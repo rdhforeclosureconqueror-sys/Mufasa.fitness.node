@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mufasa Coach Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- TensorFlow.js + Pose Detection (MoveNet/BlazePose backend) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      padding: 12px;
+      flex: 1 1 320px;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.6);
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    h2 { font-size: 1.1rem; margin-bottom: 6px; }
+
+    button {
+      border: none;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-top: 4px;
+    }
+    button.secondary {
+      background: #0ea5e9;
+      color: #020617;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #videoWrapper {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 3 / 4;
+      background: #020617;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #111827;
+    }
+    #video, #canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #repCount {
+      font-size: 2.4rem;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+    #status {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-top: 4px;
+      white-space: pre-line;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      padding: 8px;
+      background: #020617;
+      color: #e5e7eb;
+      resize: vertical;
+      min-height: 60px;
+    }
+    #coachAnswer {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      line-height: 1.3;
+      white-space: pre-line;
+    }
+    code {
+      font-size: 0.8rem;
+      background: #020617;
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px solid #1f2937;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mufasa Coach Lab 🦁</h1>
+  <p style="font-size:0.9rem; color:#9ca3af; margin-bottom:6px;">
+    Live TensorFlow pose tracking → Node (Mufasa Fitness) → Brain (MufasaBrain + OpenAI).
+  </p>
+
+  <div class="row">
+    <!-- Left: Camera + Rep Counter -->
+    <div class="card">
+      <h2>1. Live Camera & Reps</h2>
+      <p style="font-size:0.8rem; color:#9ca3af;">
+        Allow camera, stand so your whole body is visible, and do bodyweight squats.
+      </p>
+
+      <div id="videoWrapper" style="margin-top:8px;">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+      </div>
+
+      <div style="margin-top:8px;">
+        <button id="startSessionBtn">Start Session</button>
+        <button id="endSessionBtn" class="secondary" disabled>End Session</button>
+      </div>
+
+      <div id="repCount">Reps: 0</div>
+      <div style="font-size:0.85rem; margin-top:4px;">
+        Depth score: <span id="depthScore">0.0</span>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <!-- Right: Coach Chat -->
+    <div class="card">
+      <h2>2. Ask Your Coach</h2>
+      <p style="font-size:0.8rem; color:#9ca3af;">
+        This talks directly to <code>/ask</code> on your MufasaBrain API.
+      </p>
+      <input id="coachQuestion" type="text"
+             placeholder="Example: 'Give me a 3-exercise leg workout with no equipment.'" />
+      <button id="askCoachBtn" style="margin-top:6px;">Ask Coach</button>
+      <button id="speakBtn" class="secondary" style="margin-top:6px;">Speak Answer 🔊</button>
+      <div id="coachAnswer"></div>
+    </div>
+  </div>
+
+  <script>
+    // === CONFIG: CHANGE THESE TO YOUR ACTUAL URLS IF NEEDED ==================
+    const NODE_URL = "https://mufasa-fitness-node.onrender.com";
+    const BRAIN_URL = "https://mufasabrain.onrender.com";
+    const DEFAULT_USER_ID = "rashad";             // you can change per user later
+    const DEFAULT_EXERCISE_ID = "bodyweight_squat";
+
+    // === DOM ELEMENTS ========================================================
+    const videoEl = document.getElementById("video");
+    const canvasEl = document.getElementById("canvas");
+    const ctx = canvasEl.getContext("2d");
+    const repCountEl = document.getElementById("repCount");
+    const depthScoreEl = document.getElementById("depthScore");
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("startSessionBtn");
+    const endBtn = document.getElementById("endSessionBtn");
+    const coachQuestionEl = document.getElementById("coachQuestion");
+    const coachAnswerEl = document.getElementById("coachAnswer");
+    const askCoachBtn = document.getElementById("askCoachBtn");
+    const speakBtn = document.getElementById("speakBtn");
+
+    // === STATE ===============================================================
+    let detector = null;
+    let poseRunning = false;
+    let sessionId = null;
+    let totalReps = 0;
+    let lastSquatPhase = "up"; // "up" or "down"
+    let lastDepthScore = 0;
+
+    // === UTILITIES ===========================================================
+    function logStatus(msg) {
+      const ts = new Date().toLocaleTimeString();
+      statusEl.textContent = `[${ts}] ${msg}\n` + statusEl.textContent;
+    }
+
+    function toRadians(deg) {
+      return (deg * Math.PI) / 180;
+    }
+
+    function angleBetween(p1, p2, p3) {
+      // angle at p2 between p1 and p3
+      const a = { x: p1.x - p2.x, y: p1.y - p2.y };
+      const b = { x: p3.x - p2.x, y: p3.y - p2.y };
+      const dot = a.x * b.x + a.y * b.y;
+      const magA = Math.sqrt(a.x * a.x + a.y * a.y);
+      const magB = Math.sqrt(b.x * b.x + b.y * b.y);
+      if (!magA || !magB) return 0;
+      let cos = dot / (magA * magB);
+      cos = Math.min(1, Math.max(-1, cos));
+      return (Math.acos(cos) * 180) / Math.PI;
+    }
+
+    // === CAMERA + DETECTOR SETUP ============================================
+    async function initCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: 480, height: 640 },
+        audio: false
+      });
+      videoEl.srcObject = stream;
+      await new Promise((resolve) => {
+        videoEl.onloadedmetadata = () => resolve();
+      });
+
+      canvasEl.width = videoEl.videoWidth;
+      canvasEl.height = videoEl.videoHeight;
+    }
+
+    async function initDetector() {
+      // Using MoveNet / BlazePose via pose-detection API
+      detector = await posedetection.createDetector(
+        posedetection.SupportedModels.BlazePose,
+        {
+          runtime: "tfjs",
+          modelType: "lite",
+        }
+      );
+      logStatus("Pose detector initialized.");
+    }
+
+    async function startPoseLoop() {
+      poseRunning = true;
+      totalReps = 0;
+      lastSquatPhase = "up";
+      lastDepthScore = 0;
+      repCountEl.textContent = "Reps: 0";
+      depthScoreEl.textContent = "0.0";
+
+      async function frame() {
+        if (!poseRunning || !detector) return;
+
+        const poses = await detector.estimatePoses(videoEl, {
+          maxPoses: 1,
+          flipHorizontal: true,
+        });
+
+        ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+
+        if (poses && poses.length > 0) {
+          const keypoints = poses[0].keypoints;
+          drawKeypoints(keypoints);
+          processSquatLogic(keypoints);
+        }
+
+        requestAnimationFrame(frame);
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function drawKeypoints(kps) {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#22c55e";
+      ctx.fillStyle = "#22c55e";
+
+      for (const kp of kps) {
+        if (kp.score < 0.4) continue;
+        ctx.beginPath();
+        ctx.arc(kp.x, kp.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    function processSquatLogic(kps) {
+      // Get left hip, knee, ankle
+      const hip = kps.find(k => k.name === "left_hip");
+      const knee = kps.find(k => k.name === "left_knee");
+      const ankle = kps.find(k => k.name === "left_ankle");
+      if (!hip || !knee || !ankle || hip.score < 0.4 || knee.score < 0.4 || ankle.score < 0.4) {
+        return;
+      }
+
+      const angle = angleBetween(hip, knee, ankle); // ~180 standing, smaller when bent
+      // Normalize a "depth score" where 0 = straight, 1 = very deep
+      const depthScore = Math.min(1, Math.max(0, (180 - angle) / 80)); // tweak denominator for sensitivity
+      lastDepthScore = depthScore;
+      depthScoreEl.textContent = depthScore.toFixed(2);
+
+      const downThreshold = 0.5; // how low counts as bottom
+      const upThreshold = 0.25;  // how high to come back up
+
+      if (lastSquatPhase === "up" && depthScore > downThreshold) {
+        lastSquatPhase = "down";
+      } else if (lastSquatPhase === "down" && depthScore < upThreshold) {
+        lastSquatPhase = "up";
+        totalReps += 1;
+        repCountEl.textContent = `Reps: ${totalReps}`;
+        logStatus(`Rep ${totalReps} detected (depthScore=${depthScore.toFixed(2)})`);
+        sendRepUpdate(totalReps, depthScore);
+      }
+    }
+
+    // === CALL NODE (MUFASA FITNESS) ==========================================
+    async function startSession() {
+      const body = {
+        domain: "fitness",
+        command: "fitness.startSession",
+        userId: DEFAULT_USER_ID,
+        payload: {
+          programId: "squat_demo_v1"
+        }
+      };
+
+      const res = await fetch(`${NODE_URL}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`Node startSession error: ${res.status} ${txt}`);
+      }
+      const data = await res.json();
+      sessionId = data.sessionId;
+      logStatus(`Session started on Node. sessionId=${sessionId}`);
+    }
+
+    async function sendRepUpdate(repsThisSet, depthScore) {
+      if (!sessionId) return; // haven’t started yet
+
+      const body = {
+        domain: "fitness",
+        command: "fitness.repUpdate",
+        userId: DEFAULT_USER_ID,
+        payload: {
+          sessionId,
+          exerciseId: DEFAULT_EXERCISE_ID,
+          repsThisSet,
+          depthScore
+        }
+      };
+
+      try {
+        const res = await fetch(`${NODE_URL}/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          logStatus(`Node repUpdate error: ${res.status} ${txt}`);
+          return;
+        }
+        const data = await res.json();
+        logStatus(`Node repUpdate ok: ${JSON.stringify(data)}`);
+      } catch (err) {
+        console.error(err);
+        logStatus("Error sending repUpdate to Node.");
+      }
+    }
+
+    async function endSession() {
+      if (!sessionId) return;
+      const body = {
+        domain: "fitness",
+        command: "fitness.endSession",
+        userId: DEFAULT_USER_ID,
+        payload: { sessionId }
+      };
+
+      const res = await fetch(`${NODE_URL}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`Node endSession error: ${res.status} ${txt}`);
+      }
+      const data = await res.json();
+      logStatus(`Session ended on Node: ${JSON.stringify(data)}`);
+      sessionId = null;
+    }
+
+    // === CALL BRAIN (MUFASABRAIN /ask) ======================================
+    async function askCoach() {
+      const question = coachQuestionEl.value.trim();
+      if (!question) return;
+
+      coachAnswerEl.textContent = "Thinking...";
+      try {
+        const res = await fetch(`${BRAIN_URL}/ask`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          coachAnswerEl.textContent = `Error: ${res.status} ${txt}`;
+          return;
+        }
+        const data = await res.json();
+        const answer = data.answer || JSON.stringify(data, null, 2);
+        coachAnswerEl.textContent = answer;
+        logStatus("Coach replied.");
+      } catch (err) {
+        console.error(err);
+        coachAnswerEl.textContent = "Error talking to coach.";
+      }
+    }
+
+    function speakAnswer() {
+      const text = coachAnswerEl.textContent.trim();
+      if (!text) return;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
+      utter.lang = "en-US";
+      window.speechSynthesis.speak(utter);
+    }
+
+    // === BUTTON HOOKS ========================================================
+    startBtn.onclick = async () => {
+      try {
+        startBtn.disabled = true;
+        logStatus("Requesting camera & initializing…");
+        await initCamera();
+        await initDetector();
+        await startSession();
+        await startPoseLoop();
+        endBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        logStatus("Error starting session: " + err.message);
+        startBtn.disabled = false;
+      }
+    };
+
+    endBtn.onclick = async () => {
+      poseRunning = false;
+      endBtn.disabled = true;
+      await endSession();
+      logStatus("Stopped pose loop.");
+    };
+
+    askCoachBtn.onclick = () => { askCoach(); };
+    speakBtn.onclick = () => { speakAnswer(); };
+
+    // Just log that the page loaded.
+    logStatus("Mufasa Coach Lab loaded. Ready when you are.");
+  </script>
+</body>
+</html>
