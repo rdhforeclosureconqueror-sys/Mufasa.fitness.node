@@ -1,10 +1,16 @@
 // domains/fitness.js
-// Day 2: Fitness domain now emits live events via WebSockets.
+// Day 2 + Brain link: Fitness domain now emits live events via WebSockets
+// and calls the Python "Ma'at" coaching brain on rep updates.
 
 // Simple in-memory session ID generator for now
 function createSessionId() {
   return "sess_" + Date.now();
 }
+
+// Where to call the Python brain (Ma'at)
+// Set MAAT_URL in Render env for the Node service.
+// e.g. MAAT_URL = https://mufasabrain.onrender.com
+const MAAT_URL = process.env.MAAT_URL || "https://mufasabrain.onrender.com";
 
 /**
  * Handle fitness-related commands.
@@ -46,7 +52,7 @@ async function handleStartSession(userId, payload, app) {
       event: "fitness.sessionStarted",
       userId,
       sessionId,
-      programId
+      programId,
     });
   }
 
@@ -54,8 +60,47 @@ async function handleStartSession(userId, payload, app) {
     ok: true,
     sessionId,
     programId,
-    message: "Session started (Day 2 basic logic)"
+    message: "Session started (Node + WS basic logic)",
   };
+}
+
+/**
+ * Send a rep snapshot to the Python brain and try to get
+ * a short coaching cue back.
+ */
+async function askMaatForCoaching({ userId, sessionId, exerciseId, repsThisSet, depthScore }) {
+  // If MAAT_URL isn't set, just skip and return null.
+  if (!MAAT_URL) {
+    console.warn("MAAT_URL not set; skipping coaching call.");
+    return null;
+  }
+
+  try {
+    const question = `
+User ${userId} is doing exercise ${exerciseId} in session ${sessionId}.
+They just reported a rep update: repsThisSet=${repsThisSet}, depthScore=${depthScore}.
+Give ONE short, encouraging coaching cue for this rep in plain language,
+no more than 1 sentence.
+    `.trim();
+
+    const res = await fetch(`${MAAT_URL}/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!res.ok) {
+      console.error("Ma'at coaching call failed:", res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    // Your Python /ask endpoint returns { question, answer }
+    return data.answer || null;
+  } catch (err) {
+    console.error("Error calling Ma'at coaching endpoint:", err);
+    return null;
+  }
 }
 
 async function handleRepUpdate(userId, payload, app) {
@@ -67,9 +112,19 @@ async function handleRepUpdate(userId, payload, app) {
     sessionId,
     exerciseId,
     repsThisSet,
-    depthScore
+    depthScore,
   });
 
+  // 1) Call the Python brain for coaching (non-blocking if it fails)
+  const coaching = await askMaatForCoaching({
+    userId,
+    sessionId,
+    exerciseId,
+    repsThisSet,
+    depthScore,
+  });
+
+  // 2) Broadcast the rep update + any coaching over WebSockets
   if (broadcast) {
     broadcast({
       event: "fitness.repUpdate",
@@ -77,13 +132,16 @@ async function handleRepUpdate(userId, payload, app) {
       sessionId,
       exerciseId,
       repsThisSet,
-      depthScore
+      depthScore,
+      coaching, // might be null
     });
   }
 
+  // 3) Return the response to whoever called /command
   return {
     ok: true,
-    message: "Rep update received (Day 2 basic logic)"
+    message: "Rep update received",
+    coaching,
   };
 }
 
@@ -97,16 +155,16 @@ async function handleEndSession(userId, payload, app) {
     broadcast({
       event: "fitness.sessionEnded",
       userId,
-      sessionId
+      sessionId,
     });
   }
 
   return {
     ok: true,
-    message: "Session ended (Day 2 basic logic)"
+    message: "Session ended",
   };
 }
 
 module.exports = {
-  handleFitnessCommand
+  handleFitnessCommand,
 };
