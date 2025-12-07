@@ -1,0 +1,18 @@
+{
+  "fitness": {
+    "commands": {
+      "fitness.startSession": {
+        "service": "node",
+        "description": "Start a workout session for a user."
+      },
+      "fitness.repUpdate": {
+        "service": "node+maat",
+        "description": "Update reps/depth for current exercise and optionally call Ma’at for coaching text."
+      },
+      "fitness.endSession": {
+        "service": "node",
+        "description": "End a workout session and finalize summary."
+      }
+    }
+  }
+}
