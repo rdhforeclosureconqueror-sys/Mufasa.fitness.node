@@ -448,6 +448,12 @@
         addLog("system", "Network error talking to brain.");
       }
     }
+<script>
+window.addEventListener("load", () => {
+  console.log("TensorFlow loaded:", typeof tf !== "undefined");
+  console.log("PoseDetection loaded:", typeof posedetection !== "undefined");
+});
+</script>
 
     // === Wire up buttons ===
     camBtn.onclick = connectCamera;
