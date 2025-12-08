@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Black Dollar Trust 'Virtual Trainer'</title>
+  <title>Black Dollar Trust "Virtual Trainer"</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- ✅ TensorFlow + Pose Detection (UMD) -->
+  <!-- TensorFlow + Pose Detection (UMD) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  <!-- Favicon placeholder -->
+  <!-- Simple favicon so we don’t get 404 -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -39,7 +39,9 @@
       gap: 20px;
     }
 
-    @media (max-width: 800px) { .app { grid-template-columns: 1fr; } }
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; }
+    }
 
     h1 { font-size: 1.6rem; margin-bottom: 4px; }
     .subtitle { font-size: 0.9rem; color: #9ca3af; margin-bottom: 16px; }
@@ -127,7 +129,7 @@
       height: 7px;
       border-radius: 999px;
       background: #22c55e;
-      box-shadow: 0 0 10px rgba(34,197,94,0.9);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
     }
 
     input[type="text"] {
@@ -167,7 +169,7 @@
     <!-- LEFT: Live coach + video -->
     <div class="pane">
       <h1>Mufasa Live Coach</h1>
-      <p class="subtitle"> </p>
+      <p class="subtitle">Webcam + MoveNet + Voice + Ma’at Brain + Node telemetry.</p>
 
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
@@ -194,7 +196,7 @@
     <!-- RIGHT: Chat -->
     <div class="pane">
       <h2 style="font-size:1.1rem;">Coach Chat</h2>
-      <p class="subtitle">Ask Mufasa or speak—your coach listens now.</p>
+      <p class="subtitle">Talk or type. Say “Mufasa …” or “Coach …” for hands-free coaching.</p>
       <div style="display:flex; gap:8px;">
         <input id="questionInput" type="text" placeholder="Ask or speak to your coach..." />
         <button id="askBtn">Ask</button>
@@ -243,33 +245,31 @@
     let lastPoseVisible = false;
     let sessionId = null;
     let repCount = 0;
-    let squatState = "top"; // "top" | "bottom"
-    let lastNodeRepSentAt = 0;
-    // === New coaching state ===
+
+    // coaching state
     let fullBodyAcquired = false;
     let lastStepBackSpokenAt = 0;
-
-    let reps = 0;          // if you already have this, keep just one
-    let repPhase = "up";   // "up" -> "down" -> "up" cycle for squats
-
     let lastGoodRepSpokenAt = 0;
+    let repPhase = "up"; // "up" -> "down" -> "up"
 
-    // thresholds in milliseconds
-    const STEP_BACK_COOLDOWN = 4000;  // don’t say “step back” more than every 4s
-    const GOOD_REP_COOLDOWN  = 1500;  // don’t spam “good rep” faster than this
+    // telemetry
+    let lastNodeRepSentAt = 0;
 
+    const STEP_BACK_COOLDOWN = 4000;  // ms
+    const GOOD_REP_COOLDOWN  = 1500;  // ms
 
-    // skeleton edges for MoveNet keypoints
+    // skeleton edges for MoveNet keypoints (indices 0–16)
     const SKELETON_EDGES = [
-      [5, 7], [7, 9],   // left arm
-      [6, 8], [8, 10],  // right arm
-      [5, 6],           // shoulders
-      [5, 11], [6, 12], // torso
-      [11, 12],         // hips
-      [11, 13], [13, 15], // left leg
-      [12, 14], [14, 16]  // right leg
+      [5, 7], [7, 9],        // left arm
+      [6, 8], [8, 10],       // right arm
+      [5, 6],                // shoulders
+      [5, 11], [6, 12],      // torso
+      [11, 12],              // hips
+      [11, 13], [13, 15],    // left leg
+      [12, 14], [14, 16]     // right leg
     ];
 
+    // --- Helpers ---
     function addLog(kind, text) {
       const div = document.createElement("div");
       div.className = "log-line " + kind;
@@ -284,6 +284,125 @@
       u.rate = 1.0;
       u.pitch = 1.0;
       window.speechSynthesis.speak(u);
+    }
+
+    function getKeypoint(pose, name) {
+      if (!pose || !pose.keypoints) return null;
+      return pose.keypoints.find(k => k.name === name || k.part === name) || null;
+    }
+
+    function getAngleDegrees(a, b, c) {
+      if (!a || !b || !c) return null;
+      const abx = a.x - b.x;
+      const aby = a.y - b.y;
+      const cbx = c.x - b.x;
+      const cby = c.y - b.y;
+      const dot = abx * cbx + aby * cby;
+      const magAB = Math.hypot(abx, aby);
+      const magCB = Math.hypot(cbx, cby);
+      if (!magAB || !magCB) return null;
+      const cos = dot / (magAB * magCB);
+      const clamped = Math.min(1, Math.max(-1, cos));
+      return (Math.acos(clamped) * 180) / Math.PI;
+    }
+
+    // Analyze squat form → fullBody, depthScore, goodForm
+    function analyzeSquatForm(pose) {
+      if (!pose) return { fullBody: false, depthScore: 0, goodForm: false };
+
+      const leftHip   = getKeypoint(pose, "left_hip");
+      const rightHip  = getKeypoint(pose, "right_hip");
+      const leftKnee  = getKeypoint(pose, "left_knee");
+      const rightKnee = getKeypoint(pose, "right_knee");
+      const leftAnkle = getKeypoint(pose, "left_ankle");
+      const rightAnkle= getKeypoint(pose, "right_ankle");
+      const leftShoulder  = getKeypoint(pose, "left_shoulder");
+      const rightShoulder = getKeypoint(pose, "right_shoulder");
+
+      const required = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
+      const fullBody = required.every(k => k && k.score > 0.3);
+
+      const leftKneeAngle  = getAngleDegrees(leftHip,  leftKnee,  leftAnkle);
+      const rightKneeAngle = getAngleDegrees(rightHip, rightKnee, rightAnkle);
+      const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2 || 180;
+
+      // map 180 (standing) → 0, 90 (deep) → ~1
+      const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
+
+      const leftTorsoAngle  = getAngleDegrees(leftShoulder,  leftHip,  leftAnkle);
+      const rightTorsoAngle = getAngleDegrees(rightShoulder, rightHip, rightAnkle);
+      const torsoAngle = (leftTorsoAngle + rightTorsoAngle) / 2 || 90;
+
+      const deepEnough = depthScore > 0.6;
+      const notTooDeep = kneeAngle > 50;
+      const torsoOk    = torsoAngle > 60;
+
+      const goodForm = fullBody && deepEnough && notTooDeep && torsoOk;
+
+      return { fullBody, depthScore, goodForm };
+    }
+
+    async function sendToNode(payload) {
+      try {
+        await fetch(NODE_COMMAND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.warn("Node send failed", e);
+      }
+    }
+
+    function sendStartSessionToNode() {
+      const body = {
+        domain: "fitness",
+        command: "fitness.startSession",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          programId: null,
+          exerciseId: EXERCISE_ID,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
+    }
+
+    function sendEndSessionToNode() {
+      if (!sessionId) return;
+      const body = {
+        domain: "fitness",
+        command: "fitness.endSession",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          repsCompleted: repCount,
+          exerciseId: EXERCISE_ID,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
+    }
+
+    function sendRepToNode(depthScore) {
+      const now = Date.now();
+      if (now - lastNodeRepSentAt < 500) return;  // throttle
+      lastNodeRepSentAt = now;
+
+      const body = {
+        domain: "fitness",
+        command: "fitness.repUpdate",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          exerciseId: EXERCISE_ID,
+          repsThisSet: repCount,
+          depthScore,
+          ts: now
+        }
+      };
+      sendToNode(body);
     }
 
     // --- Brain health check ---
@@ -324,7 +443,7 @@
       await tf.setBackend("webgl");
       await tf.ready();
       if (typeof poseDetection === "undefined") {
-        console.error("PoseDetection failed to load. Check script URL.");
+        console.error("PoseDetection failed to load.");
         return;
       }
       detector = await poseDetection.createDetector(
@@ -358,262 +477,83 @@
       }
     }
 
-    // --- Utility: angle at joint B from points A-B-C ---
-    function jointAngle(a, b, c) {
-      if (!a || !b || !c) return null;
-      const ab = { x: a.x - b.x, y: a.y - b.y };
-      const cb = { x: c.x - b.x, y: c.y - b.y };
-      const dot = ab.x * cb.x + ab.y * cb.y;
-      const magAB = Math.hypot(ab.x, ab.y);
-      const magCB = Math.hypot(cb.x, cb.y);
-      if (!magAB || !magCB) return null;
-      let cos = dot / (magAB * magCB);
-      cos = Math.max(-1, Math.min(1, cos));
-      return (Math.acos(cos) * 180) / Math.PI;
-    }
-
-    // --- Node telemetry helpers (safe no-op if Node not ready) ---
-    async function sendToNode(payload) {
-      try {
-        await fetch(NODE_COMMAND_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-      } catch (e) {
-        // Don’t crash UI if Node isn’t reachable
-        console.warn("Node send failed", e);
-      }
-    }
-
-    function sendStartSessionToNode() {
-      const body = {
-        domain: "fitness",
-        command: "fitness.startSession",
-        userId: USER_ID,
-        payload: {
-          sessionId,
-          programId: null,
-          exerciseId: EXERCISE_ID,
-          ts: Date.now()
-        }
-      };
-      sendToNode(body);
-    }
-
-    function sendEndSessionToNode() {
-      if (!sessionId) return;
-      const body = {
-        domain: "fitness",
-        command: "fitness.endSession",
-        userId: USER_ID,
-        payload: {
-          sessionId,
-          repsCompleted: repCount,
-          exerciseId: EXERCISE_ID,
-          ts: Date.now()
-        }
-      };
-      sendToNode(body);
-    }
-
-    function sendRepToNode(depthScore) {
-      const now = Date.now();
-      // Throttle: don’t hit Node too often
-      if (now - lastNodeRepSentAt < 500) return;
-      lastNodeRepSentAt = now;
-
-      const body = {
-        domain: "fitness",
-        command: "fitness.repUpdate",
-        userId: USER_ID,
-        payload: {
-          sessionId,
-          exerciseId: EXERCISE_ID,
-          repsThisSet: repCount,
-          depthScore,
-          ts: now
-        }
-      };
-      sendToNode(body);
-    }
-
-    function getKeypoint(pose, name) {
-  if (!pose || !pose.keypoints) return null;
-  return pose.keypoints.find(k => k.name === name || k.part === name) || null;
-}
-
-function getAngleDegrees(a, b, c) {
-  if (!a || !b || !c) return null;
-  const abx = a.x - b.x;
-  const aby = a.y - b.y;
-  const cbx = c.x - b.x;
-  const cby = c.y - b.y;
-  const dot = abx * cbx + aby * cby;
-  const magAB = Math.hypot(abx, aby);
-  const magCB = Math.hypot(cbx, cby);
-  if (!magAB || !magCB) return null;
-  const cos = dot / (magAB * magCB);
-  const clamped = Math.min(1, Math.max(-1, cos));
-  return (Math.acos(clamped) * 180) / Math.PI;
-}
-
-/**
- * Analyze a bodyweight squat form.
- * Returns { fullBody, depthScore, goodForm }
- */
-function analyzeSquatForm(pose) {
-  if (!pose) return { fullBody: false, depthScore: 0, goodForm: false };
-
-  const leftHip   = getKeypoint(pose, "left_hip");
-  const rightHip  = getKeypoint(pose, "right_hip");
-  const leftKnee  = getKeypoint(pose, "left_knee");
-  const rightKnee = getKeypoint(pose, "right_knee");
-  const leftAnkle = getKeypoint(pose, "left_ankle");
-  const rightAnkle= getKeypoint(pose, "right_ankle");
-  const leftShoulder  = getKeypoint(pose, "left_shoulder");
-  const rightShoulder = getKeypoint(pose, "right_shoulder");
-
-  const required = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
-  const fullBody = required.every(k => k && k.score > 0.3);
-
-  // Knee angle: hip–knee–ankle
-  const leftKneeAngle  = getAngleDegrees(leftHip,  leftKnee,  leftAnkle);
-  const rightKneeAngle = getAngleDegrees(rightHip, rightKnee, rightAnkle);
-
-  const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2 || 180;
-  // 180 = standing tall, ~90 = deep squat
-  const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90)); 
-  // 0 = no bend, 1 ~ deep
-
-  // Torso lean: angle between shoulder–hip–ankle
-  const leftTorsoAngle  = getAngleDegrees(leftShoulder,  leftHip,  leftAnkle);
-  const rightTorsoAngle = getAngleDegrees(rightShoulder, rightHip, rightAnkle);
-  const torsoAngle = (leftTorsoAngle + rightTorsoAngle) / 2 || 90;
-  // Closer to 90 = upright; smaller = leaning too far forward
-
-  const deepEnough   = depthScore > 0.6;           // decent depth
-  const notTooDeep   = kneeAngle > 50;             // don’t go extreme
-  const torsoOk      = torsoAngle > 60;            // not folded over
-  const goodForm     = fullBody && deepEnough && notTooDeep && torsoOk;
-
-  return { fullBody, depthScore, goodForm };
-}
-
-    // --- Pose loop with squat rep detection ---
+    // --- Pose loop with squat rep + form feedback ---
     async function runPoseLoop() {
-  if (!running || !detector) return;
+      if (!running || !detector) return;
 
-  const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
-  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-  let visible = false;
-  let pose = null;
+      let pose = poses.length ? poses[0] : null;
+      let analysis = { fullBody: false, depthScore: 0, goodForm: false };
+      if (pose) analysis = analyzeSquatForm(pose);
 
-  if (poses.length) {
-    pose = poses[0];
-    visible = true;
-  }
+      const now = performance.now();
 
-  // Analyze form if we see anything
-  let analysis = { fullBody: false, depthScore: 0, goodForm: false };
-  if (pose) {
-    analysis = analyzeSquatForm(pose);
-  }
-
-  // === 1. Handle "step back" vs guiding ===
-  const now = performance.now();
-
-  if (!analysis.fullBody) {
-    poseStatusEl.textContent = "No full body in view.";
-    // Only nag BEFORE we’ve ever seen a full body
-    if (!fullBodyAcquired && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
-      speak("Step back so I can see your whole body.");
-      lastStepBackSpokenAt = now;
-    }
-  } else {
-    if (!fullBodyAcquired) {
-      // First time we see full body
-      fullBodyAcquired = true;
-      speak("Great. I can see your full body. Let's dial in your form.");
-    }
-    poseStatusEl.textContent = analysis.goodForm ? "Form looks solid." : "Form needs adjustment.";
-  }
-
-  // === 2. Draw keypoints with green/red color ===
-  if (pose && pose.keypoints) {
-    const color = analysis.goodForm ? "#22c55e" : "#ef4444";
-    for (const kp of pose.keypoints) {
-      if (kp.score > 0.4) {
-        ctx.beginPath();
-        ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
-    }
-  }
-
-  // === 3. Rep detection based on depth ===
-  // depthScore ~0 (standing) to ~1 (deep squat)
-  const depth = analysis.depthScore;
-  const DOWN_THRESHOLD = 0.6; // how deep counts as "down"
-  const UP_THRESHOLD   = 0.3; // how high counts as "up"
-
-  if (analysis.fullBody) {
-    if (repPhase === "up" && depth > DOWN_THRESHOLD) {
-      repPhase = "down"; // hit bottom
-    } else if (repPhase === "down" && depth < UP_THRESHOLD) {
-      repPhase = "up";   // returned to top → count rep
-      reps++;
-
-      // You should have some element to show reps; adjust ID if needed
-      const repsLabel = document.getElementById("repsLabel");
-      if (repsLabel) repsLabel.textContent = "Reps: " + reps;
-
-      // Good/bad rep voice feedback, but not spammy
-      if (now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
-        if (analysis.goodForm) {
-          speak("Good rep.");
-        } else {
-          speak("Careful with your form on that rep.");
+      // 1) Step-back vs guiding
+      if (!analysis.fullBody) {
+        poseStatusEl.textContent = "No full body in view.";
+        if (!fullBodyAcquired && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
+          speak("Step back so I can see your whole body.");
+          lastStepBackSpokenAt = now;
         }
-        lastGoodRepSpokenAt = now;
+      } else {
+        if (!fullBodyAcquired) {
+          fullBodyAcquired = true;
+          speak("Great, I can see your full body. Let's dial in your squat form.");
+        }
+        poseStatusEl.textContent = analysis.goodForm ? "Form looks solid." : "Form needs adjustment.";
       }
-    }
-  }
 
-  animId = requestAnimationFrame(runPoseLoop);
-}
+      // 2) Draw skeleton in green/red based on form
+      if (pose && pose.keypoints) {
+        const color = analysis.goodForm ? "#22c55e" : "#ef4444";
+        ctx.lineWidth = 3;
 
+        // lines
+        for (const [i, j] of SKELETON_EDGES) {
+          const kp1 = pose.keypoints[i];
+          const kp2 = pose.keypoints[j];
+          if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
+            ctx.beginPath();
+            ctx.moveTo(kp1.x, kp1.y);
+            ctx.lineTo(kp2.x, kp2.y);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+          }
+        }
+        // points
+        for (const kp of pose.keypoints) {
+          if (kp.score > 0.4) {
+            ctx.beginPath();
+            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
+        }
+      }
 
-      // ---- Squat rep logic (very simple) ----
-      if (visible && kneeAngle !== null) {
-        // Standing ~170-180°, deep squat ~90° or less
-        const DOWN_ANGLE = 120;
-        const UP_ANGLE = 160;
+      // 3) Rep detection from depthScore
+      const depth = analysis.depthScore;
+      const DOWN_THRESHOLD = 0.6;
+      const UP_THRESHOLD   = 0.3;
 
-        if (kneeAngle < DOWN_ANGLE && squatState === "top") {
-          squatState = "bottom";
-        } else if (kneeAngle > UP_ANGLE && squatState === "bottom") {
-          squatState = "top";
+      if (analysis.fullBody) {
+        if (repPhase === "up" && depth > DOWN_THRESHOLD) {
+          repPhase = "down"; // reached bottom
+        } else if (repPhase === "down" && depth < UP_THRESHOLD) {
+          repPhase = "up";   // came back up → count rep
           repCount += 1;
           repCountEl.textContent = String(repCount);
+          sendRepToNode(depth);
 
-          // Depth score: 0 (shallow) → 1 (deep)
-          let depthScore = (UP_ANGLE - kneeAngle) / (UP_ANGLE - 60);
-          depthScore = Math.max(0, Math.min(1, depthScore));
-
-          // Simple coaching cue
-          if (depthScore > 0.7) {
-            speak("Nice depth on that squat.");
-          } else if (depthScore < 0.3) {
-            speak("Try to sit a little deeper if your knees feel okay.");
-          }
-
-          sendRepToNode(depthScore);
-
-          if (repCount % 5 === 0) {
-            addLog("system", `You’ve done ${repCount} squats.`);
+          if (now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
+            if (analysis.goodForm) {
+              speak("Good rep.");
+            } else {
+              speak("Careful with your form on that rep.");
+            }
+            lastGoodRepSpokenAt = now;
           }
         }
       }
@@ -629,7 +569,8 @@ function analyzeSquatForm(pose) {
       if (running) {
         sessionId = "sess_" + Date.now();
         repCount = 0;
-        squatState = "top";
+        repPhase = "up";
+        fullBodyAcquired = false;
         repCountEl.textContent = "0";
         startBtn.textContent = "Stop Workout";
         speak("Workout begins in three, two, one.");
@@ -645,76 +586,72 @@ function analyzeSquatForm(pose) {
       }
     }
 
-    // --- STT (Speech Recognition) ---
+    // --- STT with wake word “Mufasa / Coach” ---
     function toggleListening() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    alert("Speech recognition not supported in this browser.");
-    return;
-  }
-
-  if (!recognition) {
-    recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.continuous = true;      // keep listening
-    recognition.interimResults = false;
-
-    recognition.onresult = e => {
-      for (let i = 0; i < e.results.length; i++) {
-        const transcript = e.results[i][0].transcript.trim();
-        const lower = transcript.toLowerCase();
-        console.log("STT:", transcript);
-
-        // Wake words: "mufasa", "coach"
-        if (lower.includes("mufasa") || lower.includes("coach")) {
-          // Remove wake word from the command
-          const cleaned = lower
-            .replace("mufasa", "")
-            .replace("coach", "")
-            .trim();
-
-          const msg = cleaned || "give me a coaching tip for my squat.";
-          addLog("you", "🎙️ " + transcript);
-          askCoach(msg);
-        }
-
-        // Optional: voice commands for controls
-        if (lower.includes("start workout")) {
-          if (!running) startWorkout();
-        } else if (lower.includes("stop workout")) {
-          if (running) startWorkout(); // toggles
-        }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        alert("Speech recognition not supported in this browser.");
+        return;
       }
-    };
 
-    recognition.onerror = e => {
-      console.warn("STT error:", e.error);
-      addLog("system", "STT error: " + e.error);
-    };
+      if (!recognition) {
+        recognition = new SR();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = false;
 
-    recognition.onend = () => {
-      if (listening) {
-        // auto-restart while listening flag is true
-        try { recognition.start(); } catch {}
+        recognition.onresult = e => {
+          for (let i = 0; i < e.results.length; i++) {
+            const transcript = e.results[i][0].transcript.trim();
+            const lower = transcript.toLowerCase();
+            console.log("STT:", transcript);
+
+            // wake words
+            if (lower.includes("mufasa") || lower.includes("coach")) {
+              const cleaned = lower
+                .replace("mufasa", "")
+                .replace("coach", "")
+                .trim();
+              const msg = cleaned || "give me a coaching tip for my squat.";
+              addLog("you", "🎙️ " + transcript);
+              askCoach(msg);
+            }
+
+            // voice controls
+            if (lower.includes("start workout")) {
+              if (!running) startWorkout();
+            } else if (lower.includes("stop workout")) {
+              if (running) startWorkout(); // toggle
+            }
+          }
+        };
+
+        recognition.onerror = e => {
+          console.warn("STT error:", e.error);
+          addLog("system", "STT error: " + e.error);
+        };
+
+        recognition.onend = () => {
+          if (listening) {
+            try { recognition.start(); } catch {}
+          } else {
+            listenBtn.textContent = "🎙️ Voice On";
+          }
+        };
+      }
+
+      if (!listening) {
+        listening = true;
+        recognition.start();
+        listenBtn.textContent = "🎧 Listening…";
+        addLog("system", "Listening for 'Mufasa' or 'Coach'...");
       } else {
+        listening = false;
+        recognition.stop();
         listenBtn.textContent = "🎙️ Voice On";
+        addLog("system", "Stopped listening.");
       }
-    };
-  }
-
-  if (!listening) {
-    recognition.start();
-    listening = true;
-    listenBtn.textContent = "🎧 Listening…";
-    addLog("system", "Listening for 'Mufasa' or 'Coach'...");
-  } else {
-    listening = false;
-    recognition.stop();
-    listenBtn.textContent = "🎙️ Voice On";
-    addLog("system", "Stopped listening.");
-  }
-}
-
+    }
 
     // --- Wire buttons ---
     connectBtn.onclick = connectCamera;
