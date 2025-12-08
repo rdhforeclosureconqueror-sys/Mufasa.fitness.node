@@ -9,7 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  <!-- Tiny data URI favicon to kill 404 -->
+  <!-- Favicon placeholder -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -159,22 +159,15 @@
     .log-line.you { color: #e5e7eb; }
     .log-line.coach { color: #a5b4fc; }
     .log-line.system { color: #6b7280; font-style: italic; }
-
-    .mini-metrics {
-      display: flex;
-      gap: 10px;
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-    .mini-metrics span strong { color: #e5e7eb; }
   </style>
 </head>
 
 <body>
   <div class="app">
+    <!-- LEFT: Live coach + video -->
     <div class="pane">
       <h1>Mufasa Live Coach</h1>
-      <p class="subtitle">Webcam + TensorFlow MoveNet + Voice + Ma’at Brain</p>
+      <p class="subtitle">Webcam + TensorFlow MoveNet + Voice + Ma’at Brain + Node telemetry</p>
 
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
@@ -192,20 +185,13 @@
         </span>
       </div>
 
-      <div class="status-line">
-        <strong>Pose:</strong> <span id="poseStatus">Not started.</span>
-      </div>
-      <div class="status-line">
-        <strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span>
-      </div>
-
-      <div class="mini-metrics">
-        <span><strong>Exercise:</strong> <span id="metricExercise">None</span></span>
-        <span><strong>Set:</strong> <span id="metricSet">0</span></span>
-        <span><strong>Rep:</strong> <span id="metricRep">0</span></span>
-      </div>
+      <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
+      <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
+      <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
+      <div class="status-line"><strong>Reps:</strong> <span id="repCount">0</span></div>
     </div>
 
+    <!-- RIGHT: Chat -->
     <div class="pane">
       <h2 style="font-size:1.1rem;">Coach Chat</h2>
       <p class="subtitle">Ask Mufasa or speak—your coach listens now.</p>
@@ -220,20 +206,17 @@
   <script>
     console.log("🔥 Mufasa Coach script initialized");
 
-    // === CONFIG ===
+    // --- Backend endpoints ---
     const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
     const ASK_URL = BRAIN_BASE_URL + "/ask";
+
+    const NODE_BASE_URL = "https://mufasafitnessnode.onrender.com";
+    const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
+
     const USER_ID = "rashad";
+    const EXERCISE_ID = "bodyweight_squat";
 
-    // Simple workout program model
-    const PROGRAM = {
-      name: "Lower Body Starter",
-      exercises: [
-        { id: "bodyweight_squat", name: "Bodyweight Squat", sets: 3, reps: 10 }
-      ]
-    };
-
-    // === DOM REFERENCES ===
+    // --- DOM hooks ---
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
     const ctx = canvasEl.getContext("2d");
@@ -247,32 +230,33 @@
     const questionInput = document.getElementById("questionInput");
     const listenBtn = document.getElementById("listenBtn");
     const logEl = document.getElementById("coach-log");
+    const repCountEl = document.getElementById("repCount");
+    const exerciseLabelEl = document.getElementById("exerciseLabel");
 
-    const metricExerciseEl = document.getElementById("metricExercise");
-    const metricSetEl = document.getElementById("metricSet");
-    const metricRepEl = document.getElementById("metricRep");
-
-    // === STATE ===
+    // --- State ---
     let detector;
     let running = false;
     let animId;
     let voiceMuted = false;
     let listening = false;
     let recognition;
-
     let lastPoseVisible = false;
     let sessionId = null;
-    let currentExerciseIndex = 0;
-    let currentSet = 1;
     let repCount = 0;
-    let inSquat = false;
-    let lastCoachCueAt = 0; // ms timestamp, to throttle /ask
+    let squatState = "top"; // "top" | "bottom"
+    let lastNodeRepSentAt = 0;
 
-    function currentExercise() {
-      return PROGRAM.exercises[currentExerciseIndex];
-    }
+    // skeleton edges for MoveNet keypoints
+    const SKELETON_EDGES = [
+      [5, 7], [7, 9],   // left arm
+      [6, 8], [8, 10],  // right arm
+      [5, 6],           // shoulders
+      [5, 11], [6, 12], // torso
+      [11, 12],         // hips
+      [11, 13], [13, 15], // left leg
+      [12, 14], [14, 16]  // right leg
+    ];
 
-    // === UI HELPERS ===
     function addLog(kind, text) {
       const div = document.createElement("div");
       div.className = "log-line " + kind;
@@ -289,27 +273,21 @@
       window.speechSynthesis.speak(u);
     }
 
-    function updateMetricsDisplay() {
-      const ex = currentExercise();
-      metricExerciseEl.textContent = ex ? ex.name : "None";
-      metricSetEl.textContent = running ? String(currentSet) : "0";
-      metricRepEl.textContent = running ? String(repCount) : "0";
-    }
-
-    // === BRAIN HEALTH CHECK ===
+    // --- Brain health check ---
     (async () => {
       try {
         const res = await fetch(BRAIN_BASE_URL + "/health");
         const data = await res.json();
         brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model}`;
         brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model}`;
-      } catch {
+      } catch (e) {
+        console.warn("Brain health error", e);
         brainStatusEl.textContent = "Brain offline.";
         brainChipTxt.textContent = "Brain: offline";
       }
     })();
 
-    // === CAMERA + POSE ===
+    // --- Camera + Pose ---
     async function connectCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -323,7 +301,7 @@
         poseStatusEl.classList.add("status-ok");
         startBtn.disabled = false;
       } catch (e) {
-        console.error(e);
+        console.error("Camera error", e);
         poseStatusEl.textContent = "Camera error.";
         poseStatusEl.classList.add("status-bad");
       }
@@ -338,17 +316,14 @@
       }
       detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
-        {
-          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-        }
+        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
       console.log("✅ MoveNet detector created.");
     }
 
-    // === BASIC AI CHAT ===
-    async function askCoach(q, extraContext) {
+    // --- Ask coach via Ma’at ---
+    async function askCoach(q) {
       if (!q) return;
-      const userText = extraContext ? `${q}\n\n${extraContext}` : q;
       addLog("you", "You: " + q);
       questionInput.value = "";
       brainStatusEl.textContent = "Thinking…";
@@ -356,67 +331,149 @@
         const res = await fetch(ASK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: userText,
-            user_id: USER_ID,
-            session_id: sessionId,
-            domain: "fitness"
-          })
+          body: JSON.stringify({ question: q })
         });
         const data = await res.json();
         const answer = data.answer || "No response.";
         addLog("coach", "Mufasa: " + answer);
         speak(answer);
         brainStatusEl.textContent = "Coach responded.";
-      } catch (err) {
-        console.error(err);
+      } catch (e) {
+        console.error("Brain error", e);
         brainStatusEl.textContent = "Brain error.";
         addLog("system", "Network error contacting brain.");
       }
     }
 
-    // === REP DETECTION + WORKOUT LOOP ===
-    function estimateSquatDepth(pose) {
-      // Very simple: use average hip Y vs average knee Y.
-      if (!pose || !pose.keypoints) return null;
-      const kp = pose.keypoints;
-
-      // MoveNet index names (0..16), using left/right hip/knee
-      const leftHip   = kp[11];
-      const rightHip  = kp[12];
-      const leftKnee  = kp[13];
-      const rightKnee = kp[14];
-
-      if (!leftHip || !rightHip || !leftKnee || !rightKnee) return null;
-      if (leftHip.score < 0.3 || rightHip.score < 0.3 ||
-          leftKnee.score < 0.3 || rightKnee.score < 0.3) return null;
-
-      const hipY  = (leftHip.y + rightHip.y) / 2;
-      const kneeY = (leftKnee.y + rightKnee.y) / 2;
-
-      // Depth = how far hips have dropped below knees.
-      return hipY - kneeY; // positive = hips lower (deeper squat)
+    // --- Utility: angle at joint B from points A-B-C ---
+    function jointAngle(a, b, c) {
+      if (!a || !b || !c) return null;
+      const ab = { x: a.x - b.x, y: a.y - b.y };
+      const cb = { x: c.x - b.x, y: c.y - b.y };
+      const dot = ab.x * cb.x + ab.y * cb.y;
+      const magAB = Math.hypot(ab.x, ab.y);
+      const magCB = Math.hypot(cb.x, cb.y);
+      if (!magAB || !magCB) return null;
+      let cos = dot / (magAB * magCB);
+      cos = Math.max(-1, Math.min(1, cos));
+      return (Math.acos(cos) * 180) / Math.PI;
     }
 
+    // --- Node telemetry helpers (safe no-op if Node not ready) ---
+    async function sendToNode(payload) {
+      try {
+        await fetch(NODE_COMMAND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // Don’t crash UI if Node isn’t reachable
+        console.warn("Node send failed", e);
+      }
+    }
+
+    function sendStartSessionToNode() {
+      const body = {
+        domain: "fitness",
+        command: "fitness.startSession",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          programId: null,
+          exerciseId: EXERCISE_ID,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
+    }
+
+    function sendEndSessionToNode() {
+      if (!sessionId) return;
+      const body = {
+        domain: "fitness",
+        command: "fitness.endSession",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          repsCompleted: repCount,
+          exerciseId: EXERCISE_ID,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
+    }
+
+    function sendRepToNode(depthScore) {
+      const now = Date.now();
+      // Throttle: don’t hit Node too often
+      if (now - lastNodeRepSentAt < 500) return;
+      lastNodeRepSentAt = now;
+
+      const body = {
+        domain: "fitness",
+        command: "fitness.repUpdate",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          exerciseId: EXERCISE_ID,
+          repsThisSet: repCount,
+          depthScore,
+          ts: now
+        }
+      };
+      sendToNode(body);
+    }
+
+    // --- Pose loop with squat rep detection ---
     async function runPoseLoop() {
       if (!running || !detector) return;
-
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
       let visible = false;
-      let primaryPose = null;
+      let kneeAngle = null;
 
-      if (poses.length) {
+      if (poses.length > 0) {
         visible = true;
-        primaryPose = poses[0];
-        for (const kp of primaryPose.keypoints) {
-          if (kp.score > 0.4) {
+        const kp = poses[0].keypoints;
+
+        // Draw joints
+        for (const p of kp) {
+          if (p.score > 0.4) {
             ctx.beginPath();
-            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
             ctx.fillStyle = "#22c55e";
             ctx.fill();
           }
+        }
+
+        // Draw skeleton lines
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#38bdf8";
+        for (const [i, j] of SKELETON_EDGES) {
+          const a = kp[i];
+          const b = kp[j];
+          if (a.score > 0.4 && b.score > 0.4) {
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+
+        // Compute knee angle for squat (left side, fallback to right)
+        const leftHip = kp[11];
+        const leftKnee = kp[13];
+        const leftAnkle = kp[15];
+        const rightHip = kp[12];
+        const rightKnee = kp[14];
+        const rightAnkle = kp[16];
+
+        if (leftHip.score > 0.4 && leftKnee.score > 0.4 && leftAnkle.score > 0.4) {
+          kneeAngle = jointAngle(leftHip, leftKnee, leftAnkle);
+        } else if (rightHip.score > 0.4 && rightKnee.score > 0.4 && rightAnkle.score > 0.4) {
+          kneeAngle = jointAngle(rightHip, rightKnee, rightAnkle);
         }
       }
 
@@ -427,30 +484,34 @@
         speak(visible ? "Good, I can see you." : "Step back a bit.");
       }
 
-      // === Simple squat rep detection ===
-      if (visible && primaryPose) {
-        const depth = estimateSquatDepth(primaryPose);
-        if (depth !== null) {
-          const threshold = 20; // tune this based on camera distance
-          // Going DOWN into a squat
-          if (depth > threshold && !inSquat) {
-            inSquat = true;
-          }
-          // Coming UP out of squat -> count rep
-          if (depth < threshold * 0.5 && inSquat) {
-            inSquat = false;
-            repCount += 1;
-            metricRepEl.textContent = String(repCount);
-            console.log("Rep counted:", repCount);
+      // ---- Squat rep logic (very simple) ----
+      if (visible && kneeAngle !== null) {
+        // Standing ~170-180°, deep squat ~90° or less
+        const DOWN_ANGLE = 120;
+        const UP_ANGLE = 160;
 
-            // If we hit target reps for this set
-            const ex = currentExercise();
-            if (ex && repCount >= ex.reps) {
-              await handleSetCompleted();
-            } else {
-              // Optional small local cue
-              speak("Good rep, keep going.");
-            }
+        if (kneeAngle < DOWN_ANGLE && squatState === "top") {
+          squatState = "bottom";
+        } else if (kneeAngle > UP_ANGLE && squatState === "bottom") {
+          squatState = "top";
+          repCount += 1;
+          repCountEl.textContent = String(repCount);
+
+          // Depth score: 0 (shallow) → 1 (deep)
+          let depthScore = (UP_ANGLE - kneeAngle) / (UP_ANGLE - 60);
+          depthScore = Math.max(0, Math.min(1, depthScore));
+
+          // Simple coaching cue
+          if (depthScore > 0.7) {
+            speak("Nice depth on that squat.");
+          } else if (depthScore < 0.3) {
+            speak("Try to sit a little deeper if your knees feel okay.");
+          }
+
+          sendRepToNode(depthScore);
+
+          if (repCount % 5 === 0) {
+            addLog("system", `You’ve done ${repCount} squats.`);
           }
         }
       }
@@ -458,93 +519,37 @@
       animId = requestAnimationFrame(runPoseLoop);
     }
 
-    async function handleSetCompleted() {
-      const ex = currentExercise();
-      addLog("system", `Set ${currentSet} completed for ${ex.name}.`);
-      speak(`Set ${currentSet} complete. Nice work.`);
-
-      // Call AI for a quick coaching cue after the set (throttled)
-      const now = Date.now();
-      if (now - lastCoachCueAt > 8000) { // 8 seconds minimum between cues
-        lastCoachCueAt = now;
-        const ctxMsg =
-          `We just finished set ${currentSet} of ${ex.sets} for ${ex.name}. ` +
-          `Target reps per set: ${ex.reps}. The user completed at least ${repCount} reps. ` +
-          `Give one short coaching cue and suggest how they should breathe or focus before the next set.`;
-        await askCoach("Give a coaching cue after that set.", ctxMsg);
-      }
-
-      // Move to next set or finish exercise
-      const exSets = ex.sets || 1;
-      if (currentSet < exSets) {
-        currentSet += 1;
-        repCount = 0;
-        metricSetEl.textContent = String(currentSet);
-        metricRepEl.textContent = "0";
-        speak(`Get ready for set ${currentSet}.`);
-      } else {
-        // Finished all sets of this exercise for now
-        speak(`You finished all sets for ${ex.name}. Great job.`);
-        addLog("system", `All sets completed for ${ex.name}.`);
-        // For now, end workout automatically
-        await stopWorkoutInternal();
-      }
-    }
-
-    async function stopWorkoutInternal() {
-      running = false;
-      startBtn.textContent = "Start Workout";
-      cancelAnimationFrame(animId);
-      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-      poseStatusEl.textContent = "Workout stopped.";
-      addLog("system", "Workout stopped.");
-
-      // Reset state for next session
-      inSquat = false;
-      repCount = 0;
-      currentSet = 1;
-      sessionId = null;
-      updateMetricsDisplay();
-    }
-
+    // --- Workout start/stop ---
     async function startWorkout() {
       if (!detector) return;
       running = !running;
 
       if (running) {
         sessionId = "sess_" + Date.now();
-        const ex = currentExercise();
-
-        startBtn.textContent = "Stop Workout";
-        currentSet = 1;
         repCount = 0;
-        inSquat = false;
-        updateMetricsDisplay();
-
+        squatState = "top";
+        repCountEl.textContent = "0";
+        startBtn.textContent = "Stop Workout";
         speak("Workout begins in three, two, one.");
-        addLog("system", `Workout started: ${sessionId} · Program: ${PROGRAM.name}`);
-
-        // Ask AI to introduce the workout with context
-        const introCtx =
-          `We are starting a workout program called "${PROGRAM.name}". ` +
-          `First exercise is ${ex.name}, with ${ex.sets} sets of ${ex.reps} reps. ` +
-          `Speak as a supportive coach, give a short intro and remind the user about form.`;
-        await askCoach("Introduce this workout for the user.", introCtx);
-
+        addLog("system", `Workout started: ${sessionId}`);
+        sendStartSessionToNode();
         runPoseLoop();
       } else {
-        await stopWorkoutInternal();
+        startBtn.textContent = "Start Workout";
+        cancelAnimationFrame(animId);
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        addLog("system", "Workout stopped.");
+        sendEndSessionToNode();
       }
     }
 
-    // === STT (Speech Recognition) ===
+    // --- STT (Speech Recognition) ---
     function toggleListening() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) return alert("Speech recognition not supported.");
       if (!recognition) {
         recognition = new SR();
         recognition.lang = "en-US";
-        recognition.interimResults = false;
         recognition.onresult = e => {
           const transcript = e.results[0][0].transcript;
           addLog("you", "🎙️ " + transcript);
@@ -560,7 +565,6 @@
         recognition.start();
         listening = true;
         listenBtn.textContent = "🎧 Listening…";
-        addLog("system", "Listening for your voice...");
       } else {
         recognition.stop();
         listening = false;
@@ -568,9 +572,9 @@
       }
     }
 
-    // === BUTTON WIRING ===
+    // --- Wire buttons ---
     connectBtn.onclick = connectCamera;
-    startBtn.onclick = () => { startWorkout(); };
+    startBtn.onclick = startWorkout;
     askBtn.onclick = () => askCoach(questionInput.value.trim());
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
@@ -581,13 +585,10 @@
       if (e.key === "Enter") askCoach(questionInput.value.trim());
     });
 
-    // === ON LOAD ===
+    // --- On load ---
     window.addEventListener("load", () => {
+      exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
-      const ex = currentExercise();
-      metricExerciseEl.textContent = ex ? ex.name : "None";
-      metricSetEl.textContent = "0";
-      metricRepEl.textContent = "0";
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
     });
