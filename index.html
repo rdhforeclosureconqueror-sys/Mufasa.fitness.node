@@ -102,11 +102,7 @@
       color: #e5e7eb;
     }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
+    button:disabled { opacity: 0.5; cursor: default; }
     button:hover:not(:disabled) {
       transform: translateY(-1px);
       background: #2563eb;
@@ -249,14 +245,15 @@
     let sessionId = null;
     let repCount = 0;
 
-    // coaching state
+    // coaching / telemetry state
     let fullBodyAcquired = false;
     let lastStepBackSpokenAt = 0;
     let lastGoodRepSpokenAt = 0;
     let repPhase = "up"; // "up" -> "down" -> "up"
     let lastDepthScore = 0;
+    let lastGoodForm = false;
 
-    // telemetry
+    // telemetry throttle
     let lastNodeRepSentAt = 0;
 
     const STEP_BACK_COOLDOWN = 4000;  // ms
@@ -310,7 +307,7 @@
       return (Math.acos(clamped) * 180) / Math.PI;
     }
 
-    // Analyze squat form → { fullBody, depthScore, goodForm }
+    // Analyze squat form → fullBody, depthScore, goodForm
     function analyzeSquatForm(pose) {
       if (!pose) return { fullBody: false, depthScore: 0, goodForm: false };
 
@@ -348,6 +345,8 @@
 
     async function sendToNode(payload) {
       try {
+        // Debug in browser:
+        console.log("→ Node", payload);
         await fetch(NODE_COMMAND_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -457,20 +456,16 @@
       console.log("✅ MoveNet detector created.");
     }
 
-    // --- Ask coach via Ma’at (with context so Ma’at knows reps, etc.) ---
+    // --- Ask coach via Ma’at (with telemetry) ---
     async function askCoach(q) {
       if (!q) return;
-      const payload = {
-        question: q,
-        context: {
-          userId: USER_ID,
-          exerciseId: EXERCISE_ID,
-          reps: repCount,
-          sessionId,
-          running,
-          lastDepthScore,
-          fullBodyAcquired
-        }
+
+      // Always send latest telemetry so Ma’at can answer about reps/form
+      const telemetry = {
+        exercise_id: EXERCISE_ID,
+        reps: repCount,
+        depth_score: lastDepthScore,
+        good_form: lastGoodForm
       };
 
       addLog("you", "You: " + q);
@@ -481,7 +476,12 @@
         const res = await fetch(ASK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            question: q,
+            user_id: USER_ID,
+            session_id: sessionId,
+            telemetry
+          })
         });
         const data = await res.json();
         const answer = data.answer || "No response.";
@@ -502,11 +502,10 @@
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-      const pose = poses.length ? poses[0] : null;
+      let pose = poses.length ? poses[0] : null;
       let analysis = { fullBody: false, depthScore: 0, goodForm: false };
       if (pose) analysis = analyzeSquatForm(pose);
 
-      lastDepthScore = analysis.depthScore;
       const now = performance.now();
 
       // 1) Step-back vs guiding
@@ -554,6 +553,9 @@
 
       // 3) Rep detection from depthScore
       const depth = analysis.depthScore;
+      lastDepthScore = depth;          // store for Ma’at telemetry
+      lastGoodForm = analysis.goodForm;
+
       const DOWN_THRESHOLD = 0.6;
       const UP_THRESHOLD   = 0.3;
 
@@ -675,7 +677,7 @@
     // --- Wire buttons ---
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
-    askBtn.onclick  = () => askCoach(questionInput.value.trim());
+    askBtn.onclick = () => askCoach(questionInput.value.trim());
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
       muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
