@@ -1,5 +1,5 @@
 // domains/fitness.js
-// Mufasa Fitness domain (Day 2 + Ma'at coaching bridge)
+// Mufasa Fitness domain + Ma'at 2.0 coaching & program bridge
 
 "use strict";
 
@@ -34,10 +34,29 @@ async function handleFitnessCommand(context) {
     case "fitness.endSession":
       return await handleEndSession(userId, payload, app);
 
+    // 🔥 NEW: Overhead Squat Assessment result coming back from the front-end
+    // payload is expected to contain:
+    // {
+    //   sessionId,
+    //   assessmentSummary,  // plain text summary of OHS findings
+    //   goal,               // e.g. "gain 20 lb muscle in 3 months"
+    //   weeks,              // e.g. 12
+    //   daysPerWeek,        // e.g. 4
+    //   homeOnly,           // bool
+    //   yogaHeavy,          // bool
+    //   extraContext        // optional extra notes
+    // }
+    case "fitness.ohsaResult":
+      return await handleOhsaResult(userId, payload, app);
+
     default:
       throw new Error("Unknown fitness command: " + command);
   }
 }
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Session lifecycle
+// ───────────────────────────────────────────────────────────────────────────────
 
 async function handleStartSession(userId, payload, app) {
   const broadcast = app.locals.broadcast;
@@ -75,7 +94,7 @@ async function handleRepUpdate(userId, payload, app) {
     depthScore,
   });
 
-  // 1) Always broadcast the raw telemetry
+  // 1) Always broadcast the raw telemetry so dashboards can listen
   if (broadcast) {
     broadcast({
       event: "fitness.repUpdate",
@@ -87,7 +106,7 @@ async function handleRepUpdate(userId, payload, app) {
     });
   }
 
-  // 2) Call Ma'at (Python brain) for coaching text
+  // 2) Call Ma'at (Python brain) for short coaching text
   let coachingText = null;
   try {
     coachingText = await callMaatForCoaching({
@@ -141,9 +160,122 @@ async function handleEndSession(userId, payload, app) {
   };
 }
 
+// ───────────────────────────────────────────────────────────────────────────────
+// Overhead Squat Assessment → Program generation
+// ───────────────────────────────────────────────────────────────────────────────
+
+async function handleOhsaResult(userId, payload, app) {
+  const broadcast = app.locals.broadcast;
+  const {
+    sessionId,
+    assessmentSummary,
+    goal,
+    weeks,
+    daysPerWeek,
+    homeOnly,
+    yogaHeavy,
+    extraContext,
+  } = payload || {};
+
+  console.log("OHS result received:", {
+    userId,
+    sessionId,
+    goal,
+    weeks,
+    daysPerWeek,
+    homeOnly,
+    yogaHeavy,
+  });
+
+  if (!MAAT_URL) {
+    console.warn("MAAT_URL not set; cannot generate program from OHS.");
+    return {
+      ok: false,
+      error: "MAAT_URL not set on server",
+    };
+  }
+
+  // Build the ProgramRequest Ma'at expects
+  const programReq = {
+    user_id: userId,
+    goal:
+      goal ||
+      "Integrated program based on overhead squat assessment and user goal.",
+    weeks: weeks != null ? weeks : 12,
+    days_per_week: daysPerWeek != null ? daysPerWeek : 4,
+    home_only: homeOnly !== undefined ? homeOnly : true,
+    yoga_heavy: yogaHeavy !== undefined ? yogaHeavy : true,
+    assessment_summary:
+      assessmentSummary || "Overhead squat was completed; see raw data.",
+    extra_context: extraContext || "",
+  };
+
+  let programResp;
+  try {
+    const resp = await fetch(`${MAAT_URL}/coach/program/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(programReq),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      console.error("Ma'at /coach/program/generate error:", resp.status, txt);
+      return {
+        ok: false,
+        error: `Ma'at program HTTP ${resp.status}`,
+        body: txt,
+      };
+    }
+
+    programResp = await resp.json();
+  } catch (err) {
+    console.error("Error calling Ma'at program API:", err.message || err);
+    return {
+      ok: false,
+      error: "Error calling Ma'at program API: " + (err.message || String(err)),
+    };
+  }
+
+  const program = programResp.program || null;
+  const programId =
+    programResp.program_id || (program && program.id) || null;
+
+  // Broadcast so the front-end can:
+  // - show "Today's Workout"
+  // - draw the calendar from program.plan
+  if (broadcast && program) {
+    broadcast({
+      event: "fitness.programGenerated",
+      userId,
+      sessionId,
+      programId,
+      goal: program.goal,
+      title: program.title,
+      weeks: program.weeks,
+      daysPerWeek: program.days_per_week,
+      plan: program.plan,
+    });
+  }
+
+  return {
+    ok: true,
+    sessionId,
+    programId,
+    program,
+    message: "OHS result stored and program generated by Ma'at.",
+  };
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Ma'at coaching call
+// ───────────────────────────────────────────────────────────────────────────────
+
 /**
  * Call Ma'at (Python FastAPI + OpenAI) to generate coaching text.
- * Expects Ma'at to expose POST { question: string } at `${MAAT_URL}/ask`
+ * Expects Ma'at to expose POST /ask
+ *   body: { question: string }
+ * and return { ts, question, answer, ... }.
  */
 async function callMaatForCoaching({
   userId,
@@ -180,7 +312,6 @@ async function callMaatForCoaching({
   }
 
   const data = await resp.json();
-  // FastAPI /ask returns { ts, question, answer, ... }
   return data.answer || null;
 }
 
