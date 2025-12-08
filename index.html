@@ -169,7 +169,7 @@
     <!-- LEFT: Live coach + video -->
     <div class="pane">
       <h1>Pan Africa Virtual Wellness Platform</h1>
-      <p class="subtitle"> The Worlds First Pan African Virtual Fitness Platform   </p>
+      <p class="subtitle"> The Worlds First Pan African Virtual Fitness Platform </p>
 
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
@@ -179,6 +179,7 @@
       <div class="btn-row">
         <button id="connectBtn">Connect Camera</button>
         <button id="startBtn" class="secondary" disabled>Start Workout</button>
+        <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <span class="chip">
@@ -231,6 +232,7 @@
     const brainChipTxt = document.getElementById("brainChipText");
     const connectBtn = document.getElementById("connectBtn");
     const startBtn = document.getElementById("startBtn");
+    const defineExerciseBtn = document.getElementById("defineExerciseBtn");
     const muteBtn = document.getElementById("muteBtn");
     const askBtn = document.getElementById("askBtn");
     const questionInput = document.getElementById("questionInput");
@@ -272,6 +274,13 @@
 
     const STEP_BACK_COOLDOWN = 4000;  // ms
     const GOOD_REP_COOLDOWN  = 1500;  // ms
+
+    // --- New Exercise definition state ---
+    let definingExercise = false;
+    let definedExercises = {};        // { name: { depthScoreAvg, torsoAngleAvg, frames: [...] } }
+    let currentExerciseName = null;
+    const EXERCISE_BASELINE_FRAMES = 80; // approx frames of "good form" to collect
+    let baselineFrames = [];          // { depthScore, torsoAngle }
 
     // skeleton edges for MoveNet keypoints (indices 0–16)
     const SKELETON_EDGES = [
@@ -351,9 +360,9 @@
       return (Math.acos(clamped) * 180) / Math.PI;
     }
 
-    // Analyze squat form → fullBody, depthScore, goodForm
+    // Analyze squat form → fullBody, depthScore, goodForm, kneeAngle, torsoAngle
     function analyzeSquatForm(pose) {
-      if (!pose) return { fullBody: false, depthScore: 0, goodForm: false };
+      if (!pose) return { fullBody: false, depthScore: 0, goodForm: false, kneeAngle: 180, torsoAngle: 90 };
 
       const leftHip   = getKeypoint(pose, "left_hip");
       const rightHip  = getKeypoint(pose, "right_hip");
@@ -384,7 +393,7 @@
 
       const goodForm = fullBody && deepEnough && notTooDeep && torsoOk;
 
-      return { fullBody, depthScore, goodForm };
+      return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle };
     }
 
     // --- Node telemetry helpers ---
@@ -479,6 +488,7 @@
         poseStatusEl.textContent = "Pose detector ready.";
         poseStatusEl.classList.add("status-ok");
         startBtn.disabled = false;
+        defineExerciseBtn.disabled = false;
       } catch (e) {
         console.error("Camera error", e);
         poseStatusEl.textContent = "Camera error.";
@@ -537,15 +547,73 @@
       }
     }
 
-    // --- Pose loop with squat reps + form feedback ---
+    // --- New Exercise Definition Mode ---
+    function startDefineExercise() {
+      if (!detector) {
+        alert("Connect camera first.");
+        return;
+      }
+      if (running) {
+        alert("Stop the workout before defining a new exercise.");
+        return;
+      }
+
+      const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
+      if (!name) return;
+
+      definingExercise = true;
+      currentExerciseName = name;
+      baselineFrames = [];
+      addLog("system", `Defining new exercise: ${name}. Give me several GOOD reps.`);
+      speak(
+        `Okay Rashad. Let's define ${name}. Give me your best form for several reps so I can learn this move.`,
+        "rep"
+      );
+    }
+
+    function finishDefineExercise() {
+      if (!definingExercise || baselineFrames.length === 0 || !currentExerciseName) return;
+
+      const depthValues = baselineFrames.map(f => f.depthScore);
+      const torsoValues = baselineFrames.map(f => f.torsoAngle);
+      const avgDepth = depthValues.reduce((a, b) => a + b, 0) / depthValues.length;
+      const avgTorso = torsoValues.reduce((a, b) => a + b, 0) / torsoValues.length;
+
+      definedExercises[currentExerciseName] = {
+        name: currentExerciseName,
+        depthScoreAvg: avgDepth,
+        torsoAngleAvg: avgTorso,
+        samples: baselineFrames.length,
+        createdAt: Date.now()
+      };
+
+      addLog(
+        "system",
+        `Exercise "${currentExerciseName}" learned. Depth avg: ${avgDepth.toFixed(
+          2
+        )}, torso avg: ${avgTorso.toFixed(1)} (samples: ${baselineFrames.length}).`
+      );
+      speak(
+        `Got it. I saved your baseline for ${currentExerciseName}. We'll use this to judge form later.`,
+        "rep"
+      );
+      console.log("Defined exercises:", definedExercises);
+
+      definingExercise = false;
+      currentExerciseName = null;
+      baselineFrames = [];
+    }
+
+    // --- Pose loop with squat reps + form feedback + exercise capture ---
     async function runPoseLoop() {
-      if (!running || !detector) return;
+      if (!running && !definingExercise) return;
+      if (!detector) return;
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
       const pose = poses.length ? poses[0] : null;
-      let analysis = { fullBody: false, depthScore: 0, goodForm: false };
+      let analysis = { fullBody: false, depthScore: 0, goodForm: false, kneeAngle: 180, torsoAngle: 90 };
       if (pose) analysis = analyzeSquatForm(pose);
 
       lastDepthScore = analysis.depthScore;
@@ -553,18 +621,20 @@
 
       const now = performance.now();
 
-      // 1) Step-back vs guiding
+      // 1) Step-back vs guiding (only relevant when running workout)
       if (!analysis.fullBody) {
         poseStatusEl.textContent = "No full body in view.";
         if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
-          speak("Step back so I can see your whole body.", "rep");
+          if (running || definingExercise) {
+            speak("Step back so I can see your whole body.", "rep");
+          }
           lastStepBackSpokenAt = now;
         }
       } else {
         if (!fullBodyAcquired) {
           fullBodyAcquired = true;
-          if (repFeedbackAllowed) {
-            speak("Great, I can see your full body. Let's dial in your squat form.", "rep");
+          if (repFeedbackAllowed && (running || definingExercise)) {
+            speak("Great, I can see your full body.", "rep");
           }
         }
         poseStatusEl.textContent = analysis.goodForm ? "Form looks solid." : "Form needs adjustment.";
@@ -597,59 +667,78 @@
         }
       }
 
-      // 3) Rep detection from depthScore
-      const depth = analysis.depthScore;
-      const DOWN_THRESHOLD = 0.6;
-      const UP_THRESHOLD   = 0.3;
+      // 3) If we are in "define exercise" mode, capture good-form frames
+      if (definingExercise && analysis.fullBody && analysis.goodForm) {
+        baselineFrames.push({
+          depthScore: analysis.depthScore,
+          torsoAngle: analysis.torsoAngle
+        });
 
-      if (analysis.fullBody) {
-        if (repPhase === "up" && depth > DOWN_THRESHOLD) {
-          repPhase = "down"; // reached bottom
-        } else if (repPhase === "down" && depth < UP_THRESHOLD) {
-          repPhase = "up";   // came back up → count rep
-          repCount += 1;
-          totalReps += 1;
-          repCountEl.textContent = String(repCount);
-          sendRepToNode(depth);
+        // little hint in log every so often
+        if (baselineFrames.length === 1) {
+          addLog("system", "Recording baseline… keep moving with good form.");
+        }
 
-          if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
-            if (analysis.goodForm) {
-              speak("Good rep.", "rep");
-            } else {
-              speak("Careful with your form on that rep.", "rep");
-            }
-            lastGoodRepSpokenAt = now;
-          }
+        if (baselineFrames.length >= EXERCISE_BASELINE_FRAMES) {
+          finishDefineExercise();
+        }
+      }
 
-          // Set / rep targets
-          if (repCount === TARGET_REPS) {
-            if (repFeedbackAllowed) {
-              speak(
-                `Great job. That's ${TARGET_REPS} reps for set ${currentSet}.`,
-                "rep"
-              );
-            }
-            currentSet += 1;
+      // 4) Rep detection from depthScore (only when running workout)
+      if (running) {
+        const depth = analysis.depthScore;
+        const DOWN_THRESHOLD = 0.6;
+        const UP_THRESHOLD   = 0.3;
 
-            if (currentSet <= TARGET_SETS) {
-              // new set
-              repCount = 0;
-              setTimeout(() => {
-                if (running && repFeedbackAllowed) {
-                  speak(`Rest is over. Let's start set ${currentSet}.`, "rep");
-                }
-              }, 20000); // simple 20s rest
-            } else {
-              // workout complete
-              running = false;
-              startBtn.textContent = "Start Workout";
-              addLog("system", "Workout complete.");
-              if (repFeedbackAllowed) {
-                speak("Workout complete. Incredible focus today.", "rep");
+        if (analysis.fullBody) {
+          if (repPhase === "up" && depth > DOWN_THRESHOLD) {
+            repPhase = "down"; // reached bottom
+          } else if (repPhase === "down" && depth < UP_THRESHOLD) {
+            repPhase = "up";   // came back up → count rep
+            repCount += 1;
+            totalReps += 1;
+            repCountEl.textContent = String(repCount);
+            sendRepToNode(depth);
+
+            if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
+              if (analysis.goodForm) {
+                speak("Good rep.", "rep");
+              } else {
+                speak("Careful with your form on that rep.", "rep");
               }
-              sendEndSessionToNode();
-              cancelAnimationFrame(animId);
-              return; // stop loop
+              lastGoodRepSpokenAt = now;
+            }
+
+            // Set / rep targets
+            if (repCount === TARGET_REPS) {
+              if (repFeedbackAllowed) {
+                speak(
+                  `Great job. That's ${TARGET_REPS} reps for set ${currentSet}.`,
+                  "rep"
+                );
+              }
+              currentSet += 1;
+
+              if (currentSet <= TARGET_SETS) {
+                // new set
+                repCount = 0;
+                setTimeout(() => {
+                  if (running && repFeedbackAllowed) {
+                    speak(`Rest is over. Let's start set ${currentSet}.`, "rep");
+                  }
+                }, 20000); // simple 20s rest
+              } else {
+                // workout complete
+                running = false;
+                startBtn.textContent = "Start Workout";
+                addLog("system", "Workout complete.");
+                if (repFeedbackAllowed) {
+                  speak("Workout complete. Incredible focus today.", "rep");
+                }
+                sendEndSessionToNode();
+                cancelAnimationFrame(animId);
+                return; // stop loop
+              }
             }
           }
         }
@@ -661,6 +750,15 @@
     // --- Workout start/stop ---
     async function startWorkout() {
       if (!detector) return;
+
+      // If we are in define mode, stop it
+      if (definingExercise) {
+        definingExercise = false;
+        baselineFrames = [];
+        currentExerciseName = null;
+        addLog("system", "Cancelled exercise definition to start workout.");
+      }
+
       running = !running;
 
       if (running) {
@@ -768,6 +866,7 @@
     // --- Wire buttons ---
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
+    defineExerciseBtn.onclick = startDefineExercise;
     askBtn.onclick = () => askCoach(questionInput.value.trim());
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
