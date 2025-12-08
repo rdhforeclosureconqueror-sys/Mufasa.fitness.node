@@ -5,11 +5,12 @@
   <title>Mufasa Live Coach</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- TensorFlow + Pose Detection (global: tf, poseDetection) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.20.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.20.0/dist/tf-converter.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.20.0/dist/tf-backend-webgl.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@3.3.0/dist/pose-detection.min.js"></script>
+  <!-- TensorFlow + Pose Detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@4.0.0/dist/pose-detection.min.js"></script>
+
+  <!-- Tiny favicon to avoid 404 -->
+  <link rel="icon" href="data:,">
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,21 +40,11 @@
     }
 
     @media (max-width: 800px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
+      .app { grid-template-columns: 1fr; }
     }
 
-    h1 {
-      font-size: 1.6rem;
-      margin-bottom: 4px;
-    }
-
-    .subtitle {
-      font-size: 0.9rem;
-      color: #9ca3af;
-      margin-bottom: 16px;
-    }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    .subtitle { font-size: 0.9rem; color: #9ca3af; margin-bottom: 16px; }
 
     .pane {
       background: rgba(15, 23, 42, 0.8);
@@ -74,7 +65,6 @@
       background: #020617;
       border: 1px solid rgba(51, 65, 85, 0.8);
     }
-
     video, canvas {
       position: absolute;
       inset: 0;
@@ -88,6 +78,7 @@
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 8px;
+      align-items: center;
     }
 
     button {
@@ -103,43 +94,20 @@
       gap: 6px;
       transition: background 0.15s ease, transform 0.08s ease;
     }
-
     button.secondary {
       background: #0f172a;
       border: 1px solid #1e293b;
       color: #e5e7eb;
     }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
+    button:disabled { opacity: 0.5; cursor: default; }
     button:hover:not(:disabled) {
       transform: translateY(-1px);
       background: #2563eb;
     }
 
-    .status-line {
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-
-    .status-line strong {
-      color: #e5e7eb;
-    }
-
-    .status-ok {
-      color: #4ade80;
-    }
-
-    .status-warn {
-      color: #f97316;
-    }
-
-    .status-bad {
-      color: #f97373;
-    }
+    .status-line { font-size: 0.8rem; color: #9ca3af; }
+    .status-ok { color: #4ade80; }
+    .status-bad { color: #f87171; }
 
     .chip {
       display: inline-flex;
@@ -152,19 +120,12 @@
       border: 1px solid rgba(55, 65, 81, 0.9);
       color: #9ca3af;
     }
-
     .chip-dot {
       width: 7px;
       height: 7px;
       border-radius: 999px;
       background: #22c55e;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 6px;
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
     }
 
     input[type="text"] {
@@ -177,10 +138,7 @@
       font-size: 0.9rem;
       outline: none;
     }
-
-    input[type="text"]::placeholder {
-      color: #6b7280;
-    }
+    input[type="text"]::placeholder { color: #6b7280; }
 
     #coach-log {
       flex: 1;
@@ -193,31 +151,20 @@
       border: 1px solid rgba(31, 41, 55, 0.9);
       font-size: 0.85rem;
     }
-
-    .log-line {
-      margin-bottom: 4px;
-    }
-
-    .log-line.you {
-      color: #e5e7eb;
-    }
-    .log-line.coach {
-      color: #a5b4fc;
-    }
-    .log-line.system {
-      color: #6b7280;
-      font-style: italic;
-    }
+    .log-line { margin-bottom: 4px; }
+    .log-line.you { color: #e5e7eb; }
+    .log-line.coach { color: #a5b4fc; }
+    .log-line.system { color: #6b7280; font-style: italic; }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- LEFT: Video + Pose -->
+    <!-- LEFT PANEL -->
     <div class="pane">
       <div>
         <h1>Mufasa Live Coach</h1>
         <p class="subtitle">
-          Webcam + TensorFlow pose detection + Node brain + Ma’at brain behind the scenes.
+          Webcam + TensorFlow pose detection + browser voice + Ma’at brain + Node telemetry.
         </p>
       </div>
 
@@ -229,71 +176,69 @@
       <div class="btn-row">
         <button id="connectBtn">Connect Camera</button>
         <button id="startBtn" class="secondary" disabled>Start Workout</button>
-        <button id="muteBtn" class="secondary">Mute voice</button>
-        <span class="chip" id="brainChip">
+        <button id="listenBtn" class="secondary">🎙️ Voice On</button>
+        <button id="muteBtn" class="secondary">🔊 Mute</button>
+        <span class="chip">
           <span class="chip-dot"></span>
           <span id="brainChipText">Brain: connecting…</span>
         </span>
       </div>
 
-      <div class="status-line">
-        <strong>Pose:</strong>
-        <span id="poseStatus">Not started.</span>
-      </div>
-      <div class="status-line">
-        <strong>Brain:</strong>
-        <span id="brainStatus">Not contacted yet.</span>
-      </div>
+      <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
+      <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
     </div>
 
-    <!-- RIGHT: Chat -->
+    <!-- RIGHT PANEL -->
     <div class="pane">
-      <div>
-        <h2 style="font-size:1.1rem; margin-bottom:4px;">Coach Chat</h2>
-        <p class="subtitle">
-          Ask Mufasa anything about today’s workout, recovery, or mindset.
-        </p>
-      </div>
-
-      <div class="chat-input-row">
-        <input id="questionInput" type="text"
-               placeholder='Ask the coach a question… e.g. "Give me a 3-exercise leg workout with no equipment."' />
+      <h2 style="font-size:1.1rem; margin-bottom:4px;">Coach Chat</h2>
+      <p class="subtitle">Ask Mufasa or speak directly—your coach listens now.</p>
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <input id="questionInput" type="text" placeholder="Ask or speak to your coach..." />
         <button id="askBtn">Ask</button>
       </div>
-
       <div id="coach-log"></div>
     </div>
   </div>
 
   <script>
-    // === CONFIG =============================================================
+    // ==== CONFIG ====
     const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
     const ASK_URL = BRAIN_BASE_URL + "/ask";
 
-    // === DOM ELEMENTS =======================================================
-    const videoEl      = document.getElementById("video");
-    const canvasEl     = document.getElementById("overlay");
-    const poseStatusEl = document.getElementById("poseStatus");
-    const brainStatusEl= document.getElementById("brainStatus");
-    const brainChipTxt = document.getElementById("brainChipText");
-    const connectBtn   = document.getElementById("connectBtn");
-    const startBtn     = document.getElementById("startBtn");
-    const muteBtn      = document.getElementById("muteBtn");
-    const askBtn       = document.getElementById("askBtn");
-    const questionInput= document.getElementById("questionInput");
-    const logEl        = document.getElementById("coach-log");
+    // Adjust this to your Node service URL
+    const NODE_BASE_URL = "https://mufasafitnessnode.onrender.com"; // example; update if needed
+    const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
 
+    const USER_ID = "rashad"; // can be dynamic later
+    const EXERCISE_ID = "bodyweight_squat";
+
+    // ==== DOM ====
+    const videoEl = document.getElementById("video");
+    const canvasEl = document.getElementById("overlay");
     const ctx = canvasEl.getContext("2d");
+    const poseStatusEl = document.getElementById("poseStatus");
+    const brainStatusEl = document.getElementById("brainStatus");
+    const brainChipTxt = document.getElementById("brainChipText");
+    const connectBtn = document.getElementById("connectBtn");
+    const startBtn = document.getElementById("startBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const askBtn = document.getElementById("askBtn");
+    const questionInput = document.getElementById("questionInput");
+    const listenBtn = document.getElementById("listenBtn");
+    const logEl = document.getElementById("coach-log");
 
-    // === STATE ==============================================================
-    let detector = null;
+    // ==== STATE ====
+    let detector;
     let running = false;
-    let stream = null;
-    let animId = null;
+    let animId;
     let voiceMuted = false;
+    let listening = false;
+    let recognition;
     let lastPoseVisible = false;
+    let sessionId = null;
+    let lastNodeRepSentAt = 0;
 
-    // === UTIL: logging + speech ============================================
+    // ==== LOGGING ====
     function addLog(kind, text) {
       const div = document.createElement("div");
       div.className = "log-line " + kind;
@@ -302,222 +247,258 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    // ==== VOICE OUT ====
     function speak(text) {
-      if (voiceMuted) return;
-      if (!("speechSynthesis" in window)) return;
-
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 1.0;
-      utter.pitch = 1.0;
-      window.speechSynthesis.speak(utter);
+      if (voiceMuted || !("speechSynthesis" in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
     }
 
-    // === INIT BRAIN STATUS ==================================================
+    // ==== BRAIN HEALTH CHECK ====
     (async () => {
       try {
         const res = await fetch(BRAIN_BASE_URL + "/health");
-        if (!res.ok) throw new Error("Health check failed");
         const data = await res.json();
-        brainStatusEl.textContent =
-          `Phase ${data.phase}, model ${data.openai_model || "unknown"}.`;
-        brainChipTxt.textContent =
-          `Brain: phase ${data.phase} · model ${data.openai_model || "LLM"}`;
-      } catch (err) {
-        console.error(err);
-        brainStatusEl.textContent = "Could not reach brain API.";
-        brainStatusEl.classList.add("status-bad");
-        brainChipTxt.textContent = "Brain: offline?";
+        brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model}`;
+        brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model}`;
+      } catch (e) {
+        console.error("Brain health error:", e);
+        brainStatusEl.textContent = "Brain offline.";
+        brainChipTxt.textContent = "Brain: offline";
       }
     })();
 
-    // === CAMERA + POSE ======================================================
+    // ==== CAMERA + POSE ====
     async function connectCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 }
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoEl.srcObject = stream;
-
-        await new Promise((resolve) => {
-          videoEl.onloadedmetadata = () => resolve();
-        });
-
-        canvasEl.width  = videoEl.videoWidth;
+        await new Promise(resolve => videoEl.onloadedmetadata = resolve);
+        canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
-
         poseStatusEl.textContent = "Camera connected. Loading pose detector…";
-
         await initDetector();
-        poseStatusEl.textContent = "Pose detector ready. Click Start Workout.";
-        poseStatusEl.classList.remove("status-bad");
+        poseStatusEl.textContent = "Pose detector ready.";
         poseStatusEl.classList.add("status-ok");
         startBtn.disabled = false;
-      } catch (err) {
-        console.error(err);
-        poseStatusEl.textContent = "Could not access camera.";
+      } catch (e) {
+        console.error("Camera error:", e);
+        poseStatusEl.textContent = "Camera error.";
         poseStatusEl.classList.add("status-bad");
       }
     }
 
     async function initDetector() {
-      console.log("TensorFlow backend:", tf.getBackend());
       await tf.setBackend("webgl");
       await tf.ready();
-
-      const poseDetectionLoaded = typeof poseDetection !== "undefined";
-      console.log("poseDetection loaded:", poseDetectionLoaded);
-      if (!poseDetectionLoaded) {
-        poseStatusEl.textContent = "Pose library not loaded.";
-        poseStatusEl.classList.add("status-bad");
-        throw new Error("poseDetection global is missing");
-      }
-
       detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
-        {
-          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-        }
+        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
+      console.log("MoveNet detector created.");
+    }
+
+    // Simple depth estimate for squats (0.0–1.0)
+    function estimateDepth(poses) {
+      if (!poses.length) return 0.0;
+      const kp = poses[0].keypoints;
+
+      const leftHip = kp.find(k => k.name === "left_hip");
+      const rightHip = kp.find(k => k.name === "right_hip");
+      const leftKnee = kp.find(k => k.name === "left_knee");
+      const rightKnee = kp.find(k => k.name === "right_knee");
+
+      if (!leftHip || !rightHip || !leftKnee || !rightKnee) return 0.0;
+      if (leftHip.score < 0.4 || rightHip.score < 0.4 ||
+          leftKnee.score < 0.4 || rightKnee.score < 0.4) return 0.0;
+
+      const avgHipY = (leftHip.y + rightHip.y) / 2;
+      const avgKneeY = (leftKnee.y + rightKnee.y) / 2;
+
+      const diff = avgKneeY - avgHipY; // more positive = deeper squat (knees lower)
+      const norm = Math.max(0, Math.min(1, diff / 200)); // 0–1 after rough normalization
+      return norm;
     }
 
     async function runPoseLoop() {
-      if (!detector || !running) return;
+      if (!running || !detector) return;
 
-      try {
-        const poses = await detector.estimatePoses(videoEl, {
-          maxPoses: 1,
-          flipHorizontal: true
+      const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+      let visible = false;
+      if (poses.length) {
+        visible = true;
+        for (const kp of poses[0].keypoints) {
+          if (kp.score > 0.4) {
+            ctx.beginPath();
+            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#22c55e";
+            ctx.fill();
+          }
+        }
+      }
+
+      poseStatusEl.textContent = visible ? "Pose detected." : "No pose.";
+      if (visible !== lastPoseVisible) {
+        lastPoseVisible = visible;
+        speak(visible ? "Good, I can see you." : "Step back a bit.");
+      }
+
+      // Node telemetry (throttled)
+      const now = Date.now();
+      if (sessionId && now - lastNodeRepSentAt > 500) {
+        const depthScore = estimateDepth(poses);
+        sendNodeCommand("fitness.repUpdate", {
+          sessionId,
+          exerciseId: EXERCISE_ID,
+          repsThisSet: 0,      // placeholder for now
+          depthScore,
+          visible,
+          timestamp: Math.floor(now / 1000)
         });
-
-        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-
-        let visible = false;
-
-        if (poses && poses.length > 0) {
-          const pose = poses[0];
-          visible = true;
-
-          // draw keypoints
-          const keypoints = pose.keypoints || [];
-          ctx.fillStyle = "#22c55e";
-          ctx.strokeStyle = "rgba(34,197,94,0.7)";
-          ctx.lineWidth = 2;
-
-          for (const kp of keypoints) {
-            if (kp.score != null && kp.score > 0.4) {
-              ctx.beginPath();
-              ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
-              ctx.fill();
-            }
-          }
-        }
-
-        poseStatusEl.textContent = visible
-          ? "Pose detected. Mufasa can see you."
-          : "No person detected – step back and center yourself.";
-
-        // only talk when visibility state changes
-        if (visible !== lastPoseVisible) {
-          lastPoseVisible = visible;
-          if (visible) {
-            speak("Good. I can see your full body now.");
-          } else {
-            speak("I lost you. Step back so I can see your full body.");
-          }
-        }
-      } catch (err) {
-        console.error("Pose loop error:", err);
-        poseStatusEl.textContent = "Error in pose detection loop.";
-        poseStatusEl.classList.add("status-bad");
+        lastNodeRepSentAt = now;
       }
 
-      if (running) {
-        animId = requestAnimationFrame(runPoseLoop);
-      }
+      animId = requestAnimationFrame(runPoseLoop);
     }
 
     async function startWorkout() {
-      if (!detector) {
-        poseStatusEl.textContent = "Pose detector not ready yet.";
-        return;
-      }
+      if (!detector) return;
 
-      if (!running) {
-        running = true;
+      running = !running;
+      if (running) {
+        // new session
+        sessionId = "sess_" + Date.now();
         startBtn.textContent = "Stop Workout";
-        startBtn.classList.remove("secondary");
         speak("Workout begins in three, two, one.");
-        addLog("system", "Workout started.");
+        addLog("system", "Workout started. Session: " + sessionId);
+
+        // tell Node
+        sendNodeCommand("fitness.startSession", {
+          sessionId,
+          exerciseId: EXERCISE_ID,
+          timestamp: Math.floor(Date.now() / 1000)
+        });
+
         runPoseLoop();
       } else {
-        running = false;
         startBtn.textContent = "Start Workout";
-        startBtn.classList.add("secondary");
-        if (animId) cancelAnimationFrame(animId);
+        cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-        poseStatusEl.textContent = "Workout stopped.";
-        addLog("system", "Workout stopped.");
+        addLog("system", "Workout stopped. Session: " + sessionId);
+
+        // tell Node
+        if (sessionId) {
+          sendNodeCommand("fitness.endSession", {
+            sessionId,
+            timestamp: Math.floor(Date.now() / 1000)
+          });
+        }
       }
     }
 
-    // === CHAT WITH BRAIN ====================================================
-    async function askCoach() {
-      const q = questionInput.value.trim();
+    // ==== NODE COMMAND ====
+    async function sendNodeCommand(command, payload) {
+      const body = {
+        domain: "fitness",
+        command,
+        userId: USER_ID,
+        payload
+      };
+      try {
+        const res = await fetch(NODE_COMMAND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          console.warn("Node command error:", res.status);
+        }
+      } catch (e) {
+        console.warn("Node command network error:", e);
+      }
+    }
+
+    // ==== CHAT / ASK ====
+    async function askCoach(q) {
       if (!q) return;
-      questionInput.value = "";
-
       addLog("you", "You: " + q);
-      brainStatusEl.textContent = "Contacting brain…";
-
+      questionInput.value = "";
+      brainStatusEl.textContent = "Thinking…";
       try {
         const res = await fetch(ASK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question: q })
         });
-
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("Brain error:", res.status, text);
-          brainStatusEl.textContent = "Brain returned an error.";
-          brainStatusEl.classList.add("status-bad");
-          addLog("system", "Network error talking to brain.");
-          return;
-        }
-
         const data = await res.json();
-        const answer = data.answer || data.result || JSON.stringify(data);
-
+        const answer = data.answer || "No response.";
         addLog("coach", "Mufasa: " + answer);
-        brainStatusEl.textContent = "Coach answered.";
         speak(answer);
-      } catch (err) {
-        console.error(err);
-        brainStatusEl.textContent = "Network error talking to brain.";
-        brainStatusEl.classList.add("status-bad");
+        brainStatusEl.textContent = "Coach responded.";
+      } catch (e) {
+        console.error("Ask error:", e);
+        brainStatusEl.textContent = "Error contacting brain.";
         addLog("system", "Network error talking to brain.");
       }
     }
 
-    // === WIRE UP BUTTONS ====================================================
-    connectBtn.onclick = connectCamera;
-    startBtn.onclick   = startWorkout;
-    askBtn.onclick     = askCoach;
+    // ==== STT (Speech Recognition) ====
+    function toggleListening() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        alert("Speech recognition not supported in this browser.");
+        return;
+      }
+      if (!recognition) {
+        recognition = new SR();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+        recognition.onresult = e => {
+          const transcript = e.results[0][0].transcript;
+          addLog("you", "🎙️ " + transcript);
+          askCoach(transcript);
+        };
+        recognition.onerror = e => addLog("system", "STT error: " + e.error);
+        recognition.onend = () => {
+          listening = false;
+          listenBtn.textContent = "🎙️ Voice On";
+        };
+      }
+      if (!listening) {
+        recognition.start();
+        listening = true;
+        listenBtn.textContent = "🎧 Listening…";
+        addLog("system", "Listening for your voice...");
+      } else {
+        recognition.stop();
+        listening = false;
+        listenBtn.textContent = "🎙️ Voice On";
+      }
+    }
 
+    // ==== BUTTONS ====
+    connectBtn.onclick = connectCamera;
+    startBtn.onclick = startWorkout;
+    askBtn.onclick = () => askCoach(questionInput.value.trim());
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
-      muteBtn.textContent = voiceMuted ? "Unmute voice" : "Mute voice";
+      muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
     };
-
-    questionInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") askCoach();
+    listenBtn.onclick = toggleListening;
+    questionInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") askCoach(questionInput.value.trim());
     });
 
-    // On load, log whether TF + poseDetection are visible
+    // ==== ON LOAD ====
     window.addEventListener("load", () => {
+      addLog("system", "Page loaded. Connect your camera to begin.");
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
-      addLog("system", "Page loaded. Click “Connect Camera” to begin.");
     });
   </script>
 </body>
