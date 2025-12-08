@@ -344,8 +344,69 @@
       }
     }
 
+       async function runPoseLoop() {
+      if (!running || !detector) return;
+      const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+      let visible = false;
+      if (poses.length) {
+        visible = true;
+        for (const kp of poses[0].keypoints) {
+          if (kp.score > 0.4) {
+            ctx.beginPath();
+            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#22c55e";
+            ctx.fill();
+          }
+        }
+      }
+
+      poseStatusEl.textContent = visible ? "Pose detected." : "No pose.";
+      if (visible !== lastPoseVisible) {
+        lastPoseVisible = visible;
+        speak(visible ? "Good, I can see you." : "Step back a bit.");
+      }
+
+      // basic correction example
+      if (poses.length) {
+        const kp = poses[0].keypoints;
+        const leftShoulder = kp.find(k => k.name === "left_shoulder");
+        const rightShoulder = kp.find(k => k.name === "right_shoulder");
+        const leftHip = kp.find(k => k.name === "left_hip");
+        const rightHip = kp.find(k => k.name === "right_hip");
+        if (leftShoulder && rightShoulder && leftHip && rightHip) {
+          const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+          const hipY = (leftHip.y + rightHip.y) / 2;
+          const torsoAngle = hipY - shoulderY;
+          if (torsoAngle < 80) {
+            speak("Keep your back straighter.");
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(runPoseLoop);
+    }
+
+    async function startWorkout() {
+      if (!detector) return;
+      running = !running;
+      if (running) {
+        sessionId = "sess_" + Date.now();
+        startBtn.textContent = "Stop Workout";
+        speak("Workout begins in three, two, one.");
+        addLog("system", "Workout started: " + sessionId);
+        runPoseLoop();
+      } else {
+        startBtn.textContent = "Start Workout";
+        cancelAnimationFrame(animId);
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        addLog("system", "Workout stopped.");
+      }
+    }
+
     connectBtn.onclick = connectCamera;
-    startBtn.onclick = () => speak("Workout feature ready soon");
+    startBtn.onclick = startWorkout;
     askBtn.onclick = () => askCoach(questionInput.value.trim());
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
@@ -361,6 +422,3 @@
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
     });
-  </script>
-</body>
-</html>
