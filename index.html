@@ -5,11 +5,10 @@
   <title>Mufasa Live Coach</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- ✅ TensorFlow + Pose Detection (UMD bundle — defines window.poseDetection) -->
+  <!-- ✅ TensorFlow + Pose Detection (UMD) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  <!-- Prevent favicon 404 -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -101,7 +100,6 @@
     }
 
     button:disabled { opacity: 0.5; cursor: default; }
-
     button:hover:not(:disabled) {
       transform: translateY(-1px);
       background: #2563eb;
@@ -165,14 +163,9 @@
 
 <body>
   <div class="app">
-    <!-- LEFT SIDE -->
     <div class="pane">
-      <div>
-        <h1>Mufasa Live Coach</h1>
-        <p class="subtitle">
-          Webcam + TensorFlow MoveNet + Voice + Ma’at Brain + Node telemetry
-        </p>
-      </div>
+      <h1>Mufasa Live Coach</h1>
+      <p class="subtitle">Webcam + TensorFlow MoveNet + Voice + Ma’at Brain + Node telemetry</p>
 
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
@@ -184,17 +177,13 @@
         <button id="startBtn" class="secondary" disabled>Start Workout</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
-        <span class="chip">
-          <span class="chip-dot"></span>
-          <span id="brainChipText">Brain: connecting…</span>
-        </span>
+        <span class="chip"><span class="chip-dot"></span><span id="brainChipText">Brain: connecting…</span></span>
       </div>
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
     </div>
 
-    <!-- RIGHT SIDE -->
     <div class="pane">
       <h2 style="font-size:1.1rem;">Coach Chat</h2>
       <p class="subtitle">Ask Mufasa or speak—your coach listens now.</p>
@@ -287,10 +276,9 @@
         console.error("PoseDetection failed to load. Check script URL.");
         return;
       }
-      detector = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-      );
+      detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
+        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+      });
       console.log("✅ MoveNet detector created.");
     }
 
@@ -316,35 +304,7 @@
       }
     }
 
-    function toggleListening() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return alert("Speech recognition not supported.");
-      if (!recognition) {
-        recognition = new SR();
-        recognition.lang = "en-US";
-        recognition.onresult = e => {
-          const transcript = e.results[0][0].transcript;
-          addLog("you", "🎙️ " + transcript);
-          askCoach(transcript);
-        };
-        recognition.onerror = e => addLog("system", "STT error: " + e.error);
-        recognition.onend = () => {
-          listening = false;
-          listenBtn.textContent = "🎙️ Voice On";
-        };
-      }
-      if (!listening) {
-        recognition.start();
-        listening = true;
-        listenBtn.textContent = "🎧 Listening…";
-      } else {
-        recognition.stop();
-        listening = false;
-        listenBtn.textContent = "🎙️ Voice On";
-      }
-    }
-
-       async function runPoseLoop() {
+    async function runPoseLoop() {
       if (!running || !detector) return;
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -366,23 +326,6 @@
       if (visible !== lastPoseVisible) {
         lastPoseVisible = visible;
         speak(visible ? "Good, I can see you." : "Step back a bit.");
-      }
-
-      // basic correction example
-      if (poses.length) {
-        const kp = poses[0].keypoints;
-        const leftShoulder = kp.find(k => k.name === "left_shoulder");
-        const rightShoulder = kp.find(k => k.name === "right_shoulder");
-        const leftHip = kp.find(k => k.name === "left_hip");
-        const rightHip = kp.find(k => k.name === "right_hip");
-        if (leftShoulder && rightShoulder && leftHip && rightHip) {
-          const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-          const hipY = (leftHip.y + rightHip.y) / 2;
-          const torsoAngle = hipY - shoulderY;
-          if (torsoAngle < 80) {
-            speak("Keep your back straighter.");
-          }
-        }
       }
 
       animId = requestAnimationFrame(runPoseLoop);
@@ -417,8 +360,39 @@
       if (e.key === "Enter") askCoach(questionInput.value.trim());
     });
 
+    function toggleListening() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return alert("Speech recognition not supported.");
+      if (!recognition) {
+        recognition = new SR();
+        recognition.lang = "en-US";
+        recognition.onresult = e => {
+          const transcript = e.results[0][0].transcript;
+          addLog("you", "🎙️ " + transcript);
+          askCoach(transcript);
+        };
+        recognition.onerror = e => addLog("system", "STT error: " + e.error);
+        recognition.onend = () => {
+          listening = false;
+          listenBtn.textContent = "🎙️ Voice On";
+        };
+      }
+      if (!listening) {
+        recognition.start();
+        listening = true;
+        listenBtn.textContent = "🎧 Listening…";
+      } else {
+        recognition.stop();
+        listening = false;
+        listenBtn.textContent = "🎙️ Voice On";
+      }
+    }
+
     window.addEventListener("load", () => {
       addLog("system", "Page loaded. Connect your camera to begin.");
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
     });
+  </script>
+</body>
+</html>
