@@ -190,7 +190,7 @@
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
-      <div class="status-line"><strong>Reps:</strong> <span id="repCount">0</span></div>
+      <div class="status-line"><strong>Total Reps:</strong> <span id="repCount">0</span></div>
     </div>
 
     <!-- RIGHT: Chat -->
@@ -218,6 +218,10 @@
     const USER_ID = "rashad";
     const EXERCISE_ID = "bodyweight_squat";
 
+    // Workout plan
+    const TARGET_REPS_PER_SET = 10;
+    const TARGET_SETS = 3;
+
     // --- DOM hooks ---
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
@@ -240,12 +244,18 @@
     let running = false;
     let animId;
     let voiceMuted = false;
+
+    // STT
     let listening = false;
     let recognition;
-    let sessionId = null;
-    let repCount = 0;
 
-    // coaching / telemetry state
+    // Workout telemetry
+    let sessionId = null;
+    let totalReps = 0;
+    let repsInCurrentSet = 0;
+    let currentSet = 1;
+
+    // Pose / rep state
     let fullBodyAcquired = false;
     let lastStepBackSpokenAt = 0;
     let lastGoodRepSpokenAt = 0;
@@ -253,7 +263,10 @@
     let lastDepthScore = 0;
     let lastGoodForm = false;
 
-    // telemetry throttle
+    // Speech orchestration
+    let speechLock = false;   // true while LLM answer is speaking
+
+    // Node telemetry
     let lastNodeRepSentAt = 0;
 
     const STEP_BACK_COOLDOWN = 4000;  // ms
@@ -279,11 +292,40 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function speak(text) {
+    function stopAllSpeech() {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      // After a hard stop, allow rep feedback again
+      speechLock = false;
+    }
+
+    // source: "rep" | "llm" | "system"
+    function speak(text, source = "system") {
       if (voiceMuted || !("speechSynthesis" in window)) return;
+
+      // Rep feedback must not interrupt LLM answers
+      if (speechLock && source === "rep") return;
+
+      // Non-rep sources can interrupt anything older
+      if (source !== "rep") {
+        stopAllSpeech();
+      }
+
       const u = new SpeechSynthesisUtterance(text);
       u.rate = 1.0;
       u.pitch = 1.0;
+
+      if (source === "llm") {
+        speechLock = true;
+      }
+
+      u.onend = () => {
+        if (source === "llm") {
+          speechLock = false;
+        }
+      };
+
       window.speechSynthesis.speak(u);
     }
 
@@ -345,8 +387,6 @@
 
     async function sendToNode(payload) {
       try {
-        // Debug in browser:
-        console.log("→ Node", payload);
         await fetch(NODE_COMMAND_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -380,7 +420,7 @@
         userId: USER_ID,
         payload: {
           sessionId,
-          repsCompleted: repCount,
+          repsCompleted: totalReps,
           exerciseId: EXERCISE_ID,
           ts: Date.now()
         }
@@ -400,7 +440,8 @@
         payload: {
           sessionId,
           exerciseId: EXERCISE_ID,
-          repsThisSet: repCount,
+          repsThisSet: repsInCurrentSet,
+          totalReps,
           depthScore,
           ts: now
         }
@@ -413,8 +454,8 @@
       try {
         const res = await fetch(BRAIN_BASE_URL + "/health");
         const data = await res.json();
-        brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model}`;
-        brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model}`;
+        brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model || data.openai_model}`;
+        brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model || "LLM"}`;
       } catch (e) {
         console.warn("Brain health error", e);
         brainStatusEl.textContent = "Brain offline.";
@@ -456,21 +497,20 @@
       console.log("✅ MoveNet detector created.");
     }
 
-    // --- Ask coach via Ma’at (with telemetry) ---
+    // --- Ask coach via Ma’at (LLM) ---
     async function askCoach(q) {
       if (!q) return;
-
-      // Always send latest telemetry so Ma’at can answer about reps/form
-      const telemetry = {
-        exercise_id: EXERCISE_ID,
-        reps: repCount,
-        depth_score: lastDepthScore,
-        good_form: lastGoodForm
-      };
-
       addLog("you", "You: " + q);
       questionInput.value = "";
       brainStatusEl.textContent = "Thinking…";
+
+      // Build telemetry snapshot for this question
+      const telemetry = {
+        exercise_id: EXERCISE_ID,
+        reps: totalReps,
+        depth_score: lastDepthScore,
+        good_form: lastGoodForm
+      };
 
       try {
         const res = await fetch(ASK_URL, {
@@ -484,9 +524,9 @@
           })
         });
         const data = await res.json();
-        const answer = data.answer || "No response.";
+        const answer = data.answer || data.response || "No response.";
         addLog("coach", "Mufasa: " + answer);
-        speak(answer);
+        speak(answer, "llm");
         brainStatusEl.textContent = "Coach responded.";
       } catch (e) {
         console.error("Brain error", e);
@@ -506,19 +546,22 @@
       let analysis = { fullBody: false, depthScore: 0, goodForm: false };
       if (pose) analysis = analyzeSquatForm(pose);
 
+      lastDepthScore = analysis.depthScore;
+      lastGoodForm = analysis.goodForm;
+
       const now = performance.now();
 
       // 1) Step-back vs guiding
       if (!analysis.fullBody) {
         poseStatusEl.textContent = "No full body in view.";
         if (!fullBodyAcquired && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
-          speak("Step back so I can see your whole body.");
+          speak("Step back so I can see your whole body.", "rep");
           lastStepBackSpokenAt = now;
         }
       } else {
         if (!fullBodyAcquired) {
           fullBodyAcquired = true;
-          speak("Great, I can see your full body. Let's dial in your squat form.");
+          speak("Great, I can see your full body. Let's dial in your squat form.", "rep");
         }
         poseStatusEl.textContent = analysis.goodForm ? "Form looks solid." : "Form needs adjustment.";
       }
@@ -553,9 +596,6 @@
 
       // 3) Rep detection from depthScore
       const depth = analysis.depthScore;
-      lastDepthScore = depth;          // store for Ma’at telemetry
-      lastGoodForm = analysis.goodForm;
-
       const DOWN_THRESHOLD = 0.6;
       const UP_THRESHOLD   = 0.3;
 
@@ -564,17 +604,40 @@
           repPhase = "down"; // reached bottom
         } else if (repPhase === "down" && depth < UP_THRESHOLD) {
           repPhase = "up";   // came back up → count rep
-          repCount += 1;
-          repCountEl.textContent = String(repCount);
+          totalReps += 1;
+          repsInCurrentSet += 1;
+          repCountEl.textContent = String(totalReps);
           sendRepToNode(depth);
 
           if (now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
             if (analysis.goodForm) {
-              speak("Good rep.");
+              speak("Good rep.", "rep");
             } else {
-              speak("Careful with your form on that rep.");
+              speak("Careful with your form on that rep.", "rep");
             }
             lastGoodRepSpokenAt = now;
+          }
+
+          // Set / workout flow
+          if (repsInCurrentSet === TARGET_REPS_PER_SET) {
+            speak(
+              `Great job. That's ${TARGET_REPS_PER_SET} reps in set ${currentSet}.`,
+              "rep"
+            );
+            currentSet += 1;
+            repsInCurrentSet = 0;
+
+            if (currentSet <= TARGET_SETS) {
+              speak(
+                `Rest for 20 seconds, then we start set ${currentSet}.`,
+                "rep"
+              );
+            } else {
+              speak(
+                `Workout complete. You finished ${TARGET_SETS} sets of ${TARGET_REPS_PER_SET} reps. Beast mode.`,
+                "rep"
+              );
+            }
           }
         }
       }
@@ -589,13 +652,18 @@
 
       if (running) {
         sessionId = "sess_" + Date.now();
-        repCount = 0;
+        totalReps = 0;
+        repsInCurrentSet = 0;
+        currentSet = 1;
         repPhase = "up";
         fullBodyAcquired = false;
         repCountEl.textContent = "0";
         startBtn.textContent = "Stop Workout";
-        speak("Workout begins in three, two, one.");
         addLog("system", `Workout started: ${sessionId}`);
+        speak(
+          `We are doing ${TARGET_SETS} sets of ${TARGET_REPS_PER_SET} bodyweight squats. When you're ready, step into frame and let's move.`,
+          "rep"
+        );
         sendStartSessionToNode();
         runPoseLoop();
       } else {
@@ -627,8 +695,9 @@
             const lower = transcript.toLowerCase();
             console.log("STT:", transcript);
 
-            // wake words
+            // Wake words: Mufasa / Coach
             if (lower.includes("mufasa") || lower.includes("coach")) {
+              stopAllSpeech();  // 🔥 instant silence
               const cleaned = lower
                 .replace("mufasa", "")
                 .replace("coach", "")
@@ -638,7 +707,7 @@
               askCoach(msg);
             }
 
-            // voice controls
+            // Voice controls
             if (lower.includes("start workout")) {
               if (!running) startWorkout();
             } else if (lower.includes("stop workout")) {
