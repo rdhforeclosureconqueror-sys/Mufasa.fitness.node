@@ -5,11 +5,11 @@
   <title>Mufasa Live Coach</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- TensorFlow + Pose Detection -->
+  <!-- ✅ TensorFlow + Pose Detection (UMD build that defines window.poseDetection) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@4.0.0/dist/pose-detection.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  <!-- Tiny favicon to avoid 404 -->
+  <!-- Prevent favicon 404 -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -65,6 +65,7 @@
       background: #020617;
       border: 1px solid rgba(51, 65, 85, 0.8);
     }
+
     video, canvas {
       position: absolute;
       inset: 0;
@@ -94,12 +95,15 @@
       gap: 6px;
       transition: background 0.15s ease, transform 0.08s ease;
     }
+
     button.secondary {
       background: #0f172a;
       border: 1px solid #1e293b;
       color: #e5e7eb;
     }
+
     button:disabled { opacity: 0.5; cursor: default; }
+
     button:hover:not(:disabled) {
       transform: translateY(-1px);
       background: #2563eb;
@@ -120,6 +124,7 @@
       border: 1px solid rgba(55, 65, 81, 0.9);
       color: #9ca3af;
     }
+
     .chip-dot {
       width: 7px;
       height: 7px;
@@ -138,6 +143,7 @@
       font-size: 0.9rem;
       outline: none;
     }
+
     input[type="text"]::placeholder { color: #6b7280; }
 
     #coach-log {
@@ -151,20 +157,22 @@
       border: 1px solid rgba(31, 41, 55, 0.9);
       font-size: 0.85rem;
     }
+
     .log-line { margin-bottom: 4px; }
     .log-line.you { color: #e5e7eb; }
     .log-line.coach { color: #a5b4fc; }
     .log-line.system { color: #6b7280; font-style: italic; }
   </style>
 </head>
+
 <body>
   <div class="app">
-    <!-- LEFT PANEL -->
+    <!-- LEFT SIDE -->
     <div class="pane">
       <div>
         <h1>Mufasa Live Coach</h1>
         <p class="subtitle">
-          Webcam + TensorFlow pose detection + browser voice + Ma’at brain + Node telemetry.
+          Webcam + TensorFlow MoveNet + Voice + Ma’at Brain + Node telemetry
         </p>
       </div>
 
@@ -188,11 +196,11 @@
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
     </div>
 
-    <!-- RIGHT PANEL -->
+    <!-- RIGHT SIDE -->
     <div class="pane">
-      <h2 style="font-size:1.1rem; margin-bottom:4px;">Coach Chat</h2>
-      <p class="subtitle">Ask Mufasa or speak directly—your coach listens now.</p>
-      <div style="display:flex; gap:8px; margin-top:6px;">
+      <h2 style="font-size:1.1rem;">Coach Chat</h2>
+      <p class="subtitle">Ask Mufasa or speak—your coach listens now.</p>
+      <div style="display:flex; gap:8px;">
         <input id="questionInput" type="text" placeholder="Ask or speak to your coach..." />
         <button id="askBtn">Ask</button>
       </div>
@@ -201,18 +209,15 @@
   </div>
 
   <script>
-    // ==== CONFIG ====
+    // === CONFIG ===
     const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
     const ASK_URL = BRAIN_BASE_URL + "/ask";
-
-    // Adjust this to your Node service URL
-    const NODE_BASE_URL = "https://mufasafitnessnode.onrender.com"; // example; update if needed
+    const NODE_BASE_URL = "https://mufasafitnessnode.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
-
-    const USER_ID = "rashad"; // can be dynamic later
+    const USER_ID = "rashad";
     const EXERCISE_ID = "bodyweight_squat";
 
-    // ==== DOM ====
+    // === DOM ELEMENTS ===
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
     const ctx = canvasEl.getContext("2d");
@@ -227,18 +232,11 @@
     const listenBtn = document.getElementById("listenBtn");
     const logEl = document.getElementById("coach-log");
 
-    // ==== STATE ====
-    let detector;
-    let running = false;
-    let animId;
-    let voiceMuted = false;
-    let listening = false;
-    let recognition;
-    let lastPoseVisible = false;
-    let sessionId = null;
-    let lastNodeRepSentAt = 0;
+    // === STATE ===
+    let detector, running = false, animId, voiceMuted = false, listening = false;
+    let recognition, lastPoseVisible = false, sessionId = null, lastNodeRepSentAt = 0;
 
-    // ==== LOGGING ====
+    // === LOGGING ===
     function addLog(kind, text) {
       const div = document.createElement("div");
       div.className = "log-line " + kind;
@@ -247,7 +245,7 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // ==== VOICE OUT ====
+    // === TTS ===
     function speak(text) {
       if (voiceMuted || !("speechSynthesis" in window)) return;
       const u = new SpeechSynthesisUtterance(text);
@@ -256,26 +254,25 @@
       window.speechSynthesis.speak(u);
     }
 
-    // ==== BRAIN HEALTH CHECK ====
+    // === BRAIN HEALTH ===
     (async () => {
       try {
         const res = await fetch(BRAIN_BASE_URL + "/health");
         const data = await res.json();
         brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model}`;
         brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model}`;
-      } catch (e) {
-        console.error("Brain health error:", e);
+      } catch {
         brainStatusEl.textContent = "Brain offline.";
         brainChipTxt.textContent = "Brain: offline";
       }
     })();
 
-    // ==== CAMERA + POSE ====
+    // === CAMERA + POSE ===
     async function connectCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoEl.srcObject = stream;
-        await new Promise(resolve => videoEl.onloadedmetadata = resolve);
+        await new Promise(r => videoEl.onloadedmetadata = r);
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
         poseStatusEl.textContent = "Camera connected. Loading pose detector…";
@@ -284,7 +281,7 @@
         poseStatusEl.classList.add("status-ok");
         startBtn.disabled = false;
       } catch (e) {
-        console.error("Camera error:", e);
+        console.error(e);
         poseStatusEl.textContent = "Camera error.";
         poseStatusEl.classList.add("status-bad");
       }
@@ -293,38 +290,33 @@
     async function initDetector() {
       await tf.setBackend("webgl");
       await tf.ready();
+      if (typeof poseDetection === "undefined") {
+        console.error("PoseDetection failed to load. Check script URL.");
+        throw new Error("poseDetection is not defined");
+      }
       detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
         { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
-      console.log("MoveNet detector created.");
+      console.log("✅ MoveNet detector created.");
     }
 
-    // Simple depth estimate for squats (0.0–1.0)
     function estimateDepth(poses) {
       if (!poses.length) return 0.0;
       const kp = poses[0].keypoints;
-
-      const leftHip = kp.find(k => k.name === "left_hip");
-      const rightHip = kp.find(k => k.name === "right_hip");
-      const leftKnee = kp.find(k => k.name === "left_knee");
-      const rightKnee = kp.find(k => k.name === "right_knee");
-
-      if (!leftHip || !rightHip || !leftKnee || !rightKnee) return 0.0;
-      if (leftHip.score < 0.4 || rightHip.score < 0.4 ||
-          leftKnee.score < 0.4 || rightKnee.score < 0.4) return 0.0;
-
-      const avgHipY = (leftHip.y + rightHip.y) / 2;
-      const avgKneeY = (leftKnee.y + rightKnee.y) / 2;
-
-      const diff = avgKneeY - avgHipY; // more positive = deeper squat (knees lower)
-      const norm = Math.max(0, Math.min(1, diff / 200)); // 0–1 after rough normalization
-      return norm;
+      const lh = kp.find(k => k.name === "left_hip");
+      const rh = kp.find(k => k.name === "right_hip");
+      const lk = kp.find(k => k.name === "left_knee");
+      const rk = kp.find(k => k.name === "right_knee");
+      if (!lh || !rh || !lk || !rk) return 0.0;
+      const avgHipY = (lh.y + rh.y) / 2;
+      const avgKneeY = (lk.y + rk.y) / 2;
+      const diff = avgKneeY - avgHipY;
+      return Math.max(0, Math.min(1, diff / 200));
     }
 
     async function runPoseLoop() {
       if (!running || !detector) return;
-
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
@@ -347,17 +339,12 @@
         speak(visible ? "Good, I can see you." : "Step back a bit.");
       }
 
-      // Node telemetry (throttled)
       const now = Date.now();
       if (sessionId && now - lastNodeRepSentAt > 500) {
-        const depthScore = estimateDepth(poses);
+        const depth = estimateDepth(poses);
         sendNodeCommand("fitness.repUpdate", {
-          sessionId,
-          exerciseId: EXERCISE_ID,
-          repsThisSet: 0,      // placeholder for now
-          depthScore,
-          visible,
-          timestamp: Math.floor(now / 1000)
+          sessionId, exerciseId: EXERCISE_ID, depthScore: depth,
+          visible, timestamp: Math.floor(now / 1000)
         });
         lastNodeRepSentAt = now;
       }
@@ -367,62 +354,39 @@
 
     async function startWorkout() {
       if (!detector) return;
-
       running = !running;
       if (running) {
-        // new session
         sessionId = "sess_" + Date.now();
         startBtn.textContent = "Stop Workout";
         speak("Workout begins in three, two, one.");
-        addLog("system", "Workout started. Session: " + sessionId);
-
-        // tell Node
-        sendNodeCommand("fitness.startSession", {
-          sessionId,
-          exerciseId: EXERCISE_ID,
-          timestamp: Math.floor(Date.now() / 1000)
-        });
-
+        addLog("system", "Workout started: " + sessionId);
+        sendNodeCommand("fitness.startSession", { sessionId, exerciseId: EXERCISE_ID });
         runPoseLoop();
       } else {
         startBtn.textContent = "Start Workout";
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-        addLog("system", "Workout stopped. Session: " + sessionId);
-
-        // tell Node
-        if (sessionId) {
-          sendNodeCommand("fitness.endSession", {
-            sessionId,
-            timestamp: Math.floor(Date.now() / 1000)
-          });
-        }
+        addLog("system", "Workout stopped.");
+        sendNodeCommand("fitness.endSession", { sessionId });
       }
     }
 
-    // ==== NODE COMMAND ====
+    // === NODE COMMAND ===
     async function sendNodeCommand(command, payload) {
-      const body = {
-        domain: "fitness",
-        command,
-        userId: USER_ID,
-        payload
-      };
+      const body = { domain: "fitness", command, userId: USER_ID, payload };
       try {
         const res = await fetch(NODE_COMMAND_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)
         });
-        if (!res.ok) {
-          console.warn("Node command error:", res.status);
-        }
+        if (!res.ok) console.warn("Node command failed:", res.status);
       } catch (e) {
-        console.warn("Node command network error:", e);
+        console.warn("Node command error:", e);
       }
     }
 
-    // ==== CHAT / ASK ====
+    // === ASK COACH ===
     async function askCoach(q) {
       if (!q) return;
       addLog("you", "You: " + q);
@@ -439,24 +403,18 @@
         addLog("coach", "Mufasa: " + answer);
         speak(answer);
         brainStatusEl.textContent = "Coach responded.";
-      } catch (e) {
-        console.error("Ask error:", e);
-        brainStatusEl.textContent = "Error contacting brain.";
-        addLog("system", "Network error talking to brain.");
+      } catch {
+        brainStatusEl.textContent = "Brain error.";
+        addLog("system", "Network error contacting brain.");
       }
     }
 
-    // ==== STT (Speech Recognition) ====
+    // === STT ===
     function toggleListening() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        alert("Speech recognition not supported in this browser.");
-        return;
-      }
+      if (!SR) return alert("Speech recognition not supported.");
       if (!recognition) {
         recognition = new SR();
-        recognition.continuous = false;
-        recognition.interimResults = false;
         recognition.lang = "en-US";
         recognition.onresult = e => {
           const transcript = e.results[0][0].transcript;
@@ -473,7 +431,6 @@
         recognition.start();
         listening = true;
         listenBtn.textContent = "🎧 Listening…";
-        addLog("system", "Listening for your voice...");
       } else {
         recognition.stop();
         listening = false;
@@ -481,7 +438,7 @@
       }
     }
 
-    // ==== BUTTONS ====
+    // === BUTTONS ===
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
     askBtn.onclick = () => askCoach(questionInput.value.trim());
@@ -494,11 +451,11 @@
       if (e.key === "Enter") askCoach(questionInput.value.trim());
     });
 
-    // ==== ON LOAD ====
     window.addEventListener("load", () => {
       addLog("system", "Page loaded. Connect your camera to begin.");
       console.log("tf loaded:", typeof tf !== "undefined");
-      console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
+      console.log("poseDetection loaded:", typeof poseDetection !== "undefined
+
     });
   </script>
 </body>
