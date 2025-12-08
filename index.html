@@ -102,7 +102,11 @@
       color: #e5e7eb;
     }
 
-    button:disabled { opacity: 0.5; cursor: default; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
     button:hover:not(:disabled) {
       transform: translateY(-1px);
       background: #2563eb;
@@ -242,7 +246,6 @@
     let voiceMuted = false;
     let listening = false;
     let recognition;
-    let lastPoseVisible = false;
     let sessionId = null;
     let repCount = 0;
 
@@ -251,6 +254,7 @@
     let lastStepBackSpokenAt = 0;
     let lastGoodRepSpokenAt = 0;
     let repPhase = "up"; // "up" -> "down" -> "up"
+    let lastDepthScore = 0;
 
     // telemetry
     let lastNodeRepSentAt = 0;
@@ -306,7 +310,7 @@
       return (Math.acos(clamped) * 180) / Math.PI;
     }
 
-    // Analyze squat form → fullBody, depthScore, goodForm
+    // Analyze squat form → { fullBody, depthScore, goodForm }
     function analyzeSquatForm(pose) {
       if (!pose) return { fullBody: false, depthScore: 0, goodForm: false };
 
@@ -453,17 +457,31 @@
       console.log("✅ MoveNet detector created.");
     }
 
-    // --- Ask coach via Ma’at ---
+    // --- Ask coach via Ma’at (with context so Ma’at knows reps, etc.) ---
     async function askCoach(q) {
       if (!q) return;
+      const payload = {
+        question: q,
+        context: {
+          userId: USER_ID,
+          exerciseId: EXERCISE_ID,
+          reps: repCount,
+          sessionId,
+          running,
+          lastDepthScore,
+          fullBodyAcquired
+        }
+      };
+
       addLog("you", "You: " + q);
       questionInput.value = "";
       brainStatusEl.textContent = "Thinking…";
+
       try {
         const res = await fetch(ASK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: q })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         const answer = data.answer || "No response.";
@@ -484,10 +502,11 @@
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-      let pose = poses.length ? poses[0] : null;
+      const pose = poses.length ? poses[0] : null;
       let analysis = { fullBody: false, depthScore: 0, goodForm: false };
       if (pose) analysis = analyzeSquatForm(pose);
 
+      lastDepthScore = analysis.depthScore;
       const now = performance.now();
 
       // 1) Step-back vs guiding
@@ -656,7 +675,7 @@
     // --- Wire buttons ---
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
-    askBtn.onclick = () => askCoach(questionInput.value.trim());
+    askBtn.onclick  = () => askCoach(questionInput.value.trim());
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
       muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
