@@ -5,11 +5,11 @@
   <title>Black Dollar Trust "Virtual Trainer"</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- TensorFlow + Pose Detection (UMD) -->
+  <!-- TensorFlow + Pose Detection (UMD builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  <!-- Simple favicon so we don’t get 404 -->
+  <!-- Simple favicon so we don’t get 404s -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -190,7 +190,7 @@
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
-      <div class="status-line"><strong>Total Reps:</strong> <span id="repCount">0</span></div>
+      <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
     </div>
 
     <!-- RIGHT: Chat -->
@@ -219,7 +219,7 @@
     const EXERCISE_ID = "bodyweight_squat";
 
     // Workout plan
-    const TARGET_REPS_PER_SET = 10;
+    const TARGET_REPS = 10;
     const TARGET_SETS = 3;
 
     // --- DOM hooks ---
@@ -243,31 +243,32 @@
     let detector;
     let running = false;
     let animId;
+
     let voiceMuted = false;
 
-    // STT
+    // Speech / LLM orchestration
+    let speechLock = false;        // true while LLM answer is playing
+    let repFeedbackAllowed = true; // rep voice allowed when no LLM talking
+
+    // STT state
     let listening = false;
     let recognition;
+    let lastTranscript = "";
 
-    // Workout telemetry
+    // Workout state
     let sessionId = null;
-    let totalReps = 0;
-    let repsInCurrentSet = 0;
+    let repCount = 0;      // this set
+    let totalReps = 0;     // across all sets
     let currentSet = 1;
+    let repPhase = "up";   // "up" -> "down" -> "up"
 
-    // Pose / rep state
     let fullBodyAcquired = false;
     let lastStepBackSpokenAt = 0;
     let lastGoodRepSpokenAt = 0;
-    let repPhase = "up"; // "up" -> "down" -> "up"
+
+    let lastNodeRepSentAt = 0;
     let lastDepthScore = 0;
     let lastGoodForm = false;
-
-    // Speech orchestration
-    let speechLock = false;   // true while LLM answer is speaking
-
-    // Node telemetry
-    let lastNodeRepSentAt = 0;
 
     const STEP_BACK_COOLDOWN = 4000;  // ms
     const GOOD_REP_COOLDOWN  = 1500;  // ms
@@ -294,23 +295,22 @@
 
     function stopAllSpeech() {
       if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // kill queued + current
       }
-      // After a hard stop, allow rep feedback again
-      speechLock = false;
     }
 
-    // source: "rep" | "llm" | "system"
+    /**
+     * speak(text, source)
+     * source: "rep" (auto coaching), "llm" (brain answer), "system"
+     */
     function speak(text, source = "system") {
       if (voiceMuted || !("speechSynthesis" in window)) return;
 
-      // Rep feedback must not interrupt LLM answers
+      // Prevent rep-loop from speaking over an LLM answer
       if (speechLock && source === "rep") return;
 
-      // Non-rep sources can interrupt anything older
-      if (source !== "rep") {
-        stopAllSpeech();
-      }
+      // Always clear old queue so we don't stack old prompts
+      stopAllSpeech();
 
       const u = new SpeechSynthesisUtterance(text);
       u.rate = 1.0;
@@ -318,11 +318,13 @@
 
       if (source === "llm") {
         speechLock = true;
+        repFeedbackAllowed = false;
       }
 
       u.onend = () => {
         if (source === "llm") {
           speechLock = false;
+          repFeedbackAllowed = true;
         }
       };
 
@@ -385,6 +387,7 @@
       return { fullBody, depthScore, goodForm };
     }
 
+    // --- Node telemetry helpers ---
     async function sendToNode(payload) {
       try {
         await fetch(NODE_COMMAND_URL, {
@@ -440,7 +443,7 @@
         payload: {
           sessionId,
           exerciseId: EXERCISE_ID,
-          repsThisSet: repsInCurrentSet,
+          repsThisSet: repCount,
           totalReps,
           depthScore,
           ts: now
@@ -454,8 +457,8 @@
       try {
         const res = await fetch(BRAIN_BASE_URL + "/health");
         const data = await res.json();
-        brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model || data.openai_model}`;
-        brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model || "LLM"}`;
+        brainStatusEl.textContent = `Phase ${data.phase}, model ${data.openai_model}`;
+        brainChipTxt.textContent = `Brain: phase ${data.phase} · ${data.openai_model}`;
       } catch (e) {
         console.warn("Brain health error", e);
         brainStatusEl.textContent = "Brain offline.";
@@ -497,14 +500,13 @@
       console.log("✅ MoveNet detector created.");
     }
 
-    // --- Ask coach via Ma’at (LLM) ---
+    // --- Ask coach via Ma’at (with telemetry) ---
     async function askCoach(q) {
       if (!q) return;
       addLog("you", "You: " + q);
       questionInput.value = "";
       brainStatusEl.textContent = "Thinking…";
 
-      // Build telemetry snapshot for this question
       const telemetry = {
         exercise_id: EXERCISE_ID,
         reps: totalReps,
@@ -526,7 +528,7 @@
         const data = await res.json();
         const answer = data.answer || data.response || "No response.";
         addLog("coach", "Mufasa: " + answer);
-        speak(answer, "llm");
+        speak(answer, "llm");   // LLM answers take speech lock
         brainStatusEl.textContent = "Coach responded.";
       } catch (e) {
         console.error("Brain error", e);
@@ -535,14 +537,14 @@
       }
     }
 
-    // --- Pose loop with squat rep + form feedback ---
+    // --- Pose loop with squat reps + form feedback ---
     async function runPoseLoop() {
       if (!running || !detector) return;
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-      let pose = poses.length ? poses[0] : null;
+      const pose = poses.length ? poses[0] : null;
       let analysis = { fullBody: false, depthScore: 0, goodForm: false };
       if (pose) analysis = analyzeSquatForm(pose);
 
@@ -554,24 +556,25 @@
       // 1) Step-back vs guiding
       if (!analysis.fullBody) {
         poseStatusEl.textContent = "No full body in view.";
-        if (!fullBodyAcquired && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
+        if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
           speak("Step back so I can see your whole body.", "rep");
           lastStepBackSpokenAt = now;
         }
       } else {
         if (!fullBodyAcquired) {
           fullBodyAcquired = true;
-          speak("Great, I can see your full body. Let's dial in your squat form.", "rep");
+          if (repFeedbackAllowed) {
+            speak("Great, I can see your full body. Let's dial in your squat form.", "rep");
+          }
         }
         poseStatusEl.textContent = analysis.goodForm ? "Form looks solid." : "Form needs adjustment.";
       }
 
-      // 2) Draw skeleton in green/red based on form
+      // 2) Draw skeleton in green/red
       if (pose && pose.keypoints) {
         const color = analysis.goodForm ? "#22c55e" : "#ef4444";
         ctx.lineWidth = 3;
 
-        // lines
         for (const [i, j] of SKELETON_EDGES) {
           const kp1 = pose.keypoints[i];
           const kp2 = pose.keypoints[j];
@@ -583,7 +586,7 @@
             ctx.stroke();
           }
         }
-        // points
+
         for (const kp of pose.keypoints) {
           if (kp.score > 0.4) {
             ctx.beginPath();
@@ -604,12 +607,12 @@
           repPhase = "down"; // reached bottom
         } else if (repPhase === "down" && depth < UP_THRESHOLD) {
           repPhase = "up";   // came back up → count rep
+          repCount += 1;
           totalReps += 1;
-          repsInCurrentSet += 1;
-          repCountEl.textContent = String(totalReps);
+          repCountEl.textContent = String(repCount);
           sendRepToNode(depth);
 
-          if (now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
+          if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
             if (analysis.goodForm) {
               speak("Good rep.", "rep");
             } else {
@@ -618,25 +621,35 @@
             lastGoodRepSpokenAt = now;
           }
 
-          // Set / workout flow
-          if (repsInCurrentSet === TARGET_REPS_PER_SET) {
-            speak(
-              `Great job. That's ${TARGET_REPS_PER_SET} reps in set ${currentSet}.`,
-              "rep"
-            );
+          // Set / rep targets
+          if (repCount === TARGET_REPS) {
+            if (repFeedbackAllowed) {
+              speak(
+                `Great job. That's ${TARGET_REPS} reps for set ${currentSet}.`,
+                "rep"
+              );
+            }
             currentSet += 1;
-            repsInCurrentSet = 0;
 
             if (currentSet <= TARGET_SETS) {
-              speak(
-                `Rest for 20 seconds, then we start set ${currentSet}.`,
-                "rep"
-              );
+              // new set
+              repCount = 0;
+              setTimeout(() => {
+                if (running && repFeedbackAllowed) {
+                  speak(`Rest is over. Let's start set ${currentSet}.`, "rep");
+                }
+              }, 20000); // simple 20s rest
             } else {
-              speak(
-                `Workout complete. You finished ${TARGET_SETS} sets of ${TARGET_REPS_PER_SET} reps. Beast mode.`,
-                "rep"
-              );
+              // workout complete
+              running = false;
+              startBtn.textContent = "Start Workout";
+              addLog("system", "Workout complete.");
+              if (repFeedbackAllowed) {
+                speak("Workout complete. Incredible focus today.", "rep");
+              }
+              sendEndSessionToNode();
+              cancelAnimationFrame(animId);
+              return; // stop loop
             }
           }
         }
@@ -652,8 +665,8 @@
 
       if (running) {
         sessionId = "sess_" + Date.now();
+        repCount = 0;
         totalReps = 0;
-        repsInCurrentSet = 0;
         currentSet = 1;
         repPhase = "up";
         fullBodyAcquired = false;
@@ -661,13 +674,14 @@
         startBtn.textContent = "Stop Workout";
         addLog("system", `Workout started: ${sessionId}`);
         speak(
-          `We are doing ${TARGET_SETS} sets of ${TARGET_REPS_PER_SET} bodyweight squats. When you're ready, step into frame and let's move.`,
+          `We are doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`,
           "rep"
         );
         sendStartSessionToNode();
         runPoseLoop();
       } else {
         startBtn.textContent = "Start Workout";
+        running = false;
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
         addLog("system", "Workout stopped.");
@@ -675,7 +689,7 @@
       }
     }
 
-    // --- STT with wake word “Mufasa / Coach” ---
+    // --- STT with wake words “Mufasa / Coach” ---
     function toggleListening() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
@@ -687,32 +701,39 @@
         recognition = new SR();
         recognition.lang = "en-US";
         recognition.continuous = true;
-        recognition.interimResults = false;
+        recognition.interimResults = true;
 
         recognition.onresult = e => {
-          for (let i = 0; i < e.results.length; i++) {
-            const transcript = e.results[i][0].transcript.trim();
-            const lower = transcript.toLowerCase();
-            console.log("STT:", transcript);
+          const result = e.results[e.results.length - 1];
+          if (!result.isFinal) return;
 
-            // Wake words: Mufasa / Coach
-            if (lower.includes("mufasa") || lower.includes("coach")) {
-              stopAllSpeech();  // 🔥 instant silence
-              const cleaned = lower
-                .replace("mufasa", "")
-                .replace("coach", "")
-                .trim();
-              const msg = cleaned || "give me a coaching tip for my squat.";
-              addLog("you", "🎙️ " + transcript);
-              askCoach(msg);
-            }
+          const transcript = result[0].transcript.trim();
+          if (!transcript || transcript === lastTranscript) return;
+          lastTranscript = transcript;
 
-            // Voice controls
-            if (lower.includes("start workout")) {
-              if (!running) startWorkout();
-            } else if (lower.includes("stop workout")) {
-              if (running) startWorkout(); // toggle
-            }
+          const lower = transcript.toLowerCase();
+          console.log("STT:", transcript);
+
+          // Wake words – also act as "stop talking and listen"
+          if (lower.includes("mufasa") || lower.includes("coach")) {
+            stopAllSpeech();   // 🔥 kill old speech immediately
+
+            const cleaned = lower
+              .replace("hey", "")
+              .replace("mufasa", "")
+              .replace("coach", "")
+              .trim();
+
+            const msg = cleaned || "give me a quick status update on my workout.";
+            addLog("you", "🎙️ " + transcript);
+            askCoach(msg);
+          }
+
+          // Voice controls
+          if (lower.includes("start workout")) {
+            if (!running) startWorkout();
+          } else if (lower.includes("stop workout")) {
+            if (running) startWorkout(); // toggles off
           }
         };
 
@@ -732,6 +753,7 @@
 
       if (!listening) {
         listening = true;
+        lastTranscript = "";
         recognition.start();
         listenBtn.textContent = "🎧 Listening…";
         addLog("system", "Listening for 'Mufasa' or 'Coach'...");
@@ -750,6 +772,7 @@
     muteBtn.onclick = () => {
       voiceMuted = !voiceMuted;
       muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
+      if (voiceMuted) stopAllSpeech();
     };
     listenBtn.onclick = toggleListening;
     questionInput.addEventListener("keydown", e => {
