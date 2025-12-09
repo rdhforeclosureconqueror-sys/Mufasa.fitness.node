@@ -5,9 +5,16 @@
   <title>Ma’at 2.0 Virtual Trainer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- TensorFlow + Pose Detection (UMD builds) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
+ <!-- TensorFlow -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
+
+<!-- Calendar system (loads BEFORE index.js) -->
+<script src="calendar.js"></script>
+
+<!-- Your main fitness engine -->
+<script src="index.js" type="module"></script>
+
 
   <!-- Simple favicon so we don’t get 404s -->
   <link rel="icon" href="data:,">
