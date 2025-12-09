@@ -2,1487 +2,1026 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Ma’at 2.0 Virtual Trainer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
- <!-- TensorFlow -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
-
-<!-- Calendar system (loads BEFORE index.js) -->
-<script src="calendar.js"></script>
-
-<!-- Your main fitness engine -->
-<script src="index.js" type="module"></script>
-
-
-  <!-- Simple favicon so we don’t get 404s -->
-  <link rel="icon" href="data:,">
-
+  <title>Fitness MVP · Ma’at + Mufasa System Blueprint</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020617; /* almost black */
-      color: #e5e7eb;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      padding: 16px;
+      margin: 0;
+      padding: 0;
+      background: #0b0c10;
+      color: #f5f5f5;
+      line-height: 1.6;
     }
-
-    .app {
-      width: 100%;
-      max-width: 1100px;
-      background: radial-gradient(circle at top left, #111827, #020617);
-      border-radius: 16px;
-      border: 2px solid #facc15; /* gold outline */
-      box-shadow: 0 24px 80px rgba(0,0,0,0.9);
-      padding: 20px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-      gap: 20px;
+    header {
+      background: linear-gradient(135deg, #1f2833, #0b0c10);
+      padding: 24px 32px;
+      border-bottom: 1px solid #45a29e;
     }
-
-    @media (max-width: 800px) {
-      .app { grid-template-columns: 1fr; }
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
-
-    h1 { font-size: 1.6rem; margin-bottom: 4px; }
-    h2 { font-size: 1.1rem; }
-    .subtitle { font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; }
-
-    .pane {
-      background: rgba(15,23,42,0.95); /* deep navy */
-      border-radius: 12px;
+    header p {
+      margin: 8px 0 0;
+      max-width: 800px;
+      color: #c5c6c7;
+    }
+    main {
+      padding: 24px 32px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h2, h3, h4 {
+      color: #66fcf1;
+      margin-top: 32px;
+    }
+    h2 {
+      border-bottom: 1px solid #45a29e;
+      padding-bottom: 4px;
+    }
+    h3 {
+      margin-top: 24px;
+    }
+    p, li {
+      color: #eaeaea;
+    }
+    a {
+      color: #66fcf1;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .toc {
+      border: 1px solid #45a29e;
+      border-radius: 8px;
+      padding: 16px 20px;
+      background: #1f2833;
+      margin-bottom: 24px;
+    }
+    .toc h2 {
+      border: none;
+      padding-bottom: 0;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .toc ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    .toc li {
+      margin: 2px 0;
+      font-size: 14px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #45a29e33;
+      border: 1px solid #45a29e99;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-right: 4px;
+    }
+    .card {
+      border-radius: 8px;
+      border: 1px solid #45a29e55;
+      background: #1f2833;
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+    code {
+      font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: #0b0c10;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    pre {
+      background: #0b0c10;
+      border-radius: 8px;
       padding: 12px 14px;
-      border: 1px solid #dc2626; /* red accent */
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      overflow-x: auto;
+      font-size: 12px;
+      border: 1px solid #45a29e44;
     }
-
-    .video-shell {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
-      border: 2px solid #16a34a; /* green edge */
+    .checklist li::marker {
+      color: #66fcf1;
     }
-
-    video, canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .btn-row {
+    .badge-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 8px;
-      align-items: center;
+      margin: 6px 0 10px;
     }
-
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      background: #16a34a; /* green primary */
-      color: #fefce8;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, transform 0.08s ease;
+    .meta {
+      font-size: 12px;
+      color: #c5c6c7;
     }
-
-    button.secondary {
-      background: #020617;
-      border: 1px solid #f97316; /* gold/orange */
-      color: #fde68a;
-    }
-
-    button:disabled { opacity: 0.5; cursor: default; }
-    button:hover:not(:disabled) {
-      transform: translateY(-1px);
-      background: #22c55e;
-    }
-
-    .status-line { font-size: 0.8rem; color: #9ca3af; }
-    .status-ok  { color: #22c55e; }
-    .status-bad { color: #ef4444; }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      background: #020617;
-      border: 1px solid #facc15;
-      color: #fde68a;
-    }
-
-    .chip-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 10px rgba(34,197,94,0.9);
-    }
-
-    input[type="text"] {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid rgba(55,65,81,0.9);
-      background: #020617;
-      color: #e5e7eb;
-      padding: 8px 12px;
-      font-size: 0.9rem;
-      outline: none;
-    }
-
-    input[type="text"]::placeholder { color: #6b7280; }
-
-    select {
-      width: 100%;
-      border-radius: 999px;
-      border: 1px solid #22c55e; /* green ring */
-      background: #020617;
-      color: #e5e7eb;
-      padding: 6px 10px;
-      font-size: 0.85rem;
-      outline: none;
-      margin-bottom: 4px;
-    }
-
-    #coach-log {
-      flex: 1;
-      min-height: 100px;
-      max-height: 220px;
-      overflow-y: auto;
-      background: #020617;
-      border-radius: 10px;
-      padding: 8px 10px;
-      border: 1px solid rgba(31,41,55,0.9);
-      font-size: 0.85rem;
-    }
-
-    #workoutPlanView,
-    #ohsSummaryView,
-    #profileSummary {
-      border-radius: 10px;
-      border: 1px solid rgba(55,65,81,0.9);
-      background: #020617;
-      padding: 8px 10px;
-      font-size: 0.85rem;
-      min-height: 50px;
-      white-space: pre-wrap;
-    }
-
-    .log-line        { margin-bottom: 4px; }
-    .log-line.you    { color: #e5e7eb; }
-    .log-line.coach  { color: #a5b4fc; }
-    .log-line.system { color: #6b7280; font-style: italic; }
-
-    .login-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    /* Calendar */
-    #calendarView {
-      border-radius: 10px;
-      border: 1px solid rgba(55,65,81,0.9);
-      background: #020617;
-      padding: 8px 10px;
-      font-size: 0.8rem;
-    }
-
-    .cal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-      font-size: 0.8rem;
-    }
-
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 2px;
-      margin-top: 4px;
-    }
-
-    .cal-dow {
-      text-align: center;
-      font-size: 0.7rem;
-      color: #9ca3af;
-    }
-
-    .cal-day {
-      text-align: center;
-      padding: 4px 0;
-      border-radius: 4px;
-      min-height: 22px;
-    }
-
-    .cal-empty {
-      opacity: 0.2;
-    }
-
-    .cal-today {
-      border: 1px solid #facc15; /* gold for today */
-    }
-
-    .cal-completed {
-      background: rgba(34,197,94,0.25); /* green fill for completed workout */
-      border: 1px solid #22c55e;
+    .highlight {
+      color: #66fcf1;
+      font-weight: 600;
     }
   </style>
 </head>
-
 <body>
-  <div class="app">
-    <!-- LEFT: Live video + Ma’at 2.0 coach -->
-    <div class="pane">
-      <h1>Pan-African Virtual Wellness Platform</h1>
-      <p class="subtitle">
-        The world’s first Pan-African virtual fitness platform powered by Ma’at&nbsp;2.0.
-      </p>
+<header>
+  <h1>Fitness MVP · Ma’at + Mufasa System Blueprint</h1>
+  <p>
+    This document describes the entire Fitness MVP ecosystem:
+    Google Sheets, AppSheet, Apps Script, Discord, Unity/AR Coach,
+    and the external Big Brain (Ma’at) working under the governance of Mufasa.
+    It is written so a coding bot (or future you) can rebuild everything from scratch.
+  </p>
+</header>
 
-      <div class="video-shell">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="overlay"></canvas>
+<main>
+  <section class="toc">
+    <h2>Table of Contents</h2>
+    <ul>
+      <li><a href="#overview">0. One-Sentence Overview</a></li>
+      <li><a href="#architecture">1. High-Level Architecture</a></li>
+      <li><a href="#sheets">2. Google Sheet Tabs & Schemas</a></li>
+      <li><a href="#apps-script">3. Apps Script Modules & Logic</a></li>
+      <li><a href="#brain-api">4. Big Brain API (Ma’at)</a></li>
+      <li><a href="#appsheet">5. AppSheet App (Today View & Forms)</a></li>
+      <li><a href="#discord">6. Discord Structure & Event Flow</a></li>
+      <li><a href="#unity">7. Unity / AR Coach & Firebase</a></li>
+      <li><a href="#rebuild-checklist">8. Fresh-Start Rebuild Checklist</a></li>
+    </ul>
+  </section>
+
+  <section id="overview">
+    <h2>0. One-Sentence Overview</h2>
+    <p>
+      <span class="highlight">Fitness MVP</span> is a wellness operating system:
+      a Google Sheet + AppSheet app + Apps Script bots + Discord + Unity/AR coach,
+      all wired into an external <span class="highlight">Big Brain</span> API (Ma’at) that does the thinking,
+      while <span class="highlight">Mufasa</span> (Apps Script governance layer) and your bots actually execute changes.
+    </p>
+  </section>
+
+  <section id="architecture">
+    <h2>1. High-Level Architecture</h2>
+    <div class="card">
+      <div class="badge-row">
+        <span class="pill">Data Layer</span>
+        <span class="pill">Logic Layer</span>
+        <span class="pill">Frontends</span>
+        <span class="pill">Governance</span>
       </div>
+      <h3>1.1 Layers</h3>
+      <ul>
+        <li><strong>Data Layer</strong>
+          <ul>
+            <li><strong>Google Sheet</strong> – truth for users, plans, points, events, suggestions, heal queue.</li>
+            <li><strong>Firebase (Firestore)</strong> – coach scripts (Brain → Unity) and session logs (Unity → Brain).</li>
+          </ul>
+        </li>
+        <li><strong>Logic Layer</strong>
+          <ul>
+            <li><strong>Apps Script</strong>
+              <ul>
+                <li>Talks to the Big Brain API (Ma’at).</li>
+                <li>Posts to Discord via webhooks.</li>
+                <li>Reads/writes the Sheet and applies point rules.</li>
+              </ul>
+            </li>
+            <li><strong>Big Brain API (Ma’at)</strong>
+              <ul>
+                <li><code>POST /plan/workout</code> – generates plans.</li>
+                <li><code>POST /mvp/weekly_snapshot</code> – returns suggestions.</li>
+                <li><code>POST /mvp/session_log</code> – ingests Unity data.</li>
+                <li><code>POST /mvp/health_snapshot</code> – returns auto-heal actions.</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><strong>Frontends</strong>
+          <ul>
+            <li><strong>AppSheet</strong> – Today screen, check-ins, plan view.</li>
+            <li><strong>Discord</strong> – community, check-ins, leaderboards, motivation.</li>
+            <li><strong>Unity/AR</strong> – 3D coach avatar following scripts from Brain.</li>
+          </ul>
+        </li>
+        <li><strong>Governance</strong>
+          <ul>
+            <li><strong>Mufasa</strong> (Apps Script module) – king/gatekeeper.</li>
+            <li><strong>Ma’at</strong> (Big Brain) – strategist & healer, proposes, never directly edits Sheets.</li>
+          </ul>
+        </li>
+      </ul>
 
-      <div class="btn-row">
-        <button id="connectBtn">Connect Camera</button>
-        <button id="startBtn" class="secondary" disabled>Start Workout</button>
-        <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
-        <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
-        <button id="listenBtn" class="secondary">🎙️ Voice On</button>
-        <button id="muteBtn" class="secondary">🔊 Mute</button>
-        <span class="chip">
-          <span class="chip-dot"></span>
-          <span id="brainChipText">Ma’at 2.0: connecting…</span>
-        </span>
-      </div>
+      <h3>1.2 Simple Flow</h3>
+      <pre><code>Discord / AppSheet / Unity
+        ↓ events
+      Events tab in Sheet
+        ↓ points rules
+      PointsLedger & Leaderboard
+        ↓ weekly snapshot
+      Big Brain (Ma’at)
+        ↓ suggestions / plan_tweaks / heal actions
+      Brain_Suggestions & Mufasa_HealQueue
+        ↓ approved via Mufasa + bots
+      Updated plans, notifications, scripts, & triggers</code></pre>
+    </div>
+  </section>
 
-      <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
-      <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
-      <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
-      <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
+  <section id="sheets">
+    <h2>2. Google Sheet Tabs & Schemas</h2>
+
+    <h3>2.1 <code>00_Config</code></h3>
+    <p><strong>Purpose:</strong> global config for all scripts & bots.</p>
+    <ul>
+      <li><strong>Columns:</strong> <code>Key</code>, <code>Value</code></li>
+      <li><strong>Important keys:</strong>
+        <ul>
+          <li><code>brainBaseUrl</code> – e.g. <code>http://192.168.1.199:7729</code></li>
+          <li><code>brainApiKey</code></li>
+          <li><code>brainTenantId</code> – <code>fitness_mvp</code></li>
+          <li><code>discord_webhook_water</code>, <code>discord_webhook_meals</code>,
+              <code>discord_webhook_workouts</code>, <code>discord_webhook_affirmations</code>,
+              <code>discord_webhook_leaderboard</code>, <code>discord_webhook_motivation</code></li>
+          <li><code>points_double_count_window_minutes</code> – e.g. <code>30</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.2 <code>Users</code></h3>
+    <p><strong>Purpose:</strong> canonical user registry.</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>UserID</code> (canonical ID used everywhere)</li>
+          <li><code>DisplayName</code></li>
+          <li><code>Email</code></li>
+          <li><code>DiscordHandle</code></li>
+          <li><code>Role</code> (member/coach/admin)</li>
+          <li><code>PlanType</code> (e.g. <code>gymnastics-l4-5</code>, <code>weight-loss</code>)</li>
+          <li><code>WorkoutsPerWeekTarget</code></li>
+          <li><code>StartDate</code></li>
+          <li><code>Status</code> (active/paused)</li>
+          <li><code>Tags</code> (e.g. <code>gymnastics,youth,elite-track</code>)</li>
+          <li><code>Notes</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.3 <code>Plans</code></h3>
+    <p><strong>Purpose:</strong> store plans returned from Ma’at.</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>PlanID</code></li>
+          <li><code>UserID</code></li>
+          <li><code>PlanType</code></li>
+          <li><code>StartDate</code></li>
+          <li><code>DurationWeeks</code></li>
+          <li><code>SessionsPerWeek</code></li>
+          <li><code>PlanJson</code> (raw JSON from <code>/plan/workout</code>)</li>
+          <li><code>Status</code> (active/complete/archived)</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.4 <code>Sessions</code></h3>
+    <p><strong>Purpose:</strong> high-level summary of each training session.</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>SessionID</code></li>
+          <li><code>UserID</code></li>
+          <li><code>PlanID</code></li>
+          <li><code>Date</code></li>
+          <li><code>Source</code> (Unity/Discord/AppSheetManual)</li>
+          <li><code>DurationMinutes</code></li>
+          <li><code>RPE</code></li>
+          <li><code>Mood</code></li>
+          <li><code>Notes</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.5 <code>Events</code></h3>
+    <p><strong>Purpose:</strong> raw behavior feed (Discord, Forms, Unity → points engine).</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>EventID</code> (unique)</li>
+          <li><code>UserID</code></li>
+          <li><code>Timestamp</code></li>
+          <li><code>EventType</code> (water_morning, meal_post, affirmation_text, workout_checkin_video, etc.)</li>
+          <li><code>Source</code> (discord, form, unity, manual)</li>
+          <li><code>PayloadJson</code> (raw data like meal ingredients, message IDs)</li>
+          <li><code>PointsAwarded</code></li>
+          <li><code>DeDupeKey</code> (e.g. <code>userId|date|category</code>)</li>
+          <li><code>Status</code> (pending, applied, ignored_duplicate, error)</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.6 <code>PointsLedger</code></h3>
+    <p><strong>Purpose:</strong> daily points per user.</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>UserID</code></li>
+          <li><code>Date</code></li>
+          <li><code>WaterPoints</code></li>
+          <li><code>MealPoints</code></li>
+          <li><code>AffirmationPoints</code></li>
+          <li><code>WorkoutPoints</code></li>
+          <li><code>MotivationPoints</code></li>
+          <li><code>BonusPoints</code></li>
+          <li><code>TotalPoints</code> (that day)</li>
+          <li><code>CumulativePoints</code> (running total)</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.7 <code>Brain_Suggestions</code></h3>
+    <p><strong>Purpose:</strong> store Ma’at’s weekly suggestions.</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>Timestamp</code></li>
+          <li><code>Tenant</code></li>
+          <li><code>WeekKey</code></li>
+          <li><code>SuggestionType</code> (coach_suggestion, plan_tweak, badge_award, alert_human_coach)</li>
+          <li><code>UserID</code></li>
+          <li><code>Channel</code> (for coach_suggestion)</li>
+          <li><code>Priority</code></li>
+          <li><code>Message</code> (for coach_suggestion / alerts)</li>
+          <li><code>RecommendationJson</code> (for plan_tweak / badge_award)</li>
+          <li><code>RawJson</code></li>
+          <li><code>Status</code> (new, queued, applied, dismissed)</li>
+          <li><code>AppliedBy</code></li>
+          <li><code>AppliedAt</code></li>
+          <li><code>Notes</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.8 <code>Mufasa_HealQueue</code></h3>
+    <p><strong>Purpose:</strong> auto-heal actions from Ma’at.</p>
+    <ul>
+      <li><strong>Columns:</strong>
+        <ul>
+          <li><code>Timestamp</code></li>
+          <li><code>Tenant</code></li>
+          <li><code>ActionType</code> (schema_fix, script_patch, trigger_fix, point_policy_suggestion)</li>
+          <li><code>TargetSheet</code></li>
+          <li><code>TargetFile</code></li>
+          <li><code>TargetFunction</code></li>
+          <li><code>Description</code></li>
+          <li><code>PatchJson</code></li>
+          <li><code>Status</code> (NEW, APPLIED, DISMISSED)</li>
+          <li><code>AppliedBy</code></li>
+          <li><code>AppliedAt</code></li>
+          <li><code>Notes</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>2.9 Content Tables (for AppSheet & Discord)</h3>
+    <p><strong>Purpose:</strong> content banks for affirmations, facts, tips, etc.</p>
+    <ul>
+      <li><code>Content_Affirmations</code> – <code>ID</code>, <code>Chakra</code>, <code>Text</code></li>
+      <li><code>Content_ChakraFacts</code> – <code>ID</code>, <code>Chakra</code>, <code>Fact</code></li>
+      <li><code>Content_LimbLessons</code> – <code>ID</code>, <code>WeekNumber</code>, <code>Limb</code>,
+          <code>DayOfWeek</code>, <code>Lesson</code>, <code>Question</code>, <code>Action</code></li>
+      <li><code>Content_PranaFacts</code>, <code>Content_YogaFacts</code>, <code>Content_SoundBowlFacts</code>,
+          <code>Content_NutritionFacts</code> – <code>ID</code>, <code>Text</code>, <code>Tag</code></li>
+      <li><code>Content_MotivationPosts</code> – <code>ID</code>, <code>Text</code></li>
+      <li><code>Content_WorkoutTips</code>, <code>Content_YogaTips</code>, <code>Content_LeaderboardTemplates</code></li>
+    </ul>
+  </section>
+
+  <section id="apps-script">
+    <h2>3. Apps Script Modules & Logic</h2>
+
+    <h3>3.1 <code>Config.gs</code></h3>
+    <p><strong>Purpose:</strong> read config from <code>00_Config</code>.</p>
+    <pre><code>// Pseudo-interface
+function BRAIN_getConfig_() { /* returns { brainBaseUrl, brainApiKey, brainTenantId, ... } */ }
+function CFG_get(key) { /* convenience getter */ }</code></pre>
+
+    <h3>3.2 <code>Brain_Api.gs</code></h3>
+    <p><strong>Purpose:</strong> all HTTP calls to Ma’at.</p>
+    <pre><code>function Brain_callApi_(path, payload) {
+  // Reads base URL + API key from 00_Config
+  // Sends POST with Authorization: Bearer, X-Tenant, Content-Type: application/json
+}
+
+function Brain_PlanWorkout(userObj, planRequestObj) {
+  // Wraps POST /plan/workout
+}
+
+function Brain_SendWeeklySnapshot(snapshotObj) {
+  // Wraps POST /mvp/weekly_snapshot
+}
+
+function Brain_SendHealthSnapshot(healthObj) {
+  // Wraps POST /mvp/health_snapshot
+}</code></pre>
+
+    <h3>3.3 <code>Events_PointsEngine.gs</code></h3>
+    <p><strong>Purpose:</strong> convert Events → PointsLedger with no double-counting.</p>
+    <pre><code>function Events_RecordEvent_(eventObj) {
+  // Insert into Events: EventID, UserID, Timestamp, EventType, Source, PayloadJson, Status='pending'
+}
+
+function Events_ApplyPoints() {
+  // 1. Read Events where Status='pending'
+  // 2. For each, apply point rules (water, meals, affirmations, workouts, motivation)
+  // 3. Update PointsAwarded, DeDupeKey, Status
+  // 4. Call Points_UpdateLedgerFromEvents_()
+}
+
+function Points_UpdateLedgerFromEvents_() {
+  // Aggregate Events into PointsLedger by UserID + Date
+}</code></pre>
+
+    <div class="card">
+      <h4>Point Rules (summary for the coding bot)</h4>
+      <ul>
+        <li><strong>Water</strong>
+          <ul>
+            <li>Morning & evening slots/day; each slot = 10 pts.</li>
+            <li>Max water points/day = 20.</li>
+            <li>Extra events in same slot/date → <code>Status='ignored_duplicate'</code>.</li>
+          </ul>
+        </li>
+        <li><strong>Meals (Melanin diet)</strong>
+          <ul>
+            <li>Parse <code>PayloadJson.ingredients</code>.</li>
+            <li>Each “melanin food” from content list = +5 pts (or your chosen value).</li>
+          </ul>
+        </li>
+        <li><strong>Affirmations</strong>
+          <ul>
+            <li><code>affirmation_text</code> → 5 pts/day.</li>
+            <li><code>affirmation_video</code> → 15 pts/day.</li>
+            <li>Only first of each type per day counts.</li>
+          </ul>
+        </li>
+        <li><strong>Workouts</strong>
+          <ul>
+            <li>Read <code>Users.WorkoutsPerWeekTarget</code>.</li>
+            <li><code>workout_checkin_text</code> 10 pts; <code>_photo</code> 15 pts; <code>_video</code> 25 pts.</li>
+            <li>If multiple per day, use highest tier; optional weekly cap at target.</li>
+          </ul>
+        </li>
+        <li><strong>Motivation</strong>
+          <ul>
+            <li>Tally <code>motivation_vote</code> events; winner gets a <code>motivation_award</code> event with +50 pts.</li>
+          </ul>
+        </li>
+        <li><strong>Double-Count Protection</strong>
+          <ul>
+            <li>Compute <code>DeDupeKey = userId|date|category</code> for each scoring category.</li>
+            <li>If existing applied event has same key → mark new as duplicate.</li>
+          </ul>
+        </li>
+      </ul>
     </div>
 
-    <!-- RIGHT: Login + Today’s workout + Calendar + OHSA + Chat -->
-    <div class="pane">
-      <!-- Login / Profile -->
-      <h2>Login &amp; Profile</h2>
-      <p class="subtitle">Sign in so Ma’at 2.0 can remember your journey and programs.</p>
+    <h3>3.4 <code>Brain_WeeklySnapshot.gs</code></h3>
+    <p><strong>Purpose:</strong> send behavioral summary to Ma’at and store suggestions.</p>
+    <pre><code>function Brain_BuildWeeklySnapshot_() {
+  // Compute weekKey (e.g. Monday date)
+  // For each user:
+  //   - Read workoutsCompleted, waterEvents, mealScore, affirmationCount, totalPoints, tags, etc.
+  // Return { tenant: 'fitness_mvp', weekKey, members: [...] }
+}
 
-      <div class="login-row">
-        <input id="userIdInput" type="text" placeholder="Enter username (e.g. rashad)..." />
-        <button id="loginBtn">Sign In</button>
-      </div>
+function Brain_WeeklySnapshot() {
+  var snapshot = Brain_BuildWeeklySnapshot_();
+  var response = Brain_SendWeeklySnapshot(snapshot);
+  Brain_WriteSuggestions_(response);
+}
 
-      <div id="profileSummary">
-        Not signed in yet. Type a username and press <strong>Sign In</strong>.
-      </div>
+function Brain_WriteSuggestions_(response) {
+  // Write response.suggestions[] into Brain_Suggestions
+}</code></pre>
 
-      <!-- Today’s Workout -->
-      <h2 style="margin-top:10px;">Today’s Workout</h2>
-      <p class="subtitle">Choose a template or use Ma’at 2.0’s program from your assessment.</p>
+    <h3>3.5 <code>Mufasa_BrainHealth.gs</code></h3>
+    <p><strong>Purpose:</strong> Mufasa asks Ma’at for system auto-heal advice.</p>
+    <pre><code>function Mufasa_BuildHealthSnapshot_() {
+  // Collect trigger states, sheet schemas, simple error counts
+  // Return { tenant: 'fitness_mvp', purpose: 'health_check', triggers: [...], schema: {...}, errors: [...] }
+}
 
-      <select id="workoutSelect">
-        <option value="">— Select a workout —</option>
-        <option value="static:nasm_total_body_a">NASM Total Body A (Template)</option>
-        <option value="static:yoga_back_release">Yoga Back Release Flow (Template)</option>
-        <!-- AI-generated programs will be added here dynamically -->
-      </select>
+function Mufasa_SendHealthSnapshotToBrain() {
+  var health = Mufasa_BuildHealthSnapshot_();
+  var response = Brain_SendHealthSnapshot(health);
+  Mufasa_WriteActionsToQueue_(response);
+}
 
-      <div id="workoutPlanView">
-        Your workout plan will appear here after you sign in and select a program.
-      </div>
+function Mufasa_WriteActionsToQueue_(response) {
+  // Write response.actions[] into Mufasa_HealQueue
+}</code></pre>
 
-      <!-- Calendar -->
-      <h2 style="margin-top:10px;">Workout Calendar</h2>
-      <p class="subtitle">Gold = today, green = days you completed a workout.</p>
-      <div id="calendarView"></div>
+    <h3>3.6 <code>Discord_Posting.gs</code></h3>
+    <p><strong>Purpose:</strong> send leaderboard, prompts, and tips to Discord.</p>
+    <pre><code>function Discord_post_(configKey, message) {
+  // Reads webhook URL from 00_Config[configKey]
+  // POST { content: message } to Discord
+}
 
-      <!-- OHS Summary -->
-      <h2 style="margin-top:10px;">Overhead Squat Assessment</h2>
-      <p class="subtitle">
-        Run the assessment first. Ma’at 2.0 will read your movement and build your plan.
-      </p>
-      <div id="ohsSummaryView">No assessment run yet.</div>
+function Discord_PostLeaderboardDaily() { /* uses PointsLedger */ }
+function Discord_PostCheckinPrompt() {}
+function Discord_PostMotivation() {}
+function Discord_PostWorkoutTip() {}
+function Discord_PostNutritionTip() {}</code></pre>
 
-      <!-- Chat -->
-      <h2 style="margin-top:10px;">Mufasa Chat</h2>
-      <p class="subtitle">Talk or type. Say “Mufasa …” or “Coach …” for hands-free coaching.</p>
-      <div style="display:flex; gap:8px;">
-        <input id="questionInput" type="text" placeholder="Ask or speak to your coach..." />
-        <button id="askBtn">Ask</button>
-      </div>
-      <div id="coach-log"></div>
+    <p class="meta">
+      Time-driven triggers call these at your chosen times (e.g. 8:00–8:20 AM sequence).
+    </p>
+  </section>
+
+  <section id="brain-api">
+    <h2>4. Big Brain API (Ma’at)</h2>
+
+    <div class="card">
+      <h3>4.1 Shared Rules</h3>
+      <ul>
+        <li>Always include tenant: <code>"fitness_mvp"</code>.</li>
+        <li>Use <code>UserID</code> from the Users sheet as canonical <code>userId</code>.</li>
+        <li>Headers:
+          <ul>
+            <li><code>Authorization: Bearer &lt;brainApiKey&gt;</code></li>
+            <li><code>X-Tenant: fitness_mvp</code></li>
+            <li><code>Content-Type: application/json</code></li>
+          </ul>
+        </li>
+      </ul>
     </div>
-  </div>
 
-  <script>
-    console.log("🔥 Ma’at 2.0 coach script initialized");
+    <h3>4.2 <code>POST /plan/workout</code></h3>
+    <p><strong>Purpose:</strong> generate structured plan for a user.</p>
+    <pre><code>// Request (example)
+{
+  "client": {
+    "id": "user_123",
+    "name": "Marleigh",
+    "age": 9,
+    "experience": "intermediate",
+    "sport": "gymnastics"
+  },
+  "goals": {
+    "primary": "Level 4-5 floor & beam fundamentals",
+    "secondary": ["strength", "flexibility"],
+    "constraints": ["3 sessions/week", "home + gym mix"]
+  },
+  "duration_weeks": 4,
+  "sessions_per_week": 3,
+  "tags": ["gymnastics", "youth"],
+  "context": {
+    "planType": "gymnastics-l4-5",
+    "injuries": ["right ankle sprain"],
+    "upcoming_event": "meet_in_6_weeks"
+  }
+}</code></pre>
 
-    // === Backend endpoints ===
-    const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
-    const ASK_URL        = BRAIN_BASE_URL + "/ask";
-    const PROGRAM_URL    = BRAIN_BASE_URL + "/coach/program/generate";
-    const PROGRAM_LIST   = BRAIN_BASE_URL + "/coach/program/list";
-    const PROGRAM_GET    = BRAIN_BASE_URL + "/coach/program/get";
-    const PROFILE_UPSERT = BRAIN_BASE_URL + "/users/profile/upsert";
-    const PROFILE_GET    = BRAIN_BASE_URL + "/users/profile/get";
+    <pre><code>// Response (shape)
+{
+  "plan_id": "pln_2025-11-13_001",
+  "tenant": "fitness_mvp",
+  "client": { "id": "user_123", "name": "Marleigh" },
+  "goals": { ... },
+  "duration_weeks": 4,
+  "sessions_per_week": 3,
+  "sources": [
+    "01_lego_training_blocks.txt",
+    "02_nasm_movement_basics.txt",
+    "04_gymnastics_fundamentals_L3_L5.txt"
+  ],
+  "microcycle": [
+    {
+      "day": "Session 1",
+      "focus": "Floor basics + core",
+      "warmup": [...],
+      "main": [...],
+      "accessory": [...],
+      "flexibility": [...],
+      "cues": [...]
+    }
+  ],
+  "notes": [...],
+  "meta": {
+    "created_at": "2025-11-13T18:45:00Z",
+    "version": "v1",
+    "brain_profile": "gymnastics_elite_track"
+  }
+}</code></pre>
 
-    const NODE_BASE_URL      = "https://mufasa-fitness-node.onrender.com";
-    const NODE_COMMAND_URL   = NODE_BASE_URL + "/command";
-
-    // === User / profile state (per-login) ===
-    let currentUserId = localStorage.getItem("maat_user_id") || "";
-    let userProfile   = null;   // will be object once signed in
-
-    // Default Rashad profile – used if you login as "rashad"
-    const RASHAD_PROFILE = {
-      name: "Rashad",
-      age: 38,
-      weight_lbs: 150,
-      height: "5'5\"",
-      injuries: ["3 herniated discs (lumbar)"],
-      history: {
-        chiropractic_months: 12,
-        yoga_years: 2
+    <h3>4.3 <code>POST /mvp/weekly_snapshot</code></h3>
+    <p><strong>Purpose:</strong> send weekly behavior; receive suggestions.</p>
+    <pre><code>// Request (shape)
+{
+  "tenant": "fitness_mvp",
+  "weekKey": "2025-11-10",
+  "members": [
+    {
+      "userId": "user_123",
+      "name": "Marleigh",
+      "discordHandle": "@Marleigh",
+      "workoutsPerWeekTarget": 4,
+      "workoutsCompleted": 3,
+      "totalPoints": 220,
+      "waterEvents": 10,
+      "mealScore": 55,
+      "affirmationCount": 7,
+      "planType": "gymnastics-l4-5",
+      "tags": ["gymnastics", "youth", "elite-track"],
+      "flags": ["ankle_injury"],
+      "streaks": {
+        "workout_days_in_a_row": 3,
+        "water_days_in_a_row": 4
       },
-      goals: {
-        primary: "Gain ~20 lb of muscle in 3 months",
-        style: "Home workouts only + heavy yoga",
-        frequency_days_per_week: 4,
-        focus: "Muscle gain + back decompression / pain-free movement"
-      }
-    };
-
-    // Default exercise ID for telemetry
-    const EXERCISE_ID = "bodyweight_squat";
-
-    // Workout targets for the live squat block
-    const TARGET_REPS = 10;
-    const TARGET_SETS = 3;
-
-    // Static workouts (template text)
-    const STATIC_WORKOUTS = {
-      nasm_total_body_a:
-        "Warm-up (5–10 min):\n" +
-        "- Cat–Cow x10\n" +
-        "- Hip circles x10/side\n" +
-        "- Arm swings x20\n\n" +
-        "Strength (2–3 rounds):\n" +
-        "- Squat to press x12\n" +
-        "- Row (band or backpack) x12\n" +
-        "- Glute bridge x15\n\n" +
-        "Cool-down: light stretching for hips, hamstrings, chest.",
-      yoga_back_release:
-        "Yoga Back Release Flow (~25 min):\n" +
-        "- Child’s Pose (3–5 breaths)\n" +
-        "- Cat–Cow x10\n" +
-        "- Low lunge with side bend (5 breaths/side)\n" +
-        "- Sphinx pose (8–10 breaths)\n" +
-        "- Supine twist (5–8 breaths/side)\n" +
-        "- Legs up the wall (2–3 min)."
-    };
-
-    // === DOM hooks ===
-    const videoEl            = document.getElementById("video");
-    const canvasEl           = document.getElementById("overlay");
-    const ctx                = canvasEl.getContext("2d");
-    const poseStatusEl       = document.getElementById("poseStatus");
-    const brainStatusEl      = document.getElementById("brainStatus");
-    const brainChipTxt       = document.getElementById("brainChipText");
-    const connectBtn         = document.getElementById("connectBtn");
-    const startBtn           = document.getElementById("startBtn");
-    const ohsaBtn            = document.getElementById("ohsaBtn");
-    const defineExerciseBtn  = document.getElementById("defineExerciseBtn");
-    const muteBtn            = document.getElementById("muteBtn");
-    const askBtn             = document.getElementById("askBtn");
-    const questionInput      = document.getElementById("questionInput");
-    const listenBtn          = document.getElementById("listenBtn");
-    const logEl              = document.getElementById("coach-log");
-    const repCountEl         = document.getElementById("repCount");
-    const exerciseLabelEl    = document.getElementById("exerciseLabel");
-    const workoutSelectEl    = document.getElementById("workoutSelect");
-    const workoutPlanViewEl  = document.getElementById("workoutPlanView");
-    const ohsaSummaryViewEl  = document.getElementById("ohsSummaryView");
-    const calendarViewEl     = document.getElementById("calendarView");
-    const userIdInputEl      = document.getElementById("userIdInput");
-    const loginBtnEl         = document.getElementById("loginBtn");
-    const profileSummaryEl   = document.getElementById("profileSummary");
-
-    // === Pose / workout / voice state ===
-    let detector;
-    let running = false;
-    let animId;
-
-    let voiceMuted = false;
-    let speechLock = false;        // true while LLM answer is speaking
-    let repFeedbackAllowed = true; // rep coaching only when no LLM speech
-
-    let listening = false;
-    let recognition;
-    let lastTranscript = "";
-
-    let sessionId = null;
-    let repCount = 0;
-    let totalReps = 0;
-    let currentSet = 1;
-    let repPhase = "up";
-
-    let fullBodyAcquired = false;
-    let lastStepBackSpokenAt = 0;
-    let lastGoodRepSpokenAt = 0;
-
-    let lastNodeRepSentAt = 0;
-    let lastDepthScore = 0;
-    let lastGoodForm = false;
-
-    const STEP_BACK_COOLDOWN = 4000;
-    const GOOD_REP_COOLDOWN  = 2500;
-
-    let definingExercise = false;
-    let definedExercises = {};
-    let currentExerciseName = null;
-    const EXERCISE_BASELINE_FRAMES = 80;
-    let baselineFrames = [];
-
-    let ohsaMode = false;
-    let ohsaPhase = null; // "front" or "side"
-    let ohsaFrontSamples = [];
-    let ohsaSideSamples  = [];
-    const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
-    let lastOhsaSummary = null;
-
-    // AI program text for "today"
-    let aiProgramToday = null;
-    let aiProgramId    = null;
-
-    // skeleton edges for drawing
-    const SKELETON_EDGES = [
-      [5,7], [7,9],
-      [6,8], [8,10],
-      [5,6],
-      [5,11], [6,12],
-      [11,12],
-      [11,13], [13,15],
-      [12,14], [14,16]
-    ];
-
-    // === Logging / speech helpers ===
-    function addLog(kind, text) {
-      const div = document.createElement("div");
-      div.className = "log-line " + kind;
-      div.textContent = text;
-      logEl.appendChild(div);
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    function stopAllSpeech() {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
+      "history_summary": {
+        "weeks_on_program": 6,
+        "avg_workouts_per_week": 3.2
       }
     }
+  ]
+}</code></pre>
 
-    function speak(text, source = "system") {
-      if (voiceMuted || !("speechSynthesis" in window)) return;
-      if (speechLock && source === "rep") return;
-
-      stopAllSpeech();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0;
-      u.pitch = 1.0;
-
-      if (source === "llm") {
-        speechLock = true;
-        repFeedbackAllowed = false;
+    <pre><code>// Response (shape)
+{
+  "tenant": "fitness_mvp",
+  "weekKey": "2025-11-10",
+  "generated_at": "2025-11-13T19:00:00Z",
+  "suggestions": [
+    {
+      "type": "coach_suggestion",
+      "userId": "user_123",
+      "channel": "#daily-checkin",
+      "priority": "normal",
+      "message": "You hit 3/4 sessions again. Let’s officially lock in 3 and use the 4th as a flex/stretch day. Consistency &gt; perfection.",
+      "tags": ["encouragement", "consistency"]
+    },
+    {
+      "type": "plan_tweak",
+      "userId": "user_123",
+      "priority": "normal",
+      "recommendation": {
+        "new_workouts_per_week": 3,
+        "focus_areas": ["beam basics", "floor confidence", "safe landings"],
+        "when_to_apply": "next_block",
+        "reason": "3 consistent weeks of 3/4 workouts with strong adherence."
       }
-
-      u.onend = () => {
-        if (source === "llm") {
-          speechLock = false;
-          repFeedbackAllowed = true;
-        }
-      };
-
-      window.speechSynthesis.speak(u);
+    },
+    {
+      "type": "badge_award",
+      "userId": "another_user",
+      "badge": "Streak Star",
+      "reason": "7+ day water + workout streak"
+    },
+    {
+      "type": "alert_human_coach",
+      "userId": "third_user",
+      "severity": "high",
+      "reason": "Sudden drop-off after 4 weeks of high engagement.",
+      "suggested_message": "I noticed you’ve been quiet this week. Everything okay? No pressure — just checking in. 💙"
     }
+  ]
+}</code></pre>
 
-    // === Keypoint helpers ===
-    function getKeypoint(pose, name) {
-      if (!pose || !pose.keypoints) return null;
-      return pose.keypoints.find(k => k.name === name || k.part === name) || null;
+    <h3>4.4 <code>POST /mvp/session_log</code></h3>
+    <p><strong>Purpose:</strong> Unity sends detailed session data.</p>
+    <pre><code>// Request (shape)
+{
+  "tenant": "fitness_mvp",
+  "userId": "user_123",
+  "sessionId": "sess_123",
+  "planId": "pln_2025-11-13_001",
+  "startedAt": "2025-11-13T18:00:00Z",
+  "endedAt": "2025-11-13T18:25:00Z",
+  "device": "unity_ar_ios",
+  "exercises": [
+    { "name": "Handstand holds", "sets": 5, "duration_seconds": 120, "estimatedQuality": "good" },
+    { "name": "Cartwheel progressions", "sets": 4, "estimatedQuality": "needs_work" }
+  ],
+  "self_report": {
+    "rpe": 7,
+    "mood": "tired",
+    "pain": "none"
+  }
+}</code></pre>
+
+    <pre><code>// Response
+{ "ok": true }</code></pre>
+
+    <h3>4.5 <code>POST /mvp/health_snapshot</code></h3>
+    <p><strong>Purpose:</strong> Mufasa sends system health; Ma’at returns auto-heal suggestions.</p>
+    <pre><code>// Request (shape)
+{
+  "tenant": "fitness_mvp",
+  "purpose": "health_check",
+  "triggers": [...],
+  "schema": {...},
+  "errors": [...]
+}</code></pre>
+
+    <pre><code>// Response (shape)
+{
+  "actions": [
+    {
+      "type": "schema_fix",
+      "target": { "sheet": "PointsLedger" },
+      "description": "Add missing 'CumulativePoints' column.",
+      "patch": { "add_columns": [ { "name": "CumulativePoints", "position": "end", "default": 0 } ] }
+    },
+    {
+      "type": "script_patch",
+      "target": { "file": "/engine/PointsRules.gs", "function": "applyWaterPoints" },
+      "description": "Prevent double-counting water when Discord + Form both log.",
+      "patch": "/* new function body or diff for review */"
+    },
+    {
+      "type": "trigger_fix",
+      "target": { "triggerName": "FiveMinuteHeartbeat" },
+      "description": "Trigger not seen in 45+ minutes; recreate with 5-min schedule.",
+      "patch": { "triggerType": "time", "everyMinutes": 5 }
     }
+  ]
+}</code></pre>
 
-    function getAngleDegrees(a,b,c) {
-      if (!a || !b || !c) return null;
-      const abx = a.x - b.x, aby = a.y - b.y;
-      const cbx = c.x - b.x, cby = c.y - b.y;
-      const dot   = abx*cbx + aby*cby;
-      const magAB = Math.hypot(abx,aby);
-      const magCB = Math.hypot(cbx,cby);
-      if (!magAB || !magCB) return null;
-      const cos = dot / (magAB*magCB);
-      const clamped = Math.min(1, Math.max(-1, cos));
-      return (Math.acos(clamped) * 180) / Math.PI;
+  </section>
+
+  <section id="appsheet">
+    <h2>5. AppSheet App (Today View & Forms)</h2>
+
+    <h3>5.1 Tables</h3>
+    <ul>
+      <li><strong>Main tables</strong> – <code>Users</code>, <code>Plans</code>, <code>Sessions</code>,
+          <code>PointsLedger</code>, <code>Events</code> (hidden), content tables.</li>
+    </ul>
+
+    <h3>5.2 “Today” View</h3>
+    <p><strong>Goal:</strong> when user opens the app, they instantly see what today is about.</p>
+    <ul>
+      <li>Use <code>TODAY()</code> to compute:
+        <ul>
+          <li>Day of week (Sun–Sat)</li>
+          <li>Program week (from <code>Users.StartDate</code>)</li>
+        </ul>
+      </li>
+      <li>Lookup from content tables:
+        <ul>
+          <li>Active limb lesson for current week + day.</li>
+          <li>Chakra of the day + affirmation.</li>
+        </ul>
+      </li>
+      <li>Display:
+        <ul>
+          <li>Today’s lesson focus.</li>
+          <li>Today’s affirmation & chakra.</li>
+          <li>Checklist: water AM/PM, workout today?, reflection done?</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>5.3 Check-In Form</h3>
+    <p><strong>Goal:</strong> easy logging that becomes Events.</p>
+    <ul>
+      <li>Fields:
+        <ul>
+          <li>Type: Workout / Water / Meal / Affirmation.</li>
+          <li>Media: optional image/video URL.</li>
+          <li>Notes, RPE, Mood.</li>
+        </ul>
+      </li>
+      <li>On submit:
+        <ul>
+          <li>Write a row to <code>Events</code> or call an Apps Script webhook that calls <code>Events_RecordEvent_()</code>.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>5.4 Plan & Leaderboard Views</h3>
+    <ul>
+      <li><strong>Plan View:</strong> show user’s current plan, either directly from <code>PlanJson</code> or an unpacked structure.</li>
+      <li><strong>Leaderboard:</strong> view on <code>PointsLedger</code> grouped by <code>UserID</code>, ordered by <code>CumulativePoints</code>.</li>
+    </ul>
+  </section>
+
+  <section id="discord">
+    <h2>6. Discord Structure & Event Flow</h2>
+
+    <h3>6.1 Channels</h3>
+    <ul>
+      <li><code>#how-to-earn-points</code></li>
+      <li><code>#water-checkin</code></li>
+      <li><code>#meals</code></li>
+      <li><code>#workout-checkin</code></li>
+      <li><code>#affirmations</code></li>
+      <li><code>#motivation</code></li>
+      <li><code>#leaderboard</code></li>
+      <li><code>#announcements</code></li>
+    </ul>
+
+    <h3>6.2 Event Flow</h3>
+    <ul>
+      <li>User posts in a channel.</li>
+      <li>Discord bot:
+        <ul>
+          <li>Maps Discord handle → <code>UserID</code> in <code>Users</code>.</li>
+          <li>Determines <code>EventType</code> based on channel & content.</li>
+          <li>Builds payload with timestamp, media links, etc.</li>
+          <li>POSTs to Apps Script webhook.</li>
+        </ul>
+      </li>
+      <li>Apps Script webhook:
+        <ul>
+          <li>Calls <code>Events_RecordEvent_()</code>, inserting a row into <code>Events</code>.</li>
+        </ul>
+      </li>
+      <li>Scheduled <code>Events_ApplyPoints()</code> converts into points and updates <code>PointsLedger</code>.</li>
+    </ul>
+
+    <h3>6.3 Daily Automation Sequence (Example)</h3>
+    <ul>
+      <li>08:00 – <code>Discord_PostLeaderboardDaily()</code></li>
+      <li>08:05 – <code>Discord_PostCheckinPrompt()</code></li>
+      <li>08:10 – <code>Discord_PostMotivation()</code></li>
+      <li>08:15 – <code>Discord_PostWorkoutTip()</code></li>
+      <li>08:20 – <code>Discord_PostNutritionTip()</code></li>
+    </ul>
+  </section>
+
+  <section id="unity">
+    <h2>7. Unity / AR Coach & Firebase</h2>
+
+    <h3>7.1 Firestore Data Model</h3>
+    <ul>
+      <li><strong>Coach scripts (Brain → Unity)</strong><br />
+        Collection:
+        <code>users/{userId}/coach_scripts/{sessionId}</code>
+      </li>
+      <li><strong>Session logs (Unity → Brain)</strong><br />
+        Collection:
+        <code>users/{userId}/session_logs/{sessionId}</code>
+      </li>
+    </ul>
+
+    <h3>7.2 Coach Script Document (example)</h3>
+    <pre><code>{
+  "tenant": "fitness_mvp",
+  "userId": "user_123",
+  "sessionId": "sess_2025-11-13_001",
+  "planId": "pln_2025-11-13_001",
+  "title": "Lower Body Strength + Core",
+  "intro": {
+    "text": "Today we're focusing on strong legs and a solid core.",
+    "voiceLine": "intro_legs_core_1"
+  },
+  "steps": [
+    {
+      "stepId": "warmup_1",
+      "type": "warmup",
+      "animation": "coach_jog_in_place",
+      "durationSeconds": 60,
+      "text": "Jog in place to get your blood flowing.",
+      "cues": ["Land softly on your feet.", "Breathe in through your nose, out through your mouth."]
+    },
+    {
+      "stepId": "main_1",
+      "type": "exercise",
+      "exerciseName": "Bodyweight Squats",
+      "animation": "coach_squat_demo",
+      "sets": 3,
+      "reps": 12,
+      "restSeconds": 30,
+      "text": "3 sets of 12 squats. Follow my form.",
+      "cues": ["Knees track over toes.", "Keep your chest up.", "Go as low as feels safe."]
     }
-
-    function computeKneeValgus(leftHip,rightHip,leftKnee,rightKnee) {
-      if (!leftHip || !rightHip || !leftKnee || !rightKnee) return 0;
-      const hipWidth  = Math.abs(rightHip.x - leftHip.x);
-      const kneeWidth = Math.abs(rightKnee.x - leftKnee.x);
-      if (!hipWidth) return 0;
-      return (hipWidth - kneeWidth) / hipWidth;
-    }
-
-    function analyzeSquatForm(pose) {
-      if (!pose) {
-        return {
-          fullBody:false, depthScore:0, goodForm:false,
-          kneeAngle:180, torsoAngle:90, kneeValgus:0
-        };
-      }
-
-      const leftHip   = getKeypoint(pose,"left_hip");
-      const rightHip  = getKeypoint(pose,"right_hip");
-      const leftKnee  = getKeypoint(pose,"left_knee");
-      const rightKnee = getKeypoint(pose,"right_knee");
-      const leftAnkle = getKeypoint(pose,"left_ankle");
-      const rightAnkle= getKeypoint(pose,"right_ankle");
-      const leftShoulder  = getKeypoint(pose,"left_shoulder");
-      const rightShoulder = getKeypoint(pose,"right_shoulder");
-
-      const required = [leftHip,rightHip,leftKnee,rightKnee,leftAnkle,rightAnkle];
-      const fullBody = required.every(k => k && k.score > 0.3);
-
-      const leftKneeAngle  = getAngleDegrees(leftHip,leftKnee,leftAnkle);
-      const rightKneeAngle = getAngleDegrees(rightHip,rightKnee,rightAnkle);
-      const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2 || 180;
-
-      const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
-
-      const leftTorsoAngle  = getAngleDegrees(leftShoulder,leftHip,leftAnkle);
-      const rightTorsoAngle = getAngleDegrees(rightShoulder,rightHip,rightAnkle);
-      const torsoAngle = (leftTorsoAngle + rightTorsoAngle) / 2 || 90;
-
-      const kneeValgus = computeKneeValgus(leftHip,rightHip,leftKnee,rightKnee);
-
-      const deepEnough = depthScore > 0.6;
-      const notTooDeep = kneeAngle > 50;
-      const torsoOk    = torsoAngle > 60;
-
-      const goodForm = fullBody && deepEnough && notTooDeep && torsoOk;
-
-      return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
-    }
-
-    // === Node helpers ===
-    async function sendToNode(payload) {
-      try {
-        await fetch(NODE_COMMAND_URL, {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify(payload)
-        });
-      } catch (e) {
-        console.warn("Node send failed", e);
-      }
-    }
-
-    function sendStartSessionToNode() {
-      if (!currentUserId) return;
-      const body = {
-        domain: "fitness",
-        command: "fitness.startSession",
-        userId: currentUserId,
-        payload: {
-          sessionId,
-          programId: aiProgramId || null,
-          exerciseId: EXERCISE_ID,
-          ts: Date.now()
-        }
-      };
-      sendToNode(body);
-    }
-
-    function sendEndSessionToNode() {
-      if (!sessionId || !currentUserId) return;
-      const body = {
-        domain: "fitness",
-        command: "fitness.endSession",
-        userId: currentUserId,
-        payload: {
-          sessionId,
-          repsCompleted: totalReps,
-          exerciseId: EXERCISE_ID,
-          ts: Date.now()
-        }
-      };
-      sendToNode(body);
-      trackWorkoutDay(); // calendar tracking
-    }
-
-    function sendRepToNode(depthScore) {
-      if (!currentUserId) return;
-      const now = Date.now();
-      if (now - lastNodeRepSentAt < 500) return;
-      lastNodeRepSentAt = now;
-
-      const body = {
-        domain: "fitness",
-        command: "fitness.repUpdate",
-        userId: currentUserId,
-        payload: {
-          sessionId,
-          exerciseId: EXERCISE_ID,
-          repsThisSet: repCount,
-          totalReps,
-          depthScore,
-          ts: now
-        }
-      };
-      sendToNode(body);
-    }
-
-    function sendOhsaToNode(summary) {
-      if (!currentUserId) return;
-      const body = {
-        domain: "fitness",
-        command: "fitness.ohsaResult",
-        userId: currentUserId,
-        payload: {
-          summary,
-          ts: Date.now()
-        }
-      };
-      sendToNode(body);
-    }
-
-    // === Brain health check ===
-    (async () => {
-      try {
-        const res = await fetch(BRAIN_BASE_URL + "/health");
-        await res.json();
-        brainStatusEl.textContent = "Ma’at 2.0 online.";
-        brainStatusEl.classList.add("status-ok");
-        brainChipTxt.textContent = "Ma’at 2.0";
-      } catch (e) {
-        console.warn("Brain health error", e);
-        brainStatusEl.textContent = "Ma’at 2.0 offline.";
-        brainStatusEl.classList.add("status-bad");
-        brainChipTxt.textContent = "Ma’at 2.0 (offline)";
-      }
-    })();
-
-    // === Camera + pose ===
-    async function connectCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video:true });
-        videoEl.srcObject = stream;
-        await new Promise(r => videoEl.onloadedmetadata = r);
-        canvasEl.width = videoEl.videoWidth;
-        canvasEl.height= videoEl.videoHeight;
-        poseStatusEl.textContent = "Camera connected. Loading pose detector…";
-        await initDetector();
-        poseStatusEl.textContent = "Pose detector ready.";
-        poseStatusEl.classList.add("status-ok");
-        startBtn.disabled = false;
-        ohsaBtn.disabled = false;
-        defineExerciseBtn.disabled = false;
-      } catch (e) {
-        console.error("Camera error", e);
-        poseStatusEl.textContent = "Camera error.";
-        poseStatusEl.classList.add("status-bad");
-      }
-    }
-
-    async function initDetector() {
-      await tf.setBackend("webgl");
-      await tf.ready();
-      if (typeof poseDetection === "undefined") {
-        console.error("PoseDetection failed to load.");
-        return;
-      }
-      detector = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-      );
-      console.log("✅ MoveNet detector created.");
-    }
-
-    // === Brain chat (Ma’at 2.0) ===
-    async function askCoach(q, options = { speakAnswer:true }) {
-      if (!q) return;
-      addLog("you", "You: " + q);
-      questionInput.value = "";
-      brainStatusEl.textContent = "Ma’at 2.0 thinking…";
-
-      const telemetry = {
-        exercise_id: EXERCISE_ID,
-        reps: totalReps,
-        depth_score: lastDepthScore,
-        good_form: lastGoodForm
-      };
-
-      const ctxObj = {
-        profile: userProfile,
-        last_ohsa: lastOhsaSummary || null
-      };
-
-      try {
-        const res = await fetch(ASK_URL, {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify({
-            question: q,
-            user_id: currentUserId || "anonymous",
-            session_id: sessionId,
-            telemetry,
-            context: JSON.stringify(ctxObj)
-          })
-        });
-        const data = await res.json();
-        const answer = data.answer || data.response || "No response.";
-        addLog("coach", "Ma’at 2.0: " + answer);
-        if (options.speakAnswer) speak(answer, "llm");
-        brainStatusEl.textContent = "Ma’at 2.0 responded.";
-        return answer;
-      } catch (e) {
-        console.error("Brain error", e);
-        brainStatusEl.textContent = "Ma’at 2.0 error.";
-        addLog("system", "Network error contacting Ma’at 2.0.");
-        return null;
-      }
-    }
-
-    // === Program generation from OHSA ===
-    async function generateProgramFromOhsa(summary) {
-      if (!currentUserId) {
-        addLog("system","Sign in before generating a program.");
-        return;
-      }
-      try {
-        const body = {
-          user_id: currentUserId,
-          goal: "Gain 20 lb of muscle in ~3 months with home workouts and yoga-heavy back care.",
-          weeks: 12,
-          days_per_week: 4,
-          home_only: true,
-          yoga_heavy: true,
-          assessment_summary: JSON.stringify(summary),
-          extra_context: "User has lumbar herniated discs and 2 years of yoga experience."
-        };
-        addLog("system","Sending OHSA summary to Ma’at 2.0 to build a structured program…");
-        const res = await fetch(PROGRAM_URL, {
-          method:"POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!data.ok) {
-          addLog("system","Program generation failed.");
-          return;
-        }
-        const program = data.program;
-        aiProgramId    = data.program_id;
-        aiProgramToday = extractTodayFromProgram(program);
-
-        addOrUpdateAiOption(program.title || "Ma’at 2.0 – Today’s Program");
-        workoutSelectEl.value = "program:" + aiProgramId;
-        workoutPlanViewEl.textContent = aiProgramToday || JSON.stringify(program,null,2);
-
-        buildCalendarFromProgram(program);
-        addLog("system","Ma’at 2.0 program saved and calendar updated.");
-      } catch (e) {
-        console.error("Program error", e);
-        addLog("system","Error generating program from Ma’at 2.0.");
-      }
-    }
-
-    function extractTodayFromProgram(program) {
-      try {
-        const today = new Date();
-        const dow   = today.getDay(); // 0–6
-        const dayIndexInWeek = dow === 0 ? 6 : dow-1; // Mon=0…
-        const plan = program.plan || [];
-        if (!plan.length) return null;
-
-        // naive: use first week’s matching day index, else first day
-        const week1 = plan[0];
-        const days  = week1.days || [];
-        let match = days.find(d => d.day_index === dayIndexInWeek) || days[0];
-        if (!match) return null;
-
-        let out = `**${match.label || "Today’s Session"}**\n\nFocus: ${match.focus}\n\n`;
-        (match.blocks || []).forEach(b => {
-          out += `${b.type.toUpperCase()} – ${b.description}\n`;
-          if (b.items && b.items.length) {
-            out += "• " + b.items.join("\n• ") + "\n\n";
-          } else {
-            out += "\n";
-          }
-        });
-        return out;
-      } catch {
-        return null;
-      }
-    }
-
-    function addOrUpdateAiOption(label) {
-      let opt = workoutSelectEl.querySelector('option[data-ai="today"]');
-      if (!opt) {
-        opt = document.createElement("option");
-        opt.dataset.ai = "today";
-        workoutSelectEl.appendChild(opt);
-      }
-      opt.value = "program:" + aiProgramId;
-      opt.textContent = label;
-    }
-
-    // === New Exercise definition ===
-    function startDefineExercise() {
-      if (!detector) { alert("Connect camera first."); return; }
-      if (running || ohsaMode) {
-        alert("Stop workout / assessment before defining a new exercise.");
-        return;
-      }
-      const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
-      if (!name) return;
-
-      definingExercise = true;
-      currentExerciseName = name;
-      baselineFrames = [];
-      addLog("system", `Defining new exercise: ${name}. Give several GOOD reps.`);
-      speak(`Okay. Let’s define ${name}. Give me your best form for several reps.`, "rep");
-    }
-
-    function finishDefineExercise() {
-      if (!definingExercise || baselineFrames.length === 0 || !currentExerciseName) return;
-      const depthValues  = baselineFrames.map(f => f.depthScore);
-      const torsoValues  = baselineFrames.map(f => f.torsoAngle);
-      const avgDepth = depthValues.reduce((a,b)=>a+b,0)/depthValues.length;
-      const avgTorso = torsoValues.reduce((a,b)=>a+b,0)/torsoValues.length;
-
-      definedExercises[currentExerciseName] = {
-        name: currentExerciseName,
-        depthScoreAvg: avgDepth,
-        torsoAngleAvg: avgTorso,
-        samples: baselineFrames.length,
-        createdAt: Date.now()
-      };
-
-      addLog("system",
-        `Exercise "${currentExerciseName}" learned. Depth avg: ${avgDepth.toFixed(2)}, ` +
-        `torso avg: ${avgTorso.toFixed(1)} (samples: ${baselineFrames.length}).`
-      );
-      speak(`Got it. I saved your baseline for ${currentExerciseName}.`, "rep");
-
-      definingExercise = false;
-      currentExerciseName = null;
-      baselineFrames = [];
-    }
-
-    // === OHSA mode ===
-    function startOhsa() {
-      if (!detector) { alert("Connect camera first."); return; }
-      if (running || definingExercise) {
-        alert("Stop the workout / definition before running OHSA.");
-        return;
-      }
-
-      ohsaMode = true;
-      ohsaPhase = "front";
-      ohsaFrontSamples = [];
-      ohsaSideSamples  = [];
-      lastOhsaSummary  = null;
-
-      ohsaSummaryViewEl.textContent =
-        "Running OHSA… First: face the camera, arms overhead, and give 3–5 slow squats.";
-      addLog("system","OHSA started: front view first.");
-      speak(
-        "We’re starting your overhead squat assessment. Face the camera, arms overhead, and give me three to five slow squats with your best form.",
-        "rep"
-      );
-
-      runPoseLoop();
-    }
-
-    function summarizeArray(arr,key) {
-      if (!arr.length) return 0;
-      const vals = arr.map(a => a[key]).filter(v => typeof v === "number");
-      if (!vals.length) return 0;
-      return vals.reduce((a,b)=>a+b,0)/vals.length;
-    }
-
-    function finishOhsa() {
-      ohsaMode = false;
-      const frontDepthAvg   = summarizeArray(ohsaFrontSamples,"depthScore");
-      const frontKneeValgus = summarizeArray(ohsaFrontSamples,"kneeValgus");
-      const sideDepthAvg    = summarizeArray(ohsaSideSamples,"depthScore");
-      const sideTorsoAngle  = summarizeArray(ohsaSideSamples,"torsoAngle");
-
-      const findings = [];
-      if (frontKneeValgus > 0.15) findings.push("Knees collapse inward (valgus) during squat.");
-      if (sideTorsoAngle < 65)   findings.push("Torso leans forward more than ideal.");
-      if (sideDepthAvg < 0.5 || frontDepthAvg < 0.5)
-        findings.push("Squat depth is limited; may indicate ankle or hip mobility restrictions.");
-      if (!findings.length)
-        findings.push("Movement pattern looks generally balanced with no major OHSA faults.");
-
-      const summary = {
-        front: {
-          samples: ohsaFrontSamples.length,
-          depthScoreAvg: frontDepthAvg,
-          kneeValgusAvg: frontKneeValgus
-        },
-        side: {
-          samples: ohsaSideSamples.length,
-          depthScoreAvg: sideDepthAvg,
-          torsoAngleAvg: sideTorsoAngle
-        },
-        findings
-      };
-
-      lastOhsaSummary = summary;
-      sendOhsaToNode(summary);
-
-      const textSummary =
-        "Overhead Squat Assessment Summary:\n" +
-        `- Front samples: ${summary.front.samples}\n` +
-        `  · Avg depth score: ${summary.front.depthScoreAvg.toFixed(2)}\n` +
-        `  · Avg knee valgus: ${summary.front.kneeValgusAvg.toFixed(2)}\n` +
-        `- Side samples: ${summary.side.samples}\n` +
-        `  · Avg depth score: ${summary.side.depthScoreAvg.toFixed(2)}\n` +
-        `  · Avg torso angle: ${summary.side.torsoAngleAvg.toFixed(1)}°\n\n` +
-        "Key findings:\n- " + findings.join("\n- ");
-
-      ohsaSummaryViewEl.textContent = textSummary;
-      addLog("system","OHSA completed. Summary recorded and sent to Ma’at 2.0 backend.");
-      speak("Your overhead squat assessment is complete. I’ll build your plan from this.", "rep");
-
-      generateProgramFromOhsa(summary);
-    }
-
-    // === Pose loop ===
-    async function runPoseLoop() {
-      if (!running && !definingExercise && !ohsaMode) return;
-      if (!detector) return;
-
-      const poses = await detector.estimatePoses(videoEl,{ flipHorizontal:true });
-      ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
-
-      const pose = poses.length ? poses[0] : null;
-      const analysis = analyzeSquatForm(pose);
-
-      lastDepthScore = analysis.depthScore;
-      lastGoodForm   = analysis.goodForm;
-
-      const now = performance.now();
-
-      // full body cue
-      if (!analysis.fullBody) {
-        poseStatusEl.textContent = "No full body in view.";
-        if (!fullBodyAcquired && repFeedbackAllowed &&
-            now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN &&
-            (running || definingExercise || ohsaMode)
-        ) {
-          speak("Step back so I can see your whole body.", "rep");
-          lastStepBackSpokenAt = now;
-        }
-      } else {
-        if (!fullBodyAcquired) {
-          fullBodyAcquired = true;
-          if (repFeedbackAllowed && (running || definingExercise || ohsaMode)) {
-            speak("Great, I can see your full body.", "rep");
-          }
-        }
-        poseStatusEl.textContent = analysis.goodForm
-          ? `Form looks solid. Score: ${analysis.depthScore.toFixed(2)}`
-          : `Form needs adjustment. Score: ${analysis.depthScore.toFixed(2)}`;
-      }
-
-      // draw skeleton
-      if (pose && pose.keypoints) {
-        const color = analysis.goodForm ? "#22c55e" : "#ef4444";
-        ctx.lineWidth = 3;
-        for (const [i,j] of SKELETON_EDGES) {
-          const kp1 = pose.keypoints[i];
-          const kp2 = pose.keypoints[j];
-          if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
-            ctx.beginPath();
-            ctx.moveTo(kp1.x,kp1.y);
-            ctx.lineTo(kp2.x,kp2.y);
-            ctx.strokeStyle = color;
-            ctx.stroke();
-          }
-        }
-        for (const kp of pose.keypoints) {
-          if (kp.score > 0.4) {
-            ctx.beginPath();
-            ctx.arc(kp.x,kp.y,4,0,Math.PI*2);
-            ctx.fillStyle = color;
-            ctx.fill();
-          }
-        }
-      }
-
-      // exercise definition capture
-      if (definingExercise && analysis.fullBody && analysis.goodForm) {
-        baselineFrames.push({
-          depthScore: analysis.depthScore,
-          torsoAngle: analysis.torsoAngle
-        });
-        if (baselineFrames.length === 1) {
-          addLog("system","Recording exercise baseline… keep moving with good form.");
-        }
-        if (baselineFrames.length >= EXERCISE_BASELINE_FRAMES) {
-          finishDefineExercise();
-        }
-      }
-
-      // OHSA sampling
-      if (ohsaMode && analysis.fullBody) {
-        const depth = analysis.depthScore;
-        if (ohsaPhase === "front") {
-          if (depth > 0.6 && ohsaFrontSamples.length < OHSA_TARGET_SAMPLES_PER_VIEW) {
-            ohsaFrontSamples.push(analysis);
-          }
-          if (ohsaFrontSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
-            ohsaPhase = "side";
-            addLog("system","OHSA: front view captured. Turn sideways.");
-            ohsaSummaryViewEl.textContent =
-              "Front view captured. Now turn sideways and give several more overhead squats.";
-            speak("Good. Now turn sideways to the camera and keep squatting.", "rep");
-          }
-        } else if (ohsaPhase === "side") {
-          if (depth > 0.6 && ohsaSideSamples.length < OHSA_TARGET_SAMPLES_PER_VIEW) {
-            ohsaSideSamples.push(analysis);
-          }
-          if (ohsaSideSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
-            finishOhsa();
-          }
-        }
-      }
-
-      // rep detection when running workout
-      if (running) {
-        const depth = analysis.depthScore;
-        const DOWN_THRESHOLD = 0.6;
-        const UP_THRESHOLD   = 0.3;
-
-        if (analysis.fullBody) {
-          if (repPhase === "up" && depth > DOWN_THRESHOLD) {
-            repPhase = "down";
-          } else if (repPhase === "down" && depth < UP_THRESHOLD) {
-            repPhase = "up";
-            repCount += 1;
-            totalReps += 1;
-            repCountEl.textContent = String(repCount);
-            sendRepToNode(depth);
-
-            if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
-              speak(analysis.goodForm ? "Good rep." : "Careful with your form.", "rep");
-              lastGoodRepSpokenAt = now;
-            }
-
-            if (repCount === TARGET_REPS) {
-              if (repFeedbackAllowed) {
-                speak(`That’s ${TARGET_REPS} reps for set ${currentSet}.`, "rep");
-              }
-              currentSet += 1;
-              if (currentSet <= TARGET_SETS) {
-                repCount = 0;
-                setTimeout(() => {
-                  if (running && repFeedbackAllowed) {
-                    speak(`Rest is over. Let’s start set ${currentSet}.`, "rep");
-                  }
-                }, 20000);
-              } else {
-                running = false;
-                startBtn.textContent = "Start Workout";
-                addLog("system","Workout complete.");
-                if (repFeedbackAllowed) speak("Workout complete. Powerful work today.", "rep");
-                sendEndSessionToNode();
-                cancelAnimationFrame(animId);
-                return;
-              }
-            }
-          }
-        }
-      }
-
-      animId = requestAnimationFrame(runPoseLoop);
-    }
-
-    // === Workout start/stop ===
-    async function startWorkout() {
-      if (!detector) return;
-      if (!currentUserId) {
-        alert("Sign in first so Ma’at 2.0 can track your sessions.");
-        return;
-      }
-
-      if (definingExercise) {
-        definingExercise = false;
-        baselineFrames = [];
-        currentExerciseName = null;
-        addLog("system","Cancelled exercise definition to start workout.");
-      }
-      if (ohsaMode) {
-        ohsaMode = false;
-        ohsaFrontSamples = [];
-        ohsaSideSamples  = [];
-        addLog("system","Cancelled OHSA to start workout.");
-      }
-
-      running = !running;
-      if (running) {
-        sessionId = "sess_" + Date.now();
-        repCount = 0;
-        totalReps = 0;
-        currentSet = 1;
-        repPhase = "up";
-        fullBodyAcquired = false;
-        repCountEl.textContent = "0";
-        startBtn.textContent = "Stop Workout";
-        addLog("system",`Workout started: ${sessionId}`);
-        speak(
-          `We’re doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`,
-          "rep"
-        );
-        sendStartSessionToNode();
-        runPoseLoop();
-      } else {
-        startBtn.textContent = "Start Workout";
-        running = false;
-        cancelAnimationFrame(animId);
-        ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
-        addLog("system","Workout stopped.");
-        sendEndSessionToNode();
-      }
-    }
-
-    // === STT with wake words ===
-    function toggleListening() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        alert("Speech recognition not supported in this browser.");
-        return;
-      }
-      if (!recognition) {
-        recognition = new SR();
-        recognition.lang = "en-US";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onresult = e => {
-          const result = e.results[e.results.length - 1];
-          if (!result.isFinal) return;
-          const transcript = result[0].transcript.trim();
-          if (!transcript || transcript === lastTranscript) return;
-          lastTranscript = transcript;
-          const lower = transcript.toLowerCase();
-          console.log("STT:", transcript);
-
-          if (lower.includes("mufasa") || lower.includes("coach")) {
-            stopAllSpeech();
-            const cleaned = lower
-              .replace("hey","")
-              .replace("mufasa","")
-              .replace("coach","")
-              .trim();
-            const msg = cleaned || "give me a quick status update on my workout.";
-            addLog("you","🎙️ " + transcript);
-            askCoach(msg);
-          }
-
-          if (lower.includes("start workout")) {
-            if (!running) startWorkout();
-          } else if (lower.includes("stop workout")) {
-            if (running) startWorkout();
-          } else if (lower.includes("run assessment") || lower.includes("overhead squat")) {
-            if (!ohsaMode) startOhsa();
-          }
-        };
-
-        recognition.onerror = e => {
-          console.warn("STT error:", e.error);
-          addLog("system","STT error: " + e.error);
-        };
-
-        recognition.onend = () => {
-          if (listening) {
-            try { recognition.start(); } catch {}
-          } else {
-            listenBtn.textContent = "🎙️ Voice On";
-          }
-        };
-      }
-
-      if (!listening) {
-        listening = true;
-        lastTranscript = "";
-        recognition.start();
-        listenBtn.textContent = "🎧 Listening…";
-        addLog("system","Listening for 'Mufasa' or 'Coach'...");
-      } else {
-        listening = false;
-        recognition.stop();
-        listenBtn.textContent = "🎙️ Voice On";
-        addLog("system","Stopped listening.");
-      }
-    }
-
-    // === Workout dropdown ===
-    function handleWorkoutSelectChange() {
-      const val = workoutSelectEl.value;
-      if (!val) {
-        workoutPlanViewEl.textContent =
-          "Your workout plan will appear here after you sign in and select a program.";
-        return;
-      }
-
-      if (val.startsWith("static:")) {
-        const key = val.split(":")[1];
-        workoutPlanViewEl.textContent = STATIC_WORKOUTS[key] || "Template not found.";
-      } else if (val.startsWith("program:")) {
-        const id = val.split(":")[1];
-        if (id === aiProgramId && aiProgramToday) {
-          workoutPlanViewEl.textContent = aiProgramToday;
-        } else {
-          // fetch from backend (in case it’s an older program)
-          fetch(PROGRAM_GET + "?program_id=" + encodeURIComponent(id))
-            .then(r => r.json())
-            .then(data => {
-              if (data.ok === false) {
-                workoutPlanViewEl.textContent = "Could not load program.";
-                return;
-              }
-              const program = data.program || data;
-              const text = extractTodayFromProgram(program) ||
-                           JSON.stringify(program,null,2);
-              workoutPlanViewEl.textContent = text;
-            })
-            .catch(() => {
-              workoutPlanViewEl.textContent = "Error loading program.";
-            });
-        }
-      }
-    }
-
-    // === Calendar tracking (localStorage per user) ===
-    function getSessionDaysForUser() {
-      if (!currentUserId) return [];
-      const key = "maat_sessions_" + currentUserId;
-      try {
-        return JSON.parse(localStorage.getItem(key) || "[]");
-      } catch {
-        return [];
-      }
-    }
-
-    function trackWorkoutDay() {
-      if (!currentUserId) return;
-      const key = "maat_sessions_" + currentUserId;
-      const todayIso = new Date().toISOString().slice(0,10);
-      let days = getSessionDaysForUser();
-      if (!days.includes(todayIso)) {
-        days.push(todayIso);
-        localStorage.setItem(key, JSON.stringify(days));
-      }
-      renderCalendar();
-    }
-
-    function renderCalendar() {
-      const now = new Date();
-      const year  = now.getFullYear();
-      const month = now.getMonth(); // 0-based
-      const todayIso = now.toISOString().slice(0,10);
-      const completedDays = new Set(getSessionDaysForUser());
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay  = new Date(year, month + 1, 0);
-      const startDOW = firstDay.getDay(); // 0=Sun
-      const totalDays = lastDay.getDate();
-
-      const monthNames = [
-        "January","February","March","April","May","June",
-        "July","August","September","October","November","December"
-      ];
-      const dowNames = ["S","M","T","W","T","F","S"];
-
-      calendarViewEl.innerHTML = "";
-
-      const header = document.createElement("div");
-      header.className = "cal-header";
-      header.innerHTML = `<span>${monthNames[month]} ${year}</span>` +
-                         `<span>${currentUserId ? "User: " + currentUserId : "Not signed in"}</span>`;
-      calendarViewEl.appendChild(header);
-
-      const grid = document.createElement("div");
-      grid.className = "cal-grid";
-
-      dowNames.forEach(d => {
-        const cell = document.createElement("div");
-        cell.className = "cal-dow";
-        cell.textContent = d;
-        grid.appendChild(cell);
-      });
-
-      // leading blanks
-      for (let i=0; i<startDOW; i++) {
-        const cell = document.createElement("div");
-        cell.className = "cal-day cal-empty";
-        grid.appendChild(cell);
-      }
-
-      for (let day=1; day<=totalDays; day++) {
-        const cell = document.createElement("div");
-        cell.className = "cal-day";
-        const dateIso = new Date(year,month,day).toISOString().slice(0,10);
-        if (dateIso === todayIso) cell.classList.add("cal-today");
-        if (completedDays.has(dateIso)) cell.classList.add("cal-completed");
-        cell.textContent = String(day);
-        grid.appendChild(cell);
-      }
-
-      calendarViewEl.appendChild(grid);
-    }
-
-    // === Login / profile ===
-    async function syncProfileToBrain() {
-      if (!currentUserId || !userProfile) return;
-      try {
-        const body = {
-          user_id: currentUserId,
-          age: userProfile.age || undefined,
-          height_cm: undefined,
-          weight_kg: undefined,
-          goals: userProfile.goals ? [userProfile.goals.primary] : undefined,
-          injuries: userProfile.injuries || [],
-          notes: userProfile.focus || ""
-        };
-        await fetch(PROFILE_UPSERT, {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify(body)
-        });
-      } catch (e) {
-        console.warn("Profile upsert failed", e);
-      }
-    }
-
-    async function loadProfileFromBrain() {
-      if (!currentUserId) return null;
-      try {
-        const res = await fetch(PROFILE_GET + "?user_id=" +
-                     encodeURIComponent(currentUserId));
-        const data = await res.json();
-        return data.profile || data;
-      } catch {
-        return null;
-      }
-    }
-
-    function renderProfileSummary() {
-      if (!currentUserId) {
-        profileSummaryEl.textContent =
-          "Not signed in yet. Type a username and press Sign In.";
-        return;
-      }
-      const p = userProfile || {};
-      const lines = [];
-      lines.push(`Signed in as: ${currentUserId}`);
-      if (p.age) lines.push(`Age: ${p.age}`);
-      if (p.weight_lbs) lines.push(`Weight: ${p.weight_lbs} lb`);
-      if (p.height) lines.push(`Height: ${p.height}`);
-      if (p.goals && p.goals.primary) lines.push(`Goal: ${p.goals.primary}`);
-      if (p.injuries && p.injuries.length)
-        lines.push("Injuries: " + p.injuries.join(", "));
-      profileSummaryEl.textContent = lines.join("\n");
-    }
-
-    async function handleLoginClick() {
-      const id = (userIdInputEl.value || "").trim().toLowerCase();
-      if (!id) {
-        alert("Enter a username first.");
-        return;
-      }
-      currentUserId = id;
-      localStorage.setItem("maat_user_id", currentUserId);
-
-      // seed profile
-      userProfile = (id === "rashad") ? JSON.parse(JSON.stringify(RASHAD_PROFILE)) : {
-        name: id,
-        goals: { primary: "General fitness and wellness" },
-        injuries: []
-      };
-
-      renderProfileSummary();
-      renderCalendar();
-      addLog("system", `Signed in as ${currentUserId}. Sending profile to Ma’at 2.0.`);
-      await syncProfileToBrain();
-    }
-
-    // === Wire buttons ===
-    connectBtn.onclick        = connectCamera;
-    startBtn.onclick          = startWorkout;
-    ohsaBtn.onclick           = startOhsa;
-    defineExerciseBtn.onclick = startDefineExercise;
-    askBtn.onclick            = () => askCoach(questionInput.value.trim());
-    muteBtn.onclick           = () => {
-      voiceMuted = !voiceMuted;
-      muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
-      if (voiceMuted) stopAllSpeech();
-    };
-    listenBtn.onclick         = toggleListening;
-    workoutSelectEl.onchange  = handleWorkoutSelectChange;
-    loginBtnEl.onclick        = handleLoginClick;
-
-    questionInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") askCoach(questionInput.value.trim());
-    });
-
-    // === On load ===
-    window.addEventListener("load", () => {
-      exerciseLabelEl.textContent = "Bodyweight Squat";
-      addLog("system","Page loaded. Connect your camera to begin.");
-
-      if (currentUserId) {
-        // restore simple profile for returning logins
-        if (currentUserId === "rashad") {
-          userProfile = JSON.parse(JSON.stringify(RASHAD_PROFILE));
-        } else {
-          userProfile = { name: currentUserId, goals:{primary:"General fitness"}, injuries:[] };
-        }
-        userIdInputEl.value = currentUserId;
-        renderProfileSummary();
-      }
-      renderCalendar();
-
-      console.log("tf loaded:", typeof tf !== "undefined");
-      console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
-    });
-  </script>
+  ],
+  "outro": {
+    "text": "Nice work today. Log how you feel, and we’ll keep building.",
+    "voiceLine": "outro_good_job_1"
+  },
+  "meta": {
+    "createdAt": "2025-11-13T20:00:00Z",
+    "profile": "general_fitness"
+  }
+}</code></pre>
+
+    <h3>7.3 Session Log Document (example)</h3>
+    <pre><code>{
+  "tenant": "fitness_mvp",
+  "userId": "user_123",
+  "sessionId": "sess_2025-11-13_001",
+  "planId": "pln_2025-11-13_001",
+  "startedAt": "2025-11-13T20:05:00Z",
+  "endedAt": "2025-11-13T20:32:00Z",
+  "device": "unity_ar_ios",
+  "stepsCompleted": [
+    { "stepId": "warmup_1", "completed": true, "durationSeconds": 60 },
+    { "stepId": "main_1", "completedSets": 3, "targetSets": 3, "notes": "User slowed down in last set." }
+  ],
+  "selfReport": {
+    "rpe": 7,
+    "mood": "tired",
+    "pain": "none"
+  },
+  "meta": { "uploadedAt": "2025-11-13T20:33:10Z", "appVersion": "1.0.0" }
+}</code></pre>
+
+    <h3>7.4 Unity Side: CoachSessionManager (Concept)</h3>
+    <pre><code>// High-level behavior:
+Start:
+  - Set userId + sessionId
+  - Fetch coach_scripts/{sessionId} for that user
+  - Map to CoachScript object
+  - Initialize SessionLog
+
+Run:
+  - Show intro text/voice
+  - For each step:
+      * Play animation on Animator (step.animation)
+      * Show text + cues
+      * Wait durationSeconds or run simple sets/reps loop
+      * Record completion into SessionLog.stepsCompleted
+
+End:
+  - Collect self-report (RPE, mood, pain)
+  - Set endedAt
+  - Upload to users/{userId}/session_logs/{sessionId}</code></pre>
+  </section>
+
+  <section id="rebuild-checklist">
+    <h2>8. Fresh-Start Rebuild Checklist</h2>
+
+    <ol class="checklist">
+      <li>Create new Spreadsheet <strong>Fitness_MVP_v2</strong>.</li>
+      <li>Add tabs + headers exactly as in Section 2.</li>
+      <li>Fill <code>00_Config</code> with Brain URL, API key, Discord webhooks, tenant ID.</li>
+      <li>Create Apps Script project attached to the Sheet:
+        <ul>
+          <li>Add files: <code>Config.gs</code>, <code>Brain_Api.gs</code>, <code>Brain_WeeklySnapshot.gs</code>,
+              <code>Mufasa_BrainHealth.gs</code>, <code>Events_PointsEngine.gs</code>, <code>Discord_Posting.gs</code>.</li>
+          <li>Implement functions described in Section 3.</li>
+          <li>Set triggers:
+            <ul>
+              <li><code>Events_ApplyPoints</code> (every 5–15 minutes).</li>
+              <li><code>Points_UpdateLedgerFromEvents_</code> (daily).</li>
+              <li><code>Brain_WeeklySnapshot</code> (weekly).</li>
+              <li><code>Mufasa_SendHealthSnapshotToBrain</code> (daily/hourly).</li>
+              <li>Discord posting functions for morning sequence.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Build AppSheet app on top of the Sheet:
+        <ul>
+          <li>“Today” view (date → week/day → limb/chakra/affirmation).</li>
+          <li>Check-In form writing to <code>Events</code>.</li>
+          <li>Plan view & Leaderboard view.</li>
+        </ul>
+      </li>
+      <li>Set up Discord:
+        <ul>
+          <li>Create channels from Section 6.</li>
+          <li>Create bot/webhooks that forward events → Apps Script webhook → <code>Events_RecordEvent_()</code>.</li>
+        </ul>
+      </li>
+      <li>Deploy Big Brain (Ma’at) with endpoints in Section 4 and mount all training docs.</li>
+      <li>Set up Firebase/Firestore with collections:
+        <ul>
+          <li><code>users/{userId}/coach_scripts/{sessionId}</code></li>
+          <li><code>users/{userId}/session_logs/{sessionId}</code></li>
+        </ul>
+      </li>
+      <li>Wire Unity:
+        <ul>
+          <li>Import Firebase SDK for Firestore.</li>
+          <li>Implement <code>CoachSessionManager</code> to pull coach scripts and push session logs.</li>
+        </ul>
+      </li>
+      <li>Run end-to-end smoke tests:
+        <ul>
+          <li>Discord post → Events → PointsLedger → leaderboard → Discord.</li>
+          <li>AppSheet check-in → Events → PointsLedger.</li>
+          <li>Plan request → <code>/plan/workout</code> → Plans tab.</li>
+          <li>Weekly snapshot → <code>/mvp/weekly_snapshot</code> → Brain_Suggestions.</li>
+          <li>Unity session → Firestore → <code>/mvp/session_log</code>.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p class="meta">
+      Once this checklist is complete, Ma’at (Big Brain) and Mufasa (governance)
+      will be fully wired into Fitness MVP, with Unity as the moving body
+      and Discord/AppSheet as the community nervous system.
+    </p>
+  </section>
+</main>
 </body>
 </html>
