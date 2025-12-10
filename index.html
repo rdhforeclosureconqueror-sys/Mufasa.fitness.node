@@ -5,22 +5,30 @@
   <title>Pan-African Virtual Wellness Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Google Sign-In -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <!-- TensorFlow + Pose Detection (UMD builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
-
-  <!-- Google Sign-In (for overlay login) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- Simple favicon so we don’t get 404s -->
   <link rel="icon" href="data:,">
 
   <style>
+    :root {
+      --black: #020617;
+      --black-soft: #0b1120;
+      --red: #ef4444;
+      --green: #22c55e;
+      --gold: #facc15;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020617; /* nearly black */
+      background: var(--black);
       color: #e5e7eb;
       min-height: 100vh;
       display: flex;
@@ -32,9 +40,9 @@
     .app {
       width: 100%;
       max-width: 1100px;
-      background: radial-gradient(circle at top left, #111827, #020617);
+      background: radial-gradient(circle at top left, #111827, var(--black-soft));
       border-radius: 16px;
-      border: 1px solid rgba(250, 204, 21, 0.9); /* gold outline */
+      border: 2px solid var(--gold);            /* GOLD OUTLINE */
       box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
       padding: 20px;
       display: grid;
@@ -46,15 +54,15 @@
       .app { grid-template-columns: 1fr; }
     }
 
-    h1 { font-size: 1.6rem; margin-bottom: 4px; }
-    h2 { font-size: 1.1rem; }
-    .subtitle { font-size: 0.9rem; color: #9ca3af; margin-bottom: 12px; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; color: var(--gold); }
+    h2 { font-size: 1.1rem; color: var(--green); }
+    .subtitle { font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; }
 
     .pane {
       background: rgba(15, 23, 42, 0.9);
       border-radius: 12px;
       padding: 12px 14px;
-      border: 1px solid rgba(248, 113, 113, 0.5); /* red accent */
+      border: 1px solid var(--red);             /* RED accent border */
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -67,7 +75,7 @@
       border-radius: 12px;
       overflow: hidden;
       background: #000;
-      border: 1px solid rgba(34, 197, 94, 0.8); /* green edge */
+      border: 2px solid var(--green);           /* GREEN edge */
     }
 
     video, canvas {
@@ -92,29 +100,35 @@
       padding: 8px 14px;
       font-size: 0.9rem;
       cursor: pointer;
-      background: #16a34a; /* green primary */
-      color: white;
+      background: var(--green);                 /* GREEN primary */
+      color: #000;
+      font-weight: 600;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.15s ease, transform 0.08s ease;
+      transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.16s ease;
     }
 
     button.secondary {
-      background: #020617;
-      border: 1px solid #f97316; /* gold / orange */
-      color: #fde68a;
+      background: var(--black);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+
+    button.danger {
+      background: var(--red);
+      color: #fff;
     }
 
     button:disabled { opacity: 0.5; cursor: default; }
     button:hover:not(:disabled) {
       transform: translateY(-1px);
-      background: #22c55e;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
     }
 
     .status-line { font-size: 0.8rem; color: #9ca3af; }
-    .status-ok { color: #22c55e; }
-    .status-bad { color: #ef4444; }
+    .status-ok { color: var(--green); }
+    .status-bad { color: var(--red); }
 
     .chip {
       display: inline-flex;
@@ -123,16 +137,16 @@
       padding: 4px 8px;
       border-radius: 999px;
       font-size: 0.75rem;
-      background: #020617;
-      border: 1px solid #facc15; /* gold */
-      color: #fde68a;
+      background: var(--black);
+      border: 1px solid var(--gold);           /* GOLD chip */
+      color: var(--gold);
     }
 
     .chip-dot {
       width: 7px;
       height: 7px;
       border-radius: 999px;
-      background: #22c55e; /* green */
+      background: var(--green);
       box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
     }
 
@@ -140,7 +154,7 @@
       flex: 1;
       border-radius: 999px;
       border: 1px solid rgba(55, 65, 81, 0.9);
-      background: #020617;
+      background: var(--black);
       color: #e5e7eb;
       padding: 8px 12px;
       font-size: 0.9rem;
@@ -151,27 +165,12 @@
     select {
       width: 100%;
       border-radius: 999px;
-      border: 1px solid #facc15;
-      background: #020617;
+      border: 1px solid var(--gold);
+      background: var(--black);
       color: #e5e7eb;
       padding: 6px 10px;
       font-size: 0.85rem;
       outline: none;
-    }
-
-    .login-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .small-card {
-      border-radius: 10px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      background: #020617;
-      padding: 8px 10px;
-      font-size: 0.85rem;
-      min-height: 48px;
     }
 
     #coach-log {
@@ -179,7 +178,7 @@
       min-height: 120px;
       max-height: 260px;
       overflow-y: auto;
-      background: #020617;
+      background: var(--black);
       border-radius: 10px;
       padding: 8px 10px;
       border: 1px solid rgba(31, 41, 55, 0.9);
@@ -189,7 +188,7 @@
     #workoutPlanView, #ohsSummaryView {
       border-radius: 10px;
       border: 1px solid rgba(55, 65, 81, 0.9);
-      background: #020617;
+      background: var(--black);
       padding: 8px 10px;
       font-size: 0.85rem;
       min-height: 60px;
@@ -204,41 +203,65 @@
     /* --- Calendar --- */
     #calendarView {
       border-radius: 10px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      background: #020617;
+      border: 1px solid var(--gold);
+      background: var(--black);
       padding: 8px 10px;
       font-size: 0.8rem;
     }
-    .calendar-header {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      margin-bottom: 4px;
-      font-size: 0.75rem;
-      color: #9ca3af;
-      text-align: center;
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      color: var(--gold);
     }
-    .calendar-grid {
+    .cal-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 3px;
     }
-    .calendar-cell {
-      height: 22px;
-      border-radius: 6px;
+    .cal-day-name {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+    .cal-cell {
+      height: 24px;
+      border-radius: 4px;
       border: 1px solid rgba(55, 65, 81, 0.9);
       text-align: center;
-      line-height: 20px;
-      font-size: 0.75rem;
+      line-height: 22px;
+      font-size: 0.7rem;
       color: #e5e7eb;
     }
-    .calendar-cell.empty { border: none; background: transparent; }
-    .calendar-cell.today {
-      border-color: #facc15;
-      box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+    .cal-cell.today {
+      border-color: var(--gold);
+      box-shadow: 0 0 6px rgba(250, 204, 21, 0.7);
+      font-weight: 700;
     }
-    .calendar-cell.completed {
-      background: rgba(34, 197, 94, 0.4);
-      border-color: #22c55e;
+    .cal-cell.workout {
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .cal-cell.completed {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--green);
+    }
+
+    .small-card {
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: var(--black);
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      color: #e5e7eb;
+    }
+
+    .login-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
     }
 
     /* --- LOGIN OVERLAY --- */
@@ -246,7 +269,7 @@
       position: fixed;
       inset: 0;
       backdrop-filter: blur(8px) brightness(0.4);
-      background: rgba(0,0,0,0.65);
+      background: rgba(0,0,0,0.6);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -258,58 +281,49 @@
 
     #loginBox {
       background: radial-gradient(circle at top, #111, #000);
-      border: 2px solid #facc15;
+      border: 2px solid var(--gold);
       border-radius: 20px;
-      padding: 30px 40px;
+      padding: 40px 50px;
       text-align: center;
       box-shadow: 0 0 40px rgba(250,204,21,0.4);
-      color: #facc15;
-      max-width: 340px;
+      color: var(--gold);
+      max-width: 320px;
     }
     #loginBox h1 {
-      color: #facc15;
+      color: var(--gold);
       font-size: 1.4rem;
       margin-bottom: 10px;
     }
-    #loginBox p {
-      font-size: 0.9rem;
-      color: #fde68a;
-      margin-bottom: 12px;
-    }
-    #loginBox input {
-      width: 100%;
-      margin-top: 8px;
-      margin-bottom: 8px;
-    }
-    #loginBox button {
-      width: 100%;
-      justify-content: center;
-    }
     #googleBtn {
-      margin-top: 8px;
-      background: linear-gradient(90deg,#ef4444,#22c55e);
-      border: 2px solid #facc15;
+      margin-top: 20px;
+      background: linear-gradient(90deg,var(--red),var(--green));
+      color: #fff;
+      border: 2px solid var(--gold);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .3s ease;
+    }
+    #googleBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px var(--gold);
     }
     #userInfo {
       position: fixed;
-      top: 8px;
-      right: 12px;
+      top: 10px;
+      right: 14px;
       display: none;
       align-items: center;
       gap: 8px;
       z-index: 2000;
     }
     #userInfo img {
-      width: 32px; height: 32px; border-radius: 50%;
-      border: 2px solid #facc15;
-    }
-    #userName {
-      color: #facc15;
-      font-size: 0.8rem;
-      font-weight: 600;
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid var(--gold);
     }
     #signOutBtn {
-      background: #ef4444;
+      background: var(--red);
       border: none;
       border-radius: 999px;
       color: #fff;
@@ -322,22 +336,21 @@
 </head>
 
 <body>
-  <!-- === LOGIN OVERLAY (first screen) === -->
+  <!-- === LOGIN OVERLAY (Google) === -->
   <div id="loginOverlay">
     <div id="loginBox">
       <h1>Enter the Mufasa Realm 🔥</h1>
-      <p>Sign in to unlock your Pan-African virtual wellness dashboard.</p>
-      <input id="manualUserId" type="text" placeholder="Enter a username (e.g. rashad)..." />
-      <button id="manualLoginBtn">Continue</button>
-      <div style="margin-top:10px;font-size:0.8rem;color:#9ca3af;">or</div>
-      <button id="googleBtn">Sign in with Google</button>
+      <p style="font-size:0.9rem;color:#fde68a;">
+        Sign in with your Google account to unlock your Pan-African wellness dashboard.
+      </p>
+      <button id="googleBtn">Enter with Google</button>
     </div>
   </div>
 
-  <!-- Small user info bar after login -->
+  <!-- user info bar -->
   <div id="userInfo">
-    <img id="userPic" src="" alt="profile" />
-    <span id="userName"></span>
+    <img id="userPic" src="" alt="profile"/>
+    <span id="userName" style="color:#facc15;font-weight:600;"></span>
     <button id="signOutBtn">Sign out</button>
   </div>
 
@@ -362,6 +375,7 @@
         <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
+        <button id="testVoiceBtn" class="secondary">🔈 Test Voice</button>
         <span class="chip">
           <span class="chip-dot"></span>
           <span id="brainChipText">Ma’at 2.0: connecting…</span>
@@ -374,23 +388,17 @@
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
     </div>
 
-    <!-- RIGHT: Login/profile + Today’s workout + calendar + chat -->
+    <!-- RIGHT: Profile + Today’s workout + calendar + chat -->
     <div class="pane">
-      <!-- Login / Profile block (inside app, uses same USER_ID) -->
-      <h2>Login &amp; Profile</h2>
-      <p class="subtitle">Sign in so Ma’at 2.0 can remember your journey and programs.</p>
-
-      <div class="login-row">
-        <input id="userIdInput" type="text" placeholder="Enter username (e.g. rashad)..." />
-        <button id="loginBtn">Sign In</button>
-      </div>
-
+      <!-- Profile -->
+      <h2>Profile</h2>
+      <p class="subtitle">Google sign-in unlocks your saved Ma’at 2.0 programs.</p>
       <div id="profileSummary" class="small-card">
-        Not signed in yet. Use the login above or the entry screen.
+        Not signed in yet. Use the Google button to enter the realm.
       </div>
 
       <!-- Today’s Workout -->
-      <h2 style="margin-top:12px;">Today’s Workout</h2>
+      <h2 style="margin-top:8px;">Today’s Workout</h2>
       <p class="subtitle">Choose a template or let Ma’at 2.0 design one from your assessment.</p>
 
       <select id="workoutSelect">
@@ -401,23 +409,23 @@
       </select>
 
       <div id="workoutPlanView">
-        Your workout plan will appear here after you sign in and select a program.
+        Your workout plan will appear here once Ma’at 2.0 has one for you.
       </div>
 
       <!-- Calendar -->
-      <h2 style="margin-top:12px;">Workout Calendar</h2>
-      <p class="subtitle">Gold = today, green = days you completed a workout.</p>
+      <h2 style="margin-top:10px;">Workout Calendar</h2>
+      <p class="subtitle">Gold = today, green = workout days.</p>
       <div id="calendarView"></div>
 
       <!-- OHS Summary -->
-      <h2 style="margin-top:12px;">Overhead Squat Assessment</h2>
+      <h2 style="margin-top:10px;">Overhead Squat Assessment</h2>
       <p class="subtitle">
         Run the assessment first. Ma’at 2.0 will read your movement and build your plan.
       </p>
       <div id="ohsSummaryView">No assessment run yet.</div>
 
       <!-- Chat -->
-      <h2 style="margin-top:12px;">Mufasa Chat</h2>
+      <h2 style="margin-top:10px;">Mufasa Chat</h2>
       <p class="subtitle">Talk or type. Say “Mufasa …” or “Coach …” for hands-free coaching.</p>
       <div style="display:flex; gap:8px;">
         <input id="questionInput" type="text" placeholder="Ask or speak to your coach..." />
@@ -428,278 +436,149 @@
   </div>
 
   <script>
-    "use strict";
-
     console.log("🔥 Mufasa Coach script initialized");
 
     // --- Backend endpoints ---
     const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
     const ASK_URL = BRAIN_BASE_URL + "/ask";
+    const PROGRAM_URL = BRAIN_BASE_URL + "/coach/program/generate";
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
 
-    // --- Identity / profile state ---
+    // --- Google login config ---
+    const GOOGLE_CLIENT_ID = "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com";
+    const VERIFY_URL = NODE_BASE_URL + "/verify-google-token";
+
+    const overlay = document.getElementById("loginOverlay");
+    const googleBtn = document.getElementById("googleBtn");
+    const userInfo = document.getElementById("userInfo");
+    const userPic = document.getElementById("userPic");
+    const userNameEl = document.getElementById("userName");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const profileSummaryEl = document.getElementById("profileSummary");
+
+    // --- Global user / program state ---
     let USER_ID = "guest";
-    const USER_PROFILE = {
-      name: "Guest",
-      age: 38,
-      weight_lbs: 150,
-      height: "5'5\"",
-      injuries: [
-        "3 herniated discs (lumbar)",
-      ],
-      history: {
-        chiropractic_months: 12,
-        yoga_years: 2
-      },
-      goals: {
-        primary: "Gain 20 lb of muscle in ~3 months",
-        style: "Home workouts only + heavy yoga",
-        frequency_days_per_week: 4,
-        focus: "Muscle gain + back decompression / pain-free movement"
-      }
-    };
+    let USER_PROFILE = null;
+    let currentProgram = null;    // structured JSON from Ma’at 2.0
+    let calendarMonthOffset = 0;  // for future next/prev months if needed
+    let aiProgramTodayText = "";  // pretty text for "today" panel
 
-    const LS_USER_KEY = "mufasaUser";
-    const LS_LOG_KEY  = "mufasaWorkoutLog";
-
-    // workout log by ISO date { "2025-12-08": {completed:true, userId, program:string } }
-    let workoutLog = {};
-
-    // --- DOM hooks (login + profile + calendar) ---
-    const loginOverlay   = document.getElementById("loginOverlay");
-    const manualUserIdEl = document.getElementById("manualUserId");
-    const manualLoginBtn = document.getElementById("manualLoginBtn");
-    const googleBtn      = document.getElementById("googleBtn");
-
-    const userInfoBar = document.getElementById("userInfo");
-    const userPicEl   = document.getElementById("userPic");
-    const userNameEl  = document.getElementById("userName");
-    const signOutBtn  = document.getElementById("signOutBtn");
-
-    const userIdInputEl   = document.getElementById("userIdInput");
-    const loginBtn        = document.getElementById("loginBtn");
-    const profileSummaryEl= document.getElementById("profileSummary");
-    const calendarViewEl  = document.getElementById("calendarView");
-
-    // --- Shared helpers for identity / calendar ---
     function showOverlay(show) {
-      if (show) {
-        loginOverlay.classList.remove("hidden");
-      } else {
-        loginOverlay.classList.add("hidden");
-      }
+      if (show) overlay.classList.remove("hidden");
+      else overlay.classList.add("hidden");
     }
 
-    function loadWorkoutLog() {
+    async function verifyGoogleToken(id_token) {
       try {
-        const raw = localStorage.getItem(LS_LOG_KEY);
-        workoutLog = raw ? JSON.parse(raw) : {};
-      } catch {
-        workoutLog = {};
+        const res = await fetch(VERIFY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: id_token })
+        });
+        return await res.json();
+      } catch (e) {
+        console.error("verify error", e);
+        return null;
       }
     }
 
-    function saveWorkoutLog() {
-      try {
-        localStorage.setItem(LS_LOG_KEY, JSON.stringify(workoutLog));
-      } catch {}
-    }
+    function applyUserProfile(u) {
+      USER_ID = u.sub || u.email || "guest";
+      USER_PROFILE = {
+        name: u.name || "Athlete",
+        email: u.email || "",
+        picture: u.picture || "",
+        // base Rashad seed – Ma’at will override per-user later if you want
+        age: 38,
+        weight_lbs: 150,
+        height: "5'5\"",
+        injuries: ["3 herniated discs (lumbar)"],
+        history: { chiropractic_months: 12, yoga_years: 2 },
+        goals: {
+          primary: "Gain 20 lb of muscle in ~3 months",
+          style: "Home workouts only + heavy yoga",
+          frequency_days_per_week: 4,
+          focus: "Muscle gain + back decompression / pain-free movement"
+        }
+      };
 
-    function getTodayKey() {
-      const d = new Date();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${d.getFullYear()}-${m}-${day}`;
-    }
+      userPic.src = USER_PROFILE.picture || "https://i.imgur.com/9z3s8Gh.png";
+      userNameEl.textContent = USER_PROFILE.name;
+      userInfo.style.display = "flex";
 
-    function updateProfileSummary() {
-      if (!USER_ID) {
-        profileSummaryEl.innerHTML =
-          'Not signed in yet. Use the login above or the entry screen.';
-        return;
-      }
       profileSummaryEl.innerHTML =
-        `Signed in as <strong>${USER_PROFILE.name}</strong><br>` +
-        `Age: ${USER_PROFILE.age} &nbsp;•&nbsp; ` +
-        `Weight: ${USER_PROFILE.weight_lbs} lb &nbsp;•&nbsp; ` +
+        `<strong>Signed in as ${USER_PROFILE.name}</strong><br>` +
+        (USER_PROFILE.email ? `Email: ${USER_PROFILE.email}<br>` : "") +
+        `Age: ${USER_PROFILE.age}<br>` +
+        `Weight: ${USER_PROFILE.weight_lbs} lb<br>` +
         `Height: ${USER_PROFILE.height}<br>` +
         `Goal: ${USER_PROFILE.goals.primary}<br>` +
         `Injuries: ${USER_PROFILE.injuries.join(", ")}`;
+
+      sendProfileToNode();   // seed backend memory
     }
 
-    function buildCalendar() {
-      if (!calendarViewEl) return;
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth(); // 0-based
-      const first = new Date(year, month, 1);
-      const startDay = first.getDay(); // 0..6
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const todayKey = getTodayKey();
-
-      calendarViewEl.innerHTML = "";
-
-      // header (Su..Sa)
-      const header = document.createElement("div");
-      header.className = "calendar-header";
-      ["Su","Mo","Tu","We","Th","Fr","Sa"].forEach(label => {
-        const cell = document.createElement("div");
-        cell.textContent = label;
-        header.appendChild(cell);
-      });
-      calendarViewEl.appendChild(header);
-
-      const grid = document.createElement("div");
-      grid.className = "calendar-grid";
-
-      for (let i = 0; i < startDay; i++) {
-        const empty = document.createElement("div");
-        empty.className = "calendar-cell empty";
-        grid.appendChild(empty);
-      }
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateKey = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-        const entry = workoutLog[dateKey];
-
-        const cell = document.createElement("div");
-        cell.className = "calendar-cell";
-        cell.textContent = day;
-
-        if (dateKey === todayKey) {
-          cell.classList.add("today");
-        }
-        if (entry && entry.completed) {
-          cell.classList.add("completed");
-        }
-        grid.appendChild(cell);
-      }
-
-      calendarViewEl.appendChild(grid);
-    }
-
-    function markWorkoutCompleted(programText) {
-      if (!USER_ID) return;
-      const key = getTodayKey();
-      if (!workoutLog[key]) workoutLog[key] = {};
-      workoutLog[key].completed = true;
-      workoutLog[key].userId = USER_ID;
-      workoutLog[key].program = programText || "";
-      saveWorkoutLog();
-      buildCalendar();
-    }
-
-    // simple JWT decode for Google credential (no verification, dev-only)
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split("")
-            .map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-            .join("")
-        );
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        console.warn("JWT parse error", e);
-        return {};
-      }
-    }
-
-    async function upsertProfileToMaat() {
-      if (!USER_ID) return;
-      try {
-        await fetch(BRAIN_BASE_URL + "/users/profile/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: USER_ID,
-            age: USER_PROFILE.age,
-            weight_kg: Math.round(USER_PROFILE.weight_lbs * 0.453592),
-            goals: [USER_PROFILE.goals.primary],
-            injuries: USER_PROFILE.injuries,
-            notes: USER_PROFILE.goals.style
-          })
-        });
-      } catch (e) {
-        console.warn("Profile upsert failed", e);
-      }
-    }
-
-    function completeLogin(username, extra = {}) {
-      USER_ID = username || "guest";
-      USER_PROFILE.name = username || "Guest";
-
-      localStorage.setItem(
-        LS_USER_KEY,
-        JSON.stringify({ id: USER_ID, name: USER_PROFILE.name, picture: extra.picture || "" })
-      );
-
-      userInfoBar.style.display = "flex";
-      userPicEl.src =
-        extra.picture || "https://i.imgur.com/9z3s8Gh.png";
-      userNameEl.textContent = USER_PROFILE.name;
-
-      if (userIdInputEl) userIdInputEl.value = USER_ID;
-
-      updateProfileSummary();
-      showOverlay(false);
-      upsertProfileToMaat();
-      buildCalendar();
-    }
-
-    // --- Login button wiring ---
-    manualLoginBtn.onclick = () => {
-      const name = (manualUserIdEl.value || "").trim();
-      if (!name) {
-        alert("Type a username to enter.");
-        return;
-      }
-      completeLogin(name);
-    };
-
-    if (loginBtn) {
-      loginBtn.onclick = () => {
-        const name = (userIdInputEl.value || "").trim();
-        if (!name) {
-          alert("Type a username.");
-          return;
-        }
-        completeLogin(name);
-      };
-    }
-
+    // Google login button
     googleBtn.onclick = () => {
       if (!window.google || !google.accounts || !google.accounts.id) {
-        alert("Google Sign-In not ready yet. Try again in a moment.");
+        alert("Google login not ready yet. Try again in a moment.");
         return;
       }
+
       google.accounts.id.initialize({
-        client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
-        callback: (response) => {
-          if (!response.credential) return;
-          const decoded = parseJwt(response.credential);
-          const id = decoded.sub || decoded.email || "user";
-          const name = decoded.name || decoded.email || "User";
-          const picture = decoded.picture || "";
-          completeLogin(name, { picture });
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          const id_token = response.credential || null;
+          if (!id_token) return;
+          const verified = await verifyGoogleToken(id_token);
+          if (verified && verified.ok) {
+            const u = verified.user || {};
+            applyUserProfile(u);
+            showOverlay(false);
+          } else {
+            alert("Login failed. Please try again.");
+          }
         }
       });
-      google.accounts.id.prompt();
+      google.accounts.id.prompt(); // show Google popup
     };
 
     signOutBtn.onclick = () => {
-      USER_ID = null;
-      localStorage.removeItem(LS_USER_KEY);
-      userInfoBar.style.display = "none";
+      userInfo.style.display = "none";
+      profileSummaryEl.textContent = "Signed out. Use the Google button to enter again.";
       showOverlay(true);
-      updateProfileSummary();
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
+      }
+      USER_ID = "guest";
+      USER_PROFILE = null;
     };
 
-    // --- Rest of app DOM hooks ---
+    // --- Pose + coaching logic from here down (mostly same as last build) ---
+
+    // Static backup templates
+    const STATIC_WORKOUTS = {
+      nasm_total_body_a:
+        "Warm-up (5–10 min):\n" +
+        "- Cat–cow x10, Hip circles x10/side, Arm swings x20\n\n" +
+        "Strength (2–3 rounds):\n" +
+        "- Squat to press x12\n" +
+        "- Row (band or backpack) x12\n" +
+        "- Glute bridge x15\n\n" +
+        "Cool-down: light stretching for hips, hamstrings, chest.",
+      yoga_back_release:
+        "Yoga Back Release Flow (~25 min):\n" +
+        "- Child’s pose (3–5 breaths)\n" +
+        "- Cat–cow x10\n" +
+        "- Low lunge with side bend (5 breaths/side)\n" +
+        "- Sphinx pose (8–10 breaths)\n" +
+        "- Supine twist (5–8 breaths/side)\n" +
+        "- Legs up the wall (2–3 min)."
+    };
+
+    // --- DOM hooks ---
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
     const ctx = canvasEl.getContext("2d");
@@ -714,12 +593,14 @@
     const askBtn = document.getElementById("askBtn");
     const questionInput = document.getElementById("questionInput");
     const listenBtn = document.getElementById("listenBtn");
+    const testVoiceBtn = document.getElementById("testVoiceBtn");
     const logEl = document.getElementById("coach-log");
     const repCountEl = document.getElementById("repCount");
     const exerciseLabelEl = document.getElementById("exerciseLabel");
     const workoutSelectEl = document.getElementById("workoutSelect");
     const workoutPlanViewEl = document.getElementById("workoutPlanView");
     const ohsaSummaryViewEl = document.getElementById("ohsSummaryView");
+    const calendarViewEl = document.getElementById("calendarView");
 
     // --- State ---
     let detector;
@@ -757,61 +638,35 @@
 
     // New Exercise definition state
     let definingExercise = false;
-    let definedExercises = {};        // { name: { depthScoreAvg, torsoAngleAvg, samples } }
+    let definedExercises = {};
     let currentExerciseName = null;
     const EXERCISE_BASELINE_FRAMES = 80;
-    let baselineFrames = [];          // { depthScore, torsoAngle }
+    let baselineFrames = [];
 
-    // Overhead Squat Assessment state
+    // OHSA state
     let ohsaMode = false;
-    let ohsaPhase = null;             // "front" or "side"
-    let ohsaFrontSamples = [];        // analysis objects from front view
-    let ohsaSideSamples = [];         // analysis objects from side view
+    let ohsaPhase = null;
+    let ohsaFrontSamples = [];
+    let ohsaSideSamples = [];
     const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
     let lastOhsaSummary = null;
 
-    // AI-generated program text for today
-    let aiProgramToday = null;
+    // skeleton edges
+    const SKELETON_EDGES = [
+      [5, 7], [7, 9],
+      [6, 8], [8, 10],
+      [5, 6],
+      [5, 11], [6, 12],
+      [11, 12],
+      [11, 13], [13, 15],
+      [12, 14], [14, 16]
+    ];
 
-    // Default exercise ID for telemetry
     const EXERCISE_ID = "bodyweight_squat";
-
-    // Simple set / rep targets
     const TARGET_REPS = 10;
     const TARGET_SETS = 3;
 
-    // Static workout templates
-    const STATIC_WORKOUTS = {
-      nasm_total_body_a:
-        "Warm-up (5–10 min):\n" +
-        "- Cat–cow x10, Hip circles x10/side, Arm swings x20\n\n" +
-        "Strength (2–3 rounds):\n" +
-        "- Squat to press x12\n" +
-        "- Row (band or backpack) x12\n" +
-        "- Glute bridge x15\n\n" +
-        "Cool-down: light stretching for hips, hamstrings, chest.",
-      yoga_back_release:
-        "Yoga Back Release Flow (~25 min):\n" +
-        "- Child’s pose (3–5 breaths)\n" +
-        "- Cat–cow x10\n" +
-        "- Low lunge with side bend (5 breaths/side)\n" +
-        "- Sphinx pose (8–10 breaths)\n" +
-        "- Supine twist (5–8 breaths/side)\n" +
-        "- Legs up the wall (2–3 min)."
-    };
-
-    // skeleton edges for MoveNet keypoints
-    const SKELETON_EDGES = [
-      [5, 7], [7, 9],
-      [6, 8], [8,10],
-      [5, 6],
-      [5,11], [6,12],
-      [11,12],
-      [11,13],[13,15],
-      [12,14],[14,16]
-    ];
-
-    // --- Logging + speech helpers ---
+    // --- Helpers ---
     function addLog(kind, text) {
       const div = document.createElement("div");
       div.className = "log-line " + kind;
@@ -827,11 +682,16 @@
     }
 
     function speak(text, source = "system") {
-      if (voiceMuted || !("speechSynthesis" in window)) return;
+      // Extra guard for phones: require explicit user gesture first.
+      if (voiceMuted) return;
+      if (!("speechSynthesis" in window)) {
+        console.warn("speechSynthesis not supported here");
+        return;
+      }
+
       if (speechLock && source === "rep") return;
 
       stopAllSpeech();
-
       const u = new SpeechSynthesisUtterance(text);
       u.rate = 1.0;
       u.pitch = 1.0;
@@ -851,7 +711,6 @@
       window.speechSynthesis.speak(u);
     }
 
-    // --- Pose helpers + analysis (same as before) ---
     function getKeypoint(pose, name) {
       if (!pose || !pose.keypoints) return null;
       return pose.keypoints.find(k => k.name === name || k.part === name) || null;
@@ -877,7 +736,7 @@
       const hipWidth = Math.abs(rightHip.x - leftHip.x);
       const kneeWidth = Math.abs(rightKnee.x - leftKnee.x);
       if (!hipWidth) return 0;
-      return (hipWidth - kneeWidth) / hipWidth;
+      return (hipWidth - kneeWidth) / hipWidth; // knees closer => positive
     }
 
     function analyzeSquatForm(pose) {
@@ -924,7 +783,7 @@
       return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
     }
 
-    // --- Node helpers (same endpoints you already have) ---
+    // --- Node helpers ---
     async function sendToNode(payload) {
       try {
         await fetch(NODE_COMMAND_URL, {
@@ -937,6 +796,18 @@
       }
     }
 
+    function sendProfileToNode() {
+      if (!USER_PROFILE) return;
+      const body = {
+        domain: "fitness",
+        command: "fitness.saveProfile",
+        userId: USER_ID,
+        payload: { profile: USER_PROFILE, ts: Date.now() }
+      };
+      sendToNode(body);
+      addLog("system", "Profile sent to Ma’at 2.0 backend.");
+    }
+
     function sendStartSessionToNode() {
       const body = {
         domain: "fitness",
@@ -944,7 +815,7 @@
         userId: USER_ID,
         payload: {
           sessionId,
-          programId: null,
+          programId: currentProgram ? currentProgram.id || null : null,
           exerciseId: EXERCISE_ID,
           ts: Date.now()
         }
@@ -994,10 +865,7 @@
         domain: "fitness",
         command: "fitness.ohsaResult",
         userId: USER_ID,
-        payload: {
-          summary,
-          ts: Date.now()
-        }
+        payload: { summary, ts: Date.now() }
       };
       sendToNode(body);
     }
@@ -1088,9 +956,7 @@
         const data = await res.json();
         const answer = data.answer || data.response || "No response.";
         addLog("coach", "Ma’at 2.0: " + answer);
-        if (options.speakAnswer) {
-          speak(answer, "llm");
-        }
+        if (options.speakAnswer) speak(answer, "llm");
         brainStatusEl.textContent = "Ma’at 2.0 responded.";
         return answer;
       } catch (e) {
@@ -1101,120 +967,133 @@
       }
     }
 
-    // --- Program from OHSA ---
+    // --- Calendar builder from structured program ---
+    function buildCalendarFromProgram(program) {
+      if (!calendarViewEl) return;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      // Flatten program days into a sequence of workout sessions
+      const sessions = [];
+      if (program && Array.isArray(program.plan)) {
+        for (const wk of program.plan) {
+          for (const d of (wk.days || [])) {
+            sessions.push({
+              label: d.label || `Week ${wk.week} Day ${d.day_index}`,
+              focus: d.focus || "",
+              week: wk.week,
+              dayIndex: d.day_index
+            });
+          }
+        }
+      }
+
+      // Map dates -> session, starting at today
+      const workoutByDate = {};
+      let cursor = new Date(today);
+      for (let i = 0; i < sessions.length; i++) {
+        const key = cursor.toISOString().slice(0,10);
+        workoutByDate[key] = sessions[i];
+        cursor.setDate(cursor.getDate() + 1); // simple: every day is workout in sequence
+      }
+
+      // Build calendar for current month (today + offset)
+      const monthDate = new Date(today);
+      monthDate.setMonth(monthDate.getMonth() + calendarMonthOffset);
+      monthDate.setDate(1);
+
+      const year = monthDate.getFullYear();
+      const month = monthDate.getMonth(); // 0–11
+
+      const firstDay = new Date(year, month, 1);
+      const startWeekday = firstDay.getDay(); // 0=Sun
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const dayNames = ["S","M","T","W","T","F","S"];
+
+      let html = "";
+      html += `<div class="cal-header"><span>${monthNames[month]} ${year}</span></div>`;
+      html += `<div class="cal-grid">`;
+      for (const n of dayNames) {
+        html += `<div class="cal-day-name">${n}</div>`;
+      }
+
+      // blank cells
+      for (let i = 0; i < startWeekday; i++) {
+        html += `<div class="cal-cell"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const key = d.toISOString().slice(0,10);
+        let cls = "cal-cell";
+        const isToday = d.getTime() === today.getTime();
+        if (isToday) cls += " today";
+        if (workoutByDate[key]) cls += " workout";
+
+        html += `<div class="${cls}" title="${workoutByDate[key] ? workoutByDate[key].label : ""}">${day}</div>`;
+      }
+
+      html += `</div>`;
+      calendarViewEl.innerHTML = html;
+    }
+
+    // --- Generate program from OHSA (structured) ---
     async function generateProgramFromOhsa(summary) {
-      if (!summary) return;
-      const question =
-        "You are Ma’at 2.0, my NASM-informed Pan-African virtual coach. " +
-        "Using this Overhead Squat Assessment result and my profile, " +
-        "design a 3-month plan and show ONLY today’s workout from that plan.\n\n" +
-        "Constraints:\n" +
-        "- Goal: gain 20 lb of muscle in 3 months.\n" +
-        "- Workouts: 4 days per week.\n" +
-        "- Home workouts only.\n" +
-        "- Heavy on yoga and corrective exercise for lumbar herniated discs.\n" +
-        "- Use your NASM Movement Basics, Overhead Squat Assessment patterns, gymnastics fundamentals, and yoga CSV knowledge.\n\n" +
-        "Overhead Squat Assessment (JSON):\n" +
-        JSON.stringify(summary, null, 2) + "\n\n" +
-        "My profile (JSON):\n" +
-        JSON.stringify(USER_PROFILE, null, 2) + "\n\n" +
-        "Return a clear, numbered breakdown for TODAY ONLY.";
-
-      addLog("system", "Sending OHSA + profile to Ma’at 2.0 to generate today’s workout…");
-
-      const answer = await askCoach(question, { speakAnswer: false });
-      if (!answer) return;
-
-      aiProgramToday = answer;
-      workoutPlanViewEl.textContent = aiProgramToday;
-      workoutSelectEl.value = "ai_today";
-      addLog("system", "Ma’at 2.0 created today’s program from your assessment.");
-    }
-
-    // --- New Exercise Definition Mode ---
-    function startDefineExercise() {
-      if (!detector) {
-        alert("Connect camera first.");
+      if (!USER_PROFILE) {
+        addLog("system", "Sign in first so Ma’at 2.0 can attach the program to your profile.");
         return;
       }
-      if (running || ohsaMode) {
-        alert("Stop workout / assessment before defining a new exercise.");
-        return;
+      try {
+        const res = await fetch(PROGRAM_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: USER_ID,
+            goal: USER_PROFILE.goals.primary,
+            weeks: 12,
+            days_per_week: USER_PROFILE.goals.frequency_days_per_week,
+            home_only: true,
+            yoga_heavy: true,
+            assessment_summary: JSON.stringify(summary),
+            extra_context: "Respect lumbar herniated discs; use yoga and corrective exercise."
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error("Program generation failed");
+        currentProgram = data.program;
+        addLog("system", "Ma’at 2.0 built a 12-week plan from your OHSA.");
+
+        // Render "today" as first day of week 1, day 1
+        if (currentProgram && Array.isArray(currentProgram.plan) && currentProgram.plan.length) {
+          const firstWeek = currentProgram.plan[0];
+          const firstDay = (firstWeek.days && firstWeek.days[0]) || null;
+          if (firstDay) {
+            let text = `${currentProgram.title || "Today’s Session"}\n\n`;
+            text += `Week ${firstWeek.week} – ${firstDay.label || "Day 1"}\n`;
+            text += `Focus: ${firstDay.focus || "Session"}\n\n`;
+            for (const block of (firstDay.blocks || [])) {
+              text += block.type.toUpperCase() + ":\n";
+              (block.items || []).forEach(it => { text += "• " + it + "\n"; });
+              text += "\n";
+            }
+            aiProgramTodayText = text.trim();
+            workoutPlanViewEl.textContent = aiProgramTodayText;
+            workoutSelectEl.value = "ai_today";
+          }
+        }
+
+        // Build calendar from structured program
+        buildCalendarFromProgram(currentProgram);
+
+      } catch (e) {
+        console.error("Program error", e);
+        addLog("system", "Program error: " + e.message);
       }
-
-      const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
-      if (!name) return;
-
-      definingExercise = true;
-      currentExerciseName = name;
-      baselineFrames = [];
-      addLog("system", `Defining new exercise: ${name}. Give me several GOOD reps.`);
-      speak(
-        `Okay. Let's define ${name}. Give me your best form for several reps so I can learn this move.`,
-        "rep"
-      );
     }
 
-    function finishDefineExercise() {
-      if (!definingExercise || baselineFrames.length === 0 || !currentExerciseName) return;
-
-      const depthValues = baselineFrames.map(f => f.depthScore);
-      const torsoValues = baselineFrames.map(f => f.torsoAngle);
-      const avgDepth = depthValues.reduce((a, b) => a + b, 0) / depthValues.length;
-      const avgTorso = torsoValues.reduce((a, b) => a + b, 0) / torsoValues.length;
-
-      definedExercises[currentExerciseName] = {
-        name: currentExerciseName,
-        depthScoreAvg: avgDepth,
-        torsoAngleAvg: avgTorso,
-        samples: baselineFrames.length,
-        createdAt: Date.now()
-      };
-
-      addLog(
-        "system",
-        `Exercise "${currentExerciseName}" learned. Depth avg: ${avgDepth.toFixed(
-          2
-        )}, torso avg: ${avgTorso.toFixed(1)} (samples: ${baselineFrames.length}).`
-      );
-      speak(
-        `Got it. I saved your baseline for ${currentExerciseName}. We can use this to judge form later.`,
-        "rep"
-      );
-
-      definingExercise = false;
-      currentExerciseName = null;
-      baselineFrames = [];
-    }
-
-    // --- OHSA helpers ---
-    function startOhsa() {
-      if (!detector) {
-        alert("Connect camera first.");
-        return;
-      }
-      if (running || definingExercise) {
-        alert("Stop the workout / exercise definition before running OHSA.");
-        return;
-      }
-
-      ohsaMode = true;
-      ohsaPhase = "front";
-      ohsaFrontSamples = [];
-      ohsaSideSamples = [];
-      lastOhsaSummary = null;
-
-      ohsaSummaryViewEl.textContent =
-        "Running OHSA… first: face the camera and give me several good overhead squats.";
-      addLog("system", "OHSA started: front view first.");
-      speak(
-        "We are starting your overhead squat assessment. Face the camera, raise your arms overhead, and give me three to five slow squats with your best form.",
-        "rep"
-      );
-
-      runPoseLoop();
-    }
-
+    // --- OHSA summarization helpers ---
     function summarizeArray(arr, key) {
       if (!arr.length) return 0;
       const vals = arr.map(a => a[key]).filter(v => typeof v === "number");
@@ -1230,7 +1109,6 @@
       const sideTorsoAngle   = summarizeArray(ohsaSideSamples, "torsoAngle");
 
       const findings = [];
-
       if (frontKneeValgus > 0.15) {
         findings.push("Knees tend to collapse inward (knee valgus) on squat.");
       }
@@ -1281,6 +1159,87 @@
       generateProgramFromOhsa(summary);
     }
 
+    function startOhsa() {
+      if (!detector) {
+        alert("Connect camera first.");
+        return;
+      }
+      if (running || definingExercise) {
+        alert("Stop the workout / exercise definition before running OHSA.");
+        return;
+      }
+
+      ohsaMode = true;
+      ohsaPhase = "front";
+      ohsaFrontSamples = [];
+      ohsaSideSamples = [];
+      lastOhsaSummary = null;
+
+      ohsaSummaryViewEl.textContent = "Running OHSA… first: face the camera and give me several good overhead squats.";
+      addLog("system", "OHSA started: front view first.");
+      speak(
+        "We are starting your overhead squat assessment. Face the camera, raise your arms overhead, and give me three to five slow squats with your best form.",
+        "rep"
+      );
+
+      runPoseLoop();
+    }
+
+    // --- New Exercise learning (same as before, trimmed a bit) ---
+    function startDefineExercise() {
+      if (!detector) {
+        alert("Connect camera first.");
+        return;
+      }
+      if (running || ohsaMode) {
+        alert("Stop workout / assessment before defining a new exercise.");
+        return;
+      }
+      const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
+      if (!name) return;
+
+      definingExercise = true;
+      currentExerciseName = name;
+      baselineFrames = [];
+      addLog("system", `Defining new exercise: ${name}. Give me several GOOD reps.`);
+      speak(
+        `Okay. Let's define ${name}. Give me your best form for several reps so I can learn this move.`,
+        "rep"
+      );
+    }
+
+    function finishDefineExercise() {
+      if (!definingExercise || baselineFrames.length === 0 || !currentExerciseName) return;
+
+      const depthValues = baselineFrames.map(f => f.depthScore);
+      const torsoValues = baselineFrames.map(f => f.torsoAngle);
+      const avgDepth = depthValues.reduce((a,b)=>a+b,0) / depthValues.length;
+      const avgTorso = torsoValues.reduce((a,b)=>a+b,0) / torsoValues.length;
+
+      definedExercises[currentExerciseName] = {
+        name: currentExerciseName,
+        depthScoreAvg: avgDepth,
+        torsoAngleAvg: avgTorso,
+        samples: baselineFrames.length,
+        createdAt: Date.now()
+      };
+
+      addLog(
+        "system",
+        `Exercise "${currentExerciseName}" learned. Depth avg: ${avgDepth.toFixed(
+          2
+        )}, torso avg: ${avgTorso.toFixed(1)} (samples: ${baselineFrames.length}).`
+      );
+      speak(
+        `Got it. I saved your baseline for ${currentExerciseName}. We can use this to judge form later.`,
+        "rep"
+      );
+
+      definingExercise = false;
+      currentExerciseName = null;
+      baselineFrames = [];
+    }
+
     // --- Pose loop ---
     async function runPoseLoop() {
       if (!running && !definingExercise && !ohsaMode) return;
@@ -1290,13 +1249,14 @@
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
       const pose = poses.length ? poses[0] : null;
-      const analysis = analyzeSquatForm(pose);
+      let analysis = analyzeSquatForm(pose);
 
       lastDepthScore = analysis.depthScore;
       lastGoodForm = analysis.goodForm;
 
       const now = performance.now();
 
+      // 1) step-back guidance
       if (!analysis.fullBody) {
         poseStatusEl.textContent = "No full body in view.";
         if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
@@ -1317,7 +1277,7 @@
           : `Form needs adjustment. Score: ${analysis.depthScore.toFixed(2)}`;
       }
 
-      // draw skeleton
+      // 2) draw skeleton
       if (pose && pose.keypoints) {
         const color = analysis.goodForm ? "#22c55e" : "#ef4444";
         ctx.lineWidth = 3;
@@ -1342,13 +1302,12 @@
         }
       }
 
-      // exercise definition
+      // 3) new exercise capture
       if (definingExercise && analysis.fullBody && analysis.goodForm) {
         baselineFrames.push({
           depthScore: analysis.depthScore,
           torsoAngle: analysis.torsoAngle
         });
-
         if (baselineFrames.length === 1) {
           addLog("system", "Recording exercise baseline… keep moving with good form.");
         }
@@ -1357,7 +1316,7 @@
         }
       }
 
-      // OHSA frame capture
+      // 4) OHSA sampling
       if (ohsaMode && analysis.fullBody) {
         const depth = analysis.depthScore;
         if (ohsaPhase === "front") {
@@ -1384,7 +1343,7 @@
         }
       }
 
-      // Workout rep counting
+      // 5) rep counting
       if (running) {
         const depth = analysis.depthScore;
         const DOWN_THRESHOLD = 0.6;
@@ -1433,7 +1392,6 @@
                   speak("Workout complete. Incredible focus today.", "rep");
                 }
                 sendEndSessionToNode();
-                markWorkoutCompleted(aiProgramToday || workoutPlanViewEl.textContent);
                 cancelAnimationFrame(animId);
                 return;
               }
@@ -1445,7 +1403,7 @@
       animId = requestAnimationFrame(runPoseLoop);
     }
 
-    // --- Workout start/stop ---
+    // --- Workout toggle ---
     async function startWorkout() {
       if (!detector) return;
 
@@ -1490,7 +1448,7 @@
       }
     }
 
-    // --- STT with wake words “Mufasa / Coach” ---
+    // --- STT (wake words) ---
     function toggleListening() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
@@ -1572,8 +1530,8 @@
         workoutPlanViewEl.textContent = "Your workout plan will appear here.";
         return;
       }
-      if (val === "ai_today" && aiProgramToday) {
-        workoutPlanViewEl.textContent = aiProgramToday;
+      if (val === "ai_today" && aiProgramTodayText) {
+        workoutPlanViewEl.textContent = aiProgramTodayText;
       } else if (STATIC_WORKOUTS[val]) {
         workoutPlanViewEl.textContent = STATIC_WORKOUTS[val];
       } else {
@@ -1594,6 +1552,10 @@
     };
     listenBtn.onclick = toggleListening;
     workoutSelectEl.onchange = handleWorkoutSelectChange;
+    testVoiceBtn.onclick = () => {
+      addLog("system", "Testing voice output.");
+      speak("This is Ma’at 2 point oh. If you can hear me, your phone audio is working.", "system");
+    };
 
     questionInput.addEventListener("keydown", e => {
       if (e.key === "Enter") askCoach(questionInput.value.trim());
@@ -1601,29 +1563,9 @@
 
     // --- On load ---
     window.addEventListener("load", () => {
-      loadWorkoutLog();
-
-      // restore login if stored
-      try {
-        const raw = localStorage.getItem(LS_USER_KEY);
-        if (raw) {
-          const saved = JSON.parse(raw);
-          const name = saved.name || saved.id || "Guest";
-          const picture = saved.picture || "";
-          completeLogin(name, { picture });
-        } else {
-          showOverlay(true);
-          updateProfileSummary();
-        }
-      } catch {
-        showOverlay(true);
-        updateProfileSummary();
-      }
-
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
-      handleWorkoutSelectChange();
-      buildCalendar();
+      buildCalendarFromProgram(null); // empty calendar with just today highlighted
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
     });
