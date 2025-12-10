@@ -1,4 +1,4 @@
-// src/server.js
+// src/server.js 
 // Mufasa Fitness Node – command router for the fitness domain
 
 "use strict";
