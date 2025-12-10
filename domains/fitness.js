@@ -1,7 +1,9 @@
 // domains/fitness.js
-// Mufasa + Ma’at 2.0 Fitness domain
+// Mufasa + Ma’at 2.0 Fitness domain (Node side glue)
 
 "use strict";
+
+const fetch = require("node-fetch");
 
 // URL of your Ma’at 2.0 / Python brain (FastAPI + OpenAI)
 const BRAIN_BASE_URL =
@@ -47,8 +49,13 @@ async function handleFitnessCommand(context) {
     case "fitness.ohsaResult":
       return await handleOhsaResult(userId, payload, app);
 
+    // Voice / chat driven program generation for **yourself**
     case "fitness.generateProgram":
       return await handleGenerateProgram(userId, payload, app);
+
+    // Coach says: “create a program for username X”
+    case "fitness.generateProgramForUser":
+      return await handleGenerateProgramForUser(userId, payload, app);
 
     case "fitness.listPrograms":
       return await handleListPrograms(userId, payload, app);
@@ -91,8 +98,14 @@ async function handleStartSession(userId, payload, app) {
 
 async function handleRepUpdate(userId, payload, app) {
   const broadcast = app.locals.broadcast;
-  const { sessionId, exerciseId, repsThisSet, totalReps, depthScore, goodForm } =
-    payload || {};
+  const {
+    sessionId,
+    exerciseId,
+    repsThisSet,
+    totalReps,
+    depthScore,
+    goodForm,
+  } = payload || {};
 
   console.log("Rep update:", {
     userId,
@@ -326,7 +339,7 @@ async function handleOhsaResult(userId, payload, app) {
 
   if (autoProgram) {
     try {
-      const prog = await generateProgramForUser(userId, {
+      const prog = await generateProgramForUserInternal(userId, {
         goal:
           goal ||
           "Gain 20 lb of muscle in ~3 months with safe yoga-heavy training.",
@@ -374,7 +387,7 @@ async function handleOhsaResult(userId, payload, app) {
 // Program generation / listing / fetch
 // ─────────────────────────────────────────────
 
-async function generateProgramForUser(
+async function generateProgramForUserInternal(
   userId,
   {
     goal,
@@ -386,7 +399,7 @@ async function generateProgramForUser(
     extraContext = "",
   }
 ) {
-  if (!userId) throw new Error("generateProgramForUser requires userId");
+  if (!userId) throw new Error("generateProgramForUserInternal requires userId");
 
   const body = {
     user_id: userId,
@@ -421,10 +434,11 @@ async function generateProgramForUser(
 }
 
 /**
- * Voice / command-driven program generation.
- * E.g. "create an 8-week yoga program around the eight limbs"
+ * Voice / command-driven program generation for YOURSELF.
+ * E.g. Rashad says: “Mufasa, create an 8 week yoga program…”
  */
 async function handleGenerateProgram(userId, payload, app) {
+  if (!userId) throw new Error("fitness.generateProgram requires userId");
   const broadcast = app.locals.broadcast;
 
   const {
@@ -437,7 +451,7 @@ async function handleGenerateProgram(userId, payload, app) {
     extraContext,
   } = payload || {};
 
-  const prog = await generateProgramForUser(userId, {
+  const prog = await generateProgramForUserInternal(userId, {
     goal:
       goal ||
       "Eight-week program focused on the eight limbs of yoga plus gentle strength.",
@@ -468,6 +482,66 @@ async function handleGenerateProgram(userId, payload, app) {
 
   return {
     ok: true,
+    programId: prog.program_id,
+    program: prog.program,
+  };
+}
+
+/**
+ * Coach-driven program for ANOTHER username.
+ * payload.targetUserId = "their_username"
+ */
+async function handleGenerateProgramForUser(requestingUserId, payload, app) {
+  const broadcast = app.locals.broadcast;
+
+  const targetUserId = payload?.targetUserId;
+  if (!targetUserId) {
+    throw new Error("fitness.generateProgramForUser requires payload.targetUserId");
+  }
+
+  const {
+    goal,
+    weeks,
+    daysPerWeek,
+    homeOnly,
+    yogaHeavy,
+    assessmentSummary,
+    extraContext,
+  } = payload || {};
+
+  const prog = await generateProgramForUserInternal(targetUserId, {
+    goal:
+      goal ||
+      `Program created by coach ${requestingUserId || "coach"} for user ${targetUserId}.`,
+    weeks: weeks || 8,
+    daysPerWeek: daysPerWeek || 3,
+    homeOnly: homeOnly !== undefined ? homeOnly : true,
+    yogaHeavy: yogaHeavy !== undefined ? yogaHeavy : true,
+    assessmentSummary: assessmentSummary || null,
+    extraContext:
+      extraContext ||
+      "Coach requested this program via Mufasa voice/command inside the virtual gym.",
+  });
+
+  if (broadcast) {
+    broadcast({
+      event: "fitness.programGenerated",
+      userId: targetUserId,
+      createdBy: requestingUserId || null,
+      from: "coach_command",
+      programId: prog.program_id,
+      programMeta: {
+        title: prog.program?.title,
+        goal: prog.program?.goal,
+        weeks: prog.program?.weeks,
+        days_per_week: prog.program?.days_per_week,
+      },
+    });
+  }
+
+  return {
+    ok: true,
+    targetUserId,
     programId: prog.program_id,
     program: prog.program,
   };
