@@ -587,3 +587,4 @@ async function handleGetProgram(userId, payload, app) {
 module.exports = {
   handleFitnessCommand,
 };
+
