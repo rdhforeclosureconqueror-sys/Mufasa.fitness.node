@@ -465,6 +465,9 @@
     </div>
   </div>
 
+  <!-- Hidden audio player for OpenVoice -->
+  <audio id="ttsAudio" style="display:none"></audio>
+
   <script>
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
@@ -475,6 +478,12 @@
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
+
+    // 🔊 OpenVoice TTS endpoint (Flask app's /speak)
+    // CHANGE THIS to your OpenVoice server URL.
+    const OPENVOICE_TTS_URL = "https://YOUR-OPENVOICE-SERVER.onrender.com/speak"; // <-- CHANGE ME
+
+    const ttsAudioEl = document.getElementById("ttsAudio");
 
     // ---- Login / user state ----
     const overlay = document.getElementById("loginOverlay");
@@ -601,7 +610,6 @@
       if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
 
       if (!calendarMeta) {
-        // default 12 week / 4 day schedule starting today
         const today = new Date();
         today.setHours(0,0,0,0);
         calendarMeta = {
@@ -804,7 +812,7 @@
     let ohsaPhase = null;             // "front" or "side"
     let ohsaFrontSamples = [];        // analysis objects from front view
     let ohsaSideSamples = [];         // analysis objects from side view
-    const OHSA_TARGET_SAMPLES_PER_VIEW = 40; // ~several reps worth of frames
+    const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
     let lastOhsaSummary = null;
 
     // AI-generated program
@@ -819,13 +827,13 @@
 
     // skeleton edges for MoveNet keypoints (indices 0–16)
     const SKELETON_EDGES = [
-      [5, 7], [7, 9],        // left arm
-      [6, 8], [8, 10],       // right arm
-      [5, 6],                // shoulders
-      [5, 11], [6, 12],      // torso
-      [11, 12],              // hips
-      [11, 13], [13, 15],    // left leg
-      [12, 14], [14, 16]     // right leg
+      [5, 7], [7, 9],
+      [6, 8], [8, 10],
+      [5, 6],
+      [5, 11], [6, 12],
+      [11, 12],
+      [11, 13], [13, 15],
+      [12, 14], [14, 16]
     ];
 
     function addLog(kind, text) {
@@ -840,32 +848,83 @@
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
+      if (ttsAudioEl) {
+        try { ttsAudioEl.pause(); } catch {}
+      }
     }
 
+    // 🔊 OpenVoice + browser TTS hybrid
     function speak(text, source = "system") {
-      if (voiceMuted || !("speechSynthesis" in window)) return;
+      if (voiceMuted || !text) return;
 
+      // Only block rep chatter while LLM is talking
       if (speechLock && source === "rep") return;
 
       stopAllSpeech();
 
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0;
-      u.pitch = 1.0;
+      (async () => {
+        let usedOpenVoice = false;
 
-      if (source === "llm") {
-        speechLock = true;
-        repFeedbackAllowed = false;
-      }
+        // try OpenVoice first if configured
+        if (OPENVOICE_TTS_URL && OPENVOICE_TTS_URL.startsWith("http")) {
+          try {
+            if (source === "llm") {
+              speechLock = true;
+              repFeedbackAllowed = false;
+            }
 
-      u.onend = () => {
-        if (source === "llm") {
-          speechLock = false;
-          repFeedbackAllowed = true;
+            const res = await fetch(OPENVOICE_TTS_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text })
+            });
+
+            if (!res.ok) throw new Error("OpenVoice HTTP " + res.status);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+
+            ttsAudioEl.src = url;
+            await ttsAudioEl.play();
+            usedOpenVoice = true;
+
+            ttsAudioEl.onended = () => {
+              URL.revokeObjectURL(url);
+              if (source === "llm") {
+                speechLock = false;
+                repFeedbackAllowed = true;
+              }
+            };
+          } catch (err) {
+            console.warn("OpenVoice failed, falling back to browser TTS:", err);
+            usedOpenVoice = false;
+            if (source === "llm") {
+              speechLock = false;
+              repFeedbackAllowed = true;
+            }
+          }
         }
-      };
 
-      window.speechSynthesis.speak(u);
+        // fallback: Web Speech API
+        if (!usedOpenVoice && "speechSynthesis" in window) {
+          const u = new SpeechSynthesisUtterance(text);
+          u.rate = 1.0;
+          u.pitch = 1.0;
+
+          if (source === "llm") {
+            speechLock = true;
+            repFeedbackAllowed = false;
+          }
+
+          u.onend = () => {
+            if (source === "llm") {
+              speechLock = false;
+              repFeedbackAllowed = true;
+            }
+          };
+
+          window.speechSynthesis.speak(u);
+        }
+      })();
     }
 
     function getKeypoint(pose, name) {
@@ -995,7 +1054,6 @@
       };
       sendToNode(body);
 
-      // mark today's workout as completed in calendar
       if (calendarMeta) {
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -1140,7 +1198,6 @@
     async function generateProgramFromOhsa(summary) {
       if (!summary) return;
 
-      // 1) Ask Ma’at (chat style) for today's description
       const question =
         "You are Ma’at 2.0, my NASM-informed Pan-African virtual coach. " +
         "Using this Overhead Squat Assessment result and my profile, " +
@@ -1166,7 +1223,6 @@
       workoutPlanViewEl.textContent = aiProgramToday;
       addLog("system", "Ma’at 2.0 created today’s program from your assessment.");
 
-      // 2) Ask program engine for structured calendar meta (weeks / days_per_week)
       try {
         const res = await fetch(PROGRAM_URL, {
           method: "POST",
@@ -1645,7 +1701,6 @@
       }
     }
 
-    // ---- Calendar builder ----
     function buildCalendarFromMeta() {
       if (!calendarMeta) {
         calendarViewEl.textContent = "No calendar yet. Run an assessment to generate a plan.";
@@ -1660,12 +1715,11 @@
       today.setHours(0,0,0,0);
       const todayKey = today.toISOString().slice(0,10);
 
-      // Build workout day set for next meta.weeks weeks
       const workoutDates = new Set();
       let d = new Date(startDate);
       for (let w = 0; w < meta.weeks; w++) {
         for (let day = 0; day < 7; day++) {
-          const dayIdxInWeek = day; // 0..6
+          const dayIdxInWeek = day;
           if (dayIdxInWeek < meta.daysPerWeek) {
             workoutDates.add(d.toISOString().slice(0,10));
           }
@@ -1679,7 +1733,7 @@
       const baseYear = today.getFullYear();
 
       const firstOfMonth = new Date(baseYear, baseMonth, 1);
-      const startWeekday = firstOfMonth.getDay(); // 0=Sun
+      const startWeekday = firstOfMonth.getDay();
       const daysInMonth = new Date(baseYear, baseMonth + 1, 0).getDate();
 
       const monthName = firstOfMonth.toLocaleString("default", { month: "long" });
