@@ -1,1403 +1,1890 @@
-<script>
-  console.log("🔥 Ma’at 2.0 coach script initialized");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mufasa Live Coach – Ma’at 2.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  // 🔁 NEW: unify SpeechRecognition for desktop + iOS
-  window.SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+  <!-- TensorFlow + Pose Detection (UMD builds) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  // ---- Backend endpoints ----
-  const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
-  const ASK_URL = BRAIN_BASE_URL + "/ask";
-  const PROGRAM_URL = BRAIN_BASE_URL + "/coach/program/generate";
+  <!-- Google Sign-In -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
-  const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
+  <!-- Favicon (to avoid 404) -->
+  <link rel="icon" href="data:,">
 
-  // 🔊 OpenVoice TTS endpoint (Flask app's /speak)
-  // CHANGE THIS to your OpenVoice server URL.
-  const OPENVOICE_TTS_URL = "https://YOUR-OPENVOICE-SERVER.onrender.com/speak"; // <-- CHANGE ME
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+    }
 
-  const ttsAudioEl = document.getElementById("ttsAudio");
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-  // 🔁 NEW: iPhone audio + mic helpers
-  let audioCtx;
-  let micStream = null;
+    header {
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f2937;
+      background: radial-gradient(circle at top left, #0f172a, #020617);
+    }
 
-  async function ensureAudioContextUnlocked() {
-    try {
-      if (!audioCtx) {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx) return; // old browsers
-        audioCtx = new Ctx();
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid #4b5563;
+      background: #020617;
+    }
+
+    .status-ok {
+      color: #22c55e;
+    }
+    .status-bad {
+      color: #f97316;
+    }
+
+    #userInfo {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    #userPic {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 1px solid #4b5563;
+    }
+
+    #signOutBtn {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: transparent;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
       }
-      if (audioCtx.state === "suspended") {
-        await audioCtx.resume();
+    }
+
+    .left-pane, .right-pane {
+      border-radius: 0.75rem;
+      border: 1px solid #111827;
+      background: radial-gradient(circle at top, #020617, #020617);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      max-height: 60vh;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: #020617;
+      border: 1px solid #1f2937;
+    }
+
+    #video, #overlay {
+      display: block;
+      width: 100%;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    button:hover:not(:disabled) {
+      background: #111827;
+    }
+
+    #coach-log {
+      flex: 1;
+      background: #020617;
+      border-radius: 0.5rem;
+      border: 1px solid #111827;
+      padding: 0.5rem;
+      font-size: 0.75rem;
+      overflow-y: auto;
+      max-height: 180px;
+    }
+
+    .log-line {
+      margin-bottom: 0.25rem;
+    }
+    .log-line.you {
+      color: #93c5fd;
+    }
+    .log-line.coach {
+      color: #bbf7d0;
+    }
+    .log-line.system {
+      color: #e5e7eb;
+      opacity: 0.8;
+    }
+
+    .metric-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+
+    .metric-pill {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      font-size: 0.75rem;
+    }
+
+    .right-pane-section {
+      border-radius: 0.6rem;
+      border: 1px solid #111827;
+      padding: 0.5rem 0.6rem;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .right-pane-section h2 {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    textarea, input, select {
+      border-radius: 0.5rem;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.8rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    #calendarView .cal-header {
+      text-align: center;
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.15rem;
+      font-size: 0.7rem;
+    }
+
+    .cal-day-label {
+      text-align: center;
+      opacity: 0.7;
+    }
+
+    .cal-cell {
+      border-radius: 0.3rem;
+      border: 1px solid #111827;
+      padding: 0.25rem;
+      min-height: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .cal-date {
+      font-size: 0.7rem;
+    }
+
+    .cal-empty {
+      border: none;
+    }
+
+    .cal-today {
+      border-color: #93c5fd;
+    }
+
+    .cal-workout {
+      background: rgba(59, 130, 246, 0.15);
+    }
+
+    .cal-done {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: #22c55e;
+    }
+
+    /* Login overlay */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 40;
+    }
+
+    #loginOverlay.hidden {
+      display: none;
+    }
+
+    .login-card {
+      background: #020617;
+      border-radius: 0.75rem;
+      border: 1px solid #1f2937;
+      padding: 1rem 1.25rem;
+      max-width: 320px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+
+    .login-card h2 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+
+    .login-row {
+      margin-top: 0.6rem;
+      display: flex;
+      gap: 0.4rem;
+      justify-content: stretch;
+    }
+
+    .login-row input {
+      flex: 1;
+    }
+
+    footer {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.7rem;
+      opacity: 0.6;
+      text-align: right;
+      border-top: 1px solid #111827;
+      background: #020617;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>
+      🦁 Mufasa Live Coach
+      <span class="chip">
+        <span id="brainChipText">Ma’at 2.0</span>
+      </span>
+    </h1>
+
+    <div class="chip" id="voiceSupportStatus">Checking voice support…</div>
+
+    <div id="userInfo">
+      <img id="userPic" src="https://i.imgur.com/9z3s8Gh.png" alt="User" />
+      <span id="userName">User</span>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT: Video, pose, log -->
+    <section class="left-pane">
+      <div class="status-row">
+        <div>
+          <span class="chip" id="poseStatus">Camera not connected.</span>
+        </div>
+        <div>
+          <span class="chip" id="brainStatus">Checking Ma’at 2.0…</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="connectBtn">📷 Connect Camera</button>
+        <button id="startBtn" disabled>🏋🏾 Start Workout</button>
+        <button id="ohsaBtn" disabled>📊 Run OHSA</button>
+        <button id="defineExerciseBtn" disabled>✨ Define Exercise</button>
+        <button id="muteBtn">🔊 Mute</button>
+        <button id="listenBtn">🎙️ Voice On</button>
+      </div>
+
+      <div class="video-wrapper">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-pill">
+          <strong id="exerciseLabel">Bodyweight Squat</strong>
+        </div>
+        <div class="metric-pill">
+          Reps this set: <span id="repCount">0</span>
+        </div>
+      </div>
+
+      <div id="coach-log"></div>
+    </section>
+
+    <!-- RIGHT: Workout plan, OHSA, calendar, Q&A -->
+    <section class="right-pane">
+      <div id="profileSummary" class="right-pane-section">
+        <h2>Profile</h2>
+        <div>Not signed in yet.</div>
+      </div>
+
+      <div class="right-pane-section">
+        <h2>Workout Plan</h2>
+        <label style="font-size:0.75rem; opacity:0.8;">
+          Choose plan:
+          <select id="workoutSelect">
+            <option value="">-- select --</option>
+            <option value="ai_today">AI – Today’s Plan</option>
+            <option value="nasm_total_body_a">NASM Total Body A</option>
+            <option value="yoga_back_release">Yoga – Back Release</option>
+          </select>
+        </label>
+        <pre id="workoutPlanView" style="white-space: pre-wrap; margin:0; font-size:0.75rem;">
+Your workout plan will appear here.
+        </pre>
+      </div>
+
+      <div class="right-pane-section">
+        <h2>Overhead Squat Assessment</h2>
+        <pre id="ohsSummaryView" style="white-space: pre-wrap; margin:0; font-size:0.75rem;">
+No assessment run yet.
+        </pre>
+      </div>
+
+      <div class="right-pane-section">
+        <h2>Training Calendar</h2>
+        <div id="calendarView" style="font-size:0.75rem;">
+          No calendar yet. Run an assessment to generate a plan.
+        </div>
+      </div>
+
+      <div class="right-pane-section">
+        <h2>Ask Ma’at 2.0</h2>
+        <textarea id="questionInput" placeholder="Ask about form, pain, or your program…"></textarea>
+        <div class="btn-row">
+          <button id="askBtn">🤖 Ask Ma’at</button>
+        </div>
+        <small style="opacity:0.7; font-size:0.7rem;">
+          Or say “Mufasa…” / “Coach…” with Voice On to talk hands-free.
+        </small>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Ma’at 2.0 · Pose-aware coaching · Pan-African wellness engine
+  </footer>
+
+  <!-- Hidden TTS audio element for OpenVoice -->
+  <audio id="ttsAudio"></audio>
+
+  <!-- Login Overlay -->
+  <div id="loginOverlay">
+    <div class="login-card">
+      <h2>Sign in to Ma’at 2.0</h2>
+      <p style="font-size:0.8rem; opacity:0.85;">
+        Use Google or enter a name to create your athlete profile.
+      </p>
+
+      <div class="btn-row" style="justify-content:center; margin-top:0.5rem;">
+        <button id="googleBtn">🔐 Sign in with Google</button>
+      </div>
+
+      <div style="margin:0.5rem 0; font-size:0.7rem; opacity:0.65;">
+        — or —
+      </div>
+
+      <div class="login-row">
+        <input id="manualName" placeholder="Enter your name" />
+        <button id="manualLoginBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Coach Script -->
+  <script>
+    console.log("🔥 Ma’at 2.0 coach script initialized");
+
+    // 🔁 NEW: unify SpeechRecognition for desktop + iOS
+    window.SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // ---- Backend endpoints ----
+    const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
+    const ASK_URL = BRAIN_BASE_URL + "/ask";
+    const PROGRAM_URL = BRAIN_BASE_URL + "/coach/program/generate";
+
+    const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+    const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
+
+    // 🔊 OpenVoice TTS endpoint (Flask app's /speak)
+    // When your OpenVoice server is ready, set this to "https://your-server.onrender.com/speak"
+    const OPENVOICE_TTS_URL = ""; // blank => skip OpenVoice, use browser TTS only
+
+    const ttsAudioEl = document.getElementById("ttsAudio");
+
+    // 🔁 NEW: iPhone audio + mic helpers
+    let audioCtx;
+    let micStream = null;
+
+    async function ensureAudioContextUnlocked() {
+      try {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return; // old browsers
+          audioCtx = new Ctx();
+        }
+        if (audioCtx.state === "suspended") {
+          await audioCtx.resume();
+        }
+      } catch (e) {
+        console.warn("AudioContext resume failed:", e);
       }
-    } catch (e) {
-      console.warn("AudioContext resume failed:", e);
     }
-  }
 
-  async function ensureMicAccess() {
-    if (micStream) return; // already granted
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error("Microphone not supported on this device.");
-    }
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log("🎙️ Mic permission granted");
-  }
-
-  // ---- Login / user state ----
-  const overlay = document.getElementById("loginOverlay");
-  const googleBtn = document.getElementById("googleBtn");
-  const manualNameInput = document.getElementById("manualName");
-  const manualLoginBtn = document.getElementById("manualLoginBtn");
-  const userInfoBar = document.getElementById("userInfo");
-  const userPicEl = document.getElementById("userPic");
-  const userNameEl = document.getElementById("userName");
-  const signOutBtn = document.getElementById("signOutBtn");
-  const profileSummaryEl = document.getElementById("profileSummary");
-
-  let USER_ID = "guest";
-  let USER_PROFILE = null;
-  let calendarMeta = null;   // {startDateISO, weeks, daysPerWeek, completedDates:Set<string>}
-
-  function showOverlay(show) {
-    if (show) {
-      overlay.classList.remove("hidden");
-    } else {
-      overlay.classList.add("hidden");
-    }
-  }
-
-  function persistUser() {
-    try {
-      localStorage.setItem("maatUserId", USER_ID);
-      localStorage.setItem("maatUserProfile", JSON.stringify(USER_PROFILE || {}));
-      if (calendarMeta) {
-        const metaJSON = {
-          startDateISO: calendarMeta.startDateISO,
-          weeks: calendarMeta.weeks,
-          daysPerWeek: calendarMeta.daysPerWeek,
-          completed: Array.from(calendarMeta.completedDates || [])
-        };
-        localStorage.setItem("maatCalendar_" + USER_ID, JSON.stringify(metaJSON));
+    async function ensureMicAccess() {
+      if (micStream) return; // already granted
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Microphone not supported on this device.");
       }
-    } catch (e) {
-      console.warn("localStorage error", e);
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("🎙️ Mic permission granted");
     }
-  }
 
-  function loadPersistedUser() {
-    try {
-      const id = localStorage.getItem("maatUserId");
-      const profileStr = localStorage.getItem("maatUserProfile");
-      if (id && profileStr) {
-        USER_ID = id;
-        USER_PROFILE = JSON.parse(profileStr);
-        const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
-        if (calStr) {
-          const meta = JSON.parse(calStr);
-          calendarMeta = {
-            startDateISO: meta.startDateISO,
-            weeks: meta.weeks,
-            daysPerWeek: meta.daysPerWeek,
-            completedDates: new Set(meta.completed || [])
+    // ---- Login / user state ----
+    const overlay = document.getElementById("loginOverlay");
+    const googleBtn = document.getElementById("googleBtn");
+    const manualNameInput = document.getElementById("manualName");
+    const manualLoginBtn = document.getElementById("manualLoginBtn");
+    const userInfoBar = document.getElementById("userInfo");
+    const userPicEl = document.getElementById("userPic");
+    const userNameEl = document.getElementById("userName");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const profileSummaryEl = document.getElementById("profileSummary");
+
+    let USER_ID = "guest";
+    let USER_PROFILE = null;
+    let calendarMeta = null;   // {startDateISO, weeks, daysPerWeek, completedDates:Set<string>}
+
+    function showOverlay(show) {
+      if (show) {
+        overlay.classList.remove("hidden");
+      } else {
+        overlay.classList.add("hidden");
+      }
+    }
+
+    function persistUser() {
+      try {
+        localStorage.setItem("maatUserId", USER_ID);
+        localStorage.setItem("maatUserProfile", JSON.stringify(USER_PROFILE || {}));
+        if (calendarMeta) {
+          const metaJSON = {
+            startDateISO: calendarMeta.startDateISO,
+            weeks: calendarMeta.weeks,
+            daysPerWeek: calendarMeta.daysPerWeek,
+            completed: Array.from(calendarMeta.completedDates || [])
           };
+          localStorage.setItem("maatCalendar_" + USER_ID, JSON.stringify(metaJSON));
         }
-        onLoginUI(USER_PROFILE);
-        showOverlay(false);
-        return true;
+      } catch (e) {
+        console.warn("localStorage error", e);
       }
-    } catch (e) {
-      console.warn("loadPersistedUser error", e);
     }
-    return false;
-  }
 
-  function defaultProfileForName(name) {
-    const lower = (name || "").toLowerCase();
-    if (lower === "rashad" || lower === "rashad harbor") {
-      return {
-        name: "Rashad",
-        age: 38,
-        weight_lbs: 150,
-        height: "5'5\"",
-        injuries: ["3 herniated discs (lumbar)"],
-        history: { chiropractic_months: 12, yoga_years: 2 },
-        goals: {
-          primary: "Gain 20 lb of muscle in ~3 months",
-          style: "Home workouts only + heavy yoga",
-          frequency_days_per_week: 4,
-          focus: "Muscle gain + back decompression / pain-free movement"
+    function loadPersistedUser() {
+      try {
+        const id = localStorage.getItem("maatUserId");
+        const profileStr = localStorage.getItem("maatUserProfile");
+        if (id && profileStr) {
+          USER_ID = id;
+          USER_PROFILE = JSON.parse(profileStr);
+          const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
+          if (calStr) {
+            const meta = JSON.parse(calStr);
+            calendarMeta = {
+              startDateISO: meta.startDateISO,
+              weeks: meta.weeks,
+              daysPerWeek: meta.daysPerWeek,
+              completedDates: new Set(meta.completed || [])
+            };
+          }
+          onLoginUI(USER_PROFILE);
+          showOverlay(false);
+          return true;
         }
-      };
-    }
-    return {
-      name: name || "Athlete",
-      age: null,
-      weight_lbs: null,
-      height: null,
-      injuries: [],
-      history: {},
-      goals: {
-        primary: "Build full-body strength and mobility",
-        style: "Home workouts + yoga focus",
-        frequency_days_per_week: 3,
-        focus: "Consistent training and recovery"
+      } catch (e) {
+        console.warn("loadPersistedUser error", e);
       }
-    };
-  }
-
-  function onLogin(profile) {
-    USER_ID = (profile.email || profile.name || "user").toLowerCase().replace(/\s+/g, "_");
-    USER_PROFILE = {
-      name: profile.name || profile.email || "Athlete",
-      email: profile.email || null,
-      picture: profile.picture || null,
-      age: profile.age || profile.ageYears || null,
-      weight_lbs: profile.weight_lbs || null,
-      height: profile.height || null,
-      injuries: profile.injuries || [],
-      history: profile.history || {},
-      goals: profile.goals || {
-        primary: "Build strength and mobility",
-        style: "Home workouts + yoga",
-        frequency_days_per_week: 3,
-        focus: "Consistent training"
-      }
-    };
-    if (!USER_PROFILE.injuries) USER_PROFILE.injuries = [];
-    if (!USER_PROFILE.history) USER_PROFILE.history = {};
-    if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
-
-    if (!calendarMeta) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      calendarMeta = {
-        startDateISO: today.toISOString().slice(0,10),
-        weeks: 12,
-        daysPerWeek: USER_PROFILE.goals.frequency_days_per_week || 4,
-        completedDates: new Set()
-      };
+      return false;
     }
 
-    onLoginUI(USER_PROFILE);
-    persistUser();
-    sendProfileToNode();
-    buildCalendarFromMeta();
-  }
-
-  function onLoginUI(profile) {
-    userInfoBar.style.display = "flex";
-    userPicEl.src = profile.picture || "https://i.imgur.com/9z3s8Gh.png";
-    userNameEl.textContent = profile.name || "User";
-
-    const inj = (profile.injuries && profile.injuries.length)
-      ? profile.injuries.join(", ")
-      : "None listed";
-    const goalText = profile.goals && profile.goals.primary
-      ? profile.goals.primary
-      : "Build strength and mobility";
-
-    profileSummaryEl.innerHTML =
-      `<strong>Signed in as ${profile.name || "User"}</strong><br/>` +
-      (profile.age ? `Age: ${profile.age}<br/>` : "") +
-      (profile.height ? `Height: ${profile.height}<br/>` : "") +
-      (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
-      `Goal: ${goalText}<br/>` +
-      `Injuries: ${inj}`;
-  }
-
-  manualLoginBtn.onclick = () => {
-    const name = manualNameInput.value.trim() || "Athlete";
-    const profile = defaultProfileForName(name);
-    onLogin(profile);
-    showOverlay(false);
-  };
-
-  function parseJwt(token) {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.warn("JWT parse error", e);
-      return {};
-    }
-  }
-
-  googleBtn.onclick = () => {
-    if (!window.google || !google.accounts || !google.accounts.id) {
-      alert("Google login not available on this device. Use username login instead.");
-      return;
-    }
-    google.accounts.id.initialize({
-      client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
-      callback: (response) => {
-        const payload = parseJwt(response.credential || "");
-        const profile = {
-          name: payload.name || payload.given_name || "Athlete",
-          email: payload.email,
-          picture: payload.picture
+    function defaultProfileForName(name) {
+      const lower = (name || "").toLowerCase();
+      if (lower === "rashad" || lower === "rashad harbor") {
+        return {
+          name: "Rashad",
+          age: 38,
+          weight_lbs: 150,
+          height: "5'5\"",
+          injuries: ["3 herniated discs (lumbar)"],
+          history: { chiropractic_months: 12, yoga_years: 2 },
+          goals: {
+            primary: "Gain 20 lb of muscle in ~3 months",
+            style: "Home workouts only + heavy yoga",
+            frequency_days_per_week: 4,
+            focus: "Muscle gain + back decompression / pain-free movement"
+          }
         };
-        onLogin(profile);
-        showOverlay(false);
       }
-    });
-    google.accounts.id.prompt();
-  };
-
-  signOutBtn.onclick = () => {
-    USER_ID = "guest";
-    USER_PROFILE = null;
-    calendarMeta = null;
-    userInfoBar.style.display = "none";
-    profileSummaryEl.textContent = "Not signed in yet.";
-    try {
-      localStorage.removeItem("maatUserId");
-      localStorage.removeItem("maatUserProfile");
-    } catch (_) {}
-    showOverlay(true);
-  };
-
-  // Try auto-login from localStorage on load
-  loadPersistedUser();
-
-  // ---- Voice capability status ----
-  const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
-  const hasSpeechSynth = "speechSynthesis" in window;
-  const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!hasSpeechSynth && !SRClass) {
-    voiceSupportStatusEl.textContent =
-      "This device does not fully support voice coaching. Text feedback only.";
-  } else if (!hasSpeechSynth) {
-    voiceSupportStatusEl.textContent =
-      "Speech output not supported on this device. You can still talk, Ma’at will reply in text.";
-  } else if (!SRClass) {
-    voiceSupportStatusEl.textContent =
-      "Listening (voice input) not supported in this browser. Use chat box or another browser.";
-  } else {
-    voiceSupportStatusEl.textContent = "Full voice coaching available on this device.";
-    voiceSupportStatusEl.classList.add("status-ok");
-  }
-
-  // ---- Static workout templates ----
-  const STATIC_WORKOUTS = {
-    nasm_total_body_a:
-      "Warm-up (5–10 min):\n" +
-      "- Cat–cow x10, Hip circles x10/side, Arm swings x20\n\n" +
-      "Strength (2–3 rounds):\n" +
-      "- Squat to press x12\n" +
-      "- Row (band or backpack) x12\n" +
-      "- Glute bridge x15\n\n" +
-      "Cool-down: light stretching for hips, hamstrings, chest.",
-    yoga_back_release:
-      "Yoga Back Release Flow (~25 min):\n" +
-      "- Child’s pose (3–5 breaths)\n" +
-      "- Cat–cow x10\n" +
-      "- Low lunge with side bend (5 breaths/side)\n" +
-      "- Sphinx pose (8–10 breaths)\n" +
-      "- Supine twist (5–8 breaths/side)\n" +
-      "- Legs up the wall (2–3 min)."
-  };
-
-  // ---- DOM hooks ----
-  const videoEl = document.getElementById("video");
-  const canvasEl = document.getElementById("overlay");
-  const ctx = canvasEl.getContext("2d");
-  const poseStatusEl = document.getElementById("poseStatus");
-  const brainStatusEl = document.getElementById("brainStatus");
-  const brainChipTxt = document.getElementById("brainChipText");
-  const connectBtn = document.getElementById("connectBtn");
-  const startBtn = document.getElementById("startBtn");
-  const ohsaBtn = document.getElementById("ohsaBtn");
-  const defineExerciseBtn = document.getElementById("defineExerciseBtn");
-  const muteBtn = document.getElementById("muteBtn");
-  const askBtn = document.getElementById("askBtn");
-  const questionInput = document.getElementById("questionInput");
-  const listenBtn = document.getElementById("listenBtn");
-  const logEl = document.getElementById("coach-log");
-  const repCountEl = document.getElementById("repCount");
-  const exerciseLabelEl = document.getElementById("exerciseLabel");
-  const workoutSelectEl = document.getElementById("workoutSelect");
-  const workoutPlanViewEl = document.getElementById("workoutPlanView");
-  const ohsaSummaryViewEl = document.getElementById("ohsSummaryView");
-  const calendarViewEl = document.getElementById("calendarView");
-
-  // ---- State ----
-  let detector;
-  let running = false;
-  let animId;
-
-  let voiceMuted = false;
-
-  // Speech / LLM orchestration
-  let speechLock = false;        // true while LLM answer is playing
-  let repFeedbackAllowed = true; // rep voice allowed when no LLM talking
-
-  // STT state
-  let listening = false;
-  let recognition;
-  let lastTranscript = "";
-
-  // Workout state
-  let sessionId = null;
-  let repCount = 0;      // this set
-  let totalReps = 0;     // across all sets
-  let currentSet = 1;
-  let repPhase = "up";   // "up" -> "down" -> "up"
-
-  let fullBodyAcquired = false;
-  let lastStepBackSpokenAt = 0;
-  let lastGoodRepSpokenAt = 0;
-
-  let lastNodeRepSentAt = 0;
-  let lastDepthScore = 0;   // for Ma’at
-  let lastGoodForm = false; // for Ma’at
-
-  const STEP_BACK_COOLDOWN = 4000;   // ms
-  const GOOD_REP_COOLDOWN  = 2500;   // ms
-
-  // New Exercise definition state
-  let definingExercise = false;
-  let definedExercises = {};        // { name: { depthScoreAvg, torsoAngleAvg, samples } }
-  let currentExerciseName = null;
-  const EXERCISE_BASELINE_FRAMES = 80;
-  let baselineFrames = [];          // { depthScore, torsoAngle }
-
-  // Overhead Squat Assessment state
-  let ohsaMode = false;
-  let ohsaPhase = null;             // "front" or "side"
-  let ohsaFrontSamples = [];        // analysis objects from front view
-  let ohsaSideSamples = [];         // analysis objects from side view
-  const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
-  let lastOhsaSummary = null;
-
-  // AI-generated program
-  let aiProgramToday = null;
-
-  // Default exercise ID for telemetry
-  const EXERCISE_ID = "bodyweight_squat";
-
-  // Workout plan (simple: 3 x 10 squats)
-  const TARGET_REPS = 10;
-  const TARGET_SETS = 3;
-
-  // skeleton edges for MoveNet keypoints (indices 0–16)
-  const SKELETON_EDGES = [
-    [5, 7], [7, 9],
-    [6, 8], [8, 10],
-    [5, 6],
-    [5, 11], [6, 12],
-    [11, 12],
-    [11, 13], [13, 15],
-    [12, 14], [14, 16]
-  ];
-
-  function addLog(kind, text) {
-    const div = document.createElement("div");
-    div.className = "log-line " + kind;
-    div.textContent = text;
-    logEl.appendChild(div);
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-
-  function stopAllSpeech() {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+      return {
+        name: name || "Athlete",
+        age: null,
+        weight_lbs: null,
+        height: null,
+        injuries: [],
+        history: {},
+        goals: {
+          primary: "Build full-body strength and mobility",
+          style: "Home workouts + yoga focus",
+          frequency_days_per_week: 3,
+          focus: "Consistent training and recovery"
+        }
+      };
     }
-    if (ttsAudioEl) {
-      try { ttsAudioEl.pause(); } catch {}
+
+    function onLogin(profile) {
+      USER_ID = (profile.email || profile.name || "user").toLowerCase().replace(/\s+/g, "_");
+      USER_PROFILE = {
+        name: profile.name || profile.email || "Athlete",
+        email: profile.email || null,
+        picture: profile.picture || null,
+        age: profile.age || profile.ageYears || null,
+        weight_lbs: profile.weight_lbs || null,
+        height: profile.height || null,
+        injuries: profile.injuries || [],
+        history: profile.history || {},
+        goals: profile.goals || {
+          primary: "Build strength and mobility",
+          style: "Home workouts + yoga",
+          frequency_days_per_week: 3,
+          focus: "Consistent training"
+        }
+      };
+      if (!USER_PROFILE.injuries) USER_PROFILE.injuries = [];
+      if (!USER_PROFILE.history) USER_PROFILE.history = {};
+      if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
+
+      if (!calendarMeta) {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        calendarMeta = {
+          startDateISO: today.toISOString().slice(0,10),
+          weeks: 12,
+          daysPerWeek: USER_PROFILE.goals.frequency_days_per_week || 4,
+          completedDates: new Set()
+        };
+      }
+
+      onLoginUI(USER_PROFILE);
+      persistUser();
+      sendProfileToNode();
+      buildCalendarFromMeta();
     }
-  }
 
-  // 🔊 OpenVoice + browser TTS hybrid
-  function speak(text, source = "system") {
-    if (voiceMuted || !text) return;
+    function onLoginUI(profile) {
+      userInfoBar.style.display = "flex";
+      userPicEl.src = profile.picture || "https://i.imgur.com/9z3s8Gh.png";
+      userNameEl.textContent = profile.name || "User";
 
-    // Only block rep chatter while LLM is talking
-    if (speechLock && source === "rep") return;
+      const inj = (profile.injuries && profile.injuries.length)
+        ? profile.injuries.join(", ")
+        : "None listed";
+      const goalText = profile.goals && profile.goals.primary
+        ? profile.goals.primary
+        : "Build strength and mobility";
 
-    stopAllSpeech();
+      profileSummaryEl.innerHTML =
+        `<h2>Profile</h2>` +
+        `<div style="font-size:0.8rem;">` +
+        `<strong>Signed in as ${profile.name || "User"}</strong><br/>` +
+        (profile.age ? `Age: ${profile.age}<br/>` : "") +
+        (profile.height ? `Height: ${profile.height}<br/>` : "") +
+        (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
+        `Goal: ${goalText}<br/>` +
+        `Injuries: ${inj}</div>`;
+    }
 
-    (async () => {
-      await ensureAudioContextUnlocked(); // 🔁 NEW: unlock audio on iOS
+    manualLoginBtn.onclick = () => {
+      const name = manualNameInput.value.trim() || "Athlete";
+      const profile = defaultProfileForName(name);
+      onLogin(profile);
+      showOverlay(false);
+    };
 
-      let usedOpenVoice = false;
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        console.warn("JWT parse error", e);
+        return {};
+      }
+    }
 
-      // try OpenVoice first if configured
-      if (OPENVOICE_TTS_URL && OPENVOICE_TTS_URL.startsWith("http")) {
-        try {
+    googleBtn.onclick = () => {
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        alert("Google login not available on this device. Use username login instead.");
+        return;
+      }
+      google.accounts.id.initialize({
+        client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
+        callback: (response) => {
+          const payload = parseJwt(response.credential || "");
+          const profile = {
+            name: payload.name || payload.given_name || "Athlete",
+            email: payload.email,
+            picture: payload.picture
+          };
+          onLogin(profile);
+          showOverlay(false);
+        }
+      });
+      google.accounts.id.prompt();
+    };
+
+    signOutBtn.onclick = () => {
+      USER_ID = "guest";
+      USER_PROFILE = null;
+      calendarMeta = null;
+      userInfoBar.style.display = "none";
+      profileSummaryEl.innerHTML = "<h2>Profile</h2><div>Not signed in yet.</div>";
+      try {
+        localStorage.removeItem("maatUserId");
+        localStorage.removeItem("maatUserProfile");
+      } catch (_) {}
+      showOverlay(true);
+    };
+
+    // Try auto-login from localStorage on load
+    loadPersistedUser();
+
+    // ---- Voice capability status ----
+    const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
+    const hasSpeechSynth = "speechSynthesis" in window;
+    const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!hasSpeechSynth && !SRClass) {
+      voiceSupportStatusEl.textContent =
+        "This device does not fully support voice coaching. Text feedback only.";
+    } else if (!hasSpeechSynth) {
+      voiceSupportStatusEl.textContent =
+        "Speech output not supported on this device. You can still talk, Ma’at will reply in text.";
+    } else if (!SRClass) {
+      voiceSupportStatusEl.textContent =
+        "Listening (voice input) not supported in this browser. Use chat box or another browser.";
+    } else {
+      voiceSupportStatusEl.textContent = "Full voice coaching available on this device.";
+      voiceSupportStatusEl.classList.add("status-ok");
+    }
+
+    // ---- Static workout templates ----
+    const STATIC_WORKOUTS = {
+      nasm_total_body_a:
+        "Warm-up (5–10 min):\n" +
+        "- Cat–cow x10, Hip circles x10/side, Arm swings x20\n\n" +
+        "Strength (2–3 rounds):\n" +
+        "- Squat to press x12\n" +
+        "- Row (band or backpack) x12\n" +
+        "- Glute bridge x15\n\n" +
+        "Cool-down: light stretching for hips, hamstrings, chest.",
+      yoga_back_release:
+        "Yoga Back Release Flow (~25 min):\n" +
+        "- Child’s pose (3–5 breaths)\n" +
+        "- Cat–cow x10\n" +
+        "- Low lunge with side bend (5 breaths/side)\n" +
+        "- Sphinx pose (8–10 breaths)\n" +
+        "- Supine twist (5–8 breaths/side)\n" +
+        "- Legs up the wall (2–3 min)."
+    };
+
+    // ---- DOM hooks ----
+    const videoEl = document.getElementById("video");
+    const canvasEl = document.getElementById("overlay");
+    const ctx = canvasEl.getContext("2d");
+    const poseStatusEl = document.getElementById("poseStatus");
+    const brainStatusEl = document.getElementById("brainStatus");
+    const brainChipTxt = document.getElementById("brainChipText");
+    const connectBtn = document.getElementById("connectBtn");
+    const startBtn = document.getElementById("startBtn");
+    const ohsaBtn = document.getElementById("ohsaBtn");
+    const defineExerciseBtn = document.getElementById("defineExerciseBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const askBtn = document.getElementById("askBtn");
+    const questionInput = document.getElementById("questionInput");
+    const listenBtn = document.getElementById("listenBtn");
+    const logEl = document.getElementById("coach-log");
+    const repCountEl = document.getElementById("repCount");
+    const exerciseLabelEl = document.getElementById("exerciseLabel");
+    const workoutSelectEl = document.getElementById("workoutSelect");
+    const workoutPlanViewEl = document.getElementById("workoutPlanView");
+    const ohsaSummaryViewEl = document.getElementById("ohsSummaryView");
+    const calendarViewEl = document.getElementById("calendarView");
+
+    // ---- State ----
+    let detector;
+    let running = false;
+    let animId;
+
+    let voiceMuted = false;
+
+    // Speech / LLM orchestration
+    let speechLock = false;        // true while LLM answer is playing
+    let repFeedbackAllowed = true; // rep voice allowed when no LLM talking
+
+    // STT state
+    let listening = false;
+    let recognition;
+    let lastTranscript = "";
+
+    // Workout state
+    let sessionId = null;
+    let repCount = 0;      // this set
+    let totalReps = 0;     // across all sets
+    let currentSet = 1;
+    let repPhase = "up";   // "up" -> "down" -> "up"
+
+    let fullBodyAcquired = false;
+    let lastStepBackSpokenAt = 0;
+    let lastGoodRepSpokenAt = 0;
+
+    let lastNodeRepSentAt = 0;
+    let lastDepthScore = 0;   // for Ma’at
+    let lastGoodForm = false; // for Ma’at
+
+    const STEP_BACK_COOLDOWN = 4000;   // ms
+    const GOOD_REP_COOLDOWN  = 2500;   // ms
+
+    // New Exercise definition state
+    let definingExercise = false;
+    let definedExercises = {};        // { name: { depthScoreAvg, torsoAngleAvg, samples } }
+    let currentExerciseName = null;
+    const EXERCISE_BASELINE_FRAMES = 80;
+    let baselineFrames = [];          // { depthScore, torsoAngle }
+
+    // Overhead Squat Assessment state
+    let ohsaMode = false;
+    let ohsaPhase = null;             // "front" or "side"
+    let ohsaFrontSamples = [];        // analysis objects from front view
+    let ohsaSideSamples = [];         // analysis objects from side view
+    const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
+    let lastOhsaSummary = null;
+
+    // AI-generated program
+    let aiProgramToday = null;
+
+    // Default exercise ID for telemetry
+    const EXERCISE_ID = "bodyweight_squat";
+
+    // Workout plan (simple: 3 x 10 squats)
+    const TARGET_REPS = 10;
+    const TARGET_SETS = 3;
+
+    // skeleton edges for MoveNet keypoints (indices 0–16)
+    const SKELETON_EDGES = [
+      [5, 7], [7, 9],
+      [6, 8], [8, 10],
+      [5, 6],
+      [5, 11], [6, 12],
+      [11, 12],
+      [11, 13], [13, 15],
+      [12, 14], [14, 16]
+    ];
+
+    function addLog(kind, text) {
+      const div = document.createElement("div");
+      div.className = "log-line " + kind;
+      div.textContent = text;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function stopAllSpeech() {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (ttsAudioEl) {
+        try { ttsAudioEl.pause(); } catch {}
+      }
+    }
+
+    // 🔊 OpenVoice + browser TTS hybrid
+    function speak(text, source = "system") {
+      if (voiceMuted || !text) return;
+
+      // Only block rep chatter while LLM is talking
+      if (speechLock && source === "rep") return;
+
+      stopAllSpeech();
+
+      (async () => {
+        await ensureAudioContextUnlocked(); // 🔁 NEW: unlock audio on iOS
+
+        let usedOpenVoice = false;
+
+        // try OpenVoice first if configured
+        if (OPENVOICE_TTS_URL && OPENVOICE_TTS_URL.startsWith("http")) {
+          try {
+            if (source === "llm") {
+              speechLock = true;
+              repFeedbackAllowed = false;
+            }
+
+            const res = await fetch(OPENVOICE_TTS_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text })
+            });
+
+            if (!res.ok) throw new Error("OpenVoice HTTP " + res.status);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+
+            ttsAudioEl.src = url;
+            await ttsAudioEl.play();
+            usedOpenVoice = true;
+
+            ttsAudioEl.onended = () => {
+              URL.revokeObjectURL(url);
+              if (source === "llm") {
+                speechLock = false;
+                repFeedbackAllowed = true;
+              }
+            };
+          } catch (err) {
+            console.warn("OpenVoice failed, falling back to browser TTS:", err);
+            usedOpenVoice = false;
+            if (source === "llm") {
+              speechLock = false;
+              repFeedbackAllowed = true;
+            }
+          }
+        }
+
+        // fallback: Web Speech API
+        if (!usedOpenVoice && "speechSynthesis" in window) {
+          const u = new SpeechSynthesisUtterance(text);
+          u.rate = 1.0;
+          u.pitch = 1.0;
+
           if (source === "llm") {
             speechLock = true;
             repFeedbackAllowed = false;
           }
 
-          const res = await fetch(OPENVOICE_TTS_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-          });
-
-          if (!res.ok) throw new Error("OpenVoice HTTP " + res.status);
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-
-          ttsAudioEl.src = url;
-          await ttsAudioEl.play();
-          usedOpenVoice = true;
-
-          ttsAudioEl.onended = () => {
-            URL.revokeObjectURL(url);
+          u.onend = () => {
             if (source === "llm") {
               speechLock = false;
               repFeedbackAllowed = true;
             }
           };
-        } catch (err) {
-          console.warn("OpenVoice failed, falling back to browser TTS:", err);
-          usedOpenVoice = false;
-          if (source === "llm") {
-            speechLock = false;
-            repFeedbackAllowed = true;
-          }
+
+          window.speechSynthesis.speak(u);
         }
-      }
+      })();
+    }
 
-      // fallback: Web Speech API
-      if (!usedOpenVoice && "speechSynthesis" in window) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 1.0;
-        u.pitch = 1.0;
+    function getKeypoint(pose, name) {
+      if (!pose || !pose.keypoints) return null;
+      return pose.keypoints.find(k => k.name === name || k.part === name) || null;
+    }
 
-        if (source === "llm") {
-          speechLock = true;
-          repFeedbackAllowed = false;
-        }
+    function getAngleDegrees(a, b, c) {
+      if (!a || !b || !c) return null;
+      const abx = a.x - b.x;
+      const aby = a.y - b.y;
+      const cbx = c.x - b.x;
+      const cby = c.y - b.y;
+      const dot = abx * cbx + aby * cby;
+      const magAB = Math.hypot(abx, aby);
+      const magCB = Math.hypot(cbx, cby);
+      if (!magAB || !magCB) return null;
+      const cos = dot / (magAB * magCB);
+      const clamped = Math.min(1, Math.max(-1, cos));
+      return (Math.acos(clamped) * 180) / Math.PI;
+    }
 
-        u.onend = () => {
-          if (source === "llm") {
-            speechLock = false;
-            repFeedbackAllowed = true;
-          }
+    function computeKneeValgus(leftHip, rightHip, leftKnee, rightKnee) {
+      if (!leftHip || !rightHip || !leftKnee || !rightKnee) return 0;
+      const hipWidth = Math.abs(rightHip.x - leftHip.x);
+      const kneeWidth = Math.abs(rightKnee.x - leftKnee.x);
+      if (!hipWidth) return 0;
+      return (hipWidth - kneeWidth) / hipWidth;
+    }
+
+    function analyzeSquatForm(pose) {
+      if (!pose) {
+        return {
+          fullBody: false,
+          depthScore: 0,
+          goodForm: false,
+          kneeAngle: 180,
+          torsoAngle: 90,
+          kneeValgus: 0
         };
-
-        window.speechSynthesis.speak(u);
       }
-    })();
-  }
 
-  function getKeypoint(pose, name) {
-    if (!pose || !pose.keypoints) return null;
-    return pose.keypoints.find(k => k.name === name || k.part === name) || null;
-  }
+      const leftHip   = getKeypoint(pose, "left_hip");
+      const rightHip  = getKeypoint(pose, "right_hip");
+      const leftKnee  = getKeypoint(pose, "left_knee");
+      const rightKnee = getKeypoint(pose, "right_knee");
+      const leftAnkle = getKeypoint(pose, "left_ankle");
+      const rightAnkle= getKeypoint(pose, "right_ankle");
+      const leftShoulder  = getKeypoint(pose, "left_shoulder");
+      const rightShoulder = getKeypoint(pose, "right_shoulder");
 
-  function getAngleDegrees(a, b, c) {
-    if (!a || !b || !c) return null;
-    const abx = a.x - b.x;
-    const aby = a.y - b.y;
-    const cbx = c.x - b.x;
-    const cby = c.y - b.y;
-    const dot = abx * cbx + aby * cby;
-    const magAB = Math.hypot(abx, aby);
-    const magCB = Math.hypot(cbx, cby);
-    if (!magAB || !magCB) return null;
-    const cos = dot / (magAB * magCB);
-    const clamped = Math.min(1, Math.max(-1, cos));
-    return (Math.acos(clamped) * 180) / Math.PI;
-  }
+      const required = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
+      const fullBody = required.every(k => k && k.score > 0.3);
 
-  function computeKneeValgus(leftHip, rightHip, leftKnee, rightKnee) {
-    if (!leftHip || !rightHip || !leftKnee || !rightKnee) return 0;
-    const hipWidth = Math.abs(rightHip.x - leftHip.x);
-    const kneeWidth = Math.abs(rightKnee.x - leftKnee.x);
-    if (!hipWidth) return 0;
-    return (hipWidth - kneeWidth) / hipWidth;
-  }
+      const leftKneeAngle  = getAngleDegrees(leftHip,  leftKnee,  leftAnkle);
+      const rightKneeAngle = getAngleDegrees(rightHip, rightKnee, rightAnkle);
+      const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2 || 180;
 
-  function analyzeSquatForm(pose) {
-    if (!pose) {
-      return {
-        fullBody: false,
-        depthScore: 0,
-        goodForm: false,
-        kneeAngle: 180,
-        torsoAngle: 90,
-        kneeValgus: 0
+      const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
+
+      const leftTorsoAngle  = getAngleDegrees(leftShoulder,  leftHip,  leftAnkle);
+      const rightTorsoAngle = getAngleDegrees(rightShoulder, rightHip, rightAnkle);
+      const torsoAngle = (leftTorsoAngle + rightTorsoAngle) / 2 || 90;
+
+      const kneeValgus = computeKneeValgus(leftHip, rightHip, leftKnee, rightKnee);
+
+      const deepEnough = depthScore > 0.6;
+      const notTooDeep = kneeAngle > 50;
+      const torsoOk    = torsoAngle > 60;
+
+      const goodForm = fullBody && deepEnough && notTooDeep && torsoOk;
+
+      return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
+    }
+
+    async function sendToNode(payload) {
+      try {
+        await fetch(NODE_COMMAND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.warn("Node send failed", e);
+      }
+    }
+
+    function sendProfileToNode() {
+      if (!USER_PROFILE) return;
+      const body = {
+        domain: "fitness",
+        command: "fitness.saveProfile",
+        userId: USER_ID,
+        payload: { profile: USER_PROFILE, ts: Date.now() }
       };
+      sendToNode(body);
+      addLog("system", "Profile sent to Ma’at 2.0 backend.");
     }
 
-    const leftHip   = getKeypoint(pose, "left_hip");
-    const rightHip  = getKeypoint(pose, "right_hip");
-    const leftKnee  = getKeypoint(pose, "left_knee");
-    const rightKnee = getKeypoint(pose, "right_knee");
-    const leftAnkle = getKeypoint(pose, "left_ankle");
-    const rightAnkle= getKeypoint(pose, "right_ankle");
-    const leftShoulder  = getKeypoint(pose, "left_shoulder");
-    const rightShoulder = getKeypoint(pose, "right_shoulder");
-
-    const required = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
-    const fullBody = required.every(k => k && k.score > 0.3);
-
-    const leftKneeAngle  = getAngleDegrees(leftHip,  leftKnee,  leftAnkle);
-    const rightKneeAngle = getAngleDegrees(rightHip, rightKnee, rightAnkle);
-    const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2 || 180;
-
-    const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
-
-    const leftTorsoAngle  = getAngleDegrees(leftShoulder,  leftHip,  leftAnkle);
-    const rightTorsoAngle = getAngleDegrees(rightShoulder, rightHip, rightAnkle);
-    const torsoAngle = (leftTorsoAngle + rightTorsoAngle) / 2 || 90;
-
-    const kneeValgus = computeKneeValgus(leftHip, rightHip, leftKnee, rightKnee);
-
-    const deepEnough = depthScore > 0.6;
-    const notTooDeep = kneeAngle > 50;
-    const torsoOk    = torsoAngle > 60;
-
-    const goodForm = fullBody && deepEnough && notTooDeep && torsoOk;
-
-    return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
-  }
-
-  async function sendToNode(payload) {
-    try {
-      await fetch(NODE_COMMAND_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-    } catch (e) {
-      console.warn("Node send failed", e);
+    function sendStartSessionToNode() {
+      const body = {
+        domain: "fitness",
+        command: "fitness.startSession",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          programId: null,
+          exerciseId: EXERCISE_ID,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
     }
-  }
 
-  function sendProfileToNode() {
-    if (!USER_PROFILE) return;
-    const body = {
-      domain: "fitness",
-      command: "fitness.saveProfile",
-      userId: USER_ID,
-      payload: { profile: USER_PROFILE, ts: Date.now() }
-    };
-    sendToNode(body);
-    addLog("system", "Profile sent to Ma’at 2.0 backend.");
-  }
+    function sendEndSessionToNode() {
+      if (!sessionId) return;
+      const body = {
+        domain: "fitness",
+        command: "fitness.endSession",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          repsCompleted: totalReps,
+          exerciseId: EXERCISE_ID,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
 
-  function sendStartSessionToNode() {
-    const body = {
-      domain: "fitness",
-      command: "fitness.startSession",
-      userId: USER_ID,
-      payload: {
-        sessionId,
-        programId: null,
-        exerciseId: EXERCISE_ID,
-        ts: Date.now()
-      }
-    };
-    sendToNode(body);
-  }
-
-  function sendEndSessionToNode() {
-    if (!sessionId) return;
-    const body = {
-      domain: "fitness",
-      command: "fitness.endSession",
-      userId: USER_ID,
-      payload: {
-        sessionId,
-        repsCompleted: totalReps,
-        exerciseId: EXERCISE_ID,
-        ts: Date.now()
-      }
-    };
-    sendToNode(body);
-
-    if (calendarMeta) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const key = today.toISOString().slice(0,10);
-      calendarMeta.completedDates.add(key);
-      buildCalendarFromMeta();
-      persistUser();
-    }
-  }
-
-  function sendRepToNode(depthScore) {
-    const now = Date.now();
-    if (now - lastNodeRepSentAt < 500) return;
-    lastNodeRepSentAt = now;
-
-    const body = {
-      domain: "fitness",
-      command: "fitness.repUpdate",
-      userId: USER_ID,
-      payload: {
-        sessionId,
-        exerciseId: EXERCISE_ID,
-        repsThisSet: repCount,
-        totalReps,
-        depthScore,
-        ts: now
-      }
-    };
-    sendToNode(body);
-  }
-
-  function sendOhsaToNode(summary) {
-    const body = {
-      domain: "fitness",
-      command: "fitness.ohsaResult",
-      userId: USER_ID,
-      payload: {
-        summary,
-        ts: Date.now()
-      }
-    };
-    sendToNode(body);
-  }
-
-  // Brain health
-  (async () => {
-    try {
-      const res = await fetch(BRAIN_BASE_URL + "/health");
-      await res.json();
-      brainStatusEl.textContent = "Ma’at 2.0 online.";
-      brainStatusEl.classList.add("status-ok");
-      brainChipTxt.textContent = "Ma’at 2.0";
-    } catch (e) {
-      console.warn("Brain health error", e);
-      brainStatusEl.textContent = "Ma’at 2.0 offline.";
-      brainStatusEl.classList.add("status-bad");
-      brainChipTxt.textContent = "Ma’at 2.0 (offline)";
-    }
-  })();
-
-  async function connectCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoEl.srcObject = stream;
-      await new Promise(r => videoEl.onloadedmetadata = r);
-      canvasEl.width = videoEl.videoWidth;
-      canvasEl.height = videoEl.videoHeight;
-      poseStatusEl.textContent = "Camera connected. Loading pose detector…";
-      await initDetector();
-      poseStatusEl.textContent = "Pose detector ready.";
-      poseStatusEl.classList.add("status-ok");
-      startBtn.disabled = false;
-      ohsaBtn.disabled = false;
-      defineExerciseBtn.disabled = false;
-    } catch (e) {
-      console.error("Camera error", e);
-      poseStatusEl.textContent = "Camera error.";
-      poseStatusEl.classList.add("status-bad");
-    }
-  }
-
-  async function initDetector() {
-    await tf.setBackend("webgl");
-    await tf.ready();
-    if (typeof poseDetection === "undefined") {
-      console.error("PoseDetection failed to load.");
-      return;
-    }
-    detector = await poseDetection.createDetector(
-      poseDetection.SupportedModels.MoveNet,
-      { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-    );
-    console.log("✅ MoveNet detector created.");
-  }
-
-  async function askCoach(q, options = { speakAnswer: true }) {
-    if (!q) return;
-    addLog("you", "You: " + q);
-    questionInput.value = "";
-    brainStatusEl.textContent = "Ma’at 2.0 thinking…";
-
-    const telemetry = {
-      exercise_id: EXERCISE_ID,
-      reps: totalReps,
-      depth_score: lastDepthScore,
-      good_form: lastGoodForm
-    };
-
-    const contextObj = {
-      profile: USER_PROFILE,
-      last_ohsa: lastOhsaSummary || null
-    };
-
-    try {
-      const res = await fetch(ASK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: q,
-          user_id: USER_ID,
-          session_id: sessionId,
-          telemetry,
-          context: JSON.stringify(contextObj)
-        })
-      });
-      const data = await res.json();
-      const answer = data.answer || data.response || "No response.";
-      addLog("coach", "Ma’at 2.0: " + answer);
-      if (options.speakAnswer) {
-        speak(answer, "llm");
-      }
-      brainStatusEl.textContent = "Ma’at 2.0 responded.";
-      return answer;
-    } catch (e) {
-      console.error("Brain error", e);
-      brainStatusEl.textContent = "Ma’at 2.0 error.";
-      addLog("system", "Network error contacting Ma’at 2.0.");
-      return null;
-    }
-  }
-
-  async function generateProgramFromOhsa(summary) {
-    if (!summary) return;
-
-    const question =
-      "You are Ma’at 2.0, my NASM-informed Pan-African virtual coach. " +
-      "Using this Overhead Squat Assessment result and my profile, " +
-      "design a 3-month plan and show ONLY today’s workout from that plan.\n\n" +
-      "Constraints:\n" +
-      "- Goal: gain 20 lb of muscle in 3 months.\n" +
-      "- Workouts: ~4 days per week.\n" +
-      "- Home workouts only.\n" +
-      "- Heavy on yoga and corrective exercise for lumbar herniated discs.\n" +
-      "- Use your NASM Movement Basics, Overhead Squat Assessment patterns, gymnastics fundamentals, and yoga CSV knowledge.\n\n" +
-      "Overhead Squat Assessment (JSON):\n" +
-      JSON.stringify(summary, null, 2) + "\n\n" +
-      "My profile (JSON):\n" +
-      JSON.stringify(USER_PROFILE || {}, null, 2) + "\n\n" +
-      "Return a clear, numbered breakdown for TODAY ONLY.";
-
-    addLog("system", "Sending OHSA + profile to Ma’at 2.0 to generate today’s workout…");
-    const answer = await askCoach(question, { speakAnswer: false });
-    if (!answer) return;
-
-    aiProgramToday = answer;
-    workoutSelectEl.value = "ai_today";
-    workoutPlanViewEl.textContent = aiProgramToday;
-    addLog("system", "Ma’at 2.0 created today’s program from your assessment.");
-
-    try {
-      const res = await fetch(PROGRAM_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: USER_ID,
-          goal: "Gain 20 lb muscle in 3 months",
-          weeks: 12,
-          days_per_week: 4,
-          home_only: true,
-          yoga_heavy: true,
-          assessment_summary: JSON.stringify(summary),
-          extra_context: ""
-        })
-      });
-      const data = await res.json();
-      if (data && data.program) {
-        const prog = data.program;
-        const weeks = prog.weeks || 12;
-        const daysPerWeek = prog.days_per_week || 4;
+      if (calendarMeta) {
         const today = new Date();
         today.setHours(0,0,0,0);
-        calendarMeta = {
-          startDateISO: today.toISOString().slice(0,10),
-          weeks,
-          daysPerWeek,
-          completedDates: new Set()
-        };
+        const key = today.toISOString().slice(0,10);
+        calendarMeta.completedDates.add(key);
         buildCalendarFromMeta();
         persistUser();
-        addLog("system", "Calendar updated from Ma’at 2.0 program.");
-      }
-    } catch (e) {
-      console.warn("Program API error", e);
-    }
-  }
-
-  function startDefineExercise() {
-    if (!detector) {
-      alert("Connect camera first.");
-      return;
-    }
-    if (running || ohsaMode) {
-      alert("Stop workout / assessment before defining a new exercise.");
-      return;
-    }
-
-    const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
-    if (!name) return;
-
-    definingExercise = true;
-    currentExerciseName = name;
-    baselineFrames = [];
-    addLog("system", `Defining new exercise: ${name}. Give me several GOOD reps.`);
-    speak(
-      `Okay. Let's define ${name}. Give me your best form for several reps so I can learn this move.`,
-      "rep"
-    );
-  }
-
-  function finishDefineExercise() {
-    if (!definingExercise || baselineFrames.length === 0 || !currentExerciseName) return;
-
-    const depthValues = baselineFrames.map(f => f.depthScore);
-    const torsoValues = baselineFrames.map(f => f.torsoAngle);
-    const avgDepth = depthValues.reduce((a, b) => a + b, 0) / depthValues.length;
-    const avgTorso = torsoValues.reduce((a, b) => a + b, 0) / torsoValues.length;
-
-    definedExercises[currentExerciseName] = {
-      name: currentExerciseName,
-      depthScoreAvg: avgDepth,
-      torsoAngleAvg: avgTorso,
-      samples: baselineFrames.length,
-      createdAt: Date.now()
-    };
-
-    addLog(
-      "system",
-      `Exercise "${currentExerciseName}" learned. Depth avg: ${avgDepth.toFixed(
-        2
-      )}, torso avg: ${avgTorso.toFixed(1)} (samples: ${baselineFrames.length}).`
-    );
-    speak(
-      `Got it. I saved your baseline for ${currentExerciseName}.`,
-      "rep"
-    );
-    definingExercise = false;
-    currentExerciseName = null;
-    baselineFrames = [];
-  }
-
-  function startOhsa() {
-    if (!detector) {
-      alert("Connect camera first.");
-      return;
-    }
-    if (running || definingExercise) {
-      alert("Stop the workout / exercise definition before running OHSA.");
-      return;
-    }
-
-    ohsaMode = true;
-    ohsaPhase = "front";
-    ohsaFrontSamples = [];
-    ohsaSideSamples = [];
-    lastOhsaSummary = null;
-
-    ohsaSummaryViewEl.textContent = "Running OHSA… first: face the camera and give me several good overhead squats.";
-    addLog("system", "OHSA started: front view first.");
-    speak(
-      "We are starting your overhead squat assessment. Face the camera, raise your arms overhead, and give me three to five slow squats with your best form.",
-      "rep"
-    );
-
-    runPoseLoop();
-  }
-
-  function summarizeArray(arr, key) {
-    if (!arr.length) return 0;
-    const vals = arr.map(a => a[key]).filter(v => typeof v === "number");
-    if (!vals.length) return 0;
-    return vals.reduce((a, b) => a + b, 0) / vals.length;
-  }
-
-  function finishOhsa() {
-    ohsaMode = false;
-    const frontDepthAvg    = summarizeArray(ohsaFrontSamples, "depthScore");
-    const frontKneeValgus  = summarizeArray(ohsaFrontSamples, "kneeValgus");
-    const sideDepthAvg     = summarizeArray(ohsaSideSamples, "depthScore");
-    const sideTorsoAngle   = summarizeArray(ohsaSideSamples, "torsoAngle");
-
-    const findings = [];
-
-    if (frontKneeValgus > 0.15) {
-      findings.push("Knees tend to collapse inward (knee valgus) on squat.");
-    }
-    if (sideTorsoAngle < 65) {
-      findings.push("Trunk leans forward more than ideal in the bottom of the squat.");
-    }
-    if (sideDepthAvg < 0.5 || frontDepthAvg < 0.5) {
-      findings.push("Squat depth is limited (may indicate ankle or hip mobility restrictions).");
-    }
-    if (!findings.length) {
-      findings.push("Movement pattern looks generally balanced with no major overhead-squat faults.");
-    }
-
-    const summary = {
-      front: {
-        samples: ohsaFrontSamples.length,
-        depthScoreAvg: frontDepthAvg,
-        kneeValgusAvg: frontKneeValgus
-      },
-      side: {
-        samples: ohsaSideSamples.length,
-        depthScoreAvg: sideDepthAvg,
-        torsoAngleAvg: sideTorsoAngle
-      },
-      findings
-    };
-
-    lastOhsaSummary = summary;
-    sendOhsaToNode(summary);
-
-    const textSummary =
-      "Overhead Squat Assessment Summary:\n" +
-      `- Front view samples: ${summary.front.samples}\n` +
-      `  · Avg depth score: ${summary.front.depthScoreAvg.toFixed(2)}\n` +
-      `  · Avg knee valgus: ${summary.front.kneeValgusAvg.toFixed(2)}\n` +
-      `- Side view samples: ${summary.side.samples}\n` +
-      `  · Avg depth score: ${summary.side.depthScoreAvg.toFixed(2)}\n` +
-      `  · Avg torso angle: ${summary.side.torsoAngleAvg.toFixed(1)}°\n\n` +
-      "Key findings:\n- " + summary.findings.join("\n- ");
-
-    ohsaSummaryViewEl.textContent = textSummary;
-    addLog("system", "OHSA completed. Summary recorded and sent to Ma’at 2.0 backend.");
-    speak(
-      "Your overhead squat assessment is complete. I’ve logged your movement pattern and will build your plan from this.",
-      "rep"
-    );
-
-    generateProgramFromOhsa(summary);
-  }
-
-  async function runPoseLoop() {
-    if (!running && !definingExercise && !ohsaMode) return;
-    if (!detector) return;
-
-    const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
-    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-
-    const pose = poses.length ? poses[0] : null;
-    let analysis = analyzeSquatForm(pose);
-
-    lastDepthScore = analysis.depthScore;
-    lastGoodForm = analysis.goodForm;
-
-    const now = performance.now();
-
-    if (!analysis.fullBody) {
-      poseStatusEl.textContent = "No full body in view.";
-      if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
-        if (running || definingExercise || ohsaMode) {
-          speak("Step back so I can see your whole body.", "rep");
-        }
-        lastStepBackSpokenAt = now;
-      }
-    } else {
-      if (!fullBodyAcquired) {
-        fullBodyAcquired = true;
-        if (repFeedbackAllowed && (running || definingExercise || ohsaMode)) {
-          speak("Great, I can see your full body.", "rep");
-        }
-      }
-      poseStatusEl.textContent = analysis.goodForm
-        ? `Form looks solid. Score: ${analysis.depthScore.toFixed(2)}`
-        : `Form needs adjustment. Score: ${analysis.depthScore.toFixed(2)}`;
-    }
-
-    if (pose && pose.keypoints) {
-      const color = analysis.goodForm ? "#22c55e" : "#ef4444";
-      ctx.lineWidth = 3;
-
-      for (const [i, j] of SKELETON_EDGES) {
-        const kp1 = pose.keypoints[i];
-        const kp2 = pose.keypoints[j];
-        if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
-          ctx.beginPath();
-          ctx.moveTo(kp1.x, kp1.y);
-          ctx.lineTo(kp2.x, kp2.y);
-          ctx.strokeStyle = color;
-          ctx.stroke();
-        }
-      }
-
-      for (const kp of pose.keypoints) {
-        if (kp.score > 0.4) {
-          ctx.beginPath();
-          ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = color;
-          ctx.fill();
-        }
       }
     }
 
-    if (definingExercise && analysis.fullBody && analysis.goodForm) {
-      baselineFrames.push({
-        depthScore: analysis.depthScore,
-        torsoAngle: analysis.torsoAngle
-      });
+    function sendRepToNode(depthScore) {
+      const now = Date.now();
+      if (now - lastNodeRepSentAt < 500) return;
+      lastNodeRepSentAt = now;
 
-      if (baselineFrames.length === 1) {
-        addLog("system", "Recording exercise baseline… keep moving with good form.");
+      const body = {
+        domain: "fitness",
+        command: "fitness.repUpdate",
+        userId: USER_ID,
+        payload: {
+          sessionId,
+          exerciseId: EXERCISE_ID,
+          repsThisSet: repCount,
+          totalReps,
+          depthScore,
+          ts: now
+        }
+      };
+      sendToNode(body);
+    }
+
+    function sendOhsaToNode(summary) {
+      const body = {
+        domain: "fitness",
+        command: "fitness.ohsaResult",
+        userId: USER_ID,
+        payload: {
+          summary,
+          ts: Date.now()
+        }
+      };
+      sendToNode(body);
+    }
+
+    // Brain health
+    (async () => {
+      try {
+        const res = await fetch(BRAIN_BASE_URL + "/health");
+        await res.json();
+        brainStatusEl.textContent = "Ma’at 2.0 online.";
+        brainStatusEl.classList.add("status-ok");
+        brainChipTxt.textContent = "Ma’at 2.0";
+      } catch (e) {
+        console.warn("Brain health error", e);
+        brainStatusEl.textContent = "Ma’at 2.0 offline.";
+        brainStatusEl.classList.add("status-bad");
+        brainChipTxt.textContent = "Ma’at 2.0 (offline)";
       }
+    })();
 
-      if (baselineFrames.length >= EXERCISE_BASELINE_FRAMES) {
-        finishDefineExercise();
+    async function connectCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoEl.srcObject = stream;
+        await new Promise(r => videoEl.onloadedmetadata = r);
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        poseStatusEl.textContent = "Camera connected. Loading pose detector…";
+        await initDetector();
+        poseStatusEl.textContent = "Pose detector ready.";
+        poseStatusEl.classList.add("status-ok");
+        startBtn.disabled = false;
+        ohsaBtn.disabled = false;
+        defineExerciseBtn.disabled = false;
+      } catch (e) {
+        console.error("Camera error", e);
+        poseStatusEl.textContent = "Camera error.";
+        poseStatusEl.classList.add("status-bad");
       }
     }
 
-    if (ohsaMode && analysis.fullBody) {
-      const depth = analysis.depthScore;
-      if (ohsaPhase === "front") {
-        if (depth > 0.6 && ohsaFrontSamples.length < OHSA_TARGET_SAMPLES_PER_VIEW) {
-          ohsaFrontSamples.push(analysis);
+    async function initDetector() {
+      await tf.setBackend("webgl");
+      await tf.ready();
+      if (typeof poseDetection === "undefined") {
+        console.error("PoseDetection failed to load.");
+        return;
+      }
+      detector = await poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+      );
+      console.log("✅ MoveNet detector created.");
+    }
+
+    async function askCoach(q, options = { speakAnswer: true }) {
+      if (!q) return;
+      addLog("you", "You: " + q);
+      questionInput.value = "";
+      brainStatusEl.textContent = "Ma’at 2.0 thinking…";
+
+      const telemetry = {
+        exercise_id: EXERCISE_ID,
+        reps: totalReps,
+        depth_score: lastDepthScore,
+        good_form: lastGoodForm
+      };
+
+      const contextObj = {
+        profile: USER_PROFILE,
+        last_ohsa: lastOhsaSummary || null
+      };
+
+      try {
+        const res = await fetch(ASK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: q,
+            user_id: USER_ID,
+            session_id: sessionId,
+            telemetry,
+            context: JSON.stringify(contextObj)
+          })
+        });
+        const data = await res.json();
+        const answer = data.answer || data.response || "No response.";
+        addLog("coach", "Ma’at 2.0: " + answer);
+        if (options.speakAnswer) {
+          speak(answer, "llm");
         }
-        if (ohsaFrontSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
-          ohsaPhase = "side";
-          addLog("system", "OHSA: front view captured. Turn sideways and keep squatting.");
-          ohsaSummaryViewEl.textContent =
-            "Front view captured. Now turn sideways to the camera and give me several more squats.";
-          speak(
-            "Good. Now turn sideways to the camera and give me several more overhead squats with your best form.",
-            "rep"
-          );
-        }
-      } else if (ohsaPhase === "side") {
-        if (depth > 0.6 && ohsaSideSamples.length < OHSA_TARGET_SAMPLES_PER_VIEW) {
-          ohsaSideSamples.push(analysis);
-        }
-        if (ohsaSideSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
-          finishOhsa();
-        }
+        brainStatusEl.textContent = "Ma’at 2.0 responded.";
+        return answer;
+      } catch (e) {
+        console.error("Brain error", e);
+        brainStatusEl.textContent = "Ma’at 2.0 error.";
+        addLog("system", "Network error contacting Ma’at 2.0.");
+        return null;
       }
     }
 
-    if (running) {
-      const depth = analysis.depthScore;
-      const DOWN_THRESHOLD = 0.6;
-      const UP_THRESHOLD   = 0.3;
+    async function generateProgramFromOhsa(summary) {
+      if (!summary) return;
 
-      if (analysis.fullBody) {
-        if (repPhase === "up" && depth > DOWN_THRESHOLD) {
-          repPhase = "down";
-        } else if (repPhase === "down" && depth < UP_THRESHOLD) {
-          repPhase = "up";
-          repCount += 1;
-          totalReps += 1;
-          repCountEl.textContent = String(repCount);
-          sendRepToNode(depth);
+      const question =
+        "You are Ma’at 2.0, my NASM-informed Pan-African virtual coach. " +
+        "Using this Overhead Squat Assessment result and my profile, " +
+        "design a 3-month plan and show ONLY today’s workout from that plan.\n\n" +
+        "Constraints:\n" +
+        "- Goal: gain 20 lb of muscle in 3 months.\n" +
+        "- Workouts: ~4 days per week.\n" +
+        "- Home workouts only.\n" +
+        "- Heavy on yoga and corrective exercise for lumbar herniated discs.\n" +
+        "- Use your NASM Movement Basics, Overhead Squat Assessment patterns, gymnastics fundamentals, and yoga CSV knowledge.\n\n" +
+        "Overhead Squat Assessment (JSON):\n" +
+        JSON.stringify(summary, null, 2) + "\n\n" +
+        "My profile (JSON):\n" +
+        JSON.stringify(USER_PROFILE || {}, null, 2) + "\n\n" +
+        "Return a clear, numbered breakdown for TODAY ONLY.";
 
-          if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
-            if (analysis.goodForm) {
-              speak("Good rep.", "rep");
-            } else {
-              speak("Careful with your form on that rep.", "rep");
-            }
-            lastGoodRepSpokenAt = now;
-          }
+      addLog("system", "Sending OHSA + profile to Ma’at 2.0 to generate today’s workout…");
+      const answer = await askCoach(question, { speakAnswer: false });
+      if (!answer) return;
 
-          if (repCount === TARGET_REPS) {
-            if (repFeedbackAllowed) {
-              speak(
-                `Great job. That's ${TARGET_REPS} reps for set ${currentSet}.`,
-                "rep"
-              );
-            }
-            currentSet += 1;
+      aiProgramToday = answer;
+      workoutSelectEl.value = "ai_today";
+      workoutPlanViewEl.textContent = aiProgramToday;
+      addLog("system", "Ma’at 2.0 created today’s program from your assessment.");
 
-            if (currentSet <= TARGET_SETS) {
-              repCount = 0;
-              setTimeout(() => {
-                if (running && repFeedbackAllowed) {
-                  speak(`Rest is over. Let's start set ${currentSet}.`, "rep");
-                }
-              }, 20000);
-            } else {
-              running = false;
-              startBtn.textContent = "Start Workout";
-              addLog("system", "Workout complete.");
-              if (repFeedbackAllowed) {
-                speak("Workout complete. Strong work today.", "rep");
-              }
-              sendEndSessionToNode();
-              cancelAnimationFrame(animId);
-              return;
-            }
-          }
+      try {
+        const res = await fetch(PROGRAM_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: USER_ID,
+            goal: "Gain 20 lb muscle in 3 months",
+            weeks: 12,
+            days_per_week: 4,
+            home_only: true,
+            yoga_heavy: true,
+            assessment_summary: JSON.stringify(summary),
+            extra_context: ""
+          })
+        });
+        const data = await res.json();
+        if (data && data.program) {
+          const prog = data.program;
+          const weeks = prog.weeks || 12;
+          const daysPerWeek = prog.days_per_week || 4;
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          calendarMeta = {
+            startDateISO: today.toISOString().slice(0,10),
+            weeks,
+            daysPerWeek,
+            completedDates: new Set()
+          };
+          buildCalendarFromMeta();
+          persistUser();
+          addLog("system", "Calendar updated from Ma’at 2.0 program.");
         }
+      } catch (e) {
+        console.warn("Program API error", e);
       }
     }
 
-    animId = requestAnimationFrame(runPoseLoop);
-  }
+    function startDefineExercise() {
+      if (!detector) {
+        alert("Connect camera first.");
+        return;
+      }
+      if (running || ohsaMode) {
+        alert("Stop workout / assessment before defining a new exercise.");
+        return;
+      }
 
-  async function startWorkout() {
-    if (!detector) return;
+      const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
+      if (!name) return;
 
-    if (definingExercise) {
-      definingExercise = false;
+      definingExercise = true;
+      currentExerciseName = name;
       baselineFrames = [];
-      currentExerciseName = null;
-      addLog("system", "Cancelled exercise definition to start workout.");
-    }
-    if (ohsaMode) {
-      ohsaMode = false;
-      ohsaFrontSamples = [];
-      ohsaSideSamples = [];
-      addLog("system", "Cancelled OHSA to start workout.");
-    }
-
-    running = !running;
-
-    if (running) {
-      sessionId = "sess_" + Date.now();
-      repCount = 0;
-      totalReps = 0;
-      currentSet = 1;
-      repPhase = "up";
-      fullBodyAcquired = false;
-      repCountEl.textContent = "0";
-      startBtn.textContent = "Stop Workout";
-      addLog("system", `Workout started: ${sessionId}`);
+      addLog("system", `Defining new exercise: ${name}. Give me several GOOD reps.`);
       speak(
-        `We are doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`,
+        `Okay. Let's define ${name}. Give me your best form for several reps so I can learn this move.`,
         "rep"
       );
-      sendStartSessionToNode();
+    }
+
+    function finishDefineExercise() {
+      if (!definingExercise || baselineFrames.length === 0 || !currentExerciseName) return;
+
+      const depthValues = baselineFrames.map(f => f.depthScore);
+      const torsoValues = baselineFrames.map(f => f.torsoAngle);
+      const avgDepth = depthValues.reduce((a, b) => a + b, 0) / depthValues.length;
+      const avgTorso = torsoValues.reduce((a, b) => a + b, 0) / torsoValues.length;
+
+      definedExercises[currentExerciseName] = {
+        name: currentExerciseName,
+        depthScoreAvg: avgDepth,
+        torsoAngleAvg: avgTorso,
+        samples: baselineFrames.length,
+        createdAt: Date.now()
+      };
+
+      addLog(
+        "system",
+        `Exercise "${currentExerciseName}" learned. Depth avg: ${avgDepth.toFixed(
+          2
+        )}, torso avg: ${avgTorso.toFixed(1)} (samples: ${baselineFrames.length}).`
+      );
+      speak(
+        `Got it. I saved your baseline for ${currentExerciseName}.`,
+        "rep"
+      );
+      definingExercise = false;
+      currentExerciseName = null;
+      baselineFrames = [];
+    }
+
+    function startOhsa() {
+      if (!detector) {
+        alert("Connect camera first.");
+        return;
+      }
+      if (running || definingExercise) {
+        alert("Stop the workout / exercise definition before running OHSA.");
+        return;
+      }
+
+      ohsaMode = true;
+      ohsaPhase = "front";
+      ohsaFrontSamples = [];
+      ohsaSideSamples = [];
+      lastOhsaSummary = null;
+
+      ohsaSummaryViewEl.textContent = "Running OHSA… first: face the camera and give me several good overhead squats.";
+      addLog("system", "OHSA started: front view first.");
+      speak(
+        "We are starting your overhead squat assessment. Face the camera, raise your arms overhead, and give me three to five slow squats with your best form.",
+        "rep"
+      );
+
       runPoseLoop();
-    } else {
-      startBtn.textContent = "Start Workout";
-      running = false;
-      cancelAnimationFrame(animId);
+    }
+
+    function summarizeArray(arr, key) {
+      if (!arr.length) return 0;
+      const vals = arr.map(a => a[key]).filter(v => typeof v === "number");
+      if (!vals.length) return 0;
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    }
+
+    function finishOhsa() {
+      ohsaMode = false;
+      const frontDepthAvg    = summarizeArray(ohsaFrontSamples, "depthScore");
+      const frontKneeValgus  = summarizeArray(ohsaFrontSamples, "kneeValgus");
+      const sideDepthAvg     = summarizeArray(ohsaSideSamples, "depthScore");
+      const sideTorsoAngle   = summarizeArray(ohsaSideSamples, "torsoAngle");
+
+      const findings = [];
+
+      if (frontKneeValgus > 0.15) {
+        findings.push("Knees tend to collapse inward (knee valgus) on squat.");
+      }
+      if (sideTorsoAngle < 65) {
+        findings.push("Trunk leans forward more than ideal in the bottom of the squat.");
+      }
+      if (sideDepthAvg < 0.5 || frontDepthAvg < 0.5) {
+        findings.push("Squat depth is limited (may indicate ankle or hip mobility restrictions).");
+      }
+      if (!findings.length) {
+        findings.push("Movement pattern looks generally balanced with no major overhead-squat faults.");
+      }
+
+      const summary = {
+        front: {
+          samples: ohsaFrontSamples.length,
+          depthScoreAvg: frontDepthAvg,
+          kneeValgusAvg: frontKneeValgus
+        },
+        side: {
+          samples: ohsaSideSamples.length,
+          depthScoreAvg: sideDepthAvg,
+          torsoAngleAvg: sideTorsoAngle
+        },
+        findings
+      };
+
+      lastOhsaSummary = summary;
+      sendOhsaToNode(summary);
+
+      const textSummary =
+        "Overhead Squat Assessment Summary:\n" +
+        `- Front view samples: ${summary.front.samples}\n` +
+        `  · Avg depth score: ${summary.front.depthScoreAvg.toFixed(2)}\n` +
+        `  · Avg knee valgus: ${summary.front.kneeValgusAvg.toFixed(2)}\n` +
+        `- Side view samples: ${summary.side.samples}\n` +
+        `  · Avg depth score: ${summary.side.depthScoreAvg.toFixed(2)}\n` +
+        `  · Avg torso angle: ${summary.side.torsoAngleAvg.toFixed(1)}°\n\n` +
+        "Key findings:\n- " + summary.findings.join("\n- ");
+
+      ohsaSummaryViewEl.textContent = textSummary;
+      addLog("system", "OHSA completed. Summary recorded and sent to Ma’at 2.0 backend.");
+      speak(
+        "Your overhead squat assessment is complete. I’ve logged your movement pattern and will build your plan from this.",
+        "rep"
+      );
+
+      generateProgramFromOhsa(summary);
+    }
+
+    async function runPoseLoop() {
+      if (!running && !definingExercise && !ohsaMode) return;
+      if (!detector) return;
+
+      const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-      addLog("system", "Workout stopped.");
-      sendEndSessionToNode();
-    }
-  }
 
-  // 🔁 UPDATED: async + mic/audio unlock for iPhone
-  async function toggleListening() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      alert("Speech recognition not supported in this browser.");
-      return;
-    }
+      const pose = poses.length ? poses[0] : null;
+      let analysis = analyzeSquatForm(pose);
 
-    if (!recognition) {
-      recognition = new SR();
-      recognition.lang = "en-US";
-      recognition.continuous = true;
-      recognition.interimResults = true;
+      lastDepthScore = analysis.depthScore;
+      lastGoodForm = analysis.goodForm;
 
-      recognition.onresult = e => {
-        const result = e.results[e.results.length - 1];
-        if (!result.isFinal) return;
+      const now = performance.now();
 
-        const transcript = result[0].transcript.trim();
-        if (!transcript || transcript === lastTranscript) return;
-        lastTranscript = transcript;
+      if (!analysis.fullBody) {
+        poseStatusEl.textContent = "No full body in view.";
+        if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
+          if (running || definingExercise || ohsaMode) {
+            speak("Step back so I can see your whole body.", "rep");
+          }
+          lastStepBackSpokenAt = now;
+        }
+      } else {
+        if (!fullBodyAcquired) {
+          fullBodyAcquired = true;
+          if (repFeedbackAllowed && (running || definingExercise || ohsaMode)) {
+            speak("Great, I can see your full body.", "rep");
+          }
+        }
+        poseStatusEl.textContent = analysis.goodForm
+          ? `Form looks solid. Score: ${analysis.depthScore.toFixed(2)}`
+          : `Form needs adjustment. Score: ${analysis.depthScore.toFixed(2)}`;
+      }
 
-        const lower = transcript.toLowerCase();
-        console.log("STT:", transcript);
+      if (pose && pose.keypoints) {
+        const color = analysis.goodForm ? "#22c55e" : "#ef4444";
+        ctx.lineWidth = 3;
 
-        if (lower.includes("mufasa") || lower.includes("coach")) {
-          stopAllSpeech();
-
-          const cleaned = lower
-            .replace("hey", "")
-            .replace("mufasa", "")
-            .replace("coach", "")
-            .trim();
-
-          const msg = cleaned || "give me a quick status update on my workout.";
-          addLog("you", "🎙️ " + transcript);
-          askCoach(msg);
+        for (const [i, j] of SKELETON_EDGES) {
+          const kp1 = pose.keypoints[i];
+          const kp2 = pose.keypoints[j];
+          if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
+            ctx.beginPath();
+            ctx.moveTo(kp1.x, kp1.y);
+            ctx.lineTo(kp2.x, kp2.y);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+          }
         }
 
-        if (lower.includes("start workout")) {
-          if (!running) startWorkout();
-        } else if (lower.includes("stop workout")) {
-          if (running) startWorkout();
-        } else if (lower.includes("run assessment") || lower.includes("overhead squat")) {
-          if (!ohsaMode) startOhsa();
+        for (const kp of pose.keypoints) {
+          if (kp.score > 0.4) {
+            ctx.beginPath();
+            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
         }
-      };
+      }
 
-      recognition.onerror = e => {
-        console.warn("STT error:", e.error);
-        addLog("system", "STT error: " + e.error);
-      };
+      if (definingExercise && analysis.fullBody && analysis.goodForm) {
+        baselineFrames.push({
+          depthScore: analysis.depthScore,
+          torsoAngle: analysis.torsoAngle
+        });
 
-      recognition.onend = () => {
-        if (listening) {
-          try { recognition.start(); } catch {}
-        } else {
-          listenBtn.textContent = "🎙️ Voice On";
+        if (baselineFrames.length === 1) {
+          addLog("system", "Recording exercise baseline… keep moving with good form.");
         }
-      };
+
+        if (baselineFrames.length >= EXERCISE_BASELINE_FRAMES) {
+          finishDefineExercise();
+        }
+      }
+
+      if (ohsaMode && analysis.fullBody) {
+        const depth = analysis.depthScore;
+        if (ohsaPhase === "front") {
+          if (depth > 0.6 && ohsaFrontSamples.length < OHSA_TARGET_SAMPLES_PER_VIEW) {
+            ohsaFrontSamples.push(analysis);
+          }
+          if (ohsaFrontSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
+            ohsaPhase = "side";
+            addLog("system", "OHSA: front view captured. Turn sideways and keep squatting.");
+            ohsaSummaryViewEl.textContent =
+              "Front view captured. Now turn sideways to the camera and give me several more squats.";
+            speak(
+              "Good. Now turn sideways to the camera and give me several more overhead squats with your best form.",
+              "rep"
+            );
+          }
+        } else if (ohsaPhase === "side") {
+          if (depth > 0.6 && ohsaSideSamples.length < OHSA_TARGET_SAMPLES_PER_VIEW) {
+            ohsaSideSamples.push(analysis);
+          }
+          if (ohsaSideSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
+            finishOhsa();
+          }
+        }
+      }
+
+      if (running) {
+        const depth = analysis.depthScore;
+        const DOWN_THRESHOLD = 0.6;
+        const UP_THRESHOLD   = 0.3;
+
+        if (analysis.fullBody) {
+          if (repPhase === "up" && depth > DOWN_THRESHOLD) {
+            repPhase = "down";
+          } else if (repPhase === "down" && depth < UP_THRESHOLD) {
+            repPhase = "up";
+            repCount += 1;
+            totalReps += 1;
+            repCountEl.textContent = String(repCount);
+            sendRepToNode(depth);
+
+            if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
+              if (analysis.goodForm) {
+                speak("Good rep.", "rep");
+              } else {
+                speak("Careful with your form on that rep.", "rep");
+              }
+              lastGoodRepSpokenAt = now;
+            }
+
+            if (repCount === TARGET_REPS) {
+              if (repFeedbackAllowed) {
+                speak(
+                  `Great job. That's ${TARGET_REPS} reps for set ${currentSet}.`,
+                  "rep"
+                );
+              }
+              currentSet += 1;
+
+              if (currentSet <= TARGET_SETS) {
+                repCount = 0;
+                setTimeout(() => {
+                  if (running && repFeedbackAllowed) {
+                    speak(`Rest is over. Let's start set ${currentSet}.`, "rep");
+                  }
+                }, 20000);
+              } else {
+                running = false;
+                startBtn.textContent = "Start Workout";
+                addLog("system", "Workout complete.");
+                if (repFeedbackAllowed) {
+                  speak("Workout complete. Strong work today.", "rep");
+                }
+                sendEndSessionToNode();
+                cancelAnimationFrame(animId);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(runPoseLoop);
     }
 
-    if (!listening) {
-      // 👉 NEW: ask for mic + unlock audio BEFORE starting STT
-      try {
-        await ensureAudioContextUnlocked();
-        await ensureMicAccess();
-      } catch (err) {
-        console.warn("Mic/audio unlock failed:", err);
-        alert("I couldn't access your microphone. Check browser permissions.");
+    async function startWorkout() {
+      if (!detector) return;
+
+      if (definingExercise) {
+        definingExercise = false;
+        baselineFrames = [];
+        currentExerciseName = null;
+        addLog("system", "Cancelled exercise definition to start workout.");
+      }
+      if (ohsaMode) {
+        ohsaMode = false;
+        ohsaFrontSamples = [];
+        ohsaSideSamples = [];
+        addLog("system", "Cancelled OHSA to start workout.");
+      }
+
+      running = !running;
+
+      if (running) {
+        sessionId = "sess_" + Date.now();
+        repCount = 0;
+        totalReps = 0;
+        currentSet = 1;
+        repPhase = "up";
+        fullBodyAcquired = false;
+        repCountEl.textContent = "0";
+        startBtn.textContent = "Stop Workout";
+        addLog("system", `Workout started: ${sessionId}`);
+        speak(
+          `We are doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`,
+          "rep"
+        );
+        sendStartSessionToNode();
+        runPoseLoop();
+      } else {
+        startBtn.textContent = "Start Workout";
+        running = false;
+        cancelAnimationFrame(animId);
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        addLog("system", "Workout stopped.");
+        sendEndSessionToNode();
+      }
+    }
+
+    // 🔁 UPDATED: async + mic/audio unlock for iPhone
+    async function toggleListening() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        alert("Speech recognition not supported in this browser.");
         return;
       }
 
-      listening = true;
-      lastTranscript = "";
-      try {
-        recognition.start();
-      } catch (e) {
-        console.warn("recognition.start failed:", e);
-        addLog("system", "Could not start voice recognition: " + e.message);
+      if (!recognition) {
+        recognition = new SR();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = e => {
+          const result = e.results[e.results.length - 1];
+          if (!result.isFinal) return;
+
+          const transcript = result[0].transcript.trim();
+          if (!transcript || transcript === lastTranscript) return;
+          lastTranscript = transcript;
+
+          const lower = transcript.toLowerCase();
+          console.log("STT:", transcript);
+
+          if (lower.includes("mufasa") || lower.includes("coach")) {
+            stopAllSpeech();
+
+            const cleaned = lower
+              .replace("hey", "")
+              .replace("mufasa", "")
+              .replace("coach", "")
+              .trim();
+
+            const msg = cleaned || "give me a quick status update on my workout.";
+            addLog("you", "🎙️ " + transcript);
+            askCoach(msg);
+          }
+
+          if (lower.includes("start workout")) {
+            if (!running) startWorkout();
+          } else if (lower.includes("stop workout")) {
+            if (running) startWorkout();
+          } else if (lower.includes("run assessment") || lower.includes("overhead squat")) {
+            if (!ohsaMode) startOhsa();
+          }
+        };
+
+        recognition.onerror = e => {
+          console.warn("STT error:", e.error);
+          addLog("system", "STT error: " + e.error);
+        };
+
+        recognition.onend = () => {
+          if (listening) {
+            try { recognition.start(); } catch {}
+          } else {
+            listenBtn.textContent = "🎙️ Voice On";
+          }
+        };
+      }
+
+      if (!listening) {
+        // 👉 NEW: ask for mic + unlock audio BEFORE starting STT
+        try {
+          await ensureAudioContextUnlocked();
+          await ensureMicAccess();
+        } catch (err) {
+          console.warn("Mic/audio unlock failed:", err);
+          alert("I couldn't access your microphone. Check browser permissions.");
+          return;
+        }
+
+        listening = true;
+        lastTranscript = "";
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn("recognition.start failed:", e);
+          addLog("system", "Could not start voice recognition: " + e.message);
+          listening = false;
+          return;
+        }
+        listenBtn.textContent = "🎧 Listening…";
+        addLog("system", "Listening for 'Mufasa' or 'Coach'...");
+      } else {
         listening = false;
+        try { recognition.stop(); } catch {}
+        listenBtn.textContent = "🎙️ Voice On";
+        addLog("system", "Stopped listening.");
+      }
+    }
+
+    function handleWorkoutSelectChange() {
+      const val = workoutSelectEl.value;
+      if (!val) {
+        workoutPlanViewEl.textContent = "Your workout plan will appear here.";
         return;
       }
-      listenBtn.textContent = "🎧 Listening…";
-      addLog("system", "Listening for 'Mufasa' or 'Coach'...");
-    } else {
-      listening = false;
-      try { recognition.stop(); } catch {}
-      listenBtn.textContent = "🎙️ Voice On";
-      addLog("system", "Stopped listening.");
-    }
-  }
-
-  function handleWorkoutSelectChange() {
-    const val = workoutSelectEl.value;
-    if (!val) {
-      workoutPlanViewEl.textContent = "Your workout plan will appear here.";
-      return;
-    }
-    if (val === "ai_today" && aiProgramToday) {
-      workoutPlanViewEl.textContent = aiProgramToday;
-    } else if (STATIC_WORKOUTS[val]) {
-      workoutPlanViewEl.textContent = STATIC_WORKOUTS[val];
-    } else {
-      workoutPlanViewEl.textContent = "No plan found for that selection.";
-    }
-  }
-
-  function buildCalendarFromMeta() {
-    if (!calendarMeta) {
-      calendarViewEl.textContent = "No calendar yet. Run an assessment to generate a plan.";
-      return;
+      if (val === "ai_today" && aiProgramToday) {
+        workoutPlanViewEl.textContent = aiProgramToday;
+      } else if (STATIC_WORKOUTS[val]) {
+        workoutPlanViewEl.textContent = STATIC_WORKOUTS[val];
+      } else {
+        workoutPlanViewEl.textContent = "No plan found for that selection.";
+      }
     }
 
-    const meta = calendarMeta;
-    const startDate = new Date(meta.startDateISO);
-    startDate.setHours(0,0,0,0);
+    function buildCalendarFromMeta() {
+      if (!calendarMeta) {
+        calendarViewEl.textContent = "No calendar yet. Run an assessment to generate a plan.";
+        return;
+      }
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const todayKey = today.toISOString().slice(0,10);
+      const meta = calendarMeta;
+      const startDate = new Date(meta.startDateISO);
+      startDate.setHours(0,0,0,0);
 
-    const workoutDates = new Set();
-    let d = new Date(startDate);
-    for (let w = 0; w < meta.weeks; w++) {
-      for (let day = 0; day < 7; day++) {
-        const dayIdxInWeek = day;
-        if (dayIdxInWeek < meta.daysPerWeek) {
-          workoutDates.add(d.toISOString().slice(0,10));
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const todayKey = today.toISOString().slice(0,10);
+
+      const workoutDates = new Set();
+      let d = new Date(startDate);
+      for (let w = 0; w < meta.weeks; w++) {
+        for (let day = 0; day < 7; day++) {
+          const dayIdxInWeek = day;
+          if (dayIdxInWeek < meta.daysPerWeek) {
+            workoutDates.add(d.toISOString().slice(0,10));
+          }
+          d.setDate(d.getDate() + 1);
         }
-        d.setDate(d.getDate() + 1);
-      }
-    }
-
-    const completed = meta.completedDates || new Set();
-
-    const baseMonth = today.getMonth();
-    const baseYear = today.getFullYear();
-
-    const firstOfMonth = new Date(baseYear, baseMonth, 1);
-    const startWeekday = firstOfMonth.getDay();
-    const daysInMonth = new Date(baseYear, baseMonth + 1, 0).getDate();
-
-    const monthName = firstOfMonth.toLocaleString("default", { month: "long" });
-
-    const header = document.createElement("div");
-    header.className = "cal-header";
-    header.textContent = monthName + " " + baseYear;
-
-    const grid = document.createElement("div");
-    grid.className = "cal-grid";
-
-    const dayLabels = ["S","M","T","W","T","F","S"];
-    for (const label of dayLabels) {
-      const dl = document.createElement("div");
-      dl.className = "cal-day-label";
-      dl.textContent = label;
-      grid.appendChild(dl);
-    }
-
-    for (let i = 0; i < startWeekday; i++) {
-      const cell = document.createElement("div");
-      cell.className = "cal-cell cal-empty";
-      grid.appendChild(cell);
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const cell = document.createElement("div");
-      cell.className = "cal-cell";
-      const dateObj = new Date(baseYear, baseMonth, day);
-      dateObj.setHours(0,0,0,0);
-      const key = dateObj.toISOString().slice(0,10);
-
-      const span = document.createElement("div");
-      span.className = "cal-date";
-      span.textContent = day;
-      cell.appendChild(span);
-
-      if (key === todayKey) {
-        cell.classList.add("cal-today");
-      }
-      if (workoutDates.has(key)) {
-        cell.classList.add("cal-workout");
-      }
-      if (completed.has(key)) {
-        cell.classList.add("cal-done");
       }
 
-      grid.appendChild(cell);
+      const completed = meta.completedDates || new Set();
+
+      const baseMonth = today.getMonth();
+      const baseYear = today.getFullYear();
+
+      const firstOfMonth = new Date(baseYear, baseMonth, 1);
+      const startWeekday = firstOfMonth.getDay();
+      const daysInMonth = new Date(baseYear, baseMonth + 1, 0).getDate();
+
+      const monthName = firstOfMonth.toLocaleString("default", { month: "long" });
+
+      const header = document.createElement("div");
+      header.className = "cal-header";
+      header.textContent = monthName + " " + baseYear;
+
+      const grid = document.createElement("div");
+      grid.className = "cal-grid";
+
+      const dayLabels = ["S","M","T","W","T","F","S"];
+      for (const label of dayLabels) {
+        const dl = document.createElement("div");
+        dl.className = "cal-day-label";
+        dl.textContent = label;
+        grid.appendChild(dl);
+      }
+
+      for (let i = 0; i < startWeekday; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cal-cell cal-empty";
+        grid.appendChild(cell);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement("div");
+        cell.className = "cal-cell";
+        const dateObj = new Date(baseYear, baseMonth, day);
+        dateObj.setHours(0,0,0,0);
+        const key = dateObj.toISOString().slice(0,10);
+
+        const span = document.createElement("div");
+        span.className = "cal-date";
+        span.textContent = day;
+        cell.appendChild(span);
+
+        if (key === todayKey) {
+          cell.classList.add("cal-today");
+        }
+        if (workoutDates.has(key)) {
+          cell.classList.add("cal-workout");
+        }
+        if (completed.has(key)) {
+          cell.classList.add("cal-done");
+        }
+
+        grid.appendChild(cell);
+      }
+
+      calendarViewEl.innerHTML = "";
+      calendarViewEl.appendChild(header);
+      calendarViewEl.appendChild(grid);
     }
 
-    calendarViewEl.innerHTML = "";
-    calendarViewEl.appendChild(header);
-    calendarViewEl.appendChild(grid);
-  }
+    // ---- Wire buttons / events ----
+    connectBtn.onclick = connectCamera;
+    startBtn.onclick = startWorkout;
+    ohsaBtn.onclick = startOhsa;
+    defineExerciseBtn.onclick = startDefineExercise;
+    askBtn.onclick = () => askCoach(questionInput.value.trim());
+    muteBtn.onclick = () => {
+      voiceMuted = !voiceMuted;
+      muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
+      if (voiceMuted) stopAllSpeech();
+    };
+    listenBtn.onclick = toggleListening;
+    workoutSelectEl.onchange = handleWorkoutSelectChange;
 
-  // ---- Wire buttons / events ----
-  connectBtn.onclick = connectCamera;
-  startBtn.onclick = startWorkout;
-  ohsaBtn.onclick = startOhsa;
-  defineExerciseBtn.onclick = startDefineExercise;
-  askBtn.onclick = () => askCoach(questionInput.value.trim());
-  muteBtn.onclick = () => {
-    voiceMuted = !voiceMuted;
-    muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
-    if (voiceMuted) stopAllSpeech();
-  };
-  listenBtn.onclick = toggleListening;
-  workoutSelectEl.onchange = handleWorkoutSelectChange;
+    questionInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") askCoach(questionInput.value.trim());
+    });
 
-  questionInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") askCoach(questionInput.value.trim());
-  });
-
-  // ---- On load ----
-  window.addEventListener("load", () => {
-    exerciseLabelEl.textContent = "Bodyweight Squat";
-    addLog("system", "Page loaded. Connect your camera to begin.");
-    if (USER_PROFILE) {
-      addLog("system", "Loaded your profile from memory.");
-      buildCalendarFromMeta();
-    }
-    console.log("tf loaded:", typeof tf !== "undefined");
-    console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
-  });
-</script>
+    // ---- On load ----
+    window.addEventListener("load", () => {
+      exerciseLabelEl.textContent = "Bodyweight Squat";
+      addLog("system", "Page loaded. Connect your camera to begin.");
+      if (USER_PROFILE) {
+        addLog("system", "Loaded your profile from memory.");
+        buildCalendarFromMeta();
+      }
+      console.log("tf loaded:", typeof tf !== "undefined");
+      console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
+    });
+  </script>
+</body>
+</html>
