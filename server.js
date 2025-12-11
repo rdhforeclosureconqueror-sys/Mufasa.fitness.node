@@ -1,77 +1,78 @@
-// src/server.js 
-// Mufasa Fitness Node – command router for the fitness domain
+// src/server.js
+// Mufasa Fitness Node – routes commands to domains (Fitness, etc.)
 
 "use strict";
 
 const express = require("express");
 const cors = require("cors");
+const bodyParser = require("body-parser");
+const http = require("http");
 
+// Domains
 const { handleFitnessCommand } = require("./domains/fitness");
 
-const PORT = process.env.PORT || 3000;
-
 const app = express();
+const server = http.createServer(app);
 
-// Basic JSON API + CORS
+// Basic middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Simple broadcast hook – right now just logs to console,
-// but you can later wire this into WebSockets or SSE.
-app.locals.broadcast = function broadcast(msg) {
-  console.log("[broadcast]", JSON.stringify(msg));
+// Simple broadcast stub (can later be upgraded to WebSocket or SSE)
+app.locals.broadcast = function broadcast(message) {
+  try {
+    console.log("[broadcast]", JSON.stringify(message));
+  } catch {
+    console.log("[broadcast]", message);
+  }
 };
 
-// Health check (Render will hit this sometimes)
+// Health check
 app.get("/health", (req, res) => {
   res.json({
     ok: true,
-    label: "Mufasa Fitness Node",
-    version: "2.0.0",
+    service: "mufasa-fitness-node",
+    ts: Date.now(),
   });
 });
 
-// Main command endpoint called from your front-end:
-// POST /command { domain, command, userId, payload }
+// Generic command router
+// Body shape: { domain, command, userId, payload }
 app.post("/command", async (req, res) => {
+  const { domain, command, userId, payload } = req.body || {};
+
+  if (!domain) {
+    return res.status(400).json({ ok: false, error: "Missing 'domain'" });
+  }
+  if (!command) {
+    return res.status(400).json({ ok: false, error: "Missing 'command'" });
+  }
+
   try {
-    const { domain, command, userId, payload } = req.body || {};
+    let result;
 
-    if (!domain || !command) {
-      return res.status(400).json({
-        ok: false,
-        error: "domain and command are required",
-      });
+    switch (domain) {
+      case "fitness":
+        result = await handleFitnessCommand({ command, userId, payload, app });
+        break;
+
+      default:
+        return res.status(400).json({ ok: false, error: "Unknown domain: " + domain });
     }
 
-    if (domain !== "fitness") {
-      return res.status(400).json({
-        ok: false,
-        error: `Unknown domain: ${domain}`,
-      });
-    }
-
-    const result = await handleFitnessCommand({
-      domain,
-      command,
-      userId: userId || "anonymous",
-      payload: payload || {},
-      app,
-    });
-
-    // result already has { ok: true, ... } shape
-    res.json(result);
+    res.json(result || { ok: true });
   } catch (err) {
-    console.error("Error in /command:", err);
+    console.error("Error handling command:", command, err);
     res.status(500).json({
       ok: false,
-      error: err.message || "Internal server error",
+      error: err && err.message ? err.message : String(err),
     });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Mufasa fitness node listening on port ${PORT}`);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("🔥 Mufasa fitness node listening on", PORT);
 });
 
-module.exports = app;
+module.exports = { app, server };
