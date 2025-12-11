@@ -56,6 +56,10 @@ async function handleFitnessCommand(context) {
     case "fitness.getProgram":
       return await handleGetProgram(userId, payload, app);
 
+    // 🔥 NEW: front-end chat goes through Node using this action-aware wrapper
+    case "fitness.askCoach":
+      return await handleAskCoach(userId, payload, app);
+
     default:
       throw new Error("Unknown fitness command: " + command);
   }
@@ -91,14 +95,8 @@ async function handleStartSession(userId, payload, app) {
 
 async function handleRepUpdate(userId, payload, app) {
   const broadcast = app.locals.broadcast;
-  const {
-    sessionId,
-    exerciseId,
-    repsThisSet,
-    totalReps,
-    depthScore,
-    goodForm,
-  } = payload || {};
+  const { sessionId, exerciseId, repsThisSet, totalReps, depthScore, goodForm } =
+    payload || {};
 
   console.log("Rep update:", {
     userId,
@@ -513,6 +511,71 @@ async function handleGetProgram(userId, payload, app) {
   return {
     ok: true,
     program: data.program || null,
+  };
+}
+
+// ─────────────────────────────────────────────
+// NEW: Environment Action wrapper – fitness.askCoach
+// ─────────────────────────────────────────────
+
+async function handleAskCoach(userId, payload, app) {
+  const broadcast = app.locals.broadcast;
+  const {
+    question,
+    telemetry,
+    context,
+    sessionId,
+    mode = "chat",
+  } = payload || {};
+
+  if (!question) {
+    throw new Error("fitness.askCoach requires payload.question");
+  }
+
+  const body = {
+    question,
+    user_id: userId || "anonymous",
+    session_id: sessionId || null,
+    telemetry: telemetry || null,
+    context: typeof context === "string" ? context : JSON.stringify(context || {}),
+    mode,
+  };
+
+  console.log("fitness.askCoach → /ask body:", body);
+
+  const resp = await fetch(ASK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    console.error("Ma’at /ask failed:", resp.status, text);
+    throw new Error(`Ma’at /ask HTTP ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  const answer = data.answer || data.response || "";
+  const actions = Array.isArray(data.actions) ? data.actions : [];
+
+  if (broadcast) {
+    broadcast({
+      event: "fitness.llmAnswer",
+      userId,
+      question,
+      answer,
+      actions,
+    });
+  }
+
+  // For now, Node does NOT mutate anything by itself.
+  // It just passes back the actions so the front-end can update
+  // calendar, programs, etc. Later we can add server-side effects here.
+  return {
+    ok: true,
+    answer,
+    actions,
   };
 }
 
