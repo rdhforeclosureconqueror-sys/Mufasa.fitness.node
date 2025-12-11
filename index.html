@@ -2,491 +2,484 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mufasa Live Coach – Ma’at 2.0</title>
+  <title>Pan-African Virtual Wellness Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Google Identity (for optional Google sign-in) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- TensorFlow + Pose Detection (UMD builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
 
-  <!-- Google Sign-In -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- Favicon (to avoid 404) -->
+  <!-- Simple favicon so we don’t get 404s -->
   <link rel="icon" href="data:,">
 
   <style>
-    :root {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020617;
-      color: #e5e7eb;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617; /* nearly black */
+      color: #e5e7eb;
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      padding: 16px;
     }
 
-    header {
-      padding: 0.75rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #1f2937;
-      background: radial-gradient(circle at top left, #0f172a, #020617);
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      border: 1px solid #4b5563;
-      background: #020617;
-    }
-
-    .status-ok {
-      color: #22c55e;
-    }
-    .status-bad {
-      color: #f97316;
-    }
-
-    #userInfo {
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    #userPic {
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      object-fit: cover;
-      border: 1px solid #4b5563;
-    }
-
-    #signOutBtn {
-      font-size: 0.75rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      border: 1px solid #4b5563;
-      background: transparent;
-      color: #e5e7eb;
-      cursor: pointer;
-    }
-
-    main {
-      flex: 1;
+    .app {
+      width: 100%;
+      max-width: 1100px;
+      background: radial-gradient(circle at top left, #020617, #000000);
+      border-radius: 16px;
+      border: 2px solid #facc15; /* gold outline */
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
+      padding: 20px;
       display: grid;
-      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
-      gap: 1rem;
-      padding: 1rem;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 20px;
     }
 
-    @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; }
     }
 
-    .left-pane, .right-pane {
-      border-radius: 0.75rem;
-      border: 1px solid #111827;
-      background: radial-gradient(circle at top, #020617, #020617);
-      padding: 0.75rem;
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    h2 { font-size: 1.1rem; }
+    .subtitle { font-size: 0.9rem; color: #9ca3af; margin-bottom: 12px; }
+
+    .pane {
+      background: rgba(3, 7, 18, 0.95);
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid #facc15; /* gold edge on each panel */
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 12px;
     }
 
-    .video-wrapper {
+    .video-shell {
       position: relative;
       width: 100%;
-      max-height: 60vh;
-      border-radius: 0.75rem;
+      aspect-ratio: 4 / 3;
+      border-radius: 12px;
       overflow: hidden;
-      background: #020617;
-      border: 1px solid #1f2937;
+      background: #000;
+      border: 1px solid #22c55e; /* green edge */
     }
 
-    #video, #overlay {
-      display: block;
-      width: 100%;
-    }
-
-    #overlay {
+    video, canvas {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-    }
-
-    .status-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      font-size: 0.8rem;
-      align-items: center;
-      justify-content: space-between;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .btn-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.25rem;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
     }
 
     button {
+      border: none;
       border-radius: 999px;
-      border: 1px solid #4b5563;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 0.3rem 0.7rem;
-      font-size: 0.8rem;
+      padding: 8px 14px;
+      font-size: 0.9rem;
       cursor: pointer;
+      background: #22c55e; /* green primary */
+      color: #0b1120;
+      font-weight: 600;
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.08s ease;
     }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
+    button.secondary {
+      background: #020617;
+      border: 1px solid #ef4444; /* red accent */
+      color: #fecaca;
     }
 
+    button:disabled { opacity: 0.5; cursor: default; }
     button:hover:not(:disabled) {
-      background: #111827;
+      transform: translateY(-1px);
+      background: #16a34a;
+      color: #ecfdf5;
+    }
+
+    .status-line { font-size: 0.8rem; color: #9ca3af; }
+    .status-ok { color: #22c55e; }
+    .status-bad { color: #ef4444; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #020617;
+      border: 1px solid #facc15; /* gold */
+      color: #fde68a;
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e; /* green */
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+    }
+
+    input[type="text"] {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: #020617;
+      color: #e5e7eb;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    input[type="text"]::placeholder { color: #6b7280; }
+
+    select {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid #facc15;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    /* voice dropdown override so it’s small in the button row */
+    #voiceSelect {
+      width: auto;
+      min-width: 120px;
+      max-width: 220px;
     }
 
     #coach-log {
       flex: 1;
-      background: #020617;
-      border-radius: 0.5rem;
-      border: 1px solid #111827;
-      padding: 0.5rem;
-      font-size: 0.75rem;
+      min-height: 120px;
+      max-height: 260px;
       overflow-y: auto;
-      max-height: 180px;
-    }
-
-    .log-line {
-      margin-bottom: 0.25rem;
-    }
-    .log-line.you {
-      color: #93c5fd;
-    }
-    .log-line.coach {
-      color: #bbf7d0;
-    }
-    .log-line.system {
-      color: #e5e7eb;
-      opacity: 0.8;
-    }
-
-    .metric-row {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
+      background: #020617;
+      border-radius: 10px;
+      padding: 8px 10px;
+      border: 1px solid rgba(31, 41, 55, 0.9);
       font-size: 0.85rem;
     }
 
-    .metric-pill {
-      padding: 0.25rem 0.6rem;
-      border-radius: 999px;
-      border: 1px solid #4b5563;
+    #workoutPlanView, #ohsSummaryView {
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: #020617;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+
+    .log-line { margin-bottom: 4px; }
+    .log-line.you { color: #e5e7eb; }
+    .log-line.coach { color: #a5b4fc; }
+    .log-line.system { color: #6b7280; font-style: italic; }
+
+    /* ---- Calendar ---- */
+    #calendarView {
+      margin-top: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: #020617;
+      padding: 6px 8px;
       font-size: 0.75rem;
     }
 
-    .right-pane-section {
-      border-radius: 0.6rem;
-      border: 1px solid #111827;
-      padding: 0.5rem 0.6rem;
-      background: #020617;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    .right-pane-section h2 {
-      margin: 0;
-      font-size: 0.9rem;
-    }
-
-    textarea, input, select {
-      border-radius: 0.5rem;
-      border: 1px solid #4b5563;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 0.4rem 0.5rem;
-      font-size: 0.8rem;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    textarea {
-      min-height: 70px;
-      resize: vertical;
-    }
-
-    #calendarView .cal-header {
+    .cal-header {
       text-align: center;
-      font-size: 0.85rem;
-      margin-bottom: 0.25rem;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #facc15;
     }
 
     .cal-grid {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 0.15rem;
-      font-size: 0.7rem;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
     }
 
     .cal-day-label {
       text-align: center;
-      opacity: 0.7;
+      color: #9ca3af;
+      font-size: 0.7rem;
     }
 
     .cal-cell {
-      border-radius: 0.3rem;
-      border: 1px solid #111827;
-      padding: 0.25rem;
-      min-height: 28px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-    }
-
-    .cal-date {
-      font-size: 0.7rem;
+      min-height: 32px;
+      border-radius: 6px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      text-align: center;
+      padding: 2px;
+      cursor: default;
     }
 
     .cal-empty {
       border: none;
+      background: transparent;
+    }
+
+    .cal-date {
+      font-size: 0.75rem;
     }
 
     .cal-today {
-      border-color: #93c5fd;
+      border-color: #facc15;
+      box-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
     }
 
     .cal-workout {
-      background: rgba(59, 130, 246, 0.15);
-    }
-
-    .cal-done {
-      background: rgba(34, 197, 94, 0.25);
+      background: rgba(34, 197, 94, 0.18);
       border-color: #22c55e;
     }
 
-    /* Login overlay */
-    #loginOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 40;
+    .cal-done {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #022c22;
+      font-weight: 600;
     }
 
-    #loginOverlay.hidden {
-      display: none;
-    }
-
-    .login-card {
+    .small-card {
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
       background: #020617;
-      border-radius: 0.75rem;
-      border: 1px solid #1f2937;
-      padding: 1rem 1.25rem;
-      max-width: 320px;
-      width: 90%;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-      text-align: center;
-    }
-
-    .login-card h2 {
-      margin-top: 0;
-      font-size: 1rem;
+      padding: 6px 8px;
+      font-size: 0.8rem;
     }
 
     .login-row {
-      margin-top: 0.6rem;
       display: flex;
-      gap: 0.4rem;
-      justify-content: stretch;
+      gap: 8px;
+      margin-bottom: 6px;
     }
 
-    .login-row input {
-      flex: 1;
+    /* ---- LOGIN OVERLAY ---- */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      backdrop-filter: blur(8px) brightness(0.4);
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      flex-direction: column;
+      transition: opacity 0.4s ease;
+    }
+    #loginOverlay.hidden { opacity: 0; pointer-events: none; }
+
+    #loginBox {
+      background: radial-gradient(circle at top, #020617, #000000);
+      border: 2px solid #facc15;
+      border-radius: 20px;
+      padding: 32px 40px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(250,204,21,0.4);
+      color: #facc15;
+      max-width: 360px;
+    }
+    #loginBox h1 {
+      color: #facc15;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+    #loginBox p {
+      font-size: 0.9rem;
+      color: #fde68a;
+      margin-bottom: 16px;
+    }
+    #googleBtn {
+      margin-top: 10px;
+      background: linear-gradient(90deg,#ef4444,#16a34a);
+      color: #fff;
+      border: 2px solid #facc15;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .3s ease;
+    }
+    #googleBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #facc15;
     }
 
-    footer {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.7rem;
-      opacity: 0.6;
-      text-align: right;
-      border-top: 1px solid #111827;
-      background: #020617;
+    #userInfo {
+      position: fixed;
+      top: 8px;
+      right: 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 2000;
+    }
+    #userInfo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #facc15;
+    }
+    #userName {
+      color: #facc15;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    #signOutBtn {
+      background: #ef4444;
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      padding: 4px 10px;
+      font-size: .75rem;
+      cursor: pointer;
+    }
+    #signOutBtn:hover { background: #b91c1c; }
+
+    #voiceSupportStatus {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 4px;
     }
   </style>
 </head>
+
 <body>
-  <header>
-    <h1>
-      🦁 Mufasa Live Coach
-      <span class="chip">
-        <span id="brainChipText">Ma’at 2.0</span>
-      </span>
-    </h1>
-
-    <div class="chip" id="voiceSupportStatus">Checking voice support…</div>
-
-    <div id="userInfo">
-      <img id="userPic" src="https://i.imgur.com/9z3s8Gh.png" alt="User" />
-      <span id="userName">User</span>
-      <button id="signOutBtn">Sign out</button>
-    </div>
-  </header>
-
-  <main>
-    <!-- LEFT: Video, pose, log -->
-    <section class="left-pane">
-      <div class="status-row">
-        <div>
-          <span class="chip" id="poseStatus">Camera not connected.</span>
-        </div>
-        <div>
-          <span class="chip" id="brainStatus">Checking Ma’at 2.0…</span>
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button id="connectBtn">📷 Connect Camera</button>
-        <button id="startBtn" disabled>🏋🏾 Start Workout</button>
-        <button id="ohsaBtn" disabled>📊 Run OHSA</button>
-        <button id="defineExerciseBtn" disabled>✨ Define Exercise</button>
-        <button id="muteBtn">🔊 Mute</button>
-        <button id="listenBtn">🎙️ Voice On</button>
-      </div>
-
-      <div class="video-wrapper">
-        <video id="video" autoplay playsinline></video>
-        <canvas id="overlay"></canvas>
-      </div>
-
-      <div class="metric-row">
-        <div class="metric-pill">
-          <strong id="exerciseLabel">Bodyweight Squat</strong>
-        </div>
-        <div class="metric-pill">
-          Reps this set: <span id="repCount">0</span>
-        </div>
-      </div>
-
-      <div id="coach-log"></div>
-    </section>
-
-    <!-- RIGHT: Workout plan, OHSA, calendar, Q&A -->
-    <section class="right-pane">
-      <div id="profileSummary" class="right-pane-section">
-        <h2>Profile</h2>
-        <div>Not signed in yet.</div>
-      </div>
-
-      <div class="right-pane-section">
-        <h2>Workout Plan</h2>
-        <label style="font-size:0.75rem; opacity:0.8;">
-          Choose plan:
-          <select id="workoutSelect">
-            <option value="">-- select --</option>
-            <option value="ai_today">AI – Today’s Plan</option>
-            <option value="nasm_total_body_a">NASM Total Body A</option>
-            <option value="yoga_back_release">Yoga – Back Release</option>
-          </select>
-        </label>
-        <pre id="workoutPlanView" style="white-space: pre-wrap; margin:0; font-size:0.75rem;">
-Your workout plan will appear here.
-        </pre>
-      </div>
-
-      <div class="right-pane-section">
-        <h2>Overhead Squat Assessment</h2>
-        <pre id="ohsSummaryView" style="white-space: pre-wrap; margin:0; font-size:0.75rem;">
-No assessment run yet.
-        </pre>
-      </div>
-
-      <div class="right-pane-section">
-        <h2>Training Calendar</h2>
-        <div id="calendarView" style="font-size:0.75rem;">
-          No calendar yet. Run an assessment to generate a plan.
-        </div>
-      </div>
-
-      <div class="right-pane-section">
-        <h2>Ask Ma’at 2.0</h2>
-        <textarea id="questionInput" placeholder="Ask about form, pain, or your program…"></textarea>
-        <div class="btn-row">
-          <button id="askBtn">🤖 Ask Ma’at</button>
-        </div>
-        <small style="opacity:0.7; font-size:0.7rem;">
-          Or say “Mufasa…” / “Coach…” with Voice On to talk hands-free.
-        </small>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    Ma’at 2.0 · Pose-aware coaching · Pan-African wellness engine
-  </footer>
-
-  <!-- Hidden TTS audio element for OpenVoice -->
-  <audio id="ttsAudio"></audio>
-
-  <!-- Login Overlay -->
+  <!-- LOGIN OVERLAY -->
   <div id="loginOverlay">
-    <div class="login-card">
-      <h2>Sign in to Ma’at 2.0</h2>
-      <p style="font-size:0.8rem; opacity:0.85;">
-        Use Google or enter a name to create your athlete profile.
-      </p>
+    <div id="loginBox">
+      <h1>Enter the Mufasa Realm 🔥</h1>
+      <p>Sign in to unlock your Pan-African Ma’at 2.0 dashboard.</p>
 
-      <div class="btn-row" style="justify-content:center; margin-top:0.5rem;">
-        <button id="googleBtn">🔐 Sign in with Google</button>
+      <div style="margin-bottom:10px;">
+        <input id="manualName" type="text"
+               placeholder="Type a username (e.g. rashad)…"
+               style="width:100%;margin-bottom:8px;" />
+        <button id="manualLoginBtn" style="width:100%;">Continue</button>
       </div>
 
-      <div style="margin:0.5rem 0; font-size:0.7rem; opacity:0.65;">
-        — or —
-      </div>
-
-      <div class="login-row">
-        <input id="manualName" placeholder="Enter your name" />
-        <button id="manualLoginBtn">Continue</button>
-      </div>
+      <div style="font-size:0.75rem;color:#9ca3af;margin:6px 0;">— or —</div>
+      <button id="googleBtn">Continue with Google</button>
     </div>
   </div>
 
-  <!-- Main Coach Script -->
+  <!-- USER INFO BAR -->
+  <div id="userInfo">
+    <img id="userPic" src="" alt="profile" />
+    <span id="userName"></span>
+    <button id="signOutBtn">Sign out</button>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="app">
+    <!-- LEFT: Live coach + video -->
+    <div class="pane">
+      <h1>Pan-African Virtual Wellness Platform</h1>
+      <p class="subtitle">
+        The world’s first Pan-African virtual fitness platform powered by Ma’at&nbsp;2.0.
+      </p>
+
+      <div class="video-shell">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div class="btn-row">
+        <button id="connectBtn">Connect Camera</button>
+        <button id="startBtn" class="secondary" disabled>Start Workout</button>
+        <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
+        <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
+        <button id="listenBtn" class="secondary">🎙️ Voice On</button>
+        <button id="muteBtn" class="secondary">🔊 Mute</button>
+
+        <!-- 🔻 NEW: Voice selection dropdown (no more guessing where to paste the clip) -->
+        <select id="voiceSelect">
+          <option value="">Loading voices…</option>
+        </select>
+
+        <span class="chip">
+          <span class="chip-dot"></span>
+          <span id="brainChipText">Ma’at 2.0: connecting…</span>
+        </span>
+      </div>
+
+      <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
+      <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
+      <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
+      <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
+      <div id="voiceSupportStatus"></div>
+    </div>
+
+    <!-- RIGHT: Profile + Today’s workout + calendar + chat -->
+    <div class="pane">
+      <!-- Profile summary -->
+      <h2>Profile</h2>
+      <p class="subtitle">Ma’at 2.0 remembers you and builds long-term programs from here.</p>
+
+      <div id="profileSummary" class="small-card">
+        Not signed in yet.
+      </div>
+
+      <!-- Today’s Workout -->
+      <h2 style="margin-top:12px;">Today’s Workout</h2>
+      <p class="subtitle">Choose a template or use Ma’at 2.0’s program from your assessment.</p>
+
+      <select id="workoutSelect">
+        <option value="">— Select a workout —</option>
+        <option value="ai_today">Ma’at 2.0 – Today’s Program</option>
+        <option value="nasm_total_body_a">NASM Total Body A (Template)</option>
+        <option value="yoga_back_release">Yoga Back Release Flow (Template)</option>
+      </select>
+
+      <div id="workoutPlanView">
+        Your workout plan will appear here after you sign in and select or generate a program.
+      </div>
+
+      <!-- Calendar -->
+      <h2 style="margin-top:12px;">Workout Calendar</h2>
+      <p class="subtitle">Gold = today, green = workout days (solid green = completed).</p>
+      <div id="calendarView"></div>
+
+      <!-- OHS Summary -->
+      <h2 style="margin-top:12px;">Overhead Squat Assessment</h2>
+      <p class="subtitle">
+        Run the assessment first. Ma’at 2.0 will read your movement and build your plan.
+      </p>
+      <div id="ohsSummaryView">No assessment run yet.</div>
+
+      <!-- Chat -->
+      <h2 style="margin-top:12px;">Mufasa Chat</h2>
+      <p class="subtitle">Talk or type. Say “Mufasa …” or “Coach …” for hands-free coaching.</p>
+      <div style="display:flex; gap:8px;">
+        <input id="questionInput" type="text" placeholder="Ask or speak to your coach..." />
+        <button id="askBtn">Ask</button>
+      </div>
+      <div id="coach-log"></div>
+    </div>
+  </div>
+
   <script>
     console.log("🔥 Ma’at 2.0 coach script initialized");
-
-    // 🔁 NEW: unify SpeechRecognition for desktop + iOS
-    window.SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
 
     // ---- Backend endpoints ----
     const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
@@ -495,40 +488,6 @@ No assessment run yet.
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
-
-    // 🔊 OpenVoice TTS endpoint (Flask app's /speak)
-    // When your OpenVoice server is ready, set this to "https://your-server.onrender.com/speak"
-    const OPENVOICE_TTS_URL = ""; // blank => skip OpenVoice, use browser TTS only
-
-    const ttsAudioEl = document.getElementById("ttsAudio");
-
-    // 🔁 NEW: iPhone audio + mic helpers
-    let audioCtx;
-    let micStream = null;
-
-    async function ensureAudioContextUnlocked() {
-      try {
-        if (!audioCtx) {
-          const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (!Ctx) return; // old browsers
-          audioCtx = new Ctx();
-        }
-        if (audioCtx.state === "suspended") {
-          await audioCtx.resume();
-        }
-      } catch (e) {
-        console.warn("AudioContext resume failed:", e);
-      }
-    }
-
-    async function ensureMicAccess() {
-      if (micStream) return; // already granted
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Microphone not supported on this device.");
-      }
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("🎙️ Mic permission granted");
-    }
 
     // ---- Login / user state ----
     const overlay = document.getElementById("loginOverlay");
@@ -655,6 +614,7 @@ No assessment run yet.
       if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
 
       if (!calendarMeta) {
+        // default 12 week / 4 day schedule starting today
         const today = new Date();
         today.setHours(0,0,0,0);
         calendarMeta = {
@@ -684,14 +644,12 @@ No assessment run yet.
         : "Build strength and mobility";
 
       profileSummaryEl.innerHTML =
-        `<h2>Profile</h2>` +
-        `<div style="font-size:0.8rem;">` +
         `<strong>Signed in as ${profile.name || "User"}</strong><br/>` +
         (profile.age ? `Age: ${profile.age}<br/>` : "") +
         (profile.height ? `Height: ${profile.height}<br/>` : "") +
         (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
         `Goal: ${goalText}<br/>` +
-        `Injuries: ${inj}</div>`;
+        `Injuries: ${inj}`;
     }
 
     manualLoginBtn.onclick = () => {
@@ -741,7 +699,7 @@ No assessment run yet.
       USER_PROFILE = null;
       calendarMeta = null;
       userInfoBar.style.display = "none";
-      profileSummaryEl.innerHTML = "<h2>Profile</h2><div>Not signed in yet.</div>";
+      profileSummaryEl.textContent = "Not signed in yet.";
       try {
         localStorage.removeItem("maatUserId");
         localStorage.removeItem("maatUserProfile");
@@ -768,6 +726,65 @@ No assessment run yet.
     } else {
       voiceSupportStatusEl.textContent = "Full voice coaching available on this device.";
       voiceSupportStatusEl.classList.add("status-ok");
+    }
+
+    // 🔻 NEW: voice dropdown wiring
+    const voiceSelectEl = document.getElementById("voiceSelect");
+    let availableVoices = [];
+    let selectedVoice = null;
+
+    function populateVoices() {
+      if (!hasSpeechSynth) {
+        if (voiceSelectEl) {
+          voiceSelectEl.innerHTML = "<option value=''>No speech output</option>";
+        }
+        return;
+      }
+      const voices = window.speechSynthesis.getVoices();
+      availableVoices = voices;
+      if (!voiceSelectEl) return;
+
+      voiceSelectEl.innerHTML = "";
+
+      if (!voices || !voices.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Default voice";
+        voiceSelectEl.appendChild(opt);
+        selectedVoice = null;
+        return;
+      }
+
+      voices.forEach((v, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = v.name + (v.lang ? ` (${v.lang})` : "");
+        voiceSelectEl.appendChild(opt);
+      });
+
+      // Prefer an English voice if available
+      let defaultIndex = voices.findIndex(v => (v.lang || "").toLowerCase().startsWith("en"));
+      if (defaultIndex < 0) defaultIndex = 0;
+      voiceSelectEl.value = String(defaultIndex);
+      selectedVoice = voices[defaultIndex] || null;
+    }
+
+    if (hasSpeechSynth) {
+      populateVoices();
+      window.speechSynthesis.onvoiceschanged = populateVoices;
+    } else if (voiceSelectEl) {
+      voiceSelectEl.innerHTML = "<option value=''>No speech output</option>";
+    }
+
+    if (voiceSelectEl) {
+      voiceSelectEl.addEventListener("change", () => {
+        const idx = parseInt(voiceSelectEl.value, 10);
+        if (!Number.isNaN(idx) && availableVoices[idx]) {
+          selectedVoice = availableVoices[idx];
+        } else {
+          selectedVoice = null;
+        }
+      });
     }
 
     // ---- Static workout templates ----
@@ -859,7 +876,7 @@ No assessment run yet.
     let ohsaPhase = null;             // "front" or "side"
     let ohsaFrontSamples = [];        // analysis objects from front view
     let ohsaSideSamples = [];         // analysis objects from side view
-    const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
+    const OHSA_TARGET_SAMPLES_PER_VIEW = 40; // ~several reps worth of frames
     let lastOhsaSummary = null;
 
     // AI-generated program
@@ -874,13 +891,13 @@ No assessment run yet.
 
     // skeleton edges for MoveNet keypoints (indices 0–16)
     const SKELETON_EDGES = [
-      [5, 7], [7, 9],
-      [6, 8], [8, 10],
-      [5, 6],
-      [5, 11], [6, 12],
-      [11, 12],
-      [11, 13], [13, 15],
-      [12, 14], [14, 16]
+      [5, 7], [7, 9],        // left arm
+      [6, 8], [8, 10],       // right arm
+      [5, 6],                // shoulders
+      [5, 11], [6, 12],      // torso
+      [11, 12],              // hips
+      [11, 13], [13, 15],    // left leg
+      [12, 14], [14, 16]     // right leg
     ];
 
     function addLog(kind, text) {
@@ -895,85 +912,36 @@ No assessment run yet.
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
-      if (ttsAudioEl) {
-        try { ttsAudioEl.pause(); } catch {}
-      }
     }
 
-    // 🔊 OpenVoice + browser TTS hybrid
     function speak(text, source = "system") {
-      if (voiceMuted || !text) return;
+      if (voiceMuted || !("speechSynthesis" in window)) return;
 
-      // Only block rep chatter while LLM is talking
       if (speechLock && source === "rep") return;
 
       stopAllSpeech();
 
-      (async () => {
-        await ensureAudioContextUnlocked(); // 🔁 NEW: unlock audio on iOS
+      const u = new SpeechSynthesisUtterance(text);
+      // 🔻 NEW: use selected browser voice if chosen
+      if (selectedVoice) {
+        u.voice = selectedVoice;
+      }
+      u.rate = 1.0;
+      u.pitch = 1.0;
 
-        let usedOpenVoice = false;
+      if (source === "llm") {
+        speechLock = true;
+        repFeedbackAllowed = false;
+      }
 
-        // try OpenVoice first if configured
-        if (OPENVOICE_TTS_URL && OPENVOICE_TTS_URL.startsWith("http")) {
-          try {
-            if (source === "llm") {
-              speechLock = true;
-              repFeedbackAllowed = false;
-            }
-
-            const res = await fetch(OPENVOICE_TTS_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text })
-            });
-
-            if (!res.ok) throw new Error("OpenVoice HTTP " + res.status);
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-
-            ttsAudioEl.src = url;
-            await ttsAudioEl.play();
-            usedOpenVoice = true;
-
-            ttsAudioEl.onended = () => {
-              URL.revokeObjectURL(url);
-              if (source === "llm") {
-                speechLock = false;
-                repFeedbackAllowed = true;
-              }
-            };
-          } catch (err) {
-            console.warn("OpenVoice failed, falling back to browser TTS:", err);
-            usedOpenVoice = false;
-            if (source === "llm") {
-              speechLock = false;
-              repFeedbackAllowed = true;
-            }
-          }
+      u.onend = () => {
+        if (source === "llm") {
+          speechLock = false;
+          repFeedbackAllowed = true;
         }
+      };
 
-        // fallback: Web Speech API
-        if (!usedOpenVoice && "speechSynthesis" in window) {
-          const u = new SpeechSynthesisUtterance(text);
-          u.rate = 1.0;
-          u.pitch = 1.0;
-
-          if (source === "llm") {
-            speechLock = true;
-            repFeedbackAllowed = false;
-          }
-
-          u.onend = () => {
-            if (source === "llm") {
-              speechLock = false;
-              repFeedbackAllowed = true;
-            }
-          };
-
-          window.speechSynthesis.speak(u);
-        }
-      })();
+      window.speechSynthesis.speak(u);
     }
 
     function getKeypoint(pose, name) {
@@ -1103,6 +1071,7 @@ No assessment run yet.
       };
       sendToNode(body);
 
+      // mark today's workout as completed in calendar
       if (calendarMeta) {
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -1247,6 +1216,7 @@ No assessment run yet.
     async function generateProgramFromOhsa(summary) {
       if (!summary) return;
 
+      // 1) Ask Ma’at (chat style) for today's description
       const question =
         "You are Ma’at 2.0, my NASM-informed Pan-African virtual coach. " +
         "Using this Overhead Squat Assessment result and my profile, " +
@@ -1272,6 +1242,7 @@ No assessment run yet.
       workoutPlanViewEl.textContent = aiProgramToday;
       addLog("system", "Ma’at 2.0 created today’s program from your assessment.");
 
+      // 2) Ask program engine for structured calendar meta (weeks / days_per_week)
       try {
         const res = await fetch(PROGRAM_URL, {
           method: "POST",
@@ -1284,7 +1255,9 @@ No assessment run yet.
             home_only: true,
             yoga_heavy: true,
             assessment_summary: JSON.stringify(summary),
-            extra_context: ""
+            extra_context: "",
+            start_date: new Date().toISOString().slice(0,10),
+            created_by: USER_ID
           })
         });
         const data = await res.json();
@@ -1660,8 +1633,7 @@ No assessment run yet.
       }
     }
 
-    // 🔁 UPDATED: async + mic/audio unlock for iPhone
-    async function toggleListening() {
+    function toggleListening() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
         alert("Speech recognition not supported in this browser.");
@@ -1723,31 +1695,14 @@ No assessment run yet.
       }
 
       if (!listening) {
-        // 👉 NEW: ask for mic + unlock audio BEFORE starting STT
-        try {
-          await ensureAudioContextUnlocked();
-          await ensureMicAccess();
-        } catch (err) {
-          console.warn("Mic/audio unlock failed:", err);
-          alert("I couldn't access your microphone. Check browser permissions.");
-          return;
-        }
-
         listening = true;
         lastTranscript = "";
-        try {
-          recognition.start();
-        } catch (e) {
-          console.warn("recognition.start failed:", e);
-          addLog("system", "Could not start voice recognition: " + e.message);
-          listening = false;
-          return;
-        }
+        recognition.start();
         listenBtn.textContent = "🎧 Listening…";
         addLog("system", "Listening for 'Mufasa' or 'Coach'...");
       } else {
         listening = false;
-        try { recognition.stop(); } catch {}
+        recognition.stop();
         listenBtn.textContent = "🎙️ Voice On";
         addLog("system", "Stopped listening.");
       }
@@ -1768,6 +1723,7 @@ No assessment run yet.
       }
     }
 
+    // ---- Calendar builder ----
     function buildCalendarFromMeta() {
       if (!calendarMeta) {
         calendarViewEl.textContent = "No calendar yet. Run an assessment to generate a plan.";
@@ -1782,11 +1738,12 @@ No assessment run yet.
       today.setHours(0,0,0,0);
       const todayKey = today.toISOString().slice(0,10);
 
+      // Build workout day set for next meta.weeks weeks
       const workoutDates = new Set();
       let d = new Date(startDate);
       for (let w = 0; w < meta.weeks; w++) {
         for (let day = 0; day < 7; day++) {
-          const dayIdxInWeek = day;
+          const dayIdxInWeek = day; // 0..6
           if (dayIdxInWeek < meta.daysPerWeek) {
             workoutDates.add(d.toISOString().slice(0,10));
           }
@@ -1800,7 +1757,7 @@ No assessment run yet.
       const baseYear = today.getFullYear();
 
       const firstOfMonth = new Date(baseYear, baseMonth, 1);
-      const startWeekday = firstOfMonth.getDay();
+      const startWeekday = firstOfMonth.getDay(); // 0=Sun
       const daysInMonth = new Date(baseYear, baseMonth + 1, 0).getDate();
 
       const monthName = firstOfMonth.toLocaleString("default", { month: "long" });
