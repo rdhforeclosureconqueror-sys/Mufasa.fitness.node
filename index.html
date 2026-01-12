@@ -914,35 +914,69 @@
       }
     }
 
-    function speak(text, source = "system") {
-      if (voiceMuted || !("speechSynthesis" in window)) return;
+  // === AI Voice upgrade ===
+async function speak(text, source = "system") {
+  if (voiceMuted || !text) return;
+  if (speechLock && source === "rep") return;
 
-      if (speechLock && source === "rep") return;
+  const AIVOICE_URL = "https://aivoice-wmrv.onrender.com/speak";
+  const AIVOICE_KEY = "aivoice_live_7f3a9c9e2e4d9b8e12";
+  const USE_AI_VOICE = true;
 
-      stopAllSpeech();
+  // 1️⃣ Try AI Voice first
+  if (USE_AI_VOICE) {
+    try {
+      const response = await fetch(AIVOICE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-AIVOICE-KEY": AIVOICE_KEY
+        },
+        body: JSON.stringify({ text, format: "mp3" })
+      });
 
-      const u = new SpeechSynthesisUtterance(text);
-      // 🔻 NEW: use selected browser voice if chosen
-      if (selectedVoice) {
-        u.voice = selectedVoice;
-      }
-      u.rate = 1.0;
-      u.pitch = 1.0;
+      if (!response.ok) throw new Error("AI voice backend error");
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
 
       if (source === "llm") {
         speechLock = true;
         repFeedbackAllowed = false;
-      }
-
-      u.onend = () => {
-        if (source === "llm") {
+        audio.onended = () => {
           speechLock = false;
           repFeedbackAllowed = true;
-        }
-      };
+        };
+      }
 
-      window.speechSynthesis.speak(u);
+      await audio.play();
+      return;
+    } catch (err) {
+      console.warn("AI voice failed, fallback to browser TTS:", err);
     }
+  }
+
+  // 2️⃣ Fallback: browser speech synthesis
+  if (!("speechSynthesis" in window)) return;
+  stopAllSpeech();
+  const u = new SpeechSynthesisUtterance(text);
+  if (selectedVoice) u.voice = selectedVoice;
+  u.rate = 1.0;
+  u.pitch = 1.0;
+
+  if (source === "llm") {
+    speechLock = true;
+    repFeedbackAllowed = false;
+    u.onend = () => {
+      speechLock = false;
+      repFeedbackAllowed = true;
+    };
+  }
+
+  window.speechSynthesis.speak(u);
+}
+
 
     function getKeypoint(pose, name) {
       if (!pose || !pose.keypoints) return null;
