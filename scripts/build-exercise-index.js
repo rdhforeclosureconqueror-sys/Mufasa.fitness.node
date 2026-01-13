@@ -1,88 +1,100 @@
 // scripts/build-exercise-index.js
+// Builds public/exercise-db/index.json from data/exercise.json (master DB)
+// Also checks which exercise folders exist and notes missing assets.
+
 const fs = require("fs");
 const path = require("path");
 
-function safeReadJSON(p) {
+const REPO_ROOT = path.resolve(__dirname, "..");
+const DATA_JSON = path.join(REPO_ROOT, "data", "exercise.json");
+const EXERCISE_DB_DIR = path.join(REPO_ROOT, "public", "exercise-db");
+const OUT_INDEX = path.join(EXERCISE_DB_DIR, "index.json");
+
+function exists(p) {
   try {
-    return JSON.parse(fs.readFileSync(p, "utf8"));
+    fs.accessSync(p, fs.constants.F_OK);
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
 
-function toSlug(name) {
-  return String(name || "")
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(/[^\w\-]/g, "");
+function safeReadJson(p) {
+  const raw = fs.readFileSync(p, "utf8");
+  return JSON.parse(raw);
+}
+
+function listFolders(dir) {
+  if (!exists(dir)) return [];
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
 }
 
 function main() {
-  const repoRoot = process.cwd();
-  const dbDir = path.join(repoRoot, "public", "exercise-db");
-
-  if (!fs.existsSync(dbDir)) {
-    console.error("❌ Missing folder:", dbDir);
+  if (!exists(DATA_JSON)) {
+    console.error(`❌ Missing master DB: ${DATA_JSON}`);
     process.exit(1);
   }
 
-  const entries = fs.readdirSync(dbDir, { withFileTypes: true })
-    .filter(d => d.isDirectory())
-    .map(d => d.name);
-
-  const index = [];
-  for (const folderName of entries) {
-    const slug = toSlug(folderName);
-
-    // Common patterns: folder contains JSON with same name, or "exercise.json", or "index.json"
-    const candidates = [
-      path.join(dbDir, folderName, `${folderName}.json`),
-      path.join(dbDir, folderName, `${slug}.json`),
-      path.join(dbDir, folderName, "exercise.json"),
-      path.join(dbDir, folderName, "index.json"),
-    ];
-
-    let jsonPath = null;
-    let data = null;
-
-    for (const c of candidates) {
-      if (fs.existsSync(c)) {
-        data = safeReadJSON(c);
-        if (data) {
-          jsonPath = c;
-          break;
-        }
-      }
-    }
-
-    // If no JSON found, still include folder so you can audit
-    const relJson = jsonPath ? path.relative(path.join(repoRoot, "public"), jsonPath).replaceAll("\\", "/") : null;
-
-    index.push({
-      name: folderName,
-      slug,
-      json: relJson,  // e.g. "exercise-db/Ab_Roller/Ab_Roller.json"
-      hasJson: Boolean(relJson),
-      // optional metadata if present:
-      category: data?.category || data?.bodyPart || data?.body_part || null,
-      equipment: data?.equipment || null,
-      target: data?.target || data?.muscle || null,
-    });
+  if (!exists(EXERCISE_DB_DIR)) {
+    console.error(`❌ Missing folder: ${EXERCISE_DB_DIR}`);
+    console.error(`Create it: public/exercise-db`);
+    process.exit(1);
   }
 
-  index.sort((a, b) => a.name.localeCompare(b.name));
+  const master = safeReadJson(DATA_JSON);
 
-  const outPath = path.join(dbDir, "index.json");
-  fs.writeFileSync(outPath, JSON.stringify({
-    generatedAt: new Date().toISOString(),
-    totalFolders: index.length,
-    missingJsonCount: index.filter(x => !x.hasJson).length,
-    exercises: index
-  }, null, 2));
+  if (!Array.isArray(master)) {
+    console.error("❌ data/exercise.json must be an array of exercises");
+    process.exit(1);
+  }
 
-  console.log(`✅ Wrote ${outPath}`);
-  console.log(`✅ totalFolders: ${index.length}`);
-  console.log(`⚠️ missingJsonCount: ${index.filter(x => !x.hasJson).length}`);
+  const folderNames = new Set(listFolders(EXERCISE_DB_DIR));
+
+  let missingFolderCount = 0;
+
+  // Build a clean index (keep full metadata if you want, but this is a good practical set)
+  const index = master.map((ex) => {
+    const id = ex.id || "";
+    const folder = id; // your folders appear to be named by id (ex: "3_4_Sit-Up")
+
+    const hasFolder = folderNames.has(folder);
+    if (!hasFolder) missingFolderCount++;
+
+    // Normalize images to be web paths under /exercise-db/
+    // Your master JSON already stores like: "3_4_Sit-Up/0.jpg"
+    const images = Array.isArray(ex.images)
+      ? ex.images.map((img) => `/exercise-db/${img}`)
+      : [];
+
+    return {
+      id,
+      name: ex.name || id,
+      category: ex.category || null,
+      force: ex.force || null,
+      level: ex.level || null,
+      mechanic: ex.mechanic || null,
+      equipment: ex.equipment || null,
+      primaryMuscles: ex.primaryMuscles || [],
+      secondaryMuscles: ex.secondaryMuscles || [],
+      instructions: ex.instructions || [],
+      images,
+      // Useful for debugging
+      folder,
+      hasFolder,
+    };
+  });
+
+  fs.writeFileSync(OUT_INDEX, JSON.stringify(index, null, 2), "utf8");
+
+  console.log(`✅ Wrote ${OUT_INDEX}`);
+  console.log(`✅ totalExercises: ${index.length}`);
+  console.log(`⚠️ missingFolderCount: ${missingFolderCount}`);
+  console.log(
+    `ℹ️ Tip: GitHub "truncated list" is just UI — files can still exist even if not listed.`
+  );
 }
 
 main();
