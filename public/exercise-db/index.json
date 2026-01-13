@@ -1,0 +1,7864 @@
+{
+  "generatedAt": "2026-01-13T18:33:49.233Z",
+  "totalFolders": 873,
+  "missingJsonCount": 873,
+  "exercises": [
+    {
+      "name": "3_4_Sit-Up",
+      "slug": "3_4_Sit-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "90_90_Hamstring",
+      "slug": "90_90_Hamstring",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Ab_Crunch_Machine",
+      "slug": "Ab_Crunch_Machine",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Ab_Roller",
+      "slug": "Ab_Roller",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Adductor",
+      "slug": "Adductor",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Adductor_Groin",
+      "slug": "Adductor_Groin",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Advanced_Kettlebell_Windmill",
+      "slug": "Advanced_Kettlebell_Windmill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Air_Bike",
+      "slug": "Air_Bike",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "All_Fours_Quad_Stretch",
+      "slug": "All_Fours_Quad_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternate_Hammer_Curl",
+      "slug": "Alternate_Hammer_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternate_Heel_Touchers",
+      "slug": "Alternate_Heel_Touchers",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternate_Incline_Dumbbell_Curl",
+      "slug": "Alternate_Incline_Dumbbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternate_Leg_Diagonal_Bound",
+      "slug": "Alternate_Leg_Diagonal_Bound",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Cable_Shoulder_Press",
+      "slug": "Alternating_Cable_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Deltoid_Raise",
+      "slug": "Alternating_Deltoid_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Floor_Press",
+      "slug": "Alternating_Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Hang_Clean",
+      "slug": "Alternating_Hang_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Kettlebell_Press",
+      "slug": "Alternating_Kettlebell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Kettlebell_Row",
+      "slug": "Alternating_Kettlebell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Alternating_Renegade_Row",
+      "slug": "Alternating_Renegade_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Ankle_Circles",
+      "slug": "Ankle_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Ankle_On_The_Knee",
+      "slug": "Ankle_On_The_Knee",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Anterior_Tibialis-SMR",
+      "slug": "Anterior_Tibialis-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Anti-Gravity_Press",
+      "slug": "Anti-Gravity_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Arm_Circles",
+      "slug": "Arm_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Arnold_Dumbbell_Press",
+      "slug": "Arnold_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Around_The_Worlds",
+      "slug": "Around_The_Worlds",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Atlas_Stone_Trainer",
+      "slug": "Atlas_Stone_Trainer",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Atlas_Stones",
+      "slug": "Atlas_Stones",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Axle_Deadlift",
+      "slug": "Axle_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Back_Flyes_-_With_Bands",
+      "slug": "Back_Flyes_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Backward_Drag",
+      "slug": "Backward_Drag",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Backward_Medicine_Ball_Throw",
+      "slug": "Backward_Medicine_Ball_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Balance_Board",
+      "slug": "Balance_Board",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Ball_Leg_Curl",
+      "slug": "Ball_Leg_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Band_Assisted_Pull-Up",
+      "slug": "Band_Assisted_Pull-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Band_Good_Morning",
+      "slug": "Band_Good_Morning",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Band_Good_Morning_Pull_Through",
+      "slug": "Band_Good_Morning_Pull_Through",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Band_Hip_Adductions",
+      "slug": "Band_Hip_Adductions",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Band_Pull_Apart",
+      "slug": "Band_Pull_Apart",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Band_Skull_Crusher",
+      "slug": "Band_Skull_Crusher",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Ab_Rollout",
+      "slug": "Barbell_Ab_Rollout",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Ab_Rollout_-_On_Knees",
+      "slug": "Barbell_Ab_Rollout_-_On_Knees",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Bench_Press_-_Medium_Grip",
+      "slug": "Barbell_Bench_Press_-_Medium_Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Curl",
+      "slug": "Barbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Curls_Lying_Against_An_Incline",
+      "slug": "Barbell_Curls_Lying_Against_An_Incline",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Deadlift",
+      "slug": "Barbell_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Full_Squat",
+      "slug": "Barbell_Full_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Glute_Bridge",
+      "slug": "Barbell_Glute_Bridge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Guillotine_Bench_Press",
+      "slug": "Barbell_Guillotine_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Hack_Squat",
+      "slug": "Barbell_Hack_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Hip_Thrust",
+      "slug": "Barbell_Hip_Thrust",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+      "slug": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Incline_Shoulder_Raise",
+      "slug": "Barbell_Incline_Shoulder_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Lunge",
+      "slug": "Barbell_Lunge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Rear_Delt_Row",
+      "slug": "Barbell_Rear_Delt_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Rollout_from_Bench",
+      "slug": "Barbell_Rollout_from_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Seated_Calf_Raise",
+      "slug": "Barbell_Seated_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Shoulder_Press",
+      "slug": "Barbell_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Shrug",
+      "slug": "Barbell_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Shrug_Behind_The_Back",
+      "slug": "Barbell_Shrug_Behind_The_Back",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Side_Bend",
+      "slug": "Barbell_Side_Bend",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Side_Split_Squat",
+      "slug": "Barbell_Side_Split_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Squat",
+      "slug": "Barbell_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Squat_To_A_Bench",
+      "slug": "Barbell_Squat_To_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Step_Ups",
+      "slug": "Barbell_Step_Ups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Barbell_Walking_Lunge",
+      "slug": "Barbell_Walking_Lunge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Battling_Ropes",
+      "slug": "Battling_Ropes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bear_Crawl_Sled_Drags",
+      "slug": "Bear_Crawl_Sled_Drags",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Behind_Head_Chest_Stretch",
+      "slug": "Behind_Head_Chest_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bench_Dips",
+      "slug": "Bench_Dips",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bench_Jump",
+      "slug": "Bench_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bench_Press_-_Powerlifting",
+      "slug": "Bench_Press_-_Powerlifting",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bench_Press_-_With_Bands",
+      "slug": "Bench_Press_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bench_Press_with_Chains",
+      "slug": "Bench_Press_with_Chains",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bench_Sprint",
+      "slug": "Bench_Sprint",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_Barbell_Row",
+      "slug": "Bent_Over_Barbell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench",
+      "slug": "Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_Low-Pulley_Side_Lateral",
+      "slug": "Bent_Over_Low-Pulley_Side_Lateral",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_One-Arm_Long_Bar_Row",
+      "slug": "Bent_Over_One-Arm_Long_Bar_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_Two-Arm_Long_Bar_Row",
+      "slug": "Bent_Over_Two-Arm_Long_Bar_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_Two-Dumbbell_Row",
+      "slug": "Bent_Over_Two-Dumbbell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Over_Two-Dumbbell_Row_With_Palms_In",
+      "slug": "Bent_Over_Two-Dumbbell_Row_With_Palms_In",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent_Press",
+      "slug": "Bent_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent-Arm_Barbell_Pullover",
+      "slug": "Bent-Arm_Barbell_Pullover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent-Arm_Dumbbell_Pullover",
+      "slug": "Bent-Arm_Dumbbell_Pullover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bent-Knee_Hip_Raise",
+      "slug": "Bent-Knee_Hip_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bicycling",
+      "slug": "Bicycling",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bicycling_Stationary",
+      "slug": "Bicycling_Stationary",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Board_Press",
+      "slug": "Board_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Body_Tricep_Press",
+      "slug": "Body_Tricep_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Body-Up",
+      "slug": "Body-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bodyweight_Flyes",
+      "slug": "Bodyweight_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bodyweight_Mid_Row",
+      "slug": "Bodyweight_Mid_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bodyweight_Squat",
+      "slug": "Bodyweight_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bodyweight_Walking_Lunge",
+      "slug": "Bodyweight_Walking_Lunge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bosu_Ball_Cable_Crunch_With_Side_Bends",
+      "slug": "Bosu_Ball_Cable_Crunch_With_Side_Bends",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bottoms_Up",
+      "slug": "Bottoms_Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bottoms-Up_Clean_From_The_Hang_Position",
+      "slug": "Bottoms-Up_Clean_From_The_Hang_Position",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Box_Jump_Multiple_Response",
+      "slug": "Box_Jump_Multiple_Response",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Box_Skip",
+      "slug": "Box_Skip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Box_Squat",
+      "slug": "Box_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Box_Squat_with_Bands",
+      "slug": "Box_Squat_with_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Box_Squat_with_Chains",
+      "slug": "Box_Squat_with_Chains",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Brachialis-SMR",
+      "slug": "Brachialis-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Bradford_Rocky_Presses",
+      "slug": "Bradford_Rocky_Presses",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Butt_Lift_Bridge",
+      "slug": "Butt_Lift_Bridge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Butt-Ups",
+      "slug": "Butt-Ups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Butterfly",
+      "slug": "Butterfly",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Chest_Press",
+      "slug": "Cable_Chest_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Crossover",
+      "slug": "Cable_Crossover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Crunch",
+      "slug": "Cable_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Deadlifts",
+      "slug": "Cable_Deadlifts",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Hammer_Curls_-_Rope_Attachment",
+      "slug": "Cable_Hammer_Curls_-_Rope_Attachment",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Hip_Adduction",
+      "slug": "Cable_Hip_Adduction",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Incline_Pushdown",
+      "slug": "Cable_Incline_Pushdown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Incline_Triceps_Extension",
+      "slug": "Cable_Incline_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Internal_Rotation",
+      "slug": "Cable_Internal_Rotation",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Iron_Cross",
+      "slug": "Cable_Iron_Cross",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Judo_Flip",
+      "slug": "Cable_Judo_Flip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Lying_Triceps_Extension",
+      "slug": "Cable_Lying_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_One_Arm_Tricep_Extension",
+      "slug": "Cable_One_Arm_Tricep_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Preacher_Curl",
+      "slug": "Cable_Preacher_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Rear_Delt_Fly",
+      "slug": "Cable_Rear_Delt_Fly",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Reverse_Crunch",
+      "slug": "Cable_Reverse_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Rope_Overhead_Triceps_Extension",
+      "slug": "Cable_Rope_Overhead_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Rope_Rear-Delt_Rows",
+      "slug": "Cable_Rope_Rear-Delt_Rows",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Russian_Twists",
+      "slug": "Cable_Russian_Twists",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Seated_Crunch",
+      "slug": "Cable_Seated_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Seated_Lateral_Raise",
+      "slug": "Cable_Seated_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Shoulder_Press",
+      "slug": "Cable_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Shrugs",
+      "slug": "Cable_Shrugs",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cable_Wrist_Curl",
+      "slug": "Cable_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf_Press",
+      "slug": "Calf_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf_Press_On_The_Leg_Press_Machine",
+      "slug": "Calf_Press_On_The_Leg_Press_Machine",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf_Raise_On_A_Dumbbell",
+      "slug": "Calf_Raise_On_A_Dumbbell",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf_Raises_-_With_Bands",
+      "slug": "Calf_Raises_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf_Stretch_Elbows_Against_Wall",
+      "slug": "Calf_Stretch_Elbows_Against_Wall",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf_Stretch_Hands_Against_Wall",
+      "slug": "Calf_Stretch_Hands_Against_Wall",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calf-Machine_Shoulder_Shrug",
+      "slug": "Calf-Machine_Shoulder_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Calves-SMR",
+      "slug": "Calves-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Car_Deadlift",
+      "slug": "Car_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Car_Drivers",
+      "slug": "Car_Drivers",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Carioca_Quick_Step",
+      "slug": "Carioca_Quick_Step",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cat_Stretch",
+      "slug": "Cat_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Catch_and_Overhead_Throw",
+      "slug": "Catch_and_Overhead_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chain_Handle_Extension",
+      "slug": "Chain_Handle_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chain_Press",
+      "slug": "Chain_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chair_Leg_Extended_Stretch",
+      "slug": "Chair_Leg_Extended_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chair_Lower_Back_Stretch",
+      "slug": "Chair_Lower_Back_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chair_Squat",
+      "slug": "Chair_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chair_Upper_Body_Stretch",
+      "slug": "Chair_Upper_Body_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chest_And_Front_Of_Shoulder_Stretch",
+      "slug": "Chest_And_Front_Of_Shoulder_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chest_Push_from_3_point_stance",
+      "slug": "Chest_Push_from_3_point_stance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chest_Push_multiple_response",
+      "slug": "Chest_Push_multiple_response",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chest_Push_single_response",
+      "slug": "Chest_Push_single_response",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chest_Push_with_Run_Release",
+      "slug": "Chest_Push_with_Run_Release",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chest_Stretch_on_Stability_Ball",
+      "slug": "Chest_Stretch_on_Stability_Ball",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Childs_Pose",
+      "slug": "Childs_Pose",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chin_To_Chest_Stretch",
+      "slug": "Chin_To_Chest_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Chin-Up",
+      "slug": "Chin-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Circus_Bell",
+      "slug": "Circus_Bell",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean",
+      "slug": "Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean_and_Jerk",
+      "slug": "Clean_and_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean_and_Press",
+      "slug": "Clean_and_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean_Deadlift",
+      "slug": "Clean_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean_from_Blocks",
+      "slug": "Clean_from_Blocks",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean_Pull",
+      "slug": "Clean_Pull",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clean_Shrug",
+      "slug": "Clean_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Clock_Push-Up",
+      "slug": "Clock_Push-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_Barbell_Bench_Press",
+      "slug": "Close-Grip_Barbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_Dumbbell_Press",
+      "slug": "Close-Grip_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_EZ_Bar_Curl",
+      "slug": "Close-Grip_EZ_Bar_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_EZ-Bar_Curl_with_Band",
+      "slug": "Close-Grip_EZ-Bar_Curl_with_Band",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_EZ-Bar_Press",
+      "slug": "Close-Grip_EZ-Bar_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_Front_Lat_Pulldown",
+      "slug": "Close-Grip_Front_Lat_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_Push-Up_off_of_a_Dumbbell",
+      "slug": "Close-Grip_Push-Up_off_of_a_Dumbbell",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Close-Grip_Standing_Barbell_Curl",
+      "slug": "Close-Grip_Standing_Barbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cocoons",
+      "slug": "Cocoons",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Conans_Wheel",
+      "slug": "Conans_Wheel",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Concentration_Curls",
+      "slug": "Concentration_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cross_Body_Hammer_Curl",
+      "slug": "Cross_Body_Hammer_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cross_Over_-_With_Bands",
+      "slug": "Cross_Over_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cross-Body_Crunch",
+      "slug": "Cross-Body_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Crossover_Reverse_Lunge",
+      "slug": "Crossover_Reverse_Lunge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Crucifix",
+      "slug": "Crucifix",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Crunch_-_Hands_Overhead",
+      "slug": "Crunch_-_Hands_Overhead",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Crunch_-_Legs_On_Exercise_Ball",
+      "slug": "Crunch_-_Legs_On_Exercise_Ball",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Crunches",
+      "slug": "Crunches",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Cuban_Press",
+      "slug": "Cuban_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dancers_Stretch",
+      "slug": "Dancers_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dead_Bug",
+      "slug": "Dead_Bug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Deadlift_with_Bands",
+      "slug": "Deadlift_with_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Deadlift_with_Chains",
+      "slug": "Deadlift_with_Chains",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Barbell_Bench_Press",
+      "slug": "Decline_Barbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Close-Grip_Bench_To_Skull_Crusher",
+      "slug": "Decline_Close-Grip_Bench_To_Skull_Crusher",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Crunch",
+      "slug": "Decline_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Dumbbell_Bench_Press",
+      "slug": "Decline_Dumbbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Dumbbell_Flyes",
+      "slug": "Decline_Dumbbell_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Dumbbell_Triceps_Extension",
+      "slug": "Decline_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_EZ_Bar_Triceps_Extension",
+      "slug": "Decline_EZ_Bar_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Oblique_Crunch",
+      "slug": "Decline_Oblique_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Push-Up",
+      "slug": "Decline_Push-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Reverse_Crunch",
+      "slug": "Decline_Reverse_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Decline_Smith_Press",
+      "slug": "Decline_Smith_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Deficit_Deadlift",
+      "slug": "Deficit_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Depth_Jump_Leap",
+      "slug": "Depth_Jump_Leap",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dip_Machine",
+      "slug": "Dip_Machine",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dips_-_Chest_Version",
+      "slug": "Dips_-_Chest_Version",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dips_-_Triceps_Version",
+      "slug": "Dips_-_Triceps_Version",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Donkey_Calf_Raises",
+      "slug": "Donkey_Calf_Raises",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Double_Kettlebell_Alternating_Hang_Clean",
+      "slug": "Double_Kettlebell_Alternating_Hang_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Double_Kettlebell_Jerk",
+      "slug": "Double_Kettlebell_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Double_Kettlebell_Push_Press",
+      "slug": "Double_Kettlebell_Push_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Double_Kettlebell_Snatch",
+      "slug": "Double_Kettlebell_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Double_Kettlebell_Windmill",
+      "slug": "Double_Kettlebell_Windmill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Double_Leg_Butt_Kick",
+      "slug": "Double_Leg_Butt_Kick",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Downward_Facing_Balance",
+      "slug": "Downward_Facing_Balance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Drag_Curl",
+      "slug": "Drag_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Drop_Push",
+      "slug": "Drop_Push",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Alternate_Bicep_Curl",
+      "slug": "Dumbbell_Alternate_Bicep_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Bench_Press",
+      "slug": "Dumbbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Bench_Press_with_Neutral_Grip",
+      "slug": "Dumbbell_Bench_Press_with_Neutral_Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Bicep_Curl",
+      "slug": "Dumbbell_Bicep_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Clean",
+      "slug": "Dumbbell_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Floor_Press",
+      "slug": "Dumbbell_Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Flyes",
+      "slug": "Dumbbell_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Incline_Row",
+      "slug": "Dumbbell_Incline_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Incline_Shoulder_Raise",
+      "slug": "Dumbbell_Incline_Shoulder_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Lunges",
+      "slug": "Dumbbell_Lunges",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise",
+      "slug": "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Lying_Pronation",
+      "slug": "Dumbbell_Lying_Pronation",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Lying_Rear_Lateral_Raise",
+      "slug": "Dumbbell_Lying_Rear_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Lying_Supination",
+      "slug": "Dumbbell_Lying_Supination",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_One-Arm_Shoulder_Press",
+      "slug": "Dumbbell_One-Arm_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_One-Arm_Triceps_Extension",
+      "slug": "Dumbbell_One-Arm_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_One-Arm_Upright_Row",
+      "slug": "Dumbbell_One-Arm_Upright_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Prone_Incline_Curl",
+      "slug": "Dumbbell_Prone_Incline_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Raise",
+      "slug": "Dumbbell_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Rear_Lunge",
+      "slug": "Dumbbell_Rear_Lunge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Scaption",
+      "slug": "Dumbbell_Scaption",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Seated_Box_Jump",
+      "slug": "Dumbbell_Seated_Box_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Seated_One-Leg_Calf_Raise",
+      "slug": "Dumbbell_Seated_One-Leg_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Shoulder_Press",
+      "slug": "Dumbbell_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Shrug",
+      "slug": "Dumbbell_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Side_Bend",
+      "slug": "Dumbbell_Side_Bend",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Squat",
+      "slug": "Dumbbell_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Squat_To_A_Bench",
+      "slug": "Dumbbell_Squat_To_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Step_Ups",
+      "slug": "Dumbbell_Step_Ups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dumbbell_Tricep_Extension_-Pronated_Grip",
+      "slug": "Dumbbell_Tricep_Extension_-Pronated_Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dynamic_Back_Stretch",
+      "slug": "Dynamic_Back_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Dynamic_Chest_Stretch",
+      "slug": "Dynamic_Chest_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Elbow_Circles",
+      "slug": "Elbow_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Elbow_to_Knee",
+      "slug": "Elbow_to_Knee",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Elbows_Back",
+      "slug": "Elbows_Back",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Elevated_Back_Lunge",
+      "slug": "Elevated_Back_Lunge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Elevated_Cable_Rows",
+      "slug": "Elevated_Cable_Rows",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Elliptical_Trainer",
+      "slug": "Elliptical_Trainer",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Exercise_Ball_Crunch",
+      "slug": "Exercise_Ball_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Exercise_Ball_Pull-In",
+      "slug": "Exercise_Ball_Pull-In",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Extended_Range_One-Arm_Kettlebell_Floor_Press",
+      "slug": "Extended_Range_One-Arm_Kettlebell_Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "External_Rotation",
+      "slug": "External_Rotation",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "External_Rotation_with_Band",
+      "slug": "External_Rotation_with_Band",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "External_Rotation_with_Cable",
+      "slug": "External_Rotation_with_Cable",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "EZ-Bar_Curl",
+      "slug": "EZ-Bar_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "EZ-Bar_Skullcrusher",
+      "slug": "EZ-Bar_Skullcrusher",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Face_Pull",
+      "slug": "Face_Pull",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Farmers_Walk",
+      "slug": "Farmers_Walk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Fast_Skipping",
+      "slug": "Fast_Skipping",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Finger_Curls",
+      "slug": "Finger_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Flat_Bench_Cable_Flyes",
+      "slug": "Flat_Bench_Cable_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Flat_Bench_Leg_Pull-In",
+      "slug": "Flat_Bench_Leg_Pull-In",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Flat_Bench_Lying_Leg_Raise",
+      "slug": "Flat_Bench_Lying_Leg_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Flexor_Incline_Dumbbell_Curls",
+      "slug": "Flexor_Incline_Dumbbell_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Floor_Glute-Ham_Raise",
+      "slug": "Floor_Glute-Ham_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Floor_Press",
+      "slug": "Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Floor_Press_with_Chains",
+      "slug": "Floor_Press_with_Chains",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Flutter_Kicks",
+      "slug": "Flutter_Kicks",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Foot-SMR",
+      "slug": "Foot-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Forward_Drag_with_Press",
+      "slug": "Forward_Drag_with_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Frankenstein_Squat",
+      "slug": "Frankenstein_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Freehand_Jump_Squat",
+      "slug": "Freehand_Jump_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Frog_Hops",
+      "slug": "Frog_Hops",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Frog_Sit-Ups",
+      "slug": "Frog_Sit-Ups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Barbell_Squat",
+      "slug": "Front_Barbell_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Barbell_Squat_To_A_Bench",
+      "slug": "Front_Barbell_Squat_To_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Box_Jump",
+      "slug": "Front_Box_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Cable_Raise",
+      "slug": "Front_Cable_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Cone_Hops_or_hurdle_hops",
+      "slug": "Front_Cone_Hops_or_hurdle_hops",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Dumbbell_Raise",
+      "slug": "Front_Dumbbell_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Incline_Dumbbell_Raise",
+      "slug": "Front_Incline_Dumbbell_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Leg_Raises",
+      "slug": "Front_Leg_Raises",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Plate_Raise",
+      "slug": "Front_Plate_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Raise_And_Pullover",
+      "slug": "Front_Raise_And_Pullover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Squat_Clean_Grip",
+      "slug": "Front_Squat_Clean_Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Squats_With_Two_Kettlebells",
+      "slug": "Front_Squats_With_Two_Kettlebells",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Front_Two-Dumbbell_Raise",
+      "slug": "Front_Two-Dumbbell_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Full_Range-Of-Motion_Lat_Pulldown",
+      "slug": "Full_Range-Of-Motion_Lat_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Gironda_Sternum_Chins",
+      "slug": "Gironda_Sternum_Chins",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Glute_Ham_Raise",
+      "slug": "Glute_Ham_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Glute_Kickback",
+      "slug": "Glute_Kickback",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Goblet_Squat",
+      "slug": "Goblet_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Good_Morning",
+      "slug": "Good_Morning",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Good_Morning_off_Pins",
+      "slug": "Good_Morning_off_Pins",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Gorilla_Chin_Crunch",
+      "slug": "Gorilla_Chin_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Groin_and_Back_Stretch",
+      "slug": "Groin_and_Back_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Groiners",
+      "slug": "Groiners",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hack_Squat",
+      "slug": "Hack_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hammer_Curls",
+      "slug": "Hammer_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hammer_Grip_Incline_DB_Bench_Press",
+      "slug": "Hammer_Grip_Incline_DB_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hamstring_Stretch",
+      "slug": "Hamstring_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hamstring-SMR",
+      "slug": "Hamstring-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Handstand_Push-Ups",
+      "slug": "Handstand_Push-Ups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hang_Clean",
+      "slug": "Hang_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hang_Clean_-_Below_the_Knees",
+      "slug": "Hang_Clean_-_Below_the_Knees",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hang_Snatch",
+      "slug": "Hang_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hang_Snatch_-_Below_Knees",
+      "slug": "Hang_Snatch_-_Below_Knees",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hanging_Bar_Good_Morning",
+      "slug": "Hanging_Bar_Good_Morning",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hanging_Leg_Raise",
+      "slug": "Hanging_Leg_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hanging_Pike",
+      "slug": "Hanging_Pike",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Heaving_Snatch_Balance",
+      "slug": "Heaving_Snatch_Balance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Heavy_Bag_Thrust",
+      "slug": "Heavy_Bag_Thrust",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "High_Cable_Curls",
+      "slug": "High_Cable_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hip_Circles_prone",
+      "slug": "Hip_Circles_prone",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hip_Extension_with_Bands",
+      "slug": "Hip_Extension_with_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hip_Flexion_with_Band",
+      "slug": "Hip_Flexion_with_Band",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hip_Lift_with_Band",
+      "slug": "Hip_Lift_with_Band",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hug_A_Ball",
+      "slug": "Hug_A_Ball",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hug_Knees_To_Chest",
+      "slug": "Hug_Knees_To_Chest",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hurdle_Hops",
+      "slug": "Hurdle_Hops",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hyperextensions_Back_Extensions",
+      "slug": "Hyperextensions_Back_Extensions",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Hyperextensions_With_No_Hyperextension_Bench",
+      "slug": "Hyperextensions_With_No_Hyperextension_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Iliotibial_Tract-SMR",
+      "slug": "Iliotibial_Tract-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Inchworm",
+      "slug": "Inchworm",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Barbell_Triceps_Extension",
+      "slug": "Incline_Barbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Bench_Pull",
+      "slug": "Incline_Bench_Pull",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Cable_Chest_Press",
+      "slug": "Incline_Cable_Chest_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Cable_Flye",
+      "slug": "Incline_Cable_Flye",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Dumbbell_Bench_With_Palms_Facing_In",
+      "slug": "Incline_Dumbbell_Bench_With_Palms_Facing_In",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Dumbbell_Curl",
+      "slug": "Incline_Dumbbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Dumbbell_Flyes",
+      "slug": "Incline_Dumbbell_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Dumbbell_Flyes_-_With_A_Twist",
+      "slug": "Incline_Dumbbell_Flyes_-_With_A_Twist",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Dumbbell_Press",
+      "slug": "Incline_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Hammer_Curls",
+      "slug": "Incline_Hammer_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Inner_Biceps_Curl",
+      "slug": "Incline_Inner_Biceps_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Push-Up",
+      "slug": "Incline_Push-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Push-Up_Close-Grip",
+      "slug": "Incline_Push-Up_Close-Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Push-Up_Depth_Jump",
+      "slug": "Incline_Push-Up_Depth_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Push-Up_Medium",
+      "slug": "Incline_Push-Up_Medium",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Push-Up_Reverse_Grip",
+      "slug": "Incline_Push-Up_Reverse_Grip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Incline_Push-Up_Wide",
+      "slug": "Incline_Push-Up_Wide",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Intermediate_Groin_Stretch",
+      "slug": "Intermediate_Groin_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Intermediate_Hip_Flexor_and_Quad_Stretch",
+      "slug": "Intermediate_Hip_Flexor_and_Quad_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Internal_Rotation_with_Band",
+      "slug": "Internal_Rotation_with_Band",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Inverted_Row",
+      "slug": "Inverted_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Inverted_Row_with_Straps",
+      "slug": "Inverted_Row_with_Straps",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Iron_Cross",
+      "slug": "Iron_Cross",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Iron_Crosses_stretch",
+      "slug": "Iron_Crosses_stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Isometric_Chest_Squeezes",
+      "slug": "Isometric_Chest_Squeezes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Isometric_Neck_Exercise_-_Front_And_Back",
+      "slug": "Isometric_Neck_Exercise_-_Front_And_Back",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Isometric_Neck_Exercise_-_Sides",
+      "slug": "Isometric_Neck_Exercise_-_Sides",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Isometric_Wipers",
+      "slug": "Isometric_Wipers",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "IT_Band_and_Glute_Stretch",
+      "slug": "IT_Band_and_Glute_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Jackknife_Sit-Up",
+      "slug": "Jackknife_Sit-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Janda_Sit-Up",
+      "slug": "Janda_Sit-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Jefferson_Squats",
+      "slug": "Jefferson_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Jerk_Balance",
+      "slug": "Jerk_Balance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Jerk_Dip_Squat",
+      "slug": "Jerk_Dip_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "JM_Press",
+      "slug": "JM_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Jogging_Treadmill",
+      "slug": "Jogging_Treadmill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Keg_Load",
+      "slug": "Keg_Load",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Arnold_Press",
+      "slug": "Kettlebell_Arnold_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Dead_Clean",
+      "slug": "Kettlebell_Dead_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Figure_8",
+      "slug": "Kettlebell_Figure_8",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Hang_Clean",
+      "slug": "Kettlebell_Hang_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_One-Legged_Deadlift",
+      "slug": "Kettlebell_One-Legged_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Pass_Between_The_Legs",
+      "slug": "Kettlebell_Pass_Between_The_Legs",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Pirate_Ships",
+      "slug": "Kettlebell_Pirate_Ships",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Pistol_Squat",
+      "slug": "Kettlebell_Pistol_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Seated_Press",
+      "slug": "Kettlebell_Seated_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Seesaw_Press",
+      "slug": "Kettlebell_Seesaw_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Sumo_High_Pull",
+      "slug": "Kettlebell_Sumo_High_Pull",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Thruster",
+      "slug": "Kettlebell_Thruster",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Turkish_Get-Up_Lunge_style",
+      "slug": "Kettlebell_Turkish_Get-Up_Lunge_style",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Turkish_Get-Up_Squat_style",
+      "slug": "Kettlebell_Turkish_Get-Up_Squat_style",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kettlebell_Windmill",
+      "slug": "Kettlebell_Windmill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kipping_Muscle_Up",
+      "slug": "Kipping_Muscle_Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Knee_Across_The_Body",
+      "slug": "Knee_Across_The_Body",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Knee_Circles",
+      "slug": "Knee_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Knee_Hip_Raise_On_Parallel_Bars",
+      "slug": "Knee_Hip_Raise_On_Parallel_Bars",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Knee_Tuck_Jump",
+      "slug": "Knee_Tuck_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Arm_Drill",
+      "slug": "Kneeling_Arm_Drill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists",
+      "slug": "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Cable_Triceps_Extension",
+      "slug": "Kneeling_Cable_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Forearm_Stretch",
+      "slug": "Kneeling_Forearm_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_High_Pulley_Row",
+      "slug": "Kneeling_High_Pulley_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Hip_Flexor",
+      "slug": "Kneeling_Hip_Flexor",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Jump_Squat",
+      "slug": "Kneeling_Jump_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Single-Arm_High_Pulley_Row",
+      "slug": "Kneeling_Single-Arm_High_Pulley_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Kneeling_Squat",
+      "slug": "Kneeling_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Landmine_180s",
+      "slug": "Landmine_180s",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Landmine_Linear_Jammer",
+      "slug": "Landmine_Linear_Jammer",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lateral_Bound",
+      "slug": "Lateral_Bound",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lateral_Box_Jump",
+      "slug": "Lateral_Box_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lateral_Cone_Hops",
+      "slug": "Lateral_Cone_Hops",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lateral_Raise_-_With_Bands",
+      "slug": "Lateral_Raise_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Latissimus_Dorsi-SMR",
+      "slug": "Latissimus_Dorsi-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leg_Extensions",
+      "slug": "Leg_Extensions",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leg_Lift",
+      "slug": "Leg_Lift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leg_Press",
+      "slug": "Leg_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leg_Pull-In",
+      "slug": "Leg_Pull-In",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leg-Over_Floor_Press",
+      "slug": "Leg-Over_Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leg-Up_Hamstring_Stretch",
+      "slug": "Leg-Up_Hamstring_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Chest_Press",
+      "slug": "Leverage_Chest_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Deadlift",
+      "slug": "Leverage_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Decline_Chest_Press",
+      "slug": "Leverage_Decline_Chest_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_High_Row",
+      "slug": "Leverage_High_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Incline_Chest_Press",
+      "slug": "Leverage_Incline_Chest_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Iso_Row",
+      "slug": "Leverage_Iso_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Shoulder_Press",
+      "slug": "Leverage_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Leverage_Shrug",
+      "slug": "Leverage_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Linear_3-Part_Start_Technique",
+      "slug": "Linear_3-Part_Start_Technique",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Linear_Acceleration_Wall_Drill",
+      "slug": "Linear_Acceleration_Wall_Drill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Linear_Depth_Jump",
+      "slug": "Linear_Depth_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Log_Lift",
+      "slug": "Log_Lift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "London_Bridges",
+      "slug": "London_Bridges",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Looking_At_Ceiling",
+      "slug": "Looking_At_Ceiling",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Low_Cable_Crossover",
+      "slug": "Low_Cable_Crossover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Low_Cable_Triceps_Extension",
+      "slug": "Low_Cable_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Low_Pulley_Row_To_Neck",
+      "slug": "Low_Pulley_Row_To_Neck",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lower_Back_Curl",
+      "slug": "Lower_Back_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lower_Back-SMR",
+      "slug": "Lower_Back-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lunge_Pass_Through",
+      "slug": "Lunge_Pass_Through",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lunge_Sprint",
+      "slug": "Lunge_Sprint",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Bent_Leg_Groin",
+      "slug": "Lying_Bent_Leg_Groin",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Cable_Curl",
+      "slug": "Lying_Cable_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Cambered_Barbell_Row",
+      "slug": "Lying_Cambered_Barbell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Close-Grip_Bar_Curl_On_High_Pulley",
+      "slug": "Lying_Close-Grip_Bar_Curl_On_High_Pulley",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head",
+      "slug": "Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Close-Grip_Barbell_Triceps_Press_To_Chin",
+      "slug": "Lying_Close-Grip_Barbell_Triceps_Press_To_Chin",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Crossover",
+      "slug": "Lying_Crossover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Dumbbell_Tricep_Extension",
+      "slug": "Lying_Dumbbell_Tricep_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Face_Down_Plate_Neck_Resistance",
+      "slug": "Lying_Face_Down_Plate_Neck_Resistance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Face_Up_Plate_Neck_Resistance",
+      "slug": "Lying_Face_Up_Plate_Neck_Resistance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Glute",
+      "slug": "Lying_Glute",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Hamstring",
+      "slug": "Lying_Hamstring",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_High_Bench_Barbell_Curl",
+      "slug": "Lying_High_Bench_Barbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Leg_Curls",
+      "slug": "Lying_Leg_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Machine_Squat",
+      "slug": "Lying_Machine_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_One-Arm_Lateral_Raise",
+      "slug": "Lying_One-Arm_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Prone_Quadriceps",
+      "slug": "Lying_Prone_Quadriceps",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Rear_Delt_Raise",
+      "slug": "Lying_Rear_Delt_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Supine_Dumbbell_Curl",
+      "slug": "Lying_Supine_Dumbbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_T-Bar_Row",
+      "slug": "Lying_T-Bar_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Lying_Triceps_Press",
+      "slug": "Lying_Triceps_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Machine_Bench_Press",
+      "slug": "Machine_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Machine_Bicep_Curl",
+      "slug": "Machine_Bicep_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Machine_Preacher_Curls",
+      "slug": "Machine_Preacher_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Machine_Shoulder_Military_Press",
+      "slug": "Machine_Shoulder_Military_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Machine_Triceps_Extension",
+      "slug": "Machine_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Medicine_Ball_Chest_Pass",
+      "slug": "Medicine_Ball_Chest_Pass",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Medicine_Ball_Full_Twist",
+      "slug": "Medicine_Ball_Full_Twist",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Medicine_Ball_Scoop_Throw",
+      "slug": "Medicine_Ball_Scoop_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Middle_Back_Shrug",
+      "slug": "Middle_Back_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Middle_Back_Stretch",
+      "slug": "Middle_Back_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Mixed_Grip_Chin",
+      "slug": "Mixed_Grip_Chin",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Monster_Walk",
+      "slug": "Monster_Walk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Mountain_Climbers",
+      "slug": "Mountain_Climbers",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Moving_Claw_Series",
+      "slug": "Moving_Claw_Series",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Muscle_Snatch",
+      "slug": "Muscle_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Muscle_Up",
+      "slug": "Muscle_Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Narrow_Stance_Hack_Squats",
+      "slug": "Narrow_Stance_Hack_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Narrow_Stance_Leg_Press",
+      "slug": "Narrow_Stance_Leg_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Narrow_Stance_Squats",
+      "slug": "Narrow_Stance_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Natural_Glute_Ham_Raise",
+      "slug": "Natural_Glute_Ham_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Neck_Press",
+      "slug": "Neck_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Neck-SMR",
+      "slug": "Neck-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Oblique_Crunches",
+      "slug": "Oblique_Crunches",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Oblique_Crunches_-_On_The_Floor",
+      "slug": "Oblique_Crunches_-_On_The_Floor",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Olympic_Squat",
+      "slug": "Olympic_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "On_Your_Side_Quad_Stretch",
+      "slug": "On_Your_Side_Quad_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "On-Your-Back_Quad_Stretch",
+      "slug": "On-Your-Back_Quad_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Against_Wall",
+      "slug": "One_Arm_Against_Wall",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Chin-Up",
+      "slug": "One_Arm_Chin-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Dumbbell_Bench_Press",
+      "slug": "One_Arm_Dumbbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Dumbbell_Preacher_Curl",
+      "slug": "One_Arm_Dumbbell_Preacher_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Floor_Press",
+      "slug": "One_Arm_Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Lat_Pulldown",
+      "slug": "One_Arm_Lat_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Pronated_Dumbbell_Triceps_Extension",
+      "slug": "One_Arm_Pronated_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Arm_Supinated_Dumbbell_Triceps_Extension",
+      "slug": "One_Arm_Supinated_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Half_Locust",
+      "slug": "One_Half_Locust",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Handed_Hang",
+      "slug": "One_Handed_Hang",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Knee_To_Chest",
+      "slug": "One_Knee_To_Chest",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One_Leg_Barbell_Squat",
+      "slug": "One_Leg_Barbell_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Dumbbell_Row",
+      "slug": "One-Arm_Dumbbell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Flat_Bench_Dumbbell_Flye",
+      "slug": "One-Arm_Flat_Bench_Dumbbell_Flye",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_High-Pulley_Cable_Side_Bends",
+      "slug": "One-Arm_High-Pulley_Cable_Side_Bends",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Incline_Lateral_Raise",
+      "slug": "One-Arm_Incline_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Clean",
+      "slug": "One-Arm_Kettlebell_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Clean_and_Jerk",
+      "slug": "One-Arm_Kettlebell_Clean_and_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Floor_Press",
+      "slug": "One-Arm_Kettlebell_Floor_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Jerk",
+      "slug": "One-Arm_Kettlebell_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Military_Press_To_The_Side",
+      "slug": "One-Arm_Kettlebell_Military_Press_To_The_Side",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Para_Press",
+      "slug": "One-Arm_Kettlebell_Para_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Push_Press",
+      "slug": "One-Arm_Kettlebell_Push_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Row",
+      "slug": "One-Arm_Kettlebell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Snatch",
+      "slug": "One-Arm_Kettlebell_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Split_Jerk",
+      "slug": "One-Arm_Kettlebell_Split_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Split_Snatch",
+      "slug": "One-Arm_Kettlebell_Split_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Kettlebell_Swings",
+      "slug": "One-Arm_Kettlebell_Swings",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Long_Bar_Row",
+      "slug": "One-Arm_Long_Bar_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Medicine_Ball_Slam",
+      "slug": "One-Arm_Medicine_Ball_Slam",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Open_Palm_Kettlebell_Clean",
+      "slug": "One-Arm_Open_Palm_Kettlebell_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Overhead_Kettlebell_Squats",
+      "slug": "One-Arm_Overhead_Kettlebell_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Side_Deadlift",
+      "slug": "One-Arm_Side_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Arm_Side_Laterals",
+      "slug": "One-Arm_Side_Laterals",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "One-Legged_Cable_Kickback",
+      "slug": "One-Legged_Cable_Kickback",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Open_Palm_Kettlebell_Clean",
+      "slug": "Open_Palm_Kettlebell_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Otis-Up",
+      "slug": "Otis-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Overhead_Cable_Curl",
+      "slug": "Overhead_Cable_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Overhead_Lat",
+      "slug": "Overhead_Lat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Overhead_Slam",
+      "slug": "Overhead_Slam",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Overhead_Squat",
+      "slug": "Overhead_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Overhead_Stretch",
+      "slug": "Overhead_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Overhead_Triceps",
+      "slug": "Overhead_Triceps",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pallof_Press",
+      "slug": "Pallof_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pallof_Press_With_Rotation",
+      "slug": "Pallof_Press_With_Rotation",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench",
+      "slug": "Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Palms-Down_Wrist_Curl_Over_A_Bench",
+      "slug": "Palms-Down_Wrist_Curl_Over_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench",
+      "slug": "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench",
+      "slug": "Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Parallel_Bar_Dip",
+      "slug": "Parallel_Bar_Dip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pelvic_Tilt_Into_Bridge",
+      "slug": "Pelvic_Tilt_Into_Bridge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Peroneals_Stretch",
+      "slug": "Peroneals_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Peroneals-SMR",
+      "slug": "Peroneals-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Physioball_Hip_Bridge",
+      "slug": "Physioball_Hip_Bridge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pin_Presses",
+      "slug": "Pin_Presses",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Piriformis-SMR",
+      "slug": "Piriformis-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Plank",
+      "slug": "Plank",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Plate_Pinch",
+      "slug": "Plate_Pinch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Plate_Twist",
+      "slug": "Plate_Twist",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Platform_Hamstring_Slides",
+      "slug": "Platform_Hamstring_Slides",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Plie_Dumbbell_Squat",
+      "slug": "Plie_Dumbbell_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Plyo_Kettlebell_Pushups",
+      "slug": "Plyo_Kettlebell_Pushups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Plyo_Push-up",
+      "slug": "Plyo_Push-up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Posterior_Tibialis_Stretch",
+      "slug": "Posterior_Tibialis_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Clean",
+      "slug": "Power_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Clean_from_Blocks",
+      "slug": "Power_Clean_from_Blocks",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Jerk",
+      "slug": "Power_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Partials",
+      "slug": "Power_Partials",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Snatch",
+      "slug": "Power_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Snatch_from_Blocks",
+      "slug": "Power_Snatch_from_Blocks",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Power_Stairs",
+      "slug": "Power_Stairs",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Preacher_Curl",
+      "slug": "Preacher_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Preacher_Hammer_Dumbbell_Curl",
+      "slug": "Preacher_Hammer_Dumbbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Press_Sit-Up",
+      "slug": "Press_Sit-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Prone_Manual_Hamstring",
+      "slug": "Prone_Manual_Hamstring",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Prowler_Sprint",
+      "slug": "Prowler_Sprint",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pull_Through",
+      "slug": "Pull_Through",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pullups",
+      "slug": "Pullups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push_Press",
+      "slug": "Push_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push_Press_-_Behind_the_Neck",
+      "slug": "Push_Press_-_Behind_the_Neck",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push_Up_to_Side_Plank",
+      "slug": "Push_Up_to_Side_Plank",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push-Up_Wide",
+      "slug": "Push-Up_Wide",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push-Ups_-_Close_Triceps_Position",
+      "slug": "Push-Ups_-_Close_Triceps_Position",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push-Ups_With_Feet_Elevated",
+      "slug": "Push-Ups_With_Feet_Elevated",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Push-Ups_With_Feet_On_An_Exercise_Ball",
+      "slug": "Push-Ups_With_Feet_On_An_Exercise_Ball",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pushups",
+      "slug": "Pushups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pushups_Close_and_Wide_Hand_Positions",
+      "slug": "Pushups_Close_and_Wide_Hand_Positions",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Pyramid",
+      "slug": "Pyramid",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Quad_Stretch",
+      "slug": "Quad_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Quadriceps-SMR",
+      "slug": "Quadriceps-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Quick_Leap",
+      "slug": "Quick_Leap",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rack_Delivery",
+      "slug": "Rack_Delivery",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rack_Pull_with_Bands",
+      "slug": "Rack_Pull_with_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rack_Pulls",
+      "slug": "Rack_Pulls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rear_Leg_Raises",
+      "slug": "Rear_Leg_Raises",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Recumbent_Bike",
+      "slug": "Recumbent_Bike",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Return_Push_from_Stance",
+      "slug": "Return_Push_from_Stance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Band_Bench_Press",
+      "slug": "Reverse_Band_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Band_Box_Squat",
+      "slug": "Reverse_Band_Box_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Band_Deadlift",
+      "slug": "Reverse_Band_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Band_Power_Squat",
+      "slug": "Reverse_Band_Power_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Band_Sumo_Deadlift",
+      "slug": "Reverse_Band_Sumo_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Barbell_Curl",
+      "slug": "Reverse_Barbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Barbell_Preacher_Curls",
+      "slug": "Reverse_Barbell_Preacher_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Cable_Curl",
+      "slug": "Reverse_Cable_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Crunch",
+      "slug": "Reverse_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Flyes",
+      "slug": "Reverse_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Flyes_With_External_Rotation",
+      "slug": "Reverse_Flyes_With_External_Rotation",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Grip_Bent-Over_Rows",
+      "slug": "Reverse_Grip_Bent-Over_Rows",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Grip_Triceps_Pushdown",
+      "slug": "Reverse_Grip_Triceps_Pushdown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Hyperextension",
+      "slug": "Reverse_Hyperextension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Machine_Flyes",
+      "slug": "Reverse_Machine_Flyes",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Plate_Curls",
+      "slug": "Reverse_Plate_Curls",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Reverse_Triceps_Bench_Press",
+      "slug": "Reverse_Triceps_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rhomboids-SMR",
+      "slug": "Rhomboids-SMR",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rickshaw_Carry",
+      "slug": "Rickshaw_Carry",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rickshaw_Deadlift",
+      "slug": "Rickshaw_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Ring_Dips",
+      "slug": "Ring_Dips",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rocket_Jump",
+      "slug": "Rocket_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rocking_Standing_Calf_Raise",
+      "slug": "Rocking_Standing_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rocky_Pull-Ups_Pulldowns",
+      "slug": "Rocky_Pull-Ups_Pulldowns",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Romanian_Deadlift",
+      "slug": "Romanian_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Romanian_Deadlift_from_Deficit",
+      "slug": "Romanian_Deadlift_from_Deficit",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rope_Climb",
+      "slug": "Rope_Climb",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rope_Crunch",
+      "slug": "Rope_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rope_Jumping",
+      "slug": "Rope_Jumping",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rope_Straight-Arm_Pulldown",
+      "slug": "Rope_Straight-Arm_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Round_The_World_Shoulder_Stretch",
+      "slug": "Round_The_World_Shoulder_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Rowing_Stationary",
+      "slug": "Rowing_Stationary",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Runners_Stretch",
+      "slug": "Runners_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Running_Treadmill",
+      "slug": "Running_Treadmill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Russian_Twist",
+      "slug": "Russian_Twist",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sandbag_Load",
+      "slug": "Sandbag_Load",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Scapular_Pull-Up",
+      "slug": "Scapular_Pull-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Scissor_Kick",
+      "slug": "Scissor_Kick",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Scissors_Jump",
+      "slug": "Scissors_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Band_Hamstring_Curl",
+      "slug": "Seated_Band_Hamstring_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Barbell_Military_Press",
+      "slug": "Seated_Barbell_Military_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Barbell_Twist",
+      "slug": "Seated_Barbell_Twist",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+      "slug": "Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Bent-Over_Rear_Delt_Raise",
+      "slug": "Seated_Bent-Over_Rear_Delt_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+      "slug": "Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Biceps",
+      "slug": "Seated_Biceps",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Cable_Rows",
+      "slug": "Seated_Cable_Rows",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Cable_Shoulder_Press",
+      "slug": "Seated_Cable_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Calf_Raise",
+      "slug": "Seated_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Calf_Stretch",
+      "slug": "Seated_Calf_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Close-Grip_Concentration_Barbell_Curl",
+      "slug": "Seated_Close-Grip_Concentration_Barbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Dumbbell_Curl",
+      "slug": "Seated_Dumbbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Dumbbell_Inner_Biceps_Curl",
+      "slug": "Seated_Dumbbell_Inner_Biceps_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Dumbbell_Palms-Down_Wrist_Curl",
+      "slug": "Seated_Dumbbell_Palms-Down_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Dumbbell_Palms-Up_Wrist_Curl",
+      "slug": "Seated_Dumbbell_Palms-Up_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Dumbbell_Press",
+      "slug": "Seated_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Flat_Bench_Leg_Pull-In",
+      "slug": "Seated_Flat_Bench_Leg_Pull-In",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Floor_Hamstring_Stretch",
+      "slug": "Seated_Floor_Hamstring_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Front_Deltoid",
+      "slug": "Seated_Front_Deltoid",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Glute",
+      "slug": "Seated_Glute",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Good_Mornings",
+      "slug": "Seated_Good_Mornings",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Hamstring",
+      "slug": "Seated_Hamstring",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Hamstring_and_Calf_Stretch",
+      "slug": "Seated_Hamstring_and_Calf_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Head_Harness_Neck_Resistance",
+      "slug": "Seated_Head_Harness_Neck_Resistance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Leg_Curl",
+      "slug": "Seated_Leg_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Leg_Tucks",
+      "slug": "Seated_Leg_Tucks",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_One-arm_Cable_Pulley_Rows",
+      "slug": "Seated_One-arm_Cable_Pulley_Rows",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_One-Arm_Dumbbell_Palms-Down_Wrist_Curl",
+      "slug": "Seated_One-Arm_Dumbbell_Palms-Down_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_One-Arm_Dumbbell_Palms-Up_Wrist_Curl",
+      "slug": "Seated_One-Arm_Dumbbell_Palms-Up_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Overhead_Stretch",
+      "slug": "Seated_Overhead_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Palm-Up_Barbell_Wrist_Curl",
+      "slug": "Seated_Palm-Up_Barbell_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Palms-Down_Barbell_Wrist_Curl",
+      "slug": "Seated_Palms-Down_Barbell_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Side_Lateral_Raise",
+      "slug": "Seated_Side_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Triceps_Press",
+      "slug": "Seated_Triceps_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl",
+      "slug": "Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "See-Saw_Press_Alternating_Side_Press",
+      "slug": "See-Saw_Press_Alternating_Side_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Shotgun_Row",
+      "slug": "Shotgun_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Shoulder_Circles",
+      "slug": "Shoulder_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Shoulder_Press_-_With_Bands",
+      "slug": "Shoulder_Press_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Shoulder_Raise",
+      "slug": "Shoulder_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Shoulder_Stretch",
+      "slug": "Shoulder_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Bridge",
+      "slug": "Side_Bridge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Hop-Sprint",
+      "slug": "Side_Hop-Sprint",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Jackknife",
+      "slug": "Side_Jackknife",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Lateral_Raise",
+      "slug": "Side_Lateral_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Laterals_to_Front_Raise",
+      "slug": "Side_Laterals_to_Front_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Leg_Raises",
+      "slug": "Side_Leg_Raises",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Lying_Groin_Stretch",
+      "slug": "Side_Lying_Groin_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Neck_Stretch",
+      "slug": "Side_Neck_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Standing_Long_Jump",
+      "slug": "Side_Standing_Long_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_to_Side_Box_Shuffle",
+      "slug": "Side_to_Side_Box_Shuffle",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_To_Side_Chins",
+      "slug": "Side_To_Side_Chins",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side_Wrist_Pull",
+      "slug": "Side_Wrist_Pull",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Side-Lying_Floor_Stretch",
+      "slug": "Side-Lying_Floor_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single_Dumbbell_Raise",
+      "slug": "Single_Dumbbell_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single_Leg_Butt_Kick",
+      "slug": "Single_Leg_Butt_Kick",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single_Leg_Glute_Bridge",
+      "slug": "Single_Leg_Glute_Bridge",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single_Leg_Push-off",
+      "slug": "Single_Leg_Push-off",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Arm_Cable_Crossover",
+      "slug": "Single-Arm_Cable_Crossover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Arm_Linear_Jammer",
+      "slug": "Single-Arm_Linear_Jammer",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Arm_Push-Up",
+      "slug": "Single-Arm_Push-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Cone_Sprint_Drill",
+      "slug": "Single-Cone_Sprint_Drill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Leg_High_Box_Squat",
+      "slug": "Single-Leg_High_Box_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Leg_Hop_Progression",
+      "slug": "Single-Leg_Hop_Progression",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Leg_Lateral_Hop",
+      "slug": "Single-Leg_Lateral_Hop",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Leg_Leg_Extension",
+      "slug": "Single-Leg_Leg_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Single-Leg_Stride_Jump",
+      "slug": "Single-Leg_Stride_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sit_Squats",
+      "slug": "Sit_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sit-Up",
+      "slug": "Sit-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Skating",
+      "slug": "Skating",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sled_Drag_-_Harness",
+      "slug": "Sled_Drag_-_Harness",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sled_Overhead_Backward_Walk",
+      "slug": "Sled_Overhead_Backward_Walk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sled_Overhead_Triceps_Extension",
+      "slug": "Sled_Overhead_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sled_Push",
+      "slug": "Sled_Push",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sled_Reverse_Flye",
+      "slug": "Sled_Reverse_Flye",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sled_Row",
+      "slug": "Sled_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sledgehammer_Swings",
+      "slug": "Sledgehammer_Swings",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Incline_Shoulder_Raise",
+      "slug": "Smith_Incline_Shoulder_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Behind_the_Back_Shrug",
+      "slug": "Smith_Machine_Behind_the_Back_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Bench_Press",
+      "slug": "Smith_Machine_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Bent_Over_Row",
+      "slug": "Smith_Machine_Bent_Over_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Calf_Raise",
+      "slug": "Smith_Machine_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Close-Grip_Bench_Press",
+      "slug": "Smith_Machine_Close-Grip_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Decline_Press",
+      "slug": "Smith_Machine_Decline_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Hang_Power_Clean",
+      "slug": "Smith_Machine_Hang_Power_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Hip_Raise",
+      "slug": "Smith_Machine_Hip_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Incline_Bench_Press",
+      "slug": "Smith_Machine_Incline_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Leg_Press",
+      "slug": "Smith_Machine_Leg_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_One-Arm_Upright_Row",
+      "slug": "Smith_Machine_One-Arm_Upright_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Overhead_Shoulder_Press",
+      "slug": "Smith_Machine_Overhead_Shoulder_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Pistol_Squat",
+      "slug": "Smith_Machine_Pistol_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Reverse_Calf_Raises",
+      "slug": "Smith_Machine_Reverse_Calf_Raises",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Squat",
+      "slug": "Smith_Machine_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Stiff-Legged_Deadlift",
+      "slug": "Smith_Machine_Stiff-Legged_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Machine_Upright_Row",
+      "slug": "Smith_Machine_Upright_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Smith_Single-Leg_Split_Squat",
+      "slug": "Smith_Single-Leg_Split_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Snatch",
+      "slug": "Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Snatch_Balance",
+      "slug": "Snatch_Balance",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Snatch_Deadlift",
+      "slug": "Snatch_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Snatch_from_Blocks",
+      "slug": "Snatch_from_Blocks",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Snatch_Pull",
+      "slug": "Snatch_Pull",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Snatch_Shrug",
+      "slug": "Snatch_Shrug",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Speed_Band_Overhead_Triceps",
+      "slug": "Speed_Band_Overhead_Triceps",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Speed_Box_Squat",
+      "slug": "Speed_Box_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Speed_Squats",
+      "slug": "Speed_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Spell_Caster",
+      "slug": "Spell_Caster",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Spider_Crawl",
+      "slug": "Spider_Crawl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Spider_Curl",
+      "slug": "Spider_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Spinal_Stretch",
+      "slug": "Spinal_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Split_Clean",
+      "slug": "Split_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Split_Jerk",
+      "slug": "Split_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Split_Jump",
+      "slug": "Split_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Split_Snatch",
+      "slug": "Split_Snatch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Split_Squat_with_Dumbbells",
+      "slug": "Split_Squat_with_Dumbbells",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Split_Squats",
+      "slug": "Split_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Squat_Jerk",
+      "slug": "Squat_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Squat_with_Bands",
+      "slug": "Squat_with_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Squat_with_Chains",
+      "slug": "Squat_with_Chains",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Squat_with_Plate_Movers",
+      "slug": "Squat_with_Plate_Movers",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Squats_-_With_Bands",
+      "slug": "Squats_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Stairmaster",
+      "slug": "Stairmaster",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Alternating_Dumbbell_Press",
+      "slug": "Standing_Alternating_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Barbell_Calf_Raise",
+      "slug": "Standing_Barbell_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Barbell_Press_Behind_Neck",
+      "slug": "Standing_Barbell_Press_Behind_Neck",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+      "slug": "Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+      "slug": "Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Biceps_Cable_Curl",
+      "slug": "Standing_Biceps_Cable_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Biceps_Stretch",
+      "slug": "Standing_Biceps_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Bradford_Press",
+      "slug": "Standing_Bradford_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Cable_Chest_Press",
+      "slug": "Standing_Cable_Chest_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Cable_Lift",
+      "slug": "Standing_Cable_Lift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Cable_Wood_Chop",
+      "slug": "Standing_Cable_Wood_Chop",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Calf_Raises",
+      "slug": "Standing_Calf_Raises",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Concentration_Curl",
+      "slug": "Standing_Concentration_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Dumbbell_Calf_Raise",
+      "slug": "Standing_Dumbbell_Calf_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Dumbbell_Press",
+      "slug": "Standing_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Dumbbell_Reverse_Curl",
+      "slug": "Standing_Dumbbell_Reverse_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Dumbbell_Straight-Arm_Front_Delt_Raise_Above_Head",
+      "slug": "Standing_Dumbbell_Straight-Arm_Front_Delt_Raise_Above_Head",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Dumbbell_Triceps_Extension",
+      "slug": "Standing_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Dumbbell_Upright_Row",
+      "slug": "Standing_Dumbbell_Upright_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Elevated_Quad_Stretch",
+      "slug": "Standing_Elevated_Quad_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Front_Barbell_Raise_Over_Head",
+      "slug": "Standing_Front_Barbell_Raise_Over_Head",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Gastrocnemius_Calf_Stretch",
+      "slug": "Standing_Gastrocnemius_Calf_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Hamstring_and_Calf_Stretch",
+      "slug": "Standing_Hamstring_and_Calf_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Hip_Circles",
+      "slug": "Standing_Hip_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Hip_Flexors",
+      "slug": "Standing_Hip_Flexors",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Inner-Biceps_Curl",
+      "slug": "Standing_Inner-Biceps_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Lateral_Stretch",
+      "slug": "Standing_Lateral_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Leg_Curl",
+      "slug": "Standing_Leg_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Long_Jump",
+      "slug": "Standing_Long_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Low-Pulley_Deltoid_Raise",
+      "slug": "Standing_Low-Pulley_Deltoid_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Low-Pulley_One-Arm_Triceps_Extension",
+      "slug": "Standing_Low-Pulley_One-Arm_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Military_Press",
+      "slug": "Standing_Military_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Olympic_Plate_Hand_Squeeze",
+      "slug": "Standing_Olympic_Plate_Hand_Squeeze",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_One-Arm_Cable_Curl",
+      "slug": "Standing_One-Arm_Cable_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_One-Arm_Dumbbell_Curl_Over_Incline_Bench",
+      "slug": "Standing_One-Arm_Dumbbell_Curl_Over_Incline_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_One-Arm_Dumbbell_Triceps_Extension",
+      "slug": "Standing_One-Arm_Dumbbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Overhead_Barbell_Triceps_Extension",
+      "slug": "Standing_Overhead_Barbell_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Palm-In_One-Arm_Dumbbell_Press",
+      "slug": "Standing_Palm-In_One-Arm_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Palms-In_Dumbbell_Press",
+      "slug": "Standing_Palms-In_Dumbbell_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Palms-Up_Barbell_Behind_The_Back_Wrist_Curl",
+      "slug": "Standing_Palms-Up_Barbell_Behind_The_Back_Wrist_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Pelvic_Tilt",
+      "slug": "Standing_Pelvic_Tilt",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Rope_Crunch",
+      "slug": "Standing_Rope_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Soleus_And_Achilles_Stretch",
+      "slug": "Standing_Soleus_And_Achilles_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Toe_Touches",
+      "slug": "Standing_Toe_Touches",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Towel_Triceps_Extension",
+      "slug": "Standing_Towel_Triceps_Extension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Standing_Two-Arm_Overhead_Throw",
+      "slug": "Standing_Two-Arm_Overhead_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Star_Jump",
+      "slug": "Star_Jump",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Step_Mill",
+      "slug": "Step_Mill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Step-up_with_Knee_Raise",
+      "slug": "Step-up_with_Knee_Raise",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Stiff_Leg_Barbell_Good_Morning",
+      "slug": "Stiff_Leg_Barbell_Good_Morning",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Stiff-Legged_Barbell_Deadlift",
+      "slug": "Stiff-Legged_Barbell_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Stiff-Legged_Dumbbell_Deadlift",
+      "slug": "Stiff-Legged_Dumbbell_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Stomach_Vacuum",
+      "slug": "Stomach_Vacuum",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Straight_Bar_Bench_Mid_Rows",
+      "slug": "Straight_Bar_Bench_Mid_Rows",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Straight_Raises_on_Incline_Bench",
+      "slug": "Straight_Raises_on_Incline_Bench",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Straight-Arm_Dumbbell_Pullover",
+      "slug": "Straight-Arm_Dumbbell_Pullover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Straight-Arm_Pulldown",
+      "slug": "Straight-Arm_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Stride_Jump_Crossover",
+      "slug": "Stride_Jump_Crossover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sumo_Deadlift",
+      "slug": "Sumo_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sumo_Deadlift_with_Bands",
+      "slug": "Sumo_Deadlift_with_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Sumo_Deadlift_with_Chains",
+      "slug": "Sumo_Deadlift_with_Chains",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Superman",
+      "slug": "Superman",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Supine_Chest_Throw",
+      "slug": "Supine_Chest_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Supine_One-Arm_Overhead_Throw",
+      "slug": "Supine_One-Arm_Overhead_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Supine_Two-Arm_Overhead_Throw",
+      "slug": "Supine_Two-Arm_Overhead_Throw",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Suspended_Fallout",
+      "slug": "Suspended_Fallout",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Suspended_Push-Up",
+      "slug": "Suspended_Push-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Suspended_Reverse_Crunch",
+      "slug": "Suspended_Reverse_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Suspended_Row",
+      "slug": "Suspended_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Suspended_Split_Squat",
+      "slug": "Suspended_Split_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Svend_Press",
+      "slug": "Svend_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "T-Bar_Row_with_Handle",
+      "slug": "T-Bar_Row_with_Handle",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Tate_Press",
+      "slug": "Tate_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "The_Straddle",
+      "slug": "The_Straddle",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Thigh_Abductor",
+      "slug": "Thigh_Abductor",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Thigh_Adductor",
+      "slug": "Thigh_Adductor",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Tire_Flip",
+      "slug": "Tire_Flip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Toe_Touchers",
+      "slug": "Toe_Touchers",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Torso_Rotation",
+      "slug": "Torso_Rotation",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Trail_Running_Walking",
+      "slug": "Trail_Running_Walking",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Trap_Bar_Deadlift",
+      "slug": "Trap_Bar_Deadlift",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Tricep_Dumbbell_Kickback",
+      "slug": "Tricep_Dumbbell_Kickback",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Tricep_Side_Stretch",
+      "slug": "Tricep_Side_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Triceps_Overhead_Extension_with_Rope",
+      "slug": "Triceps_Overhead_Extension_with_Rope",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Triceps_Pushdown",
+      "slug": "Triceps_Pushdown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Triceps_Pushdown_-_Rope_Attachment",
+      "slug": "Triceps_Pushdown_-_Rope_Attachment",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Triceps_Pushdown_-_V-Bar_Attachment",
+      "slug": "Triceps_Pushdown_-_V-Bar_Attachment",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Triceps_Stretch",
+      "slug": "Triceps_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Tuck_Crunch",
+      "slug": "Tuck_Crunch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Two-Arm_Dumbbell_Preacher_Curl",
+      "slug": "Two-Arm_Dumbbell_Preacher_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Two-Arm_Kettlebell_Clean",
+      "slug": "Two-Arm_Kettlebell_Clean",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Two-Arm_Kettlebell_Jerk",
+      "slug": "Two-Arm_Kettlebell_Jerk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Two-Arm_Kettlebell_Military_Press",
+      "slug": "Two-Arm_Kettlebell_Military_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Two-Arm_Kettlebell_Row",
+      "slug": "Two-Arm_Kettlebell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Underhand_Cable_Pulldowns",
+      "slug": "Underhand_Cable_Pulldowns",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Upper_Back_Stretch",
+      "slug": "Upper_Back_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Upper_Back-Leg_Grab",
+      "slug": "Upper_Back-Leg_Grab",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Upright_Barbell_Row",
+      "slug": "Upright_Barbell_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Upright_Cable_Row",
+      "slug": "Upright_Cable_Row",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Upright_Row_-_With_Bands",
+      "slug": "Upright_Row_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Upward_Stretch",
+      "slug": "Upward_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "V-Bar_Pulldown",
+      "slug": "V-Bar_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "V-Bar_Pullup",
+      "slug": "V-Bar_Pullup",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Vertical_Swing",
+      "slug": "Vertical_Swing",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Walking_Treadmill",
+      "slug": "Walking_Treadmill",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Ball_Hyperextension",
+      "slug": "Weighted_Ball_Hyperextension",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Ball_Side_Bend",
+      "slug": "Weighted_Ball_Side_Bend",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Bench_Dip",
+      "slug": "Weighted_Bench_Dip",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Crunches",
+      "slug": "Weighted_Crunches",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Jump_Squat",
+      "slug": "Weighted_Jump_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Pull_Ups",
+      "slug": "Weighted_Pull_Ups",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Sissy_Squat",
+      "slug": "Weighted_Sissy_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Sit-Ups_-_With_Bands",
+      "slug": "Weighted_Sit-Ups_-_With_Bands",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Weighted_Squat",
+      "slug": "Weighted_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide_Stance_Barbell_Squat",
+      "slug": "Wide_Stance_Barbell_Squat",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide_Stance_Stiff_Legs",
+      "slug": "Wide_Stance_Stiff_Legs",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Barbell_Bench_Press",
+      "slug": "Wide-Grip_Barbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Decline_Barbell_Bench_Press",
+      "slug": "Wide-Grip_Decline_Barbell_Bench_Press",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Decline_Barbell_Pullover",
+      "slug": "Wide-Grip_Decline_Barbell_Pullover",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Lat_Pulldown",
+      "slug": "Wide-Grip_Lat_Pulldown",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Pulldown_Behind_The_Neck",
+      "slug": "Wide-Grip_Pulldown_Behind_The_Neck",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Rear_Pull-Up",
+      "slug": "Wide-Grip_Rear_Pull-Up",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wide-Grip_Standing_Barbell_Curl",
+      "slug": "Wide-Grip_Standing_Barbell_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wind_Sprints",
+      "slug": "Wind_Sprints",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Windmills",
+      "slug": "Windmills",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Worlds_Greatest_Stretch",
+      "slug": "Worlds_Greatest_Stretch",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wrist_Circles",
+      "slug": "Wrist_Circles",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wrist_Roller",
+      "slug": "Wrist_Roller",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Wrist_Rotations_with_Straight_Bar",
+      "slug": "Wrist_Rotations_with_Straight_Bar",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Yoke_Walk",
+      "slug": "Yoke_Walk",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Zercher_Squats",
+      "slug": "Zercher_Squats",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Zottman_Curl",
+      "slug": "Zottman_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    },
+    {
+      "name": "Zottman_Preacher_Curl",
+      "slug": "Zottman_Preacher_Curl",
+      "json": null,
+      "hasJson": false,
+      "category": null,
+      "equipment": null,
+      "target": null
+    }
+  ]
+}
