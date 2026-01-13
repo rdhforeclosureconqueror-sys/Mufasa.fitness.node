@@ -1,62 +1,59 @@
 /* =========================================================
-   fitness.js — connects Exercise DB + UI + coaching (V2)
-   Drop-in file. Works with your existing index.html IDs/state.
+   fitness.js — Exercise DB + Workout Session State (ACTIVE_WORKOUT)
+   Drop-in: place in /public/fitness.js
 ========================================================= */
-
 (function () {
-  // ---- Where the DB index lives ----
-  // Your repo shows: /public/exercise-db/index.json
-  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json";
+  "use strict";
 
-  // ---- UI hooks from your index.html ----
+  // ---------- CONFIG ----------
+  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json"; // ✅ confirmed working
+
+  // ---------- UI HOOKS ----------
   const workoutPlanViewEl = document.getElementById("workoutPlanView");
   const workoutSelectEl   = document.getElementById("workoutSelect");
-  const defineExerciseBtn = document.getElementById("defineExerciseBtn");
   const exerciseLabelEl   = document.getElementById("exerciseLabel");
+  const brainStatusEl     = document.getElementById("brainStatus");
 
-  // Optional status element (if it exists)
-  const brainStatusEl = document.getElementById("brainStatus");
-
-  // ---- In-memory DB ----
+  // ---------- IN-MEMORY DB ----------
   let EXERCISES = [];
-  let EX_BY_ID  = {};
+  let EX_BY_ID = {};
 
-  // ---- Utility ----
+  // ---------- HELPERS ----------
+  const nowISODate = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  function normalize(v) {
+    return (v || "").toString().toLowerCase().trim();
+  }
+
   function safeText(v, fallback = "") {
     return (typeof v === "string" && v.trim()) ? v : fallback;
   }
 
-  function normalize(str) {
-    return (str || "").toLowerCase().trim();
-  }
-
   function pickRandom(arr) {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  function setStatusOk(msg) {
+  function setStatus(ok, msg) {
     if (!brainStatusEl) return;
     brainStatusEl.textContent = msg;
-    brainStatusEl.classList.remove("status-bad");
-    brainStatusEl.classList.add("status-ok");
+    brainStatusEl.classList.remove("status-ok", "status-bad");
+    brainStatusEl.classList.add(ok ? "status-ok" : "status-bad");
   }
 
-  function setStatusBad(msg) {
-    if (!brainStatusEl) return;
-    brainStatusEl.textContent = msg;
-    brainStatusEl.classList.remove("status-ok");
-    brainStatusEl.classList.add("status-bad");
-  }
-
-  // ---- Load Exercise DB ----
+  // ---------- LOAD DB ----------
   async function loadExerciseIndex() {
     try {
       const res = await fetch(EXERCISE_INDEX_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch index.json: " + res.status);
+      if (!res.ok) throw new Error(`index fetch failed (${res.status})`);
 
       const data = await res.json();
-
-      // Support either {exercises:[...]} or [...]
       const list = Array.isArray(data) ? data : (data.exercises || []);
       EXERCISES = list;
 
@@ -65,24 +62,22 @@
         if (ex && ex.id) EX_BY_ID[ex.id] = ex;
       }
 
-      setStatusOk(`Exercise DB loaded (${EXERCISES.length} exercises).`);
+      setStatus(true, `Exercise DB loaded (${EXERCISES.length}).`);
       return true;
-    } catch (e) {
-      console.warn("Exercise DB load error:", e);
-      setStatusBad("Exercise DB not loaded.");
-
+    } catch (err) {
+      console.warn("Exercise DB load error:", err);
+      setStatus(false, "Exercise DB not loaded.");
       if (workoutPlanViewEl) {
         workoutPlanViewEl.textContent =
-          "Exercise DB failed to load. Confirm /public/exercise-db/index.json exists and is deployed.";
+          "Exercise DB failed to load. Check /public/exercise-db/index.json deployment.";
       }
       return false;
     }
   }
 
-  // ---- Search / filter ----
-  function searchExercises(query, filters = {}) {
+  // ---------- FILTER/SEARCH ----------
+  function searchExercises(query = "", filters = {}) {
     const q = normalize(query);
-    const level = normalize(filters.level);
     const category = normalize(filters.category);
     const equipment = normalize(filters.equipment);
     const muscle = normalize(filters.muscle);
@@ -96,7 +91,6 @@
       const mech = normalize(ex.mechanic);
       const eq = normalize(ex.equipment);
       const cat = normalize(ex.category);
-      const lvl = normalize(ex.level);
 
       const prim = Array.isArray(ex.primaryMuscles) ? ex.primaryMuscles.map(normalize) : [];
       const sec  = Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles.map(normalize) : [];
@@ -113,8 +107,6 @@
         sec.some(m => m.includes(q));
 
       if (!matchesQuery) return false;
-
-      if (level && lvl !== level) return false;
       if (category && cat !== category) return false;
       if (equipment && eq !== equipment) return false;
       if (muscle && !prim.includes(muscle) && !sec.includes(muscle)) return false;
@@ -123,148 +115,133 @@
     });
   }
 
-  // ---- Workout generator (V1: simple + reliable) ----
-  function generateWorkout({
-    level = "beginner",
-    strengthCount = 4,
-    stretchCount = 1,
-    equipmentAllowed = ["body only", "dumbbell", "bands", "kettlebells"]
-  } = {}) {
-
-    if (!EXERCISES || EXERCISES.length === 0) {
-      console.warn("generateWorkout called before DB loaded");
-      return { title: "Workout", warmup: [], corrective: [], blocks: [], finisher: [] };
-    }
-
-    const strengthPool = searchExercises("", { category: "strength", level })
-      .filter(ex => equipmentAllowed.includes(normalize(ex.equipment)));
-
-    const stretchPool = searchExercises("", { category: "stretching" })
-      .filter(ex => normalize(ex.equipment) === "body only");
-
-    const pickN = (pool, n) => {
-      const shuffled = [...pool].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, Math.min(n, shuffled.length));
-    };
-
-    const strength = pickN(strengthPool, strengthCount);
-    const finisher = pickN(stretchPool, stretchCount);
-
-    const blocks = strength.map((ex, i) => ({
-      slot: `A${i + 1}`,
-      id: ex.id,
-      name: ex.name,
-      sets: 3,
-      reps: "10–12",
-      rest: "60s",
-      equipment: ex.equipment,
-      primaryMuscles: ex.primaryMuscles || [],
-      instructions: ex.instructions || [],
-      images: ex.images || [],
-      category: ex.category,
-      level: ex.level
-    }));
-
-    const finisherBlock = finisher.map(ex => ({
-      slot: "MOB",
-      id: ex.id,
-      name: ex.name,
-      sets: 1,
-      reps: "60–90 sec",
-      rest: "—",
-      equipment: ex.equipment,
-      primaryMuscles: ex.primaryMuscles || [],
-      instructions: ex.instructions || [],
-      images: ex.images || [],
-      category: ex.category,
-      level: ex.level
-    }));
-
-    return {
-      title: "Ma’at 2.0 — Today’s Program (DB)",
-      warmup: [
-        "Cat–cow x10",
-        "Hip circles x10/side",
-        "Ankle rocks x10/side",
-        "Arm swings x20"
-      ],
-      corrective: [
-        "90/90 breathing — 2×5 breaths",
-        "Dead bug — 2×8/side"
-      ],
-      blocks,
-      finisher: finisherBlock
-    };
+  // ---------- SESSION STATE ----------
+  // This is the core upgrade: one source of truth for coaching, tracking, saving.
+  function setActiveWorkout(session) {
+    window.ACTIVE_WORKOUT = session; // ✅ global access
+    // Convenience alias for quick console checks
+    window.ACTIVE_WORKOUT_READY = true;
   }
 
-  // ---- OHSA → corrective emphasis (simple) ----
-  function buildCorrectivesFromOhsa(ohsaSummary) {
-    const findingsStr = (ohsaSummary && Array.isArray(ohsaSummary.findings))
-      ? ohsaSummary.findings.join(" ").toLowerCase()
+  // ---------- PLAN GENERATION (v1) ----------
+  function generateTodayWorkout(profile, ohsaSummary) {
+    const daysPerWeek = profile?.goals?.frequency_days_per_week || 4;
+
+    const findings = (ohsaSummary && Array.isArray(ohsaSummary.findings))
+      ? ohsaSummary.findings.join(" ")
       : "";
 
-    const correctives = [];
+    const hasKneeValgus = normalize(findings).includes("valgus");
+    const hasTrunkLean  = normalize(findings).includes("trunk") || normalize(findings).includes("lean");
 
-    if (findingsStr.includes("valgus")) {
-      correctives.push("Glute med: lateral band walks — 2×12/side");
-    }
-    if (findingsStr.includes("trunk") || findingsStr.includes("lean")) {
-      correctives.push("Core brace: dead bug — 2×8/side");
-    }
+    const warmup = [
+      { name: "Cat–cow", sets: 1, reps: "x10", restSec: 0 },
+      { name: "Hip circles", sets: 1, reps: "x10/side", restSec: 0 },
+      { name: "Ankle rocks", sets: 1, reps: "x10/side", restSec: 0 },
+      { name: "Arm swings", sets: 1, reps: "x20", restSec: 0 },
+    ];
 
-    if (!correctives.length) {
-      correctives.push("90/90 breathing — 2×5 breaths");
-      correctives.push("Brace drill: slow air squat — 2×6");
-    }
+    const corrective = [];
+    if (hasKneeValgus) corrective.push({ name: "Lateral band walks", sets: 2, reps: "x12/side", restSec: 30, cue: "Knees track over toes." });
+    if (hasTrunkLean) corrective.push({ name: "Dead bug", sets: 2, reps: "x8/side", restSec: 30, cue: "Ribs down. Slow." });
+    if (!corrective.length) corrective.push({ name: "90/90 breathing", sets: 2, reps: "x5 breaths", restSec: 15, cue: "Exhale fully. Brace gently." });
 
-    return correctives;
+    // Strength buckets (prefer common home + gym options)
+    const lower = searchExercises("", { category: "strength" })
+      .filter(ex => ["body only", "dumbbell", "bands", "kettlebells", "barbell", "machine"].includes(normalize(ex.equipment)))
+      .filter(ex => (ex.primaryMuscles || []).some(m => ["quadriceps","glutes","hamstrings"].some(t => normalize(m).includes(t))));
+
+    const push = searchExercises("", { category: "strength" })
+      .filter(ex => ["body only", "dumbbell", "bands", "barbell", "machine"].includes(normalize(ex.equipment)))
+      .filter(ex => (ex.primaryMuscles || []).some(m => ["chest","shoulders","triceps"].some(t => normalize(m).includes(t))));
+
+    const pull = searchExercises("", { category: "strength" })
+      .filter(ex => ["body only", "dumbbell", "bands", "barbell", "machine"].includes(normalize(ex.equipment)))
+      .filter(ex => (ex.primaryMuscles || []).some(m => ["back","lats","biceps"].some(t => normalize(m).includes(t))));
+
+    const accessory = searchExercises("", { category: "strength" })
+      .filter(ex => ["dumbbell", "bands", "machine", "body only"].includes(normalize(ex.equipment)));
+
+    const a1 = pickRandom(push)  || { name: "Push-Up", id: "push-up", equipment: "body only" };
+    const a2 = pickRandom(pull)  || { name: "Row (band/backpack)", id: "row", equipment: "bands" };
+    const a3 = pickRandom(accessory) || { name: "Dumbbell Curl", id: "dumbbell-curl", equipment: "dumbbell" };
+    const a4 = pickRandom(lower) || { name: "Bodyweight Squat", id: "bodyweight-squat", equipment: "body only" };
+
+    const stretch = searchExercises("", { category: "stretching" })
+      .filter(ex => normalize(ex.equipment) === "body only");
+    const finisher = pickRandom(stretch) || { name: "Child’s Pose", id: "child-pose" };
+
+    const strengthBlock = [
+      { slot: "A1", ex: a1, sets: 3, reps: "10–12", restSec: 60, cue: "Brace first. Smooth reps." },
+      { slot: "A2", ex: a2, sets: 3, reps: "10–12", restSec: 60, cue: "Pull elbows back, no shrug." },
+      { slot: "A3", ex: a3, sets: 3, reps: "10–12", restSec: 60, cue: "Control the lowering." },
+      { slot: "A4", ex: a4, sets: 3, reps: "10–12", restSec: 60, cue: "Knees over toes, chest tall." },
+    ];
+
+    // Render text (for your current UI)
+    const planText =
+      `Ma’at 2.0 — Today’s Program (DB)\n` +
+      `Schedule: ${daysPerWeek} days/week\n\n` +
+      `Warm-up:\n- ${warmup.map(w => `${w.name} ${w.reps}`).join("\n- ")}\n\n` +
+      `Corrective:\n- ${corrective.map(c => `${c.name} — ${c.sets}×${c.reps}`).join("\n- ")}\n\n` +
+      `Strength (3 rounds):\n` +
+      strengthBlock.map(s => `${s.slot}) ${s.ex.name} — ${s.sets} sets × ${s.reps} | rest ${s.restSec}s`).join("\n") +
+      `\n\nFinisher:\n- ${finisher.name} — 60–90 sec\n\n` +
+      `Coach focus: slow reps, brace first, perfect form.`;
+
+    // Create ACTIVE_WORKOUT session object (this is the upgrade)
+    const session = {
+      id: `workout_${nowISODate()}`,
+      date: nowISODate(),
+      source: "exercise_db_v1",
+      profileSnapshot: {
+        name: profile?.name || profile?.display_name || "",
+        goal: profile?.goals?.primary_goal || profile?.goal || "",
+        injuries: profile?.injuries || []
+      },
+      blocks: {
+        warmup,
+        corrective,
+        strength: strengthBlock.map(s => ({
+          slot: s.slot,
+          id: s.ex.id || null,
+          name: s.ex.name,
+          equipment: s.ex.equipment || null,
+          sets: s.sets,
+          reps: s.reps,
+          restSec: s.restSec,
+          cue: s.cue
+        })),
+        finisher: [{ id: finisher.id || null, name: finisher.name, sets: 1, reps: "60–90 sec", restSec: 0 }]
+      },
+      // Coaching pointer: what the camera coach should start with
+      current: { block: "strength", slot: "A1", setIndex: 1 },
+      coachingFocus: "brace first; slow reps; knees track; control lowering",
+      createdAt: new Date().toISOString()
+    };
+
+    const primaryExerciseName = safeText(strengthBlock[0]?.ex?.name, "Bodyweight Squat");
+
+    return { planText, primaryExerciseName, session };
   }
 
-  // ---- UI rendering (cards) ----
-  function renderWorkoutToUI(workout) {
-    if (!workoutPlanViewEl) return;
-
-    const lines = [];
-
-    lines.push(`${workout.title}`);
-    lines.push("");
-    lines.push("Warm-up:");
-    workout.warmup.forEach(x => lines.push(`- ${x}`));
-    lines.push("");
-    lines.push("Corrective:");
-    workout.corrective.forEach(x => lines.push(`- ${x}`));
-    lines.push("");
-    lines.push("Strength (3 rounds):");
-    workout.blocks.forEach(b => {
-      lines.push(`${b.slot}) ${b.name} — ${b.sets} sets × ${b.reps} | rest ${b.rest}`);
-    });
-    lines.push("");
-    lines.push("Finisher:");
-    workout.finisher.forEach(b => {
-      lines.push(`- ${b.name} — ${b.reps}`);
-    });
-    lines.push("");
-    lines.push("Coach focus: slow reps, brace first, perfect form.");
-
-    workoutPlanViewEl.textContent = lines.join("\n");
-
-    // Update camera coach label to first strength exercise
-    const primary = workout.blocks[0]?.name || "Bodyweight Squat";
-    if (exerciseLabelEl) exerciseLabelEl.textContent = primary;
-  }
-
-  // ---- Hook into your existing UI ----
-  function attachWorkoutOptions() {
+  // ---------- UI WIRING ----------
+  function ensureDBOption() {
     if (!workoutSelectEl) return;
 
-    // Add DB option if not already there
-    const exists = Array.from(workoutSelectEl.options).some(o => o.value === "db_today");
+    const value = "db_today";
+    const exists = Array.from(workoutSelectEl.options).some(o => o.value === value);
     if (!exists) {
       const opt = document.createElement("option");
-      opt.value = "db_today";
+      opt.value = value;
       opt.textContent = "Ma’at 2.0 – Today’s Program (Exercise DB)";
+      // put near the top
       workoutSelectEl.insertBefore(opt, workoutSelectEl.options[1] || null);
     }
+  }
+
+  function handleSelectChange() {
+    if (!workoutSelectEl) return;
 
     workoutSelectEl.addEventListener("change", () => {
       if (workoutSelectEl.value !== "db_today") return;
@@ -272,43 +249,35 @@
       const profile = window.USER_PROFILE || null;
       const ohsa = window.lastOhsaSummary || null;
 
-      const level = safeText(profile?.fitness_level, "beginner").toLowerCase();
-      const workout = generateWorkout({ level });
+      const out = generateTodayWorkout(profile, ohsa);
 
-      // Replace corrective block with OHSA-aware block (if present)
-      workout.corrective = buildCorrectivesFromOhsa(ohsa);
+      // 1) Render the plan
+      if (workoutPlanViewEl) workoutPlanViewEl.textContent = out.planText;
 
-      renderWorkoutToUI(workout);
+      // 2) Set the label used by your camera coach
+      if (exerciseLabelEl) exerciseLabelEl.textContent = out.primaryExerciseName;
+
+      // 3) Store session state globally (this is the upgrade)
+      setActiveWorkout(out.session);
+
+      // 4) Status
+      setStatus(true, "Workout loaded + ACTIVE_WORKOUT created.");
+      console.log("✅ ACTIVE_WORKOUT:", window.ACTIVE_WORKOUT);
     });
   }
 
-  // ---- Self-test (so you KNOW it works) ----
-  function runSelfTest() {
-    try {
-      console.log("[fitness.js] DB count:", EXERCISES.length);
-      const w = generateWorkout({ level: "beginner" });
-      console.log("[fitness.js] Generated workout sample:", w);
-      if (brainStatusEl) {
-        brainStatusEl.textContent += " | Self-test OK ✅";
-      }
-    } catch (e) {
-      console.warn("[fitness.js] Self-test FAILED:", e);
-      if (brainStatusEl) {
-        brainStatusEl.textContent += " | Self-test FAILED ❌";
-      }
-    }
-  }
-
-  // ---- Boot ----
+  // ---------- BOOT ----------
   window.addEventListener("load", async () => {
     const ok = await loadExerciseIndex();
-    if (ok) {
-      attachWorkoutOptions();
-      runSelfTest();
-    }
+    if (!ok) return;
 
-    if (defineExerciseBtn) {
-      defineExerciseBtn.title = "DB loaded: next step is mapping form coaching to exercise IDs.";
+    ensureDBOption();
+    handleSelectChange();
+
+    // If user already has "db_today" selected on load, auto-run once
+    if (workoutSelectEl && workoutSelectEl.value === "db_today") {
+      const evt = new Event("change");
+      workoutSelectEl.dispatchEvent(evt);
     }
   });
 
