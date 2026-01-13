@@ -1,18 +1,28 @@
 /* =========================================================
    fitness.js — Exercise DB + Workout Session State (ACTIVE_WORKOUT)
+   + Local history tracking (WORKOUT_HISTORY)
+   + Dashboard connector (/public/dashboard.html)
    Drop-in: place in /public/fitness.js
 ========================================================= */
 (function () {
   "use strict";
 
   // ---------- CONFIG ----------
-  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json"; // ✅ confirmed working
+  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json";
+  const STORAGE_KEYS = {
+    HISTORY: "WORKOUT_HISTORY_V1",   // array of workout sessions (completed or not)
+    ACTIVE: "ACTIVE_WORKOUT_V1"      // active session snapshot
+  };
 
   // ---------- UI HOOKS ----------
   const workoutPlanViewEl = document.getElementById("workoutPlanView");
   const workoutSelectEl   = document.getElementById("workoutSelect");
   const exerciseLabelEl   = document.getElementById("exerciseLabel");
   const brainStatusEl     = document.getElementById("brainStatus");
+
+  // Optional UI hooks (if they exist in your index.html, we’ll use them)
+  const dashboardLinkEl   = document.getElementById("dashboardLink");     // <a id="dashboardLink">
+  const completeBtnEl     = document.getElementById("completeWorkoutBtn"); // <button id="completeWorkoutBtn">
 
   // ---------- IN-MEMORY DB ----------
   let EXERCISES = [];
@@ -45,6 +55,29 @@
     brainStatusEl.textContent = msg;
     brainStatusEl.classList.remove("status-ok", "status-bad");
     brainStatusEl.classList.add(ok ? "status-ok" : "status-bad");
+  }
+
+  function readJSON(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function writeJSON(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.warn("localStorage write failed:", e);
+      return false;
+    }
+  }
+
+  function uid(prefix="id") {
+    return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   }
 
   // ---------- LOAD DB ----------
@@ -115,12 +148,33 @@
     });
   }
 
+  // ---------- HISTORY TRACKING ----------
+  function getHistory() {
+    return readJSON(STORAGE_KEYS.HISTORY, []);
+  }
+
+  function saveHistory(history) {
+    writeJSON(STORAGE_KEYS.HISTORY, history);
+  }
+
+  function upsertHistorySession(session) {
+    const history = getHistory();
+    const i = history.findIndex(x => x && x.id === session.id);
+    if (i >= 0) history[i] = session;
+    else history.unshift(session); // newest first
+    saveHistory(history.slice(0, 90)); // keep last 90 sessions
+  }
+
+  function markActiveSnapshot(session) {
+    writeJSON(STORAGE_KEYS.ACTIVE, session);
+  }
+
   // ---------- SESSION STATE ----------
-  // This is the core upgrade: one source of truth for coaching, tracking, saving.
   function setActiveWorkout(session) {
-    window.ACTIVE_WORKOUT = session; // ✅ global access
-    // Convenience alias for quick console checks
+    window.ACTIVE_WORKOUT = session;
     window.ACTIVE_WORKOUT_READY = true;
+    markActiveSnapshot(session);
+    upsertHistorySession(session);
   }
 
   // ---------- PLAN GENERATION (v1) ----------
@@ -146,7 +200,6 @@
     if (hasTrunkLean) corrective.push({ name: "Dead bug", sets: 2, reps: "x8/side", restSec: 30, cue: "Ribs down. Slow." });
     if (!corrective.length) corrective.push({ name: "90/90 breathing", sets: 2, reps: "x5 breaths", restSec: 15, cue: "Exhale fully. Brace gently." });
 
-    // Strength buckets (prefer common home + gym options)
     const lower = searchExercises("", { category: "strength" })
       .filter(ex => ["body only", "dumbbell", "bands", "kettlebells", "barbell", "machine"].includes(normalize(ex.equipment)))
       .filter(ex => (ex.primaryMuscles || []).some(m => ["quadriceps","glutes","hamstrings"].some(t => normalize(m).includes(t))));
@@ -178,7 +231,6 @@
       { slot: "A4", ex: a4, sets: 3, reps: "10–12", restSec: 60, cue: "Knees over toes, chest tall." },
     ];
 
-    // Render text (for your current UI)
     const planText =
       `Ma’at 2.0 — Today’s Program (DB)\n` +
       `Schedule: ${daysPerWeek} days/week\n\n` +
@@ -189,10 +241,11 @@
       `\n\nFinisher:\n- ${finisher.name} — 60–90 sec\n\n` +
       `Coach focus: slow reps, brace first, perfect form.`;
 
-    // Create ACTIVE_WORKOUT session object (this is the upgrade)
     const session = {
-      id: `workout_${nowISODate()}`,
+      id: uid(`workout_${nowISODate()}`),
       date: nowISODate(),
+      status: "planned",            // planned | in_progress | completed
+      completedAt: null,
       source: "exercise_db_v1",
       profileSnapshot: {
         name: profile?.name || profile?.display_name || "",
@@ -210,19 +263,49 @@
           sets: s.sets,
           reps: s.reps,
           restSec: s.restSec,
-          cue: s.cue
+          cue: s.cue,
+          // tracking for results (future-proof)
+          performed: [] // push {set:1,reps:12,weight:25,notes:""} later
         })),
-        finisher: [{ id: finisher.id || null, name: finisher.name, sets: 1, reps: "60–90 sec", restSec: 0 }]
+        finisher: [{ id: finisher.id || null, name: finisher.name, sets: 1, reps: "60–90 sec", restSec: 0, performed: [] }]
       },
-      // Coaching pointer: what the camera coach should start with
       current: { block: "strength", slot: "A1", setIndex: 1 },
       coachingFocus: "brace first; slow reps; knees track; control lowering",
       createdAt: new Date().toISOString()
     };
 
     const primaryExerciseName = safeText(strengthBlock[0]?.ex?.name, "Bodyweight Squat");
-
     return { planText, primaryExerciseName, session };
+  }
+
+  // ---------- COMPLETE WORKOUT (minimal v1) ----------
+  function completeActiveWorkout() {
+    const s = window.ACTIVE_WORKOUT;
+    if (!s || !s.id) return;
+
+    s.status = "completed";
+    s.completedAt = new Date().toISOString();
+
+    setActiveWorkout(s);
+    setStatus(true, "Workout marked completed ✅ (saved to dashboard).");
+  }
+
+  // ---------- DASHBOARD CONNECTOR ----------
+  function wireDashboardLink() {
+    // If user already has a link element, set it.
+    if (dashboardLinkEl) {
+      dashboardLinkEl.href = "/public/dashboard.html";
+      dashboardLinkEl.target = "_blank";
+      dashboardLinkEl.rel = "noopener";
+      dashboardLinkEl.textContent = dashboardLinkEl.textContent || "Open Dashboard";
+    }
+  }
+
+  function wireCompleteButton() {
+    if (!completeBtnEl) return;
+    completeBtnEl.addEventListener("click", () => {
+      completeActiveWorkout();
+    });
   }
 
   // ---------- UI WIRING ----------
@@ -235,7 +318,6 @@
       const opt = document.createElement("option");
       opt.value = value;
       opt.textContent = "Ma’at 2.0 – Today’s Program (Exercise DB)";
-      // put near the top
       workoutSelectEl.insertBefore(opt, workoutSelectEl.options[1] || null);
     }
   }
@@ -251,17 +333,14 @@
 
       const out = generateTodayWorkout(profile, ohsa);
 
-      // 1) Render the plan
       if (workoutPlanViewEl) workoutPlanViewEl.textContent = out.planText;
-
-      // 2) Set the label used by your camera coach
       if (exerciseLabelEl) exerciseLabelEl.textContent = out.primaryExerciseName;
 
-      // 3) Store session state globally (this is the upgrade)
+      // Mark as in progress + persist
+      out.session.status = "in_progress";
       setActiveWorkout(out.session);
 
-      // 4) Status
-      setStatus(true, "Workout loaded + ACTIVE_WORKOUT created.");
+      setStatus(true, "Workout loaded + ACTIVE_WORKOUT saved.");
       console.log("✅ ACTIVE_WORKOUT:", window.ACTIVE_WORKOUT);
     });
   }
@@ -274,10 +353,12 @@
     ensureDBOption();
     handleSelectChange();
 
+    wireDashboardLink();
+    wireCompleteButton();
+
     // If user already has "db_today" selected on load, auto-run once
     if (workoutSelectEl && workoutSelectEl.value === "db_today") {
-      const evt = new Event("change");
-      workoutSelectEl.dispatchEvent(evt);
+      workoutSelectEl.dispatchEvent(new Event("change"));
     }
   });
 
