@@ -411,6 +411,7 @@
         <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
+        <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
 
         <!-- 🔻 NEW: Voice selection dropdown (no more guessing where to paste the clip) -->
         <select id="voiceSelect">
@@ -530,185 +531,232 @@
       }
     }
 
-    function loadPersistedUser() {
-      try {
-        const id = localStorage.getItem("maatUserId");
-        const profileStr = localStorage.getItem("maatUserProfile");
-        if (id && profileStr) {
-          USER_ID = id;
-          USER_PROFILE = JSON.parse(profileStr);
-          const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
-          if (calStr) {
-            const meta = JSON.parse(calStr);
-            calendarMeta = {
-              startDateISO: meta.startDateISO,
-              weeks: meta.weeks,
-              daysPerWeek: meta.daysPerWeek,
-              completedDates: new Set(meta.completed || [])
-            };
-          }
-          onLoginUI(USER_PROFILE);
-          showOverlay(false);
-          return true;
-        }
-      } catch (e) {
-        console.warn("loadPersistedUser error", e);
-      }
-      return false;
-    }
+    /* ============================
+   LOGIN / USER STATE (DROP-IN)
+   Adds: dashboardBtn enable/disable + calendar Set rehydrate
+============================ */
 
-    function defaultProfileForName(name) {
-      const lower = (name || "").toLowerCase();
-      if (lower === "rashad" || lower === "rashad harbor") {
-        return {
-          name: "Rashad",
-          age: 38,
-          weight_lbs: 150,
-          height: "5'5\"",
-          injuries: ["3 herniated discs (lumbar)"],
-          history: { chiropractic_months: 12, yoga_years: 2 },
-          goals: {
-            primary: "Gain 20 lb of muscle in ~3 months",
-            style: "Home workouts only + heavy yoga",
-            frequency_days_per_week: 4,
-            focus: "Muscle gain + back decompression / pain-free movement"
-          }
-        };
-      }
-      return {
-        name: name || "Athlete",
-        age: null,
-        weight_lbs: null,
-        height: null,
-        injuries: [],
-        history: {},
-        goals: {
-          primary: "Build full-body strength and mobility",
-          style: "Home workouts + yoga focus",
-          frequency_days_per_week: 3,
-          focus: "Consistent training and recovery"
-        }
-      };
-    }
+function loadPersistedUser() {
+  try {
+    const id = localStorage.getItem("maatUserId");
+    const profileStr = localStorage.getItem("maatUserProfile");
 
-    function onLogin(profile) {
-      USER_ID = (profile.email || profile.name || "user").toLowerCase().replace(/\s+/g, "_");
-      USER_PROFILE = {
-        name: profile.name || profile.email || "Athlete",
-        email: profile.email || null,
-        picture: profile.picture || null,
-        age: profile.age || profile.ageYears || null,
-        weight_lbs: profile.weight_lbs || null,
-        height: profile.height || null,
-        injuries: profile.injuries || [],
-        history: profile.history || {},
-        goals: profile.goals || {
-          primary: "Build strength and mobility",
-          style: "Home workouts + yoga",
-          frequency_days_per_week: 3,
-          focus: "Consistent training"
-        }
-      };
-      if (!USER_PROFILE.injuries) USER_PROFILE.injuries = [];
-      if (!USER_PROFILE.history) USER_PROFILE.history = {};
-      if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
+    if (id && profileStr) {
+      USER_ID = id;
+      USER_PROFILE = JSON.parse(profileStr);
 
-      if (!calendarMeta) {
-        // default 12 week / 4 day schedule starting today
-        const today = new Date();
-        today.setHours(0,0,0,0);
+      // Re-hydrate calendar meta (completedDates must be a Set)
+      const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
+      if (calStr) {
+        const meta = JSON.parse(calStr);
         calendarMeta = {
-          startDateISO: today.toISOString().slice(0,10),
-          weeks: 12,
-          daysPerWeek: USER_PROFILE.goals.frequency_days_per_week || 4,
-          completedDates: new Set()
+          startDateISO: meta.startDateISO,
+          weeks: meta.weeks,
+          daysPerWeek: meta.daysPerWeek,
+          completedDates: new Set(meta.completed || [])
         };
       }
 
       onLoginUI(USER_PROFILE);
-      persistUser();
-      sendProfileToNode();
-      buildCalendarFromMeta();
+
+      // ✅ Enable dashboard if present
+      if (typeof dashboardBtn !== "undefined" && dashboardBtn) {
+        dashboardBtn.disabled = false;
+      }
+
+      showOverlay(false);
+      return true;
     }
+  } catch (e) {
+    console.warn("loadPersistedUser error", e);
+  }
+  return false;
+}
 
-    function onLoginUI(profile) {
-      userInfoBar.style.display = "flex";
-      userPicEl.src = profile.picture || "https://i.imgur.com/9z3s8Gh.png";
-      userNameEl.textContent = profile.name || "User";
-
-      const inj = (profile.injuries && profile.injuries.length)
-        ? profile.injuries.join(", ")
-        : "None listed";
-      const goalText = profile.goals && profile.goals.primary
-        ? profile.goals.primary
-        : "Build strength and mobility";
-
-      profileSummaryEl.innerHTML =
-        `<strong>Signed in as ${profile.name || "User"}</strong><br/>` +
-        (profile.age ? `Age: ${profile.age}<br/>` : "") +
-        (profile.height ? `Height: ${profile.height}<br/>` : "") +
-        (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
-        `Goal: ${goalText}<br/>` +
-        `Injuries: ${inj}`;
+function defaultProfileForName(name) {
+  const lower = (name || "").toLowerCase();
+  if (lower === "rashad" || lower === "rashad harbor") {
+    return {
+      name: "Rashad",
+      age: 38,
+      weight_lbs: 150,
+      height: "5'5\"",
+      injuries: ["3 herniated discs (lumbar)"],
+      history: { chiropractic_months: 12, yoga_years: 2 },
+      goals: {
+        primary: "Gain 20 lb of muscle in ~3 months",
+        style: "Home workouts only + heavy yoga",
+        frequency_days_per_week: 4,
+        focus: "Muscle gain + back decompression / pain-free movement"
+      }
+    };
+  }
+  return {
+    name: name || "Athlete",
+    age: null,
+    weight_lbs: null,
+    height: null,
+    injuries: [],
+    history: {},
+    goals: {
+      primary: "Build full-body strength and mobility",
+      style: "Home workouts + yoga focus",
+      frequency_days_per_week: 3,
+      focus: "Consistent training and recovery"
     }
+  };
+}
 
-    manualLoginBtn.onclick = () => {
-      const name = manualNameInput.value.trim() || "Athlete";
-      const profile = defaultProfileForName(name);
+function onLogin(profile) {
+  USER_ID = (profile.email || profile.name || "user").toLowerCase().replace(/\s+/g, "_");
+
+  USER_PROFILE = {
+    name: profile.name || profile.email || "Athlete",
+    email: profile.email || null,
+    picture: profile.picture || null,
+    age: profile.age || profile.ageYears || null,
+    weight_lbs: profile.weight_lbs || null,
+    height: profile.height || null,
+    injuries: profile.injuries || [],
+    history: profile.history || {},
+    goals: profile.goals || {
+      primary: "Build strength and mobility",
+      style: "Home workouts + yoga",
+      frequency_days_per_week: 3,
+      focus: "Consistent training"
+    }
+  };
+
+  if (!USER_PROFILE.injuries) USER_PROFILE.injuries = [];
+  if (!USER_PROFILE.history) USER_PROFILE.history = {};
+  if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
+
+  if (!calendarMeta) {
+    // default 12 week schedule starting today
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    calendarMeta = {
+      startDateISO: today.toISOString().slice(0,10),
+      weeks: 12,
+      daysPerWeek: USER_PROFILE.goals.frequency_days_per_week || 4,
+      completedDates: new Set()
+    };
+  }
+
+  onLoginUI(USER_PROFILE);
+
+  // ✅ Enable dashboard if present
+  if (typeof dashboardBtn !== "undefined" && dashboardBtn) {
+    dashboardBtn.disabled = false;
+  }
+  
+// ✅ Dashboard navigation (only needs to be set once, safe to reassign)
+if (typeof dashboardBtn !== "undefined" && dashboardBtn) {
+  dashboardBtn.onclick = () => {
+    window.location.href = "/dashboard.html";
+  };
+}
+
+  persistUser();
+  sendProfileToNode();
+  buildCalendarFromMeta();
+}
+
+function onLoginUI(profile) {
+  userInfoBar.style.display = "flex";
+  userPicEl.src = profile.picture || "https://i.imgur.com/9z3s8Gh.png";
+  userNameEl.textContent = profile.name || "User";
+
+  const inj = (profile.injuries && profile.injuries.length)
+    ? profile.injuries.join(", ")
+    : "None listed";
+
+  const goalText = profile.goals && profile.goals.primary
+    ? profile.goals.primary
+    : "Build strength and mobility";
+
+  profileSummaryEl.innerHTML =
+    `<strong>Signed in as ${profile.name || "User"}</strong><br/>` +
+    (profile.age ? `Age: ${profile.age}<br/>` : "") +
+    (profile.height ? `Height: ${profile.height}<br/>` : "") +
+    (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
+    `Goal: ${goalText}<br/>` +
+    `Injuries: ${inj}`;
+}
+
+manualLoginBtn.onclick = () => {
+  const name = manualNameInput.value.trim() || "Athlete";
+  const profile = defaultProfileForName(name);
+  onLogin(profile);
+  showOverlay(false);
+};
+
+function parseJwt(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64).split("").map(function(c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.warn("JWT parse error", e);
+    return {};
+  }
+}
+
+googleBtn.onclick = () => {
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    alert("Google login not available on this device. Use username login instead.");
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
+    callback: (response) => {
+      const payload = parseJwt(response.credential || "");
+      const profile = {
+        name: payload.name || payload.given_name || "Athlete",
+        email: payload.email,
+        picture: payload.picture
+      };
       onLogin(profile);
       showOverlay(false);
-    };
-
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        console.warn("JWT parse error", e);
-        return {};
-      }
     }
+  });
+  google.accounts.id.prompt();
+};
 
-    googleBtn.onclick = () => {
-      if (!window.google || !google.accounts || !google.accounts.id) {
-        alert("Google login not available on this device. Use username login instead.");
-        return;
-      }
-      google.accounts.id.initialize({
-        client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
-        callback: (response) => {
-          const payload = parseJwt(response.credential || "");
-          const profile = {
-            name: payload.name || payload.given_name || "Athlete",
-            email: payload.email,
-            picture: payload.picture
-          };
-          onLogin(profile);
-          showOverlay(false);
-        }
-      });
-      google.accounts.id.prompt();
-    };
+signOutBtn.onclick = () => {
+  const oldId = USER_ID; // ✅ capture before reset
 
-    signOutBtn.onclick = () => {
-      USER_ID = "guest";
-      USER_PROFILE = null;
-      calendarMeta = null;
-      userInfoBar.style.display = "none";
-      profileSummaryEl.textContent = "Not signed in yet.";
-      try {
-        localStorage.removeItem("maatUserId");
-        localStorage.removeItem("maatUserProfile");
-      } catch (_) {}
-      showOverlay(true);
-    };
+  USER_ID = "guest";
+  USER_PROFILE = null;
+  calendarMeta = null;
 
-    // Try auto-login from localStorage on load
-    loadPersistedUser();
+  userInfoBar.style.display = "none";
+  profileSummaryEl.textContent = "Not signed in yet.";
+
+  // ✅ Disable dashboard if present
+  if (typeof dashboardBtn !== "undefined" && dashboardBtn) {
+    dashboardBtn.disabled = true;
+  }
+
+  try {
+    localStorage.removeItem("maatUserId");
+    localStorage.removeItem("maatUserProfile");
+    localStorage.removeItem("maatCalendar_" + oldId); // ✅ use oldId
+  } catch (_) {}
+
+  showOverlay(true);
+};
+
+
+// Try auto-login from localStorage on load
+loadPersistedUser();
+
+      
 
     // ---- Voice capability status ----
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
@@ -829,6 +877,7 @@
     const workoutPlanViewEl = document.getElementById("workoutPlanView");
     const ohsaSummaryViewEl = document.getElementById("ohsSummaryView");
     const calendarViewEl = document.getElementById("calendarView");
+    const dashboardBtn = document.getElementById("dashboardBtn");
 
     // ---- State ----
     let detector;
