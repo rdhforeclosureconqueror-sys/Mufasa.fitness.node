@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ma’at 2.0 — Dashboard</title>
+  <link rel="icon" href="/favicon.ico" />
+  <style>
+    :root{
+      --bg:#060913;
+      --panel:rgba(255,255,255,.06);
+      --panel2:rgba(255,255,255,.09);
+      --text:#e9f1ff;
+      --muted:rgba(233,241,255,.65);
+      --line:rgba(233,241,255,.14);
+      --gold:#ffd35a;
+      --green:#44ff9a;
+      --red:#ff5c7a;
+      --glow:0 0 22px rgba(255,211,90,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 12% 8%, rgba(255,211,90,.10), transparent 60%),
+        radial-gradient(800px 520px at 88% 18%, rgba(68,255,154,.09), transparent 55%),
+        radial-gradient(1000px 700px at 50% 110%, rgba(90,120,255,.08), transparent 60%),
+        var(--bg);
+    }
+    header{
+      padding:18px 18px 10px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(to bottom, rgba(255,255,255,.06), transparent);
+    }
+    .title{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .title h1{margin:0; font-size:18px; letter-spacing:.6px}
+    .title .sub{color:var(--muted); font-size:12px}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      box-shadow: var(--glow);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:16px;}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:14px;
+    }
+    @media (max-width: 900px){
+      .grid{grid-template-columns:1fr}
+    }
+    .card{
+      border:1px solid var(--line);
+      background:var(--panel);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 12px 34px rgba(0,0,0,.35);
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:14px;
+      color:var(--gold);
+      letter-spacing:.5px;
+    }
+    .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+    @media(max-width:700px){.kpis{grid-template-columns:1fr}}
+    .kpi{
+      background:var(--panel2);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    .kpi .label{font-size:11px; color:var(--muted)}
+    .kpi .value{font-size:22px; margin-top:6px}
+    .kpi .hint{font-size:11px; color:var(--muted); margin-top:6px}
+    .list{display:flex; flex-direction:column; gap:10px;}
+    .row{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.05);
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .row .left{display:flex; flex-direction:column; gap:4px;}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.22);
+      font-size:11px;
+      color:var(--muted);
+      width:fit-content;
+    }
+    .pill.ok{color:rgba(68,255,154,.95); border-color:rgba(68,255,154,.28)}
+    .pill.bad{color:rgba(255,92,122,.95); border-color:rgba(255,92,122,.28)}
+    .muted{color:var(--muted); font-size:12px}
+    .mini{
+      font-size:12px;
+      border-top:1px dashed var(--line);
+      margin-top:10px;
+      padding-top:10px;
+      color:var(--muted);
+      white-space:pre-wrap;
+    }
+    .footerNote{margin-top:10px; color:var(--muted); font-size:11px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>Ma’at 2.0 — Results Dashboard</h1>
+      <div class="sub">Client view: weekly workouts + progress signals (local v1)</div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button id="resetBtn" class="btn">Reset Local Data</button>
+      <a class="btn" href="/" style="text-decoration:none; display:inline-block;">Back to App</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
+        <h2>This Week</h2>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Workouts Planned</div>
+            <div class="value" id="kpiPlanned">0</div>
+            <div class="hint">sessions created this week</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Workouts Completed</div>
+            <div class="value" id="kpiCompleted">0</div>
+            <div class="hint">marked completed</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Consistency</div>
+            <div class="value" id="kpiConsistency">0%</div>
+            <div class="hint">completed / planned</div>
+          </div>
+        </div>
+
+        <div class="footerNote">
+          Next upgrade: capture reps/weight per set + sync to Apple Fitness / Google Fit.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Current Active Workout</h2>
+        <div id="activeBox" class="muted">No active workout found.</div>
+        <div class="mini" id="activeMini"></div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1;">
+        <h2>Workout History</h2>
+        <div class="list" id="historyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/public/dashboard.js"></script>
+</body>
+</html>
