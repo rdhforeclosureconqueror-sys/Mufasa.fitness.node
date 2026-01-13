@@ -1,14 +1,22 @@
 // scripts/build-exercise-index.js
-// Builds public/exercise-db/index.json from data/exercise.json (master DB)
-// Also checks which exercise folders exist and notes missing assets.
+// Builds: public/exercise-db/index.json
+// Source of truth: data/exercise.json
+//
+// This DOES NOT expect JSON files inside each exercise folder.
+// It uses exercise.images like: "3_4_Sit-Up/0.jpg" and "3_4_Sit-Up/1.jpg"
 
 const fs = require("fs");
 const path = require("path");
 
-const REPO_ROOT = path.resolve(__dirname, "..");
-const DATA_JSON = path.join(REPO_ROOT, "data", "exercise.json");
-const EXERCISE_DB_DIR = path.join(REPO_ROOT, "public", "exercise-db");
-const OUT_INDEX = path.join(EXERCISE_DB_DIR, "index.json");
+const ROOT = process.cwd();
+const INPUT = path.join(ROOT, "data", "exercise.json");
+const OUT_DIR = path.join(ROOT, "public", "exercise-db");
+const OUT_FILE = path.join(OUT_DIR, "index.json");
+
+function safeReadJson(filePath) {
+  const raw = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(raw);
+}
 
 function exists(p) {
   try {
@@ -19,82 +27,62 @@ function exists(p) {
   }
 }
 
-function safeReadJson(p) {
-  const raw = fs.readFileSync(p, "utf8");
-  return JSON.parse(raw);
-}
-
-function listFolders(dir) {
-  if (!exists(dir)) return [];
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-}
-
 function main() {
-  if (!exists(DATA_JSON)) {
-    console.error(`❌ Missing master DB: ${DATA_JSON}`);
+  if (!exists(INPUT)) {
+    console.error(`❌ Missing input file: ${INPUT}`);
     process.exit(1);
   }
 
-  if (!exists(EXERCISE_DB_DIR)) {
-    console.error(`❌ Missing folder: ${EXERCISE_DB_DIR}`);
-    console.error(`Create it: public/exercise-db`);
+  if (!exists(OUT_DIR)) {
+    console.error(`❌ Missing output directory: ${OUT_DIR}`);
+    console.error(`   Expected your images to live here: public/exercise-db/<id>/*.jpg`);
     process.exit(1);
   }
 
-  const master = safeReadJson(DATA_JSON);
+  const exercises = safeReadJson(INPUT);
 
-  if (!Array.isArray(master)) {
-    console.error("❌ data/exercise.json must be an array of exercises");
+  if (!Array.isArray(exercises)) {
+    console.error("❌ data/exercise.json must be an array of exercises.");
     process.exit(1);
   }
-
-  const folderNames = new Set(listFolders(EXERCISE_DB_DIR));
 
   let missingFolderCount = 0;
+  let missingImageCount = 0;
+  let missingIdCount = 0;
 
-  // Build a clean index (keep full metadata if you want, but this is a good practical set)
-  const index = master.map((ex) => {
-    const id = ex.id || "";
-    const folder = id; // your folders appear to be named by id (ex: "3_4_Sit-Up")
+  const normalized = exercises.map((ex, idx) => {
+    const id = ex.id || ex.name || `exercise_${idx}`;
+    if (!ex.id) missingIdCount++;
 
-    const hasFolder = folderNames.has(folder);
-    if (!hasFolder) missingFolderCount++;
+    // folder name is usually the same as id (ex: "3_4_Sit-Up")
+    const folderPath = path.join(OUT_DIR, id);
+    const folderExists = exists(folderPath);
+    if (!folderExists) missingFolderCount++;
 
-    // Normalize images to be web paths under /exercise-db/
-    // Your master JSON already stores like: "3_4_Sit-Up/0.jpg"
-    const images = Array.isArray(ex.images)
-      ? ex.images.map((img) => `/exercise-db/${img}`)
-      : [];
+    // validate images if present
+    const images = Array.isArray(ex.images) ? ex.images : [];
+    for (const rel of images) {
+      const imgPath = path.join(OUT_DIR, rel);
+      if (!exists(imgPath)) missingImageCount++;
+    }
 
+    // return clean record
     return {
+      ...ex,
       id,
-      name: ex.name || id,
-      category: ex.category || null,
-      force: ex.force || null,
-      level: ex.level || null,
-      mechanic: ex.mechanic || null,
-      equipment: ex.equipment || null,
-      primaryMuscles: ex.primaryMuscles || [],
-      secondaryMuscles: ex.secondaryMuscles || [],
-      instructions: ex.instructions || [],
       images,
-      // Useful for debugging
-      folder,
-      hasFolder,
     };
   });
 
-  fs.writeFileSync(OUT_INDEX, JSON.stringify(index, null, 2), "utf8");
+  // Keep it simple: write the whole normalized exercise list to index.json
+  // Your API/frontend can filter/search this.
+  fs.writeFileSync(OUT_FILE, JSON.stringify(normalized, null, 2), "utf8");
 
-  console.log(`✅ Wrote ${OUT_INDEX}`);
-  console.log(`✅ totalExercises: ${index.length}`);
+  console.log(`✅ Wrote ${OUT_FILE}`);
+  console.log(`📦 totalExercises: ${normalized.length}`);
+  console.log(`ℹ️ missingIdCount: ${missingIdCount}`);
   console.log(`⚠️ missingFolderCount: ${missingFolderCount}`);
-  console.log(
-    `ℹ️ Tip: GitHub "truncated list" is just UI — files can still exist even if not listed.`
-  );
+  console.log(`⚠️ missingImageCount: ${missingImageCount}`);
 }
 
 main();
