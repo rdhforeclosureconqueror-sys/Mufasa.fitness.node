@@ -1,15 +1,22 @@
 {
   "name": "mufasa-fitness-brain",
-  "version": "1.0.0",
-  "description": "Mufasa Node fitness brain (Day 1 - Fitness domain only)",
+  "version": "1.1.0",
+  "description": "Mufasa Node fitness brain (fitness domain, exercise DB + command bus)",
   "main": "server.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node server.js"
+    "dev": "node --watch server.js",
+    "build:exercise-index": "node scripts/build-exercise-index.js",
+    "prestart": "node scripts/ensure-exercise-index.js",
+    "start": "node server.js",
+    "lint": "node scripts/selfcheck.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
-    "express": "^4.19.0",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
     "ws": "^8.18.0"
   },
   "engines": {
