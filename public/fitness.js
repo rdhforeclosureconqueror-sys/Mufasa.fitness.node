@@ -5,7 +5,7 @@
 
 (function () {
   // ---- Where the DB index lives ----
-  const EXERCISE_INDEX_URL = "/exercise-db/index.json"; // served from /public/exercise-db
+  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json"; // served from /public/exercise-db
 
   // ---- UI hooks from your index.html ----
   const workoutPlanViewEl = document.getElementById("workoutPlanView");
