@@ -1,0 +1,7 @@
+{
+  "name": "exercise-db",
+  "version": "1.0.0",
+  "source": "data/exercise.json",
+  "built_at": "REPLACE_AT_BUILD_TIME",
+  "notes": "Generated index for frontend search and programming"
+}
