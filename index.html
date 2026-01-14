@@ -898,228 +898,253 @@
       showOverlay(true);
     };
 
-    /* =========================================================
-      SECTION 3/4 — VOICE (AI voice + browser TTS) + STT
-    ========================================================== */
+/* =========================================================
+  SECTION 3/4 — VOICE (AI streaming blob + browser fallback) + STT
+========================================================== */
 
-    const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
-    const hasSpeechSynth = "speechSynthesis" in window;
-    const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+// ---- DOM ----
+const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
+const voiceSelectEl = document.getElementById("voiceSelect");
+const listenBtnEl = document.getElementById("listenBtn"); // your button
+// Add this <audio> somewhere in HTML OR create it here:
+let ttsPlayer = document.getElementById("ttsPlayer");
+if (!ttsPlayer) {
+  ttsPlayer = document.createElement("audio");
+  ttsPlayer.id = "ttsPlayer";
+  ttsPlayer.preload = "auto";
+  document.body.appendChild(ttsPlayer);
+}
 
-    if (!hasSpeechSynth && !SRClass) {
-      voiceSupportStatusEl.textContent =
-        "This device does not fully support voice coaching. Text feedback only.";
-    } else if (!hasSpeechSynth) {
-      voiceSupportStatusEl.textContent =
-        "Speech output not supported on this device. You can still talk, Ma’at will reply in text.";
-    } else if (!SRClass) {
-      voiceSupportStatusEl.textContent =
-        "Listening (voice input) not supported in this browser. Use chat box or another browser.";
-    } else {
-      voiceSupportStatusEl.textContent = "Full voice coaching available on this device.";
-      voiceSupportStatusEl.classList.add("status-ok");
+// ---- Capability checks ----
+const hasSpeechSynth = "speechSynthesis" in window;
+const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SRClass && !hasSpeechSynth) {
+  voiceSupportStatusEl.textContent = "This device does not support voice. Text only.";
+} else if (!SRClass) {
+  voiceSupportStatusEl.textContent = "Mic input not supported here. Text + AI voice output only.";
+} else {
+  voiceSupportStatusEl.textContent = "Voice ready. Tap 'Voice On' to enable audio + mic.";
+  voiceSupportStatusEl.classList.add("status-ok");
+}
+
+// ---- Voice dropdown (controls backend voice) ----
+// Your backend expects: { text, voice, format }
+// So dropdown values should be voices like: alloy, verse, etc.
+(function initVoiceDropdown() {
+  if (!voiceSelectEl) return;
+  const voices = ["alloy", "verse", "aria", "ember", "coral"]; // adjust if you want
+  voiceSelectEl.innerHTML = "";
+  voices.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    voiceSelectEl.appendChild(opt);
+  });
+  voiceSelectEl.value = "alloy";
+})();
+
+// ---- State ----
+let voiceMuted = false;
+let audioUnlocked = false;
+let speechLock = false;        // LLM voice lock
+let repFeedbackAllowed = true; // rep voice allowed when no LLM talking
+
+function stopAllSpeech() {
+  try { window.speechSynthesis?.cancel?.(); } catch {}
+  try {
+    ttsPlayer.pause();
+    ttsPlayer.currentTime = 0;
+  } catch {}
+}
+
+// ---- IMPORTANT: unlock audio once from a user click ----
+async function unlockAudioOnce() {
+  if (audioUnlocked) return true;
+  try {
+    // play a tiny silent sound to satisfy autoplay policies
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.00001;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.02);
+    await ctx.resume();
+    audioUnlocked = true;
+    voiceSupportStatusEl.textContent = "Audio unlocked ✅ Voice will play now.";
+    voiceSupportStatusEl.classList.add("status-ok");
+    return true;
+  } catch (e) {
+    console.warn("Audio unlock failed:", e);
+    voiceSupportStatusEl.textContent =
+      "Tap the page once more to enable audio (browser autoplay protection).";
+    return false;
+  }
+}
+
+// ---- AI TTS (STREAMING BLOB) ----
+// This matches YOUR FastAPI server: it returns audio bytes (mp3/wav)
+const AIVOICE_URL = "https://aivoice-wmrv.onrender.com/speak";
+const AIVOICE_KEY = ""; // if you set AIVOICE_API_KEY on server, put matching key here
+
+async function speak(text, source = "system") {
+  if (voiceMuted || !text || !text.trim()) return;
+  if (speechLock && source === "rep") return;
+
+  // If audio isn't unlocked yet, we can't auto-play
+  if (!audioUnlocked) {
+    // Try unlock (works only if speak() was triggered by a user click)
+    const ok = await unlockAudioOnce();
+    if (!ok) return;
+  }
+
+  const voice = (voiceSelectEl?.value || "alloy");
+  const format = "mp3";
+
+  try {
+    stopAllSpeech();
+
+    // lock while LLM is talking
+    if (source === "llm") {
+      speechLock = true;
+      repFeedbackAllowed = false;
     }
 
-    // Voice dropdown
-    const voiceSelectEl = document.getElementById("voiceSelect");
-    let availableVoices = [];
-    let selectedVoice = null;
+    const res = await fetch(AIVOICE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(AIVOICE_KEY ? { "X-AIVOICE-KEY": AIVOICE_KEY } : {})
+      },
+      body: JSON.stringify({ text, voice, format })
+    });
 
-    function populateVoices() {
-      if (!hasSpeechSynth) {
-        if (voiceSelectEl) voiceSelectEl.innerHTML = "<option value=''>No speech output</option>";
-        return;
-      }
-      const voices = window.speechSynthesis.getVoices();
-      availableVoices = voices || [];
-      if (!voiceSelectEl) return;
-
-      voiceSelectEl.innerHTML = "";
-
-      if (!voices || !voices.length) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "Default voice";
-        voiceSelectEl.appendChild(opt);
-        selectedVoice = null;
-        return;
-      }
-
-      voices.forEach((v, idx) => {
-        const opt = document.createElement("option");
-        opt.value = String(idx);
-        opt.textContent = v.name + (v.lang ? ` (${v.lang})` : "");
-        voiceSelectEl.appendChild(opt);
-      });
-
-      let defaultIndex = voices.findIndex(v => (v.lang || "").toLowerCase().startsWith("en"));
-      if (defaultIndex < 0) defaultIndex = 0;
-      voiceSelectEl.value = String(defaultIndex);
-      selectedVoice = voices[defaultIndex] || null;
+    if (!res.ok) {
+      const errTxt = await res.text().catch(() => "");
+      throw new Error("TTS HTTP " + res.status + " " + errTxt);
     }
 
-    if (hasSpeechSynth) {
-      populateVoices();
-      window.speechSynthesis.onvoiceschanged = populateVoices;
-    } else if (voiceSelectEl) {
-      voiceSelectEl.innerHTML = "<option value=''>No speech output</option>";
-    }
+    // ✅ blob because backend streams audio bytes
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
 
-    if (voiceSelectEl) {
-      voiceSelectEl.addEventListener("change", () => {
-        const idx = parseInt(voiceSelectEl.value, 10);
-        selectedVoice = (!Number.isNaN(idx) && availableVoices[idx]) ? availableVoices[idx] : null;
-      });
-    }
-
-    // Speech orchestration
-    let voiceMuted = false;
-    let speechLock = false;        // true while LLM answer is playing
-    let repFeedbackAllowed = true; // rep voice allowed when no LLM talking
-
-    // STT state
-    let listening = false;
-    let recognition;
-    let lastTranscript = "";
-
-    function stopAllSpeech() {
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    }
-
-    // === AI Voice upgrade ===
-    async function speak(text, source = "system") {
-      if (voiceMuted || !text) return;
-      if (speechLock && source === "rep") return;
-
-      const AIVOICE_URL = "https://aivoice-wmrv.onrender.com/speak";
-      const AIVOICE_KEY = "aivoice_live_7f3a9c9e2e4d9b8e12";
-      const USE_AI_VOICE = true;
-
-      if (USE_AI_VOICE) {
-        try {
-          const response = await fetch(AIVOICE_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-AIVOICE-KEY": AIVOICE_KEY
-            },
-            body: JSON.stringify({ text, format: "mp3" })
-          });
-
-          if (!response.ok) throw new Error("AI voice backend error");
-
-          const audioBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-
-          if (source === "llm") {
-            speechLock = true;
-            repFeedbackAllowed = false;
-            audio.onended = () => {
-              speechLock = false;
-              repFeedbackAllowed = true;
-            };
-          }
-
-          await audio.play();
-          return;
-        } catch (err) {
-          console.warn("AI voice failed, fallback to browser TTS:", err);
-        }
-      }
-
-      if (!("speechSynthesis" in window)) return;
-      stopAllSpeech();
-      const u = new SpeechSynthesisUtterance(text);
-      if (selectedVoice) u.voice = selectedVoice;
-      u.rate = 1.0;
-      u.pitch = 1.0;
-
+    ttsPlayer.src = url;
+    ttsPlayer.onended = () => {
+      URL.revokeObjectURL(url);
       if (source === "llm") {
-        speechLock = true;
-        repFeedbackAllowed = false;
+        speechLock = false;
+        repFeedbackAllowed = true;
+      }
+    };
+    ttsPlayer.onerror = () => {
+      URL.revokeObjectURL(url);
+      if (source === "llm") {
+        speechLock = false;
+        repFeedbackAllowed = true;
+      }
+    };
+
+    await ttsPlayer.play();
+    return;
+
+  } catch (e) {
+    console.warn("AI voice failed:", e);
+
+    // Optional browser fallback
+    if (hasSpeechSynth) {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.95;
+        u.pitch = 1.0;
         u.onend = () => {
-          speechLock = false;
-          repFeedbackAllowed = true;
+          if (source === "llm") {
+            speechLock = false;
+            repFeedbackAllowed = true;
+          }
         };
+        window.speechSynthesis.speak(u);
+      } catch (err) {
+        console.warn("Fallback TTS failed:", err);
       }
-
-      window.speechSynthesis.speak(u);
     }
 
-    function toggleListening() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        alert("Speech recognition not supported in this browser.");
-        return;
-      }
-
-      if (!recognition) {
-        recognition = new SR();
-        recognition.lang = "en-US";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onresult = e => {
-          const result = e.results[e.results.length - 1];
-          if (!result.isFinal) return;
-
-          const transcript = result[0].transcript.trim();
-          if (!transcript || transcript === lastTranscript) return;
-          lastTranscript = transcript;
-
-          const lower = transcript.toLowerCase();
-          console.log("STT:", transcript);
-
-          if (lower.includes("mufasa") || lower.includes("coach")) {
-            stopAllSpeech();
-            const cleaned = lower
-              .replace("hey", "")
-              .replace("mufasa", "")
-              .replace("coach", "")
-              .trim();
-
-            const msg = cleaned || "give me a quick status update on my workout.";
-            addLog("you", "🎙️ " + transcript);
-            askCoach(msg);
-          }
-
-          if (lower.includes("start workout")) {
-            if (!running) startWorkout();
-          } else if (lower.includes("stop workout")) {
-            if (running) startWorkout();
-          } else if (lower.includes("run assessment") || lower.includes("overhead squat")) {
-            if (!ohsaMode) startOhsa();
-          }
-        };
-
-        recognition.onerror = e => {
-          console.warn("STT error:", e.error);
-          addLog("system", "STT error: " + e.error);
-        };
-
-        recognition.onend = () => {
-          if (listening) {
-            try { recognition.start(); } catch {}
-          } else {
-            listenBtn.textContent = "🎙️ Voice On";
-          }
-        };
-      }
-
-      if (!listening) {
-        listening = true;
-        lastTranscript = "";
-        recognition.start();
-        listenBtn.textContent = "🎧 Listening…";
-        addLog("system", "Listening for 'Mufasa' or 'Coach'...");
-      } else {
-        listening = false;
-        recognition.stop();
-        listenBtn.textContent = "🎙️ Voice On";
-        addLog("system", "Stopped listening.");
-      }
+    if (source === "llm") {
+      speechLock = false;
+      repFeedbackAllowed = true;
     }
+  }
+}
+
+// ---- Voice On button should unlock audio (USER GESTURE!) ----
+listenBtnEl.addEventListener("click", async () => {
+  // This click is what makes rep feedback possible later
+  await unlockAudioOnce();
+  // If you also want mic listening toggle, call toggleListening() here too:
+  // toggleListening();
+});
+
+// ---- STT (Speech Recognition) ----
+let listening = false;
+let recognition = null;
+let lastTranscript = "";
+
+function toggleListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    alert("Speech recognition not supported in this browser.");
+    return;
+  }
+
+  if (!recognition) {
+    recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = e => {
+      const transcript = e.results?.[e.results.length - 1]?.[0]?.transcript?.trim() || "";
+      if (!transcript || transcript === lastTranscript) return;
+      lastTranscript = transcript;
+
+      const lower = transcript.toLowerCase();
+      console.log("STT:", transcript);
+
+      if (lower.includes("mufasa") || lower.includes("coach")) {
+        stopAllSpeech();
+        const cleaned = lower.replace("hey", "").replace("mufasa", "").replace("coach", "").trim();
+        const msg = cleaned || "give me a quick status update on my workout.";
+        addLog("you", "🎙️ " + transcript);
+        askCoach(msg);
+      }
+    };
+
+    recognition.onerror = e => {
+      console.warn("STT error:", e.error);
+      addLog("system", "STT error: " + e.error);
+    };
+
+    recognition.onend = () => {
+      if (listening) {
+        try { recognition.start(); } catch {}
+      }
+    };
+  }
+
+  if (!listening) {
+    listening = true;
+    lastTranscript = "";
+    recognition.start();
+    addLog("system", "Listening for 'Mufasa' or 'Coach'...");
+  } else {
+    listening = false;
+    recognition.stop();
+    addLog("system", "Stopped listening.");
+  }
+}
+
 
     /* =========================================================
       SECTION 4/4 — POSE ENGINE + OHSA + WORKOUT + CHAT
