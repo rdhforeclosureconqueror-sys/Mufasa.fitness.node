@@ -473,7 +473,7 @@
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
-
+    const AIVOICE_URL = "https://aivoice-wmrv.onrender.com/speak";
     // ---- DOM hooks ----
     const overlay = document.getElementById("loginOverlay");
     const googleBtn = document.getElementById("googleBtn");
@@ -985,7 +985,7 @@ async function unlockAudioOnce() {
 
 // ---- AI TTS (STREAMING BLOB) ----
 // This matches YOUR FastAPI server: it returns audio bytes (mp3/wav)
-const AIVOICE_URL = "/api/voice/speak";
+
 
 
 async function speak(text, source = "system") {
