@@ -1763,10 +1763,15 @@ function toggleListening() {
       if (voiceMuted) stopAllSpeech();
     };
 
-    listenBtn.onclick = async () => {
-  await unlockAudioOnce();
+  listenBtn.onclick = async () => {
+  try { await unlockAudioOnce(); } catch (e) { console.warn("unlockAudioOnce failed", e); }
+
+  // prime iPhone audio (must happen inside the user tap)
+  try { await speak("Voice is on.", "rep"); } catch (e) { console.warn("prime speak failed", e); }
+
   toggleListening();
 };
+
 
     workoutSelectEl.onchange = handleWorkoutSelectChange;
 
