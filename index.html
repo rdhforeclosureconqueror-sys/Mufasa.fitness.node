@@ -1796,7 +1796,10 @@ function toggleListening() {
     });
   </script>
 
-  <!-- Keep your existing external script include -->
+  <!-- Audio player for AI voice (must exist in DOM before JS tries to use it) -->
+  <audio id="ttsPlayer" playsinline preload="auto"></audio>
+
+  <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
   <script src="/public/fitness.js"></script>
 </body>
 </html>
