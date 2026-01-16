@@ -357,7 +357,7 @@
   <div id="loginOverlay">
     <div id="loginBox">
       <h1>Enter the Mufasa Realm 🔥</h1>
-      <p>Sign in to unlock your Pan-African Ma’at 2.0 dashboard.</p>
+      <p>Sign in to unlock your Pocket PT 2.0 dashboard.</p>
 
       <div style="margin-bottom:10px;">
         <input id="manualName" type="text"
@@ -382,9 +382,9 @@
   <div class="app">
     <!-- LEFT: Live coach + video -->
     <div class="pane">
-      <h1>Pan-African Virtual Wellness Platform</h1>
+      <h1>Pocket PT Virtual Wellness Platform</h1>
       <p class="subtitle">
-        The world’s first Pan-African virtual fitness platform powered by Ma’at&nbsp;2.0.
+        Pocket PT virtual fitness platform powered by Simba Wa Ujamaa &nbsp;2.0.
       </p>
 
       <div class="video-shell">
@@ -986,8 +986,8 @@ async function unlockAudioOnce() {
 
 // ---- AI TTS (STREAMING BLOB) ----
 // This matches YOUR FastAPI server: it returns audio bytes (mp3/wav)
-const AIVOICE_URL = "https://aivoice-wmrv.onrender.com/speak";
-const AIVOICE_KEY = ""; // if you set AIVOICE_API_KEY on server, put matching key here
+const AIVOICE_URL = "/api/voice/speak";
+
 
 async function speak(text, source = "system") {
   if (voiceMuted || !text || !text.trim()) return;
@@ -1013,18 +1013,16 @@ async function speak(text, source = "system") {
     }
 
     const res = await fetch(AIVOICE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(AIVOICE_KEY ? { "X-AIVOICE-KEY": AIVOICE_KEY } : {})
-      },
-      body: JSON.stringify({ text, voice, format })
-    });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text, voice, format })
+});
 
-    if (!res.ok) {
-      const errTxt = await res.text().catch(() => "");
-      throw new Error("TTS HTTP " + res.status + " " + errTxt);
-    }
+if (!res.ok) {
+  const errTxt = await res.text().catch(() => "");
+  throw new Error("TTS HTTP " + res.status + " " + errTxt);
+}
+
 
     // ✅ blob because backend streams audio bytes
     const blob = await res.blob();
