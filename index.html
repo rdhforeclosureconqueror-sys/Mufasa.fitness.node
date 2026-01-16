@@ -1074,13 +1074,7 @@ if (!res.ok) {
   }
 }
 
-// ---- Voice On button should unlock audio (USER GESTURE!) ----
-listenBtnEl.addEventListener("click", async () => {
-  // This click is what makes rep feedback possible later
-  await unlockAudioOnce();
-  // If you also want mic listening toggle, call toggleListening() here too:
-  // toggleListening();
-});
+
 
 // ---- STT (Speech Recognition) ----
 let listening = false;
