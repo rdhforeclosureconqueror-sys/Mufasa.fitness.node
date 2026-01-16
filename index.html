@@ -903,9 +903,7 @@
 ========================================================== */
 
 // ---- DOM ----
-const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
 const voiceSelectEl = document.getElementById("voiceSelect");
-const listenBtnEl = document.getElementById("listenBtn"); // your button
 // Add this <audio> somewhere in HTML OR create it here:
 let ttsPlayer = document.getElementById("ttsPlayer");
 if (!ttsPlayer) {
@@ -1770,7 +1768,11 @@ function toggleListening() {
       if (voiceMuted) stopAllSpeech();
     };
 
-    listenBtn.onclick = toggleListening;
+    listenBtn.onclick = async () => {
+  await unlockAudioOnce();
+  toggleListening();
+};
+
     workoutSelectEl.onchange = handleWorkoutSelectChange;
 
     questionInput.addEventListener("keydown", e => {
