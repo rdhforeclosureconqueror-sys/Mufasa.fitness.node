@@ -4,12 +4,30 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 
+// Node 18+ has global fetch; if not, uncomment:
+// const fetch = (...args) => import("node-fetch").then(({default: fetch}) => fetch(...args));
+
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
-// ---- CORS (tighten later if needed) ----
+/* -----------------------------
+   CORS
+   - For same-origin calls (recommended), CORS barely matters.
+   - But keep it for safety / future split deployments.
+------------------------------ */
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// If env not set, this will behave permissively (like your current setup).
 app.use(cors({
-  origin: true,
+  origin: (origin, cb) => {
+    // allow non-browser requests or same-origin
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.length === 0) return cb(null, true);
+    return cb(null, ALLOWED_ORIGINS.includes(origin));
+  },
   credentials: false
 }));
 
@@ -61,6 +79,50 @@ app.get("/health", (_req, res) => {
   });
 });
 
+/* =========================================================
+   AI VOICE PROXY (THIS is what fixes your 401 + CORS issues)
+   Frontend should call: fetch("/api/speak", { ... })
+========================================================= */
+app.post("/api/speak", async (req, res) => {
+  try {
+    const { text, voice = "alloy", format = "mp3" } = req.body || {};
+    if (!text || !String(text).trim()) {
+      return res.status(400).json({ ok: false, error: "text required" });
+    }
+
+    const AIVOICE_URL = process.env.AIVOICE_URL || "https://aivoice-wmrv.onrender.com/speak";
+    const AIVOICE_API_KEY = process.env.AIVOICE_API_KEY || "";
+
+    const r = await fetch(AIVOICE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(AIVOICE_API_KEY ? { "X-AIVOICE-KEY": AIVOICE_API_KEY } : {})
+      },
+      body: JSON.stringify({ text, voice, format })
+    });
+
+    if (!r.ok) {
+      const msg = await r.text().catch(() => "");
+      return res.status(r.status).send(msg || "aivoice error");
+    }
+
+    // stream audio to browser
+    res.setHeader("Content-Type", r.headers.get("content-type") || "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+
+    // If r.body is a web stream, convert to node stream when needed:
+    if (typeof r.body?.pipe === "function") {
+      r.body.pipe(res);
+    } else {
+      const buf = Buffer.from(await r.arrayBuffer());
+      res.send(buf);
+    }
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "proxy_failed", message: String(e) });
+  }
+});
+
 // ---- Exercise DB endpoints ----
 app.get("/api/exercises/index", (_req, res) => {
   const idx = loadExerciseIndex();
@@ -73,7 +135,6 @@ app.get("/api/exercises/index", (_req, res) => {
   res.json({ ok: true, ...idx });
 });
 
-// Search by q=...
 app.get("/api/exercises/search", (req, res) => {
   const q = String(req.query.q || "").trim().toLowerCase();
   const idx = loadExerciseIndex();
@@ -94,7 +155,6 @@ app.get("/api/exercises/search", (req, res) => {
   res.json({ ok: true, q, results });
 });
 
-// Details by slug (loads the JSON referenced in index)
 app.get("/api/exercises/:slug", (req, res) => {
   const slug = req.params.slug;
   const idx = loadExerciseIndex();
@@ -120,8 +180,7 @@ app.get("/api/exercises/:slug", (req, res) => {
   }
 });
 
-// ---- COMMAND endpoint (your HTML calls this) ----
-// Accepts: { domain, command, userId, payload }
+// ---- COMMAND endpoint ----
 app.post("/command", (req, res) => {
   const { domain, command, userId, payload } = req.body || {};
   if (!domain || !command || !userId) {
@@ -139,11 +198,9 @@ app.post("/command", (req, res) => {
     const now = Date.now();
     existing.updatedAt = now;
 
-    // simple event log
     existing.events = existing.events || [];
     existing.events.push({ command, ts: now, payload });
 
-    // structured stores (so you can query later)
     if (command === "fitness.saveProfile") {
       existing.profile = payload?.profile || existing.profile || null;
     }
