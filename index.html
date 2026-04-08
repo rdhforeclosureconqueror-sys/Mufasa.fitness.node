@@ -457,6 +457,8 @@
     </div>
   </div>
 
+  <script src="/public/backend-read.js"></script>
+
   <script>
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
@@ -473,6 +475,11 @@
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
+    try { localStorage.setItem("maatNodeBaseUrl", NODE_BASE_URL); } catch (_) {}
+    const BACKEND_READ_CLIENT = window.MufasaBackendRead?.createClient({
+      baseUrl: NODE_BASE_URL,
+      storagePrefix: "maat"
+    });
     const AIVOICE_URL = "https://mufasa-knowledge-bank.onrender.com/api/voice/tts";
     // ---- DOM hooks ----
     const overlay = document.getElementById("loginOverlay");
@@ -746,9 +753,13 @@
     }
 
     function sendToNode(payload) {
+      const token = BACKEND_READ_CLIENT?.getAuthToken?.();
       fetch(NODE_COMMAND_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       }).catch(e => console.warn("Node send failed", e));
     }
@@ -764,7 +775,46 @@
       addLog("system", "Profile sent to Ma’at 2.0 backend.");
     }
 
-    function onLogin(profile) {
+    async function ensureBackendSession(profile) {
+      if (!BACKEND_READ_CLIENT) return false;
+      try {
+        await BACKEND_READ_CLIENT.ensureAuthToken({
+          manualUserId: (profile?.email || profile?.name || "user").toLowerCase().replace(/\s+/g, "_"),
+          googleEmail: profile?.email || null
+        });
+        return true;
+      } catch (e) {
+        console.warn("backend auth bridge unavailable", e);
+        addLog("system", "Backend sign-in unavailable. Using local profile/history fallback.");
+        return false;
+      }
+    }
+
+    async function hydrateProfileFromBackend() {
+      if (!BACKEND_READ_CLIENT) return false;
+      try {
+        const result = await BACKEND_READ_CLIENT.fetchProfile();
+        if (!result?.profile) return false;
+
+        USER_PROFILE = BACKEND_READ_CLIENT.normalizeProfile(result.profile, USER_PROFILE || {});
+        USER_PROFILE.name = USER_PROFILE.name || "Athlete";
+        onLoginUI(USER_PROFILE);
+        persistUser();
+        addLog("system", "Profile synced from backend.");
+        return true;
+      } catch (e) {
+        if (e?.code === "UNAUTHORIZED") {
+          BACKEND_READ_CLIENT.clearAuthToken();
+          addLog("system", "Session expired. Continuing with local profile data.");
+          return false;
+        }
+        console.warn("backend profile read failed", e);
+        addLog("system", "Backend profile unavailable. Continuing with local profile data.");
+        return false;
+      }
+    }
+
+    async function onLogin(profile) {
       USER_ID = (profile.email || profile.name || "user").toLowerCase().replace(/\s+/g, "_");
 
       USER_PROFILE = {
@@ -800,11 +850,13 @@
       dashboardBtn.onclick = () => { window.location.href = "/public/dashboard.html"; };
 
       persistUser();
+      const backendReady = await ensureBackendSession(profile);
+      if (backendReady) await hydrateProfileFromBackend();
       sendProfileToNode();
       buildCalendarFromMeta();
     }
 
-    function loadPersistedUser() {
+    async function loadPersistedUser() {
       try {
         const id = localStorage.getItem("maatUserId");
         const profileStr = localStorage.getItem("maatUserProfile");
@@ -830,6 +882,8 @@
           dashboardBtn.onclick = () => { window.location.href = "/public/dashboard.html"; };
 
           showOverlay(false);
+          const backendReady = await ensureBackendSession(USER_PROFILE || {});
+          if (backendReady) await hydrateProfileFromBackend();
           return true;
         }
       } catch (e) {
@@ -895,6 +949,7 @@
         localStorage.removeItem("maatUserId");
         localStorage.removeItem("maatUserProfile");
         localStorage.removeItem("maatCalendar_" + oldId);
+        BACKEND_READ_CLIENT?.clearAuthToken?.();
       } catch (_) {}
 
       showOverlay(true);
@@ -1780,12 +1835,12 @@ function toggleListening() {
     });
 
     // ---- Boot ----
-    window.addEventListener("load", () => {
+    window.addEventListener("load", async () => {
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
 
       // Auto-login (safe now: dashboardBtn is already defined)
-      const didAuto = loadPersistedUser();
+      const didAuto = await loadPersistedUser();
       if (didAuto && USER_PROFILE) {
         addLog("system", "Loaded your profile from memory.");
         buildCalendarFromMeta();

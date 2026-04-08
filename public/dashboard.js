@@ -1,5 +1,5 @@
 /* =========================================================
-   dashboard.js — renders client-facing dashboard from localStorage
+   dashboard.js — prefer backend /api/me/history, fallback to localStorage
 ========================================================= */
 (function () {
   "use strict";
@@ -15,25 +15,24 @@
   const activeMini = document.getElementById("activeMini");
   const resetBtn = document.getElementById("resetBtn");
 
+  const nodeBaseUrl = localStorage.getItem("maatNodeBaseUrl") || "";
+  const client = window.MufasaBackendRead?.createClient({
+    baseUrl: nodeBaseUrl,
+    storagePrefix: "maat"
+  });
+
   function read(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch {
-      return fallback;
-    }
+    return client ? client.readJSON(key, fallback) : fallback;
   }
 
   function write(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    if (client) client.writeJSON(key, value);
   }
 
   function startOfWeek(d = new Date()) {
     const x = new Date(d);
-    const day = x.getDay(); // 0 Sun .. 6 Sat
-    const diff = (day + 6) % 7; // Monday=0
+    const day = x.getDay();
+    const diff = (day + 6) % 7;
     x.setDate(x.getDate() - diff);
     x.setHours(0,0,0,0);
     return x;
@@ -59,11 +58,75 @@
     return names.length ? names.join(" • ") : "—";
   }
 
-  function render() {
-    const history = read(KEY_HISTORY, []);
-    const active = read(KEY_ACTIVE, null);
+  function toLocalHistoryShape(serverHistory) {
+    const sessions = Array.isArray(serverHistory?.completedSessions) ? serverHistory.completedSessions : [];
+    return sessions.map((s) => ({
+      id: s.sessionId,
+      date: s.endedAt ? new Date(s.endedAt).toISOString().slice(0, 10) : "",
+      status: "completed",
+      completedAt: s.endedAt || null,
+      profileSnapshot: {
+        goal: s.programId || "Program tracked"
+      },
+      blocks: {
+        strength: [{
+          slot: "A1",
+          name: s.exerciseId || "session"
+        }]
+      },
+      serverSummary: {
+        repsCompleted: s.repsCompleted ?? null,
+        startedAt: s.startedAt || null
+      }
+    }));
+  }
 
-    // KPIs
+  async function loadData() {
+    const active = read(KEY_ACTIVE, null);
+    const localHistory = read(KEY_HISTORY, []);
+    const token = client?.getAuthToken();
+
+    if (!client || !token) {
+      return {
+        active,
+        history: localHistory,
+        source: "local",
+        warning: token ? null : "Sign in from the main app to sync server history."
+      };
+    }
+
+    try {
+      const serverHistory = await client.fetchHistory(25);
+      const mapped = toLocalHistoryShape(serverHistory);
+      const history = mapped.length ? mapped : localHistory;
+      return {
+        active,
+        history,
+        source: mapped.length ? "server" : "local",
+        warning: mapped.length ? null : "Server has no completed sessions yet; showing local history."
+      };
+    } catch (err) {
+      if (err?.code === "UNAUTHORIZED") {
+        client.clearAuthToken();
+        return {
+          active,
+          history: localHistory,
+          source: "local",
+          warning: "Session expired. Please sign in again from the main app."
+        };
+      }
+      return {
+        active,
+        history: localHistory,
+        source: "local",
+        warning: "Server history unavailable. Showing local history."
+      };
+    }
+  }
+
+  async function render() {
+    const { history, active, source, warning } = await loadData();
+
     const weekly = history.filter(s => isThisWeek(s.date));
     const planned = weekly.length;
     const completed = weekly.filter(s => s.status === "completed").length;
@@ -73,7 +136,6 @@
     elCompleted.textContent = String(completed);
     elConsistency.textContent = `${consistency}%`;
 
-    // Active
     if (active && active.id) {
       activeBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; gap:10px;">
@@ -89,19 +151,30 @@
       activeMini.textContent = "";
     }
 
-    // History list
     historyList.innerHTML = "";
+    if (warning) {
+      const note = document.createElement("div");
+      note.className = "muted";
+      note.style.marginBottom = "8px";
+      note.textContent = `Data source: ${source}. ${warning}`;
+      historyList.appendChild(note);
+    }
+
     if (!history.length) {
-      historyList.innerHTML = `<div class="muted">No history yet. Generate a workout in the main app and it will appear here.</div>`;
+      historyList.innerHTML += `<div class="muted">No history yet. Complete a workout in the main app and it will appear here.</div>`;
       return;
     }
 
     for (const s of history.slice(0, 25)) {
+      const repsLine = s.serverSummary?.repsCompleted != null
+        ? `<div class="muted">Reps: ${s.serverSummary.repsCompleted}</div>`
+        : "";
       const left = `
         <div class="left">
           <div style="font-size:13px; color:rgba(233,241,255,.92)">${s.date || ""}</div>
           <div class="muted">${summarize(s)}</div>
           <div class="muted">Goal: ${s.profileSnapshot?.goal || "—"}</div>
+          ${repsLine}
         </div>
       `;
       const right = `
