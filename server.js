@@ -221,28 +221,37 @@ function createApp(options = {}) {
 
   // ---- Structured Session API (pilot hardening) ----
   app.post("/api/sessions", asyncHandler(async (req, res) => {
-    const parsed = validateSessionCreate(req.body);
-    if (req.auth?.userId) {
-      parsed.userId = req.auth.userId;
+    if (req.auth?.userId && req.body?.userId && req.body.userId !== req.auth.userId) {
+      throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
     }
+    const parsed = validateSessionCreate({
+      ...(req.body || {}),
+      userId: req.auth?.userId || req.body?.userId
+    });
     const result = sessionService.startSession(parsed);
     return ok(res, req.requestId, result, 201);
   }));
 
   app.post("/api/sessions/:id/reps", asyncHandler(async (req, res) => {
-    const parsed = validateRepUpdate(req.body, req.params.id);
-    if (req.auth?.userId) {
-      parsed.userId = req.auth.userId;
+    if (req.auth?.userId && req.body?.userId && req.body.userId !== req.auth.userId) {
+      throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
     }
+    const parsed = validateRepUpdate({
+      ...(req.body || {}),
+      userId: req.auth?.userId || req.body?.userId
+    }, req.params.id);
     const result = sessionService.appendRepUpdate(parsed);
     return ok(res, req.requestId, result, 200);
   }));
 
   app.post("/api/sessions/:id/complete", asyncHandler(async (req, res) => {
-    const parsed = validateSessionComplete(req.body, req.params.id);
-    if (req.auth?.userId) {
-      parsed.userId = req.auth.userId;
+    if (req.auth?.userId && req.body?.userId && req.body.userId !== req.auth.userId) {
+      throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
     }
+    const parsed = validateSessionComplete({
+      ...(req.body || {}),
+      userId: req.auth?.userId || req.body?.userId
+    }, req.params.id);
     const result = sessionService.completeSession(parsed);
     return ok(res, req.requestId, result, 200);
   }));

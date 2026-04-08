@@ -475,6 +475,9 @@
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
+    const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
+    const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
+    const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     try { localStorage.setItem("maatNodeBaseUrl", NODE_BASE_URL); } catch (_) {}
     const BACKEND_READ_CLIENT = window.MufasaBackendRead?.createClient({
       baseUrl: NODE_BASE_URL,
@@ -754,25 +757,113 @@
 
     function sendToNode(payload) {
       const token = BACKEND_READ_CLIENT?.getAuthToken?.();
-      fetch(NODE_COMMAND_URL, {
+      return fetch(NODE_COMMAND_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify(payload)
-      }).catch(e => console.warn("Node send failed", e));
+      }).catch(e => {
+        console.warn("Node send failed", e);
+        throw e;
+      });
     }
 
-    function sendProfileToNode() {
+    async function postAuthenticatedJSON(url, { method = "POST", body }) {
+      if (!BACKEND_READ_CLIENT) throw new Error("backend_client_unavailable");
+      const token = BACKEND_READ_CLIENT.getAuthToken?.();
+      if (!token) {
+        const err = new Error("missing_auth_token");
+        err.code = "MISSING_AUTH_TOKEN";
+        throw err;
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(body || {})
+      });
+
+      let payload = null;
+      try {
+        payload = await res.json();
+      } catch (_) {}
+
+      if (res.status === 401 || res.status === 403) {
+        const err = new Error("unauthorized");
+        err.code = "UNAUTHORIZED";
+        err.status = res.status;
+        err.payload = payload;
+        throw err;
+      }
+
+      if (!res.ok || !payload?.ok) {
+        const err = new Error(payload?.error?.message || payload?.error || `request_failed_${res.status}`);
+        err.code = "REQUEST_FAILED";
+        err.status = res.status;
+        err.payload = payload;
+        throw err;
+      }
+
+      return payload?.data || null;
+    }
+
+    function isAuthUnavailable(err) {
+      return err?.code === "MISSING_AUTH_TOKEN" || err?.code === "UNAUTHORIZED";
+    }
+
+    function parseHeightCm(heightValue) {
+      if (heightValue == null) return null;
+      if (typeof heightValue === "number" && Number.isFinite(heightValue)) return heightValue;
+      const str = String(heightValue).trim().toLowerCase();
+      if (!str) return null;
+      const cmMatch = str.match(/^(\d+(?:\.\d+)?)\s*cm$/);
+      if (cmMatch) return Number(cmMatch[1]);
+      return null;
+    }
+
+    async function saveProfileWritePath() {
       if (!USER_PROFILE) return;
-      sendToNode({
+      const profilePayload = {
+        age: USER_PROFILE.age ?? null,
+        height_cm: parseHeightCm(USER_PROFILE.height),
+        weight_kg: USER_PROFILE.weight_lbs ? Number((USER_PROFILE.weight_lbs / 2.20462).toFixed(2)) : null,
+        goals: USER_PROFILE.goals ? {
+          primary_goal: USER_PROFILE.goals.primary || null,
+          frequency_days_per_week: USER_PROFILE.goals.frequency_days_per_week || null,
+          notes: USER_PROFILE.goals.focus || null
+        } : null,
+        injuries: Array.isArray(USER_PROFILE.injuries) ? USER_PROFILE.injuries : [],
+        notes: USER_PROFILE.notes || null
+      };
+
+      try {
+        await postAuthenticatedJSON(NODE_PROFILE_URL, { method: "PUT", body: { profile: profilePayload } });
+        addLog("system", "Profile synced to authenticated backend API.");
+        return;
+      } catch (err) {
+        if (isAuthUnavailable(err)) {
+          console.warn("Profile write auth unavailable; using legacy fallback.", err);
+        } else {
+          console.warn("Profile write failed on authenticated API; using legacy fallback.", err);
+        }
+      }
+
+      await sendToNode({
         domain: "fitness",
         command: "fitness.saveProfile",
         userId: USER_ID,
         payload: { profile: USER_PROFILE, ts: Date.now() }
       });
-      addLog("system", "Profile sent to Ma’at 2.0 backend.");
+      addLog("system", "Profile saved via legacy compatibility path.");
+    }
+
+    async function sendProfileToNode() {
+      await saveProfileWritePath();
     }
 
     async function ensureBackendSession(profile) {
@@ -852,7 +943,7 @@
       persistUser();
       const backendReady = await ensureBackendSession(profile);
       if (backendReady) await hydrateProfileFromBackend();
-      sendProfileToNode();
+      await sendProfileToNode();
       buildCalendarFromMeta();
     }
 
@@ -1282,21 +1373,37 @@ function toggleListening() {
     }
 
     function sendStartSessionToNode() {
-      sendToNode({
-        domain: "fitness",
-        command: "fitness.startSession",
-        userId: USER_ID,
-        payload: { sessionId, programId: null, exerciseId: EXERCISE_ID, ts: Date.now() }
+      postAuthenticatedJSON(NODE_SESSION_START_URL, {
+        method: "POST",
+        body: { sessionId, programId: null, exerciseId: EXERCISE_ID }
+      }).catch((err) => {
+        if (!isAuthUnavailable(err)) {
+          console.warn("Session start authenticated API failed; falling back to /command.", err);
+        }
+        return sendToNode({
+          domain: "fitness",
+          command: "fitness.startSession",
+          userId: USER_ID,
+          payload: { sessionId, programId: null, exerciseId: EXERCISE_ID, ts: Date.now() }
+        });
       });
     }
 
     function sendEndSessionToNode() {
       if (!sessionId) return;
-      sendToNode({
-        domain: "fitness",
-        command: "fitness.endSession",
-        userId: USER_ID,
-        payload: { sessionId, repsCompleted: totalReps, exerciseId: EXERCISE_ID, ts: Date.now() }
+      postAuthenticatedJSON(`${NODE_SESSION_START_URL}/${encodeURIComponent(sessionId)}/complete`, {
+        method: "POST",
+        body: { repsCompleted: totalReps, exerciseId: EXERCISE_ID }
+      }).catch((err) => {
+        if (!isAuthUnavailable(err)) {
+          console.warn("Session completion authenticated API failed; falling back to /command.", err);
+        }
+        return sendToNode({
+          domain: "fitness",
+          command: "fitness.endSession",
+          userId: USER_ID,
+          payload: { sessionId, repsCompleted: totalReps, exerciseId: EXERCISE_ID, ts: Date.now() }
+        });
       });
 
       if (calendarMeta) {
@@ -1314,6 +1421,7 @@ function toggleListening() {
       if (now - lastNodeRepSentAt < 500) return;
       lastNodeRepSentAt = now;
 
+      // Rep updates remain on legacy /command for this bounded phase to avoid high-frequency API churn risk.
       sendToNode({
         domain: "fitness",
         command: "fitness.repUpdate",
@@ -1330,11 +1438,19 @@ function toggleListening() {
     }
 
     function sendOhsaToNode(summary) {
-      sendToNode({
-        domain: "fitness",
-        command: "fitness.ohsaResult",
-        userId: USER_ID,
-        payload: { summary, ts: Date.now() }
+      postAuthenticatedJSON(NODE_OHSA_URL, {
+        method: "POST",
+        body: { summary, source: "frontend" }
+      }).catch((err) => {
+        if (!isAuthUnavailable(err)) {
+          console.warn("OHSA authenticated API failed; falling back to /command.", err);
+        }
+        return sendToNode({
+          domain: "fitness",
+          command: "fitness.ohsaResult",
+          userId: USER_ID,
+          payload: { summary, ts: Date.now() }
+        });
       });
     }
 

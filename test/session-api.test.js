@@ -114,6 +114,45 @@ test("POST /api/sessions starts a session and persists it", async (t) => {
   });
 });
 
+test("authenticated session writes derive user identity from auth when body userId is omitted", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    const token = await authBridge(baseUrl, { userId: "auth_owned_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    const { res: startRes } = await post(baseUrl, "/api/sessions", {
+      sessionId: "auth_sess_1",
+      exerciseId: "bodyweight_squat"
+    }, authHeader);
+    assert.equal(startRes.status, 201);
+
+    const { res: completeRes } = await post(baseUrl, "/api/sessions/auth_sess_1/complete", {
+      repsCompleted: 9
+    }, authHeader);
+    assert.equal(completeRes.status, 200);
+
+    const userPath = path.join(tmpRoot, "data", "users", "auth_owned_user.json");
+    const user = JSON.parse(fs.readFileSync(userPath, "utf8"));
+    assert.ok(user.sessions.auth_sess_1);
+    assert.equal(user.sessions.auth_sess_1.summary.repsCompleted, 9);
+  });
+});
+
+test("authenticated session writes reject mismatched request-body userId", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const token = await authBridge(baseUrl, { userId: "auth_guard_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    const { res, json } = await post(baseUrl, "/api/sessions", {
+      userId: "spoofed_user",
+      sessionId: "spoof_sess_1"
+    }, authHeader);
+
+    assert.equal(res.status, 403);
+    assert.equal(json.ok, false);
+    assert.equal(json.error.code, "FORBIDDEN");
+  });
+});
+
 test("POST /api/sessions/:id/reps appends rep update", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
     await post(baseUrl, "/api/sessions", {
@@ -268,12 +307,10 @@ test("OHSA submission and me history endpoint are auth protected and persisted",
     const authHeader = { authorization: `Bearer ${token}` };
 
     await post(baseUrl, "/api/sessions", {
-      userId: "different_user_should_be_ignored",
       sessionId: "sess_hist_1"
     }, authHeader);
 
     await post(baseUrl, "/api/sessions/sess_hist_1/complete", {
-      userId: "different_user_should_be_ignored",
       repsCompleted: 12
     }, authHeader);
 
@@ -366,8 +403,8 @@ test("profile/session/OHSA writes are non-destructive to unrelated user fields",
       profile: { age: 29, height_cm: 178, weight_kg: 74, injuries: [] }
     }, authHeader);
 
-    await post(baseUrl, "/api/sessions", { userId: "ignored", sessionId: "safe_sess_1" }, authHeader);
-    await post(baseUrl, "/api/sessions/safe_sess_1/complete", { userId: "ignored", repsCompleted: 16 }, authHeader);
+    await post(baseUrl, "/api/sessions", { sessionId: "safe_sess_1" }, authHeader);
+    await post(baseUrl, "/api/sessions/safe_sess_1/complete", { repsCompleted: 16 }, authHeader);
     await post(baseUrl, "/api/ohsa", {
       summary: { score: 77, riskLevel: "low", recommendations: ["stay active"] }
     }, authHeader);
@@ -388,8 +425,8 @@ test("history endpoint enforces bounded limit and coherent structure", async (t)
 
     for (let i = 0; i < 6; i += 1) {
       const sid = `limit_sess_${i}`;
-      await post(baseUrl, "/api/sessions", { userId: "ignored", sessionId: sid }, authHeader);
-      await post(baseUrl, `/api/sessions/${sid}/complete`, { userId: "ignored", repsCompleted: i + 1 }, authHeader);
+      await post(baseUrl, "/api/sessions", { sessionId: sid }, authHeader);
+      await post(baseUrl, `/api/sessions/${sid}/complete`, { repsCompleted: i + 1 }, authHeader);
     }
 
     const { res, json } = await get(baseUrl, "/api/me/history?limit=3", authHeader);
@@ -426,7 +463,6 @@ test("services remain compatible with malformed legacy stored user shapes", asyn
     assert.equal(ohsaRes.status, 201);
 
     const { res: startRes } = await post(baseUrl, "/api/sessions", {
-      userId: "ignored",
       sessionId: "shape_sess_1"
     }, authHeader);
     assert.equal(startRes.status, 201);
