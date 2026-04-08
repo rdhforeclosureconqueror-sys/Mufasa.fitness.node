@@ -22,6 +22,7 @@ const {
   validateOhsaSubmission,
   validateAuthBridge
 } = require("./src/validation/meValidators");
+const { createWriteObservability, mapRouteAction } = require("./src/lib/writeObservability");
 
 function createApp(options = {}) {
   const app = express();
@@ -29,6 +30,14 @@ function createApp(options = {}) {
   app.use(requestContext);
 
   const rootDir = options.rootDir || process.cwd();
+  const writeObservability = createWriteObservability();
+  const legacyDependencyCatalog = {
+    profile: ["fitness.saveProfile"],
+    session_start: ["fitness.startSession"],
+    rep_update: ["fitness.repUpdate"],
+    session_complete: ["fitness.endSession"],
+    ohsa: ["fitness.ohsaResult"]
+  };
 
   const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -61,7 +70,59 @@ function createApp(options = {}) {
     secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me"
   });
 
+  const startupWarnings = [];
+  const usingDefaultAuthSecret = !process.env.AUTH_TOKEN_SECRET || process.env.AUTH_TOKEN_SECRET === "dev-only-secret-change-me";
+  if (usingDefaultAuthSecret) {
+    startupWarnings.push("AUTH_TOKEN_SECRET is missing or default; authenticated writes are not production-safe.");
+  } else if (String(process.env.AUTH_TOKEN_SECRET).length < 16) {
+    startupWarnings.push("AUTH_TOKEN_SECRET is set but short; use at least 16 characters for pilot hardening.");
+  }
+  const legacyFallbackEnabled = process.env.LEGACY_FALLBACK_ENABLED !== "false";
+  if (!legacyFallbackEnabled) {
+    startupWarnings.push("LEGACY_FALLBACK_ENABLED=false; clients relying on /command fallback may fail.");
+  }
+  if (startupWarnings.length) {
+    for (const warning of startupWarnings) {
+      console.warn("[startup-warning]", warning);
+    }
+  }
+
   app.use(authContext(authTokenLib));
+  app.use((req, res, next) => {
+    const action = mapRouteAction(req);
+    if (!action) return next();
+
+    const isLegacy = req.path === "/command";
+    res.on("finish", () => {
+      const status = res.statusCode;
+      const succeeded = status >= 200 && status < 400;
+      if (isLegacy) {
+        const reason = req.body?.payload?._fallback?.reason || req.get("x-fallback-reason") || "legacy_direct";
+        writeObservability.trackLegacyFallback(action, reason);
+      } else {
+        writeObservability.trackExplicit(action, succeeded);
+      }
+
+      if (succeeded) {
+        console.info("[write-route]", {
+          requestId: req.requestId,
+          route: req.path,
+          action,
+          mode: isLegacy ? "legacy_fallback" : "explicit_api",
+          status
+        });
+      } else {
+        console.warn("[write-route-failure]", {
+          requestId: req.requestId,
+          route: req.path,
+          action,
+          mode: isLegacy ? "legacy_fallback" : "explicit_api",
+          status
+        });
+      }
+    });
+    next();
+  });
 
   // ---- Static hosting ----
   app.use(express.static(PUBLIC_DIR));
@@ -96,7 +157,23 @@ function createApp(options = {}) {
       ok: true,
       service: "mufasa-fitness-node",
       hasExerciseIndex: fs.existsSync(EX_INDEX_PATH),
+      authConfigured: !usingDefaultAuthSecret,
+      legacyFallbackEnabled,
+      degraded: startupWarnings.length > 0,
+      startupWarnings,
       time: new Date().toISOString()
+    });
+  });
+
+  app.get("/api/ops/write-observability", (_req, res) => {
+    return res.json({
+      ok: true,
+      service: "mufasa-fitness-node",
+      authConfigured: !usingDefaultAuthSecret,
+      legacyFallbackEnabled,
+      startupWarnings,
+      legacyDependencyCatalog,
+      writes: writeObservability.snapshot()
     });
   });
 
@@ -296,6 +373,10 @@ function createApp(options = {}) {
 
   // ---- COMMAND endpoint (legacy compatibility adapter for session lifecycle) ----
   app.post("/command", asyncHandler(async (req, res) => {
+    if (!legacyFallbackEnabled) {
+      throw new ApiError("LEGACY_FALLBACK_DISABLED", "Legacy /command fallback is disabled by server configuration", 503);
+    }
+
     const { domain, command, userId, payload } = req.body || {};
 
     const isSessionCommand = domain === "fitness" && [

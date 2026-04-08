@@ -14,7 +14,9 @@
       getUserId,
       getAuthToken,
       repDebounceMs = 450,
-      logger = console
+      logger = console,
+      observabilityStorageKey = "maatWriteObservabilityV1",
+      onObservabilityUpdate
     } = options || {};
 
     if (!baseUrl) throw new Error("baseUrl_required");
@@ -23,6 +25,72 @@
     let pendingRep = null;
     let repTimer = null;
     let repInFlight = false;
+    const routeActions = ["profile", "session_start", "rep_update", "session_complete", "ohsa"];
+    const observability = {
+      explicitSuccess: Object.fromEntries(routeActions.map((a) => [a, 0])),
+      fallbackToLegacy: Object.fromEntries(routeActions.map((a) => [a, 0])),
+      lastFallback: null,
+      updatedAt: null
+    };
+
+    function persistObservability() {
+      observability.updatedAt = new Date().toISOString();
+      if (typeof localStorage !== "undefined") {
+        try { localStorage.setItem(observabilityStorageKey, JSON.stringify(observability)); } catch (_) {}
+      }
+      if (typeof onObservabilityUpdate === "function") {
+        onObservabilityUpdate(getObservabilitySnapshot());
+      }
+    }
+
+    function classifyFallbackReason(err) {
+      if (!err) return "unknown";
+      if (err.code === "MISSING_AUTH_TOKEN") return "missing_auth_token";
+      if (err.code === "UNAUTHORIZED") return "unauthorized";
+      if (err.code === "REQUEST_FAILED") {
+        if (err.status >= 500) return "explicit_api_5xx";
+        if (err.status >= 400) return "explicit_api_4xx";
+      }
+      if (err.name === "TypeError") return "network_error";
+      return "request_error";
+    }
+
+    function trackExplicitSuccess(action) {
+      if (!(action in observability.explicitSuccess)) return;
+      observability.explicitSuccess[action] += 1;
+      persistObservability();
+    }
+
+    function trackFallback(action, err) {
+      if (!(action in observability.fallbackToLegacy)) return;
+      const reason = classifyFallbackReason(err);
+      observability.fallbackToLegacy[action] += 1;
+      observability.lastFallback = {
+        action,
+        reason,
+        status: err?.status ?? null,
+        code: err?.code || null,
+        at: new Date().toISOString()
+      };
+      persistObservability();
+      return reason;
+    }
+
+    function getObservabilitySnapshot() {
+      return JSON.parse(JSON.stringify(observability));
+    }
+
+    function getWriteModeStatus() {
+      const token = getAuthToken?.();
+      const fallbackTotal = Object.values(observability.fallbackToLegacy).reduce((sum, count) => sum + count, 0);
+      if (!token) {
+        return { mode: "local_fallback", label: "Local fallback", fallbackTotal, lastFallback: observability.lastFallback };
+      }
+      if (fallbackTotal > 0) {
+        return { mode: "degraded_fallback", label: "Degraded (legacy fallback active)", fallbackTotal, lastFallback: observability.lastFallback };
+      }
+      return { mode: "explicit_api", label: "Backend synced", fallbackTotal, lastFallback: observability.lastFallback };
+    }
 
     async function postJSON(url, body, authRequired) {
       const token = getAuthToken?.();
@@ -66,10 +134,12 @@
     }
 
     function sendLegacyCommand(command, payload) {
+      const fallbackReason = payload?._fallbackReason || "unspecified";
       return fetch(commandUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-fallback-reason": fallbackReason,
           ...(getAuthToken?.() ? { authorization: `Bearer ${getAuthToken()}` } : {})
         },
         body: JSON.stringify({
@@ -78,6 +148,10 @@
           userId: getUserId?.() || "guest",
           payload: {
             ...payload,
+            _fallback: {
+              reason: fallbackReason,
+              at: new Date().toISOString()
+            },
             ts: payload?.ts || Date.now()
           }
         })
@@ -87,9 +161,11 @@
     async function startSession(payload) {
       try {
         await postJSON(`${baseUrl}/api/sessions`, payload, true);
+        trackExplicitSuccess("session_start");
       } catch (err) {
         logger.warn("Session start API unavailable; using /command fallback.", err);
-        await sendLegacyCommand("fitness.startSession", payload);
+        const reason = trackFallback("session_start", err);
+        await sendLegacyCommand("fitness.startSession", { ...payload, _fallbackReason: reason });
       }
     }
 
@@ -97,9 +173,11 @@
       if (!sessionId) return;
       try {
         await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true);
+        trackExplicitSuccess("session_complete");
       } catch (err) {
         logger.warn("Session complete API unavailable; using /command fallback.", err);
-        await sendLegacyCommand("fitness.endSession", { sessionId, ...payload });
+        const reason = trackFallback("session_complete", err);
+        await sendLegacyCommand("fitness.endSession", { sessionId, ...payload, _fallbackReason: reason });
       }
     }
 
@@ -118,9 +196,11 @@
 
       try {
         await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sid)}/reps`, explicitBody, true);
+        trackExplicitSuccess("rep_update");
       } catch (err) {
         logger.warn("Rep update API unavailable; using /command fallback.", err);
-        await sendLegacyCommand("fitness.repUpdate", repPayload);
+        const reason = trackFallback("rep_update", err);
+        await sendLegacyCommand("fitness.repUpdate", { ...repPayload, _fallbackReason: reason });
       }
     }
 
@@ -158,6 +238,11 @@
       startSession,
       completeSession,
       enqueueRepUpdate,
+      trackExplicitSuccess,
+      trackFallback,
+      getObservabilitySnapshot,
+      getWriteModeStatus,
+      _classifyFallbackReasonForTests: classifyFallbackReason,
       _flushRepQueueForTests: flushRepQueue
     };
   }

@@ -413,6 +413,7 @@
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
+      <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
       <div id="voiceSupportStatus"></div>
@@ -504,6 +505,7 @@
 
     const poseStatusEl = document.getElementById("poseStatus");
     const brainStatusEl = document.getElementById("brainStatus");
+    const syncStatusEl = document.getElementById("syncStatus");
     const brainChipTxt = document.getElementById("brainChipText");
 
     const connectBtn = document.getElementById("connectBtn");
@@ -823,8 +825,22 @@
       getUserId: () => USER_ID,
       getAuthToken: () => BACKEND_READ_CLIENT?.getAuthToken?.(),
       repDebounceMs: 500,
-      logger: console
+      logger: console,
+      onObservabilityUpdate: updateSyncStatus
     });
+
+    function updateSyncStatus() {
+      if (!syncStatusEl || !SESSION_WRITE_CLIENT?.getWriteModeStatus) return;
+      const state = SESSION_WRITE_CLIENT.getWriteModeStatus();
+      const lastFallback = state.lastFallback;
+      const fallbackText = lastFallback
+        ? ` | last fallback: ${lastFallback.action} (${lastFallback.reason})`
+        : "";
+      syncStatusEl.textContent = `${state.label}${fallbackText}`;
+      syncStatusEl.classList.remove("status-ok", "status-bad");
+      if (state.mode === "explicit_api") syncStatusEl.classList.add("status-ok");
+      if (state.mode === "degraded_fallback") syncStatusEl.classList.add("status-bad");
+    }
 
     function parseHeightCm(heightValue) {
       if (heightValue == null) return null;
@@ -853,9 +869,12 @@
 
       try {
         await postAuthenticatedJSON(NODE_PROFILE_URL, { method: "PUT", body: { profile: profilePayload } });
+        SESSION_WRITE_CLIENT?.trackExplicitSuccess?.("profile");
         addLog("system", "Profile synced to authenticated backend API.");
+        updateSyncStatus();
         return;
       } catch (err) {
+        SESSION_WRITE_CLIENT?.trackFallback?.("profile", err);
         if (isAuthUnavailable(err)) {
           console.warn("Profile write auth unavailable; using legacy fallback.", err);
         } else {
@@ -867,9 +886,10 @@
         domain: "fitness",
         command: "fitness.saveProfile",
         userId: USER_ID,
-        payload: { profile: USER_PROFILE, ts: Date.now() }
+        payload: { profile: USER_PROFILE, _fallbackReason: "profile_api_unavailable", ts: Date.now() }
       });
       addLog("system", "Profile saved via legacy compatibility path.");
+      updateSyncStatus();
     }
 
     async function sendProfileToNode() {
@@ -955,6 +975,7 @@
       if (backendReady) await hydrateProfileFromBackend();
       await sendProfileToNode();
       buildCalendarFromMeta();
+      updateSyncStatus();
     }
 
     async function loadPersistedUser() {
@@ -985,6 +1006,7 @@
           showOverlay(false);
           const backendReady = await ensureBackendSession(USER_PROFILE || {});
           if (backendReady) await hydrateProfileFromBackend();
+          updateSyncStatus();
           return true;
         }
       } catch (e) {
@@ -1054,6 +1076,7 @@
       } catch (_) {}
 
       showOverlay(true);
+      updateSyncStatus();
     };
 
 /* =========================================================
@@ -1428,7 +1451,10 @@ function toggleListening() {
       postAuthenticatedJSON(NODE_OHSA_URL, {
         method: "POST",
         body: { summary, source: "frontend" }
+      }).then(() => {
+        SESSION_WRITE_CLIENT?.trackExplicitSuccess?.("ohsa");
       }).catch((err) => {
+        SESSION_WRITE_CLIENT?.trackFallback?.("ohsa", err);
         if (!isAuthUnavailable(err)) {
           console.warn("OHSA authenticated API failed; falling back to /command.", err);
         }
@@ -1436,8 +1462,10 @@ function toggleListening() {
           domain: "fitness",
           command: "fitness.ohsaResult",
           userId: USER_ID,
-          payload: { summary, ts: Date.now() }
+          payload: { summary, _fallbackReason: "ohsa_api_unavailable", ts: Date.now() }
         });
+      }).finally(() => {
+        updateSyncStatus();
       });
     }
 
@@ -1948,6 +1976,7 @@ function toggleListening() {
         addLog("system", "Loaded your profile from memory.");
         buildCalendarFromMeta();
       }
+      updateSyncStatus();
 
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
