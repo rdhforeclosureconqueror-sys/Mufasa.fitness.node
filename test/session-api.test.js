@@ -432,3 +432,33 @@ test("services remain compatible with malformed legacy stored user shapes", asyn
     assert.equal(startRes.status, 201);
   });
 });
+
+
+test("auth-protected /api/me/history rejects missing token", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const { res, json } = await get(baseUrl, "/api/me/history");
+    assert.equal(res.status, 401);
+    assert.equal(json.ok, false);
+    assert.equal(json.error.code, "UNAUTHENTICATED");
+  });
+});
+
+test("/api/me/profile returns normalized default profile shape for new auth user", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const token = await authBridge(baseUrl, { userId: "new_profile_shape_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    const { res, json } = await get(baseUrl, "/api/me/profile", authHeader);
+    assert.equal(res.status, 200);
+    assert.equal(json.ok, true);
+    assert.equal(json.data.userId, "new_profile_shape_user");
+    assert.deepEqual(json.data.profile, {
+      age: null,
+      height_cm: null,
+      weight_kg: null,
+      goals: null,
+      injuries: [],
+      notes: null
+    });
+  });
+});

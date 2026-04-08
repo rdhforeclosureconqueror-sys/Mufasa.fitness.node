@@ -127,7 +127,7 @@
   <header>
     <div class="title">
       <h1>Ma’at 2.0 — Results Dashboard</h1>
-      <div class="sub">Client view: weekly workouts + progress signals (local v1)</div>
+      <div class="sub">Client view: backend-synced weekly workouts + safe local fallback</div>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
       <button id="resetBtn" class="btn">Reset Local Data</button>
@@ -175,6 +175,7 @@
     </div>
   </div>
 
+  <script src="/public/backend-read.js"></script>
   <script src="/public/dashboard.js"></script>
 </body>
 </html>
