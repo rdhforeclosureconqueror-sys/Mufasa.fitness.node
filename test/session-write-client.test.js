@@ -86,4 +86,44 @@ test("rep updates fall back to legacy /command when explicit API is unavailable"
   assert.equal(calls[1].url, "http://node/command");
   assert.equal(calls[1].body.command, "fitness.repUpdate");
   assert.equal(calls[1].body.userId, "legacy_user");
+  assert.equal(calls[1].body.payload._fallback.reason, "unauthorized");
+  assert.equal(client.getObservabilitySnapshot().fallbackToLegacy.rep_update, 1);
+  assert.equal(client.getObservabilitySnapshot().lastFallback.reason, "unauthorized");
+});
+
+test("write observability tracks explicit writes and mode state", async (t) => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    async json() { return { ok: true, data: {} }; }
+  });
+  t.after(() => { global.fetch = originalFetch; });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "obs_user",
+    getAuthToken: () => "token_abc",
+    logger: { warn() {} }
+  });
+
+  await client.startSession({ sessionId: "obs_sess" });
+  const snapshot = client.getObservabilitySnapshot();
+  assert.equal(snapshot.explicitSuccess.session_start, 1);
+  assert.equal(client.getWriteModeStatus().mode, "explicit_api");
+});
+
+test("fallback reason classifier captures common categories", () => {
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "obs_user",
+    getAuthToken: () => null,
+    logger: { warn() {} }
+  });
+
+  assert.equal(client._classifyFallbackReasonForTests({ code: "MISSING_AUTH_TOKEN" }), "missing_auth_token");
+  assert.equal(client._classifyFallbackReasonForTests({ code: "UNAUTHORIZED" }), "unauthorized");
+  assert.equal(client._classifyFallbackReasonForTests({ code: "REQUEST_FAILED", status: 503 }), "explicit_api_5xx");
 });

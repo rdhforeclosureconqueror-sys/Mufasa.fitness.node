@@ -320,6 +320,54 @@ test("auth-protected /api/me/profile rejects missing token", async (t) => {
   });
 });
 
+test("write observability endpoint reports explicit and legacy write usage", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    await post(baseUrl, "/api/sessions", {
+      userId: "obs_user",
+      sessionId: "obs_sess_1"
+    });
+
+    await post(baseUrl, "/command", {
+      domain: "fitness",
+      command: "fitness.endSession",
+      userId: "obs_user",
+      payload: {
+        sessionId: "obs_sess_1",
+        repsCompleted: 5,
+        _fallback: { reason: "unauthorized" }
+      }
+    });
+
+    const { res, json } = await get(baseUrl, "/api/ops/write-observability");
+    assert.equal(res.status, 200);
+    assert.equal(json.ok, true);
+    assert.equal(json.writes.explicit.success.session_start, 1);
+    assert.equal(json.writes.legacyFallback.byAction.session_complete, 1);
+    assert.equal(json.writes.legacyFallback.lastReason.action, "session_complete");
+  });
+});
+
+test("legacy fallback can be disabled by config", async (t) => {
+  const prev = process.env.LEGACY_FALLBACK_ENABLED;
+  process.env.LEGACY_FALLBACK_ENABLED = "false";
+  t.after(() => {
+    if (prev == null) delete process.env.LEGACY_FALLBACK_ENABLED;
+    else process.env.LEGACY_FALLBACK_ENABLED = prev;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    const { res, json } = await post(baseUrl, "/command", {
+      domain: "fitness",
+      command: "fitness.startSession",
+      userId: "legacy_disabled_user",
+      payload: { sessionId: "legacy_disabled_sess" }
+    });
+    assert.equal(res.status, 503);
+    assert.equal(json.ok, false);
+    assert.equal(json.error.code, "LEGACY_FALLBACK_DISABLED");
+  });
+});
+
 test("profile read/write works with auth context ownership", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
     const token = await authBridge(baseUrl, { userId: "pilot_profile_user" });
