@@ -153,6 +153,56 @@ test("authenticated session writes reject mismatched request-body userId", async
   });
 });
 
+
+test("authenticated rep writes derive user identity from auth when body userId is omitted", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    const token = await authBridge(baseUrl, { userId: "rep_auth_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    await post(baseUrl, "/api/sessions", {
+      sessionId: "rep_auth_sess",
+      exerciseId: "bodyweight_squat"
+    }, authHeader);
+
+    const { res } = await post(baseUrl, "/api/sessions/rep_auth_sess/reps", {
+      repsThisSet: 3,
+      totalReps: 3,
+      depthScore: 0.62,
+      goodForm: true
+    }, authHeader);
+
+    assert.equal(res.status, 200);
+
+    const userPath = path.join(tmpRoot, "data", "users", "rep_auth_user.json");
+    const user = JSON.parse(fs.readFileSync(userPath, "utf8"));
+    assert.equal(user.sessions.rep_auth_sess.repUpdates.length, 1);
+    assert.equal(user.events.at(-1).command, "fitness.repUpdate");
+  });
+});
+
+test("authenticated rep writes reject mismatched request-body userId", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const token = await authBridge(baseUrl, { userId: "rep_guard_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    await post(baseUrl, "/api/sessions", {
+      sessionId: "rep_guard_sess",
+      exerciseId: "bodyweight_squat"
+    }, authHeader);
+
+    const { res, json } = await post(baseUrl, "/api/sessions/rep_guard_sess/reps", {
+      userId: "spoofed_rep_user",
+      repsThisSet: 2,
+      totalReps: 2,
+      depthScore: 0.55
+    }, authHeader);
+
+    assert.equal(res.status, 403);
+    assert.equal(json.ok, false);
+    assert.equal(json.error.code, "FORBIDDEN");
+  });
+});
+
 test("POST /api/sessions/:id/reps appends rep update", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
     await post(baseUrl, "/api/sessions", {
