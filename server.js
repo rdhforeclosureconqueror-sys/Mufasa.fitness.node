@@ -72,8 +72,8 @@ function createApp(options = {}) {
   }
 
   function findExerciseBySlug(index, slug) {
-    const list = Array.isArray(index) ? index : (index?.exercises || []);
-    return list.find(x => x.slug === slug || x.id === slug) || null;
+    const list = index?.exercises || [];
+    return list.find(x => x.slug === slug) || null;
   }
 
   // ---- Health ----
@@ -133,11 +133,6 @@ function createApp(options = {}) {
         error: "Missing exercise index.json. Run: npm run build:exercise-index and commit it."
       });
     }
-
-    if (Array.isArray(idx)) {
-      return res.json({ ok: true, exercises: idx, total: idx.length });
-    }
-
     res.json({ ok: true, ...idx });
   });
 
@@ -146,7 +141,7 @@ function createApp(options = {}) {
     const idx = loadExerciseIndex();
     if (!idx) return res.status(404).json({ ok: false, error: "Missing exercise index.json" });
 
-    const list = Array.isArray(idx) ? idx : (idx.exercises || []);
+    const list = idx.exercises || [];
     if (!q) return res.json({ ok: true, q, results: list.slice(0, 50) });
 
     const results = list
@@ -169,9 +164,8 @@ function createApp(options = {}) {
     const item = findExerciseBySlug(idx, slug);
     if (!item) return res.status(404).json({ ok: false, error: "Unknown exercise slug", slug });
 
-    // Existing data currently stores most detail directly in index array.
     if (!item.json) {
-      return res.json({ ok: true, meta: item, data: item });
+      return res.status(404).json({ ok: false, error: "Exercise folder has no JSON file", item });
     }
 
     const jsonPath = path.join(PUBLIC_DIR, item.json);
