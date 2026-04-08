@@ -279,7 +279,9 @@ function createApp(options = {}) {
   }));
 
   app.get("/api/me/history", requireAuth, asyncHandler(async (req, res) => {
-    const result = userDataService.getHistory(req.auth.userId);
+    const rawLimit = Number.parseInt(String(req.query.limit ?? ""), 10);
+    const limit = Number.isFinite(rawLimit) ? rawLimit : 10;
+    const result = userDataService.getHistory(req.auth.userId, { limit });
     return ok(res, req.requestId, result, 200);
   }));
 
@@ -336,15 +338,6 @@ function createApp(options = {}) {
     }
 
     try {
-      const userPath = path.join(USER_DIR, `${userId}.json`);
-      const existing = fs.existsSync(userPath) ? readJSON(userPath) : { userId, createdAt: Date.now() };
-
-      const now = Date.now();
-      existing.updatedAt = now;
-
-      existing.events = existing.events || [];
-      existing.events.push({ command, ts: now, payload });
-
       if (authUserId && userId !== authUserId) {
         throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
       }
@@ -359,27 +352,43 @@ function createApp(options = {}) {
         return res.json({ ok: true, saved: true, domain, command, userId: result.userId });
       }
       if (command === "fitness.startSession") {
-        existing.sessions = existing.sessions || {};
-        existing.sessions[payload?.sessionId] = {
-          ...payload,
-          startedAt: now,
-          repUpdates: []
-        };
+        sessionService.startSession({
+          userId,
+          sessionId: payload?.sessionId,
+          programId: payload?.programId ?? null,
+          exerciseId: payload?.exerciseId ?? null,
+          payload: payload || {}
+        });
+        return res.json({ ok: true, saved: true, domain, command, userId });
       }
       if (command === "fitness.repUpdate") {
-        existing.sessions = existing.sessions || {};
         const sid = payload?.sessionId;
-        if (sid && existing.sessions[sid]) {
-          existing.sessions[sid].repUpdates.push({ ...payload, ts: now });
+        if (sid) {
+          sessionService.appendRepUpdate({
+            userId,
+            sessionId: sid,
+            exerciseId: payload?.exerciseId ?? null,
+            repsThisSet: payload?.repsThisSet ?? null,
+            totalReps: payload?.totalReps ?? null,
+            depthScore: payload?.depthScore ?? null,
+            goodForm: payload?.goodForm ?? null,
+            payload: payload || {}
+          });
         }
+        return res.json({ ok: true, saved: true, domain, command, userId });
       }
       if (command === "fitness.endSession") {
-        existing.sessions = existing.sessions || {};
         const sid = payload?.sessionId;
-        if (sid && existing.sessions[sid]) {
-          existing.sessions[sid].endedAt = now;
-          existing.sessions[sid].summary = payload;
+        if (sid) {
+          sessionService.completeSession({
+            userId,
+            sessionId: sid,
+            repsCompleted: payload?.repsCompleted ?? 0,
+            exerciseId: payload?.exerciseId ?? null,
+            payload: payload || {}
+          });
         }
+        return res.json({ ok: true, saved: true, domain, command, userId });
       }
       if (command === "fitness.ohsaResult") {
         const parsed = validateOhsaSubmission(payload || {});
@@ -391,9 +400,16 @@ function createApp(options = {}) {
         return res.json({ ok: true, saved: true, domain, command, userId: result.userId });
       }
 
-      writeJSON(userPath, existing);
+      userStore.updateUser(userId, (user) => {
+        user.events = user.events || [];
+        user.events.push({ command, ts: Date.now(), payload });
+        return user;
+      });
       return res.json({ ok: true, saved: true, domain, command, userId });
     } catch (e) {
+      if (e instanceof ApiError) {
+        throw e;
+      }
       return res.status(500).json({ ok: false, error: "Command handler failed", message: e.message });
     }
   }));

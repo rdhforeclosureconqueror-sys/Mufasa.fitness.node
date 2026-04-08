@@ -299,6 +299,8 @@ test("OHSA submission and me history endpoint are auth protected and persisted",
     assert.equal(histJson.data.completedSessions.length, 1);
     assert.equal(histJson.data.completedSessions[0].repsCompleted, 12);
     assert.ok(histJson.data.recentActivity.length >= 2);
+    assert.equal(histJson.data.summary.totalCompletedSessions, 1);
+    assert.ok(Array.isArray(histJson.data.ohsaHistory));
   });
 });
 
@@ -340,5 +342,93 @@ test("legacy /command profile and ohsa actions remain compatible with stricter v
     assert.equal(user.ohsa.length, 1);
     assert.equal(user.events.filter(e => e.command === "fitness.saveProfile").length, 1);
     assert.equal(user.events.filter(e => e.command === "fitness.ohsaResult").length, 1);
+  });
+});
+
+test("profile/session/OHSA writes are non-destructive to unrelated user fields", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    const token = await authBridge(baseUrl, { userId: "safe_write_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+    const userPath = path.join(tmpRoot, "data", "users", "safe_write_user.json");
+
+    fs.mkdirSync(path.dirname(userPath), { recursive: true });
+    fs.writeFileSync(userPath, JSON.stringify({
+      userId: "safe_write_user",
+      createdAt: Date.now() - 1000,
+      updatedAt: Date.now() - 1000,
+      customFlags: { pilotTier: "alpha", keepMe: true },
+      preferences: { units: "imperial" },
+      events: [],
+      sessions: {}
+    }, null, 2));
+
+    await put(baseUrl, "/api/me/profile", {
+      profile: { age: 29, height_cm: 178, weight_kg: 74, injuries: [] }
+    }, authHeader);
+
+    await post(baseUrl, "/api/sessions", { userId: "ignored", sessionId: "safe_sess_1" }, authHeader);
+    await post(baseUrl, "/api/sessions/safe_sess_1/complete", { userId: "ignored", repsCompleted: 16 }, authHeader);
+    await post(baseUrl, "/api/ohsa", {
+      summary: { score: 77, riskLevel: "low", recommendations: ["stay active"] }
+    }, authHeader);
+
+    const user = JSON.parse(fs.readFileSync(userPath, "utf8"));
+    assert.deepEqual(user.customFlags, { pilotTier: "alpha", keepMe: true });
+    assert.deepEqual(user.preferences, { units: "imperial" });
+    assert.equal(user.profile.age, 29);
+    assert.equal(user.sessions.safe_sess_1.summary.repsCompleted, 16);
+    assert.equal(user.ohsa.length, 1);
+  });
+});
+
+test("history endpoint enforces bounded limit and coherent structure", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const token = await authBridge(baseUrl, { userId: "history_limit_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    for (let i = 0; i < 6; i += 1) {
+      const sid = `limit_sess_${i}`;
+      await post(baseUrl, "/api/sessions", { userId: "ignored", sessionId: sid }, authHeader);
+      await post(baseUrl, `/api/sessions/${sid}/complete`, { userId: "ignored", repsCompleted: i + 1 }, authHeader);
+    }
+
+    const { res, json } = await get(baseUrl, "/api/me/history?limit=3", authHeader);
+    assert.equal(res.status, 200);
+    assert.equal(json.data.limits.itemLimit, 3);
+    assert.equal(json.data.completedSessions.length, 3);
+    assert.ok(json.data.summary.totalEvents >= 6);
+    assert.equal(Array.isArray(json.data.ohsaHistory), true);
+    assert.equal(Array.isArray(json.data.recentActivity), true);
+  });
+});
+
+test("services remain compatible with malformed legacy stored user shapes", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    const token = await authBridge(baseUrl, { userId: "legacy_shape_user" });
+    const authHeader = { authorization: `Bearer ${token}` };
+    const userPath = path.join(tmpRoot, "data", "users", "legacy_shape_user.json");
+
+    fs.mkdirSync(path.dirname(userPath), { recursive: true });
+    fs.writeFileSync(userPath, JSON.stringify({
+      userId: "legacy_shape_user",
+      events: {},
+      sessions: [],
+      ohsa: null,
+      profile: { age: 40 }
+    }, null, 2));
+
+    const { res: profileRes } = await get(baseUrl, "/api/me/profile", authHeader);
+    assert.equal(profileRes.status, 200);
+
+    const { res: ohsaRes } = await post(baseUrl, "/api/ohsa", {
+      summary: { score: 64, riskLevel: "moderate", recommendations: ["mobility"] }
+    }, authHeader);
+    assert.equal(ohsaRes.status, 201);
+
+    const { res: startRes } = await post(baseUrl, "/api/sessions", {
+      userId: "ignored",
+      sessionId: "shape_sess_1"
+    }, authHeader);
+    assert.equal(startRes.status, 201);
   });
 });

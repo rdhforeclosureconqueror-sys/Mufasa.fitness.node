@@ -9,28 +9,30 @@ function pushEvent(user, command, payload) {
 
 function createSessionService({ userStore }) {
   function startSession({ userId, sessionId, programId = null, exerciseId = null, payload = {} }) {
-    const user = userStore.loadUser(userId);
     const now = Date.now();
     const sid = sessionId || `sess_${now}`;
+    let sessionData = null;
 
-    user.sessions = user.sessions || {};
-    const existing = user.sessions[sid];
-    if (existing && !existing.endedAt) {
-      throw new ApiError("SESSION_ALREADY_ACTIVE", `Session ${sid} already exists and is not completed`, 409);
-    }
+    userStore.updateUser(userId, (user) => {
+      user.sessions = user.sessions || {};
+      const existing = user.sessions[sid];
+      if (existing && !existing.endedAt) {
+        throw new ApiError("SESSION_ALREADY_ACTIVE", `Session ${sid} already exists and is not completed`, 409);
+      }
 
-    const sessionData = {
-      sessionId: sid,
-      programId,
-      exerciseId,
-      startedAt: now,
-      endedAt: null,
-      repUpdates: []
-    };
+      sessionData = {
+        sessionId: sid,
+        programId,
+        exerciseId,
+        startedAt: now,
+        endedAt: null,
+        repUpdates: []
+      };
 
-    user.sessions[sid] = sessionData;
-    pushEvent(user, "fitness.startSession", payload);
-    userStore.saveUser(user);
+      user.sessions[sid] = sessionData;
+      pushEvent(user, "fitness.startSession", payload);
+      return user;
+    });
 
     return {
       sessionId: sid,
@@ -39,63 +41,77 @@ function createSessionService({ userStore }) {
   }
 
   function appendRepUpdate({ userId, sessionId, exerciseId = null, repsThisSet = null, totalReps = null, depthScore = null, goodForm = null, payload = {} }) {
-    const user = userStore.loadUser(userId);
-    user.sessions = user.sessions || {};
+    let repUpdate = null;
+    let repUpdatesCount = 0;
 
-    if (!user.sessions[sessionId]) {
-      throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
-    }
+    userStore.updateUser(userId, (user) => {
+      user.sessions = user.sessions || {};
 
-    if (user.sessions[sessionId].endedAt) {
-      throw new ApiError("SESSION_ALREADY_COMPLETED", `Session ${sessionId} is already completed`, 409);
-    }
+      if (!user.sessions[sessionId]) {
+        throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
+      }
 
-    const repUpdate = {
-      ts: Date.now(),
-      exerciseId,
-      repsThisSet,
-      totalReps,
-      depthScore,
-      goodForm
-    };
+      if (user.sessions[sessionId].endedAt) {
+        throw new ApiError("SESSION_ALREADY_COMPLETED", `Session ${sessionId} is already completed`, 409);
+      }
 
-    user.sessions[sessionId].repUpdates.push(repUpdate);
-    pushEvent(user, "fitness.repUpdate", payload);
-    userStore.saveUser(user);
+      repUpdate = {
+        ts: Date.now(),
+        exerciseId,
+        repsThisSet,
+        totalReps,
+        depthScore,
+        goodForm
+      };
+
+      user.sessions[sessionId].repUpdates = Array.isArray(user.sessions[sessionId].repUpdates)
+        ? user.sessions[sessionId].repUpdates
+        : [];
+      user.sessions[sessionId].repUpdates.push(repUpdate);
+      repUpdatesCount = user.sessions[sessionId].repUpdates.length;
+      pushEvent(user, "fitness.repUpdate", payload);
+      return user;
+    });
 
     return {
       sessionId,
       repUpdate,
-      repUpdatesCount: user.sessions[sessionId].repUpdates.length
+      repUpdatesCount
     };
   }
 
   function completeSession({ userId, sessionId, repsCompleted = 0, exerciseId = null, payload = {} }) {
-    const user = userStore.loadUser(userId);
-    user.sessions = user.sessions || {};
-    const session = user.sessions[sessionId];
+    let endedAt = null;
+    let summary = null;
 
-    if (!session) {
-      throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
-    }
+    userStore.updateUser(userId, (user) => {
+      user.sessions = user.sessions || {};
+      const session = user.sessions[sessionId];
 
-    if (session.endedAt) {
-      throw new ApiError("SESSION_ALREADY_COMPLETED", `Session ${sessionId} is already completed`, 409);
-    }
+      if (!session) {
+        throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
+      }
 
-    session.endedAt = Date.now();
-    session.summary = {
-      repsCompleted,
-      exerciseId
-    };
+      if (session.endedAt) {
+        throw new ApiError("SESSION_ALREADY_COMPLETED", `Session ${sessionId} is already completed`, 409);
+      }
 
-    pushEvent(user, "fitness.endSession", payload);
-    userStore.saveUser(user);
+      session.endedAt = Date.now();
+      session.summary = {
+        repsCompleted,
+        exerciseId
+      };
+
+      endedAt = session.endedAt;
+      summary = session.summary;
+      pushEvent(user, "fitness.endSession", payload);
+      return user;
+    });
 
     return {
       sessionId,
-      endedAt: session.endedAt,
-      summary: session.summary
+      endedAt,
+      summary
     };
   }
 
