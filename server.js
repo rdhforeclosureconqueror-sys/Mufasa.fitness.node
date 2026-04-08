@@ -6,14 +6,22 @@ const path = require("path");
 
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
+const { createAuthTokenLib } = require("./src/lib/authToken");
+const { authContext, requireAuth } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
+const { createUserDataService } = require("./src/services/userDataService");
 const {
   validateSessionCreate,
   validateRepUpdate,
   validateSessionComplete,
   validateLegacySessionCommand
 } = require("./src/validation/sessionValidators");
+const {
+  validateProfileUpsert,
+  validateOhsaSubmission,
+  validateAuthBridge
+} = require("./src/validation/meValidators");
 
 function createApp(options = {}) {
   const app = express();
@@ -48,6 +56,12 @@ function createApp(options = {}) {
   const userStore = createUserStore({ userDir: USER_DIR });
   userStore.ensureDirs();
   const sessionService = createSessionService({ userStore });
+  const userDataService = createUserDataService({ userStore });
+  const authTokenLib = createAuthTokenLib({
+    secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me"
+  });
+
+  app.use(authContext(authTokenLib));
 
   // ---- Static hosting ----
   app.use(express.static(PUBLIC_DIR));
@@ -124,6 +138,30 @@ function createApp(options = {}) {
     }
   });
 
+  // ---- Auth bridge (pilot minimal auth foundation) ----
+  app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
+    const claims = validateAuthBridge(req.body);
+    const token = authTokenLib.issueUserToken({
+      userId: claims.userId,
+      provider: claims.provider,
+      providerSubject: claims.providerSubject
+    });
+
+    return ok(res, req.requestId, {
+      auth: token
+    }, 201);
+  }));
+
+  app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, {
+      userId: req.auth.userId,
+      provider: req.auth.provider,
+      providerSubject: req.auth.providerSubject,
+      issuedAt: req.auth.issuedAt,
+      expiresAt: req.auth.expiresAt
+    });
+  }));
+
   // ---- Exercise DB endpoints ----
   app.get("/api/exercises/index", (_req, res) => {
     const idx = loadExerciseIndex();
@@ -184,19 +222,64 @@ function createApp(options = {}) {
   // ---- Structured Session API (pilot hardening) ----
   app.post("/api/sessions", asyncHandler(async (req, res) => {
     const parsed = validateSessionCreate(req.body);
+    if (req.auth?.userId) {
+      parsed.userId = req.auth.userId;
+    }
     const result = sessionService.startSession(parsed);
     return ok(res, req.requestId, result, 201);
   }));
 
   app.post("/api/sessions/:id/reps", asyncHandler(async (req, res) => {
     const parsed = validateRepUpdate(req.body, req.params.id);
+    if (req.auth?.userId) {
+      parsed.userId = req.auth.userId;
+    }
     const result = sessionService.appendRepUpdate(parsed);
     return ok(res, req.requestId, result, 200);
   }));
 
   app.post("/api/sessions/:id/complete", asyncHandler(async (req, res) => {
     const parsed = validateSessionComplete(req.body, req.params.id);
+    if (req.auth?.userId) {
+      parsed.userId = req.auth.userId;
+    }
     const result = sessionService.completeSession(parsed);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  // ---- Explicit profile / OHSA / history endpoints ----
+  app.get("/api/me/profile", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getProfile(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.put("/api/me/profile", requireAuth, asyncHandler(async (req, res) => {
+    const profilePayload = validateProfileUpsert(req.body);
+    const result = userDataService.upsertProfile({
+      userId: req.auth.userId,
+      profilePayload,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/ohsa", requireAuth, asyncHandler(async (req, res) => {
+    const parsed = validateOhsaSubmission(req.body);
+    const result = userDataService.submitOhsa({
+      userId: req.auth.userId,
+      summary: parsed.summary,
+      source: parsed.source || "api"
+    });
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/me/ohsa", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getOhsaHistory(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/me/history", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getHistory(req.auth.userId);
     return ok(res, req.requestId, result, 200);
   }));
 
@@ -210,8 +293,16 @@ function createApp(options = {}) {
       "fitness.endSession"
     ].includes(command);
 
+    const authUserId = req.auth?.userId || null;
+
     if (isSessionCommand) {
       const { parsed } = validateLegacySessionCommand(req.body);
+      if (authUserId) {
+        if (userId && userId !== authUserId) {
+          throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
+        }
+        parsed.userId = authUserId;
+      }
       let result;
 
       if (command === "fitness.startSession") {
@@ -230,7 +321,7 @@ function createApp(options = {}) {
         legacy: true,
         deprecated: true,
         command,
-        userId,
+        userId: parsed.userId,
         result
       });
     }
@@ -254,8 +345,18 @@ function createApp(options = {}) {
       existing.events = existing.events || [];
       existing.events.push({ command, ts: now, payload });
 
+      if (authUserId && userId !== authUserId) {
+        throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
+      }
+
       if (command === "fitness.saveProfile") {
-        existing.profile = payload?.profile || existing.profile || null;
+        const profilePayload = validateProfileUpsert(payload?.profile || {});
+        const result = userDataService.upsertProfile({
+          userId,
+          profilePayload,
+          source: "legacy-command"
+        });
+        return res.json({ ok: true, saved: true, domain, command, userId: result.userId });
       }
       if (command === "fitness.startSession") {
         existing.sessions = existing.sessions || {};
@@ -281,8 +382,13 @@ function createApp(options = {}) {
         }
       }
       if (command === "fitness.ohsaResult") {
-        existing.ohsa = existing.ohsa || [];
-        existing.ohsa.push({ ...payload, ts: now });
+        const parsed = validateOhsaSubmission(payload || {});
+        const result = userDataService.submitOhsa({
+          userId,
+          summary: parsed.summary,
+          source: "legacy-command"
+        });
+        return res.json({ ok: true, saved: true, domain, command, userId: result.userId });
       }
 
       writeJSON(userPath, existing);
