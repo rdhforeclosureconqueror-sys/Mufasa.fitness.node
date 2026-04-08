@@ -32,41 +32,45 @@ function createUserDataService({ userStore }) {
   }
 
   function upsertProfile({ userId, profilePayload, source = "api" }) {
-    const user = userStore.loadUser(userId);
-    user.profile = normalizeProfile(profilePayload);
-    user.events = user.events || [];
-    user.events.push({
-      command: "fitness.saveProfile",
-      ts: Date.now(),
-      payload: { profile: user.profile, source }
+    const profile = normalizeProfile(profilePayload);
+    userStore.updateUser(userId, (user) => {
+      user.profile = profile;
+      user.events = user.events || [];
+      user.events.push({
+        command: "fitness.saveProfile",
+        ts: Date.now(),
+        payload: { profile: user.profile, source }
+      });
+      return user;
     });
-    userStore.saveUser(user);
 
     return {
       userId,
-      profile: user.profile
+      profile
     };
   }
 
   function submitOhsa({ userId, summary, source = "api" }) {
-    const user = userStore.loadUser(userId);
-    user.ohsa = user.ohsa || [];
-
     const record = {
       ...summary,
       source,
       ts: Date.now()
     };
+    let count = 0;
 
-    user.ohsa.push(record);
-    user.events = user.events || [];
-    user.events.push({ command: "fitness.ohsaResult", ts: Date.now(), payload: { summary: record, source } });
-    userStore.saveUser(user);
+    userStore.updateUser(userId, (user) => {
+      user.ohsa = user.ohsa || [];
+      user.ohsa.push(record);
+      count = user.ohsa.length;
+      user.events = user.events || [];
+      user.events.push({ command: "fitness.ohsaResult", ts: Date.now(), payload: { summary: record, source } });
+      return user;
+    });
 
     return {
       userId,
       latest: record,
-      count: user.ohsa.length
+      count
     };
   }
 
@@ -82,11 +86,12 @@ function createUserDataService({ userStore }) {
 
   function getHistory(userId, { limit = 10 } = {}) {
     const user = userStore.loadUser(userId);
+    const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, Math.floor(limit))) : 10;
     const sessions = Object.values(user.sessions || {});
     const completedSessions = sessions
       .filter(s => !!s.endedAt)
       .sort((a, b) => (b.endedAt || 0) - (a.endedAt || 0))
-      .slice(0, limit)
+      .slice(0, normalizedLimit)
       .map(s => ({
         sessionId: s.sessionId,
         startedAt: s.startedAt,
@@ -97,20 +102,40 @@ function createUserDataService({ userStore }) {
       }));
 
     const recentActivity = (user.events || [])
-      .slice(-limit)
+      .slice(-normalizedLimit)
       .reverse()
       .map(e => ({
         command: e.command,
-        ts: e.ts
+        ts: e.ts,
+        source: e.payload?.source || null
       }));
 
-    const ohsa = (user.ohsa || []).slice(-limit).reverse();
+    const ohsaHistory = (user.ohsa || [])
+      .slice(-normalizedLimit)
+      .reverse()
+      .map(item => ({
+        ts: item.ts,
+        score: item.score ?? null,
+        riskLevel: item.riskLevel ?? null,
+        recommendations: Array.isArray(item.recommendations)
+          ? item.recommendations.slice(0, 5)
+          : []
+      }));
 
     return {
       userId,
+      limits: {
+        itemLimit: normalizedLimit
+      },
+      summary: {
+        totalCompletedSessions: completedSessions.length,
+        totalEvents: (user.events || []).length,
+        totalOhsaSubmissions: (user.ohsa || []).length
+      },
       completedSessions,
       recentActivity,
-      ohsa
+      ohsaHistory,
+      ohsa: ohsaHistory
     };
   }
 

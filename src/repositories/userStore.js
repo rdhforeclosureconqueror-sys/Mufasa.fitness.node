@@ -31,25 +31,65 @@ function createUserStore({ userDir }) {
 
   function loadUser(userId) {
     const p = userPath(userId);
-    if (fs.existsSync(p)) return readJSON(p);
-    const now = Date.now();
-    return { userId, createdAt: now, updatedAt: now, events: [], sessions: {} };
+    if (fs.existsSync(p)) return normalizeUserRecord(readJSON(p), userId);
+    return createEmptyUser(userId);
   }
 
   function saveUser(user) {
     if (!user || !user.userId) {
       throw new ApiError("INVALID_USER_RECORD", "Cannot save invalid user record", 500);
     }
-    user.updatedAt = Date.now();
-    const p = userPath(user.userId);
-    writeJSON(p, user);
-    return user;
+    const normalized = normalizeUserRecord(user, user.userId);
+    normalized.updatedAt = Date.now();
+    const p = userPath(normalized.userId);
+    writeJSON(p, normalized);
+    return normalized;
+  }
+
+  function updateUser(userId, updater) {
+    if (typeof updater !== "function") {
+      throw new ApiError("INVALID_USER_UPDATE", "User update function is required", 500);
+    }
+    const user = loadUser(userId);
+    const updated = updater(user) || user;
+    return saveUser(updated);
+  }
+
+  function createEmptyUser(userId) {
+    const now = Date.now();
+    return {
+      userId,
+      createdAt: now,
+      updatedAt: now,
+      events: [],
+      sessions: {},
+      ohsa: []
+    };
+  }
+
+  function normalizeUserRecord(user, userId) {
+    const now = Date.now();
+    const normalized = (user && typeof user === "object" && !Array.isArray(user))
+      ? { ...user }
+      : {};
+
+    normalized.userId = normalized.userId || userId;
+    normalized.createdAt = Number.isFinite(normalized.createdAt) ? normalized.createdAt : now;
+    normalized.updatedAt = Number.isFinite(normalized.updatedAt) ? normalized.updatedAt : now;
+    normalized.events = Array.isArray(normalized.events) ? normalized.events : [];
+    normalized.sessions = (normalized.sessions && typeof normalized.sessions === "object" && !Array.isArray(normalized.sessions))
+      ? normalized.sessions
+      : {};
+    normalized.ohsa = Array.isArray(normalized.ohsa) ? normalized.ohsa : [];
+
+    return normalized;
   }
 
   return {
     ensureDirs,
     loadUser,
     saveUser,
+    updateUser,
     userPath
   };
 }
