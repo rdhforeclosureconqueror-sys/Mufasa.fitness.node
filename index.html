@@ -458,6 +458,7 @@
   </div>
 
   <script src="/public/backend-read.js"></script>
+  <script src="/public/session-write.js"></script>
 
   <script>
     console.log("🔥 Ma’at 2.0 coach script initialized");
@@ -815,6 +816,15 @@
     function isAuthUnavailable(err) {
       return err?.code === "MISSING_AUTH_TOKEN" || err?.code === "UNAUTHORIZED";
     }
+
+    const SESSION_WRITE_CLIENT = window.MufasaSessionWrite?.createSessionWriteClient({
+      baseUrl: NODE_BASE_URL,
+      commandUrl: NODE_COMMAND_URL,
+      getUserId: () => USER_ID,
+      getAuthToken: () => BACKEND_READ_CLIENT?.getAuthToken?.(),
+      repDebounceMs: 500,
+      logger: console
+    });
 
     function parseHeightCm(heightValue) {
       if (heightValue == null) return null;
@@ -1373,37 +1383,18 @@ function toggleListening() {
     }
 
     function sendStartSessionToNode() {
-      postAuthenticatedJSON(NODE_SESSION_START_URL, {
-        method: "POST",
-        body: { sessionId, programId: null, exerciseId: EXERCISE_ID }
-      }).catch((err) => {
-        if (!isAuthUnavailable(err)) {
-          console.warn("Session start authenticated API failed; falling back to /command.", err);
-        }
-        return sendToNode({
-          domain: "fitness",
-          command: "fitness.startSession",
-          userId: USER_ID,
-          payload: { sessionId, programId: null, exerciseId: EXERCISE_ID, ts: Date.now() }
-        });
+      SESSION_WRITE_CLIENT?.startSession({
+        sessionId,
+        programId: null,
+        exerciseId: EXERCISE_ID
       });
     }
 
     function sendEndSessionToNode() {
       if (!sessionId) return;
-      postAuthenticatedJSON(`${NODE_SESSION_START_URL}/${encodeURIComponent(sessionId)}/complete`, {
-        method: "POST",
-        body: { repsCompleted: totalReps, exerciseId: EXERCISE_ID }
-      }).catch((err) => {
-        if (!isAuthUnavailable(err)) {
-          console.warn("Session completion authenticated API failed; falling back to /command.", err);
-        }
-        return sendToNode({
-          domain: "fitness",
-          command: "fitness.endSession",
-          userId: USER_ID,
-          payload: { sessionId, repsCompleted: totalReps, exerciseId: EXERCISE_ID, ts: Date.now() }
-        });
+      SESSION_WRITE_CLIENT?.completeSession(sessionId, {
+        repsCompleted: totalReps,
+        exerciseId: EXERCISE_ID
       });
 
       if (calendarMeta) {
@@ -1418,22 +1409,18 @@ function toggleListening() {
 
     function sendRepToNode(depthScore) {
       const now = Date.now();
-      if (now - lastNodeRepSentAt < 500) return;
+      if (!sessionId) return;
+      if (now - lastNodeRepSentAt < 120) return;
       lastNodeRepSentAt = now;
 
-      // Rep updates remain on legacy /command for this bounded phase to avoid high-frequency API churn risk.
-      sendToNode({
-        domain: "fitness",
-        command: "fitness.repUpdate",
-        userId: USER_ID,
-        payload: {
-          sessionId,
-          exerciseId: EXERCISE_ID,
-          repsThisSet: repCount,
-          totalReps,
-          depthScore,
-          ts: now
-        }
+      SESSION_WRITE_CLIENT?.enqueueRepUpdate({
+        sessionId,
+        exerciseId: EXERCISE_ID,
+        repsThisSet: repCount,
+        totalReps,
+        depthScore,
+        goodForm: lastGoodForm,
+        ts: now
       });
     }
 
