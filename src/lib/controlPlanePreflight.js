@@ -62,13 +62,29 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [] }
     warnings.push("LEGACY_FALLBACK_ENABLED=false while explicit fallback enforcement flags are set; these flags are inert until fallback is enabled.");
   }
 
+  const manualBridgeEnabled = env.AUTH_BRIDGE_ALLOW_MANUAL !== "false";
+  const unverifiedGoogleEnabled = env.AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE !== "false";
+  const googleClientId = String(env.GOOGLE_OAUTH_CLIENT_ID || "").trim();
+
+  if (manualBridgeEnabled) {
+    warnings.push("AUTH_BRIDGE_ALLOW_MANUAL is enabled; manual identity path is low-trust.");
+  }
+  if (unverifiedGoogleEnabled) {
+    warnings.push("AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE is enabled; Google claims may be unverified.");
+  }
+  if (!unverifiedGoogleEnabled && !googleClientId) {
+    issues.push("GOOGLE_OAUTH_CLIENT_ID is required when AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE=false.");
+  }
+
   return {
     ok: issues.length === 0,
     issues: [...new Set(issues)],
     warnings: [...new Set(warnings)],
     summary: {
       enforceableActionCount: enforceableActions.length,
-      invalidActionCount: invalidActions.length
+      invalidActionCount: invalidActions.length,
+      manualBridgeEnabled,
+      unverifiedGoogleEnabled
     }
   };
 }

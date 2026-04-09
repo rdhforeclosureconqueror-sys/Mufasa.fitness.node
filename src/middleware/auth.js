@@ -25,6 +25,8 @@ function authContext(authTokenLib, authorizationResolver = null) {
       userId: claims.sub,
       provider: claims.provider,
       providerSubject: claims.providerSubject,
+      providerVerified: Boolean(claims.providerVerified),
+      identityClass: claims.identityClass || "manual_unverified",
       issuedAt: claims.iat,
       expiresAt: claims.exp
     };

@@ -47,6 +47,56 @@ Persistence (lightweight, append-only where applicable):
 - enforcement overrides: `data/ops/enforcement-overrides.json`
 - admin/control-plane audit log: `data/ops/admin-audit.ndjson`
 
+
+## Identity trust hardening (pilot-bounded)
+
+Auth bridge now separates identity classes:
+- `provider_verified`: Google OIDC token verified server-side via tokeninfo/JWT verifier hook.
+- `provider_unverified`: Google claim-only bridge path (kept for compatibility).
+- `manual_unverified`: manual userId bridge path.
+
+Bridge controls:
+- `AUTH_BRIDGE_ALLOW_MANUAL` (`true` default)
+- `AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE` (`true` default)
+- `GOOGLE_OAUTH_CLIENT_ID` (required when unverified Google path is disabled)
+
+`POST /api/auth/bridge` accepts:
+- manual: `{ userId }`
+- verified Google: `{ googleIdToken, googleSub?, googleEmail? }`
+- compatibility Google (if allowed): `{ googleSub }` or `{ googleEmail }`
+
+`/api/me` now returns identity trust fields: `providerVerified` and `identityClass`.
+
+Temporary trust limitation kept intentionally for pilot:
+- if `AUTH_BRIDGE_ALLOW_MANUAL=true` or `AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE=true`, low-trust bridge paths still exist and should be restricted operationally.
+
+## Token/session hardening (pilot-bounded)
+
+Auth token checks now enforce:
+- minimum secret length (`AUTH_TOKEN_MIN_SECRET_LENGTH`, default `16`)
+- bounded token lifetime (`AUTH_TOKEN_MAX_TTL_MS`)
+- clock skew handling (`AUTH_TOKEN_CLOCK_SKEW_MS`, default `5000`)
+- strict header validation (`alg=HS256`, `typ=MUFASA`)
+- `jti` issuance for per-token lifecycle tracking hooks
+
+Invalid/expired tokens now include `WWW-Authenticate: Bearer ... invalid_token` in 401 responses.
+
+## Deployment/pipeline automation hooks
+
+Machine-readable outputs are available for automation:
+- `npm run ops:preflight -- --json`
+- `npm run ops:verify-audit -- --json`
+- `npm run ops:pilot-checks` (aggregates both checks as JSON and exits non-zero on failure)
+
+Expected pass/fail behavior:
+- **pass**: `ok=true` and process exit `0`
+- **fail**: `ok=false` and process exit `1`, with `issues` or check-level `stderr`
+
+Recommended deployment gate (lightweight):
+1. run `npm run ops:pilot-checks`
+2. block rollout if exit is non-zero
+3. archive emitted JSON into deploy logs/artifacts for operator review
+
 ## Control-plane hardening additions
 
 ### Audit retention / rotation

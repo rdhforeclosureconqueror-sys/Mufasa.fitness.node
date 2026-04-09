@@ -29,6 +29,7 @@ const { createAdminAuditLog, summarizeActor } = require("./src/lib/adminAuditLog
 const { validateAuthorizationConfigShape, validateParsedEnforcementConfig } = require("./src/lib/authzEnforcementValidation");
 const { createControlPlaneAlertEmitter, ALERT_TYPES } = require("./src/lib/controlPlaneAlerts");
 const { runControlPlanePreflight } = require("./src/lib/controlPlanePreflight");
+const { resolveAuthBridgeIdentity } = require("./src/lib/providerIdentity");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -151,7 +152,10 @@ function createApp(options = {}) {
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
   const authTokenLib = createAuthTokenLib({
-    secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me"
+    secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me",
+    minSecretLength: Number(process.env.AUTH_TOKEN_MIN_SECRET_LENGTH || 16),
+    maxTtlMs: Number(process.env.AUTH_TOKEN_MAX_TTL_MS || 1000 * 60 * 60 * 24 * 14),
+    clockSkewMs: Number(process.env.AUTH_TOKEN_CLOCK_SKEW_MS || 5000)
   });
 
   const startupWarnings = [];
@@ -629,14 +633,29 @@ function createApp(options = {}) {
   // ---- Auth bridge (pilot minimal auth foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const claims = validateAuthBridge(req.body);
+    const resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
+      env: process.env,
+      googleIdentityVerifier: options.googleIdentityVerifier
+    });
     const token = authTokenLib.issueUserToken({
-      userId: claims.userId,
-      provider: claims.provider,
-      providerSubject: claims.providerSubject
+      userId: resolvedIdentity.userId,
+      provider: resolvedIdentity.provider,
+      providerSubject: resolvedIdentity.providerSubject,
+      providerVerified: resolvedIdentity.providerVerified,
+      identityClass: resolvedIdentity.identityClass
     });
 
     return ok(res, req.requestId, {
-      auth: token
+      auth: token,
+      identity: {
+        userId: resolvedIdentity.userId,
+        provider: resolvedIdentity.provider,
+        providerVerified: resolvedIdentity.providerVerified,
+        identityClass: resolvedIdentity.identityClass,
+        trustNotes: resolvedIdentity.providerVerified
+          ? []
+          : ["Identity is not provider-verified; keep scoped to low-trust pilot usage."]
+      }
     }, 201);
   }));
 
@@ -648,7 +667,9 @@ function createApp(options = {}) {
       issuedAt: req.auth.issuedAt,
       expiresAt: req.auth.expiresAt,
       role: req.authz?.role || "user",
-      isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin)
+      isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin),
+      providerVerified: Boolean(req.auth.providerVerified),
+      identityClass: req.auth.identityClass || "manual_unverified"
     });
   }));
 
@@ -929,6 +950,9 @@ function createApp(options = {}) {
   app.use((err, req, res, _next) => {
     const requestId = req.requestId || "unknown";
     if (err instanceof ApiError) {
+      if (err.status === 401) {
+        res.setHeader("WWW-Authenticate", "Bearer realm=\"mufasa\", error=\"invalid_token\"");
+      }
       return fail(res, requestId, {
         code: err.code,
         message: err.message,
