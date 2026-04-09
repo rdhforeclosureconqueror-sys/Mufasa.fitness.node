@@ -16,7 +16,8 @@
       repDebounceMs = 450,
       logger = console,
       observabilityStorageKey = "maatWriteObservabilityV1",
-      onObservabilityUpdate
+      onObservabilityUpdate,
+      onFallbackBlocked
     } = options || {};
 
     if (!baseUrl) throw new Error("baseUrl_required");
@@ -29,7 +30,9 @@
     const observability = {
       explicitSuccess: Object.fromEntries(routeActions.map((a) => [a, 0])),
       fallbackToLegacy: Object.fromEntries(routeActions.map((a) => [a, 0])),
+      blockedFallback: Object.fromEntries(routeActions.map((a) => [a, 0])),
       lastFallback: null,
+      lastBlockedFallback: null,
       updatedAt: null
     };
 
@@ -74,6 +77,18 @@
       };
       persistObservability();
       return reason;
+    }
+
+    function trackFallbackBlocked(action, err) {
+      if (!(action in observability.blockedFallback)) return;
+      observability.blockedFallback[action] += 1;
+      observability.lastBlockedFallback = {
+        action,
+        reason: err?.payload?.error?.code || err?.code || "LEGACY_FALLBACK_BLOCKED",
+        status: err?.status ?? null,
+        at: new Date().toISOString()
+      };
+      persistObservability();
     }
 
     function getObservabilitySnapshot() {
@@ -133,9 +148,9 @@
       return payload?.data || null;
     }
 
-    function sendLegacyCommand(command, payload) {
+    async function sendLegacyCommand(command, payload) {
       const fallbackReason = payload?._fallbackReason || "unspecified";
-      return fetch(commandUrl, {
+      const res = await fetch(commandUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,6 +171,30 @@
           }
         })
       });
+
+      let body = null;
+      try {
+        body = await res.json();
+      } catch (_) {}
+      if (!res.ok || body?.ok === false) {
+        const err = new Error(body?.error?.message || body?.error || `legacy_request_failed_${res.status}`);
+        err.code = body?.error?.code || "LEGACY_REQUEST_FAILED";
+        err.status = res.status;
+        err.payload = body;
+        throw err;
+      }
+      return body;
+    }
+
+    function maybeHandleBlockedFallback(action, err) {
+      if (!(err?.code === "LEGACY_FALLBACK_BLOCKED" || err?.payload?.error?.code === "LEGACY_FALLBACK_BLOCKED")) return false;
+      trackFallbackBlocked(action, err);
+      const message = `Unable to save ${action.replace("_", " ")} via legacy fallback. Please reconnect and retry.`;
+      if (typeof onFallbackBlocked === "function") {
+        onFallbackBlocked({ action, message, errorCode: "LEGACY_FALLBACK_BLOCKED" });
+      }
+      logger.warn(message, err);
+      return true;
     }
 
     async function startSession(payload) {
@@ -165,7 +204,11 @@
       } catch (err) {
         logger.warn("Session start API unavailable; using /command fallback.", err);
         const reason = trackFallback("session_start", err);
-        await sendLegacyCommand("fitness.startSession", { ...payload, _fallbackReason: reason });
+        try {
+          await sendLegacyCommand("fitness.startSession", { ...payload, _fallbackReason: reason });
+        } catch (fallbackErr) {
+          if (!maybeHandleBlockedFallback("session_start", fallbackErr)) throw fallbackErr;
+        }
       }
     }
 
@@ -177,7 +220,11 @@
       } catch (err) {
         logger.warn("Session complete API unavailable; using /command fallback.", err);
         const reason = trackFallback("session_complete", err);
-        await sendLegacyCommand("fitness.endSession", { sessionId, ...payload, _fallbackReason: reason });
+        try {
+          await sendLegacyCommand("fitness.endSession", { sessionId, ...payload, _fallbackReason: reason });
+        } catch (fallbackErr) {
+          if (!maybeHandleBlockedFallback("session_complete", fallbackErr)) throw fallbackErr;
+        }
       }
     }
 
@@ -200,7 +247,11 @@
       } catch (err) {
         logger.warn("Rep update API unavailable; using /command fallback.", err);
         const reason = trackFallback("rep_update", err);
-        await sendLegacyCommand("fitness.repUpdate", { ...repPayload, _fallbackReason: reason });
+        try {
+          await sendLegacyCommand("fitness.repUpdate", { ...repPayload, _fallbackReason: reason });
+        } catch (fallbackErr) {
+          if (!maybeHandleBlockedFallback("rep_update", fallbackErr)) throw fallbackErr;
+        }
       }
     }
 
@@ -240,6 +291,7 @@
       enqueueRepUpdate,
       trackExplicitSuccess,
       trackFallback,
+      trackFallbackBlocked,
       getObservabilitySnapshot,
       getWriteModeStatus,
       _classifyFallbackReasonForTests: classifyFallbackReason,
