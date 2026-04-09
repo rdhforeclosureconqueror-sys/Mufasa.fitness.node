@@ -88,7 +88,22 @@ test("enforcement override store saves and reloads valid shape", () => {
   const loaded = store.load();
 
   assert.equal(loaded.loaded, true);
+  assert.equal(loaded.version, 1);
   assert.deepEqual(loaded.overrides, { session_start: true, rep_update: false });
+});
+
+test("enforcement override store rejects stale version writes", () => {
+  const tmpRoot = makeTmpRoot();
+  const filePath = path.join(tmpRoot, "data", "ops", "enforcement-overrides.json");
+  const store = createEnforcementStateStore({ filePath, enforceableActions: ENFORCEABLE_ACTIONS });
+
+  const first = store.save({ session_start: true });
+  assert.equal(first.version, 1);
+
+  assert.throws(
+    () => store.save({ session_start: false }, { ifVersion: 0 }),
+    (err) => err && err.code === "VERSION_CONFLICT" && err.details.currentVersion === 1
+  );
 });
 
 test("invalid persisted override data is ignored safely", () => {
@@ -123,6 +138,47 @@ test("admin audit log appends entries and preserves append-only order", () => {
   assert.equal(entries.length, 2);
   assert.equal(entries[0].action, "enforcement_config_read");
   assert.equal(entries[1].action, "enforcement_config_update");
+  assert.equal(typeof entries[1].hash, "string");
+  assert.equal(entries[1].hashPrev, entries[0].hash);
+});
+
+test("admin audit log rotates with bounded retention and reads across archives", () => {
+  const tmpRoot = makeTmpRoot();
+  const filePath = path.join(tmpRoot, "data", "ops", "admin-audit.ndjson");
+  const log = createAdminAuditLog({ filePath, maxBytes: 220, maxArchives: 2 });
+
+  for (let i = 0; i < 10; i += 1) {
+    log.appendEvent({
+      category: "enforcement",
+      action: `rotation_${i}`,
+      status: "ok",
+      details: { idx: i, pad: "x".repeat(20) }
+    });
+  }
+
+  assert.equal(fs.existsSync(filePath), true);
+  assert.equal(fs.existsSync(`${filePath}.1`), true);
+  const combined = log.readRecentEntries(20);
+  assert.ok(combined.length >= 2);
+});
+
+test("admin audit tamper evidence detects modified entries", () => {
+  const tmpRoot = makeTmpRoot();
+  const filePath = path.join(tmpRoot, "data", "ops", "admin-audit.ndjson");
+  const log = createAdminAuditLog({ filePath });
+  log.appendEvent({ category: "enforcement", action: "safe_write", status: "ok" });
+  log.appendEvent({ category: "enforcement", action: "safe_read", status: "ok" });
+
+  const lines = fs.readFileSync(filePath, "utf8").trim().split("\n");
+  const tampered = JSON.parse(lines[1]);
+  tampered.action = "tampered_action";
+  lines[1] = JSON.stringify(tampered);
+  fs.writeFileSync(filePath, `${lines.join("\n")}\n`);
+
+  const page = log.readRecentPage({ limit: 10 });
+  assert.equal(page.integrity.enabled, true);
+  assert.equal(page.integrity.verified, false);
+  assert.ok(page.integrity.issues.some((issue) => issue.includes("hash_mismatch")));
 });
 
 test("startup restores persisted overrides and reports recovery in health", async (t) => {
@@ -162,7 +218,27 @@ test("startup restores persisted overrides and reports recovery in health", asyn
   const health = await get(baseUrl2, "/health");
   assert.equal(health.res.status, 200);
   assert.equal(health.json.persistedOverrideRecovery.loaded, true);
+  assert.equal(health.json.persistedOverrideRecovery.version, 1);
   assert.equal(health.json.actionFallbackEnforcement.effective.enabledByAction.session_start, true);
+});
+
+test("strict startup mode fails fast for unrecoverable persisted override state", (t) => {
+  const prevStrict = process.env.CONTROL_PLANE_STRICT_STARTUP;
+  process.env.CONTROL_PLANE_STRICT_STARTUP = "true";
+  t.after(() => {
+    if (prevStrict == null) delete process.env.CONTROL_PLANE_STRICT_STARTUP;
+    else process.env.CONTROL_PLANE_STRICT_STARTUP = prevStrict;
+  });
+
+  const rootDir = makeTmpRoot();
+  const filePath = path.join(rootDir, "data", "ops", "enforcement-overrides.json");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify({ version: 1, overrides: { unknown_action: true } }));
+
+  assert.throws(
+    () => createApp({ rootDir }),
+    (err) => err && err.code === "STRICT_STARTUP_FAILED" && Array.isArray(err.issues) && err.issues.length > 0
+  );
 });
 
 test("authorization/enforcement config validation surfaces obvious invalid action names", () => {
@@ -188,12 +264,31 @@ test("ops surfaces expose recent audit summary after enforcement access", async 
 
   await withServer(t, async ({ baseUrl }) => {
     const adminToken = await authBridge(baseUrl, { userId: "audit_surface_admin" });
+    const update1 = await put(baseUrl, "/api/ops/enforcement-config", {
+      enabledByAction: { session_start: true },
+      ifVersion: 0
+    }, { authorization: `Bearer ${adminToken}` });
+    assert.equal(update1.res.status, 200);
+    const updateConflict = await put(baseUrl, "/api/ops/enforcement-config", {
+      enabledByAction: { session_start: false },
+      ifVersion: 0
+    }, { authorization: `Bearer ${adminToken}` });
+    assert.equal(updateConflict.res.status, 409);
+    assert.equal(updateConflict.json.error.code, "VERSION_CONFLICT");
+
     const read = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${adminToken}` });
     assert.equal(read.res.status, 200);
     assert.ok(read.json.adminAudit.recentCount >= 1);
+    assert.equal(read.json.actionFallbackEnforcement.persistedVersion, 1);
 
     const obs = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
     assert.equal(obs.res.status, 200);
     assert.ok(obs.json.adminAudit.recentCount >= 1);
+
+    const auditTail = await get(baseUrl, "/api/ops/admin-audit?limit=5", { authorization: `Bearer ${adminToken}` });
+    assert.equal(auditTail.res.status, 200);
+    assert.ok(Array.isArray(auditTail.json.audit.entries));
+    assert.ok(auditTail.json.audit.entries.length >= 1);
+    assert.equal(auditTail.json.audit.integrity.enabled, true);
   });
 });

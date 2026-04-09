@@ -87,7 +87,10 @@ function createApp(options = {}) {
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
   const auditLog = createAdminAuditLog({
-    filePath: path.join(rootDir, "data", "ops", "admin-audit.ndjson")
+    filePath: path.join(rootDir, "data", "ops", "admin-audit.ndjson"),
+    maxBytes: Number(process.env.ADMIN_AUDIT_MAX_BYTES || 512 * 1024),
+    maxArchives: Number(process.env.ADMIN_AUDIT_MAX_ARCHIVES || 4),
+    hashChain: process.env.ADMIN_AUDIT_HASH_CHAIN !== "false"
   });
   const legacyDependencyCatalog = {
     profile: ["fitness.saveProfile"],
@@ -145,6 +148,8 @@ function createApp(options = {}) {
   });
 
   const startupWarnings = [];
+  const strictStartupIssues = [];
+  const strictStartupEnabled = process.env.CONTROL_PLANE_STRICT_STARTUP === "true";
   const usingDefaultAuthSecret = !process.env.AUTH_TOKEN_SECRET || process.env.AUTH_TOKEN_SECRET === "dev-only-secret-change-me";
   if (usingDefaultAuthSecret) {
     startupWarnings.push("AUTH_TOKEN_SECRET is missing or default; authenticated writes are not production-safe.");
@@ -158,16 +163,35 @@ function createApp(options = {}) {
   if (actionEnforcement.enforcedActions.length > 0) {
     startupWarnings.push(`Action-level /command enforcement active for: ${actionEnforcement.enforcedActions.join(", ")}`);
   }
-  startupWarnings.push(...validateAuthorizationConfigShape(authorizationConfig));
-  startupWarnings.push(...validateParsedEnforcementConfig(baseActionEnforcement, ENFORCEABLE_ACTIONS));
+  const authzWarnings = validateAuthorizationConfigShape(authorizationConfig);
+  const enforcementWarnings = validateParsedEnforcementConfig(baseActionEnforcement, ENFORCEABLE_ACTIONS);
+  startupWarnings.push(...authzWarnings);
+  startupWarnings.push(...enforcementWarnings);
   startupWarnings.push(...persistedOverrideState.warnings);
   if (persistedOverrideState.found && persistedOverrideState.loaded) {
     startupWarnings.push("Recovered persisted enforcement overrides from disk.");
+  }
+  if (authzWarnings.length > 0) {
+    strictStartupIssues.push(`Authorization config warnings: ${authzWarnings.join(" | ")}`);
+  }
+  if (baseActionEnforcement.invalidActions.length > 0) {
+    strictStartupIssues.push(
+      `Invalid enforcement action names in LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS: ${baseActionEnforcement.invalidActions.join(", ")}`
+    );
+  }
+  if (persistedOverrideState.found && !persistedOverrideState.loaded) {
+    strictStartupIssues.push("Persisted enforcement overrides could not be loaded safely.");
   }
   if (startupWarnings.length) {
     for (const warning of startupWarnings) {
       console.warn("[startup-warning]", warning);
     }
+  }
+  if (strictStartupEnabled && strictStartupIssues.length > 0) {
+    const strictError = new Error("CONTROL_PLANE_STRICT_STARTUP is enabled and strict startup checks failed.");
+    strictError.code = "STRICT_STARTUP_FAILED";
+    strictError.issues = strictStartupIssues;
+    throw strictError;
   }
 
   app.use(authContext(authTokenLib, authorizationResolver));
@@ -195,6 +219,7 @@ function createApp(options = {}) {
     return {
       configuredDefaults: baseActionEnforcement.enabledByAction,
       persistedOverrides: persistedOverrideState.loaded ? persistedOverrideState.overrides : {},
+      persistedVersion: Number.isInteger(persistedOverrideState.version) ? persistedOverrideState.version : 0,
       runtimeOverrides: { ...runtimeEnforcementOverrides },
       effective: actionEnforcement
     };
@@ -279,7 +304,13 @@ function createApp(options = {}) {
       persistedOverrideRecovery: {
         found: persistedOverrideState.found,
         loaded: persistedOverrideState.loaded,
+        version: Number.isInteger(persistedOverrideState.version) ? persistedOverrideState.version : 0,
         warnings: persistedOverrideState.warnings
+      },
+      strictStartup: {
+        enabled: strictStartupEnabled,
+        passed: strictStartupIssues.length === 0,
+        issues: strictStartupIssues
       },
       adminAudit: auditLog.recentSummary(10),
       degraded: startupWarnings.length > 0,
@@ -302,7 +333,13 @@ function createApp(options = {}) {
         persistedOverrideRecovery: {
           found: persistedOverrideState.found,
           loaded: persistedOverrideState.loaded,
+          version: Number.isInteger(persistedOverrideState.version) ? persistedOverrideState.version : 0,
           warnings: persistedOverrideState.warnings
+        },
+        strictStartup: {
+          enabled: strictStartupEnabled,
+          passed: strictStartupIssues.length === 0,
+          issues: strictStartupIssues
         },
         adminAudit: auditLog.recentSummary(20),
         startupWarnings,
@@ -329,9 +366,27 @@ function createApp(options = {}) {
         persistedOverrideRecovery: {
           found: persistedOverrideState.found,
           loaded: persistedOverrideState.loaded,
+          version: Number.isInteger(persistedOverrideState.version) ? persistedOverrideState.version : 0,
           warnings: persistedOverrideState.warnings
         },
         adminAudit: auditLog.recentSummary(10)
+      });
+    }
+  );
+
+  app.get(
+    "/api/ops/admin-audit",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      const limit = Number.parseInt(String(req.query.limit ?? ""), 10);
+      const before = Number.parseInt(String(req.query.before ?? ""), 10);
+      const page = auditLog.readRecentPage({
+        limit: Number.isFinite(limit) ? limit : 25,
+        before: Number.isFinite(before) ? before : 0
+      });
+      return res.json({
+        ok: true,
+        audit: page
       });
     }
   );
@@ -341,6 +396,7 @@ function createApp(options = {}) {
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
     asyncHandler(async (req, res) => {
       const candidate = req.body?.enabledByAction;
+      const ifVersion = req.body?.ifVersion;
       if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
         throw new ApiError("VALIDATION_ERROR", "enabledByAction object is required", 400);
       }
@@ -352,15 +408,27 @@ function createApp(options = {}) {
         if (typeof value !== "boolean") {
           throw new ApiError("VALIDATION_ERROR", `enabledByAction['${action}'] must be boolean`, 400);
         }
-        runtimeEnforcementOverrides[action] = value;
       }
-
+      const proposedOverrides = { ...runtimeEnforcementOverrides, ...candidate };
+      let saveResult;
+      try {
+        saveResult = enforcementOverrideStore.save(proposedOverrides, { ifVersion });
+      } catch (error) {
+        if (error.code === "VERSION_CONFLICT") {
+          throw new ApiError("VERSION_CONFLICT", error.message, 409, error.details);
+        }
+        if (error.code === "INVALID_IF_VERSION") {
+          throw new ApiError("VALIDATION_ERROR", error.message, 400);
+        }
+        throw error;
+      }
+      Object.assign(runtimeEnforcementOverrides, proposedOverrides);
       actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
       writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
-      enforcementOverrideStore.save(runtimeEnforcementOverrides);
       persistedOverrideState.loaded = true;
       persistedOverrideState.found = true;
       persistedOverrideState.overrides = { ...runtimeEnforcementOverrides };
+      persistedOverrideState.version = saveResult.version;
       persistedOverrideState.warnings = [];
 
       auditLog.appendEvent({
@@ -370,12 +438,15 @@ function createApp(options = {}) {
         actor: summarizeActor(req),
         details: {
           updatedActions: Object.keys(candidate),
+          ifVersion: ifVersion ?? null,
+          newVersion: saveResult.version,
           effectiveEnabledByAction: actionEnforcement.enabledByAction
         }
       });
 
       return ok(res, req.requestId, {
         actionFallbackEnforcement: currentEnforcementView(),
+        currentVersion: saveResult.version,
         updatedActions: Object.keys(candidate)
       }, 200);
     })
