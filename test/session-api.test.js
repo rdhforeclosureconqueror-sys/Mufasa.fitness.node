@@ -422,7 +422,7 @@ test("legacy /command fallback can be blocked per action while others stay compa
 
     const adminToken = await authBridge(baseUrl, { userId: "enforce_admin" });
     const { json: obs } = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
-    assert.equal(obs.actionFallbackEnforcement.enabledByAction.session_complete, true);
+    assert.equal(obs.actionFallbackEnforcement.effective.enabledByAction.session_complete, true);
     assert.equal(obs.writes.enforcement.blocked.byAction.session_complete, 1);
     assert.equal(obs.writes.legacyFallback.byAction.session_start, 1);
     assert.equal(obs.writes.legacyFallback.byAction.session_complete, 0);
@@ -708,15 +708,15 @@ test("admin can update enforcement config and rep_update remains unenforced by d
 
     const getBefore = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${adminToken}` });
     assert.equal(getBefore.res.status, 200);
-    assert.equal(getBefore.json.actionFallbackEnforcement.enabledByAction.session_complete, true);
-    assert.equal(getBefore.json.actionFallbackEnforcement.enabledByAction.rep_update, false);
+    assert.equal(getBefore.json.actionFallbackEnforcement.effective.enabledByAction.session_complete, true);
+    assert.equal(getBefore.json.actionFallbackEnforcement.effective.enabledByAction.rep_update, false);
 
     const putRes = await put(baseUrl, "/api/ops/enforcement-config", {
       enabledByAction: { session_start: true }
     }, { authorization: `Bearer ${adminToken}` });
     assert.equal(putRes.res.status, 200);
-    assert.equal(putRes.json.data.actionFallbackEnforcement.enabledByAction.session_start, true);
-    assert.equal(putRes.json.data.actionFallbackEnforcement.enabledByAction.rep_update, false);
+    assert.equal(putRes.json.data.actionFallbackEnforcement.effective.enabledByAction.session_start, true);
+    assert.equal(putRes.json.data.actionFallbackEnforcement.effective.enabledByAction.rep_update, false);
   });
 });
 

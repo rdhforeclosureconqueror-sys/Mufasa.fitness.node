@@ -24,6 +24,9 @@ const {
 } = require("./src/validation/meValidators");
 const { createWriteObservability, mapRouteAction } = require("./src/lib/writeObservability");
 const { createAuthorizationResolver, parseAuthorizationConfig } = require("./src/lib/authorization");
+const { createEnforcementStateStore } = require("./src/lib/enforcementStateStore");
+const { createAdminAuditLog, summarizeActor } = require("./src/lib/adminAuditLog");
+const { validateAuthorizationConfigShape, validateParsedEnforcementConfig } = require("./src/lib/authzEnforcementValidation");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -36,6 +39,7 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
 function parseActionEnforcementFromEnv(env = process.env) {
   const enabledByAction = Object.fromEntries(ENFORCEABLE_ACTIONS.map((action) => [action, false]));
   enabledByAction.session_complete = true;
+  const invalidActions = [];
 
   const list = String(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS || "")
     .split(",")
@@ -43,6 +47,7 @@ function parseActionEnforcementFromEnv(env = process.env) {
     .filter(Boolean);
   for (const action of list) {
     if (action in enabledByAction) enabledByAction[action] = true;
+    else invalidActions.push(action);
   }
 
   for (const action of ENFORCEABLE_ACTIONS) {
@@ -53,7 +58,8 @@ function parseActionEnforcementFromEnv(env = process.env) {
 
   return {
     enabledByAction,
-    enforcedActions: ENFORCEABLE_ACTIONS.filter((action) => enabledByAction[action])
+    enforcedActions: ENFORCEABLE_ACTIONS.filter((action) => enabledByAction[action]),
+    invalidActions
   };
 }
 
@@ -80,6 +86,9 @@ function createApp(options = {}) {
 
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
+  const auditLog = createAdminAuditLog({
+    filePath: path.join(rootDir, "data", "ops", "admin-audit.ndjson")
+  });
   const legacyDependencyCatalog = {
     profile: ["fitness.saveProfile"],
     session_start: ["fitness.startSession"],
@@ -89,10 +98,19 @@ function createApp(options = {}) {
   };
   const baseActionEnforcement = parseActionEnforcementFromEnv(process.env);
   const runtimeEnforcementOverrides = {};
+  const enforcementOverrideStore = createEnforcementStateStore({
+    filePath: path.join(rootDir, "data", "ops", "enforcement-overrides.json"),
+    enforceableActions: ENFORCEABLE_ACTIONS
+  });
+  const persistedOverrideState = enforcementOverrideStore.load();
+  if (persistedOverrideState.loaded) {
+    Object.assign(runtimeEnforcementOverrides, persistedOverrideState.overrides);
+  }
   let actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
   writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
 
-  const authorizationResolver = createAuthorizationResolver(parseAuthorizationConfig(process.env));
+  const authorizationConfig = parseAuthorizationConfig(process.env);
+  const authorizationResolver = createAuthorizationResolver(authorizationConfig);
   writeObservability.setAuthorizationState(authorizationResolver.describe());
 
   const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
@@ -140,6 +158,12 @@ function createApp(options = {}) {
   if (actionEnforcement.enforcedActions.length > 0) {
     startupWarnings.push(`Action-level /command enforcement active for: ${actionEnforcement.enforcedActions.join(", ")}`);
   }
+  startupWarnings.push(...validateAuthorizationConfigShape(authorizationConfig));
+  startupWarnings.push(...validateParsedEnforcementConfig(baseActionEnforcement, ENFORCEABLE_ACTIONS));
+  startupWarnings.push(...persistedOverrideState.warnings);
+  if (persistedOverrideState.found && persistedOverrideState.loaded) {
+    startupWarnings.push("Recovered persisted enforcement overrides from disk.");
+  }
   if (startupWarnings.length) {
     for (const warning of startupWarnings) {
       console.warn("[startup-warning]", warning);
@@ -155,7 +179,26 @@ function createApp(options = {}) {
       isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin),
       reason
     });
+    if (permission === authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT || permission === authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ) {
+      auditLog.appendEvent({
+        category: "authorization",
+        action: "ops_permission_check",
+        status: allowed ? "allowed" : "denied",
+        permission,
+        actor: summarizeActor(req),
+        reason
+      });
+    }
   };
+
+  function currentEnforcementView() {
+    return {
+      configuredDefaults: baseActionEnforcement.enabledByAction,
+      persistedOverrides: persistedOverrideState.loaded ? persistedOverrideState.overrides : {},
+      runtimeOverrides: { ...runtimeEnforcementOverrides },
+      effective: actionEnforcement
+    };
+  }
 
   app.use((req, res, next) => {
     const action = mapRouteAction(req);
@@ -231,8 +274,14 @@ function createApp(options = {}) {
       hasExerciseIndex: fs.existsSync(EX_INDEX_PATH),
       authConfigured: !usingDefaultAuthSecret,
       legacyFallbackEnabled,
-      actionFallbackEnforcement: actionEnforcement,
+      actionFallbackEnforcement: currentEnforcementView(),
       authorization: authorizationResolver.describe(),
+      persistedOverrideRecovery: {
+        found: persistedOverrideState.found,
+        loaded: persistedOverrideState.loaded,
+        warnings: persistedOverrideState.warnings
+      },
+      adminAudit: auditLog.recentSummary(10),
       degraded: startupWarnings.length > 0,
       startupWarnings,
       time: new Date().toISOString()
@@ -248,8 +297,14 @@ function createApp(options = {}) {
         service: "mufasa-fitness-node",
         authConfigured: !usingDefaultAuthSecret,
         legacyFallbackEnabled,
-        actionFallbackEnforcement: actionEnforcement,
+        actionFallbackEnforcement: currentEnforcementView(),
         authorization: authorizationResolver.describe(),
+        persistedOverrideRecovery: {
+          found: persistedOverrideState.found,
+          loaded: persistedOverrideState.loaded,
+          warnings: persistedOverrideState.warnings
+        },
+        adminAudit: auditLog.recentSummary(20),
         startupWarnings,
         legacyDependencyCatalog,
         writes: writeObservability.snapshot()
@@ -260,11 +315,23 @@ function createApp(options = {}) {
   app.get(
     "/api/ops/enforcement-config",
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
-    (_req, res) => {
+    (req, res) => {
+      auditLog.appendEvent({
+        category: "enforcement",
+        action: "enforcement_config_read",
+        status: "ok",
+        actor: summarizeActor(req)
+      });
       return res.json({
         ok: true,
-        actionFallbackEnforcement: actionEnforcement,
-        authorization: authorizationResolver.describe()
+        actionFallbackEnforcement: currentEnforcementView(),
+        authorization: authorizationResolver.describe(),
+        persistedOverrideRecovery: {
+          found: persistedOverrideState.found,
+          loaded: persistedOverrideState.loaded,
+          warnings: persistedOverrideState.warnings
+        },
+        adminAudit: auditLog.recentSummary(10)
       });
     }
   );
@@ -282,14 +349,33 @@ function createApp(options = {}) {
         if (!ENFORCEABLE_ACTIONS.includes(action)) {
           throw new ApiError("VALIDATION_ERROR", `Unknown enforceable action '${action}'`, 400);
         }
-        runtimeEnforcementOverrides[action] = Boolean(value);
+        if (typeof value !== "boolean") {
+          throw new ApiError("VALIDATION_ERROR", `enabledByAction['${action}'] must be boolean`, 400);
+        }
+        runtimeEnforcementOverrides[action] = value;
       }
 
       actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
       writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
+      enforcementOverrideStore.save(runtimeEnforcementOverrides);
+      persistedOverrideState.loaded = true;
+      persistedOverrideState.found = true;
+      persistedOverrideState.overrides = { ...runtimeEnforcementOverrides };
+      persistedOverrideState.warnings = [];
+
+      auditLog.appendEvent({
+        category: "enforcement",
+        action: "enforcement_config_update",
+        status: "ok",
+        actor: summarizeActor(req),
+        details: {
+          updatedActions: Object.keys(candidate),
+          effectiveEnabledByAction: actionEnforcement.enabledByAction
+        }
+      });
 
       return ok(res, req.requestId, {
-        actionFallbackEnforcement: actionEnforcement,
+        actionFallbackEnforcement: currentEnforcementView(),
         updatedActions: Object.keys(candidate)
       }, 200);
     })

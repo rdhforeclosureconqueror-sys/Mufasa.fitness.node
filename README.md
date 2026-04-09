@@ -40,10 +40,16 @@ Runtime ops controls (admin/super-admin only):
 - `PUT /api/ops/enforcement-config`
 - `GET /api/ops/write-observability`
 
+Persistence (lightweight, append-only where applicable):
+- enforcement overrides: `data/ops/enforcement-overrides.json`
+- admin/control-plane audit log: `data/ops/admin-audit.ndjson`
+
 ## Observability and health
 
 `/health` and `/api/ops/write-observability` expose:
-- enforcement state by action
+- configured defaults, persisted overrides, and effective enforcement state
 - explicit success/failure and blocked fallback counters
 - admin/ops authorization check trends
 - bootstrap/super-admin configuration summary
+- persisted override recovery status and startup warnings
+- recent admin audit activity summary
