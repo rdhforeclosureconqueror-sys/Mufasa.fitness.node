@@ -26,7 +26,8 @@ function authContext(authTokenLib, authorizationResolver = null) {
       provider: claims.provider,
       providerSubject: claims.providerSubject,
       issuedAt: claims.iat,
-      expiresAt: claims.exp
+      expiresAt: claims.exp,
+      jti: claims.jti
     };
 
     if (authorizationResolver) {

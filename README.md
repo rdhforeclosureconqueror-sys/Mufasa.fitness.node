@@ -49,6 +49,40 @@ Persistence (lightweight, append-only where applicable):
 
 ## Control-plane hardening additions
 
+### Trust policy tightening (pilot readiness)
+
+Auth bridge now models low-trust issuance modes explicitly:
+- `manual_unverified`
+- `provider_unverified`
+
+Env controls:
+- `AUTH_BRIDGE_ALLOWED_TRUST_MODES` (CSV, explicit allowlist)
+- `AUTH_TRUST_POLICY_MODE` (`warn` default, `fail` for stricter gating)
+
+Safe rollout behavior:
+- dev/test default: both low-trust modes allowed for compatibility
+- non-dev default: low-trust modes disabled unless explicitly allowed
+- `/api/auth/bridge` blocks disabled trust modes with `403 TRUST_MODE_DISABLED`
+
+Preflight + health/ops surfaces expose current trust posture, enabled low-trust modes, and pilot-readiness status.
+
+Recommended pilot-safe settings:
+- `NODE_ENV=production`
+- `AUTH_BRIDGE_ALLOWED_TRUST_MODES=` (empty)
+- `AUTH_TRUST_POLICY_MODE=fail`
+
+### Token revocation denylist (bounded)
+
+Issued auth tokens now include `jti`.
+
+Bounded revocation support:
+- storage: `data/ops/token-denylist.json`
+- retention: `AUTH_TOKEN_DENYLIST_RETENTION_MS` (default 14 days)
+- check: auth verification rejects revoked `jti` values
+- admin path: `POST /api/ops/auth/token-revocations` (`ops.manage_enforcement`)
+
+Revocation entries are pruned after token-expiry + retention window to keep storage bounded.
+
 ### Audit retention / rotation
 
 `admin-audit.ndjson` now rotates by size and keeps bounded archives.
@@ -142,6 +176,8 @@ When strict mode is off (default), these remain warning-oriented and visible in 
 ## Observability and health
 
 `/health` and `/api/ops/write-observability` expose:
+- trust policy posture and low-trust mode enablement
+- token revocation readiness/status
 - configured defaults, persisted overrides, and effective enforcement state
 - explicit success/failure and blocked fallback counters
 - admin/ops authorization check trends

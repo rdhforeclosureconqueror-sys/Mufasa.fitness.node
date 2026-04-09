@@ -11,7 +11,7 @@ function b64urlDecode(value) {
   return Buffer.from(value, "base64url").toString("utf8");
 }
 
-function createAuthTokenLib({ secret, issuer = "mufasa-fitness-node" }) {
+function createAuthTokenLib({ secret, issuer = "mufasa-fitness-node", isRevokedJti = null }) {
   const effectiveSecret = String(secret || "").trim();
   if (!effectiveSecret) {
     throw new Error("AUTH_TOKEN_SECRET is required");
@@ -47,12 +47,16 @@ function createAuthTokenLib({ secret, issuer = "mufasa-fitness-node" }) {
       throw new ApiError("UNAUTHENTICATED", "Invalid auth token payload", 401);
     }
 
-    if (!payload || payload.iss !== issuer || !payload.sub || !payload.exp) {
+    if (!payload || payload.iss !== issuer || !payload.sub || !payload.exp || !payload.jti) {
       throw new ApiError("UNAUTHENTICATED", "Invalid auth token claims", 401);
     }
 
     if (Date.now() > payload.exp) {
       throw new ApiError("UNAUTHENTICATED", "Auth token expired", 401);
+    }
+
+    if (typeof isRevokedJti === "function" && isRevokedJti(payload.jti)) {
+      throw new ApiError("UNAUTHENTICATED", "Auth token revoked", 401);
     }
 
     return payload;
@@ -66,7 +70,8 @@ function createAuthTokenLib({ secret, issuer = "mufasa-fitness-node" }) {
       provider,
       providerSubject,
       iat: now,
-      exp: now + ttlMs
+      exp: now + ttlMs,
+      jti: crypto.randomUUID()
     };
 
     return {
@@ -74,7 +79,8 @@ function createAuthTokenLib({ secret, issuer = "mufasa-fitness-node" }) {
       expiresAt: payload.exp,
       issuedAt: payload.iat,
       userId,
-      provider
+      provider,
+      jti: payload.jti
     };
   }
 

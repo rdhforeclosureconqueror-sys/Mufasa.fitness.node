@@ -72,7 +72,7 @@ function validateOhsaSubmission(input) {
   };
 }
 
-function validateAuthBridge(input) {
+function validateAuthBridge(input, { requestedTrustMode = null } = {}) {
   if (!isObject(input)) throw new ApiError("VALIDATION_ERROR", "Request body must be an object", 400);
 
   const manualUserId = assertString(input.userId ?? input.manualUserId, "userId", { required: false, max: 128 });
@@ -87,7 +87,8 @@ function validateAuthBridge(input) {
     return {
       userId: manualUserId,
       provider: "manual",
-      providerSubject: manualUserId
+      providerSubject: manualUserId,
+      trustMode: requestedTrustMode || "manual_unverified"
     };
   }
 
@@ -97,7 +98,8 @@ function validateAuthBridge(input) {
   return {
     userId,
     provider: "google-bridge",
-    providerSubject
+    providerSubject,
+    trustMode: requestedTrustMode || "provider_unverified"
   };
 }
 

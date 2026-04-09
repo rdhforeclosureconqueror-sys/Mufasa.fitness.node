@@ -29,6 +29,13 @@ const { createAdminAuditLog, summarizeActor } = require("./src/lib/adminAuditLog
 const { validateAuthorizationConfigShape, validateParsedEnforcementConfig } = require("./src/lib/authzEnforcementValidation");
 const { createControlPlaneAlertEmitter, ALERT_TYPES } = require("./src/lib/controlPlaneAlerts");
 const { runControlPlanePreflight } = require("./src/lib/controlPlanePreflight");
+const {
+  parseTrustPolicyConfig,
+  summarizeTrustPolicy,
+  normalizeTrustMode,
+  validateTrustPolicy
+} = require("./src/lib/trustPolicy");
+const { createTokenDenylistStore } = require("./src/lib/tokenDenylistStore");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -150,8 +157,15 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
+  const tokenDenylist = createTokenDenylistStore({
+    filePath: path.join(rootDir, "data", "ops", "token-denylist.json"),
+    retentionMs: Number(process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS || 1000 * 60 * 60 * 24 * 14)
+  });
+  const trustPolicyConfig = parseTrustPolicyConfig(process.env);
+  const trustPolicy = summarizeTrustPolicy(trustPolicyConfig);
   const authTokenLib = createAuthTokenLib({
-    secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me"
+    secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me",
+    isRevokedJti: (jti) => tokenDenylist.isRevoked(jti)
   });
 
   const startupWarnings = [];
@@ -159,7 +173,8 @@ function createApp(options = {}) {
   const strictStartupEnabled = process.env.CONTROL_PLANE_STRICT_STARTUP === "true";
   const preflight = runControlPlanePreflight({
     env: process.env,
-    enforceableActions: ENFORCEABLE_ACTIONS
+    enforceableActions: ENFORCEABLE_ACTIONS,
+    trustPolicy: trustPolicyConfig
   });
   const usingDefaultAuthSecret = !process.env.AUTH_TOKEN_SECRET || process.env.AUTH_TOKEN_SECRET === "dev-only-secret-change-me";
   if (usingDefaultAuthSecret) {
@@ -176,8 +191,10 @@ function createApp(options = {}) {
   }
   const authzWarnings = validateAuthorizationConfigShape(authorizationConfig);
   const enforcementWarnings = validateParsedEnforcementConfig(baseActionEnforcement, ENFORCEABLE_ACTIONS);
+  const trustPolicyValidation = validateTrustPolicy(trustPolicyConfig);
   startupWarnings.push(...authzWarnings);
   startupWarnings.push(...enforcementWarnings);
+  startupWarnings.push(...trustPolicyValidation.warnings);
   startupWarnings.push(...persistedOverrideState.warnings);
   if (persistedOverrideState.found && persistedOverrideState.loaded) {
     startupWarnings.push("Recovered persisted enforcement overrides from disk.");
@@ -193,6 +210,7 @@ function createApp(options = {}) {
   if (persistedOverrideState.found && !persistedOverrideState.loaded) {
     strictStartupIssues.push("Persisted enforcement overrides could not be loaded safely.");
   }
+  strictStartupIssues.push(...trustPolicyValidation.issues);
   if (startupWarnings.length) {
     for (const warning of startupWarnings) {
       console.warn("[startup-warning]", warning);
@@ -324,6 +342,8 @@ function createApp(options = {}) {
       hasExerciseIndex: fs.existsSync(EX_INDEX_PATH),
       authConfigured: !usingDefaultAuthSecret,
       legacyFallbackEnabled,
+      trustPolicy,
+      tokenRevocation: tokenDenylist.stats(),
       actionFallbackEnforcement: currentEnforcementView(),
       authorization: authorizationResolver.describe(),
       persistedOverrideRecovery: {
@@ -354,6 +374,8 @@ function createApp(options = {}) {
         service: "mufasa-fitness-node",
         authConfigured: !usingDefaultAuthSecret,
         legacyFallbackEnabled,
+        trustPolicy,
+        tokenRevocation: tokenDenylist.stats(),
         actionFallbackEnforcement: currentEnforcementView(),
         authorization: authorizationResolver.describe(),
         persistedOverrideRecovery: {
@@ -388,6 +410,8 @@ function createApp(options = {}) {
       });
       return res.json({
         ok: true,
+        trustPolicy,
+        tokenRevocation: tokenDenylist.stats(),
         actionFallbackEnforcement: currentEnforcementView(),
         authorization: authorizationResolver.describe(),
         persistedOverrideRecovery: {
@@ -517,6 +541,46 @@ function createApp(options = {}) {
     })
   );
 
+  app.post(
+    "/api/ops/auth/token-revocations",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+      const { jti, expiresAt, reason } = req.body || {};
+      const normalizedJti = String(jti || "").trim();
+      const exp = Number(expiresAt);
+      if (!normalizedJti) {
+        throw new ApiError("VALIDATION_ERROR", "jti is required", 400);
+      }
+      if (!Number.isFinite(exp)) {
+        throw new ApiError("VALIDATION_ERROR", "expiresAt must be epoch millis", 400);
+      }
+
+      const pruned = tokenDenylist.prune();
+      const entry = tokenDenylist.revoke({
+        jti: normalizedJti,
+        expiresAt: exp,
+        reason: String(reason || "manual_revocation")
+      });
+      auditLog.appendEvent({
+        category: "auth",
+        action: "token_revoked",
+        status: "ok",
+        actor: summarizeActor(req),
+        details: {
+          jti: entry.jti,
+          expiresAt: entry.expiresAt,
+          reason: entry.reason,
+          pruned
+        }
+      });
+
+      return ok(res, req.requestId, {
+        revoked: entry,
+        tokenRevocation: tokenDenylist.stats()
+      }, 201);
+    })
+  );
+
   app.put(
     "/api/ops/enforcement-config/break-glass",
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
@@ -628,7 +692,19 @@ function createApp(options = {}) {
 
   // ---- Auth bridge (pilot minimal auth foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
-    const claims = validateAuthBridge(req.body);
+    const requestedTrustMode = normalizeTrustMode(req.body?.trustMode);
+    const claims = validateAuthBridge(req.body, { requestedTrustMode });
+    if (!trustPolicy.allowedTrustModes.includes(claims.trustMode)) {
+      throw new ApiError(
+        "TRUST_MODE_DISABLED",
+        `Trust mode '${claims.trustMode}' is disabled by AUTH_BRIDGE_ALLOWED_TRUST_MODES`,
+        403,
+        {
+          trustMode: claims.trustMode,
+          allowedTrustModes: trustPolicy.allowedTrustModes
+        }
+      );
+    }
     const token = authTokenLib.issueUserToken({
       userId: claims.userId,
       provider: claims.provider,
@@ -647,6 +723,7 @@ function createApp(options = {}) {
       providerSubject: req.auth.providerSubject,
       issuedAt: req.auth.issuedAt,
       expiresAt: req.auth.expiresAt,
+      jti: req.auth.jti,
       role: req.authz?.role || "user",
       isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin)
     });
