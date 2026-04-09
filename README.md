@@ -38,8 +38,10 @@ Env controls:
 Runtime ops controls (admin/super-admin only):
 - `GET /api/ops/enforcement-config`
 - `PUT /api/ops/enforcement-config`
+- `PUT /api/ops/enforcement-config/break-glass` (super_admin only; requires reason)
 - `GET /api/ops/write-observability`
 - `GET /api/ops/admin-audit` (read-only recent audit paging)
+- `GET /api/ops/admin-audit/verify` (full-chain verification across active + archives)
 
 Persistence (lightweight, append-only where applicable):
 - enforcement overrides: `data/ops/enforcement-overrides.json`
@@ -74,6 +76,56 @@ Enforcement override persistence now tracks a monotonic `revision`:
 - stale `ifVersion` values are rejected with `409 VERSION_CONFLICT`
 
 This adds bounded write-safety without replacing existing storage.
+
+### Break-glass override workflow
+
+An explicit emergency path exists for sensitive control-plane overrides:
+- route: `PUT /api/ops/enforcement-config/break-glass`
+- role: `super_admin` only
+- requires: `reason` or `reasonCode` string + `enabledByAction`
+- semantics: forces override persistence (bypasses stale `ifVersion` checks)
+- audit: writes `enforcement_config_break_glass_update` with `annotations.breakGlass=true` and reason
+
+Use this route only for operational recovery scenarios where normal optimistic locking blocks urgent remediation.
+
+### Audit-chain verification tooling
+
+Operational verification paths:
+- API: `GET /api/ops/admin-audit/verify`
+- CLI: `npm run ops:verify-audit`
+
+Both verify hash-chain continuity across active and rotated audit files and return pass/fail issue summaries.
+
+### Optional periodic audit checkpointing
+
+Checkpoint records can be written periodically as lightweight chain anchors:
+- `ADMIN_AUDIT_CHECKPOINT_FILE_PATH` (default `data/ops/admin-audit.checkpoints.ndjson`)
+- `ADMIN_AUDIT_CHECKPOINT_INTERVAL_MS` (default `0`, disabled)
+
+When enabled (`>0`), checkpoint entries include timestamp + latest audit chain hash.
+This is local bounded checkpointing only (no external trust service).
+
+### Minimal alert hooks
+
+Control-plane alert events are emitted with a pluggable sink (`createApp({ controlPlaneAlertSink })`) and logged.
+Current alert types:
+- `strict_startup_failure`
+- `enforcement_version_conflict`
+- `audit_integrity_failure`
+- `break_glass_used`
+
+Alert counters are also exposed through `/api/ops/write-observability`.
+
+### Authz/enforcement preflight linting
+
+Preflight checks are available via:
+- `npm run ops:preflight`
+
+Checks include:
+- invalid enforcement action names
+- malformed allowlist values
+- missing bootstrap super-admin configuration
+- contradictory/inert enforcement settings (e.g., enforcement flags set while legacy fallback is disabled)
 
 ### Strict startup mode
 

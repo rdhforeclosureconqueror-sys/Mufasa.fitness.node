@@ -78,6 +78,11 @@ function createWriteObservability() {
         bootstrapSuperAdminHits: 0
       }
     },
+    alerts: {
+      total: 0,
+      byType: {},
+      lastEvent: null
+    },
     lastUpdatedAt: null
   };
 
@@ -149,6 +154,19 @@ function createWriteObservability() {
     stamp();
   }
 
+
+  function trackControlPlaneAlert(type, details = {}) {
+    const key = type || "unknown";
+    state.alerts.total += 1;
+    state.alerts.byType[key] = (state.alerts.byType[key] || 0) + 1;
+    state.alerts.lastEvent = {
+      type: key,
+      details,
+      at: new Date().toISOString()
+    };
+    stamp();
+  }
+
   function snapshot() {
     return JSON.parse(JSON.stringify(state));
   }
@@ -162,6 +180,7 @@ function createWriteObservability() {
     setAuthorizationState,
     trackAdminOpsAuthorization,
     trackLegacyFallbackBlocked,
+    trackControlPlaneAlert,
     snapshot
   };
 }

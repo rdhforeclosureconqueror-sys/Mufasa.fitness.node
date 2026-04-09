@@ -10,7 +10,9 @@
     "prestart": "node scripts/ensure-exercise-index.js",
     "start": "node server.js",
     "lint": "node scripts/selfcheck.js",
-    "test": "node --test"
+    "test": "node --test",
+    "ops:verify-audit": "node scripts/verify-admin-audit-chain.js",
+    "ops:preflight": "node scripts/control-plane-preflight.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

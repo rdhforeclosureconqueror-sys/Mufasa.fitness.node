@@ -14,10 +14,20 @@ function summarizeActor(req) {
   };
 }
 
-function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024, maxArchives = 4, hashChain = true }) {
+function createAdminAuditLog({
+  filePath,
+  recentLimit = 20,
+  maxBytes = 512 * 1024,
+  maxArchives = 4,
+  hashChain = true,
+  checkpointFilePath = null,
+  checkpointIntervalMs = 0,
+  now = () => Date.now()
+}) {
   const chainState = {
     enabled: Boolean(hashChain),
-    lastHash: null
+    lastHash: null,
+    lastCheckpointAtMs: 0
   };
 
   function listLogPathsInChronologicalOrder() {
@@ -35,11 +45,12 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
     const raw = fs.readFileSync(logPath, "utf8");
     const lines = raw.split("\n").filter(Boolean);
     const parsed = [];
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
       try {
         parsed.push(JSON.parse(line));
       } catch {
-        // Keep append-only log resilient if one line is corrupted.
+        parsed.push({ __parseError: true, lineNumber: i + 1 });
       }
     }
     return parsed;
@@ -62,6 +73,10 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
     const issues = [];
     for (let i = 0; i < entries.length; i += 1) {
       const entry = entries[i];
+      if (entry?.__parseError) {
+        issues.push(`entry_index_${i}_invalid_json`);
+        break;
+      }
       if (!entry.hash || typeof entry.hash !== "string") {
         issues.push(`entry_index_${i}_missing_hash`);
         break;
@@ -86,6 +101,21 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
     };
   }
 
+  function verifyFullChain() {
+    const paths = listLogPathsInChronologicalOrder();
+    const entries = readAllEntries();
+    const integrity = verifyEntries(entries);
+    return {
+      enabled: integrity.enabled,
+      verified: integrity.verified,
+      issueCount: integrity.issues.length,
+      issues: integrity.issues,
+      filePath,
+      filesScanned: paths,
+      entryCount: entries.length
+    };
+  }
+
   function rotateIfNeeded(incomingEntry) {
     if (!fs.existsSync(filePath)) return false;
     const currentBytes = fs.statSync(filePath).size;
@@ -106,6 +136,27 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
     }
 
     return true;
+  }
+
+  function writeCheckpoint(details = {}) {
+    if (!checkpointFilePath || !chainState.enabled) return null;
+    fs.mkdirSync(path.dirname(checkpointFilePath), { recursive: true });
+    const entry = {
+      timestamp: new Date().toISOString(),
+      sourceAuditPath: filePath,
+      latestHash: chainState.lastHash,
+      ...details
+    };
+    fs.appendFileSync(checkpointFilePath, `${JSON.stringify(entry)}\n`, "utf8");
+    chainState.lastCheckpointAtMs = now();
+    return entry;
+  }
+
+  function maybeCheckpoint(details = {}) {
+    if (!checkpointFilePath || !chainState.enabled || !checkpointIntervalMs) return null;
+    const elapsed = now() - chainState.lastCheckpointAtMs;
+    if (elapsed < checkpointIntervalMs) return null;
+    return writeCheckpoint({ mode: "interval", ...details });
   }
 
   function initializeHashState() {
@@ -137,6 +188,7 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
     rotateIfNeeded(entry);
     fs.appendFileSync(filePath, `${JSON.stringify(entry)}\n`, "utf8");
     if (chainState.enabled) chainState.lastHash = entry.hash;
+    maybeCheckpoint({ trigger: "append", eventAction: event?.action || null });
     return entry;
   }
 
@@ -174,6 +226,12 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
         maxBytes,
         maxArchives
       },
+      checkpointing: {
+        enabled: Boolean(checkpointFilePath),
+        checkpointFilePath,
+        checkpointIntervalMs: Number(checkpointIntervalMs) || 0,
+        lastCheckpointAt: chainState.lastCheckpointAtMs ? new Date(chainState.lastCheckpointAtMs).toISOString() : null
+      },
       tamperEvidence: {
         enabled: chainState.enabled,
         latestHash: chainState.lastHash,
@@ -194,6 +252,8 @@ function createAdminAuditLog({ filePath, recentLimit = 20, maxBytes = 512 * 1024
     readRecentEntries,
     readRecentPage,
     verifyEntries,
+    verifyFullChain,
+    writeCheckpoint,
     recentSummary,
     summarizeActor,
     filePath
