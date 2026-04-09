@@ -27,6 +27,8 @@ const { createAuthorizationResolver, parseAuthorizationConfig } = require("./src
 const { createEnforcementStateStore } = require("./src/lib/enforcementStateStore");
 const { createAdminAuditLog, summarizeActor } = require("./src/lib/adminAuditLog");
 const { validateAuthorizationConfigShape, validateParsedEnforcementConfig } = require("./src/lib/authzEnforcementValidation");
+const { createControlPlaneAlertEmitter, ALERT_TYPES } = require("./src/lib/controlPlaneAlerts");
+const { runControlPlanePreflight } = require("./src/lib/controlPlanePreflight");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -90,7 +92,12 @@ function createApp(options = {}) {
     filePath: path.join(rootDir, "data", "ops", "admin-audit.ndjson"),
     maxBytes: Number(process.env.ADMIN_AUDIT_MAX_BYTES || 512 * 1024),
     maxArchives: Number(process.env.ADMIN_AUDIT_MAX_ARCHIVES || 4),
-    hashChain: process.env.ADMIN_AUDIT_HASH_CHAIN !== "false"
+    hashChain: process.env.ADMIN_AUDIT_HASH_CHAIN !== "false",
+    checkpointFilePath: process.env.ADMIN_AUDIT_CHECKPOINT_FILE_PATH || path.join(rootDir, "data", "ops", "admin-audit.checkpoints.ndjson"),
+    checkpointIntervalMs: Number(process.env.ADMIN_AUDIT_CHECKPOINT_INTERVAL_MS || 0)
+  });
+  const controlPlaneAlerts = createControlPlaneAlertEmitter({
+    sink: options.controlPlaneAlertSink
   });
   const legacyDependencyCatalog = {
     profile: ["fitness.saveProfile"],
@@ -150,6 +157,10 @@ function createApp(options = {}) {
   const startupWarnings = [];
   const strictStartupIssues = [];
   const strictStartupEnabled = process.env.CONTROL_PLANE_STRICT_STARTUP === "true";
+  const preflight = runControlPlanePreflight({
+    env: process.env,
+    enforceableActions: ENFORCEABLE_ACTIONS
+  });
   const usingDefaultAuthSecret = !process.env.AUTH_TOKEN_SECRET || process.env.AUTH_TOKEN_SECRET === "dev-only-secret-change-me";
   if (usingDefaultAuthSecret) {
     startupWarnings.push("AUTH_TOKEN_SECRET is missing or default; authenticated writes are not production-safe.");
@@ -188,6 +199,11 @@ function createApp(options = {}) {
     }
   }
   if (strictStartupEnabled && strictStartupIssues.length > 0) {
+    const alert = controlPlaneAlerts.emit(ALERT_TYPES.STRICT_STARTUP_FAILURE, {
+      severity: "critical",
+      issues: strictStartupIssues
+    });
+    writeObservability.trackControlPlaneAlert(alert.type, { issueCount: strictStartupIssues.length });
     const strictError = new Error("CONTROL_PLANE_STRICT_STARTUP is enabled and strict startup checks failed.");
     strictError.code = "STRICT_STARTUP_FAILED";
     strictError.issues = strictStartupIssues;
@@ -223,6 +239,15 @@ function createApp(options = {}) {
       runtimeOverrides: { ...runtimeEnforcementOverrides },
       effective: actionEnforcement
     };
+  }
+
+  function isSuperAdmin(req) {
+    return req?.authz?.role === "super_admin";
+  }
+
+  function requireSuperAdmin(req) {
+    if (isSuperAdmin(req)) return;
+    throw new ApiError("FORBIDDEN", "Break-glass operations require super_admin role", 403);
   }
 
   app.use((req, res, next) => {
@@ -312,6 +337,7 @@ function createApp(options = {}) {
         passed: strictStartupIssues.length === 0,
         issues: strictStartupIssues
       },
+      preflight,
       adminAudit: auditLog.recentSummary(10),
       degraded: startupWarnings.length > 0,
       startupWarnings,
@@ -341,6 +367,7 @@ function createApp(options = {}) {
           passed: strictStartupIssues.length === 0,
           issues: strictStartupIssues
         },
+        preflight,
         adminAudit: auditLog.recentSummary(20),
         startupWarnings,
         legacyDependencyCatalog,
@@ -384,9 +411,37 @@ function createApp(options = {}) {
         limit: Number.isFinite(limit) ? limit : 25,
         before: Number.isFinite(before) ? before : 0
       });
+      if (page.integrity?.enabled && page.integrity.verified === false) {
+        const alert = controlPlaneAlerts.emit(ALERT_TYPES.AUDIT_INTEGRITY_FAILURE, {
+          severity: "critical",
+          actor: summarizeActor(req),
+          issues: page.integrity.issues
+        });
+        writeObservability.trackControlPlaneAlert(alert.type, { issueCount: page.integrity.issues.length });
+      }
       return res.json({
         ok: true,
         audit: page
+      });
+    }
+  );
+
+  app.get(
+    "/api/ops/admin-audit/verify",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      const verification = auditLog.verifyFullChain();
+      if (!verification.verified) {
+        const alert = controlPlaneAlerts.emit(ALERT_TYPES.AUDIT_INTEGRITY_FAILURE, {
+          severity: "critical",
+          actor: summarizeActor(req),
+          issues: verification.issues
+        });
+        writeObservability.trackControlPlaneAlert(alert.type, { issueCount: verification.issueCount });
+      }
+      return res.json({
+        ok: verification.verified,
+        auditIntegrity: verification
       });
     }
   );
@@ -415,6 +470,16 @@ function createApp(options = {}) {
         saveResult = enforcementOverrideStore.save(proposedOverrides, { ifVersion });
       } catch (error) {
         if (error.code === "VERSION_CONFLICT") {
+          const alert = controlPlaneAlerts.emit(ALERT_TYPES.ENFORCEMENT_VERSION_CONFLICT, {
+            severity: "warning",
+            actor: summarizeActor(req),
+            expectedVersion: error.details?.expectedVersion,
+            currentVersion: error.details?.currentVersion
+          });
+          writeObservability.trackControlPlaneAlert(alert.type, {
+            expectedVersion: error.details?.expectedVersion,
+            currentVersion: error.details?.currentVersion
+          });
           throw new ApiError("VERSION_CONFLICT", error.message, 409, error.details);
         }
         if (error.code === "INVALID_IF_VERSION") {
@@ -445,6 +510,77 @@ function createApp(options = {}) {
       });
 
       return ok(res, req.requestId, {
+        actionFallbackEnforcement: currentEnforcementView(),
+        currentVersion: saveResult.version,
+        updatedActions: Object.keys(candidate)
+      }, 200);
+    })
+  );
+
+  app.put(
+    "/api/ops/enforcement-config/break-glass",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+      requireSuperAdmin(req);
+      const candidate = req.body?.enabledByAction;
+      const reason = String(req.body?.reason || req.body?.reasonCode || "").trim();
+      if (!reason) {
+        throw new ApiError("VALIDATION_ERROR", "break-glass reason (reason or reasonCode) is required", 400);
+      }
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        throw new ApiError("VALIDATION_ERROR", "enabledByAction object is required", 400);
+      }
+      for (const [action, value] of Object.entries(candidate)) {
+        if (!ENFORCEABLE_ACTIONS.includes(action)) {
+          throw new ApiError("VALIDATION_ERROR", `Unknown enforceable action '${action}'`, 400);
+        }
+        if (typeof value !== "boolean") {
+          throw new ApiError("VALIDATION_ERROR", `enabledByAction['${action}'] must be boolean`, 400);
+        }
+      }
+
+      const proposedOverrides = { ...runtimeEnforcementOverrides, ...candidate };
+      const saveResult = enforcementOverrideStore.save(proposedOverrides, { force: true });
+      Object.assign(runtimeEnforcementOverrides, proposedOverrides);
+      actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
+      writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
+      persistedOverrideState.loaded = true;
+      persistedOverrideState.found = true;
+      persistedOverrideState.overrides = { ...runtimeEnforcementOverrides };
+      persistedOverrideState.version = saveResult.version;
+      persistedOverrideState.warnings = [];
+
+      const alert = controlPlaneAlerts.emit(ALERT_TYPES.BREAK_GLASS_USED, {
+        severity: "critical",
+        actor: summarizeActor(req),
+        reason,
+        updatedActions: Object.keys(candidate),
+        newVersion: saveResult.version
+      });
+      writeObservability.trackControlPlaneAlert(alert.type, {
+        updatedActionCount: Object.keys(candidate).length
+      });
+
+      auditLog.appendEvent({
+        category: "enforcement",
+        action: "enforcement_config_break_glass_update",
+        status: "override",
+        actor: summarizeActor(req),
+        annotations: {
+          breakGlass: true,
+          reason
+        },
+        details: {
+          updatedActions: Object.keys(candidate),
+          forced: true,
+          newVersion: saveResult.version,
+          effectiveEnabledByAction: actionEnforcement.enabledByAction
+        }
+      });
+
+      return ok(res, req.requestId, {
+        breakGlass: true,
+        reason,
         actionFallbackEnforcement: currentEnforcementView(),
         currentVersion: saveResult.version,
         updatedActions: Object.keys(candidate)

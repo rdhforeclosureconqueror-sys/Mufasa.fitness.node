@@ -94,6 +94,7 @@ function createEnforcementStateStore({ filePath, enforceableActions }) {
 
   function save(overrides, options = {}) {
     const ifVersion = options.ifVersion;
+    const force = options.force === true;
     const validated = validateOverrideCandidate(overrides);
     if (!validated.ok) {
       const err = new Error("Invalid enforcement override shape");
@@ -111,7 +112,7 @@ function createEnforcementStateStore({ filePath, enforceableActions }) {
         currentVersion = 0;
       }
     }
-    if (ifVersion != null) {
+    if (!force && ifVersion != null) {
       if (!Number.isInteger(ifVersion) || ifVersion < 0) {
         const err = new Error("ifVersion must be a non-negative integer");
         err.code = "INVALID_IF_VERSION";
