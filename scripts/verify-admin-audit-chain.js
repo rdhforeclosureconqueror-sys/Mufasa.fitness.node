@@ -4,6 +4,7 @@
 const path = require("path");
 const { createAdminAuditLog } = require("../src/lib/adminAuditLog");
 
+const jsonOnly = process.argv.includes("--json");
 const rootDir = process.cwd();
 const auditPath = process.env.ADMIN_AUDIT_PATH || path.join(rootDir, "data", "ops", "admin-audit.ndjson");
 const maxArchives = Number(process.env.ADMIN_AUDIT_MAX_ARCHIVES || 4);
@@ -15,6 +16,11 @@ const log = createAdminAuditLog({
 });
 
 const result = log.verifyFullChain();
+if (jsonOnly) {
+  process.stdout.write(`${JSON.stringify({ check: "admin_audit_chain", ...result })}\n`);
+  process.exit(result.verified ? 0 : 1);
+}
+
 if (result.verified) {
   console.log("PASS admin audit chain verified", JSON.stringify({
     entryCount: result.entryCount,
