@@ -67,6 +67,17 @@ function createWriteObservability() {
         lastBlocked: null
       }
     },
+    authorization: {
+      config: null,
+      adminOpsChecks: {
+        total: 0,
+        allowed: 0,
+        denied: 0,
+        byPermission: {},
+        lastDecision: null,
+        bootstrapSuperAdminHits: 0
+      }
+    },
     lastUpdatedAt: null
   };
 
@@ -100,6 +111,32 @@ function createWriteObservability() {
     stamp();
   }
 
+  function setAuthorizationState(configSummary) {
+    state.authorization.config = configSummary || null;
+    stamp();
+  }
+
+  function trackAdminOpsAuthorization({ permission, allowed, role, isBootstrapSuperAdmin = false, reason = "unknown" }) {
+    state.authorization.adminOpsChecks.total += 1;
+    if (allowed) state.authorization.adminOpsChecks.allowed += 1;
+    else state.authorization.adminOpsChecks.denied += 1;
+    const key = permission || "unknown";
+    state.authorization.adminOpsChecks.byPermission[key] = state.authorization.adminOpsChecks.byPermission[key] || { allowed: 0, denied: 0 };
+    if (allowed) state.authorization.adminOpsChecks.byPermission[key].allowed += 1;
+    else state.authorization.adminOpsChecks.byPermission[key].denied += 1;
+    if (isBootstrapSuperAdmin) state.authorization.adminOpsChecks.bootstrapSuperAdminHits += 1;
+
+    state.authorization.adminOpsChecks.lastDecision = {
+      permission: key,
+      allowed,
+      role: role || "user",
+      isBootstrapSuperAdmin: Boolean(isBootstrapSuperAdmin),
+      reason: sanitizeReason(reason),
+      at: new Date().toISOString()
+    };
+    stamp();
+  }
+
   function trackLegacyFallbackBlocked(action, reason = "fallback_blocked") {
     if (!action || !(action in state.enforcement.blocked.byAction)) return;
     state.enforcement.blocked.total += 1;
@@ -122,6 +159,8 @@ function createWriteObservability() {
     trackExplicit,
     trackLegacyFallback,
     setEnforcementState,
+    setAuthorizationState,
+    trackAdminOpsAuthorization,
     trackLegacyFallbackBlocked,
     snapshot
   };

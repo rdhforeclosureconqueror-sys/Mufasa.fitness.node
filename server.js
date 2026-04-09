@@ -7,7 +7,7 @@ const path = require("path");
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
-const { authContext, requireAuth } = require("./src/middleware/auth");
+const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
@@ -23,6 +23,7 @@ const {
   validateAuthBridge
 } = require("./src/validation/meValidators");
 const { createWriteObservability, mapRouteAction } = require("./src/lib/writeObservability");
+const { createAuthorizationResolver, parseAuthorizationConfig } = require("./src/lib/authorization");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -34,6 +35,8 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
 
 function parseActionEnforcementFromEnv(env = process.env) {
   const enabledByAction = Object.fromEntries(ENFORCEABLE_ACTIONS.map((action) => [action, false]));
+  enabledByAction.session_complete = true;
+
   const list = String(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS || "")
     .split(",")
     .map((v) => v.trim().toLowerCase())
@@ -54,6 +57,22 @@ function parseActionEnforcementFromEnv(env = process.env) {
   };
 }
 
+
+function buildActionEnforcementState(base, runtimeOverrides = {}) {
+  const enabledByAction = { ...base.enabledByAction };
+  for (const action of ENFORCEABLE_ACTIONS) {
+    if (Object.prototype.hasOwnProperty.call(runtimeOverrides, action)) {
+      enabledByAction[action] = Boolean(runtimeOverrides[action]);
+    }
+  }
+
+  return {
+    enabledByAction,
+    enforcedActions: ENFORCEABLE_ACTIONS.filter((action) => enabledByAction[action]),
+    runtimeOverrides
+  };
+}
+
 function createApp(options = {}) {
   const app = express();
   app.use(express.json({ limit: "2mb" }));
@@ -68,8 +87,13 @@ function createApp(options = {}) {
     session_complete: ["fitness.endSession"],
     ohsa: ["fitness.ohsaResult"]
   };
-  const actionEnforcement = parseActionEnforcementFromEnv(process.env);
+  const baseActionEnforcement = parseActionEnforcementFromEnv(process.env);
+  const runtimeEnforcementOverrides = {};
+  let actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
   writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
+
+  const authorizationResolver = createAuthorizationResolver(parseAuthorizationConfig(process.env));
+  writeObservability.setAuthorizationState(authorizationResolver.describe());
 
   const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -122,7 +146,17 @@ function createApp(options = {}) {
     }
   }
 
-  app.use(authContext(authTokenLib));
+  app.use(authContext(authTokenLib, authorizationResolver));
+  const trackAdminOpsAuthorizationDecision = ({ req, permission, allowed, reason }) => {
+    writeObservability.trackAdminOpsAuthorization({
+      permission,
+      allowed,
+      role: req.authz?.role || "user",
+      isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin),
+      reason
+    });
+  };
+
   app.use((req, res, next) => {
     const action = mapRouteAction(req);
     if (!action) return next();
@@ -198,24 +232,68 @@ function createApp(options = {}) {
       authConfigured: !usingDefaultAuthSecret,
       legacyFallbackEnabled,
       actionFallbackEnforcement: actionEnforcement,
+      authorization: authorizationResolver.describe(),
       degraded: startupWarnings.length > 0,
       startupWarnings,
       time: new Date().toISOString()
     });
   });
 
-  app.get("/api/ops/write-observability", (_req, res) => {
-    return res.json({
-      ok: true,
-      service: "mufasa-fitness-node",
-      authConfigured: !usingDefaultAuthSecret,
-      legacyFallbackEnabled,
-      actionFallbackEnforcement: actionEnforcement,
-      startupWarnings,
-      legacyDependencyCatalog,
-      writes: writeObservability.snapshot()
-    });
-  });
+  app.get(
+    "/api/ops/write-observability",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    (_req, res) => {
+      return res.json({
+        ok: true,
+        service: "mufasa-fitness-node",
+        authConfigured: !usingDefaultAuthSecret,
+        legacyFallbackEnabled,
+        actionFallbackEnforcement: actionEnforcement,
+        authorization: authorizationResolver.describe(),
+        startupWarnings,
+        legacyDependencyCatalog,
+        writes: writeObservability.snapshot()
+      });
+    }
+  );
+
+  app.get(
+    "/api/ops/enforcement-config",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
+    (_req, res) => {
+      return res.json({
+        ok: true,
+        actionFallbackEnforcement: actionEnforcement,
+        authorization: authorizationResolver.describe()
+      });
+    }
+  );
+
+  app.put(
+    "/api/ops/enforcement-config",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+      const candidate = req.body?.enabledByAction;
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        throw new ApiError("VALIDATION_ERROR", "enabledByAction object is required", 400);
+      }
+
+      for (const [action, value] of Object.entries(candidate)) {
+        if (!ENFORCEABLE_ACTIONS.includes(action)) {
+          throw new ApiError("VALIDATION_ERROR", `Unknown enforceable action '${action}'`, 400);
+        }
+        runtimeEnforcementOverrides[action] = Boolean(value);
+      }
+
+      actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
+      writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
+
+      return ok(res, req.requestId, {
+        actionFallbackEnforcement: actionEnforcement,
+        updatedActions: Object.keys(candidate)
+      }, 200);
+    })
+  );
 
   app.post("/api/speak", async (req, res) => {
     try {
@@ -275,7 +353,9 @@ function createApp(options = {}) {
       provider: req.auth.provider,
       providerSubject: req.auth.providerSubject,
       issuedAt: req.auth.issuedAt,
-      expiresAt: req.auth.expiresAt
+      expiresAt: req.auth.expiresAt,
+      role: req.authz?.role || "user",
+      isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin)
     });
   }));
 
@@ -338,9 +418,7 @@ function createApp(options = {}) {
 
   // ---- Structured Session API (pilot hardening) ----
   app.post("/api/sessions", asyncHandler(async (req, res) => {
-    if (req.auth?.userId && req.body?.userId && req.body.userId !== req.auth.userId) {
-      throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
-    }
+    ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionCreate({
       ...(req.body || {}),
       userId: req.auth?.userId || req.body?.userId
@@ -350,9 +428,7 @@ function createApp(options = {}) {
   }));
 
   app.post("/api/sessions/:id/reps", asyncHandler(async (req, res) => {
-    if (req.auth?.userId && req.body?.userId && req.body.userId !== req.auth.userId) {
-      throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
-    }
+    ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateRepUpdate({
       ...(req.body || {}),
       userId: req.auth?.userId || req.body?.userId
@@ -362,9 +438,7 @@ function createApp(options = {}) {
   }));
 
   app.post("/api/sessions/:id/complete", asyncHandler(async (req, res) => {
-    if (req.auth?.userId && req.body?.userId && req.body.userId !== req.auth.userId) {
-      throw new ApiError("FORBIDDEN", "Authenticated user does not match requested userId", 403);
-    }
+    ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionComplete({
       ...(req.body || {}),
       userId: req.auth?.userId || req.body?.userId

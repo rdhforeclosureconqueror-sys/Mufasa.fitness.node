@@ -169,3 +169,43 @@ test("blocked legacy fallback reports a clear frontend callback without silent f
   assert.equal(blockedNotice.errorCode, "LEGACY_FALLBACK_BLOCKED");
   assert.equal(client.getObservabilitySnapshot().blockedFallback.rep_update, 1);
 });
+
+
+test("session complete blocked fallback provides non-invasive notice and status metadata", async (t) => {
+  let notice = null;
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (url.includes("/complete")) {
+      return {
+        ok: false,
+        status: 503,
+        async json() { return { ok: false, error: { message: "server_down" } }; }
+      };
+    }
+    return {
+      ok: false,
+      status: 409,
+      async json() {
+        return { ok: false, error: { code: "LEGACY_FALLBACK_BLOCKED", message: "blocked_by_policy" } };
+      }
+    };
+  };
+  t.after(() => { global.fetch = originalFetch; });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "legacy_user",
+    getAuthToken: () => "token_abc",
+    onFallbackBlocked: (evt) => { notice = evt; },
+    logger: { warn() {} }
+  });
+
+  await client.completeSession("sess_blocked", { repsCompleted: 11 });
+
+  assert.equal(notice.action, "session_complete");
+  assert.equal(notice.adminAccessUnaffected, true);
+  const status = client.getWriteModeStatus();
+  assert.equal(status.blockedTotal, 1);
+  assert.equal(status.lastBlockedFallback.action, "session_complete");
+});

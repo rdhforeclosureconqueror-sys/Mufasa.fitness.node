@@ -98,13 +98,14 @@
     function getWriteModeStatus() {
       const token = getAuthToken?.();
       const fallbackTotal = Object.values(observability.fallbackToLegacy).reduce((sum, count) => sum + count, 0);
+      const blockedTotal = Object.values(observability.blockedFallback).reduce((sum, count) => sum + count, 0);
       if (!token) {
-        return { mode: "local_fallback", label: "Local fallback", fallbackTotal, lastFallback: observability.lastFallback };
+        return { mode: "local_fallback", label: "Local fallback", fallbackTotal, blockedTotal, lastFallback: observability.lastFallback, lastBlockedFallback: observability.lastBlockedFallback };
       }
       if (fallbackTotal > 0) {
-        return { mode: "degraded_fallback", label: "Degraded (legacy fallback active)", fallbackTotal, lastFallback: observability.lastFallback };
+        return { mode: "degraded_fallback", label: "Degraded (legacy fallback active)", fallbackTotal, blockedTotal, lastFallback: observability.lastFallback, lastBlockedFallback: observability.lastBlockedFallback };
       }
-      return { mode: "explicit_api", label: "Backend synced", fallbackTotal, lastFallback: observability.lastFallback };
+      return { mode: "explicit_api", label: "Backend synced", fallbackTotal, blockedTotal, lastFallback: observability.lastFallback, lastBlockedFallback: observability.lastBlockedFallback };
     }
 
     async function postJSON(url, body, authRequired) {
@@ -189,11 +190,23 @@
     function maybeHandleBlockedFallback(action, err) {
       if (!(err?.code === "LEGACY_FALLBACK_BLOCKED" || err?.payload?.error?.code === "LEGACY_FALLBACK_BLOCKED")) return false;
       trackFallbackBlocked(action, err);
-      const message = `Unable to save ${action.replace("_", " ")} via legacy fallback. Please reconnect and retry.`;
+      const friendlyAction = action.replace("_", " ");
+      const message = `Unable to save ${friendlyAction} via legacy fallback. Please reconnect and retry.`;
+      const notice = {
+        action,
+        message,
+        errorCode: "LEGACY_FALLBACK_BLOCKED",
+        adminAccessUnaffected: true
+      };
       if (typeof onFallbackBlocked === "function") {
-        onFallbackBlocked({ action, message, errorCode: "LEGACY_FALLBACK_BLOCKED" });
+        onFallbackBlocked(notice);
       }
-      logger.warn(message, err);
+      if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+        try {
+          window.dispatchEvent(new CustomEvent("mufasa:write-fallback-blocked", { detail: notice }));
+        } catch (_) {}
+      }
+      logger.warn(`${message} Admin access remains available to authorized operators.`, err);
       return true;
     }
 
