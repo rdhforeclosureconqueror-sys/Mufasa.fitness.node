@@ -321,6 +321,13 @@ test("auth-protected /api/me/profile rejects missing token", async (t) => {
 });
 
 test("write observability endpoint reports explicit and legacy write usage", async (t) => {
+  const prevSuper = process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+  process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = "obs_admin";
+  t.after(() => {
+    if (prevSuper == null) delete process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+    else process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = prevSuper;
+  });
+
   await withServer(t, async ({ baseUrl }) => {
     await post(baseUrl, "/api/sessions", {
       userId: "obs_user",
@@ -338,12 +345,13 @@ test("write observability endpoint reports explicit and legacy write usage", asy
       }
     });
 
-    const { res, json } = await get(baseUrl, "/api/ops/write-observability");
+    const adminToken = await authBridge(baseUrl, { userId: "obs_admin" });
+    const { res, json } = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
     assert.equal(res.status, 200);
     assert.equal(json.ok, true);
     assert.equal(json.writes.explicit.success.session_start, 1);
-    assert.equal(json.writes.legacyFallback.byAction.session_complete, 1);
-    assert.equal(json.writes.legacyFallback.lastReason.action, "session_complete");
+    assert.equal(json.writes.enforcement.blocked.byAction.session_complete, 1);
+    assert.equal(json.writes.enforcement.blocked.total, 1);
   });
 });
 
@@ -384,10 +392,14 @@ test("action-level fallback enforcement config parser supports list and per-acti
 
 test("legacy /command fallback can be blocked per action while others stay compatible", async (t) => {
   const prev = process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS;
+  const prevSuper = process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
   process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = "session_complete";
+  process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = "enforce_admin";
   t.after(() => {
     if (prev == null) delete process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS;
     else process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = prev;
+    if (prevSuper == null) delete process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+    else process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = prevSuper;
   });
 
   await withServer(t, async ({ baseUrl }) => {
@@ -408,7 +420,8 @@ test("legacy /command fallback can be blocked per action while others stay compa
     assert.equal(blocked.res.status, 409);
     assert.equal(blocked.json.error.code, "LEGACY_FALLBACK_BLOCKED");
 
-    const { json: obs } = await get(baseUrl, "/api/ops/write-observability");
+    const adminToken = await authBridge(baseUrl, { userId: "enforce_admin" });
+    const { json: obs } = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
     assert.equal(obs.actionFallbackEnforcement.enabledByAction.session_complete, true);
     assert.equal(obs.writes.enforcement.blocked.byAction.session_complete, 1);
     assert.equal(obs.writes.legacyFallback.byAction.session_start, 1);
@@ -642,5 +655,88 @@ test("/api/me/profile returns normalized default profile shape for new auth user
       injuries: [],
       notes: null
     });
+  });
+});
+
+
+test("default enforcement enables session_complete only", () => {
+  const parsed = parseActionEnforcementFromEnv({});
+  assert.equal(parsed.enabledByAction.session_complete, true);
+  assert.equal(parsed.enabledByAction.rep_update, false);
+  assert.equal(parsed.enabledByAction.session_start, false);
+});
+
+test("bootstrap super-admin can access ops surfaces while normal user is denied", async (t) => {
+  const prevSuper = process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+  const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
+  process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = "root_admin";
+  process.env.AUTHZ_ADMIN_USER_IDS = "regular_admin";
+  t.after(() => {
+    if (prevSuper == null) delete process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+    else process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = prevSuper;
+    if (prevAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
+    else process.env.AUTHZ_ADMIN_USER_IDS = prevAdmin;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    const superToken = await authBridge(baseUrl, { userId: "root_admin" });
+    const adminToken = await authBridge(baseUrl, { userId: "regular_admin" });
+    const userToken = await authBridge(baseUrl, { userId: "normal_user" });
+
+    const denied = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${userToken}` });
+    assert.equal(denied.res.status, 403);
+
+    const superAllowed = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${superToken}` });
+    assert.equal(superAllowed.res.status, 200);
+    assert.equal(superAllowed.json.authorization.bootstrapConfigured.superAdminUserIdCount, 1);
+
+    const adminAllowed = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${adminToken}` });
+    assert.equal(adminAllowed.res.status, 200);
+  });
+});
+
+test("admin can update enforcement config and rep_update remains unenforced by default", async (t) => {
+  const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
+  process.env.AUTHZ_ADMIN_USER_IDS = "ops_admin";
+  t.after(() => {
+    if (prevAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
+    else process.env.AUTHZ_ADMIN_USER_IDS = prevAdmin;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    const adminToken = await authBridge(baseUrl, { userId: "ops_admin" });
+
+    const getBefore = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${adminToken}` });
+    assert.equal(getBefore.res.status, 200);
+    assert.equal(getBefore.json.actionFallbackEnforcement.enabledByAction.session_complete, true);
+    assert.equal(getBefore.json.actionFallbackEnforcement.enabledByAction.rep_update, false);
+
+    const putRes = await put(baseUrl, "/api/ops/enforcement-config", {
+      enabledByAction: { session_start: true }
+    }, { authorization: `Bearer ${adminToken}` });
+    assert.equal(putRes.res.status, 200);
+    assert.equal(putRes.json.data.actionFallbackEnforcement.enabledByAction.session_start, true);
+    assert.equal(putRes.json.data.actionFallbackEnforcement.enabledByAction.rep_update, false);
+  });
+});
+
+test("ops authorization decisions are observable", async (t) => {
+  const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
+  process.env.AUTHZ_ADMIN_USER_IDS = "audit_admin";
+  t.after(() => {
+    if (prevAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
+    else process.env.AUTHZ_ADMIN_USER_IDS = prevAdmin;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    const adminToken = await authBridge(baseUrl, { userId: "audit_admin" });
+    const userToken = await authBridge(baseUrl, { userId: "audit_user" });
+
+    await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${userToken}` });
+    const allowed = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
+    assert.equal(allowed.res.status, 200);
+    assert.ok(allowed.json.writes.authorization.adminOpsChecks.total >= 2);
+    assert.ok(allowed.json.writes.authorization.adminOpsChecks.denied >= 1);
+    assert.ok(allowed.json.writes.authorization.adminOpsChecks.allowed >= 1);
   });
 });
