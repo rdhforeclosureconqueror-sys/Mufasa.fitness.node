@@ -127,3 +127,45 @@ test("fallback reason classifier captures common categories", () => {
   assert.equal(client._classifyFallbackReasonForTests({ code: "UNAUTHORIZED" }), "unauthorized");
   assert.equal(client._classifyFallbackReasonForTests({ code: "REQUEST_FAILED", status: 503 }), "explicit_api_5xx");
 });
+
+test("blocked legacy fallback reports a clear frontend callback without silent failure", async (t) => {
+  const calls = [];
+  let blockedNotice = null;
+  const originalFetch = global.fetch;
+  global.fetch = async (url, init = {}) => {
+    calls.push({ url, body: JSON.parse(init.body || "{}") });
+    if (url.includes("/api/sessions/")) {
+      return {
+        ok: false,
+        status: 401,
+        async json() { return { ok: false, error: { message: "unauthorized" } }; }
+      };
+    }
+    return {
+      ok: false,
+      status: 409,
+      async json() {
+        return { ok: false, error: { code: "LEGACY_FALLBACK_BLOCKED", message: "blocked_by_policy" } };
+      }
+    };
+  };
+  t.after(() => { global.fetch = originalFetch; });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "legacy_user",
+    getAuthToken: () => "token_abc",
+    repDebounceMs: 10,
+    onFallbackBlocked: (evt) => { blockedNotice = evt; },
+    logger: { warn() {} }
+  });
+
+  client.enqueueRepUpdate({ sessionId: "blocked_sess", totalReps: 5 });
+  await delay(50);
+
+  assert.equal(calls.length, 2);
+  assert.equal(blockedNotice.action, "rep_update");
+  assert.equal(blockedNotice.errorCode, "LEGACY_FALLBACK_BLOCKED");
+  assert.equal(client.getObservabilitySnapshot().blockedFallback.rep_update, 1);
+});

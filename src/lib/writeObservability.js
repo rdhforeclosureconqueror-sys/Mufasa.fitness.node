@@ -59,6 +59,14 @@ function createWriteObservability() {
       byAction: createActionCounts(),
       lastReason: null
     },
+    enforcement: {
+      enabledByAction: createActionCounts(),
+      blocked: {
+        total: 0,
+        byAction: createActionCounts(),
+        lastBlocked: null
+      }
+    },
     lastUpdatedAt: null
   };
 
@@ -85,6 +93,25 @@ function createWriteObservability() {
     stamp();
   }
 
+  function setEnforcementState(enabledByAction = {}) {
+    for (const action of ROUTE_ACTIONS) {
+      state.enforcement.enabledByAction[action] = Boolean(enabledByAction[action]);
+    }
+    stamp();
+  }
+
+  function trackLegacyFallbackBlocked(action, reason = "fallback_blocked") {
+    if (!action || !(action in state.enforcement.blocked.byAction)) return;
+    state.enforcement.blocked.total += 1;
+    state.enforcement.blocked.byAction[action] += 1;
+    state.enforcement.blocked.lastBlocked = {
+      action,
+      reason: sanitizeReason(reason),
+      at: new Date().toISOString()
+    };
+    stamp();
+  }
+
   function snapshot() {
     return JSON.parse(JSON.stringify(state));
   }
@@ -94,6 +121,8 @@ function createWriteObservability() {
     sanitizeReason,
     trackExplicit,
     trackLegacyFallback,
+    setEnforcementState,
+    trackLegacyFallbackBlocked,
     snapshot
   };
 }

@@ -24,6 +24,36 @@ const {
 } = require("./src/validation/meValidators");
 const { createWriteObservability, mapRouteAction } = require("./src/lib/writeObservability");
 
+const ENFORCEABLE_ACTIONS = Object.freeze([
+  "profile",
+  "session_start",
+  "session_complete",
+  "ohsa",
+  "rep_update"
+]);
+
+function parseActionEnforcementFromEnv(env = process.env) {
+  const enabledByAction = Object.fromEntries(ENFORCEABLE_ACTIONS.map((action) => [action, false]));
+  const list = String(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS || "")
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean);
+  for (const action of list) {
+    if (action in enabledByAction) enabledByAction[action] = true;
+  }
+
+  for (const action of ENFORCEABLE_ACTIONS) {
+    const envKey = `LEGACY_FALLBACK_REQUIRE_EXPLICIT_${action.toUpperCase()}`;
+    if (env[envKey] === "true") enabledByAction[action] = true;
+    if (env[envKey] === "false") enabledByAction[action] = false;
+  }
+
+  return {
+    enabledByAction,
+    enforcedActions: ENFORCEABLE_ACTIONS.filter((action) => enabledByAction[action])
+  };
+}
+
 function createApp(options = {}) {
   const app = express();
   app.use(express.json({ limit: "2mb" }));
@@ -38,6 +68,8 @@ function createApp(options = {}) {
     session_complete: ["fitness.endSession"],
     ohsa: ["fitness.ohsaResult"]
   };
+  const actionEnforcement = parseActionEnforcementFromEnv(process.env);
+  writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
 
   const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -81,6 +113,9 @@ function createApp(options = {}) {
   if (!legacyFallbackEnabled) {
     startupWarnings.push("LEGACY_FALLBACK_ENABLED=false; clients relying on /command fallback may fail.");
   }
+  if (actionEnforcement.enforcedActions.length > 0) {
+    startupWarnings.push(`Action-level /command enforcement active for: ${actionEnforcement.enforcedActions.join(", ")}`);
+  }
   if (startupWarnings.length) {
     for (const warning of startupWarnings) {
       console.warn("[startup-warning]", warning);
@@ -96,7 +131,10 @@ function createApp(options = {}) {
     res.on("finish", () => {
       const status = res.statusCode;
       const succeeded = status >= 200 && status < 400;
-      if (isLegacy) {
+      if (isLegacy && req.legacyFallbackBlockedAction) {
+        const reason = req.legacyFallbackBlockedReason || "fallback_blocked_by_action";
+        writeObservability.trackLegacyFallbackBlocked(req.legacyFallbackBlockedAction, reason);
+      } else if (isLegacy) {
         const reason = req.body?.payload?._fallback?.reason || req.get("x-fallback-reason") || "legacy_direct";
         writeObservability.trackLegacyFallback(action, reason);
       } else {
@@ -159,6 +197,7 @@ function createApp(options = {}) {
       hasExerciseIndex: fs.existsSync(EX_INDEX_PATH),
       authConfigured: !usingDefaultAuthSecret,
       legacyFallbackEnabled,
+      actionFallbackEnforcement: actionEnforcement,
       degraded: startupWarnings.length > 0,
       startupWarnings,
       time: new Date().toISOString()
@@ -171,6 +210,7 @@ function createApp(options = {}) {
       service: "mufasa-fitness-node",
       authConfigured: !usingDefaultAuthSecret,
       legacyFallbackEnabled,
+      actionFallbackEnforcement: actionEnforcement,
       startupWarnings,
       legacyDependencyCatalog,
       writes: writeObservability.snapshot()
@@ -378,6 +418,20 @@ function createApp(options = {}) {
     }
 
     const { domain, command, userId, payload } = req.body || {};
+    const action = mapRouteAction(req);
+    if (action && actionEnforcement.enabledByAction[action]) {
+      req.legacyFallbackBlockedAction = action;
+      req.legacyFallbackBlockedReason = "fallback_blocked_by_action_policy";
+      throw new ApiError(
+        "LEGACY_FALLBACK_BLOCKED",
+        `Legacy /command fallback blocked for action '${action}'; use explicit API route`,
+        409,
+        {
+          action,
+          explicitApiRequired: true
+        }
+      );
+    }
 
     const isSessionCommand = domain === "fitness" && [
       "fitness.startSession",
@@ -534,5 +588,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  ENFORCEABLE_ACTIONS,
+  parseActionEnforcementFromEnv,
   createApp
 };

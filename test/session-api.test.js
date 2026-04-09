@@ -6,7 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const { createApp } = require("../server");
+const { createApp, parseActionEnforcementFromEnv } = require("../server");
 
 async function withServer(t, fn) {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-node-test-"));
@@ -365,6 +365,54 @@ test("legacy fallback can be disabled by config", async (t) => {
     assert.equal(res.status, 503);
     assert.equal(json.ok, false);
     assert.equal(json.error.code, "LEGACY_FALLBACK_DISABLED");
+  });
+});
+
+test("action-level fallback enforcement config parser supports list and per-action overrides", () => {
+  const parsed = parseActionEnforcementFromEnv({
+    LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS: "session_complete, profile",
+    LEGACY_FALLBACK_REQUIRE_EXPLICIT_PROFILE: "false",
+    LEGACY_FALLBACK_REQUIRE_EXPLICIT_OHSA: "true"
+  });
+
+  assert.equal(parsed.enabledByAction.session_complete, true);
+  assert.equal(parsed.enabledByAction.profile, false);
+  assert.equal(parsed.enabledByAction.ohsa, true);
+  assert.equal(parsed.enabledByAction.rep_update, false);
+  assert.deepEqual(parsed.enforcedActions.sort(), ["ohsa", "session_complete"]);
+});
+
+test("legacy /command fallback can be blocked per action while others stay compatible", async (t) => {
+  const prev = process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS;
+  process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = "session_complete";
+  t.after(() => {
+    if (prev == null) delete process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS;
+    else process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = prev;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    const start = await post(baseUrl, "/command", {
+      domain: "fitness",
+      command: "fitness.startSession",
+      userId: "enforce_user",
+      payload: { sessionId: "enforce_sess_1" }
+    });
+    assert.equal(start.res.status, 200);
+
+    const blocked = await post(baseUrl, "/command", {
+      domain: "fitness",
+      command: "fitness.endSession",
+      userId: "enforce_user",
+      payload: { sessionId: "enforce_sess_1", repsCompleted: 10 }
+    });
+    assert.equal(blocked.res.status, 409);
+    assert.equal(blocked.json.error.code, "LEGACY_FALLBACK_BLOCKED");
+
+    const { json: obs } = await get(baseUrl, "/api/ops/write-observability");
+    assert.equal(obs.actionFallbackEnforcement.enabledByAction.session_complete, true);
+    assert.equal(obs.writes.enforcement.blocked.byAction.session_complete, 1);
+    assert.equal(obs.writes.legacyFallback.byAction.session_start, 1);
+    assert.equal(obs.writes.legacyFallback.byAction.session_complete, 0);
   });
 });
 
