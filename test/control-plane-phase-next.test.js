@@ -232,3 +232,118 @@ test("CLI verification script fails when chain is tampered", () => {
   assert.equal(run.status, 1);
   assert.ok(run.stderr.includes("FAIL admin audit chain verification"));
 });
+
+test("auth bridge trust modes can be disabled outside dev-like environments", async (t) => {
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevAllowed = process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES;
+  process.env.NODE_ENV = "production";
+  process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES = "";
+  t.after(() => {
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevAllowed == null) delete process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES;
+    else process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES = prevAllowed;
+  });
+
+  const rootDir = makeTmpRoot();
+  const app = createApp({ rootDir });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const blockedManual = await post(baseUrl, "/api/auth/bridge", { userId: "prod_user" });
+  assert.equal(blockedManual.res.status, 403);
+  assert.equal(blockedManual.json.error.code, "TRUST_MODE_DISABLED");
+
+  const blockedProvider = await post(baseUrl, "/api/auth/bridge", { googleEmail: "pilot@example.com" });
+  assert.equal(blockedProvider.res.status, 403);
+  assert.equal(blockedProvider.json.error.code, "TRUST_MODE_DISABLED");
+
+  const health = await get(baseUrl, "/health");
+  assert.equal(health.res.status, 200);
+  assert.equal(health.json.trustPolicy.readyForPilot, true);
+  assert.equal(health.json.trustPolicy.lowTrustEnabled, false);
+});
+
+test("revoked token jti is denied and denylist supports bounded pruning", async (t) => {
+  const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
+  const prevRetention = process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS;
+  process.env.AUTHZ_ADMIN_USER_IDS = "deny_admin";
+  process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS = "0";
+  t.after(() => {
+    if (prevAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
+    else process.env.AUTHZ_ADMIN_USER_IDS = prevAdmin;
+    if (prevRetention == null) delete process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS;
+    else process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS = prevRetention;
+  });
+
+  const rootDir = makeTmpRoot();
+  const app = createApp({ rootDir });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const adminBridge = await post(baseUrl, "/api/auth/bridge", { userId: "deny_admin" });
+  assert.equal(adminBridge.res.status, 201);
+  const adminToken = adminBridge.json.data.auth.token;
+
+  const userBridge = await post(baseUrl, "/api/auth/bridge", { userId: "revoked_user" });
+  assert.equal(userBridge.res.status, 201);
+  const authToken = userBridge.json.data.auth;
+  const meBefore = await get(baseUrl, "/api/me", { authorization: `Bearer ${authToken.token}` });
+  assert.equal(meBefore.res.status, 200);
+
+  const revoke = await post(baseUrl, "/api/ops/auth/token-revocations", {
+    jti: authToken.jti,
+    expiresAt: authToken.expiresAt,
+    reason: "incident"
+  }, { authorization: `Bearer ${adminToken}` });
+  assert.equal(revoke.res.status, 201);
+  assert.equal(revoke.json.data.revoked.jti, authToken.jti);
+
+  const meAfter = await get(baseUrl, "/api/me", { authorization: `Bearer ${authToken.token}` });
+  assert.equal(meAfter.res.status, 401);
+  assert.equal(meAfter.json.error.code, "UNAUTHENTICATED");
+
+  const secondBridge = await post(baseUrl, "/api/auth/bridge", { userId: "revoked_user_2" });
+  assert.equal(secondBridge.res.status, 201);
+  const stale = await post(baseUrl, "/api/ops/auth/token-revocations", {
+    jti: "stale_jti_entry",
+    expiresAt: 0
+  }, { authorization: `Bearer ${adminToken}` });
+  assert.equal(stale.res.status, 201);
+  const revokeSecond = await post(baseUrl, "/api/ops/auth/token-revocations", {
+    jti: secondBridge.json.data.auth.jti,
+    expiresAt: secondBridge.json.data.auth.expiresAt
+  }, { authorization: `Bearer ${adminToken}` });
+  assert.equal(revokeSecond.res.status, 201);
+  assert.equal(revokeSecond.json.data.tokenRevocation.activeRevocationCount, 2);
+});
+
+test("preflight trust-policy supports warn-to-fail progression", () => {
+  const warnMode = runControlPlanePreflight({
+    env: {
+      NODE_ENV: "production",
+      AUTH_TRUST_POLICY_MODE: "warn",
+      AUTH_BRIDGE_ALLOWED_TRUST_MODES: "manual_unverified",
+      AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS: "seed"
+    },
+    enforceableActions: []
+  });
+  assert.equal(warnMode.ok, true);
+  assert.ok(warnMode.warnings.some((w) => w.includes("Low-trust auth bridge modes enabled")));
+
+  const failMode = runControlPlanePreflight({
+    env: {
+      NODE_ENV: "production",
+      AUTH_TRUST_POLICY_MODE: "fail",
+      AUTH_BRIDGE_ALLOWED_TRUST_MODES: "manual_unverified",
+      AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS: "seed"
+    },
+    enforceableActions: []
+  });
+  assert.equal(failMode.ok, false);
+  assert.ok(failMode.issues.some((i) => i.includes("Low-trust auth bridge modes enabled")));
+});

@@ -2,8 +2,9 @@
 
 const { parseAuthorizationConfig } = require("./authorization");
 const { validateAuthorizationConfigShape, validateParsedEnforcementConfig } = require("./authzEnforcementValidation");
+const { parseTrustPolicyConfig, validateTrustPolicy, summarizeTrustPolicy } = require("./trustPolicy");
 
-function runControlPlanePreflight({ env = process.env, enforceableActions = [] } = {}) {
+function runControlPlanePreflight({ env = process.env, enforceableActions = [], trustPolicy = null } = {}) {
   const issues = [];
   const warnings = [];
 
@@ -61,6 +62,10 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [] }
   if (env.LEGACY_FALLBACK_ENABLED === "false" && Object.values(parsedLike.enabledByAction).some(Boolean)) {
     warnings.push("LEGACY_FALLBACK_ENABLED=false while explicit fallback enforcement flags are set; these flags are inert until fallback is enabled.");
   }
+  const parsedTrustPolicy = trustPolicy || parseTrustPolicyConfig(env);
+  const trustValidation = validateTrustPolicy(parsedTrustPolicy);
+  warnings.push(...trustValidation.warnings);
+  issues.push(...trustValidation.issues);
 
   const manualBridgeEnabled = env.AUTH_BRIDGE_ALLOW_MANUAL !== "false";
   const unverifiedGoogleEnabled = env.AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE !== "false";
@@ -83,6 +88,7 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [] }
     summary: {
       enforceableActionCount: enforceableActions.length,
       invalidActionCount: invalidActions.length,
+      trustPolicy: summarizeTrustPolicy(parsedTrustPolicy)
       manualBridgeEnabled,
       unverifiedGoogleEnabled
     }

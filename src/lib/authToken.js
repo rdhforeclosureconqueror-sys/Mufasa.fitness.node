@@ -20,7 +20,8 @@ function createAuthTokenLib({
   issuer = "mufasa-fitness-node",
   minSecretLength = 16,
   maxTtlMs = 1000 * 60 * 60 * 24 * 14,
-  clockSkewMs = 5000
+  clockSkewMs = 5000,
+  isRevokedJti = null
 }) {
   const effectiveSecret = String(secret || "").trim();
   if (!effectiveSecret) {
@@ -41,7 +42,9 @@ function createAuthTokenLib({
 
   function verify(token) {
     const parts = String(token || "").split(".");
-    if (parts.length !== 3) throw new ApiError("UNAUTHENTICATED", "Invalid auth token", 401);
+    if (parts.length !== 3) {
+      throw new ApiError("UNAUTHENTICATED", "Invalid auth token", 401);
+    }
 
     const [encodedHeader, encodedPayload, signature] = parts;
     const toSign = `${encodedHeader}.${encodedPayload}`;
@@ -68,7 +71,7 @@ function createAuthTokenLib({
 
     const exp = asFiniteNumber(payload?.exp);
     const iat = asFiniteNumber(payload?.iat);
-    if (!payload || payload.iss !== issuer || !payload.sub || !exp || !iat) {
+    if (!payload || payload.iss !== issuer || !payload.sub || !payload.jti || !exp || !iat) {
       throw new ApiError("UNAUTHENTICATED", "Invalid auth token claims", 401);
     }
 
@@ -83,6 +86,10 @@ function createAuthTokenLib({
 
     if (exp <= iat || exp - iat > maxTtlMs + clockSkewMs) {
       throw new ApiError("UNAUTHENTICATED", "Invalid auth token lifetime", 401);
+    }
+
+    if (typeof isRevokedJti === "function" && isRevokedJti(payload.jti)) {
+      throw new ApiError("UNAUTHENTICATED", "Auth token revoked", 401);
     }
 
     return payload;
@@ -121,7 +128,8 @@ function createAuthTokenLib({
       userId,
       provider,
       providerVerified: payload.providerVerified,
-      identityClass: payload.identityClass
+      identityClass: payload.identityClass,
+      jti: payload.jti
     };
   }
 

@@ -28,7 +28,8 @@ function authContext(authTokenLib, authorizationResolver = null) {
       providerVerified: Boolean(claims.providerVerified),
       identityClass: claims.identityClass || "manual_unverified",
       issuedAt: claims.iat,
-      expiresAt: claims.exp
+      expiresAt: claims.exp,
+      jti: claims.jti
     };
 
     if (authorizationResolver) {
