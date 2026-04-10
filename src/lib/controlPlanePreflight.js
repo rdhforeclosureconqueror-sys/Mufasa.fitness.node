@@ -67,6 +67,20 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [], 
   warnings.push(...trustValidation.warnings);
   issues.push(...trustValidation.issues);
 
+  const manualBridgeEnabled = env.AUTH_BRIDGE_ALLOW_MANUAL !== "false";
+  const unverifiedGoogleEnabled = env.AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE !== "false";
+  const googleClientId = String(env.GOOGLE_OAUTH_CLIENT_ID || "").trim();
+
+  if (manualBridgeEnabled) {
+    warnings.push("AUTH_BRIDGE_ALLOW_MANUAL is enabled; manual identity path is low-trust.");
+  }
+  if (unverifiedGoogleEnabled) {
+    warnings.push("AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE is enabled; Google claims may be unverified.");
+  }
+  if (!unverifiedGoogleEnabled && !googleClientId) {
+    issues.push("GOOGLE_OAUTH_CLIENT_ID is required when AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE=false.");
+  }
+
   return {
     ok: issues.length === 0,
     issues: [...new Set(issues)],
@@ -75,6 +89,8 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [], 
       enforceableActionCount: enforceableActions.length,
       invalidActionCount: invalidActions.length,
       trustPolicy: summarizeTrustPolicy(parsedTrustPolicy)
+      manualBridgeEnabled,
+      unverifiedGoogleEnabled
     }
   };
 }

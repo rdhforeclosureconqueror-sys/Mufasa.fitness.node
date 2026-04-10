@@ -78,13 +78,18 @@ function validateAuthBridge(input, { requestedTrustMode = null } = {}) {
   const manualUserId = assertString(input.userId ?? input.manualUserId, "userId", { required: false, max: 128 });
   const googleSub = assertString(input.googleSub, "googleSub", { required: false, max: 256 });
   const googleEmail = assertString(input.googleEmail, "googleEmail", { required: false, max: 256 });
+  const googleIdToken = assertString(input.googleIdToken, "googleIdToken", { required: false, min: 20, max: 4096 });
 
-  if (!manualUserId && !googleSub && !googleEmail) {
-    throw new ApiError("VALIDATION_ERROR", "Provide one of userId/manualUserId, googleSub, or googleEmail", 400);
+  if (!manualUserId && !googleSub && !googleEmail && !googleIdToken) {
+    throw new ApiError("VALIDATION_ERROR", "Provide one of userId/manualUserId, googleSub, googleEmail, or googleIdToken", 400);
   }
 
   if (manualUserId) {
     return {
+      manualUserId,
+      googleSub,
+      googleEmail,
+      googleIdToken,
       userId: manualUserId,
       provider: "manual",
       providerSubject: manualUserId,
@@ -92,11 +97,17 @@ function validateAuthBridge(input, { requestedTrustMode = null } = {}) {
     };
   }
 
-  const providerSubject = googleSub || googleEmail;
-  const userId = `google_${providerSubject.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120)}`;
+  const providerSubject = googleSub || googleEmail || null;
+  const derivedUserId = providerSubject
+    ? `google_${providerSubject.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120)}`
+    : null;
 
   return {
-    userId,
+    manualUserId,
+    googleSub,
+    googleEmail,
+    googleIdToken,
+    userId: derivedUserId,
     provider: "google-bridge",
     providerSubject,
     trustMode: requestedTrustMode || "provider_unverified"
