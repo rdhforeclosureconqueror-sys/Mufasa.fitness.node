@@ -921,10 +921,10 @@
     async function ensureBackendSession(profile) {
       if (!BACKEND_READ_CLIENT) return false;
       try {
-        await BACKEND_READ_CLIENT.ensureAuthToken({
-          manualUserId: (profile?.email || profile?.name || "user").toLowerCase().replace(/\s+/g, "_"),
-          googleEmail: profile?.email || null
-        });
+        const claims = profile?.googleIdToken
+          ? { googleIdToken: profile.googleIdToken }
+          : (profile?.email ? { googleEmail: profile.email } : { manualUserId: profile?.name || "user" });
+        await BACKEND_READ_CLIENT.ensureAuthToken(claims);
         return true;
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
@@ -958,12 +958,13 @@
     }
 
     async function onLogin(profile) {
-      USER_ID = (profile.email || profile.name || "user").toLowerCase().replace(/\s+/g, "_");
+      USER_ID = toSafeUserId(profile.email || profile.name || "user");
 
       USER_PROFILE = {
         name: profile.name || profile.email || "Athlete",
         email: profile.email || null,
         picture: profile.picture || null,
+        googleIdToken: profile.googleIdToken || null,
         age: profile.age || profile.ageYears || null,
         weight_lbs: profile.weight_lbs || null,
         height: profile.height || null,
@@ -1051,6 +1052,15 @@
       }
     }
 
+    function toSafeUserId(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 128) || "user";
+    }
+
     // Login buttons
     manualLoginBtn.onclick = () => {
       const name = manualNameInput.value.trim() || "Athlete";
@@ -1070,7 +1080,8 @@
           onLogin({
             name: payload.name || payload.given_name || "Athlete",
             email: payload.email,
-            picture: payload.picture
+            picture: payload.picture,
+            googleIdToken: response.credential || null
           });
           showOverlay(false);
         }
