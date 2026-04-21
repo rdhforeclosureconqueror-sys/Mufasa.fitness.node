@@ -97,6 +97,11 @@ Recommended deployment gate (lightweight):
 2. block rollout if exit is non-zero
 3. archive emitted JSON into deploy logs/artifacts for operator review
 
+## Phase 4 pilot readiness lock
+
+Final pilot scope lock report (journeys, route trace, visibility gating, and GO/NO-GO matrix):
+- `PILOT_READINESS_PHASE4.md`
+
 ## Control-plane hardening additions
 
 ### Trust policy tightening (pilot readiness)

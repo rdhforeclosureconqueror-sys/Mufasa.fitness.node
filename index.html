@@ -1793,8 +1793,9 @@ function toggleListening() {
         console.log("PosePacket:", posePacket);
       }
 
-      // Draw skeleton
-      if (renderMode === "camera") {
+      // Draw skeleton (camera path unchanged)
+      const shouldDrawSkeleton = renderMode === "camera" || renderMode === "avatar_overlay";
+      if (shouldDrawSkeleton) {
         if (pose && pose.keypoints) {
           const color = analysis.goodForm ? "#22c55e" : "#ef4444";
           ctx.lineWidth = 3;
@@ -1822,10 +1823,10 @@ function toggleListening() {
         }
       }
       if (renderMode === "avatar_overlay") {
-        // placeholder — do nothing yet
+        drawAvatar(ctx, posePacket);
       }
       if (renderMode === "avatar_only") {
-        // placeholder — do nothing yet
+        drawAvatar(ctx, posePacket);
       }
 
       // Exercise baseline capture
@@ -1909,6 +1910,73 @@ function toggleListening() {
         timestamp: Date.now(),
         keypoints: pose.keypoints
       };
+    }
+
+    function drawAvatar(context, posePacket) {
+      const points = posePacket?.keypoints;
+      if (!points || !points.length) return;
+      const get = (i) => points[i];
+      const good = (kp) => kp && kp.score > 0.35;
+
+      const nose = get(0);
+      const ls = get(5);
+      const rs = get(6);
+      const lh = get(11);
+      const rh = get(12);
+      if (!good(ls) || !good(rs)) return;
+
+      const midX = (ls.x + rs.x) / 2;
+      const midY = (ls.y + rs.y) / 2;
+      const shoulderWidth = Math.max(24, Math.hypot(rs.x - ls.x, rs.y - ls.y));
+      const headRadius = shoulderWidth * 0.34;
+      const headX = good(nose) ? nose.x : midX;
+      const headY = good(nose) ? (nose.y - headRadius * 0.2) : (midY - shoulderWidth * 0.9);
+
+      context.save();
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.strokeStyle = "rgba(250, 204, 21, 0.95)";
+      context.fillStyle = "rgba(250, 204, 21, 0.18)";
+      context.lineWidth = Math.max(2, shoulderWidth * 0.08);
+
+      context.beginPath();
+      context.arc(headX, headY, headRadius, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      const drawLimb = (a, b) => {
+        if (!good(a) || !good(b)) return;
+        context.beginPath();
+        context.moveTo(a.x, a.y);
+        context.lineTo(b.x, b.y);
+        context.stroke();
+      };
+
+      drawLimb(ls, rs);
+      drawLimb(ls, lh);
+      drawLimb(rs, rh);
+      drawLimb(ls, get(7));
+      drawLimb(get(7), get(9));
+      drawLimb(rs, get(8));
+      drawLimb(get(8), get(10));
+      drawLimb(lh, rh);
+      drawLimb(lh, get(13));
+      drawLimb(get(13), get(15));
+      drawLimb(rh, get(14));
+      drawLimb(get(14), get(16));
+
+      if (good(lh) && good(rh)) {
+        context.beginPath();
+        context.moveTo(ls.x, ls.y);
+        context.lineTo(rs.x, rs.y);
+        context.lineTo(rh.x, rh.y);
+        context.lineTo(lh.x, lh.y);
+        context.closePath();
+        context.fill();
+        context.stroke();
+      }
+
+      context.restore();
     }
 
     async function startWorkout() {
