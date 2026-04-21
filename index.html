@@ -586,6 +586,17 @@
       [12, 14], [14, 16]
     ];
 
+    const AVATAR_FLAGS = {
+      ENABLE_AVATAR_MODE: false,
+      AVATAR_MODE: "camera", // "camera" | "avatar_overlay" | "avatar_only"
+      AVATAR_DEBUG: false
+    };
+
+    function getRenderMode() {
+      if (!AVATAR_FLAGS.ENABLE_AVATAR_MODE) return "camera";
+      return AVATAR_FLAGS.AVATAR_MODE;
+    }
+
     /* =========================================================
       SECTION 2/4 — UI HELPERS + LOGIN/PERSIST + CALENDAR
     ========================================================== */
@@ -1753,6 +1764,8 @@ function toggleListening() {
 
       const pose = poses.length ? poses[0] : null;
       const analysis = analyzeSquatForm(pose);
+      const posePacket = buildPosePacket(pose);
+      const renderMode = getRenderMode();
 
       lastDepthScore = analysis.depthScore;
       lastGoodForm = analysis.goodForm;
@@ -1776,31 +1789,43 @@ function toggleListening() {
           : `Form needs adjustment. Score: ${analysis.depthScore.toFixed(2)}`;
       }
 
+      if (AVATAR_FLAGS.AVATAR_DEBUG && posePacket) {
+        console.log("PosePacket:", posePacket);
+      }
+
       // Draw skeleton
-      if (pose && pose.keypoints) {
-        const color = analysis.goodForm ? "#22c55e" : "#ef4444";
-        ctx.lineWidth = 3;
+      if (renderMode === "camera") {
+        if (pose && pose.keypoints) {
+          const color = analysis.goodForm ? "#22c55e" : "#ef4444";
+          ctx.lineWidth = 3;
 
-        for (const [i, j] of SKELETON_EDGES) {
-          const kp1 = pose.keypoints[i];
-          const kp2 = pose.keypoints[j];
-          if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
-            ctx.beginPath();
-            ctx.moveTo(kp1.x, kp1.y);
-            ctx.lineTo(kp2.x, kp2.y);
-            ctx.strokeStyle = color;
-            ctx.stroke();
+          for (const [i, j] of SKELETON_EDGES) {
+            const kp1 = pose.keypoints[i];
+            const kp2 = pose.keypoints[j];
+            if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
+              ctx.beginPath();
+              ctx.moveTo(kp1.x, kp1.y);
+              ctx.lineTo(kp2.x, kp2.y);
+              ctx.strokeStyle = color;
+              ctx.stroke();
+            }
+          }
+
+          for (const kp of pose.keypoints) {
+            if (kp.score > 0.4) {
+              ctx.beginPath();
+              ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+              ctx.fillStyle = color;
+              ctx.fill();
+            }
           }
         }
-
-        for (const kp of pose.keypoints) {
-          if (kp.score > 0.4) {
-            ctx.beginPath();
-            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-          }
-        }
+      }
+      if (renderMode === "avatar_overlay") {
+        // placeholder — do nothing yet
+      }
+      if (renderMode === "avatar_only") {
+        // placeholder — do nothing yet
       }
 
       // Exercise baseline capture
@@ -1876,6 +1901,14 @@ function toggleListening() {
       }
 
       animId = requestAnimationFrame(runPoseLoop);
+    }
+
+    function buildPosePacket(pose) {
+      if (!pose || !pose.keypoints) return null;
+      return {
+        timestamp: Date.now(),
+        keypoints: pose.keypoints
+      };
     }
 
     async function startWorkout() {
