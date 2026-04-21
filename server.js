@@ -692,12 +692,25 @@ function createApp(options = {}) {
         headers: sanitizeSpeakHeaders(req)
       });
 
-      const { text, voice = "alloy", format = "mp3" } = req.body || {};
+      const {
+        text,
+        voice = "alloy",
+        format = "mp3",
+        speed,
+        pitch
+      } = req.body || {};
       if (!text || !String(text).trim()) {
         return res.status(400).json({ ok: false, error: "text required" });
       }
 
-      const AIVOICE_URL = process.env.AIVOICE_URL || "https://aivoice-wmrv.onrender.com/speak";
+      const rawVoiceUpstream =
+        process.env.AIVOICE_URL ||
+        process.env.OPENVOICE_UPSTREAM_URL ||
+        "https://aivoice-wmrv.onrender.com";
+      const normalizedVoiceUpstream = rawVoiceUpstream.replace(/\/+$/, "");
+      const AIVOICE_URL = /\/speak$/i.test(normalizedVoiceUpstream)
+        ? normalizedVoiceUpstream
+        : `${normalizedVoiceUpstream}/speak`;
       const AIVOICE_API_KEY = process.env.AIVOICE_API_KEY || "";
 
       const r = await fetch(AIVOICE_URL, {
@@ -706,7 +719,7 @@ function createApp(options = {}) {
           "Content-Type": "application/json",
           ...(AIVOICE_API_KEY ? { "X-AIVOICE-KEY": AIVOICE_API_KEY } : {})
         },
-        body: JSON.stringify({ text, voice, format })
+        body: JSON.stringify({ text, voice, format, speed, pitch })
       });
 
       if (!r.ok) {
