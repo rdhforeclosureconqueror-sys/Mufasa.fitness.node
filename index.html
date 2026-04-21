@@ -591,10 +591,15 @@
       AVATAR_MODE: "camera", // "camera" | "avatar_overlay" | "avatar_only"
       AVATAR_DEBUG: false
     };
+    let lastRenderMode = "camera";
 
     function getRenderMode() {
       if (!AVATAR_FLAGS.ENABLE_AVATAR_MODE) return "camera";
       return AVATAR_FLAGS.AVATAR_MODE;
+    }
+
+    function setPersonLayerSuppressed(suppressed) {
+      videoEl.style.visibility = suppressed ? "hidden" : "visible";
     }
 
     /* =========================================================
@@ -1524,6 +1529,8 @@ function toggleListening() {
 
         poseStatusEl.textContent = "Pose detector ready.";
         poseStatusEl.classList.add("status-ok");
+        setPersonLayerSuppressed(false);
+        lastRenderMode = "camera";
         startBtn.disabled = false;
         ohsaBtn.disabled = false;
         defineExerciseBtn.disabled = false;
@@ -1760,12 +1767,17 @@ function toggleListening() {
       if (!detector) return;
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
-      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-
       const pose = poses.length ? poses[0] : null;
       const analysis = analyzeSquatForm(pose);
       const posePacket = buildPosePacket(pose);
       const renderMode = getRenderMode();
+      const modeChanged = renderMode !== lastRenderMode;
+      if (modeChanged) {
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      }
+      setPersonLayerSuppressed(renderMode === "avatar_only");
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      lastRenderMode = renderMode;
 
       lastDepthScore = analysis.depthScore;
       lastGoodForm = analysis.goodForm;
@@ -1793,40 +1805,62 @@ function toggleListening() {
         console.log("PosePacket:", posePacket);
       }
 
+      const drawSkeleton = () => {
+        if (!(pose && pose.keypoints)) return;
+        const color = analysis.goodForm ? "#22c55e" : "#ef4444";
+        ctx.lineWidth = 3;
+
+        for (const [i, j] of SKELETON_EDGES) {
+          const kp1 = pose.keypoints[i];
+          const kp2 = pose.keypoints[j];
+          if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
+            ctx.beginPath();
+            ctx.moveTo(kp1.x, kp1.y);
+            ctx.lineTo(kp2.x, kp2.y);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+          }
+        }
+
+        for (const kp of pose.keypoints) {
+          if (kp.score > 0.4) {
+            ctx.beginPath();
+            ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
+        }
+      };
+
       // Draw skeleton (camera path unchanged)
       const shouldDrawSkeleton = renderMode === "camera" || renderMode === "avatar_overlay";
       if (shouldDrawSkeleton) {
-        if (pose && pose.keypoints) {
-          const color = analysis.goodForm ? "#22c55e" : "#ef4444";
-          ctx.lineWidth = 3;
+        drawSkeleton();
+      }
 
-          for (const [i, j] of SKELETON_EDGES) {
-            const kp1 = pose.keypoints[i];
-            const kp2 = pose.keypoints[j];
-            if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
-              ctx.beginPath();
-              ctx.moveTo(kp1.x, kp1.y);
-              ctx.lineTo(kp2.x, kp2.y);
-              ctx.strokeStyle = color;
-              ctx.stroke();
-            }
-          }
-
-          for (const kp of pose.keypoints) {
-            if (kp.score > 0.4) {
-              ctx.beginPath();
-              ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
-              ctx.fillStyle = color;
-              ctx.fill();
-            }
+      const canDrawAvatar = posePacket && posePacket.keypoints && posePacket.keypoints.length;
+      if (renderMode === "avatar_overlay") {
+        if (canDrawAvatar) {
+          try {
+            drawAvatar(ctx, posePacket);
+          } catch (err) {
+            if (AVATAR_FLAGS.AVATAR_DEBUG) console.warn("Avatar overlay render failed; keeping camera frame.", err);
           }
         }
-      }
-      if (renderMode === "avatar_overlay") {
-        drawAvatar(ctx, posePacket);
-      }
-      if (renderMode === "avatar_only") {
-        drawAvatar(ctx, posePacket);
+      } else if (renderMode === "avatar_only") {
+        if (!canDrawAvatar) {
+          drawSkeleton();
+        } else {
+          try {
+            drawAvatar(ctx, posePacket);
+          } catch (err) {
+            if (AVATAR_FLAGS.AVATAR_DEBUG) console.warn("Avatar-only render failed; falling back to camera skeleton.", err);
+            drawSkeleton();
+          }
+        }
+      } else if (renderMode !== "camera") {
+        if (AVATAR_FLAGS.AVATAR_DEBUG) console.warn("Unknown render mode, falling back to camera:", renderMode);
+        drawSkeleton();
       }
 
       // Exercise baseline capture
@@ -1893,6 +1927,8 @@ function toggleListening() {
                 addLog("system", "Workout complete.");
                 if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
                 sendEndSessionToNode();
+                setPersonLayerSuppressed(false);
+                lastRenderMode = "camera";
                 cancelAnimationFrame(animId);
                 return;
               }
@@ -2016,6 +2052,8 @@ function toggleListening() {
         running = false;
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        setPersonLayerSuppressed(false);
+        lastRenderMode = "camera";
         addLog("system", "Workout stopped.");
         sendEndSessionToNode();
       }
