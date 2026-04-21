@@ -715,7 +715,6 @@ function createApp(options = {}) {
         }
       );
     }
-    const claims = validateAuthBridge(req.body);
     const resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
       env: process.env,
       googleIdentityVerifier: options.googleIdentityVerifier

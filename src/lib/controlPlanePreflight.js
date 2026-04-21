@@ -88,7 +88,7 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [], 
     summary: {
       enforceableActionCount: enforceableActions.length,
       invalidActionCount: invalidActions.length,
-      trustPolicy: summarizeTrustPolicy(parsedTrustPolicy)
+      trustPolicy: summarizeTrustPolicy(parsedTrustPolicy),
       manualBridgeEnabled,
       unverifiedGoogleEnabled
     }
