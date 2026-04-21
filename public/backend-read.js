@@ -46,6 +46,15 @@
       localStorage.removeItem(tokenKey);
     }
 
+    function sanitizeManualUserId(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 128);
+    }
+
     async function fetchJSON(path, { method = "GET", body = undefined, auth = false } = {}) {
       const headers = { "content-type": "application/json" };
       if (auth) {
@@ -91,28 +100,41 @@
     }
 
     async function ensureAuthToken(claims) {
-      if (getAuthToken()) return getAuthToken();
+      const existingToken = getAuthToken();
 
       const body = {};
-      if (claims?.manualUserId) body.userId = claims.manualUserId;
-      if (claims?.googleSub) body.googleSub = claims.googleSub;
-      if (claims?.googleEmail) body.googleEmail = claims.googleEmail;
+      if (claims?.googleIdToken) {
+        body.googleIdToken = claims.googleIdToken;
+      } else if (claims?.googleSub) {
+        body.googleSub = claims.googleSub;
+      } else if (claims?.googleEmail) {
+        body.googleEmail = claims.googleEmail;
+      } else if (claims?.manualUserId) {
+        const sanitized = sanitizeManualUserId(claims.manualUserId);
+        if (sanitized) body.userId = sanitized;
+      }
 
-      if (!body.userId && !body.googleSub && !body.googleEmail) {
+      if (!body.userId && !body.googleSub && !body.googleEmail && !body.googleIdToken) {
+        if (existingToken) return existingToken;
         const err = new Error("missing_claims");
         err.code = "MISSING_CLAIMS";
         throw err;
       }
 
-      const data = await fetchJSON("/api/auth/bridge", { method: "POST", body, auth: false });
-      const token = data?.auth?.token;
-      if (!token) {
-        const err = new Error("auth_bridge_missing_token");
-        err.code = "AUTH_BRIDGE_FAILED";
-        throw err;
+      try {
+        const data = await fetchJSON("/api/auth/bridge", { method: "POST", body, auth: false });
+        const token = data?.auth?.token;
+        if (!token) {
+          const err = new Error("auth_bridge_missing_token");
+          err.code = "AUTH_BRIDGE_FAILED";
+          throw err;
+        }
+        setAuthToken(token);
+        return token;
+      } catch (error) {
+        if (existingToken) return existingToken;
+        throw error;
       }
-      setAuthToken(token);
-      return token;
     }
 
     function normalizeProfile(profile, fallback = {}) {
