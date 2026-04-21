@@ -1212,9 +1212,13 @@ async function speak(text, source = "system") {
       repFeedbackAllowed = false;
     }
 
+    const authToken = BACKEND_READ_CLIENT?.getAuthToken?.() || null;
     const res = await fetch(AIVOICE_URL, {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
+  },
   body: JSON.stringify({ text, voice, format })
 });
 

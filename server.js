@@ -89,6 +89,22 @@ function buildActionEnforcementState(base, runtimeOverrides = {}) {
   };
 }
 
+function sanitizeAuthHeader(headerValue) {
+  if (!headerValue || typeof headerValue !== "string") return null;
+  const [scheme, token] = headerValue.split(" ");
+  if (!token) return `${scheme || "unknown"} [missing-token]`;
+  return `${scheme || "unknown"} [redacted:${Math.min(token.length, 12)}]`;
+}
+
+function sanitizeSpeakHeaders(req) {
+  return {
+    authorization: sanitizeAuthHeader(req.get("authorization")),
+    contentType: req.get("content-type") || null,
+    userAgent: req.get("user-agent") || null,
+    origin: req.get("origin") || null
+  };
+}
+
 function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
@@ -664,6 +680,18 @@ function createApp(options = {}) {
 
   app.post("/api/speak", async (req, res) => {
     try {
+      const allowTtsNoAuth = process.env.ENABLE_TTS_NO_AUTH !== "false";
+      if (!allowTtsNoAuth && !req.auth?.userId) {
+        return res.status(401).json({ ok: false, error: "auth_required" });
+      }
+
+      console.info("[tts] incoming request", {
+        requestId: req.requestId,
+        userId: req.auth?.userId || null,
+        allowTtsNoAuth,
+        headers: sanitizeSpeakHeaders(req)
+      });
+
       const { text, voice = "alloy", format = "mp3" } = req.body || {};
       if (!text || !String(text).trim()) {
         return res.status(400).json({ ok: false, error: "text required" });
@@ -851,7 +879,28 @@ function createApp(options = {}) {
   }));
 
   app.put("/api/me/profile", requireAuth, asyncHandler(async (req, res) => {
-    const profilePayload = validateProfileUpsert(req.body);
+    console.info("[profile] incoming payload", {
+      requestId: req.requestId,
+      userId: req.auth?.userId || null,
+      payload: req.body
+    });
+
+    let profilePayload;
+    try {
+      profilePayload = validateProfileUpsert(req.body);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "VALIDATION_ERROR") {
+        console.warn("[profile] validation failed", {
+          requestId: req.requestId,
+          userId: req.auth?.userId || null,
+          message: error.message,
+          field: error.message?.split(" ")[0] || null,
+          payload: req.body
+        });
+      }
+      throw error;
+    }
+
     const result = userDataService.upsertProfile({
       userId: req.auth.userId,
       profilePayload,

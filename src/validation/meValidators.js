@@ -24,6 +24,16 @@ function assertNullableNumber(v, field, { min = Number.NEGATIVE_INFINITY, max = 
   return v;
 }
 
+function coerceNullableNumber(v) {
+  if (v == null) return null;
+  if (typeof v === "number") return Number.isNaN(v) ? v : v;
+  if (typeof v !== "string") return v;
+  const trimmed = v.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : v;
+}
+
 function assertStringArray(v, field, { max = 50, maxItemLen = 160 } = {}) {
   if (v == null) return [];
   if (!Array.isArray(v)) throw new ApiError("VALIDATION_ERROR", `${field} must be an array`, 400);
@@ -37,7 +47,7 @@ function normalizeGoals(goals) {
 
   return {
     primary_goal: assertString(goals.primary_goal, "profile.goals.primary_goal", { required: false, max: 120 }),
-    frequency_days_per_week: assertNullableNumber(goals.frequency_days_per_week, "profile.goals.frequency_days_per_week", { min: 1, max: 14 }),
+    frequency_days_per_week: assertNullableNumber(coerceNullableNumber(goals.frequency_days_per_week), "profile.goals.frequency_days_per_week", { min: 1, max: 14 }),
     notes: assertString(goals.notes, "profile.goals.notes", { required: false, max: 1000 })
   };
 }
@@ -47,9 +57,9 @@ function validateProfileUpsert(input) {
   const profile = isObject(input.profile) ? input.profile : input;
 
   return {
-    age: assertNullableNumber(profile.age, "profile.age", { min: 1, max: 120 }),
-    height_cm: assertNullableNumber(profile.height_cm ?? profile.heightCm, "profile.height_cm", { min: 50, max: 300 }),
-    weight_kg: assertNullableNumber(profile.weight_kg ?? profile.weightKg, "profile.weight_kg", { min: 20, max: 450 }),
+    age: assertNullableNumber(coerceNullableNumber(profile.age), "profile.age", { min: 1, max: 120 }),
+    height_cm: assertNullableNumber(coerceNullableNumber(profile.height_cm ?? profile.heightCm), "profile.height_cm", { min: 50, max: 300 }),
+    weight_kg: assertNullableNumber(coerceNullableNumber(profile.weight_kg ?? profile.weightKg), "profile.weight_kg", { min: 20, max: 450 }),
     goals: normalizeGoals(profile.goals),
     injuries: assertStringArray(profile.injuries, "profile.injuries", { max: 50, maxItemLen: 200 }),
     notes: assertString(profile.notes ?? profile.historyText, "profile.notes", { required: false, max: 4000 })
