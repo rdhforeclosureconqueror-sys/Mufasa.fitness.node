@@ -91,7 +91,6 @@ function buildActionEnforcementState(base, runtimeOverrides = {}) {
 
 function createApp(options = {}) {
   const app = express();
-  app.use(express.json({ limit: "2mb" }));
   app.use(requestContext);
 
   const rootDir = options.rootDir || process.cwd();
@@ -136,14 +135,21 @@ function createApp(options = {}) {
     .map(s => s.trim())
     .filter(Boolean);
 
-  app.use(cors({
+  const corsOptions = {
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
       if (ALLOWED_ORIGINS.length === 0) return cb(null, true);
       return cb(null, ALLOWED_ORIGINS.includes(origin));
     },
-    credentials: false
-  }));
+    credentials: false,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    optionsSuccessStatus: 200
+  };
+
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions));
+  app.use(express.json({ limit: "2mb" }));
 
   // ---- Paths ----
   const PUBLIC_DIR = path.join(rootDir, "public");

@@ -485,7 +485,7 @@
       baseUrl: NODE_BASE_URL,
       storagePrefix: "maat"
     });
-    const AIVOICE_URL = "https://mufasa-knowledge-bank.onrender.com/api/voice/tts";
+    const AIVOICE_URL = NODE_BASE_URL + "/api/speak";
     // ---- DOM hooks ----
     const overlay = document.getElementById("loginOverlay");
     const googleBtn = document.getElementById("googleBtn");
@@ -868,15 +868,21 @@
       return null;
     }
 
+    function parseNullableNumber(value) {
+      if (value == null || value === "") return null;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
     async function saveProfileWritePath() {
       if (!USER_PROFILE) return;
       const profilePayload = {
-        age: USER_PROFILE.age ?? null,
+        age: parseNullableNumber(USER_PROFILE.age),
         height_cm: parseHeightCm(USER_PROFILE.height),
-        weight_kg: USER_PROFILE.weight_lbs ? Number((USER_PROFILE.weight_lbs / 2.20462).toFixed(2)) : null,
+        weight_kg: parseNullableNumber(USER_PROFILE.weight_lbs) ? Number((Number(USER_PROFILE.weight_lbs) / 2.20462).toFixed(2)) : null,
         goals: USER_PROFILE.goals ? {
           primary_goal: USER_PROFILE.goals.primary || null,
-          frequency_days_per_week: USER_PROFILE.goals.frequency_days_per_week || null,
+          frequency_days_per_week: parseNullableNumber(USER_PROFILE.goals.frequency_days_per_week),
           notes: USER_PROFILE.goals.focus || null
         } : null,
         injuries: Array.isArray(USER_PROFILE.injuries) ? USER_PROFILE.injuries : [],
