@@ -166,7 +166,7 @@ function createApp(options = {}) {
   const trustPolicy = summarizeTrustPolicy(trustPolicyConfig);
   const authTokenLib = createAuthTokenLib({
     secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me",
-    isRevokedJti: (jti) => tokenDenylist.isRevoked(jti)
+    isRevokedJti: (jti) => tokenDenylist.isRevoked(jti),
     minSecretLength: Number(process.env.AUTH_TOKEN_MIN_SECRET_LENGTH || 16),
     maxTtlMs: Number(process.env.AUTH_TOKEN_MAX_TTL_MS || 1000 * 60 * 60 * 24 * 14),
     clockSkewMs: Number(process.env.AUTH_TOKEN_CLOCK_SKEW_MS || 5000)
