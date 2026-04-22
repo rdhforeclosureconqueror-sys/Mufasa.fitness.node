@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json";
+  const EXERCISE_INDEX_URL = "/exercise-db/index.json";
   const cardsEl = document.getElementById("cards");
   const statsEl = document.getElementById("stats");
   const hiddenNoticeEl = document.getElementById("hiddenNotice");
@@ -24,7 +24,7 @@
     const raw = Array.isArray(ex.images) ? ex.images : [];
     return raw
       .filter(Boolean)
-      .map((rel) => `/public/exercise-db/${rel}`);
+      .map((rel) => `/exercise-db/${rel}`);
   }
 
   function getCategories(list) {

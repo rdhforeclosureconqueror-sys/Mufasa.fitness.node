@@ -8,7 +8,7 @@
   "use strict";
 
   // ---------- CONFIG ----------
-  const EXERCISE_INDEX_URL = "/public/exercise-db/index.json";
+  const EXERCISE_INDEX_URL = "/exercise-db/index.json";
   const STORAGE_KEYS = {
     HISTORY: "WORKOUT_HISTORY_V1",   // array of workout sessions (completed or not)
     ACTIVE: "ACTIVE_WORKOUT_V1"      // active session snapshot
@@ -102,7 +102,7 @@
       setStatus(false, "Exercise DB not loaded.");
       if (workoutPlanViewEl) {
         workoutPlanViewEl.textContent =
-          "Exercise DB failed to load. Check /public/exercise-db/index.json deployment.";
+          "Exercise DB failed to load. Check /exercise-db/index.json deployment.";
       }
       return false;
     }
