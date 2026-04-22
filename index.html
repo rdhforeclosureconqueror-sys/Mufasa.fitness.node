@@ -400,6 +400,7 @@
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
+        <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
 
         <select id="voiceSelect">
           <option value="">Loading voices…</option>
@@ -524,6 +525,7 @@
     const ohsaSummaryViewEl = document.getElementById("ohsSummaryView");
     const calendarViewEl = document.getElementById("calendarView");
     const dashboardBtn = document.getElementById("dashboardBtn");
+    const exerciseLibraryBtn = document.getElementById("exerciseLibraryBtn");
 
     // ---- Global user/session state ----
     let USER_ID = "guest";
@@ -558,6 +560,10 @@
     let currentExerciseName = null;
     const EXERCISE_BASELINE_FRAMES = 80;
     let baselineFrames = [];
+
+    if (exerciseLibraryBtn) {
+      exerciseLibraryBtn.onclick = () => { window.location.href = "/public/exercise-library.html"; };
+    }
 
     // ---- Overhead Squat Assessment ----
     let ohsaMode = false;
