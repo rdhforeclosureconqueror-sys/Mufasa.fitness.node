@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exercise Library</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020617;
+      --panel: #0b1220;
+      --muted: #9ca3af;
+      --text: #e5e7eb;
+      --line: #1f2937;
+      --accent: #22c55e;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr minmax(180px, 240px);
+      gap: 12px;
+      margin: 16px 0;
+    }
+    input, select {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    .stats { margin: 8px 0 16px; font-size: 14px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: #111827;
+      border-bottom: 1px solid var(--line);
+    }
+    .content { padding: 12px; display: grid; gap: 8px; }
+    .title { font-weight: 600; line-height: 1.3; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 2px 8px;
+    }
+    ul { margin: 0; padding-left: 18px; color: #d1d5db; }
+    li { margin-bottom: 4px; font-size: 13px; }
+    .hidden { display: none; }
+    .warn { color: var(--warning); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Exercise Library</h1>
+    <p class="muted">Shows exercises with usable images first, using the existing exercise database.</p>
+
+    <div class="toolbar">
+      <input id="searchInput" type="search" placeholder="Search name, category, equipment, muscle..." />
+      <select id="categorySelect">
+        <option value="">All categories</option>
+      </select>
+    </div>
+
+    <div class="stats muted" id="stats">Loading...</div>
+    <div class="stats warn hidden" id="hiddenNotice"></div>
+    <section id="cards" class="grid" aria-live="polite"></section>
+  </main>
+
+  <script src="/exercise-library.js"></script>
+</body>
+</html>
