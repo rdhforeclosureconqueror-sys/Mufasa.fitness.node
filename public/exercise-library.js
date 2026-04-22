@@ -1,7 +1,26 @@
 (function () {
   "use strict";
 
-  const EXERCISE_INDEX_URL = "/exercise-db/index.json";
+  const DEFAULT_ASSET_HOST = "https://mufasa-fitness-node.onrender.com";
+
+  function normalizeBaseUrl(value) {
+    return String(value || "").trim().replace(/\/$/, "");
+  }
+
+  function resolveAssetHostCandidates() {
+    const configuredNodeBase = normalizeBaseUrl(localStorage.getItem("maatNodeBaseUrl"));
+    const origin = normalizeBaseUrl(window.location.origin);
+    return [configuredNodeBase, DEFAULT_ASSET_HOST, origin, ""]
+      .map(normalizeBaseUrl)
+      .filter((v, i, arr) => v || i === arr.length - 1)
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+  }
+
+  function buildExerciseDbUrl(baseUrl, relPath) {
+    const base = normalizeBaseUrl(baseUrl);
+    const rel = String(relPath || "").replace(/^\/+/, "");
+    return base ? `${base}/${rel}` : `/${rel}`;
+  }
   const cardsEl = document.getElementById("cards");
   const statsEl = document.getElementById("stats");
   const hiddenNoticeEl = document.getElementById("hiddenNotice");
@@ -24,7 +43,7 @@
     const raw = Array.isArray(ex.images) ? ex.images : [];
     return raw
       .filter(Boolean)
-      .map((rel) => `/exercise-db/${rel}`);
+      .map((rel) => buildExerciseDbUrl(window.__EXERCISE_LIBRARY_ASSET_HOST, `exercise-db/${rel}`));
   }
 
   function getCategories(list) {
@@ -120,10 +139,24 @@
 
   async function init() {
     try {
-      const res = await fetch(EXERCISE_INDEX_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to load index (${res.status})`);
+      let data = null;
+      let lastErr = null;
 
-      const data = await res.json();
+      for (const host of resolveAssetHostCandidates()) {
+        const indexUrl = buildExerciseDbUrl(host, "exercise-db/index.json");
+        try {
+          const res = await fetch(indexUrl, { cache: "no-store" });
+          if (!res.ok) throw new Error(`Failed to load index (${res.status})`);
+          data = await res.json();
+          window.__EXERCISE_LIBRARY_ASSET_HOST = normalizeBaseUrl(host);
+          window.__EXERCISE_LIBRARY_INDEX_URL = indexUrl;
+          break;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+
+      if (!data) throw (lastErr || new Error("Failed to load exercise index"));
       const list = Array.isArray(data) ? data : (Array.isArray(data.exercises) ? data.exercises : []);
       exercises = list.filter((ex) => getImageCandidates(ex).length > 0);
 
