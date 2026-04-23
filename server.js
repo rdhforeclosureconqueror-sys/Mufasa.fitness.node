@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
@@ -169,12 +170,14 @@ function createApp(options = {}) {
 
   // ---- Paths ----
   const PUBLIC_DIR = path.join(rootDir, "public");
+  const AVATAR_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "avatars");
   const EX_DB_DIR = path.join(PUBLIC_DIR, "exercise-db");
   const EX_INDEX_PATH = path.join(EX_DB_DIR, "index.json");
   const DATA_DIR = path.join(rootDir, "data");
   const USER_DIR = path.join(DATA_DIR, "users");
 
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
 
   const userStore = createUserStore({ userDir: USER_DIR });
   userStore.ensureDirs();
@@ -354,6 +357,63 @@ function createApp(options = {}) {
   function writeJSON(p, obj) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, JSON.stringify(obj, null, 2));
+  }
+
+  async function parseAvatarMultipartUpload(req, maxBytes) {
+    const contentType = String(req.headers["content-type"] || "");
+    const boundaryMatch = contentType.match(/boundary=([^;]+)/i);
+    if (!contentType.toLowerCase().startsWith("multipart/form-data") || !boundaryMatch) {
+      throw new ApiError("VALIDATION_ERROR", "Content-Type must be multipart/form-data", 400);
+    }
+    const boundary = `--${boundaryMatch[1].trim()}`;
+    const chunks = [];
+    let size = 0;
+    await new Promise((resolve, reject) => {
+      req.on("data", (chunk) => {
+        size += chunk.length;
+        if (size > maxBytes) {
+          reject(new ApiError("VALIDATION_ERROR", "Avatar file exceeds size limit", 400));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on("end", resolve);
+      req.on("error", reject);
+    });
+
+    const bodyBuffer = Buffer.concat(chunks);
+    const body = bodyBuffer.toString("binary");
+    const nameMarker = 'name="avatar"';
+    const fieldIndex = body.indexOf(nameMarker);
+    if (fieldIndex === -1) {
+      throw new ApiError("VALIDATION_ERROR", "Missing avatar file upload", 400);
+    }
+
+    const headerStart = body.lastIndexOf(boundary, fieldIndex);
+    const dataStart = body.indexOf("\r\n\r\n", fieldIndex);
+    if (headerStart === -1 || dataStart === -1) {
+      throw new ApiError("VALIDATION_ERROR", "Invalid multipart avatar payload", 400);
+    }
+    const headerSection = body.slice(headerStart, dataStart);
+    const filenameMatch = headerSection.match(/filename="([^"]+)"/i);
+    const originalName = filenameMatch?.[1] || "";
+    const ext = path.extname(originalName).toLowerCase();
+    if (ext !== ".glb") {
+      throw new ApiError("VALIDATION_ERROR", "Only .glb avatar files are allowed", 400);
+    }
+
+    const nextBoundaryIndex = body.indexOf(`\r\n${boundary}`, dataStart + 4);
+    if (nextBoundaryIndex === -1) {
+      throw new ApiError("VALIDATION_ERROR", "Invalid multipart avatar payload", 400);
+    }
+    const fileStart = dataStart + 4;
+    const fileEnd = nextBoundaryIndex;
+    if (fileEnd <= fileStart) {
+      throw new ApiError("VALIDATION_ERROR", "Avatar upload is empty", 400);
+    }
+    const fileBuffer = bodyBuffer.slice(fileStart, fileEnd);
+    return { fileBuffer, originalName };
   }
 
   function loadExerciseIndex() {
@@ -952,6 +1012,26 @@ function createApp(options = {}) {
     const limit = Number.isFinite(rawLimit) ? rawLimit : 10;
     const result = userDataService.getHistory(req.auth.userId, { limit });
     return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
+    const maxBytes = Number(process.env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024);
+    const { fileBuffer, originalName } = await parseAvatarMultipartUpload(req, maxBytes);
+    if (fileBuffer.length > maxBytes) {
+      throw new ApiError("VALIDATION_ERROR", "Avatar file exceeds size limit", 400);
+    }
+    const ext = path.extname(originalName || "").toLowerCase();
+    if (ext !== ".glb") {
+      throw new ApiError("VALIDATION_ERROR", "Only .glb avatar files are allowed", 400);
+    }
+    const unique = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const fileName = `${unique}.glb`;
+    const destinationPath = path.join(AVATAR_UPLOAD_DIR, fileName);
+    fs.writeFileSync(destinationPath, fileBuffer);
+    const avatarModelUrl = `/uploads/avatars/${fileName}`;
+    return ok(res, req.requestId, { avatarModelUrl }, 201);
   }));
 
   // ---- COMMAND endpoint (legacy compatibility adapter for session lifecycle) ----
