@@ -405,6 +405,14 @@
         <select id="voiceSelect">
           <option value="">Loading voices…</option>
         </select>
+        <label for="renderModeSelect" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;">
+          <span>Render:</span>
+          <select id="renderModeSelect">
+            <option value="camera">Camera</option>
+            <option value="avatar_overlay">Avatar Overlay</option>
+            <option value="avatar_only">Avatar Only</option>
+          </select>
+        </label>
 
         <span class="chip">
           <span class="chip-dot"></span>
@@ -413,6 +421,7 @@
       </div>
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
+      <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
@@ -499,6 +508,8 @@
     const profileSummaryEl = document.getElementById("profileSummary");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
     const voiceSelectEl = document.getElementById("voiceSelect");
+    const renderModeSelectEl = document.getElementById("renderModeSelect");
+    const avatarModeStatusEl = document.getElementById("avatarModeStatus");
 
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
@@ -592,16 +603,58 @@
       [12, 14], [14, 16]
     ];
 
+    const AVATAR_MODE_STORAGE_KEY = "maatAvatarRenderMode";
+    const ALLOWED_AVATAR_MODES = new Set(["camera", "avatar_overlay", "avatar_only"]);
     const AVATAR_FLAGS = {
-      ENABLE_AVATAR_MODE: false,
+      ENABLE_AVATAR_MODE: true,
       AVATAR_MODE: "camera", // "camera" | "avatar_overlay" | "avatar_only"
       AVATAR_DEBUG: false
     };
     let lastRenderMode = "camera";
 
+    function sanitizeRenderMode(mode) {
+      return ALLOWED_AVATAR_MODES.has(mode) ? mode : "camera";
+    }
+
+    function getRenderModeLabel(mode) {
+      if (mode === "avatar_overlay") return "Avatar Overlay";
+      if (mode === "avatar_only") return "Avatar Only";
+      return "Camera";
+    }
+
+    function updateRenderModeStatus(message, bad = false) {
+      avatarModeStatusEl.textContent = message;
+      avatarModeStatusEl.classList.toggle("status-bad", bad);
+      avatarModeStatusEl.classList.toggle("status-ok", !bad);
+    }
+
+    function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
+      const nextMode = sanitizeRenderMode(mode);
+      AVATAR_FLAGS.AVATAR_MODE = nextMode;
+      if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
+      updateRenderModeStatus(`${getRenderModeLabel(nextMode)} (${source})`, false);
+      if (persist) {
+        try { localStorage.setItem(AVATAR_MODE_STORAGE_KEY, nextMode); } catch (_) {}
+      }
+      return nextMode;
+    }
+
+    function resolveInitialRenderMode() {
+      let queryMode = null;
+      try {
+        queryMode = new URLSearchParams(window.location.search).get("renderMode");
+      } catch (_) {}
+      if (queryMode) return sanitizeRenderMode(queryMode);
+      try {
+        return sanitizeRenderMode(localStorage.getItem(AVATAR_MODE_STORAGE_KEY));
+      } catch (_) {
+        return "camera";
+      }
+    }
+
     function getRenderMode() {
       if (!AVATAR_FLAGS.ENABLE_AVATAR_MODE) return "camera";
-      return AVATAR_FLAGS.AVATAR_MODE;
+      return sanitizeRenderMode(AVATAR_FLAGS.AVATAR_MODE);
     }
 
     function setPersonLayerSuppressed(suppressed) {
@@ -2126,6 +2179,9 @@ function toggleListening() {
 
 
     workoutSelectEl.onchange = handleWorkoutSelectChange;
+    renderModeSelectEl.onchange = () => {
+      applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
+    };
 
     questionInput.addEventListener("keydown", e => {
       if (e.key === "Enter") askCoach(questionInput.value.trim());
@@ -2142,6 +2198,7 @@ function toggleListening() {
         addLog("system", "Loaded your profile from memory.");
         buildCalendarFromMeta();
       }
+      applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
       updateSyncStatus();
 
       console.log("tf loaded:", typeof tf !== "undefined");
