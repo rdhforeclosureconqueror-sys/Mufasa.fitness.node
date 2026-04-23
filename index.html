@@ -459,8 +459,8 @@
     </div>
   </div>
 
-  <script src="/public/backend-read.js"></script>
-  <script src="/public/session-write.js"></script>
+  <script src="/backend-read.js"></script>
+  <script src="/session-write.js"></script>
 
   <script>
     console.log("🔥 Ma’at 2.0 coach script initialized");
@@ -997,7 +997,7 @@
       onLoginUI(USER_PROFILE);
 
       dashboardBtn.disabled = false;
-      dashboardBtn.onclick = () => { window.location.href = "/public/dashboard.html"; };
+      dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
 
       persistUser();
       const backendReady = await ensureBackendSession(profile);
@@ -1030,7 +1030,7 @@
           onLoginUI(USER_PROFILE);
 
           dashboardBtn.disabled = false;
-          dashboardBtn.onclick = () => { window.location.href = "/public/dashboard.html"; };
+          dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
 
           showOverlay(false);
           const backendReady = await ensureBackendSession(USER_PROFILE || {});
@@ -2153,6 +2153,6 @@ function toggleListening() {
   <audio id="ttsPlayer" playsinline preload="auto"></audio>
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
-  <script src="/public/fitness.js"></script>
+  <script src="/fitness.js"></script>
 </body>
 </html>

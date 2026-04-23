@@ -1,7 +1,7 @@
 /* =========================================================
    fitness.js — Exercise DB + Workout Session State (ACTIVE_WORKOUT)
    + Local history tracking (WORKOUT_HISTORY)
-   + Dashboard connector (/public/dashboard.html)
+   + Dashboard connector (/dashboard.html)
    Drop-in: place in /public/fitness.js
 ========================================================= */
 (function () {
@@ -294,7 +294,7 @@
   function wireDashboardLink() {
     // If user already has a link element, set it.
     if (dashboardLinkEl) {
-      dashboardLinkEl.href = "/public/dashboard.html";
+      dashboardLinkEl.href = "/dashboard.html";
       dashboardLinkEl.target = "_blank";
       dashboardLinkEl.rel = "noopener";
       dashboardLinkEl.textContent = dashboardLinkEl.textContent || "Open Dashboard";

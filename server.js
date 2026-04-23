@@ -335,6 +335,9 @@ function createApp(options = {}) {
 
   // ---- Static hosting ----
   app.use(express.static(PUBLIC_DIR));
+  app.get("/", (_req, res) => {
+    res.sendFile(path.join(rootDir, "index.html"));
+  });
 
   // ---- Helpers ----
   function readJSON(p) {
