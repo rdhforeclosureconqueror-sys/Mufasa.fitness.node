@@ -117,6 +117,35 @@
     .status-line { font-size: 0.8rem; color: #9ca3af; }
     .status-ok { color: #22c55e; }
     .status-bad { color: #ef4444; }
+    .avatar-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid rgba(250, 204, 21, 0.8);
+      object-fit: cover;
+      display: none;
+    }
+    .modal-shell {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 16px;
+    }
+    .modal-shell.hidden { display: none; }
+    .modal-card {
+      width: min(620px, 100%);
+      background: #020617;
+      border: 1px solid #facc15;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .chip {
       display: inline-flex;
@@ -401,6 +430,8 @@
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
         <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
+        <button id="avatarCreateBtn" class="secondary">🧍 Create Avatar</button>
+        <img id="avatarThumb" class="avatar-thumb" alt="avatar thumbnail" />
 
         <select id="voiceSelect">
           <option value="">Loading voices…</option>
@@ -422,6 +453,7 @@
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
+      <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No saved avatar.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
@@ -468,6 +500,24 @@
     </div>
   </div>
 
+  <div id="avatarModal" class="modal-shell hidden" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+    <div class="modal-card">
+      <h2 id="avatarModalTitle">Avaturn Avatar Setup</h2>
+      <p class="subtitle">Launch Avaturn creator in a popup, then paste/save your exported avatar model URL.</p>
+      <div class="btn-row">
+        <button id="launchAvaturnBtn">Open Avaturn Creator</button>
+        <button id="closeAvatarModalBtn" class="secondary">Close</button>
+      </div>
+      <input id="avatarModelUrlInput" type="text" placeholder="Avatar model URL (required, e.g. .glb/.gltf/.vrm)" />
+      <input id="avatarThumbUrlInput" type="text" placeholder="Avatar thumbnail URL (optional)" />
+      <div class="btn-row">
+        <button id="saveAvatarBtn">Save Avatar</button>
+        <button id="clearAvatarBtn" class="secondary">Remove Saved Avatar</button>
+      </div>
+      <div class="status-line"><strong>Creator status:</strong> <span id="avatarCreationStatus">Idle.</span></div>
+    </div>
+  </div>
+
   <script src="/backend-read.js"></script>
   <script src="/session-write.js"></script>
 
@@ -509,6 +559,17 @@
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
     const voiceSelectEl = document.getElementById("voiceSelect");
     const renderModeSelectEl = document.getElementById("renderModeSelect");
+    const avatarCreateBtn = document.getElementById("avatarCreateBtn");
+    const avatarThumbEl = document.getElementById("avatarThumb");
+    const avatarAssetStatusEl = document.getElementById("avatarAssetStatus");
+    const avatarModalEl = document.getElementById("avatarModal");
+    const launchAvaturnBtn = document.getElementById("launchAvaturnBtn");
+    const closeAvatarModalBtn = document.getElementById("closeAvatarModalBtn");
+    const saveAvatarBtn = document.getElementById("saveAvatarBtn");
+    const clearAvatarBtn = document.getElementById("clearAvatarBtn");
+    const avatarModelUrlInput = document.getElementById("avatarModelUrlInput");
+    const avatarThumbUrlInput = document.getElementById("avatarThumbUrlInput");
+    const avatarCreationStatusEl = document.getElementById("avatarCreationStatus");
 
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
@@ -608,6 +669,8 @@
     ];
 
     const AVATAR_MODE_STORAGE_KEY = "maatAvatarRenderMode";
+    const AVATAR_CREATOR_URL = "https://www.avaturn.me/";
+    const AVATAR_PROVIDER_DEFAULT = "avaturn";
     const ALLOWED_AVATAR_MODES = new Set(["camera", "avatar_overlay", "avatar_only"]);
     const AVATAR_FLAGS = {
       ENABLE_AVATAR_MODE: true,
@@ -615,6 +678,7 @@
       AVATAR_DEBUG: false
     };
     let lastRenderMode = "camera";
+    let activeAvatarAsset = null;
 
     function sanitizeRenderMode(mode) {
       return ALLOWED_AVATAR_MODES.has(mode) ? mode : "camera";
@@ -634,6 +698,15 @@
 
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
       const nextMode = sanitizeRenderMode(mode);
+      if ((nextMode === "avatar_overlay" || nextMode === "avatar_only") && !activeAvatarAsset) {
+        updateRenderModeStatus("Camera (fallback: no saved avatar)", true);
+        AVATAR_FLAGS.AVATAR_MODE = "camera";
+        if (renderModeSelectEl.value !== "camera") renderModeSelectEl.value = "camera";
+        if (persist) {
+          try { localStorage.setItem(AVATAR_MODE_STORAGE_KEY, "camera"); } catch (_) {}
+        }
+        return "camera";
+      }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
       if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
       updateRenderModeStatus(`${getRenderModeLabel(nextMode)} (${source})`, false);
@@ -670,6 +743,77 @@
 
     function setPersonLayerSuppressed(suppressed) {
       videoEl.style.visibility = suppressed ? "hidden" : "visible";
+    }
+
+    function isLikelyHttpUrl(value) {
+      if (!value || typeof value !== "string") return false;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function normalizeAvatarProfile(avatar) {
+      if (!avatar || typeof avatar !== "object") return null;
+      const avatarProvider = String(avatar.avatarProvider || avatar.provider || AVATAR_PROVIDER_DEFAULT).trim() || AVATAR_PROVIDER_DEFAULT;
+      const avatarModelUrl = String(avatar.avatarModelUrl || avatar.modelUrl || "").trim();
+      const avatarThumbnailUrl = String(avatar.avatarThumbnailUrl || avatar.thumbnailUrl || "").trim();
+      if (!isLikelyHttpUrl(avatarModelUrl)) return null;
+      return {
+        avatarProvider,
+        avatarModelUrl,
+        avatarThumbnailUrl: isLikelyHttpUrl(avatarThumbnailUrl) ? avatarThumbnailUrl : null,
+        avatarUpdatedAt: Number(avatar.avatarUpdatedAt || avatar.updatedAt || Date.now()) || Date.now()
+      };
+    }
+
+    async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
+      const nextAvatar = normalizeAvatarProfile(USER_PROFILE?.avatar);
+      if (!nextAvatar) {
+        activeAvatarAsset = null;
+        avatarThumbEl.style.display = "none";
+        avatarAssetStatusEl.textContent = "No saved avatar.";
+        avatarCreateBtn.textContent = "🧍 Create Avatar";
+        return false;
+      }
+      try {
+        if (nextAvatar.avatarThumbnailUrl) {
+          await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => reject(new Error("avatar_thumbnail_unreachable"));
+            img.src = nextAvatar.avatarThumbnailUrl;
+          });
+          avatarThumbEl.src = nextAvatar.avatarThumbnailUrl;
+          avatarThumbEl.style.display = "inline-block";
+        } else {
+          avatarThumbEl.style.display = "none";
+        }
+        activeAvatarAsset = nextAvatar;
+        avatarAssetStatusEl.textContent = `Loaded ${nextAvatar.avatarProvider} avatar (${source}).`;
+        avatarCreateBtn.textContent = "🧍 Change Avatar";
+        return true;
+      } catch (err) {
+        console.warn("avatar load failed", err);
+        activeAvatarAsset = null;
+        avatarThumbEl.style.display = "none";
+        avatarAssetStatusEl.textContent = "Avatar load failed. Camera mode fallback active.";
+        fallbackRenderModeToCamera("Saved avatar failed to load.", err);
+        return false;
+      }
+    }
+
+    function openAvatarModal() {
+      avatarModelUrlInput.value = USER_PROFILE?.avatar?.avatarModelUrl || "";
+      avatarThumbUrlInput.value = USER_PROFILE?.avatar?.avatarThumbnailUrl || "";
+      avatarCreationStatusEl.textContent = "Idle.";
+      avatarModalEl.classList.remove("hidden");
+    }
+
+    function closeAvatarModal() {
+      avatarModalEl.classList.add("hidden");
     }
 
     /* =========================================================
@@ -973,7 +1117,8 @@
           notes: USER_PROFILE.goals.focus || null
         } : null,
         injuries: Array.isArray(USER_PROFILE.injuries) ? USER_PROFILE.injuries : [],
-        notes: USER_PROFILE.notes || null
+        notes: USER_PROFILE.notes || null,
+        avatar: normalizeAvatarProfile(USER_PROFILE.avatar)
       };
 
       try {
@@ -1032,6 +1177,7 @@
         USER_PROFILE = BACKEND_READ_CLIENT.normalizeProfile(result.profile, USER_PROFILE || {});
         USER_PROFILE.name = USER_PROFILE.name || "Athlete";
         onLoginUI(USER_PROFILE);
+        await loadAvatarAssetForCurrentUser("backend_profile");
         persistUser();
         backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
         addLog("system", "Profile synced from backend.");
@@ -1085,6 +1231,7 @@
       }
 
       onLoginUI(USER_PROFILE);
+      await loadAvatarAssetForCurrentUser("login_profile");
 
       dashboardBtn.disabled = false;
       dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
@@ -1118,6 +1265,7 @@
           }
 
           onLoginUI(USER_PROFILE);
+          await loadAvatarAssetForCurrentUser("local_cache");
 
           dashboardBtn.disabled = false;
           dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
@@ -2066,6 +2214,9 @@ function toggleListening() {
     }
 
     function drawAvatar(context, posePacket) {
+      if (!activeAvatarAsset) {
+        throw new Error("avatar_asset_not_loaded");
+      }
       const points = posePacket?.keypoints;
       if (!points || !points.length) return;
       const get = (i) => points[i];
@@ -2088,8 +2239,9 @@ function toggleListening() {
       context.save();
       context.lineCap = "round";
       context.lineJoin = "round";
-      context.strokeStyle = "rgba(250, 204, 21, 0.95)";
-      context.fillStyle = "rgba(250, 204, 21, 0.18)";
+      const avatarHue = Math.abs(Array.from(activeAvatarAsset.avatarModelUrl).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) % 360;
+      context.strokeStyle = `hsla(${avatarHue}, 92%, 62%, 0.95)`;
+      context.fillStyle = `hsla(${avatarHue}, 92%, 62%, 0.18)`;
       context.lineWidth = Math.max(2, shoulderWidth * 0.08);
 
       context.beginPath();
@@ -2191,6 +2343,33 @@ function toggleListening() {
       }
     }
 
+    async function saveAvatarFromInputs() {
+      if (!USER_PROFILE) {
+        avatarCreationStatusEl.textContent = "Sign in first.";
+        return;
+      }
+      const nextAvatar = normalizeAvatarProfile({
+        avatarProvider: AVATAR_PROVIDER_DEFAULT,
+        avatarModelUrl: avatarModelUrlInput.value,
+        avatarThumbnailUrl: avatarThumbUrlInput.value,
+        avatarUpdatedAt: Date.now()
+      });
+      if (!nextAvatar) {
+        avatarCreationStatusEl.textContent = "Avatar model URL is invalid.";
+        return;
+      }
+      USER_PROFILE.avatar = nextAvatar;
+      await loadAvatarAssetForCurrentUser("creator_flow");
+      persistUser();
+      try {
+        await sendProfileToNode();
+        avatarCreationStatusEl.textContent = "Avatar saved to your profile.";
+      } catch (err) {
+        console.warn("avatar profile save failed", err);
+        avatarCreationStatusEl.textContent = "Saved locally. Backend sync failed.";
+      }
+    }
+
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
@@ -2199,6 +2378,35 @@ function toggleListening() {
     renderModeSelectEl.onchange = () => {
       applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
     };
+    avatarCreateBtn.onclick = openAvatarModal;
+    closeAvatarModalBtn.onclick = closeAvatarModal;
+    saveAvatarBtn.onclick = saveAvatarFromInputs;
+    clearAvatarBtn.onclick = async () => {
+      if (!USER_PROFILE) return;
+      USER_PROFILE.avatar = null;
+      await loadAvatarAssetForCurrentUser("removed");
+      persistUser();
+      await sendProfileToNode();
+      avatarCreationStatusEl.textContent = "Saved avatar removed.";
+    };
+    launchAvaturnBtn.onclick = () => {
+      avatarCreationStatusEl.textContent = "Opening Avaturn creator popup…";
+      const popup = window.open(AVATAR_CREATOR_URL, "avaturn_creator", "popup=true,width=1100,height=800");
+      if (!popup) {
+        avatarCreationStatusEl.textContent = "Popup blocked. Allow popups, then retry.";
+      } else {
+        avatarCreationStatusEl.textContent = "Creator opened. Paste exported URL and save.";
+      }
+    };
+    window.addEventListener("message", (event) => {
+      const payload = event?.data;
+      if (!payload || payload.type !== "mufasa-avatar-created") return;
+      if (typeof payload.avatarModelUrl !== "string") return;
+      avatarModelUrlInput.value = payload.avatarModelUrl;
+      avatarThumbUrlInput.value = payload.avatarThumbnailUrl || "";
+      avatarCreationStatusEl.textContent = "Avatar export captured from creator. Save to apply.";
+      openAvatarModal();
+    });
 
     askBtn.onclick = () => askCoach(questionInput.value.trim());
 
@@ -2235,6 +2443,8 @@ function toggleListening() {
       if (didAuto && USER_PROFILE) {
         addLog("system", "Loaded your profile from memory.");
         buildCalendarFromMeta();
+      } else {
+        await loadAvatarAssetForCurrentUser("no_profile");
       }
       updateSyncStatus();
 
