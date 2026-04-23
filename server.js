@@ -339,7 +339,10 @@ function createApp(options = {}) {
     res.sendFile(CANONICAL_SHELL_PATH);
   });
   app.get("/dashboard.html", (_req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, "dashboard.html"));
+    const publicDashboardPath = path.join(PUBLIC_DIR, "dashboard.html");
+    const rootDashboardPath = path.join(rootDir, "dashboard.html");
+    const dashboardPath = fs.existsSync(publicDashboardPath) ? publicDashboardPath : rootDashboardPath;
+    res.sendFile(dashboardPath);
   });
   app.get("/exercise-library.html", (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
