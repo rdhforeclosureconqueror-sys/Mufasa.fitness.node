@@ -453,7 +453,7 @@
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
-      <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No saved avatar.</span></div>
+      <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
@@ -780,6 +780,13 @@
       avatarRuntimeStatusEl.classList.toggle("status-ok", !bad);
     }
 
+    function setAvatarAssetStatus(message, bad = false) {
+      if (!avatarAssetStatusEl) return;
+      avatarAssetStatusEl.textContent = message;
+      avatarAssetStatusEl.classList.toggle("status-bad", bad);
+      avatarAssetStatusEl.classList.toggle("status-ok", !bad);
+    }
+
     function normalizeAvatarProfile(avatar) {
       if (!avatar || typeof avatar !== "object") return null;
       const avatarProvider = String(avatar.avatarProvider || avatar.provider || AVATAR_PROVIDER_DEFAULT).trim() || AVATAR_PROVIDER_DEFAULT;
@@ -815,6 +822,13 @@
         if (!status.runtimeLoaded) throw new Error("avatar_asset_unsupported_format");
         return status;
       } catch (err) {
+        if (String(err?.message || "").includes("avatar_http_404")) {
+          status.assetMissing = true;
+        } else if (String(err?.message || "").includes("avatar_http_")) {
+          status.assetProbeFailed = true;
+        } else {
+          status.assetProbeFailed = true;
+        }
         status.loadError = err;
         return status;
       }
@@ -825,13 +839,13 @@
       if (!nextAvatar) {
         activeAvatarAsset = null;
         avatarThumbEl.style.display = "none";
-        avatarAssetStatusEl.textContent = "No saved avatar.";
+        setAvatarAssetStatus("No avatar saved.", true);
         setAvatarRuntimeStatus("No avatar metadata loaded.", true);
         avatarCreateBtn.textContent = "🧍 Create Avatar";
         return false;
       }
       try {
-        avatarAssetStatusEl.textContent = `Avatar metadata loaded (${nextAvatar.avatarProvider}, ${source}).`;
+        setAvatarAssetStatus(`Avatar metadata saved (${nextAvatar.avatarProvider}, ${source}).`);
         setAvatarRuntimeStatus("Metadata accepted. Probing GLB runtime availability…");
         if (nextAvatar.avatarThumbnailUrl) {
           await new Promise((resolve, reject) => {
@@ -846,11 +860,16 @@
           avatarThumbEl.style.display = "none";
         }
         const runtimeStatus = await probeAvatarModelRuntime(nextAvatar.avatarModelUrl);
+        if (runtimeStatus.assetMissing) {
+          setAvatarAssetStatus("Avatar asset missing.", true);
+          throw runtimeStatus.loadError || new Error("avatar_asset_missing");
+        }
         if (!runtimeStatus.assetFound || !runtimeStatus.runtimeLoaded) {
+          setAvatarAssetStatus("Avatar asset probe failed.", true);
           throw runtimeStatus.loadError || new Error("avatar_runtime_probe_failed");
         }
         activeAvatarAsset = { ...nextAvatar, runtimeStatus };
-        avatarAssetStatusEl.textContent = `Loaded ${nextAvatar.avatarProvider} avatar metadata + model asset (${source}).`;
+        setAvatarAssetStatus(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
         setAvatarRuntimeStatus("GLB runtime loaded. Using procedural proxy renderer (retargeting pending).");
         avatarCreateBtn.textContent = "🧍 Change Avatar";
         return true;
@@ -858,7 +877,9 @@
         console.warn("avatar load failed", err);
         activeAvatarAsset = null;
         avatarThumbEl.style.display = "none";
-        avatarAssetStatusEl.textContent = "Avatar load failed. Camera mode fallback active.";
+        if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
+          setAvatarAssetStatus("Avatar asset probe failed.", true);
+        }
         setAvatarRuntimeStatus("GLB runtime load failed. Procedural fallback active.", true);
         fallbackRenderModeToCamera("Saved avatar failed to load.", err);
         return false;
