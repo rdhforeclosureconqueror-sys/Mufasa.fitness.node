@@ -8,7 +8,8 @@
   "use strict";
 
   // ---------- CONFIG ----------
-  const EXERCISE_INDEX_URL = "/exercise-db/index.json";
+  const DEFAULT_ASSET_HOST = "https://mufasa-fitness-node.onrender.com";
+  const EXERCISE_DB_INDEX_PATH = "exercise-db/index.json";
   const STORAGE_KEYS = {
     HISTORY: "WORKOUT_HISTORY_V1",   // array of workout sessions (completed or not)
     ACTIVE: "ACTIVE_WORKOUT_V1"      // active session snapshot
@@ -80,20 +81,69 @@
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   }
 
+  function normalizeBaseUrl(value) {
+    return String(value || "").trim().replace(/\/$/, "");
+  }
+
+  function resolveAssetHostCandidates() {
+    const configuredNodeBase = normalizeBaseUrl(localStorage.getItem("maatNodeBaseUrl"));
+    const origin = normalizeBaseUrl(window.location.origin);
+    return [configuredNodeBase, DEFAULT_ASSET_HOST, origin, ""]
+      .map(normalizeBaseUrl)
+      .filter((v, i, arr) => v || i === arr.length - 1)
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+  }
+
+  function buildExerciseDbUrl(baseUrl, relPath) {
+    const base = normalizeBaseUrl(baseUrl);
+    const rel = String(relPath || "").replace(/^\/+/, "");
+    return base ? `${base}/${rel}` : `/${rel}`;
+  }
+
+  function getExerciseImageCandidates(exercise, baseUrl) {
+    const images = Array.isArray(exercise?.images) ? exercise.images : [];
+    return images
+      .filter(Boolean)
+      .map((rel) => buildExerciseDbUrl(baseUrl, `exercise-db/${String(rel).replace(/^\/+/, "")}`));
+  }
+
   // ---------- LOAD DB ----------
   async function loadExerciseIndex() {
     try {
-      const res = await fetch(EXERCISE_INDEX_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`index fetch failed (${res.status})`);
+      let data = null;
+      let resolvedHost = "";
+      let resolvedIndexUrl = "";
+      let lastErr = null;
 
-      const data = await res.json();
+      for (const host of resolveAssetHostCandidates()) {
+        const indexUrl = buildExerciseDbUrl(host, EXERCISE_DB_INDEX_PATH);
+        try {
+          const res = await fetch(indexUrl, { cache: "no-store" });
+          if (!res.ok) throw new Error(`index fetch failed (${res.status})`);
+          data = await res.json();
+          resolvedHost = normalizeBaseUrl(host);
+          resolvedIndexUrl = indexUrl;
+          break;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+
+      if (!data) throw (lastErr || new Error("index fetch failed"));
+
       const list = Array.isArray(data) ? data : (data.exercises || []);
-      EXERCISES = list;
+      EXERCISES = list.map((ex) => ({
+        ...ex,
+        imageUrls: getExerciseImageCandidates(ex, resolvedHost)
+      }));
 
       EX_BY_ID = {};
       for (const ex of EXERCISES) {
         if (ex && ex.id) EX_BY_ID[ex.id] = ex;
       }
+
+      window.__FITNESS_EXERCISE_DB_ASSET_HOST = resolvedHost;
+      window.__FITNESS_EXERCISE_DB_INDEX_URL = resolvedIndexUrl;
 
       setStatus(true, `Exercise DB loaded (${EXERCISES.length}).`);
       return true;
