@@ -506,6 +506,7 @@
       <p class="subtitle">Launch Avaturn creator in a popup, then paste/save your exported avatar model URL.</p>
       <div class="btn-row">
         <button id="launchAvaturnBtn">Open Avaturn Creator</button>
+        <button id="useTestAvatarBtn" class="secondary">Use Uploaded GLB (Test)</button>
         <button id="closeAvatarModalBtn" class="secondary">Close</button>
       </div>
       <input id="avatarModelUrlInput" type="text" placeholder="Avatar model URL (required, e.g. .glb/.gltf/.vrm)" />
@@ -515,6 +516,7 @@
         <button id="clearAvatarBtn" class="secondary">Remove Saved Avatar</button>
       </div>
       <div class="status-line"><strong>Creator status:</strong> <span id="avatarCreationStatus">Idle.</span></div>
+      <div class="status-line"><strong>Avatar runtime:</strong> <span id="avatarRuntimeStatus">Not attempted.</span></div>
     </div>
   </div>
 
@@ -564,12 +566,14 @@
     const avatarAssetStatusEl = document.getElementById("avatarAssetStatus");
     const avatarModalEl = document.getElementById("avatarModal");
     const launchAvaturnBtn = document.getElementById("launchAvaturnBtn");
+    const useTestAvatarBtn = document.getElementById("useTestAvatarBtn");
     const closeAvatarModalBtn = document.getElementById("closeAvatarModalBtn");
     const saveAvatarBtn = document.getElementById("saveAvatarBtn");
     const clearAvatarBtn = document.getElementById("clearAvatarBtn");
     const avatarModelUrlInput = document.getElementById("avatarModelUrlInput");
     const avatarThumbUrlInput = document.getElementById("avatarThumbUrlInput");
     const avatarCreationStatusEl = document.getElementById("avatarCreationStatus");
+    const avatarRuntimeStatusEl = document.getElementById("avatarRuntimeStatus");
 
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
@@ -671,6 +675,7 @@
     const AVATAR_MODE_STORAGE_KEY = "maatAvatarRenderMode";
     const AVATAR_CREATOR_URL = "https://www.avaturn.me/";
     const AVATAR_PROVIDER_DEFAULT = "avaturn";
+    const LOCAL_TEST_AVATURN_GLB_PATH = "/test-assets/avaturn-upload.glb";
     const ALLOWED_AVATAR_MODES = new Set(["camera", "avatar_overlay", "avatar_only"]);
     const AVATAR_FLAGS = {
       ENABLE_AVATAR_MODE: true,
@@ -755,12 +760,32 @@
       }
     }
 
+    function resolveAvatarModelUrl(value) {
+      if (!value || typeof value !== "string") return null;
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      try {
+        const url = new URL(trimmed, window.location.origin);
+        if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+        return url.href;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function setAvatarRuntimeStatus(message, bad = false) {
+      if (!avatarRuntimeStatusEl) return;
+      avatarRuntimeStatusEl.textContent = message;
+      avatarRuntimeStatusEl.classList.toggle("status-bad", bad);
+      avatarRuntimeStatusEl.classList.toggle("status-ok", !bad);
+    }
+
     function normalizeAvatarProfile(avatar) {
       if (!avatar || typeof avatar !== "object") return null;
       const avatarProvider = String(avatar.avatarProvider || avatar.provider || AVATAR_PROVIDER_DEFAULT).trim() || AVATAR_PROVIDER_DEFAULT;
-      const avatarModelUrl = String(avatar.avatarModelUrl || avatar.modelUrl || "").trim();
+      const avatarModelUrl = resolveAvatarModelUrl(String(avatar.avatarModelUrl || avatar.modelUrl || ""));
       const avatarThumbnailUrl = String(avatar.avatarThumbnailUrl || avatar.thumbnailUrl || "").trim();
-      if (!isLikelyHttpUrl(avatarModelUrl)) return null;
+      if (!avatarModelUrl) return null;
       return {
         avatarProvider,
         avatarModelUrl,
@@ -769,16 +794,45 @@
       };
     }
 
+    async function probeAvatarModelRuntime(avatarModelUrl) {
+      const status = {
+        metadataLoaded: true,
+        assetFound: false,
+        runtimeLoaded: false,
+        renderSucceeded: false,
+        motionRetargeted: false,
+        adapterMode: "procedural_proxy",
+        loadError: null
+      };
+      try {
+        const response = await fetch(avatarModelUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error(`avatar_http_${response.status}`);
+        status.assetFound = true;
+        const buffer = await response.arrayBuffer();
+        const signature = String.fromCharCode(...new Uint8Array(buffer.slice(0, 4)));
+        const isGlb = signature === "glTF";
+        status.runtimeLoaded = isGlb || /\.gltf(\?|$)/i.test(avatarModelUrl) || /\.vrm(\?|$)/i.test(avatarModelUrl);
+        if (!status.runtimeLoaded) throw new Error("avatar_asset_unsupported_format");
+        return status;
+      } catch (err) {
+        status.loadError = err;
+        return status;
+      }
+    }
+
     async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
       const nextAvatar = normalizeAvatarProfile(USER_PROFILE?.avatar);
       if (!nextAvatar) {
         activeAvatarAsset = null;
         avatarThumbEl.style.display = "none";
         avatarAssetStatusEl.textContent = "No saved avatar.";
+        setAvatarRuntimeStatus("No avatar metadata loaded.", true);
         avatarCreateBtn.textContent = "🧍 Create Avatar";
         return false;
       }
       try {
+        avatarAssetStatusEl.textContent = `Avatar metadata loaded (${nextAvatar.avatarProvider}, ${source}).`;
+        setAvatarRuntimeStatus("Metadata accepted. Probing GLB runtime availability…");
         if (nextAvatar.avatarThumbnailUrl) {
           await new Promise((resolve, reject) => {
             const img = new Image();
@@ -791,8 +845,13 @@
         } else {
           avatarThumbEl.style.display = "none";
         }
-        activeAvatarAsset = nextAvatar;
-        avatarAssetStatusEl.textContent = `Loaded ${nextAvatar.avatarProvider} avatar (${source}).`;
+        const runtimeStatus = await probeAvatarModelRuntime(nextAvatar.avatarModelUrl);
+        if (!runtimeStatus.assetFound || !runtimeStatus.runtimeLoaded) {
+          throw runtimeStatus.loadError || new Error("avatar_runtime_probe_failed");
+        }
+        activeAvatarAsset = { ...nextAvatar, runtimeStatus };
+        avatarAssetStatusEl.textContent = `Loaded ${nextAvatar.avatarProvider} avatar metadata + model asset (${source}).`;
+        setAvatarRuntimeStatus("GLB runtime loaded. Using procedural proxy renderer (retargeting pending).");
         avatarCreateBtn.textContent = "🧍 Change Avatar";
         return true;
       } catch (err) {
@@ -800,6 +859,7 @@
         activeAvatarAsset = null;
         avatarThumbEl.style.display = "none";
         avatarAssetStatusEl.textContent = "Avatar load failed. Camera mode fallback active.";
+        setAvatarRuntimeStatus("GLB runtime load failed. Procedural fallback active.", true);
         fallbackRenderModeToCamera("Saved avatar failed to load.", err);
         return false;
       }
@@ -809,6 +869,7 @@
       avatarModelUrlInput.value = USER_PROFILE?.avatar?.avatarModelUrl || "";
       avatarThumbUrlInput.value = USER_PROFILE?.avatar?.avatarThumbnailUrl || "";
       avatarCreationStatusEl.textContent = "Idle.";
+      setAvatarRuntimeStatus("Not attempted.");
       avatarModalEl.classList.remove("hidden");
     }
 
@@ -2217,6 +2278,10 @@ function toggleListening() {
       if (!activeAvatarAsset) {
         throw new Error("avatar_asset_not_loaded");
       }
+      if (activeAvatarAsset.runtimeStatus && !activeAvatarAsset.runtimeStatus.renderSucceeded) {
+        activeAvatarAsset.runtimeStatus.renderSucceeded = true;
+        setAvatarRuntimeStatus("GLB asset loaded. Procedural proxy rendering active. Motion retargeting not implemented yet.");
+      }
       const points = posePacket?.keypoints;
       if (!points || !points.length) return;
       const get = (i) => points[i];
@@ -2356,6 +2421,7 @@ function toggleListening() {
       });
       if (!nextAvatar) {
         avatarCreationStatusEl.textContent = "Avatar model URL is invalid.";
+        setAvatarRuntimeStatus("Invalid avatar URL (http/https or same-origin path required).", true);
         return;
       }
       USER_PROFILE.avatar = nextAvatar;
@@ -2397,6 +2463,11 @@ function toggleListening() {
       } else {
         avatarCreationStatusEl.textContent = "Creator opened. Paste exported URL and save.";
       }
+    };
+    useTestAvatarBtn.onclick = () => {
+      avatarModelUrlInput.value = LOCAL_TEST_AVATURN_GLB_PATH;
+      avatarCreationStatusEl.textContent = `Test asset mapped: ${LOCAL_TEST_AVATURN_GLB_PATH}. Save Avatar to apply.`;
+      setAvatarRuntimeStatus("Test ingest path ready.");
     };
     window.addEventListener("message", (event) => {
       const payload = event?.data;
