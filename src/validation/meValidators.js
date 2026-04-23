@@ -52,6 +52,27 @@ function normalizeGoals(goals) {
   };
 }
 
+function normalizeAvatar(avatar) {
+  if (avatar == null) return null;
+  if (!isObject(avatar)) throw new ApiError("VALIDATION_ERROR", "profile.avatar must be an object", 400);
+
+  const avatarProvider = assertString(avatar.avatarProvider ?? avatar.provider, "profile.avatar.avatarProvider", { required: false, max: 64 });
+  const avatarModelUrl = assertString(avatar.avatarModelUrl ?? avatar.modelUrl, "profile.avatar.avatarModelUrl", { required: false, max: 2048 });
+  const avatarThumbnailUrl = assertString(avatar.avatarThumbnailUrl ?? avatar.thumbnailUrl, "profile.avatar.avatarThumbnailUrl", { required: false, max: 2048 });
+  const avatarUpdatedAtRaw = coerceNullableNumber(avatar.avatarUpdatedAt ?? avatar.updatedAt);
+  const avatarUpdatedAt = assertNullableNumber(avatarUpdatedAtRaw, "profile.avatar.avatarUpdatedAt", { min: 0, max: Number.MAX_SAFE_INTEGER });
+
+  if (!avatarProvider && !avatarModelUrl && !avatarThumbnailUrl) return null;
+  if (!avatarModelUrl) throw new ApiError("VALIDATION_ERROR", "profile.avatar.avatarModelUrl is required when avatar is provided", 400);
+
+  return {
+    avatarProvider: avatarProvider || "custom",
+    avatarModelUrl,
+    avatarThumbnailUrl: avatarThumbnailUrl || null,
+    avatarUpdatedAt: avatarUpdatedAt || Date.now()
+  };
+}
+
 function validateProfileUpsert(input) {
   if (!isObject(input)) throw new ApiError("VALIDATION_ERROR", "Request body must be an object", 400);
   const profile = isObject(input.profile) ? input.profile : input;
@@ -62,7 +83,8 @@ function validateProfileUpsert(input) {
     weight_kg: assertNullableNumber(coerceNullableNumber(profile.weight_kg ?? profile.weightKg), "profile.weight_kg", { min: 20, max: 450 }),
     goals: normalizeGoals(profile.goals),
     injuries: assertStringArray(profile.injuries, "profile.injuries", { max: 50, maxItemLen: 200 }),
-    notes: assertString(profile.notes ?? profile.historyText, "profile.notes", { required: false, max: 4000 })
+    notes: assertString(profile.notes ?? profile.historyText, "profile.notes", { required: false, max: 4000 }),
+    avatar: normalizeAvatar(profile.avatar)
   };
 }
 

@@ -138,6 +138,7 @@
     }
 
     function normalizeProfile(profile, fallback = {}) {
+      const fallbackAvatar = fallback?.avatar && typeof fallback.avatar === "object" ? fallback.avatar : null;
       return {
         name: fallback.name || "Athlete",
         email: fallback.email || null,
@@ -153,7 +154,13 @@
           focus: fallback?.goals?.focus || profile?.goals?.notes || null,
           notes: profile?.goals?.notes || null
         },
-        notes: profile?.notes || null
+        notes: profile?.notes || null,
+        avatar: profile?.avatar && typeof profile.avatar === "object" ? {
+          avatarProvider: profile.avatar.avatarProvider || "custom",
+          avatarModelUrl: profile.avatar.avatarModelUrl || null,
+          avatarThumbnailUrl: profile.avatar.avatarThumbnailUrl || null,
+          avatarUpdatedAt: profile.avatar.avatarUpdatedAt || null
+        } : fallbackAvatar
       };
     }
 

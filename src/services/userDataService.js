@@ -18,7 +18,13 @@ function normalizeProfile(profile) {
     weight_kg: profile.weight_kg ?? profile.weightKg ?? null,
     goals: profile.goals ?? null,
     injuries: Array.isArray(profile.injuries) ? profile.injuries : [],
-    notes: profile.notes ?? profile.historyText ?? null
+    notes: profile.notes ?? profile.historyText ?? null,
+    avatar: profile.avatar && typeof profile.avatar === "object" ? {
+      avatarProvider: profile.avatar.avatarProvider ?? profile.avatar.provider ?? "custom",
+      avatarModelUrl: profile.avatar.avatarModelUrl ?? profile.avatar.modelUrl ?? null,
+      avatarThumbnailUrl: profile.avatar.avatarThumbnailUrl ?? profile.avatar.thumbnailUrl ?? null,
+      avatarUpdatedAt: profile.avatar.avatarUpdatedAt ?? profile.avatar.updatedAt ?? null
+    } : null
   };
 }
 
