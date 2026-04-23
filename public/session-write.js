@@ -17,7 +17,8 @@
       logger = console,
       observabilityStorageKey = "maatWriteObservabilityV1",
       onObservabilityUpdate,
-      onFallbackBlocked
+      onFallbackBlocked,
+      onFallbackUsed
     } = options || {};
 
     if (!baseUrl) throw new Error("baseUrl_required");
@@ -68,14 +69,18 @@
       if (!(action in observability.fallbackToLegacy)) return;
       const reason = classifyFallbackReason(err);
       observability.fallbackToLegacy[action] += 1;
-      observability.lastFallback = {
+      const fallbackNotice = {
         action,
         reason,
         status: err?.status ?? null,
         code: err?.code || null,
         at: new Date().toISOString()
       };
+      observability.lastFallback = fallbackNotice;
       persistObservability();
+      if (typeof onFallbackUsed === "function") {
+        onFallbackUsed({ ...fallbackNotice });
+      }
       return reason;
     }
 

@@ -91,7 +91,9 @@
         active,
         history: localHistory,
         source: "local",
-        warning: token ? null : "Sign in from the main app to sync server history."
+        warning: token
+          ? "Backend client unavailable; showing local-only history."
+          : "Sign in from the main app to sync backend history. Currently local-only."
       };
     }
 
@@ -112,14 +114,14 @@
           active,
           history: localHistory,
           source: "local",
-          warning: "Session expired. Please sign in again from the main app."
+          warning: "Session expired. Showing local-only history until you sign in again from the main app."
         };
       }
       return {
         active,
         history: localHistory,
         source: "local",
-        warning: "Server history unavailable. Showing local history."
+        warning: "Backend history unavailable. Showing local-only history."
       };
     }
   }
@@ -156,7 +158,7 @@
       const note = document.createElement("div");
       note.className = "muted";
       note.style.marginBottom = "8px";
-      note.textContent = `Data source: ${source}. ${warning}`;
+      note.textContent = `⚠️ Data source: ${source}. ${warning}`;
       historyList.appendChild(note);
     }
 

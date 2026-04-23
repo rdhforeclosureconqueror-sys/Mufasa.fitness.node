@@ -531,6 +531,10 @@
     let USER_ID = "guest";
     let USER_PROFILE = null;
     let calendarMeta = null; // {startDateISO, weeks, daysPerWeek, completedDates:Set<string>}
+    const backendTruthState = {
+      bridge: { mode: "unknown", message: "Checking backend sign-in..." },
+      profileRead: { mode: "unknown", message: "Checking backend profile..." }
+    };
 
     // ---- Pose / workout state ----
     let detector;
@@ -848,20 +852,37 @@
       getAuthToken: () => BACKEND_READ_CLIENT?.getAuthToken?.(),
       repDebounceMs: 500,
       logger: console,
-      onObservabilityUpdate: updateSyncStatus
+      onObservabilityUpdate: updateSyncStatus,
+      onFallbackUsed: (notice) => {
+        if (!notice?.action) return;
+        addLog("system", `Write degraded: ${notice.action} used legacy fallback (${notice.reason || "unknown_reason"}).`);
+      },
+      onFallbackBlocked: (notice) => {
+        if (!notice?.message) return;
+        addLog("system", notice.message);
+      }
     });
 
     function updateSyncStatus() {
       if (!syncStatusEl || !SESSION_WRITE_CLIENT?.getWriteModeStatus) return;
-      const state = SESSION_WRITE_CLIENT.getWriteModeStatus();
-      const lastFallback = state.lastFallback;
-      const fallbackText = lastFallback
-        ? ` | last fallback: ${lastFallback.action} (${lastFallback.reason})`
-        : "";
-      syncStatusEl.textContent = `${state.label}${fallbackText}`;
+      const writeState = SESSION_WRITE_CLIENT.getWriteModeStatus();
+      const writeSegments = [writeState.label];
+      const bridgeSegments = [];
+      if (backendTruthState.bridge.mode === "degraded") {
+        bridgeSegments.push(`Auth bridge degraded: ${backendTruthState.bridge.message}`);
+      }
+      if (backendTruthState.profileRead.mode === "degraded") {
+        bridgeSegments.push(`Profile source local: ${backendTruthState.profileRead.message}`);
+      }
+      if (writeState.lastFallback) {
+        writeSegments.push(`last fallback: ${writeState.lastFallback.action} (${writeState.lastFallback.reason})`);
+      }
+      if (bridgeSegments.length) writeSegments.push(...bridgeSegments);
+      syncStatusEl.textContent = writeSegments.join(" | ");
       syncStatusEl.classList.remove("status-ok", "status-bad");
-      if (state.mode === "explicit_api") syncStatusEl.classList.add("status-ok");
-      if (state.mode === "degraded_fallback") syncStatusEl.classList.add("status-bad");
+      const hasDegradedTruth = writeState.mode !== "explicit_api" || bridgeSegments.length > 0;
+      if (hasDegradedTruth) syncStatusEl.classList.add("status-bad");
+      else syncStatusEl.classList.add("status-ok");
     }
 
     function parseHeightCm(heightValue) {
@@ -931,10 +952,13 @@
           ? { googleIdToken: profile.googleIdToken }
           : (profile?.email ? { googleEmail: profile.email } : { manualUserId: profile?.name || "user" });
         await BACKEND_READ_CLIENT.ensureAuthToken(claims);
+        backendTruthState.bridge = { mode: "ok", message: "Auth bridge healthy." };
         return true;
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
-        addLog("system", "Backend sign-in unavailable. Using local profile/history fallback.");
+        backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
+        addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
+        updateSyncStatus();
         return false;
       }
     }
@@ -949,16 +973,22 @@
         USER_PROFILE.name = USER_PROFILE.name || "Athlete";
         onLoginUI(USER_PROFILE);
         persistUser();
+        backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
         addLog("system", "Profile synced from backend.");
+        updateSyncStatus();
         return true;
       } catch (e) {
         if (e?.code === "UNAUTHORIZED") {
           BACKEND_READ_CLIENT.clearAuthToken();
-          addLog("system", "Session expired. Continuing with local profile data.");
+          backendTruthState.profileRead = { mode: "degraded", message: "session expired; showing local cached profile." };
+          addLog("system", "Session expired. Profile is now from local cache until you sign in again.");
+          updateSyncStatus();
           return false;
         }
         console.warn("backend profile read failed", e);
-        addLog("system", "Backend profile unavailable. Continuing with local profile data.");
+        backendTruthState.profileRead = { mode: "degraded", message: "backend profile unavailable; showing local cached profile." };
+        addLog("system", "Backend profile unavailable. Profile is now from local cache.");
+        updateSyncStatus();
         return false;
       }
     }

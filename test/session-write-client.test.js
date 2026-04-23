@@ -44,6 +44,7 @@ test("rep updates prefer explicit session API and are debounced to latest payloa
 
 test("rep updates fall back to legacy /command when explicit API is unavailable", async (t) => {
   const calls = [];
+  let fallbackNotice = null;
   const originalFetch = global.fetch;
   global.fetch = async (url, init = {}) => {
     calls.push({ url, body: JSON.parse(init.body || "{}") });
@@ -68,6 +69,7 @@ test("rep updates fall back to legacy /command when explicit API is unavailable"
     getUserId: () => "legacy_user",
     getAuthToken: () => "token_abc",
     repDebounceMs: 10,
+    onFallbackUsed: (notice) => { fallbackNotice = notice; },
     logger: { warn() {} }
   });
 
@@ -89,6 +91,8 @@ test("rep updates fall back to legacy /command when explicit API is unavailable"
   assert.equal(calls[1].body.payload._fallback.reason, "unauthorized");
   assert.equal(client.getObservabilitySnapshot().fallbackToLegacy.rep_update, 1);
   assert.equal(client.getObservabilitySnapshot().lastFallback.reason, "unauthorized");
+  assert.equal(fallbackNotice.action, "rep_update");
+  assert.equal(fallbackNotice.reason, "unauthorized");
 });
 
 test("write observability tracks explicit writes and mode state", async (t) => {
