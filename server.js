@@ -334,10 +334,17 @@ function createApp(options = {}) {
   });
 
   // ---- Static hosting ----
-  app.use(express.static(PUBLIC_DIR));
+  const CANONICAL_SHELL_PATH = path.join(PUBLIC_DIR, "index.html");
   app.get("/", (_req, res) => {
-    res.sendFile(path.join(rootDir, "index.html"));
+    res.sendFile(CANONICAL_SHELL_PATH);
   });
+  app.get("/dashboard.html", (_req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, "dashboard.html"));
+  });
+  app.get("/exercise-library.html", (_req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
+  });
+  app.use(express.static(PUBLIC_DIR));
 
   // ---- Helpers ----
   function readJSON(p) {
