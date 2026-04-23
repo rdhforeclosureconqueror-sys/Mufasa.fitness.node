@@ -11,6 +11,8 @@
   <!-- TensorFlow + Pose Detection (UMD builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/loaders/GLTFLoader.js"></script>
 
   <!-- Simple favicon so we don’t get 404s -->
   <link rel="icon" href="data:,">
@@ -76,6 +78,10 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+    #avatar3d {
+      pointer-events: none;
+      z-index: 2;
     }
 
     .btn-row {
@@ -419,6 +425,7 @@
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
+        <canvas id="avatar3d"></canvas>
       </div>
 
       <div class="btn-row">
@@ -579,6 +586,7 @@
 
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
+    const avatar3dCanvasEl = document.getElementById("avatar3d");
     const ctx = canvasEl.getContext("2d");
 
     const poseStatusEl = document.getElementById("poseStatus");
@@ -685,6 +693,86 @@
     };
     let lastRenderMode = "camera";
     let activeAvatarAsset = null;
+    let avatarThreeRuntime = null;
+
+    function ensureAvatarThreeRuntime() {
+      if (avatarThreeRuntime) return avatarThreeRuntime;
+      if (typeof THREE === "undefined" || !avatar3dCanvasEl) return null;
+      const renderer = new THREE.WebGLRenderer({
+        canvas: avatar3dCanvasEl,
+        alpha: true,
+        antialias: true,
+        preserveDrawingBuffer: false
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x000000, 0);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(40, 4 / 3, 0.01, 100);
+      camera.position.set(0, 1.45, 2.25);
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x223344, 1.0);
+      const key = new THREE.DirectionalLight(0xffffff, 0.85);
+      key.position.set(0.4, 1.2, 0.8);
+      scene.add(hemi, key);
+      avatarThreeRuntime = {
+        renderer,
+        scene,
+        camera,
+        avatarRoot: null,
+        avatarMixer: null,
+        skeleton: null,
+        boneMap: null,
+        active: false,
+        loadError: null
+      };
+      return avatarThreeRuntime;
+    }
+
+    function setAvatar3dCanvasVisibility(visible) {
+      if (!avatar3dCanvasEl) return;
+      avatar3dCanvasEl.style.display = visible ? "block" : "none";
+    }
+
+    function resizeAvatarThreeRuntime() {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime || !videoEl.videoWidth || !videoEl.videoHeight) return;
+      const width = videoEl.videoWidth;
+      const height = videoEl.videoHeight;
+      runtime.renderer.setSize(width, height, false);
+      runtime.camera.aspect = width / height;
+      runtime.camera.updateProjectionMatrix();
+      avatar3dCanvasEl.width = width;
+      avatar3dCanvasEl.height = height;
+    }
+
+    function findFirstSkeleton(root) {
+      let found = null;
+      root?.traverse((node) => {
+        if (!found && node && node.isSkinnedMesh && node.skeleton) {
+          found = node.skeleton;
+        }
+      });
+      return found;
+    }
+
+    function mapAvatarBones(skeleton) {
+      if (!skeleton || !Array.isArray(skeleton.bones)) return null;
+      const bones = skeleton.bones;
+      const findBone = (...patterns) => bones.find((b) => {
+        const n = String(b?.name || "").toLowerCase();
+        return patterns.some((p) => n.includes(p));
+      }) || null;
+      return {
+        hips: findBone("hips", "pelvis"),
+        spine: findBone("spine"),
+        chest: findBone("chest", "spine2", "upperchest"),
+        neck: findBone("neck"),
+        head: findBone("head"),
+        leftUpperArm: findBone("leftupperarm", "left_arm", "l_upperarm", "leftshoulder"),
+        rightUpperArm: findBone("rightupperarm", "right_arm", "r_upperarm", "rightshoulder"),
+        leftLowerArm: findBone("leftlowerarm", "leftforearm", "l_forearm"),
+        rightLowerArm: findBone("rightlowerarm", "rightforearm", "r_forearm")
+      };
+    }
 
     function sanitizeRenderMode(mode) {
       return ALLOWED_AVATAR_MODES.has(mode) ? mode : "camera";
@@ -809,7 +897,7 @@
         runtimeLoaded: false,
         renderSucceeded: false,
         motionRetargeted: false,
-        adapterMode: "procedural_proxy",
+        adapterMode: "three_glb_minimal",
         loadError: null
       };
       try {
@@ -835,10 +923,50 @@
       }
     }
 
+    async function mountAvatarGlbModel(avatarModelUrl) {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime) throw new Error("avatar_three_runtime_unavailable");
+      if (!/\.glb(\?|$)/i.test(avatarModelUrl)) {
+        throw new Error("avatar_glb_required_in_phase_a");
+      }
+      const loader = new THREE.GLTFLoader();
+      const gltf = await new Promise((resolve, reject) => {
+        loader.load(
+          avatarModelUrl,
+          (loaded) => resolve(loaded),
+          undefined,
+          (err) => reject(err || new Error("avatar_gltf_load_failed"))
+        );
+      });
+      if (runtime.avatarRoot) {
+        runtime.scene.remove(runtime.avatarRoot);
+      }
+      const root = gltf.scene || gltf.scenes?.[0];
+      if (!root) throw new Error("avatar_gltf_scene_missing");
+      root.position.set(0, -1.25, 0);
+      root.rotation.set(0, Math.PI, 0);
+      root.scale.setScalar(1.1);
+      runtime.scene.add(root);
+      runtime.avatarRoot = root;
+      runtime.skeleton = findFirstSkeleton(root);
+      runtime.boneMap = mapAvatarBones(runtime.skeleton);
+      runtime.loadError = null;
+      runtime.active = true;
+      resizeAvatarThreeRuntime();
+      return {
+        hasSkeleton: Boolean(runtime.skeleton),
+        mappedBones: Object.entries(runtime.boneMap || {}).filter(([, bone]) => !!bone).map(([k]) => k)
+      };
+    }
+
     async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
       const nextAvatar = normalizeAvatarProfile(USER_PROFILE?.avatar);
       if (!nextAvatar) {
         activeAvatarAsset = null;
+        const runtime = ensureAvatarThreeRuntime();
+        if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
+        if (runtime) runtime.active = false;
+        setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
         setAvatarAssetStatus("No avatar saved.", true);
         setAvatarRuntimeStatus("No avatar metadata loaded.", true);
@@ -869,19 +997,28 @@
           setAvatarAssetStatus("Avatar asset probe failed.", true);
           throw runtimeStatus.loadError || new Error("avatar_runtime_probe_failed");
         }
+        setAvatarRuntimeStatus("GLB detected. Booting Three.js runtime…");
+        const mountInfo = await mountAvatarGlbModel(nextAvatar.avatarModelUrl);
+        runtimeStatus.renderSucceeded = true;
+        runtimeStatus.motionRetargeted = false;
+        runtimeStatus.mappedBones = mountInfo.mappedBones;
         activeAvatarAsset = { ...nextAvatar, runtimeStatus };
         setAvatarAssetStatus(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
-        setAvatarRuntimeStatus("GLB runtime loaded. Using procedural proxy renderer (retargeting pending).");
+        setAvatarRuntimeStatus(`Model loaded + visible. Retargeting inactive (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
         avatarCreateBtn.textContent = "🧍 Change Avatar";
         return true;
       } catch (err) {
         console.warn("avatar load failed", err);
         activeAvatarAsset = null;
+        const runtime = ensureAvatarThreeRuntime();
+        if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
+        if (runtime) runtime.active = false;
+        setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
           setAvatarAssetStatus("Avatar asset probe failed.", true);
         }
-        setAvatarRuntimeStatus("GLB runtime load failed. Procedural fallback active.", true);
+        setAvatarRuntimeStatus("GLB runtime load failed. Camera/procedural fallback active.", true);
         fallbackRenderModeToCamera("Saved avatar failed to load.", err);
         return false;
       }
@@ -1871,6 +2008,10 @@ function toggleListening() {
 
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
+        avatar3dCanvasEl.width = videoEl.videoWidth;
+        avatar3dCanvasEl.height = videoEl.videoHeight;
+        setAvatar3dCanvasVisibility(false);
+        resizeAvatarThreeRuntime();
 
         poseStatusEl.textContent = "Camera connected. Loading pose detector…";
         await initDetector();
@@ -2185,13 +2326,17 @@ function toggleListening() {
       if (shouldDrawSkeleton) {
         drawSkeleton();
       }
+      if (renderMode === "camera") {
+        setAvatar3dCanvasVisibility(false);
+      }
 
       const canDrawAvatar = posePacket && posePacket.keypoints && posePacket.keypoints.length;
       if (renderMode === "avatar_overlay") {
         if (canDrawAvatar) {
           try {
-            drawAvatar(ctx, posePacket);
+            renderAvatar3d(posePacket);
           } catch (err) {
+            drawProceduralAvatar(ctx, posePacket);
             fallbackRenderModeToCamera("Avatar overlay render failed.", err);
           }
         }
@@ -2200,8 +2345,9 @@ function toggleListening() {
           drawSkeleton();
         } else {
           try {
-            drawAvatar(ctx, posePacket);
+            renderAvatar3d(posePacket);
           } catch (err) {
+            drawProceduralAvatar(ctx, posePacket);
             fallbackRenderModeToCamera("Avatar-only render failed.", err);
             drawSkeleton();
           }
@@ -2276,6 +2422,7 @@ function toggleListening() {
                 if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
                 sendEndSessionToNode();
                 setPersonLayerSuppressed(false);
+                setAvatar3dCanvasVisibility(false);
                 lastRenderMode = "camera";
                 cancelAnimationFrame(animId);
                 return;
@@ -2296,14 +2443,61 @@ function toggleListening() {
       };
     }
 
-    function drawAvatar(context, posePacket) {
-      if (!activeAvatarAsset) {
-        throw new Error("avatar_asset_not_loaded");
+    function getPosePoint(points, idx, minScore = 0.35) {
+      const kp = points?.[idx];
+      if (!kp || kp.score <= minScore) return null;
+      return kp;
+    }
+
+    function applyMinimalAvatarRetarget(posePacket) {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
+      const points = posePacket?.keypoints;
+      if (!points || !points.length) return false;
+      const ls = getPosePoint(points, 5);
+      const rs = getPosePoint(points, 6);
+      const le = getPosePoint(points, 7);
+      const re = getPosePoint(points, 8);
+      const lh = getPosePoint(points, 11);
+      const rh = getPosePoint(points, 12);
+      const nose = getPosePoint(points, 0, 0.25);
+      if (!(ls && rs)) return false;
+
+      const torsoLean = Math.atan2(((ls.y + rs.y) * 0.5) - ((lh?.y ?? ls.y) + (rh?.y ?? rs.y)) * 0.5, 80);
+      const shoulderTilt = Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x));
+      const leftUpperArm = le ? Math.atan2(le.y - ls.y, le.x - ls.x) : 0;
+      const rightUpperArm = re ? Math.atan2(re.y - rs.y, re.x - rs.x) : 0;
+
+      if (runtime.boneMap.spine) runtime.boneMap.spine.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.spine.rotation.x, -torsoLean * 0.35, 0.35);
+      if (runtime.boneMap.chest) {
+        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, -shoulderTilt * 0.7, 0.35);
+        runtime.boneMap.chest.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.x, -torsoLean * 0.45, 0.35);
       }
-      if (activeAvatarAsset.runtimeStatus && !activeAvatarAsset.runtimeStatus.renderSucceeded) {
-        activeAvatarAsset.runtimeStatus.renderSucceeded = true;
-        setAvatarRuntimeStatus("GLB asset loaded. Procedural proxy rendering active. Motion retargeting not implemented yet.");
+      if (runtime.boneMap.neck) runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, nose ? -0.08 : 0, 0.2);
+      if (runtime.boneMap.head) runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, nose ? -0.12 : 0, 0.2);
+      if (runtime.boneMap.leftUpperArm) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, Math.max(-1.2, Math.min(1.2, leftUpperArm + 1.2)), 0.35);
+      if (runtime.boneMap.rightUpperArm) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, Math.max(-1.2, Math.min(1.2, rightUpperArm - 1.2)), 0.35);
+
+      return true;
+    }
+
+    function renderAvatar3d(posePacket) {
+      if (!activeAvatarAsset) throw new Error("avatar_asset_not_loaded");
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime?.avatarRoot) throw new Error("avatar_runtime_not_initialized");
+      const retargetActive = applyMinimalAvatarRetarget(posePacket);
+      if (activeAvatarAsset.runtimeStatus) {
+        activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
       }
+      runtime.renderer.render(runtime.scene, runtime.camera);
+      setAvatar3dCanvasVisibility(true);
+      setAvatarRuntimeStatus(retargetActive
+        ? "Model loaded + visible. Live retargeting active (torso/head/upper-arms)."
+        : "Model loaded + visible. Live retargeting inactive (pose confidence too low).", !retargetActive);
+      return retargetActive;
+    }
+
+    function drawProceduralAvatar(context, posePacket) {
       const points = posePacket?.keypoints;
       if (!points || !points.length) return;
       const get = (i) => points[i];
@@ -2409,6 +2603,7 @@ function toggleListening() {
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
         setPersonLayerSuppressed(false);
+        setAvatar3dCanvasVisibility(false);
         lastRenderMode = "camera";
         addLog("system", "Workout stopped.");
         sendEndSessionToNode();
