@@ -1,21 +1,25 @@
 # Local Avaturn test asset dropzone
 
-Place the uploaded Avaturn export from this task here as:
+This folder supports **local/dev-only avatar smoke checks**.
+
+## Purpose
 
 - `public/test-assets/avaturn-upload.glb`
 
-The app's **Use Uploaded GLB (Test)** action maps avatarModelUrl to `/test-assets/avaturn-upload.glb` for local/dev validation.
+The legacy root shell (`/workspace/Mufasa.fitness.node/index.html`) includes a **Use Uploaded GLB (Test)** shortcut that maps `avatarModelUrl` to `/test-assets/avaturn-upload.glb`.
 
-Expected live served URL after placement:
+## Active pilot shell note
+
+The server serves `public/index.html` at `/`, and that shell uses the real upload contract:
+
+- **Upload Avatar (.glb)**
+- `POST /api/avatar/upload`
+- persisted profile avatar metadata
+
+For pilot validation, trust the real upload path above (not the legacy test shortcut).
+
+## Verify file is served
 
 - `http://localhost:3001/test-assets/avaturn-upload.glb`
 
-Quick verification flow after placing the file:
-
-1. Open the app and sign in.
-2. Click **🧍 Create Avatar**.
-3. Click **Use Uploaded GLB (Test)**.
-4. Click **Save Avatar**.
-5. Confirm UI status shows:
-   - `Avatar metadata saved (...)`
-   - `Avatar asset found (...)`
+If the file exists and static hosting is up, it should return `200`.
