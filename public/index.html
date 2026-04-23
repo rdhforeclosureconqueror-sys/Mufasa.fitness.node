@@ -503,10 +503,11 @@
   <div id="avatarModal" class="modal-shell hidden" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
     <div class="modal-card">
       <h2 id="avatarModalTitle">Avaturn Avatar Setup</h2>
-      <p class="subtitle">Launch Avaturn creator in a popup, then paste/save your exported avatar model URL.</p>
+      <p class="subtitle">Launch Avaturn creator or upload an exported .glb avatar file from your device.</p>
       <div class="btn-row">
         <button id="launchAvaturnBtn">Open Avaturn Creator</button>
-        <button id="useTestAvatarBtn" class="secondary">Use Uploaded GLB (Test)</button>
+        <input id="avatarFileInput" type="file" accept=".glb,model/gltf-binary" />
+        <button id="uploadAvatarBtn" class="secondary">Upload Avatar (.glb)</button>
         <button id="closeAvatarModalBtn" class="secondary">Close</button>
       </div>
       <input id="avatarModelUrlInput" type="text" placeholder="Avatar model URL (required, e.g. .glb/.gltf/.vrm)" />
@@ -566,7 +567,8 @@
     const avatarAssetStatusEl = document.getElementById("avatarAssetStatus");
     const avatarModalEl = document.getElementById("avatarModal");
     const launchAvaturnBtn = document.getElementById("launchAvaturnBtn");
-    const useTestAvatarBtn = document.getElementById("useTestAvatarBtn");
+    const avatarFileInput = document.getElementById("avatarFileInput");
+    const uploadAvatarBtn = document.getElementById("uploadAvatarBtn");
     const closeAvatarModalBtn = document.getElementById("closeAvatarModalBtn");
     const saveAvatarBtn = document.getElementById("saveAvatarBtn");
     const clearAvatarBtn = document.getElementById("clearAvatarBtn");
@@ -675,7 +677,6 @@
     const AVATAR_MODE_STORAGE_KEY = "maatAvatarRenderMode";
     const AVATAR_CREATOR_URL = "https://www.avaturn.me/";
     const AVATAR_PROVIDER_DEFAULT = "avaturn";
-    const LOCAL_TEST_AVATURN_GLB_PATH = "/test-assets/avaturn-upload.glb";
     const ALLOWED_AVATAR_MODES = new Set(["camera", "avatar_overlay", "avatar_only"]);
     const AVATAR_FLAGS = {
       ENABLE_AVATAR_MODE: true,
@@ -2457,6 +2458,68 @@ function toggleListening() {
       }
     }
 
+    async function uploadAvatarFile() {
+      if (!USER_PROFILE) {
+        avatarCreationStatusEl.textContent = "Sign in first.";
+        return;
+      }
+      const selectedFile = avatarFileInput?.files?.[0];
+      if (!selectedFile) {
+        avatarCreationStatusEl.textContent = "Choose a .glb file first.";
+        return;
+      }
+      if (!/\.glb$/i.test(selectedFile.name)) {
+        avatarCreationStatusEl.textContent = "Only .glb files are supported.";
+        return;
+      }
+
+      avatarCreationStatusEl.textContent = "Uploading avatar file…";
+      setAvatarAssetStatus("Uploading avatar asset to server…");
+      try {
+        if (BACKEND_READ_CLIENT) {
+          const claims = USER_PROFILE?.email
+            ? { googleEmail: USER_PROFILE.email }
+            : { manualUserId: USER_PROFILE?.name || "user" };
+          await BACKEND_READ_CLIENT.ensureAuthToken(claims);
+        }
+
+        const authToken = BACKEND_READ_CLIENT?.getAuthToken?.() || null;
+        if (!authToken) throw new Error("missing_auth_token");
+
+        const form = new FormData();
+        form.append("avatar", selectedFile);
+        const response = await fetch(`${NODE_BASE_URL}/api/avatar/upload`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${authToken}` },
+          body: form
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
+          throw new Error(payload?.error?.message || `upload_failed_${response.status}`);
+        }
+
+        const avatarModelUrl = payload.data.avatarModelUrl;
+        avatarModelUrlInput.value = avatarModelUrl;
+        setAvatarAssetStatus(`Upload success. Asset stored at ${avatarModelUrl}.`);
+        avatarCreationStatusEl.textContent = "Upload complete. Saving avatar metadata…";
+
+        USER_PROFILE.avatar = normalizeAvatarProfile({
+          avatarProvider: AVATAR_PROVIDER_DEFAULT,
+          avatarModelUrl,
+          avatarThumbnailUrl: avatarThumbUrlInput.value,
+          avatarUpdatedAt: Date.now()
+        });
+        await loadAvatarAssetForCurrentUser("uploaded_file");
+        persistUser();
+        await sendProfileToNode();
+        avatarCreationStatusEl.textContent = "Upload success. Avatar saved and synced to profile.";
+      } catch (err) {
+        console.warn("avatar upload failed", err);
+        setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
+        avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
+      }
+    }
+
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
@@ -2485,11 +2548,7 @@ function toggleListening() {
         avatarCreationStatusEl.textContent = "Creator opened. Paste exported URL and save.";
       }
     };
-    useTestAvatarBtn.onclick = () => {
-      avatarModelUrlInput.value = LOCAL_TEST_AVATURN_GLB_PATH;
-      avatarCreationStatusEl.textContent = `Test asset mapped: ${LOCAL_TEST_AVATURN_GLB_PATH}. Save Avatar to apply.`;
-      setAvatarRuntimeStatus("Test ingest path ready.");
-    };
+    uploadAvatarBtn.onclick = uploadAvatarFile;
     window.addEventListener("message", (event) => {
       const payload = event?.data;
       if (!payload || payload.type !== "mufasa-avatar-created") return;
