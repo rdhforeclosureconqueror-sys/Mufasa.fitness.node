@@ -953,11 +953,35 @@
       }
       const root = gltf.scene || gltf.scenes?.[0];
       if (!root) throw new Error("avatar_gltf_scene_missing");
-      root.position.set(0, -1.25, 0);
       root.rotation.set(0, Math.PI, 0);
-      root.scale.setScalar(1.1);
+      root.traverse((node) => {
+        if (node?.isMesh) {
+          node.castShadow = false;
+          node.receiveShadow = false;
+        }
+      });
+
+      const initialBox = new THREE.Box3().setFromObject(root);
+      const initialSize = initialBox.getSize(new THREE.Vector3());
+      const initialCenter = initialBox.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(initialSize.x, initialSize.y, initialSize.z, 0.001);
+      const targetHeight = 1.7;
+      const uniformScale = targetHeight / Math.max(initialSize.y, 0.001);
+      root.scale.setScalar(uniformScale);
+
+      root.updateMatrixWorld(true);
+      const normalizedBox = new THREE.Box3().setFromObject(root);
+      const normalizedCenter = normalizedBox.getCenter(new THREE.Vector3());
+      root.position.x -= normalizedCenter.x;
+      root.position.y -= normalizedBox.min.y;
+      root.position.z -= normalizedCenter.z;
+
       runtime.scene.add(root);
       runtime.avatarRoot = root;
+
+      const fitDistance = (Math.max(maxDim * uniformScale, targetHeight) * 0.9) / Math.tan((runtime.camera.fov * Math.PI) / 360);
+      runtime.camera.position.set(0, targetHeight * 0.58, fitDistance * 1.15);
+      runtime.camera.lookAt(0, targetHeight * 0.5, 0);
       runtime.skeleton = findFirstSkeleton(root);
       runtime.boneMap = mapAvatarBones(runtime.skeleton);
       runtime.loadError = null;
@@ -1014,7 +1038,7 @@
         runtimeStatus.mappedBones = mountInfo.mappedBones;
         activeAvatarAsset = { ...nextAvatar, runtimeStatus };
         setAvatarAssetStatus(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
-        setAvatarRuntimeStatus(`Model loaded + visible. Retargeting inactive (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
+        setAvatarRuntimeStatus(`3D avatar loaded. Retargeting inactive (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
         avatarCreateBtn.textContent = "🧍 Change Avatar";
         return true;
       } catch (err) {
@@ -1028,7 +1052,7 @@
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
           setAvatarAssetStatus("Avatar asset probe failed.", true);
         }
-        setAvatarRuntimeStatus("GLB runtime load failed. Camera/procedural fallback active.", true);
+        setAvatarRuntimeStatus("Using procedural fallback (3D avatar load failed).", true);
         fallbackRenderModeToCamera("Saved avatar failed to load.", err);
         return false;
       }
@@ -2658,12 +2682,13 @@ function toggleListening() {
       runtime.renderer.render(runtime.scene, runtime.camera);
       setAvatar3dCanvasVisibility(true);
       setAvatarRuntimeStatus(retargetActive
-        ? "Model loaded + visible. Live retargeting active (torso/head/upper-arms)."
-        : "Model loaded + visible. Live retargeting inactive (pose confidence too low).", !retargetActive);
+        ? "3D avatar loaded. Live retargeting active (torso/head/upper-arms)."
+        : "3D avatar loaded. Live retargeting inactive (pose confidence too low).", !retargetActive);
       return retargetActive;
     }
 
     function drawProceduralAvatar(context, posePacket) {
+      setAvatarRuntimeStatus("Using procedural fallback.", true);
       const points = posePacket?.keypoints;
       if (!points || !points.length) return;
       const get = (i) => points[i];
