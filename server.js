@@ -347,13 +347,22 @@ function createApp(options = {}) {
 
   // ---- Static hosting ----
   const CANONICAL_SHELL_PATH = path.join(PUBLIC_DIR, "index.html");
+  const SHELL_NO_STORE_HEADERS = Object.freeze({
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+    "Surrogate-Control": "no-store"
+  });
   app.get("/", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(CANONICAL_SHELL_PATH);
   });
   app.get("/dashboard.html", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "dashboard.html"));
   });
   app.get("/exercise-library.html", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
   });
   app.use(express.static(PUBLIC_DIR));
