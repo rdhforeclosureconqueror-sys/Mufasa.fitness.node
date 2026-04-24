@@ -1213,12 +1213,22 @@
       await saveProfileWritePath();
     }
 
+    function buildBridgeClaims(profile) {
+      const hasGoogleToken = Boolean(profile?.googleIdToken);
+      const authProvider = String(profile?.authProvider || "").toLowerCase();
+      if (hasGoogleToken) return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken" };
+      if (authProvider === "google") return { error: "google_token_missing", claimPath: "missing_google_token" };
+      if (profile?.googleSub) return { googleSub: profile.googleSub, claimPath: "googleSub" };
+      if (profile?.email) return { googleEmail: profile.email, claimPath: "googleEmail" };
+      return { manualUserId: profile?.name || "user", claimPath: "manualUserId" };
+    }
+
     async function ensureBackendSession(profile) {
       if (!BACKEND_READ_CLIENT) return false;
       try {
-        const claims = profile?.googleIdToken
-          ? { googleIdToken: profile.googleIdToken }
-          : (profile?.email ? { googleEmail: profile.email } : { manualUserId: profile?.name || "user" });
+        const claims = buildBridgeClaims(profile);
+        if (claims.error === "google_token_missing") throw new Error("google_token_missing");
+        console.info("[auth-bridge] ensure session claims", { claimPath: claims.claimPath });
         await BACKEND_READ_CLIENT.ensureAuthToken(claims);
         backendTruthState.bridge = { mode: "ok", message: "Auth bridge healthy." };
         return true;
@@ -1267,9 +1277,11 @@
 
       USER_PROFILE = {
         name: profile.name || profile.email || "Athlete",
+        authProvider: profile.authProvider || (profile.googleIdToken ? "google" : "manual"),
         email: profile.email || null,
         picture: profile.picture || null,
         googleIdToken: profile.googleIdToken || null,
+        googleSub: profile.googleSub || null,
         age: profile.age || profile.ageYears || null,
         weight_lbs: profile.weight_lbs || null,
         height: profile.height || null,
@@ -1388,7 +1400,9 @@
             name: payload.name || payload.given_name || "Athlete",
             email: payload.email,
             picture: payload.picture,
-            googleIdToken: response.credential || null
+            googleIdToken: response.credential || null,
+            googleSub: payload.sub || null,
+            authProvider: "google"
           });
           showOverlay(false);
         }
@@ -2457,9 +2471,9 @@ function toggleListening() {
       setAvatarAssetStatus("Uploading avatar asset to server…");
       try {
         if (BACKEND_READ_CLIENT) {
-          const claims = USER_PROFILE?.email
-            ? { googleEmail: USER_PROFILE.email }
-            : { manualUserId: USER_PROFILE?.name || "user" };
+          const claims = buildBridgeClaims(USER_PROFILE);
+          if (claims.error === "google_token_missing") throw new Error("google_token_missing");
+          console.info("[auth-bridge] avatar upload claims", { claimPath: claims.claimPath });
           await BACKEND_READ_CLIENT.ensureAuthToken(claims);
         }
 
