@@ -2655,11 +2655,17 @@ function toggleListening() {
     }
 
     async function uploadAvatarFile() {
+      console.info("[avatar-upload] upload button clicked");
       if (!USER_PROFILE) {
         avatarCreationStatusEl.textContent = "Sign in first.";
         return;
       }
       const selectedFile = avatarFileInput?.files?.[0];
+      console.info("[avatar-upload] selected file", selectedFile ? {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type
+      } : null);
       if (!selectedFile) {
         avatarCreationStatusEl.textContent = "Choose a .glb file first.";
         return;
@@ -2673,9 +2679,11 @@ function toggleListening() {
       setAvatarAssetStatus("Uploading avatar asset to server…");
       try {
         if (BACKEND_READ_CLIENT) {
-          const claims = USER_PROFILE?.email
-            ? { googleEmail: USER_PROFILE.email }
-            : { manualUserId: USER_PROFILE?.name || "user" };
+          const claims = USER_PROFILE?.googleIdToken
+            ? { googleIdToken: USER_PROFILE.googleIdToken }
+            : (USER_PROFILE?.email
+              ? { googleEmail: USER_PROFILE.email }
+              : { manualUserId: USER_PROFILE?.name || "user" });
           await BACKEND_READ_CLIENT.ensureAuthToken(claims);
         }
 
@@ -2684,18 +2692,23 @@ function toggleListening() {
 
         const form = new FormData();
         form.append("avatar", selectedFile);
-        const response = await fetch(`${NODE_BASE_URL}/api/avatar/upload`, {
+        const uploadUrl = `${NODE_BASE_URL}/api/avatar/upload`;
+        console.info("[avatar-upload] request starting", { method: "POST", url: uploadUrl, field: "avatar" });
+        const response = await fetch(uploadUrl, {
           method: "POST",
           headers: { authorization: `Bearer ${authToken}` },
           body: form
         });
         const payload = await response.json().catch(() => null);
+        console.info("[avatar-upload] response", { status: response.status, ok: response.ok, payload });
         if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
           throw new Error(payload?.error?.message || `upload_failed_${response.status}`);
         }
 
         const avatarModelUrl = payload.data.avatarModelUrl;
+        console.info("[avatar-upload] avatarModelUrl returned", avatarModelUrl);
         avatarModelUrlInput.value = avatarModelUrl;
+        console.info("[avatar-upload] url field populated", avatarModelUrlInput.value);
         setAvatarAssetStatus(`Upload success. Asset stored at ${avatarModelUrl}.`);
         avatarCreationStatusEl.textContent = "Upload complete. Saving avatar metadata…";
 
@@ -2712,7 +2725,12 @@ function toggleListening() {
       } catch (err) {
         console.warn("avatar upload failed", err);
         setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
-        avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
+        const msg = String(err?.message || "");
+        if (msg === "missing_auth_token" || msg.includes("Authentication required") || msg.includes("Trust mode")) {
+          avatarCreationStatusEl.textContent = "Upload blocked: backend auth bridge unavailable (missing token).";
+        } else {
+          avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
+        }
       }
     }
 
