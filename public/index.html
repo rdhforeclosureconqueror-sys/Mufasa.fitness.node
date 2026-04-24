@@ -856,7 +856,10 @@
       const trimmed = value.trim();
       if (!trimmed) return null;
       try {
-        const url = new URL(trimmed, window.location.origin);
+        const baseOrigin = trimmed.startsWith("/")
+          ? NODE_BASE_URL
+          : window.location.origin;
+        const url = new URL(trimmed, baseOrigin);
         if (url.protocol !== "https:" && url.protocol !== "http:") return null;
         return url.href;
       } catch (_) {

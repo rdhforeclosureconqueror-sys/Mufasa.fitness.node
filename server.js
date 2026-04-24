@@ -106,6 +106,15 @@ function sanitizeSpeakHeaders(req) {
   };
 }
 
+function resolveRequestOrigin(req) {
+  const forwardedProto = String(req.get("x-forwarded-proto") || "").split(",")[0].trim();
+  const forwardedHost = String(req.get("x-forwarded-host") || "").split(",")[0].trim();
+  const host = forwardedHost || req.get("host");
+  if (!host) return null;
+  const protocol = forwardedProto || req.protocol || "https";
+  return `${protocol}://${host}`;
+}
+
 function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
@@ -1108,7 +1117,18 @@ function createApp(options = {}) {
     const fileName = `${unique}.glb`;
     const destinationPath = path.join(AVATAR_UPLOAD_DIR, fileName);
     fs.writeFileSync(destinationPath, fileBuffer);
-    const avatarModelUrl = `/uploads/avatars/${fileName}`;
+    const avatarModelPath = `/uploads/avatars/${fileName}`;
+    const configuredAssetOrigin = String(
+      process.env.AVATAR_ASSET_ORIGIN ||
+      process.env.ASSET_ORIGIN ||
+      process.env.PUBLIC_BASE_URL ||
+      ""
+    ).trim().replace(/\/+$/g, "");
+    const requestOrigin = resolveRequestOrigin(req);
+    const assetOrigin = configuredAssetOrigin || requestOrigin || "";
+    const avatarModelUrl = assetOrigin
+      ? `${assetOrigin}${avatarModelPath}`
+      : avatarModelPath;
     return ok(res, req.requestId, { avatarModelUrl }, 201);
   }));
 
