@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Pocket PT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 
   <!-- Google Identity (optional Google sign-in) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -16,8 +19,8 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+      "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js?v=20260424-mobile-ui1",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/?v=20260424-mobile-ui1"
     }
   }
   </script>
@@ -134,9 +137,11 @@
     body.camera-fullscreen .status-line,
     body.camera-fullscreen #voiceSupportStatus,
     body.camera-fullscreen .chip,
-    body.camera-fullscreen #voiceSelect,
-    body.camera-fullscreen label[for="renderModeSelect"] {
+    body.camera-fullscreen #voiceSelect {
       display: none;
+    }
+    body.camera-fullscreen #trackingModeRow {
+      display: block;
     }
     body.camera-fullscreen .video-shell {
       width: min(100vw, 100%);
@@ -146,7 +151,7 @@
       border-width: 2px;
       border-radius: 10px;
     }
-    body.camera-fullscreen .btn-row > :not(#startBtn):not(#fullscreenCameraBtn) {
+    body.camera-fullscreen .btn-row > :not(#startBtn):not(#fullscreenCameraBtn):not(#renderModeControl) {
       display: none;
     }
     body.camera-fullscreen .camera-fs-actions {
@@ -225,6 +230,8 @@
     .modal-shell.hidden { display: none; }
     .modal-card {
       width: min(620px, 100%);
+      max-height: min(88vh, 88dvh);
+      overflow-y: auto;
       background: #020617;
       border: 1px solid #facc15;
       border-radius: 12px;
@@ -232,6 +239,33 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+    #buildVersionPill {
+      align-self: flex-start;
+      font-size: 0.7rem;
+      border-radius: 999px;
+      padding: 3px 9px;
+      border: 1px solid rgba(250, 204, 21, 0.7);
+      color: #fde68a;
+      background: rgba(2, 6, 23, 0.9);
+    }
+
+    @media (max-width: 800px) {
+      .btn-row {
+        align-items: stretch;
+      }
+
+      .btn-row button,
+      .btn-row select,
+      .btn-row label {
+        width: 100%;
+      }
+
+      .camera-fs-actions {
+        top: 6px;
+        right: 6px;
+        z-index: 30;
+      }
     }
 
     .chip {
@@ -502,6 +536,7 @@
       <p class="subtitle">
         Pocket PT virtual fitness platform powered by Simba Wa Ujamaa &nbsp;2.0.
       </p>
+      <div id="buildVersionPill">Build: loading…</div>
 
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
@@ -529,7 +564,7 @@
         <select id="voiceSelect">
           <option value="">Loading voices…</option>
         </select>
-        <label for="renderModeSelect" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;">
+        <label id="renderModeControl" for="renderModeSelect" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;">
           <span>Render:</span>
           <select id="renderModeSelect">
             <option value="camera">Camera</option>
@@ -555,7 +590,7 @@
       </div>
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
-      <div class="status-line"><strong>Tracking mode:</strong> <span id="trackingModeStatus">upper_body</span></div>
+      <div id="trackingModeRow" class="status-line"><strong>Tracking mode:</strong> <span id="trackingModeStatus">upper_body</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
       <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
@@ -626,11 +661,12 @@
     </div>
   </div>
 
-  <script src="/backend-read.js?v=20260424-authbridge1"></script>
-  <script src="/session-write.js?v=20260424-authbridge1"></script>
+  <script src="/backend-read.js?v=20260424-mobile-ui1"></script>
+  <script src="/session-write.js?v=20260424-mobile-ui1"></script>
 
   <script>
-    console.log("[BUILD_VERSION]", "2026-04-24T00:00:00Z-authbridge1");
+    const APP_BUILD_VERSION = "2026-04-24T18:20:00Z-mobile-ui1";
+    console.log("[BUILD_VERSION]", APP_BUILD_VERSION);
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
     /* =========================================================
@@ -696,6 +732,7 @@
     const brainStatusEl = document.getElementById("brainStatus");
     const syncStatusEl = document.getElementById("syncStatus");
     const brainChipTxt = document.getElementById("brainChipText");
+    const buildVersionPillEl = document.getElementById("buildVersionPill");
 
     const connectBtn = document.getElementById("connectBtn");
     const startBtn = document.getElementById("startBtn");
@@ -717,6 +754,28 @@
     const calendarViewEl = document.getElementById("calendarView");
     const dashboardBtn = document.getElementById("dashboardBtn");
     const exerciseLibraryBtn = document.getElementById("exerciseLibraryBtn");
+
+    if (buildVersionPillEl) buildVersionPillEl.textContent = `Build: ${APP_BUILD_VERSION}`;
+    (function logMobileControlTruth() {
+      const requiredControls = [
+        ["expand_camera", fullscreenCameraBtn],
+        ["exit_camera", exitCameraBtn],
+        ["render_selector", renderModeSelectEl],
+        ["upload_avatar_btn", uploadAvatarBtn],
+        ["tracking_mode_status", trackingModeStatusEl]
+      ];
+      const domTruth = requiredControls.map(([key, el]) => {
+        const style = el ? window.getComputedStyle(el) : null;
+        return {
+          control: key,
+          exists: !!el,
+          hiddenByDisplay: style ? style.display === "none" : null,
+          hiddenByVisibility: style ? style.visibility === "hidden" : null
+        };
+      });
+      console.table(domTruth);
+      console.log("[mobile-dom-truth]", domTruth);
+    })();
 
     // ---- Global user/session state ----
     let USER_ID = "guest";
