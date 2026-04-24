@@ -545,6 +545,7 @@
       </div>
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
+      <div class="status-line"><strong>Tracking mode:</strong> <span id="trackingModeStatus">upper_body</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
       <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
@@ -678,6 +679,7 @@
     const ctx = canvasEl.getContext("2d");
 
     const poseStatusEl = document.getElementById("poseStatus");
+    const trackingModeStatusEl = document.getElementById("trackingModeStatus");
     const avatarModeStatusEl = document.getElementById("avatarModeStatus");
     const brainStatusEl = document.getElementById("brainStatus");
     const syncStatusEl = document.getElementById("syncStatus");
@@ -797,6 +799,12 @@
     };
     const MODE_SWITCH_HOLD_MS = 450;
     const MODE_MIN_DWELL_MS = 700;
+    const MODE_SWITCH_HOLD_MS_FULL_BODY = 220;
+    const MAX_HEAD_YAW = 0.35;
+    const MAX_HEAD_PITCH = 0.25;
+    const MAX_SHOULDER_ROLL = 0.25;
+    const ROTATION_SMOOTHING = 0.18;
+    const SHOULDER_TILT_MULTIPLIER = 0.35;
     let currentTrackingMode = TRACKING_MODES.UPPER_BODY;
     const trackingCapabilities = {
       hasMoveNet: false,
@@ -816,14 +824,21 @@
       console.log(`[tracker-capabilities] MoveNet ${trackingCapabilities.hasMoveNet ? "yes" : "no"}, FaceMesh ${trackingCapabilities.hasFaceMesh ? "yes" : "no"}, HandTracking ${trackingCapabilities.hasHandTracking ? "yes" : "no"}`);
     }
 
-    function updateTrackingMode(nextMode, now = performance.now()) {
+    function updateTrackingMode(nextModeCandidate, now = performance.now()) {
+      const modeCandidate = typeof nextModeCandidate === "string"
+        ? { mode: nextModeCandidate, reason: "legacy", confidence: {} }
+        : (nextModeCandidate || { mode: currentTrackingMode, reason: "unknown", confidence: {} });
+      const nextMode = modeCandidate.mode;
       if (!Object.values(TRACKING_MODES).includes(nextMode)) return currentTrackingMode;
+      const modeHoldMs = nextMode === TRACKING_MODES.FULL_BODY ? MODE_SWITCH_HOLD_MS_FULL_BODY : MODE_SWITCH_HOLD_MS;
       if (nextMode === currentTrackingMode) {
         trackerModeState.pendingMode = null;
         if (trackerModeState.lastLoggedMode !== currentTrackingMode) {
           trackerModeState.lastLoggedMode = currentTrackingMode;
-          console.log(`[tracker-mode] mode: ${currentTrackingMode}`);
+          console.log(`[tracker-mode] active mode: ${currentTrackingMode}`);
+          console.log("[tracker-mode] reason:", modeCandidate.reason, "confidence:", modeCandidate.confidence);
         }
+        if (trackingModeStatusEl) trackingModeStatusEl.textContent = currentTrackingMode;
         return currentTrackingMode;
       }
       if (trackerModeState.pendingMode !== nextMode) {
@@ -831,15 +846,17 @@
         trackerModeState.pendingSince = now;
         return currentTrackingMode;
       }
-      if ((now - trackerModeState.pendingSince) < MODE_SWITCH_HOLD_MS) return currentTrackingMode;
+      if ((now - trackerModeState.pendingSince) < modeHoldMs) return currentTrackingMode;
       if ((now - trackerModeState.activeSince) < MODE_MIN_DWELL_MS) return currentTrackingMode;
       currentTrackingMode = nextMode;
       trackerModeState.activeSince = now;
       trackerModeState.pendingMode = null;
       if (trackerModeState.lastLoggedMode !== currentTrackingMode) {
         trackerModeState.lastLoggedMode = currentTrackingMode;
-        console.log(`[tracker-mode] mode: ${currentTrackingMode}`);
+        console.log(`[tracker-mode] active mode: ${currentTrackingMode}`);
+        console.log("[tracker-mode] reason:", modeCandidate.reason, "confidence:", modeCandidate.confidence);
       }
+      if (trackingModeStatusEl) trackingModeStatusEl.textContent = currentTrackingMode;
       return currentTrackingMode;
     }
 
@@ -2772,15 +2789,40 @@ function toggleListening() {
 
     function inferTrackingMode(pose, faceEstimate) {
       const points = pose?.keypoints || [];
-      const shouldersReliable = Boolean(getPosePoint(points, 5, 0.38) && getPosePoint(points, 6, 0.38));
-      const hipsReliable = Boolean(getPosePoint(points, 11, 0.38) && getPosePoint(points, 12, 0.38));
+      const shoulderLeftScore = Number(points?.[5]?.score || 0);
+      const shoulderRightScore = Number(points?.[6]?.score || 0);
+      const hipLeftScore = Number(points?.[11]?.score || 0);
+      const hipRightScore = Number(points?.[12]?.score || 0);
+      const moveNetHeadScore = Math.max(
+        Number(points?.[0]?.score || 0),
+        Number(points?.[1]?.score || 0),
+        Number(points?.[2]?.score || 0),
+        Number(points?.[3]?.score || 0),
+        Number(points?.[4]?.score || 0)
+      );
       const faceReliable = Boolean(getFaceOrientation(faceEstimate));
-      if (shouldersReliable && hipsReliable) return TRACKING_MODES.FULL_BODY;
-      if (shouldersReliable && !hipsReliable) return TRACKING_MODES.UPPER_BODY;
-      if (faceReliable && !shouldersReliable) return TRACKING_MODES.FACE_CLOSE;
-      if (shouldersReliable) return TRACKING_MODES.UPPER_BODY;
-      if (faceReliable) return TRACKING_MODES.FACE_CLOSE;
-      return currentTrackingMode;
+      const faceMeshScore = faceReliable ? 1 : 0;
+      const shouldersConfidence = Math.min(shoulderLeftScore, shoulderRightScore);
+      const hipsConfidence = Math.min(hipLeftScore, hipRightScore);
+      const headConfidence = Math.max(moveNetHeadScore, faceMeshScore);
+      const confidence = {
+        shoulders: Number(shouldersConfidence.toFixed(3)),
+        hips: Number(hipsConfidence.toFixed(3)),
+        head: Number(headConfidence.toFixed(3))
+      };
+
+      const shouldEnterFullBody = shouldersConfidence >= 0.45 && hipsConfidence >= 0.42;
+      const shouldStayFullBody = shouldersConfidence >= 0.34 && hipsConfidence >= 0.3;
+      if (shouldEnterFullBody || (currentTrackingMode === TRACKING_MODES.FULL_BODY && shouldStayFullBody)) {
+        return { mode: TRACKING_MODES.FULL_BODY, reason: "shoulders+hips confident", confidence };
+      }
+      if (shouldersConfidence >= 0.4) {
+        return { mode: TRACKING_MODES.UPPER_BODY, reason: "shoulders confident, hips weak/missing", confidence };
+      }
+      if (headConfidence >= 0.35) {
+        return { mode: TRACKING_MODES.FACE_CLOSE, reason: "head/face confident, torso weak", confidence };
+      }
+      return { mode: currentTrackingMode, reason: "insufficient confidence (hysteresis hold)", confidence };
     }
 
     async function collectTrackerFrame(pose) {
@@ -3142,6 +3184,7 @@ function toggleListening() {
       const anchorWorld = toWorldAtAvatarPlane(runtime, anchorPixel.x, anchorPixel.y);
       const scaledH = baseH * scale;
       const rootY = anchorWorld.y - (scaledH * ratioY);
+      const anchorShoulderRoll = THREE.MathUtils.clamp(-tilt * SHOULDER_TILT_MULTIPLIER, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL);
       return {
         mode,
         trackingReliable,
@@ -3151,7 +3194,7 @@ function toggleListening() {
         level: anchorLevel,
         position: { x: anchorWorld.x, y: rootY, z: 0 },
         rotationY: 0,
-        rotationZ: -tilt * 0.75,
+        rotationZ: anchorShoulderRoll,
         scale
       };
     }
@@ -3212,34 +3255,35 @@ function toggleListening() {
 
       const shoulderTilt = hasShoulders ? Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x)) : 0;
       const moveNetHeadYaw = (leftEar && rightEar)
-        ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -0.45, 0.45)
+        ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -MAX_HEAD_YAW, MAX_HEAD_YAW)
         : 0;
       const moveNetHeadPitch = (nose && leftEye && rightEye)
-        ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -0.35, 0.35)
+        ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -MAX_HEAD_PITCH, MAX_HEAD_PITCH)
         : 0;
       const faceYaw = faceOrientation?.yaw ?? 0;
       const facePitch = faceOrientation?.pitch ?? 0;
       const faceRoll = faceOrientation?.roll ?? 0;
       const preferFaceForHead = trackingMode === TRACKING_MODES.FACE_CLOSE && !!faceOrientation;
-      const headYaw = preferFaceForHead ? faceYaw : moveNetHeadYaw;
-      const headPitch = preferFaceForHead ? facePitch : moveNetHeadPitch;
-      const headRoll = preferFaceForHead ? faceRoll : -shoulderTilt * 0.25;
+      const headYaw = THREE.MathUtils.clamp(preferFaceForHead ? faceYaw : moveNetHeadYaw, -MAX_HEAD_YAW, MAX_HEAD_YAW);
+      const headPitch = THREE.MathUtils.clamp(preferFaceForHead ? facePitch : moveNetHeadPitch, -MAX_HEAD_PITCH, MAX_HEAD_PITCH);
+      const shoulderRoll = THREE.MathUtils.clamp(-shoulderTilt * SHOULDER_TILT_MULTIPLIER, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL);
+      const headRoll = THREE.MathUtils.clamp(preferFaceForHead ? faceRoll : shoulderRoll, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL);
       const leftUpperArm = (ls && le) ? Math.atan2(le.y - ls.y, le.x - ls.x) : null;
       const rightUpperArm = (rs && re) ? Math.atan2(re.y - rs.y, re.x - rs.x) : null;
       const leftForearm = (le && lw) ? Math.atan2(lw.y - le.y, lw.x - le.x) : null;
       const rightForearm = (re && rw) ? Math.atan2(rw.y - re.y, rw.x - re.x) : null;
 
       if (runtime.boneMap.chest) {
-        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, -shoulderTilt * 0.8, 0.35);
+        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, shoulderRoll, ROTATION_SMOOTHING);
       }
       if (runtime.boneMap.neck) {
-        runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, -headPitch * 0.6, 0.28);
-        runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, headYaw * 0.5, 0.28);
+        runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, -headPitch * 0.5, ROTATION_SMOOTHING);
+        runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, headYaw * 0.42, ROTATION_SMOOTHING);
       }
       if (runtime.boneMap.head) {
-        runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -headPitch, 0.32);
-        runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, headYaw, 0.32);
-        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, headRoll, 0.25);
+        runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -headPitch, ROTATION_SMOOTHING);
+        runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, headYaw, ROTATION_SMOOTHING);
+        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, headRoll, ROTATION_SMOOTHING);
       }
       if (runtime.boneMap.leftUpperArm && leftUpperArm != null) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, THREE.MathUtils.clamp(leftUpperArm + 1.05, -1.4, 1.4), 0.38);
       if (runtime.boneMap.rightUpperArm && rightUpperArm != null) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, THREE.MathUtils.clamp(rightUpperArm - 1.05, -1.4, 1.4), 0.38);
