@@ -820,6 +820,16 @@
     const MAX_SHOULDER_ROLL = 0.25;
     const ROTATION_SMOOTHING = 0.18;
     const SHOULDER_TILT_MULTIPLIER = 0.35;
+    const SHOULDER_ROLL_DEADZONE = 0.04;
+    const HEAD_YAW_DEADZONE = 0.03;
+    const HEAD_PITCH_DEADZONE = 0.03;
+    const ARM_ANGLE_DEADZONE = 0.05;
+    const HEAD_ROLL_DEADZONE = 0.03;
+    const IDLE_HOLD_MS = 500;
+    const DELTA_NOISE_EPSILON = 0.0035;
+    const MAX_ROTATION_DELTA_PER_FRAME = 0.045;
+    const MAX_ARM_DELTA_PER_FRAME = 0.09;
+    const MOTION_DEBUG_LOG_THROTTLE_MS = 500;
     let currentTrackingMode = TRACKING_MODES.UPPER_BODY;
     const trackingCapabilities = {
       hasMoveNet: false,
@@ -959,7 +969,16 @@
         avatarFacingDeg,
         facingApplied: false,
         upperBodyTrackingLogged: false,
-        lastUpperBodyGoodAt: 0
+        lastUpperBodyGoodAt: 0,
+        motionState: {
+          lastSampleAt: 0,
+          idleSince: 0,
+          idle: false,
+          lastRaw: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
+          lastFiltered: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
+          lastApplied: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
+          lastLogAt: 0
+        }
       };
       return avatarThreeRuntime;
     }
@@ -3157,6 +3176,24 @@ function toggleListening() {
     const LOST_HOLD_MS = 300;
     const TRACKING_LOG_THROTTLE_MS = 250;
 
+    function applyDeadzoneCurve(value, deadzone, maxInput, maxOutput) {
+      const sign = Math.sign(value);
+      const abs = Math.abs(value);
+      if (abs < deadzone) return 0;
+      const safeDenominator = Math.max(0.0001, maxInput - deadzone);
+      const normalized = Math.min(1, (abs - deadzone) / safeDenominator);
+      const curved = normalized * normalized;
+      return sign * curved * maxOutput;
+    }
+
+    function clampRate(nextValue, previousValue, maxDelta, noiseEpsilon = DELTA_NOISE_EPSILON) {
+      const delta = nextValue - previousValue;
+      if (Math.abs(delta) < noiseEpsilon) return previousValue;
+      if (delta > maxDelta) return previousValue + maxDelta;
+      if (delta < -maxDelta) return previousValue - maxDelta;
+      return nextValue;
+    }
+
     function computeAvatarAnchorTransform(posePacket, runtime) {
       const points = posePacket?.keypoints;
       const tracker = posePacket?.tracker || null;
@@ -3341,26 +3378,142 @@ function toggleListening() {
       const rightUpperArm = (rs && re) ? Math.atan2(re.y - rs.y, re.x - rs.x) : null;
       const leftForearm = (le && lw) ? Math.atan2(lw.y - le.y, lw.x - le.x) : null;
       const rightForearm = (re && rw) ? Math.atan2(rw.y - re.y, rw.x - re.x) : null;
+      const motionState = runtime.motionState || (runtime.motionState = {
+        lastSampleAt: 0,
+        idleSince: 0,
+        idle: false,
+        lastRaw: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
+        lastFiltered: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
+        lastApplied: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
+        lastLogAt: 0
+      });
+
+      const rawLeftArm = leftUpperArm != null ? THREE.MathUtils.clamp(leftUpperArm + 1.05, -1.4, 1.4) : motionState.lastRaw.leftArm;
+      const rawRightArm = rightUpperArm != null ? THREE.MathUtils.clamp(rightUpperArm - 1.05, -1.4, 1.4) : motionState.lastRaw.rightArm;
+      const rawLeftForearm = leftForearm != null ? THREE.MathUtils.clamp(leftForearm + 0.85, -1.4, 1.4) : motionState.lastRaw.leftForearm;
+      const rawRightForearm = rightForearm != null ? THREE.MathUtils.clamp(rightForearm - 0.85, -1.4, 1.4) : motionState.lastRaw.rightForearm;
+
+      const idlePoseNow = hasShoulders
+        && Math.abs(shoulderRoll) < SHOULDER_ROLL_DEADZONE
+        && Math.abs(headYaw) < HEAD_YAW_DEADZONE
+        && Math.abs(headPitch) < HEAD_PITCH_DEADZONE;
+      if (idlePoseNow) {
+        if (!motionState.idleSince) motionState.idleSince = now;
+        motionState.idle = (now - motionState.idleSince) >= IDLE_HOLD_MS;
+      } else {
+        motionState.idleSince = 0;
+        motionState.idle = false;
+      }
+
+      const filteredShoulderRoll = motionState.idle
+        ? 0
+        : clampRate(
+          applyDeadzoneCurve(shoulderRoll, SHOULDER_ROLL_DEADZONE, MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL),
+          motionState.lastFiltered.shoulderRoll,
+          MAX_ROTATION_DELTA_PER_FRAME
+        );
+      const filteredHeadYaw = motionState.idle
+        ? 0
+        : clampRate(
+          applyDeadzoneCurve(headYaw, HEAD_YAW_DEADZONE, MAX_HEAD_YAW, MAX_HEAD_YAW),
+          motionState.lastFiltered.headYaw,
+          MAX_ROTATION_DELTA_PER_FRAME
+        );
+      const filteredHeadPitch = motionState.idle
+        ? 0
+        : clampRate(
+          applyDeadzoneCurve(headPitch, HEAD_PITCH_DEADZONE, MAX_HEAD_PITCH, MAX_HEAD_PITCH),
+          motionState.lastFiltered.headPitch,
+          MAX_ROTATION_DELTA_PER_FRAME
+        );
+      const filteredHeadRoll = motionState.idle
+        ? 0
+        : clampRate(
+          applyDeadzoneCurve(headRoll, HEAD_ROLL_DEADZONE, MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL),
+          motionState.lastFiltered.headRoll,
+          MAX_ROTATION_DELTA_PER_FRAME
+        );
+      const filteredLeftArm = leftUpperArm != null
+        ? clampRate(
+          applyDeadzoneCurve(rawLeftArm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
+          motionState.lastFiltered.leftArm,
+          MAX_ARM_DELTA_PER_FRAME
+        )
+        : motionState.lastFiltered.leftArm;
+      const filteredRightArm = rightUpperArm != null
+        ? clampRate(
+          applyDeadzoneCurve(rawRightArm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
+          motionState.lastFiltered.rightArm,
+          MAX_ARM_DELTA_PER_FRAME
+        )
+        : motionState.lastFiltered.rightArm;
+      const filteredLeftForearm = leftForearm != null
+        ? clampRate(
+          applyDeadzoneCurve(rawLeftForearm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
+          motionState.lastFiltered.leftForearm,
+          MAX_ARM_DELTA_PER_FRAME
+        )
+        : motionState.lastFiltered.leftForearm;
+      const filteredRightForearm = rightForearm != null
+        ? clampRate(
+          applyDeadzoneCurve(rawRightForearm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
+          motionState.lastFiltered.rightForearm,
+          MAX_ARM_DELTA_PER_FRAME
+        )
+        : motionState.lastFiltered.rightForearm;
 
       if (runtime.boneMap.chest) {
-        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, shoulderRoll, ROTATION_SMOOTHING);
+        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, filteredShoulderRoll, motionState.idle ? 0.11 : ROTATION_SMOOTHING);
       }
       if (runtime.boneMap.neck) {
-        runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, -headPitch * 0.5, ROTATION_SMOOTHING);
-        runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, headYaw * 0.42, ROTATION_SMOOTHING);
+        runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, -filteredHeadPitch * 0.5, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
+        runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, filteredHeadYaw * 0.42, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
       }
       if (runtime.boneMap.head) {
-        runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -headPitch, ROTATION_SMOOTHING);
-        runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, headYaw, ROTATION_SMOOTHING);
-        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, headRoll, ROTATION_SMOOTHING);
+        runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -filteredHeadPitch, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
+        runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, filteredHeadYaw, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
+        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, filteredHeadRoll, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
       }
-      if (runtime.boneMap.leftUpperArm && leftUpperArm != null) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, THREE.MathUtils.clamp(leftUpperArm + 1.05, -1.4, 1.4), 0.38);
-      if (runtime.boneMap.rightUpperArm && rightUpperArm != null) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, THREE.MathUtils.clamp(rightUpperArm - 1.05, -1.4, 1.4), 0.38);
-      if (runtime.boneMap.leftLowerArm && leftForearm != null) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.85, -1.4, 1.4), 0.32);
-      if (runtime.boneMap.rightLowerArm && rightForearm != null) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.85, -1.4, 1.4), 0.32);
+      if (runtime.boneMap.leftUpperArm && leftUpperArm != null) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, filteredLeftArm, 0.3);
+      if (runtime.boneMap.rightUpperArm && rightUpperArm != null) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, filteredRightArm, 0.3);
+      if (runtime.boneMap.leftLowerArm && leftForearm != null) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, filteredLeftForearm, 0.27);
+      if (runtime.boneMap.rightLowerArm && rightForearm != null) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, filteredRightForearm, 0.27);
       if (faceCloseHandsVisible || trackingMode !== TRACKING_MODES.FACE_CLOSE) {
-        if (runtime.boneMap.leftHand && leftForearm != null) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.35, -0.8, 0.8), 0.22);
-        if (runtime.boneMap.rightHand && rightForearm != null) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.35, -0.8, 0.8), 0.22);
+        if (runtime.boneMap.leftHand && leftForearm != null) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, THREE.MathUtils.clamp(filteredLeftForearm * 0.45, -0.8, 0.8), 0.22);
+        if (runtime.boneMap.rightHand && rightForearm != null) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, THREE.MathUtils.clamp(filteredRightForearm * 0.45, -0.8, 0.8), 0.22);
+      }
+
+      motionState.lastSampleAt = now;
+      motionState.lastRaw = {
+        shoulderRoll,
+        headYaw,
+        headPitch,
+        headRoll,
+        leftArm: rawLeftArm,
+        rightArm: rawRightArm,
+        leftForearm: rawLeftForearm,
+        rightForearm: rawRightForearm
+      };
+      motionState.lastFiltered = {
+        shoulderRoll: filteredShoulderRoll,
+        headYaw: filteredHeadYaw,
+        headPitch: filteredHeadPitch,
+        headRoll: filteredHeadRoll,
+        leftArm: filteredLeftArm,
+        rightArm: filteredRightArm,
+        leftForearm: filteredLeftForearm,
+        rightForearm: filteredRightForearm
+      };
+      motionState.lastApplied = { ...motionState.lastFiltered };
+      if ((now - motionState.lastLogAt) >= MOTION_DEBUG_LOG_THROTTLE_MS) {
+        motionState.lastLogAt = now;
+        console.log("[avatar-motion]", {
+          rawShoulderRoll: Number(shoulderRoll.toFixed(4)),
+          filteredShoulderRoll: Number(filteredShoulderRoll.toFixed(4)),
+          idleState: motionState.idle,
+          headYawRaw: Number(headYaw.toFixed(4)),
+          headYawFiltered: Number(filteredHeadYaw.toFixed(4))
+        });
       }
 
       return true;
