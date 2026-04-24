@@ -2453,6 +2453,7 @@ function toggleListening() {
     }
 
     async function uploadAvatarFile() {
+      const uploadTimeoutMs = 30000;
       if (!USER_PROFILE) {
         avatarCreationStatusEl.textContent = "Sign in first.";
         return;
@@ -2482,11 +2483,22 @@ function toggleListening() {
 
         const form = new FormData();
         form.append("avatar", selectedFile);
-        const response = await fetch(`${NODE_BASE_URL}/api/avatar/upload`, {
-          method: "POST",
-          headers: { authorization: `Bearer ${authToken}` },
-          body: form
-        });
+        const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const timeoutHandle = abortController
+          ? setTimeout(() => abortController.abort("avatar_upload_timeout"), uploadTimeoutMs)
+          : null;
+
+        let response;
+        try {
+          response = await fetch(`${NODE_BASE_URL}/api/avatar/upload`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${authToken}` },
+            body: form,
+            ...(abortController ? { signal: abortController.signal } : {})
+          });
+        } finally {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+        }
         const payload = await response.json().catch(() => null);
         if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
           throw new Error(payload?.error?.message || `upload_failed_${response.status}`);
@@ -2510,7 +2522,14 @@ function toggleListening() {
       } catch (err) {
         console.warn("avatar upload failed", err);
         setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
-        avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
+        const msg = String(err?.message || "");
+        if (msg === "missing_auth_token" || msg.includes("Authentication required") || msg.includes("Trust mode")) {
+          avatarCreationStatusEl.textContent = "Upload blocked: backend auth bridge unavailable (missing token).";
+        } else if (msg === "avatar_upload_timeout" || msg.includes("AbortError")) {
+          avatarCreationStatusEl.textContent = "Upload timed out after 30s. Check connection or file size and retry.";
+        } else {
+          avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
+        }
       }
     }
 

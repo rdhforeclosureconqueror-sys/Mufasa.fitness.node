@@ -2760,6 +2760,7 @@ function toggleListening() {
 
     async function uploadAvatarFile() {
       console.info("[avatar-upload] upload button clicked");
+      const uploadTimeoutMs = 30000;
       if (!USER_PROFILE) {
         avatarCreationStatusEl.textContent = "Sign in first.";
         return;
@@ -2798,11 +2799,22 @@ function toggleListening() {
         form.append("avatar", selectedFile);
         const uploadUrl = `${NODE_BASE_URL}/api/avatar/upload`;
         console.info("[avatar-upload] request starting", { method: "POST", url: uploadUrl, field: "avatar" });
-        const response = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { authorization: `Bearer ${authToken}` },
-          body: form
-        });
+        const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const timeoutHandle = abortController
+          ? setTimeout(() => abortController.abort("avatar_upload_timeout"), uploadTimeoutMs)
+          : null;
+
+        let response;
+        try {
+          response = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { authorization: `Bearer ${authToken}` },
+            body: form,
+            ...(abortController ? { signal: abortController.signal } : {})
+          });
+        } finally {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+        }
         const payload = await response.json().catch(() => null);
         console.info("[avatar-upload] response", { status: response.status, ok: response.ok, payload });
         if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
@@ -2832,6 +2844,8 @@ function toggleListening() {
         const msg = String(err?.message || "");
         if (msg === "missing_auth_token" || msg.includes("Authentication required") || msg.includes("Trust mode")) {
           avatarCreationStatusEl.textContent = "Upload blocked: backend auth bridge unavailable (missing token).";
+        } else if (msg === "avatar_upload_timeout" || msg.includes("AbortError")) {
+          avatarCreationStatusEl.textContent = "Upload timed out after 30s. Check connection or file size and retry.";
         } else {
           avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
         }
