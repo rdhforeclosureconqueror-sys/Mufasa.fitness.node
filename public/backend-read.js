@@ -37,6 +37,9 @@
         ? window.__MAAT_AUTH_DEBUG
         : {};
       window.__MAAT_AUTH_DEBUG = { ...current, ...patch };
+      if (window.__MAAT_AUTH_DEBUG.googleSubPresent == null) {
+        window.__MAAT_AUTH_DEBUG.googleSubPresent = Boolean(window.__MAAT_AUTH_DEBUG.googleSub);
+      }
     }
 
     function getAuthToken() {
@@ -107,16 +110,21 @@
       return payload.data;
     }
 
-    async function ensureAuthToken(claims) {
+    async function ensureAuthToken(claims, options = {}) {
       const existingToken = getAuthToken();
       const authProvider = String(claims?.authProvider || "").toLowerCase();
+      const bridgeReason = options?.bridgeReason || "unspecified";
+      const tokenRefreshRequired = Boolean(options?.tokenRefreshRequired);
       if (authProvider === "google" && !claims?.googleIdToken) {
         mergeAuthDebug({
           authProvider,
           claimPath: "missing_google_token",
-          bridgePayloadKeys: [],
+          lastBridgePayloadKeys: [],
           tokenExists: Boolean(existingToken),
-          tokenSource: "google_profile_without_googleIdToken"
+          tokenSource: "google_profile_without_googleIdToken",
+          lastBridgeStatus: "skipped",
+          lastBridgeErrorCode: "GOOGLE_TOKEN_MISSING",
+          lastBridgeTrustMode: null
         });
         const err = new Error("google_token_missing");
         err.code = "GOOGLE_TOKEN_MISSING";
@@ -148,6 +156,9 @@
       console.info("[auth-bridge] bridge payload (sanitized)", {
         payloadKeys,
         claimPath,
+        bridgeReason,
+        tokenRefreshRequired,
+        hasGoogleIdToken: Boolean(body.googleIdToken),
         googleIdTokenLength: body.googleIdToken ? String(body.googleIdToken).length : 0,
         googleIdTokenPresent: Boolean(body.googleIdToken),
         fallbackUsed: !body.googleIdToken,
@@ -159,9 +170,11 @@
       });
       mergeAuthDebug({
         claimPath,
-        bridgePayloadKeys: payloadKeys,
+        lastBridgePayloadKeys: payloadKeys,
         tokenExists: Boolean(existingToken),
-        tokenSource: body.googleIdToken ? "bridge_payload.googleIdToken" : "bridge_payload.fallback_claims"
+        tokenSource: body.googleIdToken ? "bridge_payload.googleIdToken" : "bridge_payload.fallback_claims",
+        lastBridgeStatus: "requesting",
+        lastBridgeErrorCode: null
       });
 
       try {
@@ -175,10 +188,18 @@
         setAuthToken(token);
         mergeAuthDebug({
           tokenExists: true,
-          tokenSource: "bridge_response.auth.token"
+          tokenSource: "bridge_response.auth.token",
+          lastBridgeStatus: "success",
+          lastBridgeErrorCode: null,
+          lastBridgeTrustMode: data?.diagnostics?.effectiveTrustMode || null
         });
         return token;
       } catch (error) {
+        mergeAuthDebug({
+          lastBridgeStatus: "error",
+          lastBridgeErrorCode: error?.payload?.error?.code || error?.code || "AUTH_BRIDGE_FAILED",
+          lastBridgeTrustMode: error?.payload?.error?.details?.diagnostics?.effectiveTrustMode || null
+        });
         if (existingToken) return existingToken;
         throw error;
       }
