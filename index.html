@@ -736,7 +736,10 @@
       modeSince: 0,
       lastGoodAnchor: null,
       lastGoodAt: 0,
-      lastDebugAt: 0
+      lastDebugAt: 0,
+      facingApplied: false,
+      upperBodyTrackingLogged: false,
+      lastUpperBodyGoodAt: 0
     };
 
     function getThreeGlobal() {
@@ -863,7 +866,9 @@
         leftUpperArm: findBone("leftupperarm", "left_arm", "l_upperarm", "leftshoulder"),
         rightUpperArm: findBone("rightupperarm", "right_arm", "r_upperarm", "rightshoulder"),
         leftLowerArm: findBone("leftlowerarm", "leftforearm", "l_forearm"),
-        rightLowerArm: findBone("rightlowerarm", "rightforearm", "r_forearm")
+        rightLowerArm: findBone("rightlowerarm", "rightforearm", "r_forearm"),
+        leftHand: findBone("lefthand", "left_hand", "l_hand", "leftwrist"),
+        rightHand: findBone("righthand", "right_hand", "r_hand", "rightwrist")
       };
     }
 
@@ -1050,6 +1055,7 @@
       const poseRoot = new threeRef.Group();
       const avatarModelGroup = new threeRef.Group();
       avatarModelGroup.rotation.y = Math.PI;
+      console.log("[avatar-facing] applied rotationY:", Number(avatarModelGroup.rotation.y.toFixed(4)));
       root.traverse((node) => {
         if (node?.isMesh) {
           node.castShadow = false;
@@ -2787,203 +2793,51 @@ function toggleListening() {
       const now = Date.now();
       const leftShoulder = getPosePoint(points, 5, 0.35);
       const rightShoulder = getPosePoint(points, 6, 0.35);
-      const leftHip = getPosePoint(points, 11, 0.35);
-      const rightHip = getPosePoint(points, 12, 0.35);
+      const leftElbow = getPosePoint(points, 7, 0.3);
+      const rightElbow = getPosePoint(points, 8, 0.3);
+      const leftWrist = getPosePoint(points, 9, 0.25);
+      const rightWrist = getPosePoint(points, 10, 0.25);
       const nose = getPosePoint(points, 0, 0.25);
       const leftEye = getPosePoint(points, 1, 0.2);
       const rightEye = getPosePoint(points, 2, 0.2);
       const leftEar = getPosePoint(points, 3, 0.2);
       const rightEar = getPosePoint(points, 4, 0.2);
 
-      const shouldersReliable = Boolean(leftShoulder && rightShoulder);
-      const hipsReliable = Boolean(leftHip && rightHip);
-      const headReliableCount = [nose, leftEye, rightEye, leftEar, rightEar].filter(Boolean).length;
-      const headReliable = headReliableCount >= 1;
-
-      const desiredMode = shouldersReliable && hipsReliable
-        ? "full_body"
-        : shouldersReliable
-          ? "shoulder_torso"
-          : headReliable
-            ? "head_only"
-            : "untracked";
-
-      if (avatarTrackingState.mode === "untracked" || desiredMode === avatarTrackingState.mode) {
-        avatarTrackingState.mode = desiredMode;
-        avatarTrackingState.modeSince = now;
-      } else if (desiredMode !== "untracked" && (now - avatarTrackingState.modeSince) >= AVATAR_CALIBRATION.MODE_HOLD_MS) {
-        avatarTrackingState.mode = desiredMode;
-        avatarTrackingState.modeSince = now;
+      if (!avatarTrackingState.facingApplied && runtime.avatarModelGroup) {
+        runtime.avatarModelGroup.rotation.y = Math.PI;
+        avatarTrackingState.facingApplied = true;
+        console.log("[avatar-facing] applied rotationY:", Number(runtime.avatarModelGroup.rotation.y.toFixed(4)));
+      }
+      if (!avatarTrackingState.upperBodyTrackingLogged) {
+        avatarTrackingState.upperBodyTrackingLogged = true;
+        console.log("[avatar-upper-body] head/shoulders/arms tracking active");
       }
 
-      const mode = avatarTrackingState.mode;
-      let anchorX = null;
-      let anchorY = null;
-      let shoulderWidth = null;
-      let hipWidth = null;
-      let headSize = null;
-      let modeScale = AVATAR_CALIBRATION.FULL_BODY_MODE_SCALE;
-
-      if (mode === "full_body" || mode === "shoulder_torso") {
-        anchorX = shouldersReliable
-          ? (leftShoulder.x + rightShoulder.x) / 2
-          : (leftHip.x + rightHip.x) / 2;
-        anchorY = shouldersReliable
-          ? (leftShoulder.y + rightShoulder.y) / 2
-          : (leftHip.y + rightHip.y) / 2;
-        modeScale = mode === "full_body"
-          ? AVATAR_CALIBRATION.FULL_BODY_MODE_SCALE
-          : AVATAR_CALIBRATION.SHOULDER_MODE_SCALE;
-      } else if (mode === "head_only") {
-        const headPoints = [nose, leftEye, rightEye, leftEar, rightEar].filter(Boolean);
-        const sum = headPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
-        anchorX = sum.x / headPoints.length;
-        anchorY = (sum.y / headPoints.length) + (videoEl?.videoHeight || 0) * AVATAR_CALIBRATION.HEAD_BODY_Y_OFFSET;
-        modeScale = AVATAR_CALIBRATION.HEAD_MODE_SCALE;
+      const hasHead = Boolean(nose || leftEye || rightEye || leftEar || rightEar);
+      const hasShoulders = Boolean(leftShoulder && rightShoulder);
+      const hasElbows = Boolean(leftElbow && rightElbow);
+      const hasWrists = Boolean(leftWrist && rightWrist);
+      const trackingGood = hasHead || hasShoulders || hasElbows || hasWrists;
+      if (trackingGood) {
+        avatarTrackingState.lastUpperBodyGoodAt = now;
       }
 
-      const videoWidth = videoEl?.videoWidth || 1;
-      const videoHeight = videoEl?.videoHeight || 1;
-      if (shouldersReliable) {
-        shoulderWidth = Math.hypot(
-          (rightShoulder.x - leftShoulder.x) / videoWidth,
-          (rightShoulder.y - leftShoulder.y) / videoHeight
-        );
-      }
-      if (hipsReliable) {
-        hipWidth = Math.hypot(
-          (rightHip.x - leftHip.x) / videoWidth,
-          (rightHip.y - leftHip.y) / videoHeight
-        );
-      }
-      if (headReliable && (leftEye || rightEye || nose)) {
-        const a = leftEye || nose;
-        const b = rightEye || nose;
-        if (a && b) {
-          headSize = Math.hypot((b.x - a.x) / videoWidth, (b.y - a.y) / videoHeight) * 1.9;
-        }
-      }
-
-      let visibleRegionSize = shoulderWidth || hipWidth || headSize;
-      if (!visibleRegionSize) visibleRegionSize = AVATAR_CALIBRATION.BASE_SHOULDER_WIDTH;
-      const scaleFactor = visibleRegionSize / AVATAR_CALIBRATION.BASE_SHOULDER_WIDTH;
-      let targetScaleValue = Math.max(
-        0.8,
-        Math.min(2.2, scaleFactor * AVATAR_CALIBRATION.AVATAR_SCALE_FACTOR * modeScale)
-      );
-      if (mode === "head_only") {
-        targetScaleValue *= (AVATAR_CALIBRATION.HEAD_SCALE_BOOST * 0.72);
-      }
-
-      let usingLastGoodAnchor = false;
-      const timeSinceLastGoodAnchor = avatarTrackingState.lastGoodAt ? (now - avatarTrackingState.lastGoodAt) : Infinity;
-      if (anchorX != null && anchorY != null && mode !== "untracked") {
-        const normalizedX = anchorX / videoWidth;
-        const normalizedY = anchorY / videoHeight;
-        let anchor = screenToWorld(
-          normalizedX + AVATAR_CALIBRATION.ANCHOR_X_OFFSET,
-          normalizedY - AVATAR_CALIBRATION.ANCHOR_Y_OFFSET,
-          runtime.camera,
-          AVATAR_CALIBRATION.AVATAR_FIXED_Z
-        );
-        if (Math.abs(anchor.x - runtime.avatarRoot.position.x) < AVATAR_CALIBRATION.ANCHOR_DEAD_ZONE) {
-          anchor.x = runtime.avatarRoot.position.x;
-        }
-        runtime.avatarRoot.position.lerp(anchor, 0.6);
-        runtime.avatarRoot.position.x = anchor.x;
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(
-          runtime.avatarRoot.position.y,
-          anchor.y,
-          0.25
-        );
-        runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
-        avatarTrackingState.lastGoodAnchor = {
-          x: normalizedX + AVATAR_CALIBRATION.ANCHOR_X_OFFSET,
-          y: normalizedY - AVATAR_CALIBRATION.ANCHOR_Y_OFFSET,
-          z: AVATAR_CALIBRATION.AVATAR_FIXED_Z,
-          scale: targetScaleValue
-        };
-        avatarTrackingState.lastGoodAt = now;
-      } else if (
-        avatarTrackingState.lastGoodAnchor &&
-        timeSinceLastGoodAnchor <= AVATAR_CALIBRATION.LOST_HOLD_MS
-      ) {
-        usingLastGoodAnchor = true;
-        const held = avatarTrackingState.lastGoodAnchor;
-        const anchor = screenToWorld(held.x, held.y, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
-        runtime.avatarRoot.position.lerp(anchor, 0.6);
-        runtime.avatarRoot.position.x = anchor.x;
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(
-          runtime.avatarRoot.position.y,
-          anchor.y,
-          0.25
-        );
-        runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
-      } else {
-        avatarTrackingState.lastGoodAnchor = null;
-        avatarTrackingState.lastGoodAt = 0;
-        setAvatarRuntimeStatus("Move into frame for avatar tracking.", true);
-        if ((now - avatarTrackingState.lastDebugAt) >= AVATAR_CALIBRATION.DEBUG_THROTTLE_MS) {
-          avatarTrackingState.lastDebugAt = now;
-          console.log("[avatar-tracking]", {
-            mode,
-            trackingReliable: false,
-            hasHead: headReliable,
-            hasShoulders: shouldersReliable,
-            hasHips: hipsReliable,
-            usingLastGoodAnchor: false,
-            timeSinceLastGoodAnchor: Number.isFinite(timeSinceLastGoodAnchor) ? Math.round(timeSinceLastGoodAnchor) : null,
-            anchorX: null,
-            anchorY: null,
-            scale: null
-          });
-        }
-        return false;
-      }
-
+      const lockAnchor = screenToWorld(0.5, 0.56, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
+      runtime.avatarRoot.position.set(lockAnchor.x, lockAnchor.y, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
+      const targetScaleValue = 1.05;
       const threeRef = getThreeGlobal();
       const targetScale = new threeRef.Vector3(targetScaleValue, targetScaleValue, targetScaleValue);
       runtime.avatarRoot.scale.lerp(targetScale, 0.25);
 
       if ((now - avatarTrackingState.lastDebugAt) >= AVATAR_CALIBRATION.DEBUG_THROTTLE_MS) {
         avatarTrackingState.lastDebugAt = now;
-        if (mode === "head_only" || mode === "shoulder_torso" || mode === "full_body") {
-          setAvatarRuntimeStatus(
-            mode === "full_body"
-              ? "3D avatar anchored (full-body torso/hip tracking)."
-              : mode === "shoulder_torso"
-                ? "3D avatar anchored (shoulder/torso tracking)."
-                : "3D avatar anchored (head-only tracking).",
-            false
-          );
-        }
-        console.log("[avatar-calibration]", {
-          mode,
-          visibleLandmarks: {
-            headReliableCount,
-            shouldersReliable,
-            hipsReliable
-          },
-          shoulderWidth: shoulderWidth != null ? Number(shoulderWidth.toFixed(4)) : null,
-          headSize: headSize != null ? Number(headSize.toFixed(4)) : null,
-          targetScale: Number(targetScaleValue.toFixed(4)),
-          z: Number(runtime.avatarRoot.position.z.toFixed(4)),
-          rotationY: Number((runtime.avatarModelGroup?.rotation?.y || 0).toFixed(4))
-        });
-        console.log("[avatar-tracking]", {
-          mode,
-          trackingReliable: mode !== "untracked",
-          hasHead: headReliable,
-          hasShoulders: shouldersReliable,
-          hasHips: hipsReliable,
-          usingLastGoodAnchor,
-          timeSinceLastGoodAnchor: Number.isFinite(timeSinceLastGoodAnchor) ? Math.round(timeSinceLastGoodAnchor) : null,
-          anchorX: anchorX != null ? Number((anchorX / videoWidth).toFixed(4)) : null,
-          anchorY: anchorY != null ? Number((anchorY / videoHeight).toFixed(4)) : null,
-          scale: Number(targetScaleValue.toFixed(4))
-        });
+        setAvatarRuntimeStatus("3D avatar stable root + upper-body tracking phase active.", false);
+        console.log(`[avatar-upper-body] landmarks: head ${hasHead ? "yes" : "no"}, shoulders ${hasShoulders ? "yes" : "no"}, elbows ${hasElbows ? "yes" : "no"}, wrists ${hasWrists ? "yes" : "no"}`);
       }
 
+      if (!trackingGood && (now - avatarTrackingState.lastUpperBodyGoodAt) > AVATAR_CALIBRATION.LOST_HOLD_MS) {
+        return false;
+      }
       return true;
     }
 
@@ -2996,25 +2850,77 @@ function toggleListening() {
       const rs = getPosePoint(points, 6);
       const le = getPosePoint(points, 7);
       const re = getPosePoint(points, 8);
-      const lh = getPosePoint(points, 11);
-      const rh = getPosePoint(points, 12);
       const nose = getPosePoint(points, 0, 0.25);
-      if (!(ls && rs)) return false;
+      const lw = getPosePoint(points, 9, 0.25);
+      const rw = getPosePoint(points, 10, 0.25);
+      const leftEye = getPosePoint(points, 1, 0.2);
+      const rightEye = getPosePoint(points, 2, 0.2);
+      const leftEar = getPosePoint(points, 3, 0.2);
+      const rightEar = getPosePoint(points, 4, 0.2);
+      const now = Date.now();
 
-      const torsoLean = Math.atan2(((ls.y + rs.y) * 0.5) - ((lh?.y ?? ls.y) + (rh?.y ?? rs.y)) * 0.5, 80);
-      const shoulderTilt = Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x));
-      const leftUpperArm = le ? Math.atan2(le.y - ls.y, le.x - ls.x) : 0;
-      const rightUpperArm = re ? Math.atan2(re.y - rs.y, re.x - rs.x) : 0;
-
-      if (runtime.boneMap.spine) runtime.boneMap.spine.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.spine.rotation.x, -torsoLean * 0.35, 0.35);
-      if (runtime.boneMap.chest) {
-        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, -shoulderTilt * 0.7, 0.35);
-        runtime.boneMap.chest.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.x, -torsoLean * 0.45, 0.35);
+      const hasHead = Boolean(nose || leftEye || rightEye || leftEar || rightEar);
+      const hasShoulders = Boolean(ls && rs);
+      const hasElbows = Boolean(le && re);
+      const hasWrists = Boolean(lw && rw);
+      const trackingGood = hasHead || hasShoulders || hasElbows || hasWrists;
+      if (trackingGood) avatarTrackingState.lastUpperBodyGoodAt = now;
+      const shouldHoldLast = !trackingGood && (now - avatarTrackingState.lastUpperBodyGoodAt) <= AVATAR_CALIBRATION.LOST_HOLD_MS;
+      if (!trackingGood && !shouldHoldLast) {
+        const relax = 0.12;
+        if (runtime.boneMap.chest) {
+          runtime.boneMap.chest.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.x, 0, relax);
+          runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, 0, relax);
+        }
+        if (runtime.boneMap.neck) {
+          runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, 0, relax);
+          runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, 0, relax);
+          runtime.boneMap.neck.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.z, 0, relax);
+        }
+        if (runtime.boneMap.head) {
+          runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, 0, relax);
+          runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, 0, relax);
+          runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, 0, relax);
+        }
+        if (runtime.boneMap.leftUpperArm) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, 0.35, relax);
+        if (runtime.boneMap.rightUpperArm) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, -0.35, relax);
+        if (runtime.boneMap.leftLowerArm) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, 0, relax);
+        if (runtime.boneMap.rightLowerArm) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, 0, relax);
+        if (runtime.boneMap.leftHand) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, 0, relax);
+        if (runtime.boneMap.rightHand) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, 0, relax);
+        return false;
       }
-      if (runtime.boneMap.neck) runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, nose ? -0.08 : 0, 0.2);
-      if (runtime.boneMap.head) runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, nose ? -0.12 : 0, 0.2);
-      if (runtime.boneMap.leftUpperArm) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, Math.max(-1.2, Math.min(1.2, leftUpperArm + 1.2)), 0.35);
-      if (runtime.boneMap.rightUpperArm) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, Math.max(-1.2, Math.min(1.2, rightUpperArm - 1.2)), 0.35);
+
+      const shoulderTilt = hasShoulders ? Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x)) : 0;
+      const headYaw = (leftEar && rightEar)
+        ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -0.45, 0.45)
+        : 0;
+      const headPitch = (nose && leftEye && rightEye)
+        ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -0.35, 0.35)
+        : 0;
+      const leftUpperArm = (ls && le) ? Math.atan2(le.y - ls.y, le.x - ls.x) : null;
+      const rightUpperArm = (rs && re) ? Math.atan2(re.y - rs.y, re.x - rs.x) : null;
+      const leftForearm = (le && lw) ? Math.atan2(lw.y - le.y, lw.x - le.x) : null;
+      const rightForearm = (re && rw) ? Math.atan2(rw.y - re.y, rw.x - re.x) : null;
+
+      if (runtime.boneMap.chest) {
+        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, -shoulderTilt * 0.8, 0.35);
+      }
+      if (runtime.boneMap.neck) {
+        runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, -headPitch * 0.6, 0.28);
+        runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, headYaw * 0.5, 0.28);
+      }
+      if (runtime.boneMap.head) {
+        runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -headPitch, 0.32);
+        runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, headYaw, 0.32);
+        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, -shoulderTilt * 0.25, 0.25);
+      }
+      if (runtime.boneMap.leftUpperArm && leftUpperArm != null) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, THREE.MathUtils.clamp(leftUpperArm + 1.05, -1.4, 1.4), 0.38);
+      if (runtime.boneMap.rightUpperArm && rightUpperArm != null) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, THREE.MathUtils.clamp(rightUpperArm - 1.05, -1.4, 1.4), 0.38);
+      if (runtime.boneMap.leftLowerArm && leftForearm != null) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.85, -1.4, 1.4), 0.32);
+      if (runtime.boneMap.rightLowerArm && rightForearm != null) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.85, -1.4, 1.4), 0.32);
+      if (runtime.boneMap.leftHand && leftForearm != null) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.35, -0.8, 0.8), 0.22);
+      if (runtime.boneMap.rightHand && rightForearm != null) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.35, -0.8, 0.8), 0.22);
 
       return true;
     }
