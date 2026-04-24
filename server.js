@@ -815,13 +815,24 @@ function createApp(options = {}) {
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const requestedTrustMode = normalizeTrustMode(req.body?.trustMode);
     const claims = validateAuthBridge(req.body, { requestedTrustMode });
+    const payloadKeys = Object.keys(req.body || {}).filter((key) => ["googleIdToken", "googleSub", "googleEmail", "userId", "manualUserId", "trustMode"].includes(key));
     const bridgeDiagnostics = {
+      requestReceived: true,
+      payloadKeys,
       claimPath: claims.googleIdToken
         ? "googleIdToken"
         : (claims.googleSub ? "googleSub" : (claims.googleEmail ? "googleEmail" : "manualUserId")),
       googleIdTokenPresent: Boolean(claims.googleIdToken),
-      googleVerificationAttempted: Boolean(claims.googleIdToken)
+      googleVerificationAttempted: Boolean(claims.googleIdToken),
+      googleVerificationSucceeded: false,
+      tokenIssued: false
     };
+    console.info("[auth-bridge] request received", {
+      requestId: req.requestId,
+      payloadKeys: bridgeDiagnostics.payloadKeys,
+      claimPath: bridgeDiagnostics.claimPath,
+      googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent
+    });
     let resolvedIdentity;
     try {
       resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
@@ -831,9 +842,13 @@ function createApp(options = {}) {
     } catch (error) {
       console.warn("[auth-bridge] identity resolution failed", {
         claimPath: bridgeDiagnostics.claimPath,
+        payloadKeys: bridgeDiagnostics.payloadKeys,
         googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
         googleVerificationAttempted: bridgeDiagnostics.googleVerificationAttempted,
-        reason: error?.code || error?.message || "unknown"
+        verificationSuccess: false,
+        effectiveTrustMode: claims.trustMode,
+        tokenIssued: false,
+        rejectionReason: error?.details?.reason || error?.code || error?.message || "unknown"
       });
       throw error;
     }
@@ -846,6 +861,7 @@ function createApp(options = {}) {
       : claims.trustMode;
     console.info("[auth-bridge]", {
       claimPath: bridgeDiagnostics.claimPath,
+      payloadKeys: bridgeDiagnostics.payloadKeys,
       googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
       googleVerificationAttempted: bridgeDiagnostics.googleVerificationAttempted,
       googleVerificationSucceeded: bridgeDiagnostics.googleVerificationSucceeded,
@@ -869,6 +885,13 @@ function createApp(options = {}) {
       providerSubject: resolvedIdentity.providerSubject,
       providerVerified: resolvedIdentity.providerVerified,
       identityClass: resolvedIdentity.identityClass
+    });
+    bridgeDiagnostics.tokenIssued = Boolean(token);
+    console.info("[auth-bridge] token issued", {
+      requestId: req.requestId,
+      claimPath: bridgeDiagnostics.claimPath,
+      effectiveTrustMode,
+      tokenIssued: bridgeDiagnostics.tokenIssued
     });
 
     return ok(res, req.requestId, {

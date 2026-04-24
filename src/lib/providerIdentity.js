@@ -60,18 +60,42 @@ async function resolveAuthBridgeIdentity(input, options = {}) {
   const expectedAudience = String(env.GOOGLE_OAUTH_CLIENT_ID || "").trim();
 
   if (input.googleIdToken) {
-    const verified = await googleIdentityVerifier({
-      googleIdToken: input.googleIdToken,
-      expectedAudience,
-      fetchImpl
-    });
+    let verified;
+    try {
+      verified = await googleIdentityVerifier({
+        googleIdToken: input.googleIdToken,
+        expectedAudience,
+        fetchImpl
+      });
+    } catch (error) {
+      const details = {
+        reason: "google_verification_failed",
+        verificationError: error?.code || error?.message || "unknown"
+      };
+      throw new ApiError("UNAUTHENTICATED", "Google identity verification failed", 401, details);
+    }
 
     if (!verified?.sub) {
       throw new ApiError("UNAUTHENTICATED", "Google identity verification returned no subject", 401);
     }
 
     if (expectedAudience && verified.aud !== expectedAudience) {
-      throw new ApiError("UNAUTHENTICATED", "Google token audience mismatch", 401);
+      throw new ApiError("UNAUTHENTICATED", "Google token audience mismatch", 401, {
+        reason: "audience_mismatch"
+      });
+    }
+
+    const allowedIssuers = new Set(["https://accounts.google.com", "accounts.google.com"]);
+    if (verified.iss && !allowedIssuers.has(verified.iss)) {
+      throw new ApiError("UNAUTHENTICATED", "Google token issuer invalid", 401, {
+        reason: "issuer_invalid"
+      });
+    }
+
+    if (verified.exp && Number.isFinite(verified.exp) && (verified.exp * 1000) <= Date.now()) {
+      throw new ApiError("UNAUTHENTICATED", "Google token expired", 401, {
+        reason: "token_expired"
+      });
     }
 
     if (input.googleSub && input.googleSub !== verified.sub) {
