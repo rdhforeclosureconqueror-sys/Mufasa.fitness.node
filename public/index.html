@@ -790,7 +790,10 @@
         skeleton: null,
         boneMap: null,
         active: false,
-        loadError: null
+        loadError: null,
+        baseAvatarHeight: 1.7,
+        baseAvatarWidth: 0.6,
+        lastGoodAnchor: null
       };
       return avatarThreeRuntime;
     }
@@ -1041,6 +1044,8 @@
       root.updateMatrixWorld(true);
       const normalizedBox = new threeRef.Box3().setFromObject(root);
       const normalizedCenter = normalizedBox.getCenter(new threeRef.Vector3());
+      runtime.baseAvatarHeight = Math.max(0.5, normalizedBox.max.y - normalizedBox.min.y);
+      runtime.baseAvatarWidth = Math.max(0.2, normalizedBox.max.x - normalizedBox.min.x);
       root.position.x -= normalizedCenter.x;
       root.position.y -= normalizedBox.min.y;
       root.position.z -= normalizedCenter.z;
@@ -2717,6 +2722,101 @@ function toggleListening() {
       return kp;
     }
 
+    function getPosePointAny(points, indices, minScore = 0.35) {
+      for (const idx of indices || []) {
+        const kp = getPosePoint(points, idx, minScore);
+        if (kp) return kp;
+      }
+      return null;
+    }
+
+    function toWorldAtAvatarPlane(runtime, x, y) {
+      if (!runtime?.camera || !videoEl?.videoWidth || !videoEl?.videoHeight) return { x: 0, y: 0 };
+      const camera = runtime.camera;
+      const depth = Math.max(0.001, camera.position.z);
+      const halfH = Math.tan((camera.fov * Math.PI) / 360) * depth;
+      const halfW = halfH * camera.aspect;
+      const nx = (x / videoEl.videoWidth) * 2 - 1;
+      const ny = 1 - (y / videoEl.videoHeight) * 2;
+      return {
+        x: nx * halfW,
+        y: ny * halfH
+      };
+    }
+
+    function computeAvatarAnchorTransform(posePacket, runtime) {
+      const points = posePacket?.keypoints;
+      if (!points || !points.length) return null;
+      const ls = getPosePoint(points, 5);
+      const rs = getPosePoint(points, 6);
+      const lh = getPosePoint(points, 11);
+      const rh = getPosePoint(points, 12);
+      const nose = getPosePointAny(points, [0, 1, 2, 3, 4], 0.25);
+
+      const shoulderReady = Boolean(ls && rs);
+      const hipReady = Boolean(lh && rh);
+      const headOnly = !shoulderReady && Boolean(nose);
+      if (!(headOnly || shoulderReady)) return null;
+
+      const camera = runtime.camera;
+      const depth = Math.max(0.001, camera.position.z);
+      const halfH = Math.tan((camera.fov * Math.PI) / 360) * depth;
+      const worldPerPixelY = (halfH * 2) / Math.max(1, videoEl.videoHeight);
+
+      const baseH = runtime.baseAvatarHeight || 1.7;
+      const baseW = runtime.baseAvatarWidth || 0.6;
+      const baseShoulderWidth = Math.max(0.24, baseW * 0.55);
+      const baseTorsoHeight = Math.max(0.28, baseH * 0.32);
+      const shoulderRatioY = 0.82;
+      const hipRatioY = 0.53;
+      const headRatioY = 0.93;
+
+      let anchorLevel = "head";
+      let anchorPixel = nose;
+      let tilt = 0;
+      let scale = 1;
+      let ratioY = headRatioY;
+
+      if (shoulderReady && hipReady) {
+        anchorLevel = "full";
+        anchorPixel = {
+          x: ((ls.x + rs.x) * 0.5 + (lh.x + rh.x) * 0.5) * 0.5,
+          y: ((ls.y + rs.y) * 0.5 + (lh.y + rh.y) * 0.5) * 0.5
+        };
+        const torsoPx = Math.hypot(((ls.x + rs.x) * 0.5) - ((lh.x + rh.x) * 0.5), ((ls.y + rs.y) * 0.5) - ((lh.y + rh.y) * 0.5));
+        const torsoWorld = torsoPx * worldPerPixelY;
+        scale = Math.max(0.45, Math.min(2.4, torsoWorld / baseTorsoHeight));
+        tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
+        ratioY = hipRatioY;
+      } else if (shoulderReady) {
+        anchorLevel = "shoulder";
+        anchorPixel = { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 };
+        const shoulderPx = Math.hypot(rs.x - ls.x, rs.y - ls.y);
+        const shoulderWorld = shoulderPx * worldPerPixelY;
+        scale = Math.max(0.45, Math.min(2.4, shoulderWorld / baseShoulderWidth));
+        tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
+        ratioY = shoulderRatioY;
+      } else {
+        const eye = getPosePointAny(points, [1, 2, 3, 4], 0.25);
+        const headPx = eye ? Math.max(20, Math.hypot(nose.x - eye.x, nose.y - eye.y) * 3.4) : 52;
+        const headWorld = headPx * worldPerPixelY;
+        scale = Math.max(0.35, Math.min(1.15, headWorld / (baseH * 0.18)));
+        ratioY = headRatioY;
+        tilt = 0;
+      }
+
+      const anchorWorld = toWorldAtAvatarPlane(runtime, anchorPixel.x, anchorPixel.y);
+      const scaledH = baseH * scale;
+      const rootY = anchorWorld.y - (scaledH * ratioY);
+      return {
+        level: anchorLevel,
+        position: { x: anchorWorld.x, y: rootY, z: 0 },
+        rotationY: Math.PI,
+        rotationZ: -tilt * 0.75,
+        scale
+      };
+    }
+
     function applyMinimalAvatarRetarget(posePacket) {
       const runtime = ensureAvatarThreeRuntime();
       if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
@@ -2753,15 +2853,42 @@ function toggleListening() {
       if (!activeAvatarAsset) throw new Error("avatar_asset_not_loaded");
       const runtime = ensureAvatarThreeRuntime();
       if (!runtime?.avatarRoot) throw new Error("avatar_runtime_not_initialized");
+
+      const anchor = computeAvatarAnchorTransform(posePacket, runtime);
+      const now = Date.now();
+      if (anchor) {
+        runtime.lastGoodAnchor = { ...anchor, timestamp: now };
+      }
+      const fallbackAnchor = runtime.lastGoodAnchor && (now - runtime.lastGoodAnchor.timestamp <= 900)
+        ? runtime.lastGoodAnchor
+        : null;
+
+      if (!(anchor || fallbackAnchor)) {
+        setAvatar3dCanvasVisibility(false);
+        setAvatarRuntimeStatus("Move into frame for avatar tracking.", true);
+        return false;
+      }
+
+      const activeAnchor = anchor || fallbackAnchor;
+      runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, activeAnchor.position.x, 0.35);
+      runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, activeAnchor.position.y, 0.35);
+      runtime.avatarRoot.position.z = THREE.MathUtils.lerp(runtime.avatarRoot.position.z, activeAnchor.position.z, 0.35);
+      runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, activeAnchor.rotationY, 0.35);
+      runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, activeAnchor.rotationZ, 0.35);
+      runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, activeAnchor.scale, 0.3));
+
       const retargetActive = applyMinimalAvatarRetarget(posePacket);
       if (activeAvatarAsset.runtimeStatus) {
         activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
       }
       runtime.renderer.render(runtime.scene, runtime.camera);
       setAvatar3dCanvasVisibility(true);
-      setAvatarRuntimeStatus(retargetActive
-        ? "3D avatar loaded. Live retargeting active (torso/head/upper-arms)."
-        : "3D avatar loaded. Live retargeting inactive (pose confidence too low).", !retargetActive);
+      const trackingMsg = activeAnchor.level === "full"
+        ? "3D avatar anchored (full-body torso/hip tracking)."
+        : activeAnchor.level === "shoulder"
+          ? "3D avatar anchored (shoulder/torso tracking)."
+          : "3D avatar anchored (head-only tracking).";
+      setAvatarRuntimeStatus(anchor ? trackingMsg : "Tracking weak. Holding last stable avatar pose.", !anchor);
       return retargetActive;
     }
 
