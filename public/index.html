@@ -1049,6 +1049,25 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    function updateAuthDebug(partial = {}) {
+      const current = window.__MAAT_AUTH_DEBUG && typeof window.__MAAT_AUTH_DEBUG === "object"
+        ? window.__MAAT_AUTH_DEBUG
+        : {};
+      window.__MAAT_AUTH_DEBUG = {
+        hasGoogleIdToken: Boolean(USER_PROFILE?.googleIdToken),
+        authProvider: USER_PROFILE?.authProvider || null,
+        signedInEmail: USER_PROFILE?.email || null,
+        googleSub: USER_PROFILE?.googleSub || null,
+        claimPath: current.claimPath || null,
+        bridgePayloadKeys: current.bridgePayloadKeys || [],
+        tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
+        tokenSource: current.tokenSource || "unknown",
+        tokenPersistsOnRefresh: current.tokenPersistsOnRefresh ?? null,
+        ...partial
+      };
+      console.info("[auth-debug]", window.__MAAT_AUTH_DEBUG);
+    }
+
     function showOverlay(show) {
       if (show) overlay.classList.remove("hidden");
       else overlay.classList.add("hidden");
@@ -1374,13 +1393,34 @@
     function buildBridgeClaims(profile) {
       const hasGoogleToken = Boolean(profile?.googleIdToken);
       const authProvider = String(profile?.authProvider || "").toLowerCase();
-      if (hasGoogleToken) return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken" };
+      if (hasGoogleToken) {
+        updateAuthDebug({
+          authProvider,
+          claimPath: "googleIdToken",
+          bridgePayloadKeys: ["googleIdToken"],
+          tokenSource: "profile.googleIdToken"
+        });
+        return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken", authProvider };
+      }
       if (authProvider === "google") {
+        updateAuthDebug({
+          authProvider,
+          claimPath: "missing_google_token",
+          bridgePayloadKeys: [],
+          tokenSource: "missing_after_google_signin"
+        });
         return { error: "google_token_missing", claimPath: "missing_google_token" };
       }
-      if (profile?.googleSub) return { googleSub: profile.googleSub, claimPath: "googleSub" };
-      if (profile?.email) return { googleEmail: profile.email, claimPath: "googleEmail" };
-      return { manualUserId: profile?.name || "user", claimPath: "manualUserId" };
+      if (profile?.googleSub) {
+        updateAuthDebug({ authProvider, claimPath: "googleSub", bridgePayloadKeys: ["googleSub"] });
+        return { googleSub: profile.googleSub, claimPath: "googleSub", authProvider };
+      }
+      if (profile?.email) {
+        updateAuthDebug({ authProvider, claimPath: "googleEmail", bridgePayloadKeys: ["googleEmail"] });
+        return { googleEmail: profile.email, claimPath: "googleEmail", authProvider };
+      }
+      updateAuthDebug({ authProvider, claimPath: "manualUserId", bridgePayloadKeys: ["manualUserId"] });
+      return { manualUserId: profile?.name || "user", claimPath: "manualUserId", authProvider };
     }
 
     async function ensureBackendSession(profile) {
@@ -1392,10 +1432,28 @@
         }
         console.info("[auth-bridge] ensure session claims", { claimPath: claims.claimPath });
         await BACKEND_READ_CLIENT.ensureAuthToken(claims);
+        updateAuthDebug({
+          claimPath: claims.claimPath,
+          bridgePayloadKeys: claims.claimPath === "googleIdToken"
+            ? ["googleIdToken"]
+            : (claims.claimPath === "googleSub" ? ["googleSub"] : (claims.claimPath === "googleEmail" ? ["googleEmail"] : ["manualUserId"])),
+          tokenExists: true,
+          tokenSource: claims.claimPath === "googleIdToken" ? "bridge.googleIdToken" : "bridge.fallback_claim"
+        });
         backendTruthState.bridge = { mode: "ok", message: "Auth bridge healthy." };
         return true;
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
+        if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
+          backendTruthState.bridge = { mode: "degraded", message: "Google token missing; sign out/in required." };
+          addLog("system", "Google token missing; sign out/in required.");
+          updateAuthDebug({
+            tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
+            tokenSource: "missing_after_google_signin"
+          });
+          updateSyncStatus();
+          return false;
+        }
         backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
         addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
         updateSyncStatus();
@@ -1489,6 +1547,14 @@
         if (id && profileStr) {
           USER_ID = id;
           USER_PROFILE = JSON.parse(profileStr);
+          updateAuthDebug({
+            authProvider: USER_PROFILE?.authProvider || null,
+            signedInEmail: USER_PROFILE?.email || null,
+            googleSub: USER_PROFILE?.googleSub || null,
+            hasGoogleIdToken: Boolean(USER_PROFILE?.googleIdToken),
+            tokenSource: "localStorage.maatUserProfile",
+            tokenPersistsOnRefresh: Boolean(USER_PROFILE?.googleIdToken)
+          });
 
           const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
           if (calStr) {
@@ -1546,6 +1612,13 @@
     manualLoginBtn.onclick = () => {
       const name = manualNameInput.value.trim() || "Athlete";
       onLogin(defaultProfileForName(name));
+      updateAuthDebug({
+        authProvider: "manual",
+        signedInEmail: null,
+        googleSub: null,
+        hasGoogleIdToken: false,
+        tokenSource: "manual_profile_state"
+      });
       showOverlay(false);
     };
 
@@ -1558,6 +1631,13 @@
         client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
         callback: (response) => {
           const payload = parseJwt(response.credential || "");
+          updateAuthDebug({
+            authProvider: "google",
+            signedInEmail: payload.email || null,
+            googleSub: payload.sub || null,
+            hasGoogleIdToken: Boolean(response.credential),
+            tokenSource: response.credential ? "google.accounts.id.credential" : "missing_google_credential"
+          });
           onLogin({
             name: payload.name || payload.given_name || "Athlete",
             email: payload.email,
@@ -1589,6 +1669,12 @@
         localStorage.removeItem("maatUserProfile");
         localStorage.removeItem("maatCalendar_" + oldId);
         BACKEND_READ_CLIENT?.clearAuthToken?.();
+        updateAuthDebug({
+          tokenExists: false,
+          tokenSource: "signed_out",
+          claimPath: null,
+          bridgePayloadKeys: []
+        });
       } catch (_) {}
 
       showOverlay(true);
