@@ -2525,6 +2525,7 @@ function toggleListening() {
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       const pose = poses.length ? poses[0] : null;
+      updateAvatarTransform(pose);
       const analysis = analyzeSquatForm(pose);
       const posePacket = buildPosePacket(pose);
       const renderMode = getRenderMode();
@@ -2715,6 +2716,58 @@ function toggleListening() {
       const kp = points?.[idx];
       if (!kp || kp.score <= minScore) return null;
       return kp;
+    }
+
+    function screenToWorld(x, y, depth, camera) {
+      const runtime = ensureAvatarThreeRuntime();
+      const threeRef = getThreeGlobal();
+      const videoWidth = videoEl?.videoWidth || runtime?.renderer?.domElement?.width || 1;
+      const videoHeight = videoEl?.videoHeight || runtime?.renderer?.domElement?.height || 1;
+      const vec = new threeRef.Vector3(
+        (x / videoWidth) * 2 - 1,
+        -(y / videoHeight) * 2 + 1,
+        depth
+      );
+      vec.unproject(camera);
+      return vec;
+    }
+
+    function updateAvatarTransform(pose) {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime?.avatarRoot || !pose?.keypoints?.length) return false;
+      const points = pose.keypoints;
+      const leftShoulder = getPosePoint(points, 5);
+      const rightShoulder = getPosePoint(points, 6);
+      if (!(leftShoulder && rightShoulder)) return false;
+
+      const midX = (leftShoulder.x + rightShoulder.x) / 2;
+      const midY = (leftShoulder.y + rightShoulder.y) / 2;
+      const worldPos = screenToWorld(midX, midY, 0.5, runtime.camera);
+      runtime.avatarRoot.position.lerp(worldPos, 0.25);
+
+      const videoWidth = videoEl?.videoWidth || 1;
+      const videoHeight = videoEl?.videoHeight || 1;
+      const shoulderWidth = Math.hypot(
+        (rightShoulder.x - leftShoulder.x) / videoWidth,
+        (rightShoulder.y - leftShoulder.y) / videoHeight
+      );
+      const dynamicScale = Math.max(0.01, shoulderWidth * 2.5);
+      const threeRef = getThreeGlobal();
+      const targetScale = new threeRef.Vector3(dynamicScale, dynamicScale, dynamicScale);
+      runtime.avatarRoot.scale.lerp(targetScale, 0.2);
+      runtime.avatarRoot.position.z = -2 - (shoulderWidth * 1.5);
+
+      console.log("[avatar]", {
+        position: {
+          x: Number(runtime.avatarRoot.position.x.toFixed(3)),
+          y: Number(runtime.avatarRoot.position.y.toFixed(3)),
+          z: Number(runtime.avatarRoot.position.z.toFixed(3))
+        },
+        scale: Number(runtime.avatarRoot.scale.x.toFixed(3)),
+        shoulderWidth: Number(shoulderWidth.toFixed(4))
+      });
+
+      return true;
     }
 
     function applyMinimalAvatarRetarget(posePacket) {
