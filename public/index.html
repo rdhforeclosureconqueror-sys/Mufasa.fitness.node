@@ -1058,10 +1058,15 @@
         authProvider: USER_PROFILE?.authProvider || null,
         signedInEmail: USER_PROFILE?.email || null,
         googleSub: USER_PROFILE?.googleSub || null,
+        googleSubPresent: Boolean(USER_PROFILE?.googleSub),
         claimPath: current.claimPath || null,
-        bridgePayloadKeys: current.bridgePayloadKeys || [],
+        lastBridgePayloadKeys: current.lastBridgePayloadKeys || [],
         tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
         tokenSource: current.tokenSource || "unknown",
+        lastBridgeStatus: current.lastBridgeStatus || null,
+        lastBridgeErrorCode: current.lastBridgeErrorCode || null,
+        lastBridgeTrustMode: current.lastBridgeTrustMode || null,
+        lastProfileStatus: current.lastProfileStatus || null,
         tokenPersistsOnRefresh: current.tokenPersistsOnRefresh ?? null,
         ...partial
       };
@@ -1397,7 +1402,7 @@
         updateAuthDebug({
           authProvider,
           claimPath: "googleIdToken",
-          bridgePayloadKeys: ["googleIdToken"],
+          lastBridgePayloadKeys: ["googleIdToken"],
           tokenSource: "profile.googleIdToken"
         });
         return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken", authProvider };
@@ -1406,35 +1411,63 @@
         updateAuthDebug({
           authProvider,
           claimPath: "missing_google_token",
-          bridgePayloadKeys: [],
+          lastBridgePayloadKeys: [],
           tokenSource: "missing_after_google_signin"
         });
         return { error: "google_token_missing", claimPath: "missing_google_token" };
       }
       if (profile?.googleSub) {
-        updateAuthDebug({ authProvider, claimPath: "googleSub", bridgePayloadKeys: ["googleSub"] });
+        updateAuthDebug({ authProvider, claimPath: "googleSub", lastBridgePayloadKeys: ["googleSub"] });
         return { googleSub: profile.googleSub, claimPath: "googleSub", authProvider };
       }
       if (profile?.email) {
-        updateAuthDebug({ authProvider, claimPath: "googleEmail", bridgePayloadKeys: ["googleEmail"] });
+        updateAuthDebug({ authProvider, claimPath: "googleEmail", lastBridgePayloadKeys: ["googleEmail"] });
         return { googleEmail: profile.email, claimPath: "googleEmail", authProvider };
       }
-      updateAuthDebug({ authProvider, claimPath: "manualUserId", bridgePayloadKeys: ["manualUserId"] });
+      updateAuthDebug({ authProvider, claimPath: "manualUserId", lastBridgePayloadKeys: ["manualUserId"] });
       return { manualUserId: profile?.name || "user", claimPath: "manualUserId", authProvider };
     }
 
     async function ensureBackendSession(profile) {
       if (!BACKEND_READ_CLIENT) return false;
       try {
+        const existingToken = BACKEND_READ_CLIENT.getAuthToken?.();
+        if (existingToken) {
+          try {
+            await BACKEND_READ_CLIENT.fetchProfile();
+            updateAuthDebug({
+              tokenExists: true,
+              tokenSource: "existing_auth_token_profile_200",
+              lastProfileStatus: "200",
+              lastBridgeStatus: "skipped_existing_token_profile_ok",
+              lastBridgeErrorCode: null
+            });
+            backendTruthState.bridge = { mode: "ok", message: "Auth bridge skipped; existing token already valid." };
+            return true;
+          } catch (profileErr) {
+            updateAuthDebug({
+              lastProfileStatus: String(profileErr?.status || "error"),
+              lastBridgeStatus: "retry_required_profile_unauthorized",
+              lastBridgeErrorCode: profileErr?.code || null
+            });
+            if (profileErr?.code !== "UNAUTHORIZED") throw profileErr;
+          }
+        }
         const claims = buildBridgeClaims(profile);
         if (claims.error === "google_token_missing") {
           throw new Error("google_token_missing");
         }
-        console.info("[auth-bridge] ensure session claims", { claimPath: claims.claimPath });
-        await BACKEND_READ_CLIENT.ensureAuthToken(claims);
+        console.info("[auth-bridge] ensure session claims", {
+          claimPath: claims.claimPath,
+          reason: "session_bootstrap_missing_or_expired_token"
+        });
+        await BACKEND_READ_CLIENT.ensureAuthToken(claims, {
+          bridgeReason: "session_bootstrap_missing_or_expired_token",
+          tokenRefreshRequired: true
+        });
         updateAuthDebug({
           claimPath: claims.claimPath,
-          bridgePayloadKeys: claims.claimPath === "googleIdToken"
+          lastBridgePayloadKeys: claims.claimPath === "googleIdToken"
             ? ["googleIdToken"]
             : (claims.claimPath === "googleSub" ? ["googleSub"] : (claims.claimPath === "googleEmail" ? ["googleEmail"] : ["manualUserId"])),
           tokenExists: true,
@@ -1446,10 +1479,12 @@
         console.warn("backend auth bridge unavailable", e);
         if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
           backendTruthState.bridge = { mode: "degraded", message: "Google token missing; sign out/in required." };
-          addLog("system", "Google token missing; sign out/in required.");
+          addLog("system", "Google session token missing. Sign out and sign back in.");
           updateAuthDebug({
             tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
-            tokenSource: "missing_after_google_signin"
+            tokenSource: "missing_after_google_signin",
+            lastBridgeStatus: "skipped_missing_google_token",
+            lastBridgeErrorCode: "GOOGLE_TOKEN_MISSING"
           });
           updateSyncStatus();
           return false;
@@ -1474,6 +1509,7 @@
         persistUser();
         backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
         addLog("system", "Profile synced from backend.");
+        updateAuthDebug({ lastProfileStatus: "200" });
         updateSyncStatus();
         return true;
       } catch (e) {
@@ -1481,12 +1517,14 @@
           BACKEND_READ_CLIENT.clearAuthToken();
           backendTruthState.profileRead = { mode: "degraded", message: "session expired; showing local cached profile." };
           addLog("system", "Session expired. Profile is now from local cache until you sign in again.");
+          updateAuthDebug({ lastProfileStatus: String(e?.status || 401) });
           updateSyncStatus();
           return false;
         }
         console.warn("backend profile read failed", e);
         backendTruthState.profileRead = { mode: "degraded", message: "backend profile unavailable; showing local cached profile." };
         addLog("system", "Backend profile unavailable. Profile is now from local cache.");
+        updateAuthDebug({ lastProfileStatus: String(e?.status || "error") });
         updateSyncStatus();
         return false;
       }
@@ -1673,7 +1711,7 @@
           tokenExists: false,
           tokenSource: "signed_out",
           claimPath: null,
-          bridgePayloadKeys: []
+          lastBridgePayloadKeys: []
         });
       } catch (_) {}
 

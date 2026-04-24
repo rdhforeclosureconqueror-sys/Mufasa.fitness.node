@@ -823,8 +823,10 @@ function createApp(options = {}) {
         ? "googleIdToken"
         : (claims.googleSub ? "googleSub" : (claims.googleEmail ? "googleEmail" : "manualUserId")),
       googleIdTokenPresent: Boolean(claims.googleIdToken),
-      googleVerificationAttempted: Boolean(claims.googleIdToken),
-      googleVerificationSucceeded: false,
+      verificationAttempted: Boolean(claims.googleIdToken),
+      verificationSucceeded: false,
+      effectiveTrustMode: claims.trustMode,
+      rejectionReason: null,
       tokenIssued: false
     };
     console.info("[auth-bridge] request received", {
@@ -844,15 +846,28 @@ function createApp(options = {}) {
         claimPath: bridgeDiagnostics.claimPath,
         payloadKeys: bridgeDiagnostics.payloadKeys,
         googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
-        googleVerificationAttempted: bridgeDiagnostics.googleVerificationAttempted,
+        verificationAttempted: bridgeDiagnostics.verificationAttempted,
         verificationSuccess: false,
         effectiveTrustMode: claims.trustMode,
         tokenIssued: false,
         rejectionReason: error?.details?.reason || error?.code || error?.message || "unknown"
       });
+      if (error instanceof ApiError) {
+        const rejectionReason = error?.details?.reason || error.code || error.message || "identity_resolution_failed";
+        throw new ApiError(error.code, error.message, error.status, {
+          ...(error.details || {}),
+          diagnostics: {
+            claimPath: bridgeDiagnostics.claimPath,
+            effectiveTrustMode: claims.trustMode,
+            verificationAttempted: bridgeDiagnostics.verificationAttempted,
+            verificationSucceeded: false,
+            rejectionReason
+          }
+        });
+      }
       throw error;
     }
-    bridgeDiagnostics.googleVerificationSucceeded = Boolean(resolvedIdentity.providerVerified);
+    bridgeDiagnostics.verificationSucceeded = Boolean(resolvedIdentity.providerVerified);
     bridgeDiagnostics.effectiveTrustMode = resolvedIdentity.providerVerified
       ? "provider_verified"
       : claims.trustMode;
@@ -863,8 +878,8 @@ function createApp(options = {}) {
       claimPath: bridgeDiagnostics.claimPath,
       payloadKeys: bridgeDiagnostics.payloadKeys,
       googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
-      googleVerificationAttempted: bridgeDiagnostics.googleVerificationAttempted,
-      googleVerificationSucceeded: bridgeDiagnostics.googleVerificationSucceeded,
+      verificationAttempted: bridgeDiagnostics.verificationAttempted,
+      verificationSucceeded: bridgeDiagnostics.verificationSucceeded,
       effectiveTrustMode
     });
     if (!resolvedIdentity.providerVerified && !trustPolicy.allowedTrustModes.includes(effectiveTrustMode)) {
@@ -896,6 +911,13 @@ function createApp(options = {}) {
 
     return ok(res, req.requestId, {
       auth: token,
+      diagnostics: {
+        claimPath: bridgeDiagnostics.claimPath,
+        effectiveTrustMode,
+        verificationAttempted: bridgeDiagnostics.verificationAttempted,
+        verificationSucceeded: bridgeDiagnostics.verificationSucceeded,
+        rejectionReason: null
+      },
       identity: {
         userId: resolvedIdentity.userId,
         provider: resolvedIdentity.provider,
