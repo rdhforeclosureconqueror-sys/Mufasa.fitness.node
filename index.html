@@ -721,13 +721,14 @@
       AVATAR_SCALE_FACTOR: 1.2,
       HEAD_MODE_SCALE: 1.25,
       HEAD_SCALE_BOOST: 1.8,
+      HEAD_BODY_Y_OFFSET: 0.18,
       ANCHOR_X_OFFSET: 0.0,
       ANCHOR_Y_OFFSET: 0.08,
       ANCHOR_DEAD_ZONE: 0.002,
       SHOULDER_MODE_SCALE: 1.05,
       FULL_BODY_MODE_SCALE: 1.0,
       MODE_HOLD_MS: 750,
-      LOST_HOLD_MS: 850,
+      LOST_HOLD_MS: 300,
       DEBUG_THROTTLE_MS: 700
     };
     const avatarTrackingState = {
@@ -1078,6 +1079,10 @@
       runtime.avatarRoot = poseRoot;
       runtime.avatarModelGroup = avatarModelGroup;
       runtime.avatarModel = root;
+      console.log("[avatar-orientation]", {
+        rootRotationY: runtime.avatarRoot.rotation.y,
+        modelGroupRotationY: runtime.avatarModelGroup.rotation.y
+      });
 
       const fitDistance = (Math.max(maxDim * uniformScale, targetHeight) * 0.9) / Math.tan((runtime.camera.fov * Math.PI) / 360);
       runtime.camera.position.set(0, targetHeight * 0.58, fitDistance * 1.15);
@@ -2793,7 +2798,7 @@ function toggleListening() {
       const shouldersReliable = Boolean(leftShoulder && rightShoulder);
       const hipsReliable = Boolean(leftHip && rightHip);
       const headReliableCount = [nose, leftEye, rightEye, leftEar, rightEar].filter(Boolean).length;
-      const headReliable = headReliableCount >= 2;
+      const headReliable = headReliableCount >= 1;
 
       const desiredMode = shouldersReliable && hipsReliable
         ? "full_body"
@@ -2833,7 +2838,7 @@ function toggleListening() {
         const headPoints = [nose, leftEye, rightEye, leftEar, rightEar].filter(Boolean);
         const sum = headPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
         anchorX = sum.x / headPoints.length;
-        anchorY = (sum.y / headPoints.length) + (videoEl?.videoHeight || 0) * 0.12;
+        anchorY = (sum.y / headPoints.length) + (videoEl?.videoHeight || 0) * AVATAR_CALIBRATION.HEAD_BODY_Y_OFFSET;
         modeScale = AVATAR_CALIBRATION.HEAD_MODE_SCALE;
       }
 
@@ -2867,9 +2872,11 @@ function toggleListening() {
         Math.min(2.2, scaleFactor * AVATAR_CALIBRATION.AVATAR_SCALE_FACTOR * modeScale)
       );
       if (mode === "head_only") {
-        targetScaleValue *= AVATAR_CALIBRATION.HEAD_SCALE_BOOST;
+        targetScaleValue *= (AVATAR_CALIBRATION.HEAD_SCALE_BOOST * 0.72);
       }
 
+      let usingLastGoodAnchor = false;
+      const timeSinceLastGoodAnchor = avatarTrackingState.lastGoodAt ? (now - avatarTrackingState.lastGoodAt) : Infinity;
       if (anchorX != null && anchorY != null && mode !== "untracked") {
         const normalizedX = anchorX / videoWidth;
         const normalizedY = anchorY / videoHeight;
@@ -2899,8 +2906,9 @@ function toggleListening() {
         avatarTrackingState.lastGoodAt = now;
       } else if (
         avatarTrackingState.lastGoodAnchor &&
-        (now - avatarTrackingState.lastGoodAt) <= AVATAR_CALIBRATION.LOST_HOLD_MS
+        timeSinceLastGoodAnchor <= AVATAR_CALIBRATION.LOST_HOLD_MS
       ) {
+        usingLastGoodAnchor = true;
         const held = avatarTrackingState.lastGoodAnchor;
         const anchor = screenToWorld(held.x, held.y, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
         runtime.avatarRoot.position.lerp(anchor, 0.6);
@@ -2912,7 +2920,24 @@ function toggleListening() {
         );
         runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
       } else {
+        avatarTrackingState.lastGoodAnchor = null;
+        avatarTrackingState.lastGoodAt = 0;
         setAvatarRuntimeStatus("Move into frame for avatar tracking.", true);
+        if ((now - avatarTrackingState.lastDebugAt) >= AVATAR_CALIBRATION.DEBUG_THROTTLE_MS) {
+          avatarTrackingState.lastDebugAt = now;
+          console.log("[avatar-tracking]", {
+            mode,
+            trackingReliable: false,
+            hasHead: headReliable,
+            hasShoulders: shouldersReliable,
+            hasHips: hipsReliable,
+            usingLastGoodAnchor: false,
+            timeSinceLastGoodAnchor: Number.isFinite(timeSinceLastGoodAnchor) ? Math.round(timeSinceLastGoodAnchor) : null,
+            anchorX: null,
+            anchorY: null,
+            scale: null
+          });
+        }
         return false;
       }
 
@@ -2922,6 +2947,16 @@ function toggleListening() {
 
       if ((now - avatarTrackingState.lastDebugAt) >= AVATAR_CALIBRATION.DEBUG_THROTTLE_MS) {
         avatarTrackingState.lastDebugAt = now;
+        if (mode === "head_only" || mode === "shoulder_torso" || mode === "full_body") {
+          setAvatarRuntimeStatus(
+            mode === "full_body"
+              ? "3D avatar anchored (full-body torso/hip tracking)."
+              : mode === "shoulder_torso"
+                ? "3D avatar anchored (shoulder/torso tracking)."
+                : "3D avatar anchored (head-only tracking).",
+            false
+          );
+        }
         console.log("[avatar-calibration]", {
           mode,
           visibleLandmarks: {
@@ -2934,6 +2969,18 @@ function toggleListening() {
           targetScale: Number(targetScaleValue.toFixed(4)),
           z: Number(runtime.avatarRoot.position.z.toFixed(4)),
           rotationY: Number((runtime.avatarModelGroup?.rotation?.y || 0).toFixed(4))
+        });
+        console.log("[avatar-tracking]", {
+          mode,
+          trackingReliable: mode !== "untracked",
+          hasHead: headReliable,
+          hasShoulders: shouldersReliable,
+          hasHips: hipsReliable,
+          usingLastGoodAnchor,
+          timeSinceLastGoodAnchor: Number.isFinite(timeSinceLastGoodAnchor) ? Math.round(timeSinceLastGoodAnchor) : null,
+          anchorX: anchorX != null ? Number((anchorX / videoWidth).toFixed(4)) : null,
+          anchorY: anchorY != null ? Number((anchorY / videoHeight).toFixed(4)) : null,
+          scale: Number(targetScaleValue.toFixed(4))
         });
       }
 

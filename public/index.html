@@ -786,6 +786,7 @@
         scene,
         camera,
         avatarRoot: null,
+        avatarModelGroup: null,
         avatarMixer: null,
         skeleton: null,
         boneMap: null,
@@ -793,7 +794,8 @@
         loadError: null,
         baseAvatarHeight: 1.7,
         baseAvatarWidth: 0.6,
-        lastGoodAnchor: null
+        lastGoodAnchor: null,
+        lastTrackingLogAt: 0
       };
       return avatarThreeRuntime;
     }
@@ -1025,7 +1027,7 @@
       }
       const root = gltf.scene || gltf.scenes?.[0];
       if (!root) throw new Error("avatar_gltf_scene_missing");
-      root.rotation.set(0, Math.PI, 0);
+      root.rotation.set(0, 0, 0);
       root.traverse((node) => {
         if (node?.isMesh) {
           node.castShadow = false;
@@ -1050,8 +1052,19 @@
       root.position.y -= normalizedBox.min.y;
       root.position.z -= normalizedCenter.z;
 
-      runtime.scene.add(root);
-      runtime.avatarRoot = root;
+      const avatarRoot = new threeRef.Group();
+      const avatarModelGroup = new threeRef.Group();
+      avatarModelGroup.rotation.y = Math.PI;
+      avatarModelGroup.add(root);
+      avatarRoot.add(avatarModelGroup);
+
+      runtime.scene.add(avatarRoot);
+      runtime.avatarRoot = avatarRoot;
+      runtime.avatarModelGroup = avatarModelGroup;
+      console.log("[avatar-orientation]", {
+        rootRotationY: runtime.avatarRoot.rotation.y,
+        modelGroupRotationY: runtime.avatarModelGroup.rotation.y
+      });
 
       const fitDistance = (Math.max(maxDim * uniformScale, targetHeight) * 0.9) / Math.tan((runtime.camera.fov * Math.PI) / 360);
       runtime.camera.position.set(0, targetHeight * 0.58, fitDistance * 1.15);
@@ -1073,7 +1086,11 @@
         activeAvatarAsset = null;
         const runtime = ensureAvatarThreeRuntime();
         if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
-        if (runtime) runtime.active = false;
+        if (runtime) {
+          runtime.avatarRoot = null;
+          runtime.avatarModelGroup = null;
+          runtime.active = false;
+        }
         setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
         setAvatarAssetStatus("No avatar saved.", true);
@@ -1123,7 +1140,11 @@
         activeAvatarAsset = null;
         const runtime = ensureAvatarThreeRuntime();
         if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
-        if (runtime) runtime.active = false;
+        if (runtime) {
+          runtime.avatarRoot = null;
+          runtime.avatarModelGroup = null;
+          runtime.active = false;
+        }
         setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
@@ -2744,19 +2765,37 @@ function toggleListening() {
       };
     }
 
+    const HEAD_BODY_Y_OFFSET = 0.18;
+    const LOST_HOLD_MS = 300;
+    const TRACKING_LOG_THROTTLE_MS = 250;
+
     function computeAvatarAnchorTransform(posePacket, runtime) {
       const points = posePacket?.keypoints;
-      if (!points || !points.length) return null;
+      if (!points || !points.length) {
+        return {
+          mode: "lost",
+          trackingReliable: false,
+          hasHead: false,
+          hasShoulders: false,
+          hasHips: false
+        };
+      }
       const ls = getPosePoint(points, 5);
       const rs = getPosePoint(points, 6);
       const lh = getPosePoint(points, 11);
       const rh = getPosePoint(points, 12);
       const nose = getPosePointAny(points, [0, 1, 2, 3, 4], 0.25);
 
-      const shoulderReady = Boolean(ls && rs);
-      const hipReady = Boolean(lh && rh);
-      const headOnly = !shoulderReady && Boolean(nose);
-      if (!(headOnly || shoulderReady)) return null;
+      const hasHead = Boolean(nose);
+      const hasShoulders = Boolean(ls && rs);
+      const hasHips = Boolean(lh && rh);
+      const mode = hasShoulders
+        ? (hasHips ? "full_body" : "shoulder_torso")
+        : (hasHead ? "head_only" : "lost");
+      const trackingReliable = mode !== "lost";
+      if (!trackingReliable) {
+        return { mode, trackingReliable, hasHead, hasShoulders, hasHips };
+      }
 
       const camera = runtime.camera;
       const depth = Math.max(0.001, camera.position.z);
@@ -2769,16 +2808,16 @@ function toggleListening() {
       const baseTorsoHeight = Math.max(0.28, baseH * 0.32);
       const shoulderRatioY = 0.82;
       const hipRatioY = 0.53;
-      const headRatioY = 0.93;
+      const headRatioY = 0.82;
 
-      let anchorLevel = "head";
+      let anchorLevel = "head_only";
       let anchorPixel = nose;
       let tilt = 0;
       let scale = 1;
       let ratioY = headRatioY;
 
-      if (shoulderReady && hipReady) {
-        anchorLevel = "full";
+      if (mode === "full_body") {
+        anchorLevel = "full_body";
         anchorPixel = {
           x: ((ls.x + rs.x) * 0.5 + (lh.x + rh.x) * 0.5) * 0.5,
           y: ((ls.y + rs.y) * 0.5 + (lh.y + rh.y) * 0.5) * 0.5
@@ -2788,8 +2827,8 @@ function toggleListening() {
         scale = Math.max(0.45, Math.min(2.4, torsoWorld / baseTorsoHeight));
         tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
         ratioY = hipRatioY;
-      } else if (shoulderReady) {
-        anchorLevel = "shoulder";
+      } else if (mode === "shoulder_torso") {
+        anchorLevel = "shoulder_torso";
         anchorPixel = { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 };
         const shoulderPx = Math.hypot(rs.x - ls.x, rs.y - ls.y);
         const shoulderWorld = shoulderPx * worldPerPixelY;
@@ -2797,10 +2836,23 @@ function toggleListening() {
         tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
         ratioY = shoulderRatioY;
       } else {
-        const eye = getPosePointAny(points, [1, 2, 3, 4], 0.25);
+        const eyes = [getPosePoint(points, 1, 0.25), getPosePoint(points, 2, 0.25), getPosePoint(points, 3, 0.25), getPosePoint(points, 4, 0.25)].filter(Boolean);
+        const headSamples = [nose, ...eyes].filter(Boolean);
+        const headCenter = headSamples.reduce((sum, kp) => ({ x: sum.x + kp.x, y: sum.y + kp.y }), { x: 0, y: 0 });
+        const headCenterX = headCenter.x / headSamples.length;
+        const headCenterY = headCenter.y / headSamples.length;
+        const bodyAnchorY = Math.min(
+          videoEl.videoHeight - 1,
+          headCenterY + (videoEl.videoHeight * HEAD_BODY_Y_OFFSET)
+        );
+        anchorPixel = {
+          x: headCenterX,
+          y: bodyAnchorY
+        };
+        const eye = eyes[0] || null;
         const headPx = eye ? Math.max(20, Math.hypot(nose.x - eye.x, nose.y - eye.y) * 3.4) : 52;
         const headWorld = headPx * worldPerPixelY;
-        scale = Math.max(0.35, Math.min(1.15, headWorld / (baseH * 0.18)));
+        scale = Math.max(0.75, Math.min(1.35, headWorld / (baseH * 0.16)));
         ratioY = headRatioY;
         tilt = 0;
       }
@@ -2809,9 +2861,14 @@ function toggleListening() {
       const scaledH = baseH * scale;
       const rootY = anchorWorld.y - (scaledH * ratioY);
       return {
+        mode,
+        trackingReliable,
+        hasHead,
+        hasShoulders,
+        hasHips,
         level: anchorLevel,
         position: { x: anchorWorld.x, y: rootY, z: 0 },
-        rotationY: Math.PI,
+        rotationY: 0,
         rotationZ: -tilt * 0.75,
         scale
       };
@@ -2856,20 +2913,40 @@ function toggleListening() {
 
       const anchor = computeAvatarAnchorTransform(posePacket, runtime);
       const now = Date.now();
-      if (anchor) {
+      if (anchor?.trackingReliable && anchor?.position) {
         runtime.lastGoodAnchor = { ...anchor, timestamp: now };
       }
-      const fallbackAnchor = runtime.lastGoodAnchor && (now - runtime.lastGoodAnchor.timestamp <= 900)
+      const timeSinceLastGoodAnchor = runtime.lastGoodAnchor ? now - runtime.lastGoodAnchor.timestamp : Infinity;
+      const fallbackAnchor = runtime.lastGoodAnchor && (timeSinceLastGoodAnchor <= LOST_HOLD_MS)
         ? runtime.lastGoodAnchor
         : null;
+      const usingLastGoodAnchor = !anchor?.trackingReliable && Boolean(fallbackAnchor);
+      if (!fallbackAnchor && runtime.lastGoodAnchor && timeSinceLastGoodAnchor > LOST_HOLD_MS) {
+        runtime.lastGoodAnchor = null;
+      }
 
-      if (!(anchor || fallbackAnchor)) {
+      if (!(anchor?.trackingReliable && anchor?.position) && !fallbackAnchor) {
         setAvatar3dCanvasVisibility(false);
         setAvatarRuntimeStatus("Move into frame for avatar tracking.", true);
+        if (!runtime.lastTrackingLogAt || (now - runtime.lastTrackingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
+          console.log("[avatar-tracking]", {
+            mode: anchor?.mode || "lost",
+            trackingReliable: Boolean(anchor?.trackingReliable),
+            hasHead: Boolean(anchor?.hasHead),
+            hasShoulders: Boolean(anchor?.hasShoulders),
+            hasHips: Boolean(anchor?.hasHips),
+            usingLastGoodAnchor: false,
+            timeSinceLastGoodAnchor: Number.isFinite(timeSinceLastGoodAnchor) ? Math.round(timeSinceLastGoodAnchor) : null,
+            anchorX: null,
+            anchorY: null,
+            scale: null
+          });
+          runtime.lastTrackingLogAt = now;
+        }
         return false;
       }
 
-      const activeAnchor = anchor || fallbackAnchor;
+      const activeAnchor = (anchor?.trackingReliable && anchor?.position) ? anchor : fallbackAnchor;
       runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, activeAnchor.position.x, 0.35);
       runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, activeAnchor.position.y, 0.35);
       runtime.avatarRoot.position.z = THREE.MathUtils.lerp(runtime.avatarRoot.position.z, activeAnchor.position.z, 0.35);
@@ -2883,12 +2960,27 @@ function toggleListening() {
       }
       runtime.renderer.render(runtime.scene, runtime.camera);
       setAvatar3dCanvasVisibility(true);
-      const trackingMsg = activeAnchor.level === "full"
+      const trackingMsg = activeAnchor.level === "full_body"
         ? "3D avatar anchored (full-body torso/hip tracking)."
-        : activeAnchor.level === "shoulder"
+        : activeAnchor.level === "shoulder_torso"
           ? "3D avatar anchored (shoulder/torso tracking)."
           : "3D avatar anchored (head-only tracking).";
-      setAvatarRuntimeStatus(anchor ? trackingMsg : "Tracking weak. Holding last stable avatar pose.", !anchor);
+      setAvatarRuntimeStatus((anchor?.trackingReliable && anchor?.position) ? trackingMsg : "Tracking weak. Reacquiring avatar anchor…", !(anchor?.trackingReliable && anchor?.position));
+      if (!runtime.lastTrackingLogAt || (now - runtime.lastTrackingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
+        console.log("[avatar-tracking]", {
+          mode: (anchor?.mode || activeAnchor?.mode || "lost"),
+          trackingReliable: Boolean(anchor?.trackingReliable),
+          hasHead: Boolean(anchor?.hasHead),
+          hasShoulders: Boolean(anchor?.hasShoulders),
+          hasHips: Boolean(anchor?.hasHips),
+          usingLastGoodAnchor,
+          timeSinceLastGoodAnchor: Number.isFinite(timeSinceLastGoodAnchor) ? Math.round(timeSinceLastGoodAnchor) : null,
+          anchorX: Number(activeAnchor.position.x.toFixed(4)),
+          anchorY: Number(activeAnchor.position.y.toFixed(4)),
+          scale: Number(activeAnchor.scale.toFixed(4))
+        });
+        runtime.lastTrackingLogAt = now;
+      }
       return retargetActive;
     }
 
