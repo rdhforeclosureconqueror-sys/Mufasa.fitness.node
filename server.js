@@ -815,21 +815,24 @@ function createApp(options = {}) {
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const requestedTrustMode = normalizeTrustMode(req.body?.trustMode);
     const claims = validateAuthBridge(req.body, { requestedTrustMode });
-    if (!trustPolicy.allowedTrustModes.includes(claims.trustMode)) {
-      throw new ApiError(
-        "TRUST_MODE_DISABLED",
-        `Trust mode '${claims.trustMode}' is disabled by AUTH_BRIDGE_ALLOWED_TRUST_MODES`,
-        403,
-        {
-          trustMode: claims.trustMode,
-          allowedTrustModes: trustPolicy.allowedTrustModes
-        }
-      );
-    }
     const resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
       env: process.env,
       googleIdentityVerifier: options.googleIdentityVerifier
     });
+    const effectiveTrustMode = resolvedIdentity.providerVerified
+      ? "provider_verified"
+      : claims.trustMode;
+    if (!resolvedIdentity.providerVerified && !trustPolicy.allowedTrustModes.includes(effectiveTrustMode)) {
+      throw new ApiError(
+        "TRUST_MODE_DISABLED",
+        `Trust mode '${effectiveTrustMode}' is disabled by AUTH_BRIDGE_ALLOWED_TRUST_MODES`,
+        403,
+        {
+          trustMode: effectiveTrustMode,
+          allowedTrustModes: trustPolicy.allowedTrustModes
+        }
+      );
+    }
     const token = authTokenLib.issueUserToken({
       userId: resolvedIdentity.userId,
       provider: resolvedIdentity.provider,

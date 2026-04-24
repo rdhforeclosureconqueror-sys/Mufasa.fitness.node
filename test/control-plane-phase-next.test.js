@@ -266,6 +266,43 @@ test("auth bridge trust modes can be disabled outside dev-like environments", as
   assert.equal(health.json.trustPolicy.lowTrustEnabled, false);
 });
 
+test("auth bridge still accepts provider-verified Google tokens when low-trust modes are disabled", async (t) => {
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevAllowed = process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES;
+  const prevClientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  process.env.NODE_ENV = "production";
+  process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES = "";
+  process.env.GOOGLE_OAUTH_CLIENT_ID = "pilot-client-id";
+  t.after(() => {
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevAllowed == null) delete process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES;
+    else process.env.AUTH_BRIDGE_ALLOWED_TRUST_MODES = prevAllowed;
+    if (prevClientId == null) delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    else process.env.GOOGLE_OAUTH_CLIENT_ID = prevClientId;
+  });
+
+  const rootDir = makeTmpRoot();
+  const app = createApp({
+    rootDir,
+    googleIdentityVerifier: async () => ({
+      sub: "verified-sub-001",
+      email: "pilot@example.com",
+      emailVerified: true,
+      aud: "pilot-client-id"
+    })
+  });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const bridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456" });
+  assert.equal(bridge.res.status, 201);
+  assert.equal(bridge.json.data.identity.identityClass, "provider_verified");
+  assert.equal(bridge.json.data.identity.providerVerified, true);
+});
+
 test("revoked token jti is denied and denylist supports bounded pruning", async (t) => {
   const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
   const prevRetention = process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS;
