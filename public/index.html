@@ -91,6 +91,67 @@
       background: #000;
       border: 1px solid #22c55e;
     }
+    .camera-fs-actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 5;
+      display: none;
+      gap: 8px;
+    }
+    .camera-fs-actions button {
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      border-radius: 999px;
+      background: rgba(2, 6, 23, 0.86);
+      color: #f8fafc;
+      border: 1px solid rgba(250, 204, 21, 0.7);
+    }
+    body.camera-fullscreen {
+      padding: 0;
+      overflow: hidden;
+    }
+    body.camera-fullscreen .app {
+      max-width: none;
+      width: 100vw;
+      min-height: 100vh;
+      border-radius: 0;
+      border-width: 0;
+      padding: 8px;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    body.camera-fullscreen .app > .pane:last-child {
+      display: none;
+    }
+    body.camera-fullscreen .pane {
+      padding: 8px;
+      border-color: rgba(250, 204, 21, 0.35);
+      gap: 8px;
+    }
+    body.camera-fullscreen .pane h1,
+    body.camera-fullscreen .pane .subtitle,
+    body.camera-fullscreen .status-line,
+    body.camera-fullscreen #voiceSupportStatus,
+    body.camera-fullscreen .chip,
+    body.camera-fullscreen #voiceSelect,
+    body.camera-fullscreen label[for="renderModeSelect"] {
+      display: none;
+    }
+    body.camera-fullscreen .video-shell {
+      width: min(100vw, 100%);
+      height: min(90vh, 100dvh - 110px);
+      max-height: 100dvh;
+      aspect-ratio: auto;
+      border-width: 2px;
+      border-radius: 10px;
+    }
+    body.camera-fullscreen .btn-row > :not(#startBtn):not(#fullscreenCameraBtn) {
+      display: none;
+    }
+    body.camera-fullscreen .camera-fs-actions {
+      display: inline-flex;
+    }
 
     video, canvas {
       position: absolute;
@@ -446,11 +507,16 @@
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
         <canvas id="avatar3d"></canvas>
+        <div id="cameraFsActions" class="camera-fs-actions" aria-live="polite">
+          <button id="exitCameraBtn" class="secondary" type="button">Exit Camera</button>
+          <button id="stopWorkoutFsBtn" class="secondary" type="button">Stop Workout</button>
+        </div>
       </div>
 
       <div class="btn-row">
         <button id="connectBtn">Connect Camera</button>
         <button id="startBtn" class="secondary" disabled>Start Workout</button>
+        <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
@@ -619,6 +685,9 @@
 
     const connectBtn = document.getElementById("connectBtn");
     const startBtn = document.getElementById("startBtn");
+    const fullscreenCameraBtn = document.getElementById("fullscreenCameraBtn");
+    const exitCameraBtn = document.getElementById("exitCameraBtn");
+    const stopWorkoutFsBtn = document.getElementById("stopWorkoutFsBtn");
     const ohsaBtn = document.getElementById("ohsaBtn");
     const defineExerciseBtn = document.getElementById("defineExerciseBtn");
     const muteBtn = document.getElementById("muteBtn");
@@ -648,6 +717,7 @@
     let detector;
     let running = false;
     let animId;
+    let cameraFullscreen = false;
 
     let sessionId = null;
     let repCount = 0;      // this set
@@ -877,6 +947,25 @@
       avatar3dCanvasEl.height = height;
     }
 
+    function refreshCameraUiState() {
+      const workoutActive = Boolean(running);
+      if (stopWorkoutFsBtn) stopWorkoutFsBtn.style.display = workoutActive ? "inline-flex" : "none";
+      if (fullscreenCameraBtn) fullscreenCameraBtn.textContent = cameraFullscreen ? "Exit Camera" : "Expand Camera";
+    }
+
+    function setCameraFullscreen(enabled) {
+      cameraFullscreen = Boolean(enabled);
+      document.body.classList.toggle("camera-fullscreen", cameraFullscreen);
+      refreshCameraUiState();
+      if (videoEl?.videoWidth && videoEl?.videoHeight) {
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        avatar3dCanvasEl.width = videoEl.videoWidth;
+        avatar3dCanvasEl.height = videoEl.videoHeight;
+      }
+      resizeAvatarThreeRuntime();
+    }
+
     function findFirstSkeleton(root) {
       let found = null;
       root?.traverse((node) => {
@@ -1089,7 +1178,8 @@
       }
       const root = gltf.scene || gltf.scenes?.[0];
       if (!root) throw new Error("avatar_gltf_scene_missing");
-      root.rotation.set(0, 0, 0);
+      const AVATAR_FACING_CORRECTION_Y = Math.PI;
+      root.rotation.set(0, AVATAR_FACING_CORRECTION_Y, 0);
       root.traverse((node) => {
         if (node?.isMesh) {
           node.castShadow = false;
@@ -1116,14 +1206,16 @@
 
       const avatarRoot = new threeRef.Group();
       const avatarModelGroup = new threeRef.Group();
-      avatarModelGroup.rotation.y = Math.PI;
-      console.log("[avatar-facing] applied rotationY:", Number(avatarModelGroup.rotation.y.toFixed(4)));
+      avatarModelGroup.rotation.y = 0;
       avatarModelGroup.add(root);
       avatarRoot.add(avatarModelGroup);
 
       runtime.scene.add(avatarRoot);
       runtime.avatarRoot = avatarRoot;
       runtime.avatarModelGroup = avatarModelGroup;
+      runtime.avatarFacingCorrectionY = AVATAR_FACING_CORRECTION_Y;
+      runtime.lastFacingLogAt = 0;
+      console.log("[avatar-facing] final model rotationY:", Number((runtime.avatarRoot.rotation.y + runtime.avatarModelGroup.rotation.y + runtime.avatarFacingCorrectionY).toFixed(4)));
       console.log("[avatar-orientation]", {
         rootRotationY: runtime.avatarRoot.rotation.y,
         modelGroupRotationY: runtime.avatarModelGroup.rotation.y
@@ -2421,6 +2513,8 @@ function toggleListening() {
         setPersonLayerSuppressed(false);
         lastRenderMode = "camera";
         startBtn.disabled = false;
+        fullscreenCameraBtn.disabled = false;
+        refreshCameraUiState();
         ohsaBtn.disabled = false;
         defineExerciseBtn.disabled = false;
       } catch (e) {
@@ -3168,11 +3262,6 @@ function toggleListening() {
         runtime.upperBodyTrackingLogged = true;
         console.log("[avatar-upper-body] head/shoulders/arms tracking active");
       }
-      if (!runtime.facingApplied && runtime.avatarModelGroup) {
-        runtime.avatarModelGroup.rotation.y = Math.PI;
-        runtime.facingApplied = true;
-        console.log("[avatar-facing] applied rotationY:", Number(runtime.avatarModelGroup.rotation.y.toFixed(4)));
-      }
 
       const points = posePacket?.keypoints || [];
       const tracker = posePacket?.tracker || null;
@@ -3200,6 +3289,11 @@ function toggleListening() {
       runtime.renderer.render(runtime.scene, runtime.camera);
       setAvatar3dCanvasVisibility(true);
       setAvatarRuntimeStatus(`3D avatar tracking active (${tracker?.mode || currentTrackingMode}).`, false);
+      if (!runtime.lastFacingLogAt || (now - runtime.lastFacingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
+        const finalRotationY = (runtime.avatarRoot?.rotation?.y || 0) + (runtime.avatarModelGroup?.rotation?.y || 0) + (runtime.avatarFacingCorrectionY || 0);
+        console.log("[avatar-facing] final model rotationY:", Number(finalRotationY.toFixed(4)));
+        runtime.lastFacingLogAt = now;
+      }
       if (!runtime.lastTrackingLogAt || (now - runtime.lastTrackingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
         console.log(`[avatar-upper-body] landmarks: head ${hasHead ? "yes" : "no"}, shoulders ${hasShoulders ? "yes" : "no"}, elbows ${hasElbows ? "yes" : "no"}, wrists ${hasWrists ? "yes" : "no"}`);
         runtime.lastTrackingLogAt = now;
@@ -3305,6 +3399,7 @@ function toggleListening() {
         repCountEl.textContent = "0";
 
         startBtn.textContent = "Stop Workout";
+        refreshCameraUiState();
         addLog("system", `Workout started: ${sessionId}`);
         speak(`We are doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`, "rep");
         sendStartSessionToNode();
@@ -3312,6 +3407,7 @@ function toggleListening() {
       } else {
         startBtn.textContent = "Start Workout";
         running = false;
+        refreshCameraUiState();
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
         setPersonLayerSuppressed(false);
@@ -3463,6 +3559,11 @@ function toggleListening() {
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
+    fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
+    exitCameraBtn.onclick = () => setCameraFullscreen(false);
+    stopWorkoutFsBtn.onclick = () => {
+      if (running) startWorkout();
+    };
     ohsaBtn.onclick = startOhsa;
     defineExerciseBtn.onclick = startDefineExercise;
     renderModeSelectEl.onchange = () => {
@@ -3522,9 +3623,15 @@ function toggleListening() {
     questionInput.addEventListener("keydown", e => {
       if (e.key === "Enter") askCoach(questionInput.value.trim());
     });
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && cameraFullscreen) {
+        setCameraFullscreen(false);
+      }
+    });
 
     // ---- Boot ----
     window.addEventListener("load", async () => {
+      refreshCameraUiState();
       applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
