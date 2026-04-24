@@ -11,6 +11,8 @@
   <!-- TensorFlow + Pose Detection (UMD builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
   <script type="importmap">
   {
     "imports": {
@@ -715,6 +717,61 @@
     let activeAvatarAsset = null;
     let avatarThreeRuntime = null;
     let avatarThreeRuntimeDepsPromise = null;
+    let faceDetector = null;
+    let handDetector = null;
+
+    const TRACKING_MODES = {
+      FULL_BODY: "full_body",
+      UPPER_BODY: "upper_body",
+      FACE_CLOSE: "face_close"
+    };
+    const MODE_SWITCH_HOLD_MS = 450;
+    const MODE_MIN_DWELL_MS = 700;
+    let currentTrackingMode = TRACKING_MODES.UPPER_BODY;
+    const trackingCapabilities = {
+      hasMoveNet: false,
+      hasFaceMesh: false,
+      hasHandTracking: false
+    };
+    const trackerModeState = {
+      pendingMode: null,
+      pendingSince: 0,
+      activeSince: Date.now(),
+      lastLoggedMode: null,
+      lastFaceEstimate: null,
+      lastHandEstimate: []
+    };
+
+    function logTrackerCapabilities() {
+      console.log(`[tracker-capabilities] MoveNet ${trackingCapabilities.hasMoveNet ? "yes" : "no"}, FaceMesh ${trackingCapabilities.hasFaceMesh ? "yes" : "no"}, HandTracking ${trackingCapabilities.hasHandTracking ? "yes" : "no"}`);
+    }
+
+    function updateTrackingMode(nextMode, now = performance.now()) {
+      if (!Object.values(TRACKING_MODES).includes(nextMode)) return currentTrackingMode;
+      if (nextMode === currentTrackingMode) {
+        trackerModeState.pendingMode = null;
+        if (trackerModeState.lastLoggedMode !== currentTrackingMode) {
+          trackerModeState.lastLoggedMode = currentTrackingMode;
+          console.log(`[tracker-mode] mode: ${currentTrackingMode}`);
+        }
+        return currentTrackingMode;
+      }
+      if (trackerModeState.pendingMode !== nextMode) {
+        trackerModeState.pendingMode = nextMode;
+        trackerModeState.pendingSince = now;
+        return currentTrackingMode;
+      }
+      if ((now - trackerModeState.pendingSince) < MODE_SWITCH_HOLD_MS) return currentTrackingMode;
+      if ((now - trackerModeState.activeSince) < MODE_MIN_DWELL_MS) return currentTrackingMode;
+      currentTrackingMode = nextMode;
+      trackerModeState.activeSince = now;
+      trackerModeState.pendingMode = null;
+      if (trackerModeState.lastLoggedMode !== currentTrackingMode) {
+        trackerModeState.lastLoggedMode = currentTrackingMode;
+        console.log(`[tracker-mode] mode: ${currentTrackingMode}`);
+      }
+      return currentTrackingMode;
+    }
 
     function getThreeGlobal() {
       return window.THREE || (typeof THREE !== "undefined" ? THREE : null);
@@ -2296,13 +2353,49 @@ function toggleListening() {
       await tf.ready();
       if (typeof poseDetection === "undefined") {
         console.error("PoseDetection failed to load.");
+        trackingCapabilities.hasMoveNet = false;
+        logTrackerCapabilities();
         return;
       }
       detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
         { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
+      trackingCapabilities.hasMoveNet = true;
+      logTrackerCapabilities();
       console.log("✅ MoveNet detector created.");
+    }
+
+    async function initOptionalTrackers() {
+      trackingCapabilities.hasFaceMesh = false;
+      trackingCapabilities.hasHandTracking = false;
+
+      try {
+        if (typeof faceLandmarksDetection === "undefined") throw new Error("facemesh_lib_unavailable");
+        faceDetector = await faceLandmarksDetection.createDetector(
+          faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
+          { runtime: "tfjs", refineLandmarks: true, maxFaces: 1 }
+        );
+        trackingCapabilities.hasFaceMesh = true;
+      } catch (err) {
+        faceDetector = null;
+        console.warn("[face-tracker] load failed", err);
+      }
+      console.log(`[face-tracker] loaded ${trackingCapabilities.hasFaceMesh ? "yes" : "no"}`);
+
+      try {
+        if (typeof handPoseDetection === "undefined") throw new Error("hand_lib_unavailable");
+        handDetector = await handPoseDetection.createDetector(
+          handPoseDetection.SupportedModels.MediaPipeHands,
+          { runtime: "tfjs", modelType: "lite", maxHands: 2 }
+        );
+        trackingCapabilities.hasHandTracking = true;
+      } catch (err) {
+        handDetector = null;
+        console.warn("[hand-tracker] load failed", err);
+      }
+      console.log(`[hand-tracker] loaded ${trackingCapabilities.hasHandTracking ? "yes" : "no"}`);
+      logTrackerCapabilities();
     }
 
     async function connectCamera() {
@@ -2320,6 +2413,8 @@ function toggleListening() {
 
         poseStatusEl.textContent = "Camera connected. Loading pose detector…";
         await initDetector();
+        await initOptionalTrackers();
+        updateTrackingMode(currentTrackingMode, performance.now());
 
         poseStatusEl.textContent = "Pose detector ready.";
         poseStatusEl.classList.add("status-ok");
@@ -2556,14 +2651,88 @@ function toggleListening() {
       generateProgramFromOhsa(summary);
     }
 
+    function getFacePoint(landmarks, idx) {
+      const p = landmarks?.[idx];
+      if (!p || typeof p.x !== "number" || typeof p.y !== "number") return null;
+      return p;
+    }
+
+    function getFaceOrientation(faceEstimate) {
+      const points = faceEstimate?.keypoints || [];
+      const leftEye = getFacePoint(points, 33) || getFacePoint(points, 159);
+      const rightEye = getFacePoint(points, 263) || getFacePoint(points, 386);
+      const nose = getFacePoint(points, 1) || getFacePoint(points, 4);
+      const mouthLeft = getFacePoint(points, 61);
+      const mouthRight = getFacePoint(points, 291);
+      const chin = getFacePoint(points, 152);
+      if (!leftEye || !rightEye || !nose) return null;
+
+      const eyeMid = { x: (leftEye.x + rightEye.x) * 0.5, y: (leftEye.y + rightEye.y) * 0.5 };
+      const roll = Math.atan2(rightEye.y - leftEye.y, Math.max(1, rightEye.x - leftEye.x));
+      const mouthWidth = (mouthLeft && mouthRight) ? Math.max(8, Math.abs(mouthRight.x - mouthLeft.x)) : Math.max(8, Math.abs(rightEye.x - leftEye.x));
+      const yaw = THREE.MathUtils.clamp((nose.x - eyeMid.x) / mouthWidth, -0.65, 0.65);
+      const pitchScale = chin ? Math.max(10, Math.abs(chin.y - eyeMid.y)) : 55;
+      const pitch = THREE.MathUtils.clamp((nose.y - eyeMid.y) / pitchScale, -0.55, 0.55);
+      return { yaw, pitch, roll };
+    }
+
+    function inferTrackingMode(pose, faceEstimate) {
+      const points = pose?.keypoints || [];
+      const shouldersReliable = Boolean(getPosePoint(points, 5, 0.38) && getPosePoint(points, 6, 0.38));
+      const hipsReliable = Boolean(getPosePoint(points, 11, 0.38) && getPosePoint(points, 12, 0.38));
+      const faceReliable = Boolean(getFaceOrientation(faceEstimate));
+      if (shouldersReliable && hipsReliable) return TRACKING_MODES.FULL_BODY;
+      if (shouldersReliable && !hipsReliable) return TRACKING_MODES.UPPER_BODY;
+      if (faceReliable && !shouldersReliable) return TRACKING_MODES.FACE_CLOSE;
+      if (shouldersReliable) return TRACKING_MODES.UPPER_BODY;
+      if (faceReliable) return TRACKING_MODES.FACE_CLOSE;
+      return currentTrackingMode;
+    }
+
+    async function collectTrackerFrame(pose) {
+      let faceEstimate = null;
+      let hands = [];
+
+      if (trackingCapabilities.hasFaceMesh && faceDetector) {
+        try {
+          const faces = await faceDetector.estimateFaces(videoEl, { flipHorizontal: true });
+          faceEstimate = faces?.[0] || null;
+        } catch (err) {
+          console.warn("[face-tracker] estimate failed", err);
+        }
+      }
+
+      const inferredMode = inferTrackingMode(pose, faceEstimate);
+      const nextMode = updateTrackingMode(inferredMode, performance.now());
+
+      if (trackingCapabilities.hasHandTracking && handDetector && nextMode === TRACKING_MODES.FACE_CLOSE) {
+        try {
+          hands = await handDetector.estimateHands(videoEl, { flipHorizontal: true });
+        } catch (err) {
+          console.warn("[hand-tracker] estimate failed", err);
+        }
+      }
+
+      trackerModeState.lastFaceEstimate = faceEstimate;
+      trackerModeState.lastHandEstimate = hands;
+      return {
+        mode: nextMode,
+        capabilities: { ...trackingCapabilities },
+        face: faceEstimate,
+        hands,
+        handCloseVisible: Boolean(hands?.length)
+      };
+    }
+
     async function runPoseLoop() {
       if (!running && !definingExercise && !ohsaMode) return;
       if (!detector) return;
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       const pose = poses.length ? poses[0] : null;
+      const trackerFrame = await collectTrackerFrame(pose);
       const analysis = analyzeSquatForm(pose);
-      const posePacket = buildPosePacket(pose);
+      const posePacket = buildPosePacket(pose, trackerFrame);
       const renderMode = getRenderMode();
       const modeChanged = renderMode !== lastRenderMode;
       if (modeChanged) {
@@ -2580,7 +2749,9 @@ function toggleListening() {
 
       // Status + coaching prompt
       if (!analysis.fullBody) {
-        poseStatusEl.textContent = "No full body in view.";
+        poseStatusEl.textContent = trackerFrame.mode === TRACKING_MODES.FACE_CLOSE
+          ? "Face-close tracking active."
+          : "No full body in view.";
         if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
           if (running || definingExercise || ohsaMode) speak("Step back so I can see your whole body.", "rep");
           lastStepBackSpokenAt = now;
@@ -2740,11 +2911,12 @@ function toggleListening() {
       animId = requestAnimationFrame(runPoseLoop);
     }
 
-    function buildPosePacket(pose) {
+    function buildPosePacket(pose, trackerFrame = null) {
       if (!pose || !pose.keypoints) return null;
       return {
         timestamp: Date.now(),
-        keypoints: pose.keypoints
+        keypoints: pose.keypoints,
+        tracker: trackerFrame
       };
     }
 
@@ -2782,6 +2954,8 @@ function toggleListening() {
 
     function computeAvatarAnchorTransform(posePacket, runtime) {
       const points = posePacket?.keypoints;
+      const tracker = posePacket?.tracker || null;
+      const trackingMode = tracker?.mode || currentTrackingMode;
       if (!points || !points.length) {
         return {
           mode: "lost",
@@ -2796,13 +2970,14 @@ function toggleListening() {
       const lh = getPosePoint(points, 11);
       const rh = getPosePoint(points, 12);
       const nose = getPosePointAny(points, [0, 1, 2, 3, 4], 0.25);
+      const faceOrientation = getFaceOrientation(tracker?.face);
 
-      const hasHead = Boolean(nose);
+      const hasHead = Boolean(nose || faceOrientation);
       const hasShoulders = Boolean(ls && rs);
       const hasHips = Boolean(lh && rh);
       const mode = hasShoulders
-        ? (hasHips ? "full_body" : "shoulder_torso")
-        : (hasHead ? "head_only" : "lost");
+        ? (hasHips ? TRACKING_MODES.FULL_BODY : TRACKING_MODES.UPPER_BODY)
+        : (hasHead ? TRACKING_MODES.FACE_CLOSE : "lost");
       const trackingReliable = mode !== "lost";
       if (!trackingReliable) {
         return { mode, trackingReliable, hasHead, hasShoulders, hasHips };
@@ -2821,14 +2996,14 @@ function toggleListening() {
       const hipRatioY = 0.53;
       const headRatioY = 0.82;
 
-      let anchorLevel = "head_only";
+      let anchorLevel = TRACKING_MODES.FACE_CLOSE;
       let anchorPixel = nose;
       let tilt = 0;
       let scale = 1;
       let ratioY = headRatioY;
 
-      if (mode === "full_body") {
-        anchorLevel = "full_body";
+      if (trackingMode === TRACKING_MODES.FULL_BODY && hasShoulders && hasHips) {
+        anchorLevel = TRACKING_MODES.FULL_BODY;
         anchorPixel = {
           x: ((ls.x + rs.x) * 0.5 + (lh.x + rh.x) * 0.5) * 0.5,
           y: ((ls.y + rs.y) * 0.5 + (lh.y + rh.y) * 0.5) * 0.5
@@ -2838,8 +3013,8 @@ function toggleListening() {
         scale = Math.max(0.45, Math.min(2.4, torsoWorld / baseTorsoHeight));
         tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
         ratioY = hipRatioY;
-      } else if (mode === "shoulder_torso") {
-        anchorLevel = "shoulder_torso";
+      } else if (trackingMode === TRACKING_MODES.UPPER_BODY && hasShoulders) {
+        anchorLevel = TRACKING_MODES.UPPER_BODY;
         anchorPixel = { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 };
         const shoulderPx = Math.hypot(rs.x - ls.x, rs.y - ls.y);
         const shoulderWorld = shoulderPx * worldPerPixelY;
@@ -2847,8 +3022,10 @@ function toggleListening() {
         tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
         ratioY = shoulderRatioY;
       } else {
+        anchorLevel = TRACKING_MODES.FACE_CLOSE;
         const eyes = [getPosePoint(points, 1, 0.25), getPosePoint(points, 2, 0.25), getPosePoint(points, 3, 0.25), getPosePoint(points, 4, 0.25)].filter(Boolean);
-        const headSamples = [nose, ...eyes].filter(Boolean);
+        const fallbackNose = nose || { x: videoEl.videoWidth * 0.5, y: videoEl.videoHeight * 0.38 };
+        const headSamples = [fallbackNose, ...eyes].filter(Boolean);
         const headCenter = headSamples.reduce((sum, kp) => ({ x: sum.x + kp.x, y: sum.y + kp.y }), { x: 0, y: 0 });
         const headCenterX = headCenter.x / headSamples.length;
         const headCenterY = headCenter.y / headSamples.length;
@@ -2861,7 +3038,7 @@ function toggleListening() {
           y: bodyAnchorY
         };
         const eye = eyes[0] || null;
-        const headPx = eye ? Math.max(20, Math.hypot(nose.x - eye.x, nose.y - eye.y) * 3.4) : 52;
+        const headPx = eye ? Math.max(20, Math.hypot(fallbackNose.x - eye.x, fallbackNose.y - eye.y) * 3.4) : 52;
         const headWorld = headPx * worldPerPixelY;
         scale = Math.max(0.75, Math.min(1.35, headWorld / (baseH * 0.16)));
         ratioY = headRatioY;
@@ -2890,6 +3067,10 @@ function toggleListening() {
       if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
       const points = posePacket?.keypoints;
       if (!points || !points.length) return false;
+      const tracker = posePacket?.tracker || null;
+      const trackingMode = tracker?.mode || TRACKING_MODES.UPPER_BODY;
+      const faceOrientation = getFaceOrientation(tracker?.face);
+      const faceCloseHandsVisible = Boolean(tracker?.handCloseVisible);
       const ls = getPosePoint(points, 5);
       const rs = getPosePoint(points, 6);
       const le = getPosePoint(points, 7);
@@ -2936,12 +3117,19 @@ function toggleListening() {
       }
 
       const shoulderTilt = hasShoulders ? Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x)) : 0;
-      const headYaw = (leftEar && rightEar)
+      const moveNetHeadYaw = (leftEar && rightEar)
         ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -0.45, 0.45)
         : 0;
-      const headPitch = (nose && leftEye && rightEye)
+      const moveNetHeadPitch = (nose && leftEye && rightEye)
         ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -0.35, 0.35)
         : 0;
+      const faceYaw = faceOrientation?.yaw ?? 0;
+      const facePitch = faceOrientation?.pitch ?? 0;
+      const faceRoll = faceOrientation?.roll ?? 0;
+      const preferFaceForHead = trackingMode === TRACKING_MODES.FACE_CLOSE && !!faceOrientation;
+      const headYaw = preferFaceForHead ? faceYaw : moveNetHeadYaw;
+      const headPitch = preferFaceForHead ? facePitch : moveNetHeadPitch;
+      const headRoll = preferFaceForHead ? faceRoll : -shoulderTilt * 0.25;
       const leftUpperArm = (ls && le) ? Math.atan2(le.y - ls.y, le.x - ls.x) : null;
       const rightUpperArm = (rs && re) ? Math.atan2(re.y - rs.y, re.x - rs.x) : null;
       const leftForearm = (le && lw) ? Math.atan2(lw.y - le.y, lw.x - le.x) : null;
@@ -2957,14 +3145,16 @@ function toggleListening() {
       if (runtime.boneMap.head) {
         runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -headPitch, 0.32);
         runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, headYaw, 0.32);
-        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, -shoulderTilt * 0.25, 0.25);
+        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, headRoll, 0.25);
       }
       if (runtime.boneMap.leftUpperArm && leftUpperArm != null) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, THREE.MathUtils.clamp(leftUpperArm + 1.05, -1.4, 1.4), 0.38);
       if (runtime.boneMap.rightUpperArm && rightUpperArm != null) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, THREE.MathUtils.clamp(rightUpperArm - 1.05, -1.4, 1.4), 0.38);
       if (runtime.boneMap.leftLowerArm && leftForearm != null) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.85, -1.4, 1.4), 0.32);
       if (runtime.boneMap.rightLowerArm && rightForearm != null) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.85, -1.4, 1.4), 0.32);
-      if (runtime.boneMap.leftHand && leftForearm != null) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.35, -0.8, 0.8), 0.22);
-      if (runtime.boneMap.rightHand && rightForearm != null) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.35, -0.8, 0.8), 0.22);
+      if (faceCloseHandsVisible || trackingMode !== TRACKING_MODES.FACE_CLOSE) {
+        if (runtime.boneMap.leftHand && leftForearm != null) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, THREE.MathUtils.clamp(leftForearm + 0.35, -0.8, 0.8), 0.22);
+        if (runtime.boneMap.rightHand && rightForearm != null) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, THREE.MathUtils.clamp(rightForearm - 0.35, -0.8, 0.8), 0.22);
+      }
 
       return true;
     }
@@ -2985,6 +3175,7 @@ function toggleListening() {
       }
 
       const points = posePacket?.keypoints || [];
+      const tracker = posePacket?.tracker || null;
       const hasHead = Boolean(getPosePointAny(points, [0, 1, 2, 3, 4], 0.25));
       const hasShoulders = Boolean(getPosePoint(points, 5) && getPosePoint(points, 6));
       const hasElbows = Boolean(getPosePoint(points, 7, 0.3) && getPosePoint(points, 8, 0.3));
@@ -2992,13 +3183,15 @@ function toggleListening() {
       const trackingGood = hasHead || hasShoulders || hasElbows || hasWrists;
       if (trackingGood) runtime.lastUpperBodyGoodAt = now;
 
-      const stable = toWorldAtAvatarPlane(runtime, videoEl.videoWidth * 0.5, videoEl.videoHeight * 0.56);
-      runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, stable.x, 0.4);
-      runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, stable.y - (runtime.baseAvatarHeight * 0.78), 0.4);
-      runtime.avatarRoot.position.z = 0;
-      runtime.avatarRoot.rotation.y = 0;
-      runtime.avatarRoot.rotation.z = 0;
-      runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, 1.05, 0.25));
+      const anchor = computeAvatarAnchorTransform(posePacket, runtime);
+      if (anchor?.trackingReliable && anchor.position) {
+        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
+        runtime.avatarRoot.position.z = 0;
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
+        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
+      }
 
       const retargetActive = applyMinimalAvatarRetarget(posePacket);
       if (activeAvatarAsset.runtimeStatus) {
@@ -3006,7 +3199,7 @@ function toggleListening() {
       }
       runtime.renderer.render(runtime.scene, runtime.camera);
       setAvatar3dCanvasVisibility(true);
-      setAvatarRuntimeStatus("3D avatar stable root + upper-body tracking phase active.", false);
+      setAvatarRuntimeStatus(`3D avatar tracking active (${tracker?.mode || currentTrackingMode}).`, false);
       if (!runtime.lastTrackingLogAt || (now - runtime.lastTrackingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
         console.log(`[avatar-upper-body] landmarks: head ${hasHead ? "yes" : "no"}, shoulders ${hasShoulders ? "yes" : "no"}, elbows ${hasElbows ? "yes" : "no"}, wrists ${hasWrists ? "yes" : "no"}`);
         runtime.lastTrackingLogAt = now;
