@@ -101,13 +101,19 @@
 
     async function ensureAuthToken(claims) {
       const existingToken = getAuthToken();
+      const authProvider = String(claims?.authProvider || "").toLowerCase();
 
       const body = {};
+      if (authProvider === "google" && !claims?.googleIdToken) {
+        const err = new Error("google_token_missing");
+        err.code = "GOOGLE_TOKEN_MISSING";
+        throw err;
+      }
       if (claims?.googleIdToken) {
         body.googleIdToken = claims.googleIdToken;
-      } else if (claims?.googleSub) {
+      } else if (claims?.googleSub && authProvider !== "google") {
         body.googleSub = claims.googleSub;
-      } else if (claims?.googleEmail) {
+      } else if (claims?.googleEmail && authProvider !== "google") {
         body.googleEmail = claims.googleEmail;
       } else if (claims?.manualUserId) {
         const sanitized = sanitizeManualUserId(claims.manualUserId);
@@ -120,6 +126,10 @@
         err.code = "MISSING_CLAIMS";
         throw err;
       }
+      const claimPath = body.googleIdToken
+        ? "googleIdToken"
+        : (body.googleSub ? "googleSub" : (body.googleEmail ? "googleEmail" : "manualUserId"));
+      console.log("[bridge] claimPath:", claimPath);
 
       try {
         const data = await fetchJSON("/api/auth/bridge", { method: "POST", body, auth: false });

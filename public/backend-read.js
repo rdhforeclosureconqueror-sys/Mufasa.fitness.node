@@ -134,9 +134,9 @@
       const body = {};
       if (claims?.googleIdToken) {
         body.googleIdToken = claims.googleIdToken;
-      } else if (claims?.googleSub) {
+      } else if (claims?.googleSub && authProvider !== "google") {
         body.googleSub = claims.googleSub;
-      } else if (claims?.googleEmail) {
+      } else if (claims?.googleEmail && authProvider !== "google") {
         body.googleEmail = claims.googleEmail;
       } else if (claims?.manualUserId) {
         const sanitized = sanitizeManualUserId(claims.manualUserId);
@@ -152,6 +152,7 @@
       const claimPath = body.googleIdToken
         ? "googleIdToken"
         : (body.googleSub ? "googleSub" : (body.googleEmail ? "googleEmail" : "manualUserId"));
+      console.log("[bridge] claimPath:", claimPath);
       const payloadKeys = Object.keys(body);
       console.info("[auth-bridge] bridge payload (sanitized)", {
         payloadKeys,
