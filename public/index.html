@@ -870,11 +870,16 @@
       avatarRuntimeStatusEl.classList.toggle("status-ok", !bad);
     }
 
-    function setAvatarAssetStatus(message, bad = false) {
-      if (!avatarAssetStatusEl) return;
-      avatarAssetStatusEl.textContent = message;
-      avatarAssetStatusEl.classList.toggle("status-bad", bad);
-      avatarAssetStatusEl.classList.toggle("status-ok", !bad);
+    function setAvatarAssetStatus(message, isError = false) {
+      const el = avatarAssetStatusEl || document.querySelector("[data-avatar-status]");
+      if (!el) return;
+      el.textContent = message;
+      if (el.classList) {
+        el.classList.toggle("status-bad", isError);
+        el.classList.toggle("status-ok", !isError);
+      } else {
+        el.style.color = isError ? "red" : "white";
+      }
     }
 
     function normalizeAvatarProfile(avatar) {
@@ -2799,31 +2804,32 @@ function toggleListening() {
     async function uploadAvatarFile() {
       console.info("[avatar-upload] upload button clicked");
       const uploadTimeoutMs = 30000;
-      if (!USER_PROFILE) {
-        avatarCreationStatusEl.textContent = "Sign in first.";
-        return;
-      }
-      const selectedFile = avatarFileInput?.files?.[0];
-      console.info("[avatar-upload] selected file", selectedFile ? {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type
-      } : null);
-      if (!selectedFile) {
-        avatarCreationStatusEl.textContent = "Choose a .glb file first.";
-        return;
-      }
-      if (!/\.glb$/i.test(selectedFile.name)) {
-        avatarCreationStatusEl.textContent = "Only .glb files are supported.";
-        return;
-      }
-
-      avatarCreationStatusEl.textContent = "Uploading avatar file…";
-      setAvatarAssetStatus("Uploading avatar asset to server…");
       try {
+        if (!USER_PROFILE) {
+          avatarCreationStatusEl.textContent = "Sign in first.";
+          return;
+        }
+        const selectedFile = avatarFileInput?.files?.[0];
+        console.info("[avatar-upload] selected file", selectedFile ? {
+          name: selectedFile.name,
+          size: selectedFile.size,
+          type: selectedFile.type
+        } : null);
+        if (!selectedFile) {
+          avatarCreationStatusEl.textContent = "Choose a .glb file first.";
+          return;
+        }
+        if (!/\.glb$/i.test(selectedFile.name)) {
+          avatarCreationStatusEl.textContent = "Only .glb files are supported.";
+          return;
+        }
+
+        avatarCreationStatusEl.textContent = "Uploading avatar file…";
+        setAvatarAssetStatus("Uploading avatar asset to server…");
         if (BACKEND_READ_CLIENT) {
           const claims = buildBridgeClaims(USER_PROFILE);
           if (claims.error === "google_token_missing") {
+            setAvatarAssetStatus("Google session expired. Please sign out and sign back in.", true);
             throw new Error("google_token_missing");
           }
           console.info("[auth-bridge] avatar upload claims", { claimPath: claims.claimPath });

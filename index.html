@@ -782,6 +782,18 @@
       avatarRuntimeStatusEl.classList.toggle("status-ok", !bad);
     }
 
+    function setAvatarAssetStatus(message, isError = false) {
+      const el = avatarAssetStatusEl || document.querySelector("[data-avatar-status]");
+      if (!el) return;
+      el.textContent = message;
+      if (el.classList) {
+        el.classList.toggle("status-bad", isError);
+        el.classList.toggle("status-ok", !isError);
+      } else {
+        el.style.color = isError ? "red" : "white";
+      }
+    }
+
     function normalizeAvatarProfile(avatar) {
       if (!avatar || typeof avatar !== "object") return null;
       const avatarProvider = String(avatar.avatarProvider || avatar.provider || AVATAR_PROVIDER_DEFAULT).trim() || AVATAR_PROVIDER_DEFAULT;
@@ -1226,6 +1238,15 @@
     async function ensureBackendSession(profile) {
       if (!BACKEND_READ_CLIENT) return false;
       try {
+        const existingToken = BACKEND_READ_CLIENT.getAuthToken?.();
+        if (existingToken) {
+          try {
+            await BACKEND_READ_CLIENT.fetchProfile();
+            return true;
+          } catch (profileErr) {
+            if (profileErr?.code !== "UNAUTHORIZED") throw profileErr;
+          }
+        }
         const claims = buildBridgeClaims(profile);
         if (claims.error === "google_token_missing") throw new Error("google_token_missing");
         console.info("[auth-bridge] ensure session claims", { claimPath: claims.claimPath });
@@ -2454,26 +2475,29 @@ function toggleListening() {
 
     async function uploadAvatarFile() {
       const uploadTimeoutMs = 30000;
-      if (!USER_PROFILE) {
-        avatarCreationStatusEl.textContent = "Sign in first.";
-        return;
-      }
-      const selectedFile = avatarFileInput?.files?.[0];
-      if (!selectedFile) {
-        avatarCreationStatusEl.textContent = "Choose a .glb file first.";
-        return;
-      }
-      if (!/\.glb$/i.test(selectedFile.name)) {
-        avatarCreationStatusEl.textContent = "Only .glb files are supported.";
-        return;
-      }
-
-      avatarCreationStatusEl.textContent = "Uploading avatar file…";
-      setAvatarAssetStatus("Uploading avatar asset to server…");
       try {
+        if (!USER_PROFILE) {
+          avatarCreationStatusEl.textContent = "Sign in first.";
+          return;
+        }
+        const selectedFile = avatarFileInput?.files?.[0];
+        if (!selectedFile) {
+          avatarCreationStatusEl.textContent = "Choose a .glb file first.";
+          return;
+        }
+        if (!/\.glb$/i.test(selectedFile.name)) {
+          avatarCreationStatusEl.textContent = "Only .glb files are supported.";
+          return;
+        }
+
+        avatarCreationStatusEl.textContent = "Uploading avatar file…";
+        setAvatarAssetStatus("Uploading avatar asset to server…");
         if (BACKEND_READ_CLIENT) {
           const claims = buildBridgeClaims(USER_PROFILE);
-          if (claims.error === "google_token_missing") throw new Error("google_token_missing");
+          if (claims.error === "google_token_missing") {
+            setAvatarAssetStatus("Google session expired. Please sign out and sign back in.", true);
+            throw new Error("google_token_missing");
+          }
           console.info("[auth-bridge] avatar upload claims", { claimPath: claims.claimPath });
           await BACKEND_READ_CLIENT.ensureAuthToken(claims);
         }
