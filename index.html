@@ -715,6 +715,24 @@
     let activeAvatarAsset = null;
     let avatarThreeRuntime = null;
     let avatarThreeRuntimeDepsPromise = null;
+    const AVATAR_CALIBRATION = {
+      AVATAR_FIXED_Z: -1.5,
+      BASE_SHOULDER_WIDTH: 0.18,
+      AVATAR_SCALE_FACTOR: 1.2,
+      HEAD_MODE_SCALE: 1.25,
+      SHOULDER_MODE_SCALE: 1.05,
+      FULL_BODY_MODE_SCALE: 1.0,
+      MODE_HOLD_MS: 750,
+      LOST_HOLD_MS: 850,
+      DEBUG_THROTTLE_MS: 700
+    };
+    const avatarTrackingState = {
+      mode: "untracked",
+      modeSince: 0,
+      lastGoodAnchor: null,
+      lastGoodAt: 0,
+      lastDebugAt: 0
+    };
 
     function getThreeGlobal() {
       return window.THREE || (typeof THREE !== "undefined" ? THREE : null);
@@ -786,6 +804,8 @@
         scene,
         camera,
         avatarRoot: null,
+        avatarModelGroup: null,
+        avatarModel: null,
         avatarMixer: null,
         skeleton: null,
         boneMap: null,
@@ -1022,7 +1042,9 @@
       }
       const root = gltf.scene || gltf.scenes?.[0];
       if (!root) throw new Error("avatar_gltf_scene_missing");
-      root.rotation.set(0, Math.PI, 0);
+      const poseRoot = new threeRef.Group();
+      const avatarModelGroup = new threeRef.Group();
+      avatarModelGroup.rotation.y = Math.PI;
       root.traverse((node) => {
         if (node?.isMesh) {
           node.castShadow = false;
@@ -1045,8 +1067,13 @@
       root.position.y -= normalizedBox.min.y;
       root.position.z -= normalizedCenter.z;
 
-      runtime.scene.add(root);
-      runtime.avatarRoot = root;
+      avatarModelGroup.add(root);
+      poseRoot.add(avatarModelGroup);
+
+      runtime.scene.add(poseRoot);
+      runtime.avatarRoot = poseRoot;
+      runtime.avatarModelGroup = avatarModelGroup;
+      runtime.avatarModel = root;
 
       const fitDistance = (Math.max(maxDim * uniformScale, targetHeight) * 0.9) / Math.tan((runtime.camera.fov * Math.PI) / 360);
       runtime.camera.position.set(0, targetHeight * 0.58, fitDistance * 1.15);
@@ -1068,7 +1095,12 @@
         activeAvatarAsset = null;
         const runtime = ensureAvatarThreeRuntime();
         if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
-        if (runtime) runtime.active = false;
+        if (runtime) {
+          runtime.avatarRoot = null;
+          runtime.avatarModelGroup = null;
+          runtime.avatarModel = null;
+          runtime.active = false;
+        }
         setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
         setAvatarAssetStatus("No avatar saved.", true);
@@ -1118,7 +1150,12 @@
         activeAvatarAsset = null;
         const runtime = ensureAvatarThreeRuntime();
         if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
-        if (runtime) runtime.active = false;
+        if (runtime) {
+          runtime.avatarRoot = null;
+          runtime.avatarModelGroup = null;
+          runtime.avatarModel = null;
+          runtime.active = false;
+        }
         setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
@@ -2718,54 +2755,155 @@ function toggleListening() {
       return kp;
     }
 
-    function screenToWorld(x, y, depth, camera) {
-      const runtime = ensureAvatarThreeRuntime();
+    function screenToWorld(normalizedX, normalizedY, camera, zDepth) {
       const threeRef = getThreeGlobal();
-      const videoWidth = videoEl?.videoWidth || runtime?.renderer?.domElement?.width || 1;
-      const videoHeight = videoEl?.videoHeight || runtime?.renderer?.domElement?.height || 1;
       const vec = new threeRef.Vector3(
-        (x / videoWidth) * 2 - 1,
-        -(y / videoHeight) * 2 + 1,
-        depth
+        (normalizedX * 2) - 1,
+        -(normalizedY * 2) + 1,
+        0.5
       );
       vec.unproject(camera);
-      return vec;
+      const dir = vec.sub(camera.position).normalize();
+      if (Math.abs(dir.z) < 1e-5) {
+        return camera.position.clone();
+      }
+      const distance = (zDepth - camera.position.z) / dir.z;
+      return camera.position.clone().add(dir.multiplyScalar(distance));
     }
 
     function updateAvatarTransform(pose) {
       const runtime = ensureAvatarThreeRuntime();
       if (!runtime?.avatarRoot || !pose?.keypoints?.length) return false;
       const points = pose.keypoints;
-      const leftShoulder = getPosePoint(points, 5);
-      const rightShoulder = getPosePoint(points, 6);
-      if (!(leftShoulder && rightShoulder)) return false;
+      const now = Date.now();
+      const leftShoulder = getPosePoint(points, 5, 0.35);
+      const rightShoulder = getPosePoint(points, 6, 0.35);
+      const leftHip = getPosePoint(points, 11, 0.35);
+      const rightHip = getPosePoint(points, 12, 0.35);
+      const nose = getPosePoint(points, 0, 0.25);
+      const leftEye = getPosePoint(points, 1, 0.2);
+      const rightEye = getPosePoint(points, 2, 0.2);
+      const leftEar = getPosePoint(points, 3, 0.2);
+      const rightEar = getPosePoint(points, 4, 0.2);
 
-      const midX = (leftShoulder.x + rightShoulder.x) / 2;
-      const midY = (leftShoulder.y + rightShoulder.y) / 2;
-      const worldPos = screenToWorld(midX, midY, 0.5, runtime.camera);
-      runtime.avatarRoot.position.lerp(worldPos, 0.25);
+      const shouldersReliable = Boolean(leftShoulder && rightShoulder);
+      const hipsReliable = Boolean(leftHip && rightHip);
+      const headReliableCount = [nose, leftEye, rightEye, leftEar, rightEar].filter(Boolean).length;
+      const headReliable = headReliableCount >= 2;
+
+      const desiredMode = shouldersReliable && hipsReliable
+        ? "full_body"
+        : shouldersReliable
+          ? "shoulder_torso"
+          : headReliable
+            ? "head_only"
+            : "untracked";
+
+      if (avatarTrackingState.mode === "untracked" || desiredMode === avatarTrackingState.mode) {
+        avatarTrackingState.mode = desiredMode;
+        avatarTrackingState.modeSince = now;
+      } else if (desiredMode !== "untracked" && (now - avatarTrackingState.modeSince) >= AVATAR_CALIBRATION.MODE_HOLD_MS) {
+        avatarTrackingState.mode = desiredMode;
+        avatarTrackingState.modeSince = now;
+      }
+
+      const mode = avatarTrackingState.mode;
+      let anchorX = null;
+      let anchorY = null;
+      let shoulderWidth = null;
+      let hipWidth = null;
+      let headSize = null;
+      let modeScale = AVATAR_CALIBRATION.FULL_BODY_MODE_SCALE;
+
+      if (mode === "full_body" || mode === "shoulder_torso") {
+        anchorX = shouldersReliable
+          ? (leftShoulder.x + rightShoulder.x) / 2
+          : (leftHip.x + rightHip.x) / 2;
+        anchorY = shouldersReliable
+          ? (leftShoulder.y + rightShoulder.y) / 2
+          : (leftHip.y + rightHip.y) / 2;
+        modeScale = mode === "full_body"
+          ? AVATAR_CALIBRATION.FULL_BODY_MODE_SCALE
+          : AVATAR_CALIBRATION.SHOULDER_MODE_SCALE;
+      } else if (mode === "head_only") {
+        const headPoints = [nose, leftEye, rightEye, leftEar, rightEar].filter(Boolean);
+        const sum = headPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+        anchorX = sum.x / headPoints.length;
+        anchorY = (sum.y / headPoints.length) + (videoEl?.videoHeight || 0) * 0.12;
+        modeScale = AVATAR_CALIBRATION.HEAD_MODE_SCALE;
+      }
 
       const videoWidth = videoEl?.videoWidth || 1;
       const videoHeight = videoEl?.videoHeight || 1;
-      const shoulderWidth = Math.hypot(
-        (rightShoulder.x - leftShoulder.x) / videoWidth,
-        (rightShoulder.y - leftShoulder.y) / videoHeight
-      );
-      const dynamicScale = Math.max(0.01, shoulderWidth * 2.5);
-      const threeRef = getThreeGlobal();
-      const targetScale = new threeRef.Vector3(dynamicScale, dynamicScale, dynamicScale);
-      runtime.avatarRoot.scale.lerp(targetScale, 0.2);
-      runtime.avatarRoot.position.z = -2 - (shoulderWidth * 1.5);
+      if (shouldersReliable) {
+        shoulderWidth = Math.hypot(
+          (rightShoulder.x - leftShoulder.x) / videoWidth,
+          (rightShoulder.y - leftShoulder.y) / videoHeight
+        );
+      }
+      if (hipsReliable) {
+        hipWidth = Math.hypot(
+          (rightHip.x - leftHip.x) / videoWidth,
+          (rightHip.y - leftHip.y) / videoHeight
+        );
+      }
+      if (headReliable && (leftEye || rightEye || nose)) {
+        const a = leftEye || nose;
+        const b = rightEye || nose;
+        if (a && b) {
+          headSize = Math.hypot((b.x - a.x) / videoWidth, (b.y - a.y) / videoHeight) * 1.9;
+        }
+      }
 
-      console.log("[avatar]", {
-        position: {
-          x: Number(runtime.avatarRoot.position.x.toFixed(3)),
-          y: Number(runtime.avatarRoot.position.y.toFixed(3)),
-          z: Number(runtime.avatarRoot.position.z.toFixed(3))
-        },
-        scale: Number(runtime.avatarRoot.scale.x.toFixed(3)),
-        shoulderWidth: Number(shoulderWidth.toFixed(4))
-      });
+      let visibleRegionSize = shoulderWidth || hipWidth || headSize;
+      if (!visibleRegionSize) visibleRegionSize = AVATAR_CALIBRATION.BASE_SHOULDER_WIDTH;
+      const scaleFactor = visibleRegionSize / AVATAR_CALIBRATION.BASE_SHOULDER_WIDTH;
+      const targetScaleValue = Math.max(
+        0.8,
+        Math.min(2.2, scaleFactor * AVATAR_CALIBRATION.AVATAR_SCALE_FACTOR * modeScale)
+      );
+
+      if (anchorX != null && anchorY != null && mode !== "untracked") {
+        const normalizedX = anchorX / videoWidth;
+        const normalizedY = anchorY / videoHeight;
+        const worldPos = screenToWorld(normalizedX, normalizedY, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
+        runtime.avatarRoot.position.lerp(worldPos, 0.35);
+        runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
+        avatarTrackingState.lastGoodAnchor = { x: normalizedX, y: normalizedY, z: AVATAR_CALIBRATION.AVATAR_FIXED_Z, scale: targetScaleValue };
+        avatarTrackingState.lastGoodAt = now;
+      } else if (
+        avatarTrackingState.lastGoodAnchor &&
+        (now - avatarTrackingState.lastGoodAt) <= AVATAR_CALIBRATION.LOST_HOLD_MS
+      ) {
+        const held = avatarTrackingState.lastGoodAnchor;
+        const worldPos = screenToWorld(held.x, held.y, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
+        runtime.avatarRoot.position.lerp(worldPos, 0.12);
+        runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
+      } else {
+        setAvatarRuntimeStatus("Move into frame for avatar tracking.", true);
+        return false;
+      }
+
+      const threeRef = getThreeGlobal();
+      const targetScale = new threeRef.Vector3(targetScaleValue, targetScaleValue, targetScaleValue);
+      runtime.avatarRoot.scale.lerp(targetScale, 0.25);
+
+      if ((now - avatarTrackingState.lastDebugAt) >= AVATAR_CALIBRATION.DEBUG_THROTTLE_MS) {
+        avatarTrackingState.lastDebugAt = now;
+        console.log("[avatar-calibration]", {
+          mode,
+          visibleLandmarks: {
+            headReliableCount,
+            shouldersReliable,
+            hipsReliable
+          },
+          shoulderWidth: shoulderWidth != null ? Number(shoulderWidth.toFixed(4)) : null,
+          headSize: headSize != null ? Number(headSize.toFixed(4)) : null,
+          targetScale: Number(targetScaleValue.toFixed(4)),
+          z: Number(runtime.avatarRoot.position.z.toFixed(4)),
+          rotationY: Number((runtime.avatarModelGroup?.rotation?.y || 0).toFixed(4))
+        });
+      }
 
       return true;
     }
