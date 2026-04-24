@@ -815,19 +815,49 @@ function createApp(options = {}) {
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const requestedTrustMode = normalizeTrustMode(req.body?.trustMode);
     const claims = validateAuthBridge(req.body, { requestedTrustMode });
-    const resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
-      env: process.env,
-      googleIdentityVerifier: options.googleIdentityVerifier
-    });
+    const bridgeDiagnostics = {
+      claimPath: claims.googleIdToken
+        ? "googleIdToken"
+        : (claims.googleSub ? "googleSub" : (claims.googleEmail ? "googleEmail" : "manualUserId")),
+      googleIdTokenPresent: Boolean(claims.googleIdToken),
+      googleVerificationAttempted: Boolean(claims.googleIdToken)
+    };
+    let resolvedIdentity;
+    try {
+      resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
+        env: process.env,
+        googleIdentityVerifier: options.googleIdentityVerifier
+      });
+    } catch (error) {
+      console.warn("[auth-bridge] identity resolution failed", {
+        claimPath: bridgeDiagnostics.claimPath,
+        googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
+        googleVerificationAttempted: bridgeDiagnostics.googleVerificationAttempted,
+        reason: error?.code || error?.message || "unknown"
+      });
+      throw error;
+    }
+    bridgeDiagnostics.googleVerificationSucceeded = Boolean(resolvedIdentity.providerVerified);
+    bridgeDiagnostics.effectiveTrustMode = resolvedIdentity.providerVerified
+      ? "provider_verified"
+      : claims.trustMode;
     const effectiveTrustMode = resolvedIdentity.providerVerified
       ? "provider_verified"
       : claims.trustMode;
+    console.info("[auth-bridge]", {
+      claimPath: bridgeDiagnostics.claimPath,
+      googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
+      googleVerificationAttempted: bridgeDiagnostics.googleVerificationAttempted,
+      googleVerificationSucceeded: bridgeDiagnostics.googleVerificationSucceeded,
+      effectiveTrustMode
+    });
     if (!resolvedIdentity.providerVerified && !trustPolicy.allowedTrustModes.includes(effectiveTrustMode)) {
       throw new ApiError(
         "TRUST_MODE_DISABLED",
         `Trust mode '${effectiveTrustMode}' is disabled by AUTH_BRIDGE_ALLOWED_TRUST_MODES`,
         403,
         {
+          diagnostics: bridgeDiagnostics,
           trustMode: effectiveTrustMode,
           allowedTrustModes: trustPolicy.allowedTrustModes
         }
