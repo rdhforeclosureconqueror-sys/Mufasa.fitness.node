@@ -720,6 +720,10 @@
       BASE_SHOULDER_WIDTH: 0.18,
       AVATAR_SCALE_FACTOR: 1.2,
       HEAD_MODE_SCALE: 1.25,
+      HEAD_SCALE_BOOST: 1.8,
+      ANCHOR_X_OFFSET: 0.0,
+      ANCHOR_Y_OFFSET: 0.08,
+      ANCHOR_DEAD_ZONE: 0.002,
       SHOULDER_MODE_SCALE: 1.05,
       FULL_BODY_MODE_SCALE: 1.0,
       MODE_HOLD_MS: 750,
@@ -2858,26 +2862,54 @@ function toggleListening() {
       let visibleRegionSize = shoulderWidth || hipWidth || headSize;
       if (!visibleRegionSize) visibleRegionSize = AVATAR_CALIBRATION.BASE_SHOULDER_WIDTH;
       const scaleFactor = visibleRegionSize / AVATAR_CALIBRATION.BASE_SHOULDER_WIDTH;
-      const targetScaleValue = Math.max(
+      let targetScaleValue = Math.max(
         0.8,
         Math.min(2.2, scaleFactor * AVATAR_CALIBRATION.AVATAR_SCALE_FACTOR * modeScale)
       );
+      if (mode === "head_only") {
+        targetScaleValue *= AVATAR_CALIBRATION.HEAD_SCALE_BOOST;
+      }
 
       if (anchorX != null && anchorY != null && mode !== "untracked") {
         const normalizedX = anchorX / videoWidth;
         const normalizedY = anchorY / videoHeight;
-        const worldPos = screenToWorld(normalizedX, normalizedY, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
-        runtime.avatarRoot.position.lerp(worldPos, 0.35);
+        let anchor = screenToWorld(
+          normalizedX + AVATAR_CALIBRATION.ANCHOR_X_OFFSET,
+          normalizedY - AVATAR_CALIBRATION.ANCHOR_Y_OFFSET,
+          runtime.camera,
+          AVATAR_CALIBRATION.AVATAR_FIXED_Z
+        );
+        if (Math.abs(anchor.x - runtime.avatarRoot.position.x) < AVATAR_CALIBRATION.ANCHOR_DEAD_ZONE) {
+          anchor.x = runtime.avatarRoot.position.x;
+        }
+        runtime.avatarRoot.position.lerp(anchor, 0.6);
+        runtime.avatarRoot.position.x = anchor.x;
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(
+          runtime.avatarRoot.position.y,
+          anchor.y,
+          0.25
+        );
         runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
-        avatarTrackingState.lastGoodAnchor = { x: normalizedX, y: normalizedY, z: AVATAR_CALIBRATION.AVATAR_FIXED_Z, scale: targetScaleValue };
+        avatarTrackingState.lastGoodAnchor = {
+          x: normalizedX + AVATAR_CALIBRATION.ANCHOR_X_OFFSET,
+          y: normalizedY - AVATAR_CALIBRATION.ANCHOR_Y_OFFSET,
+          z: AVATAR_CALIBRATION.AVATAR_FIXED_Z,
+          scale: targetScaleValue
+        };
         avatarTrackingState.lastGoodAt = now;
       } else if (
         avatarTrackingState.lastGoodAnchor &&
         (now - avatarTrackingState.lastGoodAt) <= AVATAR_CALIBRATION.LOST_HOLD_MS
       ) {
         const held = avatarTrackingState.lastGoodAnchor;
-        const worldPos = screenToWorld(held.x, held.y, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
-        runtime.avatarRoot.position.lerp(worldPos, 0.12);
+        const anchor = screenToWorld(held.x, held.y, runtime.camera, AVATAR_CALIBRATION.AVATAR_FIXED_Z);
+        runtime.avatarRoot.position.lerp(anchor, 0.6);
+        runtime.avatarRoot.position.x = anchor.x;
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(
+          runtime.avatarRoot.position.y,
+          anchor.y,
+          0.25
+        );
         runtime.avatarRoot.position.z = AVATAR_CALIBRATION.AVATAR_FIXED_Z;
       } else {
         setAvatarRuntimeStatus("Move into frame for avatar tracking.", true);
