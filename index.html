@@ -522,10 +522,11 @@
     </div>
   </div>
 
-  <script src="/backend-read.js"></script>
-  <script src="/session-write.js"></script>
+  <script src="/backend-read.js?v=20260424-authbridge1"></script>
+  <script src="/session-write.js?v=20260424-authbridge1"></script>
 
   <script>
+    console.log("[BUILD_VERSION]", "2026-04-24T00:00:00Z-authbridge1");
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
     /* =========================================================
@@ -903,6 +904,8 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    const GOOGLE_ID_TOKEN_STORAGE_KEY = "maatGoogleIdToken";
+
     function showOverlay(show) {
       if (show) overlay.classList.remove("hidden");
       else overlay.classList.add("hidden");
@@ -912,6 +915,8 @@
       try {
         localStorage.setItem("maatUserId", USER_ID);
         localStorage.setItem("maatUserProfile", JSON.stringify(USER_PROFILE || {}));
+        if (USER_PROFILE?.googleIdToken) localStorage.setItem(GOOGLE_ID_TOKEN_STORAGE_KEY, USER_PROFILE.googleIdToken);
+        else localStorage.removeItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
         if (calendarMeta) {
           const metaJSON = {
             startDateISO: calendarMeta.startDateISO,
@@ -1228,6 +1233,10 @@
     function buildBridgeClaims(profile) {
       const hasGoogleToken = Boolean(profile?.googleIdToken);
       const authProvider = String(profile?.authProvider || "").toLowerCase();
+      const claimPath = hasGoogleToken
+        ? "googleIdToken"
+        : (authProvider === "google" ? "missing_google_token" : (profile?.googleSub ? "googleSub" : (profile?.email ? "googleEmail" : "manualUserId")));
+      console.log("[bridge] claimPath:", claimPath, "tokenPresent:", hasGoogleToken);
       if (hasGoogleToken) return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken" };
       if (authProvider === "google") return { error: "google_token_missing", claimPath: "missing_google_token" };
       if (profile?.googleSub) return { googleSub: profile.googleSub, claimPath: "googleSub" };
@@ -1348,6 +1357,9 @@
         if (id && profileStr) {
           USER_ID = id;
           USER_PROFILE = JSON.parse(profileStr);
+          const persistedGoogleIdToken = localStorage.getItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
+          if (!USER_PROFILE?.googleIdToken && persistedGoogleIdToken) USER_PROFILE.googleIdToken = persistedGoogleIdToken;
+          if (!USER_PROFILE?.authProvider && (USER_PROFILE?.googleIdToken || USER_PROFILE?.googleSub)) USER_PROFILE.authProvider = "google";
 
           const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
           if (calStr) {
@@ -1417,11 +1429,13 @@
         client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
         callback: (response) => {
           const payload = parseJwt(response.credential || "");
+          const googleIdToken = response.credential || null;
+          console.log("[AUTH] googleIdToken present:", !!googleIdToken);
           onLogin({
             name: payload.name || payload.given_name || "Athlete",
             email: payload.email,
             picture: payload.picture,
-            googleIdToken: response.credential || null,
+            googleIdToken,
             googleSub: payload.sub || null,
             authProvider: "google"
           });
@@ -1446,6 +1460,7 @@
       try {
         localStorage.removeItem("maatUserId");
         localStorage.removeItem("maatUserProfile");
+        localStorage.removeItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
         localStorage.removeItem("maatCalendar_" + oldId);
         BACKEND_READ_CLIENT?.clearAuthToken?.();
       } catch (_) {}
@@ -2645,6 +2660,6 @@ function toggleListening() {
   <audio id="ttsPlayer" playsinline preload="auto"></audio>
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
-  <script src="/fitness.js"></script>
+  <script src="/fitness.js?v=20260424-authbridge1"></script>
 </body>
 </html>
