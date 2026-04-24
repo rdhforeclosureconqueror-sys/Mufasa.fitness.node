@@ -11,6 +11,8 @@
   <!-- TensorFlow + Pose Detection (UMD builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/loaders/GLTFLoader.js"></script>
 
   <!-- Simple favicon so we don’t get 404s -->
   <link rel="icon" href="data:,">
@@ -76,6 +78,10 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+    #avatar3d {
+      pointer-events: none;
+      z-index: 2;
     }
 
     .btn-row {
@@ -419,6 +425,7 @@
       <div class="video-shell">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
+        <canvas id="avatar3d"></canvas>
       </div>
 
       <div class="btn-row">
@@ -453,7 +460,7 @@
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
-      <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No saved avatar.</span></div>
+      <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
@@ -581,6 +588,7 @@
 
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
+    const avatar3dCanvasEl = document.getElementById("avatar3d");
     const ctx = canvasEl.getContext("2d");
 
     const poseStatusEl = document.getElementById("poseStatus");
@@ -687,6 +695,86 @@
     };
     let lastRenderMode = "camera";
     let activeAvatarAsset = null;
+    let avatarThreeRuntime = null;
+
+    function ensureAvatarThreeRuntime() {
+      if (avatarThreeRuntime) return avatarThreeRuntime;
+      if (typeof THREE === "undefined" || !avatar3dCanvasEl) return null;
+      const renderer = new THREE.WebGLRenderer({
+        canvas: avatar3dCanvasEl,
+        alpha: true,
+        antialias: true,
+        preserveDrawingBuffer: false
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x000000, 0);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(40, 4 / 3, 0.01, 100);
+      camera.position.set(0, 1.45, 2.25);
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x223344, 1.0);
+      const key = new THREE.DirectionalLight(0xffffff, 0.85);
+      key.position.set(0.4, 1.2, 0.8);
+      scene.add(hemi, key);
+      avatarThreeRuntime = {
+        renderer,
+        scene,
+        camera,
+        avatarRoot: null,
+        avatarMixer: null,
+        skeleton: null,
+        boneMap: null,
+        active: false,
+        loadError: null
+      };
+      return avatarThreeRuntime;
+    }
+
+    function setAvatar3dCanvasVisibility(visible) {
+      if (!avatar3dCanvasEl) return;
+      avatar3dCanvasEl.style.display = visible ? "block" : "none";
+    }
+
+    function resizeAvatarThreeRuntime() {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime || !videoEl.videoWidth || !videoEl.videoHeight) return;
+      const width = videoEl.videoWidth;
+      const height = videoEl.videoHeight;
+      runtime.renderer.setSize(width, height, false);
+      runtime.camera.aspect = width / height;
+      runtime.camera.updateProjectionMatrix();
+      avatar3dCanvasEl.width = width;
+      avatar3dCanvasEl.height = height;
+    }
+
+    function findFirstSkeleton(root) {
+      let found = null;
+      root?.traverse((node) => {
+        if (!found && node && node.isSkinnedMesh && node.skeleton) {
+          found = node.skeleton;
+        }
+      });
+      return found;
+    }
+
+    function mapAvatarBones(skeleton) {
+      if (!skeleton || !Array.isArray(skeleton.bones)) return null;
+      const bones = skeleton.bones;
+      const findBone = (...patterns) => bones.find((b) => {
+        const n = String(b?.name || "").toLowerCase();
+        return patterns.some((p) => n.includes(p));
+      }) || null;
+      return {
+        hips: findBone("hips", "pelvis"),
+        spine: findBone("spine"),
+        chest: findBone("chest", "spine2", "upperchest"),
+        neck: findBone("neck"),
+        head: findBone("head"),
+        leftUpperArm: findBone("leftupperarm", "left_arm", "l_upperarm", "leftshoulder"),
+        rightUpperArm: findBone("rightupperarm", "right_arm", "r_upperarm", "rightshoulder"),
+        leftLowerArm: findBone("leftlowerarm", "leftforearm", "l_forearm"),
+        rightLowerArm: findBone("rightlowerarm", "rightforearm", "r_forearm")
+      };
+    }
 
     function sanitizeRenderMode(mode) {
       return ALLOWED_AVATAR_MODES.has(mode) ? mode : "camera";
@@ -819,7 +907,7 @@
         runtimeLoaded: false,
         renderSucceeded: false,
         motionRetargeted: false,
-        adapterMode: "procedural_proxy",
+        adapterMode: "three_glb_minimal",
         loadError: null
       };
       try {
@@ -833,23 +921,94 @@
         if (!status.runtimeLoaded) throw new Error("avatar_asset_unsupported_format");
         return status;
       } catch (err) {
+        if (String(err?.message || "").includes("avatar_http_404")) {
+          status.assetMissing = true;
+        } else if (String(err?.message || "").includes("avatar_http_")) {
+          status.assetProbeFailed = true;
+        } else {
+          status.assetProbeFailed = true;
+        }
         status.loadError = err;
         return status;
       }
+    }
+
+    async function mountAvatarGlbModel(avatarModelUrl) {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime) throw new Error("avatar_three_runtime_unavailable");
+      if (!/\.glb(\?|$)/i.test(avatarModelUrl)) {
+        throw new Error("avatar_glb_required_in_phase_a");
+      }
+      const loader = new THREE.GLTFLoader();
+      const gltf = await new Promise((resolve, reject) => {
+        loader.load(
+          avatarModelUrl,
+          (loaded) => resolve(loaded),
+          undefined,
+          (err) => reject(err || new Error("avatar_gltf_load_failed"))
+        );
+      });
+      if (runtime.avatarRoot) {
+        runtime.scene.remove(runtime.avatarRoot);
+      }
+      const root = gltf.scene || gltf.scenes?.[0];
+      if (!root) throw new Error("avatar_gltf_scene_missing");
+      root.rotation.set(0, Math.PI, 0);
+      root.traverse((node) => {
+        if (node?.isMesh) {
+          node.castShadow = false;
+          node.receiveShadow = false;
+        }
+      });
+
+      const initialBox = new THREE.Box3().setFromObject(root);
+      const initialSize = initialBox.getSize(new THREE.Vector3());
+      const initialCenter = initialBox.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(initialSize.x, initialSize.y, initialSize.z, 0.001);
+      const targetHeight = 1.7;
+      const uniformScale = targetHeight / Math.max(initialSize.y, 0.001);
+      root.scale.setScalar(uniformScale);
+
+      root.updateMatrixWorld(true);
+      const normalizedBox = new THREE.Box3().setFromObject(root);
+      const normalizedCenter = normalizedBox.getCenter(new THREE.Vector3());
+      root.position.x -= normalizedCenter.x;
+      root.position.y -= normalizedBox.min.y;
+      root.position.z -= normalizedCenter.z;
+
+      runtime.scene.add(root);
+      runtime.avatarRoot = root;
+
+      const fitDistance = (Math.max(maxDim * uniformScale, targetHeight) * 0.9) / Math.tan((runtime.camera.fov * Math.PI) / 360);
+      runtime.camera.position.set(0, targetHeight * 0.58, fitDistance * 1.15);
+      runtime.camera.lookAt(0, targetHeight * 0.5, 0);
+      runtime.skeleton = findFirstSkeleton(root);
+      runtime.boneMap = mapAvatarBones(runtime.skeleton);
+      runtime.loadError = null;
+      runtime.active = true;
+      resizeAvatarThreeRuntime();
+      return {
+        hasSkeleton: Boolean(runtime.skeleton),
+        mappedBones: Object.entries(runtime.boneMap || {}).filter(([, bone]) => !!bone).map(([k]) => k)
+      };
     }
 
     async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
       const nextAvatar = normalizeAvatarProfile(USER_PROFILE?.avatar);
       if (!nextAvatar) {
         activeAvatarAsset = null;
+        const runtime = ensureAvatarThreeRuntime();
+        if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
+        if (runtime) runtime.active = false;
+        setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
-        avatarAssetStatusEl.textContent = "No saved avatar.";
+        setAvatarAssetStatus("No avatar saved.", true);
         setAvatarRuntimeStatus("No avatar metadata loaded.", true);
         avatarCreateBtn.textContent = "🧍 Create Avatar";
         return false;
       }
       try {
-        avatarAssetStatusEl.textContent = `Avatar metadata loaded (${nextAvatar.avatarProvider}, ${source}).`;
+        setAvatarAssetStatus(`Avatar metadata saved (${nextAvatar.avatarProvider}, ${source}).`);
         setAvatarRuntimeStatus("Metadata accepted. Probing GLB runtime availability…");
         if (nextAvatar.avatarThumbnailUrl) {
           await new Promise((resolve, reject) => {
@@ -864,20 +1023,36 @@
           avatarThumbEl.style.display = "none";
         }
         const runtimeStatus = await probeAvatarModelRuntime(nextAvatar.avatarModelUrl);
+        if (runtimeStatus.assetMissing) {
+          setAvatarAssetStatus("Avatar asset missing.", true);
+          throw runtimeStatus.loadError || new Error("avatar_asset_missing");
+        }
         if (!runtimeStatus.assetFound || !runtimeStatus.runtimeLoaded) {
+          setAvatarAssetStatus("Avatar asset probe failed.", true);
           throw runtimeStatus.loadError || new Error("avatar_runtime_probe_failed");
         }
+        setAvatarRuntimeStatus("GLB detected. Booting Three.js runtime…");
+        const mountInfo = await mountAvatarGlbModel(nextAvatar.avatarModelUrl);
+        runtimeStatus.renderSucceeded = true;
+        runtimeStatus.motionRetargeted = false;
+        runtimeStatus.mappedBones = mountInfo.mappedBones;
         activeAvatarAsset = { ...nextAvatar, runtimeStatus };
-        avatarAssetStatusEl.textContent = `Loaded ${nextAvatar.avatarProvider} avatar metadata + model asset (${source}).`;
-        setAvatarRuntimeStatus("GLB runtime loaded. Using procedural proxy renderer (retargeting pending).");
+        setAvatarAssetStatus(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
+        setAvatarRuntimeStatus(`3D avatar loaded. Retargeting inactive (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
         avatarCreateBtn.textContent = "🧍 Change Avatar";
         return true;
       } catch (err) {
         console.warn("avatar load failed", err);
         activeAvatarAsset = null;
+        const runtime = ensureAvatarThreeRuntime();
+        if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
+        if (runtime) runtime.active = false;
+        setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
-        avatarAssetStatusEl.textContent = "Avatar load failed. Camera mode fallback active.";
-        setAvatarRuntimeStatus("GLB runtime load failed. Procedural fallback active.", true);
+        if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
+          setAvatarAssetStatus("Avatar asset probe failed.", true);
+        }
+        setAvatarRuntimeStatus("Using procedural fallback (3D avatar load failed).", true);
         fallbackRenderModeToCamera("Saved avatar failed to load.", err);
         return false;
       }
@@ -905,6 +1080,30 @@
       div.textContent = text;
       logEl.appendChild(div);
       logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function updateAuthDebug(partial = {}) {
+      const current = window.__MAAT_AUTH_DEBUG && typeof window.__MAAT_AUTH_DEBUG === "object"
+        ? window.__MAAT_AUTH_DEBUG
+        : {};
+      window.__MAAT_AUTH_DEBUG = {
+        hasGoogleIdToken: Boolean(USER_PROFILE?.googleIdToken),
+        authProvider: USER_PROFILE?.authProvider || null,
+        signedInEmail: USER_PROFILE?.email || null,
+        googleSub: USER_PROFILE?.googleSub || null,
+        googleSubPresent: Boolean(USER_PROFILE?.googleSub),
+        claimPath: current.claimPath || null,
+        lastBridgePayloadKeys: current.lastBridgePayloadKeys || [],
+        tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
+        tokenSource: current.tokenSource || "unknown",
+        lastBridgeStatus: current.lastBridgeStatus || null,
+        lastBridgeErrorCode: current.lastBridgeErrorCode || null,
+        lastBridgeTrustMode: current.lastBridgeTrustMode || null,
+        lastProfileStatus: current.lastProfileStatus || null,
+        tokenPersistsOnRefresh: current.tokenPersistsOnRefresh ?? null,
+        ...partial
+      };
+      console.info("[auth-debug]", window.__MAAT_AUTH_DEBUG);
     }
 
     const GOOGLE_ID_TOKEN_STORAGE_KEY = "maatGoogleIdToken";
@@ -1240,11 +1439,34 @@
         ? "googleIdToken"
         : (authProvider === "google" ? "missing_google_token" : (profile?.googleSub ? "googleSub" : (profile?.email ? "googleEmail" : "manualUserId")));
       console.log("[bridge] claimPath:", claimPath, "tokenPresent:", hasGoogleToken);
-      if (hasGoogleToken) return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken" };
-      if (authProvider === "google") return { error: "google_token_missing", claimPath: "missing_google_token" };
-      if (profile?.googleSub) return { googleSub: profile.googleSub, claimPath: "googleSub" };
-      if (profile?.email) return { googleEmail: profile.email, claimPath: "googleEmail" };
-      return { manualUserId: profile?.name || "user", claimPath: "manualUserId" };
+      if (hasGoogleToken) {
+        updateAuthDebug({
+          authProvider,
+          claimPath: "googleIdToken",
+          lastBridgePayloadKeys: ["googleIdToken"],
+          tokenSource: "profile.googleIdToken"
+        });
+        return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken", authProvider };
+      }
+      if (authProvider === "google") {
+        updateAuthDebug({
+          authProvider,
+          claimPath: "missing_google_token",
+          lastBridgePayloadKeys: [],
+          tokenSource: "missing_after_google_signin"
+        });
+        return { error: "google_token_missing", claimPath: "missing_google_token" };
+      }
+      if (profile?.googleSub) {
+        updateAuthDebug({ authProvider, claimPath: "googleSub", lastBridgePayloadKeys: ["googleSub"] });
+        return { googleSub: profile.googleSub, claimPath: "googleSub", authProvider };
+      }
+      if (profile?.email) {
+        updateAuthDebug({ authProvider, claimPath: "googleEmail", lastBridgePayloadKeys: ["googleEmail"] });
+        return { googleEmail: profile.email, claimPath: "googleEmail", authProvider };
+      }
+      updateAuthDebug({ authProvider, claimPath: "manualUserId", lastBridgePayloadKeys: ["manualUserId"] });
+      return { manualUserId: profile?.name || "user", claimPath: "manualUserId", authProvider };
     }
 
     async function ensureBackendSession(profile) {
@@ -1254,19 +1476,60 @@
         if (existingToken) {
           try {
             await BACKEND_READ_CLIENT.fetchProfile();
+            updateAuthDebug({
+              tokenExists: true,
+              tokenSource: "existing_auth_token_profile_200",
+              lastProfileStatus: "200",
+              lastBridgeStatus: "skipped_existing_token_profile_ok",
+              lastBridgeErrorCode: null
+            });
+            backendTruthState.bridge = { mode: "ok", message: "Auth bridge skipped; existing token already valid." };
             return true;
           } catch (profileErr) {
+            updateAuthDebug({
+              lastProfileStatus: String(profileErr?.status || "error"),
+              lastBridgeStatus: "retry_required_profile_unauthorized",
+              lastBridgeErrorCode: profileErr?.code || null
+            });
             if (profileErr?.code !== "UNAUTHORIZED") throw profileErr;
           }
         }
         const claims = buildBridgeClaims(profile);
-        if (claims.error === "google_token_missing") throw new Error("google_token_missing");
-        console.info("[auth-bridge] ensure session claims", { claimPath: claims.claimPath });
-        await BACKEND_READ_CLIENT.ensureAuthToken(claims);
+        if (claims.error === "google_token_missing") {
+          throw new Error("google_token_missing");
+        }
+        console.info("[auth-bridge] ensure session claims", {
+          claimPath: claims.claimPath,
+          reason: "session_bootstrap_missing_or_expired_token"
+        });
+        await BACKEND_READ_CLIENT.ensureAuthToken(claims, {
+          bridgeReason: "session_bootstrap_missing_or_expired_token",
+          tokenRefreshRequired: true
+        });
+        updateAuthDebug({
+          claimPath: claims.claimPath,
+          lastBridgePayloadKeys: claims.claimPath === "googleIdToken"
+            ? ["googleIdToken"]
+            : (claims.claimPath === "googleSub" ? ["googleSub"] : (claims.claimPath === "googleEmail" ? ["googleEmail"] : ["manualUserId"])),
+          tokenExists: true,
+          tokenSource: claims.claimPath === "googleIdToken" ? "bridge.googleIdToken" : "bridge.fallback_claim"
+        });
         backendTruthState.bridge = { mode: "ok", message: "Auth bridge healthy." };
         return true;
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
+        if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
+          backendTruthState.bridge = { mode: "degraded", message: "Google token missing; sign out/in required." };
+          addLog("system", "Google session token missing. Sign out and sign back in.");
+          updateAuthDebug({
+            tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
+            tokenSource: "missing_after_google_signin",
+            lastBridgeStatus: "skipped_missing_google_token",
+            lastBridgeErrorCode: "GOOGLE_TOKEN_MISSING"
+          });
+          updateSyncStatus();
+          return false;
+        }
         backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
         addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
         updateSyncStatus();
@@ -1287,6 +1550,7 @@
         persistUser();
         backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
         addLog("system", "Profile synced from backend.");
+        updateAuthDebug({ lastProfileStatus: "200" });
         updateSyncStatus();
         return true;
       } catch (e) {
@@ -1294,12 +1558,14 @@
           BACKEND_READ_CLIENT.clearAuthToken();
           backendTruthState.profileRead = { mode: "degraded", message: "session expired; showing local cached profile." };
           addLog("system", "Session expired. Profile is now from local cache until you sign in again.");
+          updateAuthDebug({ lastProfileStatus: String(e?.status || 401) });
           updateSyncStatus();
           return false;
         }
         console.warn("backend profile read failed", e);
         backendTruthState.profileRead = { mode: "degraded", message: "backend profile unavailable; showing local cached profile." };
         addLog("system", "Backend profile unavailable. Profile is now from local cache.");
+        updateAuthDebug({ lastProfileStatus: String(e?.status || "error") });
         updateSyncStatus();
         return false;
       }
@@ -1363,6 +1629,14 @@
           const persistedGoogleIdToken = localStorage.getItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
           if (!USER_PROFILE?.googleIdToken && persistedGoogleIdToken) USER_PROFILE.googleIdToken = persistedGoogleIdToken;
           if (!USER_PROFILE?.authProvider && (USER_PROFILE?.googleIdToken || USER_PROFILE?.googleSub)) USER_PROFILE.authProvider = "google";
+          updateAuthDebug({
+            authProvider: USER_PROFILE?.authProvider || null,
+            signedInEmail: USER_PROFILE?.email || null,
+            googleSub: USER_PROFILE?.googleSub || null,
+            hasGoogleIdToken: Boolean(USER_PROFILE?.googleIdToken),
+            tokenSource: "localStorage.maatUserProfile",
+            tokenPersistsOnRefresh: Boolean(USER_PROFILE?.googleIdToken)
+          });
 
           const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
           if (calStr) {
@@ -1420,6 +1694,13 @@
     manualLoginBtn.onclick = () => {
       const name = manualNameInput.value.trim() || "Athlete";
       onLogin(defaultProfileForName(name));
+      updateAuthDebug({
+        authProvider: "manual",
+        signedInEmail: null,
+        googleSub: null,
+        hasGoogleIdToken: false,
+        tokenSource: "manual_profile_state"
+      });
       showOverlay(false);
     };
 
@@ -1434,6 +1715,13 @@
           const payload = parseJwt(response.credential || "");
           const googleIdToken = response.credential || null;
           console.log("[AUTH] googleIdToken present:", !!googleIdToken);
+          updateAuthDebug({
+            authProvider: "google",
+            signedInEmail: payload.email || null,
+            googleSub: payload.sub || null,
+            hasGoogleIdToken: Boolean(googleIdToken),
+            tokenSource: googleIdToken ? "google.accounts.id.credential" : "missing_google_credential"
+          });
           onLogin({
             name: payload.name || payload.given_name || "Athlete",
             email: payload.email,
@@ -1466,6 +1754,12 @@
         localStorage.removeItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
         localStorage.removeItem("maatCalendar_" + oldId);
         BACKEND_READ_CLIENT?.clearAuthToken?.();
+        updateAuthDebug({
+          tokenExists: false,
+          tokenSource: "signed_out",
+          claimPath: null,
+          lastBridgePayloadKeys: []
+        });
       } catch (_) {}
 
       showOverlay(true);
@@ -1904,6 +2198,10 @@ function toggleListening() {
 
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
+        avatar3dCanvasEl.width = videoEl.videoWidth;
+        avatar3dCanvasEl.height = videoEl.videoHeight;
+        setAvatar3dCanvasVisibility(false);
+        resizeAvatarThreeRuntime();
 
         poseStatusEl.textContent = "Camera connected. Loading pose detector…";
         await initDetector();
@@ -2218,13 +2516,17 @@ function toggleListening() {
       if (shouldDrawSkeleton) {
         drawSkeleton();
       }
+      if (renderMode === "camera") {
+        setAvatar3dCanvasVisibility(false);
+      }
 
       const canDrawAvatar = posePacket && posePacket.keypoints && posePacket.keypoints.length;
       if (renderMode === "avatar_overlay") {
         if (canDrawAvatar) {
           try {
-            drawAvatar(ctx, posePacket);
+            renderAvatar3d(posePacket);
           } catch (err) {
+            drawProceduralAvatar(ctx, posePacket);
             fallbackRenderModeToCamera("Avatar overlay render failed.", err);
           }
         }
@@ -2233,8 +2535,9 @@ function toggleListening() {
           drawSkeleton();
         } else {
           try {
-            drawAvatar(ctx, posePacket);
+            renderAvatar3d(posePacket);
           } catch (err) {
+            drawProceduralAvatar(ctx, posePacket);
             fallbackRenderModeToCamera("Avatar-only render failed.", err);
             drawSkeleton();
           }
@@ -2309,6 +2612,7 @@ function toggleListening() {
                 if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
                 sendEndSessionToNode();
                 setPersonLayerSuppressed(false);
+                setAvatar3dCanvasVisibility(false);
                 lastRenderMode = "camera";
                 cancelAnimationFrame(animId);
                 return;
@@ -2329,14 +2633,62 @@ function toggleListening() {
       };
     }
 
-    function drawAvatar(context, posePacket) {
-      if (!activeAvatarAsset) {
-        throw new Error("avatar_asset_not_loaded");
+    function getPosePoint(points, idx, minScore = 0.35) {
+      const kp = points?.[idx];
+      if (!kp || kp.score <= minScore) return null;
+      return kp;
+    }
+
+    function applyMinimalAvatarRetarget(posePacket) {
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
+      const points = posePacket?.keypoints;
+      if (!points || !points.length) return false;
+      const ls = getPosePoint(points, 5);
+      const rs = getPosePoint(points, 6);
+      const le = getPosePoint(points, 7);
+      const re = getPosePoint(points, 8);
+      const lh = getPosePoint(points, 11);
+      const rh = getPosePoint(points, 12);
+      const nose = getPosePoint(points, 0, 0.25);
+      if (!(ls && rs)) return false;
+
+      const torsoLean = Math.atan2(((ls.y + rs.y) * 0.5) - ((lh?.y ?? ls.y) + (rh?.y ?? rs.y)) * 0.5, 80);
+      const shoulderTilt = Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x));
+      const leftUpperArm = le ? Math.atan2(le.y - ls.y, le.x - ls.x) : 0;
+      const rightUpperArm = re ? Math.atan2(re.y - rs.y, re.x - rs.x) : 0;
+
+      if (runtime.boneMap.spine) runtime.boneMap.spine.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.spine.rotation.x, -torsoLean * 0.35, 0.35);
+      if (runtime.boneMap.chest) {
+        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, -shoulderTilt * 0.7, 0.35);
+        runtime.boneMap.chest.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.x, -torsoLean * 0.45, 0.35);
       }
-      if (activeAvatarAsset.runtimeStatus && !activeAvatarAsset.runtimeStatus.renderSucceeded) {
-        activeAvatarAsset.runtimeStatus.renderSucceeded = true;
-        setAvatarRuntimeStatus("GLB asset loaded. Procedural proxy rendering active. Motion retargeting not implemented yet.");
+      if (runtime.boneMap.neck) runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, nose ? -0.08 : 0, 0.2);
+      if (runtime.boneMap.head) runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, nose ? -0.12 : 0, 0.2);
+      if (runtime.boneMap.leftUpperArm) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, Math.max(-1.2, Math.min(1.2, leftUpperArm + 1.2)), 0.35);
+      if (runtime.boneMap.rightUpperArm) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, Math.max(-1.2, Math.min(1.2, rightUpperArm - 1.2)), 0.35);
+
+      return true;
+    }
+
+    function renderAvatar3d(posePacket) {
+      if (!activeAvatarAsset) throw new Error("avatar_asset_not_loaded");
+      const runtime = ensureAvatarThreeRuntime();
+      if (!runtime?.avatarRoot) throw new Error("avatar_runtime_not_initialized");
+      const retargetActive = applyMinimalAvatarRetarget(posePacket);
+      if (activeAvatarAsset.runtimeStatus) {
+        activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
       }
+      runtime.renderer.render(runtime.scene, runtime.camera);
+      setAvatar3dCanvasVisibility(true);
+      setAvatarRuntimeStatus(retargetActive
+        ? "3D avatar loaded. Live retargeting active (torso/head/upper-arms)."
+        : "3D avatar loaded. Live retargeting inactive (pose confidence too low).", !retargetActive);
+      return retargetActive;
+    }
+
+    function drawProceduralAvatar(context, posePacket) {
+      setAvatarRuntimeStatus("Using procedural fallback.", true);
       const points = posePacket?.keypoints;
       if (!points || !points.length) return;
       const get = (i) => points[i];
@@ -2442,6 +2794,7 @@ function toggleListening() {
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
         setPersonLayerSuppressed(false);
+        setAvatar3dCanvasVisibility(false);
         lastRenderMode = "camera";
         addLog("system", "Workout stopped.");
         sendEndSessionToNode();
@@ -2492,6 +2845,7 @@ function toggleListening() {
     }
 
     async function uploadAvatarFile() {
+      console.info("[avatar-upload] upload button clicked");
       const uploadTimeoutMs = 30000;
       try {
         if (!USER_PROFILE) {
@@ -2499,6 +2853,11 @@ function toggleListening() {
           return;
         }
         const selectedFile = avatarFileInput?.files?.[0];
+        console.info("[avatar-upload] selected file", selectedFile ? {
+          name: selectedFile.name,
+          size: selectedFile.size,
+          type: selectedFile.type
+        } : null);
         if (!selectedFile) {
           avatarCreationStatusEl.textContent = "Choose a .glb file first.";
           return;
@@ -2525,6 +2884,8 @@ function toggleListening() {
 
         const form = new FormData();
         form.append("avatar", selectedFile);
+        const uploadUrl = `${NODE_BASE_URL}/api/avatar/upload`;
+        console.info("[avatar-upload] request starting", { method: "POST", url: uploadUrl, field: "avatar" });
         const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
         const timeoutHandle = abortController
           ? setTimeout(() => abortController.abort("avatar_upload_timeout"), uploadTimeoutMs)
@@ -2532,7 +2893,7 @@ function toggleListening() {
 
         let response;
         try {
-          response = await fetch(`${NODE_BASE_URL}/api/avatar/upload`, {
+          response = await fetch(uploadUrl, {
             method: "POST",
             headers: { authorization: `Bearer ${authToken}` },
             body: form,
@@ -2542,12 +2903,15 @@ function toggleListening() {
           if (timeoutHandle) clearTimeout(timeoutHandle);
         }
         const payload = await response.json().catch(() => null);
+        console.info("[avatar-upload] response", { status: response.status, ok: response.ok, payload });
         if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
           throw new Error(payload?.error?.message || `upload_failed_${response.status}`);
         }
 
         const avatarModelUrl = payload.data.avatarModelUrl;
+        console.info("[avatar-upload] avatarModelUrl returned", avatarModelUrl);
         avatarModelUrlInput.value = avatarModelUrl;
+        console.info("[avatar-upload] url field populated", avatarModelUrlInput.value);
         setAvatarAssetStatus(`Upload success. Asset stored at ${avatarModelUrl}.`);
         avatarCreationStatusEl.textContent = "Upload complete. Saving avatar metadata…";
 
