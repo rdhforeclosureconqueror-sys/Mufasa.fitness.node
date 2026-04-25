@@ -7,6 +7,10 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
+  <script>
+    window.APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+    console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
+  </script>
 
   <!-- Google Identity (optional Google sign-in) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -828,12 +832,11 @@
     </div>
   </div>
 
-  <script src="/backend-read.js?v=20260424-mobile-trace1"></script>
-  <script src="/session-write.js?v=20260424-mobile-trace1"></script>
+  <script src="/backend-read.js?v=20260425"></script>
+  <script src="/session-write.js?v=20260425"></script>
 
   <script>
-    const APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
-    console.log("[BUILD_VERSION]", APP_BUILD_VERSION);
+    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
     /* =========================================================
@@ -4943,6 +4946,6 @@ function toggleListening() {
   <audio id="ttsPlayer" playsinline preload="auto"></audio>
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
-  <script src="/fitness.js?v=20260424-mobile-trace1"></script>
+  <script src="/fitness.js?v=20260425"></script>
 </body>
 </html>
