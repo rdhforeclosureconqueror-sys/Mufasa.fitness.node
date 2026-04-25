@@ -16,95 +16,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js?v=20260424-mobile-trace1",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/?v=20260424-mobile-trace1"
-    }
-  }
-  </script>
-  <script>
-    window.__AVATAR_3D_ROUTE_ASSETS = {
-      threeModuleUrl: "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js?v=20260424-mobile-trace1",
-      gltfLoaderModuleUrl: "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js?v=20260424-mobile-trace1",
-      fallbackThreeScriptUrl: "https://unpkg.com/three@0.158.0/build/three.min.js",
-      fallbackGltfLoaderScriptUrl: "https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"
-    };
-
-    async function logAvatar3dRouteAsset(name, url) {
-      try {
-        const response = await fetch(url, { method: "HEAD", mode: "cors", redirect: "follow", cache: "no-store" });
-        console.log("[avatar-3d-route] asset route", {
-          asset: name,
-          url,
-          status: response.status,
-          finalUrl: response.url,
-          mime: response.headers.get("content-type") || "unknown",
-          blocked: false,
-          cors: response.type
-        });
-      } catch (err) {
-        console.warn("[avatar-3d-route] asset route", {
-          asset: name,
-          url,
-          status: "blocked",
-          finalUrl: "n/a",
-          mime: "n/a",
-          blocked: true,
-          cors: String(err?.message || err || "unknown")
-        });
-      }
-    }
-
-    function loadScriptTag(url) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = url;
-        script.async = true;
-        script.onload = () => resolve(true);
-        script.onerror = () => reject(new Error(`script_load_failed:${url}`));
-        document.head.appendChild(script);
-      });
-    }
-
-    window.__loadAvatarThreeRuntimeFallback = async function loadAvatarThreeRuntimeFallback() {
-      const assets = window.__AVATAR_3D_ROUTE_ASSETS || {};
-      await logAvatar3dRouteAsset("fallback three script", assets.fallbackThreeScriptUrl);
-      await loadScriptTag(assets.fallbackThreeScriptUrl);
-      await logAvatar3dRouteAsset("fallback GLTFLoader script", assets.fallbackGltfLoaderScriptUrl);
-      await loadScriptTag(assets.fallbackGltfLoaderScriptUrl);
-      if (window.THREE && window.THREE.GLTFLoader && !window.GLTFLoader) window.GLTFLoader = window.THREE.GLTFLoader;
-      if (window.THREE) window.__AVATAR_THREE = window.THREE;
-      console.log(`[avatar-3d-route] THREE global set: ${window.THREE ? "yes" : "no"}`);
-      console.log(`[avatar-3d-route] GLTFLoader global set: ${window.GLTFLoader ? "yes" : "no"}`);
-      window.dispatchEvent(new Event("avatar-three-ready"));
-    };
-  </script>
   <script type="module">
-    const assets = window.__AVATAR_3D_ROUTE_ASSETS || {};
-    const importmapEl = document.querySelector('script[type="importmap"]');
-    console.log(`[avatar-3d-route] importmap present: ${importmapEl ? "yes" : "no"}`);
-    await logAvatar3dRouteAsset("three module URL", assets.threeModuleUrl);
-    await logAvatar3dRouteAsset("GLTFLoader module URL", assets.gltfLoaderModuleUrl);
+    import * as THREE_MODULE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js";
+    import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js";
 
-    try {
-      const THREE = await import(assets.threeModuleUrl);
-      const { GLTFLoader } = await import(assets.gltfLoaderModuleUrl);
-      window.THREE = THREE;
-      window.__AVATAR_THREE = THREE;
-      window.GLTFLoader = GLTFLoader;
-      if (!window.THREE.GLTFLoader) window.THREE.GLTFLoader = GLTFLoader;
-      console.log("[avatar-3d-route] module bootstrap executed");
-      console.log(`[avatar-3d-route] THREE global set: ${window.THREE ? "yes" : "no"}`);
-      console.log(`[avatar-3d-route] GLTFLoader global set: ${window.GLTFLoader ? "yes" : "no"}`);
-      window.dispatchEvent(new Event("avatar-three-ready"));
-    } catch (err) {
-      console.warn(`[avatar-3d-route] runtime fail reason: module_bootstrap_failed:${String(err?.message || err || "unknown")}`);
-      if (typeof window.__loadAvatarThreeRuntimeFallback === "function") {
-        await window.__loadAvatarThreeRuntimeFallback();
-      }
-    }
+    window.__AVATAR_THREE = {
+      THREE: THREE_MODULE,
+      GLTFLoader,
+      source: "direct-esm-jsdelivr",
+      ready: true
+    };
+
+    console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
+    console.log("[avatar-3d-route] THREE ready:", !!window.__AVATAR_THREE?.THREE ? "yes" : "no");
+    console.log("[avatar-3d-route] GLTFLoader ready:", !!window.__AVATAR_THREE?.GLTFLoader ? "yes" : "no");
+    console.log("[avatar-3d-route] legacy fallback disabled: yes");
+    window.dispatchEvent(new Event("avatar-three-ready"));
   </script>
 
   <!-- Simple favicon so we don’t get 404s -->
@@ -1184,11 +1111,13 @@
     }
 
     function getThreeGlobal() {
-      return window.__AVATAR_THREE || window.THREE || (typeof THREE !== "undefined" ? THREE : null);
+      const runtime = window.__AVATAR_THREE;
+      return runtime?.THREE || null;
     }
 
-    function getGltfLoaderCtor(threeRef = getThreeGlobal()) {
-      return threeRef?.GLTFLoader || window.GLTFLoader || window.THREE?.GLTFLoader || null;
+    function getGltfLoaderCtor() {
+      const runtime = window.__AVATAR_THREE;
+      return runtime?.GLTFLoader || null;
     }
 
     let avatarWebglAvailabilityLogged = false;
@@ -4262,8 +4191,8 @@ function toggleListening() {
       const contextConflict = !(contextOverlay === "2d" && (contextAvatar === "webgl" || contextAvatar === "webgl2"));
 
       const threeRuntime = {
-        runtimeSource: window.__AVATAR_3D_ROUTE_ASSETS?.threeModuleUrl || "unknown",
-        duplicateInstances: Boolean(window.THREE && window.__AVATAR_THREE && window.THREE !== window.__AVATAR_THREE),
+        runtimeSource: window.__AVATAR_THREE?.source || "unknown",
+        duplicateInstances: false,
         rendererReused: Boolean(runtime?.renderer && avatar3dCanvasEl?.dataset?.avatarRendererOwned === "true"),
         gltfLoaderReady: Boolean(getGltfLoaderCtor()),
         fallbackLegacyScriptsPresent: {
