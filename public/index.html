@@ -1437,7 +1437,11 @@
         leftLowerArm: findBone("leftlowerarm", "leftforearm", "l_forearm"),
         rightLowerArm: findBone("rightlowerarm", "rightforearm", "r_forearm"),
         leftHand: findBone("lefthand", "left_hand", "l_hand", "leftwrist"),
-        rightHand: findBone("righthand", "right_hand", "r_hand", "rightwrist")
+        rightHand: findBone("righthand", "right_hand", "r_hand", "rightwrist"),
+        leftUpperLeg: findBone("leftupperleg", "leftupleg", "leftthigh", "l_thigh", "l_upperleg"),
+        rightUpperLeg: findBone("rightupperleg", "rightupleg", "rightthigh", "r_thigh", "r_upperleg"),
+        leftLowerLeg: findBone("leftlowerleg", "leftleg", "leftcalf", "l_calf", "l_lowerleg"),
+        rightLowerLeg: findBone("rightlowerleg", "rightleg", "rightcalf", "r_calf", "r_lowerleg")
       };
     }
 
@@ -1764,6 +1768,15 @@
       runtime.camera.lookAt(0, targetHeight * 0.5, 0);
       runtime.skeleton = findFirstSkeleton(root);
       runtime.boneMap = mapAvatarBones(runtime.skeleton);
+      runtime.boneRestPose = Object.fromEntries(Object.entries(runtime.boneMap || {}).filter(([, bone]) => !!bone).map(([key, bone]) => [key, {
+        x: bone.rotation.x || 0,
+        y: bone.rotation.y || 0,
+        z: bone.rotation.z || 0
+      }]));
+      if (runtime.skeleton?.bones?.length) {
+        console.log("[avatar-rig] bone names:", runtime.skeleton.bones.map((b) => String(b?.name || "(unnamed)")));
+      }
+      console.log("[avatar-rig] mapped bones:", Object.fromEntries(Object.entries(runtime.boneMap || {}).map(([k, bone]) => [k, bone ? String(bone.name || k) : null])));
       runtime.loadError = null;
       runtime.active = true;
       runtime.facingApplied = true;
@@ -1835,7 +1848,7 @@
         runtimeStatus.mappedBones = mountInfo.mappedBones;
         activeAvatarAsset = { ...nextAvatar, runtimeStatus };
         setAvatarAssetStatus(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
-        setAvatarRuntimeStatus(`3D avatar loaded. Retargeting inactive (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
+        setAvatarRuntimeStatus(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
         avatarCreateBtn.textContent = "🧍 Change Avatar";
         return true;
       } catch (err) {
@@ -3745,218 +3758,105 @@ function toggleListening() {
       };
     }
 
-    function applyMinimalAvatarRetarget(posePacket) {
+    function applyPoseToAvatarRig(posePacket) {
       const runtime = ensureAvatarThreeRuntime();
       if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
       const points = posePacket?.keypoints;
       if (!points || !points.length) return false;
-      const tracker = posePacket?.tracker || null;
-      const trackingMode = tracker?.mode || TRACKING_MODES.UPPER_BODY;
-      const faceOrientation = getFaceOrientation(tracker?.face);
-      const faceCloseHandsVisible = Boolean(tracker?.handCloseVisible);
-      const ls = getPosePoint(points, 5);
-      const rs = getPosePoint(points, 6);
-      const le = getPosePoint(points, 7);
-      const re = getPosePoint(points, 8);
-      const nose = getPosePoint(points, 0, 0.25);
-      const lw = getPosePoint(points, 9, 0.25);
-      const rw = getPosePoint(points, 10, 0.25);
+      const now = Date.now();
+      const state = runtime.puppetState || (runtime.puppetState = { lastGoodByLimb: {}, lastLogAt: 0 });
+      const restPose = runtime.boneRestPose || {};
+      const getRest = (key, axis, fallback = 0) => restPose?.[key]?.[axis] ?? fallback;
+      const relaxToRest = (boneKey, axis, speed = 0.1) => {
+        const bone = runtime.boneMap?.[boneKey];
+        if (!bone) return;
+        bone.rotation[axis] = THREE.MathUtils.lerp(bone.rotation[axis], getRest(boneKey, axis, 0), speed);
+      };
+      const applyTrackedAxis = (limbKey, boneKey, axis, targetValue, min, max, smooth = 0.26) => {
+        const bone = runtime.boneMap?.[boneKey];
+        if (!bone) return "missing_bone";
+        if (typeof targetValue === "number" && Number.isFinite(targetValue)) {
+          state.lastGoodByLimb[limbKey] = now;
+          bone.rotation[axis] = THREE.MathUtils.lerp(
+            bone.rotation[axis],
+            THREE.MathUtils.clamp(targetValue, min, max),
+            smooth
+          );
+          return "applied";
+        }
+        const held = (now - (state.lastGoodByLimb[limbKey] || 0)) <= LOST_HOLD_MS;
+        if (!held) relaxToRest(boneKey, axis, 0.12);
+        return held ? "held" : "relaxed";
+      };
+
+      const nose = getPosePoint(points, 0, 0.2);
       const leftEye = getPosePoint(points, 1, 0.2);
       const rightEye = getPosePoint(points, 2, 0.2);
       const leftEar = getPosePoint(points, 3, 0.2);
       const rightEar = getPosePoint(points, 4, 0.2);
-      const now = Date.now();
+      const ls = getPosePoint(points, 5);
+      const rs = getPosePoint(points, 6);
+      const le = getPosePoint(points, 7, 0.3);
+      const re = getPosePoint(points, 8, 0.3);
+      const lw = getPosePoint(points, 9, 0.25);
+      const rw = getPosePoint(points, 10, 0.25);
+      const lh = getPosePoint(points, 11, 0.3);
+      const rh = getPosePoint(points, 12, 0.3);
+      const lk = getPosePoint(points, 13, 0.3);
+      const rk = getPosePoint(points, 14, 0.3);
+      const la = getPosePoint(points, 15, 0.3);
+      const ra = getPosePoint(points, 16, 0.3);
 
-      const hasHead = Boolean(nose || leftEye || rightEye || leftEar || rightEar);
-      const hasShoulders = Boolean(ls && rs);
-      const hasElbows = Boolean(le && re);
-      const hasWrists = Boolean(lw && rw);
-      const trackingGood = hasHead || hasShoulders || hasElbows || hasWrists;
-      if (trackingGood) runtime.lastUpperBodyGoodAt = now;
-      const shouldHoldLast = !trackingGood && (now - runtime.lastUpperBodyGoodAt) <= LOST_HOLD_MS;
-      if (!trackingGood && !shouldHoldLast) {
-        const relax = 0.12;
-        if (runtime.boneMap.chest) {
-          runtime.boneMap.chest.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.x, 0, relax);
-          runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, 0, relax);
-        }
-        if (runtime.boneMap.neck) {
-          runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, 0, relax);
-          runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, 0, relax);
-          runtime.boneMap.neck.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.z, 0, relax);
-        }
-        if (runtime.boneMap.head) {
-          runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, 0, relax);
-          runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, 0, relax);
-          runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, 0, relax);
-        }
-        if (runtime.boneMap.leftUpperArm) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, 0.35, relax);
-        if (runtime.boneMap.rightUpperArm) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, -0.35, relax);
-        if (runtime.boneMap.leftLowerArm) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, 0, relax);
-        if (runtime.boneMap.rightLowerArm) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, 0, relax);
-        if (runtime.boneMap.leftHand) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, 0, relax);
-        if (runtime.boneMap.rightHand) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, 0, relax);
-        return false;
-      }
-
-      const shoulderTilt = hasShoulders ? Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x)) : 0;
-      const moveNetHeadYaw = (leftEar && rightEar)
-        ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -MAX_HEAD_YAW, MAX_HEAD_YAW)
-        : 0;
-      const moveNetHeadPitch = (nose && leftEye && rightEye)
-        ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -MAX_HEAD_PITCH, MAX_HEAD_PITCH)
-        : 0;
-      const faceYaw = faceOrientation?.yaw ?? 0;
-      const facePitch = faceOrientation?.pitch ?? 0;
-      const faceRoll = faceOrientation?.roll ?? 0;
-      const preferFaceForHead = trackingMode === TRACKING_MODES.FACE_CLOSE && !!faceOrientation;
-      const headYaw = THREE.MathUtils.clamp(preferFaceForHead ? faceYaw : moveNetHeadYaw, -MAX_HEAD_YAW, MAX_HEAD_YAW);
-      const headPitch = THREE.MathUtils.clamp(preferFaceForHead ? facePitch : moveNetHeadPitch, -MAX_HEAD_PITCH, MAX_HEAD_PITCH);
-      const shoulderRoll = THREE.MathUtils.clamp(-shoulderTilt * SHOULDER_TILT_MULTIPLIER, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL);
-      const headRoll = THREE.MathUtils.clamp(preferFaceForHead ? faceRoll : shoulderRoll, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL);
-      const leftUpperArm = (ls && le) ? Math.atan2(le.y - ls.y, le.x - ls.x) : null;
-      const rightUpperArm = (rs && re) ? Math.atan2(re.y - rs.y, re.x - rs.x) : null;
-      const leftForearm = (le && lw) ? Math.atan2(lw.y - le.y, lw.x - le.x) : null;
-      const rightForearm = (re && rw) ? Math.atan2(rw.y - re.y, rw.x - re.x) : null;
-      const motionState = runtime.motionState || (runtime.motionState = {
-        lastSampleAt: 0,
-        idleSince: 0,
-        idle: false,
-        lastRaw: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
-        lastFiltered: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
-        lastApplied: { shoulderRoll: 0, headYaw: 0, headPitch: 0, headRoll: 0, leftArm: 0, rightArm: 0, leftForearm: 0, rightForearm: 0 },
-        lastLogAt: 0
-      });
-
-      const rawLeftArm = leftUpperArm != null ? THREE.MathUtils.clamp(leftUpperArm + 1.05, -1.4, 1.4) : motionState.lastRaw.leftArm;
-      const rawRightArm = rightUpperArm != null ? THREE.MathUtils.clamp(rightUpperArm - 1.05, -1.4, 1.4) : motionState.lastRaw.rightArm;
-      const rawLeftForearm = leftForearm != null ? THREE.MathUtils.clamp(leftForearm + 0.85, -1.4, 1.4) : motionState.lastRaw.leftForearm;
-      const rawRightForearm = rightForearm != null ? THREE.MathUtils.clamp(rightForearm - 0.85, -1.4, 1.4) : motionState.lastRaw.rightForearm;
-
-      const idlePoseNow = hasShoulders
-        && Math.abs(shoulderRoll) < SHOULDER_ROLL_DEADZONE
-        && Math.abs(headYaw) < HEAD_YAW_DEADZONE
-        && Math.abs(headPitch) < HEAD_PITCH_DEADZONE;
-      if (idlePoseNow) {
-        if (!motionState.idleSince) motionState.idleSince = now;
-        motionState.idle = (now - motionState.idleSince) >= IDLE_HOLD_MS;
-      } else {
-        motionState.idleSince = 0;
-        motionState.idle = false;
-      }
-
-      const filteredShoulderRoll = motionState.idle
-        ? 0
-        : clampRate(
-          applyDeadzoneCurve(shoulderRoll, SHOULDER_ROLL_DEADZONE, MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL),
-          motionState.lastFiltered.shoulderRoll,
-          MAX_ROTATION_DELTA_PER_FRAME
-        );
-      const filteredHeadYaw = motionState.idle
-        ? 0
-        : clampRate(
-          applyDeadzoneCurve(headYaw, HEAD_YAW_DEADZONE, MAX_HEAD_YAW, MAX_HEAD_YAW),
-          motionState.lastFiltered.headYaw,
-          MAX_ROTATION_DELTA_PER_FRAME
-        );
-      const filteredHeadPitch = motionState.idle
-        ? 0
-        : clampRate(
-          applyDeadzoneCurve(headPitch, HEAD_PITCH_DEADZONE, MAX_HEAD_PITCH, MAX_HEAD_PITCH),
-          motionState.lastFiltered.headPitch,
-          MAX_ROTATION_DELTA_PER_FRAME
-        );
-      const filteredHeadRoll = motionState.idle
-        ? 0
-        : clampRate(
-          applyDeadzoneCurve(headRoll, HEAD_ROLL_DEADZONE, MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL),
-          motionState.lastFiltered.headRoll,
-          MAX_ROTATION_DELTA_PER_FRAME
-        );
-      const filteredLeftArm = leftUpperArm != null
-        ? clampRate(
-          applyDeadzoneCurve(rawLeftArm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
-          motionState.lastFiltered.leftArm,
-          MAX_ARM_DELTA_PER_FRAME
-        )
-        : motionState.lastFiltered.leftArm;
-      const filteredRightArm = rightUpperArm != null
-        ? clampRate(
-          applyDeadzoneCurve(rawRightArm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
-          motionState.lastFiltered.rightArm,
-          MAX_ARM_DELTA_PER_FRAME
-        )
-        : motionState.lastFiltered.rightArm;
-      const filteredLeftForearm = leftForearm != null
-        ? clampRate(
-          applyDeadzoneCurve(rawLeftForearm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
-          motionState.lastFiltered.leftForearm,
-          MAX_ARM_DELTA_PER_FRAME
-        )
-        : motionState.lastFiltered.leftForearm;
-      const filteredRightForearm = rightForearm != null
-        ? clampRate(
-          applyDeadzoneCurve(rawRightForearm, ARM_ANGLE_DEADZONE, 1.4, 1.4),
-          motionState.lastFiltered.rightForearm,
-          MAX_ARM_DELTA_PER_FRAME
-        )
-        : motionState.lastFiltered.rightForearm;
-
-      if (runtime.boneMap.chest) {
-        runtime.boneMap.chest.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.chest.rotation.z, filteredShoulderRoll, motionState.idle ? 0.11 : ROTATION_SMOOTHING);
-      }
-      if (runtime.boneMap.neck) {
-        runtime.boneMap.neck.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.x, -filteredHeadPitch * 0.5, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
-        runtime.boneMap.neck.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.neck.rotation.y, filteredHeadYaw * 0.42, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
-      }
-      if (runtime.boneMap.head) {
-        runtime.boneMap.head.rotation.x = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.x, -filteredHeadPitch, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
-        runtime.boneMap.head.rotation.y = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.y, filteredHeadYaw, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
-        runtime.boneMap.head.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.head.rotation.z, filteredHeadRoll, motionState.idle ? 0.12 : ROTATION_SMOOTHING);
-      }
-      if (runtime.boneMap.leftUpperArm && leftUpperArm != null) runtime.boneMap.leftUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftUpperArm.rotation.z, filteredLeftArm, 0.3);
-      if (runtime.boneMap.rightUpperArm && rightUpperArm != null) runtime.boneMap.rightUpperArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightUpperArm.rotation.z, filteredRightArm, 0.3);
-      if (runtime.boneMap.leftLowerArm && leftForearm != null) runtime.boneMap.leftLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftLowerArm.rotation.z, filteredLeftForearm, 0.27);
-      if (runtime.boneMap.rightLowerArm && rightForearm != null) runtime.boneMap.rightLowerArm.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightLowerArm.rotation.z, filteredRightForearm, 0.27);
-      if (faceCloseHandsVisible || trackingMode !== TRACKING_MODES.FACE_CLOSE) {
-        if (runtime.boneMap.leftHand && leftForearm != null) runtime.boneMap.leftHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.leftHand.rotation.z, THREE.MathUtils.clamp(filteredLeftForearm * 0.45, -0.8, 0.8), 0.22);
-        if (runtime.boneMap.rightHand && rightForearm != null) runtime.boneMap.rightHand.rotation.z = THREE.MathUtils.lerp(runtime.boneMap.rightHand.rotation.z, THREE.MathUtils.clamp(filteredRightForearm * 0.45, -0.8, 0.8), 0.22);
-      }
-
-      motionState.lastSampleAt = now;
-      motionState.lastRaw = {
-        shoulderRoll,
-        headYaw,
-        headPitch,
-        headRoll,
-        leftArm: rawLeftArm,
-        rightArm: rawRightArm,
-        leftForearm: rawLeftForearm,
-        rightForearm: rawRightForearm
+      const hasLandmarks = {
+        head: Boolean(nose || leftEye || rightEye || leftEar || rightEar),
+        shoulders: Boolean(ls && rs),
+        elbows: Boolean(le && re),
+        wrists: Boolean(lw && rw),
+        hips: Boolean(lh && rh),
+        knees: Boolean(lk && rk),
+        ankles: Boolean(la && ra)
       };
-      motionState.lastFiltered = {
-        shoulderRoll: filteredShoulderRoll,
-        headYaw: filteredHeadYaw,
-        headPitch: filteredHeadPitch,
-        headRoll: filteredHeadRoll,
-        leftArm: filteredLeftArm,
-        rightArm: filteredRightArm,
-        leftForearm: filteredLeftForearm,
-        rightForearm: filteredRightForearm
-      };
-      motionState.lastApplied = { ...motionState.lastFiltered };
-      if ((now - motionState.lastLogAt) >= MOTION_DEBUG_LOG_THROTTLE_MS) {
-        motionState.lastLogAt = now;
-        console.log("[avatar-motion]", {
-          rawShoulderRoll: Number(shoulderRoll.toFixed(4)),
-          filteredShoulderRoll: Number(filteredShoulderRoll.toFixed(4)),
-          idleState: motionState.idle,
-          headYawRaw: Number(headYaw.toFixed(4)),
-          headYawFiltered: Number(filteredHeadYaw.toFixed(4))
-        });
-      }
 
-      return true;
+      const applied = [];
+      const skipped = [];
+      const angle = (a, b) => (a && b) ? Math.atan2(b.y - a.y, b.x - a.x) : null;
+      const shoulderRoll = (ls && rs) ? THREE.MathUtils.clamp(-Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x)) * SHOULDER_TILT_MULTIPLIER, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL) : null;
+      const headYaw = (leftEar && rightEar) ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -MAX_HEAD_YAW, MAX_HEAD_YAW) : 0;
+      const headPitch = (nose && leftEye && rightEye) ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -MAX_HEAD_PITCH, MAX_HEAD_PITCH) : 0;
+
+      const record = (limb, status) => {
+        if (status === "applied") applied.push(limb);
+        else skipped.push(`${limb}:${status}`);
+      };
+
+      record("spine", applyTrackedAxis("spine", "spine", "z", shoulderRoll, -0.7, 0.7, 0.22));
+      record("chest", applyTrackedAxis("chest", "chest", "z", shoulderRoll, -0.9, 0.9, 0.24));
+      record("neckPitch", applyTrackedAxis("neckPitch", "neck", "x", -headPitch * 0.45, -0.6, 0.6, ROTATION_SMOOTHING));
+      record("neckYaw", applyTrackedAxis("neckYaw", "neck", "y", headYaw * 0.35, -0.7, 0.7, ROTATION_SMOOTHING));
+      record("headPitch", applyTrackedAxis("headPitch", "head", "x", -headPitch, -0.9, 0.9, ROTATION_SMOOTHING));
+      record("headYaw", applyTrackedAxis("headYaw", "head", "y", headYaw, -1.1, 1.1, ROTATION_SMOOTHING));
+      record("headRoll", applyTrackedAxis("headRoll", "head", "z", shoulderRoll, -0.8, 0.8, ROTATION_SMOOTHING));
+
+      record("leftUpperArm", applyTrackedAxis("leftUpperArm", "leftUpperArm", "z", (ls && le) ? THREE.MathUtils.clamp(angle(ls, le) + 1.05, -1.4, 1.4) : null, -1.4, 1.4, 0.3));
+      record("rightUpperArm", applyTrackedAxis("rightUpperArm", "rightUpperArm", "z", (rs && re) ? THREE.MathUtils.clamp(angle(rs, re) - 1.05, -1.4, 1.4) : null, -1.4, 1.4, 0.3));
+      record("leftLowerArm", applyTrackedAxis("leftLowerArm", "leftLowerArm", "z", (le && lw) ? THREE.MathUtils.clamp(angle(le, lw) + 0.85, -1.4, 1.4) : null, -1.4, 1.4, 0.28));
+      record("rightLowerArm", applyTrackedAxis("rightLowerArm", "rightLowerArm", "z", (re && rw) ? THREE.MathUtils.clamp(angle(re, rw) - 0.85, -1.4, 1.4) : null, -1.4, 1.4, 0.28));
+      record("leftHand", applyTrackedAxis("leftHand", "leftHand", "z", (le && lw) ? THREE.MathUtils.clamp((angle(le, lw) + 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22));
+      record("rightHand", applyTrackedAxis("rightHand", "rightHand", "z", (re && rw) ? THREE.MathUtils.clamp((angle(re, rw) - 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22));
+
+      record("hips", applyTrackedAxis("hips", "hips", "z", shoulderRoll, -0.7, 0.7, 0.18));
+      record("leftUpperLeg", applyTrackedAxis("leftUpperLeg", "leftUpperLeg", "z", (lh && lk) ? THREE.MathUtils.clamp(angle(lh, lk) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
+      record("rightUpperLeg", applyTrackedAxis("rightUpperLeg", "rightUpperLeg", "z", (rh && rk) ? THREE.MathUtils.clamp(angle(rh, rk) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
+      record("leftLowerLeg", applyTrackedAxis("leftLowerLeg", "leftLowerLeg", "z", (lk && la) ? THREE.MathUtils.clamp(angle(lk, la) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
+      record("rightLowerLeg", applyTrackedAxis("rightLowerLeg", "rightLowerLeg", "z", (rk && ra) ? THREE.MathUtils.clamp(angle(rk, ra) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
+
+      if ((now - state.lastLogAt) >= TRACKING_LOG_THROTTLE_MS) {
+        state.lastLogAt = now;
+        console.log("[avatar-puppet] landmarks available: head/shoulders/elbows/wrists/hips/knees/ankles", hasLandmarks);
+        console.log("[avatar-puppet] applied limbs:", applied);
+        console.log("[avatar-puppet] skipped limbs:", skipped);
+      }
+      return applied.length > 0;
     }
 
     function renderAvatar3d(posePacket) {
@@ -3978,8 +3878,17 @@ function toggleListening() {
       const trackingGood = hasHead || hasShoulders || hasElbows || hasWrists;
       if (trackingGood) runtime.lastUpperBodyGoodAt = now;
 
+      const renderMode = getRenderMode();
       const anchor = computeAvatarAnchorTransform(posePacket, runtime);
-      if (anchor?.trackingReliable && anchor.position) {
+      if (renderMode === "avatar_overlay") {
+        const fixed = runtime.fixedStageAnchor || { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
+        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, 0.2);
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, 0.2);
+        runtime.avatarRoot.position.z = 0;
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, 0.2);
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, 0.2);
+        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, 0.2));
+      } else if (anchor?.trackingReliable && anchor.position) {
         if (avatarStageMode === "follow_pose") {
           runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
           runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
@@ -3998,7 +3907,7 @@ function toggleListening() {
         }
       }
 
-      const retargetActive = applyMinimalAvatarRetarget(posePacket);
+      const retargetActive = applyPoseToAvatarRig(posePacket);
       if (activeAvatarAsset.runtimeStatus) {
         activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
       }
