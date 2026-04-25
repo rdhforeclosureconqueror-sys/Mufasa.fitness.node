@@ -75,6 +75,7 @@
       await logAvatar3dRouteAsset("fallback GLTFLoader script", assets.fallbackGltfLoaderScriptUrl);
       await loadScriptTag(assets.fallbackGltfLoaderScriptUrl);
       if (window.THREE && window.THREE.GLTFLoader && !window.GLTFLoader) window.GLTFLoader = window.THREE.GLTFLoader;
+      if (window.THREE) window.__AVATAR_THREE = window.THREE;
       console.log(`[avatar-3d-route] THREE global set: ${window.THREE ? "yes" : "no"}`);
       console.log(`[avatar-3d-route] GLTFLoader global set: ${window.GLTFLoader ? "yes" : "no"}`);
       window.dispatchEvent(new Event("avatar-three-ready"));
@@ -91,6 +92,7 @@
       const THREE = await import(assets.threeModuleUrl);
       const { GLTFLoader } = await import(assets.gltfLoaderModuleUrl);
       window.THREE = THREE;
+      window.__AVATAR_THREE = THREE;
       window.GLTFLoader = GLTFLoader;
       if (!window.THREE.GLTFLoader) window.THREE.GLTFLoader = GLTFLoader;
       console.log("[avatar-3d-route] module bootstrap executed");
@@ -1022,6 +1024,8 @@
     let running = false;
     let animId;
     let cameraFullscreen = false;
+    let latestPosePacket = null;
+    let latestPose = null;
 
     let sessionId = null;
     let repCount = 0;      // this set
@@ -1180,7 +1184,7 @@
     }
 
     function getThreeGlobal() {
-      return window.THREE || (typeof THREE !== "undefined" ? THREE : null);
+      return window.__AVATAR_THREE || window.THREE || (typeof THREE !== "undefined" ? THREE : null);
     }
 
     function getGltfLoaderCtor(threeRef = getThreeGlobal()) {
@@ -1510,6 +1514,7 @@
         return "camera";
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
+      console.log("[route-trace] renderMode:", nextMode);
       if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
       if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== nextMode) renderModeMobileSelectEl.value = nextMode;
       updateRenderModeStatus(`${getRenderModeLabel(nextMode)} (${source})`, false);
@@ -1579,6 +1584,7 @@
 
     function setPersonLayerSuppressed(suppressed) {
       videoEl.style.visibility = suppressed ? "hidden" : "visible";
+      console.log("[route-trace] personSuppressed:", suppressed ? "yes" : "no");
     }
 
     function isLikelyHttpUrl(value) {
@@ -3407,9 +3413,11 @@ function toggleListening() {
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       const pose = poses.length ? poses[0] : null;
+      latestPose = pose;
       const trackerFrame = await collectTrackerFrame(pose);
       const analysis = analyzeSquatForm(pose);
       const posePacket = buildPosePacket(pose, trackerFrame);
+      latestPosePacket = posePacket;
       const renderMode = getRenderMode();
       const modeChanged = renderMode !== lastRenderMode;
       if (modeChanged) {
@@ -3880,7 +3888,14 @@ function toggleListening() {
 
       const renderMode = getRenderMode();
       const anchor = computeAvatarAnchorTransform(posePacket, runtime);
-      if (renderMode === "avatar_overlay") {
+      if (anchor?.trackingReliable && anchor.position && avatarStageMode === "follow_pose") {
+        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
+        runtime.avatarRoot.position.z = 0;
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
+        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
+      } else {
         const fixed = runtime.fixedStageAnchor || { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
         runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, 0.2);
         runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, 0.2);
@@ -3888,23 +3903,6 @@ function toggleListening() {
         runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, 0.2);
         runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, 0.2);
         runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, 0.2));
-      } else if (anchor?.trackingReliable && anchor.position) {
-        if (avatarStageMode === "follow_pose") {
-          runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
-          runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
-          runtime.avatarRoot.position.z = 0;
-          runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
-          runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
-          runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
-        } else {
-          const fixed = runtime.fixedStageAnchor || { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
-          runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, 0.2);
-          runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, 0.2);
-          runtime.avatarRoot.position.z = 0;
-          runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, 0.2);
-          runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, 0.2);
-          runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, 0.2));
-        }
       }
 
       const retargetActive = applyPoseToAvatarRig(posePacket);
@@ -3924,6 +3922,31 @@ function toggleListening() {
         runtime.lastTrackingLogAt = now;
       }
       const holdingPose = !trackingGood && (now - runtime.lastUpperBodyGoodAt) <= LOST_HOLD_MS;
+      const anchorReason = (!anchor?.trackingReliable || !anchor?.position)
+        ? "anchor_not_reliable"
+        : (avatarStageMode !== "follow_pose" ? `stage_mode_${avatarStageMode}` : "follow_pose_active");
+      runtime.lastAlignmentTrace = {
+        skeletonBasis: "MoveNet image-space (pixels, mirrored in detector with flipHorizontal=true) to Three camera world (toWorldAtAvatarPlane)",
+        rootAnchor: anchor?.level || anchor?.mode || "lost",
+        rootPosition: {
+          x: Number((runtime.avatarRoot?.position?.x || 0).toFixed(4)),
+          y: Number((runtime.avatarRoot?.position?.y || 0).toFixed(4)),
+          z: Number((runtime.avatarRoot?.position?.z || 0).toFixed(4))
+        },
+        scale: Number((runtime.avatarRoot?.scale?.x || 1).toFixed(4)),
+        facingDegrees: Number(avatarFacingDeg || 0),
+        limbsApplied: retargetActive ? "yes" : "no",
+        limbsSkippedReason: holdingPose ? "holding_last_pose" : "none",
+        offscreenReason: anchorReason
+      };
+      if (!runtime.lastAlignTraceLogAt || (now - runtime.lastAlignTraceLogAt) >= TRACKING_LOG_THROTTLE_MS) {
+        runtime.lastAlignTraceLogAt = now;
+        console.log("[align-trace] skeleton basis:", runtime.lastAlignmentTrace.skeletonBasis);
+        console.log("[align-trace] root anchor:", runtime.lastAlignmentTrace.rootAnchor);
+        console.log("[align-trace] root position:", runtime.lastAlignmentTrace.rootPosition);
+        console.log("[align-trace] scale:", runtime.lastAlignmentTrace.scale);
+        console.log("[align-trace] facing degrees:", runtime.lastAlignmentTrace.facingDegrees);
+      }
       return retargetActive || holdingPose;
     }
 
@@ -4180,6 +4203,183 @@ function toggleListening() {
         }
       }
     }
+
+    function getPoseConfidenceSnapshot(points = []) {
+      const score = (idx) => Number(points?.[idx]?.score || 0);
+      const kp = (idx) => points?.[idx] ? { x: Number((points[idx].x || 0).toFixed(2)), y: Number((points[idx].y || 0).toFixed(2)), score: Number(score(idx).toFixed(3)) } : null;
+      return {
+        shoulders: { left: score(5), right: score(6), detected: score(5) > 0.35 && score(6) > 0.35 },
+        hips: { left: score(11), right: score(12), detected: score(11) > 0.35 && score(12) > 0.35 },
+        arms: { elbows: [score(7), score(8)], wrists: [score(9), score(10)] },
+        legs: { knees: [score(13), score(14)], ankles: [score(15), score(16)] },
+        keypointCoords: {
+          leftShoulder: kp(5),
+          rightShoulder: kp(6),
+          leftHip: kp(11),
+          rightHip: kp(12)
+        }
+      };
+    }
+
+    async function runAvatarTrace() {
+      const renderMode = getRenderMode();
+      const runtime = avatarThreeRuntime || ensureAvatarThreeRuntime() || null;
+      const posePacket = latestPosePacket || null;
+      const posePoints = posePacket?.keypoints || latestPose?.keypoints || [];
+      const stylesVideo = videoEl ? getComputedStyle(videoEl) : null;
+      const stylesOverlay = canvasEl ? getComputedStyle(canvasEl) : null;
+      const stylesAvatar = avatar3dCanvasEl ? getComputedStyle(avatar3dCanvasEl) : null;
+      const videoRect = videoEl?.getBoundingClientRect?.() || { width: 0, height: 0 };
+      const overlayRect = canvasEl?.getBoundingClientRect?.() || { width: 0, height: 0 };
+      const avatarRect = avatar3dCanvasEl?.getBoundingClientRect?.() || { width: 0, height: 0 };
+      const anchor = (runtime && posePacket) ? computeAvatarAnchorTransform(posePacket, runtime) : null;
+      const poseSnapshot = getPoseConfidenceSnapshot(posePoints);
+      const mappedBones = Object.fromEntries(Object.entries(runtime?.boneMap || {}).map(([k, bone]) => [k, bone ? String(bone.name || k) : null]));
+      const missingBones = Object.entries(mappedBones).filter(([, name]) => !name).map(([key]) => key);
+
+      const build = {
+        appBuildVersion: APP_BUILD_VERSION,
+        shellPath: window.location.pathname || "/",
+        shellOrigin: window.location.origin || "unknown",
+        noStoreMeta: Boolean(document.querySelector('meta[http-equiv="Cache-Control"][content*="no-store"]')),
+        mobileViewport: window.matchMedia ? window.matchMedia("(max-width: 800px)").matches : false,
+        servedHost: window.location.host || "unknown-host"
+      };
+
+      const modeMap = {
+        camera: { videoVisible: true, skeletonVisible: true, avatar3dVisible: false, personSuppressed: false },
+        avatar_overlay: { videoVisible: true, skeletonVisible: true, avatar3dVisible: true, personSuppressed: false },
+        avatar_only: { videoVisible: true, skeletonVisible: false, avatar3dVisible: true, personSuppressed: true }
+      };
+      const modeExpected = modeMap[renderMode] || modeMap.camera;
+      const actualPersonSuppressed = stylesVideo?.visibility === "hidden";
+      const actualVideoVisible = videoRect.width > 0 && videoRect.height > 0 && stylesVideo?.display !== "none";
+      const actualOverlayVisible = overlayRect.width > 0 && overlayRect.height > 0 && stylesOverlay?.display !== "none";
+      const actualAvatarVisible = avatarRect.width > 0 && avatarRect.height > 0 && stylesAvatar?.display !== "none";
+
+      const contextOverlay = getCanvasContextType(canvasEl) || "none";
+      const contextAvatar = getCanvasContextType(avatar3dCanvasEl) || "none";
+      const contextConflict = !(contextOverlay === "2d" && (contextAvatar === "webgl" || contextAvatar === "webgl2"));
+
+      const threeRuntime = {
+        runtimeSource: window.__AVATAR_3D_ROUTE_ASSETS?.threeModuleUrl || "unknown",
+        duplicateInstances: Boolean(window.THREE && window.__AVATAR_THREE && window.THREE !== window.__AVATAR_THREE),
+        rendererReused: Boolean(runtime?.renderer && avatar3dCanvasEl?.dataset?.avatarRendererOwned === "true"),
+        gltfLoaderReady: Boolean(getGltfLoaderCtor()),
+        fallbackLegacyScriptsPresent: {
+          threeMin: Array.from(document.scripts || []).some((s) => /three\.min\.js/i.test(String(s?.src || ""))),
+          legacyGltfLoader: Array.from(document.scripts || []).some((s) => /examples\/js\/loaders\/GLTFLoader\.js/i.test(String(s?.src || "")))
+        }
+      };
+
+      const glb = {
+        profileUrl: USER_PROFILE?.avatar?.avatarModelUrl || null,
+        reachable: Boolean(activeAvatarAsset?.runtimeStatus?.assetFound),
+        loaded: Boolean(runtime?.avatarRoot),
+        bounds: runtime?.baseAvatarHeight ? { height: runtime.baseAvatarHeight, width: runtime.baseAvatarWidth } : null,
+        groundedOffset: runtime?.modelRoot ? Number((runtime.modelRoot.position.y || 0).toFixed(4)) : null
+      };
+
+      const align = {
+        skeletonBasis: runtime?.lastAlignmentTrace?.skeletonBasis || "pending",
+        rootAnchor: runtime?.lastAlignmentTrace?.rootAnchor || anchor?.level || anchor?.mode || "pending",
+        rootPosition: runtime?.lastAlignmentTrace?.rootPosition || {
+          x: Number((runtime?.avatarRoot?.position?.x || 0).toFixed(4)),
+          y: Number((runtime?.avatarRoot?.position?.y || 0).toFixed(4)),
+          z: Number((runtime?.avatarRoot?.position?.z || 0).toFixed(4))
+        },
+        scale: runtime?.lastAlignmentTrace?.scale || Number((runtime?.avatarRoot?.scale?.x || 1).toFixed(4)),
+        facingDegrees: runtime?.lastAlignmentTrace?.facingDegrees || avatarFacingDeg,
+        limbsApplied: runtime?.lastAlignmentTrace?.limbsApplied || "unknown",
+        limbsSkipped: runtime?.lastAlignmentTrace?.limbsSkippedReason || "unknown",
+        offscreenClippingReason: runtime?.lastAlignmentTrace?.offscreenReason || (avatarStageMode === "follow_pose" ? "unknown" : `stage_mode_${avatarStageMode}`)
+      };
+
+      const trace = {
+        build,
+        renderMode: {
+          mode: renderMode,
+          expected: modeExpected,
+          actual: {
+            videoVisible: actualVideoVisible,
+            skeletonVisible: actualOverlayVisible,
+            avatar3dVisible: actualAvatarVisible,
+            personSuppressed: actualPersonSuppressed
+          },
+          modeSwitchController: "applyRenderModeSelection",
+          runtimeReuse: Boolean(avatarThreeRuntime?.renderer)
+        },
+        canvases: {
+          overlayContext: contextOverlay,
+          avatar3dContext: contextAvatar,
+          conflict: contextConflict
+        },
+        threeRuntime,
+        glb,
+        rig: {
+          boneNames: runtime?.skeleton?.bones?.map((b) => String(b?.name || "(unnamed)")) || [],
+          mappedBones,
+          missingExpectedBones: missingBones
+        },
+        pose: {
+          detectorReady: Boolean(detector),
+          mode: currentTrackingMode,
+          ...poseSnapshot
+        },
+        alignment: align,
+        mobile: {
+          cameraFullscreen,
+          bodyClassCameraFullscreen: document.body.classList.contains("camera-fullscreen"),
+          renderModeMobile: renderModeMobileSelectEl?.value || null,
+          stageModeMobile: avatarStageMobileSelectEl?.value || null
+        }
+      };
+
+      window.__avatarTraceSnapshot = trace;
+      console.groupCollapsed("[route-trace] avatar full trace");
+      console.log("[route-trace] build:", trace.build);
+      console.log("[route-trace] shell:", `${trace.build.shellOrigin}${trace.build.shellPath}`);
+      console.log("[route-trace] public-root-match:", "unknown_in_browser");
+      console.log("[route-trace] renderMode:", trace.renderMode.mode);
+      console.log("[route-trace] videoVisible:", trace.renderMode.actual.videoVisible);
+      console.log("[route-trace] overlayVisible:", trace.renderMode.actual.skeletonVisible);
+      console.log("[route-trace] avatar3dVisible:", trace.renderMode.actual.avatar3dVisible);
+      console.log("[route-trace] personSuppressed:", trace.renderMode.actual.personSuppressed);
+      console.log("[canvas-trace] overlay context:", trace.canvases.overlayContext);
+      console.log("[canvas-trace] avatar3d context:", trace.canvases.avatar3dContext);
+      console.log("[canvas-trace] conflict:", trace.canvases.conflict ? "yes" : "no");
+      console.log("[three-trace] runtime source:", trace.threeRuntime.runtimeSource);
+      console.log("[three-trace] duplicate instances:", trace.threeRuntime.duplicateInstances ? "yes" : "no");
+      console.log("[three-trace] renderer reused:", trace.threeRuntime.rendererReused ? "yes" : "no");
+      console.log("[three-trace] GLTFLoader ready:", trace.threeRuntime.gltfLoaderReady ? "yes" : "no");
+      console.log("[glb-trace] profile url:", trace.glb.profileUrl);
+      console.log("[glb-trace] reachable:", trace.glb.reachable ? "yes" : "no");
+      console.log("[glb-trace] loaded:", trace.glb.loaded ? "yes" : "no");
+      console.log("[glb-trace] bounds:", trace.glb.bounds);
+      console.log("[glb-trace] grounded offset:", trace.glb.groundedOffset);
+      console.log("[rig-trace] bone names:", trace.rig.boneNames);
+      console.log("[rig-trace] mapped bones:", trace.rig.mappedBones);
+      console.log("[rig-trace] missing expected bones:", trace.rig.missingExpectedBones);
+      console.log("[pose-trace] detector ready:", trace.pose.detectorReady ? "yes" : "no");
+      console.log("[pose-trace] mode:", trace.pose.mode);
+      console.log("[pose-trace] shoulders:", trace.pose.shoulders);
+      console.log("[pose-trace] hips:", trace.pose.hips);
+      console.log("[pose-trace] arms:", trace.pose.arms);
+      console.log("[pose-trace] legs:", trace.pose.legs);
+      console.log("[pose-trace] keypoint coords:", trace.pose.keypointCoords);
+      console.log("[align-trace] skeleton basis:", trace.alignment.skeletonBasis);
+      console.log("[align-trace] root anchor:", trace.alignment.rootAnchor);
+      console.log("[align-trace] root position:", trace.alignment.rootPosition);
+      console.log("[align-trace] scale:", trace.alignment.scale);
+      console.log("[align-trace] facing degrees:", trace.alignment.facingDegrees);
+      console.log("[align-trace] limbs applied:", trace.alignment.limbsApplied);
+      console.log("[align-trace] limbs skipped:", trace.alignment.limbsSkipped);
+      console.log("[align-trace] offscreen/clipping reason:", trace.alignment.offscreenClippingReason);
+      console.groupEnd();
+      return trace;
+    }
+
+    window.__runAvatarTrace = runAvatarTrace;
 
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
