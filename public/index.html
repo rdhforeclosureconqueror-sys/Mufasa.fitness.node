@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Pocket PT</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -110,16 +110,29 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #020617;
       color: #e5e7eb;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       justify-content: center;
       align-items: stretch;
-      padding: 16px;
+      padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
     }
 
     .app {
@@ -185,10 +198,12 @@
     body.camera-fullscreen .app {
       max-width: none;
       width: 100vw;
+      width: 100dvw;
       min-height: 100vh;
+      min-height: 100dvh;
       border-radius: 0;
       border-width: 0;
-      padding: 8px;
+      padding: calc(8px + var(--safe-top)) calc(8px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(8px + var(--safe-left));
       grid-template-columns: 1fr;
       gap: 8px;
     }
@@ -213,7 +228,8 @@
     }
     body.camera-fullscreen .video-shell {
       width: min(100vw, 100%);
-      height: min(90vh, 100dvh - 110px);
+      width: min(100dvw, 100%);
+      height: min(92vh, calc(100dvh - 120px - var(--safe-top) - var(--safe-bottom)));
       max-height: 100dvh;
       aspect-ratio: auto;
       border-width: 2px;
@@ -236,6 +252,45 @@
     #avatar3d {
       pointer-events: none;
       z-index: 2;
+    }
+    .camera-mobile-controls {
+      position: absolute;
+      inset: auto 8px 8px 8px;
+      z-index: 40;
+      display: none;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      pointer-events: none;
+    }
+    .camera-mobile-controls .mobile-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      pointer-events: auto;
+    }
+    .camera-mobile-controls button,
+    .camera-mobile-controls select,
+    .camera-mobile-controls .mobile-status-pill {
+      min-height: 40px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+    .camera-mobile-controls button,
+    .camera-mobile-controls select {
+      background: rgba(2, 6, 23, 0.9);
+      color: #f8fafc;
+      border: 1px solid rgba(250, 204, 21, 0.6);
+      padding: 8px 10px;
+    }
+    .camera-mobile-controls .mobile-status-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2, 6, 23, 0.88);
+      border: 1px solid rgba(34, 197, 94, 0.6);
+      color: #bbf7d0;
+      padding: 0 10px;
+      text-align: center;
     }
 
     .btn-row {
@@ -307,6 +362,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      overscroll-behavior: contain;
     }
     #buildVersionPill {
       align-self: flex-start;
@@ -319,6 +375,22 @@
     }
 
     @media (max-width: 800px) {
+      body {
+        padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
+      }
+      .app {
+        padding: 10px;
+        border-radius: 12px;
+        gap: 10px;
+      }
+      .pane {
+        padding: 10px;
+        gap: 10px;
+      }
+      .video-shell {
+        aspect-ratio: auto;
+        height: min(64dvh, 520px);
+      }
       .btn-row {
         align-items: stretch;
       }
@@ -333,6 +405,27 @@
         top: 6px;
         right: 6px;
         z-index: 30;
+      }
+      .camera-mobile-controls {
+        display: grid;
+      }
+      .modal-shell {
+        align-items: flex-end;
+        padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
+      }
+      .modal-card {
+        width: 100%;
+        max-height: min(92dvh, calc(100dvh - 16px - var(--safe-top) - var(--safe-bottom)));
+        border-radius: 12px 12px 0 0;
+        padding-bottom: calc(12px + var(--safe-bottom));
+      }
+      .modal-card .btn-row {
+        gap: 6px;
+      }
+      .modal-card input[type="file"],
+      .modal-card button,
+      .modal-card input[type="text"] {
+        width: 100%;
       }
     }
 
@@ -614,6 +707,24 @@
           <button id="exitCameraBtn" class="secondary" type="button">Exit Camera</button>
           <button id="stopWorkoutFsBtn" class="secondary" type="button">Stop Workout</button>
         </div>
+        <div id="cameraMobileControls" class="camera-mobile-controls" aria-live="polite">
+          <div class="mobile-row">
+            <button id="exitCameraMobileBtn" class="secondary" type="button">Exit Camera</button>
+            <button id="workoutToggleMobileBtn" class="secondary" type="button">Start Workout</button>
+          </div>
+          <div class="mobile-row">
+            <select id="renderModeMobileSelect" aria-label="Render mode">
+              <option value="camera">Render: Camera</option>
+              <option value="avatar_overlay">Render: Avatar Overlay</option>
+              <option value="avatar_only">Render: Avatar Only</option>
+            </select>
+            <select id="avatarStageMobileSelect" aria-label="Avatar stage mode">
+              <option value="fixed">Stage: Fixed</option>
+              <option value="follow_pose">Stage: Follow Pose</option>
+            </select>
+          </div>
+          <div id="trackingModeMobileStatus" class="mobile-status-pill">Tracking: upper_body</div>
+        </div>
       </div>
 
       <div class="btn-row">
@@ -659,6 +770,7 @@
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div id="trackingModeRow" class="status-line"><strong>Tracking mode:</strong> <span id="trackingModeStatus">upper_body</span></div>
+      <div class="status-line"><strong>Stage mode:</strong> <span id="stageModeStatus">fixed</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
       <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
@@ -796,6 +908,7 @@
 
     const poseStatusEl = document.getElementById("poseStatus");
     const trackingModeStatusEl = document.getElementById("trackingModeStatus");
+    const stageModeStatusEl = document.getElementById("stageModeStatus");
     const avatarModeStatusEl = document.getElementById("avatarModeStatus");
     const brainStatusEl = document.getElementById("brainStatus");
     const syncStatusEl = document.getElementById("syncStatus");
@@ -806,7 +919,12 @@
     const startBtn = document.getElementById("startBtn");
     const fullscreenCameraBtn = document.getElementById("fullscreenCameraBtn");
     const exitCameraBtn = document.getElementById("exitCameraBtn");
+    const exitCameraMobileBtn = document.getElementById("exitCameraMobileBtn");
     const stopWorkoutFsBtn = document.getElementById("stopWorkoutFsBtn");
+    const workoutToggleMobileBtn = document.getElementById("workoutToggleMobileBtn");
+    const renderModeMobileSelectEl = document.getElementById("renderModeMobileSelect");
+    const avatarStageMobileSelectEl = document.getElementById("avatarStageMobileSelect");
+    const trackingModeMobileStatusEl = document.getElementById("trackingModeMobileStatus");
     const ohsaBtn = document.getElementById("ohsaBtn");
     const defineExerciseBtn = document.getElementById("defineExerciseBtn");
     const muteBtn = document.getElementById("muteBtn");
@@ -823,7 +941,16 @@
     const dashboardBtn = document.getElementById("dashboardBtn");
     const exerciseLibraryBtn = document.getElementById("exerciseLibraryBtn");
 
-    if (buildVersionPillEl) buildVersionPillEl.textContent = `Build: ${APP_BUILD_VERSION}`;
+    const AVATAR_STAGE_MODE_STORAGE_KEY = "maatAvatarStageMode";
+    const ALLOWED_STAGE_MODES = new Set(["fixed", "follow_pose"]);
+    let avatarStageMode = "fixed";
+    const appHostLabel = (window.location && window.location.host) ? window.location.host : "unknown-host";
+
+    function refreshBuildStamp() {
+      if (!buildVersionPillEl) return;
+      buildVersionPillEl.textContent = `Build: ${APP_BUILD_VERSION} • Host: ${appHostLabel} • Tracking: ${currentTrackingMode || "upper_body"} • Stage: ${avatarStageMode}`;
+    }
+
     (function logMobileControlTruth() {
       const requiredControls = [
         ["expand_camera", fullscreenCameraBtn],
@@ -991,6 +1118,8 @@
           console.log("[tracker-mode] reason:", modeCandidate.reason, "confidence:", modeCandidate.confidence);
         }
         if (trackingModeStatusEl) trackingModeStatusEl.textContent = currentTrackingMode;
+        if (trackingModeMobileStatusEl) trackingModeMobileStatusEl.textContent = `Tracking: ${currentTrackingMode}`;
+        refreshBuildStamp();
         return currentTrackingMode;
       }
       if (trackerModeState.pendingMode !== nextMode) {
@@ -1009,6 +1138,8 @@
         console.log("[tracker-mode] reason:", modeCandidate.reason, "confidence:", modeCandidate.confidence);
       }
       if (trackingModeStatusEl) trackingModeStatusEl.textContent = currentTrackingMode;
+      if (trackingModeMobileStatusEl) trackingModeMobileStatusEl.textContent = `Tracking: ${currentTrackingMode}`;
+      refreshBuildStamp();
       return currentTrackingMode;
     }
 
@@ -1149,6 +1280,7 @@
         loadError: null,
         baseAvatarHeight: 1.7,
         baseAvatarWidth: 0.6,
+        fixedStageAnchor: null,
         lastGoodAnchor: null,
         lastTrackingLogAt: 0,
         avatarFacingDeg,
@@ -1196,6 +1328,15 @@
       const workoutActive = Boolean(running);
       if (stopWorkoutFsBtn) stopWorkoutFsBtn.style.display = workoutActive ? "inline-flex" : "none";
       if (fullscreenCameraBtn) fullscreenCameraBtn.textContent = cameraFullscreen ? "Exit Camera" : "Expand Camera";
+      if (workoutToggleMobileBtn) {
+        workoutToggleMobileBtn.textContent = workoutActive ? "Stop Workout" : "Start Workout";
+      }
+      if (renderModeMobileSelectEl && renderModeSelectEl && renderModeMobileSelectEl.value !== renderModeSelectEl.value) {
+        renderModeMobileSelectEl.value = renderModeSelectEl.value;
+      }
+      if (trackingModeMobileStatusEl) {
+        trackingModeMobileStatusEl.textContent = `Tracking: ${currentTrackingMode}`;
+      }
     }
 
     function setCameraFullscreen(enabled) {
@@ -1259,12 +1400,49 @@
       avatarModeStatusEl.classList.toggle("status-ok", !bad);
     }
 
+    function sanitizeStageMode(mode) {
+      return ALLOWED_STAGE_MODES.has(mode) ? mode : "fixed";
+    }
+
+    function resolveInitialStageMode() {
+      try {
+        return sanitizeStageMode(localStorage.getItem(AVATAR_STAGE_MODE_STORAGE_KEY));
+      } catch (_) {
+        return "fixed";
+      }
+    }
+
+    function applyAvatarStageMode(mode, { persist = true } = {}) {
+      avatarStageMode = sanitizeStageMode(mode);
+      if (stageModeStatusEl) stageModeStatusEl.textContent = avatarStageMode;
+      if (avatarStageMobileSelectEl && avatarStageMobileSelectEl.value !== avatarStageMode) {
+        avatarStageMobileSelectEl.value = avatarStageMode;
+      }
+      const runtime = avatarThreeRuntime || null;
+      if (runtime?.avatarRoot && avatarStageMode === "fixed") {
+        runtime.fixedStageAnchor = {
+          x: runtime.avatarRoot.position.x || 0,
+          y: runtime.avatarRoot.position.y || 0,
+          z: 0,
+          rotationY: runtime.avatarRoot.rotation.y || 0,
+          rotationZ: runtime.avatarRoot.rotation.z || 0,
+          scale: runtime.avatarRoot.scale?.x || 1.05
+        };
+      }
+      if (persist) {
+        try { localStorage.setItem(AVATAR_STAGE_MODE_STORAGE_KEY, avatarStageMode); } catch (_) {}
+      }
+      refreshBuildStamp();
+      return avatarStageMode;
+    }
+
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
       const nextMode = sanitizeRenderMode(mode);
       if ((nextMode === "avatar_overlay" || nextMode === "avatar_only") && !activeAvatarAsset) {
         updateRenderModeStatus("Camera (fallback: no saved avatar)", true);
         AVATAR_FLAGS.AVATAR_MODE = "camera";
         if (renderModeSelectEl.value !== "camera") renderModeSelectEl.value = "camera";
+        if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== "camera") renderModeMobileSelectEl.value = "camera";
         if (persist) {
           try { localStorage.setItem(AVATAR_MODE_STORAGE_KEY, "camera"); } catch (_) {}
         }
@@ -1272,6 +1450,7 @@
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
       if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
+      if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== nextMode) renderModeMobileSelectEl.value = nextMode;
       updateRenderModeStatus(`${getRenderModeLabel(nextMode)} (${source})`, false);
       if (persist) {
         try { localStorage.setItem(AVATAR_MODE_STORAGE_KEY, nextMode); } catch (_) {}
@@ -1535,6 +1714,8 @@
       runtime.lastUpperBodyGoodAt = 0;
       runtime.lastTrackingLogAt = 0;
       runtime.lastGoodAnchor = null;
+      runtime.fixedStageAnchor = { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
+      applyAvatarStageMode(avatarStageMode, { persist: false });
       resizeAvatarThreeRuntime();
       setAvatar3dCanvasVisibility(true);
       ensureAvatarRenderLoop(runtime);
@@ -3742,12 +3923,22 @@ function toggleListening() {
 
       const anchor = computeAvatarAnchorTransform(posePacket, runtime);
       if (anchor?.trackingReliable && anchor.position) {
-        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
-        runtime.avatarRoot.position.z = 0;
-        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
-        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
-        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
+        if (avatarStageMode === "follow_pose") {
+          runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
+          runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
+          runtime.avatarRoot.position.z = 0;
+          runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
+          runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
+          runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
+        } else {
+          const fixed = runtime.fixedStageAnchor || { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
+          runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, 0.2);
+          runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, 0.2);
+          runtime.avatarRoot.position.z = 0;
+          runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, 0.2);
+          runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, 0.2);
+          runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, 0.2));
+        }
       }
 
       const retargetActive = applyMinimalAvatarRetarget(posePacket);
@@ -4029,14 +4220,36 @@ function toggleListening() {
     startBtn.onclick = startWorkout;
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
+    if (exitCameraMobileBtn) {
+      exitCameraMobileBtn.onclick = () => setCameraFullscreen(false);
+    }
     stopWorkoutFsBtn.onclick = () => {
       if (running) startWorkout();
     };
+    if (workoutToggleMobileBtn) {
+      workoutToggleMobileBtn.onclick = () => {
+        if (!detector && !running) {
+          alert("Connect camera first.");
+          return;
+        }
+        startWorkout();
+      };
+    }
     ohsaBtn.onclick = startOhsa;
     defineExerciseBtn.onclick = startDefineExercise;
     renderModeSelectEl.onchange = () => {
       applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
     };
+    if (renderModeMobileSelectEl) {
+      renderModeMobileSelectEl.onchange = () => {
+        applyRenderModeSelection(renderModeMobileSelectEl.value, { persist: true, source: "mobile" });
+      };
+    }
+    if (avatarStageMobileSelectEl) {
+      avatarStageMobileSelectEl.onchange = () => {
+        applyAvatarStageMode(avatarStageMobileSelectEl.value, { persist: true });
+      };
+    }
     avatarFacingSelectEl.onchange = () => {
       applyAvatarFacingCalibration(avatarFacingSelectEl.value, { persist: true, source: "facing_select" });
     };
@@ -4106,6 +4319,9 @@ function toggleListening() {
 
     // ---- Boot ----
     window.addEventListener("load", async () => {
+      avatarStageMode = resolveInitialStageMode();
+      applyAvatarStageMode(avatarStageMode, { persist: false });
+      refreshBuildStamp();
       refreshCameraUiState();
       avatarFacingDeg = resolveInitialAvatarFacingDeg();
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
