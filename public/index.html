@@ -904,7 +904,43 @@
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
     const avatar3dCanvasEl = document.getElementById("avatar3d");
-    const ctx = canvasEl.getContext("2d");
+    const canvasContextTypes = new WeakMap();
+    const CANVAS_ROUTE_LABELS = new WeakMap();
+    if (canvasEl) CANVAS_ROUTE_LABELS.set(canvasEl, "skeleton");
+    if (avatar3dCanvasEl) CANVAS_ROUTE_LABELS.set(avatar3dCanvasEl, "avatar3d");
+
+    function getCanvasContextType(canvas) {
+      return canvasContextTypes.get(canvas) || null;
+    }
+
+    function requestCanvasContext(canvas, requestedType) {
+      if (!canvas || !requestedType) return null;
+      const route = CANVAS_ROUTE_LABELS.get(canvas) || canvas.id || "unknown";
+      const existingType = getCanvasContextType(canvas);
+      const conflictDetected = Boolean(existingType && existingType !== requestedType);
+      if (route === "avatar3d" || route === "skeleton") {
+        console.log(`[canvas-route] ${route} context requested: ${requestedType}`);
+      }
+      if (route === "avatar3d") {
+        console.log(`[canvas-route] conflict detected ${conflictDetected ? "yes" : "no"}`);
+      }
+      if (conflictDetected) {
+        console.warn("[canvas-route] context conflict", {
+          canvasId: canvas.id || "unknown",
+          route,
+          requestedType,
+          existingType
+        });
+        return null;
+      }
+      const context = canvas.getContext(requestedType);
+      if (context && !existingType) {
+        canvasContextTypes.set(canvas, requestedType);
+      }
+      return context;
+    }
+
+    const ctx = requestCanvasContext(canvasEl, "2d");
 
     const poseStatusEl = document.getElementById("poseStatus");
     const trackingModeStatusEl = document.getElementById("trackingModeStatus");
@@ -1208,7 +1244,7 @@
       const rect = avatar3dCanvasEl.getBoundingClientRect();
       const styles = window.getComputedStyle ? window.getComputedStyle(avatar3dCanvasEl) : null;
       const visible = rect.width > 0 && rect.height > 0 && styles?.display !== "none" && styles?.visibility !== "hidden";
-      const webglContext = avatar3dCanvasEl.getContext?.("webgl") || avatar3dCanvasEl.getContext?.("experimental-webgl");
+      const runtimeContext = avatarThreeRuntime?.renderer?.getContext?.() || null;
       console.log("[avatar-3d] mobile canvas visible", {
         label,
         visible,
@@ -1216,7 +1252,8 @@
         height: Number(rect.height.toFixed(2)),
         display: styles?.display || "unknown",
         visibility: styles?.visibility || "unknown",
-        webglContextCreated: !!webglContext
+        trackedContextType: getCanvasContextType(avatar3dCanvasEl) || "none",
+        webglContextCreated: !!runtimeContext
       });
     }
 
@@ -1238,14 +1275,33 @@
     }
 
     function ensureAvatarThreeRuntime() {
-      if (avatarThreeRuntime) return avatarThreeRuntime;
+      if (avatarThreeRuntime?.renderer) return avatarThreeRuntime;
       logAvatarWebglAvailability();
       const threeRef = getThreeGlobal();
       if (!threeRef || !avatar3dCanvasEl) return null;
+      const existingAvatarContextType = getCanvasContextType(avatar3dCanvasEl);
+      const conflictDetected = Boolean(existingAvatarContextType && existingAvatarContextType !== "webgl");
+      console.log("[canvas-route] avatar3d context requested: webgl");
+      console.log("[canvas-route] skeleton context requested: 2d");
+      console.log(`[canvas-route] conflict detected ${conflictDetected ? "yes" : "no"}`);
+      if (conflictDetected) {
+        console.warn("[avatar-3d-route] runtime fail reason: canvas_context_conflict_avatar3d_non_webgl");
+        return null;
+      }
+      const avatarWebglContext = requestCanvasContext(avatar3dCanvasEl, "webgl");
+      if (!avatarWebglContext) {
+        console.warn("[avatar-3d-route] runtime fail reason: avatar_canvas_webgl_context_unavailable");
+        return null;
+      }
+      if (avatar3dCanvasEl.dataset.avatarRendererOwned === "true") {
+        console.warn("[avatar-3d-route] runtime fail reason: duplicate_renderer_blocked_existing_canvas_owner");
+        return avatarThreeRuntime || null;
+      }
       let renderer = null;
       try {
         renderer = new threeRef.WebGLRenderer({
           canvas: avatar3dCanvasEl,
+          context: avatarWebglContext,
           alpha: true,
           antialias: true,
           preserveDrawingBuffer: false
@@ -1257,6 +1313,7 @@
       }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setClearColor(0x000000, 0);
+      avatar3dCanvasEl.dataset.avatarRendererOwned = "true";
       console.log("[avatar-3d] renderer started");
       const scene = new threeRef.Scene();
       console.log("[avatar-3d] scene created");
