@@ -46,6 +46,8 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
+const APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+const INDEX_CACHE_BUST_TOKEN = "20260425";
 
 function parseBooleanEnv(value) {
   if (value === true || value === "true") return true;
@@ -369,8 +371,12 @@ function createApp(options = {}) {
     Expires: "0",
     "Surrogate-Control": "no-store"
   });
-  app.get("/", (_req, res) => {
+  app.get("/", (req, res) => {
+    if (req.query?.v !== INDEX_CACHE_BUST_TOKEN) {
+      return res.redirect(302, `/?v=${INDEX_CACHE_BUST_TOKEN}`);
+    }
     res.set(SHELL_NO_STORE_HEADERS);
+    res.set("X-App-Build-Version", APP_BUILD_VERSION);
     res.sendFile(CANONICAL_SHELL_PATH);
   });
   app.get("/dashboard.html", (_req, res) => {
@@ -380,6 +386,10 @@ function createApp(options = {}) {
   app.get("/exercise-library.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
+  });
+  app.get("/__version", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.json({ build: APP_BUILD_VERSION });
   });
   app.use(express.static(PUBLIC_DIR));
 
