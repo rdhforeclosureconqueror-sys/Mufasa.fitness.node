@@ -20,6 +20,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
+  <script src="/form-engine.js"></script>
   <script>
     window.__avatarRuntimeStatus = {
       threeImportStarted: true,
@@ -1169,11 +1170,19 @@
       UPPER_BODY: "upper_body",
       FACE_CLOSE: "face_close"
     };
-    const TRACKING_CONFIDENCE_STATE = {
+    const FORM_ENGINE = window.__MUFASA_FORM_ENGINE || null;
+    const BODY_VISIBILITY = FORM_ENGINE?.BODY_VISIBILITY || {
       NO_PERSON: "NO_PERSON",
-      UPPER_BODY_ONLY: "UPPER_BODY_ONLY",
-      PARTIAL_BODY: "PARTIAL_BODY",
+      HEAD_SHOULDERS: "HEAD_SHOULDERS",
+      UPPER_BODY: "UPPER_BODY",
+      TORSO_VISIBLE: "TORSO_VISIBLE",
       FULL_BODY: "FULL_BODY"
+    };
+    const TRACKING_CONFIDENCE_STATE = {
+      NO_PERSON: BODY_VISIBILITY.NO_PERSON,
+      UPPER_BODY_ONLY: BODY_VISIBILITY.UPPER_BODY,
+      PARTIAL_BODY: BODY_VISIBILITY.TORSO_VISIBLE,
+      FULL_BODY: BODY_VISIBILITY.FULL_BODY
     };
     const TRACKING_CONFIDENCE_THRESHOLDS = {
       head: 0.3,
@@ -1205,6 +1214,15 @@
     const MOTION_DEBUG_LOG_THROTTLE_MS = 500;
     let currentTrackingMode = TRACKING_MODES.UPPER_BODY;
     let currentTrackingState = TRACKING_CONFIDENCE_STATE.NO_PERSON;
+    let lastFormEngineMetrics = {};
+    window.__formEngineStatus = {
+      loaded: Boolean(FORM_ENGINE),
+      active: Boolean(FORM_ENGINE?.evaluateExerciseForm),
+      version: APP_BUILD_VERSION
+    };
+    window.__lastFormResult = null;
+    window.__lastBodyVisibility = BODY_VISIBILITY.NO_PERSON;
+    window.__lastPoseFrame = null;
     const trackingCapabilities = {
       hasMoveNet: false,
       hasFaceMesh: false,
@@ -3124,7 +3142,7 @@ function toggleListening() {
       return (hipWidth - kneeWidth) / hipWidth;
     }
 
-    function analyzeSquatForm(pose) {
+    function analyzeSquatForm(pose, formResult = null) {
       if (!pose) {
         return { fullBody:false, depthScore:0, goodForm:false, kneeAngle:180, torsoAngle:90, kneeValgus:0 };
       }
@@ -3157,7 +3175,9 @@ function toggleListening() {
       const notTooDeep = kneeAngle > 50;
       const torsoOk    = torsoAngle > 60;
 
-      const goodForm = fullBody && deepEnough && notTooDeep && torsoOk;
+      const deterministicGoodForm = fullBody && deepEnough && notTooDeep && torsoOk;
+      const formStatus = formResult?.overallStatus || null;
+      const goodForm = formStatus ? formStatus === "GOOD" : deterministicGoodForm;
       return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
     }
 
@@ -3598,6 +3618,10 @@ function toggleListening() {
 
     function assessTrackingConfidence(pose, faceEstimate) {
       const points = pose?.keypoints || [];
+      const visibilityState = FORM_ENGINE?.classifyBodyVisibility
+        ? FORM_ENGINE.classifyBodyVisibility(points)
+        : BODY_VISIBILITY.NO_PERSON;
+      window.__lastBodyVisibility = visibilityState;
       const shoulderLeftScore = Number(points?.[5]?.score || 0);
       const shoulderRightScore = Number(points?.[6]?.score || 0);
       const hipLeftScore = Number(points?.[11]?.score || 0);
@@ -3624,13 +3648,9 @@ function toggleListening() {
       const hipsVisible = hipsConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.hips;
       const kneesVisible = kneesConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.knees;
       const anklesVisible = anklesConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.ankles;
-      let state = TRACKING_CONFIDENCE_STATE.NO_PERSON;
-      if (upperBodyVisible && hipsVisible && (kneesVisible || anklesVisible)) {
-        state = TRACKING_CONFIDENCE_STATE.FULL_BODY;
-      } else if (upperBodyVisible && hipsVisible) {
-        state = TRACKING_CONFIDENCE_STATE.PARTIAL_BODY;
-      } else if (upperBodyVisible) {
-        state = TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY;
+      let state = visibilityState;
+      if (!Object.values(TRACKING_CONFIDENCE_STATE).includes(state)) {
+        state = upperBodyVisible ? TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY : TRACKING_CONFIDENCE_STATE.NO_PERSON;
       }
       const confidence = {
         shoulders: Number(shouldersConfidence.toFixed(3)),
@@ -3669,11 +3689,19 @@ function toggleListening() {
       if (!avatarDebugOverlayEl) return;
       const tracking = snapshot.tracking || {};
       const calibration = snapshot.calibration || {};
+      const form = snapshot.form || window.__lastFormResult || null;
       avatarDebugOverlayEl.textContent = [
+        `Build: ${APP_BUILD_VERSION}`,
+        `Exercise: ${exerciseLabelEl?.textContent || EXERCISE_ID}`,
+        `Movement family: ${form?.movementFamily || "UNKNOWN"}`,
         `Tracking mode: ${tracking.mode || currentTrackingMode}`,
         `Tracking state: ${tracking.state || currentTrackingState}`,
+        `Body visibility: ${window.__lastBodyVisibility || BODY_VISIBILITY.NO_PERSON}`,
         `Visible: ${(tracking.visibleLandmarks || []).join(", ") || "none"}`,
         `Confidence: ${(tracking.confidenceScore ?? 0).toFixed(2)}`,
+        `Phase: ${form?.phase || "UNKNOWN"}`,
+        `Form: ${form?.overallStatus || "UNKNOWN"} (${Number(form?.overallScore || 0).toFixed(2)})`,
+        `Top correction: ${form?.corrections?.[0]?.text || "none"}`,
         `Avatar mode: ${snapshot.avatarMode || getRenderMode()}`,
         `Avatar body: ${snapshot.avatarBodyMode || "full"}`,
         `Calibration: ${calibration.status || "pending"}`
@@ -3735,9 +3763,31 @@ function toggleListening() {
       const pose = poses.length ? poses[0] : null;
       latestPose = pose;
       const trackerFrame = await collectTrackerFrame(pose);
-      const analysis = analyzeSquatForm(pose);
       const posePacket = buildPosePacket(pose, trackerFrame);
       latestPosePacket = posePacket;
+      window.__lastPoseFrame = posePacket;
+      const movementFamily = FORM_ENGINE?.mapExerciseToMovementFamily?.({
+        exerciseId: EXERCISE_ID,
+        name: exerciseLabelEl?.textContent || EXERCISE_ID
+      }) || "UNKNOWN";
+      const formResult = FORM_ENGINE?.evaluateExerciseForm
+        ? FORM_ENGINE.evaluateExerciseForm({
+          keypoints: pose?.keypoints || [],
+          exerciseId: EXERCISE_ID,
+          exerciseName: exerciseLabelEl?.textContent || EXERCISE_ID,
+          movementFamily
+        }, { previousMetrics: lastFormEngineMetrics })
+        : null;
+      if (formResult?.metrics) lastFormEngineMetrics = formResult.metrics;
+      window.__lastFormResult = formResult;
+      window.__formEngineStatus = {
+        loaded: Boolean(FORM_ENGINE),
+        active: Boolean(FORM_ENGINE?.evaluateExerciseForm),
+        movementFamily,
+        lastPhase: formResult?.phase || "UNKNOWN",
+        updatedAt: Date.now()
+      };
+      const analysis = analyzeSquatForm(pose, formResult);
       const renderMode = getRenderMode();
       const modeChanged = renderMode !== lastRenderMode;
       if (modeChanged) {
@@ -3760,7 +3810,8 @@ function toggleListening() {
         },
         avatarMode: renderMode,
         avatarBodyMode: (trackerFrame?.trackingState === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY) ? "upper_only" : "full",
-        calibration: { status: avatarThreeRuntime?.calibration?.status || "not_started" }
+        calibration: { status: avatarThreeRuntime?.calibration?.status || "not_started" },
+        form: formResult
       });
 
       // Status + coaching prompt
@@ -3786,15 +3837,23 @@ function toggleListening() {
         console.log("PosePacket:", posePacket);
       }
 
+      const regionByPart = {
+        left_knee: "knees", right_knee: "knees", left_ankle: "ankles", right_ankle: "ankles",
+        left_hip: "hips", right_hip: "hips", left_shoulder: "shoulders", right_shoulder: "shoulders",
+        left_elbow: "elbows", right_elbow: "elbows", left_wrist: "wrists", right_wrist: "wrists"
+      };
       const drawSkeleton = () => {
         if (!(pose && pose.keypoints)) return;
-        const color = analysis.goodForm ? "#22c55e" : "#ef4444";
         ctx.lineWidth = 3;
 
         for (const [i, j] of SKELETON_EDGES) {
           const kp1 = pose.keypoints[i];
           const kp2 = pose.keypoints[j];
           if (kp1 && kp2 && kp1.score > 0.4 && kp2.score > 0.4) {
+            const part = kp1.name || kp1.part || "";
+            const region = regionByPart[part] || "core";
+            const status = formResult?.regions?.[region] || (analysis.goodForm ? "GOOD" : "BAD");
+            const color = FORM_ENGINE?.mapRegionFeedbackToColor ? FORM_ENGINE.mapRegionFeedbackToColor(status) : (analysis.goodForm ? "#22c55e" : "#ef4444");
             ctx.beginPath();
             ctx.moveTo(kp1.x, kp1.y);
             ctx.lineTo(kp2.x, kp2.y);
@@ -3805,6 +3864,9 @@ function toggleListening() {
 
         for (const kp of pose.keypoints) {
           if (kp.score > 0.4) {
+            const region = regionByPart[kp.name || kp.part || ""] || "core";
+            const status = formResult?.regions?.[region] || (analysis.goodForm ? "GOOD" : "BAD");
+            const color = FORM_ENGINE?.mapRegionFeedbackToColor ? FORM_ENGINE.mapRegionFeedbackToColor(status) : (analysis.goodForm ? "#22c55e" : "#ef4444");
             ctx.beginPath();
             ctx.arc(kp.x, kp.y, 4, 0, Math.PI * 2);
             ctx.fillStyle = color;
@@ -4166,6 +4228,17 @@ function toggleListening() {
       const points = posePacket?.keypoints;
       if (!points || !points.length) return false;
       const disableLowerBody = Boolean(options.disableLowerBody);
+      const visibilityState = options.visibilityState || BODY_VISIBILITY.NO_PERSON;
+      const allowHeadShoulders = visibilityState === BODY_VISIBILITY.HEAD_SHOULDERS
+        || visibilityState === BODY_VISIBILITY.UPPER_BODY
+        || visibilityState === BODY_VISIBILITY.TORSO_VISIBLE
+        || visibilityState === BODY_VISIBILITY.FULL_BODY;
+      const allowArms = visibilityState === BODY_VISIBILITY.UPPER_BODY
+        || visibilityState === BODY_VISIBILITY.TORSO_VISIBLE
+        || visibilityState === BODY_VISIBILITY.FULL_BODY;
+      const allowTorso = visibilityState === BODY_VISIBILITY.TORSO_VISIBLE
+        || visibilityState === BODY_VISIBILITY.FULL_BODY;
+      const allowLowerBody = visibilityState === BODY_VISIBILITY.FULL_BODY && !disableLowerBody;
       const now = Date.now();
       const state = runtime.puppetState || (runtime.puppetState = { lastGoodByLimb: {}, lastLogAt: 0 });
       const restPose = runtime.boneRestPose || {};
@@ -4233,26 +4306,26 @@ function toggleListening() {
         else skipped.push(`${limb}:${status}`);
       };
 
-      record("spine", applyTrackedAxis("spine", "spine", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34));
-      record("chest", applyTrackedAxis("chest", "chest", "z", shoulderRoll, -0.9, 0.9, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34));
-      record("neckPitch", applyTrackedAxis("neckPitch", "neck", "x", -headPitch * 0.45, -0.6, 0.6, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22));
-      record("neckYaw", applyTrackedAxis("neckYaw", "neck", "y", headYaw * 0.35, -0.7, 0.7, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22));
-      record("headPitch", applyTrackedAxis("headPitch", "head", "x", -headPitch, -0.9, 0.9, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22));
-      record("headYaw", applyTrackedAxis("headYaw", "head", "y", headYaw, -1.1, 1.1, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22));
-      record("headRoll", applyTrackedAxis("headRoll", "head", "z", shoulderRoll, -0.8, 0.8, ROTATION_SMOOTHING, Math.min(score(5), score(6)), 0.34));
+      record("spine", allowTorso ? applyTrackedAxis("spine", "spine", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34) : "hidden");
+      record("chest", allowTorso ? applyTrackedAxis("chest", "chest", "z", shoulderRoll, -0.9, 0.9, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34) : "hidden");
+      record("neckPitch", allowHeadShoulders ? applyTrackedAxis("neckPitch", "neck", "x", -headPitch * 0.45, -0.6, 0.6, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22) : "hidden");
+      record("neckYaw", allowHeadShoulders ? applyTrackedAxis("neckYaw", "neck", "y", headYaw * 0.35, -0.7, 0.7, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22) : "hidden");
+      record("headPitch", allowHeadShoulders ? applyTrackedAxis("headPitch", "head", "x", -headPitch, -0.9, 0.9, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22) : "hidden");
+      record("headYaw", allowHeadShoulders ? applyTrackedAxis("headYaw", "head", "y", headYaw, -1.1, 1.1, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22) : "hidden");
+      record("headRoll", allowHeadShoulders ? applyTrackedAxis("headRoll", "head", "z", shoulderRoll, -0.8, 0.8, ROTATION_SMOOTHING, Math.min(score(5), score(6)), 0.34) : "hidden");
 
-      record("leftUpperArm", applyTrackedAxis("leftUpperArm", "leftUpperArm", "z", (ls && le) ? THREE.MathUtils.clamp(angle(ls, le) + 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(5), score(7)), 0.34));
-      record("rightUpperArm", applyTrackedAxis("rightUpperArm", "rightUpperArm", "z", (rs && re) ? THREE.MathUtils.clamp(angle(rs, re) - 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(6), score(8)), 0.34));
-      record("leftLowerArm", applyTrackedAxis("leftLowerArm", "leftLowerArm", "z", (le && lw) ? THREE.MathUtils.clamp(angle(le, lw) + 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(7), score(9)), 0.3));
-      record("rightLowerArm", applyTrackedAxis("rightLowerArm", "rightLowerArm", "z", (re && rw) ? THREE.MathUtils.clamp(angle(re, rw) - 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(8), score(10)), 0.3));
-      record("leftHand", applyTrackedAxis("leftHand", "leftHand", "z", (le && lw) ? THREE.MathUtils.clamp((angle(le, lw) + 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(7), score(9)), 0.3));
-      record("rightHand", applyTrackedAxis("rightHand", "rightHand", "z", (re && rw) ? THREE.MathUtils.clamp((angle(re, rw) - 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(8), score(10)), 0.3));
+      record("leftUpperArm", allowArms ? applyTrackedAxis("leftUpperArm", "leftUpperArm", "z", (ls && le) ? THREE.MathUtils.clamp(angle(ls, le) + 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(5), score(7)), 0.34) : "hidden");
+      record("rightUpperArm", allowArms ? applyTrackedAxis("rightUpperArm", "rightUpperArm", "z", (rs && re) ? THREE.MathUtils.clamp(angle(rs, re) - 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(6), score(8)), 0.34) : "hidden");
+      record("leftLowerArm", allowArms ? applyTrackedAxis("leftLowerArm", "leftLowerArm", "z", (le && lw) ? THREE.MathUtils.clamp(angle(le, lw) + 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(7), score(9)), 0.3) : "hidden");
+      record("rightLowerArm", allowArms ? applyTrackedAxis("rightLowerArm", "rightLowerArm", "z", (re && rw) ? THREE.MathUtils.clamp(angle(re, rw) - 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(8), score(10)), 0.3) : "hidden");
+      record("leftHand", allowArms ? applyTrackedAxis("leftHand", "leftHand", "z", (le && lw) ? THREE.MathUtils.clamp((angle(le, lw) + 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(7), score(9)), 0.3) : "hidden");
+      record("rightHand", allowArms ? applyTrackedAxis("rightHand", "rightHand", "z", (re && rw) ? THREE.MathUtils.clamp((angle(re, rw) - 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(8), score(10)), 0.3) : "hidden");
 
-      record("hips", applyTrackedAxis("hips", "hips", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(11), score(12)), 0.3));
-      record("leftUpperLeg", disableLowerBody ? "hidden" : applyTrackedAxis("leftUpperLeg", "leftUpperLeg", "z", (lh && lk) ? THREE.MathUtils.clamp(angle(lh, lk) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(11), score(13)), 0.32));
-      record("rightUpperLeg", disableLowerBody ? "hidden" : applyTrackedAxis("rightUpperLeg", "rightUpperLeg", "z", (rh && rk) ? THREE.MathUtils.clamp(angle(rh, rk) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(12), score(14)), 0.32));
-      record("leftLowerLeg", disableLowerBody ? "hidden" : applyTrackedAxis("leftLowerLeg", "leftLowerLeg", "z", (lk && la) ? THREE.MathUtils.clamp(angle(lk, la) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(13), score(15)), 0.32));
-      record("rightLowerLeg", disableLowerBody ? "hidden" : applyTrackedAxis("rightLowerLeg", "rightLowerLeg", "z", (rk && ra) ? THREE.MathUtils.clamp(angle(rk, ra) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(14), score(16)), 0.32));
+      record("hips", allowTorso ? applyTrackedAxis("hips", "hips", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(11), score(12)), 0.3) : "hidden");
+      record("leftUpperLeg", allowLowerBody ? applyTrackedAxis("leftUpperLeg", "leftUpperLeg", "z", (lh && lk) ? THREE.MathUtils.clamp(angle(lh, lk) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(11), score(13)), 0.32) : "hidden");
+      record("rightUpperLeg", allowLowerBody ? applyTrackedAxis("rightUpperLeg", "rightUpperLeg", "z", (rh && rk) ? THREE.MathUtils.clamp(angle(rh, rk) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(12), score(14)), 0.32) : "hidden");
+      record("leftLowerLeg", allowLowerBody ? applyTrackedAxis("leftLowerLeg", "leftLowerLeg", "z", (lk && la) ? THREE.MathUtils.clamp(angle(lk, la) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(13), score(15)), 0.32) : "hidden");
+      record("rightLowerLeg", allowLowerBody ? applyTrackedAxis("rightLowerLeg", "rightLowerLeg", "z", (rk && ra) ? THREE.MathUtils.clamp(angle(rk, ra) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(14), score(16)), 0.32) : "hidden");
 
       if ((now - state.lastLogAt) >= TRACKING_LOG_THROTTLE_MS) {
         state.lastLogAt = now;
@@ -4276,9 +4349,10 @@ function toggleListening() {
       const points = posePacket?.keypoints || [];
       const tracker = posePacket?.tracker || null;
       const trackingState = tracker?.trackingState || currentTrackingState;
-      const upperBodyOnly = trackingState === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY;
-      const fullBodyReady = trackingState === TRACKING_CONFIDENCE_STATE.FULL_BODY;
-      const avatarBodyMode = upperBodyOnly ? "upper_only" : "full";
+      const visibilityState = window.__lastBodyVisibility || trackingState || BODY_VISIBILITY.NO_PERSON;
+      const upperBodyOnly = visibilityState !== BODY_VISIBILITY.FULL_BODY;
+      const fullBodyReady = visibilityState === BODY_VISIBILITY.FULL_BODY;
+      const avatarBodyMode = fullBodyReady ? "full" : "upper_only";
       const calibration = updateAvatarCalibration(posePacket, runtime);
       const hasHead = Boolean(getPosePointAny(points, [0, 1, 2, 3, 4], 0.25));
       const hasShoulders = Boolean(getPosePoint(points, 5) && getPosePoint(points, 6));
@@ -4306,8 +4380,11 @@ function toggleListening() {
         runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, ROOT_SMOOTHING));
       }
 
-      setLowerBodyVisibility(runtime, !upperBodyOnly);
-      const retargetActive = applyPoseToAvatarRig(posePacket, { disableLowerBody: upperBodyOnly && !fullBodyReady });
+      setLowerBodyVisibility(runtime, fullBodyReady);
+      const retargetActive = applyPoseToAvatarRig(posePacket, {
+        disableLowerBody: !fullBodyReady,
+        visibilityState
+      });
       if (activeAvatarAsset.runtimeStatus) {
         activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
       }
@@ -4359,7 +4436,8 @@ function toggleListening() {
         },
         avatarMode: renderMode,
         avatarBodyMode,
-        calibration: { status: calibration?.status || "not_started" }
+        calibration: { status: calibration?.status || "not_started" },
+        form: window.__lastFormResult || null
       });
       return retargetActive || holdingPose;
     }
