@@ -213,3 +213,34 @@ test("session complete blocked fallback provides non-invasive notice and status 
   assert.equal(status.blockedTotal, 1);
   assert.equal(status.lastBlockedFallback.action, "session_complete");
 });
+
+test("legacy fallback can require explicit actions via client config gate", async (t) => {
+  const calls = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (url, init = {}) => {
+    calls.push({ url, body: JSON.parse(init.body || "{}") });
+    return {
+      ok: false,
+      status: 503,
+      async json() { return { ok: false, error: { message: "service_unavailable" } }; }
+    };
+  };
+  t.after(() => { global.fetch = originalFetch; });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "pilot_gate",
+    getAuthToken: () => "token_abc",
+    legacyFallbackRequireExplicitActions: true,
+    legacyFallbackAllowedActions: ["session_complete"],
+    logger: { warn() {} }
+  });
+
+  await assert.rejects(
+    client.startSession({ sessionId: "sess_gate_1" }),
+    (err) => err?.code === "LEGACY_FALLBACK_REQUIRES_EXPLICIT_ACTION"
+  );
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "http://node/api/sessions");
+});

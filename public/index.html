@@ -794,6 +794,9 @@
     const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
     const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
+    const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
+    const LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = true;
+    const LEGACY_FALLBACK_ALLOWED_ACTIONS = ["session_complete"];
     try { localStorage.setItem("maatNodeBaseUrl", NODE_BASE_URL); } catch (_) {}
     const BACKEND_READ_CLIENT = window.MufasaBackendRead?.createClient({
       baseUrl: NODE_BASE_URL,
@@ -910,6 +913,44 @@
     const ALLOWED_STAGE_MODES = new Set(["fixed", "follow_pose"]);
     let avatarStageMode = "fixed";
     const appHostLabel = (window.location && window.location.host) ? window.location.host : "unknown-host";
+    const mobileDevice = /android|iphone|ipad|ipod|mobile/i.test((navigator && navigator.userAgent) || "");
+    const PERF_LOG_KEY = "maatPilotPerfV1";
+    const FRAME_INTERVAL_MS = mobileDevice ? 66 : 33;
+    let lastPoseFrameAt = 0;
+    let detectorInitStartedAt = 0;
+
+    function appendPilotEventLocal(entry) {
+      const nextEntry = { at: new Date().toISOString(), ...entry };
+      try {
+        const existing = JSON.parse(localStorage.getItem(PERF_LOG_KEY) || "[]");
+        existing.push(nextEntry);
+        localStorage.setItem(PERF_LOG_KEY, JSON.stringify(existing.slice(-200)));
+      } catch (_) {}
+    }
+
+    function trackPilotEvent(event, payload = {}) {
+      const body = {
+        event,
+        payload: {
+          userId: USER_ID || "guest",
+          browser: navigator?.userAgent || "unknown",
+          deviceType: mobileDevice ? "mobile" : "desktop",
+          renderMode: getRenderMode?.() || "camera",
+          ...payload
+        }
+      };
+      appendPilotEventLocal(body);
+      if (typeof fetch === "function") {
+        fetch(NODE_PILOT_EVENTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          keepalive: true
+        }).catch((err) => {
+          console.warn("[pilot-event] send failed", event, err?.message || err);
+        });
+      }
+    }
 
     function refreshBuildStamp() {
       if (!buildVersionPillEl) return;
@@ -1431,6 +1472,7 @@
     }
 
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
+      const previousMode = AVATAR_FLAGS.AVATAR_MODE;
       const nextMode = sanitizeRenderMode(mode);
       if ((nextMode === "avatar_overlay" || nextMode === "avatar_only") && !activeAvatarAsset) {
         updateRenderModeStatus("Camera (fallback: no saved avatar)", true);
@@ -1450,6 +1492,9 @@
       if (persist) {
         try { localStorage.setItem(AVATAR_MODE_STORAGE_KEY, nextMode); } catch (_) {}
       }
+      if (previousMode !== nextMode) {
+        trackPilotEvent("render_mode_changed", { from: previousMode || "camera", to: nextMode, source });
+      }
       return nextMode;
     }
 
@@ -1461,6 +1506,7 @@
     }
 
     function resolveInitialRenderMode() {
+      if (mobileDevice) return "camera";
       let queryMode = null;
       try {
         queryMode = new URLSearchParams(window.location.search).get("renderMode");
@@ -2095,14 +2141,28 @@
       getAuthToken: () => BACKEND_READ_CLIENT?.getAuthToken?.(),
       repDebounceMs: 500,
       logger: console,
+      legacyFallbackRequireExplicitActions: LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS,
+      legacyFallbackAllowedActions: LEGACY_FALLBACK_ALLOWED_ACTIONS,
       onObservabilityUpdate: updateSyncStatus,
       onFallbackUsed: (notice) => {
         if (!notice?.action) return;
         addLog("system", `Write degraded: ${notice.action} used legacy fallback (${notice.reason || "unknown_reason"}).`);
+        trackPilotEvent("session_save_failed", { action: notice.action, reason: notice.reason || "legacy_fallback_used" });
       },
       onFallbackBlocked: (notice) => {
         if (!notice?.message) return;
         addLog("system", notice.message);
+        trackPilotEvent("session_save_failed", { action: notice.action || "unknown", reason: notice.errorCode || "legacy_fallback_blocked" });
+      },
+      onSessionSaveSuccess: (notice) => {
+        trackPilotEvent("session_save_success", { action: notice?.action || "unknown", mode: notice?.mode || "unknown" });
+      },
+      onSessionSaveFailed: (notice) => {
+        trackPilotEvent("session_save_failed", {
+          action: notice?.action || "unknown",
+          mode: notice?.mode || "unknown",
+          reason: notice?.reason || notice?.error?.code || "unknown"
+        });
       }
     });
 
@@ -2449,6 +2509,7 @@
 
     // Login buttons
     manualLoginBtn.onclick = () => {
+      trackPilotEvent("login_attempted", { method: "manual" });
       const name = manualNameInput.value.trim() || "Athlete";
       onLogin(defaultProfileForName(name));
       updateAuthDebug({
@@ -2462,6 +2523,7 @@
     };
 
     googleBtn.onclick = () => {
+      trackPilotEvent("login_attempted", { method: "google" });
       if (!window.google || !google.accounts || !google.accounts.id) {
         alert("Google login not available on this device. Use username login instead.");
         return;
@@ -2858,6 +2920,9 @@ function toggleListening() {
         sessionId,
         programId: null,
         exerciseId: EXERCISE_ID
+      }).catch((err) => {
+        addLog("system", "Session could not be saved to backend. Keep exercising; retry save by finishing workout.");
+        console.warn("session_start write failed", err);
       });
     }
 
@@ -2866,7 +2931,11 @@ function toggleListening() {
       SESSION_WRITE_CLIENT?.completeSession(sessionId, {
         repsCompleted: totalReps,
         exerciseId: EXERCISE_ID
+      }).catch((err) => {
+        addLog("system", "Workout finished locally, but save failed. Check connection, then restart app to retry sync.");
+        console.warn("session_complete write failed", err);
       });
+      trackPilotEvent("workout_completed", { sessionId, totalReps });
 
       if (calendarMeta) {
         const today = new Date();
@@ -2934,7 +3003,13 @@ function toggleListening() {
     })();
 
     async function initDetector() {
-      await tf.setBackend("webgl");
+      detectorInitStartedAt = performance.now();
+      try {
+        await tf.setBackend("webgl");
+      } catch (err) {
+        console.warn("[detector-init] webgl backend unavailable, attempting cpu backend", err);
+        await tf.setBackend("cpu");
+      }
       await tf.ready();
       if (typeof poseDetection === "undefined") {
         console.error("PoseDetection failed to load.");
@@ -2947,6 +3022,10 @@ function toggleListening() {
         { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
       trackingCapabilities.hasMoveNet = true;
+      trackPilotEvent("app_loaded", {
+        detectorInitMs: Math.round(performance.now() - detectorInitStartedAt),
+        tfBackend: tf.getBackend?.() || "unknown"
+      });
       logTrackerCapabilities();
       console.log("✅ MoveNet detector created.");
     }
@@ -2954,6 +3033,11 @@ function toggleListening() {
     async function initOptionalTrackers() {
       trackingCapabilities.hasFaceMesh = false;
       trackingCapabilities.hasHandTracking = false;
+      if (mobileDevice) {
+        console.log("[tracker-defaults] Mobile detected; optional face/hand trackers disabled by default.");
+        logTrackerCapabilities();
+        return;
+      }
 
       try {
         if (typeof faceLandmarksDetection === "undefined") throw new Error("facemesh_lib_unavailable");
@@ -2984,6 +3068,7 @@ function toggleListening() {
     }
 
     async function connectCamera() {
+      trackPilotEvent("camera_connect_started");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoEl.srcObject = stream;
@@ -2996,13 +3081,14 @@ function toggleListening() {
         setAvatar3dCanvasVisibility(false);
         resizeAvatarThreeRuntime();
 
-        poseStatusEl.textContent = "Camera connected. Loading pose detector…";
+        poseStatusEl.textContent = "Camera connected. Loading movement tracker…";
         await initDetector();
         await initOptionalTrackers();
         updateTrackingMode(currentTrackingMode, performance.now());
 
-        poseStatusEl.textContent = "Pose detector ready.";
+        poseStatusEl.textContent = "Camera ready. You can start your workout now.";
         poseStatusEl.classList.add("status-ok");
+        trackPilotEvent("camera_connect_success", { detectorReady: Boolean(detector) });
         setPersonLayerSuppressed(false);
         lastRenderMode = "camera";
         startBtn.disabled = false;
@@ -3012,8 +3098,9 @@ function toggleListening() {
         defineExerciseBtn.disabled = false;
       } catch (e) {
         console.error("Camera error", e);
-        poseStatusEl.textContent = "Camera error.";
+        poseStatusEl.textContent = "Could not connect camera. Check permission settings, close other camera apps, and try again.";
         poseStatusEl.classList.add("status-bad");
+        trackPilotEvent("camera_connect_failed", { reason: e?.name || e?.message || "unknown" });
       }
     }
 
@@ -3129,7 +3216,7 @@ function toggleListening() {
     }
 
     function startDefineExercise() {
-      if (!detector) { alert("Connect camera first."); return; }
+      if (!detector) { addLog("system", "Connect camera first, then retry defining an exercise."); return; }
       if (running || ohsaMode) { alert("Stop workout / assessment before defining a new exercise."); return; }
 
       const name = prompt("Name this exercise (e.g. single_leg_squat_right):");
@@ -3178,7 +3265,7 @@ function toggleListening() {
     }
 
     function startOhsa() {
-      if (!detector) { alert("Connect camera first."); return; }
+      if (!detector) { addLog("system", "Connect camera first, then retry OHSA."); return; }
       if (running || definingExercise) { alert("Stop the workout / exercise definition before running OHSA."); return; }
 
       ohsaMode = true;
@@ -3339,6 +3426,12 @@ function toggleListening() {
     async function runPoseLoop() {
       if (!running && !definingExercise && !ohsaMode) return;
       if (!detector) return;
+      const nowFrame = performance.now();
+      if ((nowFrame - lastPoseFrameAt) < FRAME_INTERVAL_MS) {
+        animId = requestAnimationFrame(runPoseLoop);
+        return;
+      }
+      lastPoseFrameAt = nowFrame;
 
       const poses = await detector.estimatePoses(videoEl, { flipHorizontal: true });
       const pose = poses.length ? poses[0] : null;
@@ -3977,7 +4070,8 @@ function toggleListening() {
 
         startBtn.textContent = "Stop Workout";
         refreshCameraUiState();
-        addLog("system", `Workout started: ${sessionId}`);
+        addLog("system", `Workout started. Session: ${sessionId}. Keep your full body visible to count reps.`);
+        trackPilotEvent("workout_started", { sessionId, exerciseId: EXERCISE_ID });
         speak(`We are doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`, "rep");
         sendStartSessionToNode();
         runPoseLoop();
@@ -3990,7 +4084,7 @@ function toggleListening() {
         setPersonLayerSuppressed(false);
         setAvatar3dCanvasVisibility(false);
         lastRenderMode = "camera";
-        addLog("system", "Workout stopped.");
+        addLog("system", "Workout stopped. Reconnect camera and press Start Workout to resume.");
         sendEndSessionToNode();
       }
     }
@@ -4041,6 +4135,7 @@ function toggleListening() {
     async function uploadAvatarFile() {
       console.info("[avatar-upload] upload button clicked");
       const uploadTimeoutMs = 30000;
+      trackPilotEvent("avatar_upload_started");
       try {
         if (!USER_PROFILE) {
           avatarCreationStatusEl.textContent = "Sign in first.";
@@ -4119,6 +4214,7 @@ function toggleListening() {
         persistUser();
         await sendProfileToNode();
         avatarCreationStatusEl.textContent = "Upload success. Avatar saved and synced to profile.";
+        trackPilotEvent("avatar_upload_success", { size: selectedFile?.size || 0 });
       } catch (err) {
         console.warn("avatar upload failed", err);
         setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
@@ -4128,8 +4224,9 @@ function toggleListening() {
         } else if (msg === "avatar_upload_timeout" || msg.includes("AbortError")) {
           avatarCreationStatusEl.textContent = "Upload timed out after 30s. Check connection or file size and retry.";
         } else {
-          avatarCreationStatusEl.textContent = "Upload failed. Please retry with a valid .glb.";
+          avatarCreationStatusEl.textContent = "Upload failed. Use a valid .glb export and try again.";
         }
+        trackPilotEvent("avatar_upload_failed", { reason: msg || err?.name || "unknown" });
       }
     }
 
@@ -4332,7 +4429,7 @@ function toggleListening() {
     if (workoutToggleMobileBtn) {
       workoutToggleMobileBtn.onclick = () => {
         if (!detector && !running) {
-          alert("Connect camera first.");
+          addLog("system", "Connect camera first to begin workout.");
           return;
         }
         startWorkout();
@@ -4429,6 +4526,11 @@ function toggleListening() {
       avatarFacingDeg = resolveInitialAvatarFacingDeg();
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
       applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
+      trackPilotEvent("app_loaded", {
+        buildVersion: APP_BUILD_VERSION,
+        initialRenderMode: getRenderMode(),
+        webglAvailable: Boolean(window.WebGLRenderingContext)
+      });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
 
