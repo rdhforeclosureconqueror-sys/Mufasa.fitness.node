@@ -29,6 +29,16 @@
       lastAvatarUrl: null,
       lastGlbLoadStatus: "idle"
     };
+    window.__retryAvatarRuntime = function retryAvatarRuntimeBootstrapStub() {
+      const status = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
+      status.retryRequestedAt = Date.now();
+      status.retryRequestedBeforeRuntimeReady = true;
+      console.warn("[avatar-3d-route] retry requested before runtime bootstrap completed");
+      return Promise.resolve({
+        ok: false,
+        reason: "avatar_runtime_bootstrap_not_ready"
+      });
+    };
     console.log("[avatar-3d-route] Three ESM import started");
   </script>
   <script type="module">
@@ -822,7 +832,7 @@
   <script src="/session-write.js?v=20260424-mobile-trace1"></script>
 
   <script>
-    const APP_BUILD_VERSION = "2026-04-24T23:45:00Z-mobile-trace1";
+    const APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
     console.log("[BUILD_VERSION]", APP_BUILD_VERSION);
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
