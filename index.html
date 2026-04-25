@@ -649,6 +649,13 @@
             <option value="270">270°</option>
           </select>
         </label>
+        <label for="avatarStageModeSelect" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;">
+          <span>Avatar Stage:</span>
+          <select id="avatarStageModeSelect">
+            <option value="fixed">Fixed</option>
+            <option value="follow_pose">Follow Pose</option>
+          </select>
+        </label>
         <button id="avatarRotate90Btn" class="secondary" type="button">Rotate Avatar 90°</button>
 
         <span class="chip">
@@ -660,6 +667,7 @@
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
       <div id="trackingModeRow" class="status-line"><strong>Tracking mode:</strong> <span id="trackingModeStatus">upper_body</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
+      <div class="status-line"><strong>Avatar stage:</strong> <span id="avatarStageStatus">Inactive.</span></div>
       <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
@@ -773,6 +781,7 @@
     const voiceSelectEl = document.getElementById("voiceSelect");
     const renderModeSelectEl = document.getElementById("renderModeSelect");
     const avatarFacingSelectEl = document.getElementById("avatarFacingSelect");
+    const avatarStageModeSelectEl = document.getElementById("avatarStageModeSelect");
     const avatarRotate90Btn = document.getElementById("avatarRotate90Btn");
     const avatarCreateBtn = document.getElementById("avatarCreateBtn");
     const avatarThumbEl = document.getElementById("avatarThumb");
@@ -797,6 +806,7 @@
     const poseStatusEl = document.getElementById("poseStatus");
     const trackingModeStatusEl = document.getElementById("trackingModeStatus");
     const avatarModeStatusEl = document.getElementById("avatarModeStatus");
+    const avatarStageStatusEl = document.getElementById("avatarStageStatus");
     const brainStatusEl = document.getElementById("brainStatus");
     const syncStatusEl = document.getElementById("syncStatus");
     const brainChipTxt = document.getElementById("brainChipText");
@@ -917,10 +927,12 @@
 
     const AVATAR_MODE_STORAGE_KEY = "maatAvatarRenderMode";
     const AVATAR_FACING_STORAGE_KEY = "maatAvatarFacingDeg";
+    const AVATAR_STAGE_MODE_STORAGE_KEY = "maatAvatarStageMode";
     const AVATAR_CREATOR_URL = "https://www.avaturn.me/";
     const AVATAR_PROVIDER_DEFAULT = "avaturn";
     const ALLOWED_AVATAR_MODES = new Set(["camera", "avatar_overlay", "avatar_only"]);
     const ALLOWED_AVATAR_FACING_DEG = new Set([0, 90, 180, 270]);
+    const ALLOWED_AVATAR_STAGE_MODES = new Set(["fixed", "follow_pose"]);
     const AVATAR_FLAGS = {
       ENABLE_AVATAR_MODE: true,
       AVATAR_MODE: "camera", // "camera" | "avatar_overlay" | "avatar_only"
@@ -931,6 +943,7 @@
     let avatarThreeRuntime = null;
     let avatarThreeRuntimeDepsPromise = null;
     let avatarFacingDeg = 0;
+    let avatarStageMode = "fixed";
     let faceDetector = null;
     let handDetector = null;
 
@@ -1106,6 +1119,51 @@
       runtime.renderLoopId = requestAnimationFrame(loop);
     }
 
+    function createAvatarStageRoom(runtime, threeRef) {
+      if (!runtime?.scene || !threeRef) return;
+      const floorY = 0;
+      const stageGroup = new threeRef.Group();
+
+      const floor = new threeRef.Mesh(
+        new threeRef.PlaneGeometry(10, 10),
+        new threeRef.MeshStandardMaterial({ color: 0x1d2229, roughness: 0.96, metalness: 0.04 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = floorY;
+      stageGroup.add(floor);
+
+      const floorGrid = new threeRef.GridHelper(10, 20, 0x404a57, 0x2f3741);
+      floorGrid.position.y = floorY + 0.001;
+      stageGroup.add(floorGrid);
+
+      const backWall = new threeRef.Mesh(
+        new threeRef.PlaneGeometry(10, 4.5),
+        new threeRef.MeshStandardMaterial({ color: 0x202834, roughness: 0.98, metalness: 0.01, side: threeRef.DoubleSide })
+      );
+      backWall.position.set(0, 2.2, -2.5);
+      stageGroup.add(backWall);
+
+      const leftWall = new threeRef.Mesh(
+        new threeRef.PlaneGeometry(5, 4.5),
+        new threeRef.MeshStandardMaterial({ color: 0x171d26, roughness: 0.98, metalness: 0.01, side: threeRef.DoubleSide })
+      );
+      leftWall.position.set(-5, 2.2, -0.2);
+      leftWall.rotation.y = Math.PI / 2;
+      stageGroup.add(leftWall);
+
+      const rightWall = leftWall.clone();
+      rightWall.position.x = 5;
+      rightWall.rotation.y = -Math.PI / 2;
+      stageGroup.add(rightWall);
+
+      runtime.scene.add(stageGroup);
+      runtime.stageGroup = stageGroup;
+      runtime.floorY = floorY;
+      runtime.fixedAnchorPosition = new threeRef.Vector3(0, floorY, 0);
+      console.log("[avatar-stage] room created");
+      console.log("[avatar-stage] floor y: 0");
+    }
+
     function ensureAvatarThreeRuntime() {
       if (avatarThreeRuntime) return avatarThreeRuntime;
       logAvatarWebglAvailability();
@@ -1152,6 +1210,10 @@
         lastGoodAnchor: null,
         lastTrackingLogAt: 0,
         avatarFacingDeg,
+        avatarStageMode,
+        floorY: 0,
+        fixedAnchorPosition: new threeRef.Vector3(0, 0, 0),
+        stageGroup: null,
         facingApplied: false,
         upperBodyTrackingLogged: false,
         lastUpperBodyGoodAt: 0,
@@ -1168,6 +1230,7 @@
           lastLogAt: 0
         }
       };
+      createAvatarStageRoom(avatarThreeRuntime, threeRef);
       ensureAvatarRenderLoop(avatarThreeRuntime);
       logAvatarCanvasState("runtime_initialized");
       return avatarThreeRuntime;
@@ -1332,6 +1395,36 @@
       }
     }
 
+    function sanitizeAvatarStageMode(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+      return ALLOWED_AVATAR_STAGE_MODES.has(normalized) ? normalized : "fixed";
+    }
+
+    function applyAvatarStageMode(nextMode, { persist = true, source = "ui" } = {}) {
+      avatarStageMode = sanitizeAvatarStageMode(nextMode);
+      if (avatarStageModeSelectEl && avatarStageModeSelectEl.value !== avatarStageMode) {
+        avatarStageModeSelectEl.value = avatarStageMode;
+      }
+      const runtime = ensureAvatarThreeRuntime();
+      if (runtime) runtime.avatarStageMode = avatarStageMode;
+      console.log(`[avatar-stage] mode: ${avatarStageMode}`);
+      if (persist) {
+        try { localStorage.setItem(AVATAR_STAGE_MODE_STORAGE_KEY, avatarStageMode); } catch (_) {}
+      }
+      if (avatarStageStatusEl && avatarStageMode === "fixed") {
+        avatarStageStatusEl.textContent = "Fixed floor anchor active.";
+      }
+      return avatarStageMode;
+    }
+
+    function resolveInitialAvatarStageMode() {
+      try {
+        return sanitizeAvatarStageMode(localStorage.getItem(AVATAR_STAGE_MODE_STORAGE_KEY));
+      } catch (_) {
+        return "fixed";
+      }
+    }
+
     function getRenderMode() {
       if (!AVATAR_FLAGS.ENABLE_AVATAR_MODE) return "camera";
       return sanitizeRenderMode(AVATAR_FLAGS.AVATAR_MODE);
@@ -1486,8 +1579,15 @@
       runtime.baseAvatarHeight = Math.max(0.5, normalizedBox.max.y - normalizedBox.min.y);
       runtime.baseAvatarWidth = Math.max(0.2, normalizedBox.max.x - normalizedBox.min.x);
       root.position.x -= normalizedCenter.x;
-      root.position.y -= normalizedBox.min.y;
+      const bottomY = normalizedBox.min.y;
+      const stageFloorY = Number.isFinite(runtime.floorY) ? runtime.floorY : 0;
+      const offsetY = stageFloorY - bottomY;
+      root.position.y += offsetY;
       root.position.z -= normalizedCenter.z;
+      console.log("[avatar-stage] model grounded", {
+        bottomY: Number(bottomY.toFixed(4)),
+        offsetY: Number(offsetY.toFixed(4))
+      });
 
       const avatarRoot = new threeRef.Group();
       const avatarModelGroup = new threeRef.Group();
@@ -1500,6 +1600,10 @@
       runtime.avatarRoot = avatarRoot;
       runtime.avatarModelGroup = avatarModelGroup;
       runtime.modelRoot = root;
+      runtime.fixedAnchorPosition.set(0, stageFloorY, 0);
+      runtime.avatarRoot.position.copy(runtime.fixedAnchorPosition);
+      runtime.avatarRoot.rotation.set(0, 0, 0);
+      runtime.avatarRoot.scale.setScalar(1);
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "mount_avatar" });
       runtime.lastFacingLogAt = 0;
       const bboxSize = {
@@ -1538,6 +1642,11 @@
       resizeAvatarThreeRuntime();
       setAvatar3dCanvasVisibility(true);
       ensureAvatarRenderLoop(runtime);
+      if (avatarStageStatusEl) {
+        avatarStageStatusEl.textContent = sanitizeAvatarStageMode(runtime.avatarStageMode || avatarStageMode) === "fixed"
+          ? "Fixed floor anchor active."
+          : "Follow Pose active (experimental).";
+      }
       return {
         hasSkeleton: Boolean(runtime.skeleton),
         mappedBones: Object.entries(runtime.boneMap || {}).filter(([, bone]) => !!bone).map(([k]) => k)
@@ -1557,6 +1666,7 @@
           runtime.active = false;
         }
         setAvatar3dCanvasVisibility(false);
+        if (avatarStageStatusEl) avatarStageStatusEl.textContent = "Inactive.";
         avatarThumbEl.style.display = "none";
         setAvatarAssetStatus("No avatar saved.", true);
         setAvatarRuntimeStatus("No avatar metadata loaded.", true);
@@ -1612,6 +1722,7 @@
           runtime.active = false;
         }
         setAvatar3dCanvasVisibility(false);
+        if (avatarStageStatusEl) avatarStageStatusEl.textContent = "Inactive.";
         avatarThumbEl.style.display = "none";
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
           setAvatarAssetStatus("Avatar asset probe failed.", true);
@@ -3741,13 +3852,23 @@ function toggleListening() {
       if (trackingGood) runtime.lastUpperBodyGoodAt = now;
 
       const anchor = computeAvatarAnchorTransform(posePacket, runtime);
-      if (anchor?.trackingReliable && anchor.position) {
+      const stageMode = sanitizeAvatarStageMode(runtime.avatarStageMode || avatarStageMode);
+      if (stageMode === "follow_pose" && anchor?.trackingReliable && anchor.position) {
         runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
         runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
         runtime.avatarRoot.position.z = 0;
-        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
-        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.18);
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.15);
         runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
+      } else if (stageMode === "fixed") {
+        const fixedAnchor = runtime.fixedAnchorPosition || new THREE.Vector3(0, runtime.floorY || 0, 0);
+        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixedAnchor.x, 0.35);
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixedAnchor.y, 0.35);
+        runtime.avatarRoot.position.z = 0;
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, 0, 0.15);
+        const slightLean = anchor?.trackingReliable ? (anchor.rotationZ || 0) * 0.18 : 0;
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, slightLean, 0.12);
+        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, 1, 0.2));
       }
 
       const retargetActive = applyMinimalAvatarRetarget(posePacket);
@@ -3757,6 +3878,11 @@ function toggleListening() {
       runtime.renderer.render(runtime.scene, runtime.camera);
       setAvatar3dCanvasVisibility(true);
       setAvatarRuntimeStatus(`3D avatar tracking active (${tracker?.mode || currentTrackingMode}).`, false);
+      if (avatarStageStatusEl) {
+        avatarStageStatusEl.textContent = stageMode === "fixed"
+          ? "Fixed floor anchor active."
+          : "Follow Pose active (experimental).";
+      }
       if (!runtime.lastFacingLogAt || (now - runtime.lastFacingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
         const finalRotationY = (runtime.avatarRoot?.rotation?.y || 0) + (runtime.avatarModelGroup?.rotation?.y || 0);
         console.log("[avatar-facing] final model rotationY:", Number(finalRotationY.toFixed(4)), "layer=modelGroup-only");
@@ -4037,6 +4163,9 @@ function toggleListening() {
     renderModeSelectEl.onchange = () => {
       applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
     };
+    avatarStageModeSelectEl.onchange = () => {
+      applyAvatarStageMode(avatarStageModeSelectEl.value, { persist: true, source: "stage_select" });
+    };
     avatarFacingSelectEl.onchange = () => {
       applyAvatarFacingCalibration(avatarFacingSelectEl.value, { persist: true, source: "facing_select" });
     };
@@ -4107,6 +4236,8 @@ function toggleListening() {
     // ---- Boot ----
     window.addEventListener("load", async () => {
       refreshCameraUiState();
+      avatarStageMode = resolveInitialAvatarStageMode();
+      applyAvatarStageMode(avatarStageMode, { persist: false, source: "initial" });
       avatarFacingDeg = resolveInitialAvatarFacingDeg();
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
       applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
