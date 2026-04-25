@@ -862,7 +862,7 @@
     let activeAvatarAsset = null;
     let avatarThreeRuntime = null;
     let avatarThreeRuntimeDepsPromise = null;
-    let avatarFacingDeg = 180;
+    let avatarFacingDeg = 0;
     let faceDetector = null;
     let handDetector = null;
 
@@ -1217,7 +1217,7 @@
 
     function sanitizeAvatarFacingDeg(value) {
       const numeric = Number(value);
-      return ALLOWED_AVATAR_FACING_DEG.has(numeric) ? numeric : 180;
+      return ALLOWED_AVATAR_FACING_DEG.has(numeric) ? numeric : 0;
     }
 
     function applyAvatarFacingCalibration(nextDeg, { persist = true, source = "ui" } = {}) {
@@ -1235,11 +1235,8 @@
       if (persist) {
         try { localStorage.setItem(AVATAR_FACING_STORAGE_KEY, String(avatarFacingDeg)); } catch (_) {}
       }
-      console.log("[avatar-facing] calibration applied", {
-        source,
-        facingDeg: avatarFacingDeg,
-        facingRad: Number(facingRad.toFixed(4))
-      });
+      console.log(`[avatar-facing] selected degrees: ${avatarFacingDeg}`);
+      console.log(`[avatar-facing] applied radians: ${Number(facingRad.toFixed(4))}`);
       return avatarFacingDeg;
     }
 
@@ -1247,7 +1244,7 @@
       try {
         return sanitizeAvatarFacingDeg(localStorage.getItem(AVATAR_FACING_STORAGE_KEY));
       } catch (_) {
-        return 180;
+        return 0;
       }
     }
 
