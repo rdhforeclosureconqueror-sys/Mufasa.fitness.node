@@ -618,6 +618,24 @@
       color: #9ca3af;
       margin-top: 4px;
     }
+    #avatarDebugOverlay {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      z-index: 7;
+      min-width: 180px;
+      max-width: 46%;
+      background: rgba(5, 8, 20, 0.72);
+      color: #e5f3ff;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 8px;
+      font-size: 0.7rem;
+      line-height: 1.35;
+      padding: 8px 10px;
+      pointer-events: none;
+      backdrop-filter: blur(3px);
+      white-space: pre-line;
+    }
   </style>
 </head>
 
@@ -661,6 +679,7 @@
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
         <canvas id="avatar3d"></canvas>
+        <div id="avatarDebugOverlay" aria-live="polite">Tracking: pending…</div>
         <div id="cameraFsActions" class="camera-fs-actions" aria-live="polite">
           <button id="exitCameraBtn" class="secondary" type="button">Exit Camera</button>
           <button id="stopWorkoutFsBtn" class="secondary" type="button">Stop Workout</button>
@@ -865,6 +884,7 @@
     const videoEl = document.getElementById("video");
     const canvasEl = document.getElementById("overlay");
     const avatar3dCanvasEl = document.getElementById("avatar3d");
+    const avatarDebugOverlayEl = document.getElementById("avatarDebugOverlay");
     const canvasContextTypes = new WeakMap();
     const CANVAS_ROUTE_LABELS = new WeakMap();
     if (canvasEl) CANVAS_ROUTE_LABELS.set(canvasEl, "skeleton");
@@ -1136,6 +1156,19 @@
       UPPER_BODY: "upper_body",
       FACE_CLOSE: "face_close"
     };
+    const TRACKING_CONFIDENCE_STATE = {
+      NO_PERSON: "NO_PERSON",
+      UPPER_BODY_ONLY: "UPPER_BODY_ONLY",
+      PARTIAL_BODY: "PARTIAL_BODY",
+      FULL_BODY: "FULL_BODY"
+    };
+    const TRACKING_CONFIDENCE_THRESHOLDS = {
+      head: 0.3,
+      shoulders: 0.4,
+      hips: 0.38,
+      knees: 0.34,
+      ankles: 0.3
+    };
     const MODE_SWITCH_HOLD_MS = 450;
     const MODE_MIN_DWELL_MS = 700;
     const MODE_SWITCH_HOLD_MS_FULL_BODY = 220;
@@ -1143,6 +1176,9 @@
     const MAX_HEAD_PITCH = 0.25;
     const MAX_SHOULDER_ROLL = 0.25;
     const ROTATION_SMOOTHING = 0.18;
+    const ROOT_SMOOTHING = 0.22;
+    const ARM_SMOOTHING = 0.28;
+    const HIP_SMOOTHING = 0.2;
     const SHOULDER_TILT_MULTIPLIER = 0.35;
     const SHOULDER_ROLL_DEADZONE = 0.04;
     const HEAD_YAW_DEADZONE = 0.03;
@@ -1155,6 +1191,7 @@
     const MAX_ARM_DELTA_PER_FRAME = 0.09;
     const MOTION_DEBUG_LOG_THROTTLE_MS = 500;
     let currentTrackingMode = TRACKING_MODES.UPPER_BODY;
+    let currentTrackingState = TRACKING_CONFIDENCE_STATE.NO_PERSON;
     const trackingCapabilities = {
       hasMoveNet: false,
       hasFaceMesh: false,
@@ -3546,12 +3583,16 @@ function toggleListening() {
       return { yaw, pitch, roll };
     }
 
-    function inferTrackingMode(pose, faceEstimate) {
+    function assessTrackingConfidence(pose, faceEstimate) {
       const points = pose?.keypoints || [];
       const shoulderLeftScore = Number(points?.[5]?.score || 0);
       const shoulderRightScore = Number(points?.[6]?.score || 0);
       const hipLeftScore = Number(points?.[11]?.score || 0);
       const hipRightScore = Number(points?.[12]?.score || 0);
+      const kneeLeftScore = Number(points?.[13]?.score || 0);
+      const kneeRightScore = Number(points?.[14]?.score || 0);
+      const ankleLeftScore = Number(points?.[15]?.score || 0);
+      const ankleRightScore = Number(points?.[16]?.score || 0);
       const moveNetHeadScore = Math.max(
         Number(points?.[0]?.score || 0),
         Number(points?.[1]?.score || 0),
@@ -3563,25 +3604,67 @@ function toggleListening() {
       const faceMeshScore = faceReliable ? 1 : 0;
       const shouldersConfidence = Math.min(shoulderLeftScore, shoulderRightScore);
       const hipsConfidence = Math.min(hipLeftScore, hipRightScore);
+      const kneesConfidence = Math.min(kneeLeftScore, kneeRightScore);
+      const anklesConfidence = Math.min(ankleLeftScore, ankleRightScore);
       const headConfidence = Math.max(moveNetHeadScore, faceMeshScore);
+      const upperBodyVisible = shouldersConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.shoulders || headConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.head;
+      const hipsVisible = hipsConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.hips;
+      const kneesVisible = kneesConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.knees;
+      const anklesVisible = anklesConfidence >= TRACKING_CONFIDENCE_THRESHOLDS.ankles;
+      let state = TRACKING_CONFIDENCE_STATE.NO_PERSON;
+      if (upperBodyVisible && hipsVisible && (kneesVisible || anklesVisible)) {
+        state = TRACKING_CONFIDENCE_STATE.FULL_BODY;
+      } else if (upperBodyVisible && hipsVisible) {
+        state = TRACKING_CONFIDENCE_STATE.PARTIAL_BODY;
+      } else if (upperBodyVisible) {
+        state = TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY;
+      }
       const confidence = {
         shoulders: Number(shouldersConfidence.toFixed(3)),
         hips: Number(hipsConfidence.toFixed(3)),
-        head: Number(headConfidence.toFixed(3))
+        head: Number(headConfidence.toFixed(3)),
+        knees: Number(kneesConfidence.toFixed(3)),
+        ankles: Number(anklesConfidence.toFixed(3))
       };
+      const visibleLandmarks = [
+        upperBodyVisible ? "head/shoulders" : null,
+        hipsVisible ? "hips" : null,
+        kneesVisible ? "knees" : null,
+        anklesVisible ? "ankles" : null
+      ].filter(Boolean);
+      const confidenceScore = Number(((confidence.head + confidence.shoulders + confidence.hips + confidence.knees + confidence.ankles) / 5).toFixed(3));
+      return { state, confidence, confidenceScore, visibleLandmarks };
+    }
 
-      const shouldEnterFullBody = shouldersConfidence >= 0.45 && hipsConfidence >= 0.42;
-      const shouldStayFullBody = shouldersConfidence >= 0.34 && hipsConfidence >= 0.3;
-      if (shouldEnterFullBody || (currentTrackingMode === TRACKING_MODES.FULL_BODY && shouldStayFullBody)) {
-        return { mode: TRACKING_MODES.FULL_BODY, reason: "shoulders+hips confident", confidence };
+    function inferTrackingMode(pose, faceEstimate) {
+      const trackingAssessment = assessTrackingConfidence(pose, faceEstimate);
+      const confidence = trackingAssessment.confidence;
+      const state = trackingAssessment.state;
+      if (state === TRACKING_CONFIDENCE_STATE.FULL_BODY) {
+        return { mode: TRACKING_MODES.FULL_BODY, reason: "full body confidence", confidence, trackingAssessment };
       }
-      if (shouldersConfidence >= 0.4) {
-        return { mode: TRACKING_MODES.UPPER_BODY, reason: "shoulders confident, hips weak/missing", confidence };
+      if (state === TRACKING_CONFIDENCE_STATE.PARTIAL_BODY || state === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY) {
+        return { mode: TRACKING_MODES.UPPER_BODY, reason: "upper body confidence", confidence, trackingAssessment };
       }
-      if (headConfidence >= 0.35) {
-        return { mode: TRACKING_MODES.FACE_CLOSE, reason: "head/face confident, torso weak", confidence };
+      if (confidence.head >= 0.35) {
+        return { mode: TRACKING_MODES.FACE_CLOSE, reason: "head/face confident, torso weak", confidence, trackingAssessment };
       }
-      return { mode: currentTrackingMode, reason: "insufficient confidence (hysteresis hold)", confidence };
+      return { mode: currentTrackingMode, reason: "insufficient confidence (hysteresis hold)", confidence, trackingAssessment };
+    }
+
+    function updateAvatarDebugOverlay(snapshot = {}) {
+      if (!avatarDebugOverlayEl) return;
+      const tracking = snapshot.tracking || {};
+      const calibration = snapshot.calibration || {};
+      avatarDebugOverlayEl.textContent = [
+        `Tracking mode: ${tracking.mode || currentTrackingMode}`,
+        `Tracking state: ${tracking.state || currentTrackingState}`,
+        `Visible: ${(tracking.visibleLandmarks || []).join(", ") || "none"}`,
+        `Confidence: ${(tracking.confidenceScore ?? 0).toFixed(2)}`,
+        `Avatar mode: ${snapshot.avatarMode || getRenderMode()}`,
+        `Avatar body: ${snapshot.avatarBodyMode || "full"}`,
+        `Calibration: ${calibration.status || "pending"}`
+      ].join("\n");
     }
 
     async function collectTrackerFrame(pose) {
@@ -3599,6 +3682,8 @@ function toggleListening() {
 
       const inferredMode = inferTrackingMode(pose, faceEstimate);
       const nextMode = updateTrackingMode(inferredMode, performance.now());
+      const trackingAssessment = inferredMode?.trackingAssessment || assessTrackingConfidence(pose, faceEstimate);
+      currentTrackingState = trackingAssessment.state;
 
       if (trackingCapabilities.hasHandTracking && handDetector && nextMode === TRACKING_MODES.FACE_CLOSE) {
         try {
@@ -3612,6 +3697,10 @@ function toggleListening() {
       trackerModeState.lastHandEstimate = hands;
       return {
         mode: nextMode,
+        trackingState: trackingAssessment.state,
+        confidence: trackingAssessment.confidence,
+        confidenceScore: trackingAssessment.confidenceScore,
+        visibleLandmarks: trackingAssessment.visibleLandmarks,
         capabilities: { ...trackingCapabilities },
         face: faceEstimate,
         hands,
@@ -3649,6 +3738,17 @@ function toggleListening() {
       lastGoodForm = analysis.goodForm;
 
       const now = performance.now();
+      updateAvatarDebugOverlay({
+        tracking: {
+          mode: trackerFrame?.mode || currentTrackingMode,
+          state: trackerFrame?.trackingState || currentTrackingState,
+          visibleLandmarks: trackerFrame?.visibleLandmarks || [],
+          confidenceScore: trackerFrame?.confidenceScore ?? 0
+        },
+        avatarMode: renderMode,
+        avatarBodyMode: (trackerFrame?.trackingState === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY) ? "upper_only" : "full",
+        calibration: { status: avatarThreeRuntime?.calibration?.status || "not_started" }
+      });
 
       // Status + coaching prompt
       if (!analysis.fullBody) {
@@ -3873,6 +3973,65 @@ function toggleListening() {
       return nextValue;
     }
 
+    function ensureRuntimeCalibration(runtime) {
+      if (!runtime) return null;
+      if (!runtime.calibration) {
+        runtime.calibration = {
+          status: "not_started",
+          samples: [],
+          shoulderWidthPx: null,
+          midpointPx: null,
+          avatarScale: 1
+        };
+      }
+      return runtime.calibration;
+    }
+
+    function updateAvatarCalibration(posePacket, runtime) {
+      const calibration = ensureRuntimeCalibration(runtime);
+      const points = posePacket?.keypoints || [];
+      const ls = getPosePoint(points, 5, 0.4);
+      const rs = getPosePoint(points, 6, 0.4);
+      if (!ls || !rs) return calibration;
+      const lh = getPosePoint(points, 11, 0.32);
+      const rh = getPosePoint(points, 12, 0.32);
+      const midpoint = (lh && rh)
+        ? { x: ((ls.x + rs.x) * 0.5 + (lh.x + rh.x) * 0.5) * 0.5, y: ((ls.y + rs.y) * 0.5 + (lh.y + rh.y) * 0.5) * 0.5 }
+        : { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 };
+      calibration.status = "collecting";
+      calibration.samples.push({
+        shoulderWidthPx: Math.max(8, Math.hypot(rs.x - ls.x, rs.y - ls.y)),
+        midpoint
+      });
+      if (calibration.samples.length < 20) return calibration;
+
+      const shoulderWidthPx = calibration.samples.reduce((sum, sample) => sum + sample.shoulderWidthPx, 0) / calibration.samples.length;
+      const midpointPx = calibration.samples.reduce((sum, sample) => ({
+        x: sum.x + sample.midpoint.x,
+        y: sum.y + sample.midpoint.y
+      }), { x: 0, y: 0 });
+      calibration.shoulderWidthPx = shoulderWidthPx;
+      calibration.midpointPx = {
+        x: midpointPx.x / calibration.samples.length,
+        y: midpointPx.y / calibration.samples.length
+      };
+      calibration.status = "ready";
+      calibration.samples = [];
+      return calibration;
+    }
+
+    function setLowerBodyVisibility(runtime, visible) {
+      if (!runtime?.boneMap) return;
+      const lowerBodyBones = ["leftUpperLeg", "rightUpperLeg", "leftLowerLeg", "rightLowerLeg"];
+      if (!runtime.lowerBodyVisibilityState) runtime.lowerBodyVisibilityState = {};
+      for (const key of lowerBodyBones) {
+        const bone = runtime.boneMap[key];
+        if (!bone) continue;
+        if (!(key in runtime.lowerBodyVisibilityState)) runtime.lowerBodyVisibilityState[key] = Boolean(bone.visible);
+        bone.visible = visible ? runtime.lowerBodyVisibilityState[key] : false;
+      }
+    }
+
     function computeAvatarAnchorTransform(posePacket, runtime) {
       const points = posePacket?.keypoints;
       const tracker = posePacket?.tracker || null;
@@ -3913,6 +4072,7 @@ function toggleListening() {
       const baseW = runtime.baseAvatarWidth || 0.6;
       const baseShoulderWidth = Math.max(0.24, baseW * 0.55);
       const baseTorsoHeight = Math.max(0.28, baseH * 0.32);
+      const calibration = ensureRuntimeCalibration(runtime);
       const shoulderRatioY = 0.82;
       const hipRatioY = 0.53;
       const headRatioY = 0.82;
@@ -3939,7 +4099,10 @@ function toggleListening() {
         anchorPixel = { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 };
         const shoulderPx = Math.hypot(rs.x - ls.x, rs.y - ls.y);
         const shoulderWorld = shoulderPx * worldPerPixelY;
-        scale = Math.max(0.45, Math.min(2.4, shoulderWorld / baseShoulderWidth));
+        const calibratedShoulderWorld = (calibration?.status === "ready" && calibration?.shoulderWidthPx)
+          ? Math.max(0.01, calibration.shoulderWidthPx * worldPerPixelY)
+          : baseShoulderWidth;
+        scale = Math.max(0.45, Math.min(2.4, shoulderWorld / calibratedShoulderWorld));
         tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
         ratioY = shoulderRatioY;
       } else {
@@ -3984,11 +4147,12 @@ function toggleListening() {
       };
     }
 
-    function applyPoseToAvatarRig(posePacket) {
+    function applyPoseToAvatarRig(posePacket, options = {}) {
       const runtime = ensureAvatarThreeRuntime();
       if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
       const points = posePacket?.keypoints;
       if (!points || !points.length) return false;
+      const disableLowerBody = Boolean(options.disableLowerBody);
       const now = Date.now();
       const state = runtime.puppetState || (runtime.puppetState = { lastGoodByLimb: {}, lastLogAt: 0 });
       const restPose = runtime.boneRestPose || {};
@@ -3998,10 +4162,10 @@ function toggleListening() {
         if (!bone) return;
         bone.rotation[axis] = THREE.MathUtils.lerp(bone.rotation[axis], getRest(boneKey, axis, 0), speed);
       };
-      const applyTrackedAxis = (limbKey, boneKey, axis, targetValue, min, max, smooth = 0.26) => {
+      const applyTrackedAxis = (limbKey, boneKey, axis, targetValue, min, max, smooth = 0.26, confidence = 1, minConfidence = 0.3) => {
         const bone = runtime.boneMap?.[boneKey];
         if (!bone) return "missing_bone";
-        if (typeof targetValue === "number" && Number.isFinite(targetValue)) {
+        if (typeof targetValue === "number" && Number.isFinite(targetValue) && confidence >= minConfidence) {
           state.lastGoodByLimb[limbKey] = now;
           bone.rotation[axis] = THREE.MathUtils.lerp(
             bone.rotation[axis],
@@ -4032,6 +4196,7 @@ function toggleListening() {
       const rk = getPosePoint(points, 14, 0.3);
       const la = getPosePoint(points, 15, 0.3);
       const ra = getPosePoint(points, 16, 0.3);
+      const score = (i) => Number(points?.[i]?.score || 0);
 
       const hasLandmarks = {
         head: Boolean(nose || leftEye || rightEye || leftEar || rightEar),
@@ -4055,26 +4220,26 @@ function toggleListening() {
         else skipped.push(`${limb}:${status}`);
       };
 
-      record("spine", applyTrackedAxis("spine", "spine", "z", shoulderRoll, -0.7, 0.7, 0.22));
-      record("chest", applyTrackedAxis("chest", "chest", "z", shoulderRoll, -0.9, 0.9, 0.24));
-      record("neckPitch", applyTrackedAxis("neckPitch", "neck", "x", -headPitch * 0.45, -0.6, 0.6, ROTATION_SMOOTHING));
-      record("neckYaw", applyTrackedAxis("neckYaw", "neck", "y", headYaw * 0.35, -0.7, 0.7, ROTATION_SMOOTHING));
-      record("headPitch", applyTrackedAxis("headPitch", "head", "x", -headPitch, -0.9, 0.9, ROTATION_SMOOTHING));
-      record("headYaw", applyTrackedAxis("headYaw", "head", "y", headYaw, -1.1, 1.1, ROTATION_SMOOTHING));
-      record("headRoll", applyTrackedAxis("headRoll", "head", "z", shoulderRoll, -0.8, 0.8, ROTATION_SMOOTHING));
+      record("spine", applyTrackedAxis("spine", "spine", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34));
+      record("chest", applyTrackedAxis("chest", "chest", "z", shoulderRoll, -0.9, 0.9, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34));
+      record("neckPitch", applyTrackedAxis("neckPitch", "neck", "x", -headPitch * 0.45, -0.6, 0.6, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22));
+      record("neckYaw", applyTrackedAxis("neckYaw", "neck", "y", headYaw * 0.35, -0.7, 0.7, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22));
+      record("headPitch", applyTrackedAxis("headPitch", "head", "x", -headPitch, -0.9, 0.9, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22));
+      record("headYaw", applyTrackedAxis("headYaw", "head", "y", headYaw, -1.1, 1.1, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22));
+      record("headRoll", applyTrackedAxis("headRoll", "head", "z", shoulderRoll, -0.8, 0.8, ROTATION_SMOOTHING, Math.min(score(5), score(6)), 0.34));
 
-      record("leftUpperArm", applyTrackedAxis("leftUpperArm", "leftUpperArm", "z", (ls && le) ? THREE.MathUtils.clamp(angle(ls, le) + 1.05, -1.4, 1.4) : null, -1.4, 1.4, 0.3));
-      record("rightUpperArm", applyTrackedAxis("rightUpperArm", "rightUpperArm", "z", (rs && re) ? THREE.MathUtils.clamp(angle(rs, re) - 1.05, -1.4, 1.4) : null, -1.4, 1.4, 0.3));
-      record("leftLowerArm", applyTrackedAxis("leftLowerArm", "leftLowerArm", "z", (le && lw) ? THREE.MathUtils.clamp(angle(le, lw) + 0.85, -1.4, 1.4) : null, -1.4, 1.4, 0.28));
-      record("rightLowerArm", applyTrackedAxis("rightLowerArm", "rightLowerArm", "z", (re && rw) ? THREE.MathUtils.clamp(angle(re, rw) - 0.85, -1.4, 1.4) : null, -1.4, 1.4, 0.28));
-      record("leftHand", applyTrackedAxis("leftHand", "leftHand", "z", (le && lw) ? THREE.MathUtils.clamp((angle(le, lw) + 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22));
-      record("rightHand", applyTrackedAxis("rightHand", "rightHand", "z", (re && rw) ? THREE.MathUtils.clamp((angle(re, rw) - 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22));
+      record("leftUpperArm", applyTrackedAxis("leftUpperArm", "leftUpperArm", "z", (ls && le) ? THREE.MathUtils.clamp(angle(ls, le) + 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(5), score(7)), 0.34));
+      record("rightUpperArm", applyTrackedAxis("rightUpperArm", "rightUpperArm", "z", (rs && re) ? THREE.MathUtils.clamp(angle(rs, re) - 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(6), score(8)), 0.34));
+      record("leftLowerArm", applyTrackedAxis("leftLowerArm", "leftLowerArm", "z", (le && lw) ? THREE.MathUtils.clamp(angle(le, lw) + 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(7), score(9)), 0.3));
+      record("rightLowerArm", applyTrackedAxis("rightLowerArm", "rightLowerArm", "z", (re && rw) ? THREE.MathUtils.clamp(angle(re, rw) - 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(8), score(10)), 0.3));
+      record("leftHand", applyTrackedAxis("leftHand", "leftHand", "z", (le && lw) ? THREE.MathUtils.clamp((angle(le, lw) + 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(7), score(9)), 0.3));
+      record("rightHand", applyTrackedAxis("rightHand", "rightHand", "z", (re && rw) ? THREE.MathUtils.clamp((angle(re, rw) - 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(8), score(10)), 0.3));
 
-      record("hips", applyTrackedAxis("hips", "hips", "z", shoulderRoll, -0.7, 0.7, 0.18));
-      record("leftUpperLeg", applyTrackedAxis("leftUpperLeg", "leftUpperLeg", "z", (lh && lk) ? THREE.MathUtils.clamp(angle(lh, lk) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
-      record("rightUpperLeg", applyTrackedAxis("rightUpperLeg", "rightUpperLeg", "z", (rh && rk) ? THREE.MathUtils.clamp(angle(rh, rk) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
-      record("leftLowerLeg", applyTrackedAxis("leftLowerLeg", "leftLowerLeg", "z", (lk && la) ? THREE.MathUtils.clamp(angle(lk, la) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
-      record("rightLowerLeg", applyTrackedAxis("rightLowerLeg", "rightLowerLeg", "z", (rk && ra) ? THREE.MathUtils.clamp(angle(rk, ra) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24));
+      record("hips", applyTrackedAxis("hips", "hips", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(11), score(12)), 0.3));
+      record("leftUpperLeg", disableLowerBody ? "hidden" : applyTrackedAxis("leftUpperLeg", "leftUpperLeg", "z", (lh && lk) ? THREE.MathUtils.clamp(angle(lh, lk) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(11), score(13)), 0.32));
+      record("rightUpperLeg", disableLowerBody ? "hidden" : applyTrackedAxis("rightUpperLeg", "rightUpperLeg", "z", (rh && rk) ? THREE.MathUtils.clamp(angle(rh, rk) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(12), score(14)), 0.32));
+      record("leftLowerLeg", disableLowerBody ? "hidden" : applyTrackedAxis("leftLowerLeg", "leftLowerLeg", "z", (lk && la) ? THREE.MathUtils.clamp(angle(lk, la) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(13), score(15)), 0.32));
+      record("rightLowerLeg", disableLowerBody ? "hidden" : applyTrackedAxis("rightLowerLeg", "rightLowerLeg", "z", (rk && ra) ? THREE.MathUtils.clamp(angle(rk, ra) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(14), score(16)), 0.32));
 
       if ((now - state.lastLogAt) >= TRACKING_LOG_THROTTLE_MS) {
         state.lastLogAt = now;
@@ -4097,6 +4262,11 @@ function toggleListening() {
 
       const points = posePacket?.keypoints || [];
       const tracker = posePacket?.tracker || null;
+      const trackingState = tracker?.trackingState || currentTrackingState;
+      const upperBodyOnly = trackingState === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY;
+      const fullBodyReady = trackingState === TRACKING_CONFIDENCE_STATE.FULL_BODY;
+      const avatarBodyMode = upperBodyOnly ? "upper_only" : "full";
+      const calibration = updateAvatarCalibration(posePacket, runtime);
       const hasHead = Boolean(getPosePointAny(points, [0, 1, 2, 3, 4], 0.25));
       const hasShoulders = Boolean(getPosePoint(points, 5) && getPosePoint(points, 6));
       const hasElbows = Boolean(getPosePoint(points, 7, 0.3) && getPosePoint(points, 8, 0.3));
@@ -4107,23 +4277,24 @@ function toggleListening() {
       const renderMode = getRenderMode();
       const anchor = computeAvatarAnchorTransform(posePacket, runtime);
       if (anchor?.trackingReliable && anchor.position && avatarStageMode === "follow_pose") {
-        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, 0.35);
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, 0.35);
+        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, ROOT_SMOOTHING);
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, ROOT_SMOOTHING);
         runtime.avatarRoot.position.z = 0;
-        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, 0.2);
-        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, 0.2);
-        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, 0.22));
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, ROOT_SMOOTHING);
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, ROOT_SMOOTHING);
+        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, ROOT_SMOOTHING));
       } else {
         const fixed = runtime.fixedStageAnchor || { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
-        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, 0.2);
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, 0.2);
+        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, ROOT_SMOOTHING);
+        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, ROOT_SMOOTHING);
         runtime.avatarRoot.position.z = 0;
-        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, 0.2);
-        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, 0.2);
-        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, 0.2));
+        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, ROOT_SMOOTHING);
+        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, ROOT_SMOOTHING);
+        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, ROOT_SMOOTHING));
       }
 
-      const retargetActive = applyPoseToAvatarRig(posePacket);
+      setLowerBodyVisibility(runtime, !upperBodyOnly);
+      const retargetActive = applyPoseToAvatarRig(posePacket, { disableLowerBody: upperBodyOnly && !fullBodyReady });
       if (activeAvatarAsset.runtimeStatus) {
         activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
       }
@@ -4137,6 +4308,7 @@ function toggleListening() {
       }
       if (!runtime.lastTrackingLogAt || (now - runtime.lastTrackingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
         console.log(`[avatar-upper-body] landmarks: head ${hasHead ? "yes" : "no"}, shoulders ${hasShoulders ? "yes" : "no"}, elbows ${hasElbows ? "yes" : "no"}, wrists ${hasWrists ? "yes" : "no"}`);
+        console.log("[avatar-tracking-state]", { trackingState, avatarBodyMode, calibration: calibration?.status || "not_started" });
         runtime.lastTrackingLogAt = now;
       }
       const holdingPose = !trackingGood && (now - runtime.lastUpperBodyGoodAt) <= LOST_HOLD_MS;
@@ -4165,6 +4337,17 @@ function toggleListening() {
         console.log("[align-trace] scale:", runtime.lastAlignmentTrace.scale);
         console.log("[align-trace] facing degrees:", runtime.lastAlignmentTrace.facingDegrees);
       }
+      updateAvatarDebugOverlay({
+        tracking: {
+          mode: tracker?.mode || currentTrackingMode,
+          state: trackingState,
+          visibleLandmarks: tracker?.visibleLandmarks || [],
+          confidenceScore: tracker?.confidenceScore ?? 0
+        },
+        avatarMode: renderMode,
+        avatarBodyMode,
+        calibration: { status: calibration?.status || "not_started" }
+      });
       return retargetActive || holdingPose;
     }
 
