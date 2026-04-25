@@ -4295,7 +4295,7 @@ function toggleListening() {
         offscreenClippingReason: runtime?.lastAlignmentTrace?.offscreenReason || (avatarStageMode === "follow_pose" ? "unknown" : `stage_mode_${avatarStageMode}`)
       };
 
-      const trace = {
+      const traceObject = {
         build,
         renderMode: {
           mode: renderMode,
@@ -4335,51 +4335,59 @@ function toggleListening() {
         }
       };
 
-      window.__avatarTraceSnapshot = trace;
+      window.__avatarTraceSnapshot = traceObject;
       console.groupCollapsed("[route-trace] avatar full trace");
-      console.log("[route-trace] build:", trace.build);
-      console.log("[route-trace] shell:", `${trace.build.shellOrigin}${trace.build.shellPath}`);
+      console.log("[route-trace] build:", traceObject.build);
+      console.log("[route-trace] shell:", `${traceObject.build.shellOrigin}${traceObject.build.shellPath}`);
       console.log("[route-trace] public-root-match:", "unknown_in_browser");
-      console.log("[route-trace] renderMode:", trace.renderMode.mode);
-      console.log("[route-trace] videoVisible:", trace.renderMode.actual.videoVisible);
-      console.log("[route-trace] overlayVisible:", trace.renderMode.actual.skeletonVisible);
-      console.log("[route-trace] avatar3dVisible:", trace.renderMode.actual.avatar3dVisible);
-      console.log("[route-trace] personSuppressed:", trace.renderMode.actual.personSuppressed);
-      console.log("[canvas-trace] overlay context:", trace.canvases.overlayContext);
-      console.log("[canvas-trace] avatar3d context:", trace.canvases.avatar3dContext);
-      console.log("[canvas-trace] conflict:", trace.canvases.conflict ? "yes" : "no");
-      console.log("[three-trace] runtime source:", trace.threeRuntime.runtimeSource);
-      console.log("[three-trace] duplicate instances:", trace.threeRuntime.duplicateInstances ? "yes" : "no");
-      console.log("[three-trace] renderer reused:", trace.threeRuntime.rendererReused ? "yes" : "no");
-      console.log("[three-trace] GLTFLoader ready:", trace.threeRuntime.gltfLoaderReady ? "yes" : "no");
-      console.log("[glb-trace] profile url:", trace.glb.profileUrl);
-      console.log("[glb-trace] reachable:", trace.glb.reachable ? "yes" : "no");
-      console.log("[glb-trace] loaded:", trace.glb.loaded ? "yes" : "no");
-      console.log("[glb-trace] bounds:", trace.glb.bounds);
-      console.log("[glb-trace] grounded offset:", trace.glb.groundedOffset);
-      console.log("[rig-trace] bone names:", trace.rig.boneNames);
-      console.log("[rig-trace] mapped bones:", trace.rig.mappedBones);
-      console.log("[rig-trace] missing expected bones:", trace.rig.missingExpectedBones);
-      console.log("[pose-trace] detector ready:", trace.pose.detectorReady ? "yes" : "no");
-      console.log("[pose-trace] mode:", trace.pose.mode);
-      console.log("[pose-trace] shoulders:", trace.pose.shoulders);
-      console.log("[pose-trace] hips:", trace.pose.hips);
-      console.log("[pose-trace] arms:", trace.pose.arms);
-      console.log("[pose-trace] legs:", trace.pose.legs);
-      console.log("[pose-trace] keypoint coords:", trace.pose.keypointCoords);
-      console.log("[align-trace] skeleton basis:", trace.alignment.skeletonBasis);
-      console.log("[align-trace] root anchor:", trace.alignment.rootAnchor);
-      console.log("[align-trace] root position:", trace.alignment.rootPosition);
-      console.log("[align-trace] scale:", trace.alignment.scale);
-      console.log("[align-trace] facing degrees:", trace.alignment.facingDegrees);
-      console.log("[align-trace] limbs applied:", trace.alignment.limbsApplied);
-      console.log("[align-trace] limbs skipped:", trace.alignment.limbsSkipped);
-      console.log("[align-trace] offscreen/clipping reason:", trace.alignment.offscreenClippingReason);
+      console.log("[route-trace] renderMode:", traceObject.renderMode.mode);
+      console.log("[route-trace] videoVisible:", traceObject.renderMode.actual.videoVisible);
+      console.log("[route-trace] overlayVisible:", traceObject.renderMode.actual.skeletonVisible);
+      console.log("[route-trace] avatar3dVisible:", traceObject.renderMode.actual.avatar3dVisible);
+      console.log("[route-trace] personSuppressed:", traceObject.renderMode.actual.personSuppressed);
+      console.log("[canvas-trace] overlay context:", traceObject.canvases.overlayContext);
+      console.log("[canvas-trace] avatar3d context:", traceObject.canvases.avatar3dContext);
+      console.log("[canvas-trace] conflict:", traceObject.canvases.conflict ? "yes" : "no");
+      console.log("[three-trace] runtime source:", traceObject.threeRuntime.runtimeSource);
+      console.log("[three-trace] duplicate instances:", traceObject.threeRuntime.duplicateInstances ? "yes" : "no");
+      console.log("[three-trace] renderer reused:", traceObject.threeRuntime.rendererReused ? "yes" : "no");
+      console.log("[three-trace] GLTFLoader ready:", traceObject.threeRuntime.gltfLoaderReady ? "yes" : "no");
+      console.log("[glb-trace] profile url:", traceObject.glb.profileUrl);
+      console.log("[glb-trace] reachable:", traceObject.glb.reachable ? "yes" : "no");
+      console.log("[glb-trace] loaded:", traceObject.glb.loaded ? "yes" : "no");
+      console.log("[glb-trace] bounds:", traceObject.glb.bounds);
+      console.log("[glb-trace] grounded offset:", traceObject.glb.groundedOffset);
+      console.log("[rig-trace] bone names:", traceObject.rig.boneNames);
+      console.log("[rig-trace] mapped bones:", traceObject.rig.mappedBones);
+      console.log("[rig-trace] missing expected bones:", traceObject.rig.missingExpectedBones);
+      console.log("[pose-trace] detector ready:", traceObject.pose.detectorReady ? "yes" : "no");
+      console.log("[pose-trace] mode:", traceObject.pose.mode);
+      console.log("[pose-trace] shoulders:", traceObject.pose.shoulders);
+      console.log("[pose-trace] hips:", traceObject.pose.hips);
+      console.log("[pose-trace] arms:", traceObject.pose.arms);
+      console.log("[pose-trace] legs:", traceObject.pose.legs);
+      console.log("[pose-trace] keypoint coords:", traceObject.pose.keypointCoords);
+      console.log("[align-trace] skeleton basis:", traceObject.alignment.skeletonBasis);
+      console.log("[align-trace] root anchor:", traceObject.alignment.rootAnchor);
+      console.log("[align-trace] root position:", traceObject.alignment.rootPosition);
+      console.log("[align-trace] scale:", traceObject.alignment.scale);
+      console.log("[align-trace] facing degrees:", traceObject.alignment.facingDegrees);
+      console.log("[align-trace] limbs applied:", traceObject.alignment.limbsApplied);
+      console.log("[align-trace] limbs skipped:", traceObject.alignment.limbsSkipped);
+      console.log("[align-trace] offscreen/clipping reason:", traceObject.alignment.offscreenClippingReason);
       console.groupEnd();
-      return trace;
+      return traceObject;
     }
 
-    window.__runAvatarTrace = runAvatarTrace;
+    const attachAvatarTraceHarness = () => {
+      window.__runAvatarTrace = runAvatarTrace;
+      console.log("[trace] __runAvatarTrace attached:", typeof window.__runAvatarTrace);
+    };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", attachAvatarTraceHarness, { once: true });
+    } else {
+      attachAvatarTraceHarness();
+    }
 
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
