@@ -390,6 +390,17 @@ test("action-level fallback enforcement config parser supports list and per-acti
   assert.deepEqual(parsed.enforcedActions.sort(), ["ohsa", "session_complete"]);
 });
 
+test("action-level fallback enforcement parser supports boolean all-actions gate", () => {
+  const parsed = parseActionEnforcementFromEnv({
+    LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS: "true"
+  });
+  assert.equal(parsed.enforcedActions.length > 0, true);
+  assert.equal(parsed.enforcedActions.length, Object.keys(parsed.enabledByAction).length);
+  for (const action of Object.keys(parsed.enabledByAction)) {
+    assert.equal(parsed.enabledByAction[action], true);
+  }
+});
+
 test("legacy /command fallback can be blocked per action while others stay compatible", async (t) => {
   const prev = process.env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS;
   const prevSuper = process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
@@ -497,6 +508,37 @@ test("OHSA submission and me history endpoint are auth protected and persisted",
     assert.ok(histJson.data.recentActivity.length >= 2);
     assert.equal(histJson.data.summary.totalCompletedSessions, 1);
     assert.ok(Array.isArray(histJson.data.ohsaHistory));
+  });
+});
+
+test("/api/avatar/upload rejects fake glb headers and accepts valid glb magic header", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const token = await authBridge(baseUrl, { userId: "avatar_magic_user" });
+
+    const badForm = new FormData();
+    badForm.append("avatar", new Blob([Buffer.from("NOT_GLB_CONTENT", "utf8")]), "avatar.glb");
+    const badRes = await fetch(baseUrl + "/api/avatar/upload", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: badForm
+    });
+    const badJson = await badRes.json();
+    assert.equal(badRes.status, 400);
+    assert.equal(badJson.ok, false);
+    assert.equal(badJson.error.code, "VALIDATION_ERROR");
+
+    const validGlbBytes = Buffer.from([0x67, 0x6c, 0x54, 0x46, 0x02, 0x00, 0x00, 0x00]);
+    const goodForm = new FormData();
+    goodForm.append("avatar", new Blob([validGlbBytes]), "avatar.glb");
+    const goodRes = await fetch(baseUrl + "/api/avatar/upload", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: goodForm
+    });
+    const goodJson = await goodRes.json();
+    assert.equal(goodRes.status, 201);
+    assert.equal(goodJson.ok, true);
+    assert.match(goodJson.data.avatarModelUrl, /\/uploads\/avatars\/.+\.glb$/);
   });
 });
 

@@ -11,6 +11,7 @@
     "start": "node server.js",
     "lint": "node scripts/selfcheck.js",
     "test": "node --test",
+    "pilot:nonsecurity-checks": "node scripts/pilot-nonsecurity-checks.js",
     "ops:verify-audit": "node scripts/verify-admin-audit-chain.js",
     "ops:preflight": "node scripts/control-plane-preflight.js",
     "ops:pilot-checks": "node scripts/run-pilot-control-plane-checks.js"

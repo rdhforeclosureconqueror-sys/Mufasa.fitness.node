@@ -47,15 +47,28 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "rep_update"
 ]);
 
+function parseBooleanEnv(value) {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return null;
+}
+
 function parseActionEnforcementFromEnv(env = process.env) {
   const enabledByAction = Object.fromEntries(ENFORCEABLE_ACTIONS.map((action) => [action, false]));
-  enabledByAction.session_complete = true;
+  const requireExplicitAll = parseBooleanEnv(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS);
+  if (requireExplicitAll === true) {
+    for (const action of ENFORCEABLE_ACTIONS) enabledByAction[action] = true;
+  } else {
+    enabledByAction.session_complete = true;
+  }
   const invalidActions = [];
 
-  const list = String(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS || "")
+  const list = requireExplicitAll === null
+    ? String(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS || "")
     .split(",")
     .map((v) => v.trim().toLowerCase())
-    .filter(Boolean);
+    .filter(Boolean)
+    : [];
   for (const action of list) {
     if (action in enabledByAction) enabledByAction[action] = true;
     else invalidActions.push(action);
@@ -183,9 +196,12 @@ function createApp(options = {}) {
   const EX_DB_DIR = path.join(PUBLIC_DIR, "exercise-db");
   const EX_INDEX_PATH = path.join(EX_DB_DIR, "index.json");
   const DATA_DIR = path.join(rootDir, "data");
+  const OPS_DIR = path.join(DATA_DIR, "ops");
   const USER_DIR = path.join(DATA_DIR, "users");
+  const PILOT_EVENT_LOG_PATH = path.join(OPS_DIR, "pilot-events.ndjson");
 
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (!fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
 
   const userStore = createUserStore({ userDir: USER_DIR });
@@ -375,6 +391,15 @@ function createApp(options = {}) {
   function writeJSON(p, obj) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, JSON.stringify(obj, null, 2));
+  }
+
+  function appendPilotEvent(event) {
+    try {
+      fs.mkdirSync(path.dirname(PILOT_EVENT_LOG_PATH), { recursive: true });
+      fs.appendFileSync(PILOT_EVENT_LOG_PATH, `${JSON.stringify(event)}\n`);
+    } catch (error) {
+      console.warn("[pilot-events] append failed", { message: error?.message || String(error) });
+    }
   }
 
   async function parseAvatarMultipartUpload(req, maxBytes) {
@@ -963,6 +988,24 @@ function createApp(options = {}) {
     });
   }));
 
+  app.post("/api/pilot/events", asyncHandler(async (req, res) => {
+    const eventName = String(req.body?.event || "").trim();
+    if (!eventName) {
+      throw new ApiError("VALIDATION_ERROR", "Pilot event name is required", 400);
+    }
+    const payload = req.body?.payload && typeof req.body.payload === "object" ? req.body.payload : {};
+    const record = {
+      at: new Date().toISOString(),
+      requestId: req.requestId,
+      event: eventName,
+      userId: req.auth?.userId || payload.userId || null,
+      route: req.path,
+      payload
+    };
+    appendPilotEvent(record);
+    return ok(res, req.requestId, { accepted: true }, 202);
+  }));
+
   // ---- Exercise DB endpoints ----
   app.get("/api/exercises/index", (_req, res) => {
     const idx = loadExerciseIndex();
@@ -1112,13 +1155,36 @@ function createApp(options = {}) {
 
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
     const maxBytes = Number(process.env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024);
-    const { fileBuffer, originalName } = await parseAvatarMultipartUpload(req, maxBytes);
+    let upload;
+    try {
+      upload = await parseAvatarMultipartUpload(req, maxBytes);
+    } catch (error) {
+      console.warn("[avatar-upload] rejected", {
+        requestId: req.requestId,
+        userId: req.auth?.userId || null,
+        reason: error?.code || "UPLOAD_PARSE_ERROR",
+        message: error?.message || String(error)
+      });
+      throw error;
+    }
+    const { fileBuffer, originalName } = upload;
     if (fileBuffer.length > maxBytes) {
+      console.warn("[avatar-upload] rejected", { requestId: req.requestId, userId: req.auth?.userId || null, reason: "file_too_large" });
       throw new ApiError("VALIDATION_ERROR", "Avatar file exceeds size limit", 400);
+    }
+    if (fileBuffer.length === 0) {
+      console.warn("[avatar-upload] rejected", { requestId: req.requestId, userId: req.auth?.userId || null, reason: "empty_file" });
+      throw new ApiError("VALIDATION_ERROR", "Avatar upload is empty", 400);
     }
     const ext = path.extname(originalName || "").toLowerCase();
     if (ext !== ".glb") {
+      console.warn("[avatar-upload] rejected", { requestId: req.requestId, userId: req.auth?.userId || null, reason: "invalid_extension" });
       throw new ApiError("VALIDATION_ERROR", "Only .glb avatar files are allowed", 400);
+    }
+    const glbMagic = fileBuffer.slice(0, 4).toString("ascii");
+    if (glbMagic !== "glTF") {
+      console.warn("[avatar-upload] rejected", { requestId: req.requestId, userId: req.auth?.userId || null, reason: "invalid_glb_header" });
+      throw new ApiError("VALIDATION_ERROR", "Invalid .glb file header", 400);
     }
     const unique = typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -1192,6 +1258,16 @@ function createApp(options = {}) {
       res.setHeader("x-legacy-command", "true");
       res.setHeader("x-api-deprecated", "true");
       res.setHeader("warning", '299 - "Legacy /command session actions are deprecated; use /api/sessions endpoints"');
+      const fallbackReason = payload?._fallback?.reason || req.get("x-fallback-reason") || "legacy_direct";
+      const warningMsg = `Explicit API route failed; fallback command '${command}' used for action '${action || "unknown"}'`;
+      console.warn("[legacy-fallback-used]", {
+        requestId: req.requestId,
+        action: action || "unknown",
+        route: req.path,
+        userId: parsed.userId || userId || authUserId || null,
+        reason: fallbackReason,
+        warning: warningMsg
+      });
 
       return ok(res, req.requestId, {
         legacy: true,

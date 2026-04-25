@@ -18,7 +18,11 @@
       observabilityStorageKey = "maatWriteObservabilityV1",
       onObservabilityUpdate,
       onFallbackBlocked,
-      onFallbackUsed
+      onFallbackUsed,
+      onSessionSaveSuccess,
+      onSessionSaveFailed,
+      legacyFallbackRequireExplicitActions = false,
+      legacyFallbackAllowedActions = []
     } = options || {};
 
     if (!baseUrl) throw new Error("baseUrl_required");
@@ -28,6 +32,11 @@
     let repTimer = null;
     let repInFlight = false;
     const routeActions = ["profile", "session_start", "rep_update", "session_complete", "ohsa"];
+    const allowedFallbackActionSet = new Set(
+      Array.isArray(legacyFallbackAllowedActions)
+        ? legacyFallbackAllowedActions.map((action) => String(action || "").trim()).filter(Boolean)
+        : []
+    );
     const observability = {
       explicitSuccess: Object.fromEntries(routeActions.map((a) => [a, 0])),
       fallbackToLegacy: Object.fromEntries(routeActions.map((a) => [a, 0])),
@@ -111,6 +120,20 @@
         return { mode: "degraded_fallback", label: "Degraded (legacy fallback active)", fallbackTotal, blockedTotal, lastFallback: observability.lastFallback, lastBlockedFallback: observability.lastBlockedFallback };
       }
       return { mode: "explicit_api", label: "Backend synced", fallbackTotal, blockedTotal, lastFallback: observability.lastFallback, lastBlockedFallback: observability.lastBlockedFallback };
+    }
+
+    function isFallbackAllowedForAction(action) {
+      if (!legacyFallbackRequireExplicitActions) return true;
+      return allowedFallbackActionSet.has(action);
+    }
+
+    function makeFallbackGateError(action, err, reason) {
+      const gateErr = new Error(`fallback_not_allowed_for_${action}`);
+      gateErr.code = "LEGACY_FALLBACK_REQUIRES_EXPLICIT_ACTION";
+      gateErr.action = action;
+      gateErr.reason = reason || classifyFallbackReason(err);
+      gateErr.cause = err;
+      return gateErr;
     }
 
     async function postJSON(url, body, authRequired) {
@@ -219,13 +242,40 @@
       try {
         await postJSON(`${baseUrl}/api/sessions`, payload, true);
         trackExplicitSuccess("session_start");
+        if (typeof onSessionSaveSuccess === "function") {
+          onSessionSaveSuccess({ action: "session_start", mode: "explicit_api" });
+        }
       } catch (err) {
-        logger.warn("Session start API unavailable; using /command fallback.", err);
         const reason = trackFallback("session_start", err);
+        if (!isFallbackAllowedForAction("session_start")) {
+          const gateErr = makeFallbackGateError("session_start", err, reason);
+          if (typeof onSessionSaveFailed === "function") {
+            onSessionSaveFailed({ action: "session_start", mode: "explicit_api", reason, error: gateErr });
+          }
+          logger.warn("Session start explicit API failed and fallback is blocked by explicit-action gate.", {
+            action: "session_start",
+            userId: getUserId?.() || "guest",
+            reason
+          });
+          throw gateErr;
+        }
+        logger.warn("Session start API unavailable; using /command fallback.", {
+          action: "session_start",
+          userId: getUserId?.() || "guest",
+          reason
+        });
         try {
           await sendLegacyCommand("fitness.startSession", { ...payload, _fallbackReason: reason });
+          if (typeof onSessionSaveSuccess === "function") {
+            onSessionSaveSuccess({ action: "session_start", mode: "legacy_fallback", reason });
+          }
         } catch (fallbackErr) {
-          if (!maybeHandleBlockedFallback("session_start", fallbackErr)) throw fallbackErr;
+          if (!maybeHandleBlockedFallback("session_start", fallbackErr)) {
+            if (typeof onSessionSaveFailed === "function") {
+              onSessionSaveFailed({ action: "session_start", mode: "legacy_fallback", reason, error: fallbackErr });
+            }
+            throw fallbackErr;
+          }
         }
       }
     }
@@ -235,13 +285,42 @@
       try {
         await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true);
         trackExplicitSuccess("session_complete");
+        if (typeof onSessionSaveSuccess === "function") {
+          onSessionSaveSuccess({ action: "session_complete", mode: "explicit_api" });
+        }
       } catch (err) {
-        logger.warn("Session complete API unavailable; using /command fallback.", err);
         const reason = trackFallback("session_complete", err);
+        if (!isFallbackAllowedForAction("session_complete")) {
+          const gateErr = makeFallbackGateError("session_complete", err, reason);
+          if (typeof onSessionSaveFailed === "function") {
+            onSessionSaveFailed({ action: "session_complete", mode: "explicit_api", reason, error: gateErr });
+          }
+          logger.warn("Session complete explicit API failed and fallback is blocked by explicit-action gate.", {
+            action: "session_complete",
+            userId: getUserId?.() || "guest",
+            sessionId,
+            reason
+          });
+          throw gateErr;
+        }
+        logger.warn("Session complete API unavailable; using /command fallback.", {
+          action: "session_complete",
+          userId: getUserId?.() || "guest",
+          sessionId,
+          reason
+        });
         try {
           await sendLegacyCommand("fitness.endSession", { sessionId, ...payload, _fallbackReason: reason });
+          if (typeof onSessionSaveSuccess === "function") {
+            onSessionSaveSuccess({ action: "session_complete", mode: "legacy_fallback", reason });
+          }
         } catch (fallbackErr) {
-          if (!maybeHandleBlockedFallback("session_complete", fallbackErr)) throw fallbackErr;
+          if (!maybeHandleBlockedFallback("session_complete", fallbackErr)) {
+            if (typeof onSessionSaveFailed === "function") {
+              onSessionSaveFailed({ action: "session_complete", mode: "legacy_fallback", reason, error: fallbackErr });
+            }
+            throw fallbackErr;
+          }
         }
       }
     }
