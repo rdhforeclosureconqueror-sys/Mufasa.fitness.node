@@ -955,7 +955,7 @@
     async function ensureAvatarThreeRuntimeDependencies() {
       if (avatarThreeRuntimeDepsPromise) return avatarThreeRuntimeDepsPromise;
       avatarThreeRuntimeDepsPromise = (async () => {
-        console.log("[avatar-3d] THREE available", !!getThreeGlobal());
+        console.log(`[avatar-3d] three loaded: ${getThreeGlobal() ? "yes" : "no"}`);
         console.log("[avatar-3d] GLTFLoader available", !!getGltfLoaderCtor());
 
         if (!getThreeGlobal() || !getGltfLoaderCtor()) {
@@ -982,7 +982,7 @@
 
         const threeRef = getThreeGlobal();
         const loaderCtor = getGltfLoaderCtor(threeRef);
-        console.log("[avatar-3d] THREE available", !!threeRef);
+        console.log(`[avatar-3d] three loaded: ${threeRef ? "yes" : "no"}`);
         console.log("[avatar-3d] GLTFLoader available", !!loaderCtor);
         if (!threeRef || !loaderCtor) throw new Error("avatar_three_runtime_unavailable");
         return { threeRef, loaderCtor };
@@ -990,19 +990,61 @@
       return avatarThreeRuntimeDepsPromise;
     }
 
+    function logAvatarCanvasState(label = "runtime") {
+      if (!avatar3dCanvasEl) return;
+      const rect = avatar3dCanvasEl.getBoundingClientRect();
+      const styles = window.getComputedStyle ? window.getComputedStyle(avatar3dCanvasEl) : null;
+      const visible = rect.width > 0 && rect.height > 0 && styles?.display !== "none" && styles?.visibility !== "hidden";
+      const webglContext = avatar3dCanvasEl.getContext?.("webgl") || avatar3dCanvasEl.getContext?.("experimental-webgl");
+      console.log("[avatar-3d] mobile canvas visible", {
+        label,
+        visible,
+        width: Number(rect.width.toFixed(2)),
+        height: Number(rect.height.toFixed(2)),
+        display: styles?.display || "unknown",
+        visibility: styles?.visibility || "unknown",
+        webglContextCreated: !!webglContext
+      });
+    }
+
+    function ensureAvatarRenderLoop(runtime) {
+      if (!runtime || runtime.renderLoopActive) return;
+      runtime.renderLoopActive = true;
+      runtime.lastRenderLoopLogAt = 0;
+      const loop = () => {
+        if (!runtime.renderLoopActive) return;
+        runtime.renderer.render(runtime.scene, runtime.camera);
+        const now = Date.now();
+        if (!runtime.lastRenderLoopLogAt || (now - runtime.lastRenderLoopLogAt) >= 2000) {
+          runtime.lastRenderLoopLogAt = now;
+          console.log("[avatar-3d] render loop running");
+        }
+        runtime.renderLoopId = requestAnimationFrame(loop);
+      };
+      runtime.renderLoopId = requestAnimationFrame(loop);
+    }
+
     function ensureAvatarThreeRuntime() {
       if (avatarThreeRuntime) return avatarThreeRuntime;
       const threeRef = getThreeGlobal();
       if (!threeRef || !avatar3dCanvasEl) return null;
-      const renderer = new threeRef.WebGLRenderer({
-        canvas: avatar3dCanvasEl,
-        alpha: true,
-        antialias: true,
-        preserveDrawingBuffer: false
-      });
+      let renderer = null;
+      try {
+        renderer = new threeRef.WebGLRenderer({
+          canvas: avatar3dCanvasEl,
+          alpha: true,
+          antialias: true,
+          preserveDrawingBuffer: false
+        });
+      } catch (err) {
+        console.error("[avatar-3d] renderer init failed", err);
+        return null;
+      }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setClearColor(0x000000, 0);
+      console.log("[avatar-3d] renderer started");
       const scene = new threeRef.Scene();
+      console.log("[avatar-3d] scene created");
       const camera = new threeRef.PerspectiveCamera(40, 4 / 3, 0.01, 100);
       camera.position.set(0, 1.45, 2.25);
       const hemi = new threeRef.HemisphereLight(0xffffff, 0x223344, 1.0);
@@ -1029,6 +1071,9 @@
         facingApplied: false,
         upperBodyTrackingLogged: false,
         lastUpperBodyGoodAt: 0,
+        renderLoopId: null,
+        renderLoopActive: false,
+        lastRenderLoopLogAt: 0,
         motionState: {
           lastSampleAt: 0,
           idleSince: 0,
@@ -1039,12 +1084,15 @@
           lastLogAt: 0
         }
       };
+      ensureAvatarRenderLoop(avatarThreeRuntime);
+      logAvatarCanvasState("runtime_initialized");
       return avatarThreeRuntime;
     }
 
     function setAvatar3dCanvasVisibility(visible) {
       if (!avatar3dCanvasEl) return;
       avatar3dCanvasEl.style.display = visible ? "block" : "none";
+      logAvatarCanvasState(`visibility_${visible ? "on" : "off"}`);
     }
 
     function resizeAvatarThreeRuntime() {
@@ -1057,6 +1105,7 @@
       runtime.camera.updateProjectionMatrix();
       avatar3dCanvasEl.width = width;
       avatar3dCanvasEl.height = height;
+      logAvatarCanvasState("runtime_resized");
     }
 
     function refreshCameraUiState() {
@@ -1312,15 +1361,24 @@
       if (!/\.glb(\?|$)/i.test(avatarModelUrl)) {
         throw new Error("avatar_glb_required_in_phase_a");
       }
+      console.log("[avatar-load] url:", avatarModelUrl);
+      console.log("[avatar-load] started");
       const loader = new LoaderCtor();
-      const gltf = await new Promise((resolve, reject) => {
-        loader.load(
-          avatarModelUrl,
-          (loaded) => resolve(loaded),
-          undefined,
-          (err) => reject(err || new Error("avatar_gltf_load_failed"))
-        );
-      });
+      let gltf = null;
+      try {
+        gltf = await new Promise((resolve, reject) => {
+          loader.load(
+            avatarModelUrl,
+            (loaded) => resolve(loaded),
+            undefined,
+            (err) => reject(err || new Error("avatar_gltf_load_failed"))
+          );
+        });
+        console.log("[avatar-load] success");
+      } catch (err) {
+        console.error("[avatar-load] error:", err);
+        throw err;
+      }
       if (runtime.avatarRoot) {
         runtime.scene.remove(runtime.avatarRoot);
       }
@@ -1357,6 +1415,7 @@
       avatarRoot.add(avatarModelGroup);
 
       runtime.scene.add(avatarRoot);
+      console.log("[avatar-3d] model added to scene");
       runtime.avatarRoot = avatarRoot;
       runtime.avatarModelGroup = avatarModelGroup;
       runtime.modelRoot = root;
@@ -1396,6 +1455,8 @@
       runtime.lastTrackingLogAt = 0;
       runtime.lastGoodAnchor = null;
       resizeAvatarThreeRuntime();
+      setAvatar3dCanvasVisibility(true);
+      ensureAvatarRenderLoop(runtime);
       return {
         hasSkeleton: Boolean(runtime.skeleton),
         mappedBones: Object.entries(runtime.boneMap || {}).filter(([, bone]) => !!bone).map(([k]) => k)
