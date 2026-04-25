@@ -16,22 +16,51 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
-  <script type="module">
-    import * as THREE_MODULE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js";
-    import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js";
-
-    window.__AVATAR_THREE = {
-      THREE: THREE_MODULE,
-      GLTFLoader,
-      source: "direct-esm-jsdelivr",
-      ready: true
+  <script>
+    window.__avatarRuntimeStatus = {
+      threeImportStarted: true,
+      threeImportOk: false,
+      gltfLoaderOk: false,
+      readyEventFired: false,
+      failedReason: null,
+      webglOk: null,
+      canvasOk: null,
+      renderMode: "unknown",
+      lastAvatarUrl: null,
+      lastGlbLoadStatus: "idle"
     };
+    console.log("[avatar-3d-route] Three ESM import started");
+  </script>
+  <script type="module">
+    const avatarRuntimeStatus = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
+    try {
+      const THREE_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js");
+      const GLTF_LOADER_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js");
+      const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
+      avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
+      avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
+      window.__AVATAR_THREE = {
+        THREE: THREE_MODULE,
+        GLTFLoader,
+        source: "direct-esm-jsdelivr",
+        ready: true
+      };
 
-    console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
-    console.log("[avatar-3d-route] THREE ready:", !!window.__AVATAR_THREE?.THREE ? "yes" : "no");
-    console.log("[avatar-3d-route] GLTFLoader ready:", !!window.__AVATAR_THREE?.GLTFLoader ? "yes" : "no");
-    console.log("[avatar-3d-route] legacy fallback disabled: yes");
-    window.dispatchEvent(new Event("avatar-three-ready"));
+      console.log("[avatar-3d-route] Three import success");
+      console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
+      console.log("[avatar-3d-route] __AVATAR_THREE exists:", !!window.__AVATAR_THREE ? "yes" : "no");
+      console.log("[avatar-3d-route] THREE exists:", !!window.__AVATAR_THREE?.THREE ? "yes" : "no");
+      console.log("[avatar-3d-route] GLTFLoader exists:", !!window.__AVATAR_THREE?.GLTFLoader ? "yes" : "no");
+      console.log("[avatar-3d-route] legacy fallback disabled: yes");
+      avatarRuntimeStatus.readyEventFired = true;
+      console.log("[avatar-3d-route] avatar-three-ready event fired");
+      window.dispatchEvent(new Event("avatar-three-ready"));
+    } catch (err) {
+      avatarRuntimeStatus.readyEventFired = false;
+      avatarRuntimeStatus.failedReason = `three_import_failed:${String(err?.message || err || "unknown")}`;
+      console.warn("[avatar-3d-route] avatar-three-failed event fired", avatarRuntimeStatus.failedReason);
+      window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: avatarRuntimeStatus.failedReason } }));
+    }
   </script>
 
   <!-- Simple favicon so we don’t get 404s -->
@@ -952,6 +981,39 @@
       }
     }
 
+    function emitPilotEvent(event, payload = {}) {
+      trackPilotEvent(event, payload);
+    }
+
+    function getAvatarRuntimeStatusRef() {
+      const current = window.__avatarRuntimeStatus || {};
+      const normalized = {
+        threeImportStarted: Boolean(current.threeImportStarted),
+        threeImportOk: Boolean(current.threeImportOk),
+        gltfLoaderOk: Boolean(current.gltfLoaderOk),
+        readyEventFired: Boolean(current.readyEventFired),
+        failedReason: current.failedReason || null,
+        webglOk: current.webglOk ?? null,
+        canvasOk: current.canvasOk ?? null,
+        renderMode: current.renderMode || "unknown",
+        lastAvatarUrl: current.lastAvatarUrl || null,
+        lastGlbLoadStatus: current.lastGlbLoadStatus || "idle"
+      };
+      window.__avatarRuntimeStatus = normalized;
+      return normalized;
+    }
+
+    function setAvatarRuntimeFailure(reason, payload = {}) {
+      const status = getAvatarRuntimeStatusRef();
+      status.failedReason = reason;
+      console.warn("[avatar-3d-route] runtime failure", reason, payload);
+      emitPilotEvent("avatar_runtime_failed", {
+        reason,
+        renderMode: getRenderMode?.() || status.renderMode || "unknown",
+        ...payload
+      });
+    }
+
     function refreshBuildStamp() {
       if (!buildVersionPillEl) return;
       buildVersionPillEl.textContent = `Build: ${APP_BUILD_VERSION} • Host: ${appHostLabel} • Tracking: ${currentTrackingMode || "upper_body"} • Stage: ${avatarStageMode}`;
@@ -1161,20 +1223,48 @@
       return runtime?.GLTFLoader || null;
     }
 
+    function updateAvatarRuntimeRenderModeStatus() {
+      const status = getAvatarRuntimeStatusRef();
+      status.renderMode = getRenderMode?.() || AVATAR_FLAGS?.AVATAR_MODE || "unknown";
+      return status.renderMode;
+    }
+
+    window.addEventListener("avatar-three-ready", () => {
+      const status = getAvatarRuntimeStatusRef();
+      status.readyEventFired = true;
+      status.threeImportOk = Boolean(window.__AVATAR_THREE?.THREE);
+      status.gltfLoaderOk = Boolean(window.__AVATAR_THREE?.GLTFLoader);
+      status.failedReason = null;
+      console.log("[avatar-3d-route] avatar-three-ready event fired");
+    });
+
+    window.addEventListener("avatar-three-failed", (event) => {
+      const status = getAvatarRuntimeStatusRef();
+      status.readyEventFired = false;
+      status.failedReason = event?.detail?.reason || "avatar_three_runtime_failed_event";
+      console.warn("[avatar-3d-route] avatar-three-failed event fired", status.failedReason);
+      emitPilotEvent("avatar_runtime_failed", { reason: status.failedReason, source: "event" });
+    });
+
     let avatarWebglAvailabilityLogged = false;
     function logAvatarWebglAvailability() {
       if (avatarWebglAvailabilityLogged) return;
       avatarWebglAvailabilityLogged = true;
       const testCanvas = document.createElement("canvas");
       const context = testCanvas.getContext("webgl2") || testCanvas.getContext("webgl");
-      console.log(`[avatar-3d-route] webgl available: ${context ? "yes" : "no"}`);
+      const webglOk = Boolean(context);
+      getAvatarRuntimeStatusRef().webglOk = webglOk;
+      console.log(`[avatar-3d-route] webgl available: ${webglOk ? "yes" : "no"}`);
     }
 
     async function ensureAvatarThreeRuntimeDependencies() {
       if (avatarThreeRuntimeDepsPromise) return avatarThreeRuntimeDepsPromise;
       avatarThreeRuntimeDepsPromise = (async () => {
         logAvatarWebglAvailability();
-        console.log(`[avatar-3d] three loaded: ${getThreeGlobal() ? "yes" : "no"}`);
+        updateAvatarRuntimeRenderModeStatus();
+        console.log(`[avatar-3d] render mode at runtime boot: ${getAvatarRuntimeStatusRef().renderMode}`);
+        console.log(`[avatar-3d] __AVATAR_THREE exists: ${window.__AVATAR_THREE ? "yes" : "no"}`);
+        console.log(`[avatar-3d] THREE exists: ${getThreeGlobal() ? "yes" : "no"}`);
         console.log("[avatar-3d] GLTFLoader available", !!getGltfLoaderCtor());
 
         if (!getThreeGlobal() || !getGltfLoaderCtor()) {
@@ -1187,25 +1277,34 @@
               cleanup();
               resolve();
             };
+            const onFailed = (event) => {
+              cleanup();
+              reject(new Error(event?.detail?.reason || "avatar_three_runtime_unavailable"));
+            };
             const timeoutId = setTimeout(() => {
               cleanup();
-              console.warn("[avatar-3d-route] runtime fail reason: avatar_three_runtime_unavailable_timeout");
+              setAvatarRuntimeFailure("avatar_three_runtime_unavailable_timeout");
               reject(new Error("avatar_three_runtime_unavailable"));
             }, 8000);
             const cleanup = () => {
               clearTimeout(timeoutId);
               window.removeEventListener("avatar-three-ready", onReady);
+              window.removeEventListener("avatar-three-failed", onFailed);
             };
             window.addEventListener("avatar-three-ready", onReady, { once: true });
+            window.addEventListener("avatar-three-failed", onFailed, { once: true });
           });
         }
 
         const threeRef = getThreeGlobal();
         const loaderCtor = getGltfLoaderCtor(threeRef);
+        const status = getAvatarRuntimeStatusRef();
+        status.threeImportOk = Boolean(threeRef);
+        status.gltfLoaderOk = Boolean(loaderCtor);
         console.log(`[avatar-3d] three loaded: ${threeRef ? "yes" : "no"}`);
         console.log("[avatar-3d] GLTFLoader available", !!loaderCtor);
         if (!threeRef || !loaderCtor) {
-          console.warn("[avatar-3d-route] runtime fail reason: avatar_three_runtime_unavailable_missing_global");
+          setAvatarRuntimeFailure("avatar_three_runtime_unavailable_missing_global");
           throw new Error("avatar_three_runtime_unavailable");
         }
         return { threeRef, loaderCtor };
@@ -1251,24 +1350,37 @@
     function ensureAvatarThreeRuntime() {
       if (avatarThreeRuntime?.renderer) return avatarThreeRuntime;
       logAvatarWebglAvailability();
+      updateAvatarRuntimeRenderModeStatus();
+      const status = getAvatarRuntimeStatusRef();
       const threeRef = getThreeGlobal();
-      if (!threeRef || !avatar3dCanvasEl) return null;
+      if (!threeRef || !avatar3dCanvasEl) {
+        const reason = !threeRef ? "avatar_three_runtime_unavailable_missing_three" : "avatar_canvas_missing";
+        setAvatarAssetStatus("Avatar runtime missing required dependencies.", true);
+        setAvatarRuntimeFailure(reason, { hasThree: Boolean(threeRef), hasCanvas: Boolean(avatar3dCanvasEl) });
+        return null;
+      }
       const existingAvatarContextType = getCanvasContextType(avatar3dCanvasEl);
       const conflictDetected = Boolean(existingAvatarContextType && existingAvatarContextType !== "webgl");
       console.log("[canvas-route] avatar3d context requested: webgl");
       console.log("[canvas-route] skeleton context requested: 2d");
       console.log(`[canvas-route] conflict detected ${conflictDetected ? "yes" : "no"}`);
       if (conflictDetected) {
-        console.warn("[avatar-3d-route] runtime fail reason: canvas_context_conflict_avatar3d_non_webgl");
+        setAvatarAssetStatus("Avatar canvas conflict detected (non-WebGL context).", true);
+        status.canvasOk = false;
+        setAvatarRuntimeFailure("canvas_context_conflict_avatar3d_non_webgl", { contextType: existingAvatarContextType || "unknown" });
         return null;
       }
       const avatarWebglContext = requestCanvasContext(avatar3dCanvasEl, "webgl");
+      status.canvasOk = Boolean(avatarWebglContext);
+      console.log(`[avatar-3d] canvas context creation ${avatarWebglContext ? "success" : "failure"}`);
       if (!avatarWebglContext) {
-        console.warn("[avatar-3d-route] runtime fail reason: avatar_canvas_webgl_context_unavailable");
+        setAvatarAssetStatus("Avatar canvas WebGL context unavailable.", true);
+        setAvatarRuntimeFailure("avatar_canvas_webgl_context_unavailable");
         return null;
       }
       if (avatar3dCanvasEl.dataset.avatarRendererOwned === "true") {
-        console.warn("[avatar-3d-route] runtime fail reason: duplicate_renderer_blocked_existing_canvas_owner");
+        setAvatarAssetStatus("Avatar renderer already mounted on canvas.", true);
+        setAvatarRuntimeFailure("duplicate_renderer_blocked_existing_canvas_owner");
         return avatarThreeRuntime || null;
       }
       let renderer = null;
@@ -1281,13 +1393,17 @@
           preserveDrawingBuffer: false
         });
       } catch (err) {
-        console.warn(`[avatar-3d-route] runtime fail reason: renderer_init_failed:${String(err?.message || err || "unknown")}`);
+        status.canvasOk = false;
+        setAvatarAssetStatus("Avatar renderer initialization failed.", true);
+        setAvatarRuntimeFailure(`renderer_init_failed:${String(err?.message || err || "unknown")}`);
         console.error("[avatar-3d] renderer init failed", err);
         return null;
       }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setClearColor(0x000000, 0);
       avatar3dCanvasEl.dataset.avatarRendererOwned = "true";
+      status.canvasOk = true;
+      status.failedReason = null;
       console.log("[avatar-3d] renderer started");
       const scene = new threeRef.Scene();
       console.log("[avatar-3d] scene created");
@@ -1354,6 +1470,50 @@
       avatar3dCanvasEl.height = height;
       logAvatarCanvasState("runtime_resized");
     }
+
+    async function initializeAvatarRuntimeBootstrap(source = "bootstrap") {
+      try {
+        await ensureAvatarThreeRuntimeDependencies();
+        const runtime = ensureAvatarThreeRuntime();
+        if (!runtime) {
+          setAvatarAssetStatus("Avatar runtime failed to initialize.", true);
+          setAvatarRuntimeFailure("avatar_runtime_bootstrap_failed", { source });
+          return false;
+        }
+        return true;
+      } catch (err) {
+        setAvatarAssetStatus("Avatar runtime dependencies failed to initialize.", true);
+        setAvatarRuntimeFailure("avatar_runtime_bootstrap_dependencies_failed", {
+          source,
+          error: String(err?.message || err || "unknown")
+        });
+        return false;
+      }
+    }
+
+    window.__retryAvatarRuntime = async function retryAvatarRuntime() {
+      const status = getAvatarRuntimeStatusRef();
+      updateAvatarRuntimeRenderModeStatus();
+      const threeRef = getThreeGlobal();
+      const loaderCtor = getGltfLoaderCtor();
+      const webglContext = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
+      status.webglOk = Boolean(webglContext);
+      if (!threeRef || !loaderCtor) {
+        avatarThreeRuntimeDepsPromise = null;
+      }
+      const runtimeReady = await initializeAvatarRuntimeBootstrap("manual_retry");
+      if (!runtimeReady) return false;
+      const runtime = ensureAvatarThreeRuntime();
+      if (runtime && avatar3dCanvasEl) {
+        resizeAvatarThreeRuntime();
+        ensureAvatarRenderLoop(runtime);
+      }
+      const avatarUrl = status.lastAvatarUrl || USER_PROFILE?.avatar?.avatarModelUrl || null;
+      if (avatarUrl) {
+        await loadAvatarAssetForCurrentUser("manual_retry");
+      }
+      return true;
+    };
 
     function refreshCameraUiState() {
       const workoutActive = Boolean(running);
@@ -1485,6 +1645,7 @@
         return "camera";
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
+      updateAvatarRuntimeRenderModeStatus();
       console.log("[route-trace] renderMode:", nextMode);
       if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
       if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== nextMode) renderModeMobileSelectEl.value = nextMode;
@@ -1622,6 +1783,9 @@
     }
 
     async function probeAvatarModelRuntime(avatarModelUrl) {
+      const runtimeStatusRef = getAvatarRuntimeStatusRef();
+      runtimeStatusRef.lastAvatarUrl = avatarModelUrl || null;
+      runtimeStatusRef.lastGlbLoadStatus = "probe_started";
       const status = {
         metadataLoaded: true,
         assetFound: false,
@@ -1640,6 +1804,7 @@
         const isGlb = signature === "glTF";
         status.runtimeLoaded = isGlb || /\.gltf(\?|$)/i.test(avatarModelUrl) || /\.vrm(\?|$)/i.test(avatarModelUrl);
         if (!status.runtimeLoaded) throw new Error("avatar_asset_unsupported_format");
+        runtimeStatusRef.lastGlbLoadStatus = "probe_success";
         return status;
       } catch (err) {
         if (String(err?.message || "").includes("avatar_http_404")) {
@@ -1650,17 +1815,33 @@
           status.assetProbeFailed = true;
         }
         status.loadError = err;
+        runtimeStatusRef.lastGlbLoadStatus = `probe_failed:${String(err?.message || err || "unknown")}`;
         return status;
       }
     }
 
     async function mountAvatarGlbModel(avatarModelUrl) {
+      const status = getAvatarRuntimeStatusRef();
+      status.lastAvatarUrl = avatarModelUrl || null;
+      status.lastGlbLoadStatus = "starting";
+      console.log("[avatar-load] glb load start", avatarModelUrl);
       const deps = await ensureAvatarThreeRuntimeDependencies();
       const threeRef = deps?.threeRef || getThreeGlobal();
       const LoaderCtor = deps?.loaderCtor || getGltfLoaderCtor(threeRef);
       const runtime = ensureAvatarThreeRuntime();
-      if (!runtime || !threeRef || !LoaderCtor) throw new Error("avatar_three_runtime_unavailable");
+      if (!runtime || !threeRef || !LoaderCtor) {
+        status.lastGlbLoadStatus = "runtime_unavailable";
+        setAvatarAssetStatus("Avatar asset found but runtime prerequisites are missing.", true);
+        setAvatarRuntimeFailure("avatar_three_runtime_unavailable", {
+          hasRuntime: Boolean(runtime),
+          hasThree: Boolean(threeRef),
+          hasLoader: Boolean(LoaderCtor)
+        });
+        throw new Error("avatar_three_runtime_unavailable");
+      }
       if (!/\.glb(\?|$)/i.test(avatarModelUrl)) {
+        status.lastGlbLoadStatus = "unsupported_format";
+        setAvatarRuntimeFailure("avatar_glb_required_in_phase_a", { avatarModelUrl });
         throw new Error("avatar_glb_required_in_phase_a");
       }
       console.log("[avatar-load] url:", avatarModelUrl);
@@ -1676,16 +1857,24 @@
             (err) => reject(err || new Error("avatar_gltf_load_failed"))
           );
         });
-        console.log("[avatar-load] success");
+        status.lastGlbLoadStatus = "success";
+        status.failedReason = null;
+        console.log("[avatar-load] glb load success");
       } catch (err) {
-        console.error("[avatar-load] error:", err);
+        status.lastGlbLoadStatus = `failed:${String(err?.message || err || "unknown")}`;
+        setAvatarRuntimeFailure("avatar_glb_load_failed", { error: String(err?.message || err || "unknown"), avatarModelUrl });
+        console.error("[avatar-load] glb load failure:", err);
         throw err;
       }
       if (runtime.avatarRoot) {
         runtime.scene.remove(runtime.avatarRoot);
       }
       const root = gltf.scene || gltf.scenes?.[0];
-      if (!root) throw new Error("avatar_gltf_scene_missing");
+      if (!root) {
+        status.lastGlbLoadStatus = "failed:avatar_gltf_scene_missing";
+        setAvatarRuntimeFailure("avatar_gltf_scene_missing", { avatarModelUrl });
+        throw new Error("avatar_gltf_scene_missing");
+      }
       root.traverse((node) => {
         if (node?.isMesh) {
           node.castShadow = false;
@@ -1777,6 +1966,9 @@
     }
 
     async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
+      const runtimeStatusRef = getAvatarRuntimeStatusRef();
+      runtimeStatusRef.renderMode = getRenderMode?.() || AVATAR_FLAGS?.AVATAR_MODE || "unknown";
+      console.log(`[avatar-load] render mode at avatar load time: ${runtimeStatusRef.renderMode}`);
       const nextAvatar = normalizeAvatarProfile(USER_PROFILE?.avatar);
       if (!nextAvatar) {
         activeAvatarAsset = null;
@@ -1790,6 +1982,8 @@
         }
         setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
+        runtimeStatusRef.lastAvatarUrl = null;
+        runtimeStatusRef.lastGlbLoadStatus = "idle";
         setAvatarAssetStatus("No avatar saved.", true);
         setAvatarRuntimeStatus("No avatar metadata loaded.", true);
         avatarCreateBtn.textContent = "🧍 Create Avatar";
@@ -1810,6 +2004,8 @@
         } else {
           avatarThumbEl.style.display = "none";
         }
+        runtimeStatusRef.lastAvatarUrl = nextAvatar.avatarModelUrl;
+        runtimeStatusRef.lastGlbLoadStatus = "probe_started";
         const runtimeStatus = await probeAvatarModelRuntime(nextAvatar.avatarModelUrl);
         if (runtimeStatus.assetMissing) {
           USER_PROFILE.avatar = null;
@@ -1850,9 +2046,9 @@
         }
         const errMsg = String(err?.message || "");
         if (errMsg.includes("avatar_three_runtime_unavailable")) {
-          console.warn(`[avatar-3d-route] runtime fail reason: ${errMsg || "avatar_three_runtime_unavailable"}`);
-          setAvatarRuntimeStatus("3D runtime not loaded.", true);
           setAvatarAssetStatus("Avatar asset found but 3D runtime not loaded.", true);
+          setAvatarRuntimeStatus(`3D runtime not loaded (${getAvatarRuntimeStatusRef().failedReason || errMsg || "unknown"}).`, true);
+          setAvatarRuntimeFailure(errMsg || "avatar_three_runtime_unavailable", { source });
         } else {
           setAvatarRuntimeStatus("Using procedural fallback (3D avatar load failed).", true);
         }
@@ -4526,6 +4722,7 @@ function toggleListening() {
       avatarFacingDeg = resolveInitialAvatarFacingDeg();
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
       applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
+      await initializeAvatarRuntimeBootstrap("app_load");
       trackPilotEvent("app_loaded", {
         buildVersion: APP_BUILD_VERSION,
         initialRenderMode: getRenderMode(),
