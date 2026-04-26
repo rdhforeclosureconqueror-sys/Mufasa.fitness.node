@@ -286,11 +286,22 @@
       const report = json?.data || null;
       const summary = report?.openAiSummary || {};
       const pilot = report?.pilotReadiness || {};
+      const avatarRuntime = payload?.runtime?.avatarRuntimeStatus || null;
       diagnosticStatus.textContent = [
         `Build: ${report?.buildVersion || "unknown"}`,
-        `Avatar runtime: ${payload?.runtime?.avatarRuntimeStatus ? "present" : "missing"}`,
+        `Avatar runtime: ${avatarRuntime ? "present" : "missing"}`,
         `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "missing"}`,
         `Camera status: ${payload?.runtime?.cameraStatus || "unknown"}`,
+        `Three bridge fix active: ${avatarRuntime?.threeBridgeFixActive === true ? "yes" : "no"}`,
+        `window.__AVATAR_THREE exists: ${avatarRuntime?.avatarThreeGlobalOk === true ? "yes" : "no"}`,
+        `window.__AVATAR_THREE.THREE exists: ${avatarRuntime?.threeImportOk === true ? "yes" : "no"}`,
+        `window.__AVATAR_THREE.GLTFLoader exists: ${avatarRuntime?.gltfLoaderOk === true ? "yes" : "no"}`,
+        `Three import started: ${avatarRuntime?.threeImportStarted === true ? "yes" : "no"}`,
+        `Three import ok: ${avatarRuntime?.threeImportOk === true ? "yes" : "no"}`,
+        `Three import error: ${avatarRuntime?.threeImportError || "none"}`,
+        `GLTFLoader import ok: ${avatarRuntime?.gltfLoaderImportOk === true ? "yes" : "no"}`,
+        `GLTFLoader import error: ${avatarRuntime?.gltfLoaderImportError || "none"}`,
+        `Bridge issue classification: ${avatarRuntime?.threeBridgeFixActive !== true ? "deploy_or_static_path_issue" : (avatarRuntime?.threeImportOk === true ? "bridge_fix_active_import_ok" : "import_issue")}`,
         `Route check: pass=${report?.routeCheck?.passCount ?? "n/a"} protected=${report?.routeCheck?.protectedCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
         `OpenAI status: ${report?.openAiSummaryStatus || "unknown"}`,
         `Likely root cause: ${summary?.likelyRootCause || "n/a"}`,
