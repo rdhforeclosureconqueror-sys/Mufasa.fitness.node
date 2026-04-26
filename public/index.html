@@ -26,12 +26,18 @@
       threeImportStarted: true,
       threeImportOk: false,
       gltfLoaderOk: false,
+      avatarThreeGlobalOk: false,
       readyEventFired: false,
       failedReason: null,
       webglOk: null,
       canvasOk: null,
+      canvasFound: null,
+      rendererCreated: false,
+      sceneCreated: false,
+      cameraCreated: false,
       renderMode: "unknown",
       lastAvatarUrl: null,
+      glbLoadAttempted: false,
       lastGlbLoadStatus: "idle"
     };
     window.__retryAvatarRuntime = function retryAvatarRuntimeBootstrapStub() {
@@ -54,6 +60,7 @@
       const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
       avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
       avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
+      avatarRuntimeStatus.avatarThreeGlobalOk = false;
       window.__AVATAR_THREE = {
         THREE: THREE_MODULE,
         GLTFLoader,
@@ -61,6 +68,7 @@
         ready: true
       };
 
+      avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
       console.log("[avatar-3d-route] Three import success");
       console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
       console.log("[avatar-3d-route] __AVATAR_THREE exists:", !!window.__AVATAR_THREE ? "yes" : "no");
@@ -73,6 +81,7 @@
     } catch (err) {
       avatarRuntimeStatus.readyEventFired = false;
       avatarRuntimeStatus.failedReason = `three_import_failed:${String(err?.message || err || "unknown")}`;
+      avatarRuntimeStatus.avatarThreeGlobalOk = false;
       console.warn("[avatar-3d-route] avatar-three-failed event fired", avatarRuntimeStatus.failedReason);
       window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: avatarRuntimeStatus.failedReason } }));
     }
@@ -1302,6 +1311,7 @@
       status.readyEventFired = true;
       status.threeImportOk = Boolean(window.__AVATAR_THREE?.THREE);
       status.gltfLoaderOk = Boolean(window.__AVATAR_THREE?.GLTFLoader);
+      status.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
       status.failedReason = null;
       console.log("[avatar-3d-route] avatar-three-ready event fired");
     });
@@ -1421,6 +1431,7 @@
       updateAvatarRuntimeRenderModeStatus();
       const status = getAvatarRuntimeStatusRef();
       const threeRef = getThreeGlobal();
+      status.canvasFound = Boolean(avatar3dCanvasEl);
       if (!threeRef || !avatar3dCanvasEl) {
         const reason = !threeRef ? "avatar_three_runtime_unavailable_missing_three" : "avatar_canvas_missing";
         setAvatarAssetStatus("Avatar runtime missing required dependencies.", true);
@@ -1471,11 +1482,14 @@
       renderer.setClearColor(0x000000, 0);
       avatar3dCanvasEl.dataset.avatarRendererOwned = "true";
       status.canvasOk = true;
+      status.rendererCreated = true;
       status.failedReason = null;
       console.log("[avatar-3d] renderer started");
       const scene = new threeRef.Scene();
+      status.sceneCreated = true;
       console.log("[avatar-3d] scene created");
       const camera = new threeRef.PerspectiveCamera(40, 4 / 3, 0.01, 100);
+      status.cameraCreated = true;
       camera.position.set(0, 1.45, 2.25);
       const hemi = new threeRef.HemisphereLight(0xffffff, 0x223344, 1.0);
       const key = new threeRef.DirectionalLight(0xffffff, 0.85);
@@ -1891,6 +1905,7 @@
     async function mountAvatarGlbModel(avatarModelUrl) {
       const status = getAvatarRuntimeStatusRef();
       status.lastAvatarUrl = avatarModelUrl || null;
+      status.glbLoadAttempted = true;
       status.lastGlbLoadStatus = "starting";
       console.log("[avatar-load] glb load start", avatarModelUrl);
       const deps = await ensureAvatarThreeRuntimeDependencies();
