@@ -10,6 +10,8 @@
   <script>
     window.APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
+    window.__THREE_BRIDGE_FIX_ACTIVE = true;
+    console.log("[THREE_BRIDGE_FIX_ACTIVE]", window.__THREE_BRIDGE_FIX_ACTIVE);
   </script>
 
   <!-- Google Identity (optional Google sign-in) -->
@@ -23,9 +25,13 @@
   <script src="/form-engine.js"></script>
   <script>
     window.__avatarRuntimeStatus = {
+      threeBridgeFixActive: true,
       threeImportStarted: true,
       threeImportOk: false,
+      threeImportError: null,
       threeLoaded: false,
+      gltfLoaderImportOk: false,
+      gltfLoaderImportError: null,
       gltfLoaderOk: false,
       gltfLoaderLoaded: false,
       avatarThreeGlobalOk: false,
@@ -63,15 +69,20 @@
   <script type="module">
     const avatarRuntimeStatus = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
     try {
+      avatarRuntimeStatus.threeBridgeFixActive = window.__THREE_BRIDGE_FIX_ACTIVE === true;
+      avatarRuntimeStatus.threeImportStarted = true;
       const THREE_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js");
+      avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
+      avatarRuntimeStatus.threeImportError = null;
       const GLTF_LOADER_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js");
+      avatarRuntimeStatus.gltfLoaderImportOk = Boolean(GLTF_LOADER_MODULE?.GLTFLoader);
+      avatarRuntimeStatus.gltfLoaderImportError = null;
       const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
       const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
       runtimeBridge.THREE = THREE_MODULE;
       runtimeBridge.GLTFLoader = GLTFLoader;
       runtimeBridge.source = "direct-esm-jsdelivr";
       runtimeBridge.ready = true;
-      avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
       avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
       avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
       avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderOk;
@@ -87,7 +98,13 @@
       window.dispatchEvent(new Event("avatar-three-ready"));
     } catch (err) {
       avatarRuntimeStatus.readyEventFired = false;
-      avatarRuntimeStatus.failedReason = `three_import_failed:${String(err?.message || err || "unknown")}`;
+      const importError = String(err?.message || err || "unknown");
+      if (!avatarRuntimeStatus.threeImportOk) {
+        avatarRuntimeStatus.threeImportError = importError;
+      } else {
+        avatarRuntimeStatus.gltfLoaderImportError = importError;
+      }
+      avatarRuntimeStatus.failedReason = `three_import_failed:${importError}`;
       avatarRuntimeStatus.failureReason = avatarRuntimeStatus.failedReason;
       avatarRuntimeStatus.avatarThreeGlobalOk = false;
       console.warn("[avatar-3d-route] avatar-three-failed event fired", avatarRuntimeStatus.failedReason);
@@ -747,7 +764,7 @@
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
         <button id="runSystemDiagnosticBtn" class="secondary">🩺 Run System Diagnostic</button>
         <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
-        <span id="frontendDiagnosticsBuildMarker" class="chip" style="border-color:#ef4444;color:#ef4444;">🚨 Frontend diagnostics build active</span>
+        <span id="threeBridgeFixMarker" class="chip" style="border-color:#22c55e;color:#22c55e;">Three bridge fix active</span>
         <button id="avatarCreateBtn" class="secondary">🧍 Create Avatar</button>
         <img id="avatarThumb" class="avatar-thumb" alt="avatar thumbnail" />
 
