@@ -62,6 +62,7 @@
   function renderReport(report, payload) {
     const pilot = report?.pilotReadiness || {};
     const summary = report?.openAiSummary || {};
+    const avatarRuntime = payload?.runtime?.avatarRuntimeStatus || null;
     const warnings = Array.isArray(pilot?.warnings) ? pilot.warnings : [];
     const blockers = Array.isArray(pilot?.blockers) ? pilot.blockers : [];
     const missingEvidence = Array.isArray(pilot?.missingEvidence) ? pilot.missingEvidence : [];
@@ -82,7 +83,17 @@
       `OpenAI likely root cause: ${summary?.likelyRootCause || "n/a"}`,
       `Next action: ${fallbackNextAction}`,
       `Raw route check: pass=${report?.routeCheck?.passCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
-      `Raw runtime avatar status: ${payload?.runtime?.avatarRuntimeStatus ? "present" : "missing"}`
+      `Raw runtime avatar status: ${avatarRuntime ? "present" : "missing"}`,
+      `Avatar failureReason: ${avatarRuntime?.failureReason || avatarRuntime?.failedReason || "n/a"}`,
+      `Avatar glbLoadError: ${avatarRuntime?.glbLoadError || "n/a"}`,
+      `Avatar WebGL status: ok=${avatarRuntime?.webglOk ?? "n/a"} available=${avatarRuntime?.webglAvailable ?? "n/a"}`,
+      `Avatar renderer status: created=${avatarRuntime?.rendererCreated ?? "n/a"} scene=${avatarRuntime?.sceneCreated ?? "n/a"} camera=${avatarRuntime?.cameraCreated ?? "n/a"}`,
+      `Avatar canvas status: found=${avatarRuntime?.canvasFound ?? "n/a"} ok=${avatarRuntime?.canvasOk ?? "n/a"} created=${avatarRuntime?.canvasCreated ?? "n/a"}`,
+      `Avatar GLTFLoader status: ok=${avatarRuntime?.gltfLoaderOk ?? "n/a"} loaded=${avatarRuntime?.gltfLoaderLoaded ?? "n/a"}`,
+      `Avatar lastAvatarUrl: ${avatarRuntime?.lastAvatarUrl || "n/a"}`,
+      `Avatar fetch status: ${avatarRuntime?.lastAvatarFetchStatus ?? "n/a"}`,
+      `Avatar fetch bytes: ${avatarRuntime?.lastAvatarFetchBytes ?? "n/a"}`,
+      `Avatar fetch MIME: ${avatarRuntime?.lastAvatarFetchMime || "n/a"}`
     ].join("\n");
   }
 
