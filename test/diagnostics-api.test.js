@@ -11,6 +11,14 @@ const { createAuthTokenLib } = require("../src/lib/authToken");
 const { runRouteDiagnostics } = require("../src/lib/diagnosticRouteChecker");
 const { summarizeDiagnosticWithOpenAI, safeParseJson } = require("../src/lib/diagnosticSummarizer");
 
+function withMockFetch(t, impl) {
+  const prev = global.fetch;
+  global.fetch = impl;
+  t.after(() => {
+    global.fetch = prev;
+  });
+}
+
 async function withServer(t, fn) {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-diag-test-"));
   fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
@@ -87,9 +95,135 @@ test("OpenAI unavailable fallback and invalid JSON parser are safe", async () =>
   const noKey = await summarizeDiagnosticWithOpenAI({}, { apiKey: "" });
   assert.equal(noKey.status, "unavailable");
   assert.match(noKey.summary.summary, /OpenAI unavailable/i);
+  assert.equal(noKey.errorType, "api_key_missing");
 
   const parsed = safeParseJson("{not valid}");
   assert.equal(parsed.ok, false);
+});
+
+test("OpenAI summarizer handles 401 invalid key", async (t) => {
+  withMockFetch(t, async () => ({
+    ok: false,
+    status: 401,
+    text: async () => JSON.stringify({ error: { message: "Invalid API key" } })
+  }));
+  const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key" });
+  assert.equal(result.status, "error");
+  assert.equal(result.errorType, "auth_error");
+  assert.equal(result.httpStatus, 401);
+  assert.match(result.errorMessage, /Invalid API key/);
+});
+
+test("OpenAI summarizer handles 429 rate limit", async (t) => {
+  withMockFetch(t, async () => ({
+    ok: false,
+    status: 429,
+    text: async () => JSON.stringify({ error: { message: "Rate limit exceeded" } })
+  }));
+  const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key" });
+  assert.equal(result.status, "error");
+  assert.equal(result.errorType, "rate_limit");
+  assert.equal(result.httpStatus, 429);
+});
+
+test("OpenAI summarizer handles 400 model/request errors", async (t) => {
+  withMockFetch(t, async () => ({
+    ok: false,
+    status: 400,
+    text: async () => JSON.stringify({ error: { message: "Invalid model" } })
+  }));
+  const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key", model: "bad-model" });
+  assert.equal(result.status, "error");
+  assert.equal(result.errorType, "http_error");
+  assert.equal(result.httpStatus, 400);
+  assert.equal(result.model, "bad-model");
+});
+
+test("OpenAI summarizer handles invalid JSON top-level response", async (t) => {
+  withMockFetch(t, async () => ({
+    ok: true,
+    status: 200,
+    text: async () => "not-json"
+  }));
+  const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key" });
+  assert.equal(result.status, "error");
+  assert.equal(result.errorType, "json_parse_error");
+  assert.equal(result.httpStatus, 200);
+});
+
+test("OpenAI summarizer handles successful JSON response", async (t) => {
+  withMockFetch(t, async () => ({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({
+      output_text: JSON.stringify({ summary: "ok", likelyRootCause: "none", category: "PASS", confidence: 0.9, evidence: [], recommendedNextSteps: [], codexFixMessage: "none", severity: "low" })
+    })
+  }));
+  const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key" });
+  assert.equal(result.status, "ok");
+  assert.equal(result.summary.summary, "ok");
+  assert.equal(result.errorType, null);
+});
+
+test("OpenAI summarizer handles successful plain text response", async (t) => {
+  withMockFetch(t, async () => ({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({
+      output_text: "Avatar runtime is failing due to missing GLB."
+    })
+  }));
+  const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key" });
+  assert.equal(result.status, "ok");
+  assert.equal(result.errorType, "plain_text_response");
+  assert.match(result.summary.summary, /Avatar runtime is failing/);
+});
+
+test("diagnostic report endpoint includes OpenAI debug fields", async (t) => {
+  const nativeFetch = global.fetch;
+  global.fetch = async (url, init) => {
+    if (String(url).includes("api.openai.com/v1/responses")) {
+      return {
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ error: { message: "Invalid API key for diagnostics" } })
+      };
+    }
+    return nativeFetch(url, init);
+  };
+  t.after(() => {
+    global.fetch = nativeFetch;
+  });
+  await withServer(t, async ({ baseUrl, adminToken }) => {
+    const prevKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = "test-key";
+    t.after(() => {
+      if (prevKey == null) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = prevKey;
+    });
+    const body = {
+      build: { appBuildVersion: "diag-openai-fields", url: `${baseUrl}/` },
+      runtime: { avatarRuntimeStatus: { ready: false }, formEngineStatus: { loaded: true } },
+      errors: { recentConsoleErrors: ["boom"], recentConsoleWarnings: [] }
+    };
+    const postRes = await fetch(baseUrl + "/api/admin/diagnostics/report", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify(body)
+    });
+    assert.equal(postRes.status, 201);
+    const postJson = await postRes.json();
+    const report = postJson.data;
+    assert.equal(report.openAiSummaryStatus, "error");
+    assert.equal(report.openAiErrorType, "auth_error");
+    assert.equal(report.openAiHttpStatus, 401);
+    assert.ok(report.openAiModel);
+    assert.match(report.openAiEndpoint, /\/v1\/responses$/);
+    assert.match(report.openAiRawResponsePreview, /Invalid API key/);
+    assert.equal(report.openAiApiKeyMissing, false);
+    assert.ok(report.routeCheck);
+    assert.ok(report.pilotReadiness);
+  });
 });
 
 test("route checker classifies protected routes without failing health", async (t) => {

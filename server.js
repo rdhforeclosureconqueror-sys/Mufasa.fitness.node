@@ -572,7 +572,13 @@ function createApp(options = {}) {
       payload,
       openAiSummaryStatus: summaryResult.status,
       openAiSummary: summaryResult.summary,
-      openAiApiKeyMissing: !process.env.OPENAI_API_KEY,
+      openAiErrorType: summaryResult.errorType || null,
+      openAiErrorMessage: summaryResult.errorMessage || null,
+      openAiHttpStatus: Number.isInteger(summaryResult.httpStatus) ? summaryResult.httpStatus : null,
+      openAiModel: summaryResult.model || null,
+      openAiEndpoint: summaryResult.endpoint || null,
+      openAiRawResponsePreview: summaryResult.rawResponsePreview || null,
+      openAiApiKeyMissing: !summaryResult.apiKeyPresent,
       routeCheck,
       pilotReadiness
     });

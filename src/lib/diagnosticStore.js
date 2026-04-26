@@ -41,6 +41,12 @@ function createDiagnosticStore(options = {}) {
       payload: input.payload || {},
       openAiSummaryStatus: input.openAiSummaryStatus || "pending",
       openAiSummary: input.openAiSummary || null,
+      openAiErrorType: input.openAiErrorType || null,
+      openAiErrorMessage: input.openAiErrorMessage || null,
+      openAiHttpStatus: Number.isInteger(input.openAiHttpStatus) ? input.openAiHttpStatus : null,
+      openAiModel: input.openAiModel || null,
+      openAiEndpoint: input.openAiEndpoint || null,
+      openAiRawResponsePreview: input.openAiRawResponsePreview || null,
       openAiApiKeyMissing: Boolean(input.openAiApiKeyMissing),
       routeCheck: input.routeCheck || null,
       pilotReadiness: input.pilotReadiness || null
