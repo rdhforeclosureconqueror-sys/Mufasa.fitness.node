@@ -39,6 +39,10 @@
       threeImportError: null,
       threeImportTimeout: false,
       threeImportPathUsed: null,
+      threeImportProbeOk: null,
+      threeImportProbeError: null,
+      threeImportProbeDurationMs: null,
+      threeImportTimeoutAt: null,
       threeLoaded: false,
       gltfLoaderImportStarted: false,
       gltfLoaderImportPending: false,
@@ -46,6 +50,10 @@
       gltfLoaderImportError: null,
       gltfLoaderImportTimeout: false,
       gltfLoaderImportPathUsed: null,
+      gltfLoaderImportProbeOk: null,
+      gltfLoaderImportProbeError: null,
+      gltfLoaderImportProbeDurationMs: null,
+      gltfLoaderImportTimeoutAt: null,
       gltfLoaderOk: false,
       gltfLoaderLoaded: false,
       readyEventFired: false,
@@ -54,6 +62,9 @@
       cdnImportTimedOut: false,
       cdnImportFailed: false,
       fallbackImportSucceeded: false,
+      threeModuleMime: null,
+      gltfLoaderModuleMime: null,
+      importMapDetected: null,
       webglOk: null,
       webglAvailable: null,
       canvasOk: null,
@@ -125,7 +136,18 @@
     const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
     avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(runtimeBridge);
     avatarRuntimeStatus.threeBridgeFixActive = window.__THREE_BRIDGE_FIX_ACTIVE === true;
+    avatarRuntimeStatus.importMapDetected = Boolean(document.querySelector('script[type="importmap"]'));
     console.log("[avatar-3d-route] Three ESM import started");
+
+    const probeModuleMime = async (url) => {
+      try {
+        const res = await fetch(url, { method: "HEAD", cache: "no-store" });
+        const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+        return contentType || null;
+      } catch {
+        return null;
+      }
+    };
 
     const importWithTimeout = async (url, timeoutMs) => {
       let timerId = null;
@@ -139,14 +161,96 @@
       }
     };
 
+    window.__testThreeImport = async function testThreeImport() {
+      const startedAt = performance.now();
+      try {
+        const module = await import('/vendor/three/build/three.module.js');
+        const durationMs = Math.round(performance.now() - startedAt);
+        const result = {
+          success: true,
+          exportedKeysCount: Object.keys(module || {}).length,
+          hasScene: Boolean(module?.Scene),
+          hasWebGLRenderer: Boolean(module?.WebGLRenderer),
+          errorMessage: null,
+          durationMs
+        };
+        avatarRuntimeStatus.threeImportProbeOk = true;
+        avatarRuntimeStatus.threeImportProbeError = null;
+        avatarRuntimeStatus.threeImportProbeDurationMs = durationMs;
+        console.log('[avatar-3d-probe] three import probe', result);
+        return result;
+      } catch (error) {
+        const durationMs = Math.round(performance.now() - startedAt);
+        const errorMessage = String(error?.message || error || 'unknown');
+        const result = {
+          success: false,
+          exportedKeysCount: 0,
+          hasScene: false,
+          hasWebGLRenderer: false,
+          errorMessage,
+          durationMs
+        };
+        avatarRuntimeStatus.threeImportProbeOk = false;
+        avatarRuntimeStatus.threeImportProbeError = errorMessage;
+        avatarRuntimeStatus.threeImportProbeDurationMs = durationMs;
+        console.warn('[avatar-3d-probe] three import probe failed', result);
+        return result;
+      }
+    };
+
+    window.__testGLTFLoaderImport = async function testGLTFLoaderImport() {
+      const threeProbe = await window.__testThreeImport();
+      const startedAt = performance.now();
+      try {
+        const module = await import('/vendor/three/examples/jsm/loaders/GLTFLoader.js');
+        const durationMs = Math.round(performance.now() - startedAt);
+        const result = {
+          success: true,
+          hasGLTFLoader: Boolean(module?.GLTFLoader),
+          errorMessage: null,
+          durationMs,
+          threeProbeSuccess: Boolean(threeProbe?.success)
+        };
+        avatarRuntimeStatus.gltfLoaderImportProbeOk = result.hasGLTFLoader;
+        avatarRuntimeStatus.gltfLoaderImportProbeError = result.hasGLTFLoader ? null : 'missing_GLTFLoader_export';
+        avatarRuntimeStatus.gltfLoaderImportProbeDurationMs = durationMs;
+        console.log('[avatar-3d-probe] GLTFLoader import probe', result);
+        return result;
+      } catch (error) {
+        const durationMs = Math.round(performance.now() - startedAt);
+        const errorMessage = String(error?.message || error || 'unknown');
+        const result = {
+          success: false,
+          hasGLTFLoader: false,
+          errorMessage,
+          durationMs,
+          threeProbeSuccess: Boolean(threeProbe?.success)
+        };
+        avatarRuntimeStatus.gltfLoaderImportProbeOk = false;
+        avatarRuntimeStatus.gltfLoaderImportProbeError = errorMessage;
+        avatarRuntimeStatus.gltfLoaderImportProbeDurationMs = durationMs;
+        console.warn('[avatar-3d-probe] GLTFLoader import probe failed', result);
+        return result;
+      }
+    };
+
     let lastFailureReason = "three_import_failed";
     for (const source of importSources) {
       let threeModule = null;
       let gltfModule = null;
+      let threePendingTimer = null;
       try {
         avatarRuntimeStatus.threeImportStarted = true;
         avatarRuntimeStatus.threeImportPending = true;
         avatarRuntimeStatus.threeImportPathUsed = source.threeUrl;
+        avatarRuntimeStatus.threeModuleMime = await probeModuleMime(source.threeUrl);
+        threePendingTimer = setTimeout(() => {
+          if (avatarRuntimeStatus.threeImportPending) {
+            avatarRuntimeStatus.threeImportTimeout = true;
+            avatarRuntimeStatus.threeImportTimeoutAt = Date.now();
+            avatarRuntimeStatus.threeImportError = `three_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
+          }
+        }, IMPORT_TIMEOUT_MS);
         threeModule = await importWithTimeout(source.threeUrl, IMPORT_TIMEOUT_MS);
         avatarRuntimeStatus.threeImportOk = Boolean(threeModule);
         avatarRuntimeStatus.threeImportError = null;
@@ -163,13 +267,23 @@
           : (source.id === "local-vendor" ? "local_three_import_failed" : "three_import_failed");
         continue;
       } finally {
+        if (threePendingTimer) clearTimeout(threePendingTimer);
         avatarRuntimeStatus.threeImportPending = false;
       }
 
+      let gltfPendingTimer = null;
       try {
         avatarRuntimeStatus.gltfLoaderImportStarted = true;
         avatarRuntimeStatus.gltfLoaderImportPending = true;
         avatarRuntimeStatus.gltfLoaderImportPathUsed = source.gltfLoaderUrl;
+        avatarRuntimeStatus.gltfLoaderModuleMime = await probeModuleMime(source.gltfLoaderUrl);
+        gltfPendingTimer = setTimeout(() => {
+          if (avatarRuntimeStatus.gltfLoaderImportPending) {
+            avatarRuntimeStatus.gltfLoaderImportTimeout = true;
+            avatarRuntimeStatus.gltfLoaderImportTimeoutAt = Date.now();
+            avatarRuntimeStatus.gltfLoaderImportError = `gltfloader_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
+          }
+        }, IMPORT_TIMEOUT_MS);
         gltfModule = await importWithTimeout(source.gltfLoaderUrl, IMPORT_TIMEOUT_MS);
         avatarRuntimeStatus.gltfLoaderImportOk = Boolean(gltfModule?.GLTFLoader);
         avatarRuntimeStatus.gltfLoaderImportError = null;
@@ -186,6 +300,7 @@
           : (source.id === "local-vendor" ? "local_gltfloader_import_failed" : "gltfloader_import_failed");
         continue;
       } finally {
+        if (gltfPendingTimer) clearTimeout(gltfPendingTimer);
         avatarRuntimeStatus.gltfLoaderImportPending = false;
       }
 
