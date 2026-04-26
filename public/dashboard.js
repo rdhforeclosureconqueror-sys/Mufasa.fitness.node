@@ -14,6 +14,8 @@
   const activeBox = document.getElementById("activeBox");
   const activeMini = document.getElementById("activeMini");
   const resetBtn = document.getElementById("resetBtn");
+  const runDiagnosticBtn = document.getElementById("runDiagnosticBtn");
+  const diagnosticStatus = document.getElementById("diagnosticStatus");
 
   const nodeBaseUrl = localStorage.getItem("maatNodeBaseUrl") || "";
   const client = window.MufasaBackendRead?.createClient({
@@ -197,6 +199,41 @@
     write(KEY_ACTIVE, null);
     render();
   });
+
+  async function runDiagnostic() {
+    if (!diagnosticStatus) return;
+    diagnosticStatus.textContent = "Running diagnostics…";
+    const collector = window.__collectDiagnosticReport;
+    const payload = typeof collector === "function" ? collector() : { collectorMissing: true };
+
+    try {
+      const res = await fetch("/api/admin/diagnostics/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...payload, source: "manual" })
+      });
+      const json = await res.json();
+      const report = json?.data || null;
+      const summary = report?.openAiSummary || {};
+      diagnosticStatus.textContent = [
+        `Build: ${report?.buildVersion || "unknown"}`,
+        `Avatar runtime: ${payload?.runtime?.avatarRuntimeStatus ? "present" : "missing"}`,
+        `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "missing"}`,
+        `Camera status: ${payload?.runtime?.cameraStatus || "unknown"}`,
+        `Route check: pass=${report?.routeCheck?.passCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
+        `OpenAI status: ${report?.openAiSummaryStatus || "unknown"}`,
+        `Likely root cause: ${summary?.likelyRootCause || "n/a"}`,
+        `Confidence: ${summary?.confidence ?? "n/a"}`,
+        `Suggested Codex fix: ${summary?.codexFixMessage || "n/a"}`,
+        `Summary: ${summary?.summary || "No OpenAI summary available."}`
+      ].join("\\n");
+    } catch (error) {
+      diagnosticStatus.textContent = `Diagnostic request failed. Raw payload saved locally.\\n${String(error?.message || error)}`;
+      window.__lastDiagnosticReport = payload;
+    }
+  }
+
+  runDiagnosticBtn?.addEventListener("click", runDiagnostic);
 
   window.addEventListener("load", render);
 })();
