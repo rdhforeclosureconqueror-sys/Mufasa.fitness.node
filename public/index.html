@@ -66,18 +66,15 @@
       const THREE_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js");
       const GLTF_LOADER_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js");
       const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
+      const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
+      runtimeBridge.THREE = THREE_MODULE;
+      runtimeBridge.GLTFLoader = GLTFLoader;
+      runtimeBridge.source = "direct-esm-jsdelivr";
+      runtimeBridge.ready = true;
       avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
       avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
       avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
       avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderOk;
-      avatarRuntimeStatus.avatarThreeGlobalOk = false;
-      window.__AVATAR_THREE = {
-        THREE: THREE_MODULE,
-        GLTFLoader,
-        source: "direct-esm-jsdelivr",
-        ready: true
-      };
-
       avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
       console.log("[avatar-3d-route] Three import success");
       console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
@@ -1480,7 +1477,12 @@
       status.canvasFound = Boolean(avatar3dCanvasEl);
       status.canvasCreated = Boolean(avatar3dCanvasEl);
       if (!threeRef || !avatar3dCanvasEl) {
-        const reason = !threeRef ? "avatar_three_runtime_unavailable_missing_three" : "avatar_canvas_missing";
+        const importFailureReason = typeof status.failedReason === "string" && status.failedReason.startsWith("three_import_failed:")
+          ? status.failedReason
+          : null;
+        const reason = !threeRef
+          ? (importFailureReason || "avatar_three_runtime_unavailable_missing_three")
+          : "avatar_canvas_missing";
         setAvatarAssetStatus("Avatar runtime missing required dependencies.", true);
         setAvatarRuntimeFailure(reason, { hasThree: Boolean(threeRef), hasCanvas: Boolean(avatar3dCanvasEl) });
         return null;
