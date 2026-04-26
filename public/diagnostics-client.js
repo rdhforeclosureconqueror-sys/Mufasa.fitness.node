@@ -85,6 +85,8 @@
         lastBodyVisibility: globalScope.__lastBodyVisibility || null,
         lastFormResultSummary: summarizeFormResult(globalScope.__lastFormResult),
         cameraStatus: globalScope.__cameraStatus || null,
+        cameraConnectSuccess: globalScope.__cameraConnectSuccess ?? null,
+        cameraLastConnectedAt: globalScope.__cameraLastConnectedAt || null,
         selectedExercise: globalScope.__selectedExercise || null,
         workoutStarted: derivedEvidence.workoutStarted ?? null,
         workoutCompleted: derivedEvidence.workoutCompleted ?? null,
@@ -153,6 +155,8 @@
           lastBodyVisibility: null,
           lastFormResultSummary: null,
           cameraStatus: null,
+          cameraConnectSuccess: null,
+          cameraLastConnectedAt: null,
           selectedExercise: null,
           movementFamily: null,
           renderMode: null
