@@ -25,19 +25,27 @@
     window.__avatarRuntimeStatus = {
       threeImportStarted: true,
       threeImportOk: false,
+      threeLoaded: false,
       gltfLoaderOk: false,
+      gltfLoaderLoaded: false,
       avatarThreeGlobalOk: false,
       readyEventFired: false,
       failedReason: null,
+      failureReason: null,
       webglOk: null,
+      webglAvailable: null,
       canvasOk: null,
       canvasFound: null,
+      canvasCreated: false,
       rendererCreated: false,
       sceneCreated: false,
       cameraCreated: false,
       renderMode: "unknown",
       lastAvatarUrl: null,
       glbLoadAttempted: false,
+      glbLoadStarted: false,
+      glbLoadSuccess: false,
+      glbLoadError: null,
       lastGlbLoadStatus: "idle"
     };
     window.__retryAvatarRuntime = function retryAvatarRuntimeBootstrapStub() {
@@ -59,7 +67,9 @@
       const GLTF_LOADER_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js");
       const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
       avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
+      avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
       avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
+      avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderOk;
       avatarRuntimeStatus.avatarThreeGlobalOk = false;
       window.__AVATAR_THREE = {
         THREE: THREE_MODULE,
@@ -81,6 +91,7 @@
     } catch (err) {
       avatarRuntimeStatus.readyEventFired = false;
       avatarRuntimeStatus.failedReason = `three_import_failed:${String(err?.message || err || "unknown")}`;
+      avatarRuntimeStatus.failureReason = avatarRuntimeStatus.failedReason;
       avatarRuntimeStatus.avatarThreeGlobalOk = false;
       console.warn("[avatar-3d-route] avatar-three-failed event fired", avatarRuntimeStatus.failedReason);
       window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: avatarRuntimeStatus.failedReason } }));
@@ -1040,15 +1051,29 @@
     function getAvatarRuntimeStatusRef() {
       const current = window.__avatarRuntimeStatus || {};
       const normalized = {
+        ...current,
         threeImportStarted: Boolean(current.threeImportStarted),
         threeImportOk: Boolean(current.threeImportOk),
+        threeLoaded: Boolean(current.threeLoaded ?? current.threeImportOk),
         gltfLoaderOk: Boolean(current.gltfLoaderOk),
+        gltfLoaderLoaded: Boolean(current.gltfLoaderLoaded ?? current.gltfLoaderOk),
+        avatarThreeGlobalOk: Boolean(current.avatarThreeGlobalOk),
         readyEventFired: Boolean(current.readyEventFired),
         failedReason: current.failedReason || null,
+        failureReason: current.failureReason || current.failedReason || null,
         webglOk: current.webglOk ?? null,
+        webglAvailable: current.webglAvailable ?? current.webglOk ?? null,
         canvasOk: current.canvasOk ?? null,
+        canvasFound: current.canvasFound ?? null,
+        canvasCreated: Boolean(current.canvasCreated),
+        rendererCreated: Boolean(current.rendererCreated),
+        sceneCreated: Boolean(current.sceneCreated),
+        cameraCreated: Boolean(current.cameraCreated),
         renderMode: current.renderMode || "unknown",
         lastAvatarUrl: current.lastAvatarUrl || null,
+        glbLoadStarted: Boolean(current.glbLoadStarted),
+        glbLoadSuccess: Boolean(current.glbLoadSuccess),
+        glbLoadError: current.glbLoadError || null,
         lastGlbLoadStatus: current.lastGlbLoadStatus || "idle"
       };
       window.__avatarRuntimeStatus = normalized;
@@ -1058,9 +1083,14 @@
     function setAvatarRuntimeFailure(reason, payload = {}) {
       const status = getAvatarRuntimeStatusRef();
       status.failedReason = reason;
-      console.warn("[avatar-3d-route] runtime failure", reason, payload);
+      status.failureReason = reason;
+      console.warn("[AVATAR_RUNTIME_FAILED]", reason, {
+        payload,
+        status: { ...status }
+      });
       emitPilotEvent("avatar_runtime_failed", {
         reason,
+        failureReason: reason,
         renderMode: getRenderMode?.() || status.renderMode || "unknown",
         ...payload
       });
@@ -1319,9 +1349,12 @@
       const status = getAvatarRuntimeStatusRef();
       status.readyEventFired = true;
       status.threeImportOk = Boolean(window.__AVATAR_THREE?.THREE);
+      status.threeLoaded = status.threeImportOk;
       status.gltfLoaderOk = Boolean(window.__AVATAR_THREE?.GLTFLoader);
+      status.gltfLoaderLoaded = status.gltfLoaderOk;
       status.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
       status.failedReason = null;
+      status.failureReason = null;
       console.log("[avatar-3d-route] avatar-three-ready event fired");
     });
 
@@ -1329,8 +1362,9 @@
       const status = getAvatarRuntimeStatusRef();
       status.readyEventFired = false;
       status.failedReason = event?.detail?.reason || "avatar_three_runtime_failed_event";
+      status.failureReason = status.failedReason;
       console.warn("[avatar-3d-route] avatar-three-failed event fired", status.failedReason);
-      emitPilotEvent("avatar_runtime_failed", { reason: status.failedReason, source: "event" });
+      emitPilotEvent("avatar_runtime_failed", { reason: status.failedReason, failureReason: status.failedReason, source: "event" });
     });
 
     let avatarWebglAvailabilityLogged = false;
@@ -1341,6 +1375,7 @@
       const context = testCanvas.getContext("webgl2") || testCanvas.getContext("webgl");
       const webglOk = Boolean(context);
       getAvatarRuntimeStatusRef().webglOk = webglOk;
+      getAvatarRuntimeStatusRef().webglAvailable = webglOk;
       console.log(`[avatar-3d-route] webgl available: ${webglOk ? "yes" : "no"}`);
     }
 
@@ -1387,7 +1422,9 @@
         const loaderCtor = getGltfLoaderCtor(threeRef);
         const status = getAvatarRuntimeStatusRef();
         status.threeImportOk = Boolean(threeRef);
+        status.threeLoaded = status.threeImportOk;
         status.gltfLoaderOk = Boolean(loaderCtor);
+        status.gltfLoaderLoaded = status.gltfLoaderOk;
         console.log(`[avatar-3d] three loaded: ${threeRef ? "yes" : "no"}`);
         console.log("[avatar-3d] GLTFLoader available", !!loaderCtor);
         if (!threeRef || !loaderCtor) {
@@ -1441,6 +1478,7 @@
       const status = getAvatarRuntimeStatusRef();
       const threeRef = getThreeGlobal();
       status.canvasFound = Boolean(avatar3dCanvasEl);
+      status.canvasCreated = Boolean(avatar3dCanvasEl);
       if (!threeRef || !avatar3dCanvasEl) {
         const reason = !threeRef ? "avatar_three_runtime_unavailable_missing_three" : "avatar_canvas_missing";
         setAvatarAssetStatus("Avatar runtime missing required dependencies.", true);
@@ -1460,10 +1498,11 @@
       }
       const avatarWebglContext = requestCanvasContext(avatar3dCanvasEl, "webgl");
       status.canvasOk = Boolean(avatarWebglContext);
+      status.webglAvailable = Boolean(avatarWebglContext);
       console.log(`[avatar-3d] canvas context creation ${avatarWebglContext ? "success" : "failure"}`);
       if (!avatarWebglContext) {
         setAvatarAssetStatus("Avatar canvas WebGL context unavailable.", true);
-        setAvatarRuntimeFailure("avatar_canvas_webgl_context_unavailable");
+        setAvatarRuntimeFailure("WEBGL_UNAVAILABLE");
         return null;
       }
       if (avatar3dCanvasEl.dataset.avatarRendererOwned === "true") {
@@ -1891,6 +1930,10 @@
         if (!response.ok) throw new Error(`avatar_http_${response.status}`);
         status.assetFound = true;
         const buffer = await response.arrayBuffer();
+        runtimeStatusRef.lastAvatarFetchStatus = response.status;
+        runtimeStatusRef.lastAvatarFetchBytes = Number(buffer?.byteLength || 0);
+        runtimeStatusRef.lastAvatarFetchMime = response.headers?.get("content-type") || null;
+        if (!buffer?.byteLength) throw new Error("avatar_http_empty_body");
         const signature = String.fromCharCode(...new Uint8Array(buffer.slice(0, 4)));
         const isGlb = signature === "glTF";
         status.runtimeLoaded = isGlb || /\.gltf(\?|$)/i.test(avatarModelUrl) || /\.vrm(\?|$)/i.test(avatarModelUrl);
@@ -1915,6 +1958,9 @@
       const status = getAvatarRuntimeStatusRef();
       status.lastAvatarUrl = avatarModelUrl || null;
       status.glbLoadAttempted = true;
+      status.glbLoadStarted = true;
+      status.glbLoadSuccess = false;
+      status.glbLoadError = null;
       status.lastGlbLoadStatus = "starting";
       console.log("[avatar-load] glb load start", avatarModelUrl);
       const deps = await ensureAvatarThreeRuntimeDependencies();
@@ -1940,21 +1986,37 @@
       console.log("[avatar-load] started");
       const loader = new LoaderCtor();
       let gltf = null;
+      const glbLoadStartedAt = Date.now();
       try {
         gltf = await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => reject(new Error("avatar_glb_load_timeout_20000ms")), 20000);
           loader.load(
             avatarModelUrl,
-            (loaded) => resolve(loaded),
+            (loaded) => {
+              clearTimeout(timeoutId);
+              resolve(loaded);
+            },
             undefined,
-            (err) => reject(err || new Error("avatar_gltf_load_failed"))
+            (err) => {
+              clearTimeout(timeoutId);
+              reject(err || new Error("avatar_gltf_load_failed"));
+            }
           );
         });
         status.lastGlbLoadStatus = "success";
         status.failedReason = null;
+        status.failureReason = null;
+        status.glbLoadSuccess = true;
         console.log("[avatar-load] glb load success");
       } catch (err) {
-        status.lastGlbLoadStatus = `failed:${String(err?.message || err || "unknown")}`;
-        setAvatarRuntimeFailure("avatar_glb_load_failed", { error: String(err?.message || err || "unknown"), avatarModelUrl });
+        const message = String(err?.message || err || "unknown");
+        status.lastGlbLoadStatus = `failed:${message}`;
+        status.glbLoadError = message;
+        setAvatarRuntimeFailure("avatar_glb_load_failed", {
+          error: message,
+          avatarModelUrl,
+          elapsedMs: Date.now() - glbLoadStartedAt
+        });
         console.error("[avatar-load] glb load failure:", err);
         throw err;
       }
