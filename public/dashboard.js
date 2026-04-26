@@ -17,12 +17,24 @@
   const runDiagnosticBtn = document.getElementById("runDiagnosticBtn");
   const diagnosticStatus = document.getElementById("diagnosticStatus");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
+  const deploymentStatus = document.getElementById("deploymentStatus");
+  const frontendUrlEl = document.getElementById("frontendUrl");
+  const backendUrlEl = document.getElementById("backendUrl");
 
-  const nodeBaseUrl = localStorage.getItem("maatNodeBaseUrl") || "";
+  const FALLBACK_NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+  const nodeBaseUrl = (localStorage.getItem("maatNodeBaseUrl")
+    || window.MAAT_NODE_BASE_URL
+    || FALLBACK_NODE_BASE_URL)
+    .replace(/\/$/, "");
   const client = window.MufasaBackendRead?.createClient({
     baseUrl: nodeBaseUrl,
     storagePrefix: "maat"
   });
+  const dashboardApiBaseUrl = nodeBaseUrl;
+
+  function backendUrl(pathname) {
+    return `${dashboardApiBaseUrl}${pathname}`;
+  }
 
   function read(key, fallback) {
     return client ? client.readJSON(key, fallback) : fallback;
@@ -195,6 +207,59 @@
     }
   }
 
+  async function loadFrontendBuildVersion() {
+    if (window.FRONTEND_BUILD_VERSION) return String(window.FRONTEND_BUILD_VERSION);
+    try {
+      const res = await fetch("/__frontend-version.json", { cache: "no-store" });
+      if (!res.ok) return "unknown";
+      const payload = await res.json();
+      return payload?.build || "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
+
+  async function updateDeploymentStatus() {
+    if (frontendUrlEl) frontendUrlEl.textContent = window.location.origin;
+    if (backendUrlEl) backendUrlEl.textContent = dashboardApiBaseUrl || "(relative origin)";
+    if (!deploymentStatus) return;
+
+    const frontendBuild = await loadFrontendBuildVersion();
+    let backendBuild = "unreachable";
+    let backendDiagnosticsReachable = "no";
+
+    try {
+      const versionRes = await fetch(backendUrl("/__version"), { cache: "no-store" });
+      if (versionRes.ok) {
+        const versionJson = await versionRes.json();
+        backendBuild = versionJson?.build || "unknown";
+      } else {
+        backendBuild = `http_${versionRes.status}`;
+      }
+    } catch {
+      backendBuild = "network_error";
+    }
+
+    try {
+      const smokeRes = await fetch(backendUrl("/__diagnostic-smoke"), { cache: "no-store" });
+      if (smokeRes.ok) {
+        const smokeJson = await smokeRes.json();
+        backendDiagnosticsReachable = smokeJson?.diagnostics === true ? "yes" : "no";
+      } else {
+        backendDiagnosticsReachable = `http_${smokeRes.status}`;
+      }
+    } catch {
+      backendDiagnosticsReachable = "network_error";
+    }
+
+    deploymentStatus.textContent = [
+      `Frontend build active: ${frontendBuild}`,
+      `Backend build active: ${backendBuild}`,
+      `Backend diagnostics reachable: ${backendDiagnosticsReachable}`,
+      `Dashboard API base URL: ${dashboardApiBaseUrl || "(relative origin)"}`
+    ].join("\n");
+  }
+
   resetBtn?.addEventListener("click", () => {
     write(KEY_HISTORY, []);
     write(KEY_ACTIVE, null);
@@ -208,9 +273,13 @@
     const payload = typeof collector === "function" ? collector() : { collectorMissing: true };
 
     try {
-      const res = await fetch("/api/admin/diagnostics/report", {
+      const authToken = client?.getAuthToken?.() || null;
+      const res = await fetch(backendUrl("/api/admin/diagnostics/report"), {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({ ...payload, source: "manual" })
       });
       const json = await res.json();
@@ -249,5 +318,8 @@
 
   runDiagnosticBtn?.addEventListener("click", runDiagnostic);
 
-  window.addEventListener("load", render);
+  window.addEventListener("load", async () => {
+    await updateDeploymentStatus();
+    await render();
+  });
 })();

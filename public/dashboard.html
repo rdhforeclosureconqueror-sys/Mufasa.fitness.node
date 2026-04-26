@@ -177,6 +177,12 @@
 
       <div class="card" style="grid-column:1/-1;">
         <h2>System Diagnostics (Admin)</h2>
+        <div class="diagPre muted" style="margin-bottom:8px;">
+          Frontend URL: <span id="frontendUrl">unknown</span>
+          <br />
+          Backend URL: <span id="backendUrl">unknown</span>
+        </div>
+        <div id="deploymentStatus" class="diagPre muted" style="margin-bottom:10px;">Checking frontend/backend deployment status…</div>
         <div class="btn-row" style="display:flex; gap:10px; margin-bottom:8px;">
           <button id="runDiagnosticBtn" class="btn">Run Diagnostic</button>
         </div>
