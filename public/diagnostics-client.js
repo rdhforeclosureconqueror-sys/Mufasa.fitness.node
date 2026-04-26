@@ -50,10 +50,27 @@
     return clone;
   }
 
+  function derivePilotEvidenceFromLocalEvents() {
+    try {
+      const raw = globalScope.localStorage?.getItem("maatPilotPerfV1");
+      const entries = JSON.parse(raw || "[]");
+      if (!Array.isArray(entries)) return {};
+      const hasEvent = (name) => entries.some((entry) => entry?.event === name);
+      return {
+        workoutStarted: hasEvent("workout_started"),
+        workoutCompleted: hasEvent("workout_completed"),
+        sessionSaveSuccess: hasEvent("session_save_success")
+      };
+    } catch {
+      return {};
+    }
+  }
+
   function collectDiagnosticReport() {
     const avatarRuntime = globalScope.__avatarRuntimeStatus || null;
     const formEngineStatus = globalScope.__formEngineStatus || null;
     const userAgent = globalScope.navigator?.userAgent || null;
+    const derivedEvidence = derivePilotEvidenceFromLocalEvents();
     const payload = {
       build: {
         appBuildVersion: globalScope.APP_BUILD_VERSION || null,
@@ -69,6 +86,9 @@
         lastFormResultSummary: summarizeFormResult(globalScope.__lastFormResult),
         cameraStatus: globalScope.__cameraStatus || null,
         selectedExercise: globalScope.__selectedExercise || null,
+        workoutStarted: derivedEvidence.workoutStarted ?? null,
+        workoutCompleted: derivedEvidence.workoutCompleted ?? null,
+        sessionSaveSuccess: derivedEvidence.sessionSaveSuccess ?? null,
         movementFamily: globalScope.__movementFamily || null,
         renderMode: avatarRuntime?.renderMode || globalScope.__renderMode || null
       },

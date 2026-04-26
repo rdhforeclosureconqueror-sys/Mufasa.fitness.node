@@ -299,10 +299,12 @@
         `Summary: ${summary?.summary || "No OpenAI summary available."}`
       ].join("\\n");
       if (pilotReadinessStatus) {
+        const missingEvidence = (pilot?.missingEvidence || []).map((item) => item?.label || item?.field).filter(Boolean);
         pilotReadinessStatus.textContent = [
           `Pilot Status: ${pilot?.pilotStatus || "BLOCKED_UNKNOWN"}`,
           `Top blockers: ${(pilot?.blockers || []).slice(0, 3).join(" | ") || "none"}`,
           `Top warnings: ${(pilot?.warnings || []).slice(0, 3).join(" | ") || "none"}`,
+          `Missing evidence: ${missingEvidence.slice(0, 5).join(" | ") || "none"}`,
           `Recommended next fix: ${(pilot?.recommendedFixes || [pilot?.codexFixMessage || "n/a"])[0] || "n/a"}`,
           `Confidence: ${pilot?.confidence ?? "n/a"}`
         ].join("\\n");

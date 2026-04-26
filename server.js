@@ -572,6 +572,7 @@ function createApp(options = {}) {
       payload,
       openAiSummaryStatus: summaryResult.status,
       openAiSummary: summaryResult.summary,
+      openAiApiKeyMissing: !process.env.OPENAI_API_KEY,
       routeCheck,
       pilotReadiness
     });

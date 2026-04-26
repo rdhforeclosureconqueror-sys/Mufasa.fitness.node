@@ -41,7 +41,9 @@ function createDiagnosticStore(options = {}) {
       payload: input.payload || {},
       openAiSummaryStatus: input.openAiSummaryStatus || "pending",
       openAiSummary: input.openAiSummary || null,
-      routeCheck: input.routeCheck || null
+      openAiApiKeyMissing: Boolean(input.openAiApiKeyMissing),
+      routeCheck: input.routeCheck || null,
+      pilotReadiness: input.pilotReadiness || null
     };
   }
 
