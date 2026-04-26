@@ -397,6 +397,14 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({ build: APP_BUILD_VERSION });
   });
+  app.get("/__diagnostic-smoke", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.json({
+      ok: true,
+      build: APP_BUILD_VERSION,
+      diagnostics: true
+    });
+  });
   app.use(express.static(PUBLIC_DIR));
 
   // ---- Helpers ----
