@@ -8,9 +8,15 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <script>
-    window.APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+    window.APP_BUILD_VERSION = "2026-04-26T00:00:00Z-avatar-runtime-bootstrap2";
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     window.__THREE_BRIDGE_FIX_ACTIVE = true;
+    window.__AVATAR_THREE = window.__AVATAR_THREE || {
+      THREE: null,
+      GLTFLoader: null,
+      source: null,
+      ready: false
+    };
     console.log("[THREE_BRIDGE_FIX_ACTIVE]", window.__THREE_BRIDGE_FIX_ACTIVE);
   </script>
 
@@ -26,18 +32,28 @@
   <script>
     window.__avatarRuntimeStatus = {
       threeBridgeFixActive: true,
-      threeImportStarted: true,
+      avatarThreeGlobalOk: Boolean(window.__AVATAR_THREE),
+      threeImportStarted: false,
+      threeImportPending: false,
       threeImportOk: false,
       threeImportError: null,
+      threeImportTimeout: false,
+      threeImportPathUsed: null,
       threeLoaded: false,
+      gltfLoaderImportStarted: false,
+      gltfLoaderImportPending: false,
       gltfLoaderImportOk: false,
       gltfLoaderImportError: null,
+      gltfLoaderImportTimeout: false,
+      gltfLoaderImportPathUsed: null,
       gltfLoaderOk: false,
       gltfLoaderLoaded: false,
-      avatarThreeGlobalOk: false,
       readyEventFired: false,
       failedReason: null,
       failureReason: null,
+      cdnImportTimedOut: false,
+      cdnImportFailed: false,
+      fallbackImportSucceeded: false,
       webglOk: null,
       webglAvailable: null,
       canvasOk: null,
@@ -64,51 +80,125 @@
         reason: "avatar_runtime_bootstrap_not_ready"
       });
     };
-    console.log("[avatar-3d-route] Three ESM import started");
+    console.log("[avatar-3d-route] __AVATAR_THREE pre-import exists:", window.__AVATAR_THREE ? "yes" : "no");
   </script>
   <script type="module">
     const avatarRuntimeStatus = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
-    try {
-      avatarRuntimeStatus.threeBridgeFixActive = window.__THREE_BRIDGE_FIX_ACTIVE === true;
-      avatarRuntimeStatus.threeImportStarted = true;
-      const THREE_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js");
-      avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
-      avatarRuntimeStatus.threeImportError = null;
-      const GLTF_LOADER_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js");
-      avatarRuntimeStatus.gltfLoaderImportOk = Boolean(GLTF_LOADER_MODULE?.GLTFLoader);
-      avatarRuntimeStatus.gltfLoaderImportError = null;
-      const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
-      const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
-      runtimeBridge.THREE = THREE_MODULE;
-      runtimeBridge.GLTFLoader = GLTFLoader;
-      runtimeBridge.source = "direct-esm-jsdelivr";
+    const IMPORT_TIMEOUT_MS = 8000;
+    const importSources = [
+      {
+        id: "jsdelivr",
+        kind: "cdn",
+        threeUrl: "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+        gltfLoaderUrl: "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js?module"
+      },
+      {
+        id: "unpkg",
+        kind: "cdn",
+        threeUrl: "https://unpkg.com/three@0.158.0/build/three.module.js?module",
+        gltfLoaderUrl: "https://unpkg.com/three@0.158.0/examples/jsm/loaders/GLTFLoader.js?module"
+      },
+      {
+        id: "local-vendor",
+        kind: "local",
+        threeUrl: "/vendor/three/build/three.module.js",
+        gltfLoaderUrl: "/vendor/three/examples/jsm/loaders/GLTFLoader.js"
+      }
+    ];
+
+    const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
+    avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(runtimeBridge);
+    avatarRuntimeStatus.threeBridgeFixActive = window.__THREE_BRIDGE_FIX_ACTIVE === true;
+    console.log("[avatar-3d-route] Three ESM import started");
+
+    const importWithTimeout = async (url, timeoutMs) => {
+      let timerId = null;
+      try {
+        const timeoutPromise = new Promise((_, reject) => {
+          timerId = setTimeout(() => reject(new Error(`import_timeout_${timeoutMs}ms`)), timeoutMs);
+        });
+        return await Promise.race([import(url), timeoutPromise]);
+      } finally {
+        if (timerId) clearTimeout(timerId);
+      }
+    };
+
+    let lastFailureReason = "three_import_failed";
+    for (const source of importSources) {
+      let threeModule = null;
+      let gltfModule = null;
+      try {
+        avatarRuntimeStatus.threeImportStarted = true;
+        avatarRuntimeStatus.threeImportPending = true;
+        avatarRuntimeStatus.threeImportPathUsed = source.threeUrl;
+        threeModule = await importWithTimeout(source.threeUrl, IMPORT_TIMEOUT_MS);
+        avatarRuntimeStatus.threeImportOk = Boolean(threeModule);
+        avatarRuntimeStatus.threeImportError = null;
+        avatarRuntimeStatus.threeImportTimeout = false;
+      } catch (err) {
+        const errorMsg = String(err?.message || err || "unknown");
+        avatarRuntimeStatus.threeImportOk = false;
+        avatarRuntimeStatus.threeImportError = errorMsg;
+        avatarRuntimeStatus.threeImportTimeout = errorMsg.includes(`import_timeout_${IMPORT_TIMEOUT_MS}ms`);
+        avatarRuntimeStatus.cdnImportTimedOut = avatarRuntimeStatus.cdnImportTimedOut || (source.kind === "cdn" && avatarRuntimeStatus.threeImportTimeout);
+        avatarRuntimeStatus.cdnImportFailed = avatarRuntimeStatus.cdnImportFailed || (source.kind === "cdn");
+        lastFailureReason = avatarRuntimeStatus.threeImportTimeout
+          ? `three_import_timeout_${IMPORT_TIMEOUT_MS}ms`
+          : (source.id === "local-vendor" ? "local_three_import_failed" : "three_import_failed");
+        continue;
+      } finally {
+        avatarRuntimeStatus.threeImportPending = false;
+      }
+
+      try {
+        avatarRuntimeStatus.gltfLoaderImportStarted = true;
+        avatarRuntimeStatus.gltfLoaderImportPending = true;
+        avatarRuntimeStatus.gltfLoaderImportPathUsed = source.gltfLoaderUrl;
+        gltfModule = await importWithTimeout(source.gltfLoaderUrl, IMPORT_TIMEOUT_MS);
+        avatarRuntimeStatus.gltfLoaderImportOk = Boolean(gltfModule?.GLTFLoader);
+        avatarRuntimeStatus.gltfLoaderImportError = null;
+        avatarRuntimeStatus.gltfLoaderImportTimeout = false;
+      } catch (err) {
+        const errorMsg = String(err?.message || err || "unknown");
+        avatarRuntimeStatus.gltfLoaderImportOk = false;
+        avatarRuntimeStatus.gltfLoaderImportError = errorMsg;
+        avatarRuntimeStatus.gltfLoaderImportTimeout = errorMsg.includes(`import_timeout_${IMPORT_TIMEOUT_MS}ms`);
+        avatarRuntimeStatus.cdnImportTimedOut = avatarRuntimeStatus.cdnImportTimedOut || (source.kind === "cdn" && avatarRuntimeStatus.gltfLoaderImportTimeout);
+        avatarRuntimeStatus.cdnImportFailed = avatarRuntimeStatus.cdnImportFailed || (source.kind === "cdn");
+        lastFailureReason = avatarRuntimeStatus.gltfLoaderImportTimeout
+          ? `gltfloader_import_timeout_${IMPORT_TIMEOUT_MS}ms`
+          : (source.id === "local-vendor" ? "local_gltfloader_import_failed" : "gltfloader_import_failed");
+        continue;
+      } finally {
+        avatarRuntimeStatus.gltfLoaderImportPending = false;
+      }
+
+      const gltfLoader = gltfModule?.GLTFLoader || null;
+      runtimeBridge.THREE = threeModule;
+      runtimeBridge.GLTFLoader = gltfLoader;
+      runtimeBridge.source = source.id;
       runtimeBridge.ready = true;
-      avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
-      avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
+      avatarRuntimeStatus.fallbackImportSucceeded = source.id !== "jsdelivr";
+      avatarRuntimeStatus.threeLoaded = true;
+      avatarRuntimeStatus.gltfLoaderOk = Boolean(gltfLoader);
       avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderOk;
       avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
-      console.log("[avatar-3d-route] Three import success");
-      console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
-      console.log("[avatar-3d-route] __AVATAR_THREE exists:", !!window.__AVATAR_THREE ? "yes" : "no");
-      console.log("[avatar-3d-route] THREE exists:", !!window.__AVATAR_THREE?.THREE ? "yes" : "no");
-      console.log("[avatar-3d-route] GLTFLoader exists:", !!window.__AVATAR_THREE?.GLTFLoader ? "yes" : "no");
-      console.log("[avatar-3d-route] legacy fallback disabled: yes");
+      avatarRuntimeStatus.failedReason = null;
+      avatarRuntimeStatus.failureReason = null;
       avatarRuntimeStatus.readyEventFired = true;
-      console.log("[avatar-3d-route] avatar-three-ready event fired");
+      console.log("[avatar-3d-route] Three import success");
+      console.log("[avatar-3d-route] runtime source:", source.id);
       window.dispatchEvent(new Event("avatar-three-ready"));
-    } catch (err) {
+      break;
+    }
+
+    if (!runtimeBridge?.THREE || !runtimeBridge?.GLTFLoader) {
       avatarRuntimeStatus.readyEventFired = false;
-      const importError = String(err?.message || err || "unknown");
-      if (!avatarRuntimeStatus.threeImportOk) {
-        avatarRuntimeStatus.threeImportError = importError;
-      } else {
-        avatarRuntimeStatus.gltfLoaderImportError = importError;
-      }
-      avatarRuntimeStatus.failedReason = `three_import_failed:${importError}`;
-      avatarRuntimeStatus.failureReason = avatarRuntimeStatus.failedReason;
-      avatarRuntimeStatus.avatarThreeGlobalOk = false;
-      console.warn("[avatar-3d-route] avatar-three-failed event fired", avatarRuntimeStatus.failedReason);
-      window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: avatarRuntimeStatus.failedReason } }));
+      avatarRuntimeStatus.failedReason = lastFailureReason;
+      avatarRuntimeStatus.failureReason = lastFailureReason;
+      avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
+      console.warn("[avatar-3d-route] avatar-three-failed event fired", lastFailureReason);
+      window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: lastFailureReason } }));
     }
   </script>
 
