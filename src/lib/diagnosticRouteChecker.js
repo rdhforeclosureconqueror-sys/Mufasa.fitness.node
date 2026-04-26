@@ -20,9 +20,13 @@ async function checkUrl(baseUrl, route) {
   const startedAt = Date.now();
   try {
     const res = await fetch(new URL(route, baseUrl));
+    const classification = res.ok
+      ? "PASS"
+      : (res.status === 401 || res.status === 403 ? "PROTECTED" : "FAIL");
     return {
       route,
       ok: res.ok,
+      classification,
       status: res.status,
       durationMs: Date.now() - startedAt
     };
@@ -30,6 +34,7 @@ async function checkUrl(baseUrl, route) {
     return {
       route,
       ok: false,
+      classification: "FAIL",
       status: 0,
       durationMs: Date.now() - startedAt,
       error: error?.message || String(error)
@@ -67,8 +72,9 @@ async function runRouteDiagnostics(options = {}) {
     checks,
     cdnCheck,
     avatarRouteCheck,
-    passCount: checks.filter((x) => x.ok).length,
-    failCount: checks.filter((x) => !x.ok).length
+    passCount: checks.filter((x) => x.classification === "PASS").length,
+    protectedCount: checks.filter((x) => x.classification === "PROTECTED").length,
+    failCount: checks.filter((x) => x.classification === "FAIL").length
   };
 }
 

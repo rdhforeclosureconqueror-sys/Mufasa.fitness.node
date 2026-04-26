@@ -27,7 +27,7 @@
   }
 
   function getDeviceType() {
-    const ua = navigator.userAgent || "";
+    const ua = globalScope.navigator?.userAgent || "";
     if (/iPhone|Android.+Mobile|Mobile/i.test(ua)) return "mobile";
     if (/iPad|Tablet|Android/i.test(ua)) return "tablet";
     return "desktop";
@@ -44,7 +44,7 @@
   }
 
   function sanitizePayload(payload = {}) {
-    const clone = JSON.parse(JSON.stringify(payload));
+    const clone = JSON.parse(JSON.stringify(payload || {}));
     delete clone.rawVideo;
     delete clone.cameraFrame;
     return clone;
@@ -53,11 +53,12 @@
   function collectDiagnosticReport() {
     const avatarRuntime = globalScope.__avatarRuntimeStatus || null;
     const formEngineStatus = globalScope.__formEngineStatus || null;
+    const userAgent = globalScope.navigator?.userAgent || null;
     const payload = {
       build: {
         appBuildVersion: globalScope.APP_BUILD_VERSION || null,
         url: globalScope.location?.href || null,
-        userAgent: navigator.userAgent || null,
+        userAgent,
         deviceType: getDeviceType(),
         timestamp: new Date().toISOString()
       },
@@ -114,7 +115,44 @@
     postDiagnostic("runtime-event", reason);
   }
 
-  globalScope.__collectDiagnosticReport = collectDiagnosticReport;
+  globalScope.__collectDiagnosticReport = function stableCollectDiagnosticReport() {
+    try {
+      return collectDiagnosticReport();
+    } catch (error) {
+      return sanitizePayload({
+        build: {
+          appBuildVersion: globalScope.APP_BUILD_VERSION || null,
+          url: globalScope.location?.href || null,
+          userAgent: globalScope.navigator?.userAgent || null,
+          deviceType: "unknown",
+          timestamp: new Date().toISOString()
+        },
+        runtime: {
+          avatarRuntimeStatus: null,
+          formEngineStatus: null,
+          lastBodyVisibility: null,
+          lastFormResultSummary: null,
+          cameraStatus: null,
+          selectedExercise: null,
+          movementFamily: null,
+          renderMode: null
+        },
+        routesAndScripts: {
+          formEngineLoaded: false,
+          backendReadLoaded: false,
+          sessionWriteLoaded: false,
+          fitnessLoaded: false,
+          threeLoaded: false,
+          gltfLoaderLoaded: false
+        },
+        errors: {
+          recentConsoleErrors: state.errors.slice(-10),
+          recentConsoleWarnings: state.warnings.slice(-10),
+          collectorError: error?.message || String(error)
+        }
+      });
+    }
+  };
   globalScope.__runDiagnosticNow = () => postDiagnostic("manual", "manual_run");
   globalScope.__diagnosticAutoReport = throttledAutoReport;
 

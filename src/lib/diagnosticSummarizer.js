@@ -1,6 +1,15 @@
 "use strict";
 
-const SYSTEM_CONTEXT = "This is a browser-based fitness app using TensorFlow/MoveNet for pose tracking, Three.js and GLTFLoader for GLB avatar rendering, a deterministic form engine for biomechanics feedback, and pilot observability events. Avatar runtime should initialize independently of pose tracking, selected workout, form engine, or camera visibility.";
+const SYSTEM_CONTEXT = [
+  "You are diagnosing a browser-based fitness app.",
+  "Tech stack: TensorFlow MoveNet pose tracking, Three.js + GLTFLoader for GLB avatars, deterministic form engine, workout/session APIs, and diagnostics observability.",
+  "Behavior rules:",
+  "- Avatar runtime initialization is independent of pose tracking.",
+  "- Camera is optional for avatar initialization.",
+  "- Form engine requires pose input to generate movement feedback.",
+  "Only use provided diagnostic data. Do not guess missing systems.",
+  "Return evidence items that reference concrete report fields."
+].join(" ");
 
 const DEFAULT_FALLBACK = {
   summary: "OpenAI unavailable.",

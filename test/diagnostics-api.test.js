@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 
 const { createApp } = require("../server");
+const { createAuthTokenLib } = require("../src/lib/authToken");
 const { runRouteDiagnostics } = require("../src/lib/diagnosticRouteChecker");
 const { summarizeDiagnosticWithOpenAI, safeParseJson } = require("../src/lib/diagnosticSummarizer");
 
@@ -20,6 +21,12 @@ async function withServer(t, fn) {
   fs.writeFileSync(path.join(tmpRoot, "public", "fitness.js"), "window.MufasaFitness={};");
   fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
 
+  const prevBootstrap = process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+  process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = "diag_admin";
+  t.after(() => {
+    if (prevBootstrap == null) delete process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+    else process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = prevBootstrap;
+  });
   const app = createApp({ rootDir: tmpRoot });
   const server = app.listen(0);
   await new Promise((resolve, reject) => {
@@ -28,11 +35,19 @@ async function withServer(t, fn) {
   });
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
-  return fn({ baseUrl, tmpRoot });
+  const authTokenLib = createAuthTokenLib({ secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me" });
+  const adminToken = authTokenLib.issueUserToken({
+    userId: "diag_admin",
+    provider: "manual",
+    providerSubject: "diag-admin-subject",
+    providerVerified: false,
+    identityClass: "manual_unverified"
+  }).token;
+  return fn({ baseUrl, tmpRoot, adminToken });
 }
 
 test("diagnostic POST stores NDJSON and GET returns recent", async (t) => {
-  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+  await withServer(t, async ({ baseUrl, tmpRoot, adminToken }) => {
     const body = {
       build: { appBuildVersion: "test-build", url: `${baseUrl}/` },
       runtime: { avatarRuntimeStatus: { ready: false }, formEngineStatus: { loaded: true } },
@@ -40,7 +55,7 @@ test("diagnostic POST stores NDJSON and GET returns recent", async (t) => {
     };
     const postRes = await fetch(baseUrl + "/api/admin/diagnostics/report", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", authorization: `Bearer ${adminToken}` },
       body: JSON.stringify(body)
     });
     assert.equal(postRes.status, 201);
@@ -54,7 +69,9 @@ test("diagnostic POST stores NDJSON and GET returns recent", async (t) => {
     const stored = JSON.parse(line);
     assert.equal(stored.buildVersion, "test-build");
 
-    const getRes = await fetch(baseUrl + "/api/admin/diagnostics/recent");
+    const getRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
+      headers: { authorization: `Bearer ${adminToken}` }
+    });
     assert.equal(getRes.status, 200);
     const getJson = await getRes.json();
     assert.equal(getJson.ok, true);
@@ -72,12 +89,25 @@ test("OpenAI unavailable fallback and invalid JSON parser are safe", async () =>
   assert.equal(parsed.ok, false);
 });
 
-test("route checker returns pass/fail structure", async (t) => {
+test("route checker classifies protected routes without failing health", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
     const results = await runRouteDiagnostics({ baseUrl, rootDir: tmpRoot });
     assert.ok(Array.isArray(results.checks));
     assert.ok(typeof results.passCount === "number");
+    assert.ok(typeof results.protectedCount === "number");
     assert.ok(typeof results.failCount === "number");
     assert.ok(Object.prototype.hasOwnProperty.call(results.cdnCheck, "threeCdnPresent"));
+    const meCheck = results.checks.find((entry) => entry.route === "/api/me");
+    assert.equal(meCheck.classification, "PROTECTED");
+    assert.equal(meCheck.status, 401);
   });
+});
+
+test("route checker marks network errors as FAIL", async () => {
+  const results = await runRouteDiagnostics({
+    baseUrl: "http://127.0.0.1:1",
+    rootDir: process.cwd()
+  });
+  assert.ok(results.failCount > 0);
+  assert.ok(results.checks.every((entry) => entry.classification === "FAIL"));
 });

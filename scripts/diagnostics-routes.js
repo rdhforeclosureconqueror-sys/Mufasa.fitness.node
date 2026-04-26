@@ -11,7 +11,7 @@ const { runRouteDiagnostics } = require("../src/lib/diagnosticRouteChecker");
 
   console.log(`Diagnostics route check @ ${result.baseUrl}`);
   for (const item of result.checks) {
-    const status = item.ok ? "PASS" : "FAIL";
+    const status = item.classification || (item.ok ? "PASS" : "FAIL");
     console.log(`${status} ${item.route} (status=${item.status}, duration=${item.durationMs}ms${item.error ? `, error=${item.error}` : ""})`);
   }
   console.log(`CDN three.module.js present: ${result.cdnCheck.threeCdnPresent ? "PASS" : "FAIL"}`);

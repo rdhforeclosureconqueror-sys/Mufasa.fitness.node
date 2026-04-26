@@ -40,6 +40,8 @@ test("collector handles missing globals safely", () => {
   const report = ctx.__collectDiagnosticReport();
   assert.equal(report.runtime.avatarRuntimeStatus, null);
   assert.equal(report.runtime.formEngineStatus, null);
+  assert.equal(typeof ctx.__collectDiagnosticReport, "function");
+  assert.equal(typeof report.build.timestamp, "string");
 });
 
 test("collector does not include raw video/frame data", () => {
@@ -47,4 +49,12 @@ test("collector does not include raw video/frame data", () => {
   const report = ctx.__collectDiagnosticReport();
   assert.equal("rawVideo" in report, false);
   assert.equal("cameraFrame" in report, false);
+});
+
+test("collector returns safe defaults when browser globals are unavailable", () => {
+  const ctx = loadClient({ navigator: undefined, location: undefined });
+  const report = ctx.__collectDiagnosticReport();
+  assert.equal(report.build.userAgent, null);
+  assert.equal(report.build.url, null);
+  assert.ok(report.runtime);
 });
