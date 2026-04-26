@@ -68,7 +68,23 @@
       glbLoadStarted: false,
       glbLoadSuccess: false,
       glbLoadError: null,
-      lastGlbLoadStatus: "idle"
+      lastGlbLoadStatus: "idle",
+      lastRenderModeRequested: "camera",
+      lastRenderModeApplied: "camera",
+      avatarOverlayRenderAttempted: false,
+      avatarOverlayRenderOk: null,
+      avatarOverlayRenderError: null,
+      avatarModelLoaded: false,
+      avatarModelMounted: false,
+      avatarModelVisible: false,
+      avatarSceneChildrenCount: 0,
+      avatarCanvasWidth: 0,
+      avatarCanvasHeight: 0,
+      avatarCanvasDisplay: null,
+      avatarCanvasVisibility: null,
+      bodyMode: null,
+      trackingState: null,
+      calibrationStatus: null
     };
     window.__retryAvatarRuntime = function retryAvatarRuntimeBootstrapStub() {
       const status = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
@@ -1178,10 +1194,38 @@
         glbLoadStarted: Boolean(current.glbLoadStarted),
         glbLoadSuccess: Boolean(current.glbLoadSuccess),
         glbLoadError: current.glbLoadError || null,
-        lastGlbLoadStatus: current.lastGlbLoadStatus || "idle"
+        lastGlbLoadStatus: current.lastGlbLoadStatus || "idle",
+        lastRenderModeRequested: current.lastRenderModeRequested || "camera",
+        lastRenderModeApplied: current.lastRenderModeApplied || "camera",
+        avatarOverlayRenderAttempted: Boolean(current.avatarOverlayRenderAttempted),
+        avatarOverlayRenderOk: current.avatarOverlayRenderOk ?? null,
+        avatarOverlayRenderError: current.avatarOverlayRenderError || null,
+        avatarModelLoaded: Boolean(current.avatarModelLoaded),
+        avatarModelMounted: Boolean(current.avatarModelMounted),
+        avatarModelVisible: Boolean(current.avatarModelVisible),
+        avatarSceneChildrenCount: Number(current.avatarSceneChildrenCount || 0),
+        avatarCanvasWidth: Number(current.avatarCanvasWidth || 0),
+        avatarCanvasHeight: Number(current.avatarCanvasHeight || 0),
+        avatarCanvasDisplay: current.avatarCanvasDisplay || null,
+        avatarCanvasVisibility: current.avatarCanvasVisibility || null,
+        bodyMode: current.bodyMode || null,
+        trackingState: current.trackingState || null,
+        calibrationStatus: current.calibrationStatus || null
       };
       window.__avatarRuntimeStatus = normalized;
       return normalized;
+    }
+
+    function updateAvatarOverlayDiagnostics(partial = {}) {
+      const status = getAvatarRuntimeStatusRef();
+      Object.assign(status, partial);
+      status.avatarModelLoaded = Boolean(status.avatarModelLoaded);
+      status.avatarModelMounted = Boolean(status.avatarModelMounted);
+      status.avatarModelVisible = Boolean(status.avatarModelVisible);
+      status.avatarSceneChildrenCount = Number(status.avatarSceneChildrenCount || 0);
+      status.avatarCanvasWidth = Number(status.avatarCanvasWidth || 0);
+      status.avatarCanvasHeight = Number(status.avatarCanvasHeight || 0);
+      return status;
     }
 
     function setAvatarRuntimeFailure(reason, payload = {}) {
@@ -1873,9 +1917,14 @@
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
       const previousMode = AVATAR_FLAGS.AVATAR_MODE;
       const nextMode = sanitizeRenderMode(mode);
+      updateAvatarOverlayDiagnostics({ lastRenderModeRequested: nextMode });
       if ((nextMode === "avatar_overlay" || nextMode === "avatar_only") && !activeAvatarAsset) {
         updateRenderModeStatus("Camera (fallback: no saved avatar)", true);
         AVATAR_FLAGS.AVATAR_MODE = "camera";
+        updateAvatarOverlayDiagnostics({
+          lastRenderModeApplied: "camera",
+          avatarOverlayRenderError: "avatar_asset_not_loaded"
+        });
         if (renderModeSelectEl.value !== "camera") renderModeSelectEl.value = "camera";
         if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== "camera") renderModeMobileSelectEl.value = "camera";
         if (persist) {
@@ -1884,6 +1933,10 @@
         return "camera";
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
+      updateAvatarOverlayDiagnostics({
+        lastRenderModeApplied: nextMode,
+        avatarOverlayRenderError: null
+      });
       updateAvatarRuntimeRenderModeStatus();
       console.log("[route-trace] renderMode:", nextMode);
       if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
@@ -1900,6 +1953,12 @@
 
     function fallbackRenderModeToCamera(reason, err) {
       if (AVATAR_FLAGS.AVATAR_DEBUG && err) console.warn(reason, err);
+      updateAvatarOverlayDiagnostics({
+        lastRenderModeRequested: "camera",
+        lastRenderModeApplied: "camera",
+        avatarOverlayRenderOk: false,
+        avatarOverlayRenderError: String(err?.message || err || reason || "overlay_fallback")
+      });
       applyRenderModeSelection("camera", { persist: true, source: "fallback" });
       updateRenderModeStatus(`Camera (fallback: ${reason})`, true);
       poseStatusEl.textContent = `${reason} Switched to camera mode.`;
@@ -2071,6 +2130,11 @@
       status.glbLoadSuccess = false;
       status.glbLoadError = null;
       status.lastGlbLoadStatus = "starting";
+      updateAvatarOverlayDiagnostics({
+        avatarModelLoaded: false,
+        avatarModelMounted: false,
+        avatarModelVisible: false
+      });
       console.log("[avatar-load] glb load start", avatarModelUrl);
       const deps = await ensureAvatarThreeRuntimeDependencies();
       const threeRef = deps?.threeRef || getThreeGlobal();
@@ -2116,6 +2180,7 @@
         status.failedReason = null;
         status.failureReason = null;
         status.glbLoadSuccess = true;
+        updateAvatarOverlayDiagnostics({ avatarModelLoaded: true, avatarOverlayRenderError: null });
         console.log("[avatar-load] glb load success");
       } catch (err) {
         const message = String(err?.message || err || "unknown");
@@ -2170,6 +2235,11 @@
 
       runtime.scene.add(avatarRoot);
       console.log("[avatar-3d] model added to scene");
+      updateAvatarOverlayDiagnostics({
+        avatarModelMounted: runtime.scene.children.includes(avatarRoot),
+        avatarModelVisible: avatarRoot.visible !== false,
+        avatarSceneChildrenCount: runtime.scene.children.length
+      });
       runtime.avatarRoot = avatarRoot;
       runtime.avatarModelGroup = avatarModelGroup;
       runtime.modelRoot = root;
@@ -2247,6 +2317,14 @@
         avatarThumbEl.style.display = "none";
         runtimeStatusRef.lastAvatarUrl = null;
         runtimeStatusRef.lastGlbLoadStatus = "idle";
+        updateAvatarOverlayDiagnostics({
+          avatarModelLoaded: false,
+          avatarModelMounted: false,
+          avatarModelVisible: false,
+          avatarOverlayRenderAttempted: false,
+          avatarOverlayRenderOk: null,
+          avatarOverlayRenderError: null
+        });
         setAvatarAssetStatus("No avatar saved.", true);
         setAvatarRuntimeStatus("No avatar metadata loaded.", true);
         avatarCreateBtn.textContent = "🧍 Create Avatar";
@@ -2304,6 +2382,13 @@
         }
         setAvatar3dCanvasVisibility(false);
         avatarThumbEl.style.display = "none";
+        updateAvatarOverlayDiagnostics({
+          avatarModelLoaded: false,
+          avatarModelMounted: false,
+          avatarModelVisible: false,
+          avatarOverlayRenderOk: false,
+          avatarOverlayRenderError: String(err?.message || err || "avatar_load_failed")
+        });
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
           setAvatarAssetStatus("Avatar asset probe failed.", true);
         }
@@ -3530,6 +3615,9 @@ function toggleListening() {
 
     async function connectCamera() {
       trackPilotEvent("camera_connect_started");
+      window.__cameraStatus = "connecting";
+      window.__cameraConnectSuccess = false;
+      window.__cameraFailureReason = null;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoEl.srcObject = stream;
@@ -3549,6 +3637,9 @@ function toggleListening() {
 
         poseStatusEl.textContent = "Camera ready. You can start your workout now.";
         poseStatusEl.classList.add("status-ok");
+        window.__cameraStatus = "connected";
+        window.__cameraConnectSuccess = true;
+        window.__cameraLastConnectedAt = new Date().toISOString();
         trackPilotEvent("camera_connect_success", { detectorReady: Boolean(detector) });
         setPersonLayerSuppressed(false);
         lastRenderMode = "camera";
@@ -3559,6 +3650,9 @@ function toggleListening() {
         defineExerciseBtn.disabled = false;
       } catch (e) {
         console.error("Camera error", e);
+        window.__cameraStatus = `failed_${String(e?.name || e?.message || "unknown").toLowerCase()}`;
+        window.__cameraConnectSuccess = false;
+        window.__cameraFailureReason = String(e?.name || e?.message || "unknown");
         poseStatusEl.textContent = "Could not connect camera. Check permission settings, close other camera apps, and try again.";
         poseStatusEl.classList.add("status-bad");
         trackPilotEvent("camera_connect_failed", { reason: e?.name || e?.message || "unknown" });
@@ -4081,21 +4175,33 @@ function toggleListening() {
 
       const canDrawAvatar = posePacket && posePacket.keypoints && posePacket.keypoints.length;
       if (renderMode === "avatar_overlay") {
+        updateAvatarOverlayDiagnostics({ avatarOverlayRenderAttempted: Boolean(canDrawAvatar) });
         if (canDrawAvatar) {
           try {
             renderAvatar3d(posePacket);
+            updateAvatarOverlayDiagnostics({ avatarOverlayRenderOk: true, avatarOverlayRenderError: null });
           } catch (err) {
+            updateAvatarOverlayDiagnostics({
+              avatarOverlayRenderOk: false,
+              avatarOverlayRenderError: String(err?.message || err || "avatar_overlay_render_failed")
+            });
             drawProceduralAvatar(ctx, posePacket);
             fallbackRenderModeToCamera("Avatar overlay render failed.", err);
           }
         }
       } else if (renderMode === "avatar_only") {
+        updateAvatarOverlayDiagnostics({ avatarOverlayRenderAttempted: Boolean(canDrawAvatar) });
         if (!canDrawAvatar) {
           drawSkeleton();
         } else {
           try {
             renderAvatar3d(posePacket);
+            updateAvatarOverlayDiagnostics({ avatarOverlayRenderOk: true, avatarOverlayRenderError: null });
           } catch (err) {
+            updateAvatarOverlayDiagnostics({
+              avatarOverlayRenderOk: false,
+              avatarOverlayRenderError: String(err?.message || err || "avatar_only_render_failed")
+            });
             drawProceduralAvatar(ctx, posePacket);
             fallbackRenderModeToCamera("Avatar-only render failed.", err);
             drawSkeleton();
@@ -4535,6 +4641,27 @@ function toggleListening() {
       if (!activeAvatarAsset) throw new Error("avatar_asset_not_loaded");
       const runtime = ensureAvatarThreeRuntime();
       if (!runtime?.avatarRoot) throw new Error("avatar_runtime_not_initialized");
+      const mountedInScene = Boolean(runtime?.scene && runtime.avatarRoot && runtime.scene.children.includes(runtime.avatarRoot));
+      if (!mountedInScene) throw new Error("avatar_model_not_mounted_to_scene");
+      if (runtime.avatarRoot.visible === false) throw new Error("avatar_model_hidden");
+      const canvasRect = avatar3dCanvasEl?.getBoundingClientRect?.();
+      const canvasWidth = Number(avatar3dCanvasEl?.width || 0);
+      const canvasHeight = Number(avatar3dCanvasEl?.height || 0);
+      const canvasDisplay = avatar3dCanvasEl?.style?.display || null;
+      const canvasVisibility = avatar3dCanvasEl?.style?.visibility || null;
+      updateAvatarOverlayDiagnostics({
+        avatarModelLoaded: true,
+        avatarModelMounted: mountedInScene,
+        avatarModelVisible: runtime.avatarRoot.visible !== false,
+        avatarSceneChildrenCount: runtime?.scene?.children?.length || 0,
+        avatarCanvasWidth: canvasWidth,
+        avatarCanvasHeight: canvasHeight,
+        avatarCanvasDisplay: canvasDisplay,
+        avatarCanvasVisibility: canvasVisibility
+      });
+      if (canvasWidth <= 0 || canvasHeight <= 0 || (canvasRect && (canvasRect.width <= 0 || canvasRect.height <= 0))) {
+        throw new Error("avatar_canvas_zero_size");
+      }
       const now = Date.now();
       if (!runtime.upperBodyTrackingLogged) {
         runtime.upperBodyTrackingLogged = true;
@@ -4549,6 +4676,11 @@ function toggleListening() {
       const fullBodyReady = visibilityState === BODY_VISIBILITY.FULL_BODY;
       const avatarBodyMode = fullBodyReady ? "full" : "upper_only";
       const calibration = updateAvatarCalibration(posePacket, runtime);
+      updateAvatarOverlayDiagnostics({
+        bodyMode: avatarBodyMode,
+        trackingState: trackingState || null,
+        calibrationStatus: calibration?.status || "not_started"
+      });
       const hasHead = Boolean(getPosePointAny(points, [0, 1, 2, 3, 4], 0.25));
       const hasShoulders = Boolean(getPosePoint(points, 5) && getPosePoint(points, 6));
       const hasElbows = Boolean(getPosePoint(points, 7, 0.3) && getPosePoint(points, 8, 0.3));
