@@ -82,6 +82,11 @@
       avatarCanvasHeight: 0,
       avatarCanvasDisplay: null,
       avatarCanvasVisibility: null,
+      avatarCanvasOpacity: null,
+      avatarCanvasZIndex: null,
+      avatarOverlayContainerExists: null,
+      overlayRenderLoopRunning: false,
+      avatarOverlayVisibilityReason: null,
       bodyMode: null,
       trackingState: null,
       calibrationStatus: null
@@ -98,22 +103,17 @@
     };
     console.log("[avatar-3d-route] __AVATAR_THREE pre-import exists:", window.__AVATAR_THREE ? "yes" : "no");
   </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js"
+      }
+    }
+  </script>
   <script type="module">
     const avatarRuntimeStatus = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
     const IMPORT_TIMEOUT_MS = 8000;
     const importSources = [
-      {
-        id: "jsdelivr",
-        kind: "cdn",
-        threeUrl: "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
-        gltfLoaderUrl: "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js?module"
-      },
-      {
-        id: "unpkg",
-        kind: "cdn",
-        threeUrl: "https://unpkg.com/three@0.158.0/build/three.module.js?module",
-        gltfLoaderUrl: "https://unpkg.com/three@0.158.0/examples/jsm/loaders/GLTFLoader.js?module"
-      },
       {
         id: "local-vendor",
         kind: "local",
@@ -1208,6 +1208,11 @@
         avatarCanvasHeight: Number(current.avatarCanvasHeight || 0),
         avatarCanvasDisplay: current.avatarCanvasDisplay || null,
         avatarCanvasVisibility: current.avatarCanvasVisibility || null,
+        avatarCanvasOpacity: current.avatarCanvasOpacity || null,
+        avatarCanvasZIndex: current.avatarCanvasZIndex || null,
+        avatarOverlayContainerExists: current.avatarOverlayContainerExists ?? null,
+        overlayRenderLoopRunning: Boolean(current.overlayRenderLoopRunning),
+        avatarOverlayVisibilityReason: current.avatarOverlayVisibilityReason || null,
         bodyMode: current.bodyMode || null,
         trackingState: current.trackingState || null,
         calibrationStatus: current.calibrationStatus || null
@@ -1225,6 +1230,7 @@
       status.avatarSceneChildrenCount = Number(status.avatarSceneChildrenCount || 0);
       status.avatarCanvasWidth = Number(status.avatarCanvasWidth || 0);
       status.avatarCanvasHeight = Number(status.avatarCanvasHeight || 0);
+      status.overlayRenderLoopRunning = Boolean(status.overlayRenderLoopRunning);
       return status;
     }
 
@@ -1295,6 +1301,8 @@
 
     let fullBodyAcquired = false;
     let lastStepBackSpokenAt = 0;
+    let stepBackPromptCount = 0;
+    let upperBodyReadyPromptShown = false;
     let lastGoodRepSpokenAt = 0;
 
     let lastNodeRepSentAt = 0;
@@ -1605,9 +1613,13 @@
     function ensureAvatarRenderLoop(runtime) {
       if (!runtime || runtime.renderLoopActive) return;
       runtime.renderLoopActive = true;
+      updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: true });
       runtime.lastRenderLoopLogAt = 0;
       const loop = () => {
-        if (!runtime.renderLoopActive) return;
+        if (!runtime.renderLoopActive) {
+          updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: false });
+          return;
+        }
         runtime.renderer.render(runtime.scene, runtime.camera);
         const now = Date.now();
         if (!runtime.lastRenderLoopLogAt || (now - runtime.lastRenderLoopLogAt) >= 2000) {
@@ -4119,17 +4131,28 @@ function toggleListening() {
       });
 
       // Status + coaching prompt
+      const trackerUpperBodyOnly = trackerFrame?.trackingState === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY;
       if (!analysis.fullBody) {
         poseStatusEl.textContent = trackerFrame.mode === TRACKING_MODES.FACE_CLOSE
           ? "Face-close tracking active."
           : "No full body in view.";
-        if (!fullBodyAcquired && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
+        if (trackerUpperBodyOnly && !upperBodyReadyPromptShown) {
+          upperBodyReadyPromptShown = true;
+          addLog("system", "Upper body detected. You can start, or step back for full-body tracking.");
+          if (repFeedbackAllowed && (running || definingExercise || ohsaMode)) {
+            speak("Upper body detected. You can start, or step back for full-body tracking.", "rep");
+          }
+        }
+        if (!fullBodyAcquired && stepBackPromptCount < 2 && repFeedbackAllowed && now - lastStepBackSpokenAt > STEP_BACK_COOLDOWN) {
           if (running || definingExercise || ohsaMode) speak("Step back so I can see your whole body.", "rep");
           lastStepBackSpokenAt = now;
+          stepBackPromptCount += 1;
         }
       } else {
         if (!fullBodyAcquired) {
           fullBodyAcquired = true;
+          stepBackPromptCount = 0;
+          upperBodyReadyPromptShown = false;
           if (repFeedbackAllowed && (running || definingExercise || ohsaMode)) speak("Great, I can see your full body.", "rep");
         }
         poseStatusEl.textContent = analysis.goodForm
@@ -4662,8 +4685,19 @@ function toggleListening() {
       const canvasRect = avatar3dCanvasEl?.getBoundingClientRect?.();
       const canvasWidth = Number(avatar3dCanvasEl?.width || 0);
       const canvasHeight = Number(avatar3dCanvasEl?.height || 0);
-      const canvasDisplay = avatar3dCanvasEl?.style?.display || null;
-      const canvasVisibility = avatar3dCanvasEl?.style?.visibility || null;
+      const canvasStyles = avatar3dCanvasEl ? window.getComputedStyle(avatar3dCanvasEl) : null;
+      const canvasDisplay = canvasStyles?.display || avatar3dCanvasEl?.style?.display || null;
+      const canvasVisibility = canvasStyles?.visibility || avatar3dCanvasEl?.style?.visibility || null;
+      const canvasOpacity = canvasStyles?.opacity || avatar3dCanvasEl?.style?.opacity || null;
+      const canvasZIndex = canvasStyles?.zIndex || avatar3dCanvasEl?.style?.zIndex || null;
+      const overlayContainerExists = Boolean(avatar3dCanvasEl?.closest?.(".video-shell"));
+      let overlayVisibilityReason = "visible";
+      if (canvasWidth <= 0 || canvasHeight <= 0 || (canvasRect && (canvasRect.width <= 0 || canvasRect.height <= 0))) overlayVisibilityReason = "avatar_canvas_zero_size";
+      else if (canvasDisplay === "none") overlayVisibilityReason = "avatar_canvas_display_none";
+      else if (canvasVisibility === "hidden") overlayVisibilityReason = "avatar_canvas_visibility_hidden";
+      else if (Number.parseFloat(canvasOpacity || "1") <= 0) overlayVisibilityReason = "avatar_canvas_opacity_zero";
+      else if (!overlayContainerExists) overlayVisibilityReason = "avatar_overlay_container_missing";
+      else if (!runtime.renderLoopActive) overlayVisibilityReason = "avatar_overlay_render_loop_not_running";
       updateAvatarOverlayDiagnostics({
         avatarModelLoaded: true,
         avatarModelMounted: mountedInScene,
@@ -4672,10 +4706,15 @@ function toggleListening() {
         avatarCanvasWidth: canvasWidth,
         avatarCanvasHeight: canvasHeight,
         avatarCanvasDisplay: canvasDisplay,
-        avatarCanvasVisibility: canvasVisibility
+        avatarCanvasVisibility: canvasVisibility,
+        avatarCanvasOpacity: canvasOpacity,
+        avatarCanvasZIndex: canvasZIndex,
+        avatarOverlayContainerExists: overlayContainerExists,
+        overlayRenderLoopRunning: Boolean(runtime.renderLoopActive),
+        avatarOverlayVisibilityReason: overlayVisibilityReason
       });
-      if (canvasWidth <= 0 || canvasHeight <= 0 || (canvasRect && (canvasRect.width <= 0 || canvasRect.height <= 0))) {
-        throw new Error("avatar_canvas_zero_size");
+      if (overlayVisibilityReason !== "visible") {
+        throw new Error(overlayVisibilityReason);
       }
       const now = Date.now();
       if (!runtime.upperBodyTrackingLogged) {
@@ -4878,6 +4917,8 @@ function toggleListening() {
         currentSet = 1;
         repPhase = "up";
         fullBodyAcquired = false;
+        stepBackPromptCount = 0;
+        upperBodyReadyPromptShown = false;
         repCountEl.textContent = "0";
 
         startBtn.textContent = "Stop Workout";
