@@ -32,7 +32,13 @@ function toLookup(items) {
 }
 
 function parseAuthorizationConfig(env = process.env) {
+  const adminEmails = String(env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+
   return {
+    adminEmails,
     bootstrap: {
       superAdminUserIds: parseCsvList(env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS),
       superAdminSubjects: parseCsvList(env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_SUBJECTS)
@@ -47,6 +53,7 @@ function parseAuthorizationConfig(env = process.env) {
 }
 
 function createAuthorizationResolver(config = parseAuthorizationConfig(process.env)) {
+  const adminEmails = toLookup(config.adminEmails || []);
   const bootstrapUserIds = toLookup(config.bootstrap.superAdminUserIds);
   const bootstrapSubjects = toLookup(config.bootstrap.superAdminSubjects);
   const adminUserIds = toLookup(config.roleAssignments.adminUserIds);
@@ -65,6 +72,7 @@ function createAuthorizationResolver(config = parseAuthorizationConfig(process.e
     }
 
     const userId = String(auth.userId || "").toLowerCase();
+    const email = String(auth.email || "").toLowerCase();
     const providerSubject = String(auth.providerSubject || "").toLowerCase();
 
     if ((userId && bootstrapUserIds.has(userId)) || (providerSubject && bootstrapSubjects.has(providerSubject))) {
@@ -82,6 +90,15 @@ function createAuthorizationResolver(config = parseAuthorizationConfig(process.e
         permissions: ROLE_PERMISSIONS[ROLES.ADMIN],
         isBootstrapSuperAdmin: false,
         resolutionReason: "configured_admin"
+      };
+    }
+
+    if (email && adminEmails.has(email)) {
+      return {
+        role: ROLES.ADMIN,
+        permissions: ROLE_PERMISSIONS[ROLES.ADMIN],
+        isBootstrapSuperAdmin: false,
+        resolutionReason: "admin_email_allowlist"
       };
     }
 
@@ -120,6 +137,7 @@ function createAuthorizationResolver(config = parseAuthorizationConfig(process.e
         superAdminSubjectCount: config.bootstrap.superAdminSubjects.length
       },
       roleAssignmentCounts: {
+        adminEmailCount: (config.adminEmails || []).length,
         adminUserIdCount: config.roleAssignments.adminUserIds.length,
         adminSubjectCount: config.roleAssignments.adminSubjects.length,
         trainerUserIdCount: config.roleAssignments.trainerUserIds.length,
