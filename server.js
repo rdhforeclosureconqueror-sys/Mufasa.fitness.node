@@ -38,6 +38,9 @@ const {
 } = require("./src/lib/trustPolicy");
 const { createTokenDenylistStore } = require("./src/lib/tokenDenylistStore");
 const { resolveAuthBridgeIdentity } = require("./src/lib/providerIdentity");
+const { createDiagnosticStore } = require("./src/lib/diagnosticStore");
+const { summarizeDiagnosticWithOpenAI } = require("./src/lib/diagnosticSummarizer");
+const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -201,10 +204,12 @@ function createApp(options = {}) {
   const OPS_DIR = path.join(DATA_DIR, "ops");
   const USER_DIR = path.join(DATA_DIR, "users");
   const PILOT_EVENT_LOG_PATH = path.join(OPS_DIR, "pilot-events.ndjson");
+  const DIAGNOSTIC_REPORT_PATH = path.join(OPS_DIR, "diagnostic-reports.ndjson");
 
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (!fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
+  const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
   userStore.ensureDirs();
@@ -513,6 +518,46 @@ function createApp(options = {}) {
       time: new Date().toISOString()
     });
   });
+
+  // TODO(admin-hardening): protect diagnostics routes with existing admin middleware in production.
+  app.post("/api/admin/diagnostics/report", asyncHandler(async (req, res) => {
+    const payload = req.body && typeof req.body === "object" ? req.body : {};
+    const routeCheck = await runRouteDiagnostics({
+      baseUrl: resolveRequestOrigin(req) || process.env.BASE_URL || "http://127.0.0.1:3000",
+      rootDir
+    });
+    const summaryResult = await summarizeDiagnosticWithOpenAI({
+      expectedSystems: [
+        "pose_tracking",
+        "avatar_runtime",
+        "form_engine",
+        "session_save",
+        "route_health"
+      ],
+      buildVersion: payload?.build?.appBuildVersion || APP_BUILD_VERSION,
+      diagnosticReport: payload,
+      routeCheckResults: routeCheck,
+      recentErrors: payload?.errors || null
+    });
+
+    const report = diagnosticStore.createReport({
+      buildVersion: payload?.build?.appBuildVersion || APP_BUILD_VERSION,
+      route: payload?.build?.url || req.originalUrl,
+      source: payload?.source || "browser",
+      payload,
+      openAiSummaryStatus: summaryResult.status,
+      openAiSummary: summaryResult.summary,
+      routeCheck
+    });
+    diagnosticStore.append(report);
+    return ok(res, req.requestId, report, 201);
+  }));
+
+  app.get("/api/admin/diagnostics/recent", asyncHandler(async (req, res) => {
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
+    const reports = diagnosticStore.recent(limit);
+    return ok(res, req.requestId, { reports }, 200);
+  }));
 
   app.get(
     "/api/ops/write-observability",

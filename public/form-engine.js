@@ -1,4 +1,10 @@
 (function (globalScope) {
+  const formEngineStatus = globalScope.__formEngineStatus || (globalScope.__formEngineStatus = {
+    loaded: true,
+    lastEvaluatedAt: null,
+    lastMovementFamily: null,
+    lastOverallStatus: null
+  });
   const BODY_VISIBILITY = Object.freeze({
     NO_PERSON: "NO_PERSON",
     HEAD_SHOULDERS: "HEAD_SHOULDERS",
@@ -272,15 +278,27 @@
     const visibility = classifyBodyVisibility(keypoints);
     const confidence = Number((keypoints.reduce((acc, kp) => acc + Number(kp?.score || 0), 0) / Math.max(1, keypoints.length)).toFixed(3));
     if (!Array.isArray(keypoints) || keypoints.length === 0 || confidence < 0.15) {
-      return {
+      const unknownResult = {
         ...buildUnknownResult(exerciseId, movementFamily, confidence),
         overallStatus: FORM_STATUS.UNKNOWN,
         regions: emptyRegions(FORM_STATUS.NOT_VISIBLE),
         phase: MOVEMENT_PHASE.UNKNOWN
       };
+      globalScope.__lastBodyVisibility = visibility;
+      globalScope.__lastFormResult = unknownResult;
+      formEngineStatus.lastEvaluatedAt = new Date().toISOString();
+      formEngineStatus.lastMovementFamily = movementFamily;
+      formEngineStatus.lastOverallStatus = unknownResult.overallStatus;
+      return unknownResult;
     }
     if (movementFamily === MOVEMENT_FAMILY.UNKNOWN) {
-      return buildUnknownResult(exerciseId, movementFamily, confidence);
+      const unknownFamilyResult = buildUnknownResult(exerciseId, movementFamily, confidence);
+      globalScope.__lastBodyVisibility = visibility;
+      globalScope.__lastFormResult = unknownFamilyResult;
+      formEngineStatus.lastEvaluatedAt = new Date().toISOString();
+      formEngineStatus.lastMovementFamily = movementFamily;
+      formEngineStatus.lastOverallStatus = unknownFamilyResult.overallStatus;
+      return unknownFamilyResult;
     }
 
     const metrics = computeCommonMetrics(keypoints);
@@ -294,7 +312,7 @@
       return score + 0.25;
     }, 0) / REGION_KEYS.length).toFixed(3));
 
-    return {
+    const evaluated = {
       exerciseId,
       movementFamily,
       phase,
@@ -306,6 +324,12 @@
       repValid: Boolean(familyEval.repValid && phase !== MOVEMENT_PHASE.UNKNOWN),
       metrics
     };
+    globalScope.__lastBodyVisibility = visibility;
+    globalScope.__lastFormResult = evaluated;
+    formEngineStatus.lastEvaluatedAt = new Date().toISOString();
+    formEngineStatus.lastMovementFamily = movementFamily;
+    formEngineStatus.lastOverallStatus = evaluated.overallStatus;
+    return evaluated;
   }
 
   function mapRegionFeedbackToColor(status) {

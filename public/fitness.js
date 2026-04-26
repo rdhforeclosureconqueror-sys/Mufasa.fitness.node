@@ -223,6 +223,7 @@
   function setActiveWorkout(session) {
     window.ACTIVE_WORKOUT = session;
     window.ACTIVE_WORKOUT_READY = true;
+    window.__selectedExercise = session?.blocks?.strength?.[0]?.name || null;
     markActiveSnapshot(session);
     upsertHistorySession(session);
   }
@@ -412,4 +413,5 @@
     }
   });
 
+  window.MufasaFitness = { loaded: true, version: "diagnostics-v1" };
 })();
