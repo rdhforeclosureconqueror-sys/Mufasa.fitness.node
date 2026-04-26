@@ -737,6 +737,7 @@
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
+        <button id="runSystemDiagnosticBtn" class="secondary">🩺 Run System Diagnostic</button>
         <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
         <button id="avatarCreateBtn" class="secondary">🧍 Create Avatar</button>
         <img id="avatarThumb" class="avatar-thumb" alt="avatar thumbnail" />
@@ -779,6 +780,11 @@
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
       <div id="voiceSupportStatus"></div>
+      <div id="landingDiagnosticPanel" class="small-card" style="margin-top:10px;">
+        <strong>System Diagnostic</strong>
+        <div id="landingBackendProbeStatus" class="muted">Backend: checking…</div>
+        <pre id="landingDiagnosticResult" class="diagPre muted" style="white-space:pre-wrap;">No diagnostic run yet.</pre>
+      </div>
     </div>
 
     <!-- RIGHT: Profile + Today’s workout + calendar + chat -->
@@ -842,9 +848,10 @@
     </div>
   </div>
 
-  <script src="/diagnostics-client.js?v=20260426"></script>
+  <script src="/diagnostics-client.js?v=20260426b"></script>
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
+  <script src="/landing-diagnostics.js?v=20260426"></script>
 
   <script>
     const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
