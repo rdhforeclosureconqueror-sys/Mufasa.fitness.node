@@ -23,6 +23,7 @@ function authContext(authTokenLib, authorizationResolver = null) {
     const claims = authTokenLib.verify(token);
     req.auth = {
       userId: claims.sub,
+      email: claims.email || null,
       provider: claims.provider,
       providerSubject: claims.providerSubject,
       providerVerified: Boolean(claims.providerVerified),

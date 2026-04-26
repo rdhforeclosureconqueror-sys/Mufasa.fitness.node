@@ -111,3 +111,74 @@ test("route checker marks network errors as FAIL", async () => {
   assert.ok(results.failCount > 0);
   assert.ok(results.checks.every((entry) => entry.classification === "FAIL"));
 });
+
+test("diagnostics access requires auth + admin email allowlist", async (t) => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-diag-authz-test-"));
+  fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
+  fs.copyFileSync(path.join(process.cwd(), "public", "index.html"), path.join(tmpRoot, "public", "index.html"));
+  fs.writeFileSync(path.join(tmpRoot, "public", "form-engine.js"), "window.__MUFASA_FORM_ENGINE={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "backend-read.js"), "window.MufasaBackendRead={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "session-write.js"), "window.MufasaSessionWrite={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "fitness.js"), "window.MufasaFitness={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
+
+  const prevAdminEmails = process.env.ADMIN_EMAILS;
+  process.env.ADMIN_EMAILS = "RDHForeclosureConquer@gmail.com, GodBody3333@gmail.com";
+  t.after(() => {
+    if (prevAdminEmails == null) delete process.env.ADMIN_EMAILS;
+    else process.env.ADMIN_EMAILS = prevAdminEmails;
+  });
+
+  const app = createApp({ rootDir: tmpRoot });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => {
+    server.once("listening", resolve);
+    server.once("error", reject);
+  });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const authTokenLib = createAuthTokenLib({ secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me" });
+
+  const nonAdminToken = authTokenLib.issueUserToken({
+    userId: "regular_user",
+    email: "regular@example.com",
+    provider: "manual",
+    providerSubject: "regular_user",
+    providerVerified: false,
+    identityClass: "manual_unverified"
+  }).token;
+  const firstAdminToken = authTokenLib.issueUserToken({
+    userId: "email_admin_1",
+    email: "RDHForeclosureConquer@gmail.com",
+    provider: "manual",
+    providerSubject: "email_admin_1",
+    providerVerified: false,
+    identityClass: "manual_unverified"
+  }).token;
+  const secondAdminToken = authTokenLib.issueUserToken({
+    userId: "email_admin_2",
+    email: "GodBody3333@gmail.com",
+    provider: "manual",
+    providerSubject: "email_admin_2",
+    providerVerified: false,
+    identityClass: "manual_unverified"
+  }).token;
+
+  const unauthenticatedRes = await fetch(baseUrl + "/api/admin/diagnostics/recent");
+  assert.equal(unauthenticatedRes.status, 401);
+
+  const nonAdminRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
+    headers: { authorization: `Bearer ${nonAdminToken}` }
+  });
+  assert.equal(nonAdminRes.status, 403);
+
+  const firstAdminRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
+    headers: { authorization: `Bearer ${firstAdminToken}` }
+  });
+  assert.equal(firstAdminRes.status, 200);
+
+  const secondAdminRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
+    headers: { authorization: `Bearer ${secondAdminToken}` }
+  });
+  assert.equal(secondAdminRes.status, 200);
+});

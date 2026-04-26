@@ -309,6 +309,13 @@ function createApp(options = {}) {
         reason
       });
     }
+    if (allowed && req.authz?.resolutionReason === "admin_email_allowlist") {
+      console.info("[authz] admin allowlist access granted", {
+        email: req.auth?.email || null,
+        permission,
+        endpoint: req.originalUrl || req.path || null
+      });
+    }
   };
 
   function currentEnforcementView() {
@@ -1018,6 +1025,7 @@ function createApp(options = {}) {
     }
     const token = authTokenLib.issueUserToken({
       userId: resolvedIdentity.userId,
+      email: resolvedIdentity.providerEmail || claims.googleEmail || null,
       provider: resolvedIdentity.provider,
       providerSubject: resolvedIdentity.providerSubject,
       providerVerified: resolvedIdentity.providerVerified,

@@ -99,6 +99,7 @@ function createAuthTokenLib({
     userId,
     provider = "manual",
     providerSubject = null,
+    email = null,
     providerVerified = false,
     identityClass = "manual_unverified",
     ttlMs = maxTtlMs
@@ -114,6 +115,7 @@ function createAuthTokenLib({
       sub: userId,
       provider,
       providerSubject,
+      email: email ? String(email).trim().toLowerCase() : null,
       providerVerified: Boolean(providerVerified),
       identityClass,
       iat: now,
