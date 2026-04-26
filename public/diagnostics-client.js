@@ -103,7 +103,7 @@
       errors: {
         recentConsoleErrors: state.errors.slice(-10),
         recentConsoleWarnings: state.warnings.slice(-10),
-        avatarRuntimeFailureReason: avatarRuntime?.failedReason || null,
+        avatarRuntimeFailureReason: avatarRuntime?.failureReason || avatarRuntime?.failedReason || null,
         cameraFailureReason: globalScope.__cameraFailureReason || null,
         sessionSaveFailureReason: globalScope.__sessionSaveFailureReason || null
       }
