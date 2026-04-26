@@ -62,12 +62,15 @@ test("diagnostic POST stores NDJSON and GET returns recent", async (t) => {
     const postJson = await postRes.json();
     assert.equal(postJson.ok, true);
     assert.equal(postJson.data.buildVersion, "test-build");
+    assert.ok(postJson.data.pilotReadiness);
+    assert.equal(typeof postJson.data.openAiApiKeyMissing, "boolean");
 
     const ndjsonPath = path.join(tmpRoot, "data", "ops", "diagnostic-reports.ndjson");
     assert.equal(fs.existsSync(ndjsonPath), true);
     const line = fs.readFileSync(ndjsonPath, "utf8").trim().split("\n").at(-1);
     const stored = JSON.parse(line);
     assert.equal(stored.buildVersion, "test-build");
+    assert.ok(stored.pilotReadiness);
 
     const getRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
       headers: { authorization: `Bearer ${adminToken}` }

@@ -10,9 +10,12 @@ function makeBaseReport() {
       build: { appBuildVersion: "2026.04.26", deviceType: "desktop" },
       runtime: {
         cameraStatus: "connected",
-        formEngineStatus: { loaded: true },
+        formEngineStatus: { loaded: true, lastEvaluatedAt: new Date().toISOString() },
         selectedExercise: "air_squat",
+        workoutStarted: true,
         lastFormResultSummary: { movementFamily: "SQUAT", repValid: true },
+        workoutCompleted: true,
+        sessionSaveSuccess: true,
         avatarRuntimeStatus: { ready: true }
       },
       routesAndScripts: { formEngineLoaded: true },
@@ -48,4 +51,14 @@ test("healthy report yields READY", () => {
   const report = makeBaseReport();
   const result = evaluatePilotReadiness(report);
   assert.equal(result.pilotStatus, "READY");
+});
+
+test("missing workout evidence yields BLOCKED_UNKNOWN with explanation", () => {
+  const report = makeBaseReport();
+  delete report.payload.runtime.workoutCompleted;
+  delete report.payload.runtime.sessionSaveSuccess;
+  const result = evaluatePilotReadiness(report);
+  assert.equal(result.pilotStatus, "BLOCKED_UNKNOWN");
+  assert.ok(Array.isArray(result.missingEvidence));
+  assert.ok(result.missingEvidence.length >= 2);
 });

@@ -64,17 +64,23 @@
     const summary = report?.openAiSummary || {};
     const warnings = Array.isArray(pilot?.warnings) ? pilot.warnings : [];
     const blockers = Array.isArray(pilot?.blockers) ? pilot.blockers : [];
+    const missingEvidence = Array.isArray(pilot?.missingEvidence) ? pilot.missingEvidence : [];
     const nextFix = (pilot?.recommendedFixes || [summary?.codexFixMessage || "n/a"])[0] || "n/a";
     const openAiStatus = report?.openAiSummaryStatus || "unavailable";
+    const openAiKeyMissing = report?.openAiApiKeyMissing === true;
+    const fallbackNextAction = "Run a live workout test, then rerun diagnostic.";
     resultEl.textContent = [
       `Backend build status: ${report?.buildVersion || "unknown"}`,
       `Diagnostics reachable: ${report?.routeCheck ? "yes" : "unknown"}`,
       `Pilot readiness status: ${pilot?.pilotStatus || "BLOCKED_UNKNOWN"}`,
       `Blockers: ${blockers.length ? blockers.join(" | ") : "none"}`,
       `Warnings: ${warnings.length ? warnings.join(" | ") : "none"}`,
+      `Missing evidence: ${missingEvidence.length ? missingEvidence.map((item) => item.label || item.field || "unknown").join(" | ") : "none"}`,
       `Recommended next fix: ${nextFix}`,
       `OpenAI summary status: ${openAiStatus}`,
+      `OPENAI_API_KEY missing: ${openAiKeyMissing ? "yes" : "no"}`,
       `OpenAI likely root cause: ${summary?.likelyRootCause || "n/a"}`,
+      `Next action: ${fallbackNextAction}`,
       `Raw route check: pass=${report?.routeCheck?.passCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
       `Raw runtime avatar status: ${payload?.runtime?.avatarRuntimeStatus ? "present" : "missing"}`
     ].join("\n");
