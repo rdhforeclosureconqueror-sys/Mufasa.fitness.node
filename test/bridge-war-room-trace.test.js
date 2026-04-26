@@ -70,17 +70,17 @@ test("bridge war-room trace: strict trust mode blocks unverified, allows verifie
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
   // A) Manual should be blocked when strict low-trust modes are disabled.
-  const manualBridge = await post(baseUrl, "/api/auth/bridge", { userId: "manual_user" });
+  const manualBridge = await post(baseUrl, "/api/auth/bridge", { userId: "manual_user", trustMode: "manual_unverified" });
   assert.equal(manualBridge.res.status, 403);
   assert.equal(manualBridge.json?.error?.code, "TRUST_MODE_DISABLED");
 
   // B) googleEmail-only should be blocked when strict low-trust modes are disabled.
-  const emailBridge = await post(baseUrl, "/api/auth/bridge", { googleEmail: "war-room@example.com" });
+  const emailBridge = await post(baseUrl, "/api/auth/bridge", { googleEmail: "war-room@example.com", trustMode: "provider_unverified" });
   assert.equal(emailBridge.res.status, 403);
   assert.equal(emailBridge.json?.error?.code, "TRUST_MODE_DISABLED");
 
   // C) Verified googleIdToken should issue auth token.
-  const verifiedBridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_fixture_token_1234567890" });
+  const verifiedBridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_fixture_token_1234567890", trustMode: "google_verified" });
   assert.equal(verifiedBridge.res.status, 201);
   const issuedToken = verifiedBridge.json?.data?.auth?.token;
   assert.ok(issuedToken && issuedToken.length > 20);

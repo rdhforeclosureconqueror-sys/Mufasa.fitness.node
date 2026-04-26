@@ -106,14 +106,30 @@ function validateOhsaSubmission(input) {
 
 function validateAuthBridge(input, { requestedTrustMode = null } = {}) {
   if (!isObject(input)) throw new ApiError("VALIDATION_ERROR", "Request body must be an object", 400);
+  if (!requestedTrustMode) {
+    throw new ApiError("FORBIDDEN", "Auth bridge trustMode is required", 403, { reason: "missing_trust_mode" });
+  }
 
   const manualUserId = assertString(input.userId ?? input.manualUserId, "userId", { required: false, max: 128 });
   const googleSub = assertString(input.googleSub, "googleSub", { required: false, max: 256 });
   const googleEmail = assertString(input.googleEmail, "googleEmail", { required: false, max: 256 });
   const googleIdToken = assertString(input.googleIdToken, "googleIdToken", { required: false, min: 20, max: 4096 });
+  assertString(input.provider, "provider", { required: false, max: 64 });
 
   if (!manualUserId && !googleSub && !googleEmail && !googleIdToken) {
     throw new ApiError("VALIDATION_ERROR", "Provide one of userId/manualUserId, googleSub, googleEmail, or googleIdToken", 400);
+  }
+
+  if (googleIdToken && requestedTrustMode !== "google_verified") {
+    throw new ApiError("FORBIDDEN", "Verified Google bridge requires trustMode=google_verified", 403, {
+      reason: "google_verified_trust_mode_required"
+    });
+  }
+
+  if (!googleIdToken && requestedTrustMode === "google_verified") {
+    throw new ApiError("FORBIDDEN", "trustMode=google_verified requires googleIdToken", 403, {
+      reason: "google_verified_requires_id_token"
+    });
   }
 
   if (manualUserId) {
