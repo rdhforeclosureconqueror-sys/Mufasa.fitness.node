@@ -41,6 +41,7 @@ const { resolveAuthBridgeIdentity } = require("./src/lib/providerIdentity");
 const { createDiagnosticStore } = require("./src/lib/diagnosticStore");
 const { summarizeDiagnosticWithOpenAI } = require("./src/lib/diagnosticSummarizer");
 const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
+const { evaluatePilotReadiness } = require("./src/lib/pilotReadinessEvaluator");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -519,8 +520,10 @@ function createApp(options = {}) {
     });
   });
 
-  // TODO(admin-hardening): protect diagnostics routes with existing admin middleware in production.
-  app.post("/api/admin/diagnostics/report", asyncHandler(async (req, res) => {
+  app.post(
+    "/api/admin/diagnostics/report",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
     const payload = req.body && typeof req.body === "object" ? req.body : {};
     const routeCheck = await runRouteDiagnostics({
       baseUrl: resolveRequestOrigin(req) || process.env.BASE_URL || "http://127.0.0.1:3000",
@@ -540,6 +543,13 @@ function createApp(options = {}) {
       recentErrors: payload?.errors || null
     });
 
+    const pilotReadiness = evaluatePilotReadiness({
+      payload,
+      routeCheck,
+      openAiSummaryStatus: summaryResult.status,
+      openAiSummary: summaryResult.summary
+    });
+
     const report = diagnosticStore.createReport({
       buildVersion: payload?.build?.appBuildVersion || APP_BUILD_VERSION,
       route: payload?.build?.url || req.originalUrl,
@@ -547,17 +557,23 @@ function createApp(options = {}) {
       payload,
       openAiSummaryStatus: summaryResult.status,
       openAiSummary: summaryResult.summary,
-      routeCheck
+      routeCheck,
+      pilotReadiness
     });
     diagnosticStore.append(report);
     return ok(res, req.requestId, report, 201);
-  }));
+    })
+  );
 
-  app.get("/api/admin/diagnostics/recent", asyncHandler(async (req, res) => {
+  app.get(
+    "/api/admin/diagnostics/recent",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
     const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
     const reports = diagnosticStore.recent(limit);
     return ok(res, req.requestId, { reports }, 200);
-  }));
+    })
+  );
 
   app.get(
     "/api/ops/write-observability",

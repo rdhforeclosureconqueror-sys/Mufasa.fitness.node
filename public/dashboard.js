@@ -16,6 +16,7 @@
   const resetBtn = document.getElementById("resetBtn");
   const runDiagnosticBtn = document.getElementById("runDiagnosticBtn");
   const diagnosticStatus = document.getElementById("diagnosticStatus");
+  const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
 
   const nodeBaseUrl = localStorage.getItem("maatNodeBaseUrl") || "";
   const client = window.MufasaBackendRead?.createClient({
@@ -215,20 +216,33 @@
       const json = await res.json();
       const report = json?.data || null;
       const summary = report?.openAiSummary || {};
+      const pilot = report?.pilotReadiness || {};
       diagnosticStatus.textContent = [
         `Build: ${report?.buildVersion || "unknown"}`,
         `Avatar runtime: ${payload?.runtime?.avatarRuntimeStatus ? "present" : "missing"}`,
         `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "missing"}`,
         `Camera status: ${payload?.runtime?.cameraStatus || "unknown"}`,
-        `Route check: pass=${report?.routeCheck?.passCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
+        `Route check: pass=${report?.routeCheck?.passCount ?? "n/a"} protected=${report?.routeCheck?.protectedCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
         `OpenAI status: ${report?.openAiSummaryStatus || "unknown"}`,
         `Likely root cause: ${summary?.likelyRootCause || "n/a"}`,
         `Confidence: ${summary?.confidence ?? "n/a"}`,
         `Suggested Codex fix: ${summary?.codexFixMessage || "n/a"}`,
         `Summary: ${summary?.summary || "No OpenAI summary available."}`
       ].join("\\n");
+      if (pilotReadinessStatus) {
+        pilotReadinessStatus.textContent = [
+          `Pilot Status: ${pilot?.pilotStatus || "BLOCKED_UNKNOWN"}`,
+          `Top blockers: ${(pilot?.blockers || []).slice(0, 3).join(" | ") || "none"}`,
+          `Top warnings: ${(pilot?.warnings || []).slice(0, 3).join(" | ") || "none"}`,
+          `Recommended next fix: ${(pilot?.recommendedFixes || [pilot?.codexFixMessage || "n/a"])[0] || "n/a"}`,
+          `Confidence: ${pilot?.confidence ?? "n/a"}`
+        ].join("\\n");
+      }
     } catch (error) {
       diagnosticStatus.textContent = `Diagnostic request failed. Raw payload saved locally.\\n${String(error?.message || error)}`;
+      if (pilotReadinessStatus) {
+        pilotReadinessStatus.textContent = "Pilot Readiness unavailable because diagnostics request failed.";
+      }
       window.__lastDiagnosticReport = payload;
     }
   }
