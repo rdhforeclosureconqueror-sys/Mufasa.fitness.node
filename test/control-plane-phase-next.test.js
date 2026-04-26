@@ -49,7 +49,7 @@ async function get(baseUrl, route, headers = {}) {
 }
 
 async function authBridge(baseUrl, userId) {
-  const { json, res } = await post(baseUrl, "/api/auth/bridge", { userId });
+  const { json, res } = await post(baseUrl, "/api/auth/bridge", { userId, trustMode: "manual_unverified" });
   assert.equal(res.status, 201);
   return json.data.auth.token;
 }
@@ -252,11 +252,11 @@ test("auth bridge trust modes can be disabled outside dev-like environments", as
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const blockedManual = await post(baseUrl, "/api/auth/bridge", { userId: "prod_user" });
+  const blockedManual = await post(baseUrl, "/api/auth/bridge", { userId: "prod_user", trustMode: "manual_unverified" });
   assert.equal(blockedManual.res.status, 403);
   assert.equal(blockedManual.json.error.code, "TRUST_MODE_DISABLED");
 
-  const blockedProvider = await post(baseUrl, "/api/auth/bridge", { googleEmail: "pilot@example.com" });
+  const blockedProvider = await post(baseUrl, "/api/auth/bridge", { googleEmail: "pilot@example.com", trustMode: "provider_unverified" });
   assert.equal(blockedProvider.res.status, 403);
   assert.equal(blockedProvider.json.error.code, "TRUST_MODE_DISABLED");
 
@@ -297,7 +297,7 @@ test("auth bridge still accepts provider-verified Google tokens when low-trust m
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const bridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456" });
+  const bridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456", trustMode: "google_verified" });
   assert.equal(bridge.res.status, 201);
   assert.equal(bridge.json.data.identity.identityClass, "provider_verified");
   assert.equal(bridge.json.data.identity.providerVerified, true);
@@ -322,11 +322,11 @@ test("revoked token jti is denied and denylist supports bounded pruning", async 
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const adminBridge = await post(baseUrl, "/api/auth/bridge", { userId: "deny_admin" });
+  const adminBridge = await post(baseUrl, "/api/auth/bridge", { userId: "deny_admin", trustMode: "manual_unverified" });
   assert.equal(adminBridge.res.status, 201);
   const adminToken = adminBridge.json.data.auth.token;
 
-  const userBridge = await post(baseUrl, "/api/auth/bridge", { userId: "revoked_user" });
+  const userBridge = await post(baseUrl, "/api/auth/bridge", { userId: "revoked_user", trustMode: "manual_unverified" });
   assert.equal(userBridge.res.status, 201);
   const authToken = userBridge.json.data.auth;
   const meBefore = await get(baseUrl, "/api/me", { authorization: `Bearer ${authToken.token}` });
@@ -344,7 +344,7 @@ test("revoked token jti is denied and denylist supports bounded pruning", async 
   assert.equal(meAfter.res.status, 401);
   assert.equal(meAfter.json.error.code, "UNAUTHENTICATED");
 
-  const secondBridge = await post(baseUrl, "/api/auth/bridge", { userId: "revoked_user_2" });
+  const secondBridge = await post(baseUrl, "/api/auth/bridge", { userId: "revoked_user_2", trustMode: "manual_unverified" });
   assert.equal(secondBridge.res.status, 201);
   const stale = await post(baseUrl, "/api/ops/auth/token-revocations", {
     jti: "stale_jti_entry",

@@ -66,6 +66,14 @@
         .slice(0, 128);
     }
 
+    function extractBridgeFailureReason(error) {
+      return error?.payload?.error?.details?.reason
+        || error?.payload?.error?.details?.diagnostics?.rejectionReason
+        || error?.payload?.error?.code
+        || error?.code
+        || "AUTH_BRIDGE_FAILED";
+    }
+
     async function fetchJSON(path, { method = "GET", body = undefined, auth = false } = {}) {
       const headers = { "content-type": "application/json" };
       if (auth) {
@@ -134,13 +142,24 @@
       const body = {};
       if (claims?.googleIdToken) {
         body.googleIdToken = claims.googleIdToken;
+        body.provider = "google";
+        body.trustMode = "google_verified";
+        if (claims?.googleEmail) body.googleEmail = claims.googleEmail;
       } else if (claims?.googleSub && authProvider !== "google") {
         body.googleSub = claims.googleSub;
+        body.provider = "google";
+        body.trustMode = "provider_unverified";
       } else if (claims?.googleEmail && authProvider !== "google") {
         body.googleEmail = claims.googleEmail;
+        body.provider = "google";
+        body.trustMode = "provider_unverified";
       } else if (claims?.manualUserId) {
         const sanitized = sanitizeManualUserId(claims.manualUserId);
-        if (sanitized) body.userId = sanitized;
+        if (sanitized) {
+          body.userId = sanitized;
+          body.provider = "manual";
+          body.trustMode = "manual_unverified";
+        }
       }
 
       if (!body.userId && !body.googleSub && !body.googleEmail && !body.googleIdToken) {
@@ -190,13 +209,18 @@
         mergeAuthDebug({
           tokenExists: true,
           tokenSource: "bridge_response.auth.token",
+          authBridgeStatus: 201,
+          authBridgeFailureReason: null,
           lastBridgeStatus: "success",
           lastBridgeErrorCode: null,
           lastBridgeTrustMode: data?.diagnostics?.effectiveTrustMode || null
         });
         return token;
       } catch (error) {
+        const bridgeFailureReason = extractBridgeFailureReason(error);
         mergeAuthDebug({
+          authBridgeStatus: error?.status || null,
+          authBridgeFailureReason: bridgeFailureReason,
           lastBridgeStatus: "error",
           lastBridgeErrorCode: error?.payload?.error?.code || error?.code || "AUTH_BRIDGE_FAILED",
           lastBridgeTrustMode: error?.payload?.error?.details?.diagnostics?.effectiveTrustMode || null

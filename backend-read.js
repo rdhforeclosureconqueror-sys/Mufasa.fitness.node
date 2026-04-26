@@ -111,13 +111,24 @@
       }
       if (claims?.googleIdToken) {
         body.googleIdToken = claims.googleIdToken;
+        body.provider = "google";
+        body.trustMode = "google_verified";
+        if (claims?.googleEmail) body.googleEmail = claims.googleEmail;
       } else if (claims?.googleSub && authProvider !== "google") {
         body.googleSub = claims.googleSub;
+        body.provider = "google";
+        body.trustMode = "provider_unverified";
       } else if (claims?.googleEmail && authProvider !== "google") {
         body.googleEmail = claims.googleEmail;
+        body.provider = "google";
+        body.trustMode = "provider_unverified";
       } else if (claims?.manualUserId) {
         const sanitized = sanitizeManualUserId(claims.manualUserId);
-        if (sanitized) body.userId = sanitized;
+        if (sanitized) {
+          body.userId = sanitized;
+          body.provider = "manual";
+          body.trustMode = "manual_unverified";
+        }
       }
 
       if (!body.userId && !body.googleSub && !body.googleEmail && !body.googleIdToken) {

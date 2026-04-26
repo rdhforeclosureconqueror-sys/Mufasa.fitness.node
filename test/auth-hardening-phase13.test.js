@@ -61,7 +61,7 @@ test("auth bridge issues provider-verified identity when googleIdToken is verifi
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const bridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456" });
+  const bridge = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456", trustMode: "google_verified" });
   assert.equal(bridge.res.status, 201);
   assert.equal(bridge.json.data.identity.providerVerified, true);
   assert.equal(bridge.json.data.identity.identityClass, "provider_verified");
@@ -87,9 +87,67 @@ test("auth bridge can reject unverified google claims when strict mode is enable
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const bridge = await post(baseUrl, "/api/auth/bridge", { googleSub: "sub-only" });
+  const bridge = await post(baseUrl, "/api/auth/bridge", { googleSub: "sub-only", trustMode: "provider_unverified" });
   assert.equal(bridge.res.status, 401);
   assert.equal(bridge.json.error.code, "UNAUTHENTICATED");
+});
+
+test("auth bridge rejects missing or invalid trustMode with safe reasons", async (t) => {
+  const rootDir = makeTmpRoot();
+  const app = createApp({ rootDir });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const missingMode = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456" });
+  assert.equal(missingMode.res.status, 403);
+  assert.equal(missingMode.json.error.details.reason, "missing_trust_mode");
+
+  const invalidMode = await post(baseUrl, "/api/auth/bridge", { googleIdToken: "google_token_ok_value_123456", trustMode: "totally_invalid_mode" });
+  assert.equal(invalidMode.res.status, 403);
+  assert.equal(invalidMode.json.error.details.reason, "invalid_trust_mode");
+});
+
+test("admin email keeps observability read permission after google_verified bridge success", async (t) => {
+  const rootDir = makeTmpRoot();
+  const prevClientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const prevAdminEmails = process.env.ADMIN_EMAILS;
+  process.env.GOOGLE_OAUTH_CLIENT_ID = "pilot-client-id";
+  process.env.ADMIN_EMAILS = "admin-ops@example.com";
+  t.after(() => {
+    if (prevClientId == null) delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    else process.env.GOOGLE_OAUTH_CLIENT_ID = prevClientId;
+    if (prevAdminEmails == null) delete process.env.ADMIN_EMAILS;
+    else process.env.ADMIN_EMAILS = prevAdminEmails;
+  });
+  const app = createApp({
+    rootDir,
+    googleIdentityVerifier: async () => ({
+      sub: "google-admin-sub",
+      email: "admin-ops@example.com",
+      emailVerified: true,
+      aud: "pilot-client-id",
+      iss: "https://accounts.google.com"
+    })
+  });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const bridge = await post(baseUrl, "/api/auth/bridge", {
+    provider: "google",
+    trustMode: "google_verified",
+    googleEmail: "admin-ops@example.com",
+    googleIdToken: "google_token_ok_value_123456"
+  });
+  assert.equal(bridge.res.status, 201);
+
+  const diagnosticsRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
+    headers: { authorization: `Bearer ${bridge.json.data.auth.token}` }
+  });
+  assert.equal(diagnosticsRes.status, 200);
 });
 
 test("expired token is rejected with WWW-Authenticate header", async (t) => {

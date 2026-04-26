@@ -33,7 +33,6 @@ const { runControlPlanePreflight } = require("./src/lib/controlPlanePreflight");
 const {
   parseTrustPolicyConfig,
   summarizeTrustPolicy,
-  normalizeTrustMode,
   validateTrustPolicy
 } = require("./src/lib/trustPolicy");
 const { createTokenDenylistStore } = require("./src/lib/tokenDenylistStore");
@@ -52,6 +51,23 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
 ]);
 const APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
 const INDEX_CACHE_BUST_TOKEN = "20260425";
+
+function normalizeAuthBridgeTrustMode(raw) {
+  const mode = String(raw || "").trim().toLowerCase();
+  if (!mode) return null;
+  if (mode === "provider_verified" || mode === "google_verified") return "google_verified";
+  if (mode === "manual_unverified" || mode === "provider_unverified") return mode;
+  return null;
+}
+
+function deriveAuthBridgeRejectionReason(error) {
+  if (!error) return "unknown";
+  return error?.details?.reason
+    || error?.details?.diagnostics?.rejectionReason
+    || error?.code
+    || error?.message
+    || "unknown";
+}
 
 function parseBooleanEnv(value) {
   if (value === true || value === "true") return true;
@@ -949,9 +965,44 @@ function createApp(options = {}) {
 
   // ---- Auth bridge (pilot minimal auth foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
-    const requestedTrustMode = normalizeTrustMode(req.body?.trustMode);
-    const claims = validateAuthBridge(req.body, { requestedTrustMode });
-    const payloadKeys = Object.keys(req.body || {}).filter((key) => ["googleIdToken", "googleSub", "googleEmail", "userId", "manualUserId", "trustMode"].includes(key));
+    const rawTrustMode = String(req.body?.trustMode || "").trim().toLowerCase();
+    const requestedTrustMode = normalizeAuthBridgeTrustMode(req.body?.trustMode);
+    const requestOrigin = String(req.get("origin") || "");
+    const requestProvider = String(req.body?.provider || "").trim().toLowerCase() || null;
+    const hasGoogleEmail = Boolean(req.body?.googleEmail);
+    const hasIdToken = Boolean(req.body?.googleIdToken);
+    const requestEmail = req.body?.googleEmail || null;
+    if (rawTrustMode && !requestedTrustMode) {
+      console.warn("[auth-bridge] rejected", {
+        origin: requestOrigin || null,
+        trustMode: rawTrustMode,
+        provider: requestProvider,
+        hasGoogleEmail,
+        hasIdToken,
+        email: requestEmail,
+        reason: "invalid_trust_mode"
+      });
+      throw new ApiError("FORBIDDEN", "Unsupported auth bridge trustMode", 403, { reason: "invalid_trust_mode" });
+    }
+    let claims;
+    try {
+      claims = validateAuthBridge(req.body, { requestedTrustMode });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        console.warn("[auth-bridge] rejected", {
+          origin: requestOrigin || null,
+          trustMode: requestedTrustMode,
+          provider: requestProvider,
+          hasGoogleEmail,
+          hasIdToken,
+          email: requestEmail,
+          reason: deriveAuthBridgeRejectionReason(error)
+        });
+      }
+      throw error;
+    }
+    const payloadKeys = Object.keys(req.body || {}).filter((key) => ["googleIdToken", "googleSub", "googleEmail", "userId", "manualUserId", "trustMode", "provider"].includes(key));
+    const effectiveRequestProvider = String(req.body?.provider || claims.provider || "").trim().toLowerCase() || null;
     const bridgeDiagnostics = {
       requestReceived: true,
       payloadKeys,
@@ -967,9 +1018,15 @@ function createApp(options = {}) {
     };
     console.info("[auth-bridge] request received", {
       requestId: req.requestId,
+      origin: requestOrigin || null,
+      trustMode: claims.trustMode,
+      provider: effectiveRequestProvider,
       payloadKeys: bridgeDiagnostics.payloadKeys,
       claimPath: bridgeDiagnostics.claimPath,
-      googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent
+      googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
+      hasGoogleEmail: Boolean(claims.googleEmail),
+      hasIdToken: Boolean(claims.googleIdToken),
+      email: claims.googleEmail || null
     });
     let resolvedIdentity;
     try {
@@ -978,7 +1035,14 @@ function createApp(options = {}) {
         googleIdentityVerifier: options.googleIdentityVerifier
       });
     } catch (error) {
+      const rejectionReason = deriveAuthBridgeRejectionReason(error);
       console.warn("[auth-bridge] identity resolution failed", {
+        origin: requestOrigin || null,
+        trustMode: claims.trustMode,
+        provider: effectiveRequestProvider,
+        hasGoogleEmail: Boolean(claims.googleEmail),
+        hasIdToken: Boolean(claims.googleIdToken),
+        email: claims.googleEmail || null,
         claimPath: bridgeDiagnostics.claimPath,
         payloadKeys: bridgeDiagnostics.payloadKeys,
         googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
@@ -986,10 +1050,9 @@ function createApp(options = {}) {
         verificationSuccess: false,
         effectiveTrustMode: claims.trustMode,
         tokenIssued: false,
-        rejectionReason: error?.details?.reason || error?.code || error?.message || "unknown"
+        rejectionReason
       });
       if (error instanceof ApiError) {
-        const rejectionReason = error?.details?.reason || error.code || error.message || "identity_resolution_failed";
         throw new ApiError(error.code, error.message, error.status, {
           ...(error.details || {}),
           diagnostics: {
@@ -1019,12 +1082,23 @@ function createApp(options = {}) {
       effectiveTrustMode
     });
     if (!resolvedIdentity.providerVerified && !trustPolicy.allowedTrustModes.includes(effectiveTrustMode)) {
+      const rejectionReason = "trust_mode_disabled";
+      console.warn("[auth-bridge] rejected", {
+        origin: requestOrigin || null,
+        trustMode: effectiveTrustMode,
+        provider: effectiveRequestProvider,
+        hasGoogleEmail: Boolean(claims.googleEmail),
+        hasIdToken: Boolean(claims.googleIdToken),
+        email: claims.googleEmail || null,
+        reason: rejectionReason
+      });
       throw new ApiError(
         "TRUST_MODE_DISABLED",
         `Trust mode '${effectiveTrustMode}' is disabled by AUTH_BRIDGE_ALLOWED_TRUST_MODES`,
         403,
         {
           diagnostics: bridgeDiagnostics,
+          reason: rejectionReason,
           trustMode: effectiveTrustMode,
           allowedTrustModes: trustPolicy.allowedTrustModes
         }

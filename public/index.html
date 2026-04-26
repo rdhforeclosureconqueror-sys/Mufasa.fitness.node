@@ -2361,6 +2361,8 @@
         lastBridgeStatus: current.lastBridgeStatus || null,
         lastBridgeErrorCode: current.lastBridgeErrorCode || null,
         lastBridgeTrustMode: current.lastBridgeTrustMode || null,
+        authBridgeStatus: current.authBridgeStatus ?? null,
+        authBridgeFailureReason: current.authBridgeFailureReason || null,
         lastProfileStatus: current.lastProfileStatus || null,
         tokenPersistsOnRefresh: current.tokenPersistsOnRefresh ?? null,
         ...partial
@@ -2788,7 +2790,9 @@
             ? ["googleIdToken"]
             : (claims.claimPath === "googleSub" ? ["googleSub"] : (claims.claimPath === "googleEmail" ? ["googleEmail"] : ["manualUserId"])),
           tokenExists: true,
-          tokenSource: claims.claimPath === "googleIdToken" ? "bridge.googleIdToken" : "bridge.fallback_claim"
+          tokenSource: claims.claimPath === "googleIdToken" ? "bridge.googleIdToken" : "bridge.fallback_claim",
+          authBridgeStatus: 201,
+          authBridgeFailureReason: null
         });
         backendTruthState.bridge = { mode: "ok", message: "Auth bridge healthy." };
         return true;
@@ -2805,6 +2809,17 @@
           });
           updateSyncStatus();
           return false;
+        }
+        if (Number(e?.status) === 403) {
+          const safeReason = e?.payload?.error?.details?.reason
+            || e?.payload?.error?.details?.diagnostics?.rejectionReason
+            || e?.payload?.error?.code
+            || "forbidden";
+          addLog("system", `Backend login bridge rejected: ${safeReason}`);
+          updateAuthDebug({
+            authBridgeStatus: 403,
+            authBridgeFailureReason: safeReason
+          });
         }
         backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
         addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");

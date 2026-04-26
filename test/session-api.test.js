@@ -85,7 +85,11 @@ async function put(baseUrl, route, body, headers = {}) {
 }
 
 async function authBridge(baseUrl, payload) {
-  const { res, json } = await post(baseUrl, "/api/auth/bridge", payload);
+  const trustMode = payload?.googleIdToken
+    ? "google_verified"
+    : (payload?.googleSub || payload?.googleEmail ? "provider_unverified" : "manual_unverified");
+  const bridgePayload = { ...payload, trustMode };
+  const { res, json } = await post(baseUrl, "/api/auth/bridge", bridgePayload);
   assert.equal(res.status, 201);
   assert.equal(json.ok, true);
   return json.data.auth.token;
