@@ -16,22 +16,51 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
-  <script type="module">
-    import * as THREE_MODULE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js";
-    import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js";
-
-    window.__AVATAR_THREE = {
-      THREE: THREE_MODULE,
-      GLTFLoader,
-      source: "direct-esm-jsdelivr",
-      ready: true
+  <script>
+    window.__avatarRuntimeStatus = {
+      threeImportStarted: true,
+      threeImportOk: false,
+      threeLoaded: false,
+      gltfLoaderOk: false,
+      gltfLoaderLoaded: false,
+      avatarThreeGlobalOk: false,
+      readyEventFired: false,
+      failedReason: null,
+      failureReason: null
     };
-
-    console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
-    console.log("[avatar-3d-route] THREE ready:", !!window.__AVATAR_THREE?.THREE ? "yes" : "no");
-    console.log("[avatar-3d-route] GLTFLoader ready:", !!window.__AVATAR_THREE?.GLTFLoader ? "yes" : "no");
-    console.log("[avatar-3d-route] legacy fallback disabled: yes");
-    window.dispatchEvent(new Event("avatar-three-ready"));
+    console.log("[avatar-3d-route] Three ESM import started");
+  </script>
+  <script type="module">
+    const avatarRuntimeStatus = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
+    try {
+      const THREE_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js");
+      const GLTF_LOADER_MODULE = await import("https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js");
+      const GLTFLoader = GLTF_LOADER_MODULE?.GLTFLoader || null;
+      const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
+      runtimeBridge.THREE = THREE_MODULE;
+      runtimeBridge.GLTFLoader = GLTFLoader;
+      runtimeBridge.source = "direct-esm-jsdelivr";
+      runtimeBridge.ready = true;
+      avatarRuntimeStatus.threeImportOk = Boolean(THREE_MODULE);
+      avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
+      avatarRuntimeStatus.gltfLoaderOk = Boolean(GLTFLoader);
+      avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderOk;
+      avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
+      avatarRuntimeStatus.failedReason = null;
+      avatarRuntimeStatus.failureReason = null;
+      console.log("[avatar-3d-route] runtime source: direct-esm-jsdelivr");
+      console.log("[avatar-3d-route] THREE ready:", !!window.__AVATAR_THREE?.THREE ? "yes" : "no");
+      console.log("[avatar-3d-route] GLTFLoader ready:", !!window.__AVATAR_THREE?.GLTFLoader ? "yes" : "no");
+      console.log("[avatar-3d-route] legacy fallback disabled: yes");
+      avatarRuntimeStatus.readyEventFired = true;
+      window.dispatchEvent(new Event("avatar-three-ready"));
+    } catch (err) {
+      avatarRuntimeStatus.readyEventFired = false;
+      avatarRuntimeStatus.failedReason = `three_import_failed:${String(err?.message || err || "unknown")}`;
+      avatarRuntimeStatus.failureReason = avatarRuntimeStatus.failedReason;
+      avatarRuntimeStatus.avatarThreeGlobalOk = false;
+      window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: avatarRuntimeStatus.failedReason } }));
+    }
   </script>
 
   <!-- Simple favicon so we don’t get 404s -->
