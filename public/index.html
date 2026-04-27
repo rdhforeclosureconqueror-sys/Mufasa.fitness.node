@@ -707,6 +707,18 @@
       display: flex;
       justify-content: center;
     }
+    #googleLoginDebug {
+      margin-top: 10px;
+      text-align: left;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      color: #fde68a;
+      border: 1px solid rgba(250, 204, 21, 0.5);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(2, 6, 23, 0.65);
+      white-space: pre-line;
+    }
 
     #userInfo {
       position: fixed;
@@ -848,6 +860,7 @@
       <div style="font-size:0.75rem;color:#9ca3af;margin:6px 0;">— or —</div>
       <button id="googleBtn">Continue with Google</button>
       <div id="googleSignInMount" aria-live="polite"></div>
+      <div id="googleLoginDebug" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -1075,6 +1088,7 @@
     const overlay = document.getElementById("loginOverlay");
     const googleBtn = document.getElementById("googleBtn");
     const googleSignInMountEl = document.getElementById("googleSignInMount");
+    const googleLoginDebugEl = document.getElementById("googleLoginDebug");
     const manualNameInput = document.getElementById("manualName");
     const manualLoginBtn = document.getElementById("manualLoginBtn");
     const userInfoBar = document.getElementById("userInfo");
@@ -3405,15 +3419,51 @@
       showOverlay(false);
     };
 
+    const googleLoginDebugState = {
+      gisScriptLoaded: false,
+      googleInitialized: false,
+      buttonClickReceived: false,
+      promptAttempted: false,
+      lastAuthError: null
+    };
+    function renderGoogleLoginDebug() {
+      if (!googleLoginDebugEl) return;
+      googleLoginDebugEl.textContent = [
+        `GIS script loaded: ${googleLoginDebugState.gisScriptLoaded ? "yes" : "no"}`,
+        `Google initialized: ${googleLoginDebugState.googleInitialized ? "yes" : "no"}`,
+        `Button click received: ${googleLoginDebugState.buttonClickReceived ? "yes" : "no"}`,
+        `Prompt attempted: ${googleLoginDebugState.promptAttempted ? "yes" : "no"}`,
+        `Last auth error: ${googleLoginDebugState.lastAuthError || "none"}`
+      ].join("\n");
+    }
+    function setGoogleAuthError(errorLike) {
+      googleLoginDebugState.lastAuthError = String(errorLike?.message || errorLike || "unknown_auth_error");
+      renderGoogleLoginDebug();
+    }
+    const gisScriptEl = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (gisScriptEl) {
+      const onGisReady = () => {
+        googleLoginDebugState.gisScriptLoaded = true;
+        googleLoginDebugState.lastAuthError = null;
+        renderGoogleLoginDebug();
+      };
+      if (window.google?.accounts?.id) onGisReady();
+      else {
+        gisScriptEl.addEventListener("load", onGisReady, { once: true });
+        gisScriptEl.addEventListener("error", () => setGoogleAuthError("gsi_script_load_failed"), { once: true });
+      }
+    }
+    renderGoogleLoginDebug();
+
     let googleIdentityInitDone = false;
     function hasGoogleIdentityApi() {
-      return Boolean(window.google && google.accounts && google.accounts.id);
+      return Boolean(window.google?.accounts?.id);
     }
 
     function initializeGoogleIdentity({ source = "unknown" } = {}) {
       if (!hasGoogleIdentityApi()) return false;
       try {
-        google.accounts.id.initialize({
+        window.google.accounts.id.initialize({
           client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
           callback: (response) => {
             const payload = parseJwt(response.credential || "");
@@ -3438,7 +3488,7 @@
           }
         });
         if (googleSignInMountEl && !googleSignInMountEl.dataset.rendered) {
-          google.accounts.id.renderButton(googleSignInMountEl, {
+          window.google.accounts.id.renderButton(googleSignInMountEl, {
             theme: "filled_blue",
             size: "large",
             shape: "pill",
@@ -3448,6 +3498,10 @@
           googleSignInMountEl.dataset.rendered = "1";
         }
         googleIdentityInitDone = true;
+        googleLoginDebugState.googleInitialized = true;
+        googleLoginDebugState.lastAuthError = null;
+        googleLoginDebugState.gisScriptLoaded = true;
+        renderGoogleLoginDebug();
         if (googleBtn) {
           googleBtn.disabled = false;
           googleBtn.title = "";
@@ -3456,6 +3510,8 @@
         return true;
       } catch (err) {
         console.warn("google identity initialize failed", err);
+        googleLoginDebugState.googleInitialized = false;
+        setGoogleAuthError(err);
         updateAuthDebug({
           googleIdentityReady: false,
           googleIdentityInitSource: source,
@@ -3466,31 +3522,34 @@
     }
 
     (function warmGoogleIdentityInit() {
-      if (googleBtn) {
-        googleBtn.disabled = true;
-        googleBtn.title = "Loading Google Sign-In…";
-      }
       let attempts = 0;
       const tryInit = () => {
         attempts += 1;
         if (initializeGoogleIdentity({ source: attempts === 1 ? "bootstrap" : `retry_${attempts}` })) return;
         if (attempts < 40) window.setTimeout(tryInit, 150);
-        else if (googleBtn) {
-          googleBtn.disabled = false;
-          googleBtn.title = "";
+        else {
+          setGoogleAuthError("google_identity_api_unavailable_after_bootstrap_retries");
+          if (googleBtn) {
+            googleBtn.disabled = false;
+            googleBtn.title = "";
+          }
         }
       };
       tryInit();
     })();
 
     googleBtn.onclick = () => {
+      googleLoginDebugState.buttonClickReceived = true;
       trackPilotEvent("login_attempted", { method: "google" });
       if (!googleIdentityInitDone) initializeGoogleIdentity({ source: "button_click" });
       if (!hasGoogleIdentityApi()) {
+        setGoogleAuthError("google_identity_api_missing");
         alert("Google login not available on this device. Use username login instead.");
         return;
       }
-      google.accounts.id.prompt();
+      googleLoginDebugState.promptAttempted = true;
+      renderGoogleLoginDebug();
+      window.google.accounts.id.prompt();
     };
 
     signOutBtn.onclick = () => {
