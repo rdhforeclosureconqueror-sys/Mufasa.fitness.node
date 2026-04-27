@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-27T02:14:16.062Z
+Generated: 2026-04-27T13:52:52.948Z
 
 ## Backend Route Inventory
 
@@ -26,6 +26,18 @@ Generated: 2026-04-27T02:14:16.062Z
 | POST | /api/ohsa | yes | none | JSON payload validated server-side | application route | JSON/file |
 | GET | /api/me/ohsa | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | GET | /api/me/history | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/client-intake | yes | none | none/optional | application route | JSON/file |
+| POST | /api/client-intake | yes | none | none/optional | application route | JSON/file |
+| GET | /api/goals-baseline | yes | none | none/optional | application route | JSON/file |
+| POST | /api/goals-baseline | yes | none | none/optional | application route | JSON/file |
+| GET | /api/programs/current | yes | none | none/optional | application route | JSON/file |
+| POST | /api/programs | yes | none | none/optional | application route | JSON/file |
+| POST | /api/workouts/track | yes | none | none/optional | application route | JSON/file |
+| GET | /api/check-ins | yes | none | none/optional | application route | JSON/file |
+| POST | /api/check-ins | yes | none | none/optional | application route | JSON/file |
+| GET | /api/progress/dashboard | yes | none | none/optional | application route | JSON/file |
+| GET | /api/visual-progress-scans | yes | none | none/optional | application route | JSON/file |
+| POST | /api/visual-progress-scans | yes | none | none/optional | application route | JSON/file |
 | POST | /api/avatar/upload | yes | none | multipart/form-data with field name=avatar and .glb payload | upload GLB avatar and return hosted URL | JSON/file |
 | POST | /command | no | none | none/optional | application route | JSON/file |
 

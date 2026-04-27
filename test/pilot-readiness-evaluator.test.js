@@ -7,58 +7,51 @@ const { evaluatePilotReadiness } = require("../src/lib/pilotReadinessEvaluator")
 function makeBaseReport() {
   return {
     payload: {
-      build: { appBuildVersion: "2026.04.26", deviceType: "desktop" },
       runtime: {
-        cameraStatus: "connected",
-        formEngineStatus: { loaded: true, lastEvaluatedAt: new Date().toISOString() },
-        selectedExercise: "air_squat",
-        workoutStarted: true,
-        lastFormResultSummary: { movementFamily: "SQUAT", repValid: true },
-        workoutCompleted: true,
-        sessionSaveSuccess: true,
-        avatarRuntimeStatus: { ready: true }
+        sessionSaveSuccess: true
       },
-      routesAndScripts: { formEngineLoaded: true },
-      errors: { recentConsoleErrors: [], recentConsoleWarnings: [], sessionSaveFailureReason: null }
-    },
-    routeCheck: {
-      checks: [{ route: "/api/me", classification: "PROTECTED" }, { route: "/health", classification: "PASS" }],
-      failCount: 0,
-      protectedCount: 1
+      retention: {
+        intakeComplete: true,
+        goalSet: true,
+        programAssigned: true,
+        firstWorkoutCompleted: true,
+        weeklyCheckInAvailable: true,
+        progressDashboardActive: true,
+        visualScanEnabled: true,
+        visualScanUsed: true
+      }
     },
     openAiSummaryStatus: "ok"
   };
 }
 
-test("camera failure yields NOT_READY", () => {
+test("missing required retention checkpoints yields RETENTION_NOT_READY", () => {
   const report = makeBaseReport();
-  report.payload.runtime.cameraStatus = "failed_permission_denied";
+  report.payload.retention.programAssigned = false;
   const result = evaluatePilotReadiness(report);
-  assert.equal(result.pilotStatus, "NOT_READY");
-  assert.ok(result.blockers.some((entry) => /camera/i.test(entry)));
+  assert.equal(result.pilotStatus, "RETENTION_NOT_READY");
+  assert.ok(result.blockers.some((entry) => /Program has not been assigned/i.test(entry)));
 });
 
-test("avatar failure only yields READY_WITH_WARNINGS", () => {
+test("visual scan optional warning yields RETENTION_READY_WITH_WARNINGS", () => {
   const report = makeBaseReport();
-  report.payload.runtime.avatarRuntimeStatus = { failedReason: "gltf_load_failed" };
+  report.payload.retention.visualScanUsed = false;
   const result = evaluatePilotReadiness(report);
-  assert.equal(result.pilotStatus, "READY_WITH_WARNINGS");
+  assert.equal(result.pilotStatus, "RETENTION_READY_WITH_WARNINGS");
   assert.equal(result.blockers.length, 0);
-  assert.ok(result.warnings.some((entry) => /avatar runtime/i.test(entry)));
+  assert.ok(result.warnings.some((entry) => /Visual progress scan/i.test(entry)));
 });
 
-test("healthy report yields READY", () => {
+test("all required checkpoints satisfied yields RETENTION_READY", () => {
   const report = makeBaseReport();
   const result = evaluatePilotReadiness(report);
-  assert.equal(result.pilotStatus, "READY");
+  assert.equal(result.pilotStatus, "RETENTION_READY");
 });
 
-test("missing workout evidence yields BLOCKED_UNKNOWN with explanation", () => {
+test("missing evidence yields RETENTION_READY_WITH_WARNINGS", () => {
   const report = makeBaseReport();
-  delete report.payload.runtime.workoutCompleted;
-  delete report.payload.runtime.sessionSaveSuccess;
+  delete report.payload.retention.weeklyCheckInAvailable;
   const result = evaluatePilotReadiness(report);
-  assert.equal(result.pilotStatus, "BLOCKED_UNKNOWN");
-  assert.ok(Array.isArray(result.missingEvidence));
-  assert.ok(result.missingEvidence.length >= 2);
+  assert.equal(result.pilotStatus, "RETENTION_READY_WITH_WARNINGS");
+  assert.ok(result.missingEvidence.some((entry) => entry.field === "payload.retention.weeklyCheckInAvailable"));
 });
