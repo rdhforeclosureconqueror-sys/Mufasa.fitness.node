@@ -141,6 +141,7 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
       }
     });
     assert.equal(workoutTrack.res.status, 201);
+    assert.equal(workoutTrack.json.data.rewardSummary.workoutCompleted, true);
 
     const checkInSave = await request(baseUrl, "/api/check-ins", {
       method: "POST",
@@ -151,6 +152,9 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
         sleep: 7,
         motivation: 8,
         progressNotes: "felt stronger",
+        strengthProgressionNotes: "Added one rep to each set.",
+        formTrendNotes: "Squat depth and knee tracking improved.",
+        nextWeekFocus: "Hip control",
         adherence: 90,
         painFlag: false
       }
@@ -164,6 +168,17 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
     const dashboard = await request(baseUrl, "/api/progress/dashboard", { headers: auth });
     assert.equal(dashboard.res.status, 200);
     assert.equal(dashboard.json.data.workoutsCompleted, 1);
+    assert.equal(dashboard.json.data.rewardSummary.workoutCompleted, true);
+    assert.equal(typeof dashboard.json.data.streak.currentStreak, "number");
+    assert.equal(typeof dashboard.json.data.streak.consistencyPercentage, "number");
+    assert.match(dashboard.json.data.weeklyReview.weekSummary, /You completed/i);
+    assert.ok(Array.isArray(dashboard.json.data.coachMessaging.messages));
+    assert.ok(dashboard.json.data.progressNarrative);
+    assert.equal(typeof dashboard.json.data.retentionMotivationStatus, "string");
+
+    const rewardLatest = await request(baseUrl, "/api/workouts/reward/latest", { headers: auth });
+    assert.equal(rewardLatest.res.status, 200);
+    assert.equal(rewardLatest.json.data.rewardSummary.workoutCompleted, true);
 
     const user = JSON.parse(fs.readFileSync(path.join(tmpRoot, "data", "users", "retention_user_1.json"), "utf8"));
     assert.ok(user.clientIntake);
@@ -171,6 +186,75 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
     assert.ok(user.program);
     assert.ok(Array.isArray(user.workoutTracking));
     assert.ok(Array.isArray(user.checkIns));
+  });
+});
+
+test("streak consistency handles missed days without breaking summaries", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    const token = await authToken(baseUrl, "retention_user_missed_day");
+    const auth = { authorization: `Bearer ${token}` };
+    await request(baseUrl, "/api/client-intake", {
+      method: "POST",
+      headers: auth,
+      body: {
+        name: "Casey",
+        age: 29,
+        height: 170,
+        goals: ["strength"],
+        injuries: [],
+        limitations: [],
+        equipment: ["dumbbells"],
+        preferredWorkoutDays: ["Mon", "Wed", "Fri"],
+        medicalDisclaimerConsent: true
+      }
+    });
+    await request(baseUrl, "/api/goals-baseline", {
+      method: "POST",
+      headers: auth,
+      body: { goal: "strength", baseline: { formScoreBaseline: 70 } }
+    });
+    const programAssign = await request(baseUrl, "/api/programs", {
+      method: "POST",
+      headers: auth,
+      body: {
+        clientId: "retention_user_missed_day",
+        goal: "strength",
+        durationWeeks: 8,
+        daysPerWeek: 4,
+        movementFocus: ["lower_body"],
+        exercises: ["squat"],
+        progressionRules: ["+1 rep weekly"]
+      }
+    });
+    assert.equal(programAssign.res.status, 201);
+
+    const userPath = path.join(tmpRoot, "data", "users", "retention_user_missed_day.json");
+    const dayOffsets = [0, 2];
+    for (const offset of dayOffsets) {
+      const tracked = await request(baseUrl, "/api/workouts/track", {
+        method: "POST",
+        headers: auth,
+        body: {
+          programId: programAssign.json.data.program.programId,
+          workoutId: `missed_day_${offset}`,
+          exercisesCompleted: ["squat"],
+          reps: 12,
+          sets: 3,
+          formScore: 75 + offset,
+          completionStatus: "completed"
+        }
+      });
+      assert.equal(tracked.res.status, 201);
+      const user = JSON.parse(fs.readFileSync(userPath, "utf8"));
+      user.workoutTracking[user.workoutTracking.length - 1].ts = Date.now() - (offset * 24 * 60 * 60 * 1000);
+      fs.writeFileSync(userPath, JSON.stringify(user, null, 2));
+    }
+
+    const dashboard = await request(baseUrl, "/api/progress/dashboard", { headers: auth });
+    assert.equal(dashboard.res.status, 200);
+    assert.ok(dashboard.json.data.streak.missedWorkouts >= 0);
+    assert.ok(["comeback_active", "needs_comeback", "on_track"].includes(dashboard.json.data.streak.comebackStatus));
+    assert.ok(Array.isArray(dashboard.json.data.coachMessaging.messages));
   });
 });
 

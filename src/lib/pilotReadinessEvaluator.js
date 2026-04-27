@@ -1,9 +1,9 @@
 "use strict";
 
 const PILOT_STATUS = Object.freeze({
-  RETENTION_READY: "RETENTION_READY",
-  RETENTION_READY_WITH_WARNINGS: "RETENTION_READY_WITH_WARNINGS",
-  RETENTION_NOT_READY: "RETENTION_NOT_READY"
+  READY: "READY",
+  READY_WITH_WARNINGS: "READY_WITH_WARNINGS",
+  NOT_READY: "NOT_READY"
 });
 
 function evaluatePilotReadiness(report = {}) {
@@ -22,10 +22,14 @@ function evaluatePilotReadiness(report = {}) {
     goalSet: retention.goalSet === true,
     programAssigned: retention.programAssigned === true,
     firstWorkoutCompleted: retention.firstWorkoutCompleted === true,
-    weeklyCheckInAvailable: retention.weeklyCheckInAvailable === true,
-    progressDashboardActive: retention.progressDashboardActive === true,
+    weeklyCheckInAvailable: retention.weeklyReviewReady === true,
+    progressDashboardActive: retention.progressNarrativeReady === true,
     visualScanEnabled: retention.visualScanEnabled === true,
-    visualScanUsed: retention.visualScanUsed === true
+    visualScanUsed: retention.visualScanUsed === true,
+    postWorkoutRewardScreenReady: retention.postWorkoutRewardScreenReady === true,
+    streakSystemReady: retention.streakSystemReady === true,
+    coachMessagingReady: retention.coachMessagingReady === true,
+    habitLoopReady: retention.habitLoopReady === true
   };
 
   const requiredChecks = [
@@ -33,13 +37,20 @@ function evaluatePilotReadiness(report = {}) {
     ["goalSet", "Goal and baseline are not set.", "Create goals + baseline at /api/goals-baseline."],
     ["programAssigned", "Program has not been assigned.", "Assign a program using /api/programs."],
     ["firstWorkoutCompleted", "First workout has not been completed.", "Track first workout completion via /api/workouts/track."],
-    ["weeklyCheckInAvailable", "Weekly check-in flow is unavailable.", "Enable weekly check-ins with /api/check-ins."],
-    ["progressDashboardActive", "Progress dashboard is not active.", "Enable /api/progress/dashboard for this user." ]
+    ["weeklyCheckInAvailable", "Weekly check-in flow is unavailable.", "Enable weekly review data with /api/check-ins and /api/progress/dashboard."],
+    ["progressDashboardActive", "Progress dashboard is not active.", "Enable /api/progress/dashboard for this user."],
+    ["postWorkoutRewardScreenReady", "Post-workout reward summary is unavailable.", "Save and display reward summary after /api/workouts/track."],
+    ["streakSystemReady", "Streak and consistency signals are not available.", "Expose streak metrics in /api/progress/dashboard."],
+    ["coachMessagingReady", "Deterministic coach messaging is unavailable.", "Enable coach messaging in progress dashboard payload."],
+    ["habitLoopReady", "Habit loop prompts are unavailable.", "Return habit loop prompts for before/during/after/weekly moments."]
   ];
 
   for (const [field, blockerMessage, fix] of requiredChecks) {
     evidence.push(`payload.retention.${field}`);
-    if (retention[field] == null) {
+    const hasEvidence = retention[field] != null
+      || (field === "weeklyCheckInAvailable" && retention.weeklyReviewReady != null)
+      || (field === "progressDashboardActive" && retention.progressNarrativeReady != null);
+    if (!hasEvidence) {
       missingEvidence.push({ field: `payload.retention.${field}`, label: field });
       warnings.push(`${field} evidence missing from diagnostic payload.`);
       continue;
@@ -65,11 +76,11 @@ function evaluatePilotReadiness(report = {}) {
     evidence.push("payload.runtime.sessionSaveSuccess");
   }
 
-  let pilotStatus = PILOT_STATUS.RETENTION_READY;
+  let pilotStatus = PILOT_STATUS.READY;
   if (blockers.length > 0) {
-    pilotStatus = PILOT_STATUS.RETENTION_NOT_READY;
+    pilotStatus = PILOT_STATUS.NOT_READY;
   } else if (warnings.length > 0 || missingEvidence.length > 0) {
-    pilotStatus = PILOT_STATUS.RETENTION_READY_WITH_WARNINGS;
+    pilotStatus = PILOT_STATUS.READY_WITH_WARNINGS;
   }
 
   const confidence = blockers.length > 0 ? 0.9 : (warnings.length > 0 ? 0.75 : 0.85);

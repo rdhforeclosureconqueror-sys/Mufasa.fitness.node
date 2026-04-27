@@ -140,6 +140,11 @@ function validateWeeklyCheckIn(input) {
     weightKg: asNumber(payload.weight ?? payload.weightKg, "weight", { required: false, min: 20, max: 450 }),
     measurements: asStringArray(payload.measurements, "measurements", { maxItems: 20, maxItemLen: 180 }),
     progressNotes: asString(payload.progressNotes, "progressNotes", { required: false, max: 3000 }),
+    strengthProgressionNotes: asString(payload.strengthProgressionNotes, "strengthProgressionNotes", { required: false, max: 3000 }),
+    formTrendNotes: asString(payload.formTrendNotes, "formTrendNotes", { required: false, max: 3000 }),
+    bodyMeasurementsOptional: asString(payload.bodyMeasurementsOptional, "bodyMeasurementsOptional", { required: false, max: 2000 }),
+    visualScanOptional: asString(payload.visualScanOptional, "visualScanOptional", { required: false, max: 2000 }),
+    nextWeekFocus: asString(payload.nextWeekFocus, "nextWeekFocus", { required: false, max: 500 }),
     adherence: asNumber(payload.adherence, "adherence", { required: true, min: 0, max: 100 }),
     painFlag: asBoolean(payload.painFlag, "painFlag", { required: true })
   };

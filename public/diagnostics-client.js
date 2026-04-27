@@ -71,6 +71,14 @@
     const formEngineStatus = globalScope.__formEngineStatus || null;
     const userAgent = globalScope.navigator?.userAgent || null;
     const derivedEvidence = derivePilotEvidenceFromLocalEvents();
+    const retentionRuntime = globalScope.__retentionMotivationStatus || null;
+    const dashboard = retentionRuntime?.dashboard || null;
+    const hasReward = Boolean(dashboard?.rewardSummary?.workoutCompleted);
+    const hasStreak = Number.isFinite(Number(dashboard?.streak?.currentStreak));
+    const hasWeeklyReview = Boolean(dashboard?.weeklyReview?.weekSummary);
+    const hasCoachMessages = Array.isArray(dashboard?.coachMessaging?.messages) && dashboard.coachMessaging.messages.length > 0;
+    const hasNarrative = Boolean(dashboard?.progressNarrative?.nextMilestone);
+    const hasHabitLoop = Boolean(dashboard?.habitLoopPrompts?.beforeWorkout);
     const payload = {
       build: {
         appBuildVersion: globalScope.APP_BUILD_VERSION || null,
@@ -101,6 +109,20 @@
         fitnessLoaded: Boolean(globalScope.MufasaFitness),
         threeLoaded: Boolean(globalScope.__AVATAR_THREE?.THREE),
         gltfLoaderLoaded: Boolean(globalScope.__AVATAR_THREE?.GLTFLoader)
+      },
+      retention: {
+        intakeComplete: retentionRuntime?.intakeComplete ?? null,
+        goalSet: retentionRuntime?.goalSet ?? null,
+        programAssigned: retentionRuntime?.programAssigned ?? null,
+        firstWorkoutCompleted: retentionRuntime?.firstWorkoutCompleted ?? null,
+        weeklyReviewReady: retentionRuntime?.weeklyReviewReady ?? hasWeeklyReview,
+        progressNarrativeReady: retentionRuntime?.progressNarrativeReady ?? hasNarrative,
+        postWorkoutRewardScreenReady: retentionRuntime?.postWorkoutRewardScreenReady ?? hasReward,
+        streakSystemReady: retentionRuntime?.streakSystemReady ?? hasStreak,
+        coachMessagingReady: retentionRuntime?.coachMessagingReady ?? hasCoachMessages,
+        habitLoopReady: retentionRuntime?.habitLoopReady ?? hasHabitLoop,
+        visualScanEnabled: retentionRuntime?.visualScanEnabled ?? null,
+        visualScanUsed: retentionRuntime?.visualScanUsed ?? null
       },
       errors: {
         recentConsoleErrors: state.errors.slice(-10),
