@@ -428,8 +428,6 @@ function createApp(options = {}) {
       diagnostics: true
     });
   });
-  app.use(express.static(PUBLIC_DIR));
-
   // ---- Helpers ----
   function readJSON(p) {
     return JSON.parse(fs.readFileSync(p, "utf8"));
@@ -1531,6 +1529,10 @@ function createApp(options = {}) {
       return res.status(500).json({ ok: false, error: "Command handler failed", message: e.message });
     }
   }));
+
+
+  // ---- Static assets ----
+  app.use(express.static(PUBLIC_DIR));
 
   // ---- central error handler ----
   app.use((err, req, res, _next) => {
