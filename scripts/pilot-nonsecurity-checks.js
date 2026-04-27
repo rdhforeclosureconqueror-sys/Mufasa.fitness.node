@@ -41,10 +41,11 @@ const indexPath = path.join(repoRoot, "public", "index.html");
 const indexSource = fs.existsSync(indexPath) ? fs.readFileSync(indexPath, "utf8") : "";
 const gltfLoaderImportRefs = (indexSource.match(/examples\/jsm\/loaders\/GLTFLoader\.js/g) || []).length;
 const threeModuleImportRefs = (indexSource.match(/build\/three\.module\.js/g) || []).length;
+const legacyLoaderRefs = (indexSource.match(/examples\/js\/loaders\/GLTFLoader\.js/g) || []).length;
 check(
-  "no duplicate Three.js loader patterns added",
-  gltfLoaderImportRefs <= 1 && threeModuleImportRefs <= 1,
-  `GLTFLoader imports: ${gltfLoaderImportRefs}, Three imports: ${threeModuleImportRefs}`
+  "Three.js runtime references are present and modern",
+  gltfLoaderImportRefs >= 1 && threeModuleImportRefs >= 1 && legacyLoaderRefs === 0,
+  `GLTFLoader imports: ${gltfLoaderImportRefs}, Three imports: ${threeModuleImportRefs}, legacy loader refs: ${legacyLoaderRefs}`
 );
 
 check("lint passes", runScript("npm", ["run", "lint"]));

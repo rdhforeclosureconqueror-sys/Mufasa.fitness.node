@@ -31,6 +31,17 @@
     const apiBase = resolveBaseUrl(baseUrl);
     const tokenKey = `${storagePrefix}AuthToken`;
 
+    function mergeAuthDebug(patch) {
+      if (typeof window === "undefined") return;
+      const current = window.__MAAT_AUTH_DEBUG && typeof window.__MAAT_AUTH_DEBUG === "object"
+        ? window.__MAAT_AUTH_DEBUG
+        : {};
+      window.__MAAT_AUTH_DEBUG = { ...current, ...patch };
+      if (window.__MAAT_AUTH_DEBUG.googleSubPresent == null) {
+        window.__MAAT_AUTH_DEBUG.googleSubPresent = Boolean(window.__MAAT_AUTH_DEBUG.googleSub);
+      }
+    }
+
     function getAuthToken() {
       const token = localStorage.getItem(tokenKey);
       return token && token.trim() ? token : null;
@@ -53,6 +64,14 @@
         .replace(/[^a-z0-9._-]+/g, "_")
         .replace(/^_+|_+$/g, "")
         .slice(0, 128);
+    }
+
+    function extractBridgeFailureReason(error) {
+      return error?.payload?.error?.details?.reason
+        || error?.payload?.error?.details?.diagnostics?.rejectionReason
+        || error?.payload?.error?.code
+        || error?.code
+        || "AUTH_BRIDGE_FAILED";
     }
 
     async function fetchJSON(path, { method = "GET", body = undefined, auth = false } = {}) {
@@ -99,16 +118,28 @@
       return payload.data;
     }
 
-    async function ensureAuthToken(claims) {
+    async function ensureAuthToken(claims, options = {}) {
       const existingToken = getAuthToken();
       const authProvider = String(claims?.authProvider || "").toLowerCase();
-
-      const body = {};
+      const bridgeReason = options?.bridgeReason || "unspecified";
+      const tokenRefreshRequired = Boolean(options?.tokenRefreshRequired);
       if (authProvider === "google" && !claims?.googleIdToken) {
+        mergeAuthDebug({
+          authProvider,
+          claimPath: "missing_google_token",
+          lastBridgePayloadKeys: [],
+          tokenExists: Boolean(existingToken),
+          tokenSource: "google_profile_without_googleIdToken",
+          lastBridgeStatus: "skipped",
+          lastBridgeErrorCode: "GOOGLE_TOKEN_MISSING",
+          lastBridgeTrustMode: null
+        });
         const err = new Error("google_token_missing");
         err.code = "GOOGLE_TOKEN_MISSING";
         throw err;
       }
+
+      const body = {};
       if (claims?.googleIdToken) {
         body.googleIdToken = claims.googleIdToken;
         body.provider = "google";
@@ -141,6 +172,30 @@
         ? "googleIdToken"
         : (body.googleSub ? "googleSub" : (body.googleEmail ? "googleEmail" : "manualUserId"));
       console.log("[bridge] claimPath:", claimPath);
+      const payloadKeys = Object.keys(body);
+      console.info("[auth-bridge] bridge payload (sanitized)", {
+        payloadKeys,
+        claimPath,
+        bridgeReason,
+        tokenRefreshRequired,
+        hasGoogleIdToken: Boolean(body.googleIdToken),
+        googleIdTokenLength: body.googleIdToken ? String(body.googleIdToken).length : 0,
+        googleIdTokenPresent: Boolean(body.googleIdToken),
+        fallbackUsed: !body.googleIdToken,
+        fallbackClaims: {
+          googleEmail: Boolean(body.googleEmail),
+          googleSub: Boolean(body.googleSub),
+          manualUserId: Boolean(body.userId)
+        }
+      });
+      mergeAuthDebug({
+        claimPath,
+        lastBridgePayloadKeys: payloadKeys,
+        tokenExists: Boolean(existingToken),
+        tokenSource: body.googleIdToken ? "bridge_payload.googleIdToken" : "bridge_payload.fallback_claims",
+        lastBridgeStatus: "requesting",
+        lastBridgeErrorCode: null
+      });
 
       try {
         const data = await fetchJSON("/api/auth/bridge", { method: "POST", body, auth: false });
@@ -151,8 +206,25 @@
           throw err;
         }
         setAuthToken(token);
+        mergeAuthDebug({
+          tokenExists: true,
+          tokenSource: "bridge_response.auth.token",
+          authBridgeStatus: 201,
+          authBridgeFailureReason: null,
+          lastBridgeStatus: "success",
+          lastBridgeErrorCode: null,
+          lastBridgeTrustMode: data?.diagnostics?.effectiveTrustMode || null
+        });
         return token;
       } catch (error) {
+        const bridgeFailureReason = extractBridgeFailureReason(error);
+        mergeAuthDebug({
+          authBridgeStatus: error?.status || null,
+          authBridgeFailureReason: bridgeFailureReason,
+          lastBridgeStatus: "error",
+          lastBridgeErrorCode: error?.payload?.error?.code || error?.code || "AUTH_BRIDGE_FAILED",
+          lastBridgeTrustMode: error?.payload?.error?.details?.diagnostics?.effectiveTrustMode || null
+        });
         if (existingToken) return existingToken;
         throw error;
       }

@@ -17,6 +17,7 @@
   const runDiagnosticBtn = document.getElementById("runDiagnosticBtn");
   const diagnosticStatus = document.getElementById("diagnosticStatus");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
+  const openAiSummaryCard = document.getElementById("openAiSummaryCard");
   const deploymentStatus = document.getElementById("deploymentStatus");
   const frontendUrlEl = document.getElementById("frontendUrl");
   const backendUrlEl = document.getElementById("backendUrl");
@@ -266,6 +267,29 @@
     render();
   });
 
+  function renderOpenAiSummaryCard(report) {
+    if (!openAiSummaryCard) return;
+    const summary = report?.openAiSummary || {};
+    const evidenceList = Array.isArray(summary?.evidence) ? summary.evidence : [];
+    const recommendedNextStep = Array.isArray(summary?.recommendedNextSteps) && summary.recommendedNextSteps.length
+      ? summary.recommendedNextSteps[0]
+      : (summary?.codexFixMessage || "n/a");
+    openAiSummaryCard.style.display = "block";
+    openAiSummaryCard.innerHTML = `
+      <h4>AI Summary</h4>
+      <div class="ai-summary-grid">
+        <div class="label">Likely issue</div><div>${summary?.likelyRootCause || "n/a"}</div>
+        <div class="label">Recommended next step</div><div>${recommendedNextStep || "n/a"}</div>
+        <div class="label">Confidence</div><div>${summary?.confidence ?? "n/a"}</div>
+        <div class="label">Technical evidence</div><div>${evidenceList.length ? evidenceList.map((item) => {
+          if (typeof item === "string") return item;
+          return [item?.field, item?.value, item?.reason].filter(Boolean).join(": ");
+        }).join(" • ") : "none provided"}</div>
+        <div class="label">Summary</div><div>${summary?.summary || "No OpenAI summary available."}</div>
+      </div>
+    `;
+  }
+
   async function runDiagnostic() {
     if (!diagnosticStatus) return;
     diagnosticStatus.textContent = "Running diagnostics…";
@@ -302,12 +326,30 @@
         `Three import error: ${avatarRuntime?.threeImportError || "none"}`,
         `Three import timeout: ${avatarRuntime?.threeImportTimeout === true ? "yes" : "no"}`,
         `Three import path: ${avatarRuntime?.threeImportPathUsed || "none"}`,
+        `Three import probe ok: ${avatarRuntime?.threeImportProbeOk === true ? "yes" : (avatarRuntime?.threeImportProbeOk === false ? "no" : "unknown")}`,
+        `Three import probe error: ${avatarRuntime?.threeImportProbeError || "none"}`,
+        `Three import probe duration ms: ${avatarRuntime?.threeImportProbeDurationMs ?? "n/a"}`,
         `GLTFLoader import started: ${avatarRuntime?.gltfLoaderImportStarted === true ? "yes" : "no"}`,
         `GLTFLoader import pending: ${avatarRuntime?.gltfLoaderImportPending === true ? "yes" : "no"}`,
         `GLTFLoader import ok: ${avatarRuntime?.gltfLoaderImportOk === true ? "yes" : "no"}`,
-        `GLTFLoader import error: ${avatarRuntime?.gltfLoaderImportError || "none"}`,
+        `GLTFLoader import error: ${(avatarRuntime?.gltfLoaderImportOk === true || avatarRuntime?.gltfLoaderLoaded === true) ? "none" : (avatarRuntime?.gltfLoaderImportError || "none")}`,
         `GLTFLoader import timeout: ${avatarRuntime?.gltfLoaderImportTimeout === true ? "yes" : "no"}`,
         `GLTFLoader import path: ${avatarRuntime?.gltfLoaderImportPathUsed || "none"}`,
+        `GLTFLoader probe ok: ${avatarRuntime?.gltfLoaderImportProbeOk === true ? "yes" : (avatarRuntime?.gltfLoaderImportProbeOk === false ? "no" : "unknown")}`,
+        `GLTFLoader probe error: ${avatarRuntime?.gltfLoaderImportProbeError || "none"}`,
+        `GLTFLoader probe duration ms: ${avatarRuntime?.gltfLoaderImportProbeDurationMs ?? "n/a"}`,
+        `Three module MIME: ${avatarRuntime?.threeModuleMime || "unknown"}`,
+        `GLTFLoader module MIME: ${avatarRuntime?.gltfLoaderModuleMime || "unknown"}`,
+        `Import map detected: ${avatarRuntime?.importMapDetected === true ? "yes" : (avatarRuntime?.importMapDetected === false ? "no" : "unknown")}`,
+        `Avatar model loaded: ${avatarRuntime?.avatarModelLoaded === true ? "yes" : "no"}`,
+        `Avatar model mounted: ${avatarRuntime?.avatarModelMounted === true ? "yes" : "no"}`,
+        `Avatar model visible: ${avatarRuntime?.avatarModelVisible === true ? "yes" : "no"}`,
+        `Avatar scene children: ${avatarRuntime?.avatarSceneChildrenCount ?? "n/a"}`,
+        `Avatar canvas width/height: ${avatarRuntime?.avatarCanvasWidth ?? "n/a"} x ${avatarRuntime?.avatarCanvasHeight ?? "n/a"}`,
+        `Avatar canvas display/visibility/opacity/z-index: ${avatarRuntime?.avatarCanvasDisplay || "n/a"} / ${avatarRuntime?.avatarCanvasVisibility || "n/a"} / ${avatarRuntime?.avatarCanvasOpacity || "n/a"} / ${avatarRuntime?.avatarCanvasZIndex || "n/a"}`,
+        `Avatar overlay container exists: ${avatarRuntime?.avatarOverlayContainerExists === true ? "yes" : "no"}`,
+        `Overlay render loop running: ${avatarRuntime?.overlayRenderLoopRunning === true ? "yes" : "no"}`,
+        `Avatar overlay visibility reason: ${avatarRuntime?.avatarOverlayVisibilityReason || "visible"}`,
         `Bridge issue classification: ${avatarRuntime?.threeBridgeFixActive !== true ? "deploy_or_static_path_issue" : (avatarRuntime?.threeImportOk === true ? "bridge_fix_active_import_ok" : "import_issue")}`,
         `Route check: pass=${report?.routeCheck?.passCount ?? "n/a"} protected=${report?.routeCheck?.protectedCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
         `OpenAI status: ${report?.openAiSummaryStatus || "unknown"}`,
@@ -316,17 +358,21 @@
         `Suggested Codex fix: ${summary?.codexFixMessage || "n/a"}`,
         `Summary: ${summary?.summary || "No OpenAI summary available."}`
       ].join("\\n");
+      renderOpenAiSummaryCard(report);
       if (pilotReadinessStatus) {
+        const missingEvidence = (pilot?.missingEvidence || []).map((item) => item?.label || item?.field).filter(Boolean);
         pilotReadinessStatus.textContent = [
           `Pilot Status: ${pilot?.pilotStatus || "BLOCKED_UNKNOWN"}`,
           `Top blockers: ${(pilot?.blockers || []).slice(0, 3).join(" | ") || "none"}`,
           `Top warnings: ${(pilot?.warnings || []).slice(0, 3).join(" | ") || "none"}`,
+          `Missing evidence: ${missingEvidence.slice(0, 5).join(" | ") || "none"}`,
           `Recommended next fix: ${(pilot?.recommendedFixes || [pilot?.codexFixMessage || "n/a"])[0] || "n/a"}`,
           `Confidence: ${pilot?.confidence ?? "n/a"}`
         ].join("\\n");
       }
     } catch (error) {
       diagnosticStatus.textContent = `Diagnostic request failed. Raw payload saved locally.\\n${String(error?.message || error)}`;
+      if (openAiSummaryCard) openAiSummaryCard.style.display = "none";
       if (pilotReadinessStatus) {
         pilotReadinessStatus.textContent = "Pilot Readiness unavailable because diagnostics request failed.";
       }

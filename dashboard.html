@@ -121,13 +121,26 @@
       white-space:pre-wrap;
     }
     .footerNote{margin-top:10px; color:var(--muted); font-size:11px}
+    .diagPre { white-space: pre-wrap; font-size: 12px; color: var(--muted); }
+    .ai-summary-card{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(255,255,255,.04);
+    }
+    .ai-summary-card h4{margin:0 0 8px;color:var(--gold);font-size:13px;}
+    .ai-summary-grid{display:grid;grid-template-columns:160px 1fr;gap:6px 10px;font-size:12px;}
+    .ai-summary-grid .label{color:var(--muted);}
+    @media (max-width:700px){.ai-summary-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
   <header>
     <div class="title">
       <h1>Ma’at 2.0 — Results Dashboard</h1>
-      <div class="sub">Client view: backend-synced weekly workouts + safe local fallback</div>
+    <div class="sub">Client view: backend-synced weekly workouts + safe local fallback</div>
+    <div class="sub" style="margin-top:6px; font-weight:700;">Diagnostics build active</div>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
       <button id="resetBtn" class="btn">Reset Local Data</button>
@@ -172,10 +185,28 @@
         <h2>Workout History</h2>
         <div class="list" id="historyList"></div>
       </div>
+
+      <div class="card" style="grid-column:1/-1;">
+        <h2>System Diagnostics (Admin)</h2>
+        <div class="diagPre muted" style="margin-bottom:8px;">
+          Frontend URL: <span id="frontendUrl">unknown</span>
+          <br />
+          Backend URL: <span id="backendUrl">unknown</span>
+        </div>
+        <div id="deploymentStatus" class="diagPre muted" style="margin-bottom:10px;">Checking frontend/backend deployment status…</div>
+        <div class="btn-row" style="display:flex; gap:10px; margin-bottom:8px;">
+          <button id="runDiagnosticBtn" class="btn">Run Diagnostic</button>
+        </div>
+        <div id="diagnosticStatus" class="diagPre muted">No diagnostic report yet.</div>
+        <div id="openAiSummaryCard" class="ai-summary-card" style="display:none;"></div>
+        <h3 style="margin-top:14px;">Pilot Readiness</h3>
+        <div id="pilotReadinessStatus" class="diagPre muted">Run diagnostics to evaluate pilot readiness.</div>
+      </div>
     </div>
   </div>
 
+  <script src="/diagnostics-client.js?v=20260426"></script>
   <script src="/backend-read.js"></script>
-  <script src="/dashboard.js"></script>
+  <script src="/dashboard.js?v=20260426b"></script>
 </body>
 </html>
