@@ -904,6 +904,55 @@
       backdrop-filter: blur(3px);
       white-space: pre-line;
     }
+    .retention-shell {
+      border: 1px solid rgba(96,165,250,.3);
+      background: rgba(15,23,42,.35);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .retention-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap: 8px;
+    }
+    .retention-shell input, .retention-shell select, .retention-shell textarea {
+      width: 100%;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+    .retention-card {
+      border: 1px solid rgba(148,163,184,.28);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: rgba(30,41,59,.5);
+    }
+    .retention-steps {
+      font-size: .82rem;
+      color: #bfdbfe;
+      margin-bottom: 8px;
+    }
+    .retention-cal {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(22px, 1fr));
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .retention-cal-day {
+      border: 1px solid rgba(148,163,184,.3);
+      border-radius: 6px;
+      min-height: 34px;
+      font-size: .75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+    }
+    .retention-cal-day.scheduled { background: rgba(34,197,94,.2); }
+    .retention-cal-day.done { background: rgba(22,163,74,.5); border-color: rgba(74,222,128,.7); }
+    .retention-cal-day.today { outline: 1px solid #facc15; }
+    .retention-muted { color: #94a3b8; font-size: .78rem; }
   </style>
 </head>
 
@@ -1038,6 +1087,11 @@
       <p class="subtitle">Ma’at 2.0 remembers you and builds long-term programs from here.</p>
 
       <div id="profileSummary" class="small-card">Not signed in yet.</div>
+      <div id="retentionFlowRoot" class="retention-shell">
+        <h2 style="margin:0 0 6px 0;">Retention Journey</h2>
+        <div id="retentionFlowStatus" class="retention-steps">Sign in to begin onboarding flow.</div>
+        <div id="retentionFlowContent" class="retention-muted">Waiting for authenticated profile...</div>
+      </div>
 
       <h2 style="margin-top:12px;">Today’s Workout</h2>
       <p class="subtitle">Choose a template or use Ma’at 2.0’s program from your assessment.</p>
@@ -5521,5 +5575,6 @@ function toggleListening() {
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
   <script src="/fitness.js?v=20260425"></script>
+  <script src="/retention-flow.js?v=20260427"></script>
 </body>
 </html>
