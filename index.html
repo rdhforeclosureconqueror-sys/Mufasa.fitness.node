@@ -853,6 +853,12 @@
       transform: scale(1.05);
       box-shadow: 0 0 15px #facc15;
     }
+    #googleSignInMount {
+      margin-top: 12px;
+      min-height: 42px;
+      display: flex;
+      justify-content: center;
+    }
 
     #userInfo {
       position: fixed;
@@ -993,6 +999,7 @@
 
       <div style="font-size:0.75rem;color:#9ca3af;margin:6px 0;">— or —</div>
       <button id="googleBtn">Continue with Google</button>
+      <div id="googleSignInMount" aria-live="polite"></div>
     </div>
   </div>
 
@@ -1219,6 +1226,7 @@
     // ---- DOM hooks ----
     const overlay = document.getElementById("loginOverlay");
     const googleBtn = document.getElementById("googleBtn");
+    const googleSignInMountEl = document.getElementById("googleSignInMount");
     const manualNameInput = document.getElementById("manualName");
     const manualLoginBtn = document.getElementById("manualLoginBtn");
     const userInfoBar = document.getElementById("userInfo");
@@ -3493,36 +3501,91 @@
       showOverlay(false);
     };
 
+    let googleIdentityInitDone = false;
+    function hasGoogleIdentityApi() {
+      return Boolean(window.google && google.accounts && google.accounts.id);
+    }
+
+    function initializeGoogleIdentity({ source = "unknown" } = {}) {
+      if (!hasGoogleIdentityApi()) return false;
+      try {
+        google.accounts.id.initialize({
+          client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
+          callback: (response) => {
+            const payload = parseJwt(response.credential || "");
+            const googleIdToken = response.credential || null;
+            console.log("[AUTH] googleIdToken present:", !!googleIdToken);
+            updateAuthDebug({
+              authProvider: "google",
+              signedInEmail: payload.email || null,
+              googleSub: payload.sub || null,
+              hasGoogleIdToken: Boolean(googleIdToken),
+              tokenSource: googleIdToken ? "google.accounts.id.credential" : "missing_google_credential"
+            });
+            onLogin({
+              name: payload.name || payload.given_name || "Athlete",
+              email: payload.email,
+              picture: payload.picture,
+              googleIdToken,
+              googleSub: payload.sub || null,
+              authProvider: "google"
+            });
+            showOverlay(false);
+          }
+        });
+        if (googleSignInMountEl && !googleSignInMountEl.dataset.rendered) {
+          google.accounts.id.renderButton(googleSignInMountEl, {
+            theme: "filled_blue",
+            size: "large",
+            shape: "pill",
+            text: "continue_with",
+            width: 280
+          });
+          googleSignInMountEl.dataset.rendered = "1";
+        }
+        googleIdentityInitDone = true;
+        if (googleBtn) {
+          googleBtn.disabled = false;
+          googleBtn.title = "";
+        }
+        updateAuthDebug({ googleIdentityReady: true, googleIdentityInitSource: source });
+        return true;
+      } catch (err) {
+        console.warn("google identity initialize failed", err);
+        updateAuthDebug({
+          googleIdentityReady: false,
+          googleIdentityInitSource: source,
+          googleIdentityInitError: String(err?.message || err || "google_identity_init_failed")
+        });
+        return false;
+      }
+    }
+
+    (function warmGoogleIdentityInit() {
+      if (googleBtn) {
+        googleBtn.disabled = true;
+        googleBtn.title = "Loading Google Sign-In…";
+      }
+      let attempts = 0;
+      const tryInit = () => {
+        attempts += 1;
+        if (initializeGoogleIdentity({ source: attempts === 1 ? "bootstrap" : `retry_${attempts}` })) return;
+        if (attempts < 40) window.setTimeout(tryInit, 150);
+        else if (googleBtn) {
+          googleBtn.disabled = false;
+          googleBtn.title = "";
+        }
+      };
+      tryInit();
+    })();
+
     googleBtn.onclick = () => {
       trackPilotEvent("login_attempted", { method: "google" });
-      if (!window.google || !google.accounts || !google.accounts.id) {
+      if (!googleIdentityInitDone) initializeGoogleIdentity({ source: "button_click" });
+      if (!hasGoogleIdentityApi()) {
         alert("Google login not available on this device. Use username login instead.");
         return;
       }
-      google.accounts.id.initialize({
-        client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
-        callback: (response) => {
-          const payload = parseJwt(response.credential || "");
-          const googleIdToken = response.credential || null;
-          console.log("[AUTH] googleIdToken present:", !!googleIdToken);
-          updateAuthDebug({
-            authProvider: "google",
-            signedInEmail: payload.email || null,
-            googleSub: payload.sub || null,
-            hasGoogleIdToken: Boolean(googleIdToken),
-            tokenSource: googleIdToken ? "google.accounts.id.credential" : "missing_google_credential"
-          });
-          onLogin({
-            name: payload.name || payload.given_name || "Athlete",
-            email: payload.email,
-            picture: payload.picture,
-            googleIdToken,
-            googleSub: payload.sub || null,
-            authProvider: "google"
-          });
-          showOverlay(false);
-        }
-      });
       google.accounts.id.prompt();
     };
 
