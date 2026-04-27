@@ -362,7 +362,7 @@
       if (pilotReadinessStatus) {
         const missingEvidence = (pilot?.missingEvidence || []).map((item) => item?.label || item?.field).filter(Boolean);
         pilotReadinessStatus.textContent = [
-          `Pilot Status: ${pilot?.pilotStatus || "BLOCKED_UNKNOWN"}`,
+          `Retention Motivation Status: ${pilot?.pilotStatus || "NOT_READY"}`,
           `Top blockers: ${(pilot?.blockers || []).slice(0, 3).join(" | ") || "none"}`,
           `Top warnings: ${(pilot?.warnings || []).slice(0, 3).join(" | ") || "none"}`,
           `Missing evidence: ${missingEvidence.slice(0, 5).join(" | ") || "none"}`,

@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-27T15:17:17.897Z
+Generated: 2026-04-27T15:34:57.459Z
 
 ## Backend Route Inventory
 
@@ -33,6 +33,7 @@ Generated: 2026-04-27T15:17:17.897Z
 | GET | /api/programs/current | yes | none | none/optional | application route | JSON/file |
 | POST | /api/programs | yes | none | none/optional | application route | JSON/file |
 | POST | /api/workouts/track | yes | none | none/optional | application route | JSON/file |
+| GET | /api/workouts/reward/latest | yes | none | none/optional | application route | JSON/file |
 | GET | /api/check-ins | yes | none | none/optional | application route | JSON/file |
 | POST | /api/check-ins | yes | none | none/optional | application route | JSON/file |
 | GET | /api/progress/dashboard | yes | none | none/optional | application route | JSON/file |
@@ -83,7 +84,7 @@ Generated: 2026-04-27T15:17:17.897Z
 | public/session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
 | public/exercise-library.js:148 | GET | dynamic | external/unknown | no/unknown | no |
-| public/diagnostics-client.js:121 | POST | /api/admin/diagnostics/report | relative origin | no/unknown | yes |
+| public/diagnostics-client.js:143 | POST | /api/admin/diagnostics/report | relative origin | no/unknown | yes |
 | public/landing-diagnostics.js:31 | GET | dynamic | external/unknown | no/unknown | yes |
 | public/landing-diagnostics.js:44 | GET | dynamic | external/unknown | no/unknown | yes |
 | public/landing-diagnostics.js:139 | POST | dynamic | external/unknown | yes/conditional | yes |

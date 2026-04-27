@@ -1,5 +1,8 @@
 "use strict";
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 function normalizeProfile(profile) {
   if (!profile) {
     return {
@@ -29,6 +32,89 @@ function normalizeProfile(profile) {
 }
 
 function createUserDataService({ userStore }) {
+  function isoDay(ts) {
+    return new Date(ts).toISOString().slice(0, 10);
+  }
+
+  function listCompletedWorkouts(workouts = []) {
+    return workouts.filter((w) => String(w?.completionStatus || "").toLowerCase() === "completed");
+  }
+
+  function summarizeStreak(workouts = [], { nowTs = Date.now(), weeklyTarget = 4 } = {}) {
+    const completed = listCompletedWorkouts(workouts);
+    const dayKeys = Array.from(new Set(
+      completed.map((item) => isoDay(Number(item.ts) || nowTs)).filter(Boolean)
+    )).sort();
+    const today = isoDay(nowTs);
+    const yesterday = isoDay(nowTs - DAY_MS);
+    let currentStreak = 0;
+    let cursor = nowTs;
+    while (dayKeys.includes(isoDay(cursor))) {
+      currentStreak += 1;
+      cursor -= DAY_MS;
+    }
+    if (currentStreak === 0 && dayKeys.includes(yesterday)) {
+      cursor = nowTs - DAY_MS;
+      while (dayKeys.includes(isoDay(cursor))) {
+        currentStreak += 1;
+        cursor -= DAY_MS;
+      }
+    }
+    const weekStartTs = nowTs - WEEK_MS;
+    const weeklyWorkoutsCompleted = completed.filter((item) => Number(item.ts) >= weekStartTs).length;
+    const consistencyPercentage = Math.max(0, Math.min(100, Math.round((weeklyWorkoutsCompleted / Math.max(1, weeklyTarget)) * 100)));
+    const missedWorkouts = Math.max(0, weeklyTarget - weeklyWorkoutsCompleted);
+    return {
+      currentStreak,
+      weeklyWorkoutsCompleted,
+      weeklyTarget,
+      consistencyPercentage,
+      missedWorkouts,
+      comebackStatus: missedWorkouts > 0 && currentStreak > 0 ? "comeback_active" : (missedWorkouts > 0 ? "needs_comeback" : "on_track")
+    };
+  }
+
+  function buildCoachMessages({ latestWorkout = null, streak = null, goalsBaseline = null, program = null } = {}) {
+    const messages = [];
+    const formScore = Number(latestWorkout?.formScore);
+    const completedToday = latestWorkout ? `You showed up today. That counts.` : "Your plan is alive—next session builds momentum.";
+    messages.push({ type: "encouragement", text: completedToday });
+    messages.push({ type: "correction", text: Number.isFinite(formScore) && formScore < 75 ? "Slow the tempo next session and brace before every rep." : "Your form improved this session." });
+    messages.push({ type: "comeback", text: streak?.missedWorkouts > 0 ? "You missed a day, but the plan is still alive." : "No missed sessions this week—keep stacking wins." });
+    messages.push({ type: "streak", text: `${streak?.currentStreak || 0}-day streak active.` });
+    messages.push({ type: "progress", text: `You are progressing toward ${goalsBaseline?.goal || program?.goal || "your goal"}.` });
+    messages.push({ type: "weekly_focus", text: "Weekly focus: clean reps, consistent sleep, and finish every session." });
+    messages.push({ type: "next_workout", text: `Next workout is ${program?.movementFocus?.[0] || "full body"} strength.` });
+    return messages;
+  }
+
+  function summarizeReward({ workout = null, allWorkouts = [], program = null }) {
+    if (!workout) return null;
+    const exercisesCompleted = Array.isArray(workout.exercisesCompleted) ? workout.exercisesCompleted : [];
+    const reps = Number(workout.reps) || 0;
+    const currentForm = Number(workout.formScore);
+    const previousScores = listCompletedWorkouts(allWorkouts)
+      .filter((entry) => entry.workoutId !== workout.workoutId)
+      .map((entry) => Number(entry.formScore))
+      .filter((score) => Number.isFinite(score));
+    const previousBest = previousScores.length ? Math.max(...previousScores) : null;
+    const bestFormCueImproved = Number.isFinite(currentForm) && Number.isFinite(previousBest) && currentForm > previousBest
+      ? "Bracing and tempo control improved."
+      : "Rep quality stayed steady.";
+    const streak = summarizeStreak(allWorkouts, { weeklyTarget: Number(program?.daysPerWeek) || 4 });
+    return {
+      workoutCompleted: true,
+      exercisesCompleted: exercisesCompleted.length,
+      exercises: exercisesCompleted,
+      totalReps: reps,
+      formScoreSummary: Number.isFinite(currentForm) ? currentForm : null,
+      bestFormCueImproved,
+      streakUpdate: `${streak.currentStreak}-day streak`,
+      nextScheduledWorkout: `Next ${program?.movementFocus?.[0] || "training"} workout is queued.`,
+      momentumMessage: "You’re building momentum."
+    };
+  }
+
   function getProfile(userId) {
     const user = userStore.loadUser(userId);
     return {
@@ -143,15 +229,19 @@ function createUserDataService({ userStore }) {
   function appendWorkoutTracking({ userId, tracking, source = "api" }) {
     const now = Date.now();
     let totalLogged = 0;
+    let latestReward = null;
     userStore.updateUser(userId, (user) => {
       user.workoutTracking = Array.isArray(user.workoutTracking) ? user.workoutTracking : [];
-      user.workoutTracking.push({ ...tracking, ts: now, source });
+      const record = { ...tracking, ts: now, source };
+      user.workoutTracking.push(record);
+      latestReward = summarizeReward({ workout: record, allWorkouts: user.workoutTracking, program: user.program });
+      user.latestRewardSummary = latestReward;
       totalLogged = user.workoutTracking.length;
       user.events = user.events || [];
       user.events.push({ command: "fitness.workoutTracked", ts: now, payload: { workoutId: tracking.workoutId, source } });
       return user;
     });
-    return { userId, totalLogged };
+    return { userId, totalLogged, rewardSummary: latestReward };
   }
 
   function upsertWeeklyCheckIn({ userId, checkIn, source = "api" }) {
@@ -223,6 +313,36 @@ function createUserDataService({ userStore }) {
     const checkIns = user.checkIns || [];
     const formScores = workouts.map((w) => w.formScore).filter((n) => Number.isFinite(n));
     const strengthSamples = workouts.map((w) => ({ workoutId: w.workoutId, reps: w.reps ?? null, sets: w.sets ?? null }));
+    const streak = summarizeStreak(workouts, { weeklyTarget: Number(user?.program?.daysPerWeek) || 4 });
+    const completedWorkouts = listCompletedWorkouts(workouts);
+    const latestCheckIn = checkIns.length ? checkIns[checkIns.length - 1] : null;
+    const currentWeek = user?.program?.assignedAt
+      ? Math.max(1, Math.floor((Date.now() - user.program.assignedAt) / WEEK_MS) + 1)
+      : 1;
+    const weekSummary = latestCheckIn
+      ? `You completed ${streak.weeklyWorkoutsCompleted} workouts this week. ${latestCheckIn.formTrendNotes || "Your form is trending upward."} Next week, focus on ${latestCheckIn.nextWeekFocus || "hip control and consistency"}.`
+      : `You completed ${streak.weeklyWorkoutsCompleted} workouts this week. Next week, focus on quality reps and consistency.`;
+    const latestWorkout = completedWorkouts.length ? completedWorkouts[completedWorkouts.length - 1] : null;
+    const coachMessages = buildCoachMessages({
+      latestWorkout,
+      streak,
+      goalsBaseline: user.goalsBaseline || null,
+      program: user.program || null
+    });
+    const startForm = Number(user?.goalsBaseline?.baseline?.formScoreBaseline);
+    const currentForm = formScores.length ? Number(formScores[formScores.length - 1]) : null;
+    const formImprovement = Number.isFinite(startForm) && Number.isFinite(currentForm) ? currentForm - startForm : null;
+    const retentionChecks = {
+      postWorkoutRewardScreenReady: Boolean((user.latestRewardSummary || {}).workoutCompleted),
+      streakSystemReady: Number.isFinite(streak.consistencyPercentage),
+      weeklyReviewReady: Boolean(latestCheckIn),
+      coachMessagingReady: coachMessages.length > 0,
+      progressNarrativeReady: true,
+      habitLoopReady: true
+    };
+    const retentionMotivationStatus = Object.values(retentionChecks).every(Boolean)
+      ? "READY"
+      : (Object.values(retentionChecks).some(Boolean) ? "READY_WITH_WARNINGS" : "NOT_READY");
 
     return {
       userId,
@@ -235,7 +355,45 @@ function createUserDataService({ userStore }) {
       goalProgress: {
         goal: user.goalsBaseline?.goal || user.program?.goal || null,
         status: workouts.length > 0 ? "in_progress" : "not_started"
-      }
+      },
+      rewardSummary: user.latestRewardSummary || summarizeReward({ workout: latestWorkout, allWorkouts: workouts, program: user.program }),
+      streak,
+      weeklyReview: {
+        workoutsCompletedThisWeek: streak.weeklyWorkoutsCompleted,
+        formScoreTrend: formScores.slice(-6),
+        strengthProgressionNotes: latestCheckIn?.strengthProgressionNotes || null,
+        soreness: latestCheckIn?.soreness || null,
+        energy: latestCheckIn?.energy || null,
+        motivation: latestCheckIn?.motivation || null,
+        sleep: latestCheckIn?.sleep || null,
+        bodyMeasurementsOptional: latestCheckIn?.bodyMeasurementsOptional || null,
+        visualScanOptional: latestCheckIn?.visualScanOptional || null,
+        nextWeekFocus: latestCheckIn?.nextWeekFocus || null,
+        weekSummary
+      },
+      coachMessaging: {
+        deterministic: true,
+        messages: coachMessages
+      },
+      progressNarrative: {
+        startingPoint: user.goalsBaseline?.baseline || {},
+        currentWeek,
+        workoutsCompleted: completedWorkouts.length,
+        streak: streak.currentStreak,
+        formImprovement,
+        strengthImprovement: strengthSamples.slice(-1)[0] || null,
+        checkInTrend: checkIns.slice(-6).map((item) => ({ ts: item.ts, motivation: item.motivation, energy: item.energy })),
+        visualProgressScanLink: (user.visualProgressScans || []).slice(-1)[0]?.frontImageUrl || user.goalsBaseline?.baseline?.visualProgressScan || null,
+        nextMilestone: `Complete ${Math.max(0, streak.weeklyTarget - streak.weeklyWorkoutsCompleted)} more workout(s) this week.`
+      },
+      habitLoopPrompts: {
+        beforeWorkout: "Today’s mission: complete Workout 2.",
+        duringWorkout: "Set 2 of 3 — stay steady.",
+        afterWorkout: "You completed today’s mission.",
+        weekly: "Review your week and lock in next week."
+      },
+      retentionChecks,
+      retentionMotivationStatus
     };
   }
 

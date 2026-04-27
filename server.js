@@ -1386,6 +1386,14 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
+  app.get("/api/workouts/reward/latest", requireAuth, asyncHandler(async (req, res) => {
+    const dashboard = userDataService.getProgressDashboard(req.auth.userId);
+    return ok(res, req.requestId, {
+      userId: req.auth.userId,
+      rewardSummary: dashboard.rewardSummary || null
+    }, 200);
+  }));
+
   app.get("/api/check-ins", requireAuth, asyncHandler(async (req, res) => {
     const rawLimit = Number.parseInt(String(req.query.limit ?? ""), 10);
     const limit = Number.isFinite(rawLimit) ? rawLimit : 12;

@@ -73,7 +73,7 @@
     resultEl.textContent = [
       `Backend build status: ${report?.buildVersion || "unknown"}`,
       `Diagnostics reachable: ${report?.routeCheck ? "yes" : "unknown"}`,
-      `Pilot readiness status: ${pilot?.pilotStatus || "BLOCKED_UNKNOWN"}`,
+      `Retention Motivation Status: ${pilot?.pilotStatus || "NOT_READY"}`,
       `Blockers: ${blockers.length ? blockers.join(" | ") : "none"}`,
       `Warnings: ${warnings.length ? warnings.join(" | ") : "none"}`,
       `Missing evidence: ${missingEvidence.length ? missingEvidence.map((item) => item.label || item.field || "unknown").join(" | ") : "none"}`,

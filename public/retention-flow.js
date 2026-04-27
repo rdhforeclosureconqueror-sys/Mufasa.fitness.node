@@ -56,7 +56,8 @@
     completionDates: readJSON("RETENTION_COMPLETION_DATES", []),
     checkIns: [],
     progressDashboard: null,
-    exerciseIndex: null
+    exerciseIndex: null,
+    latestRewardSummary: null
   };
 
   function readJSON(key, fallback) {
@@ -146,7 +147,53 @@
 
   function renderStatus() {
     const step = inferStep();
-    statusEl.textContent = `Flow: Profile → Intake → Goals → Program → Calendar → Daily Workout → Complete → Dashboard. Current step ${step}/9.`;
+    const retentionStatus = state.progressDashboard?.retentionMotivationStatus || "NOT_READY";
+    statusEl.textContent = `Flow: Profile → Intake → Goals → Program → Calendar → Daily Workout → Complete → Dashboard. Current step ${step}/9. Retention Motivation Status: ${retentionStatus}`;
+  }
+
+  function renderRetentionMetricsCard() {
+    const streak = state.progressDashboard?.streak || {};
+    const weekly = state.progressDashboard?.weeklyReview || {};
+    const prompts = state.progressDashboard?.habitLoopPrompts || {};
+    contentEl.innerHTML += `
+      <div class="retention-card">
+        <strong>Retention Motivation</strong>
+        <div class="retention-grid">
+          <div class="retention-card"><strong>${esc(streak.currentStreak || 0)}-day streak</strong><div class="retention-muted">Current streak</div></div>
+          <div class="retention-card"><strong>${esc(streak.weeklyWorkoutsCompleted || 0)} of ${esc(streak.weeklyTarget || 4)} workouts completed this week</strong><div class="retention-muted">Weekly completion</div></div>
+          <div class="retention-card"><strong>${esc(streak.consistencyPercentage || 0)}% consistent this week</strong><div class="retention-muted">Consistency</div></div>
+          <div class="retention-card"><strong>${esc(streak.missedWorkouts || 0)} missed workouts</strong><div class="retention-muted">${esc(streak.comebackStatus || "on_track")}</div></div>
+        </div>
+        <div class="retention-card">
+          <strong>Habit loop prompts</strong>
+          <ul>
+            <li><strong>Before:</strong> ${esc(prompts.beforeWorkout || "Today’s mission: complete your assigned workout.")}</li>
+            <li><strong>During:</strong> ${esc(prompts.duringWorkout || "Set 2 of 3 — stay steady.")}</li>
+            <li><strong>After:</strong> ${esc(prompts.afterWorkout || "You completed today’s mission.")}</li>
+            <li><strong>Weekly:</strong> ${esc(prompts.weekly || "Review your week and lock in next week.")}</li>
+          </ul>
+          <div class="retention-muted">${esc(weekly.weekSummary || "Weekly summary will appear after check-in.")}</div>
+        </div>
+      </div>`;
+  }
+
+  function renderRewardSummaryCard() {
+    const reward = state.latestRewardSummary || state.progressDashboard?.rewardSummary || null;
+    if (!reward) return;
+    contentEl.innerHTML += `
+      <div class="retention-card" style="border-color:rgba(74,222,128,.8);background:rgba(22,163,74,.2);">
+        <strong>🏆 Post-workout reward</strong>
+        <div class="retention-grid">
+          <div><strong>Workout completed:</strong> ${reward.workoutCompleted ? "Yes" : "No"}</div>
+          <div><strong>Exercises completed:</strong> ${esc(reward.exercisesCompleted || 0)}</div>
+          <div><strong>Total reps:</strong> ${esc(reward.totalReps || 0)}</div>
+          <div><strong>Form score:</strong> ${esc(reward.formScoreSummary ?? "n/a")}</div>
+        </div>
+        <div><strong>Best form cue improved:</strong> ${esc(reward.bestFormCueImproved || "Rep quality improved.")}</div>
+        <div><strong>Streak update:</strong> ${esc(reward.streakUpdate || "Streak updated")}</div>
+        <div><strong>Next scheduled workout:</strong> ${esc(reward.nextScheduledWorkout || "See calendar")}</div>
+        <div style="margin-top:6px;"><strong>${esc(reward.momentumMessage || "You’re building momentum.")}</strong></div>
+      </div>`;
   }
 
   function renderIntakeForm() {
@@ -434,17 +481,23 @@
 
     contentEl.innerHTML += `
       <div class="retention-card">
-        <strong>8) Weekly Check-in ${stale ? "(Prompted)" : "(Up to date)"}</strong>
+        <strong>8) Weekly Review ${stale ? "(Prompted)" : "(Up to date)"}</strong>
         <div class="retention-muted">Latest check-in: ${latestTs ? new Date(latestTs).toLocaleDateString() : "none"}</div>
         <div class="retention-grid">
+          <label>Workouts completed this week<input id="rfWeekWorkouts" type="number" min="0" max="14" value="${esc(state.progressDashboard?.streak?.weeklyWorkoutsCompleted || 0)}"></label>
           <label>Energy (1-10)<input id="rfEnergy" type="number" min="1" max="10" value="${esc(latest?.energy || 7)}"></label>
           <label>Soreness (1-10)<input id="rfSoreness" type="number" min="1" max="10" value="${esc(latest?.soreness || 4)}"></label>
           <label>Sleep (hours)<input id="rfSleep" type="number" min="0" max="24" value="${esc(latest?.sleep || 7)}"></label>
           <label>Motivation (1-10)<input id="rfMotivation" type="number" min="1" max="10" value="${esc(latest?.motivation || 8)}"></label>
           <label>Adherence %<input id="rfAdherence" type="number" min="0" max="100" value="${esc(latest?.adherence || 80)}"></label>
         </div>
+        <label>Form score trend<textarea id="rfFormTrendNotes" rows="2">${esc(latest?.formTrendNotes || "")}</textarea></label>
+        <label>Strength/progression notes<textarea id="rfStrengthNotes" rows="2">${esc(latest?.strengthProgressionNotes || "")}</textarea></label>
         <label>Progress notes<textarea id="rfCheckinNotes" rows="2">${esc(latest?.progressNotes || "")}</textarea></label>
-        <button id="rfSaveCheckinBtn">Save Weekly Check-in</button>
+        <label>Body measurements (optional)<input id="rfBodyMeasurementsOptional" value="${esc(latest?.bodyMeasurementsOptional || "")}"></label>
+        <label>Visual scan link (optional)<input id="rfVisualScanOptional" value="${esc(latest?.visualScanOptional || "")}"></label>
+        <label>Next week focus<input id="rfNextWeekFocus" value="${esc(latest?.nextWeekFocus || "")}"></label>
+        <button id="rfSaveCheckinBtn">Save Weekly Review</button>
       </div>`;
 
     document.getElementById("rfSaveCheckinBtn").onclick = async () => {
@@ -459,6 +512,11 @@
             weightKg: state.intake?.weightKg || null,
             measurements: [],
             progressNotes: document.getElementById("rfCheckinNotes").value.trim() || null,
+            strengthProgressionNotes: document.getElementById("rfStrengthNotes").value.trim() || null,
+            formTrendNotes: document.getElementById("rfFormTrendNotes").value.trim() || null,
+            bodyMeasurementsOptional: document.getElementById("rfBodyMeasurementsOptional").value.trim() || null,
+            visualScanOptional: document.getElementById("rfVisualScanOptional").value.trim() || null,
+            nextWeekFocus: document.getElementById("rfNextWeekFocus").value.trim() || null,
             adherence: Number(document.getElementById("rfAdherence").value),
             painFlag: false
           }
@@ -495,6 +553,30 @@
         <ul>
           ${scans.length ? scans.map((scan) => `<li><a href="${esc(scan.frontImageUrl || scan.sideImageUrl || scan.backImageUrl || "#")}" target="_blank" rel="noopener">${esc(scan.captureLabel || scan.scanId || "scan")}</a></li>`).join("") : "<li>No visual scans yet. Add baseline scan link in Goals + Baseline.</li>"}
         </ul>
+      </div>`;
+  }
+
+  function renderProgressNarrative() {
+    const story = state.progressDashboard?.progressNarrative || {};
+    const coachMessages = state.progressDashboard?.coachMessaging?.messages || [];
+    contentEl.innerHTML += `
+      <div class="retention-card">
+        <strong>Your Progress Story</strong>
+        <div class="retention-grid">
+          <div class="retention-card"><strong>Starting point</strong><div class="retention-muted">${esc(JSON.stringify(story.startingPoint || {}))}</div></div>
+          <div class="retention-card"><strong>Current week</strong><div>${esc(story.currentWeek || 1)}</div></div>
+          <div class="retention-card"><strong>Workouts completed</strong><div>${esc(story.workoutsCompleted || 0)}</div></div>
+          <div class="retention-card"><strong>Streak</strong><div>${esc(story.streak || 0)} days</div></div>
+          <div class="retention-card"><strong>Form improvement</strong><div>${esc(story.formImprovement ?? "n/a")}</div></div>
+          <div class="retention-card"><strong>Strength improvement</strong><div>${esc(JSON.stringify(story.strengthImprovement || {}))}</div></div>
+          <div class="retention-card"><strong>Check-in trend</strong><div>${esc((story.checkInTrend || []).length)} check-ins tracked</div></div>
+          <div class="retention-card"><strong>Visual progress scan</strong><div>${story.visualProgressScanLink ? `<a href="${esc(story.visualProgressScanLink)}" target="_blank" rel="noopener">Open latest scan</a>` : "n/a"}</div></div>
+          <div class="retention-card"><strong>Next milestone</strong><div>${esc(story.nextMilestone || "Keep building momentum.")}</div></div>
+        </div>
+        <div class="retention-card">
+          <strong>Coach messages</strong>
+          <ul>${coachMessages.map((msg) => `<li><strong>${esc(msg.type)}:</strong> ${esc(msg.text)}</li>`).join("")}</ul>
+        </div>
       </div>`;
   }
 
@@ -539,11 +621,29 @@
       if (state.intake?.completedAt) renderGoalsBaselineForm();
       if (state.goalsBaseline?.goal) renderProgramCards();
       if (state.currentProgram?.programId) {
+        renderRewardSummaryCard();
         renderCalendar();
         await renderDailyWorkoutDetail();
+        renderRetentionMetricsCard();
         renderWeeklyCheckIn();
         renderProgressDashboard();
+        renderProgressNarrative();
       }
+      window.__retentionMotivationStatus = {
+        intakeComplete: Boolean(state.intake?.completedAt),
+        goalSet: Boolean(state.goalsBaseline?.goal),
+        programAssigned: Boolean(state.currentProgram?.programId),
+        firstWorkoutCompleted: Number(state.progressDashboard?.workoutsCompleted || 0) > 0,
+        weeklyReviewReady: Boolean(state.progressDashboard?.weeklyReview?.weekSummary),
+        coachMessagingReady: Array.isArray(state.progressDashboard?.coachMessaging?.messages) && state.progressDashboard.coachMessaging.messages.length > 0,
+        progressNarrativeReady: Boolean(state.progressDashboard?.progressNarrative?.nextMilestone),
+        postWorkoutRewardScreenReady: Boolean(state.progressDashboard?.rewardSummary?.workoutCompleted),
+        streakSystemReady: Number.isFinite(Number(state.progressDashboard?.streak?.consistencyPercentage)),
+        habitLoopReady: Boolean(state.progressDashboard?.habitLoopPrompts?.beforeWorkout),
+        visualScanEnabled: true,
+        visualScanUsed: Array.isArray(state.progressDashboard?.visualProgressScans) && state.progressDashboard.visualProgressScans.length > 0,
+        dashboard: state.progressDashboard
+      };
     } catch (err) {
       renderStatus();
       contentEl.innerHTML = `<div class="retention-muted">${esc(err.message || "Sign in required.")}</div>`;
@@ -572,6 +672,8 @@
           completionStatus: "completed"
         }
       });
+      const latestReward = await authedRequest("/api/workouts/reward/latest");
+      state.latestRewardSummary = latestReward.rewardSummary || null;
       if (state.selectedDate && !state.completionDates.includes(state.selectedDate)) {
         state.completionDates.push(state.selectedDate);
         saveCompletionDates();
