@@ -4330,7 +4330,7 @@ function toggleListening() {
         if (canDrawAvatar) {
           try {
             renderAvatar3d(posePacket);
-            updateAvatarOverlayDiagnostics({ avatarOverlayRenderOk: true, avatarOverlayRenderError: null });
+            updateAvatarOverlayDiagnostics({ avatarOverlayRenderOk: true, avatarOverlayRenderError: null, avatarOverlayVisibilityReason: "visible" });
           } catch (err) {
             updateAvatarOverlayDiagnostics({
               avatarOverlayRenderOk: false,
@@ -4347,7 +4347,7 @@ function toggleListening() {
         } else {
           try {
             renderAvatar3d(posePacket);
-            updateAvatarOverlayDiagnostics({ avatarOverlayRenderOk: true, avatarOverlayRenderError: null });
+            updateAvatarOverlayDiagnostics({ avatarOverlayRenderOk: true, avatarOverlayRenderError: null, avatarOverlayVisibilityReason: "visible" });
           } catch (err) {
             updateAvatarOverlayDiagnostics({
               avatarOverlayRenderOk: false,
