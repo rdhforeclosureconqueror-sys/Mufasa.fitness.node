@@ -1,16 +1,10 @@
 "use strict";
 
 const PILOT_STATUS = Object.freeze({
-  READY: "READY",
-  READY_WITH_WARNINGS: "READY_WITH_WARNINGS",
-  NOT_READY: "NOT_READY",
-  BLOCKED_UNKNOWN: "BLOCKED_UNKNOWN"
+  RETENTION_READY: "RETENTION_READY",
+  RETENTION_READY_WITH_WARNINGS: "RETENTION_READY_WITH_WARNINGS",
+  RETENTION_NOT_READY: "RETENTION_NOT_READY"
 });
-
-function hasCriticalRouteFailures(routeCheck) {
-  if (!routeCheck || !Array.isArray(routeCheck.checks)) return false;
-  return routeCheck.checks.some((item) => item.classification === "FAIL");
-}
 
 function evaluatePilotReadiness(report = {}) {
   const blockers = [];
@@ -20,132 +14,65 @@ function evaluatePilotReadiness(report = {}) {
   const recommendedFixes = [];
 
   const payload = report?.payload || {};
+  const retention = payload?.retention || {};
   const runtime = payload?.runtime || {};
-  const routesAndScripts = payload?.routesAndScripts || {};
-  const build = payload?.build || {};
-  const routeCheck = report?.routeCheck || null;
-  const openAiSummaryStatus = report?.openAiSummaryStatus || "unknown";
 
-  function markMissingEvidence(fieldPath, label) {
-    missingEvidence.push({ field: fieldPath, label });
-    evidence.push(fieldPath);
-  }
+  const checks = {
+    intakeComplete: retention.intakeComplete === true,
+    goalSet: retention.goalSet === true,
+    programAssigned: retention.programAssigned === true,
+    firstWorkoutCompleted: retention.firstWorkoutCompleted === true,
+    weeklyCheckInAvailable: retention.weeklyCheckInAvailable === true,
+    progressDashboardActive: retention.progressDashboardActive === true,
+    visualScanEnabled: retention.visualScanEnabled === true,
+    visualScanUsed: retention.visualScanUsed === true
+  };
 
-  if (!payload || payload.collectorMissing) {
-    markMissingEvidence("payload.collectorMissing", "Diagnostics collector payload");
-    recommendedFixes.push("Ensure diagnostics-client.js loads and window.__collectDiagnosticReport is defined.");
-  }
+  const requiredChecks = [
+    ["intakeComplete", "Client intake is incomplete.", "Complete /api/client-intake during onboarding."],
+    ["goalSet", "Goal and baseline are not set.", "Create goals + baseline at /api/goals-baseline."],
+    ["programAssigned", "Program has not been assigned.", "Assign a program using /api/programs."],
+    ["firstWorkoutCompleted", "First workout has not been completed.", "Track first workout completion via /api/workouts/track."],
+    ["weeklyCheckInAvailable", "Weekly check-in flow is unavailable.", "Enable weekly check-ins with /api/check-ins."],
+    ["progressDashboardActive", "Progress dashboard is not active.", "Enable /api/progress/dashboard for this user." ]
+  ];
 
-  if (!build.appBuildVersion) {
-    blockers.push("Build version missing or stale.");
-    recommendedFixes.push("Publish build metadata and expose APP_BUILD_VERSION.");
-    evidence.push("payload.build.appBuildVersion");
-  }
-
-  const cameraStatus = runtime.cameraStatus || "unknown";
-  if (runtime.cameraStatus == null) {
-    markMissingEvidence("payload.runtime.cameraStatus", "Camera connect status");
-  }
-  if (/failed|error|denied|blocked/i.test(cameraStatus)) {
-    blockers.push("Camera cannot connect.");
-    recommendedFixes.push("Investigate camera permissions/device availability.");
-    evidence.push("payload.runtime.cameraStatus");
-  } else if (cameraStatus === "unknown") {
-    warnings.push("Camera status unknown.");
-    evidence.push("payload.runtime.cameraStatus");
-  }
-
-  const formEnginePresent = Boolean(runtime.formEngineStatus) || Boolean(routesAndScripts.formEngineLoaded);
-  if (!formEnginePresent) {
-    blockers.push("Form engine missing.");
-    recommendedFixes.push("Load form-engine.js before workout diagnostics and verify runtime init.");
-    evidence.push("payload.runtime.formEngineStatus");
+  for (const [field, blockerMessage, fix] of requiredChecks) {
+    evidence.push(`payload.retention.${field}`);
+    if (retention[field] == null) {
+      missingEvidence.push({ field: `payload.retention.${field}`, label: field });
+      warnings.push(`${field} evidence missing from diagnostic payload.`);
+      continue;
+    }
+    if (!checks[field]) {
+      blockers.push(blockerMessage);
+      recommendedFixes.push(fix);
+    }
   }
 
-  const sessionSaveFailure = payload?.errors?.sessionSaveFailureReason || null;
-  if (sessionSaveFailure) {
-    blockers.push("Session save fails.");
-    recommendedFixes.push("Fix /api/sessions write path and resolve session save errors.");
-    evidence.push("payload.errors.sessionSaveFailureReason");
+  evidence.push("payload.retention.visualScanEnabled");
+  if (retention.visualScanEnabled == null) {
+    missingEvidence.push({ field: "payload.retention.visualScanEnabled", label: "visualScanEnabled" });
+    warnings.push("Visual progress scan feature flag evidence missing.");
+  } else if (checks.visualScanEnabled && !checks.visualScanUsed) {
+    warnings.push("Visual progress scan is enabled but no scan has been captured yet.");
+    recommendedFixes.push("Capture front/side/back visual progress scan and compare over time.");
   }
 
-  const hasWorkoutStartSignal = runtime.workoutStarted === true || runtime.selectedExercise != null;
-  if (runtime.workoutStarted == null && runtime.selectedExercise == null) {
-    markMissingEvidence("payload.runtime.selectedExercise", "Workout started");
-  }
-  if (!hasWorkoutStartSignal) {
-    warnings.push("Workout start signal missing in report.");
-    evidence.push("payload.runtime.selectedExercise");
+  if (runtime.sessionSaveSuccess === false) {
+    blockers.push("Workout session persistence is failing.");
+    recommendedFixes.push("Fix session persistence before pilot retention rollout.");
+    evidence.push("payload.runtime.sessionSaveSuccess");
   }
 
-  const formEngineActiveDuringWorkout = Boolean(runtime.formEngineStatus?.lastEvaluatedAt) || (hasWorkoutStartSignal && formEnginePresent);
-  if (!formEngineActiveDuringWorkout) {
-    markMissingEvidence("payload.runtime.formEngineStatus.lastEvaluatedAt", "Form engine active during workout");
+  let pilotStatus = PILOT_STATUS.RETENTION_READY;
+  if (blockers.length > 0) {
+    pilotStatus = PILOT_STATUS.RETENTION_NOT_READY;
+  } else if (warnings.length > 0 || missingEvidence.length > 0) {
+    pilotStatus = PILOT_STATUS.RETENTION_READY_WITH_WARNINGS;
   }
 
-  if (!runtime.lastFormResultSummary) {
-    markMissingEvidence("payload.runtime.lastFormResultSummary", "Form feedback produced");
-  }
-
-  const hasWorkoutCompletionSignal = runtime.workoutCompleted === true || Boolean(runtime.lastFormResultSummary) || Boolean(sessionSaveFailure === null && payload?.errors);
-  if (!hasWorkoutCompletionSignal) {
-    blockers.push("Workout cannot complete.");
-    recommendedFixes.push("Capture completion diagnostics (form result or completion event).");
-    evidence.push("payload.runtime.lastFormResultSummary");
-  }
-  if (runtime.workoutCompleted == null) {
-    markMissingEvidence("payload.runtime.workoutCompleted", "Workout completed");
-  }
-
-  if (runtime.sessionSaveSuccess == null) {
-    markMissingEvidence("payload.runtime.sessionSaveSuccess", "Session save success");
-  }
-
-  if (hasCriticalRouteFailures(routeCheck)) {
-    blockers.push("Critical routes failing.");
-    recommendedFixes.push("Fix failing diagnostics routes before pilot.");
-    evidence.push("routeCheck.checks[*].classification");
-  }
-
-  const avatarRuntime = runtime.avatarRuntimeStatus || null;
-  if (avatarRuntime && avatarRuntime.failedReason && !/failed|error|denied|blocked/i.test(cameraStatus)) {
-    warnings.push("Avatar runtime failed while camera mode may still work.");
-    recommendedFixes.push("Investigate avatar runtime (Three.js/GLB pipeline) without blocking pilot.");
-    evidence.push("payload.runtime.avatarRuntimeStatus.failedReason");
-  }
-
-  if (openAiSummaryStatus !== "ok") {
-    warnings.push("OpenAI summarizer unavailable.");
-    evidence.push("openAiSummaryStatus");
-  }
-  if (!report || report.openAiSummaryStatus == null) {
-    markMissingEvidence("openAiSummaryStatus", "OpenAI summary availability");
-  }
-
-  const unknownExerciseMapping = runtime.lastFormResultSummary?.movementFamily === "UNKNOWN";
-  if (unknownExerciseMapping) {
-    warnings.push("Some exercises map to UNKNOWN movement family.");
-    evidence.push("payload.runtime.lastFormResultSummary.movementFamily");
-  }
-
-  if (runtime.deviceType === "mobile" || build.deviceType === "mobile") {
-    warnings.push("Mobile performance should be verified for pilot.");
-    evidence.push("payload.build.deviceType");
-  }
-
-  let pilotStatus = PILOT_STATUS.READY;
-  if (!payload || payload.collectorMissing) {
-    pilotStatus = PILOT_STATUS.BLOCKED_UNKNOWN;
-  } else if (blockers.length === 0 && warnings.length === 0 && missingEvidence.length > 0) {
-    pilotStatus = PILOT_STATUS.BLOCKED_UNKNOWN;
-  } else if (blockers.length > 0) {
-    pilotStatus = PILOT_STATUS.NOT_READY;
-  } else if (warnings.length > 0) {
-    pilotStatus = PILOT_STATUS.READY_WITH_WARNINGS;
-  }
-
-  const confidence = blockers.length > 0 ? 0.9 : (warnings.length > 0 ? 0.75 : 0.8);
-  const codexFixMessage = blockers[0] || warnings[0] || "Pilot checks look healthy.";
+  const confidence = blockers.length > 0 ? 0.9 : (warnings.length > 0 ? 0.75 : 0.85);
 
   return {
     pilotStatus,
@@ -154,7 +81,7 @@ function evaluatePilotReadiness(report = {}) {
     missingEvidence,
     evidence,
     recommendedFixes,
-    codexFixMessage,
+    codexFixMessage: blockers[0] || warnings[0] || "Retention checks look healthy.",
     confidence,
     lastCheckedAt: new Date().toISOString()
   };

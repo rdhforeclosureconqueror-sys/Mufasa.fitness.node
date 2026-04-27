@@ -23,6 +23,14 @@ const {
   validateOhsaSubmission,
   validateAuthBridge
 } = require("./src/validation/meValidators");
+const {
+  validateClientIntake,
+  validateGoalsBaseline,
+  validateProgramAssignment,
+  validateWorkoutTracking,
+  validateWeeklyCheckIn,
+  validateVisualProgressScan
+} = require("./src/validation/retentionValidators");
 const { createWriteObservability, mapRouteAction } = require("./src/lib/writeObservability");
 const { createAuthorizationResolver, parseAuthorizationConfig } = require("./src/lib/authorization");
 const { createEnforcementStateStore } = require("./src/lib/enforcementStateStore");
@@ -153,6 +161,7 @@ function resolveRequestOrigin(req) {
 function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
+  const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
 
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
@@ -1317,6 +1326,110 @@ function createApp(options = {}) {
     const limit = Number.isFinite(rawLimit) ? rawLimit : 10;
     const result = userDataService.getHistory(req.auth.userId, { limit });
     return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/client-intake", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getClientIntake(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/client-intake", requireAuth, asyncHandler(async (req, res) => {
+    const intake = validateClientIntake(req.body);
+    const result = userDataService.upsertClientIntake({
+      userId: req.auth.userId,
+      intake,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/goals-baseline", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getGoalsBaseline(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/goals-baseline", requireAuth, asyncHandler(async (req, res) => {
+    const goalsBaseline = validateGoalsBaseline(req.body);
+    const result = userDataService.upsertGoalsBaseline({
+      userId: req.auth.userId,
+      payload: goalsBaseline,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/programs/current", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getProgram(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/programs", requireAuth, asyncHandler(async (req, res) => {
+    const program = validateProgramAssignment(req.body);
+    const targetUserId = program.clientId;
+    ensureUserScopedAccess(req, targetUserId);
+    const result = userDataService.assignProgram({
+      userId: targetUserId,
+      program,
+      actorUserId: req.auth.userId,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.post("/api/workouts/track", requireAuth, asyncHandler(async (req, res) => {
+    const tracking = validateWorkoutTracking(req.body);
+    const result = userDataService.appendWorkoutTracking({
+      userId: req.auth.userId,
+      tracking,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/check-ins", requireAuth, asyncHandler(async (req, res) => {
+    const rawLimit = Number.parseInt(String(req.query.limit ?? ""), 10);
+    const limit = Number.isFinite(rawLimit) ? rawLimit : 12;
+    const result = userDataService.getCheckIns(req.auth.userId, { limit });
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/check-ins", requireAuth, asyncHandler(async (req, res) => {
+    const checkIn = validateWeeklyCheckIn(req.body);
+    const result = userDataService.upsertWeeklyCheckIn({
+      userId: req.auth.userId,
+      checkIn,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/progress/dashboard", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getProgressDashboard(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/visual-progress-scans", requireAuth, asyncHandler(async (req, res) => {
+    if (!visualProgressScanEnabled) {
+      throw new ApiError("FEATURE_DISABLED", "Visual progress scan is disabled", 404);
+    }
+    const { firstScanId = null, secondScanId = null } = req.query || {};
+    const result = firstScanId && secondScanId
+      ? userDataService.getVisualProgressScanComparison(req.auth.userId, String(firstScanId), String(secondScanId))
+      : userDataService.getVisualProgressScans(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/visual-progress-scans", requireAuth, asyncHandler(async (req, res) => {
+    if (!visualProgressScanEnabled) {
+      throw new ApiError("FEATURE_DISABLED", "Visual progress scan is disabled", 404);
+    }
+    const scan = validateVisualProgressScan(req.body);
+    const result = userDataService.saveVisualProgressScan({
+      userId: req.auth.userId,
+      scan,
+      source: "api"
+    });
+    return ok(res, req.requestId, result, 201);
   }));
 
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
