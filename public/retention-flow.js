@@ -1,5 +1,6 @@
 (function () {
-  "use strict";
+  try {
+    "use strict";
 
   const root = document.getElementById("retentionFlowRoot");
   const statusEl = document.getElementById("retentionFlowStatus");
@@ -683,4 +684,7 @@
       console.warn("workout completion sync failed", err);
     }
   });
+  } catch (err) {
+    console.error("[retention-flow] bootstrap failed", err);
+  }
 })();
