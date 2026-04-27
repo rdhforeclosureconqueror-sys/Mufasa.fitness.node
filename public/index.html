@@ -149,14 +149,22 @@
       }
     };
 
-    const importWithTimeout = async (url, timeoutMs) => {
+    const importWithTimeout = async (url, timeoutMs, onTimeout) => {
       let timerId = null;
+      let settled = false;
       try {
         const timeoutPromise = new Promise((_, reject) => {
-          timerId = setTimeout(() => reject(new Error(`import_timeout_${timeoutMs}ms`)), timeoutMs);
+          timerId = setTimeout(() => {
+            if (settled) return;
+            if (typeof onTimeout === "function") onTimeout();
+            reject(new Error(`import_timeout_${timeoutMs}ms`));
+          }, timeoutMs);
         });
-        return await Promise.race([import(url), timeoutPromise]);
+        const module = await Promise.race([import(url), timeoutPromise]);
+        settled = true;
+        return module;
       } finally {
+        settled = true;
         if (timerId) clearTimeout(timerId);
       }
     };
@@ -238,20 +246,16 @@
     for (const source of importSources) {
       let threeModule = null;
       let gltfModule = null;
-      let threePendingTimer = null;
       try {
         avatarRuntimeStatus.threeImportStarted = true;
         avatarRuntimeStatus.threeImportPending = true;
         avatarRuntimeStatus.threeImportPathUsed = source.threeUrl;
         avatarRuntimeStatus.threeModuleMime = await probeModuleMime(source.threeUrl);
-        threePendingTimer = setTimeout(() => {
-          if (avatarRuntimeStatus.threeImportPending) {
-            avatarRuntimeStatus.threeImportTimeout = true;
-            avatarRuntimeStatus.threeImportTimeoutAt = Date.now();
-            avatarRuntimeStatus.threeImportError = `three_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
-          }
-        }, IMPORT_TIMEOUT_MS);
-        threeModule = await importWithTimeout(source.threeUrl, IMPORT_TIMEOUT_MS);
+        threeModule = await importWithTimeout(source.threeUrl, IMPORT_TIMEOUT_MS, () => {
+          avatarRuntimeStatus.threeImportTimeout = true;
+          avatarRuntimeStatus.threeImportTimeoutAt = Date.now();
+          avatarRuntimeStatus.threeImportError = `three_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
+        });
         avatarRuntimeStatus.threeImportOk = Boolean(threeModule);
         avatarRuntimeStatus.threeImportError = null;
         avatarRuntimeStatus.threeImportTimeout = false;
@@ -267,24 +271,19 @@
           : (source.id === "local-vendor" ? "local_three_import_failed" : "three_import_failed");
         continue;
       } finally {
-        if (threePendingTimer) clearTimeout(threePendingTimer);
         avatarRuntimeStatus.threeImportPending = false;
       }
 
-      let gltfPendingTimer = null;
       try {
         avatarRuntimeStatus.gltfLoaderImportStarted = true;
         avatarRuntimeStatus.gltfLoaderImportPending = true;
         avatarRuntimeStatus.gltfLoaderImportPathUsed = source.gltfLoaderUrl;
         avatarRuntimeStatus.gltfLoaderModuleMime = await probeModuleMime(source.gltfLoaderUrl);
-        gltfPendingTimer = setTimeout(() => {
-          if (avatarRuntimeStatus.gltfLoaderImportPending) {
-            avatarRuntimeStatus.gltfLoaderImportTimeout = true;
-            avatarRuntimeStatus.gltfLoaderImportTimeoutAt = Date.now();
-            avatarRuntimeStatus.gltfLoaderImportError = `gltfloader_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
-          }
-        }, IMPORT_TIMEOUT_MS);
-        gltfModule = await importWithTimeout(source.gltfLoaderUrl, IMPORT_TIMEOUT_MS);
+        gltfModule = await importWithTimeout(source.gltfLoaderUrl, IMPORT_TIMEOUT_MS, () => {
+          avatarRuntimeStatus.gltfLoaderImportTimeout = true;
+          avatarRuntimeStatus.gltfLoaderImportTimeoutAt = Date.now();
+          avatarRuntimeStatus.gltfLoaderImportError = `gltfloader_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
+        });
         avatarRuntimeStatus.gltfLoaderImportOk = Boolean(gltfModule?.GLTFLoader);
         avatarRuntimeStatus.gltfLoaderImportError = null;
         avatarRuntimeStatus.gltfLoaderImportTimeout = false;
@@ -300,7 +299,6 @@
           : (source.id === "local-vendor" ? "local_gltfloader_import_failed" : "gltfloader_import_failed");
         continue;
       } finally {
-        if (gltfPendingTimer) clearTimeout(gltfPendingTimer);
         avatarRuntimeStatus.gltfLoaderImportPending = false;
       }
 
