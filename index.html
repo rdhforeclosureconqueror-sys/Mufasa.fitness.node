@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <script>
-    window.APP_BUILD_VERSION = "2026-04-26T00:00:00Z-avatar-runtime-bootstrap2";
+    window.APP_BUILD_VERSION = "2026-04-27T00:00:00Z-client-workout-hud";
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     window.__THREE_BRIDGE_FIX_ACTIVE = true;
     window.__AVATAR_THREE = window.__AVATAR_THREE || {
@@ -450,6 +450,10 @@
       display: none;
     }
     body.camera-fullscreen #trackingModeRow {
+      display: none;
+    }
+    body.camera-fullscreen .workout-hud,
+    body.camera-fullscreen #avatarDebugOverlay {
       display: block;
     }
     body.camera-fullscreen .video-shell {
@@ -888,22 +892,88 @@
     }
     #avatarDebugOverlay {
       position: absolute;
-      right: 10px;
+      left: 10px;
       top: 10px;
       z-index: 7;
-      min-width: 180px;
-      max-width: 46%;
+      max-width: 50%;
       background: rgba(5, 8, 20, 0.72);
       color: #e5f3ff;
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      border: 1px solid rgba(34, 197, 94, 0.45);
       border-radius: 8px;
-      font-size: 0.7rem;
+      font-size: 0.76rem;
       line-height: 1.35;
       padding: 8px 10px;
       pointer-events: none;
       backdrop-filter: blur(3px);
-      white-space: pre-line;
+      white-space: normal;
     }
+    .workout-hud {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      z-index: 8;
+      width: min(360px, calc(100% - 24px));
+      background: rgba(2, 6, 23, 0.84);
+      border: 1px solid rgba(250, 204, 21, 0.55);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.78rem;
+      display: grid;
+      gap: 4px;
+    }
+    .hud-line { color: #e5e7eb; }
+    .hud-actions { display: none; margin-top: 6px; gap: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .hud-actions button { min-height: 34px; font-size: 0.72rem; padding: 6px 8px; }
+    .workout-hud.resting .hud-actions { display: grid; }
+    .retention-shell {
+      border: 1px solid rgba(96,165,250,.3);
+      background: rgba(15,23,42,.35);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .retention-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap: 8px;
+    }
+    .retention-shell input, .retention-shell select, .retention-shell textarea {
+      width: 100%;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+    .retention-card {
+      border: 1px solid rgba(148,163,184,.28);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: rgba(30,41,59,.5);
+    }
+    .retention-steps {
+      font-size: .82rem;
+      color: #bfdbfe;
+      margin-bottom: 8px;
+    }
+    .retention-cal {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(22px, 1fr));
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .retention-cal-day {
+      border: 1px solid rgba(148,163,184,.3);
+      border-radius: 6px;
+      min-height: 34px;
+      font-size: .75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+    }
+    .retention-cal-day.scheduled { background: rgba(34,197,94,.2); }
+    .retention-cal-day.done { background: rgba(22,163,74,.5); border-color: rgba(74,222,128,.7); }
+    .retention-cal-day.today { outline: 1px solid #facc15; }
+    .retention-muted { color: #94a3b8; font-size: .78rem; }
   </style>
 </head>
 
@@ -947,7 +1017,21 @@
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
         <canvas id="avatar3d"></canvas>
-        <div id="avatarDebugOverlay" aria-live="polite">Tracking: pending…</div>
+        <div id="avatarDebugOverlay" aria-live="polite">Cue: Stay controlled.</div>
+        <div id="workoutHud" class="workout-hud" aria-live="polite">
+          <div class="hud-line"><strong>Exercise:</strong> <span id="hudExerciseName">Bodyweight Squat</span></div>
+          <div class="hud-line"><strong>Set:</strong> <span id="hudSet">1 of 3</span></div>
+          <div class="hud-line"><strong>Reps:</strong> <span id="hudReps">0 / 10</span></div>
+          <div class="hud-line"><strong>Tempo:</strong> <span id="hudTempo">3-1-1</span></div>
+          <div class="hud-line"><strong>Rest:</strong> <span id="hudRest">Ready</span></div>
+          <div class="hud-line"><strong>Next:</strong> <span id="hudNextExercise">--</span></div>
+          <div class="hud-line"><strong>Cue:</strong> <span id="hudCoachCue">Brace first. Stay smooth.</span></div>
+          <div id="hudActions" class="hud-actions">
+            <button id="skipRestBtn" class="secondary" type="button">Skip Rest</button>
+            <button id="repeatSetBtn" class="secondary" type="button">Repeat Set</button>
+            <button id="nextExerciseBtn" class="secondary" type="button">Next Exercise</button>
+          </div>
+        </div>
         <div id="cameraFsActions" class="camera-fs-actions" aria-live="polite">
           <button id="exitCameraBtn" class="secondary" type="button">Exit Camera</button>
           <button id="stopWorkoutFsBtn" class="secondary" type="button">Stop Workout</button>
@@ -1038,6 +1122,11 @@
       <p class="subtitle">Ma’at 2.0 remembers you and builds long-term programs from here.</p>
 
       <div id="profileSummary" class="small-card">Not signed in yet.</div>
+      <div id="retentionFlowRoot" class="retention-shell">
+        <h2 style="margin:0 0 6px 0;">Retention Journey</h2>
+        <div id="retentionFlowStatus" class="retention-steps">Sign in to begin onboarding flow.</div>
+        <div id="retentionFlowContent" class="retention-muted">Waiting for authenticated profile...</div>
+      </div>
 
       <h2 style="margin-top:12px;">Today’s Workout</h2>
       <p class="subtitle">Choose a template or use Ma’at 2.0’s program from your assessment.</p>
@@ -1233,6 +1322,17 @@
     const calendarViewEl = document.getElementById("calendarView");
     const dashboardBtn = document.getElementById("dashboardBtn");
     const exerciseLibraryBtn = document.getElementById("exerciseLibraryBtn");
+    const workoutHudEl = document.getElementById("workoutHud");
+    const hudExerciseNameEl = document.getElementById("hudExerciseName");
+    const hudSetEl = document.getElementById("hudSet");
+    const hudRepsEl = document.getElementById("hudReps");
+    const hudTempoEl = document.getElementById("hudTempo");
+    const hudRestEl = document.getElementById("hudRest");
+    const hudNextExerciseEl = document.getElementById("hudNextExercise");
+    const hudCoachCueEl = document.getElementById("hudCoachCue");
+    const skipRestBtn = document.getElementById("skipRestBtn");
+    const repeatSetBtn = document.getElementById("repeatSetBtn");
+    const nextExerciseBtn = document.getElementById("nextExerciseBtn");
 
     const AVATAR_STAGE_MODE_STORAGE_KEY = "maatAvatarStageMode";
     const ALLOWED_STAGE_MODES = new Set(["fixed", "follow_pose"]);
@@ -1447,10 +1547,197 @@
     // ---- AI-generated program ----
     let aiProgramToday = null;
 
-    // Default exercise + workout prescription
-    const EXERCISE_ID = "bodyweight_squat";
-    const TARGET_REPS = 10;
-    const TARGET_SETS = 3;
+    const ACTIVE_WORKOUT_SELECTION_KEY = "ACTIVE_WORKOUT_SELECTION_V1";
+    const ACTIVE_WORKOUT_COMPLETION_KEY = "ACTIVE_WORKOUT_COMPLETION_V1";
+    const ACTIVE_WORKOUT_STATE = {
+      activeProgramId: null,
+      activeWorkoutId: null,
+      activeExerciseIndex: 0,
+      activeSetIndex: 0,
+      currentExercise: null,
+      targetReps: 10,
+      targetTime: null,
+      tempo: "3-1-1",
+      restSeconds: 60,
+      nextExercise: null,
+      repCount: 0,
+      setStatus: "ready",
+      workoutStatus: "idle"
+    };
+    let activeWorkoutPlan = null;
+    let restTimerId = null;
+    let restRemainingSec = 0;
+
+    function normalizeExercisePrescription(exercise, fallbackIndex = 0) {
+      const sets = Number(exercise?.sets || 3);
+      const repsRaw = Number(exercise?.targetReps || exercise?.reps || 10);
+      const targetReps = Number.isFinite(repsRaw) && repsRaw > 0 ? repsRaw : 10;
+      return {
+        exerciseId: String(exercise?.exerciseId || exercise?.id || `exercise_${fallbackIndex + 1}`),
+        name: String(exercise?.name || `Exercise ${fallbackIndex + 1}`),
+        sets,
+        targetReps,
+        targetTime: Number(exercise?.targetTime || 0) || null,
+        restSeconds: Number(exercise?.restSeconds || exercise?.restSec || 60) || 60,
+        tempo: String(exercise?.tempo || "3-1-1"),
+        instructions: Array.isArray(exercise?.instructions) ? exercise.instructions : [],
+        formCues: Array.isArray(exercise?.formCues) ? exercise.formCues : [],
+        commonMistakes: Array.isArray(exercise?.commonMistakes) ? exercise.commonMistakes : []
+      };
+    }
+
+    function hydrateActiveWorkoutPlan() {
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem(ACTIVE_WORKOUT_SELECTION_KEY) || "null"); } catch (_) {}
+      const fallback = {
+        programId: null,
+        scheduledWorkoutId: "quick_squat_default",
+        title: "Quick Squat Session",
+        exercises: [normalizeExercisePrescription({ exerciseId: "bodyweight_squat", name: "Bodyweight Squat", sets: 3, targetReps: 10, restSeconds: 60, tempo: "3-1-1", instructions:["Keep chest up."], formCues:["Keep knees tracking over toes."] }, 0)]
+      };
+      const source = stored && Array.isArray(stored.exercises) && stored.exercises.length ? stored : fallback;
+      activeWorkoutPlan = {
+        programId: source.programId || null,
+        scheduledWorkoutId: source.scheduledWorkoutId || source.workoutId || `workout_${Date.now()}`,
+        title: source.title || "Workout",
+        notes: source.notes || null,
+        exercises: source.exercises.map((exercise, index) => normalizeExercisePrescription(exercise, index))
+      };
+      ACTIVE_WORKOUT_STATE.activeProgramId = activeWorkoutPlan.programId;
+      ACTIVE_WORKOUT_STATE.activeWorkoutId = activeWorkoutPlan.scheduledWorkoutId;
+    }
+
+    function updateActiveWorkoutState(partial = {}) {
+      Object.assign(ACTIVE_WORKOUT_STATE, partial);
+      window.__ACTIVE_WORKOUT_STATE = { ...ACTIVE_WORKOUT_STATE };
+      window.ACTIVE_WORKOUT_STATE = window.__ACTIVE_WORKOUT_STATE;
+      if (!activeWorkoutPlan) return;
+      const current = activeWorkoutPlan.exercises[ACTIVE_WORKOUT_STATE.activeExerciseIndex] || activeWorkoutPlan.exercises[0];
+      const next = activeWorkoutPlan.exercises[ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1] || null;
+      ACTIVE_WORKOUT_STATE.currentExercise = current?.name || null;
+      ACTIVE_WORKOUT_STATE.targetReps = current?.targetReps || null;
+      ACTIVE_WORKOUT_STATE.targetTime = current?.targetTime || null;
+      ACTIVE_WORKOUT_STATE.tempo = current?.tempo || "3-1-1";
+      ACTIVE_WORKOUT_STATE.restSeconds = current?.restSeconds || 60;
+      ACTIVE_WORKOUT_STATE.nextExercise = next?.name || "Workout complete";
+      repCount = Number(ACTIVE_WORKOUT_STATE.repCount || 0);
+      currentSet = Number(ACTIVE_WORKOUT_STATE.activeSetIndex || 0) + 1;
+      renderWorkoutHud();
+    }
+
+    function getPrimaryCue(formResult = null) {
+      if (formResult?.corrections?.length) return formResult.corrections[0].text;
+      const current = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex];
+      return current?.formCues?.[0] || current?.instructions?.[0] || "Stay controlled and breathe.";
+    }
+
+    function renderWorkoutHud(formResult = null) {
+      const totalSets = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex]?.sets || 1;
+      if (hudExerciseNameEl) hudExerciseNameEl.textContent = ACTIVE_WORKOUT_STATE.currentExercise || "--";
+      if (hudSetEl) hudSetEl.textContent = `${ACTIVE_WORKOUT_STATE.activeSetIndex + 1} of ${totalSets}`;
+      if (hudRepsEl) hudRepsEl.textContent = `${ACTIVE_WORKOUT_STATE.repCount} / ${ACTIVE_WORKOUT_STATE.targetReps || "--"}`;
+      if (hudTempoEl) hudTempoEl.textContent = ACTIVE_WORKOUT_STATE.tempo || "--";
+      if (hudRestEl) hudRestEl.textContent = ACTIVE_WORKOUT_STATE.setStatus === "rest" ? `${restRemainingSec}s` : "Ready";
+      if (hudNextExerciseEl) hudNextExerciseEl.textContent = ACTIVE_WORKOUT_STATE.nextExercise || "--";
+      if (hudCoachCueEl) hudCoachCueEl.textContent = getPrimaryCue(formResult);
+      if (exerciseLabelEl) exerciseLabelEl.textContent = ACTIVE_WORKOUT_STATE.currentExercise || "--";
+      if (repCountEl) repCountEl.textContent = String(ACTIVE_WORKOUT_STATE.repCount || 0);
+      if (workoutHudEl) workoutHudEl.classList.toggle("resting", ACTIVE_WORKOUT_STATE.setStatus === "rest");
+      const isDebug = window.__debugWorkoutOverlay === true || AVATAR_FLAGS.AVATAR_DEBUG;
+      if (avatarDebugOverlayEl) avatarDebugOverlayEl.style.display = isDebug ? "block" : "none";
+    }
+
+    function stopRestTimer() {
+      if (restTimerId) clearInterval(restTimerId);
+      restTimerId = null;
+      restRemainingSec = 0;
+    }
+
+    function advanceWorkoutProgress(forceNextExercise = false) {
+      const exercise = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex];
+      if (!exercise) return completeWorkoutSession();
+      if (!forceNextExercise && ACTIVE_WORKOUT_STATE.activeSetIndex + 1 < exercise.sets) {
+        updateActiveWorkoutState({ activeSetIndex: ACTIVE_WORKOUT_STATE.activeSetIndex + 1, repCount: 0, setStatus: "active" });
+        if (repFeedbackAllowed) speak(`Rest is over. Start set ${ACTIVE_WORKOUT_STATE.activeSetIndex + 1}.`, "rep");
+        return;
+      }
+      if (ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1 < activeWorkoutPlan.exercises.length) {
+        updateActiveWorkoutState({ activeExerciseIndex: ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1, activeSetIndex: 0, repCount: 0, setStatus: "active" });
+        if (repFeedbackAllowed) speak(`Next exercise: ${ACTIVE_WORKOUT_STATE.currentExercise}.`, "rep");
+        return;
+      }
+      completeWorkoutSession();
+    }
+
+    function startRestTimer(seconds) {
+      stopRestTimer();
+      restRemainingSec = Math.max(0, Number(seconds || ACTIVE_WORKOUT_STATE.restSeconds || 60));
+      updateActiveWorkoutState({ setStatus: "rest" });
+      if (restRemainingSec <= 0) {
+        advanceWorkoutProgress(false);
+        return;
+      }
+      restTimerId = setInterval(() => {
+        restRemainingSec = Math.max(0, restRemainingSec - 1);
+        renderWorkoutHud();
+        if (restRemainingSec <= 0) {
+          stopRestTimer();
+          advanceWorkoutProgress(false);
+        }
+      }, 1000);
+    }
+
+    function completeWorkoutSession() {
+      stopRestTimer();
+      running = false;
+      ACTIVE_WORKOUT_STATE.workoutStatus = "completed";
+      ACTIVE_WORKOUT_STATE.setStatus = "completed";
+      renderWorkoutHud();
+      startBtn.textContent = "Start Workout";
+      refreshCameraUiState();
+      addLog("system", "Workout complete.");
+      if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
+      const durationMs = Math.max(0, Date.now() - Number(sessionId?.split("_")[1] || Date.now()));
+      const completion = {
+        scheduledWorkoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId,
+        completedExercises: activeWorkoutPlan?.exercises?.slice(0, ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1).map((x) => x.name) || [],
+        completedSets: ACTIVE_WORKOUT_STATE.activeSetIndex + 1,
+        repsCompleted: totalReps,
+        formScoreSummary: Number((window.__lastFormResult?.overallScore || 0).toFixed(3)),
+        durationSeconds: Math.round(durationMs / 1000),
+        notes: activeWorkoutPlan?.notes || null,
+        completedAt: new Date().toISOString()
+      };
+      try { localStorage.setItem(ACTIVE_WORKOUT_COMPLETION_KEY, JSON.stringify(completion)); } catch (_) {}
+      window.dispatchEvent(new CustomEvent("workout:completed", { detail: completion }));
+      sendEndSessionToNode();
+      setPersonLayerSuppressed(false);
+      setAvatar3dCanvasVisibility(false);
+      lastRenderMode = "camera";
+      cancelAnimationFrame(animId);
+    }
+
+    if (skipRestBtn) {
+      skipRestBtn.onclick = () => {
+        if (ACTIVE_WORKOUT_STATE.setStatus !== "rest") return;
+        stopRestTimer();
+        advanceWorkoutProgress(false);
+      };
+    }
+    if (repeatSetBtn) {
+      repeatSetBtn.onclick = () => {
+        stopRestTimer();
+        repCount = 0;
+        updateActiveWorkoutState({ repCount: 0, setStatus: "active" });
+      };
+    }
+    if (nextExerciseBtn) {
+      nextExerciseBtn.onclick = () => {
+        stopRestTimer();
+        repCount = 0;
+        advanceWorkoutProgress(true);
+      };
+    }
 
     // Skeleton edges for MoveNet keypoints (indices 0–16)
     const SKELETON_EDGES = [
@@ -3601,11 +3888,19 @@ function toggleListening() {
       return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
     }
 
+    function getCurrentExerciseMeta() {
+      return activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex] || null;
+    }
+
+    function getCurrentExerciseId() {
+      return getCurrentExerciseMeta()?.exerciseId || "bodyweight_squat";
+    }
+
     function sendStartSessionToNode() {
       SESSION_WRITE_CLIENT?.startSession({
         sessionId,
         programId: null,
-        exerciseId: EXERCISE_ID
+        exerciseId: getCurrentExerciseId()
       }).catch((err) => {
         addLog("system", "Session could not be saved to backend. Keep exercising; retry save by finishing workout.");
         console.warn("session_start write failed", err);
@@ -3616,7 +3911,7 @@ function toggleListening() {
       if (!sessionId) return;
       SESSION_WRITE_CLIENT?.completeSession(sessionId, {
         repsCompleted: totalReps,
-        exerciseId: EXERCISE_ID
+        exerciseId: getCurrentExerciseId()
       }).catch((err) => {
         addLog("system", "Workout finished locally, but save failed. Check connection, then restart app to retry sync.");
         console.warn("session_complete write failed", err);
@@ -3641,7 +3936,7 @@ function toggleListening() {
 
       SESSION_WRITE_CLIENT?.enqueueRepUpdate({
         sessionId,
-        exerciseId: EXERCISE_ID,
+        exerciseId: getCurrentExerciseId(),
         repsThisSet: repCount,
         totalReps,
         depthScore,
@@ -3806,7 +4101,7 @@ function toggleListening() {
       brainStatusEl.textContent = "Ma’at 2.0 thinking…";
 
       const telemetry = {
-        exercise_id: EXERCISE_ID,
+        exercise_id: getCurrentExerciseId(),
         reps: totalReps,
         depth_score: lastDepthScore,
         good_form: lastGoodForm
@@ -4117,11 +4412,23 @@ function toggleListening() {
     function updateAvatarDebugOverlay(snapshot = {}) {
       if (!avatarDebugOverlayEl) return;
       const tracking = snapshot.tracking || {};
-      const calibration = snapshot.calibration || {};
       const form = snapshot.form || window.__lastFormResult || null;
+      const debugModeEnabled = window.__debugWorkoutOverlay === true || AVATAR_FLAGS.AVATAR_DEBUG;
+      if (!debugModeEnabled) {
+        const warning = form?.corrections?.[0]?.text || null;
+        const quickCue = warning || (form?.overallStatus === "GOOD" ? "Good rep" : "Keep chest up");
+        const safeText = `Cue: ${quickCue}`;
+        avatarDebugOverlayEl.textContent = safeText;
+        avatarDebugOverlayEl.style.borderColor = form?.overallStatus === "GOOD"
+          ? "rgba(34, 197, 94, 0.55)"
+          : "rgba(239, 68, 68, 0.55)";
+        return;
+      }
+
+      const calibration = snapshot.calibration || {};
       avatarDebugOverlayEl.textContent = [
         `Build: ${APP_BUILD_VERSION}`,
-        `Exercise: ${exerciseLabelEl?.textContent || EXERCISE_ID}`,
+        `Exercise: ${exerciseLabelEl?.textContent || getCurrentExerciseId()}`,
         `Movement family: ${form?.movementFamily || "UNKNOWN"}`,
         `Tracking mode: ${tracking.mode || currentTrackingMode}`,
         `Tracking state: ${tracking.state || currentTrackingState}`,
@@ -4134,7 +4441,9 @@ function toggleListening() {
         `Avatar mode: ${snapshot.avatarMode || getRenderMode()}`,
         `Avatar body: ${snapshot.avatarBodyMode || "full"}`,
         `Calibration: ${calibration.status || "pending"}`
-      ].join("\n");
+      ].join("
+");
+      avatarDebugOverlayEl.style.borderColor = "rgba(148, 163, 184, 0.3)";
     }
 
     async function collectTrackerFrame(pose) {
@@ -4196,14 +4505,14 @@ function toggleListening() {
       latestPosePacket = posePacket;
       window.__lastPoseFrame = posePacket;
       const movementFamily = FORM_ENGINE?.mapExerciseToMovementFamily?.({
-        exerciseId: EXERCISE_ID,
-        name: exerciseLabelEl?.textContent || EXERCISE_ID
+        exerciseId: getCurrentExerciseId(),
+        name: exerciseLabelEl?.textContent || getCurrentExerciseId()
       }) || "UNKNOWN";
       const formResult = FORM_ENGINE?.evaluateExerciseForm
         ? FORM_ENGINE.evaluateExerciseForm({
           keypoints: pose?.keypoints || [],
-          exerciseId: EXERCISE_ID,
-          exerciseName: exerciseLabelEl?.textContent || EXERCISE_ID,
+          exerciseId: getCurrentExerciseId(),
+          exerciseName: exerciseLabelEl?.textContent || getCurrentExerciseId(),
           movementFamily
         }, { previousMetrics: lastFormEngineMetrics })
         : null;
@@ -4242,6 +4551,7 @@ function toggleListening() {
         calibration: { status: avatarThreeRuntime?.calibration?.status || "not_started" },
         form: formResult
       });
+      renderWorkoutHud(formResult);
 
       // Status + coaching prompt
       const trackerUpperBodyOnly = trackerFrame?.trackingState === TRACKING_CONFIDENCE_STATE.UPPER_BODY_ONLY;
@@ -4390,50 +4700,43 @@ function toggleListening() {
       }
 
       // Workout rep counting
-      if (running) {
+      if (running && ACTIVE_WORKOUT_STATE.setStatus !== "rest") {
         const depth = analysis.depthScore;
         const DOWN_THRESHOLD = 0.6;
-        const UP_THRESHOLD   = 0.3;
+        const UP_THRESHOLD = 0.3;
+        const currentExercise = getCurrentExerciseMeta();
+        const targetReps = Number(currentExercise?.targetReps || ACTIVE_WORKOUT_STATE.targetReps || 10);
+        const supportsDepthCounting = ["SQUAT", "LUNGE", "HINGE", "PUSH_UP"].includes(String(movementFamily || "").toUpperCase());
+        let repDetected = false;
 
-        if (analysis.fullBody) {
+        if (analysis.fullBody && supportsDepthCounting) {
           if (repPhase === "up" && depth > DOWN_THRESHOLD) {
             repPhase = "down";
           } else if (repPhase === "down" && depth < UP_THRESHOLD) {
             repPhase = "up";
+            repDetected = true;
+          }
+        } else if (Boolean(formResult?.repValid) && formResult?.phase === "TOP" && repPhase !== "top") {
+          repPhase = "top";
+          repDetected = true;
+        } else if (formResult?.phase && formResult.phase !== "TOP") {
+          repPhase = formResult.phase.toLowerCase();
+        }
 
-            repCount += 1;
-            totalReps += 1;
-            repCountEl.textContent = String(repCount);
-            sendRepToNode(depth);
+        if (repDetected) {
+          repCount += 1;
+          totalReps += 1;
+          updateActiveWorkoutState({ repCount, setStatus: "active", workoutStatus: "in_progress" });
+          sendRepToNode(depth);
 
-            if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
-              speak(analysis.goodForm ? "Good rep." : "Careful with your form on that rep.", "rep");
-              lastGoodRepSpokenAt = now;
-            }
+          if (repFeedbackAllowed && now - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
+            speak(analysis.goodForm ? "Good rep." : "Careful with your form on that rep.", "rep");
+            lastGoodRepSpokenAt = now;
+          }
 
-            if (repCount === TARGET_REPS) {
-              if (repFeedbackAllowed) speak(`Great job. That's ${TARGET_REPS} reps for set ${currentSet}.`, "rep");
-
-              currentSet += 1;
-
-              if (currentSet <= TARGET_SETS) {
-                repCount = 0;
-                setTimeout(() => {
-                  if (running && repFeedbackAllowed) speak(`Rest is over. Let's start set ${currentSet}.`, "rep");
-                }, 20000);
-              } else {
-                running = false;
-                startBtn.textContent = "Start Workout";
-                addLog("system", "Workout complete.");
-                if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
-                sendEndSessionToNode();
-                setPersonLayerSuppressed(false);
-                setAvatar3dCanvasVisibility(false);
-                lastRenderMode = "camera";
-                cancelAnimationFrame(animId);
-                return;
-              }
-            }
+          if (repCount >= targetReps) {
+            if (repFeedbackAllowed) speak(`Set complete. ${targetReps} reps done.`, "rep");
+            startRestTimer(Number(currentExercise?.restSeconds || ACTIVE_WORKOUT_STATE.restSeconds || 60));
           }
         }
       }
@@ -5024,26 +5327,41 @@ function toggleListening() {
       running = !running;
 
       if (running) {
+        hydrateActiveWorkoutPlan();
         sessionId = "sess_" + Date.now();
         repCount = 0;
         totalReps = 0;
-        currentSet = 1;
         repPhase = "up";
         fullBodyAcquired = false;
         stepBackPromptCount = 0;
         upperBodyReadyPromptShown = false;
-        repCountEl.textContent = "0";
+        stopRestTimer();
+        updateActiveWorkoutState({
+          activeExerciseIndex: 0,
+          activeSetIndex: 0,
+          repCount: 0,
+          setStatus: "active",
+          workoutStatus: "in_progress"
+        });
 
         startBtn.textContent = "Stop Workout";
         refreshCameraUiState();
-        addLog("system", `Workout started. Session: ${sessionId}. Keep your full body visible to count reps.`);
-        trackPilotEvent("workout_started", { sessionId, exerciseId: EXERCISE_ID });
-        speak(`We are doing ${TARGET_SETS} sets of ${TARGET_REPS} squats. When you're ready, let's begin.`, "rep");
+        addLog("system", `Workout started: ${activeWorkoutPlan?.title || "Session"}. Session: ${sessionId}.`);
+        trackPilotEvent("workout_started", {
+          sessionId,
+          exerciseId: getCurrentExerciseId(),
+          scheduledWorkoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId,
+          programId: ACTIVE_WORKOUT_STATE.activeProgramId
+        });
+        const currentExercise = getCurrentExerciseMeta();
+        speak(`Starting ${currentExercise?.name || "your workout"}. ${currentExercise?.sets || 1} sets of ${currentExercise?.targetReps || 10}. Tempo ${currentExercise?.tempo || "3-1-1"}.`, "rep");
         sendStartSessionToNode();
         runPoseLoop();
       } else {
         startBtn.textContent = "Start Workout";
         running = false;
+        stopRestTimer();
+        updateActiveWorkoutState({ workoutStatus: "paused", setStatus: "paused" });
         refreshCameraUiState();
         cancelAnimationFrame(animId);
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -5381,6 +5699,18 @@ function toggleListening() {
       attachAvatarTraceHarness();
     }
 
+    hydrateActiveWorkoutPlan();
+    updateActiveWorkoutState({ workoutStatus: "ready", setStatus: "ready" });
+    window.addEventListener("workout:selected", (event) => {
+      const detail = event?.detail;
+      if (detail) {
+        try { localStorage.setItem(ACTIVE_WORKOUT_SELECTION_KEY, JSON.stringify(detail)); } catch (_) {}
+      }
+      hydrateActiveWorkoutPlan();
+      updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "ready", workoutStatus: "ready" });
+      addLog("system", `Loaded scheduled workout: ${activeWorkoutPlan?.title || "Workout"}.`);
+    });
+
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
     startBtn.onclick = startWorkout;
@@ -5521,5 +5851,6 @@ function toggleListening() {
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
   <script src="/fitness.js?v=20260425"></script>
+  <script src="/retention-flow.js?v=20260427"></script>
 </body>
 </html>

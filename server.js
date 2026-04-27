@@ -57,8 +57,8 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
-const INDEX_CACHE_BUST_TOKEN = "20260425";
+const APP_BUILD_VERSION = "2026-04-27T00:00:00Z-client-workout-hud";
+const INDEX_CACHE_BUST_TOKEN = "20260427";
 
 function normalizeAuthBridgeTrustMode(raw) {
   const mode = String(raw || "").trim().toLowerCase();

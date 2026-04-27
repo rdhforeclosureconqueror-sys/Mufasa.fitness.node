@@ -310,13 +310,35 @@
     }) || null;
   }
 
+  function buildSessionExercise(exerciseName, entry, index) {
+    const instructions = Array.isArray(entry?.instructions) ? entry.instructions : [];
+    const formCues = instructions.slice(0, 2);
+    const commonMistakes = Array.isArray(entry?.commonMistakes) ? entry.commonMistakes : [];
+    return {
+      exerciseId: entry?.id || `exercise_${index + 1}`,
+      name: entry?.name || exerciseName,
+      sets: 3,
+      targetReps: 12,
+      targetTime: null,
+      restSeconds: 60,
+      tempo: "3-1-1",
+      instructions,
+      formCues,
+      commonMistakes,
+      targetMuscles: Array.isArray(entry?.primaryMuscles) ? entry.primaryMuscles : [],
+      media: Array.isArray(entry?.images) && entry.images.length
+        ? `${getNodeBaseUrl() || window.location.origin}/exercise-db/${entry.images[0]}`
+        : null
+    };
+  }
+
   async function renderDailyWorkoutDetail() {
     const program = state.currentProgram;
     if (!program) return;
     const exercises = Array.isArray(program.exercises) ? program.exercises : [];
-    const index = await loadExerciseIndex();
+    const indexData = await loadExerciseIndex();
     const cards = exercises.map((exerciseName) => {
-      const entry = findExerciseEntry(exerciseName, index) || {};
+      const entry = findExerciseEntry(exerciseName, indexData) || {};
       const instructionList = Array.isArray(entry.instructions) ? entry.instructions.slice(0, 3) : [];
       const firstImage = Array.isArray(entry.images) && entry.images.length
         ? `${getNodeBaseUrl() || window.location.origin}/exercise-db/${entry.images[0]}`
@@ -336,7 +358,10 @@
         <div class="retention-muted">Program ID: ${esc(program.programId || "pending")}</div>
         ${cards || "<div class=\"retention-muted\">No exercises configured yet.</div>"}
         <label>Session notes<textarea id="rfSessionNotes" rows="2" placeholder="How did today's workout feel?"></textarea></label>
-        <button id="rfCompleteWorkoutBtn">Complete Workout</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="rfStartWorkoutBtn">Start Workout</button>
+          <button id="rfCompleteWorkoutBtn">Complete Workout</button>
+        </div>
       </div>`;
 
     const existing = document.getElementById("rfDailyWorkoutCard");
@@ -344,6 +369,29 @@
       existing.outerHTML = detailsMarkup;
     } else {
       contentEl.innerHTML += detailsMarkup;
+    }
+
+    const startBtn = document.getElementById("rfStartWorkoutBtn");
+    if (startBtn) {
+      startBtn.onclick = () => {
+        const sessionExercises = exercises.map((exerciseName, index) => {
+          const entry = findExerciseEntry(exerciseName, indexData) || {};
+          return buildSessionExercise(exerciseName, entry, index);
+        });
+        const payload = {
+          programId: state.currentProgram?.programId || null,
+          scheduledWorkoutId: `scheduled_${state.selectedDate}`,
+          title: `${state.currentProgram?.goal || "Program"} • ${state.selectedDate}`,
+          selectedDate: state.selectedDate,
+          exercises: sessionExercises,
+          currentExercise: sessionExercises[0] || null,
+          notes: document.getElementById("rfSessionNotes")?.value.trim() || null
+        };
+        writeJSON("ACTIVE_WORKOUT_SELECTION_V1", payload);
+        window.dispatchEvent(new CustomEvent("workout:selected", { detail: payload }));
+        const cameraStart = document.getElementById("startBtn");
+        if (cameraStart) cameraStart.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
     }
 
     const completeBtn = document.getElementById("rfCompleteWorkoutBtn");
@@ -504,5 +552,33 @@
 
   window.addEventListener("load", () => {
     refreshAndRender();
+  });
+  window.addEventListener("workout:completed", async (event) => {
+    if (!state.currentProgram) return;
+    const detail = event?.detail || {};
+    if (!detail?.scheduledWorkoutId) return;
+    try {
+      await authedRequest("/api/workouts/track", {
+        method: "POST",
+        body: {
+          programId: state.currentProgram.programId,
+          workoutId: detail.scheduledWorkoutId,
+          exercisesCompleted: detail.completedExercises || [],
+          reps: detail.repsCompleted || 0,
+          sets: detail.completedSets || 0,
+          formScore: detail.formScoreSummary || null,
+          sessionDurationMinutes: Math.max(1, Math.round((detail.durationSeconds || 0) / 60)),
+          notes: detail.notes || null,
+          completionStatus: "completed"
+        }
+      });
+      if (state.selectedDate && !state.completionDates.includes(state.selectedDate)) {
+        state.completionDates.push(state.selectedDate);
+        saveCompletionDates();
+      }
+      await refreshAndRender();
+    } catch (err) {
+      console.warn("workout completion sync failed", err);
+    }
   });
 })();
