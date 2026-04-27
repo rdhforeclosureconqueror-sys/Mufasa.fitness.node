@@ -17,7 +17,8 @@
     "ops:preflight": "node scripts/control-plane-preflight.js",
     "ops:pilot-checks": "node scripts/run-pilot-control-plane-checks.js",
     "diagnostics:routes": "node scripts/diagnostics-routes.js",
-    "repo:route-audit": "node scripts/repo-route-audit.js"
+    "repo:route-audit": "node scripts/repo-route-audit.js",
+    "auth:trace-audit": "node scripts/auth-trace-audit.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
