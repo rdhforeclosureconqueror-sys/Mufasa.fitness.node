@@ -23,14 +23,33 @@
   <!-- Google Identity (optional Google sign-in) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- TensorFlow + Pose Detection (UMD builds) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
+  <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script>
-    window.__avatarRuntimeStatus = {
+    window.__startupResourceAudit = window.__startupResourceAudit || {
+      initialScripts: [
+        "https://accounts.google.com/gsi/client",
+        "/form-engine.js",
+        "/diagnostics-client.js",
+        "/backend-read.js",
+        "/session-write.js",
+        "/landing-diagnostics.js",
+        "/fitness.js"
+      ],
+      deferredScripts: [],
+      deferredModules: []
+    };
+    window.__perfMetrics = window.__perfMetrics || { marks: {}, values: {} };
+    window.__markPerfMetric = function markPerfMetric(name, value) {
+      const perf = window.__perfMetrics || (window.__perfMetrics = { marks: {}, values: {} });
+      perf.values[name] = Number(value);
+      perf.marks[name] = new Date().toISOString();
+      return perf.values[name];
+    };
+    const __appPerfStart = performance.now();
+
+    const avatarRuntimeStatus = window.__avatarRuntimeStatus = {
+      ...(window.__avatarRuntimeStatus || {}),
       threeBridgeFixActive: true,
       avatarThreeGlobalOk: Boolean(window.__AVATAR_THREE),
       threeImportStarted: false,
@@ -59,12 +78,7 @@
       readyEventFired: false,
       failedReason: null,
       failureReason: null,
-      cdnImportTimedOut: false,
-      cdnImportFailed: false,
-      fallbackImportSucceeded: false,
-      threeModuleMime: null,
-      gltfLoaderModuleMime: null,
-      importMapDetected: null,
+      importMapDetected: false,
       webglOk: null,
       webglAvailable: null,
       canvasOk: null,
@@ -79,256 +93,90 @@
       glbLoadStarted: false,
       glbLoadSuccess: false,
       glbLoadError: null,
-      lastGlbLoadStatus: "idle",
-      lastRenderModeRequested: "camera",
-      lastRenderModeApplied: "camera",
-      avatarOverlayRenderAttempted: false,
-      avatarOverlayRenderOk: null,
-      avatarOverlayRenderError: null,
-      avatarModelLoaded: false,
-      avatarModelMounted: false,
-      avatarModelVisible: false,
-      avatarSceneChildrenCount: 0,
-      avatarCanvasWidth: 0,
-      avatarCanvasHeight: 0,
-      avatarCanvasDisplay: null,
-      avatarCanvasVisibility: null,
-      avatarCanvasOpacity: null,
-      avatarCanvasZIndex: null,
-      avatarOverlayContainerExists: null,
-      overlayRenderLoopRunning: false,
-      avatarOverlayVisibilityReason: null,
-      bodyMode: null,
-      trackingState: null,
-      calibrationStatus: null
+      lastGlbLoadStatus: "idle"
     };
-    window.__retryAvatarRuntime = function retryAvatarRuntimeBootstrapStub() {
-      const status = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
-      status.retryRequestedAt = Date.now();
-      status.retryRequestedBeforeRuntimeReady = true;
-      console.warn("[avatar-3d-route] retry requested before runtime bootstrap completed");
-      return Promise.resolve({
-        ok: false,
-        reason: "avatar_runtime_bootstrap_not_ready"
+
+    const lazyScriptCache = window.__lazyScriptCache || (window.__lazyScriptCache = new Map());
+    window.__loadExternalScript = function loadExternalScript(src, { async = true, defer = true } = {}) {
+      if (lazyScriptCache.has(src)) return lazyScriptCache.get(src);
+      const task = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = async;
+        script.defer = defer;
+        script.onload = () => resolve(true);
+        script.onerror = () => reject(new Error(`script_load_failed:${src}`));
+        document.head.appendChild(script);
       });
-    };
-    console.log("[avatar-3d-route] __AVATAR_THREE pre-import exists:", window.__AVATAR_THREE ? "yes" : "no");
-  </script>
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "/vendor/three/build/three.module.js"
-      }
-    }
-  </script>
-  <script type="module">
-    const avatarRuntimeStatus = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
-    const IMPORT_TIMEOUT_MS = 8000;
-    const importSources = [
-      {
-        id: "local-vendor",
-        kind: "local",
-        threeUrl: "/vendor/three/build/three.module.js",
-        gltfLoaderUrl: "/vendor/three/examples/jsm/loaders/GLTFLoader.js"
-      }
-    ];
-
-    const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
-    avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(runtimeBridge);
-    avatarRuntimeStatus.threeBridgeFixActive = window.__THREE_BRIDGE_FIX_ACTIVE === true;
-    avatarRuntimeStatus.importMapDetected = Boolean(document.querySelector('script[type="importmap"]'));
-    console.log("[avatar-3d-route] Three ESM import started");
-
-    const probeModuleMime = async (url) => {
-      try {
-        const res = await fetch(url, { method: "HEAD", cache: "no-store" });
-        const contentType = String(res.headers.get("content-type") || "").toLowerCase();
-        return contentType || null;
-      } catch {
-        return null;
-      }
+      lazyScriptCache.set(src, task);
+      window.__startupResourceAudit.deferredScripts.push(src);
+      return task;
     };
 
-    const importWithTimeout = async (url, timeoutMs, onTimeout) => {
-      let timerId = null;
-      let settled = false;
-      try {
-        const timeoutPromise = new Promise((_, reject) => {
-          timerId = setTimeout(() => {
-            if (settled) return;
-            if (typeof onTimeout === "function") onTimeout();
-            reject(new Error(`import_timeout_${timeoutMs}ms`));
-          }, timeoutMs);
-        });
-        const module = await Promise.race([import(url), timeoutPromise]);
-        settled = true;
-        return module;
-      } finally {
-        settled = true;
-        if (timerId) clearTimeout(timerId);
-      }
-    };
-
-    window.__testThreeImport = async function testThreeImport() {
+    let poseRuntimePromise = null;
+    window.__ensurePoseRuntime = async function ensurePoseRuntime() {
+      if (poseRuntimePromise) return poseRuntimePromise;
       const startedAt = performance.now();
-      try {
-        const module = await import('/vendor/three/build/three.module.js');
-        const durationMs = Math.round(performance.now() - startedAt);
-        const result = {
-          success: true,
-          exportedKeysCount: Object.keys(module || {}).length,
-          hasScene: Boolean(module?.Scene),
-          hasWebGLRenderer: Boolean(module?.WebGLRenderer),
-          errorMessage: null,
-          durationMs
-        };
-        avatarRuntimeStatus.threeImportProbeOk = true;
-        avatarRuntimeStatus.threeImportProbeError = null;
-        avatarRuntimeStatus.threeImportProbeDurationMs = durationMs;
-        console.log('[avatar-3d-probe] three import probe', result);
-        return result;
-      } catch (error) {
-        const durationMs = Math.round(performance.now() - startedAt);
-        const errorMessage = String(error?.message || error || 'unknown');
-        const result = {
-          success: false,
-          exportedKeysCount: 0,
-          hasScene: false,
-          hasWebGLRenderer: false,
-          errorMessage,
-          durationMs
-        };
-        avatarRuntimeStatus.threeImportProbeOk = false;
-        avatarRuntimeStatus.threeImportProbeError = errorMessage;
-        avatarRuntimeStatus.threeImportProbeDurationMs = durationMs;
-        console.warn('[avatar-3d-probe] three import probe failed', result);
-        return result;
-      }
+      poseRuntimePromise = (async () => {
+        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js");
+        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js");
+        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js");
+        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js");
+        window.__markPerfMetric("poseModelLoadMs", Math.round(performance.now() - startedAt));
+        return true;
+      })();
+      return poseRuntimePromise;
     };
 
-    window.__testGLTFLoaderImport = async function testGLTFLoaderImport() {
-      const threeProbe = await window.__testThreeImport();
+    let avatarModulePromise = null;
+    window.__ensureAvatarThreeModules = async function ensureAvatarThreeModules() {
+      if (window.__AVATAR_THREE?.ready && window.__AVATAR_THREE?.THREE && window.__AVATAR_THREE?.GLTFLoader) {
+        return window.__AVATAR_THREE;
+      }
+      if (avatarModulePromise) return avatarModulePromise;
       const startedAt = performance.now();
-      try {
-        const module = await import('/vendor/three/examples/jsm/loaders/GLTFLoader.js');
-        const durationMs = Math.round(performance.now() - startedAt);
-        const result = {
-          success: true,
-          hasGLTFLoader: Boolean(module?.GLTFLoader),
-          errorMessage: null,
-          durationMs,
-          threeProbeSuccess: Boolean(threeProbe?.success)
-        };
-        avatarRuntimeStatus.gltfLoaderImportProbeOk = result.hasGLTFLoader;
-        avatarRuntimeStatus.gltfLoaderImportProbeError = result.hasGLTFLoader ? null : 'missing_GLTFLoader_export';
-        avatarRuntimeStatus.gltfLoaderImportProbeDurationMs = durationMs;
-        console.log('[avatar-3d-probe] GLTFLoader import probe', result);
-        return result;
-      } catch (error) {
-        const durationMs = Math.round(performance.now() - startedAt);
-        const errorMessage = String(error?.message || error || 'unknown');
-        const result = {
-          success: false,
-          hasGLTFLoader: false,
-          errorMessage,
-          durationMs,
-          threeProbeSuccess: Boolean(threeProbe?.success)
-        };
-        avatarRuntimeStatus.gltfLoaderImportProbeOk = false;
-        avatarRuntimeStatus.gltfLoaderImportProbeError = errorMessage;
-        avatarRuntimeStatus.gltfLoaderImportProbeDurationMs = durationMs;
-        console.warn('[avatar-3d-probe] GLTFLoader import probe failed', result);
-        return result;
-      }
+      avatarRuntimeStatus.threeImportStarted = true;
+      avatarModulePromise = (async () => {
+        try {
+          const [threeModule, gltfModule] = await Promise.all([
+            import('/vendor/three/build/three.module.js'),
+            import('/vendor/three/examples/jsm/loaders/GLTFLoader.js')
+          ]);
+          window.__startupResourceAudit.deferredModules.push('/vendor/three/build/three.module.js', '/vendor/three/examples/jsm/loaders/GLTFLoader.js');
+          const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
+          runtimeBridge.THREE = threeModule;
+          runtimeBridge.GLTFLoader = gltfModule?.GLTFLoader || null;
+          runtimeBridge.source = 'local-vendor-lazy';
+          runtimeBridge.ready = Boolean(runtimeBridge.THREE && runtimeBridge.GLTFLoader);
+          avatarRuntimeStatus.threeImportOk = Boolean(runtimeBridge.THREE);
+          avatarRuntimeStatus.gltfLoaderImportOk = Boolean(runtimeBridge.GLTFLoader);
+          avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
+          avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderImportOk;
+          avatarRuntimeStatus.readyEventFired = runtimeBridge.ready;
+          window.__markPerfMetric("avatarRuntimeLoadMs", Math.round(performance.now() - startedAt));
+          if (runtimeBridge.ready) window.dispatchEvent(new Event('avatar-three-ready'));
+          else window.dispatchEvent(new CustomEvent('avatar-three-failed', { detail: { reason: 'avatar_three_runtime_missing_exports' } }));
+          return runtimeBridge;
+        } catch (error) {
+          const reason = String(error?.message || error || 'avatar_three_runtime_import_failed');
+          avatarRuntimeStatus.threeImportError = reason;
+          avatarRuntimeStatus.gltfLoaderImportError = reason;
+          avatarRuntimeStatus.failureReason = reason;
+          window.dispatchEvent(new CustomEvent('avatar-three-failed', { detail: { reason } }));
+          throw error;
+        }
+      })();
+      return avatarModulePromise;
     };
 
-    let lastFailureReason = "three_import_failed";
-    for (const source of importSources) {
-      let threeModule = null;
-      let gltfModule = null;
-      try {
-        avatarRuntimeStatus.threeImportStarted = true;
-        avatarRuntimeStatus.threeImportPending = true;
-        avatarRuntimeStatus.threeImportPathUsed = source.threeUrl;
-        avatarRuntimeStatus.threeModuleMime = await probeModuleMime(source.threeUrl);
-        threeModule = await importWithTimeout(source.threeUrl, IMPORT_TIMEOUT_MS, () => {
-          avatarRuntimeStatus.threeImportTimeout = true;
-          avatarRuntimeStatus.threeImportTimeoutAt = Date.now();
-          avatarRuntimeStatus.threeImportError = `three_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
-        });
-        avatarRuntimeStatus.threeImportOk = Boolean(threeModule);
-        avatarRuntimeStatus.threeImportError = null;
-        avatarRuntimeStatus.threeImportTimeout = false;
-      } catch (err) {
-        const errorMsg = String(err?.message || err || "unknown");
-        avatarRuntimeStatus.threeImportOk = false;
-        avatarRuntimeStatus.threeImportError = errorMsg;
-        avatarRuntimeStatus.threeImportTimeout = errorMsg.includes(`import_timeout_${IMPORT_TIMEOUT_MS}ms`);
-        avatarRuntimeStatus.cdnImportTimedOut = avatarRuntimeStatus.cdnImportTimedOut || (source.kind === "cdn" && avatarRuntimeStatus.threeImportTimeout);
-        avatarRuntimeStatus.cdnImportFailed = avatarRuntimeStatus.cdnImportFailed || (source.kind === "cdn");
-        lastFailureReason = avatarRuntimeStatus.threeImportTimeout
-          ? `three_import_timeout_${IMPORT_TIMEOUT_MS}ms`
-          : (source.id === "local-vendor" ? "local_three_import_failed" : "three_import_failed");
-        continue;
-      } finally {
-        avatarRuntimeStatus.threeImportPending = false;
-      }
+    window.__retryAvatarRuntime = async function retryAvatarRuntimeBootstrapStub() {
+      await window.__ensureAvatarThreeModules();
+      return { ok: Boolean(window.__AVATAR_THREE?.ready) };
+    };
 
-      try {
-        avatarRuntimeStatus.gltfLoaderImportStarted = true;
-        avatarRuntimeStatus.gltfLoaderImportPending = true;
-        avatarRuntimeStatus.gltfLoaderImportPathUsed = source.gltfLoaderUrl;
-        avatarRuntimeStatus.gltfLoaderModuleMime = await probeModuleMime(source.gltfLoaderUrl);
-        gltfModule = await importWithTimeout(source.gltfLoaderUrl, IMPORT_TIMEOUT_MS, () => {
-          avatarRuntimeStatus.gltfLoaderImportTimeout = true;
-          avatarRuntimeStatus.gltfLoaderImportTimeoutAt = Date.now();
-          avatarRuntimeStatus.gltfLoaderImportError = `gltfloader_import_timeout_${IMPORT_TIMEOUT_MS}ms`;
-        });
-        avatarRuntimeStatus.gltfLoaderImportOk = Boolean(gltfModule?.GLTFLoader);
-        avatarRuntimeStatus.gltfLoaderImportError = null;
-        avatarRuntimeStatus.gltfLoaderImportTimeout = false;
-      } catch (err) {
-        const errorMsg = String(err?.message || err || "unknown");
-        avatarRuntimeStatus.gltfLoaderImportOk = false;
-        avatarRuntimeStatus.gltfLoaderImportError = errorMsg;
-        avatarRuntimeStatus.gltfLoaderImportTimeout = errorMsg.includes(`import_timeout_${IMPORT_TIMEOUT_MS}ms`);
-        avatarRuntimeStatus.cdnImportTimedOut = avatarRuntimeStatus.cdnImportTimedOut || (source.kind === "cdn" && avatarRuntimeStatus.gltfLoaderImportTimeout);
-        avatarRuntimeStatus.cdnImportFailed = avatarRuntimeStatus.cdnImportFailed || (source.kind === "cdn");
-        lastFailureReason = avatarRuntimeStatus.gltfLoaderImportTimeout
-          ? `gltfloader_import_timeout_${IMPORT_TIMEOUT_MS}ms`
-          : (source.id === "local-vendor" ? "local_gltfloader_import_failed" : "gltfloader_import_failed");
-        continue;
-      } finally {
-        avatarRuntimeStatus.gltfLoaderImportPending = false;
-      }
-
-      const gltfLoader = gltfModule?.GLTFLoader || null;
-      runtimeBridge.THREE = threeModule;
-      runtimeBridge.GLTFLoader = gltfLoader;
-      runtimeBridge.source = source.id;
-      runtimeBridge.ready = true;
-      avatarRuntimeStatus.fallbackImportSucceeded = source.id !== "jsdelivr";
-      avatarRuntimeStatus.threeLoaded = true;
-      avatarRuntimeStatus.gltfLoaderOk = Boolean(gltfLoader);
-      avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderOk;
-      avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
-      avatarRuntimeStatus.failedReason = null;
-      avatarRuntimeStatus.failureReason = null;
-      avatarRuntimeStatus.readyEventFired = true;
-      console.log("[avatar-3d-route] Three import success");
-      console.log("[avatar-3d-route] runtime source:", source.id);
-      window.dispatchEvent(new Event("avatar-three-ready"));
-      break;
-    }
-
-    if (!runtimeBridge?.THREE || !runtimeBridge?.GLTFLoader) {
-      avatarRuntimeStatus.readyEventFired = false;
-      avatarRuntimeStatus.failedReason = lastFailureReason;
-      avatarRuntimeStatus.failureReason = lastFailureReason;
-      avatarRuntimeStatus.avatarThreeGlobalOk = Boolean(window.__AVATAR_THREE);
-      console.warn("[avatar-3d-route] avatar-three-failed event fired", lastFailureReason);
-      window.dispatchEvent(new CustomEvent("avatar-three-failed", { detail: { reason: lastFailureReason } }));
-    }
+    window.addEventListener("load", () => {
+      window.__markPerfMetric("appLoadMs", Math.round(performance.now() - __appPerfStart));
+    }, { once: true });
   </script>
 
   <!-- Simple favicon so we don’t get 404s -->
@@ -1640,6 +1488,10 @@
     }
 
     function renderWorkoutHud(formResult = null) {
+      const perfValues = window.__perfMetrics?.values || {};
+      if (perfValues.workoutHudReadyMs == null) {
+        markPerfMetric("workoutHudReadyMs", Math.round(performance.now()));
+      }
       const totalSets = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex]?.sets || 1;
       if (hudExerciseNameEl) hudExerciseNameEl.textContent = ACTIVE_WORKOUT_STATE.currentExercise || "--";
       if (hudSetEl) hudSetEl.textContent = `${ACTIVE_WORKOUT_STATE.activeSetIndex + 1} of ${totalSets}`;
@@ -1946,6 +1798,7 @@
     async function ensureAvatarThreeRuntimeDependencies() {
       if (avatarThreeRuntimeDepsPromise) return avatarThreeRuntimeDepsPromise;
       avatarThreeRuntimeDepsPromise = (async () => {
+        await window.__ensureAvatarThreeModules();
         logAvatarWebglAvailability();
         updateAvatarRuntimeRenderModeStatus();
         console.log(`[avatar-3d] render mode at runtime boot: ${getAvatarRuntimeStatusRef().renderMode}`);
@@ -2339,6 +2192,14 @@
       const nextMode = sanitizeRenderMode(mode);
       updateAvatarOverlayDiagnostics({ lastRenderModeRequested: nextMode });
       if ((nextMode === "avatar_overlay" || nextMode === "avatar_only") && !activeAvatarAsset) {
+        queueMicrotask(() => {
+          initializeAvatarRuntimeBootstrap("render_mode_selection").then((ok) => {
+            if (!ok) return;
+            return loadAvatarAssetForCurrentUser("render_mode_selection");
+          }).catch((error) => {
+            console.warn("[avatar-load] failed while enabling avatar mode", error);
+          });
+        });
         updateRenderModeStatus("Camera (fallback: no saved avatar)", true);
         AVATAR_FLAGS.AVATAR_MODE = "camera";
         updateAvatarOverlayDiagnostics({
@@ -2596,6 +2457,7 @@
             }
           );
         });
+        markPerfMetric("avatarGlbLoadMs", Date.now() - glbLoadStartedAt);
         status.lastGlbLoadStatus = "success";
         status.failedReason = null;
         status.failureReason = null;
@@ -2831,6 +2693,11 @@
       avatarCreationStatusEl.textContent = "Idle.";
       setAvatarRuntimeStatus("Not attempted.");
       avatarModalEl.classList.remove("hidden");
+      queueMicrotask(() => {
+        initializeAvatarRuntimeBootstrap("avatar_modal_open").catch((error) => {
+          console.warn("[avatar-runtime] lazy bootstrap failed from avatar modal", error);
+        });
+      });
     }
 
     function closeAvatarModal() {
@@ -2876,6 +2743,27 @@
     }
 
     const GOOGLE_ID_TOKEN_STORAGE_KEY = "maatGoogleIdToken";
+
+    function markPerfMetric(name, value) {
+      if (typeof window.__markPerfMetric === "function") return window.__markPerfMetric(name, value);
+      return value;
+    }
+
+    let retentionFlowBootPromise = null;
+    function ensureRetentionFlowLoaded(source = "unknown") {
+      if (window.__retentionFlowLoaded) return Promise.resolve(true);
+      if (retentionFlowBootPromise) return retentionFlowBootPromise;
+      const startedAt = performance.now();
+      retentionFlowBootPromise = window.__loadExternalScript(`/retention-flow.js?v=20260427`).then(() => {
+        window.__retentionFlowLoaded = true;
+        markPerfMetric("progressScanBootMs", Math.round(performance.now() - startedAt));
+        return true;
+      }).catch((error) => {
+        console.warn("[retention-flow] lazy load failed", source, error);
+        return false;
+      });
+      return retentionFlowBootPromise;
+    }
 
     function showOverlay(show) {
       if (show) overlay.classList.remove("hidden");
@@ -2956,6 +2844,8 @@
         (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
         `Goal: ${goalText}<br/>` +
         `Injuries: ${inj}`;
+      markPerfMetric("loginReadyMs", Math.round(performance.now()));
+      ensureRetentionFlowLoaded("on_login_ui");
     }
 
     function buildCalendarFromMeta() {
@@ -3342,7 +3232,11 @@
         USER_PROFILE = BACKEND_READ_CLIENT.normalizeProfile(result.profile, USER_PROFILE || {});
         USER_PROFILE.name = USER_PROFILE.name || "Athlete";
         onLoginUI(USER_PROFILE);
-        await loadAvatarAssetForCurrentUser("backend_profile");
+        queueMicrotask(() => {
+          loadAvatarAssetForCurrentUser("backend_profile").catch((error) => {
+            console.warn("[avatar-load] deferred backend profile avatar load failed", error);
+          });
+        });
         persistUser();
         backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
         addLog("system", "Profile synced from backend.");
@@ -3401,10 +3295,15 @@
       }
 
       onLoginUI(USER_PROFILE);
-      await loadAvatarAssetForCurrentUser("login_profile");
+      queueMicrotask(() => {
+        loadAvatarAssetForCurrentUser("login_profile").catch((error) => {
+          console.warn("[avatar-load] deferred login avatar load failed", error);
+        });
+      });
 
       dashboardBtn.disabled = false;
       dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
+      markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
       const backendReady = await ensureBackendSession(profile);
@@ -3446,10 +3345,15 @@
           }
 
           onLoginUI(USER_PROFILE);
-          await loadAvatarAssetForCurrentUser("local_cache");
+          queueMicrotask(() => {
+            loadAvatarAssetForCurrentUser("local_cache").catch((error) => {
+              console.warn("[avatar-load] deferred cached avatar load failed", error);
+            });
+          });
 
           dashboardBtn.disabled = false;
           dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
+          markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
           showOverlay(false);
           const backendReady = await ensureBackendSession(USER_PROFILE || {});
@@ -4048,10 +3952,11 @@ function toggleListening() {
 
     async function initDetector() {
       detectorInitStartedAt = performance.now();
+      await window.__ensurePoseRuntime();
       try {
-        await tf.setBackend("webgl");
+        await tf.setBackend(mobileDevice ? "cpu" : "webgl");
       } catch (err) {
-        console.warn("[detector-init] webgl backend unavailable, attempting cpu backend", err);
+        console.warn("[detector-init] preferred backend unavailable, attempting cpu backend", err);
         await tf.setBackend("cpu");
       }
       await tf.ready();
@@ -4066,8 +3971,10 @@ function toggleListening() {
         { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
       trackingCapabilities.hasMoveNet = true;
+      const detectorInitMs = Math.round(performance.now() - detectorInitStartedAt);
+      markPerfMetric("cameraBootMs", detectorInitMs);
       trackPilotEvent("app_loaded", {
-        detectorInitMs: Math.round(performance.now() - detectorInitStartedAt),
+        detectorInitMs,
         tfBackend: tf.getBackend?.() || "unknown"
       });
       logTrackerCapabilities();
@@ -4112,6 +4019,7 @@ function toggleListening() {
     }
 
     async function connectCamera() {
+      const cameraBootStartedAt = performance.now();
       trackPilotEvent("camera_connect_started");
       window.__cameraStatus = "connecting";
       window.__cameraConnectSuccess = false;
@@ -4139,6 +4047,7 @@ function toggleListening() {
         window.__cameraConnectSuccess = true;
         window.__cameraLastConnectedAt = new Date().toISOString();
         trackPilotEvent("camera_connect_success", { detectorReady: Boolean(detector) });
+        markPerfMetric("cameraBootMs", Math.round(performance.now() - cameraBootStartedAt));
         setPersonLayerSuppressed(false);
         lastRenderMode = "camera";
         startBtn.disabled = false;
@@ -4318,6 +4227,7 @@ function toggleListening() {
     }
 
     function startOhsa() {
+      const progressScanStartedAt = performance.now();
       if (!detector) { addLog("system", "Connect camera first, then retry OHSA."); return; }
       if (running || definingExercise) { alert("Stop the workout / exercise definition before running OHSA."); return; }
 
@@ -4334,6 +4244,7 @@ function toggleListening() {
         "We are starting your overhead squat assessment. Face the camera, raise your arms overhead, and give me three to five slow squats with your best form.",
         "rep"
       );
+      markPerfMetric("progressScanBootMs", Math.round(performance.now() - progressScanStartedAt));
 
       runPoseLoop();
     }
@@ -5885,7 +5796,6 @@ function toggleListening() {
       avatarFacingDeg = resolveInitialAvatarFacingDeg();
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
       applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
-      await initializeAvatarRuntimeBootstrap("app_load");
       trackPilotEvent("app_loaded", {
         buildVersion: APP_BUILD_VERSION,
         initialRenderMode: getRenderMode(),
@@ -5899,8 +5809,6 @@ function toggleListening() {
       if (didAuto && USER_PROFILE) {
         addLog("system", "Loaded your profile from memory.");
         buildCalendarFromMeta();
-      } else {
-        await loadAvatarAssetForCurrentUser("no_profile");
       }
       updateSyncStatus();
 
@@ -5914,6 +5822,5 @@ function toggleListening() {
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
   <script src="/fitness.js?v=20260425"></script>
-  <script src="/retention-flow.js?v=20260427"></script>
 </body>
 </html>

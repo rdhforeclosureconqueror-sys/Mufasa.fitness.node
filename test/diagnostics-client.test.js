@@ -28,11 +28,14 @@ function loadClient(globals = {}) {
 test("collector includes avatarRuntimeStatus and formEngineStatus", () => {
   const ctx = loadClient({
     __avatarRuntimeStatus: { readyEventFired: false },
-    __formEngineStatus: { loaded: true }
+    __formEngineStatus: { loaded: true },
+    __perfMetrics: { values: { appLoadMs: 123, cameraBootMs: 456 } }
   });
   const report = ctx.__collectDiagnosticReport();
   assert.equal(report.runtime.avatarRuntimeStatus.readyEventFired, false);
   assert.equal(report.runtime.formEngineStatus.loaded, true);
+  assert.equal(report.performance.appLoadMs, 123);
+  assert.equal(report.performance.cameraBootMs, 456);
 });
 
 test("collector handles missing globals safely", () => {

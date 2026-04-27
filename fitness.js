@@ -373,11 +373,18 @@
     }
   }
 
+  async function ensureExerciseDbReady() {
+    if (EXERCISES.length > 0) return true;
+    return loadExerciseIndex();
+  }
+
   function handleSelectChange() {
     if (!workoutSelectEl) return;
 
-    workoutSelectEl.addEventListener("change", () => {
+    workoutSelectEl.addEventListener("change", async () => {
       if (workoutSelectEl.value !== "db_today") return;
+      const ok = await ensureExerciseDbReady();
+      if (!ok) return;
 
       const profile = window.USER_PROFILE || null;
       const ohsa = window.lastOhsaSummary || null;
@@ -398,9 +405,6 @@
 
   // ---------- BOOT ----------
   window.addEventListener("load", async () => {
-    const ok = await loadExerciseIndex();
-    if (!ok) return;
-
     ensureDBOption();
     handleSelectChange();
 
