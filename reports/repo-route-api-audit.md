@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-27T14:06:31.846Z
+Generated: 2026-04-27T15:17:17.897Z
 
 ## Backend Route Inventory
 
@@ -46,15 +46,15 @@ Generated: 2026-04-27T14:06:31.846Z
 | File + line | Method | URL/path | Backend base used | Auth token included | Diagnostic capture |
 |---|---|---|---|---|---|
 | index.html:144 | GET | dynamic | external/unknown | no/unknown | no |
-| index.html:1269 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:2222 | GET | dynamic | external/unknown | no/unknown | no |
-| index.html:2749 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:2771 | GET | dynamic | external/unknown | yes/conditional | no |
-| index.html:3384 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:3678 | GET | /health | relative origin | no/unknown | no |
-| index.html:3821 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:3875 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:5151 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:1369 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:2509 | GET | dynamic | external/unknown | no/unknown | no |
+| index.html:3036 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:3058 | GET | dynamic | external/unknown | yes/conditional | no |
+| index.html:3671 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:3973 | GET | /health | relative origin | no/unknown | no |
+| index.html:4116 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:4170 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:5469 | POST | dynamic | external/unknown | yes/conditional | no |
 | dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -65,15 +65,15 @@ Generated: 2026-04-27T14:06:31.846Z
 | fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
 | exercise-library.js:148 | GET | dynamic | external/unknown | no/unknown | no |
 | public/index.html:144 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:1323 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2276 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2803 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:2825 | GET | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3438 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3732 | GET | /health | relative origin | no/unknown | no |
-| public/index.html:3875 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:3929 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:5205 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:1369 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2509 | GET | dynamic | external/unknown | no/unknown | no |
+| public/index.html:3036 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3058 | GET | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3671 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3973 | GET | /health | relative origin | no/unknown | no |
+| public/index.html:4116 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:4170 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:5469 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | public/dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | public/dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
