@@ -98,6 +98,8 @@
       const img = document.createElement("img");
       const title = ex.name || ex.id || "Unnamed exercise";
       img.alt = `${title} exercise image`;
+      img.loading = "lazy";
+      img.decoding = "async";
 
       let imageIdx = 0;
       img.src = imageCandidates[imageIdx];

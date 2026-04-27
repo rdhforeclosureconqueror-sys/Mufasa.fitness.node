@@ -72,6 +72,7 @@
     const userAgent = globalScope.navigator?.userAgent || null;
     const derivedEvidence = derivePilotEvidenceFromLocalEvents();
     const retentionRuntime = globalScope.__retentionMotivationStatus || null;
+    const perfMetrics = globalScope.__perfMetrics?.values || null;
     const dashboard = retentionRuntime?.dashboard || null;
     const hasReward = Boolean(dashboard?.rewardSummary?.workoutCompleted);
     const hasStreak = Number.isFinite(Number(dashboard?.streak?.currentStreak));
@@ -101,6 +102,17 @@
         sessionSaveSuccess: derivedEvidence.sessionSaveSuccess ?? null,
         movementFamily: globalScope.__movementFamily || null,
         renderMode: avatarRuntime?.renderMode || globalScope.__renderMode || null
+      },
+      performance: {
+        appLoadMs: perfMetrics?.appLoadMs ?? null,
+        loginReadyMs: perfMetrics?.loginReadyMs ?? null,
+        dashboardReadyMs: perfMetrics?.dashboardReadyMs ?? null,
+        cameraBootMs: perfMetrics?.cameraBootMs ?? null,
+        poseModelLoadMs: perfMetrics?.poseModelLoadMs ?? null,
+        avatarRuntimeLoadMs: perfMetrics?.avatarRuntimeLoadMs ?? null,
+        avatarGlbLoadMs: perfMetrics?.avatarGlbLoadMs ?? null,
+        workoutHudReadyMs: perfMetrics?.workoutHudReadyMs ?? null,
+        progressScanBootMs: perfMetrics?.progressScanBootMs ?? null
       },
       routesAndScripts: {
         formEngineLoaded: Boolean(globalScope.__MUFASA_FORM_ENGINE),
