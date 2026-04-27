@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-27T00:23:37.768Z
+Generated: 2026-04-27T02:14:16.062Z
 
 ## Backend Route Inventory
 
@@ -34,15 +34,15 @@ Generated: 2026-04-27T00:23:37.768Z
 | File + line | Method | URL/path | Backend base used | Auth token included | Diagnostic capture |
 |---|---|---|---|---|---|
 | index.html:144 | GET | dynamic | external/unknown | no/unknown | no |
-| index.html:1271 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:2224 | GET | dynamic | external/unknown | no/unknown | no |
-| index.html:2751 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:2773 | GET | dynamic | external/unknown | yes/conditional | no |
-| index.html:3386 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:3680 | GET | /health | relative origin | no/unknown | no |
-| index.html:3823 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:3877 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:5153 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:1269 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:2222 | GET | dynamic | external/unknown | no/unknown | no |
+| index.html:2749 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:2771 | GET | dynamic | external/unknown | yes/conditional | no |
+| index.html:3384 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:3678 | GET | /health | relative origin | no/unknown | no |
+| index.html:3821 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:3875 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:5151 | POST | dynamic | external/unknown | yes/conditional | no |
 | dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -53,15 +53,15 @@ Generated: 2026-04-27T00:23:37.768Z
 | fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
 | exercise-library.js:148 | GET | dynamic | external/unknown | no/unknown | no |
 | public/index.html:144 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:1271 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2224 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2751 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:2773 | GET | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3386 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3680 | GET | /health | relative origin | no/unknown | no |
-| public/index.html:3823 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:3877 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:5153 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:1269 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2222 | GET | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2749 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:2771 | GET | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3384 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3678 | GET | /health | relative origin | no/unknown | no |
+| public/index.html:3821 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:3875 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:5151 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | public/dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | public/dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -78,10 +78,15 @@ Generated: 2026-04-27T00:23:37.768Z
 
 ## Static Asset/Runtime Inventory
 
-- Critical files verified: 16.
+- Critical files verified: 17.
 - Vendor three paths verified:
   - /vendor/three/build/three.module.js (1237216 bytes)
   - /vendor/three/examples/jsm/loaders/GLTFLoader.js (106576 bytes)
+- GLTFLoader relative dependency files:
+  - public/vendor/three/examples/jsm/utils/BufferGeometryUtils.js
+- Frontend route probes (https://mufasafitsite.onrender.com):
+  - /vendor/three/examples/jsm/loaders/GLTFLoader.js: HEAD=n/a GET=n/a WARN (HEAD fetch failed)
+  - /vendor/three/examples/jsm/utils/BufferGeometryUtils.js: HEAD=n/a GET=n/a WARN (HEAD fetch failed)
 - Root/public duplication check: synchronized for index/dashboard/backend-read/session-write/fitness assets.
 
 ## Frontend/Backend Origin Map

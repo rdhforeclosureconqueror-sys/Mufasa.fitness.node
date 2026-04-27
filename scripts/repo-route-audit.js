@@ -24,7 +24,8 @@ const CRITICAL_FILES = [
   "public/diagnostics-client.js",
   "public/landing-diagnostics.js",
   "public/vendor/three/build/three.module.js",
-  "public/vendor/three/examples/jsm/loaders/GLTFLoader.js"
+  "public/vendor/three/examples/jsm/loaders/GLTFLoader.js",
+  "public/vendor/three/examples/jsm/utils/BufferGeometryUtils.js"
 ];
 
 const REQUIRED_BACKEND_ROUTES = [
@@ -151,7 +152,38 @@ function ensure(condition, message, failures) {
   if (!condition) failures.push(message);
 }
 
-function main() {
+function parseRelativeImports(fileText) {
+  const imports = [];
+  const importRegex = /from\s+["']([^"']+)["']/g;
+  let match;
+  while ((match = importRegex.exec(fileText)) !== null) {
+    if (match[1].startsWith(".")) imports.push(match[1]);
+  }
+  return imports;
+}
+
+async function probeFrontendAsset(frontendOrigin, routePath) {
+  const url = new URL(routePath, frontendOrigin).toString();
+  const status = { routePath, url, headStatus: null, getStatus: null, ok: false, error: null };
+  try {
+    const head = await fetch(url, { method: "HEAD" });
+    status.headStatus = head.status;
+  } catch (error) {
+    status.error = `HEAD ${String(error?.message || error)}`;
+    return status;
+  }
+  try {
+    const get = await fetch(url, { method: "GET", headers: { Range: "bytes=0-64" } });
+    status.getStatus = get.status;
+    status.ok = status.headStatus >= 200 && status.headStatus < 400 && get.status >= 200 && get.status < 400;
+    return status;
+  } catch (error) {
+    status.error = `${status.error ? `${status.error}; ` : ""}GET ${String(error?.message || error)}`;
+    return status;
+  }
+}
+
+async function main() {
   const failures = [];
   const serverText = readFile("server.js");
   const backendRoutes = extractBackendRoutes(serverText);
@@ -173,6 +205,24 @@ function main() {
   const gltfSize = exists(gltfFile) ? fs.statSync(path.join(repoRoot, gltfFile)).size : 0;
   ensure(threeSize > 100000, "three.module.js appears missing or placeholder", failures);
   ensure(gltfSize > 50000, "GLTFLoader.js appears missing or placeholder", failures);
+  const gltfSource = exists(gltfFile) ? readFile(gltfFile) : "";
+  const gltfRelativeImports = parseRelativeImports(gltfSource);
+  const gltfDependencyFiles = gltfRelativeImports.map((dep) => path.posix.normalize(path.posix.join(path.posix.dirname(gltfFile), dep)));
+  for (const dep of gltfDependencyFiles) {
+    ensure(exists(dep), `GLTFLoader dependency missing: ${dep}`, failures);
+  }
+
+  const frontendOrigin = process.env.ROUTE_AUDIT_FRONTEND_ORIGIN || "https://mufasafitsite.onrender.com";
+  const gltfRouteChecks = [
+    "/vendor/three/examples/jsm/loaders/GLTFLoader.js",
+    ...gltfRelativeImports.map((dep) => path.posix.normalize(path.posix.join("/vendor/three/examples/jsm/loaders", dep)))
+  ];
+  const uniqueRouteChecks = Array.from(new Set(gltfRouteChecks));
+  const routeProbeResults = [];
+  for (const routePath of uniqueRouteChecks) {
+    routeProbeResults.push(await probeFrontendAsset(frontendOrigin, routePath));
+  }
+  const routeProbeFailures = routeProbeResults.filter((entry) => !entry.ok);
 
   const publicIndex = readFile("public/index.html");
   const rootIndex = readFile("index.html");
@@ -253,7 +303,7 @@ function main() {
     "Root/public entrypoints were drifting in duplicated files (synchronized to public copy)."
   ];
 
-  const report = `# Repo Route/API Audit Report\n\nGenerated: ${new Date().toISOString()}\n\n## Backend Route Inventory\n\n| Method | Path | Auth required | Permission | Expected body/query | Purpose | Response type |\n|---|---|---|---|---|---|---|\n${routeRows}\n\n## Frontend API Caller Inventory\n\n| File + line | Method | URL/path | Backend base used | Auth token included | Diagnostic capture |\n|---|---|---|---|---|---|\n${frontendRows}\n\n## Static Asset/Runtime Inventory\n\n- Critical files verified: ${CRITICAL_FILES.length}.\n- Vendor three paths verified:\n  - /vendor/three/build/three.module.js (${threeSize} bytes)\n  - /vendor/three/examples/jsm/loaders/GLTFLoader.js (${gltfSize} bytes)\n- Root/public duplication check: synchronized for index/dashboard/backend-read/session-write/fitness assets.\n\n## Frontend/Backend Origin Map\n\n- Frontend origin: https://mufasafitsite.onrender.com\n- Backend origin: https://mufasa-fitness-node.onrender.com\n- Primary backend base variable in frontend: NODE_BASE_URL / maatNodeBaseUrl.\n\n## Detected Mismatches\n\n${mismatchList.map((m) => `- ${m}`).join("\n")}\n\n## Fixes Applied\n\n- Moved static middleware mounting to after API route declarations in server.js to prevent ordering hazards.\n- Synchronized duplicated root files to match public runtime entrypoints.\n- Added automated static route/API audit script and npm task (repo:route-audit).\n\n## Remaining Risks\n\n- Dynamic fetch expressions that are fully computed at runtime cannot be perfectly statically mapped; current audit validates literal and partially templated calls.\n- Route inventory is extracted from server.js (single backend entrypoint) and should be rerun after route refactors.\n`;
+  const report = `# Repo Route/API Audit Report\n\nGenerated: ${new Date().toISOString()}\n\n## Backend Route Inventory\n\n| Method | Path | Auth required | Permission | Expected body/query | Purpose | Response type |\n|---|---|---|---|---|---|---|\n${routeRows}\n\n## Frontend API Caller Inventory\n\n| File + line | Method | URL/path | Backend base used | Auth token included | Diagnostic capture |\n|---|---|---|---|---|---|\n${frontendRows}\n\n## Static Asset/Runtime Inventory\n\n- Critical files verified: ${CRITICAL_FILES.length}.\n- Vendor three paths verified:\n  - /vendor/three/build/three.module.js (${threeSize} bytes)\n  - /vendor/three/examples/jsm/loaders/GLTFLoader.js (${gltfSize} bytes)\n- GLTFLoader relative dependency files:\n${gltfDependencyFiles.map((dep) => `  - ${dep}`).join("\n") || "  - none"}\n- Frontend route probes (${frontendOrigin}):\n${routeProbeResults.map((entry) => `  - ${entry.routePath}: HEAD=${entry.headStatus ?? "n/a"} GET=${entry.getStatus ?? "n/a"} ${entry.ok ? "OK" : `WARN${entry.error ? ` (${entry.error})` : ""}`}`).join("\n")}\n- Root/public duplication check: synchronized for index/dashboard/backend-read/session-write/fitness assets.\n\n## Frontend/Backend Origin Map\n\n- Frontend origin: https://mufasafitsite.onrender.com\n- Backend origin: https://mufasa-fitness-node.onrender.com\n- Primary backend base variable in frontend: NODE_BASE_URL / maatNodeBaseUrl.\n\n## Detected Mismatches\n\n${mismatchList.map((m) => `- ${m}`).join("\n")}\n\n## Fixes Applied\n\n- Moved static middleware mounting to after API route declarations in server.js to prevent ordering hazards.\n- Synchronized duplicated root files to match public runtime entrypoints.\n- Added automated static route/API audit script and npm task (repo:route-audit).\n\n## Remaining Risks\n\n- Dynamic fetch expressions that are fully computed at runtime cannot be perfectly statically mapped; current audit validates literal and partially templated calls.\n- Route inventory is extracted from server.js (single backend entrypoint) and should be rerun after route refactors.\n`;
 
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
@@ -267,8 +317,18 @@ function main() {
     process.exit(1);
   }
 
+  if (routeProbeFailures.length > 0) {
+    console.warn(`repo-route-audit warning: ${routeProbeFailures.length} frontend asset probe(s) were not OK`);
+    for (const failure of routeProbeFailures) {
+      console.warn(`- ${failure.routePath}: HEAD=${failure.headStatus ?? "n/a"} GET=${failure.getStatus ?? "n/a"}${failure.error ? ` (${failure.error})` : ""}`);
+    }
+  }
+
   console.log("repo-route-audit passed");
   console.log(`Report written: ${path.relative(repoRoot, reportPath)}`);
 }
 
-main();
+main().catch((error) => {
+  console.error("repo-route-audit failed with exception:", error);
+  process.exit(1);
+});
