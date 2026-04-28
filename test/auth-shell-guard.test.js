@@ -7,10 +7,10 @@ const repoRoot = path.resolve(__dirname, "..");
 
 test("pilot shell boots as authenticated super-admin without login UI", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /PRIVATE PILOT MODE — LOGIN DISABLED/, "pilot banner text missing");
+  assert.match(html, /BUILDER MODE — FULL ACCESS — SECURITY DISABLED/, "pilot banner text missing");
   assert.match(html, /window\.APP_AUTH\s*=\s*\{\s*isAuthenticated:\s*true,\s*token:\s*null,/, "APP_AUTH must be forced authenticated");
   assert.match(html, /role:\s*"super_admin"/, "APP_AUTH user must be super_admin");
-  assert.match(html, /roles:\s*\[\s*"admin",\s*"operator",\s*"super_admin"\s*\]/, "APP_AUTH user roles must include super-admin controls");
+  assert.match(html, /roles:\s*\[\s*"super_admin",\s*"admin",\s*"operator",\s*"trainer",\s*"client"\s*\]/, "APP_AUTH user roles must include super-admin controls");
   assert.match(html, /window\.pilotSuperAdminActive = true/, "pilot super-admin activation missing");
   assert.match(html, /window\.__pilotMode = \{ loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true \}/, "pilot diagnostics flags missing");
 });

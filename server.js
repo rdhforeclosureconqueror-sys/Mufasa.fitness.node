@@ -181,7 +181,8 @@ function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
-  const disableLoginForPilot = process.env.DISABLE_LOGIN_FOR_PILOT === "true";
+  const builderModeFullAccess = process.env.BUILDER_MODE_FULL_ACCESS === "true";
+  const disableLoginForPilot = process.env.DISABLE_LOGIN_FOR_PILOT === "true" || builderModeFullAccess;
 
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
@@ -346,7 +347,7 @@ function createApp(options = {}) {
         name: "Rashad Harbour",
         email: "RDHForeclosureConquer@gmail.com",
         role: "super_admin",
-        roles: ["admin", "operator", "super_admin"]
+        roles: ["super_admin", "admin", "operator", "trainer", "client"]
       }
       : { enabled: false }
   }));
@@ -466,7 +467,10 @@ function createApp(options = {}) {
       loginDisabledForPilot: disableLoginForPilot,
       loginRemovedForPilot: disableLoginForPilot,
       pilotSuperAdminActive: disableLoginForPilot,
-      authGateDisabled: disableLoginForPilot
+      authGateDisabled: disableLoginForPilot,
+      builderModeFullAccess,
+      superAdminActive: disableLoginForPilot,
+      allFeatureGatesBypassed: disableLoginForPilot
     });
   });
   app.get("/__diagnostic-smoke", (_req, res) => {
@@ -478,7 +482,10 @@ function createApp(options = {}) {
       loginDisabledForPilot: disableLoginForPilot,
       loginRemovedForPilot: disableLoginForPilot,
       pilotSuperAdminActive: disableLoginForPilot,
-      authGateDisabled: disableLoginForPilot
+      authGateDisabled: disableLoginForPilot,
+      builderModeFullAccess,
+      superAdminActive: disableLoginForPilot,
+      allFeatureGatesBypassed: disableLoginForPilot
     });
   });
   // ---- Helpers ----

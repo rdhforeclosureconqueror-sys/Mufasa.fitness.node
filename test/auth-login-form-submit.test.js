@@ -19,9 +19,9 @@ test("frontend removes blocking login form and opens shell by default", () => {
   assert.match(html, /id="userInfo"/, "user info bar should be present");
 });
 
-test("root index and public index stay in sync for pilot shell", () => {
+test("root index and public index stay in sync for builder shell", () => {
   const rootHtml = read("index.html");
   const publicHtml = read("public/index.html");
   assert.equal(rootHtml, publicHtml, "root index.html must mirror public/index.html");
-  assert.match(rootHtml, /PRIVATE PILOT MODE — LOGIN DISABLED/, "pilot banner text missing");
+  assert.match(rootHtml, /BUILDER MODE — FULL ACCESS — SECURITY DISABLED/, "builder banner text missing");
 });

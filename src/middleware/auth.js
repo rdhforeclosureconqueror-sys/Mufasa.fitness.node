@@ -20,7 +20,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
           email: pilotBypass.email,
           name: pilotBypass.name || "Rashad Harbour",
           role: pilotBypass.role || "super_admin",
-          roles: Array.isArray(pilotBypass.roles) ? pilotBypass.roles : ["admin", "operator", "super_admin"],
+          roles: Array.isArray(pilotBypass.roles) ? pilotBypass.roles : ["super_admin", "admin", "operator", "trainer", "client"],
           provider: "pilot_bypass",
           providerSubject: pilotBypass.email,
           providerVerified: true,
