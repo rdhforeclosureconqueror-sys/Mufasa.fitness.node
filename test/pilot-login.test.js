@@ -33,6 +33,24 @@ async function get(baseUrl, route, headers = {}) {
   return { res, json };
 }
 
+test("pilot login smoke GET route returns POST guidance", async (t) => {
+  const rootDir = makeTmpRoot();
+  const app = createApp({ rootDir });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const smoke = await get(baseUrl, "/api/auth/pilot-login");
+  assert.equal(smoke.res.status, 200);
+  assert.deepEqual(smoke.json, {
+    ok: true,
+    route: "/api/auth/pilot-login",
+    methods: ["POST"],
+    message: "Use POST for login"
+  });
+});
+
 test("pilot login allows configured email and returns auth token", async (t) => {
   const rootDir = makeTmpRoot();
   const prevPilotAllowed = process.env.PILOT_ALLOWED_EMAILS;
