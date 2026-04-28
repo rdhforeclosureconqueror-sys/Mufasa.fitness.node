@@ -87,7 +87,10 @@
         userAgent,
         deviceType: getDeviceType(),
         timestamp: new Date().toISOString(),
-        loginDisabledForPilot: Boolean(globalScope.__pilotMode?.loginDisabledForPilot)
+        loginDisabledForPilot: Boolean(globalScope.__pilotMode?.loginDisabledForPilot),
+        loginRemovedForPilot: true,
+        pilotSuperAdminActive: Boolean(globalScope.pilotSuperAdminActive),
+        authGateDisabled: true
       },
       runtime: {
         avatarRuntimeStatus: avatarRuntime,

@@ -18,17 +18,15 @@ test("frontend code has no stale calls to retired auth routes", () => {
   const combined = `${indexHtml}\n${backendRead}\n${sessionWrite}`;
 
   assert.doesNotMatch(combined, /\/api\/auth\/bridge/, "stale /api/auth/bridge call found in frontend code");
+  assert.doesNotMatch(combined, /\/api\/auth\/login/, "stale /api/auth/login call found in frontend code");
   assert.doesNotMatch(combined, /\/api\/auth\/pilot-login/, "stale /api/auth/pilot-login call found in frontend code");
   assert.doesNotMatch(combined, /\/api\/auth\/pilot-session/, "stale /api/auth/pilot-session call found in frontend code");
 });
 
-test("frontend auth token source is popa_auth_token and session-write uses shared getter", () => {
+test("session-write keeps shared APP_AUTH getter wiring for pilot mode", () => {
   const indexHtml = read("public/index.html");
-  const backendRead = read("public/backend-read.js");
   const sessionWrite = read("public/session-write.js");
 
-  assert.match(indexHtml, /AUTH_TOKEN_STORAGE_KEY\s*=\s*"popa_auth_token"/, "index auth key not set to popa_auth_token");
-  assert.match(backendRead, /const tokenKey = "popa_auth_token"/, "backend-read token key not set to popa_auth_token");
   assert.match(indexHtml, /getAuthToken:\s*\(\)\s*=>\s*getAuthToken\(\)/, "session-write client wiring does not use shared APP_AUTH getter");
   assert.match(sessionWrite, /const token = getAuthToken\?\.\(\)/, "session-write client does not use injected token getter");
 });
