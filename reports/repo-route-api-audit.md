@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-28T21:30:49.981Z
+Generated: 2026-04-28T22:03:20.324Z
 
 ## Backend Route Inventory
 
@@ -52,15 +52,15 @@ Generated: 2026-04-28T21:30:49.981Z
 
 | File + line | Method | URL/path | Backend base used | Auth token included | Diagnostic capture |
 |---|---|---|---|---|---|
-| index.html:1199 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:2352 | GET | dynamic | external/unknown | no/unknown | no |
-| index.html:2897 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:2919 | GET | dynamic | external/unknown | yes/conditional | no |
-| index.html:3328 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:3630 | GET | /health | relative origin | no/unknown | no |
-| index.html:3778 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:3832 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:5123 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:1200 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:2353 | GET | dynamic | external/unknown | no/unknown | no |
+| index.html:2898 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:2920 | GET | dynamic | external/unknown | yes/conditional | no |
+| index.html:3353 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:3655 | GET | /health | relative origin | no/unknown | no |
+| index.html:3803 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:3857 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:5148 | POST | dynamic | external/unknown | yes/conditional | no |
 | dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -70,15 +70,15 @@ Generated: 2026-04-28T21:30:49.981Z
 | session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
 | fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
 | exercise-library.js:150 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:1199 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2352 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2897 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:2919 | GET | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3328 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3630 | GET | /health | relative origin | no/unknown | no |
-| public/index.html:3778 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:3832 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:5123 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:1200 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2353 | GET | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2898 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:2920 | GET | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3353 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3655 | GET | /health | relative origin | no/unknown | no |
+| public/index.html:3803 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:3857 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:5148 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/dashboard.js:215 | GET | dynamic | external/unknown | no/unknown | no |
 | public/dashboard.js:234 | GET | /__version | backend base var | no/unknown | yes |
 | public/dashboard.js:246 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |

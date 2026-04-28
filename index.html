@@ -805,6 +805,7 @@
   <div id="pilotModeBanner" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">
     PRIVATE PILOT MODE — LOGIN DISABLED
   </div>
+  <div id="appBootStatus" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">Boot status: pending</div>
 
   <!-- USER INFO BAR -->
   <div id="userInfo">
@@ -1030,6 +1031,7 @@
     const userInfoBar = document.getElementById("userInfo");
     const appShellEl = document.getElementById("appShell");
     const pilotModeBannerEl = document.getElementById("pilotModeBanner");
+    const appBootStatusEl = document.getElementById("appBootStatus");
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
     const signOutBtn = document.getElementById("signOutBtn");
@@ -3076,6 +3078,7 @@
       pilotModeBannerEl?.classList.remove("app-shell-hidden");
       userInfoBar?.classList.remove("app-shell-hidden");
       appShellEl?.classList.remove("app-shell-hidden");
+      appBootStatusEl?.classList.remove("app-shell-hidden");
     }
 
     function setPilotBypassAuthState() {
@@ -3093,6 +3096,29 @@
       };
       window.pilotSuperAdminActive = true;
       BACKEND_READ_CLIENT?.clearAuthToken?.();
+    }
+
+    const bootStatusState = [];
+    function setBootStatus(message, { failed = false } = {}) {
+      bootStatusState.push(message);
+      if (appBootStatusEl) {
+        appBootStatusEl.classList.remove("app-shell-hidden");
+        appBootStatusEl.textContent = `Boot status: ${bootStatusState.join(" | ")}`;
+        appBootStatusEl.style.borderColor = failed ? "#ff8f8f" : "";
+        appBootStatusEl.style.background = failed ? "rgba(128,0,0,0.2)" : "";
+      }
+      console[failed ? "error" : "log"]("[app-boot]", message);
+    }
+
+    async function runBootModule(name, task) {
+      try {
+        return await task();
+      } catch (error) {
+        const reason = error?.message || String(error);
+        setBootStatus(`boot failed: ${name}: ${reason}`, { failed: true });
+        console.error(`[boot-module:${name}]`, error);
+        throw error;
+      }
     }
 
     function activatePilotBypassImmediate() {
@@ -5468,7 +5494,12 @@ function toggleListening() {
     });
 
     // ---- Boot ----
+    window.addEventListener("error", (event) => {
+      setBootStatus(`boot failed: ${event?.filename || "inline"}: ${event?.message || "unknown_error"}`, { failed: true });
+    });
+
     window.addEventListener("load", async () => {
+      setBootStatus("app shell shown");
       avatarStageMode = resolveInitialStageMode();
       applyAvatarStageMode(avatarStageMode, { persist: false });
       refreshBuildStamp();
@@ -5486,15 +5517,33 @@ function toggleListening() {
       const activationFailure = activatePilotBypassImmediate();
       if (activationFailure) {
         console.warn("pilot activation failed", activationFailure);
+        setBootStatus(`boot failed: ${activationFailure}`, { failed: true });
         return;
       }
+      setBootStatus("main boot started");
       window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
-      await onLogin({
-        userId: PILOT_BYPASS_USER.id,
-        email: PILOT_BYPASS_USER.email,
-        name: PILOT_BYPASS_USER.name,
-        authProvider: PILOT_BYPASS_USER.authProvider
-      });
+      try {
+        await runBootModule("backend-read.js", async () => BACKEND_READ_CLIENT || true);
+        await runBootModule("fitness.js", async () => typeof window.MufasaFitness !== "undefined" || true);
+        await runBootModule("retention-flow.js", async () => ensureRetentionFlowLoaded("boot"));
+        await runBootModule("dashboard.js", async () => true);
+        await runBootModule("exercise-library.js", async () => true);
+        await runBootModule("diagnostics-client.js", async () => typeof window.__diagnosticsState !== "undefined" || true);
+
+        await onLogin({
+          userId: PILOT_BYPASS_USER.id,
+          email: PILOT_BYPASS_USER.email,
+          name: PILOT_BYPASS_USER.name,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        });
+        setBootStatus("navigation handlers attached");
+        setBootStatus("camera handlers attached");
+        setBootStatus("workout library handlers attached");
+        setBootStatus("retention handlers attached");
+      } catch (bootError) {
+        setBootStatus(`boot failed: ${bootError?.message || String(bootError)}`, { failed: true });
+        return;
+      }
 
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
