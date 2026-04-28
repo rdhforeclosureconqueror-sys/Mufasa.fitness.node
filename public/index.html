@@ -806,6 +806,10 @@
     PRIVATE PILOT MODE — LOGIN DISABLED
   </div>
 
+  <div id="appBootStatus" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite" style="margin-top:8px; font-size:12px; border-color:#38bdf8; color:#e0f2fe;">
+    Boot status: pending
+  </div>
+
   <!-- USER INFO BAR -->
   <div id="userInfo">
     <img id="userPic" src="" alt="profile" />
@@ -1030,6 +1034,25 @@
     const userInfoBar = document.getElementById("userInfo");
     const appShellEl = document.getElementById("appShell");
     const pilotModeBannerEl = document.getElementById("pilotModeBanner");
+    const appBootStatusEl = document.getElementById("appBootStatus");
+    const appBootSteps = [];
+
+    function updateAppBootStatus(step, detail = "") {
+      const label = detail ? `${step}: ${detail}` : step;
+      appBootSteps.push(label);
+      if (appBootStatusEl) {
+        appBootStatusEl.classList.remove("app-shell-hidden");
+        appBootStatusEl.textContent = `Boot status: ${label}`;
+      }
+      console.log("[app-boot]", label);
+      window.__appBootStatus = { current: label, steps: [...appBootSteps], at: new Date().toISOString() };
+    }
+
+    window.addEventListener("error", (event) => {
+      const reason = event?.error?.message || event?.message || "unknown_error";
+      updateAppBootStatus("boot failed", reason);
+    });
+
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
     const signOutBtn = document.getElementById("signOutBtn");
@@ -3076,6 +3099,7 @@
       pilotModeBannerEl?.classList.remove("app-shell-hidden");
       userInfoBar?.classList.remove("app-shell-hidden");
       appShellEl?.classList.remove("app-shell-hidden");
+      updateAppBootStatus("app shell shown");
     }
 
     function setPilotBypassAuthState() {
@@ -5458,6 +5482,19 @@ function toggleListening() {
 
     workoutSelectEl.onchange = handleWorkoutSelectChange;
 
+    const handlerChecks = {
+      dashboard: typeof dashboardBtn?.onclick === "function",
+      workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
+      camera: typeof cameraConnectBtn?.onclick === "function",
+      profile: typeof saveProfileBtn?.onclick === "function",
+      calendar: typeof completeWorkoutBtn?.onclick === "function",
+      avatar: typeof openAvatarModalBtn?.onclick === "function"
+    };
+    updateAppBootStatus("navigation handlers attached", JSON.stringify(handlerChecks));
+    updateAppBootStatus("camera handlers attached", handlerChecks.camera ? "ok" : "missing");
+    updateAppBootStatus("workout library handlers attached", handlerChecks.workoutLibrary ? "ok" : "missing");
+    updateAppBootStatus("retention handlers attached", typeof ensureRetentionFlowLoaded === "function" ? "ok" : "missing");
+
     questionInput.addEventListener("keydown", e => {
       if (e.key === "Enter") askCoach(questionInput.value.trim());
     });
@@ -5486,18 +5523,35 @@ function toggleListening() {
       const activationFailure = activatePilotBypassImmediate();
       if (activationFailure) {
         console.warn("pilot activation failed", activationFailure);
+        updateAppBootStatus("boot failed", activationFailure);
         return;
       }
+      updateAppBootStatus("main boot started", "pilot bypass");
       window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
-      await onLogin({
-        userId: PILOT_BYPASS_USER.id,
-        email: PILOT_BYPASS_USER.email,
-        name: PILOT_BYPASS_USER.name,
-        authProvider: PILOT_BYPASS_USER.authProvider
-      });
+      try {
+        await onLogin({
+          userId: PILOT_BYPASS_USER.id,
+          email: PILOT_BYPASS_USER.email,
+          name: PILOT_BYPASS_USER.name,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        });
+      } catch (bootErr) {
+        console.error("[boot] onLogin failed", bootErr);
+        updateAppBootStatus("boot failed", String(bootErr?.message || bootErr));
+        return;
+      }
 
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
+      const moduleChecks = {
+        "backend-read.js": Boolean(window.MufasaBackendRead),
+        "fitness.js": Boolean(window.MufasaFitness),
+        "retention-flow.js": Boolean(window.__retentionMotivationStatus),
+        "dashboard.js": true,
+        "exercise-library.js": true,
+        "diagnostics-client.js": Boolean(window.__collectDiagnosticReport)
+      };
+      window.__appBootModuleChecks = moduleChecks;
     });
   </script>
 
