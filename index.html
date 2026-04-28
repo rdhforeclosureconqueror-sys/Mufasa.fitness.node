@@ -1073,6 +1073,7 @@
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
     const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
+    const NODE_AUTH_BRIDGE_URL = NODE_BASE_URL + "/api/auth/bridge";
     const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
@@ -3278,6 +3279,86 @@
       }
     }
 
+    function parseBridgeFailureBody(rawText) {
+      if (!rawText) return null;
+      try {
+        return JSON.parse(rawText);
+      } catch (_) {
+        return { raw: rawText };
+      }
+    }
+
+    function toBridgeFailureReason(status, body) {
+      if (!body) return `http_${status}`;
+      return body?.error?.message
+        || body?.error?.details?.reason
+        || body?.error?.code
+        || body?.message
+        || `http_${status}`;
+    }
+
+    async function directGoogleBridgeFetch(googleCredential) {
+      const payload = {
+        provider: "google",
+        trustMode: "google_verified",
+        credential: googleCredential,
+        googleIdToken: googleCredential
+      };
+      setGoogleSignInStatus("Sending to backend");
+      console.info("[auth-bridge] direct fetch POST", NODE_AUTH_BRIDGE_URL);
+      try {
+        const res = await fetch(NODE_AUTH_BRIDGE_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const rawBody = await res.text();
+        const parsedBody = parseBridgeFailureBody(rawBody);
+        setGoogleSignInStatus(`Backend responded: ${res.status}`);
+        if (!res.ok || !parsedBody?.ok) {
+          const reason = toBridgeFailureReason(res.status, parsedBody);
+          console.error("[auth-bridge] direct fetch failed", {
+            status: res.status,
+            reason,
+            url: NODE_AUTH_BRIDGE_URL,
+            responseBody: parsedBody
+          });
+          setGoogleSignInStatus(`Failed: ${reason}`);
+          return {
+            attempted: true,
+            ok: false,
+            status: res.status,
+            reason,
+            responseBody: parsedBody,
+            url: NODE_AUTH_BRIDGE_URL
+          };
+        }
+        const token = parsedBody?.data?.auth?.token || null;
+        if (token) BACKEND_READ_CLIENT?.setAuthToken?.(token);
+        setGoogleSignInStatus("Signed in");
+        return {
+          attempted: true,
+          ok: Boolean(token),
+          status: res.status,
+          reason: token ? null : "auth_bridge_missing_token",
+          responseBody: parsedBody,
+          url: NODE_AUTH_BRIDGE_URL
+        };
+      } catch (error) {
+        const reason = String(error?.message || error || "bridge_fetch_failed");
+        console.error("[auth-bridge] direct fetch exception", { reason, url: NODE_AUTH_BRIDGE_URL, error });
+        setGoogleSignInStatus(`Failed: ${reason}`);
+        return {
+          attempted: true,
+          ok: false,
+          status: null,
+          reason,
+          responseBody: null,
+          url: NODE_AUTH_BRIDGE_URL
+        };
+      }
+    }
+
     async function onLogin(profile) {
       const isGoogleLogin = String(profile?.authProvider || "").toLowerCase() === "google" || Boolean(profile?.googleIdToken);
       USER_ID = toSafeUserId(profile.email || profile.name || "user");
@@ -3324,9 +3405,18 @@
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
-      if (isGoogleLogin) setGoogleSignInStatus("Contacting backend");
-      const backendReady = await ensureBackendSession(profile);
-      if (isGoogleLogin) setGoogleSignInStatus(backendReady ? "Signed in" : "Failed: backend_bridge_unavailable");
+      let backendReady = false;
+      if (isGoogleLogin && profile?.directBridgeResult?.attempted) {
+        const bridgeResult = profile.directBridgeResult;
+        backendReady = Boolean(bridgeResult.ok);
+        if (!backendReady && bridgeResult.reason) {
+          addLog("system", `Backend login bridge rejected: ${bridgeResult.reason}`);
+        }
+      } else {
+        if (isGoogleLogin) setGoogleSignInStatus("Contacting backend");
+        backendReady = await ensureBackendSession(profile);
+        if (isGoogleLogin) setGoogleSignInStatus(backendReady ? "Signed in" : "Failed: backend_bridge_unavailable");
+      }
       if (backendReady) await hydrateProfileFromBackend();
       await sendProfileToNode();
       buildCalendarFromMeta();
@@ -3457,25 +3547,48 @@
           client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
           callback: (response) => {
             setGoogleSignInStatus("Credential received");
-            const payload = parseJwt(response.credential || "");
-            const googleIdToken = response.credential || null;
-            console.log("[AUTH] googleIdToken present:", !!googleIdToken);
-            updateAuthDebug({
-              authProvider: "google",
-              signedInEmail: payload.email || null,
-              googleSub: payload.sub || null,
-              hasGoogleIdToken: Boolean(googleIdToken),
-              tokenSource: googleIdToken ? "google.accounts.id.credential" : "missing_google_credential"
+            setGoogleSignInStatus("Google credential received");
+            Promise.resolve().then(async () => {
+              const payload = parseJwt(response.credential || "");
+              const googleIdToken = response.credential || null;
+              console.log("[AUTH] googleIdToken present:", !!googleIdToken);
+              const directBridgeResult = googleIdToken
+                ? await directGoogleBridgeFetch(googleIdToken)
+                : {
+                  attempted: false,
+                  ok: false,
+                  status: null,
+                  reason: "google_credential_missing",
+                  responseBody: null,
+                  url: NODE_AUTH_BRIDGE_URL
+                };
+              if (!googleIdToken) setGoogleSignInStatus("Failed: google_credential_missing");
+              updateAuthDebug({
+                authProvider: "google",
+                signedInEmail: payload.email || null,
+                googleSub: payload.sub || null,
+                hasGoogleIdToken: Boolean(googleIdToken),
+                tokenSource: googleIdToken ? "google.accounts.id.credential" : "missing_google_credential",
+                directBridgeFetchFired: Boolean(directBridgeResult?.attempted),
+                directBridgeUrl: directBridgeResult?.url || NODE_AUTH_BRIDGE_URL,
+                authBridgeStatus: directBridgeResult?.status || null,
+                authBridgeFailureReason: directBridgeResult?.reason || null
+              });
+              await onLogin({
+                name: payload.name || payload.given_name || "Athlete",
+                email: payload.email,
+                picture: payload.picture,
+                googleIdToken,
+                googleSub: payload.sub || null,
+                authProvider: "google",
+                directBridgeResult
+              });
+              showOverlay(false);
+            }).catch((error) => {
+              const reason = String(error?.message || error || "google_callback_failed");
+              setGoogleSignInStatus(`Failed: ${reason}`);
+              console.error("[auth-bridge] google callback flow failed", error);
             });
-            onLogin({
-              name: payload.name || payload.given_name || "Athlete",
-              email: payload.email,
-              picture: payload.picture,
-              googleIdToken,
-              googleSub: payload.sub || null,
-              authProvider: "google"
-            });
-            showOverlay(false);
           }
         });
         if (googleSignInMountEl && !googleSignInMountEl.dataset.rendered) {
