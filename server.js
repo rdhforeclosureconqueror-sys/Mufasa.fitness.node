@@ -989,8 +989,23 @@ function createApp(options = {}) {
     }
   });
 
+  app.get("/api/auth/pilot-login", asyncHandler(async (_req, res) => {
+    return res.status(200).json({
+      ok: true,
+      route: "/api/auth/pilot-login",
+      methods: ["POST"],
+      message: "Use POST for login"
+    });
+  }));
+
   app.post("/api/auth/pilot-login", asyncHandler(async (req, res) => {
     const email = normalizePilotEmail(req.body?.email);
+    console.info("[pilot-login] request received", {
+      origin: String(req.get("origin") || "") || null,
+      hasEmail: Boolean(req.body?.email),
+      emailNormalized: email,
+      requestId: req.requestId || null
+    });
     if (!email) {
       throw new ApiError("VALIDATION_ERROR", "email is required", 400);
     }
