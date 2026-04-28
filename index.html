@@ -3308,7 +3308,11 @@
       persistUser();
       const backendReady = await ensureBackendSession(profile);
       if (backendReady) await hydrateProfileFromBackend();
-      await sendProfileToNode();
+      try {
+        await sendProfileToNode();
+      } catch (profileWriteError) {
+        console.warn("profile bootstrap write failed; entering app anyway", profileWriteError);
+      }
       buildCalendarFromMeta();
       updateSyncStatus();
     }
@@ -3377,6 +3381,11 @@
       pilotLoginDebugEl.textContent = message || "";
     }
 
+    function formatPilotLoginFailure(reason) {
+      const normalized = String(reason || "").trim();
+      return normalized ? `failed: ${normalized}` : "failed: unknown_error";
+    }
+
     pilotLoginBtn.onclick = async () => {
       const email = String(pilotEmailInput?.value || "").trim().toLowerCase();
       if (!email) {
@@ -3384,7 +3393,7 @@
         return;
       }
       trackPilotEvent("login_attempted", { method: "pilot_email" });
-      setPilotLoginStatus("Checking access…");
+      setPilotLoginStatus("sending email login");
       pilotLoginBtn.disabled = true;
       try {
         const res = await fetch(NODE_PILOT_LOGIN_URL, {
@@ -3392,25 +3401,46 @@
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email })
         });
+        setPilotLoginStatus(`backend responded: ${res.status}`);
         const payload = await res.json().catch(() => null);
         if (!res.ok || !payload?.ok) {
           const reason = payload?.error?.message || "Email is not authorized for pilot access.";
-          setPilotLoginStatus(reason);
+          setPilotLoginStatus(formatPilotLoginFailure(reason));
           return;
         }
         const token = payload?.data?.auth?.token || null;
         if (!token) {
-          setPilotLoginStatus("Login failed: token_missing");
+          setPilotLoginStatus(formatPilotLoginFailure("token_missing"));
           return;
         }
+        setPilotLoginStatus("token received");
         BACKEND_READ_CLIENT?.setAuthToken?.(token);
+        const storedToken = BACKEND_READ_CLIENT?.getAuthToken?.();
+        if (!storedToken) {
+          setPilotLoginStatus(formatPilotLoginFailure("token_store_failed"));
+          return;
+        }
+        setPilotLoginStatus("token stored");
         updateAuthDebug({
           authProvider: "pilot_email",
           signedInEmail: email,
           tokenSource: "pilot_login_response.auth.token",
           tokenExists: true
         });
-        setPilotLoginStatus("Signed in");
+        setPilotLoginStatus("loading profile");
+        try {
+          await BACKEND_READ_CLIENT?.fetchProfile?.();
+          setPilotLoginStatus("profile loaded");
+        } catch (profileError) {
+          const profileReason = profileError?.payload?.error?.message
+            || profileError?.payload?.error?.code
+            || profileError?.code
+            || profileError?.message
+            || "profile_load_failed";
+          setPilotLoginStatus(formatPilotLoginFailure(profileReason));
+          return;
+        }
+        setPilotLoginStatus("entering app");
         await onLogin({
           name: email.split("@")[0] || "Athlete",
           email,
@@ -3418,7 +3448,7 @@
         });
         showOverlay(false);
       } catch (error) {
-        setPilotLoginStatus(`Login failed: ${String(error?.message || error)}`);
+        setPilotLoginStatus(formatPilotLoginFailure(String(error?.message || error)));
       } finally {
         pilotLoginBtn.disabled = false;
       }
