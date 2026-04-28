@@ -1044,7 +1044,7 @@
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
     const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
-    const NODE_PILOT_LOGIN_URL = NODE_BASE_URL + "/api/auth/pilot-login";
+    const NODE_PILOT_LOGIN_URL = "https://mufasa-fitness-node.onrender.com/api/auth/pilot-login";
     const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
@@ -3386,26 +3386,34 @@
       return normalized ? `failed: ${normalized}` : "failed: unknown_error";
     }
 
-    pilotLoginBtn.onclick = async () => {
+    async function handlePilotLoginClick() {
+      setPilotLoginStatus("login click received");
       const email = String(pilotEmailInput?.value || "").trim().toLowerCase();
       if (!email) {
         setPilotLoginStatus("Please enter an email.");
         return;
       }
       trackPilotEvent("login_attempted", { method: "pilot_email" });
-      setPilotLoginStatus("sending email login");
+      setPilotLoginStatus("sending request to backend");
       pilotLoginBtn.disabled = true;
       try {
+        console.log("[PILOT_LOGIN] posting to https://mufasa-fitness-node.onrender.com/api/auth/pilot-login");
         const res = await fetch(NODE_PILOT_LOGIN_URL, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email })
         });
-        setPilotLoginStatus(`backend responded: ${res.status}`);
-        const payload = await res.json().catch(() => null);
+        const rawBody = await res.text().catch(() => "");
+        let payload = null;
+        try {
+          payload = rawBody ? JSON.parse(rawBody) : null;
+        } catch (_) {
+          payload = null;
+        }
+        setPilotLoginStatus(`backend responded: ${res.status} ${rawBody || "(empty body)"}`);
         if (!res.ok || !payload?.ok) {
           const reason = payload?.error?.message || "Email is not authorized for pilot access.";
-          setPilotLoginStatus(formatPilotLoginFailure(reason));
+          setPilotLoginStatus(`failed: status=${res.status} body=${rawBody || "(empty body)"} reason=${reason}`);
           return;
         }
         const token = payload?.data?.auth?.token || null;
@@ -3452,7 +3460,13 @@
       } finally {
         pilotLoginBtn.disabled = false;
       }
-    };
+    }
+
+    if (pilotLoginBtn) {
+      pilotLoginBtn.addEventListener("click", handlePilotLoginClick);
+    } else {
+      console.error("[PILOT_LOGIN] button #pilotLoginBtn not found");
+    }
 
     signOutBtn.onclick = () => {
       const oldId = USER_ID;
