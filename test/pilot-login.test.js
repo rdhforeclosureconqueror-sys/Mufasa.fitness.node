@@ -9,7 +9,7 @@ const path = require("path");
 const { createApp } = require("../server");
 
 function makeTmpRoot() {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-pilot-login-"));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-auth-login-"));
   fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
   fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
   return tmpRoot;
@@ -19,152 +19,108 @@ async function post(baseUrl, route, body, headers = {}) {
   const res = await fetch(baseUrl + route, {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body || {})
   });
-  let json = null;
-  try { json = await res.json(); } catch {}
+  const json = await res.json().catch(() => null);
   return { res, json };
 }
 
 async function get(baseUrl, route, headers = {}) {
   const res = await fetch(baseUrl + route, { method: "GET", headers });
-  let json = null;
-  try { json = await res.json(); } catch {}
+  const json = await res.json().catch(() => null);
   return { res, json };
 }
 
-test("pilot login smoke GET route returns POST guidance", async (t) => {
+async function bootApp(t) {
   const rootDir = makeTmpRoot();
   const app = createApp({ rootDir });
   const server = app.listen(0);
   await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
   t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  return `http://127.0.0.1:${server.address().port}`;
+}
 
-  const smoke = await get(baseUrl, "/api/auth/pilot-login");
-  assert.equal(smoke.res.status, 200);
-  assert.deepEqual(smoke.json, {
-    ok: true,
-    route: "/api/auth/pilot-login",
-    methods: ["POST"],
-    message: "Use POST for login"
-  });
-});
-
-test("pilot login allows configured email and returns auth token", async (t) => {
-  const rootDir = makeTmpRoot();
-  const prevPilotAllowed = process.env.PILOT_ALLOWED_EMAILS;
-  process.env.PILOT_ALLOWED_EMAILS = "rdhforeclosureconquer@gmail.com";
+test("POST /api/auth/login works with valid credentials", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
   t.after(() => {
-    if (prevPilotAllowed == null) delete process.env.PILOT_ALLOWED_EMAILS;
-    else process.env.PILOT_ALLOWED_EMAILS = prevPilotAllowed;
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
   });
 
-  const app = createApp({ rootDir });
-  const server = app.listen(0);
-  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
-  t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const baseUrl = await bootApp(t);
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "RDHForeclosureConquer@gmail.com",
+    password: "top-secret"
+  });
 
-  const login = await post(baseUrl, "/api/auth/pilot-login", { email: "RDHForeclosureConquer@gmail.com" });
-  assert.equal(login.res.status, 201);
-  assert.ok(login.json?.data?.auth?.token);
-
-  const me = await get(baseUrl, "/api/me", { authorization: `Bearer ${login.json.data.auth.token}` });
-  assert.equal(me.res.status, 200);
-  assert.equal(me.json?.data?.provider, "pilot_email");
+  assert.equal(login.res.status, 200);
+  assert.equal(login.json?.ok, true);
+  assert.ok(login.json?.token);
+  assert.equal(login.json?.user?.email, "rdhforeclosureconquer@gmail.com");
 });
 
-test("pilot login rejects unauthorized email", async (t) => {
-  const rootDir = makeTmpRoot();
-  const prevPilotAllowed = process.env.PILOT_ALLOWED_EMAILS;
-  process.env.PILOT_ALLOWED_EMAILS = "rdhforeclosureconquer@gmail.com";
+test("POST /api/auth/login rejects invalid credentials", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
   t.after(() => {
-    if (prevPilotAllowed == null) delete process.env.PILOT_ALLOWED_EMAILS;
-    else process.env.PILOT_ALLOWED_EMAILS = prevPilotAllowed;
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
   });
 
-  const app = createApp({ rootDir });
-  const server = app.listen(0);
-  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
-  t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const baseUrl = await bootApp(t);
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "RDHForeclosureConquer@gmail.com",
+    password: "wrong-password"
+  });
 
-  const login = await post(baseUrl, "/api/auth/pilot-login", { email: "not-allowed@example.com" });
-  assert.equal(login.res.status, 403);
-  assert.equal(login.json?.error?.message, "Email is not authorized for pilot access.");
+  assert.equal(login.res.status, 401);
+  assert.equal(login.json?.ok, false);
+  assert.equal(login.json?.error, "Invalid email or password");
 });
 
-test("pilot login rejects missing email", async (t) => {
-  const rootDir = makeTmpRoot();
-  const app = createApp({ rootDir });
-  const server = app.listen(0);
-  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
-  t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
-
-  const login = await post(baseUrl, "/api/auth/pilot-login", {});
-  assert.equal(login.res.status, 400);
-  assert.equal(login.json?.error?.code, "VALIDATION_ERROR");
-});
-
-test("pilot login token keeps admin observability permission when ADMIN_EMAILS includes user", async (t) => {
-  const rootDir = makeTmpRoot();
-  const prevAdmin = process.env.ADMIN_EMAILS;
-  const prevPilot = process.env.PILOT_ALLOWED_EMAILS;
-  process.env.ADMIN_EMAILS = "rdhforeclosureconquer@gmail.com,godbody3333@gmail.com";
-  process.env.PILOT_ALLOWED_EMAILS = "";
+test("GET /api/auth/me works with valid token and rejects missing token", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
   t.after(() => {
-    if (prevAdmin == null) delete process.env.ADMIN_EMAILS;
-    else process.env.ADMIN_EMAILS = prevAdmin;
-    if (prevPilot == null) delete process.env.PILOT_ALLOWED_EMAILS;
-    else process.env.PILOT_ALLOWED_EMAILS = prevPilot;
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
   });
 
-  const app = createApp({ rootDir });
-  const server = app.listen(0);
-  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
-  t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
-
-  const login = await post(baseUrl, "/api/auth/pilot-login", { email: "GodBody3333@gmail.com" });
-  assert.equal(login.res.status, 201);
-
-  const diagnostics = await get(baseUrl, "/api/admin/diagnostics/recent", {
-    authorization: `Bearer ${login.json.data.auth.token}`
+  const baseUrl = await bootApp(t);
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "RDHForeclosureConquer@gmail.com",
+    password: "top-secret"
   });
-  assert.equal(diagnostics.res.status, 200);
+  const token = login.json?.token;
+
+  const meOk = await get(baseUrl, "/api/auth/me", { authorization: `Bearer ${token}` });
+  assert.equal(meOk.res.status, 200);
+  assert.equal(meOk.json?.ok, true);
+  assert.equal(meOk.json?.user?.id, "pilot_admin");
+
+  const meMissing = await get(baseUrl, "/api/auth/me");
+  assert.equal(meMissing.res.status, 401);
+  const meInvalid = await get(baseUrl, "/api/auth/me", { authorization: "Bearer bad-token" });
+  assert.equal(meInvalid.res.status, 401);
 });
 
-test("protected routes still require token without pilot login", async (t) => {
-  const rootDir = makeTmpRoot();
-  const app = createApp({ rootDir });
-  const server = app.listen(0);
-  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
-  t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+test("protected route rejects missing token and accepts valid token", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  t.after(() => {
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
+  });
 
-  const profile = await get(baseUrl, "/api/me/profile");
-  assert.equal(profile.res.status, 401);
-});
+  const baseUrl = await bootApp(t);
+  const missing = await get(baseUrl, "/api/me/profile");
+  assert.equal(missing.res.status, 401);
 
-test("pilot session route creates token for fixed pilot identity", async (t) => {
-  const rootDir = makeTmpRoot();
-  const app = createApp({ rootDir });
-  const server = app.listen(0);
-  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
-  t.after(() => server.close());
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
-
-  const session = await post(baseUrl, "/api/auth/pilot-session", {});
-  assert.equal(session.res.status, 201);
-  assert.ok(session.json?.data?.auth?.token);
-  assert.equal(session.json?.data?.identity?.userId, "pilot_user");
-  assert.equal(session.json?.data?.identity?.email, "rdhforeclosureconquer@gmail.com");
-  assert.equal(session.json?.data?.identity?.name, "Rashad Harbour");
-
-  const me = await get(baseUrl, "/api/me", { authorization: `Bearer ${session.json.data.auth.token}` });
-  assert.equal(me.res.status, 200);
-  assert.equal(me.json?.data?.userId, "pilot_user");
-  assert.equal(me.json?.data?.provider, "pilot_email");
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "RDHForeclosureConquer@gmail.com",
+    password: "top-secret"
+  });
+  const profile = await get(baseUrl, "/api/me/profile", { authorization: `Bearer ${login.json?.token}` });
+  assert.equal(profile.res.status, 200);
 });

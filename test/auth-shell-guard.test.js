@@ -2,44 +2,31 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 
-test("frontend shell auto-enters pilot mode and removes interactive login wiring", () => {
+test("login screen appears and boot validates stored token via /api/auth/me", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /Pilot mode active — login disabled/, "Pilot mode banner missing");
-  assert.match(html, /NODE_PILOT_SESSION_URL/, "Pilot session endpoint constant missing");
-  assert.match(html, /createPilotSessionToken\(\)/, "Pilot session token bootstrap missing");
-  assert.match(html, /await enterPilotMode\(\)/, "Pilot mode should auto-enter on boot");
-  assert.match(html, /userId:\s*"pilot_user"/, "Pilot identity userId should be fixed");
-  assert.match(html, /email:\s*"RDHForeclosureConquer@gmail\.com"/, "Pilot identity email should be fixed");
-  assert.doesNotMatch(html, /id="pilotEmail"/, "Pilot email input should be removed");
-  assert.doesNotMatch(html, /id="pilotLoginBtn"/, "Pilot login button should be removed");
-  assert.doesNotMatch(html, /id="loginOverlay"/, "Login overlay should be removed");
-  assert.doesNotMatch(html, /accounts\.google\.com\/gsi\/client/, "Google GIS script should be removed");
-  assert.doesNotMatch(html, /google\.accounts\.id\./, "Google GIS API usage should be removed");
+  assert.match(html, /id="authScreen"/, "auth screen container missing");
+  assert.match(html, /id="authLoginForm"/, "auth form missing");
+  assert.match(html, /\/api\/auth\/me/, "boot auth me route missing");
+  assert.match(html, /popa_auth_token/, "auth token storage key missing");
+  assert.match(html, /popa_auth_user/, "auth user storage key missing");
+  assert.match(html, /window\.APP_AUTH\s*=\s*window\.APP_AUTH\s*\|\|\s*\{\s*isAuthenticated:\s*false,\s*token:\s*null,\s*user:\s*null\s*\}/, "APP_AUTH bootstrap missing");
 });
 
-test("auth shell remains isolated from retention/workout/avatar boot paths", () => {
+test("legacy login overlay, Google GIS, and pilot email dependencies are absent", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  const start = html.indexOf("async function createPilotSessionToken() {");
-  const end = html.indexOf("signOutBtn.onclick =", start);
-  assert.ok(start > 0 && end > start, "Unable to locate auth shell block in index");
-  const authShell = html.slice(start, end);
-  assert.doesNotMatch(authShell, /retention-flow|ensureRetentionFlowLoaded/i, "Auth shell references retention-flow bootstrap");
-  assert.doesNotMatch(authShell, /workout/i, "Auth shell references workout bootstrapping");
-  assert.doesNotMatch(authShell, /avatar/i, "Auth shell references avatar bootstrapping");
+  assert.doesNotMatch(html, /id="loginOverlay"/, "legacy login overlay should not exist");
+  assert.doesNotMatch(html, /accounts\.google\.com\/gsi\/client/, "Google GIS script should not exist");
+  assert.doesNotMatch(html, /google\.accounts\.id\./, "Google GIS API references should not exist");
+  assert.doesNotMatch(html, /pilotEmail|pilot_email|pilotLoginBtn|pilot-session|auth\/bridge/i, "pilot email / legacy bridge dependencies should not exist in shell");
 });
 
-test("retention-flow bootstrap does not throw when containers are absent", () => {
-  const script = fs.readFileSync(path.join(repoRoot, "public/retention-flow.js"), "utf8");
-  const context = vm.createContext({
-    window: { addEventListener: () => {}, location: { origin: "http://localhost" } },
-    document: { getElementById: () => null },
-    localStorage: { getItem: () => null, setItem: () => {} },
-    fetch: async () => ({ ok: true, json: async () => ({ ok: true, data: {} }) }),
-    console
-  });
-  assert.doesNotThrow(() => vm.runInContext(script, context), "retention-flow bootstrap threw globally");
+test("logout path clears frontend auth state and returns to login shell", () => {
+  const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  assert.match(html, /localStorage\.removeItem\(AUTH_TOKEN_STORAGE_KEY\)/, "logout must clear auth token key");
+  assert.match(html, /localStorage\.removeItem\(AUTH_USER_STORAGE_KEY\)/, "logout must clear auth user key");
+  assert.match(html, /window\.APP_AUTH\s*=\s*\{\s*isAuthenticated:\s*false,\s*token:\s*null,\s*user:\s*null\s*\}/, "logout must reset APP_AUTH");
+  assert.match(html, /renderAuthShell\(false\)/, "logout should route back to login shell");
 });
