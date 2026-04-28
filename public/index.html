@@ -806,7 +806,8 @@
       <input id="authEmailInput" name="email" type="email" autocomplete="email" required />
       <label for="authPasswordInput">Password</label>
       <input id="authPasswordInput" name="password" type="password" autocomplete="current-password" required />
-      <button id="authLoginSubmit" type="submit">Sign in</button>
+      <button id="authLoginSubmit" type="button">Sign in</button>
+      <p id="authLoginStatus" class="auth-subtitle" role="status" aria-live="polite"></p>
       <p id="authLoginError" class="auth-error" role="alert"></p>
     </form>
   </section>
@@ -1039,6 +1040,7 @@
     const authEmailInputEl = document.getElementById("authEmailInput");
     const authPasswordInputEl = document.getElementById("authPasswordInput");
     const authLoginSubmitEl = document.getElementById("authLoginSubmit");
+    const authLoginStatusEl = document.getElementById("authLoginStatus");
     const authLoginErrorEl = document.getElementById("authLoginError");
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
@@ -3065,6 +3067,10 @@
 
     function setAuthError(message = "") {
       if (authLoginErrorEl) authLoginErrorEl.textContent = message;
+    }
+
+    function setAuthStatus(message = "") {
+      if (authLoginStatusEl) authLoginStatusEl.textContent = message;
     }
 
     function setAuthUiLoading(loading) {
@@ -5474,36 +5480,47 @@ function toggleListening() {
       }
     });
 
-    authLoginFormEl?.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    async function handlePasswordLogin(event) {
+      if (event?.preventDefault) event.preventDefault();
+      setAuthStatus("login click received");
       setAuthError("");
       setAuthUiLoading(true);
       try {
         const email = String(authEmailInputEl?.value || "").trim();
         const password = String(authPasswordInputEl?.value || "");
-        const res = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
+        setAuthStatus("sending login request");
+        const res = await fetch("https://mufasa-fitness-node.onrender.com/api/auth/login", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email, password })
         });
         const payload = await res.json().catch(() => null);
-        if (!res.ok || !payload?.ok || !payload?.token || !payload?.user) {
+        setAuthStatus(`backend responded: ${res.status}`);
+        if (!res.ok || !payload?.ok || !payload?.token) {
           throw new Error(payload?.error || "Invalid email or password");
         }
-        setAuthStateFromLogin(payload.token, payload.user);
+        const meUser = await fetchAuthMe(payload.token);
+        setAuthStateFromLogin(payload.token, meUser);
+        setAuthStatus("login success");
         renderAuthShell(true);
         await onLogin({
-          userId: payload.user.id,
-          email: payload.user.email,
-          name: payload.user.name,
-          authProvider: "password"
+          userId: meUser.id,
+          email: meUser.email,
+          name: meUser.name,
+          authProvider: meUser.authProvider || "password"
         });
+        setAuthStatus("entering app shell");
       } catch (error) {
-        setAuthError(String(error?.message || "Login failed"));
+        const reason = String(error?.message || "Login failed");
+        setAuthError(reason);
+        setAuthStatus(`failed: ${reason}`);
       } finally {
         setAuthUiLoading(false);
       }
-    });
+    }
+
+    authLoginFormEl?.addEventListener("submit", handlePasswordLogin);
+    authLoginSubmitEl?.addEventListener("click", handlePasswordLogin);
 
     // ---- Boot ----
     window.addEventListener("load", async () => {
