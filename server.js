@@ -77,6 +77,25 @@ function deriveAuthBridgeRejectionReason(error) {
     || "unknown";
 }
 
+function parseEmailAllowlist(raw) {
+  return String(raw || "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function normalizePilotEmail(raw) {
+  return String(raw || "").trim().toLowerCase();
+}
+
+function toPilotUserId(email) {
+  const slug = normalizePilotEmail(email)
+    .replace(/[^a-z0-9._-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120);
+  return `pilot_email_${slug || "user"}`;
+}
+
 function parseBooleanEnv(value) {
   if (value === true || value === "true") return true;
   if (value === false || value === "false") return false;
@@ -969,6 +988,46 @@ function createApp(options = {}) {
       res.status(500).json({ ok: false, error: "proxy_failed", message: String(e) });
     }
   });
+
+  app.post("/api/auth/pilot-login", asyncHandler(async (req, res) => {
+    const email = normalizePilotEmail(req.body?.email);
+    if (!email) {
+      throw new ApiError("VALIDATION_ERROR", "email is required", 400);
+    }
+
+    const configuredPilotAllowlist = parseEmailAllowlist(process.env.PILOT_ALLOWED_EMAILS);
+    const configuredAdminAllowlist = parseEmailAllowlist(process.env.ADMIN_EMAILS);
+    const defaultPilotAllowlist = [
+      "rdhforeclosureconquer@gmail.com",
+      "godbody3333@gmail.com"
+    ];
+    const allowlist = configuredPilotAllowlist.length > 0
+      ? configuredPilotAllowlist
+      : (configuredAdminAllowlist.length > 0 ? configuredAdminAllowlist : defaultPilotAllowlist);
+    if (!allowlist.includes(email)) {
+      throw new ApiError("FORBIDDEN", "Email is not authorized for pilot access.", 403, {
+        reason: "pilot_email_not_allowed"
+      });
+    }
+
+    const token = authTokenLib.issueUserToken({
+      userId: toPilotUserId(email),
+      email,
+      provider: "pilot_email",
+      providerSubject: email,
+      providerVerified: false,
+      identityClass: "manual_unverified"
+    });
+    return ok(res, req.requestId, {
+      auth: token,
+      identity: {
+        userId: token?.userId || toPilotUserId(email),
+        provider: "pilot_email",
+        providerVerified: false,
+        identityClass: "manual_unverified"
+      }
+    }, 201);
+  }));
 
   // ---- Auth bridge (pilot minimal auth foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {

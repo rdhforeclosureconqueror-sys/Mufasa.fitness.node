@@ -20,15 +20,11 @@
     console.log("[THREE_BRIDGE_FIX_ACTIVE]", window.__THREE_BRIDGE_FIX_ACTIVE);
   </script>
 
-  <!-- Google Identity (optional Google sign-in) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script>
     window.__startupResourceAudit = window.__startupResourceAudit || {
       initialScripts: [
-        "https://accounts.google.com/gsi/client",
         "/form-engine.js",
         "/diagnostics-client.js",
         "/backend-read.js",
@@ -686,28 +682,7 @@
       color: #fde68a;
       margin-bottom: 16px;
     }
-    #googleBtn {
-      margin-top: 10px;
-      background: linear-gradient(90deg,#ef4444,#16a34a);
-      color: #fff;
-      border: 2px solid #facc15;
-      border-radius: 999px;
-      padding: 10px 18px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform .15s ease, box-shadow .3s ease;
-    }
-    #googleBtn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px #facc15;
-    }
-    #googleSignInMount {
-      margin-top: 12px;
-      min-height: 42px;
-      display: flex;
-      justify-content: center;
-    }
-    #googleLoginDebug {
+    #pilotLoginDebug {
       margin-top: 10px;
       text-align: left;
       font-size: 0.75rem;
@@ -848,19 +823,15 @@
   <div id="loginOverlay">
     <div id="loginBox">
       <h1>Enter the Mufasa Realm 🔥</h1>
-      <p>Sign in to unlock your Pocket PT 2.0 dashboard.</p>
+      <p>Pilot access is currently email authorized only.</p>
 
       <div style="margin-bottom:10px;">
-        <input id="manualName" type="text"
-               placeholder="Type a username (e.g. rashad)…"
+        <input id="pilotEmail" type="email"
+               placeholder="Enter authorized pilot email…"
                style="width:100%;margin-bottom:8px;" />
-        <button id="manualLoginBtn" style="width:100%;">Continue</button>
+        <button id="pilotLoginBtn" style="width:100%;">Continue</button>
       </div>
-
-      <div style="font-size:0.75rem;color:#9ca3af;margin:6px 0;">— or —</div>
-      <button id="googleBtn" type="button">Google fallback</button>
-      <div id="googleSignInMount" aria-live="polite"></div>
-      <div id="googleLoginDebug" role="status" aria-live="polite">Google sign-in loading…</div>
+      <div id="pilotLoginDebug" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -1073,7 +1044,7 @@
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
     const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
-    const NODE_AUTH_BRIDGE_URL = NODE_BASE_URL + "/api/auth/bridge";
+    const NODE_PILOT_LOGIN_URL = NODE_BASE_URL + "/api/auth/pilot-login";
     const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
@@ -1087,11 +1058,9 @@
     const AIVOICE_URL = NODE_BASE_URL + "/api/speak";
     // ---- DOM hooks ----
     const overlay = document.getElementById("loginOverlay");
-    const googleBtn = document.getElementById("googleBtn");
-    const googleSignInMountEl = document.getElementById("googleSignInMount");
-    const googleLoginDebugEl = document.getElementById("googleLoginDebug");
-    const manualNameInput = document.getElementById("manualName");
-    const manualLoginBtn = document.getElementById("manualLoginBtn");
+    const pilotEmailInput = document.getElementById("pilotEmail");
+    const pilotLoginBtn = document.getElementById("pilotLoginBtn");
+    const pilotLoginDebugEl = document.getElementById("pilotLoginDebug");
     const userInfoBar = document.getElementById("userInfo");
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
@@ -2757,7 +2726,6 @@
       console.info("[auth-debug]", window.__MAAT_AUTH_DEBUG);
     }
 
-    const GOOGLE_ID_TOKEN_STORAGE_KEY = "maatGoogleIdToken";
 
     function markPerfMetric(name, value) {
       if (typeof window.__markPerfMetric === "function") return window.__markPerfMetric(name, value);
@@ -2789,8 +2757,6 @@
       try {
         localStorage.setItem("maatUserId", USER_ID);
         localStorage.setItem("maatUserProfile", JSON.stringify(USER_PROFILE || {}));
-        if (USER_PROFILE?.googleIdToken) localStorage.setItem(GOOGLE_ID_TOKEN_STORAGE_KEY, USER_PROFILE.googleIdToken);
-        else localStorage.removeItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
         if (calendarMeta) {
           const metaJSON = {
             startDateISO: calendarMeta.startDateISO,
@@ -3209,9 +3175,9 @@
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
         if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
-          setGoogleAuthError("google_token_missing");
-          backendTruthState.bridge = { mode: "degraded", message: "Google token missing; sign out/in required." };
-          addLog("system", "Google session token missing. Sign out and sign back in.");
+          setPilotLoginStatus("google_token_missing");
+          backendTruthState.bridge = { mode: "degraded", message: "Session token missing; sign out/in required." };
+          addLog("system", "Session token missing. Sign out and sign back in.");
           updateAuthDebug({
             tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
             tokenSource: "missing_after_google_signin",
@@ -3226,14 +3192,14 @@
             || e?.payload?.error?.details?.diagnostics?.rejectionReason
             || e?.payload?.error?.code
             || "forbidden";
-          setGoogleAuthError(safeReason);
+          setPilotLoginStatus(safeReason);
           addLog("system", `Backend login bridge rejected: ${safeReason}`);
           updateAuthDebug({
             authBridgeStatus: 403,
             authBridgeFailureReason: safeReason
           });
         }
-        setGoogleAuthError(e?.code || e?.message || "auth_bridge_failed");
+        setPilotLoginStatus(e?.code || e?.message || "auth_bridge_failed");
         backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
         addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
         updateSyncStatus();
@@ -3297,79 +3263,14 @@
         || `http_${status}`;
     }
 
-    async function directGoogleBridgeFetch(googleCredential) {
-      const payload = {
-        provider: "google",
-        trustMode: "google_verified",
-        credential: googleCredential,
-        googleIdToken: googleCredential
-      };
-      setGoogleSignInStatus("Sending to backend");
-      console.info("[auth-bridge] direct fetch POST", NODE_AUTH_BRIDGE_URL);
-      try {
-        const res = await fetch(NODE_AUTH_BRIDGE_URL, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const rawBody = await res.text();
-        const parsedBody = parseBridgeFailureBody(rawBody);
-        setGoogleSignInStatus(`Backend responded: ${res.status}`);
-        if (!res.ok || !parsedBody?.ok) {
-          const reason = toBridgeFailureReason(res.status, parsedBody);
-          console.error("[auth-bridge] direct fetch failed", {
-            status: res.status,
-            reason,
-            url: NODE_AUTH_BRIDGE_URL,
-            responseBody: parsedBody
-          });
-          setGoogleSignInStatus(`Failed: ${reason}`);
-          return {
-            attempted: true,
-            ok: false,
-            status: res.status,
-            reason,
-            responseBody: parsedBody,
-            url: NODE_AUTH_BRIDGE_URL
-          };
-        }
-        const token = parsedBody?.data?.auth?.token || null;
-        if (token) BACKEND_READ_CLIENT?.setAuthToken?.(token);
-        setGoogleSignInStatus("Signed in");
-        return {
-          attempted: true,
-          ok: Boolean(token),
-          status: res.status,
-          reason: token ? null : "auth_bridge_missing_token",
-          responseBody: parsedBody,
-          url: NODE_AUTH_BRIDGE_URL
-        };
-      } catch (error) {
-        const reason = String(error?.message || error || "bridge_fetch_failed");
-        console.error("[auth-bridge] direct fetch exception", { reason, url: NODE_AUTH_BRIDGE_URL, error });
-        setGoogleSignInStatus(`Failed: ${reason}`);
-        return {
-          attempted: true,
-          ok: false,
-          status: null,
-          reason,
-          responseBody: null,
-          url: NODE_AUTH_BRIDGE_URL
-        };
-      }
-    }
-
     async function onLogin(profile) {
-      const isGoogleLogin = String(profile?.authProvider || "").toLowerCase() === "google" || Boolean(profile?.googleIdToken);
       USER_ID = toSafeUserId(profile.email || profile.name || "user");
 
       USER_PROFILE = {
         name: profile.name || profile.email || "Athlete",
-        authProvider: profile.authProvider || (profile.googleIdToken ? "google" : "manual"),
+        authProvider: profile.authProvider || "pilot_email",
         email: profile.email || null,
         picture: profile.picture || null,
-        googleIdToken: profile.googleIdToken || null,
-        googleSub: profile.googleSub || null,
         age: profile.age || profile.ageYears || null,
         weight_lbs: profile.weight_lbs || null,
         height: profile.height || null,
@@ -3405,18 +3306,7 @@
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
-      let backendReady = false;
-      if (isGoogleLogin && profile?.directBridgeResult?.attempted) {
-        const bridgeResult = profile.directBridgeResult;
-        backendReady = Boolean(bridgeResult.ok);
-        if (!backendReady && bridgeResult.reason) {
-          addLog("system", `Backend login bridge rejected: ${bridgeResult.reason}`);
-        }
-      } else {
-        if (isGoogleLogin) setGoogleSignInStatus("Contacting backend");
-        backendReady = await ensureBackendSession(profile);
-        if (isGoogleLogin) setGoogleSignInStatus(backendReady ? "Signed in" : "Failed: backend_bridge_unavailable");
-      }
+      const backendReady = await ensureBackendSession(profile);
       if (backendReady) await hydrateProfileFromBackend();
       await sendProfileToNode();
       buildCalendarFromMeta();
@@ -3431,16 +3321,12 @@
         if (id && profileStr) {
           USER_ID = id;
           USER_PROFILE = JSON.parse(profileStr);
-          const persistedGoogleIdToken = localStorage.getItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
-          if (!USER_PROFILE?.googleIdToken && persistedGoogleIdToken) USER_PROFILE.googleIdToken = persistedGoogleIdToken;
-          if (!USER_PROFILE?.authProvider && (USER_PROFILE?.googleIdToken || USER_PROFILE?.googleSub)) USER_PROFILE.authProvider = "google";
+          if (!USER_PROFILE?.authProvider) USER_PROFILE.authProvider = "pilot_email";
           updateAuthDebug({
             authProvider: USER_PROFILE?.authProvider || null,
             signedInEmail: USER_PROFILE?.email || null,
-            googleSub: USER_PROFILE?.googleSub || null,
-            hasGoogleIdToken: Boolean(USER_PROFILE?.googleIdToken),
             tokenSource: "localStorage.maatUserProfile",
-            tokenPersistsOnRefresh: Boolean(USER_PROFILE?.googleIdToken)
+            tokenPersistsOnRefresh: false
           });
 
           const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
@@ -3477,20 +3363,6 @@
       return false;
     }
 
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = decodeURIComponent(
-          atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
-        );
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        console.warn("JWT parse error", e);
-        return {};
-      }
-    }
-
     function toSafeUserId(value) {
       return String(value || "")
         .trim()
@@ -3499,155 +3371,57 @@
         .replace(/^_+|_+$/g, "")
         .slice(0, 128) || "user";
     }
-
     // Login buttons
-    manualLoginBtn.onclick = () => {
-      trackPilotEvent("login_attempted", { method: "manual" });
-      const name = manualNameInput.value.trim() || "Athlete";
-      onLogin(defaultProfileForName(name));
-      updateAuthDebug({
-        authProvider: "manual",
-        signedInEmail: null,
-        googleSub: null,
-        hasGoogleIdToken: false,
-        tokenSource: "manual_profile_state"
-      });
-      showOverlay(false);
-    };
-
-    function setGoogleSignInStatus(message) {
-      if (!googleLoginDebugEl) return;
-      googleLoginDebugEl.textContent = message || "";
-    }
-    function setGoogleAuthError(reason = "unknown") {
-      setGoogleSignInStatus(`Failed: ${reason}`);
-    }
-    const gisScriptEl = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-    if (gisScriptEl) {
-      const onGisReady = () => {
-        setGoogleSignInStatus("Loading Google sign-in");
-      };
-      if (window.google?.accounts?.id) onGisReady();
-      else {
-        gisScriptEl.addEventListener("load", onGisReady, { once: true });
-        gisScriptEl.addEventListener("error", () => setGoogleAuthError("gsi_script_load_failed"), { once: true });
-      }
-    }
-    setGoogleSignInStatus("Loading Google sign-in");
-
-    let googleIdentityInitDone = false;
-    function hasGoogleIdentityApi() {
-      return Boolean(window.google?.accounts?.id);
+    function setPilotLoginStatus(message) {
+      if (!pilotLoginDebugEl) return;
+      pilotLoginDebugEl.textContent = message || "";
     }
 
-    function initializeGoogleIdentity({ source = "unknown" } = {}) {
-      if (!hasGoogleIdentityApi()) return false;
-      try {
-        window.google.accounts.id.initialize({
-          client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
-          callback: (response) => {
-            setGoogleSignInStatus("Credential received");
-            setGoogleSignInStatus("Google credential received");
-            Promise.resolve().then(async () => {
-              const payload = parseJwt(response.credential || "");
-              const googleIdToken = response.credential || null;
-              console.log("[AUTH] googleIdToken present:", !!googleIdToken);
-              const directBridgeResult = googleIdToken
-                ? await directGoogleBridgeFetch(googleIdToken)
-                : {
-                  attempted: false,
-                  ok: false,
-                  status: null,
-                  reason: "google_credential_missing",
-                  responseBody: null,
-                  url: NODE_AUTH_BRIDGE_URL
-                };
-              if (!googleIdToken) setGoogleSignInStatus("Failed: google_credential_missing");
-              updateAuthDebug({
-                authProvider: "google",
-                signedInEmail: payload.email || null,
-                googleSub: payload.sub || null,
-                hasGoogleIdToken: Boolean(googleIdToken),
-                tokenSource: googleIdToken ? "google.accounts.id.credential" : "missing_google_credential",
-                directBridgeFetchFired: Boolean(directBridgeResult?.attempted),
-                directBridgeUrl: directBridgeResult?.url || NODE_AUTH_BRIDGE_URL,
-                authBridgeStatus: directBridgeResult?.status || null,
-                authBridgeFailureReason: directBridgeResult?.reason || null
-              });
-              await onLogin({
-                name: payload.name || payload.given_name || "Athlete",
-                email: payload.email,
-                picture: payload.picture,
-                googleIdToken,
-                googleSub: payload.sub || null,
-                authProvider: "google",
-                directBridgeResult
-              });
-              showOverlay(false);
-            }).catch((error) => {
-              const reason = String(error?.message || error || "google_callback_failed");
-              setGoogleSignInStatus(`Failed: ${reason}`);
-              console.error("[auth-bridge] google callback flow failed", error);
-            });
-          }
-        });
-        if (googleSignInMountEl && !googleSignInMountEl.dataset.rendered) {
-          window.google.accounts.id.renderButton(googleSignInMountEl, {
-            theme: "filled_blue",
-            size: "large",
-            shape: "pill",
-            text: "continue_with",
-            width: 280
-          });
-          googleSignInMountEl.dataset.rendered = "1";
-        }
-        googleIdentityInitDone = true;
-        setGoogleSignInStatus("Ready");
-        if (googleBtn) {
-          googleBtn.hidden = true;
-          googleBtn.disabled = true;
-        }
-        updateAuthDebug({ googleIdentityReady: true, googleIdentityInitSource: source });
-        return true;
-      } catch (err) {
-        console.warn("google identity initialize failed", err);
-        setGoogleAuthError(err);
-        updateAuthDebug({
-          googleIdentityReady: false,
-          googleIdentityInitSource: source,
-          googleIdentityInitError: String(err?.message || err || "google_identity_init_failed")
-        });
-        return false;
-      }
-    }
-
-    (function warmGoogleIdentityInit() {
-      let attempts = 0;
-      const tryInit = () => {
-        attempts += 1;
-        if (initializeGoogleIdentity({ source: attempts === 1 ? "bootstrap" : `retry_${attempts}` })) return;
-        if (attempts < 40) window.setTimeout(tryInit, 150);
-        else {
-          setGoogleAuthError("google_identity_api_unavailable_after_bootstrap_retries");
-          if (googleBtn) {
-            googleBtn.disabled = false;
-            googleBtn.hidden = false;
-            googleBtn.title = "Fallback when official Google button cannot load";
-          }
-        }
-      };
-      tryInit();
-    })();
-
-    googleBtn.onclick = () => {
-      trackPilotEvent("login_attempted", { method: "google_fallback" });
-      if (!googleIdentityInitDone) initializeGoogleIdentity({ source: "button_click" });
-      if (!hasGoogleIdentityApi()) {
-        setGoogleAuthError("google_identity_api_missing");
+    pilotLoginBtn.onclick = async () => {
+      const email = String(pilotEmailInput?.value || "").trim().toLowerCase();
+      if (!email) {
+        setPilotLoginStatus("Please enter an email.");
         return;
       }
-      if (googleSignInMountEl) googleSignInMountEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      setGoogleSignInStatus("Ready");
+      trackPilotEvent("login_attempted", { method: "pilot_email" });
+      setPilotLoginStatus("Checking access…");
+      pilotLoginBtn.disabled = true;
+      try {
+        const res = await fetch(NODE_PILOT_LOGIN_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.ok) {
+          const reason = payload?.error?.message || "Email is not authorized for pilot access.";
+          setPilotLoginStatus(reason);
+          return;
+        }
+        const token = payload?.data?.auth?.token || null;
+        if (!token) {
+          setPilotLoginStatus("Login failed: token_missing");
+          return;
+        }
+        BACKEND_READ_CLIENT?.setAuthToken?.(token);
+        updateAuthDebug({
+          authProvider: "pilot_email",
+          signedInEmail: email,
+          tokenSource: "pilot_login_response.auth.token",
+          tokenExists: true
+        });
+        setPilotLoginStatus("Signed in");
+        await onLogin({
+          name: email.split("@")[0] || "Athlete",
+          email,
+          authProvider: "pilot_email"
+        });
+        showOverlay(false);
+      } catch (error) {
+        setPilotLoginStatus(`Login failed: ${String(error?.message || error)}`);
+      } finally {
+        pilotLoginBtn.disabled = false;
+      }
     };
 
     signOutBtn.onclick = () => {
@@ -3665,7 +3439,6 @@
       try {
         localStorage.removeItem("maatUserId");
         localStorage.removeItem("maatUserProfile");
-        localStorage.removeItem(GOOGLE_ID_TOKEN_STORAGE_KEY);
         localStorage.removeItem("maatCalendar_" + oldId);
         BACKEND_READ_CLIENT?.clearAuthToken?.();
         updateAuthDebug({
