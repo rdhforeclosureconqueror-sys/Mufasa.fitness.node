@@ -6,27 +6,21 @@ const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 
-test("frontend shell keeps Google identity script/init/button wiring", () => {
+test("frontend shell keeps pilot email login wiring and removes Google GIS dependency", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /https:\/\/accounts\.google\.com\/gsi\/client/, "GIS script reference missing");
-  assert.match(html, /id="googleBtn"/, "Google button container missing");
-  assert.match(html, /id="googleSignInMount"/, "GIS mount container missing");
-  assert.match(html, /id="googleLoginDebug"/, "Google fallback status container missing");
-  assert.match(html, /google\.accounts\.id\.initialize\(/, "google.accounts.id.initialize missing");
-  assert.match(html, /google\.accounts\.id\.renderButton\(/, "google.accounts.id.renderButton missing");
-  assert.doesNotMatch(html, /google\.accounts\.id\.prompt\(/, "google.accounts.id.prompt should not be used in renderButton-first flow");
-  assert.match(html, /callback:\s*\(response\)\s*=>\s*{/, "Google credential callback missing");
-  assert.match(html, /Loading Google sign-in/, "Google loading status text missing");
-  assert.match(html, /Ready/, "Google ready status text missing");
-  assert.match(html, /Credential received/, "Google credential status text missing");
-  assert.match(html, /Contacting backend/, "Google backend contact status text missing");
-  assert.match(html, /Signed in/, "Google success status text missing");
-  assert.match(html, /Failed:\s*/, "Google failure status text missing");
+  assert.match(html, /id="pilotEmail"/, "Pilot email input missing");
+  assert.match(html, /id="pilotLoginBtn"/, "Pilot login button missing");
+  assert.match(html, /id="pilotLoginDebug"/, "Pilot login debug/status container missing");
+  assert.match(html, /NODE_PILOT_LOGIN_URL/, "Pilot login endpoint constant missing");
+  assert.match(html, /pilotLoginBtn\.onclick = async \(\) => {/, "Pilot login click handler missing");
+  assert.match(html, /fetch\(NODE_PILOT_LOGIN_URL/, "Pilot login request to backend route missing");
+  assert.doesNotMatch(html, /accounts\.google\.com\/gsi\/client/, "Google GIS script should be removed");
+  assert.doesNotMatch(html, /google\.accounts\.id\./, "Google GIS API usage should be removed");
 });
 
 test("auth shell remains isolated from retention/workout/avatar boot paths", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  const start = html.indexOf("function setGoogleSignInStatus(message) {");
+  const start = html.indexOf("function setPilotLoginStatus(message) {");
   const end = html.indexOf("signOutBtn.onclick =", start);
   assert.ok(start > 0 && end > start, "Unable to locate auth shell block in index");
   const authShell = html.slice(start, end);
