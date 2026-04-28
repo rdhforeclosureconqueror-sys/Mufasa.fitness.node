@@ -11,8 +11,24 @@ test("frontend shell keeps Google identity script/init/button wiring", () => {
   assert.match(html, /https:\/\/accounts\.google\.com\/gsi\/client/, "GIS script reference missing");
   assert.match(html, /id="googleBtn"/, "Google button container missing");
   assert.match(html, /id="googleSignInMount"/, "GIS mount container missing");
+  assert.match(html, /id="googleLoginDebug"/, "Google fallback status container missing");
   assert.match(html, /google\.accounts\.id\.initialize\(/, "google.accounts.id.initialize missing");
   assert.match(html, /google\.accounts\.id\.renderButton\(/, "google.accounts.id.renderButton missing");
+  assert.match(html, /google\.accounts\.id\.prompt\(/, "google.accounts.id.prompt missing");
+  assert.match(html, /callback:\s*\(response\)\s*=>\s*{/, "Google credential callback missing");
+  assert.match(html, /Google sign-in loading…/, "Google loading fallback text missing");
+  assert.match(html, /Google sign-in unavailable\. Refresh or try again\./, "Google unavailable fallback text missing");
+});
+
+test("auth shell remains isolated from retention/workout/avatar boot paths", () => {
+  const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  const start = html.indexOf("function setGoogleSignInStatus(mode) {");
+  const end = html.indexOf("signOutBtn.onclick =", start);
+  assert.ok(start > 0 && end > start, "Unable to locate auth shell block in index");
+  const authShell = html.slice(start, end);
+  assert.doesNotMatch(authShell, /retention-flow|ensureRetentionFlowLoaded/i, "Auth shell references retention-flow bootstrap");
+  assert.doesNotMatch(authShell, /workout/i, "Auth shell references workout bootstrapping");
+  assert.doesNotMatch(authShell, /avatar/i, "Auth shell references avatar bootstrapping");
 });
 
 test("retention-flow bootstrap does not throw when containers are absent", () => {
