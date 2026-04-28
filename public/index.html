@@ -5485,15 +5485,17 @@ function toggleListening() {
     const handlerChecks = {
       dashboard: typeof dashboardBtn?.onclick === "function",
       workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
-      camera: typeof cameraConnectBtn?.onclick === "function",
-      profile: typeof saveProfileBtn?.onclick === "function",
-      calendar: typeof completeWorkoutBtn?.onclick === "function",
-      avatar: typeof openAvatarModalBtn?.onclick === "function"
+      camera: typeof connectBtn?.onclick === "function",
+      profile: typeof saveProfileFormBtn?.onclick === "function",
+      calendar: typeof calendarApplyBtn?.onclick === "function",
+      retention: typeof ensureRetentionFlowLoaded === "function"
     };
-    updateAppBootStatus("navigation handlers attached", JSON.stringify(handlerChecks));
-    updateAppBootStatus("camera handlers attached", handlerChecks.camera ? "ok" : "missing");
-    updateAppBootStatus("workout library handlers attached", handlerChecks.workoutLibrary ? "ok" : "missing");
-    updateAppBootStatus("retention handlers attached", typeof ensureRetentionFlowLoaded === "function" ? "ok" : "missing");
+    console.log("[APP_BOOT] nav handlers attached", handlerChecks);
+    updateAppBootStatus("nav handlers attached", JSON.stringify(handlerChecks));
+    console.log("[APP_BOOT] camera handlers attached", handlerChecks.camera ? "ok" : "missing");
+    updateAppBootStatus("camera handler attached", handlerChecks.camera ? "ok" : "missing");
+    console.log("[APP_BOOT] workout library handlers attached", handlerChecks.workoutLibrary ? "ok" : "missing");
+    updateAppBootStatus("workout library handler attached", handlerChecks.workoutLibrary ? "ok" : "missing");
 
     questionInput.addEventListener("keydown", e => {
       if (e.key === "Enter") askCoach(questionInput.value.trim());
@@ -5526,9 +5528,12 @@ function toggleListening() {
         updateAppBootStatus("boot failed", activationFailure);
         return;
       }
-      updateAppBootStatus("main boot started", "pilot bypass");
+      console.log("[APP_BOOT] pilot bypass active");
+      updateAppBootStatus("pilot bypass active");
       window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
       try {
+        console.log("[APP_BOOT] post login init called");
+        updateAppBootStatus("post-login init called");
         await onLogin({
           userId: PILOT_BYPASS_USER.id,
           email: PILOT_BYPASS_USER.email,
@@ -5536,7 +5541,7 @@ function toggleListening() {
           authProvider: PILOT_BYPASS_USER.authProvider
         });
       } catch (bootErr) {
-        console.error("[boot] onLogin failed", bootErr);
+        console.error("[APP_BOOT] boot failed:", bootErr);
         updateAppBootStatus("boot failed", String(bootErr?.message || bootErr));
         return;
       }
