@@ -111,7 +111,7 @@
       `GLTFLoader module MIME: ${avatarRuntime?.gltfLoaderModuleMime || "unknown"}`,
       `Import map detected: ${avatarRuntime?.importMapDetected === true ? "yes" : (avatarRuntime?.importMapDetected === false ? "no" : "unknown")}`,
       `Avatar failureReason: ${avatarRuntime?.failureReason || avatarRuntime?.failedReason || "n/a"}`,
-      `Bridge issue classification: ${avatarRuntime?.threeBridgeFixActive !== true ? "deploy_or_static_path_issue" : (avatarRuntime?.threeImportOk === true ? "bridge_fix_active_import_ok" : "import_issue")}`,
+      `Bridge issue classification: ${avatarRuntime?.threeBridgeFixActive !== true ? "deploy_or_static_path_issue" : (avatarRuntime?.threeImportStarted !== true ? "not_loaded_yet" : (avatarRuntime?.threeImportOk === true ? "bridge_fix_active_import_ok" : "import_issue"))}`,
       `Avatar glbLoadError: ${avatarRuntime?.glbLoadError || "n/a"}`,
       `Avatar WebGL status: ok=${avatarRuntime?.webglOk ?? "n/a"} available=${avatarRuntime?.webglAvailable ?? "n/a"}`,
       `Avatar renderer status: created=${avatarRuntime?.rendererCreated ?? "n/a"} scene=${avatarRuntime?.sceneCreated ?? "n/a"} camera=${avatarRuntime?.cameraCreated ?? "n/a"}`,

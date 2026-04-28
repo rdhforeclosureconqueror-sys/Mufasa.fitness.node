@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-28T21:10:00.234Z
+Generated: 2026-04-28T21:30:49.981Z
 
 ## Backend Route Inventory
 
@@ -79,11 +79,11 @@ Generated: 2026-04-28T21:10:00.234Z
 | public/index.html:3778 | POST | dynamic | external/unknown | no/unknown | no |
 | public/index.html:3832 | POST | dynamic | external/unknown | no/unknown | no |
 | public/index.html:5123 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
-| public/dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
-| public/dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
-| public/dashboard.js:301 | POST | /api/admin/diagnostics/report | backend base var | yes/conditional | yes |
-| public/backend-read.js:72 | GET | dynamic | backend base var | yes/conditional | no |
+| public/dashboard.js:215 | GET | dynamic | external/unknown | no/unknown | no |
+| public/dashboard.js:234 | GET | /__version | backend base var | no/unknown | yes |
+| public/dashboard.js:246 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
+| public/dashboard.js:302 | POST | /api/admin/diagnostics/report | backend base var | yes/conditional | yes |
+| public/backend-read.js:76 | GET | dynamic | backend base var | yes/conditional | no |
 | public/session-write.js:147 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
