@@ -25,10 +25,10 @@ function run() {
   const backendRead = read(backendReadPath);
   const server = read(serverPath);
 
-  assertContains(rootIndex, 'Google sign-in loading…', 'root index missing Google loading fallback text', failures);
-  assertContains(publicIndex, 'Google sign-in loading…', 'public index missing Google loading fallback text', failures);
-  assertContains(rootIndex, 'Google sign-in unavailable. Refresh or try again.', 'root index missing Google unavailable fallback text', failures);
-  assertContains(publicIndex, 'Google sign-in unavailable. Refresh or try again.', 'public index missing Google unavailable fallback text', failures);
+  assertContains(rootIndex, 'Loading Google sign-in', 'root index missing Google loading status text', failures);
+  assertContains(publicIndex, 'Loading Google sign-in', 'public index missing Google loading status text', failures);
+  assertContains(rootIndex, 'Failed:', 'root index missing Google failure status text', failures);
+  assertContains(publicIndex, 'Failed:', 'public index missing Google failure status text', failures);
   if (rootIndex.includes('Build: pending')) failures.push('root index contains Build pending blocker text');
   if (publicIndex.includes('Build: pending')) failures.push('public index contains Build pending blocker text');
   if (rootIndex.includes('LOGIN TRACE BUILD ACTIVE')) failures.push('root index contains login trace marker');
@@ -39,26 +39,26 @@ function run() {
 
   assertContains(rootIndex, /google\.accounts\.id\.initialize\(/, 'root index missing google.accounts.id.initialize', failures);
   assertContains(rootIndex, /google\.accounts\.id\.renderButton\(/, 'root index missing google.accounts.id.renderButton', failures);
-  assertContains(rootIndex, /google\.accounts\.id\.prompt\(/, 'root index missing google.accounts.id.prompt', failures);
+  if (/google\.accounts\.id\.prompt\(/.test(rootIndex)) failures.push('root index still uses deprecated google.accounts.id.prompt flow');
 
   assertContains(rootIndex, 'id="googleBtn"', 'root index missing google button id', failures);
   assertContains(rootIndex, 'id="googleSignInMount"', 'root index missing GIS mount container id', failures);
 
   assertContains(server, 'app.post("/api/auth/bridge"', 'server missing /api/auth/bridge route', failures);
   assertContains(backendRead, '"/api/auth/bridge"', 'frontend backend-read missing /api/auth/bridge call', failures);
+  assertContains(backendRead, 'credential', 'frontend bridge payload missing credential', failures);
   assertContains(backendRead, 'body.provider', 'frontend bridge payload missing provider', failures);
   assertContains(backendRead, 'body.trustMode', 'frontend bridge payload missing trustMode', failures);
   assertContains(backendRead, 'body.googleIdToken', 'frontend bridge payload missing credential/googleIdToken', failures);
 
-  assertContains(rootIndex, 'setGoogleSignInStatus("loading")', 'root index missing Google loading status handler call', failures);
-  assertContains(rootIndex, 'setGoogleSignInStatus("unavailable")', 'root index missing Google unavailable status handler call', failures);
+  assertContains(rootIndex, 'setGoogleSignInStatus("Loading Google sign-in")', 'root index missing Google loading status handler call', failures);
+  assertContains(rootIndex, 'setGoogleSignInStatus("Ready")', 'root index missing Google ready status handler call', failures);
   assertContains(rootIndex, 'googleBtn.onclick = () => {', 'root index missing Google button click handler', failures);
-  assertContains(rootIndex, 'window.google.accounts.id.prompt();', 'root index missing Google prompt invocation', failures);
   assertContains(rootIndex, 'callback: (response) => {', 'root index missing Google credential callback', failures);
   assertContains(rootIndex, 'const googleIdToken = response.credential || null;', 'root index missing credential extraction from GIS callback', failures);
   assertContains(rootIndex, 'BACKEND_READ_CLIENT.ensureAuthToken', 'root index missing auth bridge invocation', failures);
 
-  const authShellStart = rootIndex.indexOf('function setGoogleSignInStatus(mode) {');
+  const authShellStart = rootIndex.indexOf('function setGoogleSignInStatus(message) {');
   const authShellEnd = rootIndex.indexOf('signOutBtn.onclick =', authShellStart);
   if (authShellStart < 0 || authShellEnd <= authShellStart) failures.push('unable to isolate root index auth shell block');
   else {

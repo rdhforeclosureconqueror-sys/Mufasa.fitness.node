@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-28T05:59:54.113Z
+Generated: 2026-04-28T06:19:11.094Z
 
 ## Backend Route Inventory
 
@@ -50,11 +50,11 @@ Generated: 2026-04-28T05:59:54.113Z
 | index.html:2392 | GET | dynamic | external/unknown | no/unknown | no |
 | index.html:2948 | POST | dynamic | external/unknown | yes/conditional | no |
 | index.html:2970 | GET | dynamic | external/unknown | yes/conditional | no |
-| index.html:3681 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:3983 | GET | /health | relative origin | no/unknown | no |
-| index.html:4131 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:4185 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:5486 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:3682 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:3984 | GET | /health | relative origin | no/unknown | no |
+| index.html:4132 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:4186 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:5487 | POST | dynamic | external/unknown | yes/conditional | no |
 | dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -68,11 +68,11 @@ Generated: 2026-04-28T05:59:54.113Z
 | public/index.html:2392 | GET | dynamic | external/unknown | no/unknown | no |
 | public/index.html:2948 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/index.html:2970 | GET | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3681 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3983 | GET | /health | relative origin | no/unknown | no |
-| public/index.html:4131 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:4185 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:5486 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3682 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3984 | GET | /health | relative origin | no/unknown | no |
+| public/index.html:4132 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:4186 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:5487 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | public/dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | public/dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |

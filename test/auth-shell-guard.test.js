@@ -14,15 +14,19 @@ test("frontend shell keeps Google identity script/init/button wiring", () => {
   assert.match(html, /id="googleLoginDebug"/, "Google fallback status container missing");
   assert.match(html, /google\.accounts\.id\.initialize\(/, "google.accounts.id.initialize missing");
   assert.match(html, /google\.accounts\.id\.renderButton\(/, "google.accounts.id.renderButton missing");
-  assert.match(html, /google\.accounts\.id\.prompt\(/, "google.accounts.id.prompt missing");
+  assert.doesNotMatch(html, /google\.accounts\.id\.prompt\(/, "google.accounts.id.prompt should not be used in renderButton-first flow");
   assert.match(html, /callback:\s*\(response\)\s*=>\s*{/, "Google credential callback missing");
-  assert.match(html, /Google sign-in loading…/, "Google loading fallback text missing");
-  assert.match(html, /Google sign-in unavailable\. Refresh or try again\./, "Google unavailable fallback text missing");
+  assert.match(html, /Loading Google sign-in/, "Google loading status text missing");
+  assert.match(html, /Ready/, "Google ready status text missing");
+  assert.match(html, /Credential received/, "Google credential status text missing");
+  assert.match(html, /Contacting backend/, "Google backend contact status text missing");
+  assert.match(html, /Signed in/, "Google success status text missing");
+  assert.match(html, /Failed:\s*/, "Google failure status text missing");
 });
 
 test("auth shell remains isolated from retention/workout/avatar boot paths", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  const start = html.indexOf("function setGoogleSignInStatus(mode) {");
+  const start = html.indexOf("function setGoogleSignInStatus(message) {");
   const end = html.indexOf("signOutBtn.onclick =", start);
   assert.ok(start > 0 && end > start, "Unable to locate auth shell block in index");
   const authShell = html.slice(start, end);
