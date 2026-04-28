@@ -141,6 +141,7 @@
 
       const body = {};
       if (claims?.googleIdToken) {
+        body.credential = claims.googleIdToken;
         body.googleIdToken = claims.googleIdToken;
         body.provider = "google";
         body.trustMode = "google_verified";

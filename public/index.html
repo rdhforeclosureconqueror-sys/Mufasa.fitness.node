@@ -858,7 +858,7 @@
       </div>
 
       <div style="font-size:0.75rem;color:#9ca3af;margin:6px 0;">— or —</div>
-      <button id="googleBtn">Continue with Google</button>
+      <button id="googleBtn" type="button">Google fallback</button>
       <div id="googleSignInMount" aria-live="polite"></div>
       <div id="googleLoginDebug" role="status" aria-live="polite">Google sign-in loading…</div>
     </div>
@@ -3208,6 +3208,7 @@
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
         if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
+          setGoogleAuthError("google_token_missing");
           backendTruthState.bridge = { mode: "degraded", message: "Google token missing; sign out/in required." };
           addLog("system", "Google session token missing. Sign out and sign back in.");
           updateAuthDebug({
@@ -3224,12 +3225,14 @@
             || e?.payload?.error?.details?.diagnostics?.rejectionReason
             || e?.payload?.error?.code
             || "forbidden";
+          setGoogleAuthError(safeReason);
           addLog("system", `Backend login bridge rejected: ${safeReason}`);
           updateAuthDebug({
             authBridgeStatus: 403,
             authBridgeFailureReason: safeReason
           });
         }
+        setGoogleAuthError(e?.code || e?.message || "auth_bridge_failed");
         backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
         addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
         updateSyncStatus();
@@ -3276,6 +3279,7 @@
     }
 
     async function onLogin(profile) {
+      const isGoogleLogin = String(profile?.authProvider || "").toLowerCase() === "google" || Boolean(profile?.googleIdToken);
       USER_ID = toSafeUserId(profile.email || profile.name || "user");
 
       USER_PROFILE = {
@@ -3320,7 +3324,9 @@
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
+      if (isGoogleLogin) setGoogleSignInStatus("Contacting backend");
       const backendReady = await ensureBackendSession(profile);
+      if (isGoogleLogin) setGoogleSignInStatus(backendReady ? "Signed in" : "Failed: backend_bridge_unavailable");
       if (backendReady) await hydrateProfileFromBackend();
       await sendProfileToNode();
       buildCalendarFromMeta();
@@ -3419,25 +3425,17 @@
       showOverlay(false);
     };
 
-    function setGoogleSignInStatus(mode) {
+    function setGoogleSignInStatus(message) {
       if (!googleLoginDebugEl) return;
-      if (mode === "unavailable") {
-        googleLoginDebugEl.textContent = "Google sign-in unavailable. Refresh or try again.";
-        return;
-      }
-      if (mode === "loading") {
-        googleLoginDebugEl.textContent = "Google sign-in loading…";
-        return;
-      }
-      googleLoginDebugEl.textContent = "";
+      googleLoginDebugEl.textContent = message || "";
     }
-    function setGoogleAuthError() {
-      setGoogleSignInStatus("unavailable");
+    function setGoogleAuthError(reason = "unknown") {
+      setGoogleSignInStatus(`Failed: ${reason}`);
     }
     const gisScriptEl = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
     if (gisScriptEl) {
       const onGisReady = () => {
-        setGoogleSignInStatus("loading");
+        setGoogleSignInStatus("Loading Google sign-in");
       };
       if (window.google?.accounts?.id) onGisReady();
       else {
@@ -3445,7 +3443,7 @@
         gisScriptEl.addEventListener("error", () => setGoogleAuthError("gsi_script_load_failed"), { once: true });
       }
     }
-    setGoogleSignInStatus("loading");
+    setGoogleSignInStatus("Loading Google sign-in");
 
     let googleIdentityInitDone = false;
     function hasGoogleIdentityApi() {
@@ -3458,6 +3456,7 @@
         window.google.accounts.id.initialize({
           client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
           callback: (response) => {
+            setGoogleSignInStatus("Credential received");
             const payload = parseJwt(response.credential || "");
             const googleIdToken = response.credential || null;
             console.log("[AUTH] googleIdToken present:", !!googleIdToken);
@@ -3490,10 +3489,10 @@
           googleSignInMountEl.dataset.rendered = "1";
         }
         googleIdentityInitDone = true;
-        setGoogleSignInStatus("ready");
+        setGoogleSignInStatus("Ready");
         if (googleBtn) {
-          googleBtn.disabled = false;
-          googleBtn.title = "";
+          googleBtn.hidden = true;
+          googleBtn.disabled = true;
         }
         updateAuthDebug({ googleIdentityReady: true, googleIdentityInitSource: source });
         return true;
@@ -3519,7 +3518,8 @@
           setGoogleAuthError("google_identity_api_unavailable_after_bootstrap_retries");
           if (googleBtn) {
             googleBtn.disabled = false;
-            googleBtn.title = "";
+            googleBtn.hidden = false;
+            googleBtn.title = "Fallback when official Google button cannot load";
           }
         }
       };
@@ -3527,13 +3527,14 @@
     })();
 
     googleBtn.onclick = () => {
-      trackPilotEvent("login_attempted", { method: "google" });
+      trackPilotEvent("login_attempted", { method: "google_fallback" });
       if (!googleIdentityInitDone) initializeGoogleIdentity({ source: "button_click" });
       if (!hasGoogleIdentityApi()) {
         setGoogleAuthError("google_identity_api_missing");
         return;
       }
-      window.google.accounts.id.prompt();
+      if (googleSignInMountEl) googleSignInMountEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      setGoogleSignInStatus("Ready");
     };
 
     signOutBtn.onclick = () => {
