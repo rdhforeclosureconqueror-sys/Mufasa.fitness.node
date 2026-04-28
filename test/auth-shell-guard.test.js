@@ -6,21 +6,24 @@ const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 
-test("frontend shell keeps pilot email login wiring and removes Google GIS dependency", () => {
+test("frontend shell auto-enters pilot mode and removes interactive login wiring", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /id="pilotEmail"/, "Pilot email input missing");
-  assert.match(html, /id="pilotLoginBtn"/, "Pilot login button missing");
-  assert.match(html, /id="pilotLoginDebug"/, "Pilot login debug/status container missing");
-  assert.match(html, /NODE_PILOT_LOGIN_URL/, "Pilot login endpoint constant missing");
-  assert.match(html, /pilotLoginBtn\.onclick = async \(\) => {/, "Pilot login click handler missing");
-  assert.match(html, /fetch\(NODE_PILOT_LOGIN_URL/, "Pilot login request to backend route missing");
+  assert.match(html, /Pilot mode active — login disabled/, "Pilot mode banner missing");
+  assert.match(html, /NODE_PILOT_SESSION_URL/, "Pilot session endpoint constant missing");
+  assert.match(html, /createPilotSessionToken\(\)/, "Pilot session token bootstrap missing");
+  assert.match(html, /await enterPilotMode\(\)/, "Pilot mode should auto-enter on boot");
+  assert.match(html, /userId:\s*"pilot_user"/, "Pilot identity userId should be fixed");
+  assert.match(html, /email:\s*"RDHForeclosureConquer@gmail\.com"/, "Pilot identity email should be fixed");
+  assert.doesNotMatch(html, /id="pilotEmail"/, "Pilot email input should be removed");
+  assert.doesNotMatch(html, /id="pilotLoginBtn"/, "Pilot login button should be removed");
+  assert.doesNotMatch(html, /id="loginOverlay"/, "Login overlay should be removed");
   assert.doesNotMatch(html, /accounts\.google\.com\/gsi\/client/, "Google GIS script should be removed");
   assert.doesNotMatch(html, /google\.accounts\.id\./, "Google GIS API usage should be removed");
 });
 
 test("auth shell remains isolated from retention/workout/avatar boot paths", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  const start = html.indexOf("function setPilotLoginStatus(message) {");
+  const start = html.indexOf("async function createPilotSessionToken() {");
   const end = html.indexOf("signOutBtn.onclick =", start);
   assert.ok(start > 0 && end > start, "Unable to locate auth shell block in index");
   const authShell = html.slice(start, end);
