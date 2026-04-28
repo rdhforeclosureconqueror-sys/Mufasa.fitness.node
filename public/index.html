@@ -803,7 +803,7 @@
 
 <body>
   <div id="pilotModeBanner" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">
-    PRIVATE PILOT MODE — LOGIN DISABLED
+    BUILDER MODE — FULL ACCESS — SECURITY DISABLED
   </div>
 
   <div id="appBootStatus" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite" style="margin-top:8px; font-size:12px; border-color:#38bdf8; color:#e0f2fe;">
@@ -1061,10 +1061,11 @@
       name: "Rashad Harbour",
       email: "RDHForeclosureConquer@gmail.com",
       role: "super_admin",
-      roles: ["admin", "operator", "super_admin"],
+      roles: ["super_admin", "admin", "operator", "trainer", "client"],
       authProvider: "pilot_bypass"
     });
-    let DISABLE_LOGIN_FOR_PILOT = true;
+    const BUILDER_MODE_FULL_ACCESS = true;
+    let DISABLE_LOGIN_FOR_PILOT = BUILDER_MODE_FULL_ACCESS;
     window.APP_AUTH = {
       isAuthenticated: true,
       token: null,

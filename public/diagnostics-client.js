@@ -90,7 +90,10 @@
         loginDisabledForPilot: Boolean(globalScope.__pilotMode?.loginDisabledForPilot),
         loginRemovedForPilot: true,
         pilotSuperAdminActive: Boolean(globalScope.pilotSuperAdminActive),
-        authGateDisabled: true
+        authGateDisabled: true,
+        builderModeFullAccess: true,
+        superAdminActive: true,
+        allFeatureGatesBypassed: true
       },
       runtime: {
         avatarRuntimeStatus: avatarRuntime,
