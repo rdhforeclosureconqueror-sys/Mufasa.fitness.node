@@ -317,6 +317,9 @@ function createApp(options = {}) {
     strictStartupIssues.push("Persisted enforcement overrides could not be loaded safely.");
   }
   strictStartupIssues.push(...trustPolicyValidation.issues);
+  if (!String(process.env.PILOT_LOGIN_PASSWORD || "").trim()) {
+    console.warn("[auth-login] PILOT_LOGIN_PASSWORD is not configured; /api/auth/login will return 503 until configured.");
+  }
   if (startupWarnings.length) {
     for (const warning of startupWarnings) {
       console.warn("[startup-warning]", warning);
@@ -989,82 +992,91 @@ function createApp(options = {}) {
     }
   });
 
-  app.get("/api/auth/pilot-login", asyncHandler(async (_req, res) => {
-    return res.status(200).json({
-      ok: true,
-      route: "/api/auth/pilot-login",
-      methods: ["POST"],
-      message: "Use POST for login"
-    });
-  }));
+  const AUTH_SEED_USER = Object.freeze({
+    id: "pilot_admin",
+    email: "rdhforeclosureconquer@gmail.com",
+    name: "Rashad Harbour",
+    role: "admin"
+  });
 
-  app.post("/api/auth/pilot-login", asyncHandler(async (req, res) => {
-    const email = normalizePilotEmail(req.body?.email);
-    console.info("[pilot-login] request received", {
-      origin: String(req.get("origin") || "") || null,
-      hasEmail: Boolean(req.body?.email),
-      emailNormalized: email,
-      requestId: req.requestId || null
-    });
-    if (!email) {
-      throw new ApiError("VALIDATION_ERROR", "email is required", 400);
+  function authUserContract() {
+    return {
+      id: AUTH_SEED_USER.id,
+      email: AUTH_SEED_USER.email,
+      name: AUTH_SEED_USER.name,
+      role: AUTH_SEED_USER.role
+    };
+  }
+
+  app.post("/api/auth/login", asyncHandler(async (req, res) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+    const expectedPassword = String(process.env.PILOT_LOGIN_PASSWORD || "");
+
+    if (!expectedPassword) {
+      return res.status(503).json({
+        ok: false,
+        error: "PILOT_LOGIN_PASSWORD is not configured"
+      });
     }
 
-    const configuredPilotAllowlist = parseEmailAllowlist(process.env.PILOT_ALLOWED_EMAILS);
-    const configuredAdminAllowlist = parseEmailAllowlist(process.env.ADMIN_EMAILS);
-    const defaultPilotAllowlist = [
-      "rdhforeclosureconquer@gmail.com",
-      "godbody3333@gmail.com"
-    ];
-    const allowlist = configuredPilotAllowlist.length > 0
-      ? configuredPilotAllowlist
-      : (configuredAdminAllowlist.length > 0 ? configuredAdminAllowlist : defaultPilotAllowlist);
-    if (!allowlist.includes(email)) {
-      throw new ApiError("FORBIDDEN", "Email is not authorized for pilot access.", 403, {
-        reason: "pilot_email_not_allowed"
+    if (!email || !password) {
+      return res.status(400).json({
+        ok: false,
+        error: "Invalid email or password"
+      });
+    }
+
+    if (email !== AUTH_SEED_USER.email || password !== expectedPassword) {
+      return res.status(401).json({
+        ok: false,
+        error: "Invalid email or password"
       });
     }
 
     const token = authTokenLib.issueUserToken({
-      userId: toPilotUserId(email),
-      email,
-      provider: "pilot_email",
-      providerSubject: email,
-      providerVerified: false,
-      identityClass: "manual_unverified"
+      userId: AUTH_SEED_USER.id,
+      email: AUTH_SEED_USER.email,
+      provider: "password",
+      providerSubject: AUTH_SEED_USER.email,
+      providerVerified: true,
+      identityClass: "provider_verified"
     });
-    return ok(res, req.requestId, {
-      auth: token,
-      identity: {
-        userId: token?.userId || toPilotUserId(email),
-        provider: "pilot_email",
-        providerVerified: false,
-        identityClass: "manual_unverified"
-      }
-    }, 201);
+
+    return res.status(200).json({
+      ok: true,
+      token: token.token,
+      user: authUserContract()
+    });
   }));
 
-  app.post("/api/auth/pilot-session", asyncHandler(async (req, res) => {
-    const email = "rdhforeclosureconquer@gmail.com";
-    const token = authTokenLib.issueUserToken({
-      userId: "pilot_user",
-      email,
-      provider: "pilot_email",
-      providerSubject: email,
-      providerVerified: false,
-      identityClass: "manual_unverified"
-    });
-    return ok(res, req.requestId, {
-      auth: token,
-      identity: {
-        userId: "pilot_user",
-        email,
-        name: "Rashad Harbour",
-        provider: "pilot_email",
-        providerVerified: false,
-        identityClass: "manual_unverified"
+  app.get("/api/auth/me", requireAuth, asyncHandler(async (req, res) => {
+    const role = req.auth.userId === AUTH_SEED_USER.id
+      ? AUTH_SEED_USER.role
+      : (req.authz?.role || "user");
+    return res.status(200).json({
+      ok: true,
+      user: {
+        id: req.auth.userId,
+        email: req.auth.email || AUTH_SEED_USER.email,
+        name: AUTH_SEED_USER.name,
+        role
       }
-    }, 201);
+    });
+  }));
+
+  app.post("/api/auth/logout", asyncHandler(async (_req, res) => {
+    return res.status(200).json({ ok: true });
+  }));
+
+  app.get("/api/auth/pilot-login", asyncHandler(async (_req, res) => {
+    return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
+  }));
+  app.post("/api/auth/pilot-login", asyncHandler(async (_req, res) => {
+    return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
+  }));
+  app.post("/api/auth/pilot-session", asyncHandler(async (_req, res) => {
+    return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
   }));
 
   // ---- Auth bridge (pilot minimal auth foundation) ----
