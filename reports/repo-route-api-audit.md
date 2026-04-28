@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-28T19:18:09.118Z
+Generated: 2026-04-28T19:35:11.223Z
 
 ## Backend Route Inventory
 
@@ -71,18 +71,19 @@ Generated: 2026-04-28T19:18:09.118Z
 | session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
 | fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
 | exercise-library.js:150 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:1192 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2345 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2890 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:2912 | GET | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3110 | GET | ${NODE_BASE_URL}/api/auth/me | backend base var | yes/conditional | no |
-| public/index.html:3212 | POST | ${NODE_BASE_URL}/api/auth/logout | backend base var | yes/conditional | no |
-| public/index.html:3341 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3643 | GET | /health | relative origin | no/unknown | no |
-| public/index.html:3791 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:3845 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:5136 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:5492 | POST | https://mufasa-fitness-node.onrender.com/api/auth/login | external/unknown | no/unknown | no |
+| public/index.html:1216 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2369 | GET | dynamic | external/unknown | no/unknown | no |
+| public/index.html:2914 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:2936 | GET | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3152 | GET | ${NODE_BASE_URL}/__version | backend base var | no/unknown | no |
+| public/index.html:3165 | GET | ${NODE_BASE_URL}/api/auth/me | backend base var | yes/conditional | no |
+| public/index.html:3280 | POST | ${NODE_BASE_URL}/api/auth/logout | backend base var | yes/conditional | no |
+| public/index.html:3409 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:3711 | GET | /health | relative origin | no/unknown | no |
+| public/index.html:3859 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:3913 | POST | dynamic | external/unknown | no/unknown | no |
+| public/index.html:5204 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/index.html:5560 | POST | https://mufasa-fitness-node.onrender.com/api/auth/login | external/unknown | no/unknown | no |
 | public/dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | public/dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | public/dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -92,10 +93,10 @@ Generated: 2026-04-28T19:18:09.118Z
 | public/session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
 | public/fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
 | public/exercise-library.js:150 | GET | dynamic | external/unknown | no/unknown | no |
-| public/diagnostics-client.js:155 | POST | /api/admin/diagnostics/report | relative origin | no/unknown | yes |
+| public/diagnostics-client.js:156 | POST | /api/admin/diagnostics/report | relative origin | no/unknown | yes |
 | public/landing-diagnostics.js:31 | GET | dynamic | external/unknown | no/unknown | yes |
 | public/landing-diagnostics.js:44 | GET | dynamic | external/unknown | no/unknown | yes |
-| public/landing-diagnostics.js:139 | POST | dynamic | external/unknown | yes/conditional | yes |
+| public/landing-diagnostics.js:140 | POST | dynamic | external/unknown | yes/conditional | yes |
 
 ## Static Asset/Runtime Inventory
 

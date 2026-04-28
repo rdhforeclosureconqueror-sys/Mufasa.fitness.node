@@ -72,6 +72,7 @@
     const fallbackNextAction = "Run a live workout test, then rerun diagnostic.";
     resultEl.textContent = [
       `Backend build status: ${report?.buildVersion || "unknown"}`,
+      `loginDisabledForPilot: ${payload?.build?.loginDisabledForPilot === true ? "true" : "false"}`,
       `Diagnostics reachable: ${report?.routeCheck ? "yes" : "unknown"}`,
       `Retention Motivation Status: ${pilot?.pilotStatus || "NOT_READY"}`,
       `Blockers: ${blockers.length ? blockers.join(" | ") : "none"}`,

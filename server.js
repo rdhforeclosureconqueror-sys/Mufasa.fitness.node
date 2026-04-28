@@ -181,6 +181,7 @@ function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
+  const disableLoginForPilot = process.env.DISABLE_LOGIN_FOR_PILOT === "true";
 
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
@@ -337,7 +338,16 @@ function createApp(options = {}) {
     throw strictError;
   }
 
-  app.use(authContext(authTokenLib, authorizationResolver));
+  app.use(authContext(authTokenLib, authorizationResolver, {
+    pilotBypass: disableLoginForPilot
+      ? {
+        enabled: true,
+        userId: "pilot_admin",
+        email: "RDHForeclosureConquer@gmail.com",
+        role: "admin"
+      }
+      : { enabled: false }
+  }));
   const trackAdminOpsAuthorizationDecision = ({ req, permission, allowed, reason }) => {
     writeObservability.trackAdminOpsAuthorization({
       permission,
@@ -449,14 +459,18 @@ function createApp(options = {}) {
   });
   app.get("/__version", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
-    return res.json({ build: APP_BUILD_VERSION });
+    return res.json({
+      build: APP_BUILD_VERSION,
+      loginDisabledForPilot: disableLoginForPilot
+    });
   });
   app.get("/__diagnostic-smoke", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({
       ok: true,
       build: APP_BUILD_VERSION,
-      diagnostics: true
+      diagnostics: true,
+      loginDisabledForPilot: disableLoginForPilot
     });
   });
   // ---- Helpers ----

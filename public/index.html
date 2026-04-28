@@ -794,10 +794,25 @@
     .auth-subtitle { color: #9ca3af; font-size: .9rem; }
     .auth-error { min-height: 1.25rem; color: #fca5a5; font-size: .85rem; }
     .app-shell-hidden { display: none !important; }
+    .pilot-mode-banner {
+      width: min(1100px, 100%);
+      margin: 0 auto 12px auto;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #f59e0b;
+      background: rgba(120, 53, 15, 0.75);
+      color: #fde68a;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
   </style>
 </head>
 
 <body>
+  <div id="pilotModeBanner" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">
+    Pilot mode active — login disabled
+  </div>
   <section id="authScreen" class="auth-screen" aria-live="polite">
     <form id="authLoginForm" class="auth-card">
       <h2>Sign in</h2>
@@ -1042,11 +1057,20 @@
     const authLoginSubmitEl = document.getElementById("authLoginSubmit");
     const authLoginStatusEl = document.getElementById("authLoginStatus");
     const authLoginErrorEl = document.getElementById("authLoginError");
+    const pilotModeBannerEl = document.getElementById("pilotModeBanner");
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
     const signOutBtn = document.getElementById("signOutBtn");
     const AUTH_TOKEN_STORAGE_KEY = "popa_auth_token";
     const AUTH_USER_STORAGE_KEY = "popa_auth_user";
+    let DISABLE_LOGIN_FOR_PILOT = false;
+    const PILOT_BYPASS_USER = Object.freeze({
+      id: "pilot_admin",
+      name: "Rashad Harbour",
+      email: "RDHForeclosureConquer@gmail.com",
+      role: "admin",
+      authProvider: "pilot_bypass"
+    });
     window.APP_AUTH = window.APP_AUTH || { isAuthenticated: false, token: null, user: null };
     const profileSummaryEl = document.getElementById("profileSummary");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
@@ -3079,6 +3103,7 @@
     }
 
     function renderAuthShell(authenticated) {
+      pilotModeBannerEl?.classList.toggle("app-shell-hidden", !DISABLE_LOGIN_FOR_PILOT);
       authScreenEl?.classList.toggle("app-shell-hidden", authenticated);
       userInfoBar?.classList.toggle("app-shell-hidden", !authenticated);
       appShellEl?.classList.toggle("app-shell-hidden", !authenticated);
@@ -3104,6 +3129,36 @@
       window.APP_AUTH = { isAuthenticated: true, token, user };
       BACKEND_READ_CLIENT?.setAuthToken?.(token);
       persistAuthState();
+    }
+
+    function setPilotBypassAuthState() {
+      window.APP_AUTH = {
+        isAuthenticated: true,
+        token: null,
+        user: {
+          id: PILOT_BYPASS_USER.id,
+          name: PILOT_BYPASS_USER.name,
+          email: PILOT_BYPASS_USER.email,
+          role: PILOT_BYPASS_USER.role,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        }
+      };
+      BACKEND_READ_CLIENT?.clearAuthToken?.();
+      persistAuthState();
+    }
+
+    async function hydrateRuntimeFlags() {
+      try {
+        const response = await fetch(`${NODE_BASE_URL}/__version`, { cache: "no-store" });
+        const payload = await response.json().catch(() => null);
+        DISABLE_LOGIN_FOR_PILOT = Boolean(payload?.loginDisabledForPilot);
+      } catch {
+        DISABLE_LOGIN_FOR_PILOT = false;
+      }
+      window.__pilotMode = {
+        loginDisabledForPilot: DISABLE_LOGIN_FOR_PILOT
+      };
+      return DISABLE_LOGIN_FOR_PILOT;
     }
 
     async function fetchAuthMe(token) {
@@ -3207,6 +3262,19 @@
     }
 
     async function handleLogout() {
+      if (DISABLE_LOGIN_FOR_PILOT) {
+        setPilotBypassAuthState();
+        renderAuthShell(true);
+        setAuthStatus("pilot mode active");
+        setAuthError("");
+        await onLogin({
+          userId: PILOT_BYPASS_USER.id,
+          email: PILOT_BYPASS_USER.email,
+          name: PILOT_BYPASS_USER.name,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        });
+        return;
+      }
       try {
         if (getAuthToken()) {
           await fetch(`${NODE_BASE_URL}/api/auth/logout`, {
@@ -5538,23 +5606,38 @@ function toggleListening() {
       });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
-      renderAuthShell(false);
+      await hydrateRuntimeFlags();
+      if (DISABLE_LOGIN_FOR_PILOT) {
+        setPilotBypassAuthState();
+        renderAuthShell(true);
+        setAuthStatus("pilot mode active");
+        await onLogin({
+          userId: PILOT_BYPASS_USER.id,
+          email: PILOT_BYPASS_USER.email,
+          name: PILOT_BYPASS_USER.name,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        });
+      } else {
+        renderAuthShell(false);
+      }
       try {
-        const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || null;
-        if (token) {
-          const user = await fetchAuthMe(token);
-          setAuthStateFromLogin(token, user);
-          renderAuthShell(true);
-          await onLogin({
-            userId: user.id,
-            email: user.email,
-            name: user.name,
-            authProvider: "password"
-          });
+        if (!DISABLE_LOGIN_FOR_PILOT) {
+          const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || null;
+          if (token) {
+            const user = await fetchAuthMe(token);
+            setAuthStateFromLogin(token, user);
+            renderAuthShell(true);
+            await onLogin({
+              userId: user.id,
+              email: user.email,
+              name: user.name,
+              authProvider: "password"
+            });
+          }
         }
       } catch (_) {
         clearAuthState();
-        renderAuthShell(false);
+        renderAuthShell(DISABLE_LOGIN_FOR_PILOT);
       }
 
       console.log("tf loaded:", typeof tf !== "undefined");

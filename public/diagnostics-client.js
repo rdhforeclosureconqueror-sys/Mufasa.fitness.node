@@ -86,7 +86,8 @@
         url: globalScope.location?.href || null,
         userAgent,
         deviceType: getDeviceType(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        loginDisabledForPilot: Boolean(globalScope.__pilotMode?.loginDisabledForPilot)
       },
       runtime: {
         avatarRuntimeStatus: avatarRuntime,
