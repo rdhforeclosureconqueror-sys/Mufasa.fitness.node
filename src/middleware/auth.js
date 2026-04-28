@@ -18,6 +18,9 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
         req.auth = {
           userId: pilotBypass.userId,
           email: pilotBypass.email,
+          name: pilotBypass.name || "Rashad Harbour",
+          role: pilotBypass.role || "super_admin",
+          roles: Array.isArray(pilotBypass.roles) ? pilotBypass.roles : ["admin", "operator", "super_admin"],
           provider: "pilot_bypass",
           providerSubject: pilotBypass.email,
           providerVerified: true,

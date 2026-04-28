@@ -5,40 +5,32 @@ const path = require("node:path");
 
 const repoRoot = path.resolve(__dirname, "..");
 
-test("login screen appears and boot validates stored token via /api/auth/me", () => {
+test("pilot shell boots as authenticated super-admin without login UI", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /id="authScreen"/, "auth screen container missing");
-  assert.match(html, /id="authLoginForm"/, "auth form missing");
-  assert.match(html, /\/api\/auth\/me/, "boot auth me route missing");
-  assert.match(html, /popa_auth_token/, "auth token storage key missing");
-  assert.match(html, /popa_auth_user/, "auth user storage key missing");
-  assert.match(html, /window\.APP_AUTH\s*=\s*window\.APP_AUTH\s*\|\|\s*\{\s*isAuthenticated:\s*false,\s*token:\s*null,\s*user:\s*null\s*\}/, "APP_AUTH bootstrap missing");
-  assert.match(html, /Pilot no-login bypass active/, "pilot bypass banner text missing");
-  assert.match(html, /const PILOT_VERSION_URL = "https:\/\/mufasa-fitness-node\.onrender\.com\/__version"/, "pilot version URL must target backend");
+  assert.match(html, /PRIVATE PILOT MODE — LOGIN DISABLED/, "pilot banner text missing");
+  assert.match(html, /window\.APP_AUTH\s*=\s*\{\s*isAuthenticated:\s*true,\s*token:\s*null,/, "APP_AUTH must be forced authenticated");
+  assert.match(html, /role:\s*"super_admin"/, "APP_AUTH user must be super_admin");
+  assert.match(html, /roles:\s*\[\s*"admin",\s*"operator",\s*"super_admin"\s*\]/, "APP_AUTH user roles must include super-admin controls");
+  assert.match(html, /window\.pilotSuperAdminActive = true/, "pilot super-admin activation missing");
+  assert.match(html, /window\.__pilotMode = \{ loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true \}/, "pilot diagnostics flags missing");
 });
 
-test("legacy login overlay, Google GIS, and pilot email dependencies are absent", () => {
+test("legacy login and auth blockers are absent from frontend shell", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  assert.doesNotMatch(html, /id="authScreen"/, "auth screen should be removed");
+  assert.doesNotMatch(html, /id="authLoginForm"/, "auth login form should be removed");
   assert.doesNotMatch(html, /id="loginOverlay"/, "legacy login overlay should not exist");
+  assert.doesNotMatch(html, /\/api\/auth\/login/, "frontend must not call /api/auth/login");
+  assert.doesNotMatch(html, /\/api\/auth\/pilot-login/, "frontend must not call /api/auth/pilot-login");
+  assert.doesNotMatch(html, /\/api\/auth\/bridge/, "frontend must not call /api/auth/bridge");
   assert.doesNotMatch(html, /accounts\.google\.com\/gsi\/client/, "Google GIS script should not exist");
   assert.doesNotMatch(html, /google\.accounts\.id\./, "Google GIS API references should not exist");
-  assert.doesNotMatch(html, /pilotEmail|pilot_email|pilotLoginBtn|pilot-session|auth\/bridge/i, "pilot email / legacy bridge dependencies should not exist in shell");
+  assert.doesNotMatch(html, /pilotEmail|pilot_email|pilotLoginBtn|pilot-session/i, "pilot email dependencies should not exist in shell");
 });
 
-test("logout path clears frontend auth state and returns to login shell", () => {
+test("pilot bypass activates immediate shell render path", () => {
   const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /localStorage\.removeItem\(AUTH_TOKEN_STORAGE_KEY\)/, "logout must clear auth token key");
-  assert.match(html, /localStorage\.removeItem\(AUTH_USER_STORAGE_KEY\)/, "logout must clear auth user key");
-  assert.match(html, /window\.APP_AUTH\s*=\s*\{\s*isAuthenticated:\s*false,\s*token:\s*null,\s*user:\s*null\s*\}/, "logout must reset APP_AUTH");
-  assert.match(html, /window\.pilotSuperAdminActive = false/, "logout must clear pilot super-admin activation");
-  assert.match(html, /renderAuthShell\(false\)/, "logout should route back to login shell");
-});
-
-test("pilot bypass exposes explicit bootstrap failure reasons and immediate shell activation checks", () => {
-  const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
-  assert.match(html, /backend version not reachable/, "missing backend reachability failure reason");
-  assert.match(html, /flag false/, "missing disabled-flag failure reason");
   assert.match(html, /app shell missing/, "missing app-shell failure reason");
-  assert.match(html, /overlay hide failed/, "missing auth-screen hide failure reason");
   assert.match(html, /function activatePilotBypassImmediate\(\)/, "missing immediate pilot activation flow");
+  assert.match(html, /renderAuthShell\(\);/, "boot must render app shell directly");
 });

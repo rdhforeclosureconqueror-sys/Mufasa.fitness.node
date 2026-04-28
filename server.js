@@ -343,8 +343,10 @@ function createApp(options = {}) {
       ? {
         enabled: true,
         userId: "pilot_admin",
+        name: "Rashad Harbour",
         email: "RDHForeclosureConquer@gmail.com",
-        role: "admin"
+        role: "super_admin",
+        roles: ["admin", "operator", "super_admin"]
       }
       : { enabled: false }
   }));
@@ -461,7 +463,10 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({
       build: APP_BUILD_VERSION,
-      loginDisabledForPilot: disableLoginForPilot
+      loginDisabledForPilot: disableLoginForPilot,
+      loginRemovedForPilot: disableLoginForPilot,
+      pilotSuperAdminActive: disableLoginForPilot,
+      authGateDisabled: disableLoginForPilot
     });
   });
   app.get("/__diagnostic-smoke", (_req, res) => {
@@ -470,7 +475,10 @@ function createApp(options = {}) {
       ok: true,
       build: APP_BUILD_VERSION,
       diagnostics: true,
-      loginDisabledForPilot: disableLoginForPilot
+      loginDisabledForPilot: disableLoginForPilot,
+      loginRemovedForPilot: disableLoginForPilot,
+      pilotSuperAdminActive: disableLoginForPilot,
+      authGateDisabled: disableLoginForPilot
     });
   });
   // ---- Helpers ----
