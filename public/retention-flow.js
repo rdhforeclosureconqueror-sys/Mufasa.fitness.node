@@ -104,13 +104,14 @@
       storagePrefix: "maat"
     });
     const token = client?.getAuthToken?.() || state.authToken;
-    if (!token) throw new Error("missing_auth_token");
-    state.authToken = token;
+    const pilotNoLogin = window.__pilotMode?.loginDisabledForPilot === true && window.APP_AUTH?.isAuthenticated === true;
+    if (!token && !pilotNoLogin) throw new Error("missing_auth_token");
+    state.authToken = token || state.authToken;
 
     const res = await fetch(`${getNodeBaseUrl()}${path}`, {
       method,
       headers: {
-        authorization: `Bearer ${token}`,
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
         "content-type": "application/json"
       },
       body: body ? JSON.stringify(body) : undefined

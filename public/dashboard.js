@@ -102,14 +102,15 @@
     const localHistory = read(KEY_HISTORY, []);
     const token = client?.getAuthToken();
 
-    if (!client || !token) {
+    const pilotNoLogin = window.__pilotMode?.loginDisabledForPilot === true && window.APP_AUTH?.isAuthenticated === true;
+    if (!client || (!token && !pilotNoLogin)) {
       return {
         active,
         history: localHistory,
         source: "local",
         warning: token
           ? "Backend client unavailable; showing local-only history."
-          : "Sign in from the main app to sync backend history. Currently local-only."
+          : "Backend token unavailable; showing local-only history in pilot mode."
       };
     }
 
@@ -350,7 +351,7 @@
         `Avatar overlay container exists: ${avatarRuntime?.avatarOverlayContainerExists === true ? "yes" : "no"}`,
         `Overlay render loop running: ${avatarRuntime?.overlayRenderLoopRunning === true ? "yes" : "no"}`,
         `Avatar overlay visibility reason: ${avatarRuntime?.avatarOverlayVisibilityReason || "visible"}`,
-        `Bridge issue classification: ${avatarRuntime?.threeBridgeFixActive !== true ? "deploy_or_static_path_issue" : (avatarRuntime?.threeImportOk === true ? "bridge_fix_active_import_ok" : "import_issue")}`,
+        `Bridge issue classification: ${avatarRuntime?.threeBridgeFixActive !== true ? "deploy_or_static_path_issue" : (avatarRuntime?.threeImportStarted !== true ? "not_loaded_yet" : (avatarRuntime?.threeImportOk === true ? "bridge_fix_active_import_ok" : "import_issue"))}`,
         `Route check: pass=${report?.routeCheck?.passCount ?? "n/a"} protected=${report?.routeCheck?.protectedCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
         `OpenAI status: ${report?.openAiSummaryStatus || "unknown"}`,
         `Likely root cause: ${summary?.likelyRootCause || "n/a"}`,

@@ -144,7 +144,7 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
         summary: {
           ...DEFAULT_FALLBACK,
           summary: text || "OpenAI returned non-JSON summary text.",
-          likelyRootCause: "OpenAI response was plain text, not structured JSON."
+          likelyRootCause: "Diagnostics processed with plain-text AI summary."
         },
         errorType: "plain_text_response",
         errorMessage: "OpenAI output_text was plain text instead of JSON.",
