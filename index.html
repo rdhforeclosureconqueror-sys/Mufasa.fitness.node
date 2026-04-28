@@ -647,52 +647,21 @@
       font-size: 0.8rem;
     }
 
-    /* ---- LOGIN OVERLAY ---- */
-    #loginOverlay {
+    #pilotModeBanner {
       position: fixed;
-      inset: 0;
-      backdrop-filter: blur(8px) brightness(0.4);
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      flex-direction: column;
-      transition: opacity 0.4s ease;
-    }
-    #loginOverlay.hidden { opacity: 0; pointer-events: none; }
-
-    #loginBox {
-      background: radial-gradient(circle at top, #020617, #000000);
-      border: 2px solid #facc15;
-      border-radius: 20px;
-      padding: 32px 40px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2100;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #facc15;
+      background: rgba(250, 204, 21, 0.2);
+      color: #fef08a;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
       text-align: center;
-      box-shadow: 0 0 40px rgba(250,204,21,0.4);
-      color: #facc15;
-      max-width: 360px;
-    }
-    #loginBox h1 {
-      color: #facc15;
-      font-size: 1.4rem;
-      margin-bottom: 10px;
-    }
-    #loginBox p {
-      font-size: 0.9rem;
-      color: #fde68a;
-      margin-bottom: 16px;
-    }
-    #pilotLoginDebug {
-      margin-top: 10px;
-      text-align: left;
-      font-size: 0.75rem;
-      line-height: 1.35;
-      color: #fde68a;
-      border: 1px solid rgba(250, 204, 21, 0.5);
-      border-radius: 10px;
-      padding: 8px 10px;
-      background: rgba(2, 6, 23, 0.65);
-      white-space: pre-line;
     }
 
     #userInfo {
@@ -815,35 +784,58 @@
     .retention-cal-day.done { background: rgba(22,163,74,.5); border-color: rgba(74,222,128,.7); }
     .retention-cal-day.today { outline: 1px solid #facc15; }
     .retention-muted { color: #94a3b8; font-size: .78rem; }
+
+    .auth-screen { width: min(460px, 100%); margin: auto; }
+    .auth-card {
+      display: grid; gap: 10px; padding: 20px; border-radius: 12px;
+      background: rgba(3,7,18,.95); border: 1px solid #facc15;
+    }
+    .auth-card input { width: 100%; }
+    .auth-subtitle { color: #9ca3af; font-size: .9rem; }
+    .auth-error { min-height: 1.25rem; color: #fca5a5; font-size: .85rem; }
+    .app-shell-hidden { display: none !important; }
+    .pilot-mode-banner {
+      width: min(1100px, 100%);
+      margin: 0 auto 12px auto;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #f59e0b;
+      background: rgba(120, 53, 15, 0.75);
+      color: #fde68a;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
   </style>
 </head>
 
 <body>
-  <!-- LOGIN OVERLAY -->
-  <div id="loginOverlay">
-    <div id="loginBox">
-      <h1>Enter the Mufasa Realm 🔥</h1>
-      <p>Pilot access is currently email authorized only.</p>
-
-      <div style="margin-bottom:10px;">
-        <input id="pilotEmail" type="email"
-               placeholder="Enter authorized pilot email…"
-               style="width:100%;margin-bottom:8px;" />
-        <button id="pilotLoginBtn" style="width:100%;">Continue</button>
-      </div>
-      <div id="pilotLoginDebug" role="status" aria-live="polite"></div>
-    </div>
+  <div id="pilotModeBanner" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">
+    Pilot no-login bypass active
   </div>
+  <section id="authScreen" class="auth-screen" aria-live="polite">
+    <form id="authLoginForm" class="auth-card">
+      <h2>Sign in</h2>
+      <p class="auth-subtitle">Use your Pocket PT credentials to continue.</p>
+      <label for="authEmailInput">Email</label>
+      <input id="authEmailInput" name="email" type="email" autocomplete="email" required />
+      <label for="authPasswordInput">Password</label>
+      <input id="authPasswordInput" name="password" type="password" autocomplete="current-password" required />
+      <button id="authLoginSubmit" type="button">Sign in</button>
+      <p id="authLoginStatus" class="auth-subtitle" role="status" aria-live="polite"></p>
+      <p id="authLoginError" class="auth-error" role="alert"></p>
+    </form>
+  </section>
 
   <!-- USER INFO BAR -->
-  <div id="userInfo">
+  <div id="userInfo" class="app-shell-hidden">
     <img id="userPic" src="" alt="profile" />
     <span id="userName"></span>
     <button id="signOutBtn">Sign out</button>
   </div>
 
   <!-- MAIN APP -->
-  <div class="app">
+  <div id="appShell" class="app app-shell-hidden">
     <!-- LEFT: Live coach + video -->
     <div class="pane">
       <h1>Pocket PT Virtual Wellness Platform</h1>
@@ -1044,7 +1036,6 @@
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
     const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
-    const NODE_PILOT_LOGIN_URL = "https://mufasa-fitness-node.onrender.com/api/auth/pilot-login";
     const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
@@ -1057,14 +1048,32 @@
     });
     const AIVOICE_URL = NODE_BASE_URL + "/api/speak";
     // ---- DOM hooks ----
-    const overlay = document.getElementById("loginOverlay");
-    const pilotEmailInput = document.getElementById("pilotEmail");
-    const pilotLoginBtn = document.getElementById("pilotLoginBtn");
-    const pilotLoginDebugEl = document.getElementById("pilotLoginDebug");
     const userInfoBar = document.getElementById("userInfo");
+    const authScreenEl = document.getElementById("authScreen");
+    const appShellEl = document.getElementById("appShell");
+    const authLoginFormEl = document.getElementById("authLoginForm");
+    const authEmailInputEl = document.getElementById("authEmailInput");
+    const authPasswordInputEl = document.getElementById("authPasswordInput");
+    const authLoginSubmitEl = document.getElementById("authLoginSubmit");
+    const authLoginStatusEl = document.getElementById("authLoginStatus");
+    const authLoginErrorEl = document.getElementById("authLoginError");
+    const pilotModeBannerEl = document.getElementById("pilotModeBanner");
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
     const signOutBtn = document.getElementById("signOutBtn");
+    const AUTH_TOKEN_STORAGE_KEY = "popa_auth_token";
+    const AUTH_USER_STORAGE_KEY = "popa_auth_user";
+    let DISABLE_LOGIN_FOR_PILOT = false;
+    const PILOT_VERSION_URL = "https://mufasa-fitness-node.onrender.com/__version";
+    const PILOT_BYPASS_USER = Object.freeze({
+      id: "pilot_admin",
+      name: "Rashad Harbour",
+      email: "RDHForeclosureConquer@gmail.com",
+      role: "admin",
+      authProvider: "pilot_bypass"
+    });
+    window.APP_AUTH = window.APP_AUTH || { isAuthenticated: false, token: null, user: null };
+    window.pilotSuperAdminActive = Boolean(window.pilotSuperAdminActive);
     const profileSummaryEl = document.getElementById("profileSummary");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
     const voiceSelectEl = document.getElementById("voiceSelect");
@@ -2705,14 +2714,11 @@
         ? window.__MAAT_AUTH_DEBUG
         : {};
       window.__MAAT_AUTH_DEBUG = {
-        hasGoogleIdToken: Boolean(USER_PROFILE?.googleIdToken),
         authProvider: USER_PROFILE?.authProvider || null,
         signedInEmail: USER_PROFILE?.email || null,
-        googleSub: USER_PROFILE?.googleSub || null,
-        googleSubPresent: Boolean(USER_PROFILE?.googleSub),
         claimPath: current.claimPath || null,
         lastBridgePayloadKeys: current.lastBridgePayloadKeys || [],
-        tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
+        tokenExists: Boolean(getAuthToken()),
         tokenSource: current.tokenSource || "unknown",
         lastBridgeStatus: current.lastBridgeStatus || null,
         lastBridgeErrorCode: current.lastBridgeErrorCode || null,
@@ -2746,11 +2752,6 @@
         return false;
       });
       return retentionFlowBootPromise;
-    }
-
-    function showOverlay(show) {
-      if (show) overlay.classList.remove("hidden");
-      else overlay.classList.add("hidden");
     }
 
     function persistUser() {
@@ -2911,7 +2912,7 @@
     }
 
     function sendToNode(payload) {
-      const token = BACKEND_READ_CLIENT?.getAuthToken?.();
+      const token = getAuthToken();
       return fetch(NODE_COMMAND_URL, {
         method: "POST",
         headers: {
@@ -2927,7 +2928,7 @@
 
     async function postAuthenticatedJSON(url, { method = "POST", body }) {
       if (!BACKEND_READ_CLIENT) throw new Error("backend_client_unavailable");
-      const token = BACKEND_READ_CLIENT.getAuthToken?.();
+      const token = getAuthToken();
       if (!token) {
         const err = new Error("missing_auth_token");
         err.code = "MISSING_AUTH_TOKEN";
@@ -2975,7 +2976,7 @@
       baseUrl: NODE_BASE_URL,
       commandUrl: NODE_COMMAND_URL,
       getUserId: () => USER_ID,
-      getAuthToken: () => BACKEND_READ_CLIENT?.getAuthToken?.(),
+      getAuthToken: () => getAuthToken(),
       repDebounceMs: 500,
       logger: console,
       legacyFallbackRequireExplicitActions: LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS,
@@ -3086,125 +3087,110 @@
       await saveProfileWritePath();
     }
 
-    function buildBridgeClaims(profile) {
-      const hasGoogleToken = Boolean(profile?.googleIdToken);
-      const authProvider = String(profile?.authProvider || "").toLowerCase();
-      const claimPath = hasGoogleToken
-        ? "googleIdToken"
-        : (authProvider === "google" ? "missing_google_token" : (profile?.googleSub ? "googleSub" : (profile?.email ? "googleEmail" : "manualUserId")));
-      console.log("[bridge] claimPath:", claimPath, "tokenPresent:", hasGoogleToken);
-      if (hasGoogleToken) {
-        updateAuthDebug({
-          authProvider,
-          claimPath: "googleIdToken",
-          lastBridgePayloadKeys: ["googleIdToken"],
-          tokenSource: "profile.googleIdToken"
-        });
-        return { googleIdToken: profile.googleIdToken, claimPath: "googleIdToken", authProvider };
-      }
-      if (authProvider === "google") {
-        updateAuthDebug({
-          authProvider,
-          claimPath: "missing_google_token",
-          lastBridgePayloadKeys: [],
-          tokenSource: "missing_after_google_signin"
-        });
-        return { error: "google_token_missing", claimPath: "missing_google_token" };
-      }
-      if (profile?.googleSub) {
-        updateAuthDebug({ authProvider, claimPath: "googleSub", lastBridgePayloadKeys: ["googleSub"] });
-        return { googleSub: profile.googleSub, claimPath: "googleSub", authProvider };
-      }
-      if (profile?.email) {
-        updateAuthDebug({ authProvider, claimPath: "googleEmail", lastBridgePayloadKeys: ["googleEmail"] });
-        return { googleEmail: profile.email, claimPath: "googleEmail", authProvider };
-      }
-      updateAuthDebug({ authProvider, claimPath: "manualUserId", lastBridgePayloadKeys: ["manualUserId"] });
-      return { manualUserId: profile?.name || "user", claimPath: "manualUserId", authProvider };
+    function getAuthToken() {
+      return window.APP_AUTH?.token || null;
     }
 
-    async function ensureBackendSession(profile) {
-      if (!BACKEND_READ_CLIENT) return false;
+    function setAuthError(message = "") {
+      if (authLoginErrorEl) authLoginErrorEl.textContent = message;
+    }
+
+    function setAuthStatus(message = "") {
+      if (authLoginStatusEl) authLoginStatusEl.textContent = message;
+    }
+
+    function setAuthUiLoading(loading) {
+      if (authLoginSubmitEl) authLoginSubmitEl.disabled = Boolean(loading);
+      if (authLoginSubmitEl) authLoginSubmitEl.textContent = loading ? "Signing in..." : "Sign in";
+    }
+
+    function renderAuthShell(authenticated) {
+      pilotModeBannerEl?.classList.toggle("app-shell-hidden", !DISABLE_LOGIN_FOR_PILOT);
+      authScreenEl?.classList.toggle("app-shell-hidden", authenticated);
+      userInfoBar?.classList.toggle("app-shell-hidden", !authenticated);
+      appShellEl?.classList.toggle("app-shell-hidden", !authenticated);
+    }
+
+    function persistAuthState() {
       try {
-        const existingToken = BACKEND_READ_CLIENT.getAuthToken?.();
-        if (existingToken) {
-          try {
-            await BACKEND_READ_CLIENT.fetchProfile();
-            updateAuthDebug({
-              tokenExists: true,
-              tokenSource: "existing_auth_token_profile_200",
-              lastProfileStatus: "200",
-              lastBridgeStatus: "skipped_existing_token_profile_ok",
-              lastBridgeErrorCode: null
-            });
-            backendTruthState.bridge = { mode: "ok", message: "Auth bridge skipped; existing token already valid." };
-            return true;
-          } catch (profileErr) {
-            updateAuthDebug({
-              lastProfileStatus: String(profileErr?.status || "error"),
-              lastBridgeStatus: "retry_required_profile_unauthorized",
-              lastBridgeErrorCode: profileErr?.code || null
-            });
-            if (profileErr?.code !== "UNAUTHORIZED") throw profileErr;
-          }
+        if (window.APP_AUTH?.token) localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, window.APP_AUTH.token);
+        if (window.APP_AUTH?.user) localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(window.APP_AUTH.user));
+      } catch (_) {}
+    }
+
+    function clearAuthState() {
+      window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+      window.pilotSuperAdminActive = false;
+      BACKEND_READ_CLIENT?.clearAuthToken?.();
+      try {
+        localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+        localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+      } catch (_) {}
+    }
+
+    function setAuthStateFromLogin(token, user) {
+      window.APP_AUTH = { isAuthenticated: true, token, user };
+      BACKEND_READ_CLIENT?.setAuthToken?.(token);
+      persistAuthState();
+    }
+
+    function setPilotBypassAuthState() {
+      window.APP_AUTH = {
+        isAuthenticated: true,
+        token: null,
+        user: {
+          id: PILOT_BYPASS_USER.id,
+          name: PILOT_BYPASS_USER.name,
+          email: PILOT_BYPASS_USER.email,
+          role: PILOT_BYPASS_USER.role,
+          authProvider: PILOT_BYPASS_USER.authProvider
         }
-        const claims = buildBridgeClaims(profile);
-        if (claims.error === "google_token_missing") {
-          throw new Error("google_token_missing");
-        }
-        console.info("[auth-bridge] ensure session claims", {
-          claimPath: claims.claimPath,
-          reason: "session_bootstrap_missing_or_expired_token"
-        });
-        await BACKEND_READ_CLIENT.ensureAuthToken(claims, {
-          bridgeReason: "session_bootstrap_missing_or_expired_token",
-          tokenRefreshRequired: true
-        });
-        updateAuthDebug({
-          claimPath: claims.claimPath,
-          lastBridgePayloadKeys: claims.claimPath === "googleIdToken"
-            ? ["googleIdToken"]
-            : (claims.claimPath === "googleSub" ? ["googleSub"] : (claims.claimPath === "googleEmail" ? ["googleEmail"] : ["manualUserId"])),
-          tokenExists: true,
-          tokenSource: claims.claimPath === "googleIdToken" ? "bridge.googleIdToken" : "bridge.fallback_claim",
-          authBridgeStatus: 201,
-          authBridgeFailureReason: null
-        });
-        backendTruthState.bridge = { mode: "ok", message: "Auth bridge healthy." };
-        return true;
-      } catch (e) {
-        console.warn("backend auth bridge unavailable", e);
-        if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
-          setPilotLoginStatus("google_token_missing");
-          backendTruthState.bridge = { mode: "degraded", message: "Session token missing; sign out/in required." };
-          addLog("system", "Session token missing. Sign out and sign back in.");
-          updateAuthDebug({
-            tokenExists: Boolean(BACKEND_READ_CLIENT?.getAuthToken?.()),
-            tokenSource: "missing_after_google_signin",
-            lastBridgeStatus: "skipped_missing_google_token",
-            lastBridgeErrorCode: "GOOGLE_TOKEN_MISSING"
-          });
-          updateSyncStatus();
-          return false;
-        }
-        if (Number(e?.status) === 403) {
-          const safeReason = e?.payload?.error?.details?.reason
-            || e?.payload?.error?.details?.diagnostics?.rejectionReason
-            || e?.payload?.error?.code
-            || "forbidden";
-          setPilotLoginStatus(safeReason);
-          addLog("system", `Backend login bridge rejected: ${safeReason}`);
-          updateAuthDebug({
-            authBridgeStatus: 403,
-            authBridgeFailureReason: safeReason
-          });
-        }
-        setPilotLoginStatus(e?.code || e?.message || "auth_bridge_failed");
-        backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
-        addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
-        updateSyncStatus();
-        return false;
+      };
+      window.pilotSuperAdminActive = true;
+      BACKEND_READ_CLIENT?.clearAuthToken?.();
+      persistAuthState();
+    }
+
+    async function hydrateRuntimeFlags() {
+      let failureReason = "";
+      try {
+        const response = await fetch(PILOT_VERSION_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error("backend version not reachable");
+        const payload = await response.json().catch(() => null);
+        if (!payload || typeof payload !== "object") throw new Error("backend version not reachable");
+        DISABLE_LOGIN_FOR_PILOT = Boolean(payload?.loginDisabledForPilot);
+        if (!DISABLE_LOGIN_FOR_PILOT) failureReason = "flag false";
+      } catch {
+        DISABLE_LOGIN_FOR_PILOT = false;
+        failureReason = "backend version not reachable";
       }
+      window.__pilotMode = {
+        loginDisabledForPilot: DISABLE_LOGIN_FOR_PILOT,
+        versionUrl: PILOT_VERSION_URL,
+        failureReason
+      };
+      return { enabled: DISABLE_LOGIN_FOR_PILOT, failureReason };
+    }
+
+    function activatePilotBypassImmediate() {
+      setPilotBypassAuthState();
+      renderAuthShell(true);
+      window.APP_AUTH.isAuthenticated = true;
+      window.pilotSuperAdminActive = true;
+      const appShellVisible = !appShellEl?.classList.contains("app-shell-hidden");
+      const authScreenHidden = authScreenEl?.classList.contains("app-shell-hidden");
+      if (!appShellVisible) return "app shell missing";
+      if (!authScreenHidden) return "overlay hide failed";
+      return "";
+    }
+
+    async function fetchAuthMe(token) {
+      const res = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
+        headers: { authorization: `Bearer ${token}` }
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.ok || !payload?.user) throw new Error(payload?.error || "session_invalid");
+      return payload.user;
     }
 
     async function hydrateProfileFromBackend() {
@@ -3245,30 +3231,12 @@
       }
     }
 
-    function parseBridgeFailureBody(rawText) {
-      if (!rawText) return null;
-      try {
-        return JSON.parse(rawText);
-      } catch (_) {
-        return { raw: rawText };
-      }
-    }
-
-    function toBridgeFailureReason(status, body) {
-      if (!body) return `http_${status}`;
-      return body?.error?.message
-        || body?.error?.details?.reason
-        || body?.error?.code
-        || body?.message
-        || `http_${status}`;
-    }
-
     async function onLogin(profile) {
-      USER_ID = toSafeUserId(profile.email || profile.name || "user");
+      USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
 
       USER_PROFILE = {
         name: profile.name || profile.email || "Athlete",
-        authProvider: profile.authProvider || "pilot_email",
+        authProvider: profile.authProvider || "password",
         email: profile.email || null,
         picture: profile.picture || null,
         age: profile.age || profile.ageYears || null,
@@ -3306,8 +3274,7 @@
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
-      const backendReady = await ensureBackendSession(profile);
-      if (backendReady) await hydrateProfileFromBackend();
+      await hydrateProfileFromBackend();
       try {
         await sendProfileToNode();
       } catch (profileWriteError) {
@@ -3317,184 +3284,37 @@
       updateSyncStatus();
     }
 
-    async function loadPersistedUser() {
-      try {
-        const id = localStorage.getItem("maatUserId");
-        const profileStr = localStorage.getItem("maatUserProfile");
-
-        if (id && profileStr) {
-          USER_ID = id;
-          USER_PROFILE = JSON.parse(profileStr);
-          if (!USER_PROFILE?.authProvider) USER_PROFILE.authProvider = "pilot_email";
-          updateAuthDebug({
-            authProvider: USER_PROFILE?.authProvider || null,
-            signedInEmail: USER_PROFILE?.email || null,
-            tokenSource: "localStorage.maatUserProfile",
-            tokenPersistsOnRefresh: false
-          });
-
-          const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
-          if (calStr) {
-            const meta = JSON.parse(calStr);
-            calendarMeta = {
-              startDateISO: meta.startDateISO,
-              weeks: meta.weeks,
-              daysPerWeek: meta.daysPerWeek,
-              completedDates: new Set(meta.completed || [])
-            };
-          }
-
-          onLoginUI(USER_PROFILE);
-          queueMicrotask(() => {
-            loadAvatarAssetForCurrentUser("local_cache").catch((error) => {
-              console.warn("[avatar-load] deferred cached avatar load failed", error);
-            });
-          });
-
-          dashboardBtn.disabled = false;
-          dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
-          markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
-
-          showOverlay(false);
-          const backendReady = await ensureBackendSession(USER_PROFILE || {});
-          if (backendReady) await hydrateProfileFromBackend();
-          updateSyncStatus();
-          return true;
-        }
-      } catch (e) {
-        console.warn("loadPersistedUser error", e);
-      }
-      return false;
-    }
-
-    function toSafeUserId(value) {
-      return String(value || "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9._-]+/g, "_")
-        .replace(/^_+|_+$/g, "")
-        .slice(0, 128) || "user";
-    }
-    // Login buttons
-    function setPilotLoginStatus(message) {
-      if (!pilotLoginDebugEl) return;
-      pilotLoginDebugEl.textContent = message || "";
-    }
-
-    function formatPilotLoginFailure(reason) {
-      const normalized = String(reason || "").trim();
-      return normalized ? `failed: ${normalized}` : "failed: unknown_error";
-    }
-
-    async function handlePilotLoginClick() {
-      setPilotLoginStatus("login click received");
-      const email = String(pilotEmailInput?.value || "").trim().toLowerCase();
-      if (!email) {
-        setPilotLoginStatus("Please enter an email.");
+    async function handleLogout() {
+      if (DISABLE_LOGIN_FOR_PILOT) {
+        setPilotBypassAuthState();
+        renderAuthShell(true);
+        setAuthStatus("pilot mode active");
+        setAuthError("");
+        await onLogin({
+          userId: PILOT_BYPASS_USER.id,
+          email: PILOT_BYPASS_USER.email,
+          name: PILOT_BYPASS_USER.name,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        });
         return;
       }
-      trackPilotEvent("login_attempted", { method: "pilot_email" });
-      setPilotLoginStatus("sending request to backend");
-      pilotLoginBtn.disabled = true;
       try {
-        console.log("[PILOT_LOGIN] posting to https://mufasa-fitness-node.onrender.com/api/auth/pilot-login");
-        const res = await fetch(NODE_PILOT_LOGIN_URL, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email })
-        });
-        const rawBody = await res.text().catch(() => "");
-        let payload = null;
-        try {
-          payload = rawBody ? JSON.parse(rawBody) : null;
-        } catch (_) {
-          payload = null;
+        if (getAuthToken()) {
+          await fetch(`${NODE_BASE_URL}/api/auth/logout`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${getAuthToken()}` }
+          });
         }
-        setPilotLoginStatus(`backend responded: ${res.status} ${rawBody || "(empty body)"}`);
-        if (!res.ok || !payload?.ok) {
-          const reason = payload?.error?.message || "Email is not authorized for pilot access.";
-          setPilotLoginStatus(`failed: status=${res.status} body=${rawBody || "(empty body)"} reason=${reason}`);
-          return;
-        }
-        const token = payload?.data?.auth?.token || null;
-        if (!token) {
-          setPilotLoginStatus(formatPilotLoginFailure("token_missing"));
-          return;
-        }
-        setPilotLoginStatus("token received");
-        BACKEND_READ_CLIENT?.setAuthToken?.(token);
-        const storedToken = BACKEND_READ_CLIENT?.getAuthToken?.();
-        if (!storedToken) {
-          setPilotLoginStatus(formatPilotLoginFailure("token_store_failed"));
-          return;
-        }
-        setPilotLoginStatus("token stored");
-        updateAuthDebug({
-          authProvider: "pilot_email",
-          signedInEmail: email,
-          tokenSource: "pilot_login_response.auth.token",
-          tokenExists: true
-        });
-        setPilotLoginStatus("loading profile");
-        try {
-          await BACKEND_READ_CLIENT?.fetchProfile?.();
-          setPilotLoginStatus("profile loaded");
-        } catch (profileError) {
-          const profileReason = profileError?.payload?.error?.message
-            || profileError?.payload?.error?.code
-            || profileError?.code
-            || profileError?.message
-            || "profile_load_failed";
-          setPilotLoginStatus(formatPilotLoginFailure(profileReason));
-          return;
-        }
-        setPilotLoginStatus("entering app");
-        await onLogin({
-          name: email.split("@")[0] || "Athlete",
-          email,
-          authProvider: "pilot_email"
-        });
-        showOverlay(false);
-      } catch (error) {
-        setPilotLoginStatus(formatPilotLoginFailure(String(error?.message || error)));
-      } finally {
-        pilotLoginBtn.disabled = false;
-      }
-    }
-
-    if (pilotLoginBtn) {
-      pilotLoginBtn.addEventListener("click", handlePilotLoginClick);
-    } else {
-      console.error("[PILOT_LOGIN] button #pilotLoginBtn not found");
+      } catch (_) {}
+      clearAuthState();
+      renderAuthShell(false);
+      setAuthError("");
     }
 
     signOutBtn.onclick = () => {
-      const oldId = USER_ID;
-
-      USER_ID = "guest";
-      USER_PROFILE = null;
-      calendarMeta = null;
-
-      userInfoBar.style.display = "none";
-      profileSummaryEl.textContent = "Not signed in yet.";
-
-      dashboardBtn.disabled = true;
-
-      try {
-        localStorage.removeItem("maatUserId");
-        localStorage.removeItem("maatUserProfile");
-        localStorage.removeItem("maatCalendar_" + oldId);
-        BACKEND_READ_CLIENT?.clearAuthToken?.();
-        updateAuthDebug({
-          tokenExists: false,
-          tokenSource: "signed_out",
-          claimPath: null,
-          lastBridgePayloadKeys: []
-        });
-      } catch (_) {}
-
-      showOverlay(true);
-      updateSyncStatus();
+      handleLogout().catch((error) => {
+        console.warn("logout failed", error);
+      });
     };
 
 /* =========================================================
@@ -3608,7 +3428,7 @@ async function speak(text, source = "system") {
       repFeedbackAllowed = false;
     }
 
-    const authToken = BACKEND_READ_CLIENT?.getAuthToken?.() || null;
+    const authToken = getAuthToken();
     const res = await fetch(AIVOICE_URL, {
   method: "POST",
   headers: {
@@ -5390,17 +5210,7 @@ function toggleListening() {
 
         avatarCreationStatusEl.textContent = "Uploading avatar file…";
         setAvatarAssetStatus("Uploading avatar asset to server…");
-        if (BACKEND_READ_CLIENT) {
-          const claims = buildBridgeClaims(USER_PROFILE);
-          if (claims.error === "google_token_missing") {
-            setAvatarAssetStatus("Google session expired. Please sign out and sign back in.", true);
-            throw new Error("google_token_missing");
-          }
-          console.info("[auth-bridge] avatar upload claims", { claimPath: claims.claimPath });
-          await BACKEND_READ_CLIENT.ensureAuthToken(claims);
-        }
-
-        const authToken = BACKEND_READ_CLIENT?.getAuthToken?.() || null;
+        const authToken = getAuthToken();
         if (!authToken) throw new Error("missing_auth_token");
 
         const form = new FormData();
@@ -5761,6 +5571,48 @@ function toggleListening() {
       }
     });
 
+    async function handlePasswordLogin(event) {
+      if (event?.preventDefault) event.preventDefault();
+      setAuthStatus("login click received");
+      setAuthError("");
+      setAuthUiLoading(true);
+      try {
+        const email = String(authEmailInputEl?.value || "").trim();
+        const password = String(authPasswordInputEl?.value || "");
+        setAuthStatus("sending login request");
+        const res = await fetch("https://mufasa-fitness-node.onrender.com/api/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const payload = await res.json().catch(() => null);
+        setAuthStatus(`backend responded: ${res.status}`);
+        if (!res.ok || !payload?.ok || !payload?.token) {
+          throw new Error(payload?.error || "Invalid email or password");
+        }
+        const meUser = await fetchAuthMe(payload.token);
+        setAuthStateFromLogin(payload.token, meUser);
+        setAuthStatus("login success");
+        renderAuthShell(true);
+        await onLogin({
+          userId: meUser.id,
+          email: meUser.email,
+          name: meUser.name,
+          authProvider: meUser.authProvider || "password"
+        });
+        setAuthStatus("entering app shell");
+      } catch (error) {
+        const reason = String(error?.message || "Login failed");
+        setAuthError(reason);
+        setAuthStatus(`failed: ${reason}`);
+      } finally {
+        setAuthUiLoading(false);
+      }
+    }
+
+    authLoginFormEl?.addEventListener("submit", handlePasswordLogin);
+    authLoginSubmitEl?.addEventListener("click", handlePasswordLogin);
+
     // ---- Boot ----
     window.addEventListener("load", async () => {
       avatarStageMode = resolveInitialStageMode();
@@ -5777,14 +5629,47 @@ function toggleListening() {
       });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
-
-      // Auto-login (safe now: dashboardBtn is already defined)
-      const didAuto = await loadPersistedUser();
-      if (didAuto && USER_PROFILE) {
-        addLog("system", "Loaded your profile from memory.");
-        buildCalendarFromMeta();
+      const pilotFlag = await hydrateRuntimeFlags();
+      if (pilotFlag.enabled) {
+        const activationFailure = activatePilotBypassImmediate();
+        if (activationFailure) {
+          setAuthError(activationFailure);
+          setAuthStatus(`failed: ${activationFailure}`);
+          clearAuthState();
+          renderAuthShell(false);
+          return;
+        }
+        setAuthStatus("pilot mode active");
+        setAuthError("");
+        await onLogin({
+          userId: PILOT_BYPASS_USER.id,
+          email: PILOT_BYPASS_USER.email,
+          name: PILOT_BYPASS_USER.name,
+          authProvider: PILOT_BYPASS_USER.authProvider
+        });
+      } else {
+        setAuthError(pilotFlag.failureReason || "flag false");
+        renderAuthShell(false);
       }
-      updateSyncStatus();
+      try {
+        if (!DISABLE_LOGIN_FOR_PILOT) {
+          const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || null;
+          if (token) {
+            const user = await fetchAuthMe(token);
+            setAuthStateFromLogin(token, user);
+            renderAuthShell(true);
+            await onLogin({
+              userId: user.id,
+              email: user.email,
+              name: user.name,
+              authProvider: "password"
+            });
+          }
+        }
+      } catch (_) {
+        clearAuthState();
+        renderAuthShell(DISABLE_LOGIN_FOR_PILOT);
+      }
 
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");

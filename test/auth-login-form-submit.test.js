@@ -33,7 +33,11 @@ test("frontend posts login payload to backend /api/auth/login", () => {
   assert.match(html, /body:\s*JSON\.stringify\(\{\s*email,\s*password\s*\}\)/, "frontend must POST email/password JSON body");
 });
 
-test("index.html no longer owns password auth form (public/index.html is source of truth)", () => {
-  const html = read("index.html");
-  assert.doesNotMatch(html, /id="authLoginForm"/, "root index should not contain duplicate password auth form");
+test("root index and public index stay in sync for auth shell + pilot bypass", () => {
+  const rootHtml = read("index.html");
+  const publicHtml = read("public/index.html");
+  assert.equal(rootHtml, publicHtml, "root index.html must mirror public/index.html to prevent auth/pilot drift");
+  assert.match(rootHtml, /id="authLoginForm"/, "synced root shell must include auth form");
+  assert.match(rootHtml, /Pilot no-login bypass active/, "synced root shell must include pilot bypass banner text");
+  assert.match(rootHtml, /const PILOT_VERSION_URL = "https:\/\/mufasa-fitness-node\.onrender\.com\/__version"/, "synced root shell must use backend version endpoint");
 });

@@ -811,7 +811,7 @@
 
 <body>
   <div id="pilotModeBanner" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">
-    Pilot mode active — login disabled
+    Pilot no-login bypass active
   </div>
   <section id="authScreen" class="auth-screen" aria-live="polite">
     <form id="authLoginForm" class="auth-card">
@@ -1064,6 +1064,7 @@
     const AUTH_TOKEN_STORAGE_KEY = "popa_auth_token";
     const AUTH_USER_STORAGE_KEY = "popa_auth_user";
     let DISABLE_LOGIN_FOR_PILOT = false;
+    const PILOT_VERSION_URL = "https://mufasa-fitness-node.onrender.com/__version";
     const PILOT_BYPASS_USER = Object.freeze({
       id: "pilot_admin",
       name: "Rashad Harbour",
@@ -1072,6 +1073,7 @@
       authProvider: "pilot_bypass"
     });
     window.APP_AUTH = window.APP_AUTH || { isAuthenticated: false, token: null, user: null };
+    window.pilotSuperAdminActive = Boolean(window.pilotSuperAdminActive);
     const profileSummaryEl = document.getElementById("profileSummary");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
     const voiceSelectEl = document.getElementById("voiceSelect");
@@ -3118,6 +3120,7 @@
 
     function clearAuthState() {
       window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+      window.pilotSuperAdminActive = false;
       BACKEND_READ_CLIENT?.clearAuthToken?.();
       try {
         localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
@@ -3143,22 +3146,42 @@
           authProvider: PILOT_BYPASS_USER.authProvider
         }
       };
+      window.pilotSuperAdminActive = true;
       BACKEND_READ_CLIENT?.clearAuthToken?.();
       persistAuthState();
     }
 
     async function hydrateRuntimeFlags() {
+      let failureReason = "";
       try {
-        const response = await fetch(`${NODE_BASE_URL}/__version`, { cache: "no-store" });
+        const response = await fetch(PILOT_VERSION_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error("backend version not reachable");
         const payload = await response.json().catch(() => null);
+        if (!payload || typeof payload !== "object") throw new Error("backend version not reachable");
         DISABLE_LOGIN_FOR_PILOT = Boolean(payload?.loginDisabledForPilot);
+        if (!DISABLE_LOGIN_FOR_PILOT) failureReason = "flag false";
       } catch {
         DISABLE_LOGIN_FOR_PILOT = false;
+        failureReason = "backend version not reachable";
       }
       window.__pilotMode = {
-        loginDisabledForPilot: DISABLE_LOGIN_FOR_PILOT
+        loginDisabledForPilot: DISABLE_LOGIN_FOR_PILOT,
+        versionUrl: PILOT_VERSION_URL,
+        failureReason
       };
-      return DISABLE_LOGIN_FOR_PILOT;
+      return { enabled: DISABLE_LOGIN_FOR_PILOT, failureReason };
+    }
+
+    function activatePilotBypassImmediate() {
+      setPilotBypassAuthState();
+      renderAuthShell(true);
+      window.APP_AUTH.isAuthenticated = true;
+      window.pilotSuperAdminActive = true;
+      const appShellVisible = !appShellEl?.classList.contains("app-shell-hidden");
+      const authScreenHidden = authScreenEl?.classList.contains("app-shell-hidden");
+      if (!appShellVisible) return "app shell missing";
+      if (!authScreenHidden) return "overlay hide failed";
+      return "";
     }
 
     async function fetchAuthMe(token) {
@@ -5606,11 +5629,18 @@ function toggleListening() {
       });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
-      await hydrateRuntimeFlags();
-      if (DISABLE_LOGIN_FOR_PILOT) {
-        setPilotBypassAuthState();
-        renderAuthShell(true);
+      const pilotFlag = await hydrateRuntimeFlags();
+      if (pilotFlag.enabled) {
+        const activationFailure = activatePilotBypassImmediate();
+        if (activationFailure) {
+          setAuthError(activationFailure);
+          setAuthStatus(`failed: ${activationFailure}`);
+          clearAuthState();
+          renderAuthShell(false);
+          return;
+        }
         setAuthStatus("pilot mode active");
+        setAuthError("");
         await onLogin({
           userId: PILOT_BYPASS_USER.id,
           email: PILOT_BYPASS_USER.email,
@@ -5618,6 +5648,7 @@ function toggleListening() {
           authProvider: PILOT_BYPASS_USER.authProvider
         });
       } else {
+        setAuthError(pilotFlag.failureReason || "flag false");
         renderAuthShell(false);
       }
       try {
