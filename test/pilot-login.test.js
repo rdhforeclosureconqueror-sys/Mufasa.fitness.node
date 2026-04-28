@@ -147,3 +147,24 @@ test("protected routes still require token without pilot login", async (t) => {
   const profile = await get(baseUrl, "/api/me/profile");
   assert.equal(profile.res.status, 401);
 });
+
+test("pilot session route creates token for fixed pilot identity", async (t) => {
+  const rootDir = makeTmpRoot();
+  const app = createApp({ rootDir });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const session = await post(baseUrl, "/api/auth/pilot-session", {});
+  assert.equal(session.res.status, 201);
+  assert.ok(session.json?.data?.auth?.token);
+  assert.equal(session.json?.data?.identity?.userId, "pilot_user");
+  assert.equal(session.json?.data?.identity?.email, "rdhforeclosureconquer@gmail.com");
+  assert.equal(session.json?.data?.identity?.name, "Rashad Harbour");
+
+  const me = await get(baseUrl, "/api/me", { authorization: `Bearer ${session.json.data.auth.token}` });
+  assert.equal(me.res.status, 200);
+  assert.equal(me.json?.data?.userId, "pilot_user");
+  assert.equal(me.json?.data?.provider, "pilot_email");
+});

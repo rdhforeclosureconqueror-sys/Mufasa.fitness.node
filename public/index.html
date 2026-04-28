@@ -647,52 +647,21 @@
       font-size: 0.8rem;
     }
 
-    /* ---- LOGIN OVERLAY ---- */
-    #loginOverlay {
+    #pilotModeBanner {
       position: fixed;
-      inset: 0;
-      backdrop-filter: blur(8px) brightness(0.4);
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      flex-direction: column;
-      transition: opacity 0.4s ease;
-    }
-    #loginOverlay.hidden { opacity: 0; pointer-events: none; }
-
-    #loginBox {
-      background: radial-gradient(circle at top, #020617, #000000);
-      border: 2px solid #facc15;
-      border-radius: 20px;
-      padding: 32px 40px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2100;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #facc15;
+      background: rgba(250, 204, 21, 0.2);
+      color: #fef08a;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
       text-align: center;
-      box-shadow: 0 0 40px rgba(250,204,21,0.4);
-      color: #facc15;
-      max-width: 360px;
-    }
-    #loginBox h1 {
-      color: #facc15;
-      font-size: 1.4rem;
-      margin-bottom: 10px;
-    }
-    #loginBox p {
-      font-size: 0.9rem;
-      color: #fde68a;
-      margin-bottom: 16px;
-    }
-    #pilotLoginDebug {
-      margin-top: 10px;
-      text-align: left;
-      font-size: 0.75rem;
-      line-height: 1.35;
-      color: #fde68a;
-      border: 1px solid rgba(250, 204, 21, 0.5);
-      border-radius: 10px;
-      padding: 8px 10px;
-      background: rgba(2, 6, 23, 0.65);
-      white-space: pre-line;
     }
 
     #userInfo {
@@ -819,21 +788,7 @@
 </head>
 
 <body>
-  <!-- LOGIN OVERLAY -->
-  <div id="loginOverlay">
-    <div id="loginBox">
-      <h1>Enter the Mufasa Realm 🔥</h1>
-      <p>Pilot access is currently email authorized only.</p>
-
-      <div style="margin-bottom:10px;">
-        <input id="pilotEmail" type="email"
-               placeholder="Enter authorized pilot email…"
-               style="width:100%;margin-bottom:8px;" />
-        <button id="pilotLoginBtn" style="width:100%;">Continue</button>
-      </div>
-      <div id="pilotLoginDebug" role="status" aria-live="polite"></div>
-    </div>
-  </div>
+  <div id="pilotModeBanner" role="status" aria-live="polite">Pilot mode active — login disabled</div>
 
   <!-- USER INFO BAR -->
   <div id="userInfo">
@@ -1044,7 +999,7 @@
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
     const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
     const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
-    const NODE_PILOT_LOGIN_URL = "https://mufasa-fitness-node.onrender.com/api/auth/pilot-login";
+    const NODE_PILOT_SESSION_URL = "https://mufasa-fitness-node.onrender.com/api/auth/pilot-session";
     const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
@@ -1057,10 +1012,6 @@
     });
     const AIVOICE_URL = NODE_BASE_URL + "/api/speak";
     // ---- DOM hooks ----
-    const overlay = document.getElementById("loginOverlay");
-    const pilotEmailInput = document.getElementById("pilotEmail");
-    const pilotLoginBtn = document.getElementById("pilotLoginBtn");
-    const pilotLoginDebugEl = document.getElementById("pilotLoginDebug");
     const userInfoBar = document.getElementById("userInfo");
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
@@ -2748,11 +2699,6 @@
       return retentionFlowBootPromise;
     }
 
-    function showOverlay(show) {
-      if (show) overlay.classList.remove("hidden");
-      else overlay.classList.add("hidden");
-    }
-
     function persistUser() {
       try {
         localStorage.setItem("maatUserId", USER_ID);
@@ -3126,6 +3072,22 @@
     async function ensureBackendSession(profile) {
       if (!BACKEND_READ_CLIENT) return false;
       try {
+        if (String(profile?.authProvider || "").toLowerCase() === "pilot_email") {
+          const token = BACKEND_READ_CLIENT.getAuthToken?.();
+          if (!token) {
+            await createPilotSessionToken();
+          }
+          updateAuthDebug({
+            tokenExists: true,
+            tokenSource: "pilot_session_route",
+            lastBridgeStatus: "pilot_session_created",
+            lastBridgeErrorCode: null,
+            authBridgeStatus: 201,
+            authBridgeFailureReason: null
+          });
+          backendTruthState.bridge = { mode: "ok", message: "Pilot session route issued token." };
+          return true;
+        }
         const existingToken = BACKEND_READ_CLIENT.getAuthToken?.();
         if (existingToken) {
           try {
@@ -3175,7 +3137,6 @@
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
         if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
-          setPilotLoginStatus("google_token_missing");
           backendTruthState.bridge = { mode: "degraded", message: "Session token missing; sign out/in required." };
           addLog("system", "Session token missing. Sign out and sign back in.");
           updateAuthDebug({
@@ -3192,14 +3153,12 @@
             || e?.payload?.error?.details?.diagnostics?.rejectionReason
             || e?.payload?.error?.code
             || "forbidden";
-          setPilotLoginStatus(safeReason);
           addLog("system", `Backend login bridge rejected: ${safeReason}`);
           updateAuthDebug({
             authBridgeStatus: 403,
             authBridgeFailureReason: safeReason
           });
         }
-        setPilotLoginStatus(e?.code || e?.message || "auth_bridge_failed");
         backendTruthState.bridge = { mode: "degraded", message: "backend sign-in unavailable (local-only session)." };
         addLog("system", "Backend sign-in unavailable. Local-only mode is active for session/profile truth.");
         updateSyncStatus();
@@ -3264,7 +3223,7 @@
     }
 
     async function onLogin(profile) {
-      USER_ID = toSafeUserId(profile.email || profile.name || "user");
+      USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
 
       USER_PROFILE = {
         name: profile.name || profile.email || "Athlete",
@@ -3317,155 +3276,35 @@
       updateSyncStatus();
     }
 
-    async function loadPersistedUser() {
-      try {
-        const id = localStorage.getItem("maatUserId");
-        const profileStr = localStorage.getItem("maatUserProfile");
-
-        if (id && profileStr) {
-          USER_ID = id;
-          USER_PROFILE = JSON.parse(profileStr);
-          if (!USER_PROFILE?.authProvider) USER_PROFILE.authProvider = "pilot_email";
-          updateAuthDebug({
-            authProvider: USER_PROFILE?.authProvider || null,
-            signedInEmail: USER_PROFILE?.email || null,
-            tokenSource: "localStorage.maatUserProfile",
-            tokenPersistsOnRefresh: false
-          });
-
-          const calStr = localStorage.getItem("maatCalendar_" + USER_ID);
-          if (calStr) {
-            const meta = JSON.parse(calStr);
-            calendarMeta = {
-              startDateISO: meta.startDateISO,
-              weeks: meta.weeks,
-              daysPerWeek: meta.daysPerWeek,
-              completedDates: new Set(meta.completed || [])
-            };
-          }
-
-          onLoginUI(USER_PROFILE);
-          queueMicrotask(() => {
-            loadAvatarAssetForCurrentUser("local_cache").catch((error) => {
-              console.warn("[avatar-load] deferred cached avatar load failed", error);
-            });
-          });
-
-          dashboardBtn.disabled = false;
-          dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
-          markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
-
-          showOverlay(false);
-          const backendReady = await ensureBackendSession(USER_PROFILE || {});
-          if (backendReady) await hydrateProfileFromBackend();
-          updateSyncStatus();
-          return true;
-        }
-      } catch (e) {
-        console.warn("loadPersistedUser error", e);
+    async function createPilotSessionToken() {
+      const res = await fetch(NODE_PILOT_SESSION_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.ok) {
+        throw new Error(payload?.error?.message || `pilot_session_failed_${res.status}`);
       }
-      return false;
+      const token = payload?.data?.auth?.token || null;
+      if (!token) throw new Error("pilot_session_missing_token");
+      BACKEND_READ_CLIENT?.setAuthToken?.(token);
+      return token;
     }
 
-    function toSafeUserId(value) {
-      return String(value || "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9._-]+/g, "_")
-        .replace(/^_+|_+$/g, "")
-        .slice(0, 128) || "user";
-    }
-    // Login buttons
-    function setPilotLoginStatus(message) {
-      if (!pilotLoginDebugEl) return;
-      pilotLoginDebugEl.textContent = message || "";
-    }
-
-    function formatPilotLoginFailure(reason) {
-      const normalized = String(reason || "").trim();
-      return normalized ? `failed: ${normalized}` : "failed: unknown_error";
-    }
-
-    async function handlePilotLoginClick() {
-      setPilotLoginStatus("login click received");
-      const email = String(pilotEmailInput?.value || "").trim().toLowerCase();
-      if (!email) {
-        setPilotLoginStatus("Please enter an email.");
-        return;
-      }
-      trackPilotEvent("login_attempted", { method: "pilot_email" });
-      setPilotLoginStatus("sending request to backend");
-      pilotLoginBtn.disabled = true;
-      try {
-        console.log("[PILOT_LOGIN] posting to https://mufasa-fitness-node.onrender.com/api/auth/pilot-login");
-        const res = await fetch(NODE_PILOT_LOGIN_URL, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email })
-        });
-        const rawBody = await res.text().catch(() => "");
-        let payload = null;
-        try {
-          payload = rawBody ? JSON.parse(rawBody) : null;
-        } catch (_) {
-          payload = null;
-        }
-        setPilotLoginStatus(`backend responded: ${res.status} ${rawBody || "(empty body)"}`);
-        if (!res.ok || !payload?.ok) {
-          const reason = payload?.error?.message || "Email is not authorized for pilot access.";
-          setPilotLoginStatus(`failed: status=${res.status} body=${rawBody || "(empty body)"} reason=${reason}`);
-          return;
-        }
-        const token = payload?.data?.auth?.token || null;
-        if (!token) {
-          setPilotLoginStatus(formatPilotLoginFailure("token_missing"));
-          return;
-        }
-        setPilotLoginStatus("token received");
-        BACKEND_READ_CLIENT?.setAuthToken?.(token);
-        const storedToken = BACKEND_READ_CLIENT?.getAuthToken?.();
-        if (!storedToken) {
-          setPilotLoginStatus(formatPilotLoginFailure("token_store_failed"));
-          return;
-        }
-        setPilotLoginStatus("token stored");
-        updateAuthDebug({
-          authProvider: "pilot_email",
-          signedInEmail: email,
-          tokenSource: "pilot_login_response.auth.token",
-          tokenExists: true
-        });
-        setPilotLoginStatus("loading profile");
-        try {
-          await BACKEND_READ_CLIENT?.fetchProfile?.();
-          setPilotLoginStatus("profile loaded");
-        } catch (profileError) {
-          const profileReason = profileError?.payload?.error?.message
-            || profileError?.payload?.error?.code
-            || profileError?.code
-            || profileError?.message
-            || "profile_load_failed";
-          setPilotLoginStatus(formatPilotLoginFailure(profileReason));
-          return;
-        }
-        setPilotLoginStatus("entering app");
-        await onLogin({
-          name: email.split("@")[0] || "Athlete",
-          email,
-          authProvider: "pilot_email"
-        });
-        showOverlay(false);
-      } catch (error) {
-        setPilotLoginStatus(formatPilotLoginFailure(String(error?.message || error)));
-      } finally {
-        pilotLoginBtn.disabled = false;
-      }
-    }
-
-    if (pilotLoginBtn) {
-      pilotLoginBtn.addEventListener("click", handlePilotLoginClick);
-    } else {
-      console.error("[PILOT_LOGIN] button #pilotLoginBtn not found");
+    async function enterPilotMode() {
+      const pilotProfile = {
+        userId: "pilot_user",
+        email: "RDHForeclosureConquer@gmail.com",
+        name: "Rashad Harbour",
+        authProvider: "pilot_email"
+      };
+      updateAuthDebug({
+        authProvider: "pilot_email",
+        signedInEmail: pilotProfile.email,
+        tokenSource: "pilot_session_route"
+      });
+      await onLogin(pilotProfile);
     }
 
     signOutBtn.onclick = () => {
@@ -3493,8 +3332,10 @@
         });
       } catch (_) {}
 
-      showOverlay(true);
       updateSyncStatus();
+      enterPilotMode().catch((error) => {
+        console.warn("pilot mode re-entry failed after sign-out reset", error);
+      });
     };
 
 /* =========================================================
@@ -5778,12 +5619,9 @@ function toggleListening() {
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
 
-      // Auto-login (safe now: dashboardBtn is already defined)
-      const didAuto = await loadPersistedUser();
-      if (didAuto && USER_PROFILE) {
-        addLog("system", "Loaded your profile from memory.");
-        buildCalendarFromMeta();
-      }
+      await enterPilotMode();
+      addLog("system", "Pilot mode session started automatically.");
+      buildCalendarFromMeta();
       updateSyncStatus();
 
       console.log("tf loaded:", typeof tf !== "undefined");

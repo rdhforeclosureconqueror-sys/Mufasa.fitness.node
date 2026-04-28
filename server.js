@@ -1044,6 +1044,29 @@ function createApp(options = {}) {
     }, 201);
   }));
 
+  app.post("/api/auth/pilot-session", asyncHandler(async (req, res) => {
+    const email = "rdhforeclosureconquer@gmail.com";
+    const token = authTokenLib.issueUserToken({
+      userId: "pilot_user",
+      email,
+      provider: "pilot_email",
+      providerSubject: email,
+      providerVerified: false,
+      identityClass: "manual_unverified"
+    });
+    return ok(res, req.requestId, {
+      auth: token,
+      identity: {
+        userId: "pilot_user",
+        email,
+        name: "Rashad Harbour",
+        provider: "pilot_email",
+        providerVerified: false,
+        identityClass: "manual_unverified"
+      }
+    }, 201);
+  }));
+
   // ---- Auth bridge (pilot minimal auth foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const rawTrustMode = String(req.body?.trustMode || "").trim().toLowerCase();
