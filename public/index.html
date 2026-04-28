@@ -9,9 +9,7 @@
   <meta http-equiv="Expires" content="0" />
   <script>
     window.APP_BUILD_VERSION = "2026-04-27T00:00:00Z-client-workout-hud";
-    window.__LOGIN_TRACE_BUILD_ACTIVE = true;
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
-    console.log("[LOGIN_TRACE_BUILD_ACTIVE]", window.__LOGIN_TRACE_BUILD_ACTIVE);
     window.__THREE_BRIDGE_FIX_ACTIVE = true;
     window.__AVATAR_THREE = window.__AVATAR_THREE || {
       THREE: null,
@@ -721,18 +719,6 @@
       background: rgba(2, 6, 23, 0.65);
       white-space: pre-line;
     }
-    #loginTraceMarker {
-      margin: 8px 0 4px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      color: #86efac;
-    }
-    #loginTraceVersion {
-      margin: 0 0 10px;
-      font-size: 0.74rem;
-      color: #cbd5e1;
-    }
 
     #userInfo {
       position: fixed;
@@ -863,8 +849,6 @@
     <div id="loginBox">
       <h1>Enter the Mufasa Realm 🔥</h1>
       <p>Sign in to unlock your Pocket PT 2.0 dashboard.</p>
-      <div id="loginTraceMarker">LOGIN TRACE BUILD ACTIVE</div>
-      <div id="loginTraceVersion">Build: pending…</div>
 
       <div style="margin-bottom:10px;">
         <input id="manualName" type="text"
@@ -876,7 +860,7 @@
       <div style="font-size:0.75rem;color:#9ca3af;margin:6px 0;">— or —</div>
       <button id="googleBtn">Continue with Google</button>
       <div id="googleSignInMount" aria-live="polite"></div>
-      <div id="googleLoginDebug" role="status" aria-live="polite"></div>
+      <div id="googleLoginDebug" role="status" aria-live="polite">Google sign-in loading…</div>
     </div>
   </div>
 
@@ -1105,7 +1089,6 @@
     const googleBtn = document.getElementById("googleBtn");
     const googleSignInMountEl = document.getElementById("googleSignInMount");
     const googleLoginDebugEl = document.getElementById("googleLoginDebug");
-    const loginTraceVersionEl = document.getElementById("loginTraceVersion");
     const manualNameInput = document.getElementById("manualName");
     const manualLoginBtn = document.getElementById("manualLoginBtn");
     const userInfoBar = document.getElementById("userInfo");
@@ -1140,90 +1123,6 @@
     const canvasContextTypes = new WeakMap();
     const CANVAS_ROUTE_LABELS = new WeakMap();
     if (canvasEl) CANVAS_ROUTE_LABELS.set(canvasEl, "skeleton");
-
-    const loginTraceDefaults = Object.freeze({
-      buildVersion: APP_BUILD_VERSION,
-      shellLoaded: true,
-      gisScriptTagPresent: false,
-      gisScriptLoaded: false,
-      gisScriptStatus: "checking",
-      googleObjectPresent: false,
-      googleAccountsPresent: false,
-      googleIdPresent: false,
-      googleInitialized: false,
-      googleInitStatus: "not_started",
-      googleInitRetryCount: 0,
-      buttonFound: false,
-      buttonClickReceived: false,
-      promptAttempted: false,
-      credentialReceived: false,
-      bridgePostAttempted: false,
-      bridgeStatus: "idle",
-      bridgeResponse: null,
-      lastAuthError: null,
-      updatedAt: null
-    });
-
-    window.__loginTrace = Object.assign({}, loginTraceDefaults, window.__loginTrace || {});
-
-    function updateLoginTrace(partial = {}) {
-      window.__loginTrace = {
-        ...window.__loginTrace,
-        ...partial,
-        updatedAt: new Date().toISOString()
-      };
-      return window.__loginTrace;
-    }
-
-    function renderLoginTracePanel() {
-      if (!googleLoginDebugEl) return;
-      const trace = window.__loginTrace || {};
-      googleLoginDebugEl.textContent = [
-        `buildVersion: ${trace.buildVersion || APP_BUILD_VERSION}`,
-        `shellLoaded: ${Boolean(trace.shellLoaded)}`,
-        `gisScriptLoaded: ${Boolean(trace.gisScriptLoaded)}`,
-        `gisScriptStatus: ${trace.gisScriptStatus || (trace.gisScriptLoaded ? "loaded" : "missing_or_blocked")}`,
-        `googleObjectPresent: ${Boolean(trace.googleObjectPresent)}`,
-        `googleAccountsPresent: ${Boolean(trace.googleAccountsPresent)}`,
-        `googleIdPresent: ${Boolean(trace.googleIdPresent)}`,
-        `googleInitialized: ${Boolean(trace.googleInitialized)}`,
-        `googleInitStatus: ${trace.googleInitStatus || "not_started"}`,
-        `googleInitRetryCount: ${Number.isFinite(trace.googleInitRetryCount) ? trace.googleInitRetryCount : 0}`,
-        `buttonFound: ${Boolean(trace.buttonFound)}`,
-        `buttonClickReceived: ${Boolean(trace.buttonClickReceived)}`,
-        `promptAttempted: ${Boolean(trace.promptAttempted)}`,
-        `credentialReceived: ${Boolean(trace.credentialReceived)}`,
-        `bridgePostAttempted: ${Boolean(trace.bridgePostAttempted)}`,
-        `bridgeStatus: ${trace.bridgeStatus || "idle"}`,
-        `bridgeResponse: ${trace.bridgeResponse ? JSON.stringify(trace.bridgeResponse) : "null"}`,
-        `lastAuthError: ${trace.lastAuthError || "none"}`,
-        `updatedAt: ${trace.updatedAt || "not_set"}`
-      ].join("\n");
-    }
-
-    function setLoginTraceError(errorLike) {
-      updateLoginTrace({ lastAuthError: String(errorLike?.message || errorLike || "unknown_error") });
-      renderLoginTracePanel();
-    }
-
-    window.addEventListener("error", (event) => {
-      const src = String(event?.filename || "");
-      if (!/(retention-flow|fitness|diagnostics-client|landing-diagnostics)/.test(src)) return;
-      setLoginTraceError(`startup_script_error:${src.split("/").pop()}:${event?.message || "unknown"}`);
-    });
-    window.addEventListener("unhandledrejection", (event) => {
-      const reasonText = String(event?.reason?.message || event?.reason || "");
-      if (!/(retention-flow|fitness|diagnostics-client|landing-diagnostics|avatar|lazy)/i.test(reasonText)) return;
-      setLoginTraceError(`startup_promise_rejection:${reasonText}`);
-    });
-
-    updateLoginTrace({
-      buildVersion: APP_BUILD_VERSION,
-      buttonFound: Boolean(googleBtn),
-      shellLoaded: true
-    });
-    renderLoginTracePanel();
-    if (loginTraceVersionEl) loginTraceVersionEl.textContent = `Build: ${APP_BUILD_VERSION} • LOGIN TRACE BUILD ACTIVE`;
     if (avatar3dCanvasEl) CANVAS_ROUTE_LABELS.set(avatar3dCanvasEl, "avatar3d");
 
     function getCanvasContextType(canvas) {
@@ -3294,13 +3193,6 @@
           bridgeReason: "session_bootstrap_missing_or_expired_token",
           tokenRefreshRequired: true
         });
-        updateLoginTrace({
-          bridgePostAttempted: true,
-          bridgeStatus: "success",
-          bridgeResponse: { claimPath: claims.claimPath, status: 201 },
-          lastError: null
-        });
-        renderGoogleLoginDebug();
         updateAuthDebug({
           claimPath: claims.claimPath,
           lastBridgePayloadKeys: claims.claimPath === "googleIdToken"
@@ -3315,13 +3207,6 @@
         return true;
       } catch (e) {
         console.warn("backend auth bridge unavailable", e);
-        updateLoginTrace({
-          bridgePostAttempted: true,
-          bridgeStatus: `error_${Number(e?.status) || "unknown"}`,
-          bridgeResponse: e?.payload?.error?.details || e?.payload?.error || null,
-          lastError: String(e?.message || e?.code || "bridge_failed")
-        });
-        renderGoogleLoginDebug();
         if (e?.message === "google_token_missing" || e?.code === "GOOGLE_TOKEN_MISSING") {
           backendTruthState.bridge = { mode: "degraded", message: "Google token missing; sign out/in required." };
           addLog("system", "Google session token missing. Sign out and sign back in.");
@@ -3391,12 +3276,6 @@
     }
 
     async function onLogin(profile) {
-      updateLoginTrace({
-        credentialReceived: Boolean(profile?.googleIdToken),
-        bridgePostAttempted: Boolean(BACKEND_READ_CLIENT),
-        bridgeStatus: "pending"
-      });
-      renderGoogleLoginDebug();
       USER_ID = toSafeUserId(profile.email || profile.name || "user");
 
       USER_PROFILE = {
@@ -3540,48 +3419,33 @@
       showOverlay(false);
     };
 
-    function renderGoogleLoginDebug() {
-      updateLoginTrace({
-        buildVersion: APP_BUILD_VERSION,
-        googleObjectPresent: Boolean(window.google),
-        googleAccountsPresent: Boolean(window.google?.accounts),
-        googleIdPresent: Boolean(window.google?.accounts?.id)
-      });
-      renderLoginTracePanel();
+    function setGoogleSignInStatus(mode) {
+      if (!googleLoginDebugEl) return;
+      if (mode === "unavailable") {
+        googleLoginDebugEl.textContent = "Google sign-in unavailable. Refresh or try again.";
+        return;
+      }
+      if (mode === "loading") {
+        googleLoginDebugEl.textContent = "Google sign-in loading…";
+        return;
+      }
+      googleLoginDebugEl.textContent = "";
     }
-    function setGoogleAuthError(errorLike) {
-      setLoginTraceError(errorLike);
+    function setGoogleAuthError() {
+      setGoogleSignInStatus("unavailable");
     }
     const gisScriptEl = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-    updateLoginTrace({
-      gisScriptTagPresent: Boolean(gisScriptEl),
-      gisScriptStatus: gisScriptEl ? "tag_present_waiting_load" : "script_tag_missing",
-      googleInitStatus: "waiting_for_gis_script"
-    });
     if (gisScriptEl) {
       const onGisReady = () => {
-        updateLoginTrace({
-          gisScriptLoaded: true,
-          gisScriptStatus: "loaded",
-          lastAuthError: null,
-          googleObjectPresent: Boolean(window.google),
-          googleAccountsPresent: Boolean(window.google?.accounts),
-          googleIdPresent: Boolean(window.google?.accounts?.id)
-        });
-        renderGoogleLoginDebug();
+        setGoogleSignInStatus("loading");
       };
       if (window.google?.accounts?.id) onGisReady();
       else {
         gisScriptEl.addEventListener("load", onGisReady, { once: true });
-        gisScriptEl.addEventListener("error", () => {
-          updateLoginTrace({ gisScriptStatus: "load_error_or_blocked" });
-          setGoogleAuthError("gsi_script_load_failed");
-        }, { once: true });
+        gisScriptEl.addEventListener("error", () => setGoogleAuthError("gsi_script_load_failed"), { once: true });
       }
-    } else {
-      setGoogleAuthError("gsi_script_tag_missing");
     }
-    renderGoogleLoginDebug();
+    setGoogleSignInStatus("loading");
 
     let googleIdentityInitDone = false;
     function hasGoogleIdentityApi() {
@@ -3589,23 +3453,13 @@
     }
 
     function initializeGoogleIdentity({ source = "unknown" } = {}) {
-      if (!hasGoogleIdentityApi()) {
-        updateLoginTrace({ googleInitStatus: "waiting_for_google_identity_api" });
-        renderGoogleLoginDebug();
-        return false;
-      }
+      if (!hasGoogleIdentityApi()) return false;
       try {
         window.google.accounts.id.initialize({
           client_id: "1053883905933-n4a6ll6m7l3lqd60mq3g2rnb6iktdgp2.apps.googleusercontent.com",
           callback: (response) => {
             const payload = parseJwt(response.credential || "");
             const googleIdToken = response.credential || null;
-            updateLoginTrace({
-              credentialReceived: Boolean(googleIdToken),
-              bridgeStatus: "credential_received",
-              bridgeResponse: payload?.email ? { email: payload.email, sub: payload.sub || null } : { sub: payload.sub || null }
-            });
-            renderGoogleLoginDebug();
             console.log("[AUTH] googleIdToken present:", !!googleIdToken);
             updateAuthDebug({
               authProvider: "google",
@@ -3636,17 +3490,7 @@
           googleSignInMountEl.dataset.rendered = "1";
         }
         googleIdentityInitDone = true;
-        updateLoginTrace({
-          googleInitialized: true,
-          googleInitStatus: "initialized",
-          lastAuthError: null,
-          gisScriptLoaded: true,
-          gisScriptStatus: "loaded",
-          googleObjectPresent: true,
-          googleAccountsPresent: true,
-          googleIdPresent: true
-        });
-        renderGoogleLoginDebug();
+        setGoogleSignInStatus("ready");
         if (googleBtn) {
           googleBtn.disabled = false;
           googleBtn.title = "";
@@ -3655,7 +3499,6 @@
         return true;
       } catch (err) {
         console.warn("google identity initialize failed", err);
-        updateLoginTrace({ googleInitialized: false, googleInitStatus: "initialize_failed" });
         setGoogleAuthError(err);
         updateAuthDebug({
           googleIdentityReady: false,
@@ -3670,18 +3513,9 @@
       let attempts = 0;
       const tryInit = () => {
         attempts += 1;
-        updateLoginTrace({
-          googleInitRetryCount: attempts,
-          googleInitStatus: attempts === 1 ? "bootstrap_attempt" : `retry_${attempts}`
-        });
-        renderGoogleLoginDebug();
         if (initializeGoogleIdentity({ source: attempts === 1 ? "bootstrap" : `retry_${attempts}` })) return;
         if (attempts < 40) window.setTimeout(tryInit, 150);
         else {
-          updateLoginTrace({
-            googleInitStatus: "timed_out_waiting_for_google_identity_api",
-            gisScriptStatus: window.__loginTrace?.gisScriptLoaded ? "loaded_but_api_missing" : (window.__loginTrace?.gisScriptTagPresent ? "load_timeout_or_blocked" : "script_tag_missing")
-          });
           setGoogleAuthError("google_identity_api_unavailable_after_bootstrap_retries");
           if (googleBtn) {
             googleBtn.disabled = false;
@@ -3693,16 +3527,12 @@
     })();
 
     googleBtn.onclick = () => {
-      updateLoginTrace({ buttonClickReceived: true });
       trackPilotEvent("login_attempted", { method: "google" });
       if (!googleIdentityInitDone) initializeGoogleIdentity({ source: "button_click" });
       if (!hasGoogleIdentityApi()) {
         setGoogleAuthError("google_identity_api_missing");
-        alert("Google login not available on this device. Use username login instead.");
         return;
       }
-      updateLoginTrace({ promptAttempted: true });
-      renderGoogleLoginDebug();
       window.google.accounts.id.prompt();
     };
 

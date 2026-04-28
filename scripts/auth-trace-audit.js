@@ -25,10 +25,14 @@ function run() {
   const backendRead = read(backendReadPath);
   const server = read(serverPath);
 
-  assertContains(rootIndex, 'LOGIN TRACE BUILD ACTIVE', 'root index missing LOGIN TRACE BUILD ACTIVE marker', failures);
-  assertContains(publicIndex, 'LOGIN TRACE BUILD ACTIVE', 'public index missing LOGIN TRACE BUILD ACTIVE marker', failures);
-  assertContains(rootIndex, 'window.__LOGIN_TRACE_BUILD_ACTIVE = true', 'root index missing __LOGIN_TRACE_BUILD_ACTIVE global', failures);
-  assertContains(publicIndex, 'window.__LOGIN_TRACE_BUILD_ACTIVE = true', 'public index missing __LOGIN_TRACE_BUILD_ACTIVE global', failures);
+  assertContains(rootIndex, 'Google sign-in loading…', 'root index missing Google loading fallback text', failures);
+  assertContains(publicIndex, 'Google sign-in loading…', 'public index missing Google loading fallback text', failures);
+  assertContains(rootIndex, 'Google sign-in unavailable. Refresh or try again.', 'root index missing Google unavailable fallback text', failures);
+  assertContains(publicIndex, 'Google sign-in unavailable. Refresh or try again.', 'public index missing Google unavailable fallback text', failures);
+  if (rootIndex.includes('Build: pending')) failures.push('root index contains Build pending blocker text');
+  if (publicIndex.includes('Build: pending')) failures.push('public index contains Build pending blocker text');
+  if (rootIndex.includes('LOGIN TRACE BUILD ACTIVE')) failures.push('root index contains login trace marker');
+  if (publicIndex.includes('LOGIN TRACE BUILD ACTIVE')) failures.push('public index contains login trace marker');
 
   assertContains(rootIndex, 'https://accounts.google.com/gsi/client', 'root index missing Google GIS script', failures);
   assertContains(publicIndex, 'https://accounts.google.com/gsi/client', 'public index missing Google GIS script', failures);
@@ -46,11 +50,23 @@ function run() {
   assertContains(backendRead, 'body.trustMode', 'frontend bridge payload missing trustMode', failures);
   assertContains(backendRead, 'body.googleIdToken', 'frontend bridge payload missing credential/googleIdToken', failures);
 
-  assertContains(rootIndex, 'window.__loginTrace', 'root index missing login trace globals', failures);
-  assertContains(rootIndex, 'function updateLoginTrace', 'root index missing updateLoginTrace helper', failures);
-  assertContains(rootIndex, 'function ensureRetentionFlowLoaded', 'root index missing retention flow lazy-loader wrapper', failures);
-  assertContains(rootIndex, 'retentionFlowBootPromise = window.__loadExternalScript', 'retention-flow not lazy-loaded through guarded promise', failures);
-  assertContains(rootIndex, '.catch((error) => {', 'retention-flow loader missing catch guard', failures);
+  assertContains(rootIndex, 'setGoogleSignInStatus("loading")', 'root index missing Google loading status handler call', failures);
+  assertContains(rootIndex, 'setGoogleSignInStatus("unavailable")', 'root index missing Google unavailable status handler call', failures);
+  assertContains(rootIndex, 'googleBtn.onclick = () => {', 'root index missing Google button click handler', failures);
+  assertContains(rootIndex, 'window.google.accounts.id.prompt();', 'root index missing Google prompt invocation', failures);
+  assertContains(rootIndex, 'callback: (response) => {', 'root index missing Google credential callback', failures);
+  assertContains(rootIndex, 'const googleIdToken = response.credential || null;', 'root index missing credential extraction from GIS callback', failures);
+  assertContains(rootIndex, 'BACKEND_READ_CLIENT.ensureAuthToken', 'root index missing auth bridge invocation', failures);
+
+  const authShellStart = rootIndex.indexOf('function setGoogleSignInStatus(mode) {');
+  const authShellEnd = rootIndex.indexOf('signOutBtn.onclick =', authShellStart);
+  if (authShellStart < 0 || authShellEnd <= authShellStart) failures.push('unable to isolate root index auth shell block');
+  else {
+    const authShell = rootIndex.slice(authShellStart, authShellEnd);
+    if (/retention-flow|ensureRetentionFlowLoaded/i.test(authShell)) failures.push('root auth shell depends on retention-flow loader');
+    if (/workout/i.test(authShell)) failures.push('root auth shell depends on workout bootstrap');
+    if (/avatar/i.test(authShell)) failures.push('root auth shell depends on avatar bootstrap');
+  }
 
   if (failures.length) {
     console.error('auth:trace-audit failed:');
@@ -59,7 +75,7 @@ function run() {
   }
 
   console.log('auth:trace-audit passed.');
-  console.log('Verified login trace marker, GIS shell wiring, auth bridge route/payload, and guarded retention-flow loader.');
+  console.log('Verified GIS shell wiring, minimal fallback copy, bridge route/payload wiring, and auth-shell isolation.');
 }
 
 run();
