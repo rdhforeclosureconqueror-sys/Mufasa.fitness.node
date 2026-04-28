@@ -9,13 +9,35 @@ function readBearerToken(req) {
   return token.trim();
 }
 
-function authContext(authTokenLib, authorizationResolver = null) {
+function authContext(authTokenLib, authorizationResolver = null, options = {}) {
+  const pilotBypass = options?.pilotBypass || null;
   return function attachAuthContext(req, _res, next) {
     const token = readBearerToken(req);
     if (!token) {
-      req.auth = null;
+      if (pilotBypass?.enabled) {
+        req.auth = {
+          userId: pilotBypass.userId,
+          email: pilotBypass.email,
+          provider: "pilot_bypass",
+          providerSubject: pilotBypass.email,
+          providerVerified: true,
+          identityClass: "pilot_bypass",
+          issuedAt: null,
+          expiresAt: null,
+          jti: null
+        };
+      } else {
+        req.auth = null;
+      }
       if (authorizationResolver) {
-        req.authz = authorizationResolver.resolveRole(null);
+        req.authz = pilotBypass?.enabled
+          ? {
+            role: pilotBypass.role || "admin",
+            permissions: Object.values(authorizationResolver.PERMISSIONS || {}),
+            isBootstrapSuperAdmin: false,
+            resolutionReason: "pilot_login_disabled"
+          }
+          : authorizationResolver.resolveRole(null);
       }
       return next();
     }
