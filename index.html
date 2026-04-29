@@ -5686,6 +5686,7 @@ function toggleListening() {
       enforceBuilderOverlayBypass();
       removeBuilderModeUiGuards();
       updateAppBootStatus("active overlay", getActiveBlockingOverlay());
+      let bootDegradedReason = null;
       try {
         console.log("[APP_BOOT] post login init called");
         updateAppBootStatus("full app init started");
@@ -5697,8 +5698,12 @@ function toggleListening() {
         });
       } catch (bootErr) {
         console.error("[APP_BOOT] boot failed:", bootErr);
-        updateAppBootStatus("boot failed", String(bootErr?.message || bootErr));
-        return;
+        bootDegradedReason = String(bootErr?.message || bootErr || "unknown_boot_error");
+        updateAppBootStatus("boot degraded", `Builder boot degraded but controls active: ${bootDegradedReason}`);
+        forceBuilderFullAccessAuthState();
+        enforceBuilderOverlayBypass();
+        removeBuilderModeUiGuards();
+        renderAuthShell();
       }
 
       console.log("tf loaded:", typeof tf !== "undefined");
@@ -5722,6 +5727,9 @@ function toggleListening() {
       updateAppBootStatus("camera handler attached", finalHandlerChecks.camera ? "ok" : "missing");
       updateAppBootStatus("workout library handler attached", finalHandlerChecks.workoutLibrary ? "ok" : "missing");
       updateAppBootStatus("active overlay", getActiveBlockingOverlay());
+      if (bootDegradedReason) {
+        updateAppBootStatus("degraded mode", `Builder boot degraded but controls active: ${bootDegradedReason}`);
+      }
     });
   </script>
 
