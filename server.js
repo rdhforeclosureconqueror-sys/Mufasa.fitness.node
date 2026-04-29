@@ -181,7 +181,6 @@ function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
-  const builderModeFullAccess = false;
   const disableLoginForPilot = false;
 
   const rootDir = options.rootDir || process.cwd();
@@ -468,7 +467,6 @@ function createApp(options = {}) {
       loginRemovedForPilot: disableLoginForPilot,
       pilotSuperAdminActive: disableLoginForPilot,
       authGateDisabled: disableLoginForPilot,
-      builderModeFullAccess,
       superAdminActive: disableLoginForPilot,
       allFeatureGatesBypassed: disableLoginForPilot
     });
@@ -483,7 +481,6 @@ function createApp(options = {}) {
       loginRemovedForPilot: disableLoginForPilot,
       pilotSuperAdminActive: disableLoginForPilot,
       authGateDisabled: disableLoginForPilot,
-      builderModeFullAccess,
       superAdminActive: disableLoginForPilot,
       allFeatureGatesBypassed: disableLoginForPilot
     });
@@ -1098,15 +1095,6 @@ function createApp(options = {}) {
     return res.status(200).json({ ok: true });
   }));
 
-  app.get("/api/auth/pilot-login", asyncHandler(async (_req, res) => {
-    return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
-  }));
-  app.post("/api/auth/pilot-login", asyncHandler(async (_req, res) => {
-    return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
-  }));
-  app.post("/api/auth/pilot-session", asyncHandler(async (_req, res) => {
-    return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
-  }));
 
   // ---- Auth bridge (legacy compatibility foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {

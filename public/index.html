@@ -799,16 +799,6 @@
       letter-spacing: 0.01em;
     }
   
-    .builder-mode #authOverlay,
-    .builder-mode .auth-screen,
-    .builder-mode .modal-backdrop.hidden-blocker {
-      display: none !important;
-      pointer-events: none !important;
-    }
-    .builder-mode #appShell,
-    .builder-mode #appShell * {
-      pointer-events: auto;
-    }
 
     #clickDiagBanner {
       position: fixed;
@@ -829,10 +819,6 @@
 </head>
 
 <body>
-  <div id="pilotModeBanner" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite">
-    BUILDER MODE — FULL ACCESS — SECURITY DISABLED
-  </div>
-
   <div id="appBootStatus" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite" style="margin-top:8px; font-size:12px; border-color:#38bdf8; color:#e0f2fe;">
     Boot status: pending
   </div>
@@ -1072,7 +1058,6 @@
     // ---- DOM hooks ----
     const userInfoBar = document.getElementById("userInfo");
     const appShellEl = document.getElementById("appShell");
-    const pilotModeBannerEl = document.getElementById("pilotModeBanner");
     const appBootStatusEl = document.getElementById("appBootStatus");
     const authOverlayEl = document.getElementById("authOverlay");
     const authLoginFormEl = document.getElementById("authLoginForm");
@@ -1093,24 +1078,7 @@
       window.__appBootStatus = { current: label, steps: [...appBootSteps], at: new Date().toISOString() };
     }
 
-    function forceBuilderFullAccessAuthState() {
-      return;
-      window.APP_AUTH = window.APP_AUTH || {};
-      window.APP_AUTH.isAuthenticated = true;
-      window.APP_AUTH.user = {
-        ...(window.APP_AUTH.user || {}),
-        id: PILOT_BYPASS_USER.id,
-        name: PILOT_BYPASS_USER.name,
-        email: PILOT_BYPASS_USER.email,
-        role: "super_admin",
-        roles: ["super_admin", "admin", "operator", "trainer", "client"],
-        authProvider: PILOT_BYPASS_USER.authProvider
-      };
-      window.APP_AUTH.token = window.APP_AUTH.token || null;
-      window.pilotSuperAdminActive = false;
-      window.builderModeFullAccess = true;
-      window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
-    }
+    function forceBuilderFullAccessAuthState() {}
 
 
 
@@ -3213,7 +3181,6 @@
     }
 
     function renderAuthShell() {
-      pilotModeBannerEl?.classList.remove("app-shell-hidden");
       userInfoBar?.classList.remove("app-shell-hidden");
       appShellEl?.classList.remove("app-shell-hidden");
       updateAppBootStatus("app shell shown");
