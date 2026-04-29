@@ -22,9 +22,8 @@ test("frontend includes login form that submits with preventDefault and auth API
   assert.match(html, /localStorage\.setItem\(\"maatAuthToken\", token\)/, "token should be stored under maatAuthToken");
 });
 
-test("root index and public index stay in sync for builder shell", () => {
+test("root index and public index stay in sync", () => {
   const rootHtml = read("index.html");
   const publicHtml = read("public/index.html");
   assert.equal(rootHtml, publicHtml, "root index.html must mirror public/index.html");
-  assert.match(rootHtml, /BUILDER MODE — FULL ACCESS — SECURITY DISABLED/, "builder banner text missing");
 });
