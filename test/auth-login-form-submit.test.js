@@ -11,12 +11,15 @@ function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), "utf8");
 }
 
-test("frontend removes blocking login form and opens shell by default", () => {
+test("frontend includes login form that submits with preventDefault and auth API calls", () => {
   const html = read("public/index.html");
-  assert.doesNotMatch(html, /id="authLoginForm"/, "auth login form must be removed");
-  assert.doesNotMatch(html, /id="authLoginSubmit"/, "auth login submit button must be removed");
-  assert.match(html, /id="appShell" class="app"/, "app shell must be visible immediately");
-  assert.match(html, /id="userInfo"/, "user info bar should be present");
+  assert.match(html, /id="authLoginForm"/, "auth login form must exist");
+  assert.match(html, /id="authLoginSubmit"/, "auth login submit button must exist");
+  assert.match(html, /event\.preventDefault\(\)/, "login submit must prevent browser navigation");
+  assert.match(html, /const NODE_BASE_URL = \"https:\/\/mufasa-fitness-node\.onrender\.com\"/, "backend base URL missing");
+  assert.match(html, /\/api\/auth\/login/, "login API endpoint path missing");
+  assert.match(html, /\/api\/auth\/me/, "auth me API endpoint path missing");
+  assert.match(html, /localStorage\.setItem\(\"maatAuthToken\", token\)/, "token should be stored under maatAuthToken");
 });
 
 test("root index and public index stay in sync for builder shell", () => {

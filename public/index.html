@@ -838,6 +838,15 @@
   </div>
 
   <div id="clickDiagBanner" aria-live="polite"></div>
+  <div id="authOverlay" class="auth-screen" role="dialog" aria-modal="true" aria-labelledby="authLoginTitle" style="position:fixed;inset:0;z-index:3000;background:rgba(2,6,23,.92);display:flex;align-items:center;justify-content:center;padding:16px;">
+    <form id="authLoginForm" style="width:min(420px,100%);background:#0f172a;border:1px solid rgba(56,189,248,.45);border-radius:12px;padding:16px;display:grid;gap:10px;">
+      <h2 id="authLoginTitle" style="margin:0;">Sign in</h2>
+      <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
+      <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
+      <button id="authLoginSubmit" type="submit">Login</button>
+      <div id="authLoginStatus" class="muted" aria-live="polite"></div>
+    </form>
+  </div>
 
   <!-- USER INFO BAR -->
   <div id="userInfo">
@@ -1064,6 +1073,11 @@
     const appShellEl = document.getElementById("appShell");
     const pilotModeBannerEl = document.getElementById("pilotModeBanner");
     const appBootStatusEl = document.getElementById("appBootStatus");
+    const authOverlayEl = document.getElementById("authOverlay");
+    const authLoginFormEl = document.getElementById("authLoginForm");
+    const authEmailEl = document.getElementById("authEmail");
+    const authPasswordEl = document.getElementById("authPassword");
+    const authLoginStatusEl = document.getElementById("authLoginStatus");
     const appBootSteps = [];
 
     function updateAppBootStatus(step, detail = "") {
@@ -3306,6 +3320,7 @@
       const token = localStorage.getItem("maatAuthToken");
       if (!token) {
         window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+        if (authOverlayEl) authOverlayEl.style.display = "flex";
         return false;
       }
       try {
@@ -3322,13 +3337,52 @@
           name: user.name,
           authProvider: user.provider || "password"
         });
+        if (authOverlayEl) authOverlayEl.style.display = "none";
         return true;
       } catch (_error) {
         localStorage.removeItem("maatAuthToken");
         window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+        if (authOverlayEl) authOverlayEl.style.display = "flex";
         return false;
       }
     }
+
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      const email = authEmailEl?.value?.trim() || "";
+      const password = authPasswordEl?.value || "";
+      if (authLoginStatusEl) authLoginStatusEl.textContent = "Signing in…";
+      try {
+        const loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const loginPayload = await loginRes.json().catch(() => ({}));
+        const token = loginPayload?.token;
+        if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
+        localStorage.setItem("maatAuthToken", token);
+        const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
+          headers: { authorization: `Bearer ${token}` }
+        });
+        const mePayload = await meRes.json().catch(() => ({}));
+        const user = mePayload?.data?.user;
+        if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
+        window.APP_AUTH = { isAuthenticated: true, token, user };
+        await onLogin({
+          userId: user.userId || user.id,
+          email: user.email,
+          name: user.name,
+          authProvider: user.provider || "password"
+        });
+        if (authOverlayEl) authOverlayEl.style.display = "none";
+        if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
+      } catch (error) {
+        localStorage.removeItem("maatAuthToken");
+        if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
+      }
+    }
+    authLoginFormEl?.addEventListener("submit", handleLoginSubmit);
 
     async function onLogin(profile) {
       USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
@@ -5553,6 +5607,17 @@ function toggleListening() {
 
     // ---- Wire buttons / events ----
     connectBtn.onclick = connectCamera;
+    const runSystemDiagnosticBtn = document.getElementById("runSystemDiagnosticBtn");
+    if (runSystemDiagnosticBtn) {
+      runSystemDiagnosticBtn.onclick = async () => {
+        try {
+          const report = await (window.__collectDiagnosticReport?.() || Promise.resolve(null));
+          addLog("system", `Diagnostics complete${report ? "" : " (no report payload)"}.`);
+        } catch (error) {
+          addLog("system", `Diagnostics failed: ${error?.message || error}`);
+        }
+      };
+    }
     startBtn.onclick = startWorkout;
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
