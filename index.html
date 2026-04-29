@@ -1048,6 +1048,24 @@
       window.__appBootStatus = { current: label, steps: [...appBootSteps], at: new Date().toISOString() };
     }
 
+    function forceBuilderFullAccessAuthState() {
+      window.APP_AUTH = window.APP_AUTH || {};
+      window.APP_AUTH.isAuthenticated = true;
+      window.APP_AUTH.user = {
+        ...(window.APP_AUTH.user || {}),
+        id: PILOT_BYPASS_USER.id,
+        name: PILOT_BYPASS_USER.name,
+        email: PILOT_BYPASS_USER.email,
+        role: "super_admin",
+        roles: ["super_admin", "admin", "operator", "trainer", "client"],
+        authProvider: PILOT_BYPASS_USER.authProvider
+      };
+      window.APP_AUTH.token = window.APP_AUTH.token || null;
+      window.pilotSuperAdminActive = true;
+      window.builderModeFullAccess = true;
+      window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
+    }
+
     window.addEventListener("error", (event) => {
       const reason = event?.error?.message || event?.message || "unknown_error";
       updateAppBootStatus("boot failed", reason);
@@ -3103,6 +3121,35 @@
       updateAppBootStatus("app shell shown");
     }
 
+    function removeBuilderModeUiGuards() {
+      [connectBtn, startBtn, dashboardBtn, exerciseLibraryBtn, ohsaBtn, defineExerciseBtn, fullscreenCameraBtn]
+        .filter(Boolean)
+        .forEach((el) => {
+          el.disabled = false;
+          el.removeAttribute("disabled");
+          el.style.pointerEvents = "auto";
+        });
+    }
+
+    function getActiveBlockingOverlay() {
+      const overlaySelectors = [
+        "#avatarModal",
+        "#loadingOverlay",
+        "#authOverlay",
+        ".modal-backdrop",
+        ".overlay",
+        ".backdrop"
+      ];
+      for (const selector of overlaySelectors) {
+        const overlay = document.querySelector(selector);
+        if (!overlay) continue;
+        const style = window.getComputedStyle(overlay);
+        const visible = style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || "1") > 0.01;
+        if (visible && style.pointerEvents !== "none") return selector;
+      }
+      return "none";
+    }
+
     function setPilotBypassAuthState() {
       window.APP_AUTH = {
         isAuthenticated: true,
@@ -3208,6 +3255,10 @@
 
       dashboardBtn.disabled = false;
       dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
+      if (exerciseLibraryBtn) {
+        exerciseLibraryBtn.disabled = false;
+        exerciseLibraryBtn.onclick = () => { window.location.href = "/exercise-library.html"; };
+      }
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
@@ -5523,6 +5574,8 @@ function toggleListening() {
       });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
+      forceBuilderFullAccessAuthState();
+      updateAppBootStatus("builder mode active", "full access");
       const activationFailure = activatePilotBypassImmediate();
       if (activationFailure) {
         console.warn("pilot activation failed", activationFailure);
@@ -5531,10 +5584,12 @@ function toggleListening() {
       }
       console.log("[APP_BOOT] pilot bypass active");
       updateAppBootStatus("pilot bypass active");
-      window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
+      forceBuilderFullAccessAuthState();
+      removeBuilderModeUiGuards();
+      updateAppBootStatus("active overlay", getActiveBlockingOverlay());
       try {
         console.log("[APP_BOOT] post login init called");
-        updateAppBootStatus("post-login init called");
+        updateAppBootStatus("full app init started");
         await onLogin({
           userId: PILOT_BYPASS_USER.id,
           email: PILOT_BYPASS_USER.email,
@@ -5558,6 +5613,16 @@ function toggleListening() {
         "diagnostics-client.js": Boolean(window.__collectDiagnosticReport)
       };
       window.__appBootModuleChecks = moduleChecks;
+      removeBuilderModeUiGuards();
+      const finalHandlerChecks = {
+        dashboard: typeof dashboardBtn?.onclick === "function",
+        camera: typeof connectBtn?.onclick === "function",
+        workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function"
+      };
+      updateAppBootStatus("dashboard handler attached", finalHandlerChecks.dashboard ? "ok" : "missing");
+      updateAppBootStatus("camera handler attached", finalHandlerChecks.camera ? "ok" : "missing");
+      updateAppBootStatus("workout library handler attached", finalHandlerChecks.workoutLibrary ? "ok" : "missing");
+      updateAppBootStatus("active overlay", getActiveBlockingOverlay());
     });
   </script>
 
