@@ -34,3 +34,14 @@ test("pilot bypass activates immediate shell render path", () => {
   assert.match(html, /function activatePilotBypassImmediate\(\)/, "missing immediate pilot activation flow");
   assert.match(html, /renderAuthShell\(\);/, "boot must render app shell directly");
 });
+
+test("builder mode keeps controls active when onLogin bootstrap fails", () => {
+  const html = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  assert.match(html, /Builder boot degraded but controls active:/, "degraded builder boot status message missing");
+  assert.match(html, /catch \(bootErr\)[\s\S]*forceBuilderFullAccessAuthState\(\);/, "degraded boot must force builder auth state");
+  assert.match(html, /catch \(bootErr\)[\s\S]*renderAuthShell\(\);/, "degraded boot must keep app shell visible");
+  assert.match(html, /const finalHandlerChecks = \{[\s\S]*dashboard:[\s\S]*camera:[\s\S]*workoutLibrary:/, "final handler checks for dashboard/camera/workout library missing");
+  assert.match(html, /updateAppBootStatus\("dashboard handler attached"/, "dashboard handler boot status missing");
+  assert.match(html, /updateAppBootStatus\("camera handler attached"/, "camera handler boot status missing");
+  assert.match(html, /updateAppBootStatus\("workout library handler attached"/, "workout library handler boot status missing");
+});
