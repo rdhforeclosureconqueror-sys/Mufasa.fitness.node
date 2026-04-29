@@ -1503,9 +1503,6 @@
     const EXERCISE_BASELINE_FRAMES = 80;
     let baselineFrames = [];
 
-    if (exerciseLibraryBtn) {
-      exerciseLibraryBtn.onclick = () => { window.location.href = "/exercise-library.html"; };
-    }
 
     // ---- Overhead Squat Assessment ----
     let ohsaMode = false;
@@ -3423,10 +3420,8 @@
       });
 
       dashboardBtn.disabled = false;
-      dashboardBtn.onclick = () => { window.location.href = "/dashboard.html"; };
       if (exerciseLibraryBtn) {
         exerciseLibraryBtn.disabled = false;
-        exerciseLibraryBtn.onclick = () => { window.location.href = "/exercise-library.html"; };
       }
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
@@ -5606,18 +5601,7 @@ function toggleListening() {
     });
 
     // ---- Wire buttons / events ----
-    connectBtn.onclick = connectCamera;
-    const runSystemDiagnosticBtn = document.getElementById("runSystemDiagnosticBtn");
-    if (runSystemDiagnosticBtn) {
-      runSystemDiagnosticBtn.onclick = async () => {
-        try {
-          const report = await (window.__collectDiagnosticReport?.() || Promise.resolve(null));
-          addLog("system", `Diagnostics complete${report ? "" : " (no report payload)"}.`);
-        } catch (error) {
-          addLog("system", `Diagnostics failed: ${error?.message || error}`);
-        }
-      };
-    }
+    window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
     startBtn.onclick = startWorkout;
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
