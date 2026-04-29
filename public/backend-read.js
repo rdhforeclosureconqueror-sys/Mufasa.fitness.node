@@ -29,7 +29,7 @@
 
   function createClient({ baseUrl = "" } = {}) {
     const apiBase = resolveBaseUrl(baseUrl);
-    const tokenKey = "popa_auth_token";
+    const tokenKey = "maatAuthToken";
 
     function mergeAuthDebug(patch) {
       if (typeof window === "undefined") return;
@@ -102,13 +102,6 @@
       return payload.data;
     }
 
-    async function ensureAuthToken(_claims, _options = {}) {
-      const existingToken = getAuthToken();
-      if (existingToken) return existingToken;
-      const err = new Error("missing_auth_token");
-      err.code = "MISSING_TOKEN";
-      throw err;
-    }
 
     function normalizeProfile(profile, fallback = {}) {
       const fallbackAvatar = fallback?.avatar && typeof fallback.avatar === "object" ? fallback.avatar : null;
@@ -151,7 +144,6 @@
       getAuthToken,
       setAuthToken,
       clearAuthToken,
-      ensureAuthToken,
       fetchProfile,
       fetchHistory,
       normalizeProfile
