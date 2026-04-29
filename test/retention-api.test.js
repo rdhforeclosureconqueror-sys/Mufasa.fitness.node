@@ -9,6 +9,7 @@ const path = require("path");
 const { createApp } = require("../server");
 
 async function withServer(t, fn, { env = {} } = {}) {
+  env = { PILOT_LOGIN_PASSWORD: "top-secret", ...env };
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-retention-test-"));
   fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
   fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
@@ -59,18 +60,22 @@ async function request(baseUrl, route, { method = "GET", body, headers = {} } = 
   return { res, json };
 }
 
-async function authToken(baseUrl, userId) {
-  const { res, json } = await request(baseUrl, "/api/auth/bridge", {
+async function loginToken(baseUrl) {
+  const { res, json } = await request(baseUrl, "/api/auth/login", {
     method: "POST",
-    body: { userId, trustMode: "manual_unverified" }
+    body: {
+      email: "RDHForeclosureConquer@gmail.com",
+      password: "top-secret"
+    }
   });
-  assert.equal(res.status, 201);
-  return json.data.auth.token;
+  assert.equal(res.status, 200);
+  assert.equal(json?.ok, true);
+  return json.token;
 }
 
 test("client intake save/load + goals/program/workout/check-in/dashboard flow", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authToken(baseUrl, "retention_user_1");
+    const token = await loginToken(baseUrl);
     const auth = { authorization: `Bearer ${token}` };
 
     const intakePayload = {
@@ -114,7 +119,7 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
       method: "POST",
       headers: auth,
       body: {
-        clientId: "retention_user_1",
+        clientId: "pilot_admin",
         goal: "fat_loss",
         durationWeeks: 8,
         daysPerWeek: 3,
@@ -180,7 +185,7 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
     assert.equal(rewardLatest.res.status, 200);
     assert.equal(rewardLatest.json.data.rewardSummary.workoutCompleted, true);
 
-    const user = JSON.parse(fs.readFileSync(path.join(tmpRoot, "data", "users", "retention_user_1.json"), "utf8"));
+    const user = JSON.parse(fs.readFileSync(path.join(tmpRoot, "data", "users", "pilot_admin.json"), "utf8"));
     assert.ok(user.clientIntake);
     assert.ok(user.goalsBaseline);
     assert.ok(user.program);
@@ -191,7 +196,7 @@ test("client intake save/load + goals/program/workout/check-in/dashboard flow", 
 
 test("streak consistency handles missed days without breaking summaries", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authToken(baseUrl, "retention_user_missed_day");
+    const token = await loginToken(baseUrl);
     const auth = { authorization: `Bearer ${token}` };
     await request(baseUrl, "/api/client-intake", {
       method: "POST",
@@ -217,7 +222,7 @@ test("streak consistency handles missed days without breaking summaries", async 
       method: "POST",
       headers: auth,
       body: {
-        clientId: "retention_user_missed_day",
+        clientId: "pilot_admin",
         goal: "strength",
         durationWeeks: 8,
         daysPerWeek: 4,
@@ -228,7 +233,7 @@ test("streak consistency handles missed days without breaking summaries", async 
     });
     assert.equal(programAssign.res.status, 201);
 
-    const userPath = path.join(tmpRoot, "data", "users", "retention_user_missed_day.json");
+    const userPath = path.join(tmpRoot, "data", "users", "pilot_admin.json");
     const dayOffsets = [0, 2];
     for (const offset of dayOffsets) {
       const tracked = await request(baseUrl, "/api/workouts/track", {
@@ -260,7 +265,7 @@ test("streak consistency handles missed days without breaking summaries", async 
 
 test("visual progress scan respects feature flag and supports comparison", async (t) => {
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authToken(baseUrl, "scan_user_disabled");
+    const token = await loginToken(baseUrl);
     const blocked = await request(baseUrl, "/api/visual-progress-scans", {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
@@ -274,7 +279,7 @@ test("visual progress scan respects feature flag and supports comparison", async
   });
 
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authToken(baseUrl, "scan_user_enabled");
+    const token = await loginToken(baseUrl);
     const auth = { authorization: `Bearer ${token}` };
 
     const save1 = await request(baseUrl, "/api/visual-progress-scans", {
