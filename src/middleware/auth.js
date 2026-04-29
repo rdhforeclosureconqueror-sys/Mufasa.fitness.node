@@ -14,7 +14,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
   return function attachAuthContext(req, _res, next) {
     const token = readBearerToken(req);
     if (!token) {
-      if (pilotBypass?.enabled) {
+      if (false && pilotBypass?.enabled) {
         req.auth = {
           userId: pilotBypass.userId,
           email: pilotBypass.email,

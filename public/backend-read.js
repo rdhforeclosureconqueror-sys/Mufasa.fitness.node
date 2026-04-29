@@ -45,9 +45,6 @@
     function getAuthToken() {
       const token = localStorage.getItem(tokenKey);
       if (token && token.trim()) return token.trim();
-      if (window.APP_AUTH?.isAuthenticated === true && window.__pilotMode?.loginDisabledForPilot === true) {
-        return "__pilot_no_login__";
-      }
       return null;
     }
 

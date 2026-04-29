@@ -181,8 +181,8 @@ function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
-  const builderModeFullAccess = process.env.BUILDER_MODE_FULL_ACCESS === "true";
-  const disableLoginForPilot = process.env.DISABLE_LOGIN_FOR_PILOT === "true" || builderModeFullAccess;
+  const builderModeFullAccess = false;
+  const disableLoginForPilot = false;
 
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
@@ -1108,7 +1108,7 @@ function createApp(options = {}) {
     return res.status(410).json({ ok: false, error: "Legacy auth route retired. Use /api/auth/login." });
   }));
 
-  // ---- Auth bridge (pilot minimal auth foundation) ----
+  // ---- Auth bridge (legacy compatibility foundation) ----
   app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const rawTrustMode = String(req.body?.trustMode || "").trim().toLowerCase();
     const requestedTrustMode = normalizeAuthBridgeTrustMode(req.body?.trustMode);

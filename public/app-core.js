@@ -16,6 +16,7 @@
     return {ok:false,msg:'Missing function: '+fns.join(' | ')};
   }
   onReady(function(){
+    return;
     window.APP_AUTH = {
       isAuthenticated: true,
       token: null,
