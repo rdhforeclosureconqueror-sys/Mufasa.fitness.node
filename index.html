@@ -845,6 +845,7 @@
       <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
       <button id="authLoginSubmit" type="submit">Login</button>
       <div id="authLoginStatus" class="muted" aria-live="polite"></div>
+      <div id="authLoginStepStatus" class="muted" aria-live="polite"></div>
     </form>
   </div>
 
@@ -1078,6 +1079,7 @@
     const authEmailEl = document.getElementById("authEmail");
     const authPasswordEl = document.getElementById("authPassword");
     const authLoginStatusEl = document.getElementById("authLoginStatus");
+    const authLoginStepStatusEl = document.getElementById("authLoginStepStatus");
     const appBootSteps = [];
 
     function updateAppBootStatus(step, detail = "") {
@@ -3344,12 +3346,19 @@
       }
     }
 
+    function updateAuthStepStatus(step, detail) {
+      if (!authLoginStepStatusEl) return;
+      authLoginStepStatusEl.textContent = detail ? `${step}: ${detail}` : step;
+    }
+
     async function handleLoginSubmit(event) {
       event.preventDefault();
       const email = authEmailEl?.value?.trim() || "";
       const password = authPasswordEl?.value || "";
       if (authLoginStatusEl) authLoginStatusEl.textContent = "Signing in…";
+      updateAuthStepStatus("submit received");
       try {
+        updateAuthStepStatus("POST /api/auth/login", "sending");
         const loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -3358,7 +3367,10 @@
         const loginPayload = await loginRes.json().catch(() => ({}));
         const token = loginPayload?.token;
         if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
+        updateAuthStepStatus("token received");
         localStorage.setItem("maatAuthToken", token);
+        updateAuthStepStatus("token stored", "maatAuthToken");
+        updateAuthStepStatus("GET /api/auth/me", "sending");
         const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
           headers: { authorization: `Bearer ${token}` }
         });
@@ -3366,16 +3378,21 @@
         const user = mePayload?.data?.user;
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
         window.APP_AUTH = { isAuthenticated: true, token, user };
+        updateAuthStepStatus("onLogin()", "running");
         await onLogin({
           userId: user.userId || user.id,
           email: user.email,
           name: user.name,
           authProvider: user.provider || "password"
         });
+        updateAuthStepStatus("auth overlay hidden", "success");
         if (authOverlayEl) authOverlayEl.style.display = "none";
+        renderAuthShell();
+        updateAuthStepStatus("app shell shown", "success");
         if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
       } catch (error) {
         localStorage.removeItem("maatAuthToken");
+        updateAuthStepStatus("failed", error?.message || "unknown_error");
         if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
       }
     }
@@ -5601,7 +5618,24 @@ function toggleListening() {
     });
 
     // ---- Wire buttons / events ----
-    window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
+    const navBoundByAppCore = window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
+    if (!navBoundByAppCore) {
+      dashboardBtn.onclick = () => {
+        window.location.href = "/dashboard.html";
+      };
+      exerciseLibraryBtn.onclick = () => {
+        window.location.href = "/exercise-library.html";
+      };
+      connectBtn.onclick = connectCamera;
+      runSystemDiagnosticBtn.onclick = async () => {
+        try {
+          const report = await (window.__collectDiagnosticReport?.() || Promise.resolve(null));
+          addLog("system", "Diagnostics complete" + (report ? "" : " (no report payload)") + ".");
+        } catch (error) {
+          addLog("system", `Diagnostics failed: ${error?.message || error}`);
+        }
+      };
+    }
     startBtn.onclick = startWorkout;
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
