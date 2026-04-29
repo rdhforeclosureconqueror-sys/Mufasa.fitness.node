@@ -1078,6 +1078,7 @@
     }
 
     function forceBuilderFullAccessAuthState() {
+      return;
       window.APP_AUTH = window.APP_AUTH || {};
       window.APP_AUTH.isAuthenticated = true;
       window.APP_AUTH.user = {
@@ -1090,7 +1091,7 @@
         authProvider: PILOT_BYPASS_USER.authProvider
       };
       window.APP_AUTH.token = window.APP_AUTH.token || null;
-      window.pilotSuperAdminActive = true;
+      window.pilotSuperAdminActive = false;
       window.builderModeFullAccess = true;
       window.__pilotMode = { loginDisabledForPilot: true, authGateDisabled: true, pilotSuperAdminActive: true };
     }
@@ -1107,6 +1108,7 @@
     }
 
     function enforceBuilderOverlayBypass() {
+      return;
       document.body.classList.add("builder-mode");
       const authOverlay = document.getElementById("authOverlay");
       if (authOverlay) {
@@ -1128,6 +1130,7 @@
     }
 
     function installClickDiagnostics() {
+      return;
       const banner = document.getElementById("clickDiagBanner");
       document.addEventListener("click", (event) => {
         const target = event.target;
@@ -1171,21 +1174,14 @@
       roles: ["super_admin", "admin", "operator", "trainer", "client"],
       authProvider: "pilot_bypass"
     });
-    const BUILDER_MODE_FULL_ACCESS = true;
-    let DISABLE_LOGIN_FOR_PILOT = BUILDER_MODE_FULL_ACCESS;
+    const BUILDER_MODE_FULL_ACCESS = false;
+    let DISABLE_LOGIN_FOR_PILOT = false;
     window.APP_AUTH = {
-      isAuthenticated: true,
+      isAuthenticated: false,
       token: null,
-      user: {
-        id: PILOT_BYPASS_USER.id,
-        name: PILOT_BYPASS_USER.name,
-        email: PILOT_BYPASS_USER.email,
-        role: PILOT_BYPASS_USER.role,
-        roles: PILOT_BYPASS_USER.roles,
-        authProvider: PILOT_BYPASS_USER.authProvider
-      }
+      user: null
     };
-    window.pilotSuperAdminActive = true;
+    window.pilotSuperAdminActive = false;
     const profileSummaryEl = document.getElementById("profileSummary");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
     const voiceSelectEl = document.getElementById("voiceSelect");
@@ -3211,6 +3207,7 @@
     }
 
     function removeBuilderModeUiGuards() {
+      return;
       [connectBtn, startBtn, dashboardBtn, exerciseLibraryBtn, ohsaBtn, defineExerciseBtn, fullscreenCameraBtn]
         .filter(Boolean)
         .forEach((el) => {
@@ -3240,6 +3237,7 @@
     }
 
     function setPilotBypassAuthState() {
+      return;
       window.APP_AUTH = {
         isAuthenticated: true,
         token: null,
@@ -3252,7 +3250,7 @@
           authProvider: PILOT_BYPASS_USER.authProvider
         }
       };
-      window.pilotSuperAdminActive = true;
+      window.pilotSuperAdminActive = false;
       BACKEND_READ_CLIENT?.clearAuthToken?.();
     }
 
@@ -3260,7 +3258,7 @@
       setPilotBypassAuthState();
       renderAuthShell();
       window.APP_AUTH.isAuthenticated = true;
-      window.pilotSuperAdminActive = true;
+      window.pilotSuperAdminActive = false;
       const appShellVisible = !appShellEl?.classList.contains("app-shell-hidden");
       if (!appShellVisible) return "app shell missing";
       return "";
@@ -3300,6 +3298,34 @@
         addLog("system", "Backend profile unavailable. Profile is now from local cache.");
         updateAuthDebug({ lastProfileStatus: String(e?.status || "error") });
         updateSyncStatus();
+        return false;
+      }
+    }
+
+    async function initializeAuth() {
+      const token = localStorage.getItem("maatAuthToken");
+      if (!token) {
+        window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+        return false;
+      }
+      try {
+        const res = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
+          headers: { authorization: `Bearer ${token}` }
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok || !payload?.data?.user) throw new Error("invalid_session");
+        const user = payload.data.user;
+        window.APP_AUTH = { isAuthenticated: true, token, user };
+        await onLogin({
+          userId: user.userId || user.id,
+          email: user.email,
+          name: user.name,
+          authProvider: user.provider || "password"
+        });
+        return true;
+      } catch (_error) {
+        localStorage.removeItem("maatAuthToken");
+        window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
         return false;
       }
     }
@@ -3362,14 +3388,9 @@
     }
 
     async function handleLogout() {
-      setPilotBypassAuthState();
-      renderAuthShell();
-      await onLogin({
-        userId: PILOT_BYPASS_USER.id,
-        email: PILOT_BYPASS_USER.email,
-        name: PILOT_BYPASS_USER.name,
-        authProvider: PILOT_BYPASS_USER.authProvider
-      });
+      localStorage.removeItem("maatAuthToken");
+      window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+      window.location.reload();
     }
 
     signOutBtn.onclick = () => {
@@ -5669,42 +5690,10 @@ function toggleListening() {
       });
       exerciseLabelEl.textContent = "Bodyweight Squat";
       addLog("system", "Page loaded. Connect your camera to begin.");
-      forceBuilderFullAccessAuthState();
-      enforceBuilderOverlayBypass();
-      installClickDiagnostics();
-      updateAppBootStatus("builder mode active", "full access");
-      const activationFailure = activatePilotBypassImmediate();
-      if (activationFailure) {
-        console.warn("pilot activation failed", activationFailure);
-        updateAppBootStatus("boot failed", activationFailure);
-        return;
-      }
-      console.log("[APP_BOOT] pilot bypass active");
-      updateAppBootStatus("pilot bypass active");
-      forceBuilderFullAccessAuthState();
-      enforceBuilderOverlayBypass();
-      enforceBuilderOverlayBypass();
-      removeBuilderModeUiGuards();
-      updateAppBootStatus("active overlay", getActiveBlockingOverlay());
+      updateAppBootStatus("auth bootstrap", "starting");
+      await initializeAuth();
+      updateAppBootStatus("auth bootstrap", "completed");
       let bootDegradedReason = null;
-      try {
-        console.log("[APP_BOOT] post login init called");
-        updateAppBootStatus("full app init started");
-        await onLogin({
-          userId: PILOT_BYPASS_USER.id,
-          email: PILOT_BYPASS_USER.email,
-          name: PILOT_BYPASS_USER.name,
-          authProvider: PILOT_BYPASS_USER.authProvider
-        });
-      } catch (bootErr) {
-        console.error("[APP_BOOT] boot failed:", bootErr);
-        bootDegradedReason = String(bootErr?.message || bootErr || "unknown_boot_error");
-        updateAppBootStatus("boot degraded", `Builder boot degraded but controls active: ${bootDegradedReason}`);
-        forceBuilderFullAccessAuthState();
-        enforceBuilderOverlayBypass();
-        removeBuilderModeUiGuards();
-        renderAuthShell();
-      }
 
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
@@ -5727,9 +5716,7 @@ function toggleListening() {
       updateAppBootStatus("camera handler attached", finalHandlerChecks.camera ? "ok" : "missing");
       updateAppBootStatus("workout library handler attached", finalHandlerChecks.workoutLibrary ? "ok" : "missing");
       updateAppBootStatus("active overlay", getActiveBlockingOverlay());
-      if (bootDegradedReason) {
-        updateAppBootStatus("degraded mode", `Builder boot degraded but controls active: ${bootDegradedReason}`);
-      }
+      
     });
   </script>
 

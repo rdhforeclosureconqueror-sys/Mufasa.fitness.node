@@ -102,15 +102,14 @@
     const localHistory = read(KEY_HISTORY, []);
     const token = client?.getAuthToken();
 
-    const pilotNoLogin = window.__pilotMode?.loginDisabledForPilot === true && window.APP_AUTH?.isAuthenticated === true;
-    if (!client || (!token && !pilotNoLogin)) {
+    if (!client || !token) {
       return {
         active,
         history: localHistory,
         source: "local",
         warning: token
           ? "Backend client unavailable; showing local-only history."
-          : "Backend token unavailable; showing local-only history in pilot mode."
+          : "Backend token unavailable; showing local-only history."
       };
     }
 
