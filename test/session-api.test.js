@@ -95,6 +95,17 @@ async function authBridge(baseUrl, payload) {
   return json.data.auth.token;
 }
 
+async function loginToken(baseUrl) {
+  const { res, json } = await post(baseUrl, "/api/auth/login", {
+    email: "RDHForeclosureConquer@gmail.com",
+    password: "top-secret"
+  });
+  assert.equal(res.status, 200);
+  assert.equal(json?.ok, true);
+  assert.ok(json?.token);
+  return json.token;
+}
+
 test("POST /api/sessions starts a session and persists it", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
     const { res, json } = await post(baseUrl, "/api/sessions", {
@@ -119,8 +130,15 @@ test("POST /api/sessions starts a session and persists it", async (t) => {
 });
 
 test("authenticated session writes derive user identity from auth when body userId is omitted", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  t.after(() => {
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
+  });
+
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authBridge(baseUrl, { userId: "auth_owned_user" });
+    const token = await loginToken(baseUrl);
     const authHeader = { authorization: `Bearer ${token}` };
 
     const { res: startRes } = await post(baseUrl, "/api/sessions", {
@@ -134,7 +152,7 @@ test("authenticated session writes derive user identity from auth when body user
     }, authHeader);
     assert.equal(completeRes.status, 200);
 
-    const userPath = path.join(tmpRoot, "data", "users", "auth_owned_user.json");
+    const userPath = path.join(tmpRoot, "data", "users", "pilot_admin.json");
     const user = JSON.parse(fs.readFileSync(userPath, "utf8"));
     assert.ok(user.sessions.auth_sess_1);
     assert.equal(user.sessions.auth_sess_1.summary.repsCompleted, 9);
@@ -142,8 +160,15 @@ test("authenticated session writes derive user identity from auth when body user
 });
 
 test("authenticated session writes reject mismatched request-body userId", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  t.after(() => {
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
+  });
+
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authBridge(baseUrl, { userId: "auth_guard_user" });
+    const token = await loginToken(baseUrl);
     const authHeader = { authorization: `Bearer ${token}` };
 
     const { res, json } = await post(baseUrl, "/api/sessions", {
@@ -159,8 +184,15 @@ test("authenticated session writes reject mismatched request-body userId", async
 
 
 test("authenticated rep writes derive user identity from auth when body userId is omitted", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  t.after(() => {
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
+  });
+
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authBridge(baseUrl, { userId: "rep_auth_user" });
+    const token = await loginToken(baseUrl);
     const authHeader = { authorization: `Bearer ${token}` };
 
     await post(baseUrl, "/api/sessions", {
@@ -177,7 +209,7 @@ test("authenticated rep writes derive user identity from auth when body userId i
 
     assert.equal(res.status, 200);
 
-    const userPath = path.join(tmpRoot, "data", "users", "rep_auth_user.json");
+    const userPath = path.join(tmpRoot, "data", "users", "pilot_admin.json");
     const user = JSON.parse(fs.readFileSync(userPath, "utf8"));
     assert.equal(user.sessions.rep_auth_sess.repUpdates.length, 1);
     assert.equal(user.events.at(-1).command, "fitness.repUpdate");
@@ -185,8 +217,15 @@ test("authenticated rep writes derive user identity from auth when body userId i
 });
 
 test("authenticated rep writes reject mismatched request-body userId", async (t) => {
+  const previous = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  t.after(() => {
+    if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previous;
+  });
+
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authBridge(baseUrl, { userId: "rep_guard_user" });
+    const token = await loginToken(baseUrl);
     const authHeader = { authorization: `Bearer ${token}` };
 
     await post(baseUrl, "/api/sessions", {
