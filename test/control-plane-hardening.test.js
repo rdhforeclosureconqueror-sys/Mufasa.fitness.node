@@ -73,14 +73,15 @@ async function get(baseUrl, route, headers = {}) {
   return { res, json };
 }
 
-async function authBridge(baseUrl, payload) {
-  const trustMode = payload?.googleIdToken
-    ? "google_verified"
-    : (payload?.googleSub || payload?.googleEmail ? "provider_unverified" : "manual_unverified");
-  const bridgePayload = { ...payload, trustMode };
-  const { res, json } = await post(baseUrl, "/api/auth/bridge", bridgePayload);
-  assert.equal(res.status, 201);
-  return json.data.auth.token;
+async function loginToken(baseUrl) {
+  const { res, json } = await post(baseUrl, "/api/auth/login", {
+    email: "RDHForeclosureConquer@gmail.com",
+    password: "top-secret"
+  });
+  assert.equal(res.status, 200);
+  assert.equal(json?.ok, true);
+  assert.ok(json?.token);
+  return json.token;
 }
 
 test("enforcement override store saves and reloads valid shape", () => {
@@ -187,10 +188,14 @@ test("admin audit tamper evidence detects modified entries", () => {
 
 test("startup restores persisted overrides and reports recovery in health", async (t) => {
   const previousAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
-  process.env.AUTHZ_ADMIN_USER_IDS = "health_admin";
+  const previousPilotLoginPassword = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.AUTHZ_ADMIN_USER_IDS = "pilot_admin";
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
   t.after(() => {
     if (previousAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
     else process.env.AUTHZ_ADMIN_USER_IDS = previousAdmin;
+    if (previousPilotLoginPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previousPilotLoginPassword;
   });
 
   const rootDir = makeTmpRoot();
@@ -202,7 +207,7 @@ test("startup restores persisted overrides and reports recovery in health", asyn
   });
   const baseUrl1 = `http://127.0.0.1:${server1.address().port}`;
 
-  const adminToken = await authBridge(baseUrl1, { userId: "health_admin" });
+  const adminToken = await loginToken(baseUrl1);
   const updated = await put(baseUrl1, "/api/ops/enforcement-config", {
     enabledByAction: { session_start: true }
   }, { authorization: `Bearer ${adminToken}` });
@@ -260,14 +265,18 @@ test("authorization/enforcement config validation surfaces obvious invalid actio
 
 test("ops surfaces expose recent audit summary after enforcement access", async (t) => {
   const previousAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
-  process.env.AUTHZ_ADMIN_USER_IDS = "audit_surface_admin";
+  const previousPilotLoginPassword = process.env.PILOT_LOGIN_PASSWORD;
+  process.env.AUTHZ_ADMIN_USER_IDS = "pilot_admin";
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
   t.after(() => {
     if (previousAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
     else process.env.AUTHZ_ADMIN_USER_IDS = previousAdmin;
+    if (previousPilotLoginPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = previousPilotLoginPassword;
   });
 
   await withServer(t, async ({ baseUrl }) => {
-    const adminToken = await authBridge(baseUrl, { userId: "audit_surface_admin" });
+    const adminToken = await loginToken(baseUrl);
     const update1 = await put(baseUrl, "/api/ops/enforcement-config", {
       enabledByAction: { session_start: true },
       ifVersion: 0
