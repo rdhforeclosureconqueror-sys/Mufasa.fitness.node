@@ -95,6 +95,35 @@ async function authBridge(baseUrl, payload) {
   return json.data.auth.token;
 }
 
+
+function enableTestLoginFixture(t) {
+  const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevFixture = process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.NODE_ENV = "test";
+  process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = "true";
+  t.after(() => {
+    if (prevPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = prevPassword;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevFixture == null) delete process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+    else process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = prevFixture;
+  });
+}
+
+async function loginFixtureToken(baseUrl, testUserId) {
+  const { res, json } = await post(baseUrl, "/api/auth/login", {
+    email: "fixture-user@example.test",
+    password: "top-secret",
+    testUserId
+  });
+  assert.equal(res.status, 200);
+  assert.equal(json?.ok, true);
+  assert.ok(json?.token);
+  return json.token;
+}
 async function loginToken(baseUrl) {
   const { res, json } = await post(baseUrl, "/api/auth/login", {
     email: "RDHForeclosureConquer@gmail.com",
@@ -485,7 +514,8 @@ test("legacy /command fallback can be blocked per action while others stay compa
 
 test("profile read/write works with auth context ownership", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authBridge(baseUrl, { userId: "pilot_profile_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "pilot_profile_user");
     const authHeader = { authorization: `Bearer ${token}` };
 
     const { res: putRes, json: putJson } = await put(baseUrl, "/api/me/profile", {
@@ -516,7 +546,8 @@ test("profile read/write works with auth context ownership", async (t) => {
 
 test("OHSA submission and me history endpoint are auth protected and persisted", async (t) => {
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authBridge(baseUrl, { userId: "pilot_ohsa_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "pilot_ohsa_user");
     const authHeader = { authorization: `Bearer ${token}` };
 
     await post(baseUrl, "/api/sessions", {
@@ -556,7 +587,8 @@ test("OHSA submission and me history endpoint are auth protected and persisted",
 
 test("/api/avatar/upload rejects fake glb headers and accepts valid glb magic header", async (t) => {
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authBridge(baseUrl, { userId: "avatar_magic_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "avatar_magic_user");
 
     const badForm = new FormData();
     badForm.append("avatar", new Blob([Buffer.from("NOT_GLB_CONTENT", "utf8")]), "avatar.glb");
@@ -664,7 +696,8 @@ test("profile/session/OHSA writes are non-destructive to unrelated user fields",
 
 test("history endpoint enforces bounded limit and coherent structure", async (t) => {
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authBridge(baseUrl, { userId: "history_limit_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "history_limit_user");
     const authHeader = { authorization: `Bearer ${token}` };
 
     for (let i = 0; i < 6; i += 1) {
@@ -725,7 +758,8 @@ test("auth-protected /api/me/history rejects missing token", async (t) => {
 
 test("/api/me/profile returns normalized default profile shape for new auth user", async (t) => {
   await withServer(t, async ({ baseUrl }) => {
-    const token = await authBridge(baseUrl, { userId: "new_profile_shape_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "new_profile_shape_user");
     const authHeader = { authorization: `Bearer ${token}` };
 
     const { res, json } = await get(baseUrl, "/api/me/profile", authHeader);
