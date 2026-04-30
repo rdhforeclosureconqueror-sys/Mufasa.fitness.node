@@ -660,7 +660,8 @@ test("legacy /command profile and ohsa actions remain compatible with stricter v
 
 test("profile/session/OHSA writes are non-destructive to unrelated user fields", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authBridge(baseUrl, { userId: "safe_write_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "safe_write_user");
     const authHeader = { authorization: `Bearer ${token}` };
     const userPath = path.join(tmpRoot, "data", "users", "safe_write_user.json");
 
@@ -674,6 +675,10 @@ test("profile/session/OHSA writes are non-destructive to unrelated user fields",
       events: [],
       sessions: {}
     }, null, 2));
+
+    const { res: meRes, json: meJson } = await get(baseUrl, "/api/auth/me", authHeader);
+    assert.equal(meRes.status, 200);
+    assert.equal(meJson?.user?.id, "safe_write_user");
 
     await put(baseUrl, "/api/me/profile", {
       profile: { age: 29, height_cm: 178, weight_kg: 74, injuries: [] }
@@ -718,7 +723,8 @@ test("history endpoint enforces bounded limit and coherent structure", async (t)
 
 test("services remain compatible with malformed legacy stored user shapes", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const token = await authBridge(baseUrl, { userId: "legacy_shape_user" });
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "legacy_shape_user");
     const authHeader = { authorization: `Bearer ${token}` };
     const userPath = path.join(tmpRoot, "data", "users", "legacy_shape_user.json");
 
@@ -730,6 +736,10 @@ test("services remain compatible with malformed legacy stored user shapes", asyn
       ohsa: null,
       profile: { age: 40 }
     }, null, 2));
+
+    const { res: meRes, json: meJson } = await get(baseUrl, "/api/auth/me", authHeader);
+    assert.equal(meRes.status, 200);
+    assert.equal(meJson?.user?.id, "legacy_shape_user");
 
     const { res: profileRes } = await get(baseUrl, "/api/me/profile", authHeader);
     assert.equal(profileRes.status, 200);
