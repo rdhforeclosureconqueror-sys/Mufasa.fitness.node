@@ -124,3 +124,109 @@ test("protected route rejects missing token and accepts valid token", async (t) 
   const profile = await get(baseUrl, "/api/me/profile", { authorization: `Bearer ${login.json?.token}` });
   assert.equal(profile.res.status, 200);
 });
+
+test("test login fixture issues token for requested testUserId in test mode", async (t) => {
+  const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevFixture = process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.NODE_ENV = "test";
+  process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = "true";
+  t.after(() => {
+    if (prevPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = prevPassword;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevFixture == null) delete process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+    else process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = prevFixture;
+  });
+
+  const baseUrl = await bootApp(t);
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "fixture-user@example.test",
+    password: "top-secret",
+    testUserId: "fixture_user_1"
+  });
+  assert.equal(login.res.status, 200);
+  assert.equal(login.json?.ok, true);
+  assert.equal(login.json?.user?.id, "fixture_user_1");
+
+  const me = await get(baseUrl, "/api/auth/me", { authorization: `Bearer ${login.json?.token}` });
+  assert.equal(me.res.status, 200);
+  assert.equal(me.json?.user?.id, "fixture_user_1");
+});
+
+test("test login fixture is blocked when NODE_ENV is not test", async (t) => {
+  const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevFixture = process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.NODE_ENV = "development";
+  process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = "true";
+  t.after(() => {
+    if (prevPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = prevPassword;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevFixture == null) delete process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+    else process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = prevFixture;
+  });
+
+  const baseUrl = await bootApp(t);
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "fixture-user@example.test",
+    password: "top-secret",
+    testUserId: "fixture_user_1"
+  });
+  assert.equal(login.res.status, 403);
+  assert.equal(login.json?.ok, false);
+  assert.equal(login.json?.error, "TEST_LOGIN_FIXTURE_DISABLED");
+});
+
+test("admin ops auth still comes from allowlists, not fixture role claim", async (t) => {
+  const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevFixture = process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+  const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.NODE_ENV = "test";
+  process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = "true";
+  process.env.AUTHZ_ADMIN_USER_IDS = "fixture_allowed_admin";
+  t.after(() => {
+    if (prevPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = prevPassword;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevFixture == null) delete process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+    else process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = prevFixture;
+    if (prevAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
+    else process.env.AUTHZ_ADMIN_USER_IDS = prevAdmin;
+  });
+
+  const baseUrl = await bootApp(t);
+  const deniedLogin = await post(baseUrl, "/api/auth/login", {
+    email: "fake-admin@example.test",
+    password: "top-secret",
+    testUserId: "fixture_denied_user",
+    testRole: "admin"
+  });
+  assert.equal(deniedLogin.res.status, 200);
+
+  const denied = await get(baseUrl, "/api/ops/enforcement-config", {
+    authorization: `Bearer ${deniedLogin.json?.token}`
+  });
+  assert.equal(denied.res.status, 403);
+
+  const allowedLogin = await post(baseUrl, "/api/auth/login", {
+    email: "allowed-admin@example.test",
+    password: "top-secret",
+    testUserId: "fixture_allowed_admin",
+    testRole: "user"
+  });
+  assert.equal(allowedLogin.res.status, 200);
+
+  const allowed = await get(baseUrl, "/api/ops/enforcement-config", {
+    authorization: `Bearer ${allowedLogin.json?.token}`
+  });
+  assert.equal(allowed.res.status, 200);
+});

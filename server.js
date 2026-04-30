@@ -1038,6 +1038,9 @@ function createApp(options = {}) {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     const expectedPassword = String(process.env.PILOT_LOGIN_PASSWORD || "");
+    const fixtureEnabled = String(process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED || "").trim().toLowerCase() === "true";
+    const isTestEnv = String(process.env.NODE_ENV || "").trim().toLowerCase() === "test";
+    const hasFixtureFields = req.body?.testUserId != null || req.body?.testRole != null;
 
     if (!expectedPassword) {
       return res.status(503).json({
@@ -1050,6 +1053,46 @@ function createApp(options = {}) {
       return res.status(400).json({
         ok: false,
         error: "Invalid email or password"
+      });
+    }
+
+    if (hasFixtureFields && (!isTestEnv || !fixtureEnabled)) {
+      return res.status(403).json({
+        ok: false,
+        error: "TEST_LOGIN_FIXTURE_DISABLED"
+      });
+    }
+
+    if (isTestEnv && fixtureEnabled && hasFixtureFields) {
+      const requestedUserId = String(req.body?.testUserId || "").trim();
+      const userId = requestedUserId || AUTH_SEED_USER.id;
+      const role = String(req.body?.testRole || "user").trim().toLowerCase() || "user";
+
+      if (!/^[a-zA-Z0-9_-]{3,128}$/.test(userId)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid testUserId"
+        });
+      }
+
+      const token = authTokenLib.issueUserToken({
+        userId,
+        email: email || AUTH_SEED_USER.email,
+        provider: "password",
+        providerSubject: email || AUTH_SEED_USER.email,
+        providerVerified: true,
+        identityClass: "provider_verified"
+      });
+
+      return res.status(200).json({
+        ok: true,
+        token: token.token,
+        user: {
+          id: userId,
+          email: email || AUTH_SEED_USER.email,
+          name: AUTH_SEED_USER.name,
+          role
+        }
       });
     }
 
