@@ -124,6 +124,36 @@ async function loginFixtureToken(baseUrl, testUserId) {
   assert.ok(json?.token);
   return json.token;
 }
+
+function parseCsvEnvSet(value) {
+  return new Set(String(value || "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean));
+}
+
+async function opsLoginTokenFor(baseUrl, userId, { as } = {}) {
+  const normalizedUserId = String(userId || "").trim().toLowerCase();
+  assert.ok(normalizedUserId, "opsLoginTokenFor requires userId");
+  assert.ok(as === "admin" || as === "super_admin", "opsLoginTokenFor requires as=admin|super_admin");
+
+  const allowlisted = as === "super_admin"
+    ? parseCsvEnvSet(process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS)
+    : parseCsvEnvSet(process.env.AUTHZ_ADMIN_USER_IDS);
+  assert.ok(allowlisted.has(normalizedUserId), `opsLoginTokenFor userId must be allowlisted for ${as}`);
+
+  const { res, json } = await post(baseUrl, "/api/auth/login", {
+    email: "fixture-user@example.test",
+    password: "top-secret",
+    testUserId: normalizedUserId,
+    testRole: "user"
+  });
+  assert.equal(res.status, 200);
+  assert.equal(json?.ok, true);
+  assert.ok(json?.token);
+  return json.token;
+}
+
 async function loginToken(baseUrl) {
   const { res, json } = await post(baseUrl, "/api/auth/login", {
     email: "RDHForeclosureConquer@gmail.com",
@@ -793,6 +823,54 @@ test("default enforcement enables session_complete only", () => {
   assert.equal(parsed.enabledByAction.session_complete, true);
   assert.equal(parsed.enabledByAction.rep_update, false);
   assert.equal(parsed.enabledByAction.session_start, false);
+});
+
+test("opsLoginTokenFor(admin) requires allowlisted userId and fixture token does not bypass authz", async (t) => {
+  const prevAdmin = process.env.AUTHZ_ADMIN_USER_IDS;
+  process.env.AUTHZ_ADMIN_USER_IDS = "fixture_allowed_admin";
+  t.after(() => {
+    if (prevAdmin == null) delete process.env.AUTHZ_ADMIN_USER_IDS;
+    else process.env.AUTHZ_ADMIN_USER_IDS = prevAdmin;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+
+    await assert.rejects(
+      () => opsLoginTokenFor(baseUrl, "fixture_denied_admin", { as: "admin" }),
+      /must be allowlisted/
+    );
+
+    const allowedToken = await opsLoginTokenFor(baseUrl, "fixture_allowed_admin", { as: "admin" });
+    const allowed = await get(baseUrl, "/api/ops/enforcement-config", {
+      authorization: `Bearer ${allowedToken}`
+    });
+    assert.equal(allowed.res.status, 200);
+  });
+});
+
+test("opsLoginTokenFor(super_admin) requires bootstrap allowlist and fixture token does not bypass authz", async (t) => {
+  const prevSuper = process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+  process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = "fixture_bootstrap_super";
+  t.after(() => {
+    if (prevSuper == null) delete process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;
+    else process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS = prevSuper;
+  });
+
+  await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+
+    await assert.rejects(
+      () => opsLoginTokenFor(baseUrl, "fixture_not_super", { as: "super_admin" }),
+      /must be allowlisted/
+    );
+
+    const superToken = await opsLoginTokenFor(baseUrl, "fixture_bootstrap_super", { as: "super_admin" });
+    const allowed = await get(baseUrl, "/api/ops/write-observability", {
+      authorization: `Bearer ${superToken}`
+    });
+    assert.equal(allowed.res.status, 200);
+  });
 });
 
 test("bootstrap super-admin can access ops surfaces while normal user is denied", async (t) => {
