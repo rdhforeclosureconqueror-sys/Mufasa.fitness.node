@@ -431,6 +431,8 @@ test("write observability endpoint reports explicit and legacy write usage", asy
   });
 
   await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+
     await post(baseUrl, "/api/sessions", {
       userId: "obs_user",
       sessionId: "obs_sess_1"
@@ -447,7 +449,7 @@ test("write observability endpoint reports explicit and legacy write usage", asy
       }
     });
 
-    const adminToken = await authBridge(baseUrl, { userId: "obs_admin" });
+    const adminToken = await opsLoginTokenFor(baseUrl, "obs_admin", { as: "super_admin" });
     const { res, json } = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
     assert.equal(res.status, 200);
     assert.equal(json.ok, true);
@@ -516,6 +518,8 @@ test("legacy /command fallback can be blocked per action while others stay compa
   });
 
   await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+
     const start = await post(baseUrl, "/command", {
       domain: "fitness",
       command: "fitness.startSession",
@@ -533,7 +537,7 @@ test("legacy /command fallback can be blocked per action while others stay compa
     assert.equal(blocked.res.status, 409);
     assert.equal(blocked.json.error.code, "LEGACY_FALLBACK_BLOCKED");
 
-    const adminToken = await authBridge(baseUrl, { userId: "enforce_admin" });
+    const adminToken = await opsLoginTokenFor(baseUrl, "enforce_admin", { as: "super_admin" });
     const { json: obs } = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${adminToken}` });
     assert.equal(obs.actionFallbackEnforcement.effective.enabledByAction.session_complete, true);
     assert.equal(obs.writes.enforcement.blocked.byAction.session_complete, 1);
@@ -887,7 +891,7 @@ test("bootstrap super-admin can access ops surfaces while normal user is denied"
 
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
-    const superToken = await authBridge(baseUrl, { userId: "root_admin" });
+    const superToken = await opsLoginTokenFor(baseUrl, "root_admin", { as: "super_admin" });
     const adminToken = await opsLoginTokenFor(baseUrl, "regular_admin", { as: "admin" });
     const userToken = await loginFixtureToken(baseUrl, "normal_user");
 
