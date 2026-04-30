@@ -888,7 +888,7 @@ test("bootstrap super-admin can access ops surfaces while normal user is denied"
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
     const superToken = await authBridge(baseUrl, { userId: "root_admin" });
-    const adminToken = await authBridge(baseUrl, { userId: "regular_admin" });
+    const adminToken = await opsLoginTokenFor(baseUrl, "regular_admin", { as: "admin" });
     const userToken = await loginFixtureToken(baseUrl, "normal_user");
 
     const denied = await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${userToken}` });
@@ -912,7 +912,8 @@ test("admin can update enforcement config and rep_update remains unenforced by d
   });
 
   await withServer(t, async ({ baseUrl }) => {
-    const adminToken = await authBridge(baseUrl, { userId: "ops_admin" });
+    enableTestLoginFixture(t);
+    const adminToken = await opsLoginTokenFor(baseUrl, "ops_admin", { as: "admin" });
 
     const getBefore = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${adminToken}` });
     assert.equal(getBefore.res.status, 200);
@@ -938,7 +939,7 @@ test("ops authorization decisions are observable", async (t) => {
 
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
-    const adminToken = await authBridge(baseUrl, { userId: "audit_admin" });
+    const adminToken = await opsLoginTokenFor(baseUrl, "audit_admin", { as: "admin" });
     const userToken = await loginFixtureToken(baseUrl, "audit_user");
 
     await get(baseUrl, "/api/ops/write-observability", { authorization: `Bearer ${userToken}` });
