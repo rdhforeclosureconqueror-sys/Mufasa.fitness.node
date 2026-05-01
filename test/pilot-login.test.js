@@ -156,6 +156,42 @@ test("test login fixture issues token for requested testUserId in test mode", as
   assert.equal(me.json?.user?.id, "fixture_user_1");
 });
 
+test("test login fixture exposes revocation metadata parity and token identity", async (t) => {
+  const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevFixture = process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.NODE_ENV = "test";
+  process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = "true";
+  t.after(() => {
+    if (prevPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = prevPassword;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevFixture == null) delete process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+    else process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = prevFixture;
+  });
+
+  const baseUrl = await bootApp(t);
+  const login = await post(baseUrl, "/api/auth/login", {
+    email: "fixture-user@example.test",
+    password: "top-secret",
+    testUserId: "fixture_parity_user"
+  });
+
+  assert.equal(login.res.status, 200);
+  assert.equal(login.json?.ok, true);
+  assert.ok(login.json?.token, "expected login response token");
+  assert.ok(login.json?.jti, "expected login response jti");
+  assert.ok(login.json?.expiresAt, "expected login response expiresAt");
+  assert.equal(login.json?.user?.id, "fixture_parity_user");
+
+  const me = await get(baseUrl, "/api/auth/me", { authorization: `Bearer ${login.json.token}` });
+  assert.equal(me.res.status, 200);
+  assert.equal(me.json?.ok, true);
+  assert.equal(me.json?.user?.id, "fixture_parity_user");
+});
+
 test("test login fixture is blocked when NODE_ENV is not test", async (t) => {
   const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
   const prevNodeEnv = process.env.NODE_ENV;
