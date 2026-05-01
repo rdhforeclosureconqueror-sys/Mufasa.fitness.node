@@ -1065,6 +1065,8 @@
     const authPasswordEl = document.getElementById("authPassword");
     const authLoginStatusEl = document.getElementById("authLoginStatus");
     const authLoginStepStatusEl = document.getElementById("authLoginStepStatus");
+    const authLoginSubmitEl = document.getElementById("authLoginSubmit");
+    const AUTH_LOGIN_URL = "https://mufasa-fitness-node.onrender.com/api/auth/login";
     const appBootSteps = [];
 
     function updateAppBootStatus(step, detail = "") {
@@ -3313,20 +3315,32 @@
       }
     }
 
+
+    function ensureSingleLoginFormDisplayed() {
+      const loginForms = Array.from(document.querySelectorAll("#authLoginForm"));
+      if (loginForms.length <= 1) return;
+      loginForms.slice(1).forEach((form) => {
+        form.style.display = "none";
+        form.setAttribute("data-auth-login-duplicate-hidden", "true");
+      });
+      updateAuthStepStatus("duplicate login forms hidden", String(loginForms.length - 1));
+    }
+
     function updateAuthStepStatus(step, detail) {
       if (!authLoginStepStatusEl) return;
       authLoginStepStatusEl.textContent = detail ? `${step}: ${detail}` : step;
     }
 
     async function handleLoginSubmit(event) {
-      event.preventDefault();
+      event?.preventDefault?.();
       const email = authEmailEl?.value?.trim() || "";
       const password = authPasswordEl?.value || "";
-      if (authLoginStatusEl) authLoginStatusEl.textContent = "Signing in…";
+      if (authLoginStatusEl) authLoginStatusEl.textContent = "posting to backend";
       updateAuthStepStatus("submit received");
       try {
         updateAuthStepStatus("POST /api/auth/login", "sending");
-        const loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
+        console.log("[AUTH_LOGIN] posting to https://mufasa-fitness-node.onrender.com/api/auth/login");
+        const loginRes = await fetch(AUTH_LOGIN_URL, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email, password })
@@ -3363,7 +3377,9 @@
         if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
       }
     }
+    ensureSingleLoginFormDisplayed();
     authLoginFormEl?.addEventListener("submit", handleLoginSubmit);
+    authLoginSubmitEl?.addEventListener("click", handleLoginSubmit);
 
     async function onLogin(profile) {
       USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
