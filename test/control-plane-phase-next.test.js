@@ -48,6 +48,52 @@ async function get(baseUrl, route, headers = {}) {
   return { res, json };
 }
 
+function enableTestLoginFixture(t) {
+  const prevPassword = process.env.PILOT_LOGIN_PASSWORD;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevFixture = process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+  process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.NODE_ENV = "test";
+  process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = "true";
+  t.after(() => {
+    if (prevPassword == null) delete process.env.PILOT_LOGIN_PASSWORD;
+    else process.env.PILOT_LOGIN_PASSWORD = prevPassword;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+    if (prevFixture == null) delete process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED;
+    else process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED = prevFixture;
+  });
+}
+
+function parseCsvEnvSet(value) {
+  return new Set(String(value || "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean));
+}
+
+async function opsLoginTokenFor(baseUrl, userId, { as } = {}) {
+  const normalizedUserId = String(userId || "").trim().toLowerCase();
+  assert.ok(normalizedUserId, "opsLoginTokenFor requires userId");
+  assert.ok(as === "admin" || as === "super_admin", "opsLoginTokenFor requires as=admin|super_admin");
+
+  const allowlisted = as === "super_admin"
+    ? parseCsvEnvSet(process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS)
+    : parseCsvEnvSet(process.env.AUTHZ_ADMIN_USER_IDS);
+  assert.ok(allowlisted.has(normalizedUserId), `opsLoginTokenFor userId must be allowlisted for ${as}`);
+
+  const { res, json } = await post(baseUrl, "/api/auth/login", {
+    email: "fixture-user@example.test",
+    password: "top-secret",
+    testUserId: normalizedUserId,
+    testRole: "user"
+  });
+  assert.equal(res.status, 200);
+  assert.equal(json?.ok, true);
+  assert.ok(json?.token);
+  return json.token;
+}
+
 async function authBridge(baseUrl, userId) {
   const { json, res } = await post(baseUrl, "/api/auth/bridge", { userId, trustMode: "manual_unverified" });
   assert.equal(res.status, 201);
@@ -73,8 +119,9 @@ test("break-glass endpoint is super-admin only, requires reason, and audits with
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const adminToken = await authBridge(baseUrl, "plain_admin");
-  const superToken = await authBridge(baseUrl, "rooter");
+  enableTestLoginFixture(t);
+  const adminToken = await opsLoginTokenFor(baseUrl, "plain_admin", { as: "admin" });
+  const superToken = await opsLoginTokenFor(baseUrl, "rooter", { as: "super_admin" });
 
   const denied = await put(baseUrl, "/api/ops/enforcement-config/break-glass", {
     reason: "incident",
@@ -117,7 +164,8 @@ test("audit verify endpoint reports failures and emits alert hook", async (t) =>
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const token = await authBridge(baseUrl, "verify_admin");
+  enableTestLoginFixture(t);
+  const token = await opsLoginTokenFor(baseUrl, "verify_admin", { as: "super_admin" });
   const read1 = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${token}` });
   assert.equal(read1.res.status, 200);
 
@@ -188,7 +236,8 @@ test("version conflict and break-glass usage emit alert hooks", async (t) => {
   t.after(() => server.close());
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const token = await authBridge(baseUrl, "alert_admin");
+  enableTestLoginFixture(t);
+  const token = await opsLoginTokenFor(baseUrl, "alert_admin", { as: "super_admin" });
   const update1 = await put(baseUrl, "/api/ops/enforcement-config", {
     enabledByAction: { session_start: true },
     ifVersion: 0
