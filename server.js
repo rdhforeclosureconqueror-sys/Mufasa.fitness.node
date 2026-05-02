@@ -1087,6 +1087,8 @@ function createApp(options = {}) {
       return res.status(200).json({
         ok: true,
         token: token.token,
+        jti: token.jti,
+        expiresAt: token.expiresAt,
         user: {
           id: userId,
           email: email || AUTH_SEED_USER.email,
@@ -1115,6 +1117,8 @@ function createApp(options = {}) {
     return res.status(200).json({
       ok: true,
       token: token.token,
+      jti: token.jti,
+      expiresAt: token.expiresAt,
       user: authUserContract()
     });
   }));

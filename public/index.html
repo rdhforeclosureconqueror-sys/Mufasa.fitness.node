@@ -3326,6 +3326,7 @@
       updateAuthStepStatus("submit received");
       try {
         updateAuthStepStatus("POST /api/auth/login", "sending");
+        console.log("[AUTH_LOGIN] posting to https://mufasa-fitness-node.onrender.com/api/auth/login");
         const loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
           method: "POST",
           headers: { "content-type": "application/json" },
