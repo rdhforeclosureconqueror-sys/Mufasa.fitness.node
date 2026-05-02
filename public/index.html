@@ -825,7 +825,7 @@
 
   <div id="clickDiagBanner" aria-live="polite"></div>
   <div id="authOverlay" class="auth-screen" role="dialog" aria-modal="true" aria-labelledby="authLoginTitle" style="position:fixed;inset:0;z-index:3000;background:rgba(2,6,23,.92);display:flex;align-items:center;justify-content:center;padding:16px;">
-    <form id="authLoginForm" style="width:min(420px,100%);background:#0f172a;border:1px solid rgba(56,189,248,.45);border-radius:12px;padding:16px;display:grid;gap:10px;">
+    <form id="authLoginForm" action="javascript:void(0)" method="post" onsubmit="event.preventDefault(); return false;" style="width:min(420px,100%);background:#0f172a;border:1px solid rgba(56,189,248,.45);border-radius:12px;padding:16px;display:grid;gap:10px;">
       <h2 id="authLoginTitle" style="margin:0;">Sign in</h2>
       <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
       <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
@@ -3320,6 +3320,7 @@
 
     async function handleLoginSubmit(event) {
       event.preventDefault();
+      event.stopPropagation();
       const email = authEmailEl?.value?.trim() || "";
       const password = authPasswordEl?.value || "";
       if (authLoginStatusEl) authLoginStatusEl.textContent = "Signing in…";
@@ -3364,7 +3365,34 @@
         if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
       }
     }
-    authLoginFormEl?.addEventListener("submit", handleLoginSubmit);
+    function bindAuthLoginForm() {
+      const forms = Array.from(document.querySelectorAll("#authLoginForm"));
+      const form = forms[0] || null;
+      console.log("[AUTH_LOGIN] form found", !!form);
+      if (forms.length > 1) {
+        console.warn(`[AUTH_LOGIN] multiple login forms detected: ${forms.length}`);
+        forms.slice(1).forEach((extraForm, index) => {
+          extraForm.setAttribute("data-auth-login-disabled", "true");
+          extraForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+          });
+          const submitter = extraForm.querySelector('[type="submit"], button');
+          if (submitter) submitter.disabled = true;
+          console.warn(`[AUTH_LOGIN] disabled extra login form at index ${index + 1}`);
+        });
+      }
+      if (!form) return;
+      if (form.dataset.authLoginBound === "true") return;
+      form.addEventListener("submit", handleLoginSubmit);
+      form.dataset.authLoginBound = "true";
+      console.log("[AUTH_LOGIN] submit handler attached");
+    }
+
+    document.addEventListener("DOMContentLoaded", bindAuthLoginForm);
+    window.addEventListener("load", bindAuthLoginForm);
+    bindAuthLoginForm();
 
     async function onLogin(profile) {
       USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
