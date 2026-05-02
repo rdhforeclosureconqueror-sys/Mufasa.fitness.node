@@ -13,7 +13,8 @@ function read(relPath) {
 
 test("frontend includes login form that submits with preventDefault and auth API calls", () => {
   const html = read("public/index.html");
-  assert.match(html, /<form id="authLoginForm" action="javascript:void\(0\)" method="post" onsubmit="event\.preventDefault\(\); return false;"/, "auth login form must force post semantics and prevent native submit");
+  assert.match(html, /<form id="authLoginForm" action="javascript:void\(0\)" method="post"/, "auth login form must force post semantics");
+  assert.doesNotMatch(html, /id="authLoginForm"[^>]*onsubmit=/, "auth login form must not use inline onsubmit blocker");
   assert.match(html, /id="authLoginSubmit"/, "auth login submit button must exist");
   assert.match(html, /id="authLoginSubmit" type="submit"/, "auth login submit button must be submit type");
   assert.doesNotMatch(html, /<form[^>]*id="authLoginForm"[^>]*method="get"/i, "auth login form must never use GET");
