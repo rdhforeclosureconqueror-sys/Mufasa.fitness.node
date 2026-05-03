@@ -819,6 +819,10 @@
 </head>
 
 <body>
+  <!-- Canonical frontend shell marker: Render frontend static service should publish public/index.html -->
+  <div id="frontendShellMarker" style="position:fixed;right:8px;bottom:8px;z-index:9999;font:11px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;color:#9ca3af;background:rgba(2,6,23,.78);border:1px solid #334155;border-radius:6px;padding:4px 6px;pointer-events:none;">
+    FRONTEND SHELL: public/index.html
+  </div>
   <div id="appBootStatus" class="pilot-mode-banner app-shell-hidden" role="status" aria-live="polite" style="margin-top:8px; font-size:12px; border-color:#38bdf8; color:#e0f2fe;">
     Boot status: pending
   </div>
