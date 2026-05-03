@@ -3180,9 +3180,28 @@
       return window.APP_AUTH?.token || null;
     }
 
+    function applyAuthenticatedShellVisibility() {
+      const authOverlay = document.getElementById("authOverlay");
+      const appShell = document.getElementById("appShell");
+      console.log("[AUTH_LOGIN] hiding auth overlay");
+      if (authOverlay) {
+        authOverlay.hidden = true;
+        authOverlay.style.display = "none";
+        authOverlay.style.pointerEvents = "none";
+      }
+      if (appShell) {
+        appShell.hidden = false;
+        appShell.style.display = "";
+        appShell.style.pointerEvents = "auto";
+      }
+      document.body.classList.add("authenticated");
+      console.log("[AUTH_LOGIN] app shell shown");
+    }
+
     function renderAuthShell() {
       userInfoBar?.classList.remove("app-shell-hidden");
       appShellEl?.classList.remove("app-shell-hidden");
+      applyAuthenticatedShellVisibility();
       updateAppBootStatus("app shell shown");
     }
 
@@ -3297,13 +3316,14 @@
         if (!res.ok || !payload?.ok || !payload?.data?.user) throw new Error("invalid_session");
         const user = payload.data.user;
         window.APP_AUTH = { isAuthenticated: true, token, user };
+        console.log("[AUTH_LOGIN] login success");
         await onLogin({
           userId: user.userId || user.id,
           email: user.email,
           name: user.name,
           authProvider: user.provider || "password"
         });
-        if (authOverlayEl) authOverlayEl.style.display = "none";
+        applyAuthenticatedShellVisibility();
         return true;
       } catch (_error) {
         localStorage.removeItem("maatAuthToken");
@@ -3347,6 +3367,7 @@
         const user = mePayload?.data?.user;
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
         window.APP_AUTH = { isAuthenticated: true, token, user };
+        console.log("[AUTH_LOGIN] login success");
         updateAuthStepStatus("onLogin()", "running");
         await onLogin({
           userId: user.userId || user.id,
@@ -3355,7 +3376,7 @@
           authProvider: user.provider || "password"
         });
         updateAuthStepStatus("auth overlay hidden", "success");
-        if (authOverlayEl) authOverlayEl.style.display = "none";
+        applyAuthenticatedShellVisibility();
         renderAuthShell();
         updateAuthStepStatus("app shell shown", "success");
         if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
