@@ -1,3 +1,6 @@
 {
-  "build": "2026-04-26-frontend-diagnostics-build-active"
+  "build": "2026-05-03-frontend-shell-marker",
+  "commit": "24351a8",
+  "timestamp": "2026-05-03T22:37:20Z",
+  "shell": "public/index.html"
 }
