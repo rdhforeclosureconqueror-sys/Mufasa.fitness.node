@@ -5814,52 +5814,104 @@ function toggleListening() {
       };
     }
 
-    function updateAuthPropagationStatus(reason = "update") {
-      const panelEl = document.getElementById("authPropagationStatus");
+    function setStatusPanelError(panelId, tag, message) {
+      const panelEl = document.getElementById(panelId);
       if (!panelEl) return;
-      const auth = window.APP_AUTH || {};
-      const user = auth.user || window.__LAST_AUTH_USER || {};
-      const dbg = window.__authPropagationDebug || {};
-      const payload = [
-        `reason: ${reason}`,
-        `maatAuthToken exists: ${localStorage.getItem("maatAuthToken") ? "yes" : "no"}`,
-        `window.APP_AUTH exists: ${window.APP_AUTH ? "yes" : "no"}`,
-        `window.APP_AUTH.isAuthenticated: ${auth.isAuthenticated ? "yes" : "no"}`,
-        `window.APP_AUTH.user.email: ${user.email || "n/a"}`,
-        `window.APP_AUTH.user.role: ${user.role || "n/a"}`,
-        `window.APP_AUTH.user.roles: ${Array.isArray(user.roles) ? user.roles.join(",") : "n/a"}`,
-        `window.setCanonicalAuthState exists: ${typeof window.setCanonicalAuthState === "function" ? "yes" : "no"}`,
-        `auth:changed fired: ${dbg.authChangedFired ? "yes" : "no"}`,
-        `last auth event timestamp: ${dbg.lastAuthEventAt || "none"}`,
-        `last auth error: ${dbg.lastAuthError || "none"}`
-      ];
-      panelEl.textContent = payload.join("\n");
+      panelEl.textContent = `ERROR: ${message}`;
+      console.error(tag, message);
+    }
+
+    function updateAuthPropagationStatus(reason = "update") {
+      try {
+        const panelEl = document.getElementById("authPropagationStatus");
+        if (!panelEl) return;
+        const auth = window.APP_AUTH || {};
+        const user = auth.user || window.__LAST_AUTH_USER || {};
+        const dbg = window.__authPropagationDebug || {};
+        const payload = [
+          `reason: ${reason}`,
+          `maatAuthToken exists: ${localStorage.getItem("maatAuthToken") ? "yes" : "no"}`,
+          `window.APP_AUTH exists: ${window.APP_AUTH ? "yes" : "no"}`,
+          `window.__LAST_AUTH_USER exists: ${window.__LAST_AUTH_USER ? "yes" : "no"}`,
+          `window.__AUTH_READY: ${window.__AUTH_READY === true ? "yes" : "no"}`,
+          `window.APP_AUTH.isAuthenticated: ${auth.isAuthenticated ? "yes" : "no"}`,
+          `window.APP_AUTH.user.email: ${user.email || "n/a"}`,
+          `window.APP_AUTH.user.role: ${user.role || "n/a"}`,
+          `window.APP_AUTH.user.roles: ${Array.isArray(user.roles) ? user.roles.join(",") : "n/a"}`,
+          `window.setCanonicalAuthState exists: ${typeof window.setCanonicalAuthState === "function" ? "yes" : "no"}`,
+          `auth:changed fired: ${dbg.authChangedFired ? "yes" : "no"}`,
+          `last auth event timestamp: ${dbg.lastAuthEventAt || "none"}`,
+          `last auth error: ${dbg.lastAuthError || "none"}`
+        ];
+        panelEl.textContent = payload.join("\n");
+      } catch (error) {
+        const message = error?.message || String(error || "unknown_auth_propagation_error");
+        setStatusPanelError("authPropagationStatus", "[AUTH_PROP_STATUS_ERROR]", message);
+      }
     }
 
     function updateActivationStatusPanel(reason = "update") {
-      const panelEl = document.getElementById("appActivationStatus");
-      if (!panelEl) return;
-      const authOverlay = document.getElementById("authOverlay");
-      const appShell = document.getElementById("appShell");
-      const handlers = getPrimaryNavHandlerStatus();
-      const auth = window.APP_AUTH || {};
-      const authenticated = Boolean(auth.isAuthenticated);
-      const shellVisible = Boolean(appShell) && appShell.hidden !== true && appShell.style.display !== "none";
-      const overlayHidden = !authOverlay || authOverlay.hidden === true || authOverlay.style.display === "none" || authOverlay.style.pointerEvents === "none";
-      const payload = [
-        `reason: ${reason}`,
-        `authenticated: ${authenticated ? "yes" : "no"}`,
-        `app shell visible: ${shellVisible ? "yes" : "no"}`,
-        `overlay hidden: ${overlayHidden ? "yes" : "no"}`,
-        `dashboard handler attached: ${handlers.dashboard ? "yes" : "no"}`,
-        `workout library handler attached: ${handlers.workoutLibrary ? "yes" : "no"}`,
-        `camera handler attached: ${handlers.camera ? "yes" : "no"}`,
-        `diagnostics handler attached: ${handlers.diagnostics ? "yes" : "no"}`,
-        `last button clicked: ${window.__lastAppButtonClicked || "none"}`,
-        `last app error: ${window.__lastAppError || "none"}`
-      ];
-      panelEl.textContent = payload.join("\n");
+      try {
+        const panelEl = document.getElementById("appActivationStatus");
+        if (!panelEl) return;
+        const authOverlay = document.getElementById("authOverlay");
+        const appShell = document.getElementById("appShell");
+        const handlers = getPrimaryNavHandlerStatus();
+        const auth = window.APP_AUTH || {};
+        const authenticated = Boolean(auth.isAuthenticated);
+        const shellVisible = Boolean(appShell) && appShell.hidden !== true && appShell.style.display !== "none";
+        const overlayHidden = !authOverlay || authOverlay.hidden === true || authOverlay.style.display === "none" || authOverlay.style.pointerEvents === "none";
+        const anyHandlerAttached = Object.values(handlers).some(Boolean);
+        const payload = [
+          `reason: ${reason}`,
+          `authenticated: ${authenticated ? "yes" : "no"}`,
+          `app shell visible: ${shellVisible ? "yes" : "no"}`,
+          `overlay hidden: ${overlayHidden ? "yes" : "no"}`,
+          `handlers attached: ${anyHandlerAttached ? "yes" : "no"}`,
+          `dashboard handler attached: ${handlers.dashboard ? "yes" : "no"}`,
+          `workout library handler attached: ${handlers.workoutLibrary ? "yes" : "no"}`,
+          `camera handler attached: ${handlers.camera ? "yes" : "no"}`,
+          `diagnostics handler attached: ${handlers.diagnostics ? "yes" : "no"}`,
+          `last button clicked: ${window.__lastAppButtonClicked || "none"}`,
+          `last app error: ${window.__lastAppError || "none"}`
+        ];
+        panelEl.textContent = payload.join("\n");
+      } catch (error) {
+        const message = error?.message || String(error || "unknown_app_activation_error");
+        setStatusPanelError("appActivationStatus", "[APP_ACTIVATION_STATUS_ERROR]", message);
+      }
     }
+
+    function runPendingPanelWatchdogs() {
+      window.setTimeout(() => {
+        try {
+          const panelEl = document.getElementById("authPropagationStatus");
+          if (!panelEl) return;
+          if ((panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) {
+            updateAuthPropagationStatus("watchdog:2s");
+          }
+        } catch (error) {
+          const message = error?.message || String(error || "unknown_auth_watchdog_error");
+          setStatusPanelError("authPropagationStatus", "[AUTH_PROP_STATUS_ERROR]", message);
+        }
+      }, 2000);
+
+      window.setTimeout(() => {
+        try {
+          const panelEl = document.getElementById("appActivationStatus");
+          if (!panelEl) return;
+          if ((panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) {
+            updateActivationStatusPanel("watchdog:2s");
+          }
+        } catch (error) {
+          const message = error?.message || String(error || "unknown_activation_watchdog_error");
+          setStatusPanelError("appActivationStatus", "[APP_ACTIVATION_STATUS_ERROR]", message);
+        }
+      }, 2000);
+    }
+
+    window.__forceAuthPropagationRender = () => updateAuthPropagationStatus("manual-rescue");
+    window.__forceAppActivationRender = () => updateActivationStatusPanel("manual-rescue");
 
     function bindPrimaryButtonsAfterLogin(reason = "manual") {
       const navBoundByAppCore = window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
@@ -5941,6 +5993,17 @@ function toggleListening() {
       dbg.lastAuthEventAt = new Date().toISOString();
       updateAuthPropagationStatus("auth:ready");
       updateActivationStatusPanel("auth:ready");
+    });
+
+    window.addEventListener("load", () => {
+      updateAuthPropagationStatus("window:load");
+      updateActivationStatusPanel("window:load");
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateAuthPropagationStatus("dom:contentloaded");
+      updateActivationStatusPanel("dom:contentloaded");
+      runPendingPanelWatchdogs();
     });
 
     // ---- Wire buttons / events ----
