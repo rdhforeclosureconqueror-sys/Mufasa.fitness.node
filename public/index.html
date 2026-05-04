@@ -2970,6 +2970,17 @@ CREATE CLICKED: no</pre>
       };
     }
 
+    function setCanonicalAuthState({ token = null, user = null } = {}) {
+      const nextState = { isAuthenticated: Boolean(token && user), token: token || null, user: user || null };
+      window.APP_AUTH = nextState;
+      try {
+        if (nextState.token) localStorage.setItem("maatAuthToken", nextState.token);
+        else localStorage.removeItem("maatAuthToken");
+      } catch (_) {}
+      window.dispatchEvent(new CustomEvent("auth:changed", { detail: window.APP_AUTH }));
+      return window.APP_AUTH;
+    }
+
     function onLoginUI(profile) {
       userInfoBar.style.display = "flex";
       userPicEl.src = profile.picture || "https://i.imgur.com/9z3s8Gh.png";
@@ -2983,8 +2994,10 @@ CREATE CLICKED: no</pre>
         ? profile.goals.primary
         : "Build strength and mobility";
 
+      const signedInUser = window.APP_AUTH?.user || {};
+      const signedInLabel = signedInUser.email || profile.email || profile.name || "User";
       profileSummaryEl.innerHTML =
-        `<strong>Signed in as ${profile.name || "User"}</strong><br/>` +
+        `<strong>Signed in as ${signedInLabel}</strong><br/>` +
         (profile.age ? `Age: ${profile.age}<br/>` : "") +
         (profile.height ? `Height: ${profile.height}<br/>` : "") +
         (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
@@ -3252,7 +3265,7 @@ CREATE CLICKED: no</pre>
     }
 
     function getAuthToken() {
-      return window.APP_AUTH?.token || null;
+      return window.APP_AUTH?.token || localStorage.getItem("maatAuthToken") || null;
     }
 
     function applyAuthenticatedShellVisibility() {
@@ -3379,7 +3392,7 @@ CREATE CLICKED: no</pre>
     async function initializeAuth() {
       const token = localStorage.getItem("maatAuthToken");
       if (!token) {
-        window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+        setCanonicalAuthState({ token: null, user: null });
         if (authOverlayEl) authOverlayEl.style.display = "flex";
         return false;
       }
@@ -3391,7 +3404,7 @@ CREATE CLICKED: no</pre>
         const user = payload?.user || payload?.data?.user;
         if (!res.ok || !payload?.ok || !user) throw new Error("invalid_session");
         console.log("[AUTH_LOGIN] /api/auth/me user resolved");
-        window.APP_AUTH = { isAuthenticated: true, token, user };
+        setCanonicalAuthState({ token, user });
         console.log("[AUTH_LOGIN] login success");
         await onLogin({
           userId: user.userId || user.id,
@@ -3402,8 +3415,7 @@ CREATE CLICKED: no</pre>
         applyAuthenticatedShellVisibility();
         return true;
       } catch (_error) {
-        localStorage.removeItem("maatAuthToken");
-        window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+        setCanonicalAuthState({ token: null, user: null });
         if (authOverlayEl) authOverlayEl.style.display = "flex";
         return false;
       }
@@ -3471,7 +3483,7 @@ CREATE CLICKED: no</pre>
         console.log("[AUTH_LOGIN] /api/auth/me user resolved");
         updateAuthStepStatus("GET /api/auth/me", "user resolved");
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
-        window.APP_AUTH = { isAuthenticated: true, token, user };
+        setCanonicalAuthState({ token, user });
         console.log("[AUTH_LOGIN] login success");
         updateAuthStepStatus("onLogin()", "running");
         await onLogin({
@@ -3486,7 +3498,7 @@ CREATE CLICKED: no</pre>
         updateAuthStepStatus("app shell shown", "success");
         if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
       } catch (error) {
-        localStorage.removeItem("maatAuthToken");
+        setCanonicalAuthState({ token: null, user: null });
         updateAuthStepStatus("failed", error?.message || "unknown_error");
         if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
       }
@@ -3615,8 +3627,7 @@ CREATE CLICKED: no</pre>
     }
 
     async function handleLogout() {
-      localStorage.removeItem("maatAuthToken");
-      window.APP_AUTH = { isAuthenticated: false, token: null, user: null };
+      setCanonicalAuthState({ token: null, user: null });
       window.location.reload();
     }
 

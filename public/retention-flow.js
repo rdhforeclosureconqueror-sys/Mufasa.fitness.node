@@ -94,6 +94,12 @@
     return String(configured || "").replace(/\/$/, "");
   }
 
+  function getCanonicalAuth() {
+    const auth = window.APP_AUTH && typeof window.APP_AUTH === "object" ? window.APP_AUTH : null;
+    if (!auth) return { isAuthenticated: false, token: null, user: null };
+    return { isAuthenticated: Boolean(auth.isAuthenticated), token: auth.token || null, user: auth.user || null };
+  }
+
   function saveCompletionDates() {
     writeJSON("RETENTION_COMPLETION_DATES", state.completionDates);
   }
@@ -103,7 +109,8 @@
       baseUrl: getNodeBaseUrl(),
       storagePrefix: "maat"
     });
-    const token = client?.getAuthToken?.() || state.authToken;
+    const canonicalAuth = getCanonicalAuth();
+    const token = canonicalAuth.token || client?.getAuthToken?.() || state.authToken;
     if (!token) throw new Error("missing_auth_token");
     state.authToken = token || state.authToken;
 
@@ -586,16 +593,17 @@
       baseUrl: getNodeBaseUrl(),
       storagePrefix: "maat"
     });
-    state.authToken = client?.getAuthToken?.() || null;
+    const auth = getCanonicalAuth();
+    state.authToken = auth.token || client?.getAuthToken?.() || null;
     try {
       const me = await client?.fetchProfile?.();
-      state.userId = me?.userId || state.userId || null;
+      state.userId = me?.userId || auth?.user?.userId || auth?.user?.id || state.userId || null;
     } catch (_) {
       state.userId = state.userId || null;
     }
 
     if (!state.authToken || !state.userId) {
-      throw new Error("Please sign in to access retention flow.");
+      throw new Error("Sign in to begin onboarding flow.");
     }
 
     const [intake, goals, currentProgram, checkIns, dashboard] = await Promise.all([
@@ -652,6 +660,9 @@
   }
 
   window.addEventListener("load", () => {
+    refreshAndRender();
+  });
+  window.addEventListener("auth:changed", () => {
     refreshAndRender();
   });
   window.addEventListener("workout:completed", async (event) => {
