@@ -622,7 +622,7 @@
     state.progressDashboard = dashboard;
   }
 
-  async function refreshAndRender() {
+  async function refreshAndRender(reason = "runtime") {
     try {
       await refreshState();
       renderStatus();
@@ -660,11 +660,13 @@
     }
   }
 
+  window.__retentionFlowRefresh = (reason = 'manual') => refreshAndRender(reason);
+
   window.addEventListener("load", () => {
-    refreshAndRender();
+    refreshAndRender('window:load');
   });
-  window.addEventListener("auth:changed", () => refreshAndRender());
-  window.addEventListener("auth:ready", () => refreshAndRender());
+  window.addEventListener("auth:changed", () => refreshAndRender('auth:changed'));
+  window.addEventListener("auth:ready", () => refreshAndRender('auth:ready'));
   window.addEventListener("workout:completed", async (event) => {
     if (!state.currentProgram) return;
     const detail = event?.detail || {};
