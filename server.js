@@ -1044,30 +1044,30 @@ function createApp(options = {}) {
   app.post("/api/auth/login", asyncHandler(async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
+    const requestId = req.requestId || null;
+    const emailNormalized = email || null;
+    const hasPassword = Boolean(password);
     const expectedPassword = String(process.env.PILOT_LOGIN_PASSWORD || "");
     const fixtureEnabled = String(process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED || "").trim().toLowerCase() === "true";
     const isTestEnv = String(process.env.NODE_ENV || "").trim().toLowerCase() === "test";
     const hasFixtureFields = req.body?.testUserId != null || req.body?.testRole != null;
+    console.info("[auth-login] request received", { emailNormalized, hasPassword, requestId });
+
+    const reject = (status, reason, error = "Invalid email or password") => {
+      console.warn("[auth-login] rejected", { reason, emailNormalized, requestId });
+      return res.status(status).json({ ok: false, error });
+    };
 
     if (!expectedPassword) {
-      return res.status(503).json({
-        ok: false,
-        error: "PILOT_LOGIN_PASSWORD is not configured"
-      });
+      return reject(503, "pilot_login_password_not_configured", "PILOT_LOGIN_PASSWORD is not configured");
     }
 
     if (!email || !password) {
-      return res.status(400).json({
-        ok: false,
-        error: "Invalid email or password"
-      });
+      return reject(400, "missing_email_or_password");
     }
 
     if (hasFixtureFields && (!isTestEnv || !fixtureEnabled)) {
-      return res.status(403).json({
-        ok: false,
-        error: "TEST_LOGIN_FIXTURE_DISABLED"
-      });
+      return reject(403, "test_login_fixture_disabled", "TEST_LOGIN_FIXTURE_DISABLED");
     }
 
     if (isTestEnv && fixtureEnabled && hasFixtureFields) {
@@ -1076,10 +1076,7 @@ function createApp(options = {}) {
       const role = String(req.body?.testRole || "user").trim().toLowerCase() || "user";
 
       if (!/^[a-zA-Z0-9_-]{3,128}$/.test(userId)) {
-        return res.status(400).json({
-          ok: false,
-          error: "Invalid testUserId"
-        });
+        return reject(400, "invalid_test_user_id", "Invalid testUserId");
       }
 
       const token = authTokenLib.issueUserToken({
@@ -1091,6 +1088,7 @@ function createApp(options = {}) {
         identityClass: "provider_verified"
       });
 
+      console.info("[auth-login] success", { userId, emailNormalized: email || AUTH_SEED_USER.email, requestId });
       return res.status(200).json({
         ok: true,
         token: token.token,
@@ -1108,10 +1106,7 @@ function createApp(options = {}) {
     const registeredUser = authRegisteredUsers.get(email) || null;
     if (registeredUser) {
       if (password !== registeredUser.password) {
-        return res.status(401).json({
-          ok: false,
-          error: "Invalid email or password"
-        });
+        return reject(401, "registered_password_mismatch");
       }
       const registeredToken = authTokenLib.issueUserToken({
         userId: registeredUser.id,
@@ -1121,6 +1116,7 @@ function createApp(options = {}) {
         providerVerified: true,
         identityClass: "provider_verified"
       });
+      console.info("[auth-login] success", { userId: registeredUser.id, emailNormalized: registeredUser.email, requestId });
       return res.status(200).json({
         ok: true,
         token: registeredToken.token,
@@ -1136,10 +1132,7 @@ function createApp(options = {}) {
     }
 
     if (email !== AUTH_SEED_USER.email || password !== expectedPassword) {
-      return res.status(401).json({
-        ok: false,
-        error: "Invalid email or password"
-      });
+      return reject(401, "seed_credentials_mismatch");
     }
 
     const token = authTokenLib.issueUserToken({
@@ -1151,6 +1144,7 @@ function createApp(options = {}) {
       identityClass: "provider_verified"
     });
 
+    console.info("[auth-login] success", { userId: AUTH_SEED_USER.id, emailNormalized: AUTH_SEED_USER.email, requestId });
     return res.status(200).json({
       ok: true,
       token: token.token,

@@ -64,7 +64,10 @@
         if (stepEl) stepEl.textContent = `POST ${path}`;
         const authRes = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
         const authJson = await authRes.json().catch(() => ({}));
-        if (!authRes.ok || !authJson?.token) throw new Error(authJson?.error || 'auth_failed');
+        if (!authRes.ok || !authJson?.token) {
+          const backendError = authJson?.error || 'auth_failed';
+          throw new Error(`${authRes.status} ${backendError}`);
+        }
         localStorage.setItem('token', authJson.token);
 
         if (stepEl) stepEl.textContent = 'GET /api/auth/me';
