@@ -42,22 +42,30 @@ async function bootApp(t) {
 
 test("POST /api/auth/login works with valid credentials", async (t) => {
   const previous = process.env.PILOT_LOGIN_PASSWORD;
+  const previousAdminEmails = process.env.ADMIN_EMAILS;
+  const previousLoginSeedEmail = process.env.LOGIN_SEED_EMAIL;
   process.env.PILOT_LOGIN_PASSWORD = "top-secret";
+  process.env.ADMIN_EMAILS = "rdhforeclosureconqueror@gmail.com";
+  delete process.env.LOGIN_SEED_EMAIL;
   t.after(() => {
     if (previous == null) delete process.env.PILOT_LOGIN_PASSWORD;
     else process.env.PILOT_LOGIN_PASSWORD = previous;
+    if (previousAdminEmails == null) delete process.env.ADMIN_EMAILS;
+    else process.env.ADMIN_EMAILS = previousAdminEmails;
+    if (previousLoginSeedEmail == null) delete process.env.LOGIN_SEED_EMAIL;
+    else process.env.LOGIN_SEED_EMAIL = previousLoginSeedEmail;
   });
 
   const baseUrl = await bootApp(t);
   const login = await post(baseUrl, "/api/auth/login", {
-    email: "RDHForeclosureConquer@gmail.com",
+    email: "RDHForeclosureConqueror@gmail.com",
     password: "top-secret"
   });
 
   assert.equal(login.res.status, 200);
   assert.equal(login.json?.ok, true);
   assert.ok(login.json?.token);
-  assert.equal(login.json?.user?.email, "rdhforeclosureconquer@gmail.com");
+  assert.equal(login.json?.user?.email, "rdhforeclosureconqueror@gmail.com");
 });
 
 test("POST /api/auth/login rejects invalid credentials", async (t) => {
