@@ -1034,6 +1034,15 @@ function createApp(options = {}) {
     };
   }
 
+  const authRegisteredUsers = new Map();
+
+  function sanitizeRegisteredName(rawName, fallbackEmail) {
+    const trimmed = String(rawName || "").trim();
+    if (trimmed) return trimmed.slice(0, 120);
+    const emailLeft = String(fallbackEmail || "").split("@")[0] || "Athlete";
+    return emailLeft.slice(0, 120);
+  }
+
   app.post("/api/auth/login", asyncHandler(async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
@@ -1098,6 +1107,36 @@ function createApp(options = {}) {
       });
     }
 
+    const registeredUser = authRegisteredUsers.get(email) || null;
+    if (registeredUser) {
+      if (password !== registeredUser.password) {
+        return res.status(401).json({
+          ok: false,
+          error: "Invalid email or password"
+        });
+      }
+      const registeredToken = authTokenLib.issueUserToken({
+        userId: registeredUser.id,
+        email: registeredUser.email,
+        provider: "password",
+        providerSubject: registeredUser.email,
+        providerVerified: true,
+        identityClass: "provider_verified"
+      });
+      return res.status(200).json({
+        ok: true,
+        token: registeredToken.token,
+        jti: registeredToken.jti,
+        expiresAt: registeredToken.expiresAt,
+        user: {
+          id: registeredUser.id,
+          email: registeredUser.email,
+          name: registeredUser.name,
+          role: "user"
+        }
+      });
+    }
+
     if (email !== AUTH_SEED_USER.email || password !== expectedPassword) {
       return res.status(401).json({
         ok: false,
@@ -1120,6 +1159,46 @@ function createApp(options = {}) {
       jti: token.jti,
       expiresAt: token.expiresAt,
       user: authUserContract()
+    });
+  }));
+
+  app.post("/api/auth/register", asyncHandler(async (req, res) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+    const name = sanitizeRegisteredName(req.body?.name, email);
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ ok: false, error: "name, email, and password are required" });
+    }
+    if (!email.includes("@")) {
+      return res.status(400).json({ ok: false, error: "Invalid email format" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ ok: false, error: "Password must be at least 8 characters" });
+    }
+    if (email === AUTH_SEED_USER.email || authRegisteredUsers.has(email)) {
+      return res.status(409).json({ ok: false, error: "Account already exists" });
+    }
+
+    const userId = `registered_${Buffer.from(email).toString("base64url").slice(0, 32)}`;
+    const record = { id: userId, email, name, password };
+    authRegisteredUsers.set(email, record);
+
+    const token = authTokenLib.issueUserToken({
+      userId,
+      email,
+      provider: "password",
+      providerSubject: email,
+      providerVerified: true,
+      identityClass: "provider_verified"
+    });
+
+    return res.status(200).json({
+      ok: true,
+      token: token.token,
+      jti: token.jti,
+      expiresAt: token.expiresAt,
+      user: { id: userId, email, name, role: "user" }
     });
   }));
 
