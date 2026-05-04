@@ -5870,6 +5870,10 @@ function toggleListening() {
           `workout library handler attached: ${handlers.workoutLibrary ? "yes" : "no"}`,
           `camera handler attached: ${handlers.camera ? "yes" : "no"}`,
           `diagnostics handler attached: ${handlers.diagnostics ? "yes" : "no"}`,
+          `connectCamera available: ${typeof window.connectCamera === "function" ? "yes" : "no"}`,
+          `startWorkout available: ${typeof window.startWorkout === "function" ? "yes" : "no"}`,
+          `onLogin available: ${typeof window.onLogin === "function" ? "yes" : "no"}`,
+          `retention loader available: ${typeof window.ensureRetentionFlowLoaded === "function" ? "yes" : "no"}`,
           `last button clicked: ${window.__lastAppButtonClicked || "none"}`,
           `last app error: ${window.__lastAppError || "none"}`
         ];
@@ -5971,6 +5975,14 @@ function toggleListening() {
       return Boolean(navBoundByAppCore);
     }
     window.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
+
+    if (typeof connectCamera === "function") window.connectCamera = connectCamera;
+    if (typeof startWorkout === "function") window.startWorkout = startWorkout;
+    if (typeof onLogin === "function") window.onLogin = onLogin;
+    if (typeof onLoginUI === "function") window.onLoginUI = onLoginUI;
+    if (typeof ensureRetentionFlowLoaded === "function") window.ensureRetentionFlowLoaded = ensureRetentionFlowLoaded;
+    if (typeof updateActivationStatusPanel === "function") window.updateActivationStatusPanel = updateActivationStatusPanel;
+    if (typeof bindPrimaryButtonsAfterLogin === "function") window.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
 
     window.addEventListener("error", (event) => {
       const message = event?.error?.message || event?.message || "unknown_error";

@@ -81,8 +81,8 @@
       cameraBtn.addEventListener('click', async () => {
         logClick('camera');
         try {
-          if (typeof globalScope.connectCamera !== 'function') throw new Error('connectCamera function missing');
-          await globalScope.connectCamera();
+          if (typeof globalScope.window?.connectCamera !== 'function') throw new Error('connectCamera function missing');
+          await globalScope.window.connectCamera();
         } catch (error) {
           setError(`Camera unavailable: ${error?.message || error}`);
         }
@@ -100,6 +100,12 @@
           await fetch(smokeUrl);
         } catch (error) {
           setError(`Workout backend smoke failed: ${error?.message || error}`);
+        }
+        try {
+          if (typeof globalScope.window?.startWorkout !== 'function') throw new Error('startWorkout function missing');
+          await globalScope.window.startWorkout();
+        } catch (error) {
+          setError(`Start workout unavailable: ${error?.message || error}`);
         }
         updateFeaturePanel('start click');
       });
@@ -121,9 +127,9 @@
       if (el) { el.disabled = false; el.removeAttribute('disabled'); }
     });
 
-    await safeRun('retention', () => globalScope.ensureRetentionFlowLoaded?.('app-runtime'), 'ensureRetentionFlowLoaded missing');
-    await safeRun('profile', () => Promise.resolve(globalScope.onLoginUI?.(globalScope.USER_PROFILE || auth.user || {})), 'onLoginUI missing');
-    await safeRun('app activation', () => Promise.resolve(globalScope.updateActivationStatusPanel?.('app-runtime-force')), 'updateActivationStatusPanel missing');
+    await safeRun('retention', () => globalScope.window?.ensureRetentionFlowLoaded?.('app-runtime'), 'ensureRetentionFlowLoaded missing');
+    await safeRun('profile', () => Promise.resolve(globalScope.window?.onLoginUI?.(globalScope.USER_PROFILE || auth.user || {})), 'onLoginUI missing');
+    await safeRun('app activation', () => Promise.resolve(globalScope.window?.updateActivationStatusPanel?.('app-runtime-force')), 'updateActivationStatusPanel missing');
 
     bindFeatureClicks();
     updateFeaturePanel(`activated:${reason}`);
