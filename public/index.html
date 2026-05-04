@@ -1006,6 +1006,10 @@ CREATE CLICKED: no</pre>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
       <div id="voiceSupportStatus"></div>
+      <div id="appActivationPanel" class="small-card" style="margin-top:10px;">
+        <strong>App Activation Status</strong>
+        <pre id="appActivationStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
+      </div>
       <div id="landingDiagnosticPanel" class="small-card" style="margin-top:10px;">
         <strong>System Diagnostic</strong>
         <div id="landingBackendProbeStatus" class="muted">Backend: checking…</div>
@@ -3413,6 +3417,7 @@ CREATE CLICKED: no</pre>
           authProvider: user.provider || "password"
         });
         applyAuthenticatedShellVisibility();
+        bindPrimaryButtonsAfterLogin("initializeAuth");
         return true;
       } catch (_error) {
         setCanonicalAuthState({ token: null, user: null });
@@ -3494,6 +3499,7 @@ CREATE CLICKED: no</pre>
         });
         updateAuthStepStatus("auth overlay hidden", "success");
         applyAuthenticatedShellVisibility();
+        bindPrimaryButtonsAfterLogin("submitAuthRequest");
         renderAuthShell();
         updateAuthStepStatus("app shell shown", "success");
         if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
@@ -3609,10 +3615,7 @@ CREATE CLICKED: no</pre>
         });
       });
 
-      dashboardBtn.disabled = false;
-      if (exerciseLibraryBtn) {
-        exerciseLibraryBtn.disabled = false;
-      }
+      bindPrimaryButtonsAfterLogin("onLogin");
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
 
       persistUser();
@@ -5789,25 +5792,112 @@ function toggleListening() {
       addLog("system", `Loaded scheduled workout: ${activeWorkoutPlan?.title || "Workout"}.`);
     });
 
-    // ---- Wire buttons / events ----
-    const navBoundByAppCore = window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
-    if (!navBoundByAppCore) {
-      dashboardBtn.onclick = () => {
-        window.location.href = "/dashboard.html";
-      };
-      exerciseLibraryBtn.onclick = () => {
-        window.location.href = "/exercise-library.html";
-      };
-      connectBtn.onclick = connectCamera;
-      runSystemDiagnosticBtn.onclick = async () => {
-        try {
-          const report = await (window.__collectDiagnosticReport?.() || Promise.resolve(null));
-          addLog("system", "Diagnostics complete" + (report ? "" : " (no report payload)") + ".");
-        } catch (error) {
-          addLog("system", `Diagnostics failed: ${error?.message || error}`);
-        }
+    function getPrimaryNavHandlerStatus() {
+      return {
+        dashboard: typeof dashboardBtn?.onclick === "function",
+        workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
+        camera: typeof connectBtn?.onclick === "function",
+        diagnostics: typeof runSystemDiagnosticBtn?.onclick === "function",
+        profile: typeof saveProfileFormBtn?.onclick === "function",
+        calendar: typeof calendarApplyBtn?.onclick === "function"
       };
     }
+
+    function updateActivationStatusPanel(reason = "update") {
+      const panelEl = document.getElementById("appActivationStatus");
+      if (!panelEl) return;
+      const authOverlay = document.getElementById("authOverlay");
+      const appShell = document.getElementById("appShell");
+      const handlers = getPrimaryNavHandlerStatus();
+      const authenticated = Boolean(window.APP_AUTH?.isAuthenticated);
+      const shellVisible = Boolean(appShell) && appShell.hidden !== true && appShell.style.display !== "none";
+      const overlayHidden = !authOverlay || authOverlay.hidden === true || authOverlay.style.display === "none" || authOverlay.style.pointerEvents === "none";
+      const payload = [
+        `reason: ${reason}`,
+        `authenticated: ${authenticated ? "yes" : "no"}`,
+        `app shell visible: ${shellVisible ? "yes" : "no"}`,
+        `overlay hidden: ${overlayHidden ? "yes" : "no"}`,
+        `dashboard handler attached: ${handlers.dashboard ? "yes" : "no"}`,
+        `workout library handler attached: ${handlers.workoutLibrary ? "yes" : "no"}`,
+        `camera handler attached: ${handlers.camera ? "yes" : "no"}`,
+        `diagnostics handler attached: ${handlers.diagnostics ? "yes" : "no"}`,
+        `last button clicked: ${window.__lastAppButtonClicked || "none"}`,
+        `last app error: ${window.__lastAppError || "none"}`
+      ];
+      panelEl.textContent = payload.join("\n");
+    }
+
+    function bindPrimaryButtonsAfterLogin(reason = "manual") {
+      const navBoundByAppCore = window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
+      if (!navBoundByAppCore) {
+        dashboardBtn.onclick = () => {
+          window.__lastAppButtonClicked = "dashboard";
+          console.log("[APP_BUTTON] dashboard clicked");
+          updateActivationStatusPanel("dashboard click");
+          window.location.href = "/dashboard.html";
+        };
+        exerciseLibraryBtn.onclick = () => {
+          window.__lastAppButtonClicked = "library";
+          console.log("[APP_BUTTON] library clicked");
+          updateActivationStatusPanel("library click");
+          window.location.href = "/exercise-library.html";
+        };
+        connectBtn.onclick = async () => {
+          window.__lastAppButtonClicked = "camera";
+          console.log("[APP_BUTTON] camera clicked");
+          updateActivationStatusPanel("camera click");
+          return connectCamera();
+        };
+        runSystemDiagnosticBtn.onclick = async () => {
+          window.__lastAppButtonClicked = "diagnostics";
+          console.log("[APP_BUTTON] diagnostics clicked");
+          updateActivationStatusPanel("diagnostics click");
+          try {
+            const report = await (window.__collectDiagnosticReport?.() || Promise.resolve(null));
+            addLog("system", "Diagnostics complete" + (report ? "" : " (no report payload)") + ".");
+          } catch (error) {
+            addLog("system", `Diagnostics failed: ${error?.message || error}`);
+          }
+        };
+      }
+      [dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn]
+        .filter(Boolean)
+        .forEach((el) => {
+          el.disabled = false;
+          el.removeAttribute("disabled");
+          el.style.pointerEvents = "auto";
+        });
+      if (appShellEl) appShellEl.style.pointerEvents = "auto";
+      if (authOverlayEl) {
+        authOverlayEl.hidden = true;
+        authOverlayEl.style.display = "none";
+        authOverlayEl.style.pointerEvents = "none";
+      }
+      updateActivationStatusPanel(`bindPrimaryButtonsAfterLogin:${reason}`);
+      return Boolean(navBoundByAppCore);
+    }
+
+    window.addEventListener("error", (event) => {
+      const message = event?.error?.message || event?.message || "unknown_error";
+      window.__lastAppError = message;
+      console.error("[APP_ERROR]", event?.error || event?.message || event);
+      updateActivationStatusPanel("window error");
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+      const reason = event?.reason?.message || String(event?.reason || "unknown_promise_error");
+      window.__lastAppError = reason;
+      console.error("[APP_PROMISE_ERROR]", event?.reason || event);
+      updateActivationStatusPanel("window unhandledrejection");
+    });
+
+    window.addEventListener("auth:changed", () => {
+      bindPrimaryButtonsAfterLogin("auth:changed");
+      updateActivationStatusPanel("auth:changed");
+    });
+
+    // ---- Wire buttons / events ----
+    bindPrimaryButtonsAfterLogin("boot");
     startBtn.onclick = startWorkout;
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
@@ -5919,6 +6009,7 @@ function toggleListening() {
     updateAppBootStatus("camera handler attached", handlerChecks.camera ? "ok" : "missing");
     console.log("[APP_BOOT] workout library handlers attached", handlerChecks.workoutLibrary ? "ok" : "missing");
     updateAppBootStatus("workout library handler attached", handlerChecks.workoutLibrary ? "ok" : "missing");
+    updateActivationStatusPanel("boot complete");
 
     questionInput.addEventListener("keydown", e => {
       if (e.key === "Enter") askCoach(questionInput.value.trim());
