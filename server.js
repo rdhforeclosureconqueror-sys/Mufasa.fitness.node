@@ -175,6 +175,13 @@ function resolveRequestOrigin(req) {
   return `${protocol}://${host}`;
 }
 
+function shouldLogSystemRequest(pathname = "") {
+  if (!pathname) return false;
+  if (pathname === "/__version" || pathname === "/__diagnostic-smoke") return true;
+  if (pathname.startsWith("/api/")) return true;
+  return false;
+}
+
 function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
@@ -238,6 +245,17 @@ function createApp(options = {}) {
   app.use(cors(corsOptions));
   app.options("*", cors(corsOptions));
   app.use(express.json({ limit: "2mb" }));
+  app.use((req, _res, next) => {
+    if (!shouldLogSystemRequest(req.path)) return next();
+    console.info("[request]", {
+      method: req.method,
+      path: req.path,
+      origin: resolveRequestOrigin(req),
+      userAgent: req.get("user-agent") || null,
+      requestId: req.requestId || null
+    });
+    next();
+  });
 
   // ---- Paths ----
   const PUBLIC_DIR = path.join(rootDir, "public");
@@ -457,7 +475,8 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
   });
-  app.get("/__version", (_req, res) => {
+  app.get("/__version", (req, res) => {
+    console.info("[version]", { requestId: req.requestId, route: req.path });
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({
       build: APP_BUILD_VERSION,
@@ -469,7 +488,8 @@ function createApp(options = {}) {
       allFeatureGatesBypassed: disableLoginForPilot
     });
   });
-  app.get("/__diagnostic-smoke", (_req, res) => {
+  app.get("/__diagnostic-smoke", (req, res) => {
+    console.info("[diagnostic-smoke]", { requestId: req.requestId, route: req.path });
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({
       ok: true,
@@ -1204,6 +1224,7 @@ function createApp(options = {}) {
   }));
 
   app.get("/api/auth/me", requireAuth, asyncHandler(async (req, res) => {
+    console.info("[auth-me]", { requestId: req.requestId, userId: req.auth?.userId || null });
     const role = req.auth.userId === AUTH_SEED_USER.id
       ? AUTH_SEED_USER.role
       : (req.authz?.role || "user");
@@ -1528,6 +1549,7 @@ function createApp(options = {}) {
 
   // ---- Explicit profile / OHSA / history endpoints ----
   app.get("/api/me/profile", requireAuth, asyncHandler(async (req, res) => {
+    console.info("[me-profile]", { requestId: req.requestId, userId: req.auth?.userId || null });
     const result = userDataService.getProfile(req.auth.userId);
     return ok(res, req.requestId, result, 200);
   }));
