@@ -1,0 +1,93 @@
+(() => {
+  window.onerror = (msg, src, line, col, err) => console.error('[AUTH_CORE][onerror]', msg, src, line, col, err);
+  window.onunhandledrejection = (event) => console.error('[AUTH_CORE][unhandledrejection]', event?.reason || event);
+  console.log('[BOOT] auth-core loaded');
+
+  const stateUpdate = (patch) => {
+    if (typeof window.__setAuthDebugState === 'function') window.__setAuthDebugState(patch);
+    const el = document.getElementById('authDebugStatus');
+    if (!el) return;
+    if (patch.authScriptLoaded) el.textContent = el.textContent.replace('AUTH SCRIPT LOADED: no', 'AUTH SCRIPT LOADED: yes');
+  };
+
+  const hideAuthOverlay = () => {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) {
+      overlay.hidden = true;
+      overlay.style.display = 'none';
+      overlay.style.pointerEvents = 'none';
+    }
+    const app = document.querySelector('.app');
+    if (app) app.style.display = '';
+    document.body.classList.add('authenticated');
+  };
+
+  const bind = () => {
+    const form = document.getElementById('authLoginForm');
+    const loginBtn = document.getElementById('authLoginSubmit');
+    const createBtn = document.getElementById('authCreateAccountBtn');
+    stateUpdate({ authScriptLoaded: true, formFound: !!form, loginButtonFound: !!loginBtn, createButtonFound: !!createBtn });
+    if (!form || !loginBtn || !createBtn) return false;
+    if (form.dataset.authCoreBound === 'true') return true;
+
+    const emailEl = document.getElementById('authEmail');
+    const passEl = document.getElementById('authPassword');
+    const nameEl = document.getElementById('authName');
+    const nameWrapEl = document.getElementById('authNameWrap');
+    const statusEl = document.getElementById('authLoginStatus');
+    const stepEl = document.getElementById('authLoginStepStatus');
+    let mode = 'login';
+
+    const setMode = () => {
+      const reg = mode === 'register';
+      if (nameWrapEl) nameWrapEl.style.display = reg ? 'block' : 'none';
+      if (nameEl) nameEl.required = reg;
+      loginBtn.textContent = reg ? 'Create account' : 'Login';
+      createBtn.textContent = reg ? 'Back to login' : 'Create account';
+    };
+
+    createBtn.addEventListener('click', () => {
+      mode = mode === 'login' ? 'register' : 'login';
+      setMode();
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = emailEl?.value?.trim() || '';
+      const password = passEl?.value || '';
+      const name = nameEl?.value?.trim() || '';
+      const register = mode === 'register';
+      const path = register ? '/api/auth/register' : '/api/auth/login';
+      const body = register ? { name, email, password } : { email, password };
+      try {
+        if (statusEl) statusEl.textContent = register ? 'Creating account…' : 'Signing in…';
+        if (stepEl) stepEl.textContent = `POST ${path}`;
+        const authRes = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+        const authJson = await authRes.json().catch(() => ({}));
+        if (!authRes.ok || !authJson?.token) throw new Error(authJson?.error || 'auth_failed');
+        localStorage.setItem('token', authJson.token);
+
+        if (stepEl) stepEl.textContent = 'GET /api/auth/me';
+        const meRes = await fetch('/api/auth/me', { headers: { authorization: `Bearer ${authJson.token}` } });
+        if (!meRes.ok) throw new Error('me_failed');
+        hideAuthOverlay();
+        if (statusEl) statusEl.textContent = 'Signed in.';
+      } catch (err) {
+        console.error('[AUTH_CORE] submit failed', err);
+        if (statusEl) statusEl.textContent = `Login failed: ${err?.message || 'unknown_error'}`;
+      }
+    });
+
+    form.dataset.authCoreBound = 'true';
+    setMode();
+    return true;
+  };
+
+  let elapsed = 0;
+  const timer = setInterval(() => {
+    if (bind()) return clearInterval(timer);
+    elapsed += 100;
+    if (elapsed >= 3000) clearInterval(timer);
+  }, 100);
+  bind();
+})();
