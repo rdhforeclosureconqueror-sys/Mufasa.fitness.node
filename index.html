@@ -1032,7 +1032,6 @@
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
-  <script defer src="/auth-ui.js?v=20260504"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -3453,6 +3452,7 @@
     }
 
     function bindAuthLoginForm() {
+      console.log("[AUTH_OWNER] inline auth active");
       const forms = Array.from(document.querySelectorAll("#authLoginForm"));
       const form = forms[0] || null;
       const button = document.getElementById("authLoginSubmit");
