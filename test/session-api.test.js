@@ -442,8 +442,8 @@ test("write observability endpoint reports explicit and legacy write usage", asy
     assert.equal(res.status, 200);
     assert.equal(json.ok, true);
     assert.equal(json.writes.explicit.success.session_start, 1);
-    assert.equal(json.writes.enforcement.blocked.byAction.session_complete, 1);
-    assert.equal(json.writes.enforcement.blocked.total, 1);
+    assert.equal(json.writes.enforcement.blocked.byAction.session_complete, 0);
+    assert.equal(json.writes.enforcement.blocked.total, 0);
   });
 });
 
@@ -810,9 +810,9 @@ test("/api/me/profile returns normalized default profile shape for new auth user
 });
 
 
-test("default enforcement enables session_complete only", () => {
+test("default enforcement leaves all actions unenforced", () => {
   const parsed = parseActionEnforcementFromEnv({});
-  assert.equal(parsed.enabledByAction.session_complete, true);
+  assert.equal(parsed.enabledByAction.session_complete, false);
   assert.equal(parsed.enabledByAction.rep_update, false);
   assert.equal(parsed.enabledByAction.session_start, false);
 });
@@ -909,7 +909,7 @@ test("admin can update enforcement config and rep_update remains unenforced by d
 
     const getBefore = await get(baseUrl, "/api/ops/enforcement-config", { authorization: `Bearer ${adminToken}` });
     assert.equal(getBefore.res.status, 200);
-    assert.equal(getBefore.json.actionFallbackEnforcement.effective.enabledByAction.session_complete, true);
+    assert.equal(getBefore.json.actionFallbackEnforcement.effective.enabledByAction.session_complete, false);
     assert.equal(getBefore.json.actionFallbackEnforcement.effective.enabledByAction.rep_update, false);
 
     const putRes = await put(baseUrl, "/api/ops/enforcement-config", {

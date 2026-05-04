@@ -13,7 +13,6 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [], 
   warnings.push(...authzWarnings);
 
   const defaults = Object.fromEntries(enforceableActions.map((a) => [a, false]));
-  if (defaults.session_complete != null) defaults.session_complete = true;
 
   const list = String(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS || "")
     .split(",")

@@ -31,8 +31,13 @@ function validateAuthorizationConfigShape(config) {
   warnings.push(...validateAllowlistShape("roleAssignments.trainerSubjects", config.roleAssignments?.trainerSubjects));
   const bootstrapUserIds = config.bootstrap?.superAdminUserIds || [];
   const bootstrapSubjects = config.bootstrap?.superAdminSubjects || [];
-  if (Array.isArray(bootstrapUserIds) && Array.isArray(bootstrapSubjects) && bootstrapUserIds.length === 0 && bootstrapSubjects.length === 0) {
-    warnings.push("No bootstrap super-admin allowlist configured.");
+  const hasBootstrapAllowlist = Array.isArray(bootstrapUserIds) && bootstrapUserIds.length > 0
+    || Array.isArray(bootstrapSubjects) && bootstrapSubjects.length > 0;
+  const hasModernAdminAllowlist = (config.adminEmails || []).length > 0
+    || (config.roleAssignments?.adminUserIds || []).length > 0
+    || (config.roleAssignments?.adminSubjects || []).length > 0;
+  if (!hasBootstrapAllowlist && !hasModernAdminAllowlist) {
+    warnings.push("No bootstrap super-admin allowlist configured (set AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS / AUTHZ_BOOTSTRAP_SUPER_ADMIN_SUBJECTS for break-glass access).");
   }
 
   return [...new Set(warnings)];

@@ -70,9 +70,6 @@ function validateTrustPolicy(config) {
     else warnings.push(message);
   }
 
-  if (enabledLowTrustModes.length === 0) {
-    warnings.push("Low-trust bridge modes are disabled; ensure high-trust identity provider path is ready before rollout.");
-  }
 
   return {
     warnings,
