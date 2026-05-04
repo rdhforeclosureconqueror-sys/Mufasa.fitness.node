@@ -11,6 +11,8 @@
   const resultEl = document.getElementById("landingDiagnosticResult");
 
   function getAuthToken() {
+    const canonicalToken = window.APP_AUTH?.token || null;
+    if (canonicalToken) return canonicalToken;
     const clientToken = window.MufasaBackendRead?.createClient?.({
       baseUrl: NODE_BASE_URL,
       storagePrefix: "maat"
@@ -21,6 +23,22 @@
     } catch {
       return null;
     }
+  }
+
+  function hasDiagnosticsAccess() {
+    const user = window.APP_AUTH?.user || {};
+    const roles = Array.isArray(user.roles) ? user.roles.map((role) => String(role).toLowerCase()) : [];
+    const role = String(user.role || "").toLowerCase();
+    const email = String(user.email || "").toLowerCase();
+    const adminEmails = String(window.ADMIN_EMAILS || "")
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+    return roles.includes("admin")
+      || roles.includes("operator")
+      || role === "admin"
+      || role === "operator"
+      || adminEmails.includes(email);
   }
 
   async function probeBackend() {
@@ -132,6 +150,10 @@
   }
 
   async function runDiagnostic() {
+    if (!hasDiagnosticsAccess()) {
+      resultEl.textContent = "Diagnostic endpoint requires admin/operator permission.";
+      return;
+    }
     resultEl.textContent = "Running system diagnostic…";
     const collector = window.__collectDiagnosticReport;
     const payload = typeof collector === "function" ? collector() : { collectorMissing: true };

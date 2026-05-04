@@ -43,6 +43,8 @@
     }
 
     function getAuthToken() {
+      const appToken = window.APP_AUTH?.token;
+      if (appToken && String(appToken).trim()) return String(appToken).trim();
       const token = localStorage.getItem(tokenKey);
       if (token && token.trim()) return token.trim();
       return null;
