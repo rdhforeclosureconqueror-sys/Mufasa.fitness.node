@@ -831,11 +831,14 @@
   <div id="authOverlay" class="auth-screen" role="dialog" aria-modal="true" aria-labelledby="authLoginTitle" style="position:fixed;inset:0;z-index:3000;background:rgba(2,6,23,.92);display:flex;align-items:center;justify-content:center;padding:16px;">
     <form id="authLoginForm" action="javascript:void(0)" method="post" style="width:min(420px,100%);background:#0f172a;border:1px solid rgba(56,189,248,.45);border-radius:12px;padding:16px;display:grid;gap:10px;">
       <h2 id="authLoginTitle" style="margin:0;">Sign in</h2>
+      <label id="authNameWrap" style="display:none;">Name<input id="authName" name="name" type="text" autocomplete="name"></label>
       <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
       <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
       <button id="authLoginSubmit" type="submit">Login</button>
+      <button id="authCreateAccountToggle" type="button" class="secondary">Create account</button>
       <div id="authLoginStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginStepStatus" class="muted" aria-live="polite"></div>
+      <div id="authLoginBindingError" role="alert" style="display:none;color:#fecaca;background:#7f1d1d;padding:8px;border-radius:8px;"></div>
     </form>
   </div>
 
@@ -1066,10 +1069,19 @@
     const authOverlayEl = document.getElementById("authOverlay");
     const authLoginFormEl = document.getElementById("authLoginForm");
     const authEmailEl = document.getElementById("authEmail");
+    const authNameEl = document.getElementById("authName");
     const authPasswordEl = document.getElementById("authPassword");
+    const authLoginSubmitEl = document.getElementById("authLoginSubmit");
+    const authCreateAccountToggleEl = document.getElementById("authCreateAccountToggle");
+    const authNameWrapEl = document.getElementById("authNameWrap");
+    const authLoginTitleEl = document.getElementById("authLoginTitle");
+    const authLoginBindingErrorEl = document.getElementById("authLoginBindingError");
     const authLoginStatusEl = document.getElementById("authLoginStatus");
     const authLoginStepStatusEl = document.getElementById("authLoginStepStatus");
     const appBootSteps = [];
+    let authMode = "login";
+
+    console.log("[AUTH_LOGIN] login script loaded");
 
     function updateAppBootStatus(step, detail = "") {
       const label = detail ? `${step}: ${detail}` : step;
@@ -3342,21 +3354,48 @@
       authLoginStepStatusEl.textContent = detail ? `${step}: ${detail}` : step;
     }
 
-    async function handleLoginSubmit(event) {
-      event.preventDefault();
-      event.stopPropagation();
+    function showAuthBindingError(message) {
+      if (!authLoginBindingErrorEl) return;
+      authLoginBindingErrorEl.style.display = "block";
+      authLoginBindingErrorEl.textContent = message;
+    }
+
+    function renderAuthMode() {
+      const isRegisterMode = authMode === "register";
+      if (authNameWrapEl) authNameWrapEl.style.display = isRegisterMode ? "block" : "none";
+      if (authNameEl) authNameEl.required = isRegisterMode;
+      if (authPasswordEl) authPasswordEl.autocomplete = isRegisterMode ? "new-password" : "current-password";
+      if (authLoginTitleEl) authLoginTitleEl.textContent = isRegisterMode ? "Create account" : "Sign in";
+      if (authLoginSubmitEl) authLoginSubmitEl.textContent = isRegisterMode ? "Create account" : "Login";
+      if (authCreateAccountToggleEl) authCreateAccountToggleEl.textContent = isRegisterMode ? "Back to login" : "Create account";
+    }
+
+    async function submitAuthRequest() {
       const email = authEmailEl?.value?.trim() || "";
       const password = authPasswordEl?.value || "";
+      const name = authNameEl?.value?.trim() || "";
+      const isRegisterMode = authMode === "register";
       if (authLoginStatusEl) authLoginStatusEl.textContent = "Signing in…";
-      updateAuthStepStatus("submit received");
+      updateAuthStepStatus("submit received", isRegisterMode ? "register" : "login");
       try {
-        updateAuthStepStatus("POST /api/auth/login", "sending");
-        console.log("[AUTH_LOGIN] posting to https://mufasa-fitness-node.onrender.com/api/auth/login");
-        const loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
+        let loginRes;
+        if (isRegisterMode) {
+          updateAuthStepStatus("POST /api/auth/register", "sending");
+          console.log(`[AUTH_LOGIN] posting to ${NODE_BASE_URL}/api/auth/register`);
+          loginRes = await fetch(`${NODE_BASE_URL}/api/auth/register`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name, email, password })
+          });
+        } else {
+          updateAuthStepStatus("POST /api/auth/login", "sending");
+          console.log(`[AUTH_LOGIN] posting to ${NODE_BASE_URL}/api/auth/login`);
+          loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+        }
         const loginPayload = await loginRes.json().catch(() => ({}));
         const token = loginPayload?.token;
         if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
@@ -3390,10 +3429,27 @@
         if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
       }
     }
+
+    async function handleLoginSubmit(event) {
+      console.log("[AUTH_LOGIN] form submitted");
+      event.preventDefault();
+      event.stopPropagation();
+      return submitAuthRequest();
+    }
+
+    async function handleLoginButtonClick(event) {
+      console.log("[AUTH_LOGIN] button clicked");
+      event.preventDefault();
+      event.stopPropagation();
+      return submitAuthRequest();
+    }
+
     function bindAuthLoginForm() {
       const forms = Array.from(document.querySelectorAll("#authLoginForm"));
       const form = forms[0] || null;
+      const button = document.getElementById("authLoginSubmit");
       console.log("[AUTH_LOGIN] form found", !!form);
+      console.log("[AUTH_LOGIN] button found", !!button);
       if (forms.length > 1) {
         console.warn(`[AUTH_LOGIN] multiple login forms detected: ${forms.length}`);
         forms.slice(1).forEach((extraForm, index) => {
@@ -3408,11 +3464,21 @@
           console.warn(`[AUTH_LOGIN] disabled extra login form at index ${index + 1}`);
         });
       }
-      if (!form) return;
+      if (!form || !button) {
+        showAuthBindingError("Login UI could not be initialized (form/button missing). Refresh or contact support.");
+        return;
+      }
       if (form.dataset.authLoginBound === "true") return;
       form.addEventListener("submit", handleLoginSubmit);
+      button.addEventListener("click", handleLoginButtonClick);
+      authCreateAccountToggleEl?.addEventListener("click", () => {
+        authMode = authMode === "login" ? "register" : "login";
+        renderAuthMode();
+        if (authLoginStatusEl) authLoginStatusEl.textContent = "";
+      });
       form.dataset.authLoginBound = "true";
       console.log("[AUTH_LOGIN] submit handler attached");
+      console.log("[AUTH_LOGIN] handlers attached");
     }
 
     document.addEventListener("DOMContentLoaded", bindAuthLoginForm);
