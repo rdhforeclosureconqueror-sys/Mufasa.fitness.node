@@ -30,12 +30,17 @@
     const roles = Array.isArray(user.roles) ? user.roles.map((role) => String(role).toLowerCase()) : [];
     const role = String(user.role || "").toLowerCase();
     const email = String(user.email || "").toLowerCase();
-    const adminEmails = String(window.ADMIN_EMAILS || "")
+    const configuredAdminEmails = [window.ADMIN_EMAILS, window.__ADMIN_EMAILS, window.__APP_ADMIN_EMAILS]
+      .map((value) => String(value || ""))
+      .join(",");
+    const adminEmails = configuredAdminEmails
       .split(",")
       .map((item) => item.trim().toLowerCase())
       .filter(Boolean);
-    return roles.includes("admin")
+    return roles.includes("super_admin")
+      || roles.includes("admin")
       || roles.includes("operator")
+      || role === "super_admin"
       || role === "admin"
       || role === "operator"
       || adminEmails.includes(email);

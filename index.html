@@ -2984,6 +2984,7 @@ CREATE CLICKED: no</pre>
       window.dispatchEvent(new CustomEvent("auth:changed", { detail: window.APP_AUTH }));
       return window.APP_AUTH;
     }
+    window.setCanonicalAuthState = setCanonicalAuthState;
 
     function onLoginUI(profile) {
       userInfoBar.style.display = "flex";
