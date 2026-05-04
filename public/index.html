@@ -834,13 +834,63 @@
       <label id="authNameWrap" style="display:none;">Name<input id="authName" name="name" type="text" autocomplete="name"></label>
       <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
       <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
-      <button id="authLoginSubmit" type="submit">Login</button>
-      <button id="authCreateAccountBtn" type="button" class="secondary">Create account</button>
+      <button id="authLoginSubmit" type="submit" onclick="window.__authLoginButtonClicked && window.__authLoginButtonClicked(event)">Login</button>
+      <button id="authCreateAccountBtn" type="button" class="secondary" onclick="window.__authCreateAccountClicked && window.__authCreateAccountClicked(event)">Create account</button>
       <div id="authLoginStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginStepStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginBindingError" role="alert" style="display:none;color:#fecaca;background:#7f1d1d;padding:8px;border-radius:8px;"></div>
+      <pre id="authDebugStatus" style="margin:0;background:#020617;border:1px solid #334155;border-radius:8px;padding:8px;color:#93c5fd;font-size:12px;line-height:1.35;white-space:pre-wrap;">AUTH SCRIPT LOADED: no
+FORM FOUND: no
+LOGIN BUTTON FOUND: no
+CREATE BUTTON FOUND: no
+LOGIN CLICKED: no
+CREATE CLICKED: no</pre>
     </form>
   </div>
+
+  <script>
+    (function initAuthDebugBridge() {
+      const state = {
+        authScriptLoaded: false,
+        formFound: false,
+        loginButtonFound: false,
+        createButtonFound: false,
+        loginClicked: false,
+        createClicked: false
+      };
+      function writeStatus() {
+        const el = document.getElementById("authDebugStatus");
+        if (!el) return;
+        el.textContent = [
+          `AUTH SCRIPT LOADED: ${state.authScriptLoaded ? "yes" : "no"}`,
+          `FORM FOUND: ${state.formFound ? "yes" : "no"}`,
+          `LOGIN BUTTON FOUND: ${state.loginButtonFound ? "yes" : "no"}`,
+          `CREATE BUTTON FOUND: ${state.createButtonFound ? "yes" : "no"}`,
+          `LOGIN CLICKED: ${state.loginClicked ? "yes" : "no"}`,
+          `CREATE CLICKED: ${state.createClicked ? "yes" : "no"}`
+        ].join("\n");
+      }
+      window.__setAuthDebugState = function __setAuthDebugState(patch) {
+        Object.assign(state, patch || {});
+        writeStatus();
+      };
+      window.__authLoginButtonClicked = function __authLoginButtonClicked(event) {
+        window.__setAuthDebugState({ loginClicked: true });
+        if (typeof window.handleLoginButtonClick === "function") {
+          return window.handleLoginButtonClick(event);
+        }
+        return undefined;
+      };
+      window.__authCreateAccountClicked = function __authCreateAccountClicked(event) {
+        window.__setAuthDebugState({ createClicked: true });
+        if (typeof window.handleCreateAccountToggle === "function") {
+          return window.handleCreateAccountToggle(event);
+        }
+        return undefined;
+      };
+      writeStatus();
+    })();
+  </script>
 
   <!-- USER INFO BAR -->
   <div id="userInfo">
@@ -1089,6 +1139,7 @@
     let authMode = "login";
 
     console.log("[AUTH_LOGIN] login script loaded");
+    window.__setAuthDebugState?.({ authScriptLoaded: true });
 
     function updateAppBootStatus(step, detail = "") {
       const label = detail ? `${step}: ${detail}` : step;
@@ -3447,11 +3498,20 @@
       return submitAuthRequest();
     }
 
-    async function handleLoginButtonClick(event) {
+    window.handleLoginButtonClick = async function handleLoginButtonClick(event) {
       console.log("[AUTH_LOGIN] button clicked");
       event.preventDefault();
       event.stopPropagation();
       return submitAuthRequest();
+    }
+
+    window.handleCreateAccountToggle = function handleCreateAccountToggle(event) {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      window.__setAuthDebugState?.({ createClicked: true });
+      authMode = authMode === "login" ? "register" : "login";
+      renderAuthMode();
+      if (authLoginStatusEl) authLoginStatusEl.textContent = "";
     }
 
     function bindAuthLoginForm() {
@@ -3461,6 +3521,11 @@
       const button = document.getElementById("authLoginSubmit");
       console.log("[AUTH_LOGIN] form found", !!form);
       console.log("[AUTH_LOGIN] button found", !!button);
+      window.__setAuthDebugState?.({
+        formFound: !!document.getElementById("authLoginForm"),
+        loginButtonFound: !!document.getElementById("authLoginSubmit"),
+        createButtonFound: !!document.getElementById("authCreateAccountBtn")
+      });
       if (forms.length > 1) {
         console.warn(`[AUTH_LOGIN] multiple login forms detected: ${forms.length}`);
         forms.slice(1).forEach((extraForm, index) => {
@@ -3481,12 +3546,8 @@
       }
       if (form.dataset.authLoginBound === "true") return;
       form.addEventListener("submit", handleLoginSubmit);
-      button.addEventListener("click", handleLoginButtonClick);
-      authCreateAccountToggleEl?.addEventListener("click", () => {
-        authMode = authMode === "login" ? "register" : "login";
-        renderAuthMode();
-        if (authLoginStatusEl) authLoginStatusEl.textContent = "";
-      });
+      button.addEventListener("click", window.handleLoginButtonClick);
+      authCreateAccountToggleEl?.addEventListener("click", window.handleCreateAccountToggle);
       form.dataset.authLoginBound = "true";
       console.log("[AUTH_LOGIN] submit handler attached");
       console.log("[AUTH_LOGIN] handlers attached");
