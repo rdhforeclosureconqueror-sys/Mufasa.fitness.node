@@ -26,7 +26,7 @@
   }
 
   function hasDiagnosticsAccess() {
-    const user = window.APP_AUTH?.user || {};
+    const user = window.APP_AUTH?.user || window.__LAST_AUTH_USER || {};
     const roles = Array.isArray(user.roles) ? user.roles.map((role) => String(role).toLowerCase()) : [];
     const role = String(user.role || "").toLowerCase();
     const email = String(user.email || "").toLowerCase();
