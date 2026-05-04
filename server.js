@@ -107,8 +107,6 @@ function parseActionEnforcementFromEnv(env = process.env) {
   const requireExplicitAll = parseBooleanEnv(env.LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS);
   if (requireExplicitAll === true) {
     for (const action of ENFORCEABLE_ACTIONS) enabledByAction[action] = true;
-  } else {
-    enabledByAction.session_complete = true;
   }
   const invalidActions = [];
 
@@ -293,7 +291,7 @@ function createApp(options = {}) {
   if (!legacyFallbackEnabled) {
     startupWarnings.push("LEGACY_FALLBACK_ENABLED=false; clients relying on /command fallback may fail.");
   }
-  if (actionEnforcement.enforcedActions.length > 0) {
+  if (legacyFallbackEnabled && actionEnforcement.enforcedActions.length > 0) {
     startupWarnings.push(`Action-level /command enforcement active for: ${actionEnforcement.enforcedActions.join(", ")}`);
   }
   const authzWarnings = validateAuthorizationConfigShape(authorizationConfig);

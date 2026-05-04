@@ -1055,7 +1055,7 @@
     const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
     const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
     const LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = true;
-    const LEGACY_FALLBACK_ALLOWED_ACTIONS = ["session_complete"];
+    const LEGACY_FALLBACK_ALLOWED_ACTIONS = [];
     try { localStorage.setItem("maatNodeBaseUrl", NODE_BASE_URL); } catch (_) {}
     const BACKEND_READ_CLIENT = window.MufasaBackendRead?.createClient({
       baseUrl: NODE_BASE_URL,
