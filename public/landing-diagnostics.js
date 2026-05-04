@@ -19,14 +19,14 @@
     })?.getAuthToken?.();
     if (clientToken) return clientToken;
     try {
-      return localStorage.getItem("maatAuthToken") || null;
+      return null;
     } catch {
       return null;
     }
   }
 
   function hasDiagnosticsAccess() {
-    const user = window.APP_AUTH?.user || window.__LAST_AUTH_USER || {};
+    const user = window.APP_AUTH?.user || {};
     const roles = Array.isArray(user.roles) ? user.roles.map((role) => String(role).toLowerCase()) : [];
     const role = String(user.role || "").toLowerCase();
     const email = String(user.email || "").toLowerCase();

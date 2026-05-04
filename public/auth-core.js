@@ -86,7 +86,6 @@
           const backendError = authJson?.error || 'auth_failed';
           throw new Error(`${authRes.status} ${backendError}`);
         }
-        localStorage.setItem('maatAuthToken', authJson.token);
 
         if (stepEl) stepEl.textContent = `GET ${AUTH_ME_URL}`;
         const meRes = await fetch(AUTH_ME_URL, { headers: { authorization: `Bearer ${authJson.token}` } });
@@ -98,9 +97,8 @@
           token: authJson.token,
           user: meJson.user
         };
-        localStorage.setItem("maatAuthToken", authJson.token);
+        try { localStorage.setItem("maatAuthToken", authJson.token); } catch (_) {}
         window.APP_AUTH = canonicalPayload;
-        window.__LAST_AUTH_USER = meJson.user;
         window.__AUTH_READY = true;
         broadcastAuthState(canonicalPayload);
         if (typeof window.setCanonicalAuthState === 'function') {

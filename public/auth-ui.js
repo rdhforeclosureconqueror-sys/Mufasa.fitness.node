@@ -45,13 +45,13 @@
       const loginPayload = await loginRes.json().catch(() => ({}));
       const token = loginPayload?.token;
       if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
-      localStorage.setItem("maatAuthToken", token);
       const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, { headers: { authorization: `Bearer ${token}` } });
       const mePayload = await meRes.json().catch(() => ({}));
       const user = mePayload?.user || mePayload?.data?.user;
       console.log("[AUTH_LOGIN] /api/auth/me user resolved");
       if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
       window.APP_AUTH = { isAuthenticated: true, token, user };
+      try { localStorage.setItem("maatAuthToken", token); } catch (_) {}
       if (typeof window.onLogin === "function") {
         await window.onLogin({ userId: user.userId || user.id, email: user.email, name: user.name, authProvider: user.provider || "password" });
       }
@@ -61,7 +61,6 @@
       if (appShellEl) appShellEl.classList.remove("app-shell-hidden");
       if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
     } catch (error) {
-      localStorage.removeItem("maatAuthToken");
       if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
     }
   }

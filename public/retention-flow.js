@@ -89,16 +89,16 @@
       .replace(/'/g, "&#39;");
   }
 
+  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+
   function getNodeBaseUrl() {
-    const configured = localStorage.getItem("maatNodeBaseUrl") || window.NODE_BASE_URL || "";
-    return String(configured || "").replace(/\/$/, "");
+    return NODE_BASE_URL;
   }
 
   function getCanonicalAuth() {
     const auth = window.APP_AUTH && typeof window.APP_AUTH === "object" ? window.APP_AUTH : null;
-    const fallbackUser = window.__LAST_AUTH_USER && typeof window.__LAST_AUTH_USER === "object" ? window.__LAST_AUTH_USER : null;
-    if (!auth) return { isAuthenticated: false, token: null, user: fallbackUser };
-    return { isAuthenticated: Boolean(auth.isAuthenticated), token: auth.token || null, user: auth.user || fallbackUser };
+    if (!auth) return { isAuthenticated: false, token: null, user: null };
+    return { isAuthenticated: Boolean(auth.isAuthenticated), token: auth.token || null, user: auth.user || null };
   }
 
   function saveCompletionDates() {
@@ -111,7 +111,7 @@
       storagePrefix: "maat"
     });
     const canonicalAuth = getCanonicalAuth();
-    const token = canonicalAuth.token || client?.getAuthToken?.() || state.authToken;
+    const token = canonicalAuth.token || state.authToken;
     if (!token) throw new Error("missing_auth_token");
     state.authToken = token || state.authToken;
 
@@ -133,7 +133,7 @@
 
   async function loadExerciseIndex() {
     if (state.exerciseIndex) return state.exerciseIndex;
-    const base = getNodeBaseUrl() || window.location.origin;
+    const base = getNodeBaseUrl();
     try {
       const res = await fetch(`${base}/exercise-db/index.json`, { cache: "no-store" });
       const raw = await res.json();

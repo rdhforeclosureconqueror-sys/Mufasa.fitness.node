@@ -1243,12 +1243,7 @@ CREATE CLICKED: no</pre>
     });
     const BUILDER_MODE_FULL_ACCESS = false;
     let DISABLE_LOGIN_FOR_PILOT = false;
-    window.APP_AUTH = window.APP_AUTH || {
-      isAuthenticated: false,
-      token: null,
-      user: null
-    };
-    window.__LAST_AUTH_USER = window.__LAST_AUTH_USER || null;
+    window.APP_AUTH = window.APP_AUTH && typeof window.APP_AUTH === "object" ? window.APP_AUTH : { isAuthenticated: false, token: null, user: null };
     window.__AUTH_READY = window.__AUTH_READY === true;
     window.__authPropagationDebug = window.__authPropagationDebug || { authChangedFired: false, lastAuthEventAt: null, lastAuthError: null };
     window.pilotSuperAdminActive = false;
@@ -2988,7 +2983,6 @@ CREATE CLICKED: no</pre>
         if (nextState.token) localStorage.setItem("maatAuthToken", nextState.token);
         else localStorage.removeItem("maatAuthToken");
       } catch (_) {}
-      window.__LAST_AUTH_USER = nextState.user || window.__LAST_AUTH_USER || null;
       window.__AUTH_READY = Boolean(nextState.isAuthenticated);
       window.dispatchEvent(new CustomEvent("auth:changed", { detail: window.APP_AUTH }));
       window.dispatchEvent(new CustomEvent("auth:ready", { detail: window.APP_AUTH }));
@@ -3009,7 +3003,7 @@ CREATE CLICKED: no</pre>
         ? profile.goals.primary
         : "Build strength and mobility";
 
-      const signedInUser = window.APP_AUTH?.user || window.__LAST_AUTH_USER || {};
+      const signedInUser = window.APP_AUTH?.user || {};
       const signedInLabel = signedInUser.email || profile.email || profile.name || "User";
       profileSummaryEl.innerHTML =
         `<strong>Signed in as ${signedInLabel}</strong><br/>` +
@@ -3405,7 +3399,7 @@ CREATE CLICKED: no</pre>
     }
 
     async function initializeAuth() {
-      const token = localStorage.getItem("maatAuthToken");
+      const token = window.APP_AUTH?.token || localStorage.getItem("maatAuthToken");
       if (!token) {
         setCanonicalAuthState({ token: null, user: null });
         if (authOverlayEl) authOverlayEl.style.display = "flex";
@@ -3489,7 +3483,7 @@ CREATE CLICKED: no</pre>
         if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
         updateAuthStepStatus("token received");
         localStorage.setItem("maatAuthToken", token);
-        updateAuthStepStatus("token stored", "maatAuthToken");
+        updateAuthStepStatus("token stored", "APP_AUTH");
         updateAuthStepStatus("GET /api/auth/me", "sending");
         const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
           headers: { authorization: `Bearer ${token}` }
@@ -5917,6 +5911,7 @@ function toggleListening() {
       const navBoundByAppCore = window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
       if (!navBoundByAppCore) {
         dashboardBtn.onclick = () => {
+          console.log("[BUTTON_CLICK] dashboard clicked");
           window.__lastAppButtonClicked = "dashboard";
           console.log("[APP_BUTTON] dashboard clicked");
           updateActivationStatusPanel("dashboard click");
@@ -5929,12 +5924,14 @@ function toggleListening() {
           window.location.href = "/exercise-library.html";
         };
         connectBtn.onclick = async () => {
+          console.log("[BUTTON_CLICK] camera clicked");
           window.__lastAppButtonClicked = "camera";
           console.log("[APP_BUTTON] camera clicked");
           updateActivationStatusPanel("camera click");
           return connectCamera();
         };
         runSystemDiagnosticBtn.onclick = async () => {
+          console.log("[BUTTON_CLICK] diagnostics clicked");
           window.__lastAppButtonClicked = "diagnostics";
           console.log("[APP_BUTTON] diagnostics clicked");
           updateActivationStatusPanel("diagnostics click");
@@ -5946,6 +5943,9 @@ function toggleListening() {
           }
         };
       }
+      console.log("[BUTTON_BIND] dashboard bound");
+      console.log("[BUTTON_BIND] camera bound");
+      console.log("[BUTTON_BIND] diagnostics bound");
       [dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn]
         .filter(Boolean)
         .forEach((el) => {
@@ -5993,6 +5993,9 @@ function toggleListening() {
       dbg.lastAuthEventAt = new Date().toISOString();
       updateAuthPropagationStatus("auth:ready");
       updateActivationStatusPanel("auth:ready");
+      if (window.APP_AUTH?.isAuthenticated !== true) {
+        alert("CRITICAL: AUTH NOT PROPAGATED");
+      }
     });
 
     window.addEventListener("load", () => {
@@ -6007,9 +6010,20 @@ function toggleListening() {
     });
 
     // ---- Wire buttons / events ----
+    console.log("[ROUTE_CHECK]", window.location.href, "NODE_BASE_URL", NODE_BASE_URL);
     updateAuthPropagationStatus("boot");
     bindPrimaryButtonsAfterLogin("boot");
-    startBtn.onclick = startWorkout;
+    startBtn.onclick = async () => {
+      console.log("[BUTTON_CLICK] start_workout clicked");
+      try {
+        const smoke = await fetch(`${NODE_BASE_URL}/__diagnostic-smoke`);
+        console.log("[BUTTON_TEST] backend hit success", smoke.status);
+      } catch (e) {
+        console.log("[BUTTON_TEST] backend hit fail", e?.message || e);
+      }
+      return startWorkout();
+    };
+    console.log("[BUTTON_BIND] start_workout bound");
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
     if (exitCameraMobileBtn) {

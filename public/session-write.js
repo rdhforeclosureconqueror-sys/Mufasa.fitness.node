@@ -10,7 +10,6 @@
   function createSessionWriteClient(options) {
     const {
       baseUrl,
-      commandUrl,
       getUserId,
       getAuthToken,
       repDebounceMs = 450,
@@ -26,7 +25,6 @@
     } = options || {};
 
     if (!baseUrl) throw new Error("baseUrl_required");
-    if (!commandUrl) throw new Error("commandUrl_required");
 
     let pendingRep = null;
     let repTimer = null;
@@ -247,6 +245,7 @@
         }
       } catch (err) {
         const reason = trackFallback("session_start", err);
+        throw err;
         if (!isFallbackAllowedForAction("session_start")) {
           const gateErr = makeFallbackGateError("session_start", err, reason);
           if (typeof onSessionSaveFailed === "function") {
@@ -290,6 +289,7 @@
         }
       } catch (err) {
         const reason = trackFallback("session_complete", err);
+        throw err;
         if (!isFallbackAllowedForAction("session_complete")) {
           const gateErr = makeFallbackGateError("session_complete", err, reason);
           if (typeof onSessionSaveFailed === "function") {
@@ -344,6 +344,7 @@
       } catch (err) {
         logger.warn("Rep update API unavailable; using /command fallback.", err);
         const reason = trackFallback("rep_update", err);
+        throw err;
         try {
           await sendLegacyCommand("fitness.repUpdate", { ...repPayload, _fallbackReason: reason });
         } catch (fallbackErr) {
