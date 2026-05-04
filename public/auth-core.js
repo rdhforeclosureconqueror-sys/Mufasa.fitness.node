@@ -74,11 +74,25 @@
           const backendError = authJson?.error || 'auth_failed';
           throw new Error(`${authRes.status} ${backendError}`);
         }
-        localStorage.setItem('token', authJson.token);
+        localStorage.setItem('maatAuthToken', authJson.token);
 
         if (stepEl) stepEl.textContent = `GET ${AUTH_ME_URL}`;
         const meRes = await fetch(AUTH_ME_URL, { headers: { authorization: `Bearer ${authJson.token}` } });
-        if (!meRes.ok) throw new Error('me_failed');
+        const meJson = await meRes.json().catch(() => ({}));
+        if (!meRes.ok || !meJson?.user) throw new Error('me_failed');
+
+        const canonicalPayload = {
+          isAuthenticated: true,
+          token: authJson.token,
+          user: meJson.user
+        };
+        if (typeof window.setCanonicalAuthState === 'function') {
+          window.setCanonicalAuthState(canonicalPayload);
+        } else {
+          window.APP_AUTH = canonicalPayload;
+          window.dispatchEvent(new CustomEvent('auth:changed', { detail: canonicalPayload }));
+        }
+
         hideAuthOverlay();
         if (statusEl) statusEl.textContent = 'Signed in.';
       } catch (err) {

@@ -1207,13 +1207,17 @@ function createApp(options = {}) {
     const role = req.auth.userId === AUTH_SEED_USER.id
       ? AUTH_SEED_USER.role
       : (req.authz?.role || "user");
+    const email = req.auth.email || AUTH_SEED_USER.email;
+    const name = String(req.auth?.name || "").trim() || (email.includes("@") ? email.split("@")[0] : AUTH_SEED_USER.name);
+    const roles = Array.from(new Set([role, ...(role === "super_admin" ? ["admin", "operator"] : []), ...(role === "admin" ? ["operator"] : [])]));
     return res.status(200).json({
       ok: true,
       user: {
         id: req.auth.userId,
-        email: req.auth.email || AUTH_SEED_USER.email,
-        name: AUTH_SEED_USER.name,
-        role
+        email,
+        name,
+        role,
+        roles
       }
     });
   }));
