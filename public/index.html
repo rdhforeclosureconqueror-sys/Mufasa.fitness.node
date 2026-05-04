@@ -1014,6 +1014,10 @@ CREATE CLICKED: no</pre>
         <strong>App Activation Status</strong>
         <pre id="appActivationStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
       </div>
+      <div id="featureActivationPanel" class="small-card" style="margin-top:10px;">
+        <strong>Feature Activation Panel</strong>
+        <pre id="featureActivationStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
+      </div>
       <div id="landingDiagnosticPanel" class="small-card" style="margin-top:10px;">
         <strong>System Diagnostic</strong>
         <div id="landingBackendProbeStatus" class="muted">Backend: checking…</div>
@@ -5912,12 +5916,14 @@ function toggleListening() {
       if (!navBoundByAppCore) {
         dashboardBtn.onclick = () => {
           console.log("[BUTTON_CLICK] dashboard clicked");
+          console.log("[FEATURE_CLICK] dashboard");
           window.__lastAppButtonClicked = "dashboard";
           console.log("[APP_BUTTON] dashboard clicked");
           updateActivationStatusPanel("dashboard click");
           window.location.href = "/dashboard.html";
         };
         exerciseLibraryBtn.onclick = () => {
+          console.log("[FEATURE_CLICK] workout_library");
           window.__lastAppButtonClicked = "library";
           console.log("[APP_BUTTON] library clicked");
           updateActivationStatusPanel("library click");
@@ -5925,6 +5931,7 @@ function toggleListening() {
         };
         connectBtn.onclick = async () => {
           console.log("[BUTTON_CLICK] camera clicked");
+          console.log("[FEATURE_CLICK] camera");
           window.__lastAppButtonClicked = "camera";
           console.log("[APP_BUTTON] camera clicked");
           updateActivationStatusPanel("camera click");
@@ -5963,6 +5970,7 @@ function toggleListening() {
       updateActivationStatusPanel(`bindPrimaryButtonsAfterLogin:${reason}`);
       return Boolean(navBoundByAppCore);
     }
+    window.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
 
     window.addEventListener("error", (event) => {
       const message = event?.error?.message || event?.message || "unknown_error";
@@ -6015,8 +6023,11 @@ function toggleListening() {
     bindPrimaryButtonsAfterLogin("boot");
     startBtn.onclick = async () => {
       console.log("[BUTTON_CLICK] start_workout clicked");
+      console.log("[FEATURE_CLICK] start_workout");
       try {
-        const smoke = await fetch(`${NODE_BASE_URL}/__diagnostic-smoke`);
+        const smokeUrl = `${NODE_BASE_URL}/__diagnostic-smoke`;
+        console.log(`[FEATURE_BACKEND] ${smokeUrl}`);
+        const smoke = await fetch(smokeUrl);
         console.log("[BUTTON_TEST] backend hit success", smoke.status);
       } catch (e) {
         console.log("[BUTTON_TEST] backend hit fail", e?.message || e);
@@ -6192,6 +6203,7 @@ function toggleListening() {
   </script>
 
   <script src="/app-core.js?v=20260429"></script>
+  <script src="/app-runtime.js?v=20260504"></script>
 
   <!-- Audio player for AI voice (must exist in DOM before JS tries to use it) -->
   <audio id="ttsPlayer" playsinline preload="auto"></audio>
