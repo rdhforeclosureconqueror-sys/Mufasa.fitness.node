@@ -23,13 +23,15 @@
     }
   }
 
-  function resolveBaseUrl(baseUrl) {
-    return (baseUrl || "").replace(/\/$/, "");
+  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+
+  function resolveBaseUrl() {
+    return NODE_BASE_URL;
   }
 
   function createClient({ baseUrl = "" } = {}) {
     const apiBase = resolveBaseUrl(baseUrl);
-    const tokenKey = "maatAuthToken";
+    
 
     function mergeAuthDebug(patch) {
       if (typeof window === "undefined") return;
@@ -45,19 +47,20 @@
     function getAuthToken() {
       const appToken = window.APP_AUTH?.token;
       if (appToken && String(appToken).trim()) return String(appToken).trim();
-      const token = localStorage.getItem(tokenKey);
-      if (token && token.trim()) return token.trim();
+      const persisted = localStorage.getItem("maatAuthToken");
+      if (persisted && String(persisted).trim()) return String(persisted).trim();
       return null;
     }
 
     function setAuthToken(token) {
-      if (token && token.trim()) {
-        localStorage.setItem(tokenKey, token.trim());
-      }
+      if (!token) return null;
+      try { localStorage.setItem("maatAuthToken", String(token).trim()); } catch (_) {}
+      return token;
     }
 
     function clearAuthToken() {
-      localStorage.removeItem(tokenKey);
+      try { localStorage.removeItem("maatAuthToken"); } catch (_) {}
+      return null;
     }
 
     async function fetchJSON(path, { method = "GET", body = undefined, auth = false } = {}) {
