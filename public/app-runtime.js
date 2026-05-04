@@ -54,6 +54,31 @@
     ].join('\n');
   }
 
+
+
+  function ensureGlobalFunction(name, fallbackMessage){
+    if (typeof globalScope.window?.[name] === 'function') return;
+    globalScope.window[name] = async function fallbackFeature(){
+      const smokeUrl = 'https://mufasa-fitness-node.onrender.com/__diagnostic-smoke';
+      logBackend(smokeUrl);
+      try { await fetch(smokeUrl, { cache: 'no-store' }); } catch (error) {
+        setError(`${name} fallback smoke failed: ${error?.message || error}`);
+      }
+      const msg = `${name} unavailable: ${fallbackMessage}`;
+      setError(msg);
+      throw new Error(msg);
+    };
+  }
+
+  function assertPostLoginAuthConsistency(reason){
+    const auth = globalScope.APP_AUTH || {};
+    const profileSummary = globalScope.document.getElementById('profileSummary');
+    if (auth.isAuthenticated === true && profileSummary && /not signed in yet/i.test(profileSummary.textContent || '')) {
+      setError('CRITICAL: PROFILE IGNORES AUTH');
+      console.error('[AUTH_ASSERT]', reason, 'CRITICAL: PROFILE IGNORES AUTH');
+    }
+  }
+
   async function safeRun(name, fn, missingMessage){
     try {
       if (typeof fn !== 'function') throw new Error(missingMessage);
@@ -94,7 +119,7 @@
       startBtn.addEventListener('click', async () => {
         logClick('start_workout');
         const baseUrl = globalScope.NODE_BASE_URL || '';
-        const smokeUrl = `${baseUrl}/__diagnostic-smoke`;
+        const smokeUrl = `https://mufasa-fitness-node.onrender.com/__diagnostic-smoke`;
         logBackend(smokeUrl);
         try {
           await fetch(smokeUrl);
@@ -118,6 +143,8 @@
       updateFeaturePanel(`${reason}:not-authenticated`);
       return;
     }
+    ensureGlobalFunction('startWorkout', 'startWorkout function missing');
+    ensureGlobalFunction('connectCamera', 'connectCamera function missing');
     if (typeof globalScope.bindPrimaryButtonsAfterLogin === 'function') {
       globalScope.bindPrimaryButtonsAfterLogin(`app-runtime:${reason}`);
     }
@@ -129,9 +156,11 @@
 
     await safeRun('retention', () => globalScope.window?.ensureRetentionFlowLoaded?.('app-runtime'), 'ensureRetentionFlowLoaded missing');
     await safeRun('profile', () => Promise.resolve(globalScope.window?.onLoginUI?.(globalScope.USER_PROFILE || auth.user || {})), 'onLoginUI missing');
+    await safeRun('retention refresh', () => Promise.resolve(globalScope.window?.__retentionFlowRefresh?.('app-runtime')), '__retentionFlowRefresh missing');
     await safeRun('app activation', () => Promise.resolve(globalScope.window?.updateActivationStatusPanel?.('app-runtime-force')), 'updateActivationStatusPanel missing');
 
     bindFeatureClicks();
+    assertPostLoginAuthConsistency(reason);
     updateFeaturePanel(`activated:${reason}`);
   }
 
