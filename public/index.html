@@ -1018,6 +1018,10 @@ CREATE CLICKED: no</pre>
         <strong>Feature Activation Panel</strong>
         <pre id="featureActivationStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
       </div>
+      <div id="systemBootStatusPanel" class="small-card" style="margin-top:10px;">
+        <strong>System Boot Status</strong>
+        <pre id="systemBootStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
+      </div>
       <div id="landingDiagnosticPanel" class="small-card" style="margin-top:10px;">
         <strong>System Diagnostic</strong>
         <div id="landingBackendProbeStatus" class="muted">Backend: checking…</div>
@@ -1322,6 +1326,9 @@ CREATE CLICKED: no</pre>
     const syncStatusEl = document.getElementById("syncStatus");
     const brainChipTxt = document.getElementById("brainChipText");
     const buildVersionPillEl = document.getElementById("buildVersionPill");
+    const systemBootStatusEl = document.getElementById("systemBootStatus");
+    const bootStatus = { frontendVersionLoaded:false, backendVersionLoaded:false, authLoginSuccess:false, authMeSuccess:false, profileFetchSuccess:false, retentionInitSuccess:false, appRuntimeLoaded:false, lastBootError:"none" };
+    function renderSystemBootStatus(reason = "update") { if (!systemBootStatusEl) return; systemBootStatusEl.textContent = [`reason: ${reason}`,`frontend version loaded: ${bootStatus.frontendVersionLoaded?"yes":"no"}`,`backend __version loaded: ${bootStatus.backendVersionLoaded?"yes":"no"}`,`auth login success: ${bootStatus.authLoginSuccess?"yes":"no"}`,`/api/auth/me success: ${bootStatus.authMeSuccess?"yes":"no"}`,`profile fetch success: ${bootStatus.profileFetchSuccess?"yes":"no"}`,`retention init success: ${bootStatus.retentionInitSuccess?"yes":"no"}`,`app runtime loaded: ${bootStatus.appRuntimeLoaded?"yes":"no"}`,`last boot error: ${bootStatus.lastBootError||"none"}`].join("\n"); }
 
     const connectBtn = document.getElementById("connectBtn");
     const startBtn = document.getElementById("startBtn");
@@ -1489,9 +1496,22 @@ CREATE CLICKED: no</pre>
       });
     }
 
-    function refreshBuildStamp() {
+    async function refreshBuildStamp() {
       if (!buildVersionPillEl) return;
-      buildVersionPillEl.textContent = `Build: ${APP_BUILD_VERSION} • Host: ${appHostLabel} • Tracking: ${currentTrackingMode || "upper_body"} • Stage: ${avatarStageMode}`;
+      let backendBuild = "loading";
+      try {
+        const res = await fetch("https://mufasa-fitness-node.onrender.com/__version", { cache: "no-store" });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(`http_${res.status}`);
+        backendBuild = payload?.build || "unknown";
+        bootStatus.backendVersionLoaded = true;
+        bootStatus.frontendVersionLoaded = true;
+      } catch (error) {
+        backendBuild = `error:${error?.message || "network_error"}`;
+        bootStatus.lastBootError = backendBuild;
+      }
+      buildVersionPillEl.textContent = `Build: ${backendBuild} • Host: ${appHostLabel} • Tracking: ${currentTrackingMode || "upper_body"} • Stage: ${avatarStageMode}`;
+      renderSystemBootStatus("build-stamp");
     }
 
     (function logMobileControlTruth() {
@@ -3368,11 +3388,16 @@ CREATE CLICKED: no</pre>
       if (!BACKEND_READ_CLIENT) return false;
       try {
         const result = await BACKEND_READ_CLIENT.fetchProfile();
-        if (!result?.profile) return false;
+        if (!result?.profile) {
+          const fallbackUser = window.APP_AUTH?.user || {};
+          if (window.APP_AUTH?.isAuthenticated === true) onLoginUI({ ...USER_PROFILE, ...fallbackUser, name: fallbackUser.name || fallbackUser.email || "Signed-in user" });
+          return false;
+        }
 
         USER_PROFILE = BACKEND_READ_CLIENT.normalizeProfile(result.profile, USER_PROFILE || {});
         USER_PROFILE.name = USER_PROFILE.name || "Athlete";
         onLoginUI(USER_PROFILE);
+      bootStatus.retentionInitSuccess = true;
         queueMicrotask(() => {
           loadAvatarAssetForCurrentUser("backend_profile").catch((error) => {
             console.warn("[avatar-load] deferred backend profile avatar load failed", error);
@@ -3380,6 +3405,7 @@ CREATE CLICKED: no</pre>
         });
         persistUser();
         backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
+        bootStatus.profileFetchSuccess = true;
         addLog("system", "Profile synced from backend.");
         updateAuthDebug({ lastProfileStatus: "200" });
         updateSyncStatus();
@@ -3497,6 +3523,8 @@ CREATE CLICKED: no</pre>
         console.log("[AUTH_LOGIN] /api/auth/me user resolved");
         updateAuthStepStatus("GET /api/auth/me", "user resolved");
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
+        bootStatus.authLoginSuccess = true;
+        bootStatus.authMeSuccess = true;
         setCanonicalAuthState({ token, user });
         console.log("[AUTH_LOGIN] login success");
         updateAuthStepStatus("onLogin()", "running");
@@ -3626,6 +3654,8 @@ CREATE CLICKED: no</pre>
 
       bindPrimaryButtonsAfterLogin("onLogin");
       markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
+      bootStatus.appRuntimeLoaded = true;
+      renderSystemBootStatus("onLogin");
 
       persistUser();
       await hydrateProfileFromBackend();
@@ -5910,6 +5940,8 @@ function toggleListening() {
           setStatusPanelError("appActivationStatus", "[APP_ACTIVATION_STATUS_ERROR]", message);
         }
       }, 2000);
+      window.setTimeout(() => { const panelEl = document.getElementById("featureActivationStatus"); if (panelEl && (panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) { window.__appRuntime?.updateFeaturePanel?.("watchdog:2s"); } }, 2000);
+      window.setTimeout(() => { const panelEl = document.getElementById("systemBootStatus"); if (panelEl && (panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) { renderSystemBootStatus("watchdog:2s"); } }, 2000);
     }
 
     window.__forceAuthPropagationRender = () => updateAuthPropagationStatus("manual-rescue");
@@ -6032,6 +6064,7 @@ function toggleListening() {
     // ---- Wire buttons / events ----
     console.log("[ROUTE_CHECK]", window.location.href, "NODE_BASE_URL", NODE_BASE_URL);
     updateAuthPropagationStatus("boot");
+    renderSystemBootStatus("boot");
     bindPrimaryButtonsAfterLogin("boot");
     startBtn.onclick = async () => {
       console.log("[BUTTON_CLICK] start_workout clicked");
