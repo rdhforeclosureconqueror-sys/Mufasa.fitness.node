@@ -3,6 +3,11 @@
   window.onunhandledrejection = (event) => console.error('[AUTH_CORE][unhandledrejection]', event?.reason || event);
   console.log('[BOOT] auth-core loaded');
 
+  const NODE_BASE_URL = 'https://mufasa-fitness-node.onrender.com';
+  const AUTH_LOGIN_URL = `${NODE_BASE_URL}/api/auth/login`;
+  const AUTH_REGISTER_URL = `${NODE_BASE_URL}/api/auth/register`;
+  const AUTH_ME_URL = `${NODE_BASE_URL}/api/auth/me`;
+
   const stateUpdate = (patch) => {
     if (typeof window.__setAuthDebugState === 'function') window.__setAuthDebugState(patch);
     const el = document.getElementById('authDebugStatus');
@@ -57,12 +62,13 @@
       const password = passEl?.value || '';
       const name = nameEl?.value?.trim() || '';
       const register = mode === 'register';
-      const path = register ? '/api/auth/register' : '/api/auth/login';
+      const authUrl = register ? AUTH_REGISTER_URL : AUTH_LOGIN_URL;
       const body = register ? { name, email, password } : { email, password };
       try {
         if (statusEl) statusEl.textContent = register ? 'Creating account…' : 'Signing in…';
-        if (stepEl) stepEl.textContent = `POST ${path}`;
-        const authRes = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+        if (stepEl) stepEl.textContent = `POST ${authUrl}`;
+        console.log(`[AUTH_CORE] posting to ${authUrl}`);
+        const authRes = await fetch(authUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
         const authJson = await authRes.json().catch(() => ({}));
         if (!authRes.ok || !authJson?.token) {
           const backendError = authJson?.error || 'auth_failed';
@@ -70,8 +76,8 @@
         }
         localStorage.setItem('token', authJson.token);
 
-        if (stepEl) stepEl.textContent = 'GET /api/auth/me';
-        const meRes = await fetch('/api/auth/me', { headers: { authorization: `Bearer ${authJson.token}` } });
+        if (stepEl) stepEl.textContent = `GET ${AUTH_ME_URL}`;
+        const meRes = await fetch(AUTH_ME_URL, { headers: { authorization: `Bearer ${authJson.token}` } });
         if (!meRes.ok) throw new Error('me_failed');
         hideAuthOverlay();
         if (statusEl) statusEl.textContent = 'Signed in.';
