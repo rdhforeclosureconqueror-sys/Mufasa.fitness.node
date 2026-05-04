@@ -1006,6 +1006,10 @@ CREATE CLICKED: no</pre>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
       <div id="voiceSupportStatus"></div>
+      <div id="authPropagationPanel" class="small-card" style="margin-top:10px;">
+        <strong>Auth Propagation Status</strong>
+        <pre id="authPropagationStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
+      </div>
       <div id="appActivationPanel" class="small-card" style="margin-top:10px;">
         <strong>App Activation Status</strong>
         <pre id="appActivationStatus" class="diagPre muted" style="white-space:pre-wrap;">pending…</pre>
@@ -1239,11 +1243,14 @@ CREATE CLICKED: no</pre>
     });
     const BUILDER_MODE_FULL_ACCESS = false;
     let DISABLE_LOGIN_FOR_PILOT = false;
-    window.APP_AUTH = {
+    window.APP_AUTH = window.APP_AUTH || {
       isAuthenticated: false,
       token: null,
       user: null
     };
+    window.__LAST_AUTH_USER = window.__LAST_AUTH_USER || null;
+    window.__AUTH_READY = window.__AUTH_READY === true;
+    window.__authPropagationDebug = window.__authPropagationDebug || { authChangedFired: false, lastAuthEventAt: null, lastAuthError: null };
     window.pilotSuperAdminActive = false;
     const profileSummaryEl = document.getElementById("profileSummary");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
@@ -2981,7 +2988,10 @@ CREATE CLICKED: no</pre>
         if (nextState.token) localStorage.setItem("maatAuthToken", nextState.token);
         else localStorage.removeItem("maatAuthToken");
       } catch (_) {}
+      window.__LAST_AUTH_USER = nextState.user || window.__LAST_AUTH_USER || null;
+      window.__AUTH_READY = Boolean(nextState.isAuthenticated);
       window.dispatchEvent(new CustomEvent("auth:changed", { detail: window.APP_AUTH }));
+      window.dispatchEvent(new CustomEvent("auth:ready", { detail: window.APP_AUTH }));
       return window.APP_AUTH;
     }
     window.setCanonicalAuthState = setCanonicalAuthState;
@@ -2999,7 +3009,7 @@ CREATE CLICKED: no</pre>
         ? profile.goals.primary
         : "Build strength and mobility";
 
-      const signedInUser = window.APP_AUTH?.user || {};
+      const signedInUser = window.APP_AUTH?.user || window.__LAST_AUTH_USER || {};
       const signedInLabel = signedInUser.email || profile.email || profile.name || "User";
       profileSummaryEl.innerHTML =
         `<strong>Signed in as ${signedInLabel}</strong><br/>` +
@@ -5804,13 +5814,36 @@ function toggleListening() {
       };
     }
 
+    function updateAuthPropagationStatus(reason = "update") {
+      const panelEl = document.getElementById("authPropagationStatus");
+      if (!panelEl) return;
+      const auth = window.APP_AUTH || {};
+      const user = auth.user || window.__LAST_AUTH_USER || {};
+      const dbg = window.__authPropagationDebug || {};
+      const payload = [
+        `reason: ${reason}`,
+        `maatAuthToken exists: ${localStorage.getItem("maatAuthToken") ? "yes" : "no"}`,
+        `window.APP_AUTH exists: ${window.APP_AUTH ? "yes" : "no"}`,
+        `window.APP_AUTH.isAuthenticated: ${auth.isAuthenticated ? "yes" : "no"}`,
+        `window.APP_AUTH.user.email: ${user.email || "n/a"}`,
+        `window.APP_AUTH.user.role: ${user.role || "n/a"}`,
+        `window.APP_AUTH.user.roles: ${Array.isArray(user.roles) ? user.roles.join(",") : "n/a"}`,
+        `window.setCanonicalAuthState exists: ${typeof window.setCanonicalAuthState === "function" ? "yes" : "no"}`,
+        `auth:changed fired: ${dbg.authChangedFired ? "yes" : "no"}`,
+        `last auth event timestamp: ${dbg.lastAuthEventAt || "none"}`,
+        `last auth error: ${dbg.lastAuthError || "none"}`
+      ];
+      panelEl.textContent = payload.join("\n");
+    }
+
     function updateActivationStatusPanel(reason = "update") {
       const panelEl = document.getElementById("appActivationStatus");
       if (!panelEl) return;
       const authOverlay = document.getElementById("authOverlay");
       const appShell = document.getElementById("appShell");
       const handlers = getPrimaryNavHandlerStatus();
-      const authenticated = Boolean(window.APP_AUTH?.isAuthenticated);
+      const auth = window.APP_AUTH || {};
+      const authenticated = Boolean(auth.isAuthenticated);
       const shellVisible = Boolean(appShell) && appShell.hidden !== true && appShell.style.display !== "none";
       const overlayHidden = !authOverlay || authOverlay.hidden === true || authOverlay.style.display === "none" || authOverlay.style.pointerEvents === "none";
       const payload = [
@@ -5874,6 +5907,7 @@ function toggleListening() {
         authOverlayEl.style.display = "none";
         authOverlayEl.style.pointerEvents = "none";
       }
+      updateAuthPropagationStatus(`bindPrimaryButtonsAfterLogin:${reason}`);
       updateActivationStatusPanel(`bindPrimaryButtonsAfterLogin:${reason}`);
       return Boolean(navBoundByAppCore);
     }
@@ -5894,10 +5928,23 @@ function toggleListening() {
 
     window.addEventListener("auth:changed", () => {
       bindPrimaryButtonsAfterLogin("auth:changed");
+      const dbg = window.__authPropagationDebug || (window.__authPropagationDebug = {});
+      dbg.authChangedFired = true;
+      dbg.lastAuthEventAt = new Date().toISOString();
+      updateAuthPropagationStatus("auth:changed");
       updateActivationStatusPanel("auth:changed");
     });
 
+    window.addEventListener("auth:ready", () => {
+      const dbg = window.__authPropagationDebug || (window.__authPropagationDebug = {});
+      dbg.authChangedFired = true;
+      dbg.lastAuthEventAt = new Date().toISOString();
+      updateAuthPropagationStatus("auth:ready");
+      updateActivationStatusPanel("auth:ready");
+    });
+
     // ---- Wire buttons / events ----
+    updateAuthPropagationStatus("boot");
     bindPrimaryButtonsAfterLogin("boot");
     startBtn.onclick = startWorkout;
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);

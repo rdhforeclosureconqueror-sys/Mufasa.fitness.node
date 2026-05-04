@@ -7,6 +7,11 @@
   const AUTH_LOGIN_URL = `${NODE_BASE_URL}/api/auth/login`;
   const AUTH_REGISTER_URL = `${NODE_BASE_URL}/api/auth/register`;
   const AUTH_ME_URL = `${NODE_BASE_URL}/api/auth/me`;
+  const authDebugState = window.__authPropagationDebug || (window.__authPropagationDebug = {
+    authChangedFired: false,
+    lastAuthEventAt: null,
+    lastAuthError: null
+  });
 
   const stateUpdate = (patch) => {
     if (typeof window.__setAuthDebugState === 'function') window.__setAuthDebugState(patch);
@@ -25,6 +30,13 @@
     const app = document.querySelector('.app');
     if (app) app.style.display = '';
     document.body.classList.add('authenticated');
+  };
+
+  const broadcastAuthState = (detail) => {
+    authDebugState.authChangedFired = true;
+    authDebugState.lastAuthEventAt = new Date().toISOString();
+    window.dispatchEvent(new CustomEvent('auth:changed', { detail }));
+    window.dispatchEvent(new CustomEvent('auth:ready', { detail }));
   };
 
   const bind = () => {
@@ -86,17 +98,22 @@
           token: authJson.token,
           user: meJson.user
         };
+        localStorage.setItem("maatAuthToken", authJson.token);
+        window.APP_AUTH = canonicalPayload;
+        window.__LAST_AUTH_USER = meJson.user;
+        window.__AUTH_READY = true;
+        broadcastAuthState(canonicalPayload);
         if (typeof window.setCanonicalAuthState === 'function') {
           window.setCanonicalAuthState(canonicalPayload);
-        } else {
-          window.APP_AUTH = canonicalPayload;
-          window.dispatchEvent(new CustomEvent('auth:changed', { detail: canonicalPayload }));
         }
+        setTimeout(() => broadcastAuthState(window.APP_AUTH || canonicalPayload), 250);
+        setTimeout(() => broadcastAuthState(window.APP_AUTH || canonicalPayload), 1000);
 
         hideAuthOverlay();
         if (statusEl) statusEl.textContent = 'Signed in.';
       } catch (err) {
         console.error('[AUTH_CORE] submit failed', err);
+        authDebugState.lastAuthError = err?.message || String(err);
         if (statusEl) statusEl.textContent = `Login failed: ${err?.message || 'unknown_error'}`;
       }
     });

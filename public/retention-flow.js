@@ -96,8 +96,9 @@
 
   function getCanonicalAuth() {
     const auth = window.APP_AUTH && typeof window.APP_AUTH === "object" ? window.APP_AUTH : null;
-    if (!auth) return { isAuthenticated: false, token: null, user: null };
-    return { isAuthenticated: Boolean(auth.isAuthenticated), token: auth.token || null, user: auth.user || null };
+    const fallbackUser = window.__LAST_AUTH_USER && typeof window.__LAST_AUTH_USER === "object" ? window.__LAST_AUTH_USER : null;
+    if (!auth) return { isAuthenticated: false, token: null, user: fallbackUser };
+    return { isAuthenticated: Boolean(auth.isAuthenticated), token: auth.token || null, user: auth.user || fallbackUser };
   }
 
   function saveCompletionDates() {
@@ -662,9 +663,8 @@
   window.addEventListener("load", () => {
     refreshAndRender();
   });
-  window.addEventListener("auth:changed", () => {
-    refreshAndRender();
-  });
+  window.addEventListener("auth:changed", () => refreshAndRender());
+  window.addEventListener("auth:ready", () => refreshAndRender());
   window.addEventListener("workout:completed", async (event) => {
     if (!state.currentProgram) return;
     const detail = event?.detail || {};
