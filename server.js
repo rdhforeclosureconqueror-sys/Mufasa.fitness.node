@@ -1016,11 +1016,20 @@ function createApp(options = {}) {
     }
   });
 
+  const configuredSeedEmail = String(process.env.LOGIN_SEED_EMAIL || "").trim().toLowerCase()
+    || String((authorizationConfig.adminEmails || [])[0] || "").trim().toLowerCase()
+    || "rdhforeclosureconquer@gmail.com";
+  console.info("[auth-login] seed email configured", { seedEmail: configuredSeedEmail });
+
   const AUTH_SEED_USER = Object.freeze({
     id: "pilot_admin",
-    email: "rdhforeclosureconquer@gmail.com",
+    email: configuredSeedEmail,
     name: "Rashad Harbour",
-    role: "admin"
+    role: authorizationResolver.resolveRole({
+      userId: "pilot_admin",
+      email: configuredSeedEmail,
+      providerSubject: configuredSeedEmail
+    }).role
   });
 
   function authUserContract() {
