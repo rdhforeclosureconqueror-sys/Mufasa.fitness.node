@@ -835,7 +835,7 @@
       <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
       <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
       <button id="authLoginSubmit" type="submit">Login</button>
-      <button id="authCreateAccountToggle" type="button" class="secondary">Create account</button>
+      <button id="authCreateAccountBtn" type="button" class="secondary">Create account</button>
       <div id="authLoginStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginStepStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginBindingError" role="alert" style="display:none;color:#fecaca;background:#7f1d1d;padding:8px;border-radius:8px;"></div>
@@ -1032,8 +1032,16 @@
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
+  <script defer src="/auth-ui.js?v=20260504"></script>
 
   <script>
+    console.log("[BOOT] main inline script started");
+    window.addEventListener("error", e => {
+      console.error("[BOOT_ERROR]", e.message, e.filename, e.lineno);
+    });
+    window.addEventListener("unhandledrejection", e => {
+      console.error("[BOOT_PROMISE_ERROR]", e.reason);
+    });
     const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
@@ -1072,7 +1080,7 @@
     const authNameEl = document.getElementById("authName");
     const authPasswordEl = document.getElementById("authPassword");
     const authLoginSubmitEl = document.getElementById("authLoginSubmit");
-    const authCreateAccountToggleEl = document.getElementById("authCreateAccountToggle");
+    const authCreateAccountToggleEl = document.getElementById("authCreateAccountBtn");
     const authNameWrapEl = document.getElementById("authNameWrap");
     const authLoginTitleEl = document.getElementById("authLoginTitle");
     const authLoginBindingErrorEl = document.getElementById("authLoginBindingError");
@@ -3480,6 +3488,7 @@
       console.log("[AUTH_LOGIN] submit handler attached");
       console.log("[AUTH_LOGIN] handlers attached");
     }
+
 
     document.addEventListener("DOMContentLoaded", bindAuthLoginForm);
     window.addEventListener("load", bindAuthLoginForm);
