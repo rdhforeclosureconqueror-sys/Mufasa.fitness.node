@@ -48,7 +48,8 @@
       localStorage.setItem("maatAuthToken", token);
       const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, { headers: { authorization: `Bearer ${token}` } });
       const mePayload = await meRes.json().catch(() => ({}));
-      const user = mePayload?.data?.user;
+      const user = mePayload?.user || mePayload?.data?.user;
+      console.log("[AUTH_LOGIN] /api/auth/me user resolved");
       if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
       window.APP_AUTH = { isAuthenticated: true, token, user };
       if (typeof window.onLogin === "function") {

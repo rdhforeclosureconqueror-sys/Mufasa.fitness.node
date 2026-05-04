@@ -3336,8 +3336,9 @@
           headers: { authorization: `Bearer ${token}` }
         });
         const payload = await res.json().catch(() => ({}));
-        if (!res.ok || !payload?.ok || !payload?.data?.user) throw new Error("invalid_session");
-        const user = payload.data.user;
+        const user = payload?.user || payload?.data?.user;
+        if (!res.ok || !payload?.ok || !user) throw new Error("invalid_session");
+        console.log("[AUTH_LOGIN] /api/auth/me user resolved");
         window.APP_AUTH = { isAuthenticated: true, token, user };
         console.log("[AUTH_LOGIN] login success");
         await onLogin({
@@ -3414,7 +3415,9 @@
           headers: { authorization: `Bearer ${token}` }
         });
         const mePayload = await meRes.json().catch(() => ({}));
-        const user = mePayload?.data?.user;
+        const user = mePayload?.user || mePayload?.data?.user;
+        console.log("[AUTH_LOGIN] /api/auth/me user resolved");
+        updateAuthStepStatus("GET /api/auth/me", "user resolved");
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
         window.APP_AUTH = { isAuthenticated: true, token, user };
         console.log("[AUTH_LOGIN] login success");

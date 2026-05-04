@@ -29,6 +29,11 @@ test("frontend includes login form that submits with preventDefault and auth API
   assert.doesNotMatch(html, /location\.search\s*=\s*.*password/i, "password must never be written to URL query string");
   assert.match(html, /\/api\/auth\/login/, "login API endpoint path missing");
   assert.match(html, /\/api\/auth\/me/, "auth me API endpoint path missing");
+  assert.match(
+    html,
+    /const user = mePayload\?\.user \|\| mePayload\?\.data\?\.user;/,
+    "frontend auth me parser must accept top-level user with legacy data.user fallback"
+  );
   assert.match(html, /localStorage\.setItem\("maatAuthToken", token\)/, "token should be stored under maatAuthToken");
 });
 
