@@ -3032,27 +3032,9 @@ CREATE CLICKED: no</pre>
     window.setCanonicalAuthState = setCanonicalAuthState;
 
     function onLoginUI(profile) {
-      userInfoBar.style.display = "flex";
-      userPicEl.src = profile.picture || "https://i.imgur.com/9z3s8Gh.png";
-      userNameEl.textContent = profile.name || "User";
-
-      const inj = (profile.injuries && profile.injuries.length)
-        ? profile.injuries.join(", ")
-        : "None listed";
-
-      const goalText = profile.goals && profile.goals.primary
-        ? profile.goals.primary
-        : "Build strength and mobility";
-
-      const signedInUser = window.APP_AUTH?.user || {};
-      const signedInLabel = signedInUser.email || profile.email || profile.name || "User";
-      profileSummaryEl.innerHTML =
-        `<strong>Signed in as ${signedInLabel}</strong><br/>` +
-        (profile.age ? `Age: ${profile.age}<br/>` : "") +
-        (profile.height ? `Height: ${profile.height}<br/>` : "") +
-        (profile.weight_lbs ? `Weight: ${profile.weight_lbs} lb<br/>` : "") +
-        `Goal: ${goalText}<br/>` +
-        `Injuries: ${inj}`;
+      if (window.PROFILE_RUNTIME?.renderSignedInProfile) {
+        window.PROFILE_RUNTIME.renderSignedInProfile(profile);
+      }
       markPerfMetric("loginReadyMs", Math.round(performance.now()));
       ensureRetentionFlowLoaded("on_login_ui");
     }
@@ -3402,47 +3384,8 @@ CREATE CLICKED: no</pre>
     }
 
     async function hydrateProfileFromBackend() {
-      if (!BACKEND_READ_CLIENT) return false;
-      try {
-        const result = await BACKEND_READ_CLIENT.fetchProfile();
-        if (!result?.profile) {
-          const fallbackUser = window.APP_AUTH?.user || {};
-          if (window.APP_AUTH?.isAuthenticated === true) onLoginUI({ ...USER_PROFILE, ...fallbackUser, name: fallbackUser.name || fallbackUser.email || "Signed-in user" });
-          return false;
-        }
-
-        USER_PROFILE = BACKEND_READ_CLIENT.normalizeProfile(result.profile, USER_PROFILE || {});
-        USER_PROFILE.name = USER_PROFILE.name || "Athlete";
-        onLoginUI(USER_PROFILE);
-      bootStatus.appRuntimeStarted = true;
-        queueMicrotask(() => {
-          loadAvatarAssetForCurrentUser("backend_profile").catch((error) => {
-            console.warn("[avatar-load] deferred backend profile avatar load failed", error);
-          });
-        });
-        persistUser();
-        backendTruthState.profileRead = { mode: "ok", message: "Profile loaded from backend." };
-        bootStatus.appRuntimeStarted = true;
-        addLog("system", "Profile synced from backend.");
-        updateAuthDebug({ lastProfileStatus: "200" });
-        updateSyncStatus();
-        return true;
-      } catch (e) {
-        if (e?.code === "UNAUTHORIZED") {
-          BACKEND_READ_CLIENT.clearAuthToken();
-          backendTruthState.profileRead = { mode: "degraded", message: "session expired; showing local cached profile." };
-          addLog("system", "Session expired. Profile is now from local cache until you sign in again.");
-          updateAuthDebug({ lastProfileStatus: String(e?.status || 401) });
-          updateSyncStatus();
-          return false;
-        }
-        console.warn("backend profile read failed", e);
-        backendTruthState.profileRead = { mode: "degraded", message: "backend profile unavailable; showing local cached profile." };
-        addLog("system", "Backend profile unavailable. Profile is now from local cache.");
-        updateAuthDebug({ lastProfileStatus: String(e?.status || "error") });
-        updateSyncStatus();
-        return false;
-      }
+      if (!window.PROFILE_RUNTIME?.hydrateProfileFromBackend) return false;
+      return window.PROFILE_RUNTIME.hydrateProfileFromBackend();
     }
 
     async function initializeAuth() {
@@ -6116,6 +6059,7 @@ function toggleListening() {
   </script>
 
   <script src="/app-core.js?v=20260429"></script>
+  <script src="/profile-runtime.js?v=20260505"></script>
   <script src="/app-runtime.js?v=20260504"></script>
 
   <!-- Audio player for AI voice (must exist in DOM before JS tries to use it) -->
