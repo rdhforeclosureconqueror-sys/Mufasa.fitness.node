@@ -84,14 +84,6 @@
     startBtn.onclick = async () => {
       logClick("start_workout");
       console.log("[FEATURE_CLICK] start_workout");
-      try {
-        const smokeUrl = `${nodeBaseUrl}/__diagnostic-smoke`;
-        console.log(`[FEATURE_BACKEND] ${smokeUrl}`);
-        const smoke = await fetch(smokeUrl);
-        console.log("[BUTTON_TEST] backend hit success", smoke.status);
-      } catch (e) {
-        console.log("[BUTTON_TEST] backend hit fail", e?.message || e);
-      }
       if (typeof globalScope.startWorkout !== "function" && typeof startWorkout !== "function") throw new Error("startWorkout unavailable");
       return (globalScope.startWorkout || startWorkout)();
     };
