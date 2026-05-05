@@ -128,6 +128,7 @@
 
     let avatarModulePromise = null;
     window.__ensureAvatarThreeModules = async function ensureAvatarThreeModules() {
+      console.log("[INLINE_SECTION] three/avatar init"); 
       if (window.__AVATAR_THREE?.ready && window.__AVATAR_THREE?.THREE && window.__AVATAR_THREE?.GLTFLoader) {
         return window.__AVATAR_THREE;
       }
@@ -166,12 +167,15 @@
       })();
       return avatarModulePromise;
     };
-
+    console.log("[INLINE_SECTION] post avatar");
+    
+    console.log("[INLINE_SECTION] runtime exports");
     window.__retryAvatarRuntime = async function retryAvatarRuntimeBootstrapStub() {
       await window.__ensureAvatarThreeModules();
       return { ok: Boolean(window.__AVATAR_THREE?.ready) };
     };
 
+    console.log("[INLINE_SECTION] boot complete");
     window.addEventListener("load", () => {
       window.__markPerfMetric("appLoadMs", Math.round(performance.now() - __appPerfStart));
     }, { once: true });
@@ -1114,6 +1118,7 @@ CREATE CLICKED: no</pre>
       console.error("[BOOT_PROMISE_ERROR]", e.reason);
     });
     const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+    console.log("[INLINE_SECTION] boot start");
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
     /* =========================================================
@@ -1141,11 +1146,13 @@ CREATE CLICKED: no</pre>
       storagePrefix: "maat"
     });
     const AIVOICE_URL = NODE_BASE_URL + "/api/speak";
+    console.log("[INLINE_SECTION] voice refs");
     // ---- DOM hooks ----
     const userInfoBar = document.getElementById("userInfo");
     const appShellEl = document.getElementById("appShell");
     const appBootStatusEl = document.getElementById("appBootStatus");
     const authOverlayEl = document.getElementById("authOverlay");
+    console.log("[INLINE_SECTION] auth refs");
     const authLoginFormEl = document.getElementById("authLoginForm");
     const authEmailEl = document.getElementById("authEmail");
     const authNameEl = document.getElementById("authName");
@@ -1261,10 +1268,12 @@ CREATE CLICKED: no</pre>
     window.__authPropagationDebug = window.__authPropagationDebug || { authChangedFired: false, lastAuthEventAt: null, lastAuthError: null };
     window.pilotSuperAdminActive = false;
     const profileSummaryEl = document.getElementById("profileSummary");
+    console.log("[INLINE_SECTION] profile refs");
     const voiceSupportStatusEl = document.getElementById("voiceSupportStatus");
     const voiceSelectEl = document.getElementById("voiceSelect");
     const renderModeSelectEl = document.getElementById("renderModeSelect");
     const avatarFacingSelectEl = document.getElementById("avatarFacingSelect");
+    console.log("[INLINE_SECTION] avatar refs");
     const avatarRotate90Btn = document.getElementById("avatarRotate90Btn");
     const avatarCreateBtn = document.getElementById("avatarCreateBtn");
     const avatarThumbEl = document.getElementById("avatarThumb");
@@ -1282,6 +1291,7 @@ CREATE CLICKED: no</pre>
     const avatarRuntimeStatusEl = document.getElementById("avatarRuntimeStatus");
 
     const videoEl = document.getElementById("video");
+    console.log("[INLINE_SECTION] camera refs");
     const canvasEl = document.getElementById("overlay");
     const avatar3dCanvasEl = document.getElementById("avatar3d");
     const avatarDebugOverlayEl = document.getElementById("avatarDebugOverlay");
@@ -1339,6 +1349,7 @@ CREATE CLICKED: no</pre>
     }
 
     const connectBtn = document.getElementById("connectBtn");
+    console.log("[INLINE_SECTION] workout refs");
     const startBtn = document.getElementById("startBtn");
     const fullscreenCameraBtn = document.getElementById("fullscreenCameraBtn");
     const exitCameraBtn = document.getElementById("exitCameraBtn");
