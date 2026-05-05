@@ -1101,6 +1101,7 @@ CREATE CLICKED: no</pre>
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
+  <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
 
   <script>
@@ -5870,69 +5871,19 @@ function toggleListening() {
     window.__forceAppActivationRender = () => updateActivationStatusPanel("manual-rescue");
 
     function bindPrimaryButtonsAfterLogin(reason = "manual") {
-      const navBoundByAppCore = window.bindPrimaryNavHandlers?.({ connectCamera, addLog });
-      if (!navBoundByAppCore) {
-        dashboardBtn.onclick = () => {
-          console.log("[BUTTON_CLICK] dashboard clicked");
-          console.log("[FEATURE_CLICK] dashboard");
-          window.__lastAppButtonClicked = "dashboard";
-          console.log("[APP_BUTTON] dashboard clicked");
-          updateActivationStatusPanel("dashboard click");
-          window.location.href = "/dashboard.html";
-        };
-        exerciseLibraryBtn.onclick = () => {
-          console.log("[FEATURE_CLICK] workout_library");
-          window.__lastAppButtonClicked = "library";
-          console.log("[APP_BUTTON] library clicked");
-          updateActivationStatusPanel("library click");
-          window.location.href = "/exercise-library.html";
-        };
-        connectBtn.onclick = async () => {
-          console.log("[BUTTON_CLICK] camera clicked");
-          console.log("[FEATURE_CLICK] camera");
-          window.__lastAppButtonClicked = "camera";
-          console.log("[APP_BUTTON] camera clicked");
-          updateActivationStatusPanel("camera click");
-          return connectCamera();
-        };
-        runSystemDiagnosticBtn.onclick = async () => {
-          console.log("[BUTTON_CLICK] diagnostics clicked");
-          window.__lastAppButtonClicked = "diagnostics";
-          console.log("[APP_BUTTON] diagnostics clicked");
-          updateActivationStatusPanel("diagnostics click");
-          try {
-            const report = await (window.__collectDiagnosticReport?.() || Promise.resolve(null));
-            addLog("system", "Diagnostics complete" + (report ? "" : " (no report payload)") + ".");
-          } catch (error) {
-            addLog("system", `Diagnostics failed: ${error?.message || error}`);
-          }
-        };
-      }
-      console.log("[BUTTON_BIND] dashboard bound");
-      console.log("[BUTTON_BIND] camera bound");
-      console.log("[BUTTON_BIND] diagnostics bound");
       const enableNow = isBootContractReady() || bootStatus.lastBootError !== "none";
-      [dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn]
-        .filter(Boolean)
-        .forEach((el) => {
-          if (enableNow) {
-            el.disabled = false;
-            el.removeAttribute("disabled");
-            el.style.pointerEvents = "auto";
-          } else {
-            el.disabled = true;
-            el.setAttribute("disabled", "disabled");
-            el.style.pointerEvents = "none";
-          }
-        });
+      const navBoundByAppCore = window.ButtonRuntime?.bindPrimaryButtonsAfterLoginRuntime?.({
+        reason,
+        refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn },
+        deps: { connectCamera, addLog, updateAuthPropagationStatus, updateActivationStatusPanel },
+        enableNow
+      });
       if (appShellEl) appShellEl.style.pointerEvents = "auto";
       if (authOverlayEl) {
         authOverlayEl.hidden = true;
         authOverlayEl.style.display = "none";
         authOverlayEl.style.pointerEvents = "none";
       }
-      updateAuthPropagationStatus(`bindPrimaryButtonsAfterLogin:${reason}`);
-      updateActivationStatusPanel(`bindPrimaryButtonsAfterLogin:${reason}`);
       return Boolean(navBoundByAppCore);
     }
     window.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
@@ -5996,20 +5947,7 @@ function toggleListening() {
     renderSystemBootStatus("boot");
     bootStatus.shellLoaded = true;
     renderSystemBootStatus("shell-loaded");
-    startBtn.onclick = async () => {
-      console.log("[BUTTON_CLICK] start_workout clicked");
-      console.log("[FEATURE_CLICK] start_workout");
-      try {
-        const smokeUrl = `${NODE_BASE_URL}/__diagnostic-smoke`;
-        console.log(`[FEATURE_BACKEND] ${smokeUrl}`);
-        const smoke = await fetch(smokeUrl);
-        console.log("[BUTTON_TEST] backend hit success", smoke.status);
-      } catch (e) {
-        console.log("[BUTTON_TEST] backend hit fail", e?.message || e);
-      }
-      return startWorkout();
-    };
-    console.log("[BUTTON_BIND] start_workout bound");
+    window.ButtonRuntime?.bindStartWorkoutButton?.({ startBtn, startWorkout, nodeBaseUrl: NODE_BASE_URL });
     fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
     exitCameraBtn.onclick = () => setCameraFullscreen(false);
     if (exitCameraMobileBtn) {
