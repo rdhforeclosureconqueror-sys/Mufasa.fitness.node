@@ -2,14 +2,25 @@
   'use strict';
 
   const NODE_BASE = 'https://mufasa-fitness-node.onrender.com';
+  const HYDRATE_DEBOUNCE_MS = 1200;
   const state = {
     lastFeatureClick: null,
     lastFeatureBackendUrl: null,
     lastFeatureError: null,
     lastProfileHydrationError: null,
-    bootSmokeRan: false,
-    startSmokeRuns: 0,
-    boundFeatureClicks: false
+    boundFeatureClicks: false,
+    hydrationInFlight: null,
+    hydrationLastStartedAt: 0,
+    hydrationLastToken: null,
+    hydrationLastReason: null,
+    cameraDiagnostics: {
+      buttonClicked: false,
+      getUserMediaCalled: false,
+      streamReceived: false,
+      videoElementReady: false,
+      videoPlaying: false,
+      lastCameraError: null
+    }
   };
 
   function logClick(feature){ state.lastFeatureClick = feature; console.log(`[FEATURE_CLICK] ${feature}`); }
@@ -28,25 +39,28 @@
     const retentionStatus = globalScope.document.getElementById('retentionFlowStatus');
     const workoutLibraryBtn = globalScope.document.getElementById('exerciseLibraryBtn');
     const auth = globalScope.APP_AUTH || {};
-    const dashboardReady = Boolean(dashboardBtn && !dashboardBtn.disabled && typeof dashboardBtn.onclick === 'function');
-    const cameraReady = Boolean(cameraBtn && !cameraBtn.disabled && typeof cameraBtn.onclick === 'function');
-    const startReady = Boolean(startBtn && !startBtn.disabled && typeof startBtn.onclick === 'function');
     const profileReady = Boolean(profileSummary && !/not signed in|loading/i.test(profileSummary.textContent || ''));
     const retentionReady = Boolean(retentionStatus && !/sign in|loading/i.test(retentionStatus.textContent || ''));
-    const dashboardEnabled = Boolean(dashboardBtn && !dashboardBtn.disabled);
+    const cameraDiag = state.cameraDiagnostics;
     panel.textContent = [
       `reason: ${reason}`,
       `auth authenticated: ${boolText(auth.isAuthenticated === true)}`,
       `profile ready: ${boolText(profileReady)}`,
       `retention ready: ${boolText(retentionReady)}`,
-      `dashboard enabled: ${boolText(dashboardEnabled)}`,
-      `camera enabled: ${boolText(cameraReady)}`,
-      `start workout enabled: ${boolText(startReady)}`,
+      `dashboard enabled: ${boolText(Boolean(dashboardBtn && !dashboardBtn.disabled))}`,
+      `camera enabled: ${boolText(Boolean(cameraBtn && !cameraBtn.disabled))}`,
+      `start workout enabled: ${boolText(Boolean(startBtn && !startBtn.disabled))}`,
       `workout library enabled: ${boolText(Boolean(workoutLibraryBtn && !workoutLibraryBtn.disabled))}`,
       `last feature click: ${state.lastFeatureClick || 'none'}`,
       `last feature backend URL: ${state.lastFeatureBackendUrl || 'none'}`,
       `profile hydration error: ${state.lastProfileHydrationError || 'none'}`,
-      `last feature error: ${state.lastFeatureError || 'none'}`
+      `last feature error: ${state.lastFeatureError || 'none'}`,
+      `camera button clicked: ${boolText(cameraDiag.buttonClicked)}`,
+      `camera getUserMedia called: ${boolText(cameraDiag.getUserMediaCalled)}`,
+      `camera stream received: ${boolText(cameraDiag.streamReceived)}`,
+      `camera video element found/created: ${boolText(cameraDiag.videoElementReady)}`,
+      `camera video playing: ${boolText(cameraDiag.videoPlaying)}`,
+      `camera last error: ${cameraDiag.lastCameraError || 'none'}`
     ].join('\n');
   }
 
@@ -57,63 +71,71 @@
     const res = await fetch(url, { headers: token ? { authorization: `Bearer ${token}` } : {}, cache: 'no-store' });
     let json = null;
     try { json = await res.json(); } catch (_) {}
-    if (!res.ok) {
-      const msg = json?.error || json?.message || `${res.status}`;
-      throw new Error(`${path} failed (${res.status}): ${msg}`);
-    }
+    if (!res.ok) throw new Error(`${path} failed (${res.status}): ${json?.error || json?.message || `${res.status}`}`);
     return json || {};
   }
 
   async function hydrateAuthAndProfile(reason){
     const token = getToken();
     if (!token) return;
-    try {
-      const me = await fetchJsonAuthed('/api/auth/me');
-      const user = me.user || me.data?.user || me;
-      globalScope.APP_AUTH = { ...(globalScope.APP_AUTH || {}), token, isAuthenticated: true, user };
-      globalScope.APP_AUTH.isAuthenticated = true;
-      const email = user?.email || globalScope.APP_AUTH?.user?.email || 'unknown';
-      const summary = globalScope.document.getElementById('profileSummary');
-      if (summary) summary.textContent = `Signed in as ${email}`;
-    } catch (error) {
-      state.lastProfileHydrationError = error?.message || String(error);
-      setError(`Auth propagation failed: ${state.lastProfileHydrationError}`);
-      updateFeaturePanel(`auth-hydration-failed:${reason}`);
-      return;
-    }
+    const now = Date.now();
+    if (state.hydrationInFlight) return state.hydrationInFlight;
+    if (state.hydrationLastToken === token && now - state.hydrationLastStartedAt < HYDRATE_DEBOUNCE_MS) return;
+    state.hydrationLastStartedAt = now;
+    state.hydrationLastToken = token;
+    state.hydrationLastReason = reason;
 
-    try {
-      const profile = await fetchJsonAuthed('/api/me/profile');
-      const merged = { ...(globalScope.USER_PROFILE || {}), ...(profile.profile || profile.data || profile || {}) };
-      globalScope.USER_PROFILE = merged;
-      if (typeof globalScope.window?.onLoginUI === 'function') globalScope.window.onLoginUI(merged);
-      state.lastProfileHydrationError = null;
-    } catch (error) {
-      state.lastProfileHydrationError = error?.message || String(error);
-      const email = globalScope.APP_AUTH?.user?.email || 'unknown';
-      const summary = globalScope.document.getElementById('profileSummary');
-      if (summary) summary.textContent = `Signed in as ${email}\nProfile fetch failed: ${state.lastProfileHydrationError}`;
-    }
+    state.hydrationInFlight = (async () => {
+      try {
+        const me = await fetchJsonAuthed('/api/auth/me');
+        const user = me.user || me.data?.user || me;
+        globalScope.APP_AUTH = { ...(globalScope.APP_AUTH || {}), token, isAuthenticated: true, user };
+        const summary = globalScope.document.getElementById('profileSummary');
+        if (summary) summary.textContent = `Signed in as ${user?.email || 'unknown'}`;
+
+        const profile = await fetchJsonAuthed('/api/me/profile');
+        const merged = { ...(globalScope.USER_PROFILE || {}), ...(profile.profile || profile.data || profile || {}) };
+        globalScope.USER_PROFILE = merged;
+        if (typeof globalScope.window?.onLoginUI === 'function') globalScope.window.onLoginUI(merged);
+        state.lastProfileHydrationError = null;
+      } catch (error) {
+        state.lastProfileHydrationError = error?.message || String(error);
+        setError(`Auth/profile hydration failed: ${state.lastProfileHydrationError}`);
+      } finally {
+        state.hydrationInFlight = null;
+      }
+    })();
+
+    return state.hydrationInFlight;
   }
 
   function ensureRuntimeHandlers(){
     if (typeof globalScope.window.connectCamera !== 'function') {
       globalScope.window.connectCamera = async function runtimeConnectCamera(){
+        state.cameraDiagnostics.getUserMediaCalled = true;
         logBackend('navigator.mediaDevices.getUserMedia');
         if (!globalScope.navigator?.mediaDevices?.getUserMedia) throw new Error('mediaDevices.getUserMedia unavailable');
-        return globalScope.navigator.mediaDevices.getUserMedia({ video: true });
-      };
-    }
-    if (typeof globalScope.window.startWorkout !== 'function') {
-      globalScope.window.startWorkout = async function runtimeStartWorkout(){
-        const token = getToken();
-        const url = `${NODE_BASE}/api/sessions`;
-        logBackend(url);
-        const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ source: 'app-runtime-fallback' }) });
-        let json = null;
-        try { json = await res.json(); } catch (_) {}
-        if (!res.ok) throw new Error(`/api/sessions failed (${res.status}): ${json?.error || json?.message || 'route error'}`);
-        return json;
+        const stream = await globalScope.navigator.mediaDevices.getUserMedia({ video: true });
+        state.cameraDiagnostics.streamReceived = true;
+        let video = globalScope.document.getElementById('cameraPreview');
+        if (!video) {
+          video = globalScope.document.createElement('video');
+          video.id = 'cameraPreview';
+          video.autoplay = true;
+          video.playsInline = true;
+          video.muted = true;
+          video.style.width = '100%';
+          video.style.maxWidth = '420px';
+          const anchor = globalScope.document.getElementById('poseStatus') || globalScope.document.body;
+          anchor.insertAdjacentElement('afterend', video);
+        }
+        state.cameraDiagnostics.videoElementReady = true;
+        video.srcObject = stream;
+        await video.play();
+        state.cameraDiagnostics.videoPlaying = true;
+        const status = globalScope.document.getElementById('poseStatus');
+        if (status) status.textContent = 'Camera active';
+        return stream;
       };
     }
   }
@@ -124,42 +146,46 @@
     const cameraBtn = globalScope.document.getElementById('connectBtn');
     const startBtn = globalScope.document.getElementById('startBtn');
 
-    if (cameraBtn) cameraBtn.addEventListener('click', async () => { logClick('camera'); try { await globalScope.window.connectCamera(); } catch (e) { setError(`Camera unavailable: ${e?.message || e}`); } updateFeaturePanel('camera click'); });
+    if (cameraBtn) cameraBtn.addEventListener('click', async () => {
+      logClick('camera');
+      state.cameraDiagnostics.buttonClicked = true;
+      state.cameraDiagnostics.lastCameraError = null;
+      try { await globalScope.window.connectCamera(); }
+      catch (e) { state.cameraDiagnostics.lastCameraError = e?.message || String(e); setError(`Camera unavailable: ${state.cameraDiagnostics.lastCameraError}`); }
+      updateFeaturePanel('camera click');
+    });
     if (startBtn) startBtn.addEventListener('click', async () => {
       logClick('start_workout');
-      if (state.startSmokeRuns < 1) {
-        state.startSmokeRuns += 1;
-        const smokeUrl = `${NODE_BASE}/__diagnostic-smoke`;
-        logBackend(smokeUrl);
-        try { await fetch(smokeUrl, { cache: 'no-store' }); } catch (_) {}
-      }
-      try { await globalScope.window.startWorkout(); } catch (e) { setError(`Start workout unavailable: ${e?.message || e}`); }
+      try {
+        const session = await globalScope.window.startWorkout();
+        const status = globalScope.document.getElementById('poseStatus');
+        if (status) status.textContent = `Workout started: ${session?.sessionId || session?.id || 'unknown'}`;
+      } catch (e) { setError(`Start workout unavailable: ${e?.message || e}`); }
       updateFeaturePanel('start click');
     });
   }
 
   async function forceActivate(reason){
-    if (!state.bootSmokeRan) {
-      state.bootSmokeRan = true;
-      const smokeUrl = `${NODE_BASE}/__diagnostic-smoke`;
-      logBackend(smokeUrl);
-      try { await fetch(smokeUrl, { cache: 'no-store' }); } catch (_) {}
-    }
-
     await hydrateAuthAndProfile(reason);
     const auth = globalScope.APP_AUTH || {};
     if (auth.isAuthenticated !== true) { updateFeaturePanel(`${reason}:not-authenticated`); return; }
-
     ensureRuntimeHandlers();
+
+    if (globalScope.WorkoutRuntime?.configureWorkoutRuntime) {
+      globalScope.WorkoutRuntime.configureWorkoutRuntime({
+        createSession: async (payload) => {
+          const token = getToken();
+          const url = `${NODE_BASE}/api/sessions`;
+          logBackend(url);
+          const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(payload || { source: 'workout-runtime' }) });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(`/api/sessions failed (${res.status}): ${json?.error || json?.message || 'route error'}`);
+          return json;
+        }
+      });
+    }
     if (typeof globalScope.bindPrimaryButtonsAfterLogin === 'function') globalScope.bindPrimaryButtonsAfterLogin(`app-runtime:${reason}`);
     ['dashboardBtn','exerciseLibraryBtn','connectBtn','startBtn'].forEach((id) => { const el = globalScope.document.getElementById(id); if (el) { el.disabled = false; el.removeAttribute('disabled'); } });
-
-    try { if (typeof globalScope.window?.ensureRetentionFlowLoaded === 'function') await globalScope.window.ensureRetentionFlowLoaded('app-runtime'); } catch (e) { setError(`retention load failed: ${e?.message || e}`); }
-    try { if (typeof globalScope.window?.__retentionFlowRefresh === 'function') await globalScope.window.__retentionFlowRefresh('app-runtime'); } catch (e) { setError(`retention refresh failed: ${e?.message || e}`); }
-    const retentionStatus = globalScope.document.getElementById('retentionFlowStatus');
-    if (auth.isAuthenticated === true && retentionStatus && /sign in/i.test(retentionStatus.textContent || '')) {
-      retentionStatus.textContent = 'Retention route missing';
-    }
     bindFeatureClicks();
     updateFeaturePanel(`activated:${reason}`);
   }
