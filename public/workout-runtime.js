@@ -15,6 +15,13 @@
     else el.textContent = el.textContent.replace(/active session id:[^\n]*\nactive workout state true:[^\n]*/m, line);
   }
 
+  function setBrainStatus(status, reason){
+    const brainEl = global.document?.getElementById('brainStatus');
+    const chipEl = global.document?.getElementById('brainChipText');
+    if (brainEl) brainEl.textContent = status;
+    if (chipEl && reason) chipEl.textContent = reason;
+  }
+  
   async function connectCamera(){
     getFn('beforeConnectCamera')?.();
     try {
@@ -54,11 +61,13 @@
       await getFn('prepareWorkoutStart')?.();
       const sessionPayload = getFn('buildSessionPayload') ? getFn('buildSessionPayload')() : { source: 'workout-runtime' };
       const sessionRes = await requireFn('createSession')(sessionPayload);
+      getFn('onSessionCreated')?.(sessionRes);
       state.sessionId = sessionRes?.sessionId || sessionRes?.id || null;
       if (!state.sessionId) throw new Error('session id missing from /api/sessions response');
       state.running = true;
       await getFn('onWorkoutStarted')?.(state.sessionId, sessionRes);
       setPoseStatus(`Workout started: ${state.sessionId}`);
+      setBrainStatus('Coach ready.', 'Ma’at 2.0: coach ready');
       updateRuntimeState();
       return { running: true, sessionId: state.sessionId, sessionRes };
     }
