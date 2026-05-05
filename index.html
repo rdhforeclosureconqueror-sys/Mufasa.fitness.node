@@ -22,6 +22,7 @@
 
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
+  <script src="/boot-core.js?v=20260505a" defer></script>
   <script src="/auth-core.js" defer></script>
   <script>
     window.__startupResourceAudit = window.__startupResourceAudit || {
@@ -1003,6 +1004,7 @@ CREATE CLICKED: no</pre>
       <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
+      <div class="status-line"><strong>BOOT_CORE_LOADED:</strong> <span id="bootCoreLoadedMarker">no</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
       <div id="voiceSupportStatus"></div>
