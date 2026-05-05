@@ -1101,6 +1101,7 @@ CREATE CLICKED: no</pre>
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
+  <script src="/status-panels.js?v=20260505"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -1328,9 +1329,9 @@ CREATE CLICKED: no</pre>
     const syncStatusEl = document.getElementById("syncStatus");
     const brainChipTxt = document.getElementById("brainChipText");
     const buildVersionPillEl = document.getElementById("buildVersionPill");
-    const systemBootStatusEl = document.getElementById("systemBootStatus");
     const bootStatus = { shellLoaded:false, frontendVersionLoaded:false, backendVersionReached:false, backendBuildParsed:false, authRestoredValidated:false, appRuntimeStarted:false, featureGatesEnabled:false, lastBootError:"none" };
-    function renderSystemBootStatus(reason = "update") { if (!systemBootStatusEl) return; systemBootStatusEl.textContent = [`reason: ${reason}`,`frontend shell loaded: ${bootStatus.shellLoaded?"yes":"no"}`,`frontend version file loaded: ${bootStatus.frontendVersionLoaded?"yes":"no"}`,`backend __version reached: ${bootStatus.backendVersionReached?"yes":"no"}`,`backend build parsed: ${bootStatus.backendBuildParsed?"yes":"no"}`,`auth restored/validated: ${bootStatus.authRestoredValidated?"yes":"no"}`,`app runtime started: ${bootStatus.appRuntimeStarted?"yes":"no"}`,`feature gates enabled: ${bootStatus.featureGatesEnabled?"yes":"no"}`,`last boot error: ${bootStatus.lastBootError||"none"}`].join("\n"); }
+    window.__statusPanelsBootStatus = bootStatus;
+    const renderSystemBootStatus = (reason = "update") => window.StatusPanels?.renderSystemBootStatus?.(reason);
     function isBootContractReady() {
       return Boolean(bootStatus.shellLoaded && bootStatus.frontendVersionLoaded && bootStatus.backendVersionReached && bootStatus.backendBuildParsed && bootStatus.authRestoredValidated);
     }
@@ -5859,107 +5860,11 @@ function toggleListening() {
       };
     }
 
-    function setStatusPanelError(panelId, tag, message) {
-      const panelEl = document.getElementById(panelId);
-      if (!panelEl) return;
-      panelEl.textContent = `ERROR: ${message}`;
-      console.error(tag, message);
-    }
+    const updateAuthPropagationStatus = (reason = "update") => window.StatusPanels?.updateAuthPropagationStatus?.(reason);
 
-    function updateAuthPropagationStatus(reason = "update") {
-      try {
-        const panelEl = document.getElementById("authPropagationStatus");
-        if (!panelEl) return;
-        const auth = window.APP_AUTH || {};
-        const user = auth.user || window.__LAST_AUTH_USER || {};
-        const dbg = window.__authPropagationDebug || {};
-        const payload = [
-          `reason: ${reason}`,
-          `maatAuthToken exists: ${localStorage.getItem("maatAuthToken") ? "yes" : "no"}`,
-          `window.APP_AUTH exists: ${window.APP_AUTH ? "yes" : "no"}`,
-          `window.__LAST_AUTH_USER exists: ${window.__LAST_AUTH_USER ? "yes" : "no"}`,
-          `window.__AUTH_READY: ${window.__AUTH_READY === true ? "yes" : "no"}`,
-          `window.APP_AUTH.isAuthenticated: ${auth.isAuthenticated ? "yes" : "no"}`,
-          `window.APP_AUTH.user.email: ${user.email || "n/a"}`,
-          `window.APP_AUTH.user.role: ${user.role || "n/a"}`,
-          `window.APP_AUTH.user.roles: ${Array.isArray(user.roles) ? user.roles.join(",") : "n/a"}`,
-          `window.setCanonicalAuthState exists: ${typeof window.setCanonicalAuthState === "function" ? "yes" : "no"}`,
-          `auth:changed fired: ${dbg.authChangedFired ? "yes" : "no"}`,
-          `last auth event timestamp: ${dbg.lastAuthEventAt || "none"}`,
-          `last auth error: ${dbg.lastAuthError || "none"}`
-        ];
-        panelEl.textContent = payload.join("\n");
-      } catch (error) {
-        const message = error?.message || String(error || "unknown_auth_propagation_error");
-        setStatusPanelError("authPropagationStatus", "[AUTH_PROP_STATUS_ERROR]", message);
-      }
-    }
+    const updateActivationStatusPanel = (reason = "update") => window.StatusPanels?.updateActivationStatusPanel?.(reason);
 
-    function updateActivationStatusPanel(reason = "update") {
-      try {
-        const panelEl = document.getElementById("appActivationStatus");
-        if (!panelEl) return;
-        const authOverlay = document.getElementById("authOverlay");
-        const appShell = document.getElementById("appShell");
-        const handlers = getPrimaryNavHandlerStatus();
-        const auth = window.APP_AUTH || {};
-        const authenticated = Boolean(auth.isAuthenticated);
-        const shellVisible = Boolean(appShell) && appShell.hidden !== true && appShell.style.display !== "none";
-        const overlayHidden = !authOverlay || authOverlay.hidden === true || authOverlay.style.display === "none" || authOverlay.style.pointerEvents === "none";
-        const anyHandlerAttached = Object.values(handlers).some(Boolean);
-        const payload = [
-          `reason: ${reason}`,
-          `authenticated: ${authenticated ? "yes" : "no"}`,
-          `app shell visible: ${shellVisible ? "yes" : "no"}`,
-          `overlay hidden: ${overlayHidden ? "yes" : "no"}`,
-          `handlers attached: ${anyHandlerAttached ? "yes" : "no"}`,
-          `dashboard handler attached: ${handlers.dashboard ? "yes" : "no"}`,
-          `workout library handler attached: ${handlers.workoutLibrary ? "yes" : "no"}`,
-          `camera handler attached: ${handlers.camera ? "yes" : "no"}`,
-          `diagnostics handler attached: ${handlers.diagnostics ? "yes" : "no"}`,
-          `connectCamera available: ${typeof window.connectCamera === "function" ? "yes" : "no"}`,
-          `startWorkout available: ${typeof window.startWorkout === "function" ? "yes" : "no"}`,
-          `onLogin available: ${typeof window.onLogin === "function" ? "yes" : "no"}`,
-          `retention loader available: ${typeof window.ensureRetentionFlowLoaded === "function" ? "yes" : "no"}`,
-          `last button clicked: ${window.__lastAppButtonClicked || "none"}`,
-          `last app error: ${window.__lastAppError || "none"}`
-        ];
-        panelEl.textContent = payload.join("\n");
-      } catch (error) {
-        const message = error?.message || String(error || "unknown_app_activation_error");
-        setStatusPanelError("appActivationStatus", "[APP_ACTIVATION_STATUS_ERROR]", message);
-      }
-    }
-
-    function runPendingPanelWatchdogs() {
-      window.setTimeout(() => {
-        try {
-          const panelEl = document.getElementById("authPropagationStatus");
-          if (!panelEl) return;
-          if ((panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) {
-            updateAuthPropagationStatus("watchdog:2s");
-          }
-        } catch (error) {
-          const message = error?.message || String(error || "unknown_auth_watchdog_error");
-          setStatusPanelError("authPropagationStatus", "[AUTH_PROP_STATUS_ERROR]", message);
-        }
-      }, 2000);
-
-      window.setTimeout(() => {
-        try {
-          const panelEl = document.getElementById("appActivationStatus");
-          if (!panelEl) return;
-          if ((panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) {
-            updateActivationStatusPanel("watchdog:2s");
-          }
-        } catch (error) {
-          const message = error?.message || String(error || "unknown_activation_watchdog_error");
-          setStatusPanelError("appActivationStatus", "[APP_ACTIVATION_STATUS_ERROR]", message);
-        }
-      }, 2000);
-      window.setTimeout(() => { const panelEl = document.getElementById("featureActivationStatus"); if (panelEl && (panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) { window.__appRuntime?.updateFeaturePanel?.("watchdog:2s"); } }, 2000);
-      window.setTimeout(() => { const panelEl = document.getElementById("systemBootStatus"); if (panelEl && (panelEl.textContent || "").trim().toLowerCase().startsWith("pending")) { renderSystemBootStatus("watchdog:2s"); } }, 2000);
-    }
+    const runPendingPanelWatchdogs = () => window.StatusPanels?.runPendingPanelWatchdogs?.();
 
     window.__forceAuthPropagationRender = () => updateAuthPropagationStatus("manual-rescue");
     window.__forceAppActivationRender = () => updateActivationStatusPanel("manual-rescue");
