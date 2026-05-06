@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <script>
-    window.APP_BUILD_VERSION = "2026-04-27T00:00:00Z-client-workout-hud";
+    window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-camera-workout-restored";
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     window.__THREE_BRIDGE_FIX_ACTIVE = true;
     window.__AVATAR_THREE = window.__AVATAR_THREE || {
@@ -128,7 +128,7 @@
 
     let avatarModulePromise = null;
     window.__ensureAvatarThreeModules = async function ensureAvatarThreeModules() {
-      console.log("[INLINE_SECTION] three/avatar init");
+      console.log("[INLINE_SECTION] three/avatar init"); 
       if (window.__AVATAR_THREE?.ready && window.__AVATAR_THREE?.THREE && window.__AVATAR_THREE?.GLTFLoader) {
         return window.__AVATAR_THREE;
       }
@@ -379,6 +379,16 @@
       gap: 8px;
       margin-top: 8px;
       align-items: center;
+      width: 100%;
+      overflow: visible;
+    }
+    .btn-row #connectBtn,
+    .btn-row #startBtn,
+    .btn-row #fullscreenCameraBtn {
+      flex: 1 1 150px;
+      justify-content: center;
+      min-height: 42px;
+      white-space: normal;
     }
 
     button {
@@ -1107,7 +1117,7 @@ CREATE CLICKED: no</pre>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
-  <script src="/workout-runtime.js?v=20260505"></script>
+  <script src="/workout-runtime.js?v=20260506"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -5020,14 +5030,29 @@ function toggleListening() {
         updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "active", workoutStatus: "in_progress" });
       },
       buildSessionPayload: () => ({ workoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId || null, programId: ACTIVE_WORKOUT_STATE.activeProgramId || null }),
-      createSession: (payload) => window.SessionWrite?.startSession?.(payload),
+      createSession: (payload) => {
+        if (!window.SessionWrite?.startSession) throw new Error('SessionWrite.startSession missing for POST /api/sessions');
+        return window.SessionWrite.startSession(payload);
+      },
+      onCameraFullscreenChanged: (enabled) => {
+        cameraFullscreen = Boolean(enabled);
+        document.body.classList.toggle("camera-fullscreen", cameraFullscreen);
+        refreshCameraUiState();
+        if (videoEl?.videoWidth && videoEl?.videoHeight) {
+          canvasEl.width = videoEl.videoWidth;
+          canvasEl.height = videoEl.videoHeight;
+          avatar3dCanvasEl.width = videoEl.videoWidth;
+          avatar3dCanvasEl.height = videoEl.videoHeight;
+        }
+        resizeAvatarThreeRuntime();
+      },
       onSessionCreated: (sessionRes) => { addLog("system", `Session API OK: ${JSON.stringify({ sessionId: sessionRes?.sessionId || sessionRes?.id || null })}`); updateActivationStatusPanel("session-created"); updateAuthPropagationStatus("session-created"); window.__appRuntime?.updateFeaturePanel?.("session-created"); },
       onWorkoutStarted: async (createdSessionId) => { running = true; sessionId = createdSessionId; startBtn.textContent = "Stop Workout"; refreshCameraUiState(); addLog("system", `Workout started: ${activeWorkoutPlan?.title || "Session"}. Session: ${sessionId}.`); trackPilotEvent("workout_started", { sessionId, exerciseId: getCurrentExerciseId(), scheduledWorkoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId, programId: ACTIVE_WORKOUT_STATE.activeProgramId }); const currentExercise = getCurrentExerciseMeta(); try { await speak(`Starting ${currentExercise?.name || "your workout"}. ${currentExercise?.sets || 1} sets of ${currentExercise?.targetReps || 10}. Tempo ${currentExercise?.tempo || "3-1-1"}.`, "rep"); brainStatusEl.textContent = "Speaking"; brainChipTxt.textContent = "Ma’at 2.0: speaking"; } catch (voiceErr) { const reason = voiceErr?.message || String(voiceErr || "voice_unavailable"); brainStatusEl.textContent = `Voice unavailable: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: voice unavailable"; addLog("system", `Voice unavailable: ${reason}`); } sendStartSessionToNode(); runPoseLoop(); updateActivationStatusPanel("workout-started"); updateAuthPropagationStatus("workout-started"); window.__appRuntime?.updateFeaturePanel?.("workout-started"); },
       onWorkoutStartError: (err) => { const reason = err?.message || String(err || "unknown_error"); addLog("system", `Workout start failed: ${reason}`); brainStatusEl.textContent = `AI route missing / runtime error: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: error"; updateActivationStatusPanel("workout-start-error"); updateAuthPropagationStatus("workout-start-error"); window.__appRuntime?.updateFeaturePanel?.("workout-start-error"); },
       onWorkoutStopped: async () => { startBtn.textContent = "Start Workout"; running = false; stopRestTimer(); updateActiveWorkoutState({ workoutStatus: "paused", setStatus: "paused" }); refreshCameraUiState(); cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvasEl.width, canvasEl.height); setPersonLayerSuppressed(false); setAvatar3dCanvasVisibility(false); lastRenderMode = "camera"; addLog("system", "Workout stopped. Reconnect camera and press Start Workout to resume."); sendEndSessionToNode(); }
-    });
-
-    function bindPrimaryButtonsAfterLogin(reason = "manual") {
+      });
+    
+      function bindPrimaryButtonsAfterLogin(reason = "manual") {
       const enableNow = isBootContractReady() || bootStatus.lastBootError !== "none";
       const navBoundByAppCore = window.ButtonRuntime?.bindPrimaryButtonsAfterLoginRuntime?.({
         reason,
@@ -5105,10 +5130,19 @@ function toggleListening() {
     bootStatus.shellLoaded = true;
     renderSystemBootStatus("shell-loaded");
     window.ButtonRuntime?.bindStartWorkoutButton?.({ startBtn, startWorkout, nodeBaseUrl: NODE_BASE_URL });
-    fullscreenCameraBtn.onclick = () => setCameraFullscreen(!cameraFullscreen);
-    exitCameraBtn.onclick = () => setCameraFullscreen(false);
+    fullscreenCameraBtn.onclick = () => {
+      if (window.WorkoutRuntime?.setCameraFullscreen) window.WorkoutRuntime.setCameraFullscreen(!cameraFullscreen);
+      else setCameraFullscreen(!cameraFullscreen);
+    };
+    exitCameraBtn.onclick = () => {
+      if (window.WorkoutRuntime?.setCameraFullscreen) window.WorkoutRuntime.setCameraFullscreen(false);
+      else setCameraFullscreen(false);
+    };
     if (exitCameraMobileBtn) {
-      exitCameraMobileBtn.onclick = () => setCameraFullscreen(false);
+      exitCameraMobileBtn.onclick = () => {
+        if (window.WorkoutRuntime?.setCameraFullscreen) window.WorkoutRuntime.setCameraFullscreen(false);
+        else setCameraFullscreen(false);
+      };
     }
     stopWorkoutFsBtn.onclick = () => {
       if (running) startWorkout();
@@ -5274,7 +5308,7 @@ function toggleListening() {
 
   <script src="/app-core.js?v=20260429"></script>
   <script src="/profile-runtime.js?v=20260505"></script>
-  <script src="/app-runtime.js?v=20260504"></script>
+  <script src="/app-runtime.js?v=20260506"></script>
 
   <!-- Audio player for AI voice (must exist in DOM before JS tries to use it) -->
   <audio id="ttsPlayer" playsinline preload="auto"></audio>
