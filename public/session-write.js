@@ -239,11 +239,12 @@
 
     async function startSession(payload) {
       try {
-        await postJSON(`${baseUrl}/api/sessions`, payload, true);
+        const sessionResult = await postJSON(`${baseUrl}/api/sessions`, payload, true);
         trackExplicitSuccess("session_start");
         if (typeof onSessionSaveSuccess === "function") {
           onSessionSaveSuccess({ action: "session_start", mode: "explicit_api" });
         }
+        return sessionResult;
       } catch (err) {
         const reason = trackFallback("session_start", err);
         if (!isFallbackAllowedForAction("session_start")) {

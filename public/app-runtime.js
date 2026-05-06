@@ -25,7 +25,13 @@
 
   function logClick(feature){ state.lastFeatureClick = feature; console.log(`[FEATURE_CLICK] ${feature}`); }
   function logBackend(url){ state.lastFeatureBackendUrl = url; console.log(`[FEATURE_BACKEND] ${url}`); }
-  function setError(msg){ state.lastFeatureError = msg; const status = globalScope.document.getElementById('poseStatus'); if (status) status.textContent = msg; }
+  function setError(msg){
+    state.lastFeatureError = msg;
+    const status = globalScope.document.getElementById('poseStatus');
+    const brain = globalScope.document.getElementById('brainStatus');
+    if (status) status.textContent = msg;
+    if (brain) brain.textContent = msg;
+  }
   function boolText(value){ return value ? 'yes' : 'no'; }
   function getToken(){ return globalScope.APP_AUTH?.token || globalScope.localStorage?.getItem('maatAuthToken') || null; }
 
@@ -110,35 +116,17 @@
   }
 
   function ensureRuntimeHandlers(){
-    if (typeof globalScope.window.connectCamera !== 'function') {
-      globalScope.window.connectCamera = async function runtimeConnectCamera(){
-        state.cameraDiagnostics.getUserMediaCalled = true;
-        logBackend('navigator.mediaDevices.getUserMedia');
-        if (!globalScope.navigator?.mediaDevices?.getUserMedia) throw new Error('mediaDevices.getUserMedia unavailable');
-        const stream = await globalScope.navigator.mediaDevices.getUserMedia({ video: true });
-        state.cameraDiagnostics.streamReceived = true;
-        let video = globalScope.document.getElementById('cameraPreview');
-        if (!video) {
-          video = globalScope.document.createElement('video');
-          video.id = 'cameraPreview';
-          video.autoplay = true;
-          video.playsInline = true;
-          video.muted = true;
-          video.style.width = '100%';
-          video.style.maxWidth = '420px';
-          const anchor = globalScope.document.getElementById('poseStatus') || globalScope.document.body;
-          anchor.insertAdjacentElement('afterend', video);
-        }
-        state.cameraDiagnostics.videoElementReady = true;
-        video.srcObject = stream;
-        await video.play();
-        state.cameraDiagnostics.videoPlaying = true;
-        const status = globalScope.document.getElementById('poseStatus');
-        if (status) status.textContent = 'Camera active';
-        return stream;
-      };
+    const missing = ['connectBtn','startBtn','fullscreenCameraBtn','exitCameraBtn','video','workoutHud','poseStatus','brainStatus']
+      .filter((id) => !globalScope.document.getElementById(id));
+    if (missing.length) setError(`Camera/workout DOM missing: ${missing.join(', ')}`);
+    if (typeof globalScope.window.connectCamera !== 'function' && typeof globalScope.WorkoutRuntime?.connectCamera === 'function') {
+      globalScope.window.connectCamera = (...args) => globalScope.WorkoutRuntime.connectCamera(...args);
+    }
+    if (typeof globalScope.window.startWorkout !== 'function' && typeof globalScope.WorkoutRuntime?.startWorkout === 'function') {
+      globalScope.window.startWorkout = (...args) => globalScope.WorkoutRuntime.startWorkout(...args);
     }
   }
+
 
   function bindFeatureClicks(){
     if (state.boundFeatureClicks) return;
@@ -146,24 +134,20 @@
     const cameraBtn = globalScope.document.getElementById('connectBtn');
     const startBtn = globalScope.document.getElementById('startBtn');
 
-    if (cameraBtn) cameraBtn.addEventListener('click', async () => {
+    // Audit-only listeners: normal camera/workout behavior is owned by ButtonRuntime + WorkoutRuntime.
+    // Do not invoke connectCamera/startWorkout here, otherwise a single click double-starts and then stops.
+    if (cameraBtn) cameraBtn.addEventListener('click', () => {
       logClick('camera');
       state.cameraDiagnostics.buttonClicked = true;
       state.cameraDiagnostics.lastCameraError = null;
-      try { await globalScope.window.connectCamera(); }
-      catch (e) { state.cameraDiagnostics.lastCameraError = e?.message || String(e); setError(`Camera unavailable: ${state.cameraDiagnostics.lastCameraError}`); }
-      updateFeaturePanel('camera click');
-    });
-    if (startBtn) startBtn.addEventListener('click', async () => {
+      updateFeaturePanel('camera click observed');
+    }, { passive: true });
+    if (startBtn) startBtn.addEventListener('click', () => {
       logClick('start_workout');
-      try {
-        const session = await globalScope.window.startWorkout();
-        const status = globalScope.document.getElementById('poseStatus');
-        if (status) status.textContent = `Workout started: ${session?.sessionId || session?.id || 'unknown'}`;
-      } catch (e) { setError(`Start workout unavailable: ${e?.message || e}`); }
-      updateFeaturePanel('start click');
-    });
+      updateFeaturePanel('start click observed');
+    }, { passive: true });
   }
+
 
   async function forceActivate(reason){
     await hydrateAuthAndProfile(reason);
@@ -185,7 +169,7 @@
       });
     }
     if (typeof globalScope.bindPrimaryButtonsAfterLogin === 'function') globalScope.bindPrimaryButtonsAfterLogin(`app-runtime:${reason}`);
-    ['dashboardBtn','exerciseLibraryBtn','connectBtn','startBtn'].forEach((id) => { const el = globalScope.document.getElementById(id); if (el) { el.disabled = false; el.removeAttribute('disabled'); } });
+    ['dashboardBtn','exerciseLibraryBtn','connectBtn'].forEach((id) => { const el = globalScope.document.getElementById(id); if (el) { el.disabled = false; el.removeAttribute('disabled'); } });
     bindFeatureClicks();
     updateFeaturePanel(`activated:${reason}`);
   }
