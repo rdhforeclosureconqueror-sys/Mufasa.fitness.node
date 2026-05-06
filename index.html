@@ -8,16 +8,8 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <script>
-    window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-camera-workout-restored";
+    window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
-    window.__THREE_BRIDGE_FIX_ACTIVE = true;
-    window.__AVATAR_THREE = window.__AVATAR_THREE || {
-      THREE: null,
-      GLTFLoader: null,
-      source: null,
-      ready: false
-    };
-    console.log("[THREE_BRIDGE_FIX_ACTIVE]", window.__THREE_BRIDGE_FIX_ACTIVE);
   </script>
 
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
@@ -37,6 +29,7 @@
         "/hud-runtime.js",
         "/workout-progression-runtime.js",
         "/coach-runtime.js",
+        "/avatar-runtime.js",
         "/landing-diagnostics.js",
         "/fitness.js"
       ],
@@ -52,53 +45,7 @@
     };
     const __appPerfStart = performance.now();
 
-    const avatarRuntimeStatus = window.__avatarRuntimeStatus = {
-      ...(window.__avatarRuntimeStatus || {}),
-      threeBridgeFixActive: true,
-      avatarThreeGlobalOk: Boolean(window.__AVATAR_THREE),
-      threeImportStarted: false,
-      threeImportPending: false,
-      threeImportOk: false,
-      threeImportError: null,
-      threeImportTimeout: false,
-      threeImportPathUsed: null,
-      threeImportProbeOk: null,
-      threeImportProbeError: null,
-      threeImportProbeDurationMs: null,
-      threeImportTimeoutAt: null,
-      threeLoaded: false,
-      gltfLoaderImportStarted: false,
-      gltfLoaderImportPending: false,
-      gltfLoaderImportOk: false,
-      gltfLoaderImportError: null,
-      gltfLoaderImportTimeout: false,
-      gltfLoaderImportPathUsed: null,
-      gltfLoaderImportProbeOk: null,
-      gltfLoaderImportProbeError: null,
-      gltfLoaderImportProbeDurationMs: null,
-      gltfLoaderImportTimeoutAt: null,
-      gltfLoaderOk: false,
-      gltfLoaderLoaded: false,
-      readyEventFired: false,
-      failedReason: null,
-      failureReason: null,
-      importMapDetected: false,
-      webglOk: null,
-      webglAvailable: null,
-      canvasOk: null,
-      canvasFound: null,
-      canvasCreated: false,
-      rendererCreated: false,
-      sceneCreated: false,
-      cameraCreated: false,
-      renderMode: "unknown",
-      lastAvatarUrl: null,
-      glbLoadAttempted: false,
-      glbLoadStarted: false,
-      glbLoadSuccess: false,
-      glbLoadError: null,
-      lastGlbLoadStatus: "idle"
-    };
+    window.__avatarRuntimeStatus = window.__avatarRuntimeStatus || {};
 
     const lazyScriptCache = window.__lazyScriptCache || (window.__lazyScriptCache = new Map());
     window.__loadExternalScript = function loadExternalScript(src, { async = true, defer = true } = {}) {
@@ -132,48 +79,8 @@
       return poseRuntimePromise;
     };
 
-    let avatarModulePromise = null;
-    window.__ensureAvatarThreeModules = async function ensureAvatarThreeModules() {
-      console.log("[INLINE_SECTION] three/avatar init"); 
-      if (window.__AVATAR_THREE?.ready && window.__AVATAR_THREE?.THREE && window.__AVATAR_THREE?.GLTFLoader) {
-        return window.__AVATAR_THREE;
-      }
-      if (avatarModulePromise) return avatarModulePromise;
-      const startedAt = performance.now();
-      avatarRuntimeStatus.threeImportStarted = true;
-      avatarModulePromise = (async () => {
-        try {
-          const [threeModule, gltfModule] = await Promise.all([
-            import('/vendor/three/build/three.module.js'),
-            import('/vendor/three/examples/jsm/loaders/GLTFLoader.js')
-          ]);
-          window.__startupResourceAudit.deferredModules.push('/vendor/three/build/three.module.js', '/vendor/three/examples/jsm/loaders/GLTFLoader.js');
-          const runtimeBridge = window.__AVATAR_THREE || (window.__AVATAR_THREE = {});
-          runtimeBridge.THREE = threeModule;
-          runtimeBridge.GLTFLoader = gltfModule?.GLTFLoader || null;
-          runtimeBridge.source = 'local-vendor-lazy';
-          runtimeBridge.ready = Boolean(runtimeBridge.THREE && runtimeBridge.GLTFLoader);
-          avatarRuntimeStatus.threeImportOk = Boolean(runtimeBridge.THREE);
-          avatarRuntimeStatus.gltfLoaderImportOk = Boolean(runtimeBridge.GLTFLoader);
-          avatarRuntimeStatus.threeLoaded = avatarRuntimeStatus.threeImportOk;
-          avatarRuntimeStatus.gltfLoaderLoaded = avatarRuntimeStatus.gltfLoaderImportOk;
-          avatarRuntimeStatus.readyEventFired = runtimeBridge.ready;
-          window.__markPerfMetric("avatarRuntimeLoadMs", Math.round(performance.now() - startedAt));
-          if (runtimeBridge.ready) window.dispatchEvent(new Event('avatar-three-ready'));
-          else window.dispatchEvent(new CustomEvent('avatar-three-failed', { detail: { reason: 'avatar_three_runtime_missing_exports' } }));
-          return runtimeBridge;
-        } catch (error) {
-          const reason = String(error?.message || error || 'avatar_three_runtime_import_failed');
-          avatarRuntimeStatus.threeImportError = reason;
-          avatarRuntimeStatus.gltfLoaderImportError = reason;
-          avatarRuntimeStatus.failureReason = reason;
-          window.dispatchEvent(new CustomEvent('avatar-three-failed', { detail: { reason } }));
-          throw error;
-        }
-      })();
-      return avatarModulePromise;
-    };
-    console.log("[INLINE_SECTION] post avatar");
+    console.log("[AVATAR_RUNTIME] delegated to /avatar-runtime.js");
+
     
     console.log("[INLINE_SECTION] runtime exports");
     window.__retryAvatarRuntime = async function retryAvatarRuntimeBootstrapStub() {
@@ -1126,6 +1033,7 @@ CREATE CLICKED: no</pre>
   <script src="/hud-runtime.js?v=20260506"></script>
   <script src="/workout-progression-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260506"></script>
+  <script src="/avatar-runtime.js?v=20260506a"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
@@ -4372,6 +4280,12 @@ function toggleListening() {
       return retargetActive || holdingPose;
     }
 
+    window.AvatarRuntime?.registerPoseRenderer?.((posePacket) => {
+      const mode = getRenderMode();
+      if (mode !== "avatar_overlay" && mode !== "avatar_only") return false;
+      return renderAvatar3d(posePacket);
+    });
+
     function drawProceduralAvatar(context, posePacket) {
       setAvatarRuntimeStatus("Using procedural fallback.", true);
       const points = posePacket?.keypoints;
@@ -5014,17 +4928,24 @@ function toggleListening() {
       const nextDeg = (avatarFacingDeg + 90) % 360;
       applyAvatarFacingCalibration(nextDeg, { persist: true, source: "facing_rotate_90" });
     };
-    avatarCreateBtn.onclick = openAvatarModal;
-    closeAvatarModalBtn.onclick = closeAvatarModal;
-    saveAvatarBtn.onclick = saveAvatarFromInputs;
-    clearAvatarBtn.onclick = async () => {
-      if (!USER_PROFILE) return;
-      USER_PROFILE.avatar = null;
-      await loadAvatarAssetForCurrentUser("removed");
-      persistUser();
-      await sendProfileToNode();
-      avatarCreationStatusEl.textContent = "Saved avatar removed.";
-    };
+    window.AvatarRuntime?.bindControls?.({
+      refs: {
+        avatarCreateBtn, closeAvatarModalBtn, saveAvatarBtn, clearAvatarBtn, uploadAvatarBtn,
+        avatarModalEl, avatarModelUrlInput, avatarThumbUrlInput, avatarCreationStatusEl, avatarRuntimeStatusEl
+      },
+      getProfile: () => USER_PROFILE,
+      initialize: initializeAvatarRuntimeBootstrap,
+      saveFromInputs: saveAvatarFromInputs,
+      uploadFile: uploadAvatarFile,
+      clearAvatar: async () => {
+        if (!USER_PROFILE) return;
+        USER_PROFILE.avatar = null;
+        await loadAvatarAssetForCurrentUser("removed");
+        persistUser();
+        await sendProfileToNode();
+        avatarCreationStatusEl.textContent = "Saved avatar removed.";
+      }
+    });
     launchAvaturnBtn.onclick = () => {
       avatarCreationStatusEl.textContent = "Opening Avaturn creator popup…";
       const popup = window.open(AVATAR_CREATOR_URL, "avaturn_creator", "popup=true,width=1100,height=800");
@@ -5034,7 +4955,6 @@ function toggleListening() {
         avatarCreationStatusEl.textContent = "Creator opened. Paste exported URL and save.";
       }
     };
-    uploadAvatarBtn.onclick = uploadAvatarFile;
     window.addEventListener("message", (event) => {
       const payload = event?.data;
       if (!payload || payload.type !== "mufasa-avatar-created") return;

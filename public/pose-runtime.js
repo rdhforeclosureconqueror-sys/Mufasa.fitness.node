@@ -228,6 +228,9 @@
         state.loopFrameCount += 1;
         state.lastFrameAt = new Date().toISOString();
         global.__lastPoseRuntimeFrame = posePacket;
+        try {
+          global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poses } }));
+        } catch (_) {}
         if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poses });
       } catch (err) {
         const message = err?.message || String(err || 'pose_loop_failed');
