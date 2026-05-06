@@ -588,9 +588,29 @@ function createApp(options = {}) {
     }
   }
 
+  function normalizeExerciseIndexList(index) {
+    if (Array.isArray(index)) return index;
+    if (Array.isArray(index?.exercises)) return index.exercises;
+    return [];
+  }
+
+  function exerciseSearchText(exercise) {
+    return [
+      exercise?.name,
+      exercise?.id,
+      exercise?.slug,
+      exercise?.category,
+      exercise?.equipment,
+      exercise?.target,
+      ...(Array.isArray(exercise?.primaryMuscles) ? exercise.primaryMuscles : []),
+      ...(Array.isArray(exercise?.secondaryMuscles) ? exercise.secondaryMuscles : [])
+    ].filter(Boolean).join(" ").toLowerCase();
+  }
+
   function findExerciseBySlug(index, slug) {
-    const list = index?.exercises || [];
-    return list.find(x => x.slug === slug) || null;
+    const requested = String(slug || "");
+    const list = normalizeExerciseIndexList(index);
+    return list.find(x => x.slug === requested || x.id === requested) || null;
   }
 
   // ---- Health ----
@@ -1468,7 +1488,9 @@ function createApp(options = {}) {
         error: "Missing exercise index.json. Run: npm run build:exercise-index and commit it."
       });
     }
-    res.json({ ok: true, ...idx });
+    const exercises = normalizeExerciseIndexList(idx);
+    console.info("[EXERCISE_LIBRARY] index", { count: exercises.length, shape: Array.isArray(idx) ? "array" : "object" });
+    res.json({ ok: true, exercises, count: exercises.length });
   });
 
   app.get("/api/exercises/search", (req, res) => {
@@ -1476,19 +1498,11 @@ function createApp(options = {}) {
     const idx = loadExerciseIndex();
     if (!idx) return res.status(404).json({ ok: false, error: "Missing exercise index.json" });
 
-    const list = idx.exercises || [];
-    if (!q) return res.json({ ok: true, q, results: list.slice(0, 50) });
+    const list = normalizeExerciseIndexList(idx);
+    const results = (!q ? list : list.filter(x => exerciseSearchText(x).includes(q))).slice(0, q ? 100 : 50);
 
-    const results = list
-      .filter(x =>
-        String(x.name || "").toLowerCase().includes(q) ||
-        String(x.category || "").toLowerCase().includes(q) ||
-        String(x.equipment || "").toLowerCase().includes(q) ||
-        String(x.target || "").toLowerCase().includes(q)
-      )
-      .slice(0, 100);
-
-    res.json({ ok: true, q, results });
+    console.info("[EXERCISE_LIBRARY] search", { q, total: list.length, results: results.length });
+    res.json({ ok: true, q, results, count: results.length });
   });
 
   app.get("/api/exercises/:slug", (req, res) => {

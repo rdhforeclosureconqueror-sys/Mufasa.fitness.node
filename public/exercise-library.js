@@ -2,6 +2,7 @@
   "use strict";
 
   const DEFAULT_ASSET_HOST = "https://mufasa-fitness-node.onrender.com";
+  const ACTIVE_WORKOUT_SELECTION_KEY = "ACTIVE_WORKOUT_SELECTION_V1";
 
   function normalizeBaseUrl(value) {
     return String(value || "").trim().replace(/\/$/, "");
@@ -37,6 +38,67 @@
   function firstInstructionLines(ex) {
     const instructions = Array.isArray(ex.instructions) ? ex.instructions : [];
     return instructions.filter(Boolean).slice(0, 3);
+  }
+
+  function visibleError(message) {
+    statsEl.textContent = message;
+    statsEl.classList.add("warn");
+    console.error("[EXERCISE_LIBRARY]", message);
+  }
+
+  function canonicalExercisePrescription(ex) {
+    const primaryMuscle = Array.isArray(ex.primaryMuscles) ? ex.primaryMuscles[0] : null;
+    return {
+      exerciseId: String(ex.id || ex.slug || ex.name || "exercise"),
+      sourceExerciseId: String(ex.id || ex.slug || ""),
+      name: String(ex.name || ex.id || "Selected Exercise"),
+      category: ex.category || null,
+      equipment: ex.equipment || null,
+      primaryMuscles: Array.isArray(ex.primaryMuscles) ? ex.primaryMuscles : [],
+      secondaryMuscles: Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles : [],
+      sets: 3,
+      targetReps: 10,
+      restSeconds: 60,
+      tempo: primaryMuscle === "abdominals" ? "2-1-2" : "3-1-1",
+      instructions: firstInstructionLines(ex),
+      formCues: [
+        ex.category ? `Category: ${ex.category}` : null,
+        ex.equipment ? `Equipment: ${ex.equipment}` : null,
+        primaryMuscle ? `Primary target: ${primaryMuscle}` : null
+      ].filter(Boolean),
+      commonMistakes: []
+    };
+  }
+
+  function buildCanonicalWorkoutSelection(ex) {
+    const exercise = canonicalExercisePrescription(ex);
+    const selectedAt = new Date().toISOString();
+    return {
+      schemaVersion: 1,
+      source: "exercise-library",
+      selectedAt,
+      programId: "exercise_library",
+      scheduledWorkoutId: `library_${exercise.exerciseId}`.replace(/[^a-zA-Z0-9_-]/g, "_"),
+      title: `${exercise.name} Session`,
+      notes: "Selected from the exercise library.",
+      exercises: [exercise]
+    };
+  }
+
+  function selectExerciseForWorkout(ex) {
+    const selection = buildCanonicalWorkoutSelection(ex);
+    try {
+      localStorage.setItem(ACTIVE_WORKOUT_SELECTION_KEY, JSON.stringify(selection));
+      window.__ACTIVE_WORKOUT_SELECTION = selection;
+      window.dispatchEvent(new CustomEvent("workout:selected", { detail: selection }));
+      console.log("[EXERCISE_LIBRARY] selected exercise", { exerciseId: selection.exercises[0].exerciseId, workoutId: selection.scheduledWorkoutId });
+      statsEl.classList.remove("warn");
+      statsEl.textContent = `Selected ${selection.exercises[0].name}. Opening workout start page...`;
+      window.location.href = "/index.html#today-workout";
+    } catch (err) {
+      visibleError(`Could not select exercise: ${err.message || err}`);
+      throw err;
+    }
   }
 
   function getImageCandidates(ex) {
@@ -131,6 +193,13 @@
         ${instructions ? `<ul>${instructions}</ul>` : `<div class="muted">No instructions available.</div>`}
       `;
 
+      const selectBtn = document.createElement("button");
+      selectBtn.type = "button";
+      selectBtn.className = "select-workout-btn";
+      selectBtn.textContent = "Use for workout";
+      selectBtn.addEventListener("click", () => selectExerciseForWorkout(ex));
+      content.appendChild(selectBtn);
+
       card.appendChild(img);
       card.appendChild(content);
       cardsEl.appendChild(card);
@@ -160,6 +229,7 @@
 
       if (!data) throw (lastErr || new Error("Failed to load exercise index"));
       const list = Array.isArray(data) ? data : (Array.isArray(data.exercises) ? data.exercises : []);
+      console.log("[EXERCISE_LIBRARY] loaded index", { count: list.length, indexUrl: window.__EXERCISE_LIBRARY_INDEX_URL });
       exercises = list.filter((ex) => getImageCandidates(ex).length > 0);
 
       for (const category of getCategories(exercises)) {
@@ -172,7 +242,7 @@
       render();
     } catch (err) {
       cardsEl.innerHTML = `<p class="warn">Could not load exercise index: ${String(err.message || err)}</p>`;
-      statsEl.textContent = "";
+      visibleError(`Could not load exercise index: ${String(err.message || err)}`);
     }
   }
 

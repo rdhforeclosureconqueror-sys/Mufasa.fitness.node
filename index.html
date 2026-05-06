@@ -970,7 +970,7 @@ CREATE CLICKED: no</pre>
         <div id="retentionFlowContent" class="retention-muted">Loading pilot profile...</div>
       </div>
 
-      <h2 style="margin-top:12px;">Today’s Workout</h2>
+      <h2 id="today-workout" style="margin-top:12px;">Today’s Workout</h2>
       <p class="subtitle">Choose a template or use Ma’at 2.0’s program from your assessment.</p>
 
       <select id="workoutSelect">
@@ -1545,6 +1545,7 @@ CREATE CLICKED: no</pre>
 
     // ---- AI-generated program ----
     let aiProgramToday = null;
+    const ACTIVE_WORKOUT_SELECTION_KEY = "ACTIVE_WORKOUT_SELECTION_V1";
 
     function requireWorkoutProgressionRuntime() {
       if (!window.WorkoutProgressionRuntime) throw new Error("WorkoutProgressionRuntime missing");
@@ -3517,23 +3518,85 @@ function toggleListening() {
 
     // Static workout templates
     const STATIC_WORKOUTS = {
-      nasm_total_body_a:
-        "Warm-up (5–10 min):\n" +
-        "- Cat–cow x10, Hip circles x10/side, Arm swings x20\n\n" +
-        "Strength (2–3 rounds):\n" +
-        "- Squat to press x12\n" +
-        "- Row (band or backpack) x12\n" +
-        "- Glute bridge x15\n\n" +
-        "Cool-down: light stretching for hips, hamstrings, chest.",
-      yoga_back_release:
-        "Yoga Back Release Flow (~25 min):\n" +
-        "- Child’s pose (3–5 breaths)\n" +
-        "- Cat–cow x10\n" +
-        "- Low lunge with side bend (5 breaths/side)\n" +
-        "- Sphinx pose (8–10 breaths)\n" +
-        "- Supine twist (5–8 breaths/side)\n" +
-        "- Legs up the wall (2–3 min)."
+      nasm_total_body_a: {
+        title: "NASM Total Body A",
+        text:
+          "Warm-up (5–10 min):\n" +
+          "- Cat–cow x10, Hip circles x10/side, Arm swings x20\n\n" +
+          "Strength (2–3 rounds):\n" +
+          "- Squat to press x12\n" +
+          "- Row (band or backpack) x12\n" +
+          "- Glute bridge x15\n\n" +
+          "Cool-down: light stretching for hips, hamstrings, chest.",
+        exercises: [
+          { exerciseId: "squat_to_press", name: "Squat to Press", sets: 3, targetReps: 12, restSeconds: 60, tempo: "3-1-1", instructions: ["Squat under control, then press overhead."], formCues: ["Keep chest tall.", "Press ribs down."] },
+          { exerciseId: "loaded_row", name: "Row", sets: 3, targetReps: 12, restSeconds: 60, tempo: "2-1-2", instructions: ["Row a band, dumbbell, or backpack toward the ribs."], formCues: ["Pull shoulder blades back.", "Keep neck relaxed."] },
+          { exerciseId: "glute_bridge", name: "Glute Bridge", sets: 3, targetReps: 15, restSeconds: 45, tempo: "2-1-2", instructions: ["Drive through heels and squeeze glutes at the top."], formCues: ["Keep ribs stacked over pelvis."] }
+        ]
+      },
+      yoga_back_release: {
+        title: "Yoga Back Release Flow",
+        text:
+          "Yoga Back Release Flow (~25 min):\n" +
+          "- Child’s pose (3–5 breaths)\n" +
+          "- Cat–cow x10\n" +
+          "- Low lunge with side bend (5 breaths/side)\n" +
+          "- Sphinx pose (8–10 breaths)\n" +
+          "- Supine twist (5–8 breaths/side)\n" +
+          "- Legs up the wall (2–3 min).",
+        exercises: [
+          { exerciseId: "childs_pose", name: "Child’s Pose", sets: 1, targetTime: 60, targetReps: 1, restSeconds: 10, tempo: "breath", instructions: ["Settle hips toward heels and breathe slowly."], formCues: ["Relax shoulders."] },
+          { exerciseId: "cat_cow", name: "Cat-Cow", sets: 1, targetReps: 10, restSeconds: 10, tempo: "breath", instructions: ["Move between spinal flexion and extension with breath."], formCues: ["Move smoothly."] },
+          { exerciseId: "supine_twist", name: "Supine Twist", sets: 2, targetTime: 45, targetReps: 1, restSeconds: 10, tempo: "breath", instructions: ["Rotate gently and keep the breath easy."], formCues: ["Do not force range."] }
+        ]
+      }
     };
+
+    function buildCanonicalWorkoutSelection(workoutId) {
+      const template = STATIC_WORKOUTS[workoutId];
+      if (!template) throw new Error(`unknown workout selection: ${workoutId}`);
+      return {
+        schemaVersion: 1,
+        source: "workout-select",
+        selectedAt: new Date().toISOString(),
+        programId: "template",
+        scheduledWorkoutId: workoutId,
+        title: template.title,
+        notes: template.text,
+        exercises: template.exercises
+      };
+    }
+
+    function persistCanonicalWorkoutSelection(selection) {
+      if (!selection?.exercises?.length) throw new Error("selected workout has no exercises");
+      localStorage.setItem(ACTIVE_WORKOUT_SELECTION_KEY, JSON.stringify(selection));
+      window.__ACTIVE_WORKOUT_SELECTION = selection;
+      console.log("[WORKOUT_SELECTION] selected", { source: selection.source, workoutId: selection.scheduledWorkoutId, exercises: selection.exercises.length });
+      window.dispatchEvent(new CustomEvent("workout:selected", { detail: selection }));
+      return selection;
+    }
+
+    function clearCanonicalWorkoutSelection(reason = "manual") {
+      localStorage.removeItem(ACTIVE_WORKOUT_SELECTION_KEY);
+      window.__ACTIVE_WORKOUT_SELECTION = null;
+      console.log("[WORKOUT_SELECTION] cleared", { reason });
+    }
+
+    function renderWorkoutPlan(plan) {
+      if (!plan) {
+        workoutPlanViewEl.textContent = "Select a workout or choose an exercise from the Exercise Library before starting.";
+        return;
+      }
+      const lines = [
+        `${plan.title || "Workout"}`,
+        plan.notes ? `\n${plan.notes}` : "",
+        "",
+        "Exercises:",
+        ...(plan.exercises || []).map((exercise, index) => `${index + 1}. ${exercise.name} — ${exercise.sets || 1} set(s), ${exercise.targetReps || exercise.targetTime || "timed"} ${exercise.targetTime ? "sec" : "reps"}`)
+      ];
+      workoutPlanViewEl.textContent = lines.filter((line) => line !== null && line !== undefined).join("\n");
+      console.log("[WORKOUT_PLAN] rendered", { workoutId: plan.scheduledWorkoutId, exercises: plan.exercises?.length || 0 });
+    }
 
     function getKeypoint(pose, name) {
       if (!pose || !pose.keypoints) return null;
@@ -4392,17 +4455,29 @@ function toggleListening() {
 
 
     function handleWorkoutSelectChange() {
-      const val = workoutSelectEl.value;
-      if (!val) {
-        workoutPlanViewEl.textContent = "Your workout plan will appear here.";
-        return;
-      }
-      if (val === "ai_today" && aiProgramToday) {
-        workoutPlanViewEl.textContent = aiProgramToday;
-      } else if (STATIC_WORKOUTS[val]) {
-        workoutPlanViewEl.textContent = STATIC_WORKOUTS[val];
-      } else {
-        workoutPlanViewEl.textContent = "No plan found for that selection.";
+      try {
+        const val = workoutSelectEl.value;
+        if (!val) {
+          clearCanonicalWorkoutSelection("workout-select-empty");
+          renderWorkoutPlan(null);
+          return;
+        }
+        if (val === "ai_today") {
+          clearCanonicalWorkoutSelection("ai-today-not-canonical");
+          workoutPlanViewEl.textContent = aiProgramToday || "Ma’at 2.0 has not hydrated today’s program yet. Select a template or choose an exercise from the Exercise Library.";
+          console.warn("[WORKOUT_SELECTION] ai_today not canonical yet", { hasProgram: Boolean(aiProgramToday) });
+          return;
+        }
+        const selection = persistCanonicalWorkoutSelection(buildCanonicalWorkoutSelection(val));
+        renderWorkoutPlan(selection);
+        hydrateActiveWorkoutPlan();
+      } catch (err) {
+        const message = `Workout selection failed: ${err.message || err}`;
+        workoutPlanViewEl.textContent = message;
+        poseStatusEl.textContent = message;
+        poseStatusEl.classList.add("status-bad");
+        console.error("[WORKOUT_SELECTION] error", err);
+        throw err;
       }
     }
 
@@ -4707,15 +4782,17 @@ function toggleListening() {
       attachAvatarTraceHarness();
     }
 
-    hydrateActiveWorkoutPlan();
-    updateActiveWorkoutState({ workoutStatus: "ready", setStatus: "ready" });
+    const bootWorkoutPlan = hydrateActiveWorkoutPlan();
+    renderWorkoutPlan(bootWorkoutPlan);
+    if (bootWorkoutPlan?.exercises?.length) updateActiveWorkoutState({ workoutStatus: "ready", setStatus: "ready" });
     window.addEventListener("workout:selected", (event) => {
       const detail = event?.detail;
       if (detail) {
         try { localStorage.setItem("ACTIVE_WORKOUT_SELECTION_V1", JSON.stringify(detail)); } catch (_) {}
       }
-      hydrateActiveWorkoutPlan();
-      updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "ready", workoutStatus: "ready" });
+      const hydrated = hydrateActiveWorkoutPlan();
+      renderWorkoutPlan(hydrated);
+      if (hydrated?.exercises?.length) updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "ready", workoutStatus: "ready" });
       addLog("system", `Loaded scheduled workout: ${getActiveWorkoutPlan()?.title || "Workout"}.`);
     });
 
@@ -4779,7 +4856,12 @@ function toggleListening() {
         window.RepAnalysisRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
         console.log("[WORKOUT_LIFECYCLE] prepared workout start", { workoutId: preparedState.activeWorkoutId, programId: preparedState.activeProgramId });
       },
-      buildSessionPayload: () => ({ workoutId: getActiveWorkoutState().activeWorkoutId || null, programId: getActiveWorkoutState().activeProgramId || null }),
+      buildSessionPayload: () => {
+        const plan = getActiveWorkoutPlan();
+        if (!plan?.exercises?.length) throw new Error("selected workout failed to hydrate; choose a workout before starting");
+        console.log("[WORKOUT_PLAN] session payload hydrated", { workoutId: getActiveWorkoutState().activeWorkoutId || null, exercises: plan.exercises.length });
+        return { workoutId: getActiveWorkoutState().activeWorkoutId || null, programId: getActiveWorkoutState().activeProgramId || null, exerciseId: plan.exercises[0]?.exerciseId || null };
+      },
       createSession: (payload) => {
         if (!SESSION_WRITE_CLIENT?.startSession) throw new Error('SessionWrite.startSession missing for POST /api/sessions');
         return SESSION_WRITE_CLIENT.startSession(payload);

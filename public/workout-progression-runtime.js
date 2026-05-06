@@ -18,6 +18,16 @@
     else console.log(`[WORKOUT_PROGRESS] ${message}`, details);
   }
 
+  function selectionLog(message, details) {
+    if (details === undefined) console.log(`[WORKOUT_SELECTION] ${message}`);
+    else console.log(`[WORKOUT_SELECTION] ${message}`, details);
+  }
+
+  function planLog(message, details) {
+    if (details === undefined) console.log(`[WORKOUT_PLAN] ${message}`);
+    else console.log(`[WORKOUT_PLAN] ${message}`, details);
+  }
+
   function retentionSignal(message, details) {
     if (details === undefined) console.log(`[RETENTION_SIGNAL] ${message}`);
     else console.log(`[RETENTION_SIGNAL] ${message}`, details);
@@ -81,26 +91,30 @@
     try { stored = JSON.parse(global.localStorage?.getItem(ACTIVE_WORKOUT_SELECTION_KEY) || 'null'); } catch (err) {
       throw new Error(`invalid active workout selection: ${err?.message || err}`);
     }
-    const fallback = {
-      programId: null,
-      scheduledWorkoutId: 'quick_squat_default',
-      title: 'Quick Squat Session',
-      notes: null,
-      exercises: [normalizeExercisePrescription({ exerciseId: 'bodyweight_squat', name: 'Bodyweight Squat', sets: 3, targetReps: 10, restSeconds: 60, tempo: '3-1-1', instructions: ['Keep chest up.'], formCues: ['Keep knees tracking over toes.'] }, 0)]
-    };
-    const source = stored && Array.isArray(stored.exercises) && stored.exercises.length ? stored : fallback;
+    if (!stored) {
+      activeWorkoutPlan = null;
+      updateState({ activeProgramId: null, activeWorkoutId: null, currentExercise: null, workoutStatus: 'idle', setStatus: 'idle' }, { render: false });
+      selectionLog('no active workout selection');
+      return null;
+    }
+    if (!Array.isArray(stored.exercises) || stored.exercises.length < 1) {
+      throw new Error('active workout selection has no exercises');
+    }
     activeWorkoutPlan = {
-      programId: source.programId || null,
-      scheduledWorkoutId: source.scheduledWorkoutId || source.workoutId || `workout_${Date.now()}`,
-      title: source.title || 'Workout',
-      notes: source.notes || null,
-      exercises: source.exercises.map((exercise, index) => normalizeExercisePrescription(exercise, index))
+      programId: stored.programId || null,
+      scheduledWorkoutId: stored.scheduledWorkoutId || stored.workoutId || `workout_${Date.now()}`,
+      title: stored.title || 'Workout',
+      notes: stored.notes || null,
+      source: stored.source || 'unknown',
+      selectedAt: stored.selectedAt || null,
+      exercises: stored.exercises.map((exercise, index) => normalizeExercisePrescription(exercise, index))
     };
     updateState({
       activeProgramId: activeWorkoutPlan.programId,
       activeWorkoutId: activeWorkoutPlan.scheduledWorkoutId
     }, { render: false });
-    log('hydrated workout plan', { workoutId: activeWorkoutPlan.scheduledWorkoutId, exercises: activeWorkoutPlan.exercises.length });
+    selectionLog('hydrated active selection', { source: activeWorkoutPlan.source, workoutId: activeWorkoutPlan.scheduledWorkoutId, exercises: activeWorkoutPlan.exercises.length });
+    planLog('hydrated workout plan', { workoutId: activeWorkoutPlan.scheduledWorkoutId, title: activeWorkoutPlan.title, exercises: activeWorkoutPlan.exercises.map((exercise) => exercise.exerciseId) });
     return getPlan();
   }
 
@@ -227,7 +241,8 @@
   }
 
   function prepareWorkoutStart() {
-    hydrateActiveWorkoutPlan();
+    const plan = hydrateActiveWorkoutPlan();
+    if (!plan?.exercises?.length) throw new Error('select a workout before starting');
     completedEventDispatched = false;
     sessionStartedAt = Date.now();
     sessionId = null;
