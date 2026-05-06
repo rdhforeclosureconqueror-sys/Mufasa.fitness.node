@@ -33,6 +33,8 @@
         "/session-write.js",
         "/pose-runtime.js",
         "/rep-runtime.js",
+        "/rep-analysis-runtime.js",
+        "/hud-runtime.js",
         "/landing-diagnostics.js",
         "/fitness.js"
       ],
@@ -1118,6 +1120,8 @@ CREATE CLICKED: no</pre>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/pose-runtime.js?v=20260506"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
+  <script src="/rep-analysis-runtime.js?v=20260506"></script>
+  <script src="/hud-runtime.js?v=20260506"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
@@ -1712,48 +1716,21 @@ CREATE CLICKED: no</pre>
     }
 
     function getPrimaryCue(formResult = null) {
-      if (formResult?.corrections?.length) return formResult.corrections[0].text;
-      const current = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex];
-      return current?.formCues?.[0] || current?.instructions?.[0] || "Stay controlled and breathe.";
+      if (!window.HudRuntime?.getPrimaryCue) throw new Error("HudRuntime.getPrimaryCue missing");
+      return window.HudRuntime.getPrimaryCue(formResult, {
+        activeWorkoutPlan,
+        activeWorkoutState: ACTIVE_WORKOUT_STATE
+      });
     }
 
     function renderWorkoutHud(formResult = null) {
-      const nowForHud = Date.now();
-      window.__HUD_RUNTIME_STATE = {
-        ...(window.__HUD_RUNTIME_STATE || {}),
-        loaded: true,
-        lastRenderAt: new Date(nowForHud).toISOString(),
-        workoutStatus: ACTIVE_WORKOUT_STATE.workoutStatus,
-        setStatus: ACTIVE_WORKOUT_STATE.setStatus,
-        currentExercise: ACTIVE_WORKOUT_STATE.currentExercise,
-        repCount: ACTIVE_WORKOUT_STATE.repCount
-      };
-      if (!window.__HUD_RUNTIME_STATE.lastLogAt || nowForHud - window.__HUD_RUNTIME_STATE.lastLogAt > 2500) {
-        window.__HUD_RUNTIME_STATE.lastLogAt = nowForHud;
-        console.log("[HUD_RUNTIME] render", {
-          workoutStatus: ACTIVE_WORKOUT_STATE.workoutStatus,
-          setStatus: ACTIVE_WORKOUT_STATE.setStatus,
-          currentExercise: ACTIVE_WORKOUT_STATE.currentExercise,
-          repCount: ACTIVE_WORKOUT_STATE.repCount
-        });
-      }
-      const perfValues = window.__perfMetrics?.values || {};
-      if (perfValues.workoutHudReadyMs == null) {
-        markPerfMetric("workoutHudReadyMs", Math.round(performance.now()));
-      }
-      const totalSets = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex]?.sets || 1;
-      if (hudExerciseNameEl) hudExerciseNameEl.textContent = ACTIVE_WORKOUT_STATE.currentExercise || "--";
-      if (hudSetEl) hudSetEl.textContent = `${ACTIVE_WORKOUT_STATE.activeSetIndex + 1} of ${totalSets}`;
-      if (hudRepsEl) hudRepsEl.textContent = `${ACTIVE_WORKOUT_STATE.repCount} / ${ACTIVE_WORKOUT_STATE.targetReps || "--"}`;
-      if (hudTempoEl) hudTempoEl.textContent = ACTIVE_WORKOUT_STATE.tempo || "--";
-      if (hudRestEl) hudRestEl.textContent = ACTIVE_WORKOUT_STATE.setStatus === "rest" ? `${restRemainingSec}s` : "Ready";
-      if (hudNextExerciseEl) hudNextExerciseEl.textContent = ACTIVE_WORKOUT_STATE.nextExercise || "--";
-      if (hudCoachCueEl) hudCoachCueEl.textContent = getPrimaryCue(formResult);
-      if (exerciseLabelEl) exerciseLabelEl.textContent = ACTIVE_WORKOUT_STATE.currentExercise || "--";
-      if (repCountEl) repCountEl.textContent = String(ACTIVE_WORKOUT_STATE.repCount || 0);
-      if (workoutHudEl) workoutHudEl.classList.toggle("resting", ACTIVE_WORKOUT_STATE.setStatus === "rest");
-      const isDebug = window.__debugWorkoutOverlay === true || AVATAR_FLAGS.AVATAR_DEBUG;
-      if (avatarDebugOverlayEl) avatarDebugOverlayEl.style.display = isDebug ? "block" : "none";
+      if (!window.HudRuntime?.render) throw new Error("HudRuntime.render missing");
+      return window.HudRuntime.render({
+        activeWorkoutPlan,
+        activeWorkoutState: ACTIVE_WORKOUT_STATE,
+        formResult,
+        restRemainingSec
+      });
     }
 
     function stopRestTimer() {
@@ -4063,34 +4040,83 @@ function toggleListening() {
     function sendRepToNode(depthScore) {
       const now = Date.now();
       if (!sessionId) return;
-      if (window.RepRuntime?.persistRepUpdate) {
-        const sent = window.RepRuntime.persistRepUpdate({
-          sessionId,
-          exerciseId: getCurrentExerciseId(),
-          repsThisSet: repCount,
-          totalReps,
-          depthScore,
-          goodForm: lastGoodForm,
-          sessionWrite: SESSION_WRITE_CLIENT,
-          now,
-          minIntervalMs: 120
-        });
-        if (sent) lastNodeRepSentAt = now;
-        return;
-      }
-      if (now - lastNodeRepSentAt < 120) return;
-      lastNodeRepSentAt = now;
-      console.warn("[REP_RUNTIME] RepRuntime unavailable; using existing SessionWrite enqueue path.");
-      SESSION_WRITE_CLIENT?.enqueueRepUpdate({
+      if (!window.RepRuntime?.persistRepUpdate) throw new Error("RepRuntime.persistRepUpdate missing");
+      const sent = window.RepRuntime.persistRepUpdate({
         sessionId,
         exerciseId: getCurrentExerciseId(),
         repsThisSet: repCount,
         totalReps,
         depthScore,
         goodForm: lastGoodForm,
-        ts: now
+        sessionWrite: SESSION_WRITE_CLIENT,
+        now,
+        minIntervalMs: 120
       });
+      if (sent) lastNodeRepSentAt = now;
     }
+
+    function syncRepAnalysisState(snapshot = {}) {
+      repCount = Number(snapshot.repCount || 0);
+      totalReps = Number(snapshot.totalReps || 0);
+      repPhase = snapshot.repPhase || snapshot.phase || repPhase;
+      lastDepthScore = Number(snapshot.lastDepthScore || lastDepthScore || 0);
+      lastGoodForm = Boolean(snapshot.lastGoodForm);
+      window.RepRuntime?.sync?.({ repCount, totalReps, phase: repPhase });
+    }
+
+    function configureExtractedWorkoutRuntimes() {
+      if (!window.HudRuntime?.configure) throw new Error("HudRuntime.configure missing");
+      if (!window.RepAnalysisRuntime?.configure) throw new Error("RepAnalysisRuntime.configure missing");
+      window.HudRuntime.configure({
+        workoutHudEl,
+        hudExerciseNameEl,
+        hudSetEl,
+        hudRepsEl,
+        hudTempoEl,
+        hudRestEl,
+        hudNextExerciseEl,
+        hudCoachCueEl,
+        exerciseLabelEl,
+        repCountEl,
+        avatarDebugOverlayEl,
+        markPerfMetric,
+        getActiveWorkoutPlan: () => activeWorkoutPlan,
+        getActiveWorkoutState: () => ACTIVE_WORKOUT_STATE,
+        getRestRemainingSec: () => restRemainingSec,
+        isAvatarDebug: () => AVATAR_FLAGS.AVATAR_DEBUG
+      });
+      window.RepAnalysisRuntime.configure({
+        formEngine: FORM_ENGINE,
+        getCurrentExerciseMeta,
+        getCurrentExerciseId,
+        onAnalysis: ({ formResult, analysis }) => {
+          syncRepAnalysisState(window.RepAnalysisRuntime.getState());
+          updateActiveWorkoutState({ repCount });
+          renderWorkoutHud(formResult || null);
+          if (analysis?.fullBody) fullBodyAcquired = true;
+        },
+        onRepComplete: ({ repCount: nextRepCount, totalReps: nextTotalReps, depthScore, goodForm, formResult }) => {
+          repCount = Number(nextRepCount || 0);
+          totalReps = Number(nextTotalReps || 0);
+          lastDepthScore = Number(depthScore || 0);
+          lastGoodForm = Boolean(goodForm);
+          updateActiveWorkoutState({ repCount });
+          sendRepToNode(depthScore);
+          if (repFeedbackAllowed && Date.now() - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
+            lastGoodRepSpokenAt = Date.now();
+            speak(goodForm ? "Good rep." : getPrimaryCue(formResult), "rep");
+          }
+          if (ACTIVE_WORKOUT_STATE.targetReps && repCount >= ACTIVE_WORKOUT_STATE.targetReps && ACTIVE_WORKOUT_STATE.setStatus === "active") {
+            startRestTimer(ACTIVE_WORKOUT_STATE.restSeconds);
+          }
+        }
+      });
+      console.log("[REP_ANALYSIS] extracted runtime configured");
+      console.log("[HUD_RUNTIME] extracted runtime configured");
+      console.log("[COACH_RUNTIME] active cue runtime configured");
+    }
+
+    configureExtractedWorkoutRuntimes();
 
     function sendOhsaToNode(summary) {
       postAuthenticatedJSON(NODE_OHSA_URL, {
@@ -4720,7 +4746,8 @@ function toggleListening() {
           latestPose = pose;
           latestPosePacket = posePacket;
           window.__lastPoseFrame = posePacket;
-          renderWorkoutHud(window.__lastFormResult || null);
+          if (!window.RepAnalysisRuntime?.processPoseFrame) throw new Error("RepAnalysisRuntime.processPoseFrame missing");
+          window.RepAnalysisRuntime.processPoseFrame({ pose, posePacket });
         },
         onError: (err) => {
           const reason = err?.message || String(err || "pose_loop_error");
@@ -5125,6 +5152,7 @@ function toggleListening() {
         if (ohsaMode) { ohsaMode = false; ohsaFrontSamples = []; ohsaSideSamples = []; addLog("system", "Cancelled OHSA to start workout."); }
         hydrateActiveWorkoutPlan(); repCount = 0; totalReps = 0; repPhase = "up"; fullBodyAcquired = false; stepBackPromptCount = 0; upperBodyReadyPromptShown = false; stopRestTimer();
         window.RepRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
+        window.RepAnalysisRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
         console.log("[WORKOUT_LIFECYCLE] prepared workout start", { workoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId, programId: ACTIVE_WORKOUT_STATE.activeProgramId });
         updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "active", workoutStatus: "in_progress" });
       },
