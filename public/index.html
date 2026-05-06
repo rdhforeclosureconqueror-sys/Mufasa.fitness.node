@@ -36,6 +36,7 @@
         "/rep-analysis-runtime.js",
         "/hud-runtime.js",
         "/workout-progression-runtime.js",
+        "/coach-runtime.js",
         "/landing-diagnostics.js",
         "/fitness.js"
       ],
@@ -1012,7 +1013,7 @@ CREATE CLICKED: no</pre>
 
         <span class="chip">
           <span class="chip-dot"></span>
-          <span id="brainChipText">Ma’at 2.0: connecting…</span>
+          <span id="brainChipText">Ma’at 2.0: ready</span>
         </span>
       </div>
 
@@ -1021,7 +1022,7 @@ CREATE CLICKED: no</pre>
       <div class="status-line"><strong>Stage mode:</strong> <span id="stageModeStatus">fixed</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
       <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
-      <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Not contacted yet.</span></div>
+      <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Coach ready</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>BOOT_CORE_LOADED:</strong> <span id="bootCoreLoadedMarker">no</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
@@ -1124,6 +1125,7 @@ CREATE CLICKED: no</pre>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
   <script src="/hud-runtime.js?v=20260506"></script>
   <script src="/workout-progression-runtime.js?v=20260506"></script>
+  <script src="/coach-runtime.js?v=20260506"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
@@ -1610,14 +1612,12 @@ CREATE CLICKED: no</pre>
     let lastStepBackSpokenAt = 0;
     let stepBackPromptCount = 0;
     let upperBodyReadyPromptShown = false;
-    let lastGoodRepSpokenAt = 0;
 
     let lastNodeRepSentAt = 0;
     let lastDepthScore = 0;
     let lastGoodForm = false;
 
     const STEP_BACK_COOLDOWN = 4000;
-    const GOOD_REP_COOLDOWN  = 2500;
 
     // ---- New Exercise definition ----
     let definingExercise = false;
@@ -3518,185 +3518,30 @@ CREATE CLICKED: no</pre>
     };
 
 /* =========================================================
-  SECTION 3/4 — VOICE (AI streaming blob + browser fallback) + STT
+  SECTION 3/4 — COACH/VOICE DELEGATORS + STT
 ========================================================== */
 
-// ---- DOM ----
-// Add this <audio> somewhere in HTML OR create it here:
-let ttsPlayer = document.getElementById("ttsPlayer");
-if (!ttsPlayer) {
-  ttsPlayer = document.createElement("audio");
-  ttsPlayer.id = "ttsPlayer";
-  ttsPlayer.preload = "auto";
-  document.body.appendChild(ttsPlayer);
-}
-
-// ---- Capability checks ----
-const hasSpeechSynth = "speechSynthesis" in window;
-const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-if (!SRClass && !hasSpeechSynth) {
-  voiceSupportStatusEl.textContent = "This device does not support voice. Text only.";
-} else if (!SRClass) {
-  voiceSupportStatusEl.textContent = "Mic input not supported here. Text + AI voice output only.";
-} else {
-  voiceSupportStatusEl.textContent = "Voice ready. Tap 'Voice On' to enable audio + mic.";
-  voiceSupportStatusEl.classList.add("status-ok");
-}
-
-// ---- Voice dropdown (controls backend voice) ----
-// Your backend expects: { text, voice, format }
-// So dropdown values should be voices like: alloy, verse, etc.
-(function initVoiceDropdown() {
-  if (!voiceSelectEl) return;
-  const voices = ["alloy", "verse", "aria", "ember", "coral"]; // adjust if you want
-  voiceSelectEl.innerHTML = "";
-  voices.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    voiceSelectEl.appendChild(opt);
-  });
-  voiceSelectEl.value = "alloy";
-})();
-
-// ---- State ----
-let voiceMuted = false;
-let audioUnlocked = false;
-let speechLock = false;        // LLM voice lock
-let repFeedbackAllowed = true; // rep voice allowed when no LLM talking
-
-function stopAllSpeech() {
-  try { window.speechSynthesis?.cancel?.(); } catch {}
-  try {
-    ttsPlayer.pause();
-    ttsPlayer.currentTime = 0;
-  } catch {}
-}
-
-// ---- IMPORTANT: unlock audio once from a user click ----
-async function unlockAudioOnce() {
-  if (audioUnlocked) return true;
-  try {
-    // play a tiny silent sound to satisfy autoplay policies
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    gain.gain.value = 0.00001;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.02);
-    await ctx.resume();
-    audioUnlocked = true;
-    voiceSupportStatusEl.textContent = "Audio unlocked ✅ Voice will play now.";
-    voiceSupportStatusEl.classList.add("status-ok");
-    return true;
-  } catch (e) {
-    console.warn("Audio unlock failed:", e);
-    voiceSupportStatusEl.textContent =
-      "Tap the page once more to enable audio (browser autoplay protection).";
-    return false;
-  }
-}
-
-// ---- AI TTS (STREAMING BLOB) ----
-// This matches YOUR FastAPI server: it returns audio bytes (mp3/wav)
-
-
-
-async function speak(text, source = "system") {
-  if (voiceMuted || !text || !text.trim()) return;
-  if (speechLock && source === "rep") return;
-
-  // If audio isn't unlocked yet, we can't auto-play
-  if (!audioUnlocked) {
-    // Try unlock (works only if speak() was triggered by a user click)
-    const ok = await unlockAudioOnce();
-    if (!ok) return;
-  }
-
-  const voice = (voiceSelectEl?.value || "alloy");
-  const format = "mp3";
-
-  try {
-    stopAllSpeech();
-
-    // lock while LLM is talking
-    if (source === "llm") {
-      speechLock = true;
-      repFeedbackAllowed = false;
+    function requireCoachRuntime() {
+      if (!window.CoachRuntime) throw new Error("CoachRuntime missing");
+      return window.CoachRuntime;
     }
 
-    const authToken = getAuthToken();
-    const res = await fetch(AIVOICE_URL, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
-  },
-  body: JSON.stringify({ text, voice, format })
-});
+    requireCoachRuntime().configure({
+      refs: { brainStatusEl, brainChipTxt, voiceSupportStatusEl, voiceSelectEl, muteBtn },
+      deps: { voiceUrl: AIVOICE_URL, getAuthToken, addLog }
+    });
 
-if (!res.ok) {
-  const errTxt = await res.text().catch(() => "");
-  throw new Error("TTS HTTP " + res.status + " " + errTxt);
-}
-
-
-    // ✅ blob because backend streams audio bytes
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-
-    ttsPlayer.src = url;
-    ttsPlayer.onended = () => {
-      URL.revokeObjectURL(url);
-      if (source === "llm") {
-        speechLock = false;
-        repFeedbackAllowed = true;
-      }
-    };
-    ttsPlayer.onerror = () => {
-      URL.revokeObjectURL(url);
-      if (source === "llm") {
-        speechLock = false;
-        repFeedbackAllowed = true;
-      }
-    };
-
-    await ttsPlayer.play();
-    return;
-
-  } catch (e) {
-    console.warn("AI voice failed:", e);
-
-    // Optional browser fallback
-    if (hasSpeechSynth) {
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 0.95;
-        u.pitch = 1.0;
-        u.onend = () => {
-          if (source === "llm") {
-            speechLock = false;
-            repFeedbackAllowed = true;
-          }
-        };
-        window.speechSynthesis.speak(u);
-      } catch (err) {
-        console.warn("Fallback TTS failed:", err);
-      }
+    async function speak(text, source = "system") {
+      return requireCoachRuntime().speak(text, source);
     }
 
-    if (source === "llm") {
-      speechLock = false;
-      repFeedbackAllowed = true;
+    async function unlockAudioOnce() {
+      return requireCoachRuntime().unlockAudioOnce();
     }
-  }
-}
 
-
+    function stopAllSpeech() {
+      return requireCoachRuntime().stopAllSpeech();
+    }
 
 // ---- STT (Speech Recognition) ----
 let listening = false;
@@ -3926,17 +3771,17 @@ function toggleListening() {
           totalReps = Number(progressState.totalReps || 0);
         },
         onSetStarted: (setNumber) => {
-          if (repFeedbackAllowed) speak(`Rest is over. Start set ${setNumber}.`, "rep");
+          requireCoachRuntime().speakSetStarted(setNumber);
         },
         onExerciseStarted: (exercise) => {
-          if (repFeedbackAllowed) speak(`Next exercise: ${exercise?.name || "next exercise"}.`, "rep");
+          requireCoachRuntime().speakExerciseStarted(exercise);
         },
         onWorkoutCompleted: () => {
           running = false;
           startBtn.textContent = "Start Workout";
           refreshCameraUiState();
           addLog("system", "Workout complete.");
-          if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
+          requireCoachRuntime().speakWorkoutCompleted();
           setPersonLayerSuppressed(false);
           setAvatar3dCanvasVisibility(false);
           lastRenderMode = "camera";
@@ -3977,10 +3822,7 @@ function toggleListening() {
           lastGoodForm = Boolean(goodForm);
           requireWorkoutProgressionRuntime().handleRepComplete({ repCount, totalReps }, formResult || null);
           sendRepToNode(depthScore);
-          if (repFeedbackAllowed && Date.now() - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
-            lastGoodRepSpokenAt = Date.now();
-            speak(goodForm ? "Good rep." : getPrimaryCue(formResult), "rep");
-          }
+          requireCoachRuntime().speakRepFeedback(goodForm ? "Good rep." : getPrimaryCue(formResult), "rep");
         }
       });
       console.log("[REP_ANALYSIS] extracted runtime configured");
@@ -4018,14 +3860,11 @@ function toggleListening() {
       try {
         const res = await fetch(BRAIN_BASE_URL + "/health");
         await res.json();
-        brainStatusEl.textContent = "Ma’at 2.0 online.";
-        brainStatusEl.classList.add("status-ok");
-        brainChipTxt.textContent = "Ma’at 2.0";
+        requireCoachRuntime().setReady("brain-health-online");
       } catch (e) {
         console.warn("Brain health error", e);
-        brainStatusEl.textContent = "Ma’at 2.0 offline.";
-        brainStatusEl.classList.add("status-bad");
-        brainChipTxt.textContent = "Ma’at 2.0 (offline)";
+        console.log("[MAAT_STATUS] health unavailable", e?.message || String(e || "unknown_error"));
+        requireCoachRuntime().setReady("brain-health-unavailable");
       }
     })();
 
@@ -4608,7 +4447,6 @@ function toggleListening() {
         const message = "Pose runtime module missing; cannot start pose loop.";
         poseStatusEl.textContent = message;
         poseStatusEl.classList.add("status-bad");
-        brainStatusEl.textContent = message;
         throw new Error("PoseRuntime.startPoseLoop missing");
       }
       const loop = window.PoseRuntime.startPoseLoop({
@@ -4626,7 +4464,6 @@ function toggleListening() {
           const reason = err?.message || String(err || "pose_loop_error");
           poseStatusEl.textContent = `Pose loop error: ${reason}`;
           poseStatusEl.classList.add("status-bad");
-          brainStatusEl.textContent = `Pose loop error: ${reason}`;
         }
       });
       animId = { stop: loop.stop };
@@ -5046,8 +4883,8 @@ function toggleListening() {
         resizeAvatarThreeRuntime();
       },
       onSessionCreated: (sessionRes) => { addLog("system", `Session API OK: ${JSON.stringify({ sessionId: sessionRes?.sessionId || sessionRes?.id || null })}`); updateActivationStatusPanel("session-created"); updateAuthPropagationStatus("session-created"); window.__appRuntime?.updateFeaturePanel?.("session-created"); },
-      onWorkoutStarted: async (createdSessionId) => { const startedState = requireWorkoutProgressionRuntime().startWorkout(createdSessionId); running = true; sessionId = createdSessionId; startBtn.textContent = "Stop Workout"; refreshCameraUiState(); addLog("system", `Workout started: ${getActiveWorkoutPlan()?.title || "Session"}. Session: ${sessionId}.`); console.log("[WORKOUT_LIFECYCLE] session started", { sessionId, exerciseId: getCurrentExerciseId() }); trackPilotEvent("workout_started", { sessionId, exerciseId: getCurrentExerciseId(), scheduledWorkoutId: startedState.activeWorkoutId, programId: startedState.activeProgramId }); const currentExercise = getCurrentExerciseMeta(); try { await speak(`Starting ${currentExercise?.name || "your workout"}. ${currentExercise?.sets || 1} sets of ${currentExercise?.targetReps || 10}. Tempo ${currentExercise?.tempo || "3-1-1"}.`, "rep"); brainStatusEl.textContent = "Speaking"; brainChipTxt.textContent = "Ma’at 2.0: speaking"; } catch (voiceErr) { const reason = voiceErr?.message || String(voiceErr || "voice_unavailable"); brainStatusEl.textContent = `Voice unavailable: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: voice unavailable"; addLog("system", `Voice unavailable: ${reason}`); } runPoseLoop(); updateActivationStatusPanel("workout-started"); updateAuthPropagationStatus("workout-started"); window.__appRuntime?.updateFeaturePanel?.("workout-started"); },
-      onWorkoutStartError: (err) => { const reason = err?.message || String(err || "unknown_error"); addLog("system", `Workout start failed: ${reason}`); brainStatusEl.textContent = `AI route missing / runtime error: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: error"; updateActivationStatusPanel("workout-start-error"); updateAuthPropagationStatus("workout-start-error"); window.__appRuntime?.updateFeaturePanel?.("workout-start-error"); },
+      onWorkoutStarted: async (createdSessionId) => { const startedState = requireWorkoutProgressionRuntime().startWorkout(createdSessionId); running = true; sessionId = createdSessionId; startBtn.textContent = "Stop Workout"; refreshCameraUiState(); addLog("system", `Workout started: ${getActiveWorkoutPlan()?.title || "Session"}. Session: ${sessionId}.`); console.log("[WORKOUT_LIFECYCLE] session started", { sessionId, exerciseId: getCurrentExerciseId() }); trackPilotEvent("workout_started", { sessionId, exerciseId: getCurrentExerciseId(), scheduledWorkoutId: startedState.activeWorkoutId, programId: startedState.activeProgramId }); const currentExercise = getCurrentExerciseMeta(); await requireCoachRuntime().speakWorkoutIntro(currentExercise); runPoseLoop(); updateActivationStatusPanel("workout-started"); updateAuthPropagationStatus("workout-started"); window.__appRuntime?.updateFeaturePanel?.("workout-started"); },
+      onWorkoutStartError: (err) => { const reason = err?.message || String(err || "unknown_error"); addLog("system", `Workout start failed: ${reason}`); requireCoachRuntime().setVoiceUnavailable(`workout_start_failed: ${reason}`, "workout-start-error"); updateActivationStatusPanel("workout-start-error"); updateAuthPropagationStatus("workout-start-error"); window.__appRuntime?.updateFeaturePanel?.("workout-start-error"); },
       onWorkoutStopped: async () => { startBtn.textContent = "Start Workout"; running = false; requireWorkoutProgressionRuntime().pauseWorkout(); refreshCameraUiState(); if (animId?.stop) animId.stop(); else cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvasEl.width, canvasEl.height); setPersonLayerSuppressed(false); setAvatar3dCanvasVisibility(false); lastRenderMode = "camera"; addLog("system", "Workout stopped. Reconnect camera and press Start Workout to resume."); console.log("[WORKOUT_LIFECYCLE] workout stopped", { sessionId }); }
       });
     
@@ -5211,9 +5048,7 @@ function toggleListening() {
     askBtn.onclick = () => askCoach(questionInput.value.trim());
 
     muteBtn.onclick = () => {
-      voiceMuted = !voiceMuted;
-      muteBtn.textContent = voiceMuted ? "🔇 Unmute" : "🔊 Mute";
-      if (voiceMuted) stopAllSpeech();
+      requireCoachRuntime().toggleMuted();
     };
 
   listenBtn.onclick = async () => {
