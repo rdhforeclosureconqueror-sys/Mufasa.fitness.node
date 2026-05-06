@@ -35,6 +35,7 @@
         "/rep-runtime.js",
         "/rep-analysis-runtime.js",
         "/hud-runtime.js",
+        "/workout-progression-runtime.js",
         "/landing-diagnostics.js",
         "/fitness.js"
       ],
@@ -1122,6 +1123,7 @@ CREATE CLICKED: no</pre>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
   <script src="/hud-runtime.js?v=20260506"></script>
+  <script src="/workout-progression-runtime.js?v=20260506"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
@@ -1600,9 +1602,8 @@ CREATE CLICKED: no</pre>
     let latestPose = null;
 
     let sessionId = null;
-    let repCount = 0;      // this set
-    let totalReps = 0;     // across all sets
-    let currentSet = 1;
+    let repCount = 0;      // Rep-analysis mirror; progression ownership lives in WorkoutProgressionRuntime.
+    let totalReps = 0;     // Rep-analysis mirror; progression ownership lives in WorkoutProgressionRuntime.
     let repPhase = "up";
 
     let fullBodyAcquired = false;
@@ -1637,194 +1638,45 @@ CREATE CLICKED: no</pre>
     // ---- AI-generated program ----
     let aiProgramToday = null;
 
-    const ACTIVE_WORKOUT_SELECTION_KEY = "ACTIVE_WORKOUT_SELECTION_V1";
-    const ACTIVE_WORKOUT_COMPLETION_KEY = "ACTIVE_WORKOUT_COMPLETION_V1";
-    const ACTIVE_WORKOUT_STATE = {
-      activeProgramId: null,
-      activeWorkoutId: null,
-      activeExerciseIndex: 0,
-      activeSetIndex: 0,
-      currentExercise: null,
-      targetReps: 10,
-      targetTime: null,
-      tempo: "3-1-1",
-      restSeconds: 60,
-      nextExercise: null,
-      repCount: 0,
-      setStatus: "ready",
-      workoutStatus: "idle"
-    };
-    let activeWorkoutPlan = null;
-    let restTimerId = null;
-    let restRemainingSec = 0;
+    function requireWorkoutProgressionRuntime() {
+      if (!window.WorkoutProgressionRuntime) throw new Error("WorkoutProgressionRuntime missing");
+      return window.WorkoutProgressionRuntime;
+    }
 
-    function normalizeExercisePrescription(exercise, fallbackIndex = 0) {
-      const sets = Number(exercise?.sets || 3);
-      const repsRaw = Number(exercise?.targetReps || exercise?.reps || 10);
-      const targetReps = Number.isFinite(repsRaw) && repsRaw > 0 ? repsRaw : 10;
-      return {
-        exerciseId: String(exercise?.exerciseId || exercise?.id || `exercise_${fallbackIndex + 1}`),
-        name: String(exercise?.name || `Exercise ${fallbackIndex + 1}`),
-        sets,
-        targetReps,
-        targetTime: Number(exercise?.targetTime || 0) || null,
-        restSeconds: Number(exercise?.restSeconds || exercise?.restSec || 60) || 60,
-        tempo: String(exercise?.tempo || "3-1-1"),
-        instructions: Array.isArray(exercise?.instructions) ? exercise.instructions : [],
-        formCues: Array.isArray(exercise?.formCues) ? exercise.formCues : [],
-        commonMistakes: Array.isArray(exercise?.commonMistakes) ? exercise.commonMistakes : []
-      };
+    function getActiveWorkoutState() {
+      return requireWorkoutProgressionRuntime().getState();
+    }
+
+    function getActiveWorkoutPlan() {
+      return requireWorkoutProgressionRuntime().getPlan();
     }
 
     function hydrateActiveWorkoutPlan() {
-      let stored = null;
-      try { stored = JSON.parse(localStorage.getItem(ACTIVE_WORKOUT_SELECTION_KEY) || "null"); } catch (_) {}
-      const fallback = {
-        programId: null,
-        scheduledWorkoutId: "quick_squat_default",
-        title: "Quick Squat Session",
-        exercises: [normalizeExercisePrescription({ exerciseId: "bodyweight_squat", name: "Bodyweight Squat", sets: 3, targetReps: 10, restSeconds: 60, tempo: "3-1-1", instructions:["Keep chest up."], formCues:["Keep knees tracking over toes."] }, 0)]
-      };
-      const source = stored && Array.isArray(stored.exercises) && stored.exercises.length ? stored : fallback;
-      activeWorkoutPlan = {
-        programId: source.programId || null,
-        scheduledWorkoutId: source.scheduledWorkoutId || source.workoutId || `workout_${Date.now()}`,
-        title: source.title || "Workout",
-        notes: source.notes || null,
-        exercises: source.exercises.map((exercise, index) => normalizeExercisePrescription(exercise, index))
-      };
-      ACTIVE_WORKOUT_STATE.activeProgramId = activeWorkoutPlan.programId;
-      ACTIVE_WORKOUT_STATE.activeWorkoutId = activeWorkoutPlan.scheduledWorkoutId;
+      return requireWorkoutProgressionRuntime().hydrateActiveWorkoutPlan();
     }
 
-    function updateActiveWorkoutState(partial = {}) {
-      Object.assign(ACTIVE_WORKOUT_STATE, partial);
-      window.__ACTIVE_WORKOUT_STATE = { ...ACTIVE_WORKOUT_STATE };
-      window.ACTIVE_WORKOUT_STATE = window.__ACTIVE_WORKOUT_STATE;
-      if (!activeWorkoutPlan) return;
-      const current = activeWorkoutPlan.exercises[ACTIVE_WORKOUT_STATE.activeExerciseIndex] || activeWorkoutPlan.exercises[0];
-      const next = activeWorkoutPlan.exercises[ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1] || null;
-      ACTIVE_WORKOUT_STATE.currentExercise = current?.name || null;
-      ACTIVE_WORKOUT_STATE.targetReps = current?.targetReps || null;
-      ACTIVE_WORKOUT_STATE.targetTime = current?.targetTime || null;
-      ACTIVE_WORKOUT_STATE.tempo = current?.tempo || "3-1-1";
-      ACTIVE_WORKOUT_STATE.restSeconds = current?.restSeconds || 60;
-      ACTIVE_WORKOUT_STATE.nextExercise = next?.name || "Workout complete";
-      repCount = Number(ACTIVE_WORKOUT_STATE.repCount || 0);
-      currentSet = Number(ACTIVE_WORKOUT_STATE.activeSetIndex || 0) + 1;
-      renderWorkoutHud();
+    function updateActiveWorkoutState(partial = {}, options = {}) {
+      const progression = requireWorkoutProgressionRuntime();
+      if (partial.workoutStatus === "ready" || partial.setStatus === "ready") return progression.prepareWorkoutStart();
+      return progression.getState();
     }
 
     function getPrimaryCue(formResult = null) {
       if (!window.HudRuntime?.getPrimaryCue) throw new Error("HudRuntime.getPrimaryCue missing");
       return window.HudRuntime.getPrimaryCue(formResult, {
-        activeWorkoutPlan,
-        activeWorkoutState: ACTIVE_WORKOUT_STATE
+        activeWorkoutPlan: getActiveWorkoutPlan(),
+        activeWorkoutState: getActiveWorkoutState()
       });
     }
 
     function renderWorkoutHud(formResult = null) {
       if (!window.HudRuntime?.render) throw new Error("HudRuntime.render missing");
       return window.HudRuntime.render({
-        activeWorkoutPlan,
-        activeWorkoutState: ACTIVE_WORKOUT_STATE,
+        activeWorkoutPlan: getActiveWorkoutPlan(),
+        activeWorkoutState: getActiveWorkoutState(),
         formResult,
-        restRemainingSec
+        restRemainingSec: getActiveWorkoutState().restRemainingSec || 0
       });
-    }
-
-    function stopRestTimer() {
-      if (restTimerId) clearInterval(restTimerId);
-      restTimerId = null;
-      restRemainingSec = 0;
-    }
-
-    function advanceWorkoutProgress(forceNextExercise = false) {
-      const exercise = activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex];
-      if (!exercise) return completeWorkoutSession();
-      if (!forceNextExercise && ACTIVE_WORKOUT_STATE.activeSetIndex + 1 < exercise.sets) {
-        updateActiveWorkoutState({ activeSetIndex: ACTIVE_WORKOUT_STATE.activeSetIndex + 1, repCount: 0, setStatus: "active" });
-        if (repFeedbackAllowed) speak(`Rest is over. Start set ${ACTIVE_WORKOUT_STATE.activeSetIndex + 1}.`, "rep");
-        return;
-      }
-      if (ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1 < activeWorkoutPlan.exercises.length) {
-        updateActiveWorkoutState({ activeExerciseIndex: ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1, activeSetIndex: 0, repCount: 0, setStatus: "active" });
-        if (repFeedbackAllowed) speak(`Next exercise: ${ACTIVE_WORKOUT_STATE.currentExercise}.`, "rep");
-        return;
-      }
-      completeWorkoutSession();
-    }
-
-    function startRestTimer(seconds) {
-      stopRestTimer();
-      restRemainingSec = Math.max(0, Number(seconds || ACTIVE_WORKOUT_STATE.restSeconds || 60));
-      updateActiveWorkoutState({ setStatus: "rest" });
-      if (restRemainingSec <= 0) {
-        advanceWorkoutProgress(false);
-        return;
-      }
-      restTimerId = setInterval(() => {
-        restRemainingSec = Math.max(0, restRemainingSec - 1);
-        renderWorkoutHud();
-        if (restRemainingSec <= 0) {
-          stopRestTimer();
-          advanceWorkoutProgress(false);
-        }
-      }, 1000);
-    }
-
-    function completeWorkoutSession() {
-      stopRestTimer();
-      running = false;
-      ACTIVE_WORKOUT_STATE.workoutStatus = "completed";
-      ACTIVE_WORKOUT_STATE.setStatus = "completed";
-      renderWorkoutHud();
-      startBtn.textContent = "Start Workout";
-      refreshCameraUiState();
-      addLog("system", "Workout complete.");
-      if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
-      const durationMs = Math.max(0, Date.now() - Number(sessionId?.split("_")[1] || Date.now()));
-      const completion = {
-        scheduledWorkoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId,
-        completedExercises: activeWorkoutPlan?.exercises?.slice(0, ACTIVE_WORKOUT_STATE.activeExerciseIndex + 1).map((x) => x.name) || [],
-        completedSets: ACTIVE_WORKOUT_STATE.activeSetIndex + 1,
-        repsCompleted: totalReps,
-        formScoreSummary: Number((window.__lastFormResult?.overallScore || 0).toFixed(3)),
-        durationSeconds: Math.round(durationMs / 1000),
-        notes: activeWorkoutPlan?.notes || null,
-        completedAt: new Date().toISOString()
-      };
-      try { localStorage.setItem(ACTIVE_WORKOUT_COMPLETION_KEY, JSON.stringify(completion)); } catch (_) {}
-      window.dispatchEvent(new CustomEvent("workout:completed", { detail: completion }));
-      sendEndSessionToNode();
-      setPersonLayerSuppressed(false);
-      setAvatar3dCanvasVisibility(false);
-      lastRenderMode = "camera";
-      if (animId?.stop) animId.stop();
-      else cancelAnimationFrame(animId);
-      console.log("[WORKOUT_LIFECYCLE] workout completed", completion);
-    }
-
-    if (skipRestBtn) {
-      skipRestBtn.onclick = () => {
-        if (ACTIVE_WORKOUT_STATE.setStatus !== "rest") return;
-        stopRestTimer();
-        advanceWorkoutProgress(false);
-      };
-    }
-    if (repeatSetBtn) {
-      repeatSetBtn.onclick = () => {
-        stopRestTimer();
-        repCount = 0;
-        updateActiveWorkoutState({ repCount: 0, setStatus: "active" });
-      };
-    }
-    if (nextExerciseBtn) {
-      nextExerciseBtn.onclick = () => {
-        stopRestTimer();
-        repCount = 0;
-        advanceWorkoutProgress(true);
-      };
     }
 
     // Skeleton edges for MoveNet keypoints (indices 0–16)
@@ -3998,7 +3850,7 @@ function toggleListening() {
     }
 
     function getCurrentExerciseMeta() {
-      return activeWorkoutPlan?.exercises?.[ACTIVE_WORKOUT_STATE.activeExerciseIndex] || null;
+      return requireWorkoutProgressionRuntime().getCurrentExerciseMeta();
     }
 
     function getCurrentExerciseId() {
@@ -4014,27 +3866,6 @@ function toggleListening() {
         addLog("system", "Session could not be saved to backend. Keep exercising; retry save by finishing workout.");
         console.warn("session_start write failed", err);
       });
-    }
-
-    function sendEndSessionToNode() {
-      if (!sessionId) return;
-      SESSION_WRITE_CLIENT?.completeSession(sessionId, {
-        repsCompleted: totalReps,
-        exerciseId: getCurrentExerciseId()
-      }).catch((err) => {
-        addLog("system", "Workout finished locally, but save failed. Check connection, then restart app to retry sync.");
-        console.warn("session_complete write failed", err);
-      });
-      trackPilotEvent("workout_completed", { sessionId, totalReps });
-
-      if (calendarMeta) {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const key = today.toISOString().slice(0,10);
-        calendarMeta.completedDates.add(key);
-        buildCalendarFromMeta();
-        persistUser();
-      }
     }
 
     function sendRepToNode(depthScore) {
@@ -4080,18 +3911,62 @@ function toggleListening() {
         repCountEl,
         avatarDebugOverlayEl,
         markPerfMetric,
-        getActiveWorkoutPlan: () => activeWorkoutPlan,
-        getActiveWorkoutState: () => ACTIVE_WORKOUT_STATE,
-        getRestRemainingSec: () => restRemainingSec,
+        getActiveWorkoutPlan,
+        getActiveWorkoutState,
+        getRestRemainingSec: () => getActiveWorkoutState().restRemainingSec || 0,
         isAvatarDebug: () => AVATAR_FLAGS.AVATAR_DEBUG
       });
+      if (!window.WorkoutProgressionRuntime?.configure) throw new Error("WorkoutProgressionRuntime.configure missing");
+      window.WorkoutProgressionRuntime.configure({
+        sessionWrite: SESSION_WRITE_CLIENT,
+        getSessionId: () => sessionId,
+        trackPilotEvent,
+        onStateChange: (progressState) => {
+          repCount = Number(progressState.repCount || 0);
+          totalReps = Number(progressState.totalReps || 0);
+        },
+        onSetStarted: (setNumber) => {
+          if (repFeedbackAllowed) speak(`Rest is over. Start set ${setNumber}.`, "rep");
+        },
+        onExerciseStarted: (exercise) => {
+          if (repFeedbackAllowed) speak(`Next exercise: ${exercise?.name || "next exercise"}.`, "rep");
+        },
+        onWorkoutCompleted: () => {
+          running = false;
+          startBtn.textContent = "Start Workout";
+          refreshCameraUiState();
+          addLog("system", "Workout complete.");
+          if (repFeedbackAllowed) speak("Workout complete. Strong work today.", "rep");
+          setPersonLayerSuppressed(false);
+          setAvatar3dCanvasVisibility(false);
+          lastRenderMode = "camera";
+          if (animId?.stop) animId.stop();
+          else cancelAnimationFrame(animId);
+        },
+        onCompleteSaveError: () => {
+          addLog("system", "Workout finished locally, but save failed. Check connection, then restart app to retry sync.");
+        },
+        onRetentionSignal: () => {
+          if (calendarMeta) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const key = today.toISOString().slice(0,10);
+            calendarMeta.completedDates.add(key);
+            buildCalendarFromMeta();
+            persistUser();
+          }
+        }
+      });
+      if (skipRestBtn) skipRestBtn.onclick = () => window.WorkoutProgressionRuntime.skipRest();
+      if (repeatSetBtn) repeatSetBtn.onclick = () => window.WorkoutProgressionRuntime.repeatSet();
+      if (nextExerciseBtn) nextExerciseBtn.onclick = () => window.WorkoutProgressionRuntime.nextExercise();
       window.RepAnalysisRuntime.configure({
         formEngine: FORM_ENGINE,
         getCurrentExerciseMeta,
         getCurrentExerciseId,
         onAnalysis: ({ formResult, analysis }) => {
           syncRepAnalysisState(window.RepAnalysisRuntime.getState());
-          updateActiveWorkoutState({ repCount });
+          requireWorkoutProgressionRuntime().handleRepAnalysis({ repCount, totalReps }, formResult || null);
           renderWorkoutHud(formResult || null);
           if (analysis?.fullBody) fullBodyAcquired = true;
         },
@@ -4100,19 +3975,17 @@ function toggleListening() {
           totalReps = Number(nextTotalReps || 0);
           lastDepthScore = Number(depthScore || 0);
           lastGoodForm = Boolean(goodForm);
-          updateActiveWorkoutState({ repCount });
+          requireWorkoutProgressionRuntime().handleRepComplete({ repCount, totalReps }, formResult || null);
           sendRepToNode(depthScore);
           if (repFeedbackAllowed && Date.now() - lastGoodRepSpokenAt > GOOD_REP_COOLDOWN) {
             lastGoodRepSpokenAt = Date.now();
             speak(goodForm ? "Good rep." : getPrimaryCue(formResult), "rep");
           }
-          if (ACTIVE_WORKOUT_STATE.targetReps && repCount >= ACTIVE_WORKOUT_STATE.targetReps && ACTIVE_WORKOUT_STATE.setStatus === "active") {
-            startRestTimer(ACTIVE_WORKOUT_STATE.restSeconds);
-          }
         }
       });
       console.log("[REP_ANALYSIS] extracted runtime configured");
       console.log("[HUD_RUNTIME] extracted runtime configured");
+      console.log("[WORKOUT_PROGRESS] extracted runtime configured");
       console.log("[COACH_RUNTIME] active cue runtime configured");
     }
 
@@ -5088,11 +4961,11 @@ function toggleListening() {
     window.addEventListener("workout:selected", (event) => {
       const detail = event?.detail;
       if (detail) {
-        try { localStorage.setItem(ACTIVE_WORKOUT_SELECTION_KEY, JSON.stringify(detail)); } catch (_) {}
+        try { localStorage.setItem("ACTIVE_WORKOUT_SELECTION_V1", JSON.stringify(detail)); } catch (_) {}
       }
       hydrateActiveWorkoutPlan();
       updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "ready", workoutStatus: "ready" });
-      addLog("system", `Loaded scheduled workout: ${activeWorkoutPlan?.title || "Workout"}.`);
+      addLog("system", `Loaded scheduled workout: ${getActiveWorkoutPlan()?.title || "Workout"}.`);
     });
 
     function getPrimaryNavHandlerStatus() {
@@ -5150,16 +5023,15 @@ function toggleListening() {
       prepareWorkoutStart: async () => {
         if (definingExercise) { definingExercise = false; baselineFrames = []; currentExerciseName = null; addLog("system", "Cancelled exercise definition to start workout."); }
         if (ohsaMode) { ohsaMode = false; ohsaFrontSamples = []; ohsaSideSamples = []; addLog("system", "Cancelled OHSA to start workout."); }
-        hydrateActiveWorkoutPlan(); repCount = 0; totalReps = 0; repPhase = "up"; fullBodyAcquired = false; stepBackPromptCount = 0; upperBodyReadyPromptShown = false; stopRestTimer();
+        const preparedState = requireWorkoutProgressionRuntime().prepareWorkoutStart(); repCount = 0; totalReps = 0; repPhase = "up"; fullBodyAcquired = false; stepBackPromptCount = 0; upperBodyReadyPromptShown = false;
         window.RepRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
         window.RepAnalysisRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
-        console.log("[WORKOUT_LIFECYCLE] prepared workout start", { workoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId, programId: ACTIVE_WORKOUT_STATE.activeProgramId });
-        updateActiveWorkoutState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, setStatus: "active", workoutStatus: "in_progress" });
+        console.log("[WORKOUT_LIFECYCLE] prepared workout start", { workoutId: preparedState.activeWorkoutId, programId: preparedState.activeProgramId });
       },
-      buildSessionPayload: () => ({ workoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId || null, programId: ACTIVE_WORKOUT_STATE.activeProgramId || null }),
+      buildSessionPayload: () => ({ workoutId: getActiveWorkoutState().activeWorkoutId || null, programId: getActiveWorkoutState().activeProgramId || null }),
       createSession: (payload) => {
-        if (!window.SessionWrite?.startSession) throw new Error('SessionWrite.startSession missing for POST /api/sessions');
-        return window.SessionWrite.startSession(payload);
+        if (!SESSION_WRITE_CLIENT?.startSession) throw new Error('SessionWrite.startSession missing for POST /api/sessions');
+        return SESSION_WRITE_CLIENT.startSession(payload);
       },
       onCameraFullscreenChanged: (enabled) => {
         cameraFullscreen = Boolean(enabled);
@@ -5174,9 +5046,9 @@ function toggleListening() {
         resizeAvatarThreeRuntime();
       },
       onSessionCreated: (sessionRes) => { addLog("system", `Session API OK: ${JSON.stringify({ sessionId: sessionRes?.sessionId || sessionRes?.id || null })}`); updateActivationStatusPanel("session-created"); updateAuthPropagationStatus("session-created"); window.__appRuntime?.updateFeaturePanel?.("session-created"); },
-      onWorkoutStarted: async (createdSessionId) => { running = true; sessionId = createdSessionId; startBtn.textContent = "Stop Workout"; refreshCameraUiState(); addLog("system", `Workout started: ${activeWorkoutPlan?.title || "Session"}. Session: ${sessionId}.`); console.log("[WORKOUT_LIFECYCLE] session started", { sessionId, exerciseId: getCurrentExerciseId() }); trackPilotEvent("workout_started", { sessionId, exerciseId: getCurrentExerciseId(), scheduledWorkoutId: ACTIVE_WORKOUT_STATE.activeWorkoutId, programId: ACTIVE_WORKOUT_STATE.activeProgramId }); const currentExercise = getCurrentExerciseMeta(); try { await speak(`Starting ${currentExercise?.name || "your workout"}. ${currentExercise?.sets || 1} sets of ${currentExercise?.targetReps || 10}. Tempo ${currentExercise?.tempo || "3-1-1"}.`, "rep"); brainStatusEl.textContent = "Speaking"; brainChipTxt.textContent = "Ma’at 2.0: speaking"; } catch (voiceErr) { const reason = voiceErr?.message || String(voiceErr || "voice_unavailable"); brainStatusEl.textContent = `Voice unavailable: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: voice unavailable"; addLog("system", `Voice unavailable: ${reason}`); } runPoseLoop(); updateActivationStatusPanel("workout-started"); updateAuthPropagationStatus("workout-started"); window.__appRuntime?.updateFeaturePanel?.("workout-started"); },
+      onWorkoutStarted: async (createdSessionId) => { const startedState = requireWorkoutProgressionRuntime().startWorkout(createdSessionId); running = true; sessionId = createdSessionId; startBtn.textContent = "Stop Workout"; refreshCameraUiState(); addLog("system", `Workout started: ${getActiveWorkoutPlan()?.title || "Session"}. Session: ${sessionId}.`); console.log("[WORKOUT_LIFECYCLE] session started", { sessionId, exerciseId: getCurrentExerciseId() }); trackPilotEvent("workout_started", { sessionId, exerciseId: getCurrentExerciseId(), scheduledWorkoutId: startedState.activeWorkoutId, programId: startedState.activeProgramId }); const currentExercise = getCurrentExerciseMeta(); try { await speak(`Starting ${currentExercise?.name || "your workout"}. ${currentExercise?.sets || 1} sets of ${currentExercise?.targetReps || 10}. Tempo ${currentExercise?.tempo || "3-1-1"}.`, "rep"); brainStatusEl.textContent = "Speaking"; brainChipTxt.textContent = "Ma’at 2.0: speaking"; } catch (voiceErr) { const reason = voiceErr?.message || String(voiceErr || "voice_unavailable"); brainStatusEl.textContent = `Voice unavailable: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: voice unavailable"; addLog("system", `Voice unavailable: ${reason}`); } runPoseLoop(); updateActivationStatusPanel("workout-started"); updateAuthPropagationStatus("workout-started"); window.__appRuntime?.updateFeaturePanel?.("workout-started"); },
       onWorkoutStartError: (err) => { const reason = err?.message || String(err || "unknown_error"); addLog("system", `Workout start failed: ${reason}`); brainStatusEl.textContent = `AI route missing / runtime error: ${reason}`; brainChipTxt.textContent = "Ma’at 2.0: error"; updateActivationStatusPanel("workout-start-error"); updateAuthPropagationStatus("workout-start-error"); window.__appRuntime?.updateFeaturePanel?.("workout-start-error"); },
-      onWorkoutStopped: async () => { startBtn.textContent = "Start Workout"; running = false; stopRestTimer(); updateActiveWorkoutState({ workoutStatus: "paused", setStatus: "paused" }); refreshCameraUiState(); if (animId?.stop) animId.stop(); else cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvasEl.width, canvasEl.height); setPersonLayerSuppressed(false); setAvatar3dCanvasVisibility(false); lastRenderMode = "camera"; addLog("system", "Workout stopped. Reconnect camera and press Start Workout to resume."); console.log("[WORKOUT_LIFECYCLE] workout stopped", { sessionId }); sendEndSessionToNode(); }
+      onWorkoutStopped: async () => { startBtn.textContent = "Start Workout"; running = false; requireWorkoutProgressionRuntime().pauseWorkout(); refreshCameraUiState(); if (animId?.stop) animId.stop(); else cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvasEl.width, canvasEl.height); setPersonLayerSuppressed(false); setAvatar3dCanvasVisibility(false); lastRenderMode = "camera"; addLog("system", "Workout stopped. Reconnect camera and press Start Workout to resume."); console.log("[WORKOUT_LIFECYCLE] workout stopped", { sessionId }); }
       });
     
       function bindPrimaryButtonsAfterLogin(reason = "manual") {
