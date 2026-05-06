@@ -16,6 +16,7 @@ Reduce the landing-page inline runtime from ownership-heavy script toward boot w
 | Avatar retry bridge | Inline owned `__retryAvatarRuntime` stub | `public/runtime-bridges.js` | Still delegates to `__ensureAvatarThreeModules()` and exposes the same return shape. |
 | Canvas context routing bridge | Inline owned canvas route WeakMaps and context conflict checks | `public/runtime-bridges.js` | Preserves skeleton/avatar3d conflict logging while leaving local aliases for existing inline consumers. |
 | Dormant diagnostics helpers | Inline described click targets and no-op diagnostic install hooks | `public/runtime-bridges.js` + no-op inline aliases | The active behavior remains unchanged because the diagnostic installer returned immediately before this pass. |
+| Runtime registration and lifecycle orchestration | Inline directly called `configureWorkoutRuntime`, `WorkoutProgressionRuntime.configure`, `CoachRuntime.configure`, `AvatarRuntime.bindControls`, dashboard/auth/boot listeners, and post-login button activation | `public/runtime-orchestrator.js` | Registration order and lifecycle wiring now flow through `RuntimeOrchestrator` with `[RUNTIME_ORCHESTRATOR]`, `[RUNTIME_READY]`, and `[RUNTIME_CONFIG]` instrumentation. Inline still supplies closure callbacks/context only. |
 
 ## Bridge/delegator-only inline sections (B: keep thin for now)
 
@@ -25,7 +26,7 @@ Reduce the landing-page inline runtime from ownership-heavy script toward boot w
 | Runtime endpoint aliases | Declares constants (`NODE_BASE_URL`, `ASK_URL`, session/profile URLs) used by many inline functions | Existing tests and inline closure references require local constants. Future pass can inject these via a boot context object. |
 | DOM refs | Reads hundreds of element references at bootstrap | Many legacy inline functions close over these refs; extracting without dependency injection would be high risk. |
 | Auth submit/listener wiring | Still binds login form and propagates `APP_AUTH` changes | Auth core exists, but inline still owns compatibility listeners and UI fallback details. |
-| Runtime registration | Configures `WorkoutRuntime`, `AvatarRuntime`, `ButtonRuntime`, coach/profile/dashboard integrations | This is the desired final inline shape, but the current block still includes side effects embedded in registration callbacks. |
+| Runtime context assembly | Builds dependency objects passed into `RuntimeOrchestrator` for workout/avatar/button/coach/dashboard integrations | The orchestration owner moved to `public/runtime-orchestrator.js`; callback internals remain inline because they close over local pose/profile/session state. |
 | Window exports | Exposes `connectCamera`, `startWorkout`, `onLogin`, `onLoginUI`, retention loader, and status-panel helpers | These are compatibility exports; should stay until all callers consume runtime namespaces directly. |
 | Retention glue | Loads retention flow and updates status panels | Coupled to auth/profile/dashboard state and local status elements. |
 | Diagnostics glue | Module checks, overlay checks, final handler checks, app boot status | Useful as boot orchestration, but still mixed with inline local variables. |
@@ -35,23 +36,23 @@ Reduce the landing-page inline runtime from ownership-heavy script toward boot w
 
 ## Dangerous/high-blast-radius inline sections (C: defer)
 
-1. **Auth lifecycle and `APP_AUTH` propagation** — tightly coupled to localStorage, overlay visibility, profile rendering, retention boot, and button activation.
-2. **Workout lifecycle callback registration** — `WorkoutRuntime.configureWorkoutRuntime()` callbacks mutate rep mirrors, pose state, progression state, HUD, coach voice, and camera status globals.
+1. **Auth state implementation and `APP_AUTH` writes** — canonical auth mutation still lives inline because it is coupled to localStorage, overlay visibility, profile rendering, and retention boot. Auth lifecycle listeners are now registered by `RuntimeOrchestrator`.
+2. **Workout lifecycle callback internals** — `RuntimeOrchestrator.configureWorkoutRuntime()` owns registration, but supplied callbacks still mutate rep mirrors, pose state, progression state, HUD, coach voice, and camera status globals.
 3. **Pose/render loop ownership remnants** — detector/running/animation/local pose packet variables still feed rep analysis, avatar overlay, coach cues, and HUD rendering.
 4. **Rep/session persistence glue** — session id, rep mirrors, Node event writes, and local fallback behavior span several runtimes.
-5. **Avatar modal/profile coupling** — Avaturn popup messages, uploaded GLB URLs, profile persistence, and runtime status are interdependent.
-6. **Retention/dashboard/profile hydration chain** — calendar/progress/profile/dashboard reads share auth and backend truth state.
-7. **Boot readiness gates** — `bootStatus`, handler checks, overlay checks, and feature activation enable buttons; regressions could lock the app.
+5. **Avatar modal/profile callback internals** — control/message registration moved to `RuntimeOrchestrator`, but Avaturn popup payload handling, uploaded GLB URLs, profile persistence, and runtime status remain interdependent.
+6. **Retention/dashboard/profile hydration chain** — dashboard auth-ready refresh registration moved to `RuntimeOrchestrator`, but calendar/progress/profile/dashboard reads still share auth and backend truth state.
+7. **Boot readiness gates and final diagnostics** — boot lifecycle listener wiring moved to `RuntimeOrchestrator`, but handler checks, overlay checks, and feature activation diagnostics still depend on inline state.
 
 ## Remaining inline ownership inventory
 
 - **Global state:** user/profile/calendar/backend truth, pose/workout/session mirrors, exercise-definition buffers, OHSA buffers, AI program selection, boot status, and app host/tracking/avatar-stage flags.
 - **Window exports:** auth helpers, camera/workout helpers, retention loader, status panel rescue helpers, avatar/profile helpers, and diagnostic/report state.
-- **Auth listeners:** `auth:changed`, `auth:ready`, `load`, and `DOMContentLoaded` listeners remain inline because they sequence overlay and feature gating.
+- **Auth listeners:** `auth:changed`, `auth:ready`, `load`, and `DOMContentLoaded` listeners are registered by `RuntimeOrchestrator`; inline still provides status-panel and post-login activation callbacks.
 - **Event listeners:** workout selection, fullscreen camera, avatar controls, Avaturn `message`, keyboard shortcuts, voice input, and final load bootstrap remain inline.
 - **Retention glue:** retention flow lazy loading and status-panel updates remain inline/adjacent to dashboard/profile state.
 - **Diagnostics glue:** app boot module checks, handler checks, overlay checks, diagnostic collection, and click/activation panels remain inline or delegated to status panel runtime.
-- **Runtime registration:** `WorkoutRuntime`, `ButtonRuntime`, `AvatarRuntime`, `CoachRuntime`, `HudRuntime`, `RepRuntime`, `RepAnalysisRuntime`, and `WorkoutProgressionRuntime` are registered/connected inline.
+- **Runtime registration:** `RuntimeOrchestrator` now configures `WorkoutRuntime`, `ButtonRuntime`, `AvatarRuntime`, `CoachRuntime`, `HudRuntime`, `RepAnalysisRuntime`, `WorkoutProgressionRuntime`, dashboard auth-ready refresh, auth-ready hooks, boot-ready hooks, and post-login activation. Inline remains responsible for dependency/context construction.
 - **Camera/workout helpers:** local aliases remain for `connectCamera`, `startWorkout`, fullscreen state, and mobile controls while core behavior delegates to `WorkoutRuntime`.
 - **Session helpers:** session creation and pilot-event writes remain tied to inline auth/backend constants.
 - **Avatar helpers:** modal controls, upload/profile fields, and Avaturn bridge remain inline while Three/render ownership is extracted.
@@ -59,13 +60,13 @@ Reduce the landing-page inline runtime from ownership-heavy script toward boot w
 
 ## Estimated reduction and remaining work
 
-- `index.html` / `public/index.html` are synchronized at 4,952 lines after extraction.
-- The largest inline bootstrap script is now approximately 4,004 lines.
-- This pass moved roughly 300 lines of event/state/bridge implementation into dedicated runtime modules and reduced duplicated inline HTML by roughly 206 lines overall.
+- `index.html` / `public/index.html` are synchronized at 4,927 lines after runtime-orchestrator extraction.
+- The largest inline bootstrap script is now approximately 3,978 lines.
+- This pass added `public/runtime-orchestrator.js` and moved runtime registration/lifecycle wiring out of the inline bootstrap while preserving inline callback/context construction.
 - Estimated remaining inline reduction opportunity: **2,400–3,000 lines**, mostly by extracting auth lifecycle compatibility, DOM ref/context construction, retention/dashboard hydration glue, and the remaining pose/workout/session callback bodies into runtime-owned modules.
 
 ## No-regression notes
 
 - No silent failures were introduced: new modules keep console-visible boot/runtime errors and rejected loader promises.
-- `[RUNTIME_EVENTS]`, `[RUNTIME_STATE]`, and `[RUNTIME_BRIDGE]` markers identify the extracted ownership at runtime.
+- `[RUNTIME_EVENTS]`, `[RUNTIME_STATE]`, `[RUNTIME_BRIDGE]`, `[RUNTIME_ORCHESTRATOR]`, `[RUNTIME_READY]`, and `[RUNTIME_CONFIG]` markers identify the extracted ownership at runtime.
 - Root/public sync was preserved by copying the updated root `index.html` to `public/index.html` after edits.
