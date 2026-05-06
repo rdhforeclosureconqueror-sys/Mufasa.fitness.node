@@ -1,5 +1,5 @@
 /* =========================================================
-   dashboard.js — prefer backend /api/me/history, fallback to localStorage
+   dashboard.js — backend-authoritative dashboard renderer
 ========================================================= */
 (function () {
   "use strict";
@@ -97,53 +97,50 @@
     }));
   }
 
+  function formatDashboardError(err) {
+    return err?.message || String(err || "unknown_error");
+  }
+
   async function loadData() {
     const active = read(KEY_ACTIVE, null);
-    const localHistory = read(KEY_HISTORY, []);
     const token = client?.getAuthToken();
 
-    if (!client || !token) {
-      return {
-        active,
-        history: localHistory,
-        source: "local",
-        warning: token
-          ? "Backend client unavailable; showing local-only history."
-          : "Backend token unavailable; showing local-only history."
-      };
+    if (!client) {
+      throw new Error("/api/me/history: backend read client unavailable");
+    }
+    if (!token) {
+      throw new Error("/api/me/history: missing_auth_token");
     }
 
-    try {
-      const serverHistory = await client.fetchHistory(25);
-      const mapped = toLocalHistoryShape(serverHistory);
-      const history = mapped.length ? mapped : localHistory;
-      return {
-        active,
-        history,
-        source: mapped.length ? "server" : "local",
-        warning: mapped.length ? null : "Server has no completed sessions yet; showing local history."
-      };
-    } catch (err) {
-      if (err?.code === "UNAUTHORIZED") {
-        client.clearAuthToken();
-        return {
-          active,
-          history: localHistory,
-          source: "local",
-          warning: "Session expired. Showing local-only history until you sign in again from the main app."
-        };
-      }
-      return {
-        active,
-        history: localHistory,
-        source: "local",
-        warning: "Backend history unavailable. Showing local-only history."
-      };
-    }
+    const serverHistory = window.MufasaDashboardRuntime?.refreshHistory
+      ? await window.MufasaDashboardRuntime.refreshHistory({ limit: 25, visibleErrors: false })
+      : await client.fetchHistory(25);
+    const mapped = toLocalHistoryShape(serverHistory);
+    return {
+      active,
+      history: mapped,
+      source: "server",
+      warning: null
+    };
   }
 
   async function render() {
-    const { history, active, source, warning } = await loadData();
+    let data;
+    try {
+      data = await loadData();
+    } catch (err) {
+      console.error("[DASHBOARD_RUNTIME] render failed", err);
+      window.MufasaDashboardRuntime?.renderVisibleError?.(err);
+      elPlanned.textContent = "0";
+      elCompleted.textContent = "0";
+      elConsistency.textContent = "0%";
+      activeBox.textContent = "No active workout found.";
+      activeMini.textContent = "";
+      historyList.innerHTML = `<div class="muted">⚠️ ${formatDashboardError(err)}</div>`;
+      return;
+    }
+
+    const { history, active, source, warning } = data;
 
     const weekly = history.filter(s => isThisWeek(s.date));
     const planned = weekly.length;
@@ -168,6 +165,9 @@
       activeBox.textContent = "No active workout found.";
       activeMini.textContent = "";
     }
+
+    const dashboardRuntimeStatus = document.getElementById("dashboardRuntimeStatus");
+    if (dashboardRuntimeStatus) dashboardRuntimeStatus.textContent = `Backend history loaded from /api/me/history (${history.length} completed sessions).`;
 
     historyList.innerHTML = "";
     if (warning) {

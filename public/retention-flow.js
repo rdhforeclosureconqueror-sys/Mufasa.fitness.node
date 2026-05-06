@@ -115,6 +115,7 @@
     if (!token) throw new Error("missing_auth_token");
     state.authToken = token || state.authToken;
 
+    console.log("[RETENTION_RUNTIME] route", method, path);
     const res = await fetch(`${getNodeBaseUrl()}${path}`, {
       method,
       headers: {
@@ -126,7 +127,7 @@
 
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || !payload?.ok) {
-      throw new Error(payload?.error?.message || `request_failed_${res.status}`);
+      throw new Error(`${path}: ${payload?.error?.message || `request_failed_${res.status}`}`);
     }
     return payload.data || {};
   }
@@ -668,33 +669,28 @@
   window.addEventListener("auth:changed", () => refreshAndRender('auth:changed'));
   window.addEventListener("auth:ready", () => refreshAndRender('auth:ready'));
   window.addEventListener("workout:completed", async (event) => {
-    if (!state.currentProgram) return;
     const detail = event?.detail || {};
-    if (!detail?.scheduledWorkoutId) return;
+    if (!detail?.scheduledWorkoutId && !detail?.workoutId) return;
     try {
-      await authedRequest("/api/workouts/track", {
-        method: "POST",
-        body: {
-          programId: state.currentProgram.programId,
-          workoutId: detail.scheduledWorkoutId,
-          exercisesCompleted: detail.completedExercises || [],
-          reps: detail.repsCompleted || 0,
-          sets: detail.completedSets || 0,
-          formScore: detail.formScoreSummary || null,
-          sessionDurationMinutes: Math.max(1, Math.round((detail.durationSeconds || 0) / 60)),
-          notes: detail.notes || null,
-          completionStatus: "completed"
-        }
-      });
-      const latestReward = await authedRequest("/api/workouts/reward/latest");
-      state.latestRewardSummary = latestReward.rewardSummary || null;
+      if (window.MufasaDashboardRuntime?.propagateCompletion) {
+        await window.MufasaDashboardRuntime.propagateCompletion(detail, {
+          currentProgram: state.currentProgram,
+          selectedDate: state.selectedDate
+        });
+      } else {
+        throw new Error("dashboard-runtime.js unavailable for retention completion propagation");
+      }
+      const runtimeState = window.MufasaDashboardRuntime?.getState?.() || {};
+      state.latestRewardSummary = runtimeState.latestReward?.rewardSummary || runtimeState.latestReward || null;
       if (state.selectedDate && !state.completionDates.includes(state.selectedDate)) {
         state.completionDates.push(state.selectedDate);
         saveCompletionDates();
       }
-      await refreshAndRender();
+      await refreshAndRender('workout:completed');
     } catch (err) {
-      console.warn("workout completion sync failed", err);
+      console.error("[RETENTION_RUNTIME] workout completion sync failed", err);
+      statusEl.textContent = `Completion sync failed: ${err?.message || err}`;
+      statusEl.classList?.add?.("status-bad");
     }
   });
   } catch (err) {

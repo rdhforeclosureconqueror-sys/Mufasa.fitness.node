@@ -196,7 +196,7 @@
     return getState();
   }
 
-  function completeWorkoutSession() {
+  async function completeWorkoutSession() {
     if (completedEventDispatched) return getState();
     stopRestTimer();
     updateState({ workoutStatus: 'completed', setStatus: 'completed' });
@@ -205,6 +205,7 @@
     const completion = {
       sessionId: canonicalSessionId,
       scheduledWorkoutId: state.activeWorkoutId,
+      workoutId: state.activeWorkoutId,
       completedExercises: activeWorkoutPlan?.exercises?.slice(0, state.activeExerciseIndex + 1).map((x) => x.name) || [],
       completedSets: state.activeSetIndex + 1,
       repsCompleted: state.totalReps,
@@ -214,24 +215,34 @@
       completedAt: new Date().toISOString()
     };
     try { global.localStorage?.setItem(ACTIVE_WORKOUT_COMPLETION_KEY, JSON.stringify(completion)); } catch (_) {}
-    completedEventDispatched = true;
-    global.dispatchEvent?.(new global.CustomEvent('workout:completed', { detail: completion }));
     if (canonicalSessionId) {
       const sessionWrite = deps.sessionWrite || global.SessionWrite || null;
       if (!sessionWrite?.completeSession) {
+        const err = new Error('SessionWrite.completeSession missing');
+        console.error('[SESSION_COMPLETION] failed', err);
         setVisibleRuntimeError('Workout completion failed: SessionWrite.completeSession missing');
-        throw new Error('SessionWrite.completeSession missing');
+        throw err;
       }
-      sessionWrite.completeSession(canonicalSessionId, {
-        repsCompleted: state.totalReps,
-        exerciseId: getCurrentExerciseId(),
-        scheduledWorkoutId: state.activeWorkoutId,
-        completedAt: completion.completedAt
-      }).catch((err) => {
+      try {
+        console.log('[SESSION_COMPLETION] completing session', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
+        await sessionWrite.completeSession(canonicalSessionId, {
+          repsCompleted: state.totalReps,
+          exerciseId: getCurrentExerciseId(),
+          scheduledWorkoutId: state.activeWorkoutId,
+          workoutId: state.activeWorkoutId,
+          completedAt: completion.completedAt
+        });
+        console.log('[SESSION_COMPLETION] completeSession saved', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
+      } catch (err) {
         deps.onCompleteSaveError?.(err);
-        console.warn('[WORKOUT_COMPLETE] session_complete write failed', err);
-      });
+        console.error('[SESSION_COMPLETION] session_complete write failed', err);
+        setVisibleRuntimeError(`Workout completion failed: ${err?.message || err}`);
+        throw err;
+      }
     }
+    completedEventDispatched = true;
+    console.log('[SESSION_COMPLETION] dispatching workout:completed', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
+    global.dispatchEvent?.(new global.CustomEvent('workout:completed', { detail: completion }));
     deps.trackPilotEvent?.('workout_completed', { sessionId: canonicalSessionId, totalReps: state.totalReps });
     deps.onRetentionSignal?.({ sessionId: canonicalSessionId, totalReps: state.totalReps, completedAt: completion.completedAt });
     retentionSignal('workout completed', { sessionId: canonicalSessionId, totalReps: state.totalReps });

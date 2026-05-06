@@ -28,6 +28,7 @@
         "/rep-analysis-runtime.js",
         "/hud-runtime.js",
         "/workout-progression-runtime.js",
+        "/dashboard-runtime.js",
         "/coach-runtime.js",
         "/avatar-runtime.js",
         "/landing-diagnostics.js",
@@ -1032,6 +1033,7 @@ CREATE CLICKED: no</pre>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
   <script src="/hud-runtime.js?v=20260506"></script>
   <script src="/workout-progression-runtime.js?v=20260506"></script>
+  <script src="/dashboard-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260506"></script>
   <script src="/avatar-runtime.js?v=20260506a"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
@@ -2739,7 +2741,7 @@ CREATE CLICKED: no</pre>
       if (window.__retentionFlowLoaded) return Promise.resolve(true);
       if (retentionFlowBootPromise) return retentionFlowBootPromise;
       const startedAt = performance.now();
-      retentionFlowBootPromise = window.__loadExternalScript(`/retention-flow.js?v=20260427`).then(() => {
+      retentionFlowBootPromise = window.__loadExternalScript(`/retention-flow.js?v=20260506`).then(() => {
         window.__retentionFlowLoaded = true;
         markPerfMetric("progressScanBootMs", Math.round(performance.now() - startedAt));
         return true;
@@ -5122,6 +5124,7 @@ function toggleListening() {
       const moduleChecks = {
         "backend-read.js": Boolean(window.MufasaBackendRead),
         "fitness.js": Boolean(window.MufasaFitness),
+        "dashboard-runtime.js": Boolean(window.MufasaDashboardRuntime),
         "retention-flow.js": Boolean(window.__retentionMotivationStatus),
         "dashboard.js": true,
         "exercise-library.js": true,

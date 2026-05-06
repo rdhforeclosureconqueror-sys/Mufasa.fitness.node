@@ -283,12 +283,15 @@
     async function completeSession(sessionId, payload) {
       if (!sessionId) return;
       try {
-        await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true);
+        logger.log?.("[SESSION_COMPLETION] POST /api/sessions/:sessionId/complete", { sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null });
+        const result = await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true);
         trackExplicitSuccess("session_complete");
         if (typeof onSessionSaveSuccess === "function") {
-          onSessionSaveSuccess({ action: "session_complete", mode: "explicit_api" });
+          onSessionSaveSuccess({ action: "session_complete", mode: "explicit_api", sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null });
         }
+        return result;
       } catch (err) {
+        logger.error?.("[SESSION_COMPLETION] explicit complete failed", { sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null, message: err?.message || String(err) });
         const reason = trackFallback("session_complete", err);
         if (!isFallbackAllowedForAction("session_complete")) {
           const gateErr = makeFallbackGateError("session_complete", err, reason);
