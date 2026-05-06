@@ -87,6 +87,7 @@
   }
 
   async function connectCamera(){
+    console.log('[WORKOUT_LIFECYCLE] connectCamera enter');
     try {
       ensureRequiredDom(['connectBtn', 'startBtn', 'fullscreenCameraBtn', 'video', 'poseStatus', 'workoutHud', 'brainStatus']);
       getFn('beforeConnectCamera')?.();
@@ -114,10 +115,12 @@
       setPoseStatus('Camera ready. You can start your workout now.');
       updateRuntimeState();
       global.__appRuntime?.updateFeaturePanel?.('camera-connected');
+      console.log('[WORKOUT_LIFECYCLE] camera ready');
       return stream;
     } catch (err) {
       markCameraDiagnostics({ lastCameraError: err?.message || String(err) });
       getFn('onCameraError')?.(err);
+      console.error('[WORKOUT_LIFECYCLE] camera error', err);
       setVisibleError(`Camera error: ${err?.message || err}`);
       updateRuntimeState();
       throw err;
@@ -146,6 +149,7 @@
   }
 
   async function startWorkout(){
+    console.log('[WORKOUT_LIFECYCLE] startWorkout enter', { running: state.running, sessionId: state.sessionId, cameraActive: state.cameraActive });
     try {
       ensureRequiredDom(['startBtn', 'video', 'workoutHud', 'hudExerciseName', 'hudSet', 'hudReps', 'hudTempo', 'hudRest', 'hudNextExercise', 'hudCoachCue', 'poseStatus', 'brainStatus']);
       if (!state.cameraActive && !getVideoElement()?.srcObject) throw new Error('connect camera before starting workout');
@@ -155,9 +159,11 @@
       if (!state.running) {
         await getFn('prepareWorkoutStart')?.();
         const sessionPayload = getFn('buildSessionPayload') ? getFn('buildSessionPayload')() : { source: 'workout-runtime' };
+        console.log('[WORKOUT_LIFECYCLE] creating session', sessionPayload);
         const sessionRes = await requireFn('createSession')(sessionPayload);
         getFn('onSessionCreated')?.(sessionRes);
         state.sessionId = getSessionId(sessionRes);
+        console.log('[WORKOUT_LIFECYCLE] session created', { sessionId: state.sessionId });
         if (!state.sessionId) throw new Error('session id missing from /api/sessions response');
         state.running = true;
         await getFn('onWorkoutStarted')?.(state.sessionId, sessionRes);
@@ -169,12 +175,14 @@
         return { running: true, sessionId: state.sessionId, sessionRes };
       }
       state.running = false;
+      console.log('[WORKOUT_LIFECYCLE] stopping workout', { sessionId: state.sessionId });
       await getFn('onWorkoutStopped')?.(state.sessionId);
       refreshCameraControls();
       updateRuntimeState();
       global.__appRuntime?.updateFeaturePanel?.('workout-stopped');
       return { running: false, sessionId: state.sessionId };
     } catch (err) {
+      console.error('[WORKOUT_LIFECYCLE] startWorkout error', err);
       getFn('onWorkoutStartError')?.(err);
       setVisibleError(`Start workout error: ${err?.message || err}`);
       updateRuntimeState();
