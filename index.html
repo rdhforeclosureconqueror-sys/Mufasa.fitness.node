@@ -14,85 +14,18 @@
 
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
+  <script src="/runtime-events.js?v=20260506"></script>
+  <script src="/runtime-state.js?v=20260506"></script>
+  <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/boot-core.js?v=20260505a" defer></script>
   <script src="/auth-core.js" defer></script>
   <script>
-    window.__startupResourceAudit = window.__startupResourceAudit || {
-      initialScripts: [
-        "/form-engine.js",
-        "/diagnostics-client.js",
-        "/backend-read.js",
-        "/session-write.js",
-        "/pose-runtime.js",
-        "/rep-runtime.js",
-        "/rep-analysis-runtime.js",
-        "/hud-runtime.js",
-        "/workout-progression-runtime.js",
-        "/dashboard-runtime.js",
-        "/coach-runtime.js",
-        "/avatar-runtime.js",
-        "/landing-diagnostics.js",
-        "/fitness.js"
-      ],
-      deferredScripts: [],
-      deferredModules: []
-    };
-    window.__perfMetrics = window.__perfMetrics || { marks: {}, values: {} };
-    window.__markPerfMetric = function markPerfMetric(name, value) {
-      const perf = window.__perfMetrics || (window.__perfMetrics = { marks: {}, values: {} });
-      perf.values[name] = Number(value);
-      perf.marks[name] = new Date().toISOString();
-      return perf.values[name];
-    };
-    const __appPerfStart = performance.now();
-
-    window.__avatarRuntimeStatus = window.__avatarRuntimeStatus || {};
-
-    const lazyScriptCache = window.__lazyScriptCache || (window.__lazyScriptCache = new Map());
-    window.__loadExternalScript = function loadExternalScript(src, { async = true, defer = true } = {}) {
-      if (lazyScriptCache.has(src)) return lazyScriptCache.get(src);
-      const task = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = async;
-        script.defer = defer;
-        script.onload = () => resolve(true);
-        script.onerror = () => reject(new Error(`script_load_failed:${src}`));
-        document.head.appendChild(script);
-      });
-      lazyScriptCache.set(src, task);
-      window.__startupResourceAudit.deferredScripts.push(src);
-      return task;
-    };
-
-    let poseRuntimePromise = null;
-    window.__ensurePoseRuntime = async function ensurePoseRuntime() {
-      if (poseRuntimePromise) return poseRuntimePromise;
-      const startedAt = performance.now();
-      poseRuntimePromise = (async () => {
-        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js");
-        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js");
-        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js");
-        await window.__loadExternalScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js");
-        window.__markPerfMetric("poseModelLoadMs", Math.round(performance.now() - startedAt));
-        return true;
-      })();
-      return poseRuntimePromise;
-    };
-
+    window.RuntimeState?.initHeadRuntime?.();
     console.log("[AVATAR_RUNTIME] delegated to /avatar-runtime.js");
-
-    
     console.log("[INLINE_SECTION] runtime exports");
-    window.__retryAvatarRuntime = async function retryAvatarRuntimeBootstrapStub() {
-      await window.__ensureAvatarThreeModules();
-      return { ok: Boolean(window.__AVATAR_THREE?.ready) };
-    };
-
+    window.RuntimeBridges?.installAvatarRetryBridge?.();
     console.log("[INLINE_SECTION] boot complete");
-    window.addEventListener("load", () => {
-      window.__markPerfMetric("appLoadMs", Math.round(performance.now() - __appPerfStart));
-    }, { once: true });
+    window.RuntimeEvents?.installLoadPerfMark?.({ startedAt: window.RuntimeState?.getHeadPerfStart?.() });
   </script>
 
   <!-- Simple favicon so we don’t get 404s -->
@@ -779,47 +712,7 @@ CREATE CLICKED: no</pre>
   </div>
 
   <script>
-    (function initAuthDebugBridge() {
-      const state = {
-        authScriptLoaded: false,
-        formFound: false,
-        loginButtonFound: false,
-        createButtonFound: false,
-        loginClicked: false,
-        createClicked: false
-      };
-      function writeStatus() {
-        const el = document.getElementById("authDebugStatus");
-        if (!el) return;
-        el.textContent = [
-          `AUTH SCRIPT LOADED: ${state.authScriptLoaded ? "yes" : "no"}`,
-          `FORM FOUND: ${state.formFound ? "yes" : "no"}`,
-          `LOGIN BUTTON FOUND: ${state.loginButtonFound ? "yes" : "no"}`,
-          `CREATE BUTTON FOUND: ${state.createButtonFound ? "yes" : "no"}`,
-          `LOGIN CLICKED: ${state.loginClicked ? "yes" : "no"}`,
-          `CREATE CLICKED: ${state.createClicked ? "yes" : "no"}`
-        ].join("\n");
-      }
-      window.__setAuthDebugState = function __setAuthDebugState(patch) {
-        Object.assign(state, patch || {});
-        writeStatus();
-      };
-      window.__authLoginButtonClicked = function __authLoginButtonClicked(event) {
-        window.__setAuthDebugState({ loginClicked: true });
-        if (typeof window.handleLoginButtonClick === "function") {
-          return window.handleLoginButtonClick(event);
-        }
-        return undefined;
-      };
-      window.__authCreateAccountClicked = function __authCreateAccountClicked(event) {
-        window.__setAuthDebugState({ createClicked: true });
-        if (typeof window.handleCreateAccountToggle === "function") {
-          return window.handleCreateAccountToggle(event);
-        }
-        return undefined;
-      };
-      writeStatus();
-    })();
+    window.RuntimeBridges?.installAuthDebugBridge?.();
   </script>
 
   <!-- USER INFO BAR -->
@@ -1043,12 +936,7 @@ CREATE CLICKED: no</pre>
 
   <script>
     console.log("[BOOT] main inline script started");
-    window.addEventListener("error", e => {
-      console.error("[BOOT_ERROR]", e.message, e.filename, e.lineno);
-    });
-    window.addEventListener("unhandledrejection", e => {
-      console.error("[BOOT_PROMISE_ERROR]", e.reason);
-    });
+    window.RuntimeEvents?.installBootErrorListeners?.();
     const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
     console.log("[INLINE_SECTION] boot start");
     console.log("🔥 Ma’at 2.0 coach script initialized");
@@ -1060,24 +948,21 @@ CREATE CLICKED: no</pre>
     ========================================================== */
 
     // ---- Backend endpoints ----
-    const BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
-    const ASK_URL = BRAIN_BASE_URL + "/ask";
-    const PROGRAM_URL = BRAIN_BASE_URL + "/coach/program/generate";
+    const RUNTIME_ENDPOINTS = window.RuntimeState?.getEndpoints?.() || {};
+    const BRAIN_BASE_URL = RUNTIME_ENDPOINTS.brainBaseUrl || "https://mufasabrain.onrender.com";
+    const ASK_URL = RUNTIME_ENDPOINTS.askUrl || BRAIN_BASE_URL + "/ask";
+    const PROGRAM_URL = RUNTIME_ENDPOINTS.programUrl || BRAIN_BASE_URL + "/coach/program/generate";
 
     const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
-    const NODE_COMMAND_URL = NODE_BASE_URL + "/command";
-    const NODE_PROFILE_URL = NODE_BASE_URL + "/api/me/profile";
-    const NODE_SESSION_START_URL = NODE_BASE_URL + "/api/sessions";
-    const NODE_OHSA_URL = NODE_BASE_URL + "/api/ohsa";
-    const NODE_PILOT_EVENTS_URL = NODE_BASE_URL + "/api/pilot/events";
-    const LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = true;
-    const LEGACY_FALLBACK_ALLOWED_ACTIONS = [];
-    try { localStorage.setItem("maatNodeBaseUrl", NODE_BASE_URL); } catch (_) {}
-    const BACKEND_READ_CLIENT = window.MufasaBackendRead?.createClient({
-      baseUrl: NODE_BASE_URL,
-      storagePrefix: "maat"
-    });
-    const AIVOICE_URL = NODE_BASE_URL + "/api/speak";
+    const NODE_COMMAND_URL = RUNTIME_ENDPOINTS.nodeCommandUrl || NODE_BASE_URL + "/command";
+    const NODE_PROFILE_URL = RUNTIME_ENDPOINTS.nodeProfileUrl || NODE_BASE_URL + "/api/me/profile";
+    const NODE_SESSION_START_URL = RUNTIME_ENDPOINTS.nodeSessionStartUrl || NODE_BASE_URL + "/api/sessions";
+    const NODE_OHSA_URL = RUNTIME_ENDPOINTS.nodeOhsaUrl || NODE_BASE_URL + "/api/ohsa";
+    const NODE_PILOT_EVENTS_URL = RUNTIME_ENDPOINTS.nodePilotEventsUrl || NODE_BASE_URL + "/api/pilot/events";
+    const LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS = RUNTIME_ENDPOINTS.legacyFallbackRequireExplicitActions !== false;
+    const LEGACY_FALLBACK_ALLOWED_ACTIONS = RUNTIME_ENDPOINTS.legacyFallbackAllowedActions || [];
+    const BACKEND_READ_CLIENT = window.RuntimeState?.createBackendReadClient?.();
+    const AIVOICE_URL = RUNTIME_ENDPOINTS.aiVoiceUrl || NODE_BASE_URL + "/api/speak";
     console.log("[INLINE_SECTION] voice refs");
     // ---- DOM hooks ----
     const userInfoBar = document.getElementById("userInfo");
@@ -1113,74 +998,12 @@ CREATE CLICKED: no</pre>
       window.__appBootStatus = { current: label, steps: [...appBootSteps], at: new Date().toISOString() };
     }
 
-    function forceBuilderFullAccessAuthState() {}
+    const forceBuilderFullAccessAuthState = () => {};
+    const describeElement = window.RuntimeBridges?.describeElement || ((el) => el?.id ? `#${el.id}` : "none");
+    const enforceBuilderOverlayBypass = () => {};
+    const installClickDiagnostics = () => {};
 
-
-
-    function describeElement(el) {
-      if (!el || typeof el !== "object") return "none";
-      const id = el.id ? `#${el.id}` : "";
-      const classes = (el.className && typeof el.className === "string")
-        ? "." + el.className.trim().split(/\s+/).filter(Boolean).join(".")
-        : "";
-      return `${el.tagName?.toLowerCase?.() || "node"}${id}${classes}`;
-    }
-
-    function enforceBuilderOverlayBypass() {
-      return;
-      document.body.classList.add("builder-mode");
-      const authOverlay = document.getElementById("authOverlay");
-      if (authOverlay) {
-        authOverlay.style.display = "none";
-        authOverlay.style.pointerEvents = "none";
-      }
-      if (appShellEl) appShellEl.style.pointerEvents = "auto";
-      document.body.style.pointerEvents = "auto";
-      ["#authOverlay", ".auth-screen", ".modal-backdrop", "#avatarModal", "#loadingOverlay", "#diagnosticsPanel"].forEach((selector) => {
-        document.querySelectorAll(selector).forEach((node) => {
-          const style = window.getComputedStyle(node);
-          const blocks = style.display !== "none" && style.visibility !== "hidden" && style.pointerEvents !== "none";
-          if (blocks && !node.classList.contains("hidden") && selector !== "#avatarModal") {
-            node.style.pointerEvents = "none";
-            if (selector === ".auth-screen" || selector === "#authOverlay") node.style.display = "none";
-          }
-        });
-      });
-    }
-
-    function installClickDiagnostics() {
-      return;
-      const banner = document.getElementById("clickDiagBanner");
-      document.addEventListener("click", (event) => {
-        const target = event.target;
-        const topAtPoint = document.elementFromPoint(event.clientX, event.clientY);
-        const targetStyle = target ? window.getComputedStyle(target) : null;
-        const topStyle = topAtPoint ? window.getComputedStyle(topAtPoint) : null;
-        const payload = {
-          clicked: describeElement(target),
-          elementFromPoint: describeElement(topAtPoint),
-          topBlockingElement: describeElement(topAtPoint),
-          targetId: target?.id || "",
-          targetClass: target?.className || "",
-          targetPointerEvents: targetStyle?.pointerEvents || "n/a",
-          targetZIndex: targetStyle?.zIndex || "auto",
-          targetDisabled: Boolean(target?.disabled),
-          topPointerEvents: topStyle?.pointerEvents || "n/a",
-          topZIndex: topStyle?.zIndex || "auto",
-          topDisabled: Boolean(topAtPoint?.disabled)
-        };
-        console.log("[CLICK_DIAGNOSTIC]", payload);
-        if (banner) {
-          banner.style.display = "block";
-          banner.textContent = `Click target: ${payload.clicked} | Top layer: ${payload.topBlockingElement}`;
-        }
-      }, true);
-    }
-
-    window.addEventListener("error", (event) => {
-      const reason = event?.error?.message || event?.message || "unknown_error";
-      updateAppBootStatus("boot failed", reason);
-    });
+    window.RuntimeEvents?.installBootFailureStatusBridge?.(updateAppBootStatus);
 
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
@@ -1227,41 +1050,12 @@ CREATE CLICKED: no</pre>
     const canvasEl = document.getElementById("overlay");
     const avatar3dCanvasEl = document.getElementById("avatar3d");
     const avatarDebugOverlayEl = document.getElementById("avatarDebugOverlay");
-    const canvasContextTypes = new WeakMap();
-    const CANVAS_ROUTE_LABELS = new WeakMap();
-    if (canvasEl) CANVAS_ROUTE_LABELS.set(canvasEl, "skeleton");
-    if (avatar3dCanvasEl) CANVAS_ROUTE_LABELS.set(avatar3dCanvasEl, "avatar3d");
-
-    function getCanvasContextType(canvas) {
-      return canvasContextTypes.get(canvas) || null;
-    }
-
-    function requestCanvasContext(canvas, requestedType) {
-      if (!canvas || !requestedType) return null;
-      const route = CANVAS_ROUTE_LABELS.get(canvas) || canvas.id || "unknown";
-      const existingType = getCanvasContextType(canvas);
-      const conflictDetected = Boolean(existingType && existingType !== requestedType);
-      if (route === "avatar3d" || route === "skeleton") {
-        console.log(`[canvas-route] ${route} context requested: ${requestedType}`);
-      }
-      if (route === "avatar3d") {
-        console.log(`[canvas-route] conflict detected ${conflictDetected ? "yes" : "no"}`);
-      }
-      if (conflictDetected) {
-        console.warn("[canvas-route] context conflict", {
-          canvasId: canvas.id || "unknown",
-          route,
-          requestedType,
-          existingType
-        });
-        return null;
-      }
-      const context = canvas.getContext(requestedType);
-      if (context && !existingType) {
-        canvasContextTypes.set(canvas, requestedType);
-      }
-      return context;
-    }
+    const canvasContextRouter = window.RuntimeBridges?.createCanvasContextRouter?.({
+      skeleton: canvasEl,
+      avatar3d: avatar3dCanvasEl
+    });
+    const getCanvasContextType = canvasContextRouter?.getCanvasContextType || (() => null);
+    const requestCanvasContext = canvasContextRouter?.requestCanvasContext || ((canvas, requestedType) => canvas?.getContext?.(requestedType) || null);
 
     const ctx = requestCanvasContext(canvasEl, "2d");
 
@@ -4912,18 +4706,8 @@ function toggleListening() {
     if (typeof updateActivationStatusPanel === "function") window.updateActivationStatusPanel = updateActivationStatusPanel;
     if (typeof bindPrimaryButtonsAfterLogin === "function") window.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
 
-    window.addEventListener("error", (event) => {
-      const message = event?.error?.message || event?.message || "unknown_error";
-      window.__lastAppError = message;
-      console.error("[APP_ERROR]", event?.error || event?.message || event);
-      updateActivationStatusPanel("window error");
-    });
-
-    window.addEventListener("unhandledrejection", (event) => {
-      const reason = event?.reason?.message || String(event?.reason || "unknown_promise_error");
-      window.__lastAppError = reason;
-      console.error("[APP_PROMISE_ERROR]", event?.reason || event);
-      updateActivationStatusPanel("window unhandledrejection");
+    window.RuntimeEvents?.installLastAppErrorBridge?.({
+      updateActivationStatusPanel: (reason) => updateActivationStatusPanel(reason === "runtime-error" ? "window error" : "window unhandledrejection")
     });
 
     window.addEventListener("auth:changed", () => {
