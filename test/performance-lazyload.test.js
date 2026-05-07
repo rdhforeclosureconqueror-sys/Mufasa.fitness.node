@@ -37,3 +37,12 @@ test("progress scan boot metric is tracked from OHSA start", () => {
   const html = read("public/index.html");
   assert.match(html, /function startOhsa\([\s\S]*markPerfMetric\("progressScanBootMs"/, "OHSA start should track progress scan boot metric");
 });
+
+
+test("coach voice controls call coach runtime directly", () => {
+  const html = read("public/index.html");
+  assert.doesNotMatch(html, /async function speak\(|async function unlockAudioOnce\(|function stopAllSpeech\(/, "inline coach voice compatibility delegators should be removed");
+  assert.match(html, /requireCoachRuntime\(\)\.unlockAudioOnce\(\)/, "listen button should unlock audio through coach runtime directly");
+  assert.match(html, /requireCoachRuntime\(\)\.speak\("Voice is on\.", "rep"\)/, "listen button voice prime should use coach runtime directly");
+  assert.match(html, /requireCoachRuntime\(\)\.stopAllSpeech\(\)/, "speech recognition should stop speech through coach runtime directly");
+});
