@@ -2429,7 +2429,7 @@ CREATE CLICKED: no</pre>
         signedInEmail: USER_PROFILE?.email || null,
         claimPath: current.claimPath || null,
         lastBridgePayloadKeys: current.lastBridgePayloadKeys || [],
-        tokenExists: Boolean(getAuthToken()),
+        tokenExists: Boolean(window.AuthStateRuntime?.getAuthToken?.()),
         tokenSource: current.tokenSource || "unknown",
         lastBridgeStatus: current.lastBridgeStatus || null,
         lastBridgeErrorCode: current.lastBridgeErrorCode || null,
@@ -2490,72 +2490,12 @@ CREATE CLICKED: no</pre>
       return window.AppHydrationRuntime?.buildCalendarFromMeta?.();
     }
 
-    function sendToNode(payload) {
-      const token = getAuthToken();
-      return fetch(NODE_COMMAND_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload)
-      }).catch(e => {
-        console.warn("Node send failed", e);
-        throw e;
-      });
-    }
-
-    async function postAuthenticatedJSON(url, { method = "POST", body }) {
-      if (!BACKEND_READ_CLIENT) throw new Error("backend_client_unavailable");
-      const token = getAuthToken();
-      if (!token) {
-        const err = new Error("missing_auth_token");
-        err.code = "MISSING_AUTH_TOKEN";
-        throw err;
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(body || {})
-      });
-
-      let payload = null;
-      try {
-        payload = await res.json();
-      } catch (_) {}
-
-      if (res.status === 401 || res.status === 403) {
-        const err = new Error("unauthorized");
-        err.code = "UNAUTHORIZED";
-        err.status = res.status;
-        err.payload = payload;
-        throw err;
-      }
-
-      if (!res.ok || !payload?.ok) {
-        const err = new Error(payload?.error?.message || payload?.error || `request_failed_${res.status}`);
-        err.code = "REQUEST_FAILED";
-        err.status = res.status;
-        err.payload = payload;
-        throw err;
-      }
-
-      return payload?.data || null;
-    }
-
-    function isAuthUnavailable(err) {
-      return err?.code === "MISSING_AUTH_TOKEN" || err?.code === "UNAUTHORIZED";
-    }
 
     const SESSION_WRITE_CLIENT = window.MufasaSessionWrite?.createSessionWriteClient({
       baseUrl: NODE_BASE_URL,
       commandUrl: NODE_COMMAND_URL,
       getUserId: () => USER_ID,
-      getAuthToken: () => getAuthToken(),
+      getAuthToken: window.AuthStateRuntime?.getAuthToken,
       repDebounceMs: 500,
       logger: console,
       legacyFallbackRequireExplicitActions: LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS,
@@ -2609,9 +2549,6 @@ CREATE CLICKED: no</pre>
       return window.ProfileWriteRuntime?.saveProfileToNode?.({ source: "inline-compat", ...options });
     }
 
-    function getAuthToken() {
-      return window.APP_AUTH?.token || localStorage.getItem("maatAuthToken") || null;
-    }
 
     function applyAuthenticatedShellVisibility() {
       const authOverlay = document.getElementById("authOverlay");
@@ -2682,7 +2619,7 @@ CREATE CLICKED: no</pre>
     }
 
     async function initializeAuth() {
-      const token = window.APP_AUTH?.token || window.AuthStateRuntime?.getStoredToken?.() || localStorage.getItem("maatAuthToken");
+      const token = window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || window.AuthStateRuntime?.getStoredToken?.() || localStorage.getItem("maatAuthToken");
       if (!token) {
         window.AuthStateRuntime?.clearCanonicalAuthState?.("initializeAuth:missing_token");
         if (authOverlayEl) authOverlayEl.style.display = "flex";
@@ -2741,7 +2678,7 @@ CREATE CLICKED: no</pre>
       deps: {
         voiceUrl: AIVOICE_URL,
         askUrl: ASK_URL,
-        getAuthToken,
+        getAuthToken: window.AuthStateRuntime?.getAuthToken,
         getProfile: () => USER_PROFILE,
         getUserId: () => USER_ID,
         addLog,
@@ -3134,10 +3071,13 @@ CREATE CLICKED: no</pre>
       addLog,
       markPerfMetric,
       nodeOhsaUrl: NODE_OHSA_URL,
-      postAuthenticatedJSON,
+      postAuthenticatedJSON: (url, options) => {
+        if (!BACKEND_READ_CLIENT) throw new Error("backend_client_unavailable");
+        return window.AuthStateRuntime.postAuthenticatedJSON(url, options);
+      },
       sessionWriteClient: SESSION_WRITE_CLIENT,
-      isAuthUnavailable,
-      sendToNode,
+      isAuthUnavailable: window.AuthStateRuntime?.isAuthUnavailable,
+      sendToNode: (payload) => window.AuthStateRuntime.sendToNode(payload, { commandUrl: NODE_COMMAND_URL }),
       userId: USER_ID,
       updateSyncStatus
     });
@@ -3668,10 +3608,13 @@ CREATE CLICKED: no</pre>
         getProfile: () => USER_PROFILE,
         setProfile: (profile) => { USER_PROFILE = profile; return USER_PROFILE; },
         getUserId: () => USER_ID,
-        getAuthToken,
-        postAuthenticatedJSON,
-        sendToNode,
-        isAuthUnavailable,
+        getAuthToken: window.AuthStateRuntime?.getAuthToken,
+        postAuthenticatedJSON: (url, options) => {
+          if (!BACKEND_READ_CLIENT) throw new Error("backend_client_unavailable");
+          return window.AuthStateRuntime.postAuthenticatedJSON(url, options);
+        },
+        sendToNode: (payload) => window.AuthStateRuntime.sendToNode(payload, { commandUrl: NODE_COMMAND_URL }),
+        isAuthUnavailable: window.AuthStateRuntime?.isAuthUnavailable,
         sessionWriteClient: SESSION_WRITE_CLIENT,
         addLog,
         updateSyncStatus,
