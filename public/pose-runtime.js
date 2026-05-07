@@ -17,7 +17,10 @@
     loopStartedAt: null,
     loopFrameCount: 0,
     lastFrameAt: null,
-    lastError: null
+    lastError: null,
+    latestPose: null,
+    latestPosePacket: null,
+    latestPoses: null
   };
 
   function log(message, details) {
@@ -227,7 +230,11 @@
         const posePacket = normalizePosePacket(pose, video);
         state.loopFrameCount += 1;
         state.lastFrameAt = new Date().toISOString();
+        state.latestPose = pose;
+        state.latestPosePacket = posePacket;
+        state.latestPoses = poses;
         global.__lastPoseRuntimeFrame = posePacket;
+        global.__lastPoseFrame = posePacket;
         try {
           global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poses } }));
         } catch (_) {}
@@ -258,6 +265,8 @@
     initOptionalTrackers,
     normalizePosePacket,
     startPoseLoop,
+    getLatestPose: () => state.latestPose || null,
+    getLatestPosePacket: () => state.latestPosePacket || null,
     getState: () => ({ ...state, optionalTrackers: { ...state.optionalTrackers }, optionalTrackerErrors: { ...state.optionalTrackerErrors } })
   };
 
