@@ -2362,111 +2362,48 @@ CREATE CLICKED: no</pre>
     }
 
     async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
-      const runtimeStatusRef = getAvatarRuntimeStatusRef();
-      runtimeStatusRef.renderMode = getRenderMode?.() || AVATAR_FLAGS?.AVATAR_MODE || "unknown";
-      console.log(`[avatar-load] render mode at avatar load time: ${runtimeStatusRef.renderMode}`);
-      const nextAvatar = normalizeAvatarProfile(USER_PROFILE?.avatar);
-      if (!nextAvatar) {
-        activeAvatarAsset = null;
-        const runtime = ensureAvatarThreeRuntime();
-        if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
-        if (runtime) {
-          runtime.avatarRoot = null;
-          runtime.avatarModelGroup = null;
-          runtime.modelRoot = null;
-          runtime.active = false;
-        }
-        setAvatar3dCanvasVisibility(false);
-        avatarThumbEl.style.display = "none";
-        runtimeStatusRef.lastAvatarUrl = null;
-        runtimeStatusRef.lastGlbLoadStatus = "idle";
-        updateAvatarOverlayDiagnostics({
-          avatarModelLoaded: false,
-          avatarModelMounted: false,
-          avatarModelVisible: false,
-          avatarOverlayRenderAttempted: false,
-          avatarOverlayRenderOk: null,
-          avatarOverlayRenderError: null
-        });
-        setAvatarAssetStatus("No avatar saved.", true);
-        setAvatarRuntimeStatus("No avatar metadata loaded.", true);
-        avatarCreateBtn.textContent = "🧍 Create Avatar";
-        return false;
-      }
-      try {
-        setAvatarAssetStatus(`Avatar metadata saved (${nextAvatar.avatarProvider}, ${source}).`);
-        setAvatarRuntimeStatus("Metadata accepted. Probing GLB runtime availability…");
-        if (nextAvatar.avatarThumbnailUrl) {
-          await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => reject(new Error("avatar_thumbnail_unreachable"));
-            img.src = nextAvatar.avatarThumbnailUrl;
-          });
-          avatarThumbEl.src = nextAvatar.avatarThumbnailUrl;
-          avatarThumbEl.style.display = "inline-block";
-        } else {
+      return window.AvatarRuntime?.loadAvatarAssetForCurrentUser?.(source) || false;
+    }
+
+    window.AvatarRuntime?.configureAssetPipeline?.({
+      getStatusRef: getAvatarRuntimeStatusRef,
+      getRenderMode,
+      getProfile: () => USER_PROFILE,
+      setActiveAvatarAsset: (asset) => { activeAvatarAsset = asset; return activeAvatarAsset; },
+      getRuntime: () => avatarThreeRuntime,
+      ensureRuntime: ensureAvatarThreeRuntime,
+      setCanvasVisibility: setAvatar3dCanvasVisibility,
+      setThumbnail: async (url) => {
+        if (!url) {
           avatarThumbEl.style.display = "none";
+          return false;
         }
-        runtimeStatusRef.lastAvatarUrl = nextAvatar.avatarModelUrl;
-        runtimeStatusRef.lastGlbLoadStatus = "probe_started";
-        const runtimeStatus = await probeAvatarModelRuntime(nextAvatar.avatarModelUrl);
-        if (runtimeStatus.assetMissing) {
-          USER_PROFILE.avatar = null;
-          avatarModelUrlInput.value = "";
-          setAvatarAssetStatus("Saved avatar URL returned 404. Cleared stale avatar reference.", true);
-          setAvatarRuntimeStatus("Stale avatar cleared. Upload or save a new .glb avatar.", true);
-          throw runtimeStatus.loadError || new Error("avatar_asset_missing");
-        }
-        if (!runtimeStatus.assetFound || !runtimeStatus.runtimeLoaded) {
-          setAvatarAssetStatus("Avatar asset probe failed.", true);
-          throw runtimeStatus.loadError || new Error("avatar_runtime_probe_failed");
-        }
-        setAvatarRuntimeStatus("GLB detected. Booting Three.js runtime…");
-        const mountInfo = await mountAvatarGlbModel(nextAvatar.avatarModelUrl);
-        runtimeStatus.renderSucceeded = true;
-        runtimeStatus.motionRetargeted = false;
-        runtimeStatus.mappedBones = mountInfo.mappedBones;
-        activeAvatarAsset = { ...nextAvatar, runtimeStatus };
-        setAvatarAssetStatus(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
-        setAvatarRuntimeStatus(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${mountInfo.mappedBones.join(", ") || "none"}).`);
-        avatarCreateBtn.textContent = "🧍 Change Avatar";
-        return true;
-      } catch (err) {
-        console.warn("avatar load failed", err);
-        activeAvatarAsset = null;
-        const runtime = ensureAvatarThreeRuntime();
-        if (runtime?.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
-        if (runtime) {
-          runtime.avatarRoot = null;
-          runtime.avatarModelGroup = null;
-          runtime.modelRoot = null;
-          runtime.active = false;
-        }
-        setAvatar3dCanvasVisibility(false);
-        avatarThumbEl.style.display = "none";
-        updateAvatarOverlayDiagnostics({
-          avatarModelLoaded: false,
-          avatarModelMounted: false,
-          avatarModelVisible: false,
-          avatarOverlayRenderOk: false,
-          avatarOverlayRenderError: String(err?.message || err || "avatar_load_failed")
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => reject(new Error("avatar_thumbnail_unreachable"));
+          img.src = url;
         });
+        avatarThumbEl.src = url;
+        avatarThumbEl.style.display = "inline-block";
+        return true;
+      },
+      updateOverlayDiagnostics: updateAvatarOverlayDiagnostics,
+      setAssetStatus: setAvatarAssetStatus,
+      setRuntimeStatus: setAvatarRuntimeStatus,
+      setCreateButtonLabel: (label) => { avatarCreateBtn.textContent = label; },
+      normalizeAvatarProfile,
+      probeAvatarModelRuntime,
+      mountAvatarGlbModel,
+      clearProfileAvatar: () => { if (USER_PROFILE) USER_PROFILE.avatar = null; },
+      clearModelUrlInput: () => { avatarModelUrlInput.value = ""; },
+      ensureAssetProbeFailedStatus: () => {
         if (!String(avatarAssetStatusEl.textContent || "").toLowerCase().includes("asset")) {
           setAvatarAssetStatus("Avatar asset probe failed.", true);
         }
-        const errMsg = String(err?.message || "");
-        if (errMsg.includes("avatar_three_runtime_unavailable")) {
-          setAvatarAssetStatus("Avatar asset found but 3D runtime not loaded.", true);
-          setAvatarRuntimeStatus(`3D runtime not loaded (${getAvatarRuntimeStatusRef().failedReason || errMsg || "unknown"}).`, true);
-          setAvatarRuntimeFailure(errMsg || "avatar_three_runtime_unavailable", { source });
-        } else {
-          setAvatarRuntimeStatus("Using procedural fallback (3D avatar load failed).", true);
-        }
-        fallbackRenderModeToCamera("Saved avatar failed to load.", err);
-        return false;
-      }
-    }
+      },
+      fallbackRenderModeToCamera
+    });
 
     function openAvatarModal() {
       avatarModelUrlInput.value = USER_PROFILE?.avatar?.avatarModelUrl || "";
@@ -3305,438 +3242,27 @@ function toggleListening() {
     }
 
 
-    function ensureRuntimeCalibration(runtime) {
-      if (!runtime) return null;
-      if (!runtime.avatarCalibration) {
-        runtime.avatarCalibration = { status: "not_started", samples: [], shoulderWidthPx: null, midpointPx: null };
-      }
-      return runtime.avatarCalibration;
-    }
-
-    function updateAvatarCalibration(posePacket, runtime) {
-      const calibration = ensureRuntimeCalibration(runtime);
-      if (!calibration) return null;
-      const points = posePacket?.keypoints || [];
-      const ls = getPosePoint(points, 5, 0.35);
-      const rs = getPosePoint(points, 6, 0.35);
-      if (!ls || !rs) return calibration;
-      const shoulderWidthSample = Math.hypot(rs.x - ls.x, rs.y - ls.y);
-      if (!Number.isFinite(shoulderWidthSample) || shoulderWidthSample <= 0) return calibration;
-      calibration.status = "collecting";
-      calibration.samples.push({
-        shoulderWidthPx: shoulderWidthSample,
-        midpoint: { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 }
-      });
-      if (calibration.samples.length < 8) return calibration;
-
-      const shoulderWidthPx = calibration.samples.reduce((sum, sample) => sum + sample.shoulderWidthPx, 0) / calibration.samples.length;
-      const midpointPx = calibration.samples.reduce((sum, sample) => ({
-        x: sum.x + sample.midpoint.x,
-        y: sum.y + sample.midpoint.y
-      }), { x: 0, y: 0 });
-      calibration.shoulderWidthPx = shoulderWidthPx;
-      calibration.midpointPx = {
-        x: midpointPx.x / calibration.samples.length,
-        y: midpointPx.y / calibration.samples.length
-      };
-      calibration.status = "ready";
-      calibration.samples = [];
-      return calibration;
-    }
-
-    function setLowerBodyVisibility(runtime, visible) {
-      if (!runtime?.boneMap) return;
-      const lowerBodyBones = ["leftUpperLeg", "rightUpperLeg", "leftLowerLeg", "rightLowerLeg"];
-      if (!runtime.lowerBodyVisibilityState) runtime.lowerBodyVisibilityState = {};
-      for (const key of lowerBodyBones) {
-        const bone = runtime.boneMap[key];
-        if (!bone) continue;
-        if (!(key in runtime.lowerBodyVisibilityState)) runtime.lowerBodyVisibilityState[key] = Boolean(bone.visible);
-        bone.visible = visible ? runtime.lowerBodyVisibilityState[key] : false;
-      }
-    }
-
-    function computeAvatarAnchorTransform(posePacket, runtime) {
-      const points = posePacket?.keypoints;
-      const tracker = posePacket?.tracker || null;
-      const trackingMode = tracker?.mode || currentTrackingMode;
-      if (!points || !points.length) {
-        return {
-          mode: "lost",
-          trackingReliable: false,
-          hasHead: false,
-          hasShoulders: false,
-          hasHips: false
-        };
-      }
-      const ls = getPosePoint(points, 5);
-      const rs = getPosePoint(points, 6);
-      const lh = getPosePoint(points, 11);
-      const rh = getPosePoint(points, 12);
-      const nose = getPosePointAny(points, [0, 1, 2, 3, 4], 0.25);
-      const faceOrientation = getFaceOrientation(tracker?.face);
-
-      const hasHead = Boolean(nose || faceOrientation);
-      const hasShoulders = Boolean(ls && rs);
-      const hasHips = Boolean(lh && rh);
-      const mode = hasShoulders
-        ? (hasHips ? TRACKING_MODES.FULL_BODY : TRACKING_MODES.UPPER_BODY)
-        : (hasHead ? TRACKING_MODES.FACE_CLOSE : "lost");
-      const trackingReliable = mode !== "lost";
-      if (!trackingReliable) {
-        return { mode, trackingReliable, hasHead, hasShoulders, hasHips };
-      }
-
-      const camera = runtime.camera;
-      const depth = Math.max(0.001, camera.position.z);
-      const halfH = Math.tan((camera.fov * Math.PI) / 360) * depth;
-      const worldPerPixelY = (halfH * 2) / Math.max(1, videoEl.videoHeight);
-
-      const baseH = runtime.baseAvatarHeight || 1.7;
-      const baseW = runtime.baseAvatarWidth || 0.6;
-      const baseShoulderWidth = Math.max(0.24, baseW * 0.55);
-      const baseTorsoHeight = Math.max(0.28, baseH * 0.32);
-      const calibration = ensureRuntimeCalibration(runtime);
-      const shoulderRatioY = 0.82;
-      const hipRatioY = 0.53;
-      const headRatioY = 0.82;
-
-      let anchorLevel = TRACKING_MODES.FACE_CLOSE;
-      let anchorPixel = nose;
-      let tilt = 0;
-      let scale = 1;
-      let ratioY = headRatioY;
-
-      if (trackingMode === TRACKING_MODES.FULL_BODY && hasShoulders && hasHips) {
-        anchorLevel = TRACKING_MODES.FULL_BODY;
-        anchorPixel = {
-          x: ((ls.x + rs.x) * 0.5 + (lh.x + rh.x) * 0.5) * 0.5,
-          y: ((ls.y + rs.y) * 0.5 + (lh.y + rh.y) * 0.5) * 0.5
-        };
-        const torsoPx = Math.hypot(((ls.x + rs.x) * 0.5) - ((lh.x + rh.x) * 0.5), ((ls.y + rs.y) * 0.5) - ((lh.y + rh.y) * 0.5));
-        const torsoWorld = torsoPx * worldPerPixelY;
-        scale = Math.max(0.45, Math.min(2.4, torsoWorld / baseTorsoHeight));
-        tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
-        ratioY = hipRatioY;
-      } else if (trackingMode === TRACKING_MODES.UPPER_BODY && hasShoulders) {
-        anchorLevel = TRACKING_MODES.UPPER_BODY;
-        anchorPixel = { x: (ls.x + rs.x) * 0.5, y: (ls.y + rs.y) * 0.5 };
-        const shoulderPx = Math.hypot(rs.x - ls.x, rs.y - ls.y);
-        const shoulderWorld = shoulderPx * worldPerPixelY;
-        const calibratedShoulderWorld = (calibration?.status === "ready" && calibration?.shoulderWidthPx)
-          ? Math.max(0.01, calibration.shoulderWidthPx * worldPerPixelY)
-          : baseShoulderWidth;
-        scale = Math.max(0.45, Math.min(2.4, shoulderWorld / calibratedShoulderWorld));
-        tilt = Math.atan2(rs.y - ls.y, Math.max(1, rs.x - ls.x));
-        ratioY = shoulderRatioY;
-      } else {
-        anchorLevel = TRACKING_MODES.FACE_CLOSE;
-        const eyes = [getPosePoint(points, 1, 0.25), getPosePoint(points, 2, 0.25), getPosePoint(points, 3, 0.25), getPosePoint(points, 4, 0.25)].filter(Boolean);
-        const fallbackNose = nose || { x: videoEl.videoWidth * 0.5, y: videoEl.videoHeight * 0.38 };
-        const headSamples = [fallbackNose, ...eyes].filter(Boolean);
-        const headCenter = headSamples.reduce((sum, kp) => ({ x: sum.x + kp.x, y: sum.y + kp.y }), { x: 0, y: 0 });
-        const headCenterX = headCenter.x / headSamples.length;
-        const headCenterY = headCenter.y / headSamples.length;
-        const bodyAnchorY = Math.min(
-          videoEl.videoHeight - 1,
-          headCenterY + (videoEl.videoHeight * HEAD_BODY_Y_OFFSET)
-        );
-        anchorPixel = {
-          x: headCenterX,
-          y: bodyAnchorY
-        };
-        const eye = eyes[0] || null;
-        const headPx = eye ? Math.max(20, Math.hypot(fallbackNose.x - eye.x, fallbackNose.y - eye.y) * 3.4) : 52;
-        const headWorld = headPx * worldPerPixelY;
-        scale = Math.max(0.75, Math.min(1.35, headWorld / (baseH * 0.16)));
-        ratioY = headRatioY;
-        tilt = 0;
-      }
-
-      const anchorWorld = toWorldAtAvatarPlane(runtime, anchorPixel.x, anchorPixel.y);
-      const scaledH = baseH * scale;
-      const rootY = anchorWorld.y - (scaledH * ratioY);
-      const anchorShoulderRoll = THREE.MathUtils.clamp(-tilt * SHOULDER_TILT_MULTIPLIER, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL);
-      return {
-        mode,
-        trackingReliable,
-        hasHead,
-        hasShoulders,
-        hasHips,
-        level: anchorLevel,
-        position: { x: anchorWorld.x, y: rootY, z: 0 },
-        rotationY: 0,
-        rotationZ: anchorShoulderRoll,
-        scale
-      };
-    }
-
-    function applyPoseToAvatarRig(posePacket, options = {}) {
-      const runtime = ensureAvatarThreeRuntime();
-      if (!runtime?.avatarRoot || !runtime?.boneMap) return false;
-      const points = posePacket?.keypoints;
-      if (!points || !points.length) return false;
-      const disableLowerBody = Boolean(options.disableLowerBody);
-      const visibilityState = options.visibilityState || BODY_VISIBILITY.NO_PERSON;
-      const allowHeadShoulders = visibilityState === BODY_VISIBILITY.HEAD_SHOULDERS
-        || visibilityState === BODY_VISIBILITY.UPPER_BODY
-        || visibilityState === BODY_VISIBILITY.TORSO_VISIBLE
-        || visibilityState === BODY_VISIBILITY.FULL_BODY;
-      const allowArms = visibilityState === BODY_VISIBILITY.UPPER_BODY
-        || visibilityState === BODY_VISIBILITY.TORSO_VISIBLE
-        || visibilityState === BODY_VISIBILITY.FULL_BODY;
-      const allowTorso = visibilityState === BODY_VISIBILITY.TORSO_VISIBLE
-        || visibilityState === BODY_VISIBILITY.FULL_BODY;
-      const allowLowerBody = visibilityState === BODY_VISIBILITY.FULL_BODY && !disableLowerBody;
-      const now = Date.now();
-      const state = runtime.puppetState || (runtime.puppetState = { lastGoodByLimb: {}, lastLogAt: 0 });
-      const restPose = runtime.boneRestPose || {};
-      const getRest = (key, axis, fallback = 0) => restPose?.[key]?.[axis] ?? fallback;
-      const relaxToRest = (boneKey, axis, speed = 0.1) => {
-        const bone = runtime.boneMap?.[boneKey];
-        if (!bone) return;
-        bone.rotation[axis] = THREE.MathUtils.lerp(bone.rotation[axis], getRest(boneKey, axis, 0), speed);
-      };
-      const applyTrackedAxis = (limbKey, boneKey, axis, targetValue, min, max, smooth = 0.26, confidence = 1, minConfidence = 0.3) => {
-        const bone = runtime.boneMap?.[boneKey];
-        if (!bone) return "missing_bone";
-        if (typeof targetValue === "number" && Number.isFinite(targetValue) && confidence >= minConfidence) {
-          state.lastGoodByLimb[limbKey] = now;
-          bone.rotation[axis] = THREE.MathUtils.lerp(
-            bone.rotation[axis],
-            THREE.MathUtils.clamp(targetValue, min, max),
-            smooth
-          );
-          return "applied";
-        }
-        const held = (now - (state.lastGoodByLimb[limbKey] || 0)) <= LOST_HOLD_MS;
-        if (!held) relaxToRest(boneKey, axis, 0.12);
-        return held ? "held" : "relaxed";
-      };
-
-      const nose = getPosePoint(points, 0, 0.2);
-      const leftEye = getPosePoint(points, 1, 0.2);
-      const rightEye = getPosePoint(points, 2, 0.2);
-      const leftEar = getPosePoint(points, 3, 0.2);
-      const rightEar = getPosePoint(points, 4, 0.2);
-      const ls = getPosePoint(points, 5);
-      const rs = getPosePoint(points, 6);
-      const le = getPosePoint(points, 7, 0.3);
-      const re = getPosePoint(points, 8, 0.3);
-      const lw = getPosePoint(points, 9, 0.25);
-      const rw = getPosePoint(points, 10, 0.25);
-      const lh = getPosePoint(points, 11, 0.3);
-      const rh = getPosePoint(points, 12, 0.3);
-      const lk = getPosePoint(points, 13, 0.3);
-      const rk = getPosePoint(points, 14, 0.3);
-      const la = getPosePoint(points, 15, 0.3);
-      const ra = getPosePoint(points, 16, 0.3);
-      const score = (i) => Number(points?.[i]?.score || 0);
-
-      const hasLandmarks = {
-        head: Boolean(nose || leftEye || rightEye || leftEar || rightEar),
-        shoulders: Boolean(ls && rs),
-        elbows: Boolean(le && re),
-        wrists: Boolean(lw && rw),
-        hips: Boolean(lh && rh),
-        knees: Boolean(lk && rk),
-        ankles: Boolean(la && ra)
-      };
-
-      const applied = [];
-      const skipped = [];
-      const angle = (a, b) => (a && b) ? Math.atan2(b.y - a.y, b.x - a.x) : null;
-      const shoulderRoll = (ls && rs) ? THREE.MathUtils.clamp(-Math.atan2((rs.y - ls.y), Math.max(1, rs.x - ls.x)) * SHOULDER_TILT_MULTIPLIER, -MAX_SHOULDER_ROLL, MAX_SHOULDER_ROLL) : null;
-      const headYaw = (leftEar && rightEar) ? THREE.MathUtils.clamp((leftEar.y - rightEar.y) / 120, -MAX_HEAD_YAW, MAX_HEAD_YAW) : 0;
-      const headPitch = (nose && leftEye && rightEye) ? THREE.MathUtils.clamp((((leftEye.y + rightEye.y) * 0.5) - nose.y) / 90, -MAX_HEAD_PITCH, MAX_HEAD_PITCH) : 0;
-
-      const record = (limb, status) => {
-        if (status === "applied") applied.push(limb);
-        else skipped.push(`${limb}:${status}`);
-      };
-
-      record("spine", allowTorso ? applyTrackedAxis("spine", "spine", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34) : "hidden");
-      record("chest", allowTorso ? applyTrackedAxis("chest", "chest", "z", shoulderRoll, -0.9, 0.9, HIP_SMOOTHING, Math.min(score(5), score(6)), 0.34) : "hidden");
-      record("neckPitch", allowHeadShoulders ? applyTrackedAxis("neckPitch", "neck", "x", -headPitch * 0.45, -0.6, 0.6, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22) : "hidden");
-      record("neckYaw", allowHeadShoulders ? applyTrackedAxis("neckYaw", "neck", "y", headYaw * 0.35, -0.7, 0.7, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22) : "hidden");
-      record("headPitch", allowHeadShoulders ? applyTrackedAxis("headPitch", "head", "x", -headPitch, -0.9, 0.9, ROTATION_SMOOTHING, Math.max(score(0), score(1), score(2)), 0.22) : "hidden");
-      record("headYaw", allowHeadShoulders ? applyTrackedAxis("headYaw", "head", "y", headYaw, -1.1, 1.1, ROTATION_SMOOTHING, Math.max(score(3), score(4), score(1), score(2)), 0.22) : "hidden");
-      record("headRoll", allowHeadShoulders ? applyTrackedAxis("headRoll", "head", "z", shoulderRoll, -0.8, 0.8, ROTATION_SMOOTHING, Math.min(score(5), score(6)), 0.34) : "hidden");
-
-      record("leftUpperArm", allowArms ? applyTrackedAxis("leftUpperArm", "leftUpperArm", "z", (ls && le) ? THREE.MathUtils.clamp(angle(ls, le) + 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(5), score(7)), 0.34) : "hidden");
-      record("rightUpperArm", allowArms ? applyTrackedAxis("rightUpperArm", "rightUpperArm", "z", (rs && re) ? THREE.MathUtils.clamp(angle(rs, re) - 1.05, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(6), score(8)), 0.34) : "hidden");
-      record("leftLowerArm", allowArms ? applyTrackedAxis("leftLowerArm", "leftLowerArm", "z", (le && lw) ? THREE.MathUtils.clamp(angle(le, lw) + 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(7), score(9)), 0.3) : "hidden");
-      record("rightLowerArm", allowArms ? applyTrackedAxis("rightLowerArm", "rightLowerArm", "z", (re && rw) ? THREE.MathUtils.clamp(angle(re, rw) - 0.85, -1.4, 1.4) : null, -1.4, 1.4, ARM_SMOOTHING, Math.min(score(8), score(10)), 0.3) : "hidden");
-      record("leftHand", allowArms ? applyTrackedAxis("leftHand", "leftHand", "z", (le && lw) ? THREE.MathUtils.clamp((angle(le, lw) + 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(7), score(9)), 0.3) : "hidden");
-      record("rightHand", allowArms ? applyTrackedAxis("rightHand", "rightHand", "z", (re && rw) ? THREE.MathUtils.clamp((angle(re, rw) - 0.85) * 0.45, -0.8, 0.8) : null, -0.8, 0.8, 0.22, Math.min(score(8), score(10)), 0.3) : "hidden");
-
-      record("hips", allowTorso ? applyTrackedAxis("hips", "hips", "z", shoulderRoll, -0.7, 0.7, HIP_SMOOTHING, Math.min(score(11), score(12)), 0.3) : "hidden");
-      record("leftUpperLeg", allowLowerBody ? applyTrackedAxis("leftUpperLeg", "leftUpperLeg", "z", (lh && lk) ? THREE.MathUtils.clamp(angle(lh, lk) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(11), score(13)), 0.32) : "hidden");
-      record("rightUpperLeg", allowLowerBody ? applyTrackedAxis("rightUpperLeg", "rightUpperLeg", "z", (rh && rk) ? THREE.MathUtils.clamp(angle(rh, rk) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(12), score(14)), 0.32) : "hidden");
-      record("leftLowerLeg", allowLowerBody ? applyTrackedAxis("leftLowerLeg", "leftLowerLeg", "z", (lk && la) ? THREE.MathUtils.clamp(angle(lk, la) + 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(13), score(15)), 0.32) : "hidden");
-      record("rightLowerLeg", allowLowerBody ? applyTrackedAxis("rightLowerLeg", "rightLowerLeg", "z", (rk && ra) ? THREE.MathUtils.clamp(angle(rk, ra) - 1.45, -1.25, 1.25) : null, -1.25, 1.25, 0.24, Math.min(score(14), score(16)), 0.32) : "hidden");
-
-      if ((now - state.lastLogAt) >= TRACKING_LOG_THROTTLE_MS) {
-        state.lastLogAt = now;
-        console.log("[avatar-puppet] landmarks available: head/shoulders/elbows/wrists/hips/knees/ankles", hasLandmarks);
-        console.log("[avatar-puppet] applied limbs:", applied);
-        console.log("[avatar-puppet] skipped limbs:", skipped);
-      }
-      return applied.length > 0;
-    }
-
-    function renderAvatar3d(posePacket) {
-      if (!activeAvatarAsset) throw new Error("avatar_asset_not_loaded");
-      const runtime = ensureAvatarThreeRuntime();
-      if (!runtime?.avatarRoot) throw new Error("avatar_runtime_not_initialized");
-      const mountedInScene = Boolean(runtime?.scene && runtime.avatarRoot && runtime.scene.children.includes(runtime.avatarRoot));
-      if (!mountedInScene) throw new Error("avatar_model_not_mounted_to_scene");
-      if (runtime.avatarRoot.visible === false) throw new Error("avatar_model_hidden");
-      const canvasRect = avatar3dCanvasEl?.getBoundingClientRect?.();
-      const canvasWidth = Number(avatar3dCanvasEl?.width || 0);
-      const canvasHeight = Number(avatar3dCanvasEl?.height || 0);
-      const canvasStyles = avatar3dCanvasEl ? window.getComputedStyle(avatar3dCanvasEl) : null;
-      const canvasDisplay = canvasStyles?.display || avatar3dCanvasEl?.style?.display || null;
-      const canvasVisibility = canvasStyles?.visibility || avatar3dCanvasEl?.style?.visibility || null;
-      const canvasOpacity = canvasStyles?.opacity || avatar3dCanvasEl?.style?.opacity || null;
-      const canvasZIndex = canvasStyles?.zIndex || avatar3dCanvasEl?.style?.zIndex || null;
-      const overlayContainerExists = Boolean(avatar3dCanvasEl?.closest?.(".video-shell"));
-      let overlayVisibilityReason = "visible";
-      if (canvasWidth <= 0 || canvasHeight <= 0 || (canvasRect && (canvasRect.width <= 0 || canvasRect.height <= 0))) overlayVisibilityReason = "avatar_canvas_zero_size";
-      else if (canvasDisplay === "none") overlayVisibilityReason = "avatar_canvas_display_none";
-      else if (canvasVisibility === "hidden") overlayVisibilityReason = "avatar_canvas_visibility_hidden";
-      else if (Number.parseFloat(canvasOpacity || "1") <= 0) overlayVisibilityReason = "avatar_canvas_opacity_zero";
-      else if (!overlayContainerExists) overlayVisibilityReason = "avatar_overlay_container_missing";
-      else if (!runtime.renderLoopActive) overlayVisibilityReason = "avatar_overlay_render_loop_not_running";
-      updateAvatarOverlayDiagnostics({
-        avatarModelLoaded: true,
-        avatarModelMounted: mountedInScene,
-        avatarModelVisible: runtime.avatarRoot.visible !== false,
-        avatarSceneChildrenCount: runtime?.scene?.children?.length || 0,
-        avatarCanvasWidth: canvasWidth,
-        avatarCanvasHeight: canvasHeight,
-        avatarCanvasDisplay: canvasDisplay,
-        avatarCanvasVisibility: canvasVisibility,
-        avatarCanvasOpacity: canvasOpacity,
-        avatarCanvasZIndex: canvasZIndex,
-        avatarOverlayContainerExists: overlayContainerExists,
-        overlayRenderLoopRunning: Boolean(runtime.renderLoopActive),
-        avatarOverlayVisibilityReason: overlayVisibilityReason
-      });
-      if (overlayVisibilityReason !== "visible") {
-        throw new Error(overlayVisibilityReason);
-      }
-      const now = Date.now();
-      if (!runtime.upperBodyTrackingLogged) {
-        runtime.upperBodyTrackingLogged = true;
-        console.log("[avatar-upper-body] head/shoulders/arms tracking active");
-      }
-
-      const points = posePacket?.keypoints || [];
-      const tracker = posePacket?.tracker || null;
-      const trackingState = tracker?.trackingState || currentTrackingState;
-      const visibilityState = window.__lastBodyVisibility || trackingState || BODY_VISIBILITY.NO_PERSON;
-      const upperBodyOnly = visibilityState !== BODY_VISIBILITY.FULL_BODY;
-      const fullBodyReady = visibilityState === BODY_VISIBILITY.FULL_BODY;
-      const avatarBodyMode = fullBodyReady ? "full" : "upper_only";
-      const calibration = updateAvatarCalibration(posePacket, runtime);
-      updateAvatarOverlayDiagnostics({
-        bodyMode: avatarBodyMode,
-        trackingState: trackingState || null,
-        calibrationStatus: calibration?.status || "not_started"
-      });
-      const hasHead = Boolean(getPosePointAny(points, [0, 1, 2, 3, 4], 0.25));
-      const hasShoulders = Boolean(getPosePoint(points, 5) && getPosePoint(points, 6));
-      const hasElbows = Boolean(getPosePoint(points, 7, 0.3) && getPosePoint(points, 8, 0.3));
-      const hasWrists = Boolean(getPosePoint(points, 9, 0.25) && getPosePoint(points, 10, 0.25));
-      const trackingGood = hasHead || hasShoulders || hasElbows || hasWrists;
-      if (trackingGood) runtime.lastUpperBodyGoodAt = now;
-
-      const renderMode = getRenderMode();
-      const anchor = computeAvatarAnchorTransform(posePacket, runtime);
-      if (anchor?.trackingReliable && anchor.position && avatarStageMode === "follow_pose") {
-        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, anchor.position.x, ROOT_SMOOTHING);
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, anchor.position.y, ROOT_SMOOTHING);
-        runtime.avatarRoot.position.z = 0;
-        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, anchor.rotationY || 0, ROOT_SMOOTHING);
-        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, anchor.rotationZ || 0, ROOT_SMOOTHING);
-        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, anchor.scale || 1.05, ROOT_SMOOTHING));
-      } else {
-        const fixed = runtime.fixedStageAnchor || { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
-        runtime.avatarRoot.position.x = THREE.MathUtils.lerp(runtime.avatarRoot.position.x, fixed.x || 0, ROOT_SMOOTHING);
-        runtime.avatarRoot.position.y = THREE.MathUtils.lerp(runtime.avatarRoot.position.y, fixed.y || 0, ROOT_SMOOTHING);
-        runtime.avatarRoot.position.z = 0;
-        runtime.avatarRoot.rotation.y = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.y, fixed.rotationY || 0, ROOT_SMOOTHING);
-        runtime.avatarRoot.rotation.z = THREE.MathUtils.lerp(runtime.avatarRoot.rotation.z, fixed.rotationZ || 0, ROOT_SMOOTHING);
-        runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, ROOT_SMOOTHING));
-      }
-
-      setLowerBodyVisibility(runtime, fullBodyReady);
-      const retargetActive = applyPoseToAvatarRig(posePacket, {
-        disableLowerBody: !fullBodyReady,
-        visibilityState
-      });
-      if (activeAvatarAsset.runtimeStatus) {
-        activeAvatarAsset.runtimeStatus.motionRetargeted = retargetActive;
-      }
-      runtime.renderer.render(runtime.scene, runtime.camera);
-      setAvatar3dCanvasVisibility(true);
-      setAvatarRuntimeStatus(`3D avatar tracking active (${tracker?.mode || currentTrackingMode}).`, false);
-      if (!runtime.lastFacingLogAt || (now - runtime.lastFacingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
-        const finalRotationY = (runtime.avatarRoot?.rotation?.y || 0) + (runtime.avatarModelGroup?.rotation?.y || 0);
-        console.log("[avatar-facing] final model rotationY:", Number(finalRotationY.toFixed(4)), "layer=modelGroup-only");
-        runtime.lastFacingLogAt = now;
-      }
-      if (!runtime.lastTrackingLogAt || (now - runtime.lastTrackingLogAt) >= TRACKING_LOG_THROTTLE_MS) {
-        console.log(`[avatar-upper-body] landmarks: head ${hasHead ? "yes" : "no"}, shoulders ${hasShoulders ? "yes" : "no"}, elbows ${hasElbows ? "yes" : "no"}, wrists ${hasWrists ? "yes" : "no"}`);
-        console.log("[avatar-tracking-state]", { trackingState, avatarBodyMode, calibration: calibration?.status || "not_started" });
-        runtime.lastTrackingLogAt = now;
-      }
-      const holdingPose = !trackingGood && (now - runtime.lastUpperBodyGoodAt) <= LOST_HOLD_MS;
-      const anchorReason = (!anchor?.trackingReliable || !anchor?.position)
-        ? "anchor_not_reliable"
-        : (avatarStageMode !== "follow_pose" ? `stage_mode_${avatarStageMode}` : "follow_pose_active");
-      runtime.lastAlignmentTrace = {
-        skeletonBasis: "MoveNet image-space (pixels, mirrored in detector with flipHorizontal=true) to Three camera world (toWorldAtAvatarPlane)",
-        rootAnchor: anchor?.level || anchor?.mode || "lost",
-        rootPosition: {
-          x: Number((runtime.avatarRoot?.position?.x || 0).toFixed(4)),
-          y: Number((runtime.avatarRoot?.position?.y || 0).toFixed(4)),
-          z: Number((runtime.avatarRoot?.position?.z || 0).toFixed(4))
-        },
-        scale: Number((runtime.avatarRoot?.scale?.x || 1).toFixed(4)),
-        facingDegrees: Number(avatarFacingDeg || 0),
-        limbsApplied: retargetActive ? "yes" : "no",
-        limbsSkippedReason: holdingPose ? "holding_last_pose" : "none",
-        offscreenReason: anchorReason
-      };
-      if (!runtime.lastAlignTraceLogAt || (now - runtime.lastAlignTraceLogAt) >= TRACKING_LOG_THROTTLE_MS) {
-        runtime.lastAlignTraceLogAt = now;
-        console.log("[align-trace] skeleton basis:", runtime.lastAlignmentTrace.skeletonBasis);
-        console.log("[align-trace] root anchor:", runtime.lastAlignmentTrace.rootAnchor);
-        console.log("[align-trace] root position:", runtime.lastAlignmentTrace.rootPosition);
-        console.log("[align-trace] scale:", runtime.lastAlignmentTrace.scale);
-        console.log("[align-trace] facing degrees:", runtime.lastAlignmentTrace.facingDegrees);
-      }
-      updateAvatarDebugOverlay({
-        tracking: {
-          mode: tracker?.mode || currentTrackingMode,
-          state: trackingState,
-          visibleLandmarks: tracker?.visibleLandmarks || [],
-          confidenceScore: tracker?.confidenceScore ?? 0
-        },
-        avatarMode: renderMode,
-        avatarBodyMode,
-        calibration: { status: calibration?.status || "not_started" },
-        form: window.__lastFormResult || null
-      });
-      return retargetActive || holdingPose;
-    }
-
-    window.AvatarRuntime?.bindPoseFrameRenderer?.((posePacket) => {
-      const mode = getRenderMode();
-      if (mode !== "avatar_overlay" && mode !== "avatar_only") return false;
-      return renderAvatar3d(posePacket);
+    window.AvatarRuntime?.configureRenderEngine?.({
+      constants: {
+        TRACKING_MODES, BODY_VISIBILITY, LOST_HOLD_MS, TRACKING_LOG_THROTTLE_MS,
+        MAX_HEAD_YAW, MAX_HEAD_PITCH, MAX_SHOULDER_ROLL, ROTATION_SMOOTHING,
+        ROOT_SMOOTHING, ARM_SMOOTHING, HIP_SMOOTHING, SHOULDER_TILT_MULTIPLIER
+      },
+      getRenderMode,
+      getRuntime: () => avatarThreeRuntime,
+      ensureRuntime: ensureAvatarThreeRuntime,
+      getThree: getThreeGlobal,
+      getCanvas: () => avatar3dCanvasEl,
+      getVideo: () => videoEl,
+      getActiveAvatarAsset: () => activeAvatarAsset,
+      getCurrentTrackingMode: () => currentTrackingMode,
+      getCurrentTrackingState: () => currentTrackingState,
+      getLastBodyVisibility: () => window.__lastBodyVisibility,
+      getAvatarStageMode: () => avatarStageMode,
+      getAvatarFacingDeg: () => avatarFacingDeg,
+      updateOverlayDiagnostics: updateAvatarOverlayDiagnostics,
+      updateDebugOverlay: updateAvatarDebugOverlay,
+      setRuntimeStatus: setAvatarRuntimeStatus
     });
 
     function drawProceduralAvatar(context, posePacket) {
@@ -3806,6 +3332,179 @@ function toggleListening() {
       }
 
       context.restore();
+    }
+
+
+    function stopAuxiliaryPoseLoop() {
+      if (animId?.stop) animId.stop();
+      else if (animId) cancelAnimationFrame(animId);
+      animId = null;
+    }
+
+    function startAuxiliaryPoseLoop({ isActive, onPoseFrame, onError } = {}) {
+      if (!window.PoseRuntime?.startPoseLoop) throw new Error("PoseRuntime.startPoseLoop missing");
+      stopAuxiliaryPoseLoop();
+      const loop = window.PoseRuntime.startPoseLoop({
+        detector,
+        video: videoEl,
+        isRunning: () => Boolean(isActive?.()),
+        onPoseFrame,
+        onError: (err) => {
+          const reason = err?.message || String(err || "pose_loop_error");
+          poseStatusEl.textContent = `Pose loop error: ${reason}`;
+          poseStatusEl.classList.add("status-bad");
+          onError?.(err);
+        }
+      });
+      animId = { stop: loop.stop };
+      return loop;
+    }
+
+    function summarizeOhsaSamples(frontSamples = [], sideSamples = []) {
+      const avg = (items, key) => {
+        const values = items.map((item) => Number(item?.[key])).filter(Number.isFinite);
+        return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+      };
+      const frontKneeValgus = avg(frontSamples, "kneeValgus");
+      const sideDepthScore = avg(sideSamples, "depthScore") || avg(frontSamples, "depthScore");
+      const sideTorsoAngle = avg(sideSamples, "torsoAngle") || avg(frontSamples, "torsoAngle");
+      const findings = [];
+      if (frontKneeValgus > 0.18) findings.push("Possible knee valgus / knees moving inward");
+      if (sideTorsoAngle && sideTorsoAngle < 58) findings.push("Forward torso lean observed");
+      if (sideDepthScore && sideDepthScore < 0.45) findings.push("Limited squat depth observed");
+      if (!findings.length) findings.push("No major OHSA movement limitation detected from this scan");
+      return {
+        createdAt: new Date().toISOString(),
+        frontSamples: frontSamples.length,
+        sideSamples: sideSamples.length,
+        metrics: {
+          kneeValgus: Number(frontKneeValgus.toFixed(3)),
+          depthScore: Number(sideDepthScore.toFixed(3)),
+          torsoAngle: Number(sideTorsoAngle.toFixed(1))
+        },
+        findings
+      };
+    }
+
+    function renderOhsaSummary(summary) {
+      if (!ohsaSummaryViewEl || !summary) return;
+      ohsaSummaryViewEl.textContent = [
+        "Overhead Squat Assessment complete.",
+        `Samples: front ${summary.frontSamples}, side ${summary.sideSamples}`,
+        `Depth: ${summary.metrics.depthScore}, torso angle: ${summary.metrics.torsoAngle}°, knee valgus: ${summary.metrics.kneeValgus}`,
+        "Findings:",
+        ...summary.findings.map((finding) => `- ${finding}`)
+      ].join("\n");
+    }
+
+    async function startOhsa() {
+      const progressScanStartedAt = performance.now();
+      markPerfMetric("progressScanBootMs", 0);
+      try {
+        if (!videoEl?.srcObject) throw new Error("connect camera before starting OHSA");
+        if (!detector) await initDetector();
+        if (!detector) throw new Error("movement detector unavailable for OHSA");
+        if (running) await startWorkout();
+        definingExercise = false;
+        baselineFrames = [];
+        currentExerciseName = null;
+        ohsaMode = true;
+        ohsaPhase = "front";
+        ohsaFrontSamples = [];
+        ohsaSideSamples = [];
+        lastOhsaSummary = null;
+        window.lastOhsaSummary = null;
+        poseStatusEl.textContent = "OHSA running: front view. Face the camera and perform slow overhead squats.";
+        ohsaSummaryViewEl.textContent = "OHSA running: collecting front-view samples…";
+        addLog("system", "OHSA started. Collecting front-view samples.");
+        markPerfMetric("progressScanBootMs", Math.round(performance.now() - progressScanStartedAt));
+        startAuxiliaryPoseLoop({
+          isActive: () => ohsaMode,
+          onPoseFrame: ({ pose }) => {
+            const sample = analyzeSquatForm(pose);
+            if (!sample.fullBody) return;
+            if (ohsaPhase === "front") {
+              ohsaFrontSamples.push(sample);
+              ohsaSummaryViewEl.textContent = `OHSA front view: ${ohsaFrontSamples.length}/${OHSA_TARGET_SAMPLES_PER_VIEW} samples.`;
+              if (ohsaFrontSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
+                ohsaPhase = "side";
+                poseStatusEl.textContent = "OHSA running: side view. Turn sideways and continue slow overhead squats.";
+                ohsaSummaryViewEl.textContent = "OHSA running: collecting side-view samples…";
+                addLog("system", "OHSA front view complete. Collecting side-view samples.");
+              }
+              return;
+            }
+            ohsaSideSamples.push(sample);
+            ohsaSummaryViewEl.textContent = `OHSA side view: ${ohsaSideSamples.length}/${OHSA_TARGET_SAMPLES_PER_VIEW} samples.`;
+            if (ohsaSideSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
+              const summary = summarizeOhsaSamples(ohsaFrontSamples, ohsaSideSamples);
+              lastOhsaSummary = summary;
+              window.lastOhsaSummary = summary;
+              ohsaMode = false;
+              renderOhsaSummary(summary);
+              poseStatusEl.textContent = "OHSA complete.";
+              addLog("system", "OHSA complete. Summary saved.");
+              sendOhsaToNode(summary);
+              stopAuxiliaryPoseLoop();
+            }
+          }
+        });
+      } catch (err) {
+        ohsaMode = false;
+        stopAuxiliaryPoseLoop();
+        const reason = err?.message || String(err || "OHSA failed");
+        poseStatusEl.textContent = `OHSA error: ${reason}`;
+        poseStatusEl.classList.add("status-bad");
+        addLog("system", `OHSA failed: ${reason}`);
+      }
+    }
+
+    async function startDefineExercise() {
+      try {
+        if (!videoEl?.srcObject) throw new Error("connect camera before defining an exercise");
+        if (!detector) await initDetector();
+        if (!detector) throw new Error("movement detector unavailable for exercise definition");
+        if (running) await startWorkout();
+        ohsaMode = false;
+        ohsaPhase = null;
+        ohsaFrontSamples = [];
+        ohsaSideSamples = [];
+        currentExerciseName = (window.prompt?.("Name this exercise", "Custom exercise") || "Custom exercise").trim() || "Custom exercise";
+        definingExercise = true;
+        baselineFrames = [];
+        poseStatusEl.textContent = `Defining ${currentExerciseName}: perform several clean reps.`;
+        addLog("system", `Exercise definition started: ${currentExerciseName}.`);
+        startAuxiliaryPoseLoop({
+          isActive: () => definingExercise,
+          onPoseFrame: ({ pose }) => {
+            const sample = analyzeSquatForm(pose);
+            if (!sample.fullBody) return;
+            baselineFrames.push(sample);
+            poseStatusEl.textContent = `Defining ${currentExerciseName}: ${baselineFrames.length}/${EXERCISE_BASELINE_FRAMES} samples.`;
+            if (baselineFrames.length >= EXERCISE_BASELINE_FRAMES) {
+              const avg = (key) => baselineFrames.reduce((sum, frame) => sum + Number(frame?.[key] || 0), 0) / baselineFrames.length;
+              definedExercises[currentExerciseName] = {
+                depthScoreAvg: Number(avg("depthScore").toFixed(3)),
+                torsoAngleAvg: Number(avg("torsoAngle").toFixed(1)),
+                samples: baselineFrames.length,
+                updatedAt: new Date().toISOString()
+              };
+              try { localStorage.setItem("DEFINED_EXERCISES_V1", JSON.stringify(definedExercises)); } catch (_) {}
+              definingExercise = false;
+              poseStatusEl.textContent = `Exercise definition saved: ${currentExerciseName}.`;
+              addLog("system", `Exercise definition saved: ${currentExerciseName}.`);
+              stopAuxiliaryPoseLoop();
+            }
+          }
+        });
+      } catch (err) {
+        definingExercise = false;
+        stopAuxiliaryPoseLoop();
+        const reason = err?.message || String(err || "exercise definition failed");
+        poseStatusEl.textContent = `Exercise definition error: ${reason}`;
+        poseStatusEl.classList.add("status-bad");
+        addLog("system", `Exercise definition failed: ${reason}`);
+      }
     }
 
     function runPoseLoop() {
