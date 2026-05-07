@@ -936,6 +936,7 @@ CREATE CLICKED: no</pre>
   <script src="/status-panels.js?v=20260505"></script>
   <script src="/workout-runtime.js?v=20260506"></script>
   <script src="/runtime-orchestrator.js?v=20260506"></script>
+  <script src="/retention-loader-runtime.js?v=20260507"></script>
   <script src="/app-hydration-runtime.js?v=20260507"></script>
 
   <script>
@@ -2533,20 +2534,8 @@ CREATE CLICKED: no</pre>
       return value;
     }
 
-    let retentionFlowBootPromise = null;
-    function ensureRetentionFlowLoaded(source = "unknown") {
-      if (window.__retentionFlowLoaded) return Promise.resolve(true);
-      if (retentionFlowBootPromise) return retentionFlowBootPromise;
-      const startedAt = performance.now();
-      retentionFlowBootPromise = window.__loadExternalScript(`/retention-flow.js?v=20260506`).then(() => {
-        window.__retentionFlowLoaded = true;
-        markPerfMetric("progressScanBootMs", Math.round(performance.now() - startedAt));
-        return true;
-      }).catch((error) => {
-        console.warn("[retention-flow] lazy load failed", source, error);
-        return false;
-      });
-      return retentionFlowBootPromise;
+    function ensureRetentionFlowLoaded(source = "unknown", options = {}) {
+      return window.RetentionLoaderRuntime?.ensureLoaded?.(source, options) || Promise.resolve(false);
     }
 
     function persistUser() {
