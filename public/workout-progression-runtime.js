@@ -327,6 +327,91 @@
     return { ...state, restRemainingSec, sessionId };
   }
 
+  function createSessionCallbackGlue(options = {}) {
+    const {
+      refs = {},
+      deps: glueDeps = {}
+    } = options || {};
+    const getRepState = () => glueDeps.getRepState?.() || {};
+    const setRepState = (partial = {}) => glueDeps.setRepState?.(partial);
+    return {
+      progression: {
+        sessionWrite: glueDeps.sessionWrite || global.SessionWrite,
+        getSessionId: glueDeps.getSessionId,
+        trackPilotEvent: glueDeps.trackPilotEvent,
+        onStateChange: (progressState) => {
+          setRepState({
+            repCount: Number(progressState?.repCount || 0),
+            totalReps: Number(progressState?.totalReps || 0)
+          });
+        },
+        onSetStarted: (setNumber) => {
+          glueDeps.getCoachRuntime?.()?.speakSetStarted?.(setNumber);
+        },
+        onExerciseStarted: (exercise) => {
+          glueDeps.getCoachRuntime?.()?.speakExerciseStarted?.(exercise);
+        },
+        onWorkoutCompleted: () => {
+          glueDeps.setRunning?.(false);
+          if (refs.startBtn) refs.startBtn.textContent = 'Start Workout';
+          glueDeps.refreshCameraUiState?.();
+          glueDeps.addLog?.('system', 'Workout complete.');
+          glueDeps.getCoachRuntime?.()?.speakWorkoutCompleted?.();
+          glueDeps.setPersonLayerSuppressed?.(false);
+          glueDeps.setAvatar3dCanvasVisibility?.(false);
+          glueDeps.setLastRenderMode?.('camera');
+          const animId = glueDeps.getAnimId?.();
+          if (animId?.stop) animId.stop();
+          else if (animId) global.cancelAnimationFrame?.(animId);
+        },
+        onCompleteSaveError: () => {
+          glueDeps.addLog?.('system', 'Workout finished locally, but save failed. Check connection, then restart app to retry sync.');
+        },
+        onRetentionSignal: () => {
+          const calendarMeta = glueDeps.getCalendarMeta?.();
+          if (!calendarMeta) return;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const key = today.toISOString().slice(0, 10);
+          calendarMeta.completedDates.add(key);
+          glueDeps.buildCalendarFromMeta?.();
+          glueDeps.persistUser?.();
+        }
+      },
+      repAnalysis: {
+        formEngine: glueDeps.formEngine,
+        getCurrentExerciseMeta: glueDeps.getCurrentExerciseMeta,
+        getCurrentExerciseId: glueDeps.getCurrentExerciseId,
+        onAnalysis: ({ formResult, analysis } = {}) => {
+          glueDeps.syncRepAnalysisState?.(global.RepAnalysisRuntime?.getState?.() || {});
+          const current = getRepState();
+          global.WorkoutProgressionRuntime.handleRepAnalysis({
+            repCount: current.repCount,
+            totalReps: current.totalReps
+          }, formResult || null);
+          glueDeps.renderWorkoutHud?.(formResult || null);
+          if (analysis?.fullBody) glueDeps.setFullBodyAcquired?.(true);
+        },
+        onRepComplete: ({ repCount: nextRepCount, totalReps: nextTotalReps, depthScore, goodForm, formResult } = {}) => {
+          setRepState({
+            repCount: Number(nextRepCount || 0),
+            totalReps: Number(nextTotalReps || 0),
+            lastDepthScore: Number(depthScore || 0),
+            lastGoodForm: Boolean(goodForm)
+          });
+          const current = getRepState();
+          global.WorkoutProgressionRuntime.handleRepComplete({
+            repCount: current.repCount,
+            totalReps: current.totalReps
+          }, formResult || null);
+          glueDeps.sendRepToNode?.(depthScore);
+          const cue = goodForm ? 'Good rep.' : glueDeps.getPrimaryCue?.(formResult);
+          glueDeps.getCoachRuntime?.()?.speakRepFeedback?.(cue, 'rep');
+        }
+      }
+    };
+  }
+
   function configure(nextDeps) {
     deps = { ...deps, ...(nextDeps || {}) };
     publishState();
@@ -358,6 +443,7 @@
     repeatSet: safeCall(repeatSet, 'Repeat set'),
     nextExercise: safeCall(nextExercise, 'Next exercise'),
     completeWorkoutSession: safeCall(completeWorkoutSession, 'Workout completion'),
+    createSessionCallbackGlue,
     getCurrentExerciseMeta,
     getCurrentExerciseId,
     getPlan,

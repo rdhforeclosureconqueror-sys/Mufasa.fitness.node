@@ -190,9 +190,112 @@
     }
   }
 
+  function createSessionCallbackGlue(options = {}) {
+    const { refs = {}, deps: glueDeps = {} } = options || {};
+    const getProgressionRuntime = () => {
+      const runtime = glueDeps.getWorkoutProgressionRuntime?.() || global.WorkoutProgressionRuntime;
+      if (!runtime) throw new Error('WorkoutProgressionRuntime missing');
+      return runtime;
+    };
+    const getPlan = () => glueDeps.getActiveWorkoutPlan?.() || getProgressionRuntime().getPlan?.();
+    const getState = () => glueDeps.getActiveWorkoutState?.() || getProgressionRuntime().getState?.() || {};
+    const getCurrentExerciseMeta = () => glueDeps.getCurrentExerciseMeta?.() || getProgressionRuntime().getCurrentExerciseMeta?.();
+    const getCurrentExerciseId = () => glueDeps.getCurrentExerciseId?.() || getCurrentExerciseMeta()?.exerciseId || 'bodyweight_squat';
+    return {
+      prepareWorkoutStart: async () => {
+        if (glueDeps.isDefiningExercise?.()) {
+          glueDeps.setDefiningExercise?.(false);
+          glueDeps.setBaselineFrames?.([]);
+          glueDeps.setCurrentExerciseName?.(null);
+          glueDeps.addLog?.('system', 'Cancelled exercise definition to start workout.');
+        }
+        if (glueDeps.isOhsaMode?.()) {
+          glueDeps.setOhsaMode?.(false);
+          glueDeps.setOhsaFrontSamples?.([]);
+          glueDeps.setOhsaSideSamples?.([]);
+          glueDeps.addLog?.('system', 'Cancelled OHSA to start workout.');
+        }
+        const preparedState = getProgressionRuntime().prepareWorkoutStart();
+        glueDeps.setRepState?.({ repCount: 0, totalReps: 0, repPhase: 'up' });
+        glueDeps.setFullBodyAcquired?.(false);
+        glueDeps.setStepBackPromptCount?.(0);
+        glueDeps.setUpperBodyReadyPromptShown?.(false);
+        global.RepRuntime?.reset?.({ repCount: 0, totalReps: 0, phase: 'up' });
+        global.RepAnalysisRuntime?.reset?.({ repCount: 0, totalReps: 0, phase: 'up' });
+        console.log('[WORKOUT_LIFECYCLE] prepared workout start', { workoutId: preparedState.activeWorkoutId, programId: preparedState.activeProgramId });
+      },
+      buildSessionPayload: () => {
+        const plan = getPlan();
+        if (!plan?.exercises?.length) throw new Error('selected workout failed to hydrate; choose a workout before starting');
+        const workoutState = getState();
+        console.log('[WORKOUT_PLAN] session payload hydrated', { workoutId: workoutState.activeWorkoutId || null, exercises: plan.exercises.length });
+        return {
+          workoutId: workoutState.activeWorkoutId || null,
+          programId: workoutState.activeProgramId || null,
+          exerciseId: plan.exercises[0]?.exerciseId || null
+        };
+      },
+      createSession: (payload) => {
+        const sessionWrite = glueDeps.sessionWrite || global.SessionWrite;
+        if (!sessionWrite?.startSession) throw new Error('SessionWrite.startSession missing for POST /api/sessions');
+        return sessionWrite.startSession(payload);
+      },
+      onSessionCreated: (sessionRes) => {
+        glueDeps.addLog?.('system', `Session API OK: ${JSON.stringify({ sessionId: sessionRes?.sessionId || sessionRes?.id || null })}`);
+        glueDeps.updateActivationStatusPanel?.('session-created');
+        glueDeps.updateAuthPropagationStatus?.('session-created');
+        global.__appRuntime?.updateFeaturePanel?.('session-created');
+      },
+      onWorkoutStarted: async (createdSessionId) => {
+        const startedState = getProgressionRuntime().startWorkout(createdSessionId);
+        glueDeps.setRunning?.(true);
+        glueDeps.setSessionId?.(createdSessionId);
+        if (refs.startBtn) refs.startBtn.textContent = 'Stop Workout';
+        glueDeps.refreshCameraUiState?.();
+        glueDeps.addLog?.('system', `Workout started: ${getPlan()?.title || 'Session'}. Session: ${createdSessionId}.`);
+        console.log('[WORKOUT_LIFECYCLE] session started', { sessionId: createdSessionId, exerciseId: getCurrentExerciseId() });
+        glueDeps.trackPilotEvent?.('workout_started', {
+          sessionId: createdSessionId,
+          exerciseId: getCurrentExerciseId(),
+          scheduledWorkoutId: startedState.activeWorkoutId,
+          programId: startedState.activeProgramId
+        });
+        await glueDeps.getCoachRuntime?.()?.speakWorkoutIntro?.(getCurrentExerciseMeta());
+        glueDeps.runPoseLoop?.();
+        glueDeps.updateActivationStatusPanel?.('workout-started');
+        glueDeps.updateAuthPropagationStatus?.('workout-started');
+        global.__appRuntime?.updateFeaturePanel?.('workout-started');
+      },
+      onWorkoutStartError: (err) => {
+        const reason = err?.message || String(err || 'unknown_error');
+        glueDeps.addLog?.('system', `Workout start failed: ${reason}`);
+        glueDeps.getCoachRuntime?.()?.setVoiceUnavailable?.(`workout_start_failed: ${reason}`, 'workout-start-error');
+        glueDeps.updateActivationStatusPanel?.('workout-start-error');
+        glueDeps.updateAuthPropagationStatus?.('workout-start-error');
+        global.__appRuntime?.updateFeaturePanel?.('workout-start-error');
+      },
+      onWorkoutStopped: async () => {
+        if (refs.startBtn) refs.startBtn.textContent = 'Start Workout';
+        glueDeps.setRunning?.(false);
+        getProgressionRuntime().pauseWorkout();
+        glueDeps.refreshCameraUiState?.();
+        const animId = glueDeps.getAnimId?.();
+        if (animId?.stop) animId.stop();
+        else if (animId) global.cancelAnimationFrame?.(animId);
+        const ctx = refs.canvasEl?.getContext?.('2d') || refs.ctx;
+        if (ctx && refs.canvasEl) ctx.clearRect(0, 0, refs.canvasEl.width, refs.canvasEl.height);
+        glueDeps.setPersonLayerSuppressed?.(false);
+        glueDeps.setAvatar3dCanvasVisibility?.(false);
+        glueDeps.setLastRenderMode?.('camera');
+        glueDeps.addLog?.('system', 'Workout stopped. Reconnect camera and press Start Workout to resume.');
+        console.log('[WORKOUT_LIFECYCLE] workout stopped', { sessionId: glueDeps.getSessionId?.() });
+      }
+    };
+  }
+
   function configureWorkoutRuntime(nextDeps){ deps = { ...deps, ...(nextDeps || {}) }; }
 
-  global.WorkoutRuntime = { configureWorkoutRuntime, startWorkout, connectCamera, stopCamera, setCameraFullscreen, getState: () => ({ ...state }) };
+  global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, getState: () => ({ ...state }) };
   global.startWorkout = (...args) => global.WorkoutRuntime.startWorkout(...args);
   global.connectCamera = (...args) => global.WorkoutRuntime.connectCamera(...args);
 })(typeof window !== 'undefined' ? window : globalThis);
