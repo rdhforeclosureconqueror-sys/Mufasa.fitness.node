@@ -13,15 +13,25 @@
     lastStatus: "Coach ready",
     lastVoiceError: null,
     lastBackendError: null,
-    lastSource: null
+    lastSource: null,
+    listening: false,
+    lastMicError: null,
+    lastTranscript: "",
+    recognitionSupported: false
   };
 
   let refs = {};
   let deps = {};
   let ttsPlayer = null;
+  let recognition = null;
 
   function log(channel, message, details) {
-    const tag = channel === "voice" ? "[VOICE_RUNTIME]" : channel === "maat" ? "[MAAT_STATUS]" : "[COACH_RUNTIME]";
+    const tag = channel === "voice" ? "[VOICE_RUNTIME]"
+      : channel === "maat" ? "[MAAT_STATUS]"
+        : channel === "recognition" ? "[VOICE_RECOGNITION]"
+          : channel === "mic" ? "[MIC_RUNTIME]"
+            : channel === "command" ? "[COACH_COMMAND]"
+              : "[COACH_RUNTIME]";
     if (details === undefined) console.log(tag, message);
     else console.log(tag, message, details);
   }
@@ -108,9 +118,25 @@
     refs.voiceSelectEl.value = DEFAULT_VOICES[0];
   }
 
+  function getSpeechRecognitionClass() {
+    return global.SpeechRecognition || global.webkitSpeechRecognition || null;
+  }
+
+  function updateListenButton() {
+    if (!refs.listenBtn) return;
+    refs.listenBtn.textContent = state.listening ? "🛑 Voice Off" : "🎙️ Voice On";
+    refs.listenBtn.setAttribute?.("aria-pressed", state.listening ? "true" : "false");
+  }
+
+  function setListeningStatus(text, ok = true) {
+    setVoiceSupport(text, ok);
+    log("mic", "status", { listening: state.listening, status: text, ok });
+  }
+
   function updateVoiceCapabilityStatus() {
     const hasSpeechSynth = "speechSynthesis" in global;
-    const hasSpeechRecognition = Boolean(global.SpeechRecognition || global.webkitSpeechRecognition);
+    const hasSpeechRecognition = Boolean(getSpeechRecognitionClass());
+    state.recognitionSupported = hasSpeechRecognition;
     if (!hasSpeechRecognition && !hasSpeechSynth) {
       setVoiceSupport("This device does not support voice. Text only.", false);
       return;
@@ -259,6 +285,125 @@
     }
   }
 
+  function setMicFailure(reason, source = "mic") {
+    const normalized = normalizeReason(reason);
+    state.lastMicError = normalized;
+    state.listening = false;
+    updateListenButton();
+    setListeningStatus(`Mic error: ${normalized}`, false);
+    setCoachStatus(`Mic error: ${normalized}`, { mode: "bad", chipText: "Ma’at 2.0: mic error", source });
+    deps.addLog?.("system", `STT error: ${normalized}`);
+    log("mic", "failure", { error: normalized, source });
+    return normalized;
+  }
+
+  function dispatchCoachCommand(message, transcript) {
+    const command = String(message || "").trim();
+    if (!command) return false;
+    deps.addLog?.("you", `🎙️ ${transcript}`);
+    stopAllSpeech();
+    log("command", "dispatch", { command, transcript });
+    const dispatcher = deps.dispatchCommand || deps.askCoach || global.askCoach;
+    if (typeof dispatcher !== "function") {
+      deps.addLog?.("system", "Voice command heard, but no coach command handler is available.");
+      log("command", "missing dispatcher", { command });
+      return false;
+    }
+    try {
+      dispatcher(command, { transcript, source: "speech-recognition" });
+      return true;
+    } catch (err) {
+      const reason = normalizeReason(err);
+      deps.addLog?.("system", `Coach command failed: ${reason}`);
+      log("command", "dispatch failed", { error: reason, command });
+      return false;
+    }
+  }
+
+  function handleRecognitionResult(event) {
+    const results = event?.results;
+    const transcript = results?.[results.length - 1]?.[0]?.transcript?.trim?.() || "";
+    if (!transcript || transcript === state.lastTranscript) return;
+    state.lastTranscript = transcript;
+    log("recognition", "transcript", { transcript });
+
+    const lower = transcript.toLowerCase();
+    if (!lower.includes("mufasa") && !lower.includes("coach")) return;
+    const cleaned = lower.replace("hey", "").replace("mufasa", "").replace("coach", "").trim();
+    const message = cleaned || "give me a quick status update on my workout.";
+    dispatchCoachCommand(message, transcript);
+  }
+
+  function ensureRecognition() {
+    if (recognition) return recognition;
+    const SpeechRecognitionClass = getSpeechRecognitionClass();
+    state.recognitionSupported = Boolean(SpeechRecognitionClass);
+    if (!SpeechRecognitionClass) {
+      const reason = "speech_recognition_unsupported";
+      setListeningStatus("Speech recognition not supported in this browser.", false);
+      setCoachStatus("Mic unavailable: speech recognition not supported", { mode: "bad", chipText: "Ma’at 2.0: mic unavailable", source: "speech-recognition" });
+      deps.addLog?.("system", "Speech recognition not supported in this browser.");
+      log("recognition", "unsupported", { reason });
+      return null;
+    }
+
+    recognition = new SpeechRecognitionClass();
+    recognition.lang = deps.recognitionLang || "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = handleRecognitionResult;
+    recognition.onerror = (event) => {
+      const exactError = event?.error || normalizeReason(event);
+      setMicFailure(exactError, "speech-recognition-error");
+    };
+    recognition.onend = () => {
+      log("recognition", "ended", { listening: state.listening });
+      if (!state.listening) return;
+      try {
+        recognition.start();
+        log("recognition", "restarted");
+      } catch (err) {
+        setMicFailure(normalizeReason(err), "speech-recognition-restart");
+      }
+    };
+    log("recognition", "created", { lang: recognition.lang, continuous: recognition.continuous });
+    return recognition;
+  }
+
+  function startListening() {
+    const stt = ensureRecognition();
+    if (!stt) return { ok: false, reason: "speech_recognition_unsupported" };
+    try {
+      state.listening = true;
+      state.lastMicError = null;
+      state.lastTranscript = "";
+      updateListenButton();
+      stt.start();
+      setListeningStatus("Listening for 'Mufasa' or 'Coach'...", true);
+      deps.addLog?.("system", "Listening for 'Mufasa' or 'Coach'...");
+      log("mic", "started");
+      return { ok: true, listening: true };
+    } catch (err) {
+      const reason = setMicFailure(normalizeReason(err), "speech-recognition-start");
+      return { ok: false, reason };
+    }
+  }
+
+  function stopListening() {
+    state.listening = false;
+    updateListenButton();
+    try { recognition?.stop?.(); } catch (err) { log("mic", "stop failed", normalizeReason(err)); }
+    setListeningStatus("Stopped listening.", true);
+    deps.addLog?.("system", "Stopped listening.");
+    log("mic", "stopped");
+    return { ok: true, listening: false };
+  }
+
+  function toggleListening() {
+    log("mic", "toggle requested", { listening: state.listening });
+    return state.listening ? stopListening() : startListening();
+  }
+
   function canSpeakRepFeedback(now = Date.now()) {
     return Boolean(state.repFeedbackAllowed && now - state.lastRepFeedbackAt > GOOD_REP_COOLDOWN_MS);
   }
@@ -284,9 +429,10 @@
     ensureAudioPlayer();
     initVoiceDropdown();
     updateVoiceCapabilityStatus();
+    updateListenButton();
     state.configured = true;
     setReady("configure");
-    log("coach", "configured", { hasVoiceUrl: Boolean(deps.voiceUrl), hasSpeechSynth: "speechSynthesis" in global });
+    log("coach", "configured", { hasVoiceUrl: Boolean(deps.voiceUrl), hasSpeechSynth: "speechSynthesis" in global, hasSpeechRecognition: state.recognitionSupported });
     return snapshot();
   }
 
@@ -321,6 +467,9 @@
     canSpeakRepFeedback,
     unlockAudioOnce,
     stopAllSpeech,
+    toggleListening,
+    startListening,
+    stopListening,
     setMuted,
     toggleMuted,
     setReady,

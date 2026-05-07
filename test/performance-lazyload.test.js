@@ -44,5 +44,20 @@ test("coach voice controls call coach runtime directly", () => {
   assert.doesNotMatch(html, /async function speak\(|async function unlockAudioOnce\(|function stopAllSpeech\(/, "inline coach voice compatibility delegators should be removed");
   assert.match(html, /requireCoachRuntime\(\)\.unlockAudioOnce\(\)/, "listen button should unlock audio through coach runtime directly");
   assert.match(html, /requireCoachRuntime\(\)\.speak\("Voice is on\.", "rep"\)/, "listen button voice prime should use coach runtime directly");
-  assert.match(html, /requireCoachRuntime\(\)\.stopAllSpeech\(\)/, "speech recognition should stop speech through coach runtime directly");
+  assert.match(html, /requireCoachRuntime\(\)\.toggleListening\(\)/, "listen button should delegate mic lifecycle to coach runtime directly");
+  assert.doesNotMatch(html, /new\s+(?:window\.)?(?:SpeechRecognition|webkitSpeechRecognition)\(/, "inline shell must not construct browser speech recognition");
+});
+
+
+test("coach runtime owns browser speech recognition lifecycle", () => {
+  const runtime = read("public/coach-runtime.js");
+  assert.match(runtime, /\[VOICE_RECOGNITION\]/, "voice recognition instrumentation tag should live in coach runtime");
+  assert.match(runtime, /\[MIC_RUNTIME\]/, "mic runtime instrumentation tag should live in coach runtime");
+  assert.match(runtime, /\[COACH_COMMAND\]/, "coach command instrumentation tag should live in coach runtime");
+  assert.match(runtime, /function startListening\(/, "coach runtime should expose mic start lifecycle");
+  assert.match(runtime, /function stopListening\(/, "coach runtime should expose mic stop lifecycle");
+  assert.match(runtime, /function toggleListening\([\s\S]*state\.listening \? stopListening\(\) : startListening\(\)/, "coach runtime should expose the mic toggle lifecycle");
+  assert.match(runtime, /global\.SpeechRecognition \|\| global\.webkitSpeechRecognition/, "coach runtime should own browser speech recognition setup");
+  assert.match(runtime, /recognition\.onresult = handleRecognitionResult/, "coach runtime should own transcript handling");
+  assert.match(runtime, /recognition\.onerror =/, "coach runtime should own mic error handling");
 });

@@ -2728,7 +2728,7 @@ CREATE CLICKED: no</pre>
     };
 
 /* =========================================================
-  SECTION 3/4 — COACH/VOICE DELEGATORS + STT
+  SECTION 3/4 — COACH/VOICE RUNTIME DELEGATORS
 ========================================================== */
 
     function requireCoachRuntime() {
@@ -2737,69 +2737,18 @@ CREATE CLICKED: no</pre>
     }
 
     window.RuntimeOrchestrator.configureCoachRuntime({
-      refs: { brainStatusEl, brainChipTxt, voiceSupportStatusEl, voiceSelectEl, muteBtn },
-      deps: { voiceUrl: AIVOICE_URL, getAuthToken, addLog }
+      refs: { brainStatusEl, brainChipTxt, voiceSupportStatusEl, voiceSelectEl, listenBtn, muteBtn },
+      deps: {
+        voiceUrl: AIVOICE_URL,
+        getAuthToken,
+        addLog,
+        dispatchCommand: (message, context) => {
+          if (typeof window.askCoach === "function") return window.askCoach(message, context);
+          addLog("system", "Voice command heard, but coach chat is not available yet.");
+          return null;
+        }
+      }
     });
-
-
-// ---- STT (Speech Recognition) ----
-let listening = false;
-let recognition = null;
-let lastTranscript = "";
-
-function toggleListening() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    alert("Speech recognition not supported in this browser.");
-    return;
-  }
-
-  if (!recognition) {
-    recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = false;
-
-    recognition.onresult = e => {
-      const transcript = e.results?.[e.results.length - 1]?.[0]?.transcript?.trim() || "";
-      if (!transcript || transcript === lastTranscript) return;
-      lastTranscript = transcript;
-
-      const lower = transcript.toLowerCase();
-      console.log("STT:", transcript);
-
-      if (lower.includes("mufasa") || lower.includes("coach")) {
-        requireCoachRuntime().stopAllSpeech();
-        const cleaned = lower.replace("hey", "").replace("mufasa", "").replace("coach", "").trim();
-        const msg = cleaned || "give me a quick status update on my workout.";
-        addLog("you", "🎙️ " + transcript);
-        askCoach(msg);
-      }
-    };
-
-    recognition.onerror = e => {
-      console.warn("STT error:", e.error);
-      addLog("system", "STT error: " + e.error);
-    };
-
-    recognition.onend = () => {
-      if (listening) {
-        try { recognition.start(); } catch {}
-      }
-    };
-  }
-
-  if (!listening) {
-    listening = true;
-    lastTranscript = "";
-    recognition.start();
-    addLog("system", "Listening for 'Mufasa' or 'Coach'...");
-  } else {
-    listening = false;
-    recognition.stop();
-    addLog("system", "Stopped listening.");
-  }
-}
 
 
     /* =========================================================
@@ -3852,7 +3801,7 @@ function toggleListening() {
   // prime iPhone audio (must happen inside the user tap)
   try { await requireCoachRuntime().speak("Voice is on.", "rep"); } catch (e) { console.warn("prime speak failed", e); }
 
-  toggleListening();
+  requireCoachRuntime().toggleListening();
 };
 
 
