@@ -27,8 +27,8 @@ The inline shell no longer owns direct latest-pose storage, avatar canvas mutati
 
 Measured after this pass with a one-off script that counts lines inside literal `<script>...</script>` blocks in `public/index.html` and approximates inline function/arrow tokens:
 
-- Inline script lines remaining: **3,058**.
-- Approximate inline function/arrow token count remaining: **316**.
+- Inline script lines remaining: **3,231**.
+- Approximate inline function/arrow token count remaining: **334**.
 - Hydration compatibility delegators intentionally remaining inline: **6** (`ensureRetentionFlowLoaded`, `defaultProfileForName`, `onLoginUI`, `buildCalendarFromMeta`, `sendProfileToNode`, `onLogin`).
 - Pose/avatar compatibility delegators intentionally remaining inline: **3** (`setAvatar3dCanvasVisibility`, `resizeAvatarThreeRuntime`, `loadAvatarAssetForCurrentUser`).
 
@@ -44,7 +44,7 @@ Do not expand these sections while continuing the deprecation work; extract them
    - Lower-level GLB probe/mount primitives (`probeAvatarModelRuntime`, `mountAvatarGlbModel`, skeleton bone mapping, scene setup, render-loop creation, render-mode/facing control handlers) remain inline as runtime-callable primitives. Keep them lazy-only and do not reintroduce inline pose packet ownership.
    - Procedural fallback drawing still remains inline for the camera canvas path; AvatarRuntime now owns 3D failure isolation and asset fallback decisions.
 3. **Workout/rep/session glue**
-   - Workout progression configuration, rep analysis bridge, session write callbacks, OHSA state bridges, and retention completion signal remain inline.
+   - Workout progression configuration, rep analysis bridge, session write callbacks, OHSA/progress-scan start and sampling compatibility, exercise-definition sampling, and retention completion signal remain inline.
 4. **Boot/status diagnostics**
    - Boot status mutation, blocking overlay checks, activation/status panels, DOM truth logging, and boot contract diagnostics remain inline.
 5. **Calendar/session compatibility glue**

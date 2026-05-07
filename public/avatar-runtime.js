@@ -289,11 +289,6 @@
     console.log('[AVATAR_RUNTIME] avatar asset/profile pipeline delegated to runtime');
   }
 
-  function getRenderBinding(name, fallback = null) {
-    const value = renderEngineBindings?.[name];
-    return value === undefined ? fallback : value;
-  }
-
   function getRenderConstants() {
     return { ...renderEngineDefaults, ...(renderEngineBindings?.constants || {}) };
   }
