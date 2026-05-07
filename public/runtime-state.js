@@ -77,6 +77,7 @@
       "/runtime-events.js",
       "/runtime-state.js",
       "/runtime-bridges.js",
+      "/auth-state-runtime.js",
       "/diagnostics-client.js",
       "/backend-read.js",
       "/session-write.js",

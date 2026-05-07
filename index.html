@@ -17,6 +17,7 @@
   <script src="/runtime-events.js?v=20260506"></script>
   <script src="/runtime-state.js?v=20260506"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
+  <script src="/auth-state-runtime.js?v=20260506"></script>
   <script src="/boot-core.js?v=20260505a" defer></script>
   <script src="/auth-core.js" defer></script>
   <script>
@@ -1019,9 +1020,8 @@ CREATE CLICKED: no</pre>
     });
     const BUILDER_MODE_FULL_ACCESS = false;
     let DISABLE_LOGIN_FOR_PILOT = false;
-    window.APP_AUTH = window.APP_AUTH && typeof window.APP_AUTH === "object" ? window.APP_AUTH : { isAuthenticated: false, token: null, user: null };
-    window.__AUTH_READY = window.__AUTH_READY === true;
-    window.__authPropagationDebug = window.__authPropagationDebug || { authChangedFired: false, lastAuthEventAt: null, lastAuthError: null };
+    window.AuthStateRuntime?.getCanonicalAuthState?.();
+    window.AuthStateRuntime?.ensureDebugState?.();
     window.pilotSuperAdminActive = false;
     const profileSummaryEl = document.getElementById("profileSummary");
     console.log("[INLINE_SECTION] profile refs");
@@ -2599,19 +2599,7 @@ CREATE CLICKED: no</pre>
       };
     }
 
-    function setCanonicalAuthState({ token = null, user = null } = {}) {
-      const nextState = { isAuthenticated: Boolean(token && user), token: token || null, user: user || null };
-      window.APP_AUTH = nextState;
-      try {
-        if (nextState.token) localStorage.setItem("maatAuthToken", nextState.token);
-        else localStorage.removeItem("maatAuthToken");
-      } catch (_) {}
-      window.__AUTH_READY = Boolean(nextState.isAuthenticated);
-      window.dispatchEvent(new CustomEvent("auth:changed", { detail: window.APP_AUTH }));
-      window.dispatchEvent(new CustomEvent("auth:ready", { detail: window.APP_AUTH }));
-      return window.APP_AUTH;
-    }
-    window.setCanonicalAuthState = setCanonicalAuthState;
+    // Auth state ownership is delegated to /auth-state-runtime.js.
 
     function onLoginUI(profile) {
       if (window.PROFILE_RUNTIME?.renderSignedInProfile) {
@@ -2939,26 +2927,11 @@ CREATE CLICKED: no</pre>
 
     function setPilotBypassAuthState() {
       return;
-      window.APP_AUTH = {
-        isAuthenticated: true,
-        token: null,
-        user: {
-          id: PILOT_BYPASS_USER.id,
-          name: PILOT_BYPASS_USER.name,
-          email: PILOT_BYPASS_USER.email,
-          role: PILOT_BYPASS_USER.role,
-          roles: PILOT_BYPASS_USER.roles,
-          authProvider: PILOT_BYPASS_USER.authProvider
-        }
-      };
-      window.pilotSuperAdminActive = false;
-      BACKEND_READ_CLIENT?.clearAuthToken?.();
     }
 
     function activatePilotBypassImmediate() {
       setPilotBypassAuthState();
       renderAuthShell();
-      window.APP_AUTH.isAuthenticated = true;
       window.pilotSuperAdminActive = false;
       const appShellVisible = !appShellEl?.classList.contains("app-shell-hidden");
       if (!appShellVisible) return "app shell missing";
@@ -2971,21 +2944,17 @@ CREATE CLICKED: no</pre>
     }
 
     async function initializeAuth() {
-      const token = window.APP_AUTH?.token || localStorage.getItem("maatAuthToken");
+      const token = window.APP_AUTH?.token || window.AuthStateRuntime?.getStoredToken?.() || localStorage.getItem("maatAuthToken");
       if (!token) {
-        setCanonicalAuthState({ token: null, user: null });
+        window.AuthStateRuntime?.clearCanonicalAuthState?.("initializeAuth:missing_token");
         if (authOverlayEl) authOverlayEl.style.display = "flex";
         return false;
       }
       try {
-        const res = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
-          headers: { authorization: `Bearer ${token}` }
-        });
-        const payload = await res.json().catch(() => ({}));
-        const user = payload?.user || payload?.data?.user;
-        if (!res.ok || !payload?.ok || !user) throw new Error("invalid_session");
+        const refresh = await window.AuthStateRuntime.refreshAuthStatus({ reason: "initializeAuth", token, visibleErrors: true });
+        const user = refresh?.user;
+        if (!refresh?.ok || !user) throw new Error("invalid_session");
         console.log("[AUTH_LOGIN] /api/auth/me user resolved");
-        setCanonicalAuthState({ token, user });
         console.log("[AUTH_LOGIN] login success");
         await onLogin({
           userId: user.userId || user.id,
@@ -2998,7 +2967,7 @@ CREATE CLICKED: no</pre>
         bindPrimaryButtonsAfterLogin("initializeAuth");
         return true;
       } catch (_error) {
-        setCanonicalAuthState({ token: null, user: null });
+        window.AuthStateRuntime?.clearCanonicalAuthState?.("initializeAuth:invalid_session");
         if (authOverlayEl) authOverlayEl.style.display = "flex";
         return false;
       }
@@ -3055,8 +3024,8 @@ CREATE CLICKED: no</pre>
         const token = loginPayload?.token;
         if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
         updateAuthStepStatus("token received");
-        localStorage.setItem("maatAuthToken", token);
-        updateAuthStepStatus("token stored", "APP_AUTH");
+        // Token persistence and APP_AUTH propagation are owned by auth-state-runtime.
+        updateAuthStepStatus("token received", "auth-state-runtime pending");
         updateAuthStepStatus("GET /api/auth/me", "sending");
         const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
           headers: { authorization: `Bearer ${token}` }
@@ -3067,7 +3036,7 @@ CREATE CLICKED: no</pre>
         updateAuthStepStatus("GET /api/auth/me", "user resolved");
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
         bootStatus.authRestoredValidated = true;
-        setCanonicalAuthState({ token, user });
+        window.setCanonicalAuthState({ token, user }, { reason: "inline_submitAuthRequest" });
         console.log("[AUTH_LOGIN] login success");
         updateAuthStepStatus("onLogin()", "running");
         await onLogin({
@@ -3083,7 +3052,7 @@ CREATE CLICKED: no</pre>
         updateAuthStepStatus("app shell shown", "success");
         if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
       } catch (error) {
-        setCanonicalAuthState({ token: null, user: null });
+        window.AuthStateRuntime?.clearCanonicalAuthState?.("inline_submitAuthRequest_failed");
         updateAuthStepStatus("failed", error?.message || "unknown_error");
         if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
       }
@@ -3213,7 +3182,7 @@ CREATE CLICKED: no</pre>
     }
 
     async function handleLogout() {
-      setCanonicalAuthState({ token: null, user: null });
+      window.AuthStateRuntime?.clearCanonicalAuthState?.("logout", { forceDispatch: true, clearLastUser: true });
       window.location.reload();
     }
 
