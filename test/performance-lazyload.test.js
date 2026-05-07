@@ -61,3 +61,18 @@ test("coach runtime owns browser speech recognition lifecycle", () => {
   assert.match(runtime, /recognition\.onresult = handleRecognitionResult/, "coach runtime should own transcript handling");
   assert.match(runtime, /recognition\.onerror =/, "coach runtime should own mic error handling");
 });
+
+
+test("remaining inline dangerous sections are explicitly marked", () => {
+  const html = read("public/index.html");
+  for (const marker of [
+    "[INLINE_REMAINING] auth/profile shell",
+    "[INLINE_REMAINING] boot diagnostics",
+    "[INLINE_REMAINING] hydration ordering",
+    "[INLINE_REMAINING] workout/OHSA glue",
+    "[INLINE_REMAINING] pose/camera loop",
+    "[INLINE_REMAINING] avatar render pipeline"
+  ]) {
+    assert.match(html, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${marker} should remain visible in the inline shell`);
+  }
+});
