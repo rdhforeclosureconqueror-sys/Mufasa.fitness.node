@@ -2711,31 +2711,6 @@ CREATE CLICKED: no</pre>
       }
     }
 
-    function submitAuthRequest() {
-      console.log("[AUTH_SUBMIT] inline delegator invoked");
-      return window.AuthCore?.submitAuthRequest?.();
-    }
-
-    async function handleLoginSubmit(event) {
-      console.log("[AUTH_SUBMIT] inline submit delegator invoked");
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      return window.AuthCore?.handleLoginSubmit?.(event) || submitAuthRequest();
-    }
-
-    window.handleLoginButtonClick = async function handleLoginButtonClick(event) {
-      console.log("[AUTH_SUBMIT] inline button delegator invoked");
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      return window.AuthCore?.handleLoginButtonClick?.(event) || submitAuthRequest();
-    };
-
-    window.handleCreateAccountToggle = function handleCreateAccountToggle(event) {
-      console.log("[AUTH_REGISTER] inline toggle delegator invoked");
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      return window.AuthCore?.handleCreateAccountToggle?.(event);
-    };
 
     async function onLogin(profile) {
       return window.AppHydrationRuntime?.handleLoginProfile?.(profile);
@@ -2753,7 +2728,7 @@ CREATE CLICKED: no</pre>
     };
 
 /* =========================================================
-  SECTION 3/4 — COACH/VOICE DELEGATORS + STT
+  SECTION 3/4 — COACH/VOICE RUNTIME + STT
 ========================================================== */
 
     function requireCoachRuntime() {
@@ -2766,17 +2741,6 @@ CREATE CLICKED: no</pre>
       deps: { voiceUrl: AIVOICE_URL, getAuthToken, addLog }
     });
 
-    async function speak(text, source = "system") {
-      return requireCoachRuntime().speak(text, source);
-    }
-
-    async function unlockAudioOnce() {
-      return requireCoachRuntime().unlockAudioOnce();
-    }
-
-    function stopAllSpeech() {
-      return requireCoachRuntime().stopAllSpeech();
-    }
 
 // ---- STT (Speech Recognition) ----
 let listening = false;
@@ -2805,7 +2769,7 @@ function toggleListening() {
       console.log("STT:", transcript);
 
       if (lower.includes("mufasa") || lower.includes("coach")) {
-        stopAllSpeech();
+        requireCoachRuntime().stopAllSpeech();
         const cleaned = lower.replace("hey", "").replace("mufasa", "").replace("coach", "").trim();
         const msg = cleaned || "give me a quick status update on my workout.";
         addLog("you", "🎙️ " + transcript);
@@ -3883,10 +3847,10 @@ function toggleListening() {
     };
 
   listenBtn.onclick = async () => {
-  try { await unlockAudioOnce(); } catch (e) { console.warn("unlockAudioOnce failed", e); }
+  try { await requireCoachRuntime().unlockAudioOnce(); } catch (e) { console.warn("unlockAudioOnce failed", e); }
 
   // prime iPhone audio (must happen inside the user tap)
-  try { await speak("Voice is on.", "rep"); } catch (e) { console.warn("prime speak failed", e); }
+  try { await requireCoachRuntime().speak("Voice is on.", "rep"); } catch (e) { console.warn("prime speak failed", e); }
 
   toggleListening();
 };
