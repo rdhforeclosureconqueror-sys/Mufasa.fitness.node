@@ -97,6 +97,7 @@
 
   global.PROFILE_RUNTIME = {
     renderSignedInProfile,
+    setProfileSummary,
     hydrateProfileFromBackend
   };
 })(window);

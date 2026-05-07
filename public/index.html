@@ -2554,127 +2554,22 @@ CREATE CLICKED: no</pre>
     }
 
     function defaultProfileForName(name) {
-      const lower = (name || "").toLowerCase();
-      if (lower === "rashad" || lower === "rashad harbor") {
-        return {
-          name: "Rashad",
-          age: 38,
-          weight_lbs: 150,
-          height: "5'5\"",
-          injuries: ["3 herniated discs (lumbar)"],
-          history: { chiropractic_months: 12, yoga_years: 2 },
-          goals: {
-            primary: "Gain 20 lb of muscle in ~3 months",
-            style: "Home workouts only + heavy yoga",
-            frequency_days_per_week: 4,
-            focus: "Muscle gain + back decompression / pain-free movement"
-          }
-        };
-      }
-      return {
+      return window.AppHydrationRuntime?.defaultProfileForName?.(name) || {
         name: name || "Athlete",
-        age: null,
-        weight_lbs: null,
-        height: null,
+        goals: { primary: "Build strength and mobility", frequency_days_per_week: 3 },
         injuries: [],
-        history: {},
-        goals: {
-          primary: "Build full-body strength and mobility",
-          style: "Home workouts + yoga focus",
-          frequency_days_per_week: 3,
-          focus: "Consistent training and recovery"
-        }
+        history: {}
       };
     }
 
     // Auth state ownership is delegated to /auth-state-runtime.js.
 
     function onLoginUI(profile) {
-      if (window.PROFILE_RUNTIME?.renderSignedInProfile) {
-        window.PROFILE_RUNTIME.renderSignedInProfile(profile);
-      }
-      markPerfMetric("loginReadyMs", Math.round(performance.now()));
+      return window.AppHydrationRuntime?.renderProfileShell?.(profile);
     }
 
     function buildCalendarFromMeta() {
-      if (!calendarMeta) {
-        calendarViewEl.textContent = "No calendar yet. Run an assessment to generate a plan.";
-        return;
-      }
-
-      const meta = calendarMeta;
-      const startDate = new Date(meta.startDateISO);
-      startDate.setHours(0,0,0,0);
-
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const todayKey = today.toISOString().slice(0,10);
-
-      // Build workout day set for next meta.weeks weeks
-      const workoutDates = new Set();
-      let d = new Date(startDate);
-      for (let w = 0; w < meta.weeks; w++) {
-        for (let day = 0; day < 7; day++) {
-          if (day < meta.daysPerWeek) {
-            workoutDates.add(d.toISOString().slice(0,10));
-          }
-          d.setDate(d.getDate() + 1);
-        }
-      }
-
-      const completed = meta.completedDates || new Set();
-
-      const baseMonth = today.getMonth();
-      const baseYear = today.getFullYear();
-
-      const firstOfMonth = new Date(baseYear, baseMonth, 1);
-      const startWeekday = firstOfMonth.getDay(); // 0=Sun
-      const daysInMonth = new Date(baseYear, baseMonth + 1, 0).getDate();
-      const monthName = firstOfMonth.toLocaleString("default", { month: "long" });
-
-      const header = document.createElement("div");
-      header.className = "cal-header";
-      header.textContent = monthName + " " + baseYear;
-
-      const grid = document.createElement("div");
-      grid.className = "cal-grid";
-
-      const dayLabels = ["S","M","T","W","T","F","S"];
-      for (const label of dayLabels) {
-        const dl = document.createElement("div");
-        dl.className = "cal-day-label";
-        dl.textContent = label;
-        grid.appendChild(dl);
-      }
-
-      for (let i = 0; i < startWeekday; i++) {
-        const cell = document.createElement("div");
-        cell.className = "cal-cell cal-empty";
-        grid.appendChild(cell);
-      }
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const cell = document.createElement("div");
-        cell.className = "cal-cell";
-        const dateObj = new Date(baseYear, baseMonth, day);
-        dateObj.setHours(0,0,0,0);
-        const key = dateObj.toISOString().slice(0,10);
-
-        const span = document.createElement("div");
-        span.className = "cal-date";
-        span.textContent = day;
-        cell.appendChild(span);
-
-        if (key === todayKey) cell.classList.add("cal-today");
-        if (workoutDates.has(key)) cell.classList.add("cal-workout");
-        if (completed.has(key)) cell.classList.add("cal-done");
-
-        grid.appendChild(cell);
-      }
-
-      calendarViewEl.innerHTML = "";
-      calendarViewEl.appendChild(header);
-      calendarViewEl.appendChild(grid);
+      return window.AppHydrationRuntime?.buildCalendarFromMeta?.();
     }
 
     function sendToNode(payload) {
@@ -2925,52 +2820,7 @@ CREATE CLICKED: no</pre>
     };
 
     async function onLogin(profile) {
-      USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
-
-      USER_PROFILE = {
-        name: profile.name || profile.email || "Athlete",
-        authProvider: profile.authProvider || "password",
-        email: profile.email || null,
-        picture: profile.picture || null,
-        age: profile.age || profile.ageYears || null,
-        weight_lbs: profile.weight_lbs || null,
-        height: profile.height || null,
-        injuries: profile.injuries || [],
-        history: profile.history || {},
-        goals: profile.goals || defaultProfileForName(profile.name).goals
-      };
-
-      if (!USER_PROFILE.injuries) USER_PROFILE.injuries = [];
-      if (!USER_PROFILE.history) USER_PROFILE.history = {};
-      if (!USER_PROFILE.goals) USER_PROFILE.goals = defaultProfileForName(profile.name).goals;
-
-      if (!calendarMeta) {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        calendarMeta = {
-          startDateISO: today.toISOString().slice(0,10),
-          weeks: 12,
-          daysPerWeek: USER_PROFILE.goals.frequency_days_per_week || 4,
-          completedDates: new Set()
-        };
-      }
-
-      onLoginUI(USER_PROFILE);
-      queueMicrotask(() => {
-        loadAvatarAssetForCurrentUser("login_profile").catch((error) => {
-          console.warn("[avatar-load] deferred login avatar load failed", error);
-        });
-      });
-
-      bindPrimaryButtonsAfterLogin("onLogin");
-      markPerfMetric("dashboardReadyMs", Math.round(performance.now()));
-      bootStatus.appRuntimeStarted = true;
-      bootStatus.featureGatesEnabled = isBootContractReady() || bootStatus.lastBootError !== "none";
-      bindPrimaryButtonsAfterLogin("onLogin");
-      renderSystemBootStatus("onLogin");
-
-      persistUser();
-      await window.AppHydrationRuntime?.runPostAuthHydration?.({ reason: "onLogin", profileWrite: true });
+      return window.AppHydrationRuntime?.handleLoginProfile?.(profile);
     }
 
     async function handleLogout() {
@@ -4417,10 +4267,30 @@ function toggleListening() {
     window.AppHydrationRuntime?.configure({
       ensureRetentionFlowLoaded,
       sendProfileToNode: (options) => window.ProfileWriteRuntime?.saveProfileToNode?.({ source: "app-hydration", ...(options || {}) }),
-      buildCalendarFromMeta,
+      calendarViewEl,
+      backendReadClient: BACKEND_READ_CLIENT,
+      getProfile: () => USER_PROFILE,
+      setProfile: (profile) => { USER_PROFILE = profile; window.USER_PROFILE = profile; return USER_PROFILE; },
+      getUserId: () => USER_ID,
+      setUserId: (userId) => { USER_ID = userId; window.USER_ID = userId; return USER_ID; },
+      getCalendarMeta: () => calendarMeta,
+      setCalendarMeta: (meta) => { calendarMeta = meta; return calendarMeta; },
+      toSafeUserId,
+      markPerfMetric,
+      bindPrimaryButtonsAfterLogin,
+      renderSystemBootStatus,
+      persistUser,
+      loadAvatarAssetForCurrentUser,
+      addLog,
+      updateAuthDebug,
       updateSyncStatus,
       updateAppBootStatus,
       getActiveBlockingOverlay,
+      markBootRuntimeStarted: () => {
+        bootStatus.appRuntimeStarted = true;
+        bootStatus.featureGatesEnabled = isBootContractReady() || bootStatus.lastBootError !== "none";
+      },
+      setBackendTruthProfileRead: (next) => { backendTruthState.profileRead = next; },
       getHandlerChecks: () => ({
         dashboard: typeof dashboardBtn?.onclick === "function",
         camera: typeof connectBtn?.onclick === "function",
