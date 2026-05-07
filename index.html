@@ -930,6 +930,7 @@ CREATE CLICKED: no</pre>
   <script src="/dashboard-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260506"></script>
   <script src="/avatar-runtime.js?v=20260506a"></script>
+  <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
   <script src="/status-panels.js?v=20260505"></script>
@@ -2805,65 +2806,8 @@ CREATE CLICKED: no</pre>
       else syncStatusEl.classList.add("status-ok");
     }
 
-    function parseHeightCm(heightValue) {
-      if (heightValue == null) return null;
-      if (typeof heightValue === "number" && Number.isFinite(heightValue)) return heightValue;
-      const str = String(heightValue).trim().toLowerCase();
-      if (!str) return null;
-      const cmMatch = str.match(/^(\d+(?:\.\d+)?)\s*cm$/);
-      if (cmMatch) return Number(cmMatch[1]);
-      return null;
-    }
-
-    function parseNullableNumber(value) {
-      if (value == null || value === "") return null;
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
-    }
-
-    async function saveProfileWritePath() {
-      if (!USER_PROFILE) return;
-      const profilePayload = {
-        age: parseNullableNumber(USER_PROFILE.age),
-        height_cm: parseHeightCm(USER_PROFILE.height),
-        weight_kg: parseNullableNumber(USER_PROFILE.weight_lbs) ? Number((Number(USER_PROFILE.weight_lbs) / 2.20462).toFixed(2)) : null,
-        goals: USER_PROFILE.goals ? {
-          primary_goal: USER_PROFILE.goals.primary || null,
-          frequency_days_per_week: parseNullableNumber(USER_PROFILE.goals.frequency_days_per_week),
-          notes: USER_PROFILE.goals.focus || null
-        } : null,
-        injuries: Array.isArray(USER_PROFILE.injuries) ? USER_PROFILE.injuries : [],
-        notes: USER_PROFILE.notes || null,
-        avatar: normalizeAvatarProfile(USER_PROFILE.avatar)
-      };
-
-      try {
-        await postAuthenticatedJSON(NODE_PROFILE_URL, { method: "PUT", body: { profile: profilePayload } });
-        SESSION_WRITE_CLIENT?.trackExplicitSuccess?.("profile");
-        addLog("system", "Profile synced to authenticated backend API.");
-        updateSyncStatus();
-        return;
-      } catch (err) {
-        SESSION_WRITE_CLIENT?.trackFallback?.("profile", err);
-        if (isAuthUnavailable(err)) {
-          console.warn("Profile write auth unavailable; using legacy fallback.", err);
-        } else {
-          console.warn("Profile write failed on authenticated API; using legacy fallback.", err);
-        }
-      }
-
-      await sendToNode({
-        domain: "fitness",
-        command: "fitness.saveProfile",
-        userId: USER_ID,
-        payload: { profile: USER_PROFILE, _fallbackReason: "profile_api_unavailable", ts: Date.now() }
-      });
-      addLog("system", "Profile saved via legacy compatibility path.");
-      updateSyncStatus();
-    }
-
-    async function sendProfileToNode() {
-      await saveProfileWritePath();
+    async function sendProfileToNode(options = {}) {
+      return window.ProfileWriteRuntime?.saveProfileToNode?.({ source: "inline-compat", ...options });
     }
 
     function getAuthToken() {
@@ -4256,121 +4200,7 @@ function toggleListening() {
       }
     }
 
-    async function saveAvatarFromInputs() {
-      if (!USER_PROFILE) {
-        avatarCreationStatusEl.textContent = "Sign in first.";
-        return;
-      }
-      const nextAvatar = normalizeAvatarProfile({
-        avatarProvider: AVATAR_PROVIDER_DEFAULT,
-        avatarModelUrl: avatarModelUrlInput.value,
-        avatarThumbnailUrl: avatarThumbUrlInput.value,
-        avatarUpdatedAt: Date.now()
-      });
-      if (!nextAvatar) {
-        avatarCreationStatusEl.textContent = "Avatar model URL is invalid.";
-        setAvatarRuntimeStatus("Invalid avatar URL (http/https or same-origin path required).", true);
-        return;
-      }
-      USER_PROFILE.avatar = nextAvatar;
-      await loadAvatarAssetForCurrentUser("creator_flow");
-      persistUser();
-      try {
-        await sendProfileToNode();
-        avatarCreationStatusEl.textContent = "Avatar saved to your profile.";
-      } catch (err) {
-        console.warn("avatar profile save failed", err);
-        avatarCreationStatusEl.textContent = "Saved locally. Backend sync failed.";
-      }
-    }
-
-    async function uploadAvatarFile() {
-      console.info("[avatar-upload] upload button clicked");
-      const uploadTimeoutMs = 30000;
-      trackPilotEvent("avatar_upload_started");
-      try {
-        if (!USER_PROFILE) {
-          avatarCreationStatusEl.textContent = "Sign in first.";
-          return;
-        }
-        const selectedFile = avatarFileInput?.files?.[0];
-        console.info("[avatar-upload] selected file", selectedFile ? {
-          name: selectedFile.name,
-          size: selectedFile.size,
-          type: selectedFile.type
-        } : null);
-        if (!selectedFile) {
-          avatarCreationStatusEl.textContent = "Choose a .glb file first.";
-          return;
-        }
-        if (!/\.glb$/i.test(selectedFile.name)) {
-          avatarCreationStatusEl.textContent = "Only .glb files are supported.";
-          return;
-        }
-
-        avatarCreationStatusEl.textContent = "Uploading avatar file…";
-        setAvatarAssetStatus("Uploading avatar asset to server…");
-        const authToken = getAuthToken();
-        if (!authToken) throw new Error("missing_auth_token");
-
-        const form = new FormData();
-        form.append("avatar", selectedFile);
-        const uploadUrl = `${NODE_BASE_URL}/api/avatar/upload`;
-        console.info("[avatar-upload] request starting", { method: "POST", url: uploadUrl, field: "avatar" });
-        const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
-        const timeoutHandle = abortController
-          ? setTimeout(() => abortController.abort("avatar_upload_timeout"), uploadTimeoutMs)
-          : null;
-
-        let response;
-        try {
-          response = await fetch(uploadUrl, {
-            method: "POST",
-            headers: { authorization: `Bearer ${authToken}` },
-            body: form,
-            ...(abortController ? { signal: abortController.signal } : {})
-          });
-        } finally {
-          if (timeoutHandle) clearTimeout(timeoutHandle);
-        }
-        const payload = await response.json().catch(() => null);
-        console.info("[avatar-upload] response", { status: response.status, ok: response.ok, payload });
-        if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
-          throw new Error(payload?.error?.message || `upload_failed_${response.status}`);
-        }
-
-        const avatarModelUrl = payload.data.avatarModelUrl;
-        console.info("[avatar-upload] avatarModelUrl returned", avatarModelUrl);
-        avatarModelUrlInput.value = avatarModelUrl;
-        console.info("[avatar-upload] url field populated", avatarModelUrlInput.value);
-        setAvatarAssetStatus(`Upload success. Asset stored at ${avatarModelUrl}.`);
-        avatarCreationStatusEl.textContent = "Upload complete. Saving avatar metadata…";
-
-        USER_PROFILE.avatar = normalizeAvatarProfile({
-          avatarProvider: AVATAR_PROVIDER_DEFAULT,
-          avatarModelUrl,
-          avatarThumbnailUrl: avatarThumbUrlInput.value,
-          avatarUpdatedAt: Date.now()
-        });
-        await loadAvatarAssetForCurrentUser("uploaded_file");
-        persistUser();
-        await sendProfileToNode();
-        avatarCreationStatusEl.textContent = "Upload success. Avatar saved and synced to profile.";
-        trackPilotEvent("avatar_upload_success", { size: selectedFile?.size || 0 });
-      } catch (err) {
-        console.warn("avatar upload failed", err);
-        setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
-        const msg = String(err?.message || "");
-        if (msg === "missing_auth_token" || msg.includes("Authentication required") || msg.includes("Trust mode")) {
-          avatarCreationStatusEl.textContent = "Upload blocked: backend auth bridge unavailable (missing token).";
-        } else if (msg === "avatar_upload_timeout" || msg.includes("AbortError")) {
-          avatarCreationStatusEl.textContent = "Upload timed out after 30s. Check connection or file size and retry.";
-        } else {
-          avatarCreationStatusEl.textContent = "Upload failed. Use a valid .glb export and try again.";
-        }
-        trackPilotEvent("avatar_upload_failed", { reason: msg || err?.name || "unknown" });
-      }
-    }
+    // Profile/avatar write flows are delegated to /profile-write-runtime.js.
 
     function getPoseConfidenceSnapshot(points = []) {
       const score = (idx) => Number(points?.[idx]?.score || 0);
@@ -4696,9 +4526,37 @@ function toggleListening() {
       bootStatus,
       getActiveBlockingOverlay
     });
+    window.ProfileWriteRuntime?.configure({
+      refs: {
+        avatarFileInput, avatarModelUrlInput, avatarThumbUrlInput, avatarCreationStatusEl,
+        avatarRuntimeStatusEl, avatarAssetStatusEl
+      },
+      endpoints: { nodeBaseUrl: NODE_BASE_URL, nodeProfileUrl: NODE_PROFILE_URL },
+      deps: {
+        getProfile: () => USER_PROFILE,
+        setProfile: (profile) => { USER_PROFILE = profile; return USER_PROFILE; },
+        getUserId: () => USER_ID,
+        getAuthToken,
+        postAuthenticatedJSON,
+        sendToNode,
+        isAuthUnavailable,
+        sessionWriteClient: SESSION_WRITE_CLIENT,
+        addLog,
+        updateSyncStatus,
+        persistUser,
+        trackPilotEvent,
+        loadAvatarAssetForCurrentUser,
+        setAvatarAssetStatus,
+        setAvatarRuntimeStatus,
+        normalizeAvatarProfile,
+        avatarProviderDefault: AVATAR_PROVIDER_DEFAULT,
+        nodeBaseUrl: NODE_BASE_URL,
+        nodeProfileUrl: NODE_PROFILE_URL
+      }
+    });
     window.AppHydrationRuntime?.configure({
       ensureRetentionFlowLoaded,
-      sendProfileToNode,
+      sendProfileToNode: (options) => window.ProfileWriteRuntime?.saveProfileToNode?.({ source: "app-hydration", ...(options || {}) }),
       buildCalendarFromMeta,
       updateSyncStatus,
       updateAppBootStatus,
@@ -4760,16 +4618,9 @@ function toggleListening() {
       deps: {
         getProfile: () => USER_PROFILE,
         initialize: initializeAvatarRuntimeBootstrap,
-        saveFromInputs: saveAvatarFromInputs,
-        uploadFile: uploadAvatarFile,
-        clearAvatar: async () => {
-          if (!USER_PROFILE) return;
-          USER_PROFILE.avatar = null;
-          await loadAvatarAssetForCurrentUser("removed");
-          persistUser();
-          await sendProfileToNode();
-          avatarCreationStatusEl.textContent = "Saved avatar removed.";
-        }
+        saveFromInputs: () => window.ProfileWriteRuntime?.saveAvatarFromInputs?.(),
+        uploadFile: () => window.ProfileWriteRuntime?.uploadAvatarFile?.(),
+        clearAvatar: () => window.ProfileWriteRuntime?.clearAvatarMetadata?.()
       },
       messageHandler: (event) => {
         const payload = event?.data;
