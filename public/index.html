@@ -923,6 +923,7 @@ CREATE CLICKED: no</pre>
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/pose-runtime.js?v=20260506"></script>
+  <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
   <script src="/hud-runtime.js?v=20260506"></script>
@@ -1322,21 +1323,6 @@ CREATE CLICKED: no</pre>
 
     const STEP_BACK_COOLDOWN = 4000;
 
-    // ---- New Exercise definition ----
-    let definingExercise = false;
-    let definedExercises = {};        // { name: { depthScoreAvg, torsoAngleAvg, samples } }
-    let currentExerciseName = null;
-    const EXERCISE_BASELINE_FRAMES = 80;
-    let baselineFrames = [];
-
-
-    // ---- Overhead Squat Assessment ----
-    let ohsaMode = false;
-    let ohsaPhase = null;             // "front" or "side"
-    let ohsaFrontSamples = [];
-    let ohsaSideSamples = [];
-    const OHSA_TARGET_SAMPLES_PER_VIEW = 40;
-    let lastOhsaSummary = null;
 
     // ---- AI-generated program ----
     let aiProgramToday = null;
@@ -3107,28 +3093,6 @@ function toggleListening() {
 
     configureExtractedWorkoutRuntimes();
 
-    function sendOhsaToNode(summary) {
-      postAuthenticatedJSON(NODE_OHSA_URL, {
-        method: "POST",
-        body: { summary, source: "frontend" }
-      }).then(() => {
-        SESSION_WRITE_CLIENT?.trackExplicitSuccess?.("ohsa");
-      }).catch((err) => {
-        SESSION_WRITE_CLIENT?.trackFallback?.("ohsa", err);
-        if (!isAuthUnavailable(err)) {
-          console.warn("OHSA authenticated API failed; falling back to /command.", err);
-        }
-        return sendToNode({
-          domain: "fitness",
-          command: "fitness.ohsaResult",
-          userId: USER_ID,
-          payload: { summary, _fallbackReason: "ohsa_api_unavailable", ts: Date.now() }
-        });
-      }).finally(() => {
-        updateSyncStatus();
-      });
-    }
-
     // Brain health ping
     (async () => {
       try {
@@ -3241,6 +3205,26 @@ function toggleListening() {
       return window.WorkoutRuntime.connectCamera();
     }
 
+    window.AssessmentRuntime?.configure?.({
+      refs: { videoEl, poseStatusEl, ohsaSummaryViewEl },
+      getVideo: () => videoEl,
+      getDetector: () => detector,
+      initDetector,
+      isRunning: () => running,
+      startWorkout,
+      analyzeSquatForm,
+      addLog,
+      markPerfMetric,
+      nodeOhsaUrl: NODE_OHSA_URL,
+      postAuthenticatedJSON,
+      sessionWriteClient: SESSION_WRITE_CLIENT,
+      isAuthUnavailable,
+      sendToNode,
+      userId: USER_ID,
+      updateSyncStatus
+    });
+    console.log("[ASSESSMENT_RUNTIME] extracted runtime configured");
+
 
     window.AvatarRuntime?.configureRenderEngine?.({
       constants: {
@@ -3335,176 +3319,17 @@ function toggleListening() {
     }
 
 
-    function stopAuxiliaryPoseLoop() {
-      if (animId?.stop) animId.stop();
-      else if (animId) cancelAnimationFrame(animId);
-      animId = null;
-    }
-
-    function startAuxiliaryPoseLoop({ isActive, onPoseFrame, onError } = {}) {
-      if (!window.PoseRuntime?.startPoseLoop) throw new Error("PoseRuntime.startPoseLoop missing");
-      stopAuxiliaryPoseLoop();
-      const loop = window.PoseRuntime.startPoseLoop({
-        detector,
-        video: videoEl,
-        isRunning: () => Boolean(isActive?.()),
-        onPoseFrame,
-        onError: (err) => {
-          const reason = err?.message || String(err || "pose_loop_error");
-          poseStatusEl.textContent = `Pose loop error: ${reason}`;
-          poseStatusEl.classList.add("status-bad");
-          onError?.(err);
-        }
-      });
-      animId = { stop: loop.stop };
-      return loop;
-    }
-
-    function summarizeOhsaSamples(frontSamples = [], sideSamples = []) {
-      const avg = (items, key) => {
-        const values = items.map((item) => Number(item?.[key])).filter(Number.isFinite);
-        return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-      };
-      const frontKneeValgus = avg(frontSamples, "kneeValgus");
-      const sideDepthScore = avg(sideSamples, "depthScore") || avg(frontSamples, "depthScore");
-      const sideTorsoAngle = avg(sideSamples, "torsoAngle") || avg(frontSamples, "torsoAngle");
-      const findings = [];
-      if (frontKneeValgus > 0.18) findings.push("Possible knee valgus / knees moving inward");
-      if (sideTorsoAngle && sideTorsoAngle < 58) findings.push("Forward torso lean observed");
-      if (sideDepthScore && sideDepthScore < 0.45) findings.push("Limited squat depth observed");
-      if (!findings.length) findings.push("No major OHSA movement limitation detected from this scan");
-      return {
-        createdAt: new Date().toISOString(),
-        frontSamples: frontSamples.length,
-        sideSamples: sideSamples.length,
-        metrics: {
-          kneeValgus: Number(frontKneeValgus.toFixed(3)),
-          depthScore: Number(sideDepthScore.toFixed(3)),
-          torsoAngle: Number(sideTorsoAngle.toFixed(1))
-        },
-        findings
-      };
-    }
-
-    function renderOhsaSummary(summary) {
-      if (!ohsaSummaryViewEl || !summary) return;
-      ohsaSummaryViewEl.textContent = [
-        "Overhead Squat Assessment complete.",
-        `Samples: front ${summary.frontSamples}, side ${summary.sideSamples}`,
-        `Depth: ${summary.metrics.depthScore}, torso angle: ${summary.metrics.torsoAngle}°, knee valgus: ${summary.metrics.kneeValgus}`,
-        "Findings:",
-        ...summary.findings.map((finding) => `- ${finding}`)
-      ].join("\n");
-    }
-
     async function startOhsa() {
-      const progressScanStartedAt = performance.now();
+      console.log("[OHSA_RUNTIME] inline startOhsa delegator invoked");
       markPerfMetric("progressScanBootMs", 0);
-      try {
-        if (!videoEl?.srcObject) throw new Error("connect camera before starting OHSA");
-        if (!detector) await initDetector();
-        if (!detector) throw new Error("movement detector unavailable for OHSA");
-        if (running) await startWorkout();
-        definingExercise = false;
-        baselineFrames = [];
-        currentExerciseName = null;
-        ohsaMode = true;
-        ohsaPhase = "front";
-        ohsaFrontSamples = [];
-        ohsaSideSamples = [];
-        lastOhsaSummary = null;
-        window.lastOhsaSummary = null;
-        poseStatusEl.textContent = "OHSA running: front view. Face the camera and perform slow overhead squats.";
-        ohsaSummaryViewEl.textContent = "OHSA running: collecting front-view samples…";
-        addLog("system", "OHSA started. Collecting front-view samples.");
-        markPerfMetric("progressScanBootMs", Math.round(performance.now() - progressScanStartedAt));
-        startAuxiliaryPoseLoop({
-          isActive: () => ohsaMode,
-          onPoseFrame: ({ pose }) => {
-            const sample = analyzeSquatForm(pose);
-            if (!sample.fullBody) return;
-            if (ohsaPhase === "front") {
-              ohsaFrontSamples.push(sample);
-              ohsaSummaryViewEl.textContent = `OHSA front view: ${ohsaFrontSamples.length}/${OHSA_TARGET_SAMPLES_PER_VIEW} samples.`;
-              if (ohsaFrontSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
-                ohsaPhase = "side";
-                poseStatusEl.textContent = "OHSA running: side view. Turn sideways and continue slow overhead squats.";
-                ohsaSummaryViewEl.textContent = "OHSA running: collecting side-view samples…";
-                addLog("system", "OHSA front view complete. Collecting side-view samples.");
-              }
-              return;
-            }
-            ohsaSideSamples.push(sample);
-            ohsaSummaryViewEl.textContent = `OHSA side view: ${ohsaSideSamples.length}/${OHSA_TARGET_SAMPLES_PER_VIEW} samples.`;
-            if (ohsaSideSamples.length >= OHSA_TARGET_SAMPLES_PER_VIEW) {
-              const summary = summarizeOhsaSamples(ohsaFrontSamples, ohsaSideSamples);
-              lastOhsaSummary = summary;
-              window.lastOhsaSummary = summary;
-              ohsaMode = false;
-              renderOhsaSummary(summary);
-              poseStatusEl.textContent = "OHSA complete.";
-              addLog("system", "OHSA complete. Summary saved.");
-              sendOhsaToNode(summary);
-              stopAuxiliaryPoseLoop();
-            }
-          }
-        });
-      } catch (err) {
-        ohsaMode = false;
-        stopAuxiliaryPoseLoop();
-        const reason = err?.message || String(err || "OHSA failed");
-        poseStatusEl.textContent = `OHSA error: ${reason}`;
-        poseStatusEl.classList.add("status-bad");
-        addLog("system", `OHSA failed: ${reason}`);
-      }
+      if (!window.AssessmentRuntime?.startOhsa) throw new Error("AssessmentRuntime.startOhsa missing");
+      return window.AssessmentRuntime.startOhsa();
     }
 
     async function startDefineExercise() {
-      try {
-        if (!videoEl?.srcObject) throw new Error("connect camera before defining an exercise");
-        if (!detector) await initDetector();
-        if (!detector) throw new Error("movement detector unavailable for exercise definition");
-        if (running) await startWorkout();
-        ohsaMode = false;
-        ohsaPhase = null;
-        ohsaFrontSamples = [];
-        ohsaSideSamples = [];
-        currentExerciseName = (window.prompt?.("Name this exercise", "Custom exercise") || "Custom exercise").trim() || "Custom exercise";
-        definingExercise = true;
-        baselineFrames = [];
-        poseStatusEl.textContent = `Defining ${currentExerciseName}: perform several clean reps.`;
-        addLog("system", `Exercise definition started: ${currentExerciseName}.`);
-        startAuxiliaryPoseLoop({
-          isActive: () => definingExercise,
-          onPoseFrame: ({ pose }) => {
-            const sample = analyzeSquatForm(pose);
-            if (!sample.fullBody) return;
-            baselineFrames.push(sample);
-            poseStatusEl.textContent = `Defining ${currentExerciseName}: ${baselineFrames.length}/${EXERCISE_BASELINE_FRAMES} samples.`;
-            if (baselineFrames.length >= EXERCISE_BASELINE_FRAMES) {
-              const avg = (key) => baselineFrames.reduce((sum, frame) => sum + Number(frame?.[key] || 0), 0) / baselineFrames.length;
-              definedExercises[currentExerciseName] = {
-                depthScoreAvg: Number(avg("depthScore").toFixed(3)),
-                torsoAngleAvg: Number(avg("torsoAngle").toFixed(1)),
-                samples: baselineFrames.length,
-                updatedAt: new Date().toISOString()
-              };
-              try { localStorage.setItem("DEFINED_EXERCISES_V1", JSON.stringify(definedExercises)); } catch (_) {}
-              definingExercise = false;
-              poseStatusEl.textContent = `Exercise definition saved: ${currentExerciseName}.`;
-              addLog("system", `Exercise definition saved: ${currentExerciseName}.`);
-              stopAuxiliaryPoseLoop();
-            }
-          }
-        });
-      } catch (err) {
-        definingExercise = false;
-        stopAuxiliaryPoseLoop();
-        const reason = err?.message || String(err || "exercise definition failed");
-        poseStatusEl.textContent = `Exercise definition error: ${reason}`;
-        poseStatusEl.classList.add("status-bad");
-        addLog("system", `Exercise definition failed: ${reason}`);
-      }
+      console.log("[DEFINE_EXERCISE] inline startDefineExercise delegator invoked");
+      if (!window.AssessmentRuntime?.startDefineExercise) throw new Error("AssessmentRuntime.startDefineExercise missing");
+      return window.AssessmentRuntime.startDefineExercise();
     }
 
     function runPoseLoop() {
@@ -3829,14 +3654,18 @@ function toggleListening() {
           getActiveWorkoutState,
           getCurrentExerciseMeta,
           getCurrentExerciseId,
-          isDefiningExercise: () => definingExercise,
-          setDefiningExercise: (value) => { definingExercise = Boolean(value); },
-          setBaselineFrames: (value) => { baselineFrames = value; },
-          setCurrentExerciseName: (value) => { currentExerciseName = value; },
-          isOhsaMode: () => ohsaMode,
-          setOhsaMode: (value) => { ohsaMode = Boolean(value); },
-          setOhsaFrontSamples: (value) => { ohsaFrontSamples = value; },
-          setOhsaSideSamples: (value) => { ohsaSideSamples = value; },
+          isDefiningExercise: () => Boolean(window.AssessmentRuntime?.isDefiningExercise?.()),
+          setDefiningExercise: (value) => {
+            if (!value) window.AssessmentRuntime?.cancelDefineExercise?.();
+          },
+          setBaselineFrames: () => {},
+          setCurrentExerciseName: () => {},
+          isOhsaMode: () => Boolean(window.AssessmentRuntime?.isOhsaMode?.()),
+          setOhsaMode: (value) => {
+            if (!value) window.AssessmentRuntime?.cancelOhsa?.();
+          },
+          setOhsaFrontSamples: () => {},
+          setOhsaSideSamples: () => {},
           setRepState: (partial = {}) => {
             if (partial.repCount != null) repCount = Number(partial.repCount || 0);
             if (partial.totalReps != null) totalReps = Number(partial.totalReps || 0);
