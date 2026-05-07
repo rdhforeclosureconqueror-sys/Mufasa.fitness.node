@@ -200,26 +200,10 @@
 
   function configurePostLoginActivation({ refs = {}, deps = {} } = {}) {
     try {
-      const bindPrimaryButtonsAfterLogin = (reason = "manual") => {
-        const enableNow = deps.isBootContractReady?.() || deps.bootStatus?.lastBootError !== "none";
-        const navBoundByAppCore = global.ButtonRuntime?.bindPrimaryButtonsAfterLoginRuntime?.({
-          reason,
-          refs,
-          deps,
-          enableNow
-        });
-        if (deps.appShellEl) deps.appShellEl.style.pointerEvents = "auto";
-        if (deps.authOverlayEl) {
-          deps.authOverlayEl.hidden = true;
-          deps.authOverlayEl.style.display = "none";
-          deps.authOverlayEl.style.pointerEvents = "none";
-        }
-        return Boolean(navBoundByAppCore);
-      };
-      state.primaryButtonBinder = bindPrimaryButtonsAfterLogin;
-      global.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
+      global.ButtonRuntime?.configurePrimaryButtonsAfterLogin?.({ refs, deps });
+      state.primaryButtonBinder = global.bindPrimaryButtonsAfterLogin;
       markConfigured("post-login-activation", { buttons: Object.keys(refs || {}).filter((key) => Boolean(refs[key])) });
-      return bindPrimaryButtonsAfterLogin;
+      return global.bindPrimaryButtonsAfterLogin;
     } catch (error) {
       renderVisibleError(`post-login activation configuration failed: ${error?.message || error}`, error);
       throw error;
