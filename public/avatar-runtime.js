@@ -44,7 +44,8 @@
   let modulePromise = null;
   let controlBindings = null;
   let poseSubscribed = false;
-  let legacyPoseRenderer = null;
+  let poseFrameRenderer = null;
+  let canvasController = null;
 
   function status() {
     const current = globalScope.__avatarRuntimeStatus || {};
@@ -200,7 +201,7 @@
     update({ posePacketsReceived: Number(status().posePacketsReceived || 0) + 1, lastPosePacketAt: new Date().toISOString(), lastPosePacketSource: source });
     if ((status().posePacketsReceived % 120) === 1) console.log('[AVATAR_POSE] pose packet received', { source });
     try {
-      if (typeof legacyPoseRenderer === 'function') legacyPoseRenderer(posePacket);
+      if (typeof poseFrameRenderer === 'function') poseFrameRenderer(posePacket);
     } catch (error) {
       setFailure(String(error?.message || error || 'avatar_pose_render_failed'), { source: 'pose_packet' });
     }
@@ -213,9 +214,43 @@
     console.log('[AVATAR_POSE] subscribed to PoseRuntime packets');
   }
 
-  function registerPoseRenderer(renderer) {
-    legacyPoseRenderer = typeof renderer === 'function' ? renderer : null;
+  function bindPoseFrameRenderer(renderer) {
+    poseFrameRenderer = typeof renderer === 'function' ? renderer : null;
     subscribeToPoseRuntime();
+  }
+
+  function registerPoseRenderer(renderer) {
+    console.warn('[AVATAR_RUNTIME] registerPoseRenderer is deprecated; use bindPoseFrameRenderer');
+    bindPoseFrameRenderer(renderer);
+  }
+
+  function bindCanvasController(controller = {}) {
+    canvasController = controller || {};
+    console.log('[AVATAR_RUNTIME] canvas side effects delegated');
+  }
+
+  function setCanvasVisibility(visible) {
+    const canvas = canvasController?.getCanvas?.() || canvasController?.canvas || null;
+    if (!canvas) return;
+    canvas.style.display = visible ? 'block' : 'none';
+    canvasController?.logCanvasState?.(`visibility_${visible ? 'on' : 'off'}`);
+  }
+
+  function resizeCanvasRuntime() {
+    const runtime = canvasController?.ensureRuntime?.() || canvasController?.getRuntime?.() || null;
+    const video = canvasController?.getVideo?.() || null;
+    const canvas = canvasController?.getCanvas?.() || canvasController?.canvas || null;
+    if (!runtime || !video?.videoWidth || !video?.videoHeight || !canvas) return;
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    runtime.renderer?.setSize?.(width, height, false);
+    if (runtime.camera) {
+      runtime.camera.aspect = width / height;
+      runtime.camera.updateProjectionMatrix?.();
+    }
+    canvas.width = width;
+    canvas.height = height;
+    canvasController?.logCanvasState?.('runtime_resized');
   }
 
   globalScope.__ensureAvatarThreeModules = ensureThreeModules;
@@ -237,7 +272,11 @@
     uploadFile,
     handlePosePacket,
     subscribeToPoseRuntime,
-    registerPoseRenderer
+    bindPoseFrameRenderer,
+    registerPoseRenderer,
+    bindCanvasController,
+    setCanvasVisibility,
+    resizeCanvasRuntime
   };
 
   subscribeToPoseRuntime();

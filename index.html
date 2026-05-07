@@ -1305,8 +1305,6 @@ CREATE CLICKED: no</pre>
     let running = false;
     let animId;
     let cameraFullscreen = false;
-    let latestPosePacket = null;
-    let latestPose = null;
 
     let sessionId = null;
     let repCount = 0;      // Rep-analysis mirror; progression ownership lives in WorkoutProgressionRuntime.
@@ -1794,23 +1792,20 @@ CREATE CLICKED: no</pre>
       return avatarThreeRuntime;
     }
 
+    window.AvatarRuntime?.bindCanvasController?.({
+      getCanvas: () => avatar3dCanvasEl,
+      getVideo: () => videoEl,
+      getRuntime: () => avatarThreeRuntime,
+      ensureRuntime: () => ensureAvatarThreeRuntime(),
+      logCanvasState: logAvatarCanvasState
+    });
+
     function setAvatar3dCanvasVisibility(visible) {
-      if (!avatar3dCanvasEl) return;
-      avatar3dCanvasEl.style.display = visible ? "block" : "none";
-      logAvatarCanvasState(`visibility_${visible ? "on" : "off"}`);
+      return window.AvatarRuntime?.setCanvasVisibility?.(visible);
     }
 
     function resizeAvatarThreeRuntime() {
-      const runtime = ensureAvatarThreeRuntime();
-      if (!runtime || !videoEl.videoWidth || !videoEl.videoHeight) return;
-      const width = videoEl.videoWidth;
-      const height = videoEl.videoHeight;
-      runtime.renderer.setSize(width, height, false);
-      runtime.camera.aspect = width / height;
-      runtime.camera.updateProjectionMatrix();
-      avatar3dCanvasEl.width = width;
-      avatar3dCanvasEl.height = height;
-      logAvatarCanvasState("runtime_resized");
+      return window.AvatarRuntime?.resizeCanvasRuntime?.();
     }
 
     async function initializeAvatarRuntimeBootstrap(source = "bootstrap") {
@@ -3738,7 +3733,7 @@ function toggleListening() {
       return retargetActive || holdingPose;
     }
 
-    window.AvatarRuntime?.registerPoseRenderer?.((posePacket) => {
+    window.AvatarRuntime?.bindPoseFrameRenderer?.((posePacket) => {
       const mode = getRenderMode();
       if (mode !== "avatar_overlay" && mode !== "avatar_only") return false;
       return renderAvatar3d(posePacket);
@@ -3826,9 +3821,6 @@ function toggleListening() {
         video: videoEl,
         isRunning: () => running === true,
         onPoseFrame: ({ pose, posePacket }) => {
-          latestPose = pose;
-          latestPosePacket = posePacket;
-          window.__lastPoseFrame = posePacket;
           if (!window.RepAnalysisRuntime?.processPoseFrame) throw new Error("RepAnalysisRuntime.processPoseFrame missing");
           window.RepAnalysisRuntime.processPoseFrame({ pose, posePacket });
         },
@@ -3898,8 +3890,8 @@ function toggleListening() {
     async function runAvatarTrace() {
       const renderMode = getRenderMode();
       const runtime = avatarThreeRuntime || ensureAvatarThreeRuntime() || null;
-      const posePacket = latestPosePacket || null;
-      const posePoints = posePacket?.keypoints || latestPose?.keypoints || [];
+      const posePacket = window.PoseRuntime?.getLatestPosePacket?.() || window.__lastPoseFrame || null;
+      const posePoints = posePacket?.keypoints || window.PoseRuntime?.getLatestPose?.()?.keypoints || [];
       const stylesVideo = videoEl ? getComputedStyle(videoEl) : null;
       const stylesOverlay = canvasEl ? getComputedStyle(canvasEl) : null;
       const stylesAvatar = avatar3dCanvasEl ? getComputedStyle(avatar3dCanvasEl) : null;
