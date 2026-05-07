@@ -1003,10 +1003,7 @@ CREATE CLICKED: no</pre>
       window.__appBootStatus = { current: label, steps: [...appBootSteps], at: new Date().toISOString() };
     }
 
-    const forceBuilderFullAccessAuthState = () => {};
     const describeElement = window.RuntimeBridges?.describeElement || ((el) => el?.id ? `#${el.id}` : "none");
-    const enforceBuilderOverlayBypass = () => {};
-    const installClickDiagnostics = () => {};
 
     window.RuntimeEvents?.installBootFailureStatusBridge?.(updateAppBootStatus);
 
