@@ -698,8 +698,8 @@
       <label id="authNameWrap" style="display:none;">Name<input id="authName" name="name" type="text" autocomplete="name"></label>
       <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
       <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
-      <button id="authLoginSubmit" type="submit" onclick="window.__authLoginButtonClicked && window.__authLoginButtonClicked(event)">Login</button>
-      <button id="authCreateAccountBtn" type="button" class="secondary" onclick="window.__authCreateAccountClicked && window.__authCreateAccountClicked(event)">Create account</button>
+      <button id="authLoginSubmit" type="submit">Login</button>
+      <button id="authCreateAccountBtn" type="button" class="secondary">Create account</button>
       <div id="authLoginStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginStepStatus" class="muted" aria-live="polite"></div>
       <div id="authLoginBindingError" role="alert" style="display:none;color:#fecaca;background:#7f1d1d;padding:8px;border-radius:8px;"></div>
@@ -2711,31 +2711,6 @@ CREATE CLICKED: no</pre>
       }
     }
 
-    function submitAuthRequest() {
-      console.log("[AUTH_SUBMIT] inline delegator invoked");
-      return window.AuthCore?.submitAuthRequest?.();
-    }
-
-    async function handleLoginSubmit(event) {
-      console.log("[AUTH_SUBMIT] inline submit delegator invoked");
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      return window.AuthCore?.handleLoginSubmit?.(event) || submitAuthRequest();
-    }
-
-    window.handleLoginButtonClick = async function handleLoginButtonClick(event) {
-      console.log("[AUTH_SUBMIT] inline button delegator invoked");
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      return window.AuthCore?.handleLoginButtonClick?.(event) || submitAuthRequest();
-    };
-
-    window.handleCreateAccountToggle = function handleCreateAccountToggle(event) {
-      console.log("[AUTH_REGISTER] inline toggle delegator invoked");
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      return window.AuthCore?.handleCreateAccountToggle?.(event);
-    };
 
     async function onLogin(profile) {
       return window.AppHydrationRuntime?.handleLoginProfile?.(profile);

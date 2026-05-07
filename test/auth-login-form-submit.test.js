@@ -21,7 +21,8 @@ test("frontend includes login form and delegates auth submit ownership to auth-c
   assert.match(html, /id="authLoginSubmit"/, "auth login submit button must exist");
   assert.match(html, /id="authLoginSubmit" type="submit"/, "auth login submit button must be submit type");
   assert.doesNotMatch(html, /<form[^>]*id="authLoginForm"[^>]*method="get"/i, "auth login form must never use GET");
-  assert.match(html, /window\.AuthCore\?\.submitAuthRequest\?\.\(\)/, "inline submit compatibility must delegate to auth-core");
+  assert.doesNotMatch(html, /window\.AuthCore\?\.submitAuthRequest\?\.\(\)/, "inline submit compatibility delegator must be removed");
+  assert.doesNotMatch(html, /handleLogin(?:Submit|ButtonClick)|handleCreateAccountToggle|submitAuthRequest/, "inline shell must not define auth submit compatibility delegators");
   assert.doesNotMatch(html, /fetch\(`\$\{NODE_BASE_URL\}\/api\/auth\/(?:login|register)`/, "inline script must not own login/register submit fetches");
   assert.doesNotMatch(authUi, /fetch\(|\/api\/auth\/(?:login|register)/, "auth-ui compatibility shim must not own login/register submit fetches");
   assert.match(authCore, /event\?\.preventDefault\?\.\(\)/, "auth-core submit must prevent browser navigation");
