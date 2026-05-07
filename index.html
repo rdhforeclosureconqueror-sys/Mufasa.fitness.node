@@ -3530,14 +3530,25 @@ CREATE CLICKED: no</pre>
       },
       afterConnectCamera: async (stream) => {
         const cameraBootStartedAt = performance.now();
-        videoEl.srcObject = stream;
+        if (videoEl.srcObject !== stream) videoEl.srcObject = stream;
         if (!videoEl.videoWidth && !videoEl.videoHeight && videoEl.readyState < 1) {
           await new Promise((resolve) => {
-            videoEl.addEventListener("loadedmetadata", resolve, { once: true });
+            let settled = false;
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              videoEl.removeEventListener("loadedmetadata", finish);
+              resolve();
+            };
+            videoEl.addEventListener("loadedmetadata", finish, { once: true });
+            setTimeout(finish, 1500);
+            if (videoEl.videoWidth || videoEl.videoHeight || videoEl.readyState >= 1) finish();
           });
         }
-        canvasEl.width = videoEl.videoWidth; canvasEl.height = videoEl.videoHeight;
-        avatar3dCanvasEl.width = videoEl.videoWidth; avatar3dCanvasEl.height = videoEl.videoHeight;
+        const videoWidth = videoEl.videoWidth || videoEl.clientWidth || 640;
+        const videoHeight = videoEl.videoHeight || videoEl.clientHeight || 480;
+        canvasEl.width = videoWidth; canvasEl.height = videoHeight;
+        avatar3dCanvasEl.width = videoWidth; avatar3dCanvasEl.height = videoHeight;
         setAvatar3dCanvasVisibility(false); resizeAvatarThreeRuntime();
         poseStatusEl.textContent = "Camera connected. Loading movement tracker…";
         await initDetector(); await initOptionalTrackers(); updateTrackingMode(currentTrackingMode, performance.now());
