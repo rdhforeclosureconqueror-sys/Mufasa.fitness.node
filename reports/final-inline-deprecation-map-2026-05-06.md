@@ -2,22 +2,22 @@
 
 ## Scope and measurement
 
-This audit covers the synchronized landing page copies at `index.html` and `public/index.html` after the assessment/OHSA extraction pass. The remaining inline script is now primarily compatibility glue plus the still-load-bearing auth/profile shell, boot diagnostics, pose/camera loop, rep/HUD glue, and avatar renderer/model implementation.
+This audit covers the synchronized landing page copies at `index.html` and `public/index.html` after the auth submit compatibility delegator removal pass. The remaining inline script is now primarily compatibility glue plus the still-load-bearing auth/profile shell, boot diagnostics, pose/camera loop, rep/HUD glue, and avatar renderer/model implementation.
 
 ### Current inline script size
 
 | File | Inline script blocks | Total inline bytes | Total inline lines | Largest inline block | Remaining function/arrow count |
 |---|---:|---:|---:|---:|---:|
-| `index.html` | 4 | 134,858 | 3,028 | 134,269 bytes / 3,013 lines (`<script>` starting at line 943) | 137 |
-| `public/index.html` | 4 | 134,858 | 3,028 | 134,269 bytes / 3,013 lines (`<script>` starting at line 943) | 137 |
+| `index.html` | 4 | 133,828 | 3,003 | 133,239 bytes / 2,988 lines (`<script>` starting at line 943) | 131 |
+| `public/index.html` | 4 | 133,828 | 3,003 | 133,239 bytes / 2,988 lines (`<script>` starting at line 943) | 131 |
 
-Measured with a Python `HTMLParser` inline-script extraction command against both synchronized HTML files. The function/arrow count includes named inline `function` declarations, `const`/`let`/`var` arrow-function bindings, and global `window.*` function/arrow aliases; it intentionally excludes anonymous object-literal callback arrows passed into extracted runtime configuration objects. The classification table below combines same-line global aliases with their local function bindings, so it has 134 rows for the 137 counted bindings.
+Measured with a Python `HTMLParser` inline-script extraction command against both synchronized HTML files. The function/arrow count includes named inline `function` declarations, `const`/`let`/`var` arrow-function bindings, and global `window.*` function/arrow aliases; it intentionally excludes anonymous object-literal callback arrows passed into extracted runtime configuration objects. The classification table below combines same-line global aliases with their local function bindings, so it now has 130 rows for the 131 counted bindings.
 
 ## Remaining inline ownership
 
 | Area | Extracted/current external owner | Remaining inline owner | Status | Risk |
 |---|---|---|---|---|
-| Auth/auth state | `auth-core.js`, `auth-state-runtime.js`, `auth-ui.js`, `backend-read.js`, `profile-write-runtime.js` | `initializeAuth`, `onLogin`, `handleLogout`, pilot bypass, shell visibility, `APP_AUTH`/profile bridging, plus temporary submit/button globals | Fetch ownership is external; shell/profile lifecycle remains inline. | High |
+| Auth/auth state | `auth-core.js`, `auth-state-runtime.js`, `auth-ui.js`, `backend-read.js`, `profile-write-runtime.js` | `initializeAuth`, `onLogin`, `handleLogout`, pilot bypass, shell visibility, and `APP_AUTH`/profile bridging | Auth submit/create-account ownership is external; shell/profile lifecycle remains inline. | High |
 | Boot/status panels | `boot-core.js`, `runtime-events.js`, `runtime-state.js`, `status-panels.js`, `runtime-orchestrator.js` | `updateAppBootStatus`, build stamp refresh, boot contract checks, pilot event diagnostics, final handler checks | External boot/status owners exist, but inline still renders and gates visible diagnostics. | Medium/high |
 | Profile display/write | `profile-runtime.js`, `profile-write-runtime.js`, `backend-read.js`, `app-hydration-runtime.js` | `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, sync status, avatar profile callbacks | Write runtime owns the extracted save path; inline still owns shared profile state and fallbacks. | High |
 | Retention/hydration/dashboard | `retention-loader-runtime.js`, `app-hydration-runtime.js`, `dashboard-runtime.js`, `dashboard.js` | `ensureRetentionFlowLoaded` alias, calendar meta builder, auth-ready refresh timing/status coupling | Mostly delegator/ordering glue, but coupled to auth/profile state. | Medium/high |
@@ -39,14 +39,13 @@ Measured with a Python `HTMLParser` inline-script extraction command against bot
 
 - `renderSystemBootStatus` delegates boot/status rendering to `StatusPanels`.
 - `window.__retryAvatarRuntime`/`retryAvatarRuntime` is a global retry shim around the avatar runtime bootstrap.
-- `submitAuthRequest`, `handleLoginSubmit`, `window.handleLoginButtonClick`/`handleLoginButtonClick`, and `window.handleCreateAccountToggle`/`handleCreateAccountToggle` delegate auth submit/create-account behavior to `auth-core.js`/`auth-ui.js` compatibility paths.
 - `speak`, `unlockAudioOnce`, `stopAllSpeech`, and `toggleListening` delegate to `coach-runtime.js` when available.
 - `updateAuthPropagationStatus`, `updateActivationStatusPanel`, `runPendingPanelWatchdogs`, `window.__forceAuthPropagationRender`, and `window.__forceAppActivationRender` delegate to extracted status-panel/runtime owners.
 
 ## Safe removals
 
+- **Removed in this pass:** inline `submitAuthRequest`, `handleLoginSubmit`, `window.handleLoginButtonClick`/`handleLoginButtonClick`, and `window.handleCreateAccountToggle`/`handleCreateAccountToggle` delegators were deleted after the login form buttons were rewired to rely on `auth-core.js` event listeners.
 - **No remaining active inline implementation is safe to delete immediately.** The remaining non-delegator bodies close over inline state or DOM refs and still participate in auth/profile boot, hydration, workout, pose/camera, rep persistence, HUD, or avatar rendering.
-- **Safe after call-site rewiring:** the auth button globals (`window.handleLoginButtonClick`, `window.handleCreateAccountToggle`) can be removed after inline `onclick`/external tests use the extracted auth form owner directly.
 - **Safe after status panels become single-owner:** `renderSystemBootStatus`, `updateAuthPropagationStatus`, `updateActivationStatusPanel`, `runPendingPanelWatchdogs`, `window.__forceAuthPropagationRender`, and `window.__forceAppActivationRender`.
 - **Safe after avatar bootstrap owns retry/status directly:** `window.__retryAvatarRuntime`/`retryAvatarRuntime`.
 - **Already removed in prior passes:** no-op builder/diagnostic shims (`forceBuilderFullAccessAuthState`, `enforceBuilderOverlayBypass`, `installClickDiagnostics`), unused session-start helper, extracted workout/session callback bodies, and extracted OHSA assessment persistence/callback bodies.
@@ -151,10 +150,6 @@ Measured with a Python `HTMLParser` inline-script extraction command against bot
 | 2671 | `setPilotBypassAuthState` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
 | 2675 | `activatePilotBypassImmediate` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
 | 2684 | `initializeAuth` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2714 | `submitAuthRequest` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 2719 | `handleLoginSubmit` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 2726 | `window.handleLoginButtonClick/handleLoginButtonClick` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 2733 | `window.handleCreateAccountToggle/handleCreateAccountToggle` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
 | 2740 | `onLogin` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
 | 2744 | `handleLogout` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
 | 2759 | `requireCoachRuntime` | active implementation | inline closure/callback helper; audit with surrounding runtime configure block before removal |
@@ -202,7 +197,7 @@ Measured with a Python `HTMLParser` inline-script extraction command against bot
 ## Recommended final cleanup sequence
 
 1. **Freeze compatibility contracts and tests:** keep the current synchronized HTML copies stable while tests assert the extracted auth, retention, session, performance lazy-load, and OHSA paths.
-2. **Remove auth submit globals first:** replace inline/global auth button call sites with direct `auth-core.js`/`auth-ui.js` ownership, then delete `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, and `handleCreateAccountToggle` delegators.
+2. **Completed in this pass — remove auth submit globals first:** inline/global auth button call sites now rely on direct `auth-core.js` event-listener ownership, and `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, and `handleCreateAccountToggle` inline delegators were deleted.
 3. **Consolidate auth shell/profile state:** migrate `initializeAuth`, `onLogin`, `handleLogout`, shell visibility, `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, and `updateSyncStatus` into auth/profile runtimes; only then remove inline `APP_AUTH`, `USER_ID`, and `USER_PROFILE` writers.
 4. **Move hydration/retention/dashboard ordering:** transfer `ensureRetentionFlowLoaded`, `buildCalendarFromMeta`, dashboard refresh timing, and status refresh callbacks into `app-hydration-runtime.js`, `retention-loader-runtime.js`, and `dashboard-runtime.js`.
 5. **Move workout/OHSA/rep context accessors:** migrate selection persistence, `renderWorkoutPlan`, `startOhsa`, `startDefineExercise`, `sendRepToNode`, `syncRepAnalysisState`, and local workout state accessors into workout/assessment/rep runtimes.
