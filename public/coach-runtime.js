@@ -17,7 +17,11 @@
     listening: false,
     lastMicError: null,
     lastTranscript: "",
-    recognitionSupported: false
+    recognitionSupported: false,
+    chatBusy: false,
+    lastChatError: null,
+    lastQuestion: "",
+    lastAnswer: ""
   };
 
   let refs = {};
@@ -31,7 +35,10 @@
         : channel === "recognition" ? "[VOICE_RECOGNITION]"
           : channel === "mic" ? "[MIC_RUNTIME]"
             : channel === "command" ? "[COACH_COMMAND]"
-              : "[COACH_RUNTIME]";
+              : channel === "chat" ? "[COACH_CHAT]"
+                : channel === "ask" ? "[ASK_COACH]"
+                  : channel === "response" ? "[COACH_RESPONSE]"
+                    : "[COACH_RUNTIME]";
     if (details === undefined) console.log(tag, message);
     else console.log(tag, message, details);
   }
@@ -92,6 +99,172 @@
     log("voice", "backend failed", { error: normalized, source });
     deps.addLog?.("system", `Voice backend failed: ${normalized}`);
     return normalized;
+  }
+
+
+  function getChatUrl() {
+    return deps.askUrl || deps.chatUrl || null;
+  }
+
+  function addChatLog(kind, text) {
+    const line = String(text || "").trim();
+    if (!line) return;
+    if (typeof deps.addLog === "function") {
+      deps.addLog(kind, line);
+      return;
+    }
+    const logEl = refs.logEl || global.document?.getElementById?.("coach-log");
+    if (!logEl || !global.document?.createElement) return;
+    const div = global.document.createElement("div");
+    div.className = `log-line ${kind}`;
+    div.textContent = line;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setChatError(reason, source = "chat") {
+    const normalized = normalizeReason(reason);
+    state.lastChatError = normalized;
+    setCoachStatus(`Coach chat error: ${normalized}`, { mode: "bad", chipText: "Ma’at 2.0: chat error", source });
+    log("chat", "visible error", { error: normalized, source });
+    addChatLog("system", `Coach chat error: ${normalized}`);
+    return normalized;
+  }
+
+  function setChatBusy(isBusy) {
+    state.chatBusy = Boolean(isBusy);
+    if (refs.askBtn) refs.askBtn.disabled = state.chatBusy;
+    if (refs.questionInput) refs.questionInput.setAttribute?.("aria-busy", state.chatBusy ? "true" : "false");
+    if (state.chatBusy) setCoachStatus("Thinking", { mode: "ok", chipText: "Ma’at 2.0: thinking", source: "chat" });
+  }
+
+  function buildChatContext(options = {}) {
+    const context = options.context && typeof options.context === "object" ? options.context : {};
+    return {
+      ...(context || {}),
+      profile: deps.getProfile?.() || context.profile || null,
+      userId: deps.getUserId?.() || context.userId || null,
+      source: options.source || context.source || "typed-chat"
+    };
+  }
+
+  function buildAskPayload(question, options = {}) {
+    const context = buildChatContext(options);
+    return {
+      question,
+      q: question,
+      message: question,
+      context,
+      user_id: context.userId || undefined,
+      profile: context.profile || undefined
+    };
+  }
+
+  function extractCoachAnswer(payload) {
+    if (typeof payload === "string") return payload;
+    if (!payload || typeof payload !== "object") return "";
+    return payload.answer
+      || payload.response
+      || payload.reply
+      || payload.message
+      || payload.text
+      || payload?.data?.answer
+      || payload?.data?.response
+      || payload?.data?.reply
+      || payload?.result?.answer
+      || payload?.result?.response
+      || "";
+  }
+
+  function fallbackCoachResponse(question, reason) {
+    const topic = String(question || "your question").trim();
+    const prefix = reason ? `I could not reach the coach backend (${reason}). ` : "";
+    if (/\b(squat|knee|hip|ankle)\b/i.test(topic)) {
+      return `${prefix}For now: keep your feet rooted, knees tracking over toes, ribs stacked over hips, and move in a pain-free range. If pain shows up, stop and choose a simpler variation.`;
+    }
+    if (/\b(workout|plan|program|today|exercise)\b/i.test(topic)) {
+      return `${prefix}For now: choose a controlled full-body session, warm up first, keep two reps in reserve, and log how each set feels so Ma’at can adjust when the backend returns.`;
+    }
+    return `${prefix}I can still help locally: ask for a specific exercise cue, workout adjustment, or recovery suggestion, and I’ll keep the guidance conservative until the backend is available.`;
+  }
+
+  async function callCoachBackend(question, options = {}) {
+    const url = getChatUrl();
+    if (!url) throw new Error("coach_chat_url_missing");
+    if (typeof global.fetch !== "function") throw new Error("fetch_unavailable");
+    const authToken = deps.getAuthToken?.();
+    const res = await global.fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
+      },
+      body: JSON.stringify(buildAskPayload(question, options))
+    });
+    const contentType = res.headers?.get?.("content-type") || "";
+    const payload = contentType.includes("application/json")
+      ? await res.json().catch(() => null)
+      : await res.text().catch(() => "");
+    if (!res.ok) {
+      const message = extractCoachAnswer(payload) || (typeof payload === "string" ? payload : "") || `request_failed_${res.status}`;
+      throw new Error(message);
+    }
+    const answer = extractCoachAnswer(payload);
+    if (!answer) throw new Error("empty_coach_response");
+    return { answer: String(answer), payload };
+  }
+
+  async function askCoach(question, options = {}) {
+    const cleaned = String(question || "").trim();
+    log("ask", "received", { hasQuestion: Boolean(cleaned), source: options.source || options.context?.source || "typed-chat" });
+    if (!cleaned) return { ok: false, skipped: true, reason: "empty_question" };
+    state.lastQuestion = cleaned;
+    state.lastChatError = null;
+    if (refs.questionInput && refs.questionInput.value.trim() === cleaned) refs.questionInput.value = "";
+    addChatLog("user", `You: ${cleaned}`);
+    setChatBusy(true);
+    try {
+      const backend = await callCoachBackend(cleaned, options);
+      state.lastAnswer = backend.answer;
+      addChatLog("coach", `Ma’at 2.0: ${backend.answer}`);
+      log("response", "backend", { chars: backend.answer.length });
+      if (options.speak !== false) speak(backend.answer, "llm").catch((err) => {
+        log("voice", "chat speech failed", normalizeReason(err));
+      });
+      setReady("chat-response");
+      return { ok: true, answer: backend.answer, payload: backend.payload, fallback: false };
+    } catch (err) {
+      const reason = setChatError(err, "chat-backend");
+      if (options.fallback === false) return { ok: false, error: reason };
+      const answer = deps.localCoachResponse?.(cleaned, { reason, context: buildChatContext(options) }) || fallbackCoachResponse(cleaned, reason);
+      state.lastAnswer = answer;
+      addChatLog("coach", `Ma’at 2.0: ${answer}`);
+      log("response", "local fallback", { reason, chars: answer.length });
+      if (options.speak !== false) speak(answer, "llm").catch((speechErr) => {
+        log("voice", "fallback speech failed", normalizeReason(speechErr));
+      });
+      return { ok: true, answer, fallback: true, error: reason };
+    } finally {
+      setChatBusy(false);
+    }
+  }
+
+  function handleTypedChatSubmit(event) {
+    event?.preventDefault?.();
+    const value = refs.questionInput?.value || "";
+    log("chat", "submit", { hasValue: Boolean(String(value).trim()) });
+    return askCoach(value, { source: "typed-chat" });
+  }
+
+  function bindTypedChatHandlers() {
+    if (refs.askBtn) refs.askBtn.onclick = handleTypedChatSubmit;
+    if (refs.questionInput && !refs.questionInput.__coachRuntimeKeydownBound) {
+      refs.questionInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey) return;
+        handleTypedChatSubmit(event);
+      });
+      refs.questionInput.__coachRuntimeKeydownBound = true;
+    }
   }
 
   function ensureAudioPlayer() {
@@ -430,9 +603,14 @@
     initVoiceDropdown();
     updateVoiceCapabilityStatus();
     updateListenButton();
+    bindTypedChatHandlers();
+    if (typeof global.askCoach !== "function" || global.askCoach.__coachRuntimeDelegator) {
+      global.askCoach = askCoach;
+      global.askCoach.__coachRuntimeDelegator = true;
+    }
     state.configured = true;
     setReady("configure");
-    log("coach", "configured", { hasVoiceUrl: Boolean(deps.voiceUrl), hasSpeechSynth: "speechSynthesis" in global, hasSpeechRecognition: state.recognitionSupported });
+    log("coach", "configured", { hasVoiceUrl: Boolean(deps.voiceUrl), hasAskUrl: Boolean(getChatUrl()), hasTypedChat: Boolean(refs.askBtn && refs.questionInput), hasSpeechSynth: "speechSynthesis" in global, hasSpeechRecognition: state.recognitionSupported });
     return snapshot();
   }
 
@@ -464,6 +642,8 @@
     speakSetStarted: (setNumber) => speak(`Rest is over. Start set ${setNumber}.`, "rep"),
     speakExerciseStarted: (exercise) => speak(`Next exercise: ${exercise?.name || "next exercise"}.`, "rep"),
     speakWorkoutCompleted: () => speak("Workout complete. Strong work today.", "rep"),
+    askCoach,
+    handleTypedChatSubmit,
     canSpeakRepFeedback,
     unlockAudioOnce,
     stopAllSpeech,

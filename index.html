@@ -929,7 +929,7 @@ CREATE CLICKED: no</pre>
   <script src="/hud-runtime.js?v=20260506"></script>
   <script src="/workout-progression-runtime.js?v=20260506"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
-  <script src="/coach-runtime.js?v=20260506"></script>
+  <script src="/coach-runtime.js?v=20260507"></script>
   <script src="/avatar-runtime.js?v=20260506a"></script>
   <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
@@ -2737,18 +2737,23 @@ CREATE CLICKED: no</pre>
     }
 
     window.RuntimeOrchestrator.configureCoachRuntime({
-      refs: { brainStatusEl, brainChipTxt, voiceSupportStatusEl, voiceSelectEl, listenBtn, muteBtn },
+      refs: { brainStatusEl, brainChipTxt, voiceSupportStatusEl, voiceSelectEl, listenBtn, muteBtn, askBtn, questionInput, logEl },
       deps: {
         voiceUrl: AIVOICE_URL,
+        askUrl: ASK_URL,
         getAuthToken,
+        getProfile: () => USER_PROFILE,
+        getUserId: () => USER_ID,
         addLog,
-        dispatchCommand: (message, context) => {
-          if (typeof window.askCoach === "function") return window.askCoach(message, context);
-          addLog("system", "Voice command heard, but coach chat is not available yet.");
-          return null;
-        }
+        dispatchCommand: (message, context) => requireCoachRuntime().askCoach(message, { context, source: "voice-command" })
       }
     });
+
+    function askCoach(message, options) {
+      console.log("[ASK_COACH] inline delegator");
+      return requireCoachRuntime().askCoach(message, options);
+    }
+    window.askCoach = askCoach;
 
 
     /* =========================================================
@@ -3789,8 +3794,6 @@ CREATE CLICKED: no</pre>
       }
     };
 
-    askBtn.onclick = () => askCoach(questionInput.value.trim());
-
     muteBtn.onclick = () => {
       requireCoachRuntime().toggleMuted();
     };
@@ -3829,9 +3832,6 @@ CREATE CLICKED: no</pre>
     updateAppBootStatus("workout library handler attached", handlerChecks.workoutLibrary ? "ok" : "missing");
     updateActivationStatusPanel("boot complete");
 
-    questionInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") askCoach(questionInput.value.trim());
-    });
     window.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && cameraFullscreen) {
         setCameraFullscreen(false);
