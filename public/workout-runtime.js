@@ -79,6 +79,14 @@
     else el.textContent = el.textContent.replace(/active session id:[\s\S]*$/m, line);
   }
 
+  function markLiveBreakpoint(name, status, extra, error) {
+    const tracker = global.__liveWorkoutBreakpoints;
+    if (!tracker) return;
+    if (status === 'fail') tracker.markFail?.(name, error, extra);
+    else if (status === 'pass') tracker.markPass?.(name, extra);
+    else tracker.markPending?.(name, extra);
+  }
+
   function setBrainStatus(status, reason){
     const brainEl = byId('brainStatus');
     const chipEl = byId('brainChipText');
@@ -88,6 +96,7 @@
 
   async function connectCamera(){
     console.log('[WORKOUT_LIFECYCLE] connectCamera enter');
+    markLiveBreakpoint('camera-clicked', 'pass', { source: 'WorkoutRuntime.connectCamera' });
     try {
       ensureRequiredDom(['connectBtn', 'startBtn', 'fullscreenCameraBtn', 'video', 'poseStatus', 'workoutHud', 'brainStatus']);
       getFn('beforeConnectCamera')?.();
@@ -95,6 +104,7 @@
       if (!global.navigator?.mediaDevices?.getUserMedia) throw new Error('mediaDevices.getUserMedia unavailable');
       const stream = await global.navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       markCameraDiagnostics({ streamReceived: true });
+      markLiveBreakpoint('camera-stream-received', 'pass', { tracks: typeof stream?.getTracks === 'function' ? stream.getTracks().length : null });
       state.cameraStream = stream;
       state.cameraActive = true;
       const video = getVideoElement();
@@ -107,6 +117,7 @@
       video.style.visibility = 'visible';
       await video.play();
       markCameraDiagnostics({ videoElementReady: true, videoPlaying: true });
+      markLiveBreakpoint('video-playing', 'pass', { readyState: video.readyState || null, videoWidth: video.videoWidth || null, videoHeight: video.videoHeight || null });
       await getFn('afterConnectCamera')?.(stream);
       state.cameraActive = true;
       setEnabled('startBtn', true);
@@ -119,6 +130,8 @@
       return stream;
     } catch (err) {
       markCameraDiagnostics({ lastCameraError: err?.message || String(err) });
+      const cameraFailName = state.cameraStream ? 'video-playing' : 'camera-stream-received';
+      markLiveBreakpoint(cameraFailName, 'fail', { source: 'WorkoutRuntime.connectCamera' }, err);
       getFn('onCameraError')?.(err);
       console.error('[WORKOUT_LIFECYCLE] camera error', err);
       setVisibleError(`Camera error: ${err?.message || err}`);
@@ -150,6 +163,7 @@
 
   async function startWorkout(){
     console.log('[WORKOUT_LIFECYCLE] startWorkout enter', { running: state.running, sessionId: state.sessionId, cameraActive: state.cameraActive });
+    markLiveBreakpoint('workout-start-clicked', 'pass', { running: state.running, cameraActive: state.cameraActive });
     try {
       ensureRequiredDom(['startBtn', 'video', 'workoutHud', 'hudExerciseName', 'hudSet', 'hudReps', 'hudTempo', 'hudRest', 'hudNextExercise', 'hudCoachCue', 'poseStatus', 'brainStatus']);
       if (!state.cameraActive && !getVideoElement()?.srcObject) throw new Error('connect camera before starting workout');
@@ -164,6 +178,7 @@
         getFn('onSessionCreated')?.(sessionRes);
         state.sessionId = getSessionId(sessionRes);
         console.log('[WORKOUT_LIFECYCLE] session created', { sessionId: state.sessionId });
+        markLiveBreakpoint('session-created', 'pass', { sessionId: state.sessionId });
         if (!state.sessionId) throw new Error('session id missing from /api/sessions response');
         state.running = true;
         await getFn('onWorkoutStarted')?.(state.sessionId, sessionRes);
@@ -183,6 +198,7 @@
       return { running: false, sessionId: state.sessionId };
     } catch (err) {
       console.error('[WORKOUT_LIFECYCLE] startWorkout error', err);
+      markLiveBreakpoint(state.sessionId ? 'pose-loop-started' : 'session-created', 'fail', { source: 'WorkoutRuntime.startWorkout' }, err);
       getFn('onWorkoutStartError')?.(err);
       setVisibleError(`Start workout error: ${err?.message || err}`);
       updateRuntimeState();

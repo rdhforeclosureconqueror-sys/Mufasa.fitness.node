@@ -1,0 +1,109 @@
+(function initLiveWorkoutBreakpoints(globalScope) {
+  'use strict';
+
+  const global = globalScope || window;
+  const MILESTONES = [
+    'login-ready',
+    'auth-ready',
+    'camera-clicked',
+    'camera-stream-received',
+    'video-playing',
+    'detector-init-started',
+    'detector-ready',
+    'workout-start-clicked',
+    'session-created',
+    'pose-loop-started',
+    'first-pose-frame',
+    'rep-analysis-called',
+    'first-rep-counted',
+    'rep-persisted',
+    'workout-completed',
+    'dashboard-propagated'
+  ];
+
+  function nowIso() {
+    try { return new Date().toISOString(); } catch (_) { return String(Date.now()); }
+  }
+
+  function normalizeError(error) {
+    if (!error) return null;
+    if (typeof error === 'string') return error;
+    return error.message || error.name || String(error);
+  }
+
+  function safeExtra(extra) {
+    if (!extra || typeof extra !== 'object') return extra || null;
+    try { return JSON.parse(JSON.stringify(extra)); }
+    catch (_) { return { unserializable: true, summary: String(extra) }; }
+  }
+
+  const existing = global.__liveWorkoutBreakpoints;
+  const state = existing && typeof existing === 'object' ? existing : {};
+  state.milestones = state.milestones || {};
+  state.order = MILESTONES.slice();
+  state.lastUpdatedAt = state.lastUpdatedAt || nowIso();
+
+  for (const name of MILESTONES) {
+    state.milestones[name] = {
+      status: 'pending',
+      timestamp: null,
+      error: null,
+      extra: null,
+      ...(state.milestones[name] || {})
+    };
+  }
+
+  function update(name, status, extra, error) {
+    if (!state.milestones[name]) {
+      state.order.push(name);
+      state.milestones[name] = { status: 'pending', timestamp: null, error: null, extra: null };
+    }
+    const next = state.milestones[name];
+    if (next.status === 'pass' && status === 'pass') return { ...next };
+    next.status = status;
+    next.timestamp = nowIso();
+    next.error = normalizeError(error);
+    next.extra = safeExtra(extra);
+    state.lastUpdatedAt = next.timestamp;
+    const tag = status === 'pass' ? '[LIVE_WORKOUT_PASS]' : status === 'fail' ? '[LIVE_WORKOUT_FAIL]' : '[LIVE_WORKOUT_BREAKPOINT]';
+    const payload = { milestone: name, status, timestamp: next.timestamp, error: next.error, extra: next.extra };
+    if (status === 'fail') console.error(tag, payload);
+    else console.log(tag, payload);
+    global.StatusPanels?.renderLiveWorkoutBreakpointStatus?.(`live-workout:${name}:${status}`);
+    return { ...next };
+  }
+
+  state.markPending = (name, extra) => update(name, 'pending', extra, null);
+  state.markPass = (name, extra) => update(name, 'pass', extra, null);
+  state.markFail = (name, error, extra) => update(name, 'fail', extra, error);
+  state.getFirstBlocking = () => {
+    for (const name of state.order) {
+      const item = state.milestones[name];
+      if (!item || item.status === 'pass') continue;
+      return { name, ...item };
+    }
+    return null;
+  };
+  state.snapshot = () => ({
+    order: state.order.slice(),
+    lastUpdatedAt: state.lastUpdatedAt,
+    milestones: Object.fromEntries(state.order.map((name) => [name, { ...(state.milestones[name] || {}) }]))
+  });
+  state.summaryLine = () => {
+    const first = state.getFirstBlocking();
+    if (!first) return 'live workout breakpoint: all milestones passed';
+    const detail = first.error ? ` (${first.error})` : '';
+    return `live workout breakpoint: ${first.name} ${first.status}${detail}`;
+  };
+
+  global.__liveWorkoutBreakpoints = state;
+
+  global.addEventListener?.('auth:ready', (event) => {
+    if (event?.detail?.isAuthenticated === true) state.markPass('auth-ready', { reason: 'auth:ready' });
+  });
+  global.addEventListener?.('retention:completion-propagated', (event) => {
+    state.markPass('dashboard-propagated', { key: event?.detail?.key || null });
+  });
+
+  console.log('[LIVE_WORKOUT_BREAKPOINT]', { tracker: 'installed', milestones: MILESTONES });
+})(typeof window !== 'undefined' ? window : globalThis);

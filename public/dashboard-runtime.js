@@ -171,6 +171,7 @@
           refreshProgressDashboard({ visibleErrors: true }),
           refreshRewardAndCheckIns({ visibleErrors: true })
         ]);
+        window.__liveWorkoutBreakpoints?.markPass?.("dashboard-propagated", { key, workoutId: detail?.workoutId || detail?.scheduledWorkoutId || null });
         try {
           window.dispatchEvent(new CustomEvent("retention:completion-propagated", {
             detail: { key, tracked, history, progress, reward: retentionRefresh.reward, checkIns: retentionRefresh.checkIns }
@@ -178,6 +179,7 @@
         } catch (_) {}
         return { key, tracked, history, progress, retentionRefresh };
       } catch (err) {
+        window.__liveWorkoutBreakpoints?.markFail?.("dashboard-propagated", err, { key, workoutId: detail?.workoutId || detail?.scheduledWorkoutId || null });
         renderVisibleError(err);
         state.completionKeys.delete(key);
         state.completionPromises.delete(key);

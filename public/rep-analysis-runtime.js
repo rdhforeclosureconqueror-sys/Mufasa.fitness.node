@@ -163,6 +163,7 @@
         state.totalReps += 1;
         state.lastRepAt = new Date(now).toISOString();
         repCompleted = true;
+        global.__liveWorkoutBreakpoints?.markPass?.('first-rep-counted', { repCount: state.repCount, totalReps: state.totalReps, depthScore: Number(squat.depthScore.toFixed(3)) });
         log('rep completed', { repCount: state.repCount, totalReps: state.totalReps, depthScore: Number(squat.depthScore.toFixed(3)), goodForm: squat.goodForm });
         deps.onRepComplete?.({ repCount: state.repCount, totalReps: state.totalReps, depthScore: squat.depthScore, goodForm: squat.goodForm, formResult, analysis: squat });
       }
@@ -175,6 +176,7 @@
     } catch (err) {
       const message = err?.message || String(err || 'rep_analysis_failed');
       console.error('[REP_ANALYSIS] frame failed', err);
+      global.__liveWorkoutBreakpoints?.markFail?.('rep-analysis-called', err, { source: 'RepAnalysisRuntime.processPoseFrame' });
       setVisibleRuntimeError(`Rep analysis failed: ${message}`);
       throw err;
     }
