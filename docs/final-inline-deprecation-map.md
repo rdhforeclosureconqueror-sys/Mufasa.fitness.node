@@ -1,6 +1,6 @@
 # Final Inline Deprecation Map
 
-_Last updated: 2026-05-07 — pose/avatar runtime frame and canvas side-effect extraction pass._
+_Last updated: 2026-05-07 — avatar render/asset residual extraction pass._
 
 ## Removed/delegated hydration ownership
 
@@ -14,21 +14,23 @@ The inline `public/index.html` shell no longer owns the remaining profile/retent
 
 ## Removed/delegated pose/avatar ownership
 
-The inline shell no longer owns direct latest-pose storage or avatar canvas mutation:
+The inline shell no longer owns direct latest-pose storage, avatar canvas mutation, or avatar render/asset orchestration:
 
 - `latestPose` and `latestPosePacket` inline variables were removed. `public/pose-runtime.js` now owns the latest pose, latest pose packet, latest raw poses, and compatibility `window.__lastPoseFrame` update.
-- Avatar frame consumption is event-led through `pose-runtime:frame`; `public/avatar-runtime.js` subscribes once and invokes the bound avatar frame renderer inside an isolated failure boundary so avatar errors do not block pose/workout/camera flows.
+- Avatar frame consumption is event-led through `pose-runtime:frame`; `public/avatar-runtime.js` subscribes once and invokes its extracted avatar frame renderer inside an isolated failure boundary so avatar errors do not block pose/workout/camera flows.
 - Avatar canvas visibility and 3D canvas resize side effects were delegated to `public/avatar-runtime.js` through a canvas controller. Inline `setAvatar3dCanvasVisibility()` and `resizeAvatarThreeRuntime()` are now thin compatibility delegators.
+- Avatar 3D render ownership moved to `public/avatar-runtime.js`: calibration sampling, anchor computation, lower-body visibility gating, model rig retargeting (`applyPoseToAvatarRig`), and the main `renderAvatar3d` body now run inside AvatarRuntime with closure-safe bindings.
+- Avatar profile asset loading is runtime-owned through `AvatarRuntime.configureAssetPipeline()`. Inline `loadAvatarAssetForCurrentUser()` is now a thin delegator while GLB probe/mount primitives remain lazy and are invoked only by the runtime asset pipeline.
 - The inline pose loop callback now only forwards frames to rep analysis; pose-runtime owns pose frame state and event publication.
 
 ## Current inline size/count
 
 Measured after this pass with a one-off script that counts lines inside literal `<script>...</script>` blocks in `public/index.html` and approximates inline function/arrow tokens:
 
-- Inline script lines remaining: **3,502**.
-- Approximate inline function/arrow token count remaining: **315**.
+- Inline script lines remaining: **3,058**.
+- Approximate inline function/arrow token count remaining: **316**.
 - Hydration compatibility delegators intentionally remaining inline: **6** (`ensureRetentionFlowLoaded`, `defaultProfileForName`, `onLoginUI`, `buildCalendarFromMeta`, `sendProfileToNode`, `onLogin`).
-- Pose/avatar compatibility delegators intentionally remaining inline: **2** (`setAvatar3dCanvasVisibility`, `resizeAvatarThreeRuntime`).
+- Pose/avatar compatibility delegators intentionally remaining inline: **3** (`setAvatar3dCanvasVisibility`, `resizeAvatarThreeRuntime`, `loadAvatarAssetForCurrentUser`).
 
 ## Remaining dangerous inline sections
 
@@ -37,9 +39,10 @@ Do not expand these sections while continuing the deprecation work; extract them
 1. **Auth lifecycle/profile shell residuals**
    - `initializeAuth()`, auth shell visibility, logout wiring, and pilot bypass shell transitions remain inline.
    - Profile/retention/dashboard ownership is delegated, but auth restoration still decides when to call `onLogin()`.
-2. **Avatar asset/render residuals**
-   - Avatar asset load hooks, render-mode/facing calibration, model rig retargeting (`applyPoseToAvatarRig`), and the main 3D render body (`renderAvatar3d`) remain inline behind avatar-runtime frame/canvas delegates.
-   - These paths are safer than before because pose state and canvas side effects are runtime-owned, but they should be the next avatar extraction target.
+2. **Avatar lower-level GLB/runtime primitives**
+   - Avatar render ownership and profile asset-load orchestration are removed/delegated to AvatarRuntime.
+   - Lower-level GLB probe/mount primitives (`probeAvatarModelRuntime`, `mountAvatarGlbModel`, skeleton bone mapping, scene setup, render-loop creation, render-mode/facing control handlers) remain inline as runtime-callable primitives. Keep them lazy-only and do not reintroduce inline pose packet ownership.
+   - Procedural fallback drawing still remains inline for the camera canvas path; AvatarRuntime now owns 3D failure isolation and asset fallback decisions.
 3. **Workout/rep/session glue**
    - Workout progression configuration, rep analysis bridge, session write callbacks, OHSA state bridges, and retention completion signal remain inline.
 4. **Boot/status diagnostics**
@@ -49,7 +52,8 @@ Do not expand these sections while continuing the deprecation work; extract them
 
 ## Next extraction candidates
 
-1. Move `renderAvatar3d`, `applyPoseToAvatarRig`, avatar calibration math, and asset load hooks fully into avatar-runtime with closure-safe getters/setters.
-2. Move `initializeAuth()` and authenticated shell visibility into an auth lifecycle runtime.
-3. Extract session/write callback composition around workout progression without changing workout behavior.
-4. Move boot/status diagnostics into status-panels/runtime-orchestrator ownership.
+1. Move lower-level GLB probe/mount primitives and avatar render-loop setup into avatar-runtime once their DOM/Three closure dependencies have stable accessors.
+2. Move procedural fallback drawing out of the inline camera canvas path.
+3. Move `initializeAuth()` and authenticated shell visibility into an auth lifecycle runtime.
+4. Extract session/write callback composition around workout progression without changing workout behavior.
+5. Move boot/status diagnostics into status-panels/runtime-orchestrator ownership.
