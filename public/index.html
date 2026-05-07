@@ -2898,157 +2898,31 @@ CREATE CLICKED: no</pre>
       }
     }
 
-    function updateAuthStepStatus(step, detail) {
-      if (!authLoginStepStatusEl) return;
-      authLoginStepStatusEl.textContent = detail ? `${step}: ${detail}` : step;
-    }
-
-    function showAuthBindingError(message) {
-      if (!authLoginBindingErrorEl) return;
-      authLoginBindingErrorEl.style.display = "block";
-      authLoginBindingErrorEl.textContent = message;
-    }
-
-    function renderAuthMode() {
-      const isRegisterMode = authMode === "register";
-      if (authNameWrapEl) authNameWrapEl.style.display = isRegisterMode ? "block" : "none";
-      if (authNameEl) authNameEl.required = isRegisterMode;
-      if (authPasswordEl) authPasswordEl.autocomplete = isRegisterMode ? "new-password" : "current-password";
-      if (authLoginTitleEl) authLoginTitleEl.textContent = isRegisterMode ? "Create account" : "Sign in";
-      if (authLoginSubmitEl) authLoginSubmitEl.textContent = isRegisterMode ? "Create account" : "Login";
-      if (authCreateAccountToggleEl) authCreateAccountToggleEl.textContent = isRegisterMode ? "Back to login" : "Create account";
-    }
-
-    async function submitAuthRequest() {
-      const email = authEmailEl?.value?.trim() || "";
-      const password = authPasswordEl?.value || "";
-      const name = authNameEl?.value?.trim() || "";
-      const isRegisterMode = authMode === "register";
-      if (authLoginStatusEl) authLoginStatusEl.textContent = "Signing in…";
-      updateAuthStepStatus("submit received", isRegisterMode ? "register" : "login");
-      try {
-        let loginRes;
-        if (isRegisterMode) {
-          updateAuthStepStatus("POST /api/auth/register", "sending");
-          console.log(`[AUTH_LOGIN] posting to ${NODE_BASE_URL}/api/auth/register`);
-          loginRes = await fetch(`${NODE_BASE_URL}/api/auth/register`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ name, email, password })
-          });
-        } else {
-          updateAuthStepStatus("POST /api/auth/login", "sending");
-          console.log(`[AUTH_LOGIN] posting to ${NODE_BASE_URL}/api/auth/login`);
-          loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ email, password })
-          });
-        }
-        const loginPayload = await loginRes.json().catch(() => ({}));
-        const token = loginPayload?.token;
-        if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
-        updateAuthStepStatus("token received");
-        // Token persistence and APP_AUTH propagation are owned by auth-state-runtime.
-        updateAuthStepStatus("token received", "auth-state-runtime pending");
-        updateAuthStepStatus("GET /api/auth/me", "sending");
-        const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, {
-          headers: { authorization: `Bearer ${token}` }
-        });
-        const mePayload = await meRes.json().catch(() => ({}));
-        const user = mePayload?.user || mePayload?.data?.user;
-        console.log("[AUTH_LOGIN] /api/auth/me user resolved");
-        updateAuthStepStatus("GET /api/auth/me", "user resolved");
-        if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
-        bootStatus.authRestoredValidated = true;
-        window.setCanonicalAuthState({ token, user }, { reason: "inline_submitAuthRequest" });
-        console.log("[AUTH_LOGIN] login success");
-        updateAuthStepStatus("onLogin()", "running");
-        await onLogin({
-          userId: user.userId || user.id,
-          email: user.email,
-          name: user.name,
-          authProvider: user.provider || "password"
-        });
-        updateAuthStepStatus("auth overlay hidden", "success");
-        applyAuthenticatedShellVisibility();
-        bindPrimaryButtonsAfterLogin("submitAuthRequest");
-        renderAuthShell();
-        updateAuthStepStatus("app shell shown", "success");
-        if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
-      } catch (error) {
-        window.AuthStateRuntime?.clearCanonicalAuthState?.("inline_submitAuthRequest_failed");
-        updateAuthStepStatus("failed", error?.message || "unknown_error");
-        if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
-      }
+    function submitAuthRequest() {
+      console.log("[AUTH_SUBMIT] inline delegator invoked");
+      return window.AuthCore?.submitAuthRequest?.();
     }
 
     async function handleLoginSubmit(event) {
-      console.log("[AUTH_LOGIN] form submitted");
-      event.preventDefault();
-      event.stopPropagation();
-      return submitAuthRequest();
+      console.log("[AUTH_SUBMIT] inline submit delegator invoked");
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return window.AuthCore?.handleLoginSubmit?.(event) || submitAuthRequest();
     }
 
     window.handleLoginButtonClick = async function handleLoginButtonClick(event) {
-      console.log("[AUTH_LOGIN] button clicked");
-      event.preventDefault();
-      event.stopPropagation();
-      return submitAuthRequest();
-    }
-
-    window.handleCreateAccountToggle = function handleCreateAccountToggle(event) {
+      console.log("[AUTH_SUBMIT] inline button delegator invoked");
       event?.preventDefault?.();
       event?.stopPropagation?.();
-      window.__setAuthDebugState?.({ createClicked: true });
-      authMode = authMode === "login" ? "register" : "login";
-      renderAuthMode();
-      if (authLoginStatusEl) authLoginStatusEl.textContent = "";
-    }
+      return window.AuthCore?.handleLoginButtonClick?.(event) || submitAuthRequest();
+    };
 
-    function bindAuthLoginForm() {
-      console.log("[AUTH_OWNER] inline auth active");
-      const forms = Array.from(document.querySelectorAll("#authLoginForm"));
-      const form = forms[0] || null;
-      const button = document.getElementById("authLoginSubmit");
-      console.log("[AUTH_LOGIN] form found", !!form);
-      console.log("[AUTH_LOGIN] button found", !!button);
-      window.__setAuthDebugState?.({
-        formFound: !!document.getElementById("authLoginForm"),
-        loginButtonFound: !!document.getElementById("authLoginSubmit"),
-        createButtonFound: !!document.getElementById("authCreateAccountBtn")
-      });
-      if (forms.length > 1) {
-        console.warn(`[AUTH_LOGIN] multiple login forms detected: ${forms.length}`);
-        forms.slice(1).forEach((extraForm, index) => {
-          extraForm.setAttribute("data-auth-login-disabled", "true");
-          extraForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            return false;
-          });
-          const submitter = extraForm.querySelector('[type="submit"], button');
-          if (submitter) submitter.disabled = true;
-          console.warn(`[AUTH_LOGIN] disabled extra login form at index ${index + 1}`);
-        });
-      }
-      if (!form || !button) {
-        showAuthBindingError("Login UI could not be initialized (form/button missing). Refresh or contact support.");
-        return;
-      }
-      if (form.dataset.authLoginBound === "true") return;
-      form.addEventListener("submit", handleLoginSubmit);
-      button.addEventListener("click", window.handleLoginButtonClick);
-      authCreateAccountToggleEl?.addEventListener("click", window.handleCreateAccountToggle);
-      form.dataset.authLoginBound = "true";
-      console.log("[AUTH_LOGIN] submit handler attached");
-      console.log("[AUTH_LOGIN] handlers attached");
-    }
-
-
-    document.addEventListener("DOMContentLoaded", bindAuthLoginForm);
-    window.addEventListener("load", bindAuthLoginForm);
-    bindAuthLoginForm();
+    window.handleCreateAccountToggle = function handleCreateAccountToggle(event) {
+      console.log("[AUTH_REGISTER] inline toggle delegator invoked");
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return window.AuthCore?.handleCreateAccountToggle?.(event);
+    };
 
     async function onLogin(profile) {
       USER_ID = profile.userId || toSafeUserId(profile.email || profile.name || "user");
