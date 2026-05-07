@@ -2779,7 +2779,7 @@ CREATE CLICKED: no</pre>
         });
         bootStatus.authRestoredValidated = true;
         applyAuthenticatedShellVisibility();
-        bindPrimaryButtonsAfterLogin("initializeAuth");
+        window.bindPrimaryButtonsAfterLogin?.("initializeAuth");
         return true;
       } catch (_error) {
         window.AuthStateRuntime?.clearCanonicalAuthState?.("initializeAuth:invalid_session");
@@ -4176,7 +4176,7 @@ function toggleListening() {
       }
     });
     
-      const bindPrimaryButtonsAfterLogin = window.RuntimeOrchestrator.configurePostLoginActivation({
+    window.RuntimeOrchestrator.configurePostLoginActivation({
       refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn },
       deps: {
         connectCamera,
@@ -4188,7 +4188,7 @@ function toggleListening() {
         appShellEl,
         authOverlayEl
       }
-    }) || (() => false);
+    });
 
     if (typeof connectCamera === "function") window.connectCamera = connectCamera;
     if (typeof startWorkout === "function") window.startWorkout = startWorkout;
@@ -4196,10 +4196,9 @@ function toggleListening() {
     if (typeof onLoginUI === "function") window.onLoginUI = onLoginUI;
     if (typeof ensureRetentionFlowLoaded === "function") window.ensureRetentionFlowLoaded = ensureRetentionFlowLoaded;
     if (typeof updateActivationStatusPanel === "function") window.updateActivationStatusPanel = updateActivationStatusPanel;
-    window.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
 
     window.RuntimeOrchestrator.configureAuthLifecycle({
-      bindPrimaryButtonsAfterLogin,
+      bindPrimaryButtonsAfterLogin: window.bindPrimaryButtonsAfterLogin,
       updateAuthPropagationStatus,
       updateActivationStatusPanel,
       runPendingPanelWatchdogs
@@ -4254,7 +4253,7 @@ function toggleListening() {
       setCalendarMeta: (meta) => { calendarMeta = meta; return calendarMeta; },
       toSafeUserId,
       markPerfMetric,
-      bindPrimaryButtonsAfterLogin,
+      bindPrimaryButtonsAfterLogin: window.bindPrimaryButtonsAfterLogin,
       renderSystemBootStatus,
       persistUser,
       loadAvatarAssetForCurrentUser,

@@ -22,9 +22,21 @@
       });
   }
 
+  const primaryButtonState = { refs: {}, deps: {} };
+
+  function configurePrimaryButtonsAfterLogin(config){
+    const { refs = {}, deps = {} } = config || {};
+    primaryButtonState.refs = refs || {};
+    primaryButtonState.deps = deps || {};
+    return globalScope.bindPrimaryButtonsAfterLogin;
+  }
+
   function bindPrimaryButtonsAfterLoginRuntime(config){
     const {
-      reason = "manual", refs = {}, deps = {}, enableNow = true
+      reason = "manual",
+      refs = primaryButtonState.refs,
+      deps = primaryButtonState.deps,
+      enableNow = true
     } = config || {};
     const navBoundByAppCore = globalScope.bindPrimaryNavHandlers?.({ connectCamera: deps.connectCamera, addLog: deps.addLog });
 
@@ -73,6 +85,12 @@
     logBind("camera");
     logBind("diagnostics");
     setPrimaryButtonsEnabled(enableNow, refs);
+    if (deps.appShellEl) deps.appShellEl.style.pointerEvents = "auto";
+    if (deps.authOverlayEl) {
+      deps.authOverlayEl.hidden = true;
+      deps.authOverlayEl.style.display = "none";
+      deps.authOverlayEl.style.pointerEvents = "none";
+    }
     deps.updateAuthPropagationStatus?.(`bindPrimaryButtonsAfterLogin:${reason}`);
     deps.updateActivationStatusPanel?.(`bindPrimaryButtonsAfterLogin:${reason}`);
     return Boolean(navBoundByAppCore);
@@ -91,7 +109,15 @@
     return true;
   }
 
+  function bindPrimaryButtonsAfterLogin(reason = "manual"){
+    const deps = primaryButtonState.deps || {};
+    const enableNow = deps.isBootContractReady?.() || deps.bootStatus?.lastBootError !== "none";
+    return bindPrimaryButtonsAfterLoginRuntime({ reason, enableNow });
+  }
+
+  globalScope.bindPrimaryButtonsAfterLogin = bindPrimaryButtonsAfterLogin;
   globalScope.ButtonRuntime = {
+    configurePrimaryButtonsAfterLogin,
     bindPrimaryButtonsAfterLoginRuntime,
     bindStartWorkoutButton,
     setPrimaryButtonsEnabled
