@@ -944,6 +944,7 @@ CREATE CLICKED: no</pre>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
     const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+    // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.
     console.log("[INLINE_SECTION] boot start");
     console.log("🔥 Ma’at 2.0 coach script initialized");
 
@@ -975,6 +976,7 @@ CREATE CLICKED: no</pre>
     const appShellEl = document.getElementById("appShell");
     const appBootStatusEl = document.getElementById("appBootStatus");
     const authOverlayEl = document.getElementById("authOverlay");
+    // [INLINE_REMAINING] auth/profile shell — DOM refs, local mirrors, and post-login shell visibility glue remain inline until auth/profile runtime contracts stop requiring page-local state.
     console.log("[INLINE_SECTION] auth refs");
     const authLoginFormEl = document.getElementById("authLoginForm");
     const authEmailEl = document.getElementById("authEmail");
@@ -1565,6 +1567,7 @@ CREATE CLICKED: no</pre>
       console.log(`[avatar-3d-route] webgl available: ${webglOk ? "yes" : "no"}`);
     }
 
+    // [INLINE_REMAINING] avatar render pipeline — Three.js canvas, GLB mounting, calibration, and fallback hooks still depend on page-local DOM/runtime state.
     async function ensureAvatarThreeRuntimeDependencies() {
       if (avatarThreeRuntimeDepsPromise) return avatarThreeRuntimeDepsPromise;
       avatarThreeRuntimeDepsPromise = (async () => {
@@ -2882,6 +2885,7 @@ CREATE CLICKED: no</pre>
       window.RepRuntime?.sync?.({ repCount, totalReps, phase: repPhase });
     }
 
+    // [INLINE_REMAINING] workout/OHSA glue — page-local workout mirrors and assessment buttons delegate into extracted runtimes.
     function configureExtractedWorkoutRuntimes() {
       const workoutGlue = window.WorkoutProgressionRuntime.createSessionCallbackGlue({
         refs: { startBtn },
@@ -2961,6 +2965,7 @@ CREATE CLICKED: no</pre>
       }
     })();
 
+    // [INLINE_REMAINING] pose/camera loop — camera, detector, and frame callbacks bridge browser media state into PoseRuntime.
     async function initDetector() {
       detectorInitStartedAt = performance.now();
       console.log("[POSE_RUNTIME] initDetector bridge invoked");
@@ -3629,6 +3634,7 @@ CREATE CLICKED: no</pre>
         nodeProfileUrl: NODE_PROFILE_URL
       }
     });
+    // [INLINE_REMAINING] hydration ordering — app hydration is still sequenced from the shell after auth/profile/button runtimes are configured.
     window.AppHydrationRuntime?.configure({
       ensureRetentionFlowLoaded,
       sendProfileToNode: (options) => window.ProfileWriteRuntime?.saveProfileToNode?.({ source: "app-hydration", ...(options || {}) }),
