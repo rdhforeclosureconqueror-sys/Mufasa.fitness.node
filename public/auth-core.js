@@ -32,11 +32,13 @@
     document.body.classList.add('authenticated');
   };
 
-  const broadcastAuthState = (detail) => {
-    authDebugState.authChangedFired = true;
-    authDebugState.lastAuthEventAt = new Date().toISOString();
-    window.dispatchEvent(new CustomEvent('auth:changed', { detail }));
-    window.dispatchEvent(new CustomEvent('auth:ready', { detail }));
+  const propagateAuthState = (detail, reason) => {
+    if (typeof window.setCanonicalAuthState === 'function') {
+      return window.setCanonicalAuthState(detail, { reason, forceDispatch: true });
+    }
+    console.error('[AUTH_CORE] auth-state-runtime missing');
+    authDebugState.lastAuthError = 'auth_state_runtime_missing';
+    return null;
   };
 
   const bind = () => {
@@ -70,6 +72,7 @@
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
+      event.stopPropagation();
       const email = emailEl?.value?.trim() || '';
       const password = passEl?.value || '';
       const name = nameEl?.value?.trim() || '';
@@ -97,15 +100,7 @@
           token: authJson.token,
           user: meJson.user
         };
-        try { localStorage.setItem("maatAuthToken", authJson.token); } catch (_) {}
-        window.APP_AUTH = canonicalPayload;
-        window.__AUTH_READY = true;
-        broadcastAuthState(canonicalPayload);
-        if (typeof window.setCanonicalAuthState === 'function') {
-          window.setCanonicalAuthState(canonicalPayload);
-        }
-        setTimeout(() => broadcastAuthState(window.APP_AUTH || canonicalPayload), 250);
-        setTimeout(() => broadcastAuthState(window.APP_AUTH || canonicalPayload), 1000);
+        propagateAuthState(canonicalPayload, 'auth-core:login');
 
         hideAuthOverlay();
         if (statusEl) statusEl.textContent = 'Signed in.';
@@ -117,6 +112,7 @@
     });
 
     form.dataset.authCoreBound = 'true';
+    form.dataset.authLoginBound = 'true';
     setMode();
     return true;
   };

@@ -95,7 +95,7 @@
       try {
         const me = await fetchJsonAuthed('/api/auth/me');
         const user = me.user || me.data?.user || me;
-        globalScope.APP_AUTH = { ...(globalScope.APP_AUTH || {}), token, isAuthenticated: true, user };
+        globalScope.setCanonicalAuthState?.({ token, user }, { reason: `app-runtime:${reason}` });
         const summary = globalScope.document.getElementById('profileSummary');
         if (summary) summary.textContent = `Signed in as ${user?.email || 'unknown'}`;
 

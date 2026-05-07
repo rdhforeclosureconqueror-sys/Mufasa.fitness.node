@@ -34,7 +34,7 @@ test("frontend includes login form that submits with preventDefault and auth API
     /const user = mePayload\?\.user \|\| mePayload\?\.data\?\.user;/,
     "frontend auth me parser must accept top-level user with legacy data.user fallback"
   );
-  assert.match(html, /localStorage\.setItem\("maatAuthToken", token\)/, "token should be stored under maatAuthToken");
+  assert.match(html, /auth-state-runtime pending/, "token persistence should be delegated to auth-state-runtime");
 });
 
 test("frontend has only one auth login form id and duplicate mitigation", () => {

@@ -50,8 +50,7 @@
       const user = mePayload?.user || mePayload?.data?.user;
       console.log("[AUTH_LOGIN] /api/auth/me user resolved");
       if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
-      window.APP_AUTH = { isAuthenticated: true, token, user };
-      try { localStorage.setItem("maatAuthToken", token); } catch (_) {}
+      window.setCanonicalAuthState?.({ token, user }, { reason: "auth-ui" });
       if (typeof window.onLogin === "function") {
         await window.onLogin({ userId: user.userId || user.id, email: user.email, name: user.name, authProvider: user.provider || "password" });
       }
