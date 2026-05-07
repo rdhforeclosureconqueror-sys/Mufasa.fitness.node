@@ -2,211 +2,135 @@
 
 ## Scope and measurement
 
-This audit covers the synchronized landing page copies at `index.html` and `public/index.html` after the auth submit compatibility delegator removal pass. The remaining inline script is now primarily compatibility glue plus the still-load-bearing auth/profile shell, boot diagnostics, pose/camera loop, rep/HUD glue, and avatar renderer/model implementation.
+This final cleanup audit re-scans the synchronized landing page copies at `index.html` and `public/index.html` after the auth, hydration, workout lifecycle, dashboard, avatar-control, assessment, and voice/STT extraction passes. The remaining inline script is no longer mainly feature code that can be mechanically lifted. It is a mixed boundary layer: compatibility delegators, ordering glue, runtime configuration, and several still-dangerous implementation islands that own browser APIs, animation loops, shared globals, and boot diagnostics.
 
 ### Current inline script size
 
-| File | Inline script blocks | Total inline bytes | Total inline lines | Largest inline block | Remaining function/arrow count |
-|---|---:|---:|---:|---:|---:|
-| `index.html` | 4 | 133,590 | 2,992 | 133,001 bytes / 2,977 lines (`<script>` starting at line 943) | 128 |
-| `public/index.html` | 4 | 133,590 | 2,992 | 133,001 bytes / 2,977 lines (`<script>` starting at line 943) | 128 |
+| File | Inline script blocks | Total inline bytes | Total inline lines | Largest inline block | Notes |
+|---|---:|---:|---:|---:|---|
+| `index.html` | 4 | 132,250 | 2,941 | 131,661 bytes / 2,926 lines (`<script>` starting at line 943) | Canonical root copy. |
+| `public/index.html` | 4 | 132,250 | 2,941 | 131,661 bytes / 2,926 lines (`<script>` starting at line 943) | Synchronized public copy. |
 
-Measured with a Python `HTMLParser` inline-script extraction command against both synchronized HTML files. The function/arrow count includes named inline `function` declarations, `const`/`let`/`var` arrow-function bindings, and global `window.*` function/arrow aliases; it intentionally excludes anonymous object-literal callback arrows passed into extracted runtime configuration objects. The classification table below combines same-line global aliases with their local function bindings, so it now has 127 rows for the 128 counted bindings.
+Measured with a Python `HTMLParser` inline-script extraction scan against both HTML files. Both copies remain byte/line-count synchronized for inline script payloads.
 
-## Remaining inline ownership
+## Remaining ownership map by danger category
 
-| Area | Extracted/current external owner | Remaining inline owner | Status | Risk |
+| Category | Remaining inline owners | External/runtime owners already present | Extraction posture | Risk |
 |---|---|---|---|---|
-| Auth/auth state | `auth-core.js`, `auth-state-runtime.js`, `auth-ui.js`, `backend-read.js`, `profile-write-runtime.js` | `initializeAuth`, `onLogin`, `handleLogout`, pilot bypass, shell visibility, and `APP_AUTH`/profile bridging | Auth submit/create-account ownership is external; shell/profile lifecycle remains inline. | High |
-| Boot/status panels | `boot-core.js`, `runtime-events.js`, `runtime-state.js`, `status-panels.js`, `runtime-orchestrator.js` | `updateAppBootStatus`, build stamp refresh, boot contract checks, pilot event diagnostics, final handler checks | External boot/status owners exist, but inline still renders and gates visible diagnostics. | Medium/high |
-| Profile display/write | `profile-runtime.js`, `profile-write-runtime.js`, `backend-read.js`, `app-hydration-runtime.js` | `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, sync status, avatar profile callbacks | Write runtime owns the extracted save path; inline still owns shared profile state and fallbacks. | High |
-| Retention/hydration/dashboard | `retention-loader-runtime.js`, `app-hydration-runtime.js`, `dashboard-runtime.js`, `dashboard.js` | `ensureRetentionFlowLoaded` alias, calendar meta builder, auth-ready refresh timing/status coupling | Mostly delegator/ordering glue, but coupled to auth/profile state. | Medium/high |
-| Workout lifecycle/OHSA | `workout-runtime.js`, `workout-progression-runtime.js`, `runtime-orchestrator.js`, `assessment-runtime.js` | selection persistence, plan rendering, `startWorkout`, `startOhsa`, `startDefineExercise`, local state/context accessors | Lifecycle callbacks and OHSA assessment writes are extracted; camera/start orchestration remains inline. | High |
-| Pose/rep analysis/persistence | `pose-runtime.js`, `rep-analysis-runtime.js`, `rep-runtime.js`, `session-write.js` | detector init, optional trackers, camera loop, squat analysis helpers, `sendRepToNode`, rep state mirrors | Runtimes exist, but inline still starts and feeds the loop/persistence bridge. | Highest |
-| HUD/progression | `hud-runtime.js`, `workout-progression-runtime.js`, `status-panels.js` | `getPrimaryCue`, `renderWorkoutHud`, progress/tracker status glue | Runtime modules are configured externally; inline still computes pushed HUD state. | Medium/high |
-| Coach/voice | `coach-runtime.js` | `requireCoachRuntime` and inline `toggleListening` STT wiring | Voice speech/unlock/stop ownership is external; mic-command wiring remains inline. | Low/medium |
-| Avatar | `avatar-runtime.js`, `runtime-bridges.js`, `profile-write-runtime.js` | Three bootstrap, GLB probe/mount, render-mode/stage/facing controls, rig helpers, procedural renderer, modal/profile writeback callbacks | Runtime owns control registration; inline still owns heavy renderer/model implementation. | Highest |
+| Safe delegators | `renderSystemBootStatus`, `updateAuthPropagationStatus`, `updateActivationStatusPanel`, `runPendingPanelWatchdogs`, `window.__forceAuthPropagationRender`, `window.__forceAppActivationRender`, `window.__retryAvatarRuntime`, `onLogin`, `connectCamera`, `startWorkout`, `buildCalendarFromMeta`, `defaultProfileForName`, `onLoginUI` | `StatusPanels`, `AppHydrationRuntime`, `WorkoutRuntime`, `AvatarRuntime`, `RuntimeOrchestrator` | Can be deleted only after all global consumers and tests stop expecting the legacy names. Keep as shims until no caller uses them. | Low when left alone; medium if removed early. |
+| Moderate-risk glue | DOM ref collection, runtime endpoint constants, `APP_BUILD_VERSION`, `addLog`, `markPerfMetric`, `requireCoachRuntime`, `requireWorkoutProgressionRuntime`, runtime `configure*` calls, post-login activation wiring, dashboard refresh wiring, button runtime wiring, avatar control binding, ask/listen button handlers | `RuntimeState`, `RuntimeEvents`, `RuntimeOrchestrator`, `CoachRuntime`, `DashboardRuntime`, `ButtonRuntime`, `AvatarRuntime` | Move only in small batches after preserving script-order and DOM-ready assumptions. | Medium. |
+| Dangerous/load-bearing lifecycle | `initializeAuth`, `handleLogout`, `applyAuthenticatedShellVisibility`, `renderAuthShell`, `setPilotBypassAuthState`, `activatePilotBypassImmediate`, `persistUser`, `sendToNode`, `postAuthenticatedJSON`, `sendProfileToNode`, canonical workout selection, `renderWorkoutPlan`, `sendRepToNode`, `syncRepAnalysisState`, `configureExtractedWorkoutRuntimes`, `startOhsa`, `startDefineExercise` | `AuthStateRuntime`, `AuthCore`, `ProfileWriteRuntime`, `AppHydrationRuntime`, `WorkoutRuntime`, `WorkoutProgressionRuntime`, `AssessmentRuntime`, `RepAnalysisRuntime`, `SessionWriteRuntime` | Do not extract as a mass move. These own shared state, authenticated writes, selection state, and runtime callback payloads. | High. |
+| Render-loop ownership | `ensureAvatarRenderLoop`, `ensureAvatarThreeRuntime`, `mountAvatarGlbModel`, `drawProceduralAvatar`, `runPoseLoop`, `runAvatarTrace`, `attachAvatarTraceHarness`, tracker-mode smoothing, avatar pose packet updates | `AvatarRuntime`, `PoseRuntime`, `RepAnalysisRuntime` | Highest-risk remaining area. Extract only after a single runtime owns frame scheduling and canvas writes. | Highest. |
+| Browser API ownership | `navigator.mediaDevices.getUserMedia` is now invoked by `WorkoutRuntime.connectCamera`, while inline still wraps connect diagnostics; inline still owns Three/GLTF runtime construction, `requestAnimationFrame`, canvas contexts, `fetch` to model/profile/session endpoints, `localStorage`, popup `window.open`, `postMessage`, `CustomEvent`, `speechSynthesis`/`SpeechRecognition` access only through `CoachRuntime` | `WorkoutRuntime`, `AvatarRuntime`, `CoachRuntime`, `RuntimeEvents` | Browser APIs that are already runtime-owned should stay out of inline. Remaining inline Browser API users are tied to boot/render/model/profile ordering. | Medium to highest depending on API. |
+| Ordering-sensitive boot logic | top-of-script runtime/error bridges; DOM refs before functions; boot/status events; `RuntimeOrchestrator.configure*` ordering; `AppHydrationRuntime.configure`; `configureBootLifecycle`; `configureAuthLifecycle`; window-load boot gates and no-pending policy | `RuntimeEvents`, `RuntimeState`, `BootCore`, `RuntimeOrchestrator`, `AppHydrationRuntime`, `StatusPanels` | Leave inline until boot contract tests cover every configured runtime and load event edge. | High. |
 
-## Remaining inline active implementations
+## Specific dependency maps
 
-- **Boot/status/pilot diagnostics:** `updateAppBootStatus`, `isBootContractReady`, `appendPilotEventLocal`, `trackPilotEvent`, `emitPilotEvent`, `refreshBuildStamp`, `logMobileControlTruth`, `getPrimaryNavHandlerStatus`.
-- **Auth/profile/hydration:** `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendToNode`, `postAuthenticatedJSON`, `isAuthUnavailable`, `updateSyncStatus`, `sendProfileToNode`, `getAuthToken`, `applyAuthenticatedShellVisibility`, `renderAuthShell`, `removeBuilderModeUiGuards`, `getActiveBlockingOverlay`, `setPilotBypassAuthState`, `activatePilotBypassImmediate`, `initializeAuth`, `onLogin`, `handleLogout`, `markPerfMetric`, `buildCalendarFromMeta`, `ensureRetentionFlowLoaded`.
-- **Workout/OHSA/rep/HUD:** `requireWorkoutProgressionRuntime`, active workout state/plan accessors, `getPrimaryCue`, `renderWorkoutHud`, canonical workout selection persistence, `renderWorkoutPlan`, squat-analysis helpers, `sendRepToNode`, `syncRepAnalysisState`, `configureExtractedWorkoutRuntimes`, `startOhsa`, `startDefineExercise`, `startWorkout`, `handleWorkoutSelectChange`.
-- **Pose/camera:** `initDetector`, `initOptionalTrackers`, `connectCamera`, `runPoseLoop`, pose-confidence helpers, avatar trace harness.
-- **Coach/voice:** `requireCoachRuntime` helper and `toggleListening` SpeechRecognition command wiring.
-- **Avatar/rendering:** avatar runtime status/diagnostics, Three/GLTF dependency resolution, render-loop bootstrap, camera fullscreen UI, skeleton/bone mapping, render-mode/stage/facing controls, asset probing/mounting, modal helpers, procedural avatar drawing.
+### Pose/camera loop ownership
 
-## Remaining compatibility delegators
+| Inline owner | What it still owns | Runtime dependency | Why dangerous |
+|---|---|---|---|
+| `detector`, `camera`, `cameraStream`, `isRunning`, `poseLoopStarted`, diagnostic globals | Process-wide camera/pose flags and global diagnostics | `PoseRuntime`, `WorkoutRuntime` | Any extraction can desynchronize button state, camera stream state, and pose loop start state. |
+| `initDetector` | TensorFlow/MoveNet detector guard, pose runtime status, detector diagnostics, button enablement | `PoseRuntime` and TensorFlow globals | Must execute before workouts can depend on estimated poses. |
+| `initOptionalTrackers` and `updateTrackingMode` | Face/hand tracker discovery and tracking-mode state machine | MediaPipe/TensorFlow globals, pose confidence state | Optional trackers are non-fatal but influence avatar rigging and HUD confidence. |
+| `connectCamera` | Inline diagnostic wrapper around runtime-owned `WorkoutRuntime.connectCamera` | `WorkoutRuntime.connectCamera` | Safe as a delegator, but still exports `window.connectCamera` for existing callers. |
+| `runPoseLoop` | Frame scheduling, pose estimation, form engine evaluation, HUD render, rep analysis, avatar rendering, status updates | `PoseRuntime`, `RepAnalysisRuntime`, `HudRuntime`, `AvatarRuntime`, `WorkoutProgressionRuntime` | This is the central render/workout loop. It should not be split until one runtime owns the whole frame pipeline. |
+| `getPoseConfidenceSnapshot`, `runAvatarTrace`, `attachAvatarTraceHarness` | Debug/trace snapshots for camera, pose, and avatar frame integrity | `AvatarRuntime` diagnostics | Diagnostic consumers likely depend on globals. Keep until diagnostics are externalized. |
 
-- `renderSystemBootStatus` delegates boot/status rendering to `StatusPanels`.
-- `window.__retryAvatarRuntime`/`retryAvatarRuntime` is a global retry shim around the avatar runtime bootstrap.
-- `updateAuthPropagationStatus`, `updateActivationStatusPanel`, `runPendingPanelWatchdogs`, `window.__forceAuthPropagationRender`, and `window.__forceAppActivationRender` delegate to extracted status-panel/runtime owners.
+### Avatar render/model pipeline ownership
 
-## Safe removals
+| Inline owner | What it still owns | Runtime dependency | Why dangerous |
+|---|---|---|---|
+| `ensureAvatarThreeRuntimeDependencies` | Lazy Three and GLTF dependency readiness, timeout/failure status mirroring | `AvatarRuntime.ensureThreeModules`, `__AVATAR_THREE` bridge | Race-prone because dependency status feeds boot diagnostics and render-mode fallback. |
+| `ensureAvatarThreeRuntime` | Scene/camera/renderer/light/model runtime creation | Three/GLTF bridge and canvas router | Owns renderer canvas type, scene objects, and status globals. |
+| `ensureAvatarRenderLoop` | `requestAnimationFrame` loop and renderer draw ownership | Three renderer | Permanent extraction candidate only if `AvatarRuntime` becomes sole frame scheduler. |
+| `mountAvatarGlbModel` | GLB probe/load, skeleton discovery, bone map, fallback status | `AvatarRuntime` control state and profile metadata | Load-bearing for avatar-only/overlay mode. Broken ordering causes blank avatar or camera fallback. |
+| `applyRenderModeSelection`, `applyAvatarStageMode`, `applyAvatarFacingCalibration`, `fallbackRenderModeToCamera` | Mode/stage/facing persistence and UI status | `localStorage`, avatar UI controls | Moderate but ordering-sensitive; safe to move after the renderer pipeline moves. |
+| `drawProceduralAvatar` | 2D fallback/body overlay draw implementation | Pose packets and canvas context router | Render-loop implementation; do not extract separately from pose packet ownership. |
+| Avatar modal callbacks and popup/message handling | Avaturn popup, model URL/thumb capture, profile writeback wiring | `AvatarRuntime`, `ProfileWriteRuntime` | Control binding is extracted, but inline still owns popup/message ordering. |
 
-- **Removed in the auth-submit pass:** inline `submitAuthRequest`, `handleLoginSubmit`, `window.handleLoginButtonClick`/`handleLoginButtonClick`, and `window.handleCreateAccountToggle`/`handleCreateAccountToggle` delegators were deleted after the login form buttons were rewired to rely on `auth-core.js` event listeners.
-- **Removed in this pass:** inline `speak`, `unlockAudioOnce`, and `stopAllSpeech` coach voice compatibility delegators were deleted after the remaining call sites were rewired to call `coach-runtime.js` through `requireCoachRuntime()` directly.
-- **No remaining active inline implementation is safe to delete immediately.** The remaining non-delegator bodies close over inline state or DOM refs and still participate in auth/profile boot, hydration, workout, pose/camera, rep persistence, HUD, or avatar rendering.
-- **Safe after status panels become single-owner:** `renderSystemBootStatus`, `updateAuthPropagationStatus`, `updateActivationStatusPanel`, `runPendingPanelWatchdogs`, `window.__forceAuthPropagationRender`, and `window.__forceAppActivationRender`.
-- **Safe after avatar bootstrap owns retry/status directly:** `window.__retryAvatarRuntime`/`retryAvatarRuntime`.
-- **Already removed in prior passes:** no-op builder/diagnostic shims (`forceBuilderFullAccessAuthState`, `enforceBuilderOverlayBypass`, `installClickDiagnostics`), unused session-start helper, extracted workout/session callback bodies, and extracted OHSA assessment persistence/callback bodies.
+### Hydration ordering dependencies
 
-## Remaining dangerous/load-bearing sections
+| Inline owner | Dependency chain | Current posture |
+|---|---|---|
+| `defaultProfileForName`, `onLoginUI`, `buildCalendarFromMeta`, `onLogin` | Inline compatibility aliases delegate into `AppHydrationRuntime`, but are still referenced by global callers/tests. | Safe delegators; remove only after callers use runtime directly. |
+| `initializeAuth` | `AuthStateRuntime` session restore → profile defaults → `APP_AUTH`/`USER_ID`/`USER_PROFILE` globals → shell visibility → primary button binding. | Dangerous auth/hydration lifecycle. Do not extract until globals are owned externally. |
+| `AppHydrationRuntime.configure` | Supplies references and callbacks for profile shell, calendar, retention, runtime buttons, sync status, and state setters. | Ordering-sensitive boot glue. Move only if a bootstrap module owns all DOM refs first. |
+| `ensureRetentionFlowLoaded` alias and retention/dashboard refresh timing | Auth-ready profile state → retention loader → dashboard refresh → status panels. | Moderate-risk glue; can move after auth/profile state is single-owner. |
+| Window-load boot gates | `AppHydrationRuntime.runBootGates("window:load")`, `applyNoPendingForeverPolicy`, final diagnostics. | Keep inline for now; it is the last boot-contract safety net. |
 
-1. **Auth/profile shell lifecycle:** `initializeAuth`, `onLogin`, `handleLogout`, pilot bypass, authenticated shell visibility, profile fallback writes, and `APP_AUTH`/`USER_PROFILE`/`USER_ID` mutation remain load-bearing.
-2. **Boot/status diagnostics:** inline build stamp, boot contract checks, propagation panels, and handler checks still determine visible readiness/failure state.
-3. **Hydration/retention/dashboard ordering:** retention loader, calendar meta, dashboard refresh, and profile hydration remain coupled to inline auth/profile timing.
-4. **Workout/OHSA/rep loop:** workout selection, start/connect flow, rep analysis sync, `sendRepToNode`, OHSA/define-exercise entrypoints, and runtime context accessors still depend on inline state.
-5. **Pose/camera loop:** detector initialization, optional trackers, `connectCamera`, `runPoseLoop`, confidence scoring, and camera error handling are still the highest-risk active inline runtime.
-6. **Avatar renderer/model pipeline:** Three bootstrap, GLB probe/mount, render-loop, render-mode/stage/facing controls, skeleton mapping, procedural fallback drawing, and avatar modal/profile callbacks remain heavy and load-bearing.
+### Boot diagnostics dependencies
 
-## All remaining inline functions and classification
+| Inline owner | Diagnostic dependency | Keep/extract guidance |
+|---|---|---|
+| `updateAppBootStatus` and `appBootSteps` | Visible boot panel, runtime error bridge, `window.__appBootStatus` | Keep until `StatusPanels` owns the canonical visible boot stream. |
+| `isBootContractReady`, `appendPilotEventLocal`, `trackPilotEvent`, `emitPilotEvent` | Pilot readiness events and backend pilot event writes | Moderate/high; extract only after retry/offline semantics are tested. |
+| `refreshBuildStamp`, `logMobileControlTruth`, `getPrimaryNavHandlerStatus` | Build stamp, DOM truth logging, final handler rescue diagnostics | Keep until all button/runtime ownership is stable. |
+| `configureBootLifecycle`, `configureAuthLifecycle`, `configurePostLoginActivation` | Runtime boot/status bridges and auth propagation panels | Ordering-sensitive; should remain inline with current DOM ref bootstrap for now. |
+| Final `window.load` handler | Boot gates, no-pending policy, final status refreshes, camera preflight diagnostics | Ordering-sensitive; leave inline permanently unless a single bootstrap module takes ownership. |
 
-| Line | Function | Classification | Removal note |
+### Workout/rep/OHSA orchestration dependencies
+
+| Inline owner | What it coordinates | Runtime dependency | Guidance |
+|---|---|---|---|
+| Static workout templates and selection persistence | Workout plan IDs, local selection mirror, canonical selected workout | `WorkoutRuntime`, `WorkoutProgressionRuntime` | Can move safely if selection storage contract is copied exactly. |
+| `renderWorkoutPlan` | DOM rendering for the current plan | `WorkoutProgressionRuntime` state | Moderate; move with workout selection state. |
+| `getPrimaryCue`, `renderWorkoutHud` | HUD cue selection and runtime HUD state | `HudRuntime`, `WorkoutProgressionRuntime` | Can move once HUD runtime receives all state directly. |
+| `analyzeSquatForm`, `getKeypoint`, `getAngleDegrees`, `computeKneeValgus` | Inline squat fallback analysis and form result enrichment | `RepAnalysisRuntime`, form engine | Dangerous because loop uses it per frame. Move with `runPoseLoop`, not before. |
+| `sendRepToNode` | Authenticated rep/session persistence payloads | `SessionWriteRuntime`, auth token globals | Dangerous write path; move after auth/profile/session state are runtime-owned. |
+| `syncRepAnalysisState` and `configureExtractedWorkoutRuntimes` | State mirror from rep runtime to inline globals and HUD | `RepAnalysisRuntime`, `WorkoutProgressionRuntime` | Dangerous bridge; remove only after inline globals are no longer needed. |
+| `startOhsa`, `startDefineExercise`, `startWorkout` | Detector readiness, camera loop start, active workout/assessment start | `AssessmentRuntime`, `WorkoutRuntime`, `PoseRuntime` | Load-bearing lifecycle; keep inline wrappers until loop ownership moves. |
+
+### askCoach/chat ownership
+
+| Surface | Current owner | Audit finding | Guidance |
+|---|---|---|---|
+| Voice command dispatch | `CoachRuntime` owns SpeechRecognition lifecycle and calls the configured dispatcher. | Inline dispatcher only forwards to `window.askCoach` if present, otherwise logs unavailable chat. | Safe glue; leave until chat owner is explicit. |
+| Ask button / Enter key | Inline binds `askBtn.onclick` and `questionInput` keydown directly to global `askCoach(...)`. | No inline `askCoach` implementation remains in this scan. The historical `program_calendar.js` wrapper expects `window.askCoach` to pre-exist, so this is an unresolved global dependency rather than extractable ownership. | Do **not** touch in this cleanup pass except to create a dedicated chat runtime with tests. |
+| Chat backend endpoint constants | Inline still defines `ASK_URL` and `PROGRAM_URL`. | They are currently not evidence of inline chat implementation by themselves. | Move only when a chat runtime owns `askCoach` and imports endpoint config from `RuntimeState`. |
+
+## Sections that should NOT be extracted in the next pass
+
+1. `runPoseLoop` and its per-frame dependencies (`initDetector`, optional tracker state, squat analyzer, HUD push, rep sync, avatar packet/render calls).
+2. Avatar renderer/model pipeline (`ensureAvatarThreeRuntimeDependencies`, `ensureAvatarThreeRuntime`, `ensureAvatarRenderLoop`, `mountAvatarGlbModel`, `drawProceduralAvatar`, trace harness).
+3. Auth/profile global writers and shell state (`initializeAuth`, `APP_AUTH`, `USER_ID`, `USER_PROFILE`, shell visibility, pilot bypass state).
+4. Boot diagnostics and final window-load gates (`updateAppBootStatus`, boot contract checks, status-panel rescue shims, module gate checks).
+5. Authenticated write bridges (`sendProfileToNode`, `sendRepToNode`, `postAuthenticatedJSON`) until auth/session state has a single external owner.
+6. `askCoach` button/key bindings until a real chat runtime owns the global command and tests cover the typed-chat path.
+
+## Recommended permanent-inline sections
+
+These should stay inline permanently unless the app receives a dedicated bootstrap entry module that owns initial DOM refs and script order:
+
+- Initial runtime/error bridge installation and build/version marker.
+- One-time DOM ref acquisition for the static HTML shell.
+- Runtime configuration calls that wire existing DOM refs into extracted runtimes.
+- Final window-load boot gate and visible diagnostic rescue calls.
+- Tiny compatibility shims required by legacy tests or by external scripts loaded after the main inline block.
+
+## Recommended remaining safe extractions
+
+| Priority | Candidate | Preconditions | Expected risk |
 |---:|---|---|---|
-| 996 | `updateAppBootStatus` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1074 | `renderSystemBootStatus` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 1075 | `isBootContractReady` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1127 | `appendPilotEventLocal` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1136 | `trackPilotEvent` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1160 | `emitPilotEvent` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1164 | `getAvatarRuntimeStatusRef` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1217 | `updateAvatarOverlayDiagnostics` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1230 | `setAvatarRuntimeFailure` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1246 | `refreshBuildStamp` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1274 | `logMobileControlTruth` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 1331 | `requireWorkoutProgressionRuntime` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1336 | `getActiveWorkoutState` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1340 | `getActiveWorkoutPlan` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1344 | `hydrateActiveWorkoutPlan` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1348 | `updateActiveWorkoutState` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1354 | `getPrimaryCue` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1362 | `renderWorkoutHud` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 1474 | `logTrackerCapabilities` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1478 | `updateTrackingMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1518 | `getThreeGlobal` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1523 | `getGltfLoaderCtor` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1528 | `updateAvatarRuntimeRenderModeStatus` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1557 | `logAvatarWebglAvailability` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1568 | `ensureAvatarThreeRuntimeDependencies` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1585 | `onReady` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1589 | `onFailed` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1598 | `cleanup` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1626 | `logAvatarCanvasState` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1644 | `ensureAvatarRenderLoop` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1649 | `loop` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1665 | `ensureAvatarThreeRuntime` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1789 | `setAvatar3dCanvasVisibility` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1793 | `resizeAvatarThreeRuntime` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1797 | `initializeAvatarRuntimeBootstrap` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1817 | `window.__retryAvatarRuntime/retryAvatarRuntime` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 1841 | `refreshCameraUiState` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1856 | `setCameraFullscreen` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1869 | `findFirstSkeleton` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1879 | `mapAvatarBones` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1882 | `findBone` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1905 | `sanitizeRenderMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1909 | `getRenderModeLabel` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1915 | `updateRenderModeStatus` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1921 | `sanitizeStageMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1925 | `resolveInitialStageMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1933 | `applyAvatarStageMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 1957 | `applyRenderModeSelection` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2002 | `fallbackRenderModeToCamera` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2015 | `resolveInitialRenderMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2029 | `sanitizeAvatarFacingDeg` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2034 | `applyAvatarFacingCalibration` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2054 | `resolveInitialAvatarFacingDeg` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2062 | `getRenderMode` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2067 | `setPersonLayerSuppressed` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2072 | `isLikelyHttpUrl` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2082 | `resolveAvatarModelUrl` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2098 | `setAvatarRuntimeStatus` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2105 | `setAvatarAssetStatus` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2117 | `normalizeAvatarProfile` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2131 | `probeAvatarModelRuntime` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2173 | `mountAvatarGlbModel` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2302 | `toRotation` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2350 | `loadAvatarAssetForCurrentUser` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2394 | `openAvatarModal` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2407 | `closeAvatarModal` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2415 | `addLog` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2423 | `updateAuthDebug` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 2447 | `markPerfMetric` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2452 | `ensureRetentionFlowLoaded` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2456 | `persistUser` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2474 | `defaultProfileForName` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2485 | `onLoginUI` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2489 | `buildCalendarFromMeta` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2493 | `sendToNode` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2508 | `postAuthenticatedJSON` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2550 | `isAuthUnavailable` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2586 | `updateSyncStatus` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2608 | `sendProfileToNode` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2612 | `getAuthToken` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2616 | `applyAuthenticatedShellVisibility` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2634 | `renderAuthShell` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2641 | `removeBuilderModeUiGuards` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2652 | `getActiveBlockingOverlay` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2671 | `setPilotBypassAuthState` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2675 | `activatePilotBypassImmediate` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2684 | `initializeAuth` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2715 | `onLogin` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2719 | `handleLogout` | active implementation | load-bearing auth/profile/hydration/persistence implementation |
-| 2734 | `requireCoachRuntime` | active implementation | inline closure/callback helper; audit with surrounding runtime configure block before removal |
-| 2750 | `toggleListening` | active implementation | inline SpeechRecognition command wiring; keep until STT ownership is extracted |
-| 2845 | `buildCanonicalWorkoutSelection` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2860 | `persistCanonicalWorkoutSelection` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2869 | `clearCanonicalWorkoutSelection` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2875 | `renderWorkoutPlan` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2891 | `getKeypoint` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2896 | `getAngleDegrees` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2911 | `computeKneeValgus` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2919 | `analyzeSquatForm` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2958 | `getCurrentExerciseMeta` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2962 | `getCurrentExerciseId` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2967 | `sendRepToNode` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2985 | `syncRepAnalysisState` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 2994 | `configureExtractedWorkoutRuntimes` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 3073 | `initDetector` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3117 | `initOptionalTrackers` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3166 | `connectCamera` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3216 | `drawProceduralAvatar` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3220 | `get` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3221 | `good` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3250 | `drawLimb` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3286 | `startOhsa` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 3293 | `startDefineExercise` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 3299 | `runPoseLoop` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3325 | `startWorkout` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 3332 | `handleWorkoutSelectChange` | active implementation | load-bearing workout/OHSA/rep/HUD implementation |
-| 3361 | `getPoseConfidenceSnapshot` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3362 | `score` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3363 | `kp` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3378 | `runAvatarTrace` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3536 | `attachAvatarTraceHarness` | active implementation | dangerous avatar/pose/camera/render-loop implementation |
-| 3560 | `getPrimaryNavHandlerStatus` | active implementation | load-bearing boot/status/pilot diagnostic implementation |
-| 3571 | `updateAuthPropagationStatus` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 3573 | `updateActivationStatusPanel` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 3575 | `runPendingPanelWatchdogs` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 3577 | `window.__forceAuthPropagationRender` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
-| 3578 | `window.__forceAppActivationRender` | compatibility delegator | remove only after external runtime/call sites no longer need the global shim |
+| 1 | Pure compatibility delegator deletion (`defaultProfileForName`, `buildCalendarFromMeta`, `onLogin`, status-panel force shims) | Prove no HTML attributes, external scripts, tests, or global callers reference the names. | Low. |
+| 2 | Workout plan templates and canonical selection storage | Add tests for selected workout persistence and plan rendering before/after auth restore. | Medium. |
+| 3 | HUD cue calculation (`getPrimaryCue`, `renderWorkoutHud`) | Ensure `HudRuntime` receives active state/form result directly. | Medium. |
+| 4 | Avatar mode/stage/facing UI persistence | Keep renderer/model creation inline until after this moves; test localStorage and camera fallback. | Medium/high. |
+| 5 | Pilot event diagnostics | Add tests for event payload, auth token behavior, offline failure, and visible diagnostic updates. | Medium/high. |
+| 6 | Chat/askCoach runtime | First create an owner for `window.askCoach`; then rewire ask button, Enter key, and coach voice dispatcher. | Medium/high. |
 
-## Recommended final cleanup sequence
+## Dangerous sections map
 
-1. **Freeze compatibility contracts and tests:** keep the current synchronized HTML copies stable while tests assert the extracted auth, retention, session, performance lazy-load, and OHSA paths.
-2. **Completed — remove auth submit globals first:** inline/global auth button call sites now rely on direct `auth-core.js` event-listener ownership, and `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, and `handleCreateAccountToggle` inline delegators were deleted.
-3. **Completed in this pass — remove coach voice speech delegators:** listen/STT call sites now invoke `coach-runtime.js` directly through `requireCoachRuntime()`, and `speak`, `unlockAudioOnce`, and `stopAllSpeech` inline delegators were deleted.
-4. **Consolidate auth shell/profile state:** migrate `initializeAuth`, `onLogin`, `handleLogout`, shell visibility, `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, and `updateSyncStatus` into auth/profile runtimes; only then remove inline `APP_AUTH`, `USER_ID`, and `USER_PROFILE` writers.
-5. **Move hydration/retention/dashboard ordering:** transfer `ensureRetentionFlowLoaded`, `buildCalendarFromMeta`, dashboard refresh timing, and status refresh callbacks into `app-hydration-runtime.js`, `retention-loader-runtime.js`, and `dashboard-runtime.js`.
-6. **Move workout/OHSA/rep context accessors:** migrate selection persistence, `renderWorkoutPlan`, `startOhsa`, `startDefineExercise`, `sendRepToNode`, `syncRepAnalysisState`, and local workout state accessors into workout/assessment/rep runtimes.
-7. **Move pose/camera ownership:** migrate `initDetector`, `initOptionalTrackers`, `connectCamera`, `runPoseLoop`, pose confidence, and squat analyzer helpers to pose/rep-analysis runtimes with temporary global start/connect delegators.
-8. **Move avatar heavy implementation last:** migrate Three bootstrap, GLB loading/probing/mounting, render loop, rig/skeleton mapping, render-mode/stage/facing controls, procedural renderer, trace harness, and avatar modal/profile callbacks to `avatar-runtime.js`.
-9. **Delete final status/boot shims:** once the major runtime owners are single-owner, remove boot/status compatibility delegators and final handler rescue globals.
+| Danger level | Inline section/range | Why it is dangerous | Recommended action |
+|---|---|---|---|
+| Highest | Avatar model/render loop island, roughly inline script lines 1518–2409 and 3165–3490 in `index.html`/`public/index.html` | Owns Three/GLTF readiness, canvas, model loading, frame rendering, pose packet rendering, and trace diagnostics. | Freeze until an avatar runtime owns the entire frame/model pipeline. |
+| Highest | Pose loop and rep/form frame island, roughly lines 3022–3320 | Owns detector readiness, camera loop start, pose frames, form analysis, HUD updates, rep sync, and avatar packet delivery. | Freeze until pose runtime owns frame scheduling. |
+| High | Auth/profile/hydration shell, roughly lines 2446–2728 and 3641–3705 | Owns session restore, profile globals, shell visibility, runtime state setters, and hydration callback wiring. | Extract only as one auth/profile bootstrap migration. |
+| High | Workout/OHSA orchestration, roughly lines 2759–3018 and 3235–3285 | Coordinates selected plans, assessment start, runtime callback glue, rep/session writes, and camera loop entry. | Move selection/HUD first; keep lifecycle wrappers until pose loop moves. |
+| High | Boot diagnostics and final boot gate, roughly lines 996–1288, 3509–3578, and 3842–3868 | Owns visible rescue diagnostics and final readiness checks. | Keep inline until a boot module owns the static shell. |
+| Medium/high | Avatar modal/profile writeback and popup/message bridge, roughly lines 2394–2409 and 3760–3790 | Uses popup, message events, profile writeback, and renderer init. | Move with avatar controls only after profile writeback tests exist. |
+| Medium/high | Chat ask button/Enter handlers, roughly lines 3792 and 3832–3833 | Calls a global `askCoach` that is not defined by the remaining inline scan. | Do not delete; create chat runtime and tests. |
 
-## Test result for final inline deprecation audit
+## Final recommendation
 
-The requested checks passed for this audit:
-
-- `npm run lint`
-- `node --test test/pilot-login.test.js test/auth-login-form-submit.test.js test/session-api.test.js test/retention-api.test.js test/performance-lazyload.test.js`
+The remaining inline code should be treated as a bootstrap boundary plus three dangerous implementation islands: auth/profile hydration, pose/workout frame orchestration, and avatar render/model ownership. The next cleanup should avoid touching the pose/camera loop, avatar renderer/model pipeline, final boot diagnostics, and chat button global until dedicated runtime owners and focused tests exist. The only safe near-term movements are small delegator removals, workout selection/HUD state movement, and explicit chat-runtime creation with tests.
