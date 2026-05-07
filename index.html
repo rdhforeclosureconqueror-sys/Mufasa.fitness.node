@@ -934,8 +934,9 @@ CREATE CLICKED: no</pre>
   <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
-  <script src="/status-panels.js?v=20260505"></script>
-  <script src="/workout-runtime.js?v=20260506"></script>
+  <script src="/live-workout-breakpoints.js?v=20260507"></script>
+  <script src="/status-panels.js?v=20260507"></script>
+  <script src="/workout-runtime.js?v=20260507"></script>
   <script src="/runtime-orchestrator.js?v=20260506"></script>
   <script src="/retention-loader-runtime.js?v=20260507"></script>
   <script src="/app-hydration-runtime.js?v=20260507"></script>
@@ -2653,7 +2654,17 @@ CREATE CLICKED: no</pre>
 
 
     async function onLogin(profile) {
-      return window.AppHydrationRuntime?.handleLoginProfile?.(profile);
+      try {
+        const result = await window.AppHydrationRuntime?.handleLoginProfile?.(profile);
+        window.__liveWorkoutBreakpoints?.markPass?.("login-ready", { userId: profile?.userId || profile?.id || null, email: profile?.email || null });
+        if (window.APP_AUTH?.isAuthenticated === true || window.__AUTH_READY === true) {
+          window.__liveWorkoutBreakpoints?.markPass?.("auth-ready", { source: "onLogin" });
+        }
+        return result;
+      } catch (error) {
+        window.__liveWorkoutBreakpoints?.markFail?.("login-ready", error, { source: "onLogin" });
+        throw error;
+      }
     }
 
     async function handleLogout() {
@@ -2968,7 +2979,9 @@ CREATE CLICKED: no</pre>
     // [INLINE_REMAINING] pose/camera loop — camera, detector, and frame callbacks bridge browser media state into PoseRuntime.
     async function initDetector() {
       detectorInitStartedAt = performance.now();
+      window.__liveWorkoutBreakpoints?.markPass?.("detector-init-started", { source: "initDetector" });
       console.log("[POSE_RUNTIME] initDetector bridge invoked");
+      try {
       if (window.PoseRuntime?.initMoveNetDetector) {
         detector = await window.PoseRuntime.initMoveNetDetector({
           ensurePoseRuntime: window.__ensurePoseRuntime,
@@ -2978,6 +2991,7 @@ CREATE CLICKED: no</pre>
           trackingCapabilities,
           logTrackerCapabilities
         });
+        window.__liveWorkoutBreakpoints?.markPass?.("detector-ready", { source: "PoseRuntime.initMoveNetDetector", detectorReady: Boolean(detector) });
         return detector;
       }
       await window.__ensurePoseRuntime();
@@ -2992,6 +3006,7 @@ CREATE CLICKED: no</pre>
         console.error("PoseDetection failed to load.");
         trackingCapabilities.hasMoveNet = false;
         logTrackerCapabilities();
+        window.__liveWorkoutBreakpoints?.markFail?.("detector-ready", new Error("poseDetection library unavailable"), { source: "initDetector" });
         return null;
       }
       detector = await poseDetection.createDetector(
@@ -3007,7 +3022,12 @@ CREATE CLICKED: no</pre>
       });
       logTrackerCapabilities();
       console.log("[POSE_RUNTIME] MoveNet detector created by legacy bridge.");
+      window.__liveWorkoutBreakpoints?.markPass?.("detector-ready", { source: "legacy initDetector", detectorReady: Boolean(detector), tfBackend: tf.getBackend?.() || "unknown" });
       return detector;
+      } catch (error) {
+        window.__liveWorkoutBreakpoints?.markFail?.("detector-ready", error, { source: "initDetector" });
+        throw error;
+      }
     }
 
     async function initOptionalTrackers() {
@@ -3060,7 +3080,12 @@ CREATE CLICKED: no</pre>
     }
 
     async function connectCamera() {
-      if (typeof window.WorkoutRuntime?.connectCamera !== "function") throw new Error("WorkoutRuntime.connectCamera missing");
+      window.__liveWorkoutBreakpoints?.markPass?.("camera-clicked", { source: "inline connectCamera" });
+      if (typeof window.WorkoutRuntime?.connectCamera !== "function") {
+        const error = new Error("WorkoutRuntime.connectCamera missing");
+        window.__liveWorkoutBreakpoints?.markFail?.("camera-stream-received", error, { source: "inline connectCamera" });
+        throw error;
+      }
       console.log("[WORKOUT_LIFECYCLE] connectCamera requested");
       return window.WorkoutRuntime.connectCamera();
     }
@@ -3197,6 +3222,7 @@ CREATE CLICKED: no</pre>
 
     function runPoseLoop() {
       console.log("[POSE_RUNTIME] runPoseLoop bridge invoked");
+      try {
       if (!window.PoseRuntime?.startPoseLoop) {
         const message = "Pose runtime module missing; cannot start pose loop.";
         poseStatusEl.textContent = message;
@@ -3208,21 +3234,38 @@ CREATE CLICKED: no</pre>
         video: videoEl,
         isRunning: () => running === true,
         onPoseFrame: ({ pose, posePacket }) => {
-          if (!window.RepAnalysisRuntime?.processPoseFrame) throw new Error("RepAnalysisRuntime.processPoseFrame missing");
+          window.__liveWorkoutBreakpoints?.markPass?.("first-pose-frame", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
+          if (!window.RepAnalysisRuntime?.processPoseFrame) {
+            const error = new Error("RepAnalysisRuntime.processPoseFrame missing");
+            window.__liveWorkoutBreakpoints?.markFail?.("rep-analysis-called", error, { source: "runPoseLoop.onPoseFrame" });
+            throw error;
+          }
+          window.__liveWorkoutBreakpoints?.markPass?.("rep-analysis-called", { source: "runPoseLoop.onPoseFrame" });
           window.RepAnalysisRuntime.processPoseFrame({ pose, posePacket });
         },
         onError: (err) => {
           const reason = err?.message || String(err || "pose_loop_error");
+          window.__liveWorkoutBreakpoints?.markFail?.("first-pose-frame", err, { source: "PoseRuntime.startPoseLoop.onError" });
           poseStatusEl.textContent = `Pose loop error: ${reason}`;
           poseStatusEl.classList.add("status-bad");
         }
       });
       animId = { stop: loop.stop };
+      window.__liveWorkoutBreakpoints?.markPass?.("pose-loop-started", { hasStop: typeof loop?.stop === "function" });
       return loop;
+      } catch (error) {
+        window.__liveWorkoutBreakpoints?.markFail?.("pose-loop-started", error, { source: "runPoseLoop" });
+        throw error;
+      }
     }
 
     async function startWorkout() {
-      if (typeof window.WorkoutRuntime?.startWorkout !== "function") throw new Error("WorkoutRuntime.startWorkout missing");
+      window.__liveWorkoutBreakpoints?.markPass?.("workout-start-clicked", { source: "inline startWorkout" });
+      if (typeof window.WorkoutRuntime?.startWorkout !== "function") {
+        const error = new Error("WorkoutRuntime.startWorkout missing");
+        window.__liveWorkoutBreakpoints?.markFail?.("session-created", error, { source: "inline startWorkout" });
+        throw error;
+      }
       console.log("[WORKOUT_LIFECYCLE] startWorkout requested");
       return window.WorkoutRuntime.startWorkout();
     }

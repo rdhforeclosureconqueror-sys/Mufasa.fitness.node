@@ -93,10 +93,12 @@
       state.lastPersistAt = new Date(now).toISOString();
       state.lastPersistError = null;
       log('rep update enqueued', payload);
+      global.__liveWorkoutBreakpoints?.markPass?.('rep-persisted', { sessionId, exerciseId, totalReps });
       return true;
     } catch (err) {
       const message = err?.message || String(err || 'rep_persist_failed');
       console.error('[REP_RUNTIME] rep update failed', err);
+      global.__liveWorkoutBreakpoints?.markFail?.('rep-persisted', err, { sessionId, exerciseId, totalReps });
       setVisibleRuntimeError(`Rep persistence failed: ${message}`);
       return false;
     }

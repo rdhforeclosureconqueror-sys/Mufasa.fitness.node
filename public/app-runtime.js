@@ -66,7 +66,8 @@
       `camera stream received: ${boolText(cameraDiag.streamReceived)}`,
       `camera video element found/created: ${boolText(cameraDiag.videoElementReady)}`,
       `camera video playing: ${boolText(cameraDiag.videoPlaying)}`,
-      `camera last error: ${cameraDiag.lastCameraError || 'none'}`
+      `camera last error: ${cameraDiag.lastCameraError || 'none'}`,
+      globalScope.__liveWorkoutBreakpoints?.summaryLine?.() || 'live workout breakpoint: tracker unavailable'
     ].join('\n');
   }
 

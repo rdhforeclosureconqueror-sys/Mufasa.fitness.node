@@ -12,6 +12,29 @@
     };
   }
 
+
+
+  function getLiveWorkoutBreakpointLine() {
+    const tracker = global.__liveWorkoutBreakpoints;
+    if (!tracker?.summaryLine) return 'live workout breakpoint: tracker unavailable';
+    return tracker.summaryLine();
+  }
+
+  function renderLiveWorkoutBreakpointStatus(reason = 'update') {
+    const tracker = global.__liveWorkoutBreakpoints;
+    const line = getLiveWorkoutBreakpointLine();
+    ['authPropagationStatus', 'appActivationStatus', 'featureActivationStatus', 'systemBootStatus'].forEach((panelId) => {
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+      const current = String(panel.textContent || '');
+      if (!current.trim() || current.trim().toLowerCase().startsWith('pending')) return;
+      const lines = current.split('\n').filter((entry) => !entry.startsWith('live workout breakpoint:'));
+      lines.push(line);
+      panel.textContent = lines.join('\n');
+    });
+    return { reason, firstBlocking: tracker?.getFirstBlocking?.() || null };
+  }
+
   function setStatusPanelError(panelId, tag, message) {
     const panelEl = document.getElementById(panelId);
     if (!panelEl) return;
@@ -32,7 +55,8 @@
       `auth restored/validated: ${bootStatus.authRestoredValidated ? 'yes' : 'no'}`,
       `app runtime started: ${bootStatus.appRuntimeStarted ? 'yes' : 'no'}`,
       `feature gates enabled: ${bootStatus.featureGatesEnabled ? 'yes' : 'no'}`,
-      `last boot error: ${bootStatus.lastBootError || 'none'}`
+      `last boot error: ${bootStatus.lastBootError || 'none'}`,
+      getLiveWorkoutBreakpointLine()
     ].join('\n');
   }
 
@@ -56,7 +80,8 @@
         `window.setCanonicalAuthState exists: ${typeof global.setCanonicalAuthState === 'function' ? 'yes' : 'no'}`,
         `auth:changed fired: ${dbg.authChangedFired ? 'yes' : 'no'}`,
         `last auth event timestamp: ${dbg.lastAuthEventAt || 'none'}`,
-        `last auth error: ${dbg.lastAuthError || 'none'}`
+        `last auth error: ${dbg.lastAuthError || 'none'}`,
+        getLiveWorkoutBreakpointLine()
       ];
       panelEl.textContent = payload.join('\n');
     } catch (error) {
@@ -92,7 +117,8 @@
         `onLogin available: ${typeof global.onLogin === 'function' ? 'yes' : 'no'}`,
         `retention loader available: ${typeof global.ensureRetentionFlowLoaded === 'function' ? 'yes' : 'no'}`,
         `last button clicked: ${global.__lastAppButtonClicked || 'none'}`,
-        `last app error: ${global.__lastAppError || 'none'}`
+        `last app error: ${global.__lastAppError || 'none'}`,
+        getLiveWorkoutBreakpointLine()
       ];
       panelEl.textContent = payload.join('\n');
     } catch (error) {
@@ -148,6 +174,7 @@
     renderSystemBootStatus,
     updateAuthPropagationStatus,
     updateActivationStatusPanel,
+    renderLiveWorkoutBreakpointStatus,
     runPendingPanelWatchdogs
   };
 })(window);

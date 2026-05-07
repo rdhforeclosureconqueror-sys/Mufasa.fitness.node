@@ -220,6 +220,7 @@
       if (!sessionWrite?.completeSession) {
         const err = new Error('SessionWrite.completeSession missing');
         console.error('[SESSION_COMPLETION] failed', err);
+        global.__liveWorkoutBreakpoints?.markFail?.('workout-completed', err, { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
         setVisibleRuntimeError('Workout completion failed: SessionWrite.completeSession missing');
         throw err;
       }
@@ -236,11 +237,13 @@
       } catch (err) {
         deps.onCompleteSaveError?.(err);
         console.error('[SESSION_COMPLETION] session_complete write failed', err);
+        global.__liveWorkoutBreakpoints?.markFail?.('workout-completed', err, { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
         setVisibleRuntimeError(`Workout completion failed: ${err?.message || err}`);
         throw err;
       }
     }
     completedEventDispatched = true;
+    global.__liveWorkoutBreakpoints?.markPass?.('workout-completed', { sessionId: canonicalSessionId, totalReps: state.totalReps, workoutId: state.activeWorkoutId });
     console.log('[SESSION_COMPLETION] dispatching workout:completed', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
     global.dispatchEvent?.(new global.CustomEvent('workout:completed', { detail: completion }));
     deps.trackPilotEvent?.('workout_completed', { sessionId: canonicalSessionId, totalReps: state.totalReps });
