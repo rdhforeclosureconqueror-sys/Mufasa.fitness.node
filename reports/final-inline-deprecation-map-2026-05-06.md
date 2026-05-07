@@ -2,16 +2,16 @@
 
 ## Scope and measurement
 
-This audit covers the synchronized landing page copies at `index.html` and `public/index.html`. Phase 7A removed only explicit no-op inline compatibility shims and left active runtime bridges/helpers untouched.
+This audit covers the synchronized landing page copies at `index.html` and `public/index.html`. This pass continues final inline deprecation by extracting the remaining workout/session callback glue into the workout runtimes while leaving avatar/pose rendering untouched.
 
 ### Current inline script size
 
 | File | Inline script blocks | Total inline bytes | Total inline lines | Largest inline block |
 |---|---:|---:|---:|---:|
-| `index.html` | 4 | 171,683 | 3,655 | 171,094 bytes / 3,640 lines (`<script>` starting at line 942) |
-| `public/index.html` | 4 | 171,683 | 3,655 | 171,094 bytes / 3,640 lines (`<script>` starting at line 942) |
+| `index.html` | 4 | 163,939 | 3,510 | 163,350 bytes / 3,495 lines (`<script>` starting at line 942) |
+| `public/index.html` | 4 | 163,939 | 3,510 | 163,350 bytes / 3,495 lines (`<script>` starting at line 942) |
 
-Measured with a Python inline-script extraction command against both synchronized HTML files. The same measurement pass counts 144 remaining inline function declarations/arrow-function bindings in each copy, down from 148 before extracting the auth submit/register/login request owner into `auth-core.js`.
+Measured with a Python inline-script extraction command against both synchronized HTML files. The same measurement pass counts 143 remaining inline function declarations/arrow-function bindings in each copy, down from 144 before extracting workout/session callback bodies and deleting the unused `sendStartSessionToNode` helper.
 
 ## Final inline ownership map
 
@@ -21,14 +21,25 @@ Measured with a Python inline-script extraction command against both synchronize
 | Boot | `boot-core.js`, `runtime-events.js`, `runtime-state.js`, `status-panels.js`, `runtime-orchestrator.js` | `updateAppBootStatus`, build stamp refresh, boot contract/status diagnostics, final handler checks | **Duplicate owner remains.** External boot core fetches version while inline still refreshes build stamp and owns visible boot diagnostics. | Medium/high. |
 | Profile | `profile-runtime.js`, `profile-write-runtime.js`, `backend-read.js`, `app-hydration-runtime.js` | `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, sync status, avatar profile callbacks | **Duplicate owner remains.** Profile read/write/hydration split across modules and inline. | High. |
 | Retention | `retention-loader-runtime.js`, `app-hydration-runtime.js`, dashboard/profile runtimes | `ensureRetentionFlowLoaded` alias and post-login/dashboard refresh coupling | **Mostly delegator duplicate.** Loader moved out; inline still controls when auth/profile invokes it. | Medium. |
-| Workout | `workout-runtime.js`, `workout-progression-runtime.js`, `runtime-orchestrator.js` | workout selection persistence, `startWorkout`, `connectCamera`, workout plan rendering, session start/complete glue | **Duplicate owner remains.** Runtime owns core controls but inline owns callbacks and state. | Highest. |
+| Workout | `workout-runtime.js`, `workout-progression-runtime.js`, `runtime-orchestrator.js` | workout selection persistence, `startWorkout`, `connectCamera`, workout plan rendering, thin context delegates for state/DOM access | **Callback duplicate reduced.** Session start/stop/error callback bodies now live in `workout-runtime.js`; progression completion/rep callback bridges now live in `workout-progression-runtime.js`. Inline still supplies local state accessors until pose/avatar extraction. | High. |
 | Pose | `pose-runtime.js`, `rep-analysis-runtime.js` | detector init, camera loop, optional trackers, pose confidence, form analyzer helpers, avatar pose packet production | **Duplicate owner remains.** Runtime modules exist but inline still starts detector/loop and feeds downstream owners. | Highest. |
-| Rep | `rep-runtime.js`, `rep-analysis-runtime.js`, `session-write.js` | `sendRepToNode`, `syncRepAnalysisState`, squat analysis, rep mirrors | **Duplicate owner remains.** Extracted rep/session modules coexist with inline counters and callbacks. | High. |
+| Rep | `rep-runtime.js`, `rep-analysis-runtime.js`, `session-write.js` | `sendRepToNode`, `syncRepAnalysisState`, squat analysis, rep mirrors | **Callback duplicate reduced.** Rep-analysis callback bodies moved into `workout-progression-runtime.js`; inline still owns counter variables and the `sendRepToNode` persistence delegator until pose/rep state migrates. | High. |
 | HUD | `hud-runtime.js`, `status-panels.js` | `renderWorkoutHud`, primary cue selection, progress/tracker status glue | **Duplicate owner remains.** HUD module is configured externally, but inline still computes and pushes display state. | Medium/high. |
 | Coach | `coach-runtime.js` | `requireCoachRuntime`, `speak`, `unlockAudioOnce`, `stopAllSpeech`, `toggleListening` | **Thin duplicate/delegator.** Most voice operations delegate when runtime exists. | Lower; remove after auth/workout callbacks are migrated. |
 | Avatar | `avatar-runtime.js`, `runtime-bridges.js` | Three runtime bootstrap, GLB load/mount, render-mode/stage controls, Avaturn modal, rig application, procedural drawing | **Duplicate owner remains.** Extracted runtime owns control registration, but inline still owns renderer/model/rig heavy implementation. | Highest. |
 | Dashboard | `dashboard-runtime.js`, `dashboard.js`, `app-hydration-runtime.js`, `button-runtime.js` | auth-ready refresh callbacks, calendar/progress/dashboard status coupling | **Duplicate owner remains.** Inline still wires refresh timing and profile/retention prerequisites. | Medium/high. |
 | Exercise library | `exercise-library.js`, `button-runtime.js`, `app-core.js` | navigation/final button-handler compatibility checks in main landing page | **Thin duplicate/delegator.** Standalone library owner exists; landing page still has nav compatibility. | Low. |
+
+
+## Workout/session glue extraction completed in this pass
+
+Removed or moved from both `index.html` and `public/index.html`:
+
+1. Moved `WorkoutRuntime.configureWorkoutRuntime` session lifecycle callback bodies into `workout-runtime.js` via `WorkoutRuntime.createSessionCallbackGlue`. Inline now passes only refs/state accessors and keeps camera/avatar-specific callbacks in place for the later avatar/pose pass.
+2. Moved `WorkoutProgressionRuntime.configure` completion, retention-signal, set/exercise, and rep-analysis callback bodies into `workout-progression-runtime.js` via `WorkoutProgressionRuntime.createSessionCallbackGlue`.
+3. Removed the unused legacy `sendStartSessionToNode` helper after repository search showed no remaining call sites. No `sendEndSessionToNode` helper was present in the live landing page copies.
+4. Kept `sendRepToNode` as a thin delegator because it is still the bridge into `RepRuntime.persistRepUpdate` and depends on inline rep/session state that will move with the pose/rep extraction.
+5. Left avatar/pose rendering, detector startup, render loop, GLB/canvas handling, and OHSA glue unchanged except where existing stop/completion delegates are now invoked from runtime-owned callbacks.
 
 ## Phase 7A removals completed
 
@@ -149,22 +160,21 @@ Dependency verification: repository search found no runtime module importing, in
 | 3005 | `unlockAudioOnce` | compatibility delegator | delegates to extracted runtime/status-panel owner |
 | 3009 | `stopAllSpeech` | compatibility delegator | delegates to extracted runtime/status-panel owner |
 | 3018 | `toggleListening` | compatibility delegator | coach/voice compatibility delegates to CoachRuntime where present |
-| 3113 | `buildCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3128 | `persistCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3137 | `clearCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3143 | `renderWorkoutPlan` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3159 | `getKeypoint` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3164 | `getAngleDegrees` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3179 | `computeKneeValgus` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3187 | `analyzeSquatForm` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3226 | `getCurrentExerciseMeta` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3230 | `getCurrentExerciseId` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3234 | `sendStartSessionToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3245 | `sendRepToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3263 | `syncRepAnalysisState` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3272 | `configureExtractedWorkoutRuntimes` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3362 | `sendOhsaToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3397 | `initDetector` | active implementation | inline helper closed over local runtime state |
+| 2963 | `buildCanonicalWorkoutSelection` | active implementation | workout selection persistence; still load-bearing |
+| 2978 | `persistCanonicalWorkoutSelection` | active implementation | workout selection persistence; still load-bearing |
+| 2987 | `clearCanonicalWorkoutSelection` | active implementation | workout selection persistence; still load-bearing |
+| 2993 | `renderWorkoutPlan` | active implementation | workout plan DOM renderer; still load-bearing |
+| 3009 | `getKeypoint` | active implementation | pose/form helper; still load-bearing until pose extraction |
+| 3014 | `getAngleDegrees` | active implementation | pose/form helper; still load-bearing until pose extraction |
+| 3029 | `computeKneeValgus` | active implementation | pose/form helper; still load-bearing until pose extraction |
+| 3037 | `analyzeSquatForm` | active implementation | pose/form helper; still load-bearing until pose extraction |
+| 3076 | `getCurrentExerciseMeta` | compatibility delegator | delegates current exercise lookup to `WorkoutProgressionRuntime` |
+| 3080 | `getCurrentExerciseId` | compatibility delegator | delegates through current exercise metadata |
+| 3085 | `sendRepToNode` | active delegator | thin bridge to `RepRuntime.persistRepUpdate`; remains until rep/session state leaves inline |
+| 3103 | `syncRepAnalysisState` | active delegator | syncs inline rep mirrors with `RepRuntime`; remains until rep state leaves inline |
+| 3112 | `configureExtractedWorkoutRuntimes` | context delegator | passes refs/accessors into runtime-owned workout/session callback factories |
+| 3178 | `sendOhsaToNode` | active implementation | OHSA write/fallback glue; still load-bearing |
+| 3213 | `initDetector` | active implementation | inline helper closed over local runtime state |
 | 3441 | `initOptionalTrackers` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
 | 3490 | `connectCamera` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
 | 3497 | `ensureRuntimeCalibration` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
@@ -204,14 +214,14 @@ Dependency verification: repository search found no runtime module importing, in
 2. **Completed in this pass — extract auth submit compatibility into `auth-core.js`**: `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, `handleCreateAccountToggle`, `bindAuthLoginForm`, `renderAuthMode`, and auth step/status helpers moved behind the external auth form owner. Temporary inline and `auth-ui.js` delegators remain for `window.handleLoginButtonClick`/onclick compatibility without owning fetches.
 3. **Consolidate auth shell/profile after auth submit**: migrate `initializeAuth`, `onLogin`, `handleLogout`, `applyAuthenticatedShellVisibility`, `renderAuthShell`, `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, and `updateSyncStatus` into auth/profile runtimes. Remove inline `APP_AUTH` mutation only after auth-core/auth-state-runtime are the single writer.
 4. **Collapse retention/dashboard hydration delegates**: after auth/profile are single-owner, move `ensureRetentionFlowLoaded`, `buildCalendarFromMeta`, dashboard refresh timing, and status-panel refresh callbacks into `app-hydration-runtime.js`/`dashboard-runtime.js`.
-5. **Move workout/session callback bodies**: migrate workout selection persistence, `renderWorkoutPlan`, `sendStartSessionToNode`, `sendRepToNode`, `sendOhsaToNode`, `syncRepAnalysisState`, and `configureExtractedWorkoutRuntimes` callback construction into `workout-runtime.js`/`session-write.js` with a context factory.
+5. **Completed in this pass — move workout/session callback bodies**: `WorkoutRuntime.createSessionCallbackGlue` and `WorkoutProgressionRuntime.createSessionCallbackGlue` now own the session start/stop/error, completion, retention signal, and rep-analysis callback bodies. The unused `sendStartSessionToNode` helper was removed. Remaining workout inline work is selection persistence, `renderWorkoutPlan`, `sendRepToNode`, `sendOhsaToNode`, `syncRepAnalysisState`, and thin local state/context accessors.
 6. **Move pose loop ownership**: migrate `initDetector`, `initOptionalTrackers`, `connectCamera`, `runPoseLoop`, pose confidence helpers, and squat analysis helpers to `pose-runtime.js`/`rep-analysis-runtime.js`. Keep temporary global delegators for `connectCamera` and `startWorkout`.
 7. **Move avatar heavy implementation last**: migrate Three bootstrap, render-mode/stage controls, GLB probe/mount, rig mapping, `applyPoseToAvatarRig`, `renderAvatar3d`, `drawProceduralAvatar`, modal controls, and Avaturn message/profile writeback into `avatar-runtime.js`. This should be last because it depends on stabilized pose/workout/profile context.
 8. **Remove boot/status final delegates**: once all runtime owners expose their status directly, remove inline boot diagnostics, final handler checks, and status-panel rescue globals.
 
-## Test result for latest auth submit extraction
+## Test result for latest workout/session glue extraction
 
-The requested checks passed after extracting auth submit ownership and updating this report:
+The requested checks passed after extracting workout/session callback glue and updating this report:
 
 - `npm run lint`
 - `node --test test/pilot-login.test.js test/auth-login-form-submit.test.js test/session-api.test.js test/retention-api.test.js`

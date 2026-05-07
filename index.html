@@ -3081,16 +3081,6 @@ function toggleListening() {
       return getCurrentExerciseMeta()?.exerciseId || "bodyweight_squat";
     }
 
-    function sendStartSessionToNode() {
-      SESSION_WRITE_CLIENT?.startSession({
-        sessionId,
-        programId: null,
-        exerciseId: getCurrentExerciseId()
-      }).catch((err) => {
-        addLog("system", "Session could not be saved to backend. Keep exercising; retry save by finishing workout.");
-        console.warn("session_start write failed", err);
-      });
-    }
 
     function sendRepToNode(depthScore) {
       const now = Date.now();
@@ -3120,6 +3110,40 @@ function toggleListening() {
     }
 
     function configureExtractedWorkoutRuntimes() {
+      const workoutGlue = window.WorkoutProgressionRuntime.createSessionCallbackGlue({
+        refs: { startBtn },
+        deps: {
+          sessionWrite: SESSION_WRITE_CLIENT,
+          getSessionId: () => sessionId,
+          trackPilotEvent,
+          addLog,
+          getCoachRuntime: requireCoachRuntime,
+          refreshCameraUiState,
+          setPersonLayerSuppressed,
+          setAvatar3dCanvasVisibility,
+          setLastRenderMode: (mode) => { lastRenderMode = mode; },
+          getAnimId: () => animId,
+          getCalendarMeta: () => calendarMeta,
+          buildCalendarFromMeta,
+          persistUser,
+          formEngine: FORM_ENGINE,
+          getCurrentExerciseMeta,
+          getCurrentExerciseId,
+          syncRepAnalysisState,
+          renderWorkoutHud,
+          setFullBodyAcquired: (value) => { fullBodyAcquired = Boolean(value); },
+          getRepState: () => ({ repCount, totalReps, lastDepthScore, lastGoodForm, repPhase }),
+          setRepState: (partial = {}) => {
+            if (partial.repCount != null) repCount = Number(partial.repCount || 0);
+            if (partial.totalReps != null) totalReps = Number(partial.totalReps || 0);
+            if (partial.lastDepthScore != null) lastDepthScore = Number(partial.lastDepthScore || 0);
+            if (partial.lastGoodForm != null) lastGoodForm = Boolean(partial.lastGoodForm);
+            if (partial.repPhase) repPhase = partial.repPhase;
+          },
+          sendRepToNode,
+          getPrimaryCue
+        }
+      });
       window.RuntimeOrchestrator.configureWorkoutProgressionRuntime({
         hud: {
           workoutHudEl,
@@ -3139,67 +3163,9 @@ function toggleListening() {
           getRestRemainingSec: () => getActiveWorkoutState().restRemainingSec || 0,
           isAvatarDebug: () => AVATAR_FLAGS.AVATAR_DEBUG
         },
-        progression: {
-          sessionWrite: SESSION_WRITE_CLIENT,
-          getSessionId: () => sessionId,
-          trackPilotEvent,
-          onStateChange: (progressState) => {
-            repCount = Number(progressState.repCount || 0);
-            totalReps = Number(progressState.totalReps || 0);
-          },
-          onSetStarted: (setNumber) => {
-            requireCoachRuntime().speakSetStarted(setNumber);
-          },
-          onExerciseStarted: (exercise) => {
-            requireCoachRuntime().speakExerciseStarted(exercise);
-          },
-          onWorkoutCompleted: () => {
-            running = false;
-            startBtn.textContent = "Start Workout";
-            refreshCameraUiState();
-            addLog("system", "Workout complete.");
-            requireCoachRuntime().speakWorkoutCompleted();
-            setPersonLayerSuppressed(false);
-            setAvatar3dCanvasVisibility(false);
-            lastRenderMode = "camera";
-            if (animId?.stop) animId.stop();
-            else cancelAnimationFrame(animId);
-          },
-          onCompleteSaveError: () => {
-            addLog("system", "Workout finished locally, but save failed. Check connection, then restart app to retry sync.");
-          },
-          onRetentionSignal: () => {
-            if (calendarMeta) {
-              const today = new Date();
-              today.setHours(0,0,0,0);
-              const key = today.toISOString().slice(0,10);
-              calendarMeta.completedDates.add(key);
-              buildCalendarFromMeta();
-              persistUser();
-            }
-          }
-        },
+        progression: workoutGlue.progression,
         controls: { skipRestBtn, repeatSetBtn, nextExerciseBtn },
-        repAnalysis: {
-          formEngine: FORM_ENGINE,
-          getCurrentExerciseMeta,
-          getCurrentExerciseId,
-          onAnalysis: ({ formResult, analysis }) => {
-            syncRepAnalysisState(window.RepAnalysisRuntime.getState());
-            requireWorkoutProgressionRuntime().handleRepAnalysis({ repCount, totalReps }, formResult || null);
-            renderWorkoutHud(formResult || null);
-            if (analysis?.fullBody) fullBodyAcquired = true;
-          },
-          onRepComplete: ({ repCount: nextRepCount, totalReps: nextTotalReps, depthScore, goodForm, formResult }) => {
-            repCount = Number(nextRepCount || 0);
-            totalReps = Number(nextTotalReps || 0);
-            lastDepthScore = Number(depthScore || 0);
-            lastGoodForm = Boolean(goodForm);
-            requireWorkoutProgressionRuntime().handleRepComplete({ repCount, totalReps }, formResult || null);
-            sendRepToNode(depthScore);
-            requireCoachRuntime().speakRepFeedback(goodForm ? "Good rep." : getPrimaryCue(formResult), "rep");
-          }
-        }
+        repAnalysis: workoutGlue.repAnalysis
       });
       console.log("[REP_ANALYSIS] extracted runtime configured");
       console.log("[HUD_RUNTIME] extracted runtime configured");
@@ -4163,24 +4129,47 @@ function toggleListening() {
         poseStatusEl.classList.add("status-bad");
         trackPilotEvent("camera_connect_failed", { reason: e?.name || e?.message || "unknown" });
       },
-      prepareWorkoutStart: async () => {
-        if (definingExercise) { definingExercise = false; baselineFrames = []; currentExerciseName = null; addLog("system", "Cancelled exercise definition to start workout."); }
-        if (ohsaMode) { ohsaMode = false; ohsaFrontSamples = []; ohsaSideSamples = []; addLog("system", "Cancelled OHSA to start workout."); }
-        const preparedState = requireWorkoutProgressionRuntime().prepareWorkoutStart(); repCount = 0; totalReps = 0; repPhase = "up"; fullBodyAcquired = false; stepBackPromptCount = 0; upperBodyReadyPromptShown = false;
-        window.RepRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
-        window.RepAnalysisRuntime?.reset?.({ repCount, totalReps, phase: repPhase });
-        console.log("[WORKOUT_LIFECYCLE] prepared workout start", { workoutId: preparedState.activeWorkoutId, programId: preparedState.activeProgramId });
-      },
-      buildSessionPayload: () => {
-        const plan = getActiveWorkoutPlan();
-        if (!plan?.exercises?.length) throw new Error("selected workout failed to hydrate; choose a workout before starting");
-        console.log("[WORKOUT_PLAN] session payload hydrated", { workoutId: getActiveWorkoutState().activeWorkoutId || null, exercises: plan.exercises.length });
-        return { workoutId: getActiveWorkoutState().activeWorkoutId || null, programId: getActiveWorkoutState().activeProgramId || null, exerciseId: plan.exercises[0]?.exerciseId || null };
-      },
-      createSession: (payload) => {
-        if (!SESSION_WRITE_CLIENT?.startSession) throw new Error('SessionWrite.startSession missing for POST /api/sessions');
-        return SESSION_WRITE_CLIENT.startSession(payload);
-      },
+      ...window.WorkoutRuntime.createSessionCallbackGlue({
+        refs: { startBtn, canvasEl, ctx },
+        deps: {
+          sessionWrite: SESSION_WRITE_CLIENT,
+          getWorkoutProgressionRuntime: requireWorkoutProgressionRuntime,
+          getActiveWorkoutPlan,
+          getActiveWorkoutState,
+          getCurrentExerciseMeta,
+          getCurrentExerciseId,
+          isDefiningExercise: () => definingExercise,
+          setDefiningExercise: (value) => { definingExercise = Boolean(value); },
+          setBaselineFrames: (value) => { baselineFrames = value; },
+          setCurrentExerciseName: (value) => { currentExerciseName = value; },
+          isOhsaMode: () => ohsaMode,
+          setOhsaMode: (value) => { ohsaMode = Boolean(value); },
+          setOhsaFrontSamples: (value) => { ohsaFrontSamples = value; },
+          setOhsaSideSamples: (value) => { ohsaSideSamples = value; },
+          setRepState: (partial = {}) => {
+            if (partial.repCount != null) repCount = Number(partial.repCount || 0);
+            if (partial.totalReps != null) totalReps = Number(partial.totalReps || 0);
+            if (partial.repPhase) repPhase = partial.repPhase;
+          },
+          setFullBodyAcquired: (value) => { fullBodyAcquired = Boolean(value); },
+          setStepBackPromptCount: (value) => { stepBackPromptCount = Number(value || 0); },
+          setUpperBodyReadyPromptShown: (value) => { upperBodyReadyPromptShown = Boolean(value); },
+          addLog,
+          updateActivationStatusPanel,
+          updateAuthPropagationStatus,
+          setRunning: (value) => { running = Boolean(value); },
+          setSessionId: (value) => { sessionId = value; },
+          getSessionId: () => sessionId,
+          refreshCameraUiState,
+          trackPilotEvent,
+          getCoachRuntime: requireCoachRuntime,
+          runPoseLoop,
+          getAnimId: () => animId,
+          setPersonLayerSuppressed,
+          setAvatar3dCanvasVisibility,
+          setLastRenderMode: (mode) => { lastRenderMode = mode; }
+        }
+      }),
       onCameraFullscreenChanged: (enabled) => {
         cameraFullscreen = Boolean(enabled);
         document.body.classList.toggle("camera-fullscreen", cameraFullscreen);
@@ -4192,12 +4181,8 @@ function toggleListening() {
           avatar3dCanvasEl.height = videoEl.videoHeight;
         }
         resizeAvatarThreeRuntime();
-      },
-      onSessionCreated: (sessionRes) => { addLog("system", `Session API OK: ${JSON.stringify({ sessionId: sessionRes?.sessionId || sessionRes?.id || null })}`); updateActivationStatusPanel("session-created"); updateAuthPropagationStatus("session-created"); window.__appRuntime?.updateFeaturePanel?.("session-created"); },
-      onWorkoutStarted: async (createdSessionId) => { const startedState = requireWorkoutProgressionRuntime().startWorkout(createdSessionId); running = true; sessionId = createdSessionId; startBtn.textContent = "Stop Workout"; refreshCameraUiState(); addLog("system", `Workout started: ${getActiveWorkoutPlan()?.title || "Session"}. Session: ${sessionId}.`); console.log("[WORKOUT_LIFECYCLE] session started", { sessionId, exerciseId: getCurrentExerciseId() }); trackPilotEvent("workout_started", { sessionId, exerciseId: getCurrentExerciseId(), scheduledWorkoutId: startedState.activeWorkoutId, programId: startedState.activeProgramId }); const currentExercise = getCurrentExerciseMeta(); await requireCoachRuntime().speakWorkoutIntro(currentExercise); runPoseLoop(); updateActivationStatusPanel("workout-started"); updateAuthPropagationStatus("workout-started"); window.__appRuntime?.updateFeaturePanel?.("workout-started"); },
-      onWorkoutStartError: (err) => { const reason = err?.message || String(err || "unknown_error"); addLog("system", `Workout start failed: ${reason}`); requireCoachRuntime().setVoiceUnavailable(`workout_start_failed: ${reason}`, "workout-start-error"); updateActivationStatusPanel("workout-start-error"); updateAuthPropagationStatus("workout-start-error"); window.__appRuntime?.updateFeaturePanel?.("workout-start-error"); },
-      onWorkoutStopped: async () => { startBtn.textContent = "Start Workout"; running = false; requireWorkoutProgressionRuntime().pauseWorkout(); refreshCameraUiState(); if (animId?.stop) animId.stop(); else cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvasEl.width, canvasEl.height); setPersonLayerSuppressed(false); setAvatar3dCanvasVisibility(false); lastRenderMode = "camera"; addLog("system", "Workout stopped. Reconnect camera and press Start Workout to resume."); console.log("[WORKOUT_LIFECYCLE] workout stopped", { sessionId }); }
-      });
+      }
+    });
     
       const bindPrimaryButtonsAfterLogin = window.RuntimeOrchestrator.configurePostLoginActivation({
       refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn },
