@@ -3531,7 +3531,11 @@ CREATE CLICKED: no</pre>
       afterConnectCamera: async (stream) => {
         const cameraBootStartedAt = performance.now();
         videoEl.srcObject = stream;
-        await new Promise(r => videoEl.onloadedmetadata = r);
+        if (!videoEl.videoWidth && !videoEl.videoHeight && videoEl.readyState < 1) {
+          await new Promise((resolve) => {
+            videoEl.addEventListener("loadedmetadata", resolve, { once: true });
+          });
+        }
         canvasEl.width = videoEl.videoWidth; canvasEl.height = videoEl.videoHeight;
         avatar3dCanvasEl.width = videoEl.videoWidth; avatar3dCanvasEl.height = videoEl.videoHeight;
         setAvatar3dCanvasVisibility(false); resizeAvatarThreeRuntime();
