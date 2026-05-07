@@ -935,6 +935,7 @@ CREATE CLICKED: no</pre>
   <script src="/status-panels.js?v=20260505"></script>
   <script src="/workout-runtime.js?v=20260506"></script>
   <script src="/runtime-orchestrator.js?v=20260506"></script>
+  <script src="/app-hydration-runtime.js?v=20260507"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -2606,7 +2607,6 @@ CREATE CLICKED: no</pre>
         window.PROFILE_RUNTIME.renderSignedInProfile(profile);
       }
       markPerfMetric("loginReadyMs", Math.round(performance.now()));
-      ensureRetentionFlowLoaded("on_login_ui");
     }
 
     function buildCalendarFromMeta() {
@@ -2938,11 +2938,6 @@ CREATE CLICKED: no</pre>
       return "";
     }
 
-    async function hydrateProfileFromBackend() {
-      if (!window.PROFILE_RUNTIME?.hydrateProfileFromBackend) return false;
-      return window.PROFILE_RUNTIME.hydrateProfileFromBackend();
-    }
-
     async function initializeAuth() {
       const token = window.APP_AUTH?.token || window.AuthStateRuntime?.getStoredToken?.() || localStorage.getItem("maatAuthToken");
       if (!token) {
@@ -3171,14 +3166,7 @@ CREATE CLICKED: no</pre>
       renderSystemBootStatus("onLogin");
 
       persistUser();
-      await hydrateProfileFromBackend();
-      try {
-        await sendProfileToNode();
-      } catch (profileWriteError) {
-        console.warn("profile bootstrap write failed; entering app anyway", profileWriteError);
-      }
-      buildCalendarFromMeta();
-      updateSyncStatus();
+      await window.AppHydrationRuntime?.runPostAuthHydration?.({ reason: "onLogin", profileWrite: true });
     }
 
     async function handleLogout() {
@@ -4708,7 +4696,23 @@ function toggleListening() {
       bootStatus,
       getActiveBlockingOverlay
     });
-    window.RuntimeOrchestrator.configureDashboardRuntime({ refreshOnAuthReady: true });
+    window.AppHydrationRuntime?.configure({
+      ensureRetentionFlowLoaded,
+      sendProfileToNode,
+      buildCalendarFromMeta,
+      updateSyncStatus,
+      updateAppBootStatus,
+      getActiveBlockingOverlay,
+      getHandlerChecks: () => ({
+        dashboard: typeof dashboardBtn?.onclick === "function",
+        camera: typeof connectBtn?.onclick === "function",
+        workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
+        profile: typeof saveProfileFormBtn?.onclick === "function",
+        calendar: typeof calendarApplyBtn?.onclick === "function",
+        retention: typeof ensureRetentionFlowLoaded === "function"
+      })
+    });
+    window.RuntimeOrchestrator.configureDashboardRuntime({ refreshOnAuthReady: false });
     window.RuntimeOrchestrator.configureButtonRuntime({
       refs: { startBtn, fullscreenCameraBtn, exitCameraBtn, exitCameraMobileBtn, stopWorkoutFsBtn, workoutToggleMobileBtn, ohsaBtn, defineExerciseBtn },
       deps: {
@@ -4855,30 +4859,12 @@ function toggleListening() {
       updateAppBootStatus("auth bootstrap", "starting");
       await initializeAuth();
       updateAppBootStatus("auth bootstrap", "completed");
-      let bootDegradedReason = null;
 
       console.log("tf loaded:", typeof tf !== "undefined");
       console.log("poseDetection loaded:", typeof poseDetection !== "undefined");
-      const moduleChecks = {
-        "backend-read.js": Boolean(window.MufasaBackendRead),
-        "fitness.js": Boolean(window.MufasaFitness),
-        "dashboard-runtime.js": Boolean(window.MufasaDashboardRuntime),
-        "retention-flow.js": Boolean(window.__retentionMotivationStatus),
-        "dashboard.js": true,
-        "exercise-library.js": true,
-        "diagnostics-client.js": Boolean(window.__collectDiagnosticReport)
-      };
-      window.__appBootModuleChecks = moduleChecks;
+      window.__appBootModuleChecks = window.AppHydrationRuntime?.runBootGates?.("window:load")?.gates || {};
       removeBuilderModeUiGuards();
-      const finalHandlerChecks = {
-        dashboard: typeof dashboardBtn?.onclick === "function",
-        camera: typeof connectBtn?.onclick === "function",
-        workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function"
-      };
-      updateAppBootStatus("dashboard handler attached", finalHandlerChecks.dashboard ? "ok" : "missing");
-      updateAppBootStatus("camera handler attached", finalHandlerChecks.camera ? "ok" : "missing");
-      updateAppBootStatus("workout library handler attached", finalHandlerChecks.workoutLibrary ? "ok" : "missing");
-      updateAppBootStatus("active overlay", getActiveBlockingOverlay());
+      window.AppHydrationRuntime?.applyNoPendingForeverPolicy?.("window:load");
       
     });
   </script>
