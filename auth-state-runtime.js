@@ -136,6 +136,72 @@
     }
   }
 
+  function getAuthToken() {
+    return global.APP_AUTH?.token || getStoredToken() || null;
+  }
+
+  async function postAuthenticatedJSON(url, { method = "POST", body } = {}) {
+    const token = getAuthToken();
+    if (!token) {
+      const err = new Error("missing_auth_token");
+      err.code = "MISSING_AUTH_TOKEN";
+      throw err;
+    }
+
+    const res = await global.fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body || {})
+    });
+
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch (_) {}
+
+    if (res.status === 401 || res.status === 403) {
+      const err = new Error("unauthorized");
+      err.code = "UNAUTHORIZED";
+      err.status = res.status;
+      err.payload = payload;
+      throw err;
+    }
+
+    if (!res.ok || !payload?.ok) {
+      const err = new Error(payload?.error?.message || payload?.error || `request_failed_${res.status}`);
+      err.code = "REQUEST_FAILED";
+      err.status = res.status;
+      err.payload = payload;
+      throw err;
+    }
+
+    return payload?.data || null;
+  }
+
+  function isAuthUnavailable(err) {
+    return err?.code === "MISSING_AUTH_TOKEN" || err?.code === "UNAUTHORIZED";
+  }
+
+  function sendToNode(payload, options = {}) {
+    const commandUrl = options.commandUrl || global.RuntimeState?.getEndpoints?.().nodeCommandUrl;
+    if (!commandUrl) return Promise.reject(new Error("node_command_url_unavailable"));
+    const token = getAuthToken();
+    return global.fetch(commandUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload)
+    }).catch((error) => {
+      console.warn("Node send failed", error);
+      throw error;
+    });
+  }
+
   function getCanonicalAuthState() {
     if (!global.APP_AUTH || typeof global.APP_AUTH !== "object") {
       global.APP_AUTH = normalizeState({ token: null, user: null });
@@ -162,10 +228,14 @@
     TOKEN_STORAGE_KEY,
     clearCanonicalAuthState,
     ensureDebugState,
+    getAuthToken,
     getCanonicalAuthState,
     getStoredToken,
     installAuthStatusRefreshBridge,
+    isAuthUnavailable,
+    postAuthenticatedJSON,
     refreshAuthStatus,
+    sendToNode,
     setCanonicalAuthState
   };
 
