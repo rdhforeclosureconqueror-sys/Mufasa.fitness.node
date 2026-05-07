@@ -8,16 +8,16 @@ This audit covers the synchronized landing page copies at `index.html` and `publ
 
 | File | Inline script blocks | Total inline bytes | Total inline lines | Largest inline block |
 |---|---:|---:|---:|---:|
-| `index.html` | 4 | 177,922 | 3,781 | 177,333 bytes / 3,766 lines (`<script>` starting at line 942) |
-| `public/index.html` | 4 | 177,922 | 3,781 | 177,333 bytes / 3,766 lines (`<script>` starting at line 942) |
+| `index.html` | 4 | 171,683 | 3,655 | 171,094 bytes / 3,640 lines (`<script>` starting at line 942) |
+| `public/index.html` | 4 | 171,683 | 3,655 | 171,094 bytes / 3,640 lines (`<script>` starting at line 942) |
 
-Measured with a Python inline-script extraction command against both synchronized HTML files. The same measurement pass counts 148 remaining inline function declarations/arrow-function bindings in each copy, down from 151 before removing the three no-op shims.
+Measured with a Python inline-script extraction command against both synchronized HTML files. The same measurement pass counts 144 remaining inline function declarations/arrow-function bindings in each copy, down from 148 before extracting the auth submit/register/login request owner into `auth-core.js`.
 
 ## Final inline ownership map
 
 | Area | Extracted/current external owner | Remaining inline owner | Duplicate-owner status | Risk |
 |---|---|---|---|---|
-| Auth | `auth-core.js`, `auth-state-runtime.js`, `backend-read.js`, `profile-write-runtime.js` | Login form submit/register flow, `initializeAuth`, `onLogin`, `handleLogout`, shell visibility, pilot bypass, profile write fallback | **Duplicate owner remains.** Auth core and inline both bind/submit auth login compatibility paths. | Highest: dangerous/load-bearing. |
+| Auth | `auth-core.js`, `auth-state-runtime.js`, `backend-read.js`, `profile-write-runtime.js` | Thin inline submit/button/register delegators, `initializeAuth`, `onLogin`, `handleLogout`, shell visibility, pilot bypass, profile write fallback | **Submit duplicate removed.** `auth-core.js` is now the login/register form request owner; inline and `auth-ui.js` keep only temporary delegators and post-login/profile shell ownership. | High: remaining load-bearing auth/profile lifecycle. |
 | Boot | `boot-core.js`, `runtime-events.js`, `runtime-state.js`, `status-panels.js`, `runtime-orchestrator.js` | `updateAppBootStatus`, build stamp refresh, boot contract/status diagnostics, final handler checks | **Duplicate owner remains.** External boot core fetches version while inline still refreshes build stamp and owns visible boot diagnostics. | Medium/high. |
 | Profile | `profile-runtime.js`, `profile-write-runtime.js`, `backend-read.js`, `app-hydration-runtime.js` | `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, sync status, avatar profile callbacks | **Duplicate owner remains.** Profile read/write/hydration split across modules and inline. | High. |
 | Retention | `retention-loader-runtime.js`, `app-hydration-runtime.js`, dashboard/profile runtimes | `ensureRetentionFlowLoaded` alias and post-login/dashboard refresh coupling | **Mostly delegator duplicate.** Loader moved out; inline still controls when auth/profile invokes it. | Medium. |
@@ -42,7 +42,7 @@ Dependency verification: repository search found no runtime module importing, in
 
 ## Remaining dangerous/load-bearing sections
 
-1. **Inline auth submit/login compatibility flow**: `submitAuthRequest`, `handleLoginSubmit`, `bindAuthLoginForm`, `onLogin`, `handleLogout`, pilot bypass, auth shell visibility, and profile push are still the most dangerous section because they mutate `APP_AUTH`, localStorage, overlay visibility, and profile/dashboard/retention follow-up.
+1. **Remaining inline auth lifecycle/profile shell flow**: `initializeAuth`, `onLogin`, `handleLogout`, pilot bypass, auth shell visibility, and profile push remain load-bearing because they control shell/profile/dashboard/retention follow-up. The login/register submit fetch owner has been extracted to `auth-core.js`; inline `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, `handleCreateAccountToggle`, and `auth-ui.js` are now thin compatibility delegators only.
 2. **Avatar and pose render ownership**: Three dependency bootstrap, GLB probing/mounting, render loop, rig mapping, procedural drawing, camera fullscreen state, detector init, and pose loop remain large active implementations.
 3. **Workout/rep/session lifecycle glue**: selection persistence, workout plan rendering, rep analysis sync, session start/rep/OHSA writes, and runtime configuration callbacks are load-bearing and cross several extracted runtimes.
 4. **Profile/retention/dashboard hydration chain**: profile defaults, persisted user state, sync status, retention loader timing, calendar/dashboard refresh timing, and app shell visibility are still tightly coupled.
@@ -138,74 +138,70 @@ Dependency verification: repository search found no runtime module importing, in
 | 2858 | `setPilotBypassAuthState` | active implementation | load-bearing boot/auth diagnostics or persistence glue |
 | 2862 | `activatePilotBypassImmediate` | active implementation | load-bearing boot/auth diagnostics or persistence glue |
 | 2871 | `initializeAuth` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 2901 | `updateAuthStepStatus` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 2906 | `showAuthBindingError` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 2912 | `renderAuthMode` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 2922 | `submitAuthRequest` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 2986 | `handleLoginSubmit` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 2993 | `window.handleLoginButtonClick/handleLoginButtonClick` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 3000 | `window.handleCreateAccountToggle/handleCreateAccountToggle` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 3009 | `bindAuthLoginForm` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 3053 | `onLogin` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 3102 | `handleLogout` | active implementation | still dangerous/load-bearing auth/profile write flow |
-| 3117 | `requireCoachRuntime` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 3127 | `speak` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 3131 | `unlockAudioOnce` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 3135 | `stopAllSpeech` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 3144 | `toggleListening` | compatibility delegator | coach/voice compatibility delegates to CoachRuntime where present |
-| 3239 | `buildCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3254 | `persistCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3263 | `clearCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3269 | `renderWorkoutPlan` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3285 | `getKeypoint` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3290 | `getAngleDegrees` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3305 | `computeKneeValgus` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3313 | `analyzeSquatForm` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3352 | `getCurrentExerciseMeta` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3356 | `getCurrentExerciseId` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3360 | `sendStartSessionToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3371 | `sendRepToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3389 | `syncRepAnalysisState` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3398 | `configureExtractedWorkoutRuntimes` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3488 | `sendOhsaToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
-| 3523 | `initDetector` | active implementation | inline helper closed over local runtime state |
-| 3567 | `initOptionalTrackers` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3616 | `connectCamera` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3623 | `ensureRuntimeCalibration` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3631 | `updateAvatarCalibration` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3662 | `setLowerBodyVisibility` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3674 | `computeAvatarAnchorTransform` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3789 | `applyPoseToAvatarRig` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3809 | `getRest` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3810 | `relaxToRest` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3815 | `applyTrackedAxis` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3849 | `score` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3863 | `angle` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3868 | `record` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 3903 | `renderAvatar3d` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4057 | `drawProceduralAvatar` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4061 | `get` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4062 | `good` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4091 | `drawLimb` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4126 | `runPoseLoop` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4155 | `startWorkout` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4162 | `handleWorkoutSelectChange` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4191 | `getPoseConfidenceSnapshot` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4192 | `score` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4193 | `kp` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4208 | `runAvatarTrace` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
-| 4366 | `attachAvatarTraceHarness` | active implementation | inline helper closed over local runtime state |
-| 4390 | `getPrimaryNavHandlerStatus` | active implementation | load-bearing boot/auth diagnostics or persistence glue |
-| 4401 | `updateAuthPropagationStatus` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 4403 | `updateActivationStatusPanel` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 4405 | `runPendingPanelWatchdogs` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 4407 | `window.__forceAuthPropagationRender` | compatibility delegator | delegates to extracted runtime/status-panel owner |
-| 4408 | `window.__forceAppActivationRender` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 2901 | `submitAuthRequest` | compatibility delegator | delegates login/register submit fetch ownership to `auth-core.js` |
+| 2906 | `handleLoginSubmit` | compatibility delegator | prevents native submit and delegates to `auth-core.js` |
+| 2913 | `window.handleLoginButtonClick/handleLoginButtonClick` | compatibility delegator | preserves onclick bridge and delegates to `auth-core.js` |
+| 2920 | `window.handleCreateAccountToggle/handleCreateAccountToggle` | compatibility delegator | preserves create-account onclick bridge and delegates to `auth-core.js` |
+| 2927 | `onLogin` | active implementation | still dangerous/load-bearing auth/profile write flow |
+| 2976 | `handleLogout` | active implementation | still dangerous/load-bearing auth/profile write flow |
+| 2991 | `requireCoachRuntime` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 3001 | `speak` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 3005 | `unlockAudioOnce` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 3009 | `stopAllSpeech` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 3018 | `toggleListening` | compatibility delegator | coach/voice compatibility delegates to CoachRuntime where present |
+| 3113 | `buildCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3128 | `persistCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3137 | `clearCanonicalWorkoutSelection` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3143 | `renderWorkoutPlan` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3159 | `getKeypoint` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3164 | `getAngleDegrees` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3179 | `computeKneeValgus` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3187 | `analyzeSquatForm` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3226 | `getCurrentExerciseMeta` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3230 | `getCurrentExerciseId` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3234 | `sendStartSessionToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3245 | `sendRepToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3263 | `syncRepAnalysisState` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3272 | `configureExtractedWorkoutRuntimes` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3362 | `sendOhsaToNode` | active implementation | workout/session/rep/OHSA glue; still load-bearing |
+| 3397 | `initDetector` | active implementation | inline helper closed over local runtime state |
+| 3441 | `initOptionalTrackers` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3490 | `connectCamera` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3497 | `ensureRuntimeCalibration` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3505 | `updateAvatarCalibration` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3536 | `setLowerBodyVisibility` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3548 | `computeAvatarAnchorTransform` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3663 | `applyPoseToAvatarRig` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3683 | `getRest` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3684 | `relaxToRest` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3689 | `applyTrackedAxis` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3723 | `score` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3737 | `angle` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3742 | `record` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3777 | `renderAvatar3d` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3931 | `drawProceduralAvatar` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3935 | `get` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3936 | `good` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 3965 | `drawLimb` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4000 | `runPoseLoop` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4029 | `startWorkout` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4036 | `handleWorkoutSelectChange` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4065 | `getPoseConfidenceSnapshot` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4066 | `score` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4067 | `kp` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4082 | `runAvatarTrace` | active implementation | still dangerous/load-bearing avatar, pose, camera, or render-loop owner |
+| 4240 | `attachAvatarTraceHarness` | active implementation | inline helper closed over local runtime state |
+| 4264 | `getPrimaryNavHandlerStatus` | active implementation | load-bearing boot/auth diagnostics or persistence glue |
+| 4275 | `updateAuthPropagationStatus` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 4277 | `updateActivationStatusPanel` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 4279 | `runPendingPanelWatchdogs` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 4281 | `window.__forceAuthPropagationRender` | compatibility delegator | delegates to extracted runtime/status-panel owner |
+| 4282 | `window.__forceAppActivationRender` | compatibility delegator | delegates to extracted runtime/status-panel owner |
 
 ## Recommended final removal order
 
 1. **Completed in Phase 7A — remove inline no-op diagnostics/builders shims**: deleted only `forceBuilderFullAccessAuthState`, `enforceBuilderOverlayBypass`, and `installClickDiagnostics`; repository search found no runtime module dependency on these exact inline implementations.
-2. **Next recommended target — extract auth submit compatibility into `auth-core.js` or a new auth-form runtime**: move `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, `handleCreateAccountToggle`, `bindAuthLoginForm`, `renderAuthMode`, and auth step/status helpers behind one owner. Keep a temporary `window.handleLoginButtonClick` delegator for tests and inline onclick compatibility.
+2. **Completed in this pass — extract auth submit compatibility into `auth-core.js`**: `submitAuthRequest`, `handleLoginSubmit`, `handleLoginButtonClick`, `handleCreateAccountToggle`, `bindAuthLoginForm`, `renderAuthMode`, and auth step/status helpers moved behind the external auth form owner. Temporary inline and `auth-ui.js` delegators remain for `window.handleLoginButtonClick`/onclick compatibility without owning fetches.
 3. **Consolidate auth shell/profile after auth submit**: migrate `initializeAuth`, `onLogin`, `handleLogout`, `applyAuthenticatedShellVisibility`, `renderAuthShell`, `persistUser`, `defaultProfileForName`, `onLoginUI`, `sendProfileToNode`, and `updateSyncStatus` into auth/profile runtimes. Remove inline `APP_AUTH` mutation only after auth-core/auth-state-runtime are the single writer.
 4. **Collapse retention/dashboard hydration delegates**: after auth/profile are single-owner, move `ensureRetentionFlowLoaded`, `buildCalendarFromMeta`, dashboard refresh timing, and status-panel refresh callbacks into `app-hydration-runtime.js`/`dashboard-runtime.js`.
 5. **Move workout/session callback bodies**: migrate workout selection persistence, `renderWorkoutPlan`, `sendStartSessionToNode`, `sendRepToNode`, `sendOhsaToNode`, `syncRepAnalysisState`, and `configureExtractedWorkoutRuntimes` callback construction into `workout-runtime.js`/`session-write.js` with a context factory.
@@ -213,9 +209,9 @@ Dependency verification: repository search found no runtime module importing, in
 7. **Move avatar heavy implementation last**: migrate Three bootstrap, render-mode/stage controls, GLB probe/mount, rig mapping, `applyPoseToAvatarRig`, `renderAvatar3d`, `drawProceduralAvatar`, modal controls, and Avaturn message/profile writeback into `avatar-runtime.js`. This should be last because it depends on stabilized pose/workout/profile context.
 8. **Remove boot/status final delegates**: once all runtime owners expose their status directly, remove inline boot diagnostics, final handler checks, and status-panel rescue globals.
 
-## Test result for Phase 7A
+## Test result for latest auth submit extraction
 
-The requested checks passed after removing the three no-op shims and updating this report:
+The requested checks passed after extracting auth submit ownership and updating this report:
 
 - `npm run lint`
 - `node --test test/pilot-login.test.js test/auth-login-form-submit.test.js test/session-api.test.js test/retention-api.test.js`

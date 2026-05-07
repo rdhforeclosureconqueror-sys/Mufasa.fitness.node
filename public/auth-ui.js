@@ -1,6 +1,7 @@
 (() => {
-  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
-  let authMode = "login";
+  "use strict";
+
+  console.log("[AUTH_FORM_RUNTIME] auth-ui compatibility delegator loaded");
 
   function showBindingError(message) {
     const el = document.getElementById("authLoginBindingError");
@@ -10,93 +11,50 @@
     }
   }
 
-  function renderMode() {
-    const isRegisterMode = authMode === "register";
-    const authNameWrapEl = document.getElementById("authNameWrap");
-    const authNameEl = document.getElementById("authName");
-    const authPasswordEl = document.getElementById("authPassword");
-    const authLoginTitleEl = document.getElementById("authLoginTitle");
-    const authLoginSubmitEl = document.getElementById("authLoginSubmit");
-    const authCreateAccountBtn = document.getElementById("authCreateAccountBtn");
-    if (authNameWrapEl) authNameWrapEl.style.display = isRegisterMode ? "block" : "none";
-    if (authNameEl) authNameEl.required = isRegisterMode;
-    if (authPasswordEl) authPasswordEl.autocomplete = isRegisterMode ? "new-password" : "current-password";
-    if (authLoginTitleEl) authLoginTitleEl.textContent = isRegisterMode ? "Create account" : "Sign in";
-    if (authLoginSubmitEl) authLoginSubmitEl.textContent = isRegisterMode ? "Create account" : "Login";
-    if (authCreateAccountBtn) authCreateAccountBtn.textContent = isRegisterMode ? "Back to login" : "Create account";
+  function submitAuth() {
+    console.log("[AUTH_SUBMIT] auth-ui delegating submit to auth-core");
+    return window.AuthCore?.submitAuthRequest?.();
   }
 
-  async function submitAuth() {
-    const authEmailEl = document.getElementById("authEmail");
-    const authPasswordEl = document.getElementById("authPassword");
-    const authNameEl = document.getElementById("authName");
-    const authLoginStatusEl = document.getElementById("authLoginStatus");
-    const email = authEmailEl?.value?.trim() || "";
-    const password = authPasswordEl?.value || "";
-    const name = authNameEl?.value?.trim() || "";
-    const isRegisterMode = authMode === "register";
-    try {
-      let loginRes;
-      if (isRegisterMode) {
-        loginRes = await fetch(`${NODE_BASE_URL}/api/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email, password }) });
-      } else {
-        loginRes = await fetch(`${NODE_BASE_URL}/api/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
-      }
-      const loginPayload = await loginRes.json().catch(() => ({}));
-      const token = loginPayload?.token;
-      if (!loginRes.ok || !token) throw new Error(loginPayload?.error || "login_failed");
-      const meRes = await fetch(`${NODE_BASE_URL}/api/auth/me`, { headers: { authorization: `Bearer ${token}` } });
-      const mePayload = await meRes.json().catch(() => ({}));
-      const user = mePayload?.user || mePayload?.data?.user;
-      console.log("[AUTH_LOGIN] /api/auth/me user resolved");
-      if (!meRes.ok || !mePayload?.ok || !user) throw new Error("session_invalid");
-      window.setCanonicalAuthState?.({ token, user }, { reason: "auth-ui" });
-      if (typeof window.onLogin === "function") {
-        await window.onLogin({ userId: user.userId || user.id, email: user.email, name: user.name, authProvider: user.provider || "password" });
-      }
-      const authOverlayEl = document.getElementById("authOverlay");
-      if (authOverlayEl) authOverlayEl.style.display = "none";
-      const appShellEl = document.getElementById("appShell");
-      if (appShellEl) appShellEl.classList.remove("app-shell-hidden");
-      if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
-    } catch (error) {
-      if (authLoginStatusEl) authLoginStatusEl.textContent = `Login failed: ${error?.message || "unknown_error"}`;
-    }
-  }
-
-  async function handleAuthButtonClick(event) {
-    console.log("[AUTH_LOGIN] button clicked");
+  function handleAuthButtonClick(event) {
+    console.log("[AUTH_SUBMIT] auth-ui button delegator invoked");
     event?.preventDefault?.();
     event?.stopPropagation?.();
-    return submitAuth();
+    return window.AuthCore?.handleLoginButtonClick?.(event) || submitAuth();
   }
 
   function handleCreateAccountToggle(event) {
-    console.log("[AUTH_LOGIN] create account clicked");
+    console.log("[AUTH_REGISTER] auth-ui toggle delegator invoked");
     event?.preventDefault?.();
-    authMode = authMode === "login" ? "register" : "login";
-    renderMode();
+    event?.stopPropagation?.();
+    return window.AuthCore?.handleCreateAccountToggle?.(event);
   }
 
   function bind() {
-    console.log("[AUTH_LOGIN] binding code reached");
+    console.log("[AUTH_FORM_RUNTIME] auth-ui binding compatibility reached");
     const authLoginForm = document.getElementById("authLoginForm");
     const authLoginSubmit = document.getElementById("authLoginSubmit");
     const authCreateAccountBtn = document.getElementById("authCreateAccountBtn");
-    console.log("[AUTH_LOGIN] form", authLoginForm);
-    console.log("[AUTH_LOGIN] login button", authLoginSubmit);
-    console.log("[AUTH_LOGIN] create button", authCreateAccountBtn);
     if (!authLoginForm || !authLoginSubmit || !authCreateAccountBtn) {
       showBindingError("Login UI init failed: missing required auth element.");
-      return;
+      return false;
     }
+    if (window.AuthCore?.bindAuthLoginForm?.()) return true;
+    if (authLoginForm.dataset.authUiDelegatorBound === "true") return true;
     authLoginForm.addEventListener("submit", handleAuthButtonClick);
     authLoginSubmit.addEventListener("click", handleAuthButtonClick);
     authCreateAccountBtn.addEventListener("click", handleCreateAccountToggle);
-    authLoginSubmit.onclick = handleAuthButtonClick;
-    authCreateAccountBtn.onclick = handleCreateAccountToggle;
-    console.log("[AUTH_LOGIN] handlers attached");
+    authLoginForm.dataset.authUiDelegatorBound = "true";
+    console.log("[AUTH_FORM_RUNTIME] auth-ui delegator handlers attached");
+    return true;
   }
+
+  window.AuthUiCompatibility = {
+    bind,
+    handleAuthButtonClick,
+    handleCreateAccountToggle,
+    submitAuth
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bind);
