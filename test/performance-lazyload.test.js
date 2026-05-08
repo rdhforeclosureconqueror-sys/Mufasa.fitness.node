@@ -71,6 +71,17 @@ test("coach runtime owns browser speech recognition lifecycle", () => {
 });
 
 
+test("coach runtime exposes ready/speaking/listening/unavailable Ma’at status transitions", () => {
+  const runtime = read("public/coach-runtime.js");
+  assert.match(runtime, /function setReady[\s\S]*Ma’at 2\.0: ready/, "ready state should update Ma’at chip text");
+  assert.match(runtime, /function setSpeaking[\s\S]*Ma’at 2\.0: speaking/, "speaking state should update Ma’at chip text");
+  assert.match(runtime, /function startListening[\s\S]*setCoachStatus\("Listening", \{ mode: "ok", chipText: "Ma’at 2\.0: listening", source: "speech-recognition" \}\)/, "listening state should update the visible Ma’at status");
+  assert.match(runtime, /function stopListening[\s\S]*setReady\("speech-recognition-stopped"\)/, "stopping mic should return Ma’at to ready");
+  assert.match(runtime, /function setVoiceUnavailable[\s\S]*Ma’at 2\.0: voice unavailable/, "voice unavailable/error state should update Ma’at chip text");
+  assert.match(runtime, /function setMicFailure[\s\S]*Ma’at 2\.0: mic error/, "mic error state should update Ma’at chip text");
+});
+
+
 test("remaining inline dangerous sections are explicitly marked", () => {
   const html = read("public/index.html");
   for (const marker of [
