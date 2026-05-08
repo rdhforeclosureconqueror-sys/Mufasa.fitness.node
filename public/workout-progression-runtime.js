@@ -86,10 +86,41 @@
     };
   }
 
-  function hydrateActiveWorkoutPlan() {
+  function createDefaultLiveWorkoutSelection() {
+    return {
+      schemaVersion: 1,
+      source: 'live-workout-default',
+      selectedAt: new Date().toISOString(),
+      programId: 'template',
+      scheduledWorkoutId: 'live_bodyweight_squat_default',
+      title: 'Live Bodyweight Squat',
+      notes: 'Auto-selected so the camera → detector → workout path can start when no workout has been chosen yet.',
+      exercises: [
+        {
+          exerciseId: 'bodyweight_squat',
+          name: 'Bodyweight Squat',
+          sets: 1,
+          targetReps: 10,
+          restSeconds: 60,
+          tempo: '3-1-1',
+          instructions: ['Stand tall, squat under control, then return to standing.'],
+          formCues: ['Keep chest tall.', 'Track knees over toes.']
+        }
+      ]
+    };
+  }
+
+  function hydrateActiveWorkoutPlan(options = {}) {
+    const { allowDefault = false } = options || {};
     let stored = null;
     try { stored = JSON.parse(global.localStorage?.getItem(ACTIVE_WORKOUT_SELECTION_KEY) || 'null'); } catch (err) {
       throw new Error(`invalid active workout selection: ${err?.message || err}`);
+    }
+    if (!stored && allowDefault) {
+      stored = createDefaultLiveWorkoutSelection();
+      try { global.localStorage?.setItem(ACTIVE_WORKOUT_SELECTION_KEY, JSON.stringify(stored)); } catch (_) {}
+      global.__ACTIVE_WORKOUT_SELECTION = stored;
+      selectionLog('auto-selected default live workout', { workoutId: stored.scheduledWorkoutId, exercises: stored.exercises.length });
     }
     if (!stored) {
       activeWorkoutPlan = null;
@@ -255,7 +286,7 @@
   }
 
   function prepareWorkoutStart() {
-    const plan = hydrateActiveWorkoutPlan();
+    const plan = hydrateActiveWorkoutPlan({ allowDefault: true });
     if (!plan?.exercises?.length) throw new Error('select a workout before starting');
     completedEventDispatched = false;
     sessionStartedAt = Date.now();

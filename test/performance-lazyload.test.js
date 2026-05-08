@@ -84,3 +84,9 @@ test("remaining inline dangerous sections are explicitly marked", () => {
     assert.match(html, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${marker} should remain visible in the inline shell`);
   }
 });
+
+test("workout start auto-selects a live default when no workout is selected", () => {
+  const runtime = read("public/workout-progression-runtime.js");
+  assert.match(runtime, /function createDefaultLiveWorkoutSelection\(\)[\s\S]*exerciseId: 'bodyweight_squat'/, "workout runtime should provide a safe live default exercise");
+  assert.match(runtime, /function prepareWorkoutStart\(\) \{\n\s*const plan = hydrateActiveWorkoutPlan\(\{ allowDefault: true \}\);/, "start should hydrate a default plan instead of blocking session creation when no selection exists");
+});
