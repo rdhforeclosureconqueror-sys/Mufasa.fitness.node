@@ -1000,11 +1000,13 @@ function createApp(options = {}) {
         return res.status(401).json({ ok: false, error: "auth_required" });
       }
 
+      const incomingSpeakBody = req.body || {};
       console.info("[tts] incoming request", {
         requestId: req.requestId,
         userId: req.auth?.userId || null,
         allowTtsNoAuth,
-        headers: sanitizeSpeakHeaders(req)
+        headers: sanitizeSpeakHeaders(req),
+        body: incomingSpeakBody
       });
 
       const {
@@ -1013,7 +1015,7 @@ function createApp(options = {}) {
         format = "mp3",
         speed,
         pitch
-      } = req.body || {};
+      } = incomingSpeakBody;
       if (!text || !String(text).trim()) {
         return res.status(400).json({ ok: false, error: "text required" });
       }
@@ -1028,17 +1030,30 @@ function createApp(options = {}) {
         : `${normalizedVoiceUpstream}/speak`;
       const AIVOICE_API_KEY = process.env.AIVOICE_API_KEY || "";
 
+      const upstreamSpeakBody = { text, voice, format, speed, pitch };
+      console.info("[tts] upstream request", {
+        requestId: req.requestId,
+        url: AIVOICE_URL,
+        body: upstreamSpeakBody
+      });
       const r = await fetch(AIVOICE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(AIVOICE_API_KEY ? { "X-AIVOICE-KEY": AIVOICE_API_KEY } : {})
         },
-        body: JSON.stringify({ text, voice, format, speed, pitch })
+        body: JSON.stringify(upstreamSpeakBody)
       });
 
       if (!r.ok) {
         const msg = await r.text().catch(() => "");
+        console.warn("[tts] upstream validation error", {
+          requestId: req.requestId,
+          status: r.status,
+          url: AIVOICE_URL,
+          body: upstreamSpeakBody,
+          response: msg || null
+        });
         return res.status(r.status).send(msg || "aivoice error");
       }
 

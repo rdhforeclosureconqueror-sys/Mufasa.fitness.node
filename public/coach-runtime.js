@@ -193,19 +193,22 @@
     if (!url) throw new Error("coach_chat_url_missing");
     if (typeof global.fetch !== "function") throw new Error("fetch_unavailable");
     const authToken = deps.getAuthToken?.();
+    const requestBody = buildAskPayload(question, options);
+    console.log("[COACH_BACKEND_TRACE] /ask request", { url, body: requestBody });
     const res = await global.fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
       },
-      body: JSON.stringify(buildAskPayload(question, options))
+      body: JSON.stringify(requestBody)
     });
     const contentType = res.headers?.get?.("content-type") || "";
     const payload = contentType.includes("application/json")
       ? await res.json().catch(() => null)
       : await res.text().catch(() => "");
     if (!res.ok) {
+      console.error("[COACH_BACKEND_TRACE] /ask validation error", { url, status: res.status, body: requestBody, response: payload });
       const message = extractCoachAnswer(payload) || (typeof payload === "string" ? payload : "") || `request_failed_${res.status}`;
       throw new Error(message);
     }
@@ -374,16 +377,19 @@
     const authToken = deps.getAuthToken?.();
     const voice = refs.voiceSelectEl?.value || DEFAULT_VOICES[0];
     const format = "mp3";
+    const requestBody = { text, voice, format };
+    console.log("[COACH_BACKEND_TRACE] /api/speak request", { url, body: requestBody });
     const res = await global.fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
       },
-      body: JSON.stringify({ text, voice, format })
+      body: JSON.stringify(requestBody)
     });
     if (!res.ok) {
       const errTxt = await res.text().catch(() => "");
+      console.error("[COACH_BACKEND_TRACE] /api/speak validation error", { url, status: res.status, body: requestBody, response: errTxt });
       throw new Error(`HTTP ${res.status}${errTxt ? ` ${errTxt}` : ""}`);
     }
     const blob = await res.blob();

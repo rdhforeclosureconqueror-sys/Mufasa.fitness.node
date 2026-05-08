@@ -189,12 +189,22 @@
   function bindControls(bindings = {}) {
     controlBindings = bindings;
     const refs = bindings.refs || {};
-    if (refs.avatarCreateBtn) refs.avatarCreateBtn.onclick = openModal;
+    if (refs.avatarCreateBtn) {
+      refs.avatarCreateBtn.disabled = false;
+      refs.avatarCreateBtn.removeAttribute?.('disabled');
+      refs.avatarCreateBtn.style.pointerEvents = 'auto';
+      refs.avatarCreateBtn.onclick = openModal;
+    } else {
+      const reason = 'avatar_create_button_missing';
+      visibleMessage(refs.avatarCreationStatusEl || globalScope.document?.getElementById?.('avatarCreationStatus'), 'Avatar create button missing. Refresh the page and retry.', true);
+      setFailure(reason, { source: 'bind-controls' });
+      console.error('[AVATAR_RUNTIME] create button binding failed', { reason });
+    }
     if (refs.closeAvatarModalBtn) refs.closeAvatarModalBtn.onclick = closeModal;
     if (refs.saveAvatarBtn) refs.saveAvatarBtn.onclick = saveFromInputs;
     if (refs.uploadAvatarBtn) refs.uploadAvatarBtn.onclick = uploadFile;
     if (refs.clearAvatarBtn) refs.clearAvatarBtn.onclick = bindings.clearAvatar || null;
-    console.log('[AVATAR_RUNTIME] controls delegated');
+    console.log('[AVATAR_RUNTIME] controls delegated', { hasCreateButton: Boolean(refs.avatarCreateBtn), createHandlerAttached: typeof refs.avatarCreateBtn?.onclick === 'function' });
   }
 
   function handlePosePacket(posePacket, source = 'pose-runtime') {
