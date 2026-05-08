@@ -97,6 +97,7 @@
   async function connectCamera(){
     console.log('[WORKOUT_LIFECYCLE] connectCamera enter');
     markLiveBreakpoint('camera-clicked', 'pass', { source: 'WorkoutRuntime.connectCamera' });
+    let videoPlayingMarked = false;
     try {
       ensureRequiredDom(['connectBtn', 'startBtn', 'fullscreenCameraBtn', 'video', 'poseStatus', 'workoutHud', 'brainStatus']);
       getFn('beforeConnectCamera')?.();
@@ -118,6 +119,7 @@
       await video.play();
       markCameraDiagnostics({ videoElementReady: true, videoPlaying: true });
       markLiveBreakpoint('video-playing', 'pass', { readyState: video.readyState || null, videoWidth: video.videoWidth || null, videoHeight: video.videoHeight || null });
+      videoPlayingMarked = true;
       await getFn('afterConnectCamera')?.(stream);
       state.cameraActive = true;
       setEnabled('startBtn', true);
@@ -130,8 +132,10 @@
       return stream;
     } catch (err) {
       markCameraDiagnostics({ lastCameraError: err?.message || String(err) });
-      const cameraFailName = state.cameraStream ? 'video-playing' : 'camera-stream-received';
-      markLiveBreakpoint(cameraFailName, 'fail', { source: 'WorkoutRuntime.connectCamera' }, err);
+      if (!videoPlayingMarked) {
+        const cameraFailName = state.cameraStream ? 'video-playing' : 'camera-stream-received';
+        markLiveBreakpoint(cameraFailName, 'fail', { source: 'WorkoutRuntime.connectCamera' }, err);
+      }
       getFn('onCameraError')?.(err);
       console.error('[WORKOUT_LIFECYCLE] camera error', err);
       setVisibleError(`Camera error: ${err?.message || err}`);

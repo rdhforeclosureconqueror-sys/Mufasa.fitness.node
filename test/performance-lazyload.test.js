@@ -39,6 +39,14 @@ test("progress scan boot metric is tracked from OHSA start", () => {
 });
 
 
+test("workout runtime preserves video-playing milestone after downstream detector failures", () => {
+  const runtime = read("public/workout-runtime.js");
+  assert.match(runtime, /let videoPlayingMarked = false;/, "workout runtime should track when video playback already passed");
+  assert.match(runtime, /markLiveBreakpoint\('video-playing', 'pass',[\s\S]*videoPlayingMarked = true;[\s\S]*await getFn\('afterConnectCamera'\)/, "video-playing should be finalized before downstream camera handoff hooks run");
+  assert.match(runtime, /if \(!videoPlayingMarked\) \{[\s\S]*markLiveBreakpoint\(cameraFailName, 'fail'/, "downstream detector errors should not overwrite a passed video-playing milestone");
+});
+
+
 test("coach voice controls call coach runtime directly", () => {
   const html = read("public/index.html");
   assert.doesNotMatch(html, /async function speak\(|async function unlockAudioOnce\(|function stopAllSpeech\(/, "inline coach voice compatibility delegators should be removed");
