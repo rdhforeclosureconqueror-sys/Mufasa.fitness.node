@@ -60,7 +60,7 @@
     state.lastStatus = statusText;
     if (refs.brainStatusEl) {
       refs.brainStatusEl.textContent = statusText;
-      setClass(refs.brainStatusEl, options.mode || (statusText === "Coach ready" || statusText === "Speaking" ? "ok" : "bad"));
+      setClass(refs.brainStatusEl, options.mode || (["Coach ready", "Speaking", "Listening", "Thinking"].includes(statusText) ? "ok" : "bad"));
     }
     if (refs.brainChipTxt) {
       refs.brainChipTxt.textContent = options.chipText || `Ma’at 2.0: ${statusText.toLowerCase()}`;
@@ -553,6 +553,7 @@
       updateListenButton();
       stt.start();
       setListeningStatus("Listening for 'Mufasa' or 'Coach'...", true);
+      setCoachStatus("Listening", { mode: "ok", chipText: "Ma’at 2.0: listening", source: "speech-recognition" });
       deps.addLog?.("system", "Listening for 'Mufasa' or 'Coach'...");
       log("mic", "started");
       return { ok: true, listening: true };
@@ -567,6 +568,7 @@
     updateListenButton();
     try { recognition?.stop?.(); } catch (err) { log("mic", "stop failed", normalizeReason(err)); }
     setListeningStatus("Stopped listening.", true);
+    setReady("speech-recognition-stopped");
     deps.addLog?.("system", "Stopped listening.");
     log("mic", "stopped");
     return { ok: true, listening: false };
