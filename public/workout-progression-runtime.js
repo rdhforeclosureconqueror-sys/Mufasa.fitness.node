@@ -324,6 +324,12 @@
     const nextTotalReps = Number(snapshot.totalReps ?? state.totalReps ?? 0);
     updateState({ repCount: nextRepCount, totalReps: nextTotalReps }, { formResult });
     if (state.targetReps && state.repCount >= state.targetReps && state.setStatus === 'active') {
+      const exercise = activeWorkoutPlan?.exercises?.[state.activeExerciseIndex] || null;
+      const finalSetForExercise = !exercise || state.activeSetIndex + 1 >= exercise.sets;
+      const finalExerciseForWorkout = !activeWorkoutPlan?.exercises?.length || state.activeExerciseIndex + 1 >= activeWorkoutPlan.exercises.length;
+      if (finalSetForExercise && finalExerciseForWorkout) {
+        return advanceWorkoutProgress(false);
+      }
       startRestTimer(state.restSeconds);
     }
     return getState();
