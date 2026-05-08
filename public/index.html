@@ -3499,13 +3499,22 @@ CREATE CLICKED: no</pre>
       addLog("system", `Loaded scheduled workout: ${getActiveWorkoutPlan()?.title || "Workout"}.`);
     });
 
+    function getProfileSaveButton() {
+      return document.getElementById("saveProfileFormBtn");
+    }
+
+    function isProfileSaveHandlerReady() {
+      const profileSaveButton = getProfileSaveButton();
+      return typeof profileSaveButton?.onclick === "function" || typeof window.ProfileWriteRuntime?.saveProfileToNode === "function";
+    }
+
     function getPrimaryNavHandlerStatus() {
       return {
         dashboard: typeof dashboardBtn?.onclick === "function",
         workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
         camera: typeof connectBtn?.onclick === "function",
         diagnostics: typeof runSystemDiagnosticBtn?.onclick === "function",
-        profile: typeof saveProfileFormBtn?.onclick === "function",
+        profile: isProfileSaveHandlerReady(),
         calendar: typeof calendarApplyBtn?.onclick === "function"
       };
     }
@@ -3626,7 +3635,7 @@ CREATE CLICKED: no</pre>
     });
     
     window.RuntimeOrchestrator.configurePostLoginActivation({
-      refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn, calendarApplyBtn },
+      refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn: getProfileSaveButton(), calendarApplyBtn },
       deps: {
         connectCamera,
         addLog,
@@ -3724,7 +3733,7 @@ CREATE CLICKED: no</pre>
         dashboard: typeof dashboardBtn?.onclick === "function",
         camera: typeof connectBtn?.onclick === "function",
         workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
-        profile: typeof saveProfileFormBtn?.onclick === "function",
+        profile: isProfileSaveHandlerReady(),
         calendar: typeof calendarApplyBtn?.onclick === "function",
         retention: typeof ensureRetentionFlowLoaded === "function"
       })
@@ -3821,7 +3830,7 @@ CREATE CLICKED: no</pre>
       dashboard: typeof dashboardBtn?.onclick === "function",
       workoutLibrary: typeof exerciseLibraryBtn?.onclick === "function",
       camera: typeof connectBtn?.onclick === "function",
-      profile: typeof saveProfileFormBtn?.onclick === "function",
+      profile: isProfileSaveHandlerReady(),
       calendar: typeof calendarApplyBtn?.onclick === "function",
       retention: typeof ensureRetentionFlowLoaded === "function"
     };

@@ -101,3 +101,30 @@ test("workout start auto-selects a live default when no workout is selected", ()
   assert.match(runtime, /function createDefaultLiveWorkoutSelection\(\)[\s\S]*exerciseId: 'bodyweight_squat'/, "workout runtime should provide a safe live default exercise");
   assert.match(runtime, /function prepareWorkoutStart\(\) \{\n\s*const plan = hydrateActiveWorkoutPlan\(\{ allowDefault: true \}\);/, "start should hydrate a default plan instead of blocking session creation when no selection exists");
 });
+test("missing profile save button cannot crash activation handler checks", () => {
+  const html = read("public/index.html");
+  assert.match(html, /function getProfileSaveButton\(\)[\s\S]*document\.getElementById\("saveProfileFormBtn"\)/, "profile save button lookup should be DOM-safe");
+  assert.match(html, /function isProfileSaveHandlerReady\(\)[\s\S]*ProfileWriteRuntime\?\.saveProfileToNode/, "profile handler readiness should fall back to ProfileWriteRuntime");
+  assert.match(html, /saveProfileFormBtn:\s*getProfileSaveButton\(\)/, "post-login refs should pass a safe profile save lookup result");
+  assert.doesNotMatch(html, /typeof\s+saveProfileFormBtn\b/, "bare saveProfileFormBtn typeof checks can throw with optional chaining and must not return");
+  assert.doesNotMatch(html, /[,{]\s*saveProfileFormBtn\s*[,}]/, "saveProfileFormBtn must not be used as an object shorthand/bare variable");
+});
+
+test("coach backend tracing logs exact request body and validation errors", () => {
+  const runtime = read("public/coach-runtime.js");
+  const server = read("server.js");
+  assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/ask request[\s\S]*body: requestBody/, "coach chat should log the exact /ask request body");
+  assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/ask validation error[\s\S]*response: payload/, "coach chat should log /ask validation response payloads");
+  assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/api\/speak request[\s\S]*body: requestBody/, "coach voice should log the exact /api/speak request body");
+  assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/api\/speak validation error[\s\S]*response: errTxt/, "coach voice should log /api/speak validation responses");
+  assert.match(server, /\[tts\] incoming request[\s\S]*body: incomingSpeakBody/, "server /api/speak should log incoming body");
+  assert.match(server, /\[tts\] upstream validation error[\s\S]*body: upstreamSpeakBody[\s\S]*response: msg/, "server /api/speak should log upstream validation errors");
+});
+
+test("avatar create button binding is clickable and reports missing DOM", () => {
+  const runtime = read("public/avatar-runtime.js");
+  assert.match(runtime, /refs\.avatarCreateBtn\.onclick = openModal/, "avatar create button should bind directly to openModal");
+  assert.match(runtime, /refs\.avatarCreateBtn\.style\.pointerEvents = 'auto'/, "avatar create button should be made clickable during binding");
+  assert.match(runtime, /avatar_create_button_missing/, "missing avatar create button should have an explicit error reason");
+  assert.match(runtime, /Avatar create button missing\. Refresh the page and retry\./, "missing avatar create button should produce a visible error");
+});
