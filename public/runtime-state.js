@@ -3,11 +3,33 @@
   const global = globalScope || window;
   const DEFAULT_NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
   const DEFAULT_BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
+  const DEFAULT_REQUIRED_POSE_DEPS = [
+    {
+      label: "TensorFlow.js",
+      globalName: "tf",
+      src: "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"
+    },
+    {
+      label: "MoveNet pose-detection",
+      globalName: "poseDetection",
+      src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"
+    }
+  ];
+  const DEFAULT_OPTIONAL_POSE_DEPS = [
+    {
+      label: "Face landmarks detection",
+      globalName: "faceLandmarksDetection",
+      src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"
+    },
+    {
+      label: "Hand pose detection",
+      globalName: "handPoseDetection",
+      src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"
+    }
+  ];
   const DEFAULT_POSE_SCRIPTS = [
-    "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js",
-    "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js",
-    "https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js",
-    "https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"
+    ...DEFAULT_REQUIRED_POSE_DEPS.map((dep) => dep.src),
+    ...DEFAULT_OPTIONAL_POSE_DEPS.map((dep) => dep.src)
   ];
   let poseRuntimePromise = null;
   let headPerfStart = null;
@@ -45,6 +67,7 @@
         script.src = src;
         script.async = async;
         script.defer = defer;
+        script.crossOrigin = "anonymous";
         script.onload = () => resolve(true);
         script.onerror = () => reject(new Error(`script_load_failed:${src}`));
         document.head.appendChild(script);
@@ -56,13 +79,65 @@
     return global.__loadExternalScript;
   }
 
+  function createMissingDependencyError(dep, phase) {
+    const src = dep?.src || "unknown_script";
+    const globalName = dep?.globalName || "unknown_global";
+    const error = new Error(`missing_dependency:${globalName}:${phase}:${src}`);
+    error.code = "POSE_RUNTIME_DEPENDENCY_MISSING";
+    error.dependency = globalName;
+    error.scriptSrc = src;
+    error.phase = phase;
+    return error;
+  }
+
+  async function loadRuntimeDependency(dep, { required = true } = {}) {
+    if (global[dep.globalName]) return true;
+    await global.__loadExternalScript(dep.src, { async: false, defer: false });
+    if (global[dep.globalName]) return true;
+    const error = createMissingDependencyError(dep, "after_script_load");
+    if (required) throw error;
+    console.warn("[RUNTIME_STATE] optional pose dependency unavailable", error.message);
+    return false;
+  }
+
+  function normalizeConfiguredPoseScripts(poseScripts) {
+    if (!Array.isArray(poseScripts) || !poseScripts.length) {
+      return {
+        requiredDeps: DEFAULT_REQUIRED_POSE_DEPS,
+        optionalDeps: DEFAULT_OPTIONAL_POSE_DEPS
+      };
+    }
+    return {
+      requiredDeps: [
+        { label: "TensorFlow.js", globalName: "tf", src: poseScripts.find((src) => /@tensorflow\/tfjs/.test(src)) || "configured_pose_scripts" },
+        { label: "MoveNet pose-detection", globalName: "poseDetection", src: poseScripts.find((src) => /@tensorflow-models\/pose-detection/.test(src)) || "configured_pose_scripts" }
+      ],
+      optionalDeps: [
+        { label: "Face landmarks detection", globalName: "faceLandmarksDetection", src: poseScripts.find((src) => /face-landmarks-detection/.test(src)) },
+        { label: "Hand pose detection", globalName: "handPoseDetection", src: poseScripts.find((src) => /hand-pose-detection/.test(src)) }
+      ].filter((dep) => dep.src)
+    };
+  }
+
   function installPoseRuntimeEnsurer(poseScripts){
-    const scripts = Array.isArray(poseScripts) && poseScripts.length ? poseScripts : DEFAULT_POSE_SCRIPTS;
+    const configuredScripts = Array.isArray(poseScripts) && poseScripts.length ? poseScripts : DEFAULT_POSE_SCRIPTS;
+    const { requiredDeps, optionalDeps } = normalizeConfiguredPoseScripts(poseScripts);
     global.__ensurePoseRuntime = async function ensurePoseRuntime() {
       if (poseRuntimePromise) return poseRuntimePromise;
       const startedAt = performance.now();
       poseRuntimePromise = (async () => {
-        for (const src of scripts) await global.__loadExternalScript(src);
+        for (const src of configuredScripts) {
+          const knownDependency = [...requiredDeps, ...optionalDeps].find((dep) => dep.src === src);
+          if (!knownDependency) await global.__loadExternalScript(src, { async: false, defer: false });
+        }
+        for (const dep of requiredDeps) await loadRuntimeDependency(dep, { required: true });
+        for (const dep of optionalDeps) {
+          try {
+            await loadRuntimeDependency(dep, { required: false });
+          } catch (err) {
+            console.warn("[RUNTIME_STATE] optional pose dependency load failed", err);
+          }
+        }
         global.__markPerfMetric?.("poseModelLoadMs", Math.round(performance.now() - startedAt));
         return true;
       })();

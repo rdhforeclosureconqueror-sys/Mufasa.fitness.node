@@ -43,6 +43,16 @@
     }
   }
 
+  function describeMissingDetectorDependencies(tfRuntime, poseRuntime) {
+    const missing = [];
+    if (!tfRuntime) missing.push('window.tf');
+    if (!poseRuntime) missing.push('window.poseDetection');
+    if (poseRuntime && typeof poseRuntime.createDetector !== 'function') missing.push('poseDetection.createDetector');
+    if (poseRuntime && !poseRuntime.SupportedModels?.MoveNet) missing.push('poseDetection.SupportedModels.MoveNet');
+    if (poseRuntime && !poseRuntime.movenet?.modelType?.SINGLEPOSE_LIGHTNING) missing.push('poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING');
+    return missing;
+  }
+
   async function initMoveNetDetector(options) {
     const {
       tf = global.tf,
@@ -65,8 +75,10 @@
       if (typeof ensurePoseRuntime === 'function') await ensurePoseRuntime();
       const tfRuntime = tf || global.tf;
       const poseRuntime = poseDetection || global.poseDetection;
-      if (!tfRuntime) throw new Error('tf runtime unavailable');
-      if (!poseRuntime) throw new Error('poseDetection runtime unavailable');
+      const missingDependencies = describeMissingDetectorDependencies(tfRuntime, poseRuntime);
+      if (missingDependencies.length) {
+        throw new Error(`missing detector dependency: ${missingDependencies.join(', ')}`);
+      }
 
       try {
         await tfRuntime.setBackend(mobileDevice ? 'cpu' : 'webgl');
