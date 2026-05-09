@@ -320,7 +320,7 @@ test("diagnostics access requires auth + admin email allowlist", async (t) => {
   assert.equal(secondAdminRes.status, 200);
 });
 
-test("diagnostics/admin routes allow tokenless access when DISABLE_LOGIN_FOR_PILOT=true", async (t) => {
+test("diagnostics/admin routes allow tokenless access only when pilot bypass is explicitly enabled in test/dev", async (t) => {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-diag-pilot-on-"));
   fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
   fs.copyFileSync(path.join(process.cwd(), "public", "index.html"), path.join(tmpRoot, "public", "index.html"));
@@ -331,10 +331,14 @@ test("diagnostics/admin routes allow tokenless access when DISABLE_LOGIN_FOR_PIL
   fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
 
   const prevPilotFlag = process.env.DISABLE_LOGIN_FOR_PILOT;
+  const prevNodeEnv = process.env.NODE_ENV;
   process.env.DISABLE_LOGIN_FOR_PILOT = "true";
+  process.env.NODE_ENV = "test";
   t.after(() => {
     if (prevPilotFlag == null) delete process.env.DISABLE_LOGIN_FOR_PILOT;
     else process.env.DISABLE_LOGIN_FOR_PILOT = prevPilotFlag;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
   });
 
   const app = createApp({ rootDir: tmpRoot });
@@ -359,4 +363,45 @@ test("diagnostics/admin routes allow tokenless access when DISABLE_LOGIN_FOR_PIL
   assert.equal(versionPayload.loginRemovedForPilot, true);
   assert.equal(versionPayload.pilotSuperAdminActive, true);
   assert.equal(versionPayload.authGateDisabled, true);
+});
+
+test("DISABLE_LOGIN_FOR_PILOT does not grant tokenless diagnostics in production", async (t) => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mufasa-diag-pilot-prod-"));
+  fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
+  fs.copyFileSync(path.join(process.cwd(), "public", "index.html"), path.join(tmpRoot, "public", "index.html"));
+  fs.writeFileSync(path.join(tmpRoot, "public", "form-engine.js"), "window.__MUFASA_FORM_ENGINE={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "backend-read.js"), "window.MufasaBackendRead={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "session-write.js"), "window.MufasaSessionWrite={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "fitness.js"), "window.MufasaFitness={};");
+  fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
+
+  const prevPilotFlag = process.env.DISABLE_LOGIN_FOR_PILOT;
+  const prevNodeEnv = process.env.NODE_ENV;
+  process.env.DISABLE_LOGIN_FOR_PILOT = "true";
+  process.env.NODE_ENV = "production";
+  t.after(() => {
+    if (prevPilotFlag == null) delete process.env.DISABLE_LOGIN_FOR_PILOT;
+    else process.env.DISABLE_LOGIN_FOR_PILOT = prevPilotFlag;
+    if (prevNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+  });
+
+  const app = createApp({ rootDir: tmpRoot });
+  const server = app.listen(0);
+  await new Promise((resolve, reject) => {
+    server.once("listening", resolve);
+    server.once("error", reject);
+  });
+  t.after(() => server.close());
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  const diagnosticsRes = await fetch(baseUrl + "/api/admin/diagnostics/recent");
+  assert.equal(diagnosticsRes.status, 401);
+
+  const versionRes = await fetch(baseUrl + "/__version");
+  assert.equal(versionRes.status, 200);
+  const versionPayload = await versionRes.json();
+  assert.equal(versionPayload.loginRemovedForPilot, false);
+  assert.equal(versionPayload.pilotSuperAdminActive, false);
+  assert.equal(versionPayload.authGateDisabled, false);
 });
