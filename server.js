@@ -186,7 +186,8 @@ function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
-  const disableLoginForPilot = false;
+  const pilotBypassRuntimeAllowed = process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development";
+  const disableLoginForPilot = pilotBypassRuntimeAllowed && process.env.DISABLE_LOGIN_FOR_PILOT === "true";
 
   const rootDir = options.rootDir || process.cwd();
   const writeObservability = createWriteObservability();
@@ -358,6 +359,7 @@ function createApp(options = {}) {
     pilotBypass: disableLoginForPilot
       ? {
         enabled: true,
+        runtimeAllowed: pilotBypassRuntimeAllowed,
         userId: "pilot_admin",
         name: "Rashad Harbour",
         email: "RDHForeclosureConquer@gmail.com",

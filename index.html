@@ -2484,6 +2484,10 @@ CREATE CLICKED: no</pre>
       };
     }
 
+    function getAuthToken() {
+      return window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || null;
+    }
+
     // Auth state ownership is delegated to /auth-state-runtime.js.
 
     function onLoginUI(profile) {
@@ -2499,7 +2503,7 @@ CREATE CLICKED: no</pre>
       baseUrl: NODE_BASE_URL,
       commandUrl: NODE_COMMAND_URL,
       getUserId: () => USER_ID,
-      getAuthToken: window.AuthStateRuntime?.getAuthToken,
+      getAuthToken: () => getAuthToken(),
       repDebounceMs: 500,
       logger: console,
       legacyFallbackRequireExplicitActions: LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS,
@@ -2692,7 +2696,7 @@ CREATE CLICKED: no</pre>
       deps: {
         voiceUrl: AIVOICE_URL,
         askUrl: ASK_URL,
-        getAuthToken: window.AuthStateRuntime?.getAuthToken,
+        getAuthToken: () => getAuthToken(),
         getProfile: () => USER_PROFILE,
         getUserId: () => USER_ID,
         addLog,
@@ -3680,7 +3684,7 @@ CREATE CLICKED: no</pre>
         getProfile: () => USER_PROFILE,
         setProfile: (profile) => { USER_PROFILE = profile; return USER_PROFILE; },
         getUserId: () => USER_ID,
-        getAuthToken: window.AuthStateRuntime?.getAuthToken,
+        getAuthToken: () => getAuthToken(),
         postAuthenticatedJSON: (url, options) => {
           if (!BACKEND_READ_CLIENT) throw new Error("backend_client_unavailable");
           return window.AuthStateRuntime.postAuthenticatedJSON(url, options);
@@ -3834,14 +3838,23 @@ CREATE CLICKED: no</pre>
       calendar: typeof calendarApplyBtn?.onclick === "function",
       retention: typeof ensureRetentionFlowLoaded === "function"
     };
+    const finalHandlerChecks = {
+      dashboard: handlerChecks.dashboard,
+      camera: handlerChecks.camera,
+      workoutLibrary: handlerChecks.workoutLibrary,
+      profile: handlerChecks.profile,
+      calendar: handlerChecks.calendar,
+      retention: handlerChecks.retention
+    };
     console.log("[APP_BOOT] dashboard button found", Boolean(dashboardBtn));
     console.log("[APP_BOOT] dashboard click handler attached", handlerChecks.dashboard ? "ok" : "missing");
+    updateAppBootStatus("dashboard handler attached", handlerChecks.dashboard ? "ok" : "missing");
     console.log("[APP_BOOT] camera button found", Boolean(connectBtn));
     console.log("[APP_BOOT] camera click handler attached", handlerChecks.camera ? "ok" : "missing");
     console.log("[APP_BOOT] workout library button found", Boolean(exerciseLibraryBtn));
     console.log("[APP_BOOT] workout library click handler attached", handlerChecks.workoutLibrary ? "ok" : "missing");
-    console.log("[APP_BOOT] nav handlers attached", handlerChecks);
-    updateAppBootStatus("nav handlers attached", JSON.stringify(handlerChecks));
+    console.log("[APP_BOOT] nav handlers attached", finalHandlerChecks);
+    updateAppBootStatus("nav handlers attached", JSON.stringify(finalHandlerChecks));
     console.log("[APP_BOOT] camera handlers attached", handlerChecks.camera ? "ok" : "missing");
     updateAppBootStatus("camera handler attached", handlerChecks.camera ? "ok" : "missing");
     console.log("[APP_BOOT] workout library handlers attached", handlerChecks.workoutLibrary ? "ok" : "missing");

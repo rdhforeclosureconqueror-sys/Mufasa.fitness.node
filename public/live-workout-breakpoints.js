@@ -99,7 +99,14 @@
   global.__liveWorkoutBreakpoints = state;
 
   global.addEventListener?.('auth:ready', (event) => {
-    if (event?.detail?.isAuthenticated === true) state.markPass('auth-ready', { reason: 'auth:ready' });
+    if (event?.detail?.isAuthenticated !== true) return;
+    const user = event?.detail?.user || {};
+    state.markPass('login-ready', {
+      reason: 'auth:ready',
+      userId: user.userId || user.id || null,
+      email: user.email || null
+    });
+    state.markPass('auth-ready', { reason: 'auth:ready' });
   });
   global.addEventListener?.('retention:completion-propagated', (event) => {
     state.markPass('dashboard-propagated', { key: event?.detail?.key || null });

@@ -14,7 +14,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
   return function attachAuthContext(req, _res, next) {
     const token = readBearerToken(req);
     if (!token) {
-      if (false && pilotBypass?.enabled) {
+      if (pilotBypass?.enabled && pilotBypass?.runtimeAllowed === true) {
         req.auth = {
           userId: pilotBypass.userId,
           email: pilotBypass.email,
@@ -33,7 +33,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
         req.auth = null;
       }
       if (authorizationResolver) {
-        req.authz = pilotBypass?.enabled
+        req.authz = pilotBypass?.enabled && pilotBypass?.runtimeAllowed === true
           ? {
             role: pilotBypass.role || "admin",
             permissions: Object.values(authorizationResolver.PERMISSIONS || {}),
