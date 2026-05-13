@@ -1567,7 +1567,7 @@ function createApp(options = {}) {
   });
 
   // ---- Structured Session API (pilot hardening) ----
-  app.post("/api/sessions", asyncHandler(async (req, res) => {
+  app.post("/api/sessions", requireAuth, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionCreate({
       ...(req.body || {}),
@@ -1577,7 +1577,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.post("/api/sessions/:id/reps", asyncHandler(async (req, res) => {
+  app.post("/api/sessions/:id/reps", requireAuth, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateRepUpdate({
       ...(req.body || {}),
@@ -1587,7 +1587,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.post("/api/sessions/:id/complete", asyncHandler(async (req, res) => {
+  app.post("/api/sessions/:id/complete", requireAuth, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionComplete({
       ...(req.body || {}),
