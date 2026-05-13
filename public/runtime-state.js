@@ -146,7 +146,12 @@
     return global.__ensurePoseRuntime;
   }
 
+  function isAvatarFeatureEnabled(){
+    return global.ENABLE_AVATAR_FEATURE === true;
+  }
+
   function initHeadRuntime(config){
+    const avatarFeatureEnabled = isAvatarFeatureEnabled();
     const initialScripts = config?.initialScripts || [
       "/form-engine.js",
       "/runtime-events.js",
@@ -163,7 +168,7 @@
       "/workout-progression-runtime.js",
       "/dashboard-runtime.js",
       "/coach-runtime.js",
-      "/avatar-runtime.js",
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js"] : []),
       "/landing-diagnostics.js",
       "/fitness.js"
     ];
@@ -172,7 +177,10 @@
     installScriptLoader();
     installPoseRuntimeEnsurer(config?.poseScripts);
     global.__avatarRuntimeStatus = global.__avatarRuntimeStatus || {};
-    log("head-runtime-initialized", { initialScripts: global.__startupResourceAudit.initialScripts.length });
+    global.__avatarRuntimeStatus.featureEnabled = avatarFeatureEnabled;
+    global.__avatarRuntimeStatus.featureDisabled = !avatarFeatureEnabled;
+    if (!avatarFeatureEnabled) global.__avatarRuntimeStatus.disabledReason = "ENABLE_AVATAR_FEATURE_FALSE";
+    log("head-runtime-initialized", { initialScripts: global.__startupResourceAudit.initialScripts.length, avatarFeatureEnabled });
     return { perfStart: headPerfStart, audit: global.__startupResourceAudit };
   }
 
@@ -204,6 +212,7 @@
 
   global.RuntimeState = {
     initHeadRuntime,
+    isAvatarFeatureEnabled,
     getEndpoints,
     createBackendReadClient,
     getHeadPerfStart

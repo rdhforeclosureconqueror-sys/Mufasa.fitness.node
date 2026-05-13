@@ -101,6 +101,17 @@ function enableTestLoginFixture(t) {
   });
 }
 
+
+function setAvatarFeatureFlag(t, value) {
+  const previous = process.env.ENABLE_AVATAR_FEATURE;
+  if (value == null) delete process.env.ENABLE_AVATAR_FEATURE;
+  else process.env.ENABLE_AVATAR_FEATURE = String(value);
+  t.after(() => {
+    if (previous == null) delete process.env.ENABLE_AVATAR_FEATURE;
+    else process.env.ENABLE_AVATAR_FEATURE = previous;
+  });
+}
+
 async function loginFixtureToken(baseUrl, testUserId) {
   const { res, json } = await post(baseUrl, "/api/auth/login", {
     email: "fixture-user@example.test",
@@ -607,7 +618,52 @@ test("OHSA submission and me history endpoint are auth protected and persisted",
   });
 });
 
-test("/api/avatar/upload rejects fake glb headers and accepts valid glb magic header", async (t) => {
+test("/api/avatar/upload is disabled by default for pilot quarantine", async (t) => {
+  setAvatarFeatureFlag(t, null);
+  await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "avatar_disabled_user");
+
+    const form = new FormData();
+    form.append("avatar", new Blob([Buffer.from("NOT_GLB_CONTENT", "utf8")]), "avatar.glb");
+    const res = await fetch(baseUrl + "/api/avatar/upload", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+      body: form
+    });
+    const json = await res.json();
+    assert.equal(res.status, 404);
+    assert.equal(json.ok, false);
+    assert.equal(json.error.code, "FEATURE_DISABLED");
+    assert.match(json.error.message, /Avatar feature is disabled/);
+  });
+});
+
+test("profile save works while avatar is disabled by default", async (t) => {
+  setAvatarFeatureFlag(t, null);
+  await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "profile_avatar_disabled_user");
+    const authHeader = { authorization: `Bearer ${token}` };
+
+    const { res, json } = await put(baseUrl, "/api/me/profile", {
+      profile: {
+        age: 41,
+        height_cm: 180,
+        weight_kg: 88,
+        goals: { primary_goal: "strength", frequency_days_per_week: 3 }
+      }
+    }, authHeader);
+
+    assert.equal(res.status, 200);
+    assert.equal(json.ok, true);
+    assert.equal(json.data.profile.age, 41);
+    assert.equal(json.data.profile.goals.primary_goal, "strength");
+  });
+});
+
+test("/api/avatar/upload rejects fake glb headers and accepts valid glb magic header when explicitly enabled", async (t) => {
+  setAvatarFeatureFlag(t, "true");
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
     const token = await loginFixtureToken(baseUrl, "avatar_magic_user");

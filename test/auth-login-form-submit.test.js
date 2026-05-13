@@ -56,8 +56,9 @@ test("frontend has only one auth login form id and auth-core duplicate mitigatio
   assert.match(authCore, /data-auth-login-disabled/, "duplicate forms should be explicitly disabled");
 });
 
-test("root index and public index stay in sync", () => {
+test("root legacy index is not edited during avatar quarantine", () => {
   const rootHtml = read("index.html");
   const publicHtml = read("public/index.html");
-  assert.equal(rootHtml, publicHtml, "root index.html must mirror public/index.html");
+  assert.doesNotMatch(rootHtml, /ENABLE_AVATAR_FEATURE/, "root legacy index.html must remain outside Phase 1 avatar quarantine edits");
+  assert.match(publicHtml, /ENABLE_AVATAR_FEATURE/, "public index should own Phase 1 avatar quarantine wiring");
 });

@@ -100,6 +100,20 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  function isAvatarFeatureEnabled() {
+    if (typeof state.deps.isAvatarFeatureEnabled === "function") return state.deps.isAvatarFeatureEnabled() === true;
+    return global.ENABLE_AVATAR_FEATURE === true;
+  }
+
+  function avatarDisabledResult(action) {
+    const message = "Avatar feature is disabled for this pilot.";
+    visibleAvatarMessage(message, true);
+    setAvatarAssetStatus(message, true);
+    setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+    state.deps.trackPilotEvent?.("avatar_disabled", { action });
+    return { ok: false, disabled: true, reason: "avatar_feature_disabled" };
+  }
+
   function isLikelyHttpUrl(value) {
     return /^https?:\/\//i.test(String(value || ""));
   }
@@ -140,7 +154,7 @@
       } : null,
       injuries: Array.isArray(profile.injuries) ? profile.injuries : [],
       notes: profile.notes || null,
-      avatar: normalizeAvatarProfile(profile.avatar)
+      avatar: isAvatarFeatureEnabled() ? normalizeAvatarProfile(profile.avatar) : null
     };
   }
 
@@ -186,16 +200,18 @@
     state.lastSync = { source, mode, at: new Date().toISOString() };
     state.lastAvatar = avatar;
     global.__profileWriteRuntimeState = snapshot();
-    global.AvatarRuntime?.updateStatus?.({
-      profileAvatarMetadataSynced: Boolean(avatar),
-      profileAvatarMetadataSource: source,
-      profileAvatarMetadataMode: mode,
-      profileAvatarModelUrl: avatar?.avatarModelUrl || null,
-      profileAvatarThumbnailUrl: avatar?.avatarThumbnailUrl || null,
-      profileAvatarSyncedAt: state.lastSync.at
-    });
-    global.dispatchEvent?.(new CustomEvent("profile-write:profile-synced", { detail: { profile, avatar, source, mode } }));
-    if (avatar) global.dispatchEvent?.(new CustomEvent("profile-write:avatar-metadata", { detail: { avatar, source, mode } }));
+    if (isAvatarFeatureEnabled()) {
+      global.AvatarRuntime?.updateStatus?.({
+        profileAvatarMetadataSynced: Boolean(avatar),
+        profileAvatarMetadataSource: source,
+        profileAvatarMetadataMode: mode,
+        profileAvatarModelUrl: avatar?.avatarModelUrl || null,
+        profileAvatarThumbnailUrl: avatar?.avatarThumbnailUrl || null,
+        profileAvatarSyncedAt: state.lastSync.at
+      });
+    }
+    global.dispatchEvent?.(new CustomEvent("profile-write:profile-synced", { detail: { profile, avatar: isAvatarFeatureEnabled() ? avatar : null, source, mode } }));
+    if (isAvatarFeatureEnabled() && avatar) global.dispatchEvent?.(new CustomEvent("profile-write:avatar-metadata", { detail: { avatar, source, mode } }));
   }
 
   async function saveProfileToNode({ source = "profile", allowLegacyFallback = true, visible = false } = {}) {
@@ -265,11 +281,14 @@
   }
 
   async function refreshAvatarAsset(source) {
+    if (!isAvatarFeatureEnabled()) return false;
     if (typeof state.deps.loadAvatarAssetForCurrentUser === "function") await state.deps.loadAvatarAssetForCurrentUser(source);
+    return true;
   }
 
   async function saveAvatarFromInputs() {
     log(PROFILE_TAG, "avatar URL save requested");
+    if (!isAvatarFeatureEnabled()) return avatarDisabledResult("save_from_inputs");
     const profile = getProfile();
     if (!profile) {
       visibleAvatarMessage("Sign in first.", true);
@@ -304,6 +323,7 @@
 
   async function uploadAvatarFile() {
     log(AVATAR_TAG, "upload button clicked");
+    if (!isAvatarFeatureEnabled()) return avatarDisabledResult("upload_file");
     state.deps.trackPilotEvent?.("avatar_upload_started");
     const profile = getProfile();
     if (!profile) {
@@ -399,6 +419,7 @@
 
   async function clearAvatarMetadata() {
     log(PROFILE_TAG, "avatar clear requested");
+    if (!isAvatarFeatureEnabled()) return avatarDisabledResult("clear_metadata");
     const profile = getProfile();
     if (!profile) {
       visibleAvatarMessage("Sign in first.", true);
@@ -424,7 +445,7 @@
     };
     state.configured = true;
     global.__profileWriteRuntimeState = snapshot();
-    log(PROFILE_TAG, "runtime configured", { hasProfileUrl: Boolean(state.endpoints.nodeProfileUrl), hasAvatarRefs: Boolean(Object.keys(state.refs).length) });
+    log(PROFILE_TAG, "runtime configured", { hasProfileUrl: Boolean(state.endpoints.nodeProfileUrl), hasAvatarRefs: Boolean(Object.keys(state.refs).length), avatarFeatureEnabled: isAvatarFeatureEnabled() });
     return true;
   }
 

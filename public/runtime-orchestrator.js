@@ -104,6 +104,10 @@
   }
 
   function configureAvatarRuntime({ refs = {}, deps = {}, messageHandler } = {}) {
+    if (global.RuntimeState?.isAvatarFeatureEnabled?.() !== true && global.ENABLE_AVATAR_FEATURE !== true) {
+      markConfigured("avatar-runtime-disabled", { reason: "ENABLE_AVATAR_FEATURE_FALSE" });
+      return false;
+    }
     try {
       global.AvatarRuntime?.bindControls?.({ refs, ...deps });
       if (typeof messageHandler === "function") global.addEventListener("message", messageHandler);
