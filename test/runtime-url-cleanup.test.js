@@ -12,10 +12,18 @@ const activeFrontendFiles = [
   "public/backend-read.js",
   "public/session-write.js",
   "public/app-runtime.js",
-  "public/dashboard-runtime.js"
+  "public/dashboard-runtime.js",
+  "public/auth-core.js",
+  "public/auth-state-runtime.js",
+  "public/boot-core.js",
+  "public/landing-diagnostics.js",
+  "public/profile-write-runtime.js",
+  "public/retention-flow.js",
+  "public/exercise-library.js",
+  "public/fitness.js"
 ];
 
-test("Phase 5B active frontend files do not pin app-owned Render backend origins", () => {
+test("Phase 5B/5C active frontend files do not pin app-owned Render backend origins", () => {
   for (const rel of activeFrontendFiles) {
     const source = fs.readFileSync(path.join(repoRoot, rel), "utf8");
     assert.doesNotMatch(source, /https:\/\/mufasa-fitness-node\.onrender\.com/, `${rel} must use the runtime backend resolver instead of the old Render backend origin`);

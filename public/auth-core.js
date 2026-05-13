@@ -6,7 +6,7 @@
   console.log("[BOOT] auth-core loaded");
   console.log("[AUTH_FORM_RUNTIME] auth-core form runtime loaded");
 
-  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+  const NODE_BASE_URL = window.RuntimeState?.getBackendOrigin?.() || window.location.origin;
   const AUTH_LOGIN_URL = `${NODE_BASE_URL}/api/auth/login`;
   const AUTH_REGISTER_URL = `${NODE_BASE_URL}/api/auth/register`;
   const AUTH_ME_URL = `${NODE_BASE_URL}/api/auth/me`;

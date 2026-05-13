@@ -1,6 +1,7 @@
 (function bootCore(globalScope) {
   'use strict';
-  const VERSION_URL = 'https://mufasa-fitness-node.onrender.com/__version';
+  const NODE_BASE_URL = globalScope.RuntimeState?.getBackendOrigin?.() || globalScope.location.origin;
+  const VERSION_URL = `${NODE_BASE_URL}/__version`;
   const FRONTEND_BUILD = globalScope.APP_BUILD_VERSION || 'unknown-frontend';
   const host = globalScope.location?.host || 'unknown-host';
   const state = globalScope.__bootCoreState = {

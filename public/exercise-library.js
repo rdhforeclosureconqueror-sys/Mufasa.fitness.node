@@ -1,7 +1,6 @@
 (function () {
   "use strict";
 
-  const DEFAULT_ASSET_HOST = "https://mufasa-fitness-node.onrender.com";
   const ACTIVE_WORKOUT_SELECTION_KEY = "ACTIVE_WORKOUT_SELECTION_V1";
 
   function normalizeBaseUrl(value) {
@@ -9,9 +8,10 @@
   }
 
   function resolveAssetHostCandidates() {
+    const runtimeNodeBase = normalizeBaseUrl(window.RuntimeState?.getBackendOrigin?.());
     const configuredNodeBase = normalizeBaseUrl(localStorage.getItem("maatNodeBaseUrl"));
     const origin = normalizeBaseUrl(window.location.origin);
-    return [configuredNodeBase, DEFAULT_ASSET_HOST, origin, ""]
+    return [runtimeNodeBase, configuredNodeBase, origin, ""]
       .map(normalizeBaseUrl)
       .filter((v, i, arr) => v || i === arr.length - 1)
       .filter((v, i, arr) => arr.indexOf(v) === i);

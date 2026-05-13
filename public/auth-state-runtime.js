@@ -2,7 +2,6 @@
   "use strict";
 
   const global = globalScope || window;
-  const DEFAULT_NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
 
@@ -112,7 +111,7 @@
   async function refreshAuthStatus(options = {}) {
     const reason = options.reason || "refreshAuthStatus";
     const token = options.token || global.APP_AUTH?.token || getStoredToken();
-    const baseUrl = options.baseUrl || global.RuntimeState?.getEndpoints?.().nodeBaseUrl || DEFAULT_NODE_BASE_URL;
+    const baseUrl = options.baseUrl || global.RuntimeState?.getEndpoints?.().nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.location?.origin;
     if (!token) {
       clearCanonicalAuthState(`${reason}:missing_token`, { forceDispatch: options.forceDispatch === true });
       return { ok: false, reason: "missing_token", auth: global.APP_AUTH };
