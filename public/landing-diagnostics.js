@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+  const NODE_BASE_URL = window.RuntimeState?.getBackendOrigin?.() || window.location.origin;
   const VERSION_URL = `${NODE_BASE_URL}/__version`;
   const SMOKE_URL = `${NODE_BASE_URL}/__diagnostic-smoke`;
   const REPORT_URL = `${NODE_BASE_URL}/api/admin/diagnostics/report`;

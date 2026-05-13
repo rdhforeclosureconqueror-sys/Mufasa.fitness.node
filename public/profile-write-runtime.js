@@ -438,7 +438,7 @@
     state.refs = { ...(config.refs || {}) };
     state.deps = { ...(config.deps || {}) };
     const runtimeEndpoints = global.RuntimeState?.getEndpoints?.() || {};
-    const nodeBaseUrl = config.endpoints?.nodeBaseUrl || state.deps.nodeBaseUrl || runtimeEndpoints.nodeBaseUrl || "https://mufasa-fitness-node.onrender.com";
+    const nodeBaseUrl = config.endpoints?.nodeBaseUrl || state.deps.nodeBaseUrl || runtimeEndpoints.nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.location?.origin;
     state.endpoints = {
       nodeBaseUrl,
       nodeProfileUrl: config.endpoints?.nodeProfileUrl || state.deps.nodeProfileUrl || runtimeEndpoints.nodeProfileUrl || `${nodeBaseUrl}/api/me/profile`

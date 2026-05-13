@@ -31,7 +31,7 @@ test("frontend includes login form and delegates auth submit ownership to auth-c
   assert.match(authCore, /window\.addEventListener\("load", bindAuthLoginForm\)/, "login form binding must happen on window load in auth-core");
   assert.match(authCore, /console\.log\("\[AUTH_FORM_RUNTIME\] form found", !!form\)/, "auth-core bindAuthLoginForm should log form detection");
   assert.match(authCore, /console\.log\("\[AUTH_FORM_RUNTIME\] submit handler attached"\)/, "auth-core bindAuthLoginForm should log handler attachment");
-  assert.match(authCore, /const NODE_BASE_URL = "https:\/\/mufasa-fitness-node\.onrender\.com"/, "backend base URL missing");
+  assert.match(authCore, /const NODE_BASE_URL = window\.RuntimeState\?\.getBackendOrigin\?\.\(\) \|\| window\.location\.origin/, "auth-core must use runtime backend resolver");
   assert.match(authCore, /fetch\(authUrl, \{\s*method: "POST"/s, "auth-core submit must use fetch POST");
   assert.doesNotMatch(authCore, /location\.search\s*=\s*.*password/i, "password must never be written to URL query string");
   assert.match(authCore, /\/api\/auth\/login/, "login API endpoint path missing");

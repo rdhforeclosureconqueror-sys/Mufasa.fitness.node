@@ -89,7 +89,7 @@
       .replace(/'/g, "&#39;");
   }
 
-  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+  const NODE_BASE_URL = window.RuntimeState?.getBackendOrigin?.() || window.location.origin;
 
   function getNodeBaseUrl() {
     return NODE_BASE_URL;
