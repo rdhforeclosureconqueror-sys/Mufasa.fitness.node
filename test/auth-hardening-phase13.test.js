@@ -179,7 +179,14 @@ test("pilot control-plane checks script returns machine-readable output", () => 
     cwd: path.resolve(__dirname, ".."),
     env: {
       ...process.env,
-      AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS: "ops-root"
+      AUTH_TOKEN_SECRET: "phase13-preflight-secret-32-characters",
+      PILOT_LOGIN_PASSWORD: "phase13-pilot-password",
+      LOGIN_SEED_EMAIL: "ops@example.com",
+      ALLOWED_ORIGINS: "https://pilot.example.com",
+      AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS: "ops-root",
+      ENABLE_TTS_NO_AUTH: "false",
+      AUTH_BRIDGE_ALLOW_MANUAL: "false",
+      AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE: "false"
     },
     encoding: "utf8"
   });

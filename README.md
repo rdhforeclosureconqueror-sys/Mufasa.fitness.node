@@ -216,6 +216,20 @@ Checks include:
 - missing bootstrap super-admin configuration
 - contradictory/inert enforcement settings (e.g., enforcement flags set while legacy fallback is disabled)
 
+### Pilot auth environment hardening
+
+Phase 3 pilot/production auth configuration is documented in `docs/pilot-auth-environment.md`. Required pilot auth variables are:
+- `AUTH_TOKEN_SECRET` (non-empty high-entropy value; not default/dev-only)
+- `PILOT_LOGIN_PASSWORD`
+- `LOGIN_SEED_EMAIL`
+- `ALLOWED_ORIGINS` (non-empty in pilot/production mode)
+- `AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS` or `AUTHZ_BOOTSTRAP_SUPER_ADMIN_SUBJECTS`
+- `ENABLE_TTS_NO_AUTH=false`
+- `AUTH_BRIDGE_ALLOW_MANUAL=false`
+- `AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE=false`
+
+`npm run ops:preflight` fails with exact variable names when these auth hardening values are missing or misconfigured.
+
 ### Strict startup mode
 
 Strict mode is opt-in:
