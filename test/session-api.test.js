@@ -164,14 +164,46 @@ async function loginToken(baseUrl) {
   return json.token;
 }
 
-test("POST /api/sessions starts a session and persists it", async (t) => {
-  await withServer(t, async ({ baseUrl, tmpRoot }) => {
-    const { res, json } = await post(baseUrl, "/api/sessions", {
+test("unauthenticated structured session writes are rejected", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const start = await post(baseUrl, "/api/sessions", {
       userId: "pilot_user",
+      sessionId: "sess_unauth_start"
+    });
+    assert.equal(start.res.status, 401);
+    assert.equal(start.json.ok, false);
+    assert.equal(start.json.error.code, "UNAUTHENTICATED");
+
+    const reps = await post(baseUrl, "/api/sessions/sess_unauth/reps", {
+      userId: "pilot_user",
+      repsThisSet: 5,
+      totalReps: 5
+    });
+    assert.equal(reps.res.status, 401);
+    assert.equal(reps.json.ok, false);
+    assert.equal(reps.json.error.code, "UNAUTHENTICATED");
+
+    const complete = await post(baseUrl, "/api/sessions/sess_unauth/complete", {
+      userId: "pilot_user",
+      repsCompleted: 5
+    });
+    assert.equal(complete.res.status, 401);
+    assert.equal(complete.json.ok, false);
+    assert.equal(complete.json.error.code, "UNAUTHENTICATED");
+  });
+});
+
+test("authenticated POST /api/sessions starts a session and persists it", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "pilot_user");
+    const authHeader = { authorization: `Bearer ${token}`, "x-request-id": "req-start-1" };
+
+    const { res, json } = await post(baseUrl, "/api/sessions", {
       sessionId: "sess_123",
       programId: "prog_1",
       exerciseId: "bodyweight_squat"
-    }, { "x-request-id": "req-start-1" });
+    }, authHeader);
 
     assert.equal(res.status, 201);
     assert.equal(json.ok, true);
@@ -274,6 +306,43 @@ test("authenticated rep writes derive user identity from auth when body userId i
   });
 });
 
+test("authenticated user cannot write another user's session via scoped body userId", async (t) => {
+  await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    enableTestLoginFixture(t);
+    const ownerToken = await loginFixtureToken(baseUrl, "owner_user");
+    const attackerToken = await loginFixtureToken(baseUrl, "attacker_user");
+    const ownerAuthHeader = { authorization: `Bearer ${ownerToken}` };
+    const attackerAuthHeader = { authorization: `Bearer ${attackerToken}` };
+
+    await post(baseUrl, "/api/sessions", {
+      sessionId: "owned_sess",
+      exerciseId: "bodyweight_squat"
+    }, ownerAuthHeader);
+
+    const reps = await post(baseUrl, "/api/sessions/owned_sess/reps", {
+      userId: "owner_user",
+      repsThisSet: 4,
+      totalReps: 4
+    }, attackerAuthHeader);
+    assert.equal(reps.res.status, 403);
+    assert.equal(reps.json.ok, false);
+    assert.equal(reps.json.error.code, "FORBIDDEN");
+
+    const complete = await post(baseUrl, "/api/sessions/owned_sess/complete", {
+      userId: "owner_user",
+      repsCompleted: 4
+    }, attackerAuthHeader);
+    assert.equal(complete.res.status, 403);
+    assert.equal(complete.json.ok, false);
+    assert.equal(complete.json.error.code, "FORBIDDEN");
+
+    const ownerPath = path.join(tmpRoot, "data", "users", "owner_user.json");
+    const owner = JSON.parse(fs.readFileSync(ownerPath, "utf8"));
+    assert.equal(owner.sessions.owned_sess.repUpdates.length, 0);
+    assert.equal(owner.sessions.owned_sess.endedAt, null);
+  });
+});
+
 test("authenticated rep writes reject mismatched request-body userId", async (t) => {
   const previous = process.env.PILOT_LOGIN_PASSWORD;
   process.env.PILOT_LOGIN_PASSWORD = "top-secret";
@@ -304,22 +373,24 @@ test("authenticated rep writes reject mismatched request-body userId", async (t)
   });
 });
 
-test("POST /api/sessions/:id/reps appends rep update", async (t) => {
+test("authenticated POST /api/sessions/:id/reps appends rep update", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "pilot_user");
+    const authHeader = { authorization: `Bearer ${token}` };
+
     await post(baseUrl, "/api/sessions", {
-      userId: "pilot_user",
       sessionId: "sess_abc",
       exerciseId: "bodyweight_squat"
-    });
+    }, authHeader);
 
     const { res, json } = await post(baseUrl, "/api/sessions/sess_abc/reps", {
-      userId: "pilot_user",
       exerciseId: "bodyweight_squat",
       repsThisSet: 7,
       totalReps: 21,
       depthScore: 0.81,
       goodForm: true
-    });
+    }, authHeader);
 
     assert.equal(res.status, 200);
     assert.equal(json.ok, true);
@@ -332,19 +403,21 @@ test("POST /api/sessions/:id/reps appends rep update", async (t) => {
   });
 });
 
-test("POST /api/sessions/:id/complete ends session", async (t) => {
+test("authenticated POST /api/sessions/:id/complete ends session", async (t) => {
   await withServer(t, async ({ baseUrl, tmpRoot }) => {
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "pilot_user");
+    const authHeader = { authorization: `Bearer ${token}` };
+
     await post(baseUrl, "/api/sessions", {
-      userId: "pilot_user",
       sessionId: "sess_done",
       exerciseId: "bodyweight_squat"
-    });
+    }, authHeader);
 
     const { res, json } = await post(baseUrl, "/api/sessions/sess_done/complete", {
-      userId: "pilot_user",
       repsCompleted: 30,
       exerciseId: "bodyweight_squat"
-    });
+    }, authHeader);
 
     assert.equal(res.status, 200);
     assert.equal(json.ok, true);
@@ -357,11 +430,15 @@ test("POST /api/sessions/:id/complete ends session", async (t) => {
   });
 });
 
-test("validation failures return normalized error envelope", async (t) => {
+test("authenticated validation failures return normalized error envelope", async (t) => {
   await withServer(t, async ({ baseUrl }) => {
+    enableTestLoginFixture(t);
+    const token = await loginFixtureToken(baseUrl, "validation_user");
+    const authHeader = { authorization: `Bearer ${token}` };
+
     const { res, json } = await post(baseUrl, "/api/sessions", {
-      sessionId: "missing_user"
-    });
+      sessionId: 123
+    }, authHeader);
 
     assert.equal(res.status, 400);
     assert.equal(json.ok, false);
@@ -432,10 +509,12 @@ test("write observability endpoint reports explicit and legacy write usage", asy
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
 
+    const obsToken = await loginFixtureToken(baseUrl, "obs_user");
+    const obsAuthHeader = { authorization: `Bearer ${obsToken}` };
+
     await post(baseUrl, "/api/sessions", {
-      userId: "obs_user",
       sessionId: "obs_sess_1"
-    });
+    }, obsAuthHeader);
 
     await post(baseUrl, "/command", {
       domain: "fitness",
