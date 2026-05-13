@@ -59,6 +59,11 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
 ]);
 const APP_BUILD_VERSION = "2026-04-27T00:00:00Z-client-workout-hud";
 const INDEX_CACHE_BUST_TOKEN = "20260427";
+const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
+
+function isAvatarFeatureEnabled(env = process.env) {
+  return env.ENABLE_AVATAR_FEATURE === "true";
+}
 
 function normalizeAuthBridgeTrustMode(raw) {
   const mode = String(raw || "").trim().toLowerCase();
@@ -186,6 +191,7 @@ function createApp(options = {}) {
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
+  const avatarFeatureEnabled = isAvatarFeatureEnabled(process.env);
   const pilotBypassRuntimeAllowed = process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development";
   const disableLoginForPilot = pilotBypassRuntimeAllowed && process.env.DISABLE_LOGIN_FOR_PILOT === "true";
 
@@ -271,7 +277,7 @@ function createApp(options = {}) {
 
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
-  if (!fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
+  if (avatarFeatureEnabled && !fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
   const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
@@ -467,7 +473,10 @@ function createApp(options = {}) {
     }
     res.set(SHELL_NO_STORE_HEADERS);
     res.set("X-App-Build-Version", APP_BUILD_VERSION);
-    res.sendFile(CANONICAL_SHELL_PATH);
+    res.type("html").send(
+      fs.readFileSync(CANONICAL_SHELL_PATH, "utf8")
+        .replace(/__ENABLE_AVATAR_FEATURE__/g, avatarFeatureEnabled ? "true" : "false")
+    );
   });
   app.get("/dashboard.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
@@ -476,6 +485,14 @@ function createApp(options = {}) {
   app.get("/exercise-library.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
+  });
+  app.get("/avatar-runtime.js", (req, res, next) => {
+    if (avatarFeatureEnabled) return next();
+    console.info("[avatar-runtime] disabled", { requestId: req.requestId || null });
+    return fail(res, req.requestId || "unknown", {
+      code: "FEATURE_DISABLED",
+      message: AVATAR_FEATURE_DISABLED_MESSAGE
+    }, 404);
   });
   app.get("/__version", (req, res) => {
     console.info("[version]", { requestId: req.requestId, route: req.path });
@@ -487,7 +504,8 @@ function createApp(options = {}) {
       pilotSuperAdminActive: disableLoginForPilot,
       authGateDisabled: disableLoginForPilot,
       superAdminActive: disableLoginForPilot,
-      allFeatureGatesBypassed: disableLoginForPilot
+      allFeatureGatesBypassed: disableLoginForPilot,
+      avatarFeatureEnabled
     });
   });
   app.get("/__diagnostic-smoke", (req, res) => {
@@ -502,7 +520,8 @@ function createApp(options = {}) {
       pilotSuperAdminActive: disableLoginForPilot,
       authGateDisabled: disableLoginForPilot,
       superAdminActive: disableLoginForPilot,
-      allFeatureGatesBypassed: disableLoginForPilot
+      allFeatureGatesBypassed: disableLoginForPilot,
+      avatarFeatureEnabled
     });
   });
   // ---- Helpers ----
@@ -1751,6 +1770,9 @@ function createApp(options = {}) {
   }));
 
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
+    if (!avatarFeatureEnabled) {
+      throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
+    }
     const maxBytes = Number(process.env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024);
     let upload;
     try {
@@ -2000,5 +2022,6 @@ if (require.main === module) {
 module.exports = {
   ENFORCEABLE_ACTIONS,
   parseActionEnforcementFromEnv,
-  createApp
+  createApp,
+  isAvatarFeatureEnabled
 };

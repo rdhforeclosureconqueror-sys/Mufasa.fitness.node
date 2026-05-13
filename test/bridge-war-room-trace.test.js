@@ -89,7 +89,7 @@ test("bridge war-room trace: strict trust mode blocks unverified, allows verifie
   const profile = await get(baseUrl, "/api/me/profile", { authorization: `Bearer ${issuedToken}` });
   assert.equal(profile.res.status, 200);
 
-  // E) Issued token should pass /api/avatar/upload auth layer (400 validation expected without multipart payload).
+  // E) Issued token should pass /api/avatar/upload auth layer and receive the pilot-disabled response.
   const upload = await fetch(baseUrl + "/api/avatar/upload", {
     method: "POST",
     headers: { authorization: `Bearer ${issuedToken}`, "content-type": "application/json" },
@@ -97,6 +97,6 @@ test("bridge war-room trace: strict trust mode blocks unverified, allows verifie
   });
   let uploadJson = null;
   try { uploadJson = await upload.json(); } catch {}
-  assert.equal(upload.status, 400);
-  assert.equal(uploadJson?.error?.code, "VALIDATION_ERROR");
+  assert.equal(upload.status, 404);
+  assert.equal(uploadJson?.error?.code, "FEATURE_DISABLED");
 });

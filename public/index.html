@@ -9,7 +9,10 @@
   <meta http-equiv="Expires" content="0" />
   <script>
     window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
+    window.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__" === "true" || window.ENABLE_AVATAR_FEATURE === true;
+    if (!window.ENABLE_AVATAR_FEATURE) document.documentElement.classList.add("avatar-feature-disabled");
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
+    console.log("[AVATAR_FEATURE]", window.ENABLE_AVATAR_FEATURE ? "enabled" : "disabled");
   </script>
 
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
@@ -22,7 +25,7 @@
   <script src="/auth-core.js" defer></script>
   <script>
     window.RuntimeState?.initHeadRuntime?.();
-    console.log("[AVATAR_RUNTIME] delegated to /avatar-runtime.js");
+    console.log(window.ENABLE_AVATAR_FEATURE ? "[AVATAR_RUNTIME] delegated to /avatar-runtime.js" : "[AVATAR_RUNTIME] disabled by ENABLE_AVATAR_FEATURE flag");
     console.log("[INLINE_SECTION] runtime exports");
     window.RuntimeBridges?.installAvatarRetryBridge?.();
     console.log("[INLINE_SECTION] boot complete");
@@ -34,6 +37,7 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html.avatar-feature-disabled [data-avatar-feature] { display: none !important; }
     :root {
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
@@ -764,10 +768,10 @@ CREATE CLICKED: no</pre>
           <div class="mobile-row">
             <select id="renderModeMobileSelect" aria-label="Render mode">
               <option value="camera">Render: Camera</option>
-              <option value="avatar_overlay">Render: Avatar Overlay</option>
-              <option value="avatar_only">Render: Avatar Only</option>
+              <option value="avatar_overlay" data-avatar-feature>Render: Avatar Overlay</option>
+              <option value="avatar_only" data-avatar-feature>Render: Avatar Only</option>
             </select>
-            <select id="avatarStageMobileSelect" aria-label="Avatar stage mode">
+            <select id="avatarStageMobileSelect" aria-label="Avatar stage mode" data-avatar-feature>
               <option value="fixed">Stage: Fixed</option>
               <option value="follow_pose">Stage: Follow Pose</option>
             </select>
@@ -787,9 +791,9 @@ CREATE CLICKED: no</pre>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
         <button id="runSystemDiagnosticBtn" class="secondary">🩺 Run System Diagnostic</button>
         <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
-        <span id="threeBridgeFixMarker" class="chip" style="border-color:#22c55e;color:#22c55e;">Three bridge fix active</span>
-        <button id="avatarCreateBtn" class="secondary">🧍 Create Avatar</button>
-        <img id="avatarThumb" class="avatar-thumb" alt="avatar thumbnail" />
+        <span id="threeBridgeFixMarker" class="chip" style="border-color:#22c55e;color:#22c55e;" data-avatar-feature>Three bridge fix active</span>
+        <button id="avatarCreateBtn" class="secondary" data-avatar-feature>🧍 Create Avatar</button>
+        <img id="avatarThumb" class="avatar-thumb" alt="avatar thumbnail" data-avatar-feature />
 
         <select id="voiceSelect">
           <option value="">Loading voices…</option>
@@ -798,11 +802,11 @@ CREATE CLICKED: no</pre>
           <span>Render:</span>
           <select id="renderModeSelect">
             <option value="camera">Camera</option>
-            <option value="avatar_overlay">Avatar Overlay</option>
-            <option value="avatar_only">Avatar Only</option>
+            <option value="avatar_overlay" data-avatar-feature>Avatar Overlay</option>
+            <option value="avatar_only" data-avatar-feature>Avatar Only</option>
           </select>
         </label>
-        <label for="avatarFacingSelect" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;">
+        <label for="avatarFacingSelect" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;" data-avatar-feature>
           <span>Avatar Facing:</span>
           <select id="avatarFacingSelect">
             <option value="0">0°</option>
@@ -811,7 +815,7 @@ CREATE CLICKED: no</pre>
             <option value="270">270°</option>
           </select>
         </label>
-        <button id="avatarRotate90Btn" class="secondary" type="button">Rotate Avatar 90°</button>
+        <button id="avatarRotate90Btn" class="secondary" type="button" data-avatar-feature>Rotate Avatar 90°</button>
 
         <span class="chip">
           <span class="chip-dot"></span>
@@ -823,7 +827,7 @@ CREATE CLICKED: no</pre>
       <div id="trackingModeRow" class="status-line"><strong>Tracking mode:</strong> <span id="trackingModeStatus">upper_body</span></div>
       <div class="status-line"><strong>Stage mode:</strong> <span id="stageModeStatus">fixed</span></div>
       <div class="status-line"><strong>Render mode:</strong> <span id="avatarModeStatus">Camera (default)</span></div>
-      <div class="status-line"><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
+      <div class="status-line" data-avatar-feature><strong>Avatar:</strong> <span id="avatarAssetStatus">No avatar saved.</span></div>
       <div class="status-line"><strong>Brain:</strong> <span id="brainStatus">Coach ready</span></div>
       <div class="status-line"><strong>Sync:</strong> <span id="syncStatus">Checking backend mode…</span></div>
       <div class="status-line"><strong>BOOT_CORE_LOADED:</strong> <span id="bootCoreLoadedMarker">no</span></div>
@@ -897,7 +901,7 @@ CREATE CLICKED: no</pre>
     </div>
   </div>
 
-  <div id="avatarModal" class="modal-shell hidden" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+  <div id="avatarModal" class="modal-shell hidden" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle" data-avatar-feature>
     <div class="modal-card">
       <h2 id="avatarModalTitle">Avaturn Avatar Setup</h2>
       <p class="subtitle">Launch Avaturn creator or upload an exported .glb avatar file from your device.</p>
@@ -930,7 +934,11 @@ CREATE CLICKED: no</pre>
   <script src="/workout-progression-runtime.js?v=20260506"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260507"></script>
-  <script src="/avatar-runtime.js?v=20260506a"></script>
+  <script>
+    if (window.ENABLE_AVATAR_FEATURE) {
+      document.write('<script src="/avatar-runtime.js?v=20260506a"><\/script>');
+    }
+  </script>
   <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260505"></script>
@@ -945,6 +953,8 @@ CREATE CLICKED: no</pre>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
     const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+    const ENABLE_AVATAR_FEATURE = window.ENABLE_AVATAR_FEATURE === true;
+    const isAvatarFeatureEnabled = () => ENABLE_AVATAR_FEATURE;
     // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.
     console.log("[INLINE_SECTION] boot start");
     console.log("🔥 Ma’at 2.0 coach script initialized");
@@ -1799,6 +1809,14 @@ CREATE CLICKED: no</pre>
     }
 
     async function initializeAvatarRuntimeBootstrap(source = "bootstrap") {
+      if (!isAvatarFeatureEnabled()) {
+        const status = getAvatarRuntimeStatusRef();
+        status.featureEnabled = false;
+        status.featureDisabled = true;
+        status.disabledReason = "ENABLE_AVATAR_FEATURE_FALSE";
+        setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+        return false;
+      }
       try {
         await ensureAvatarThreeRuntimeDependencies();
         const runtime = ensureAvatarThreeRuntime();
@@ -1962,6 +1980,13 @@ CREATE CLICKED: no</pre>
       const previousMode = AVATAR_FLAGS.AVATAR_MODE;
       const nextMode = sanitizeRenderMode(mode);
       updateAvatarOverlayDiagnostics({ lastRenderModeRequested: nextMode });
+      if (!isAvatarFeatureEnabled() && (nextMode === "avatar_overlay" || nextMode === "avatar_only")) {
+        updateRenderModeStatus("Camera (avatar disabled for pilot)", true);
+        AVATAR_FLAGS.AVATAR_MODE = "camera";
+        if (renderModeSelectEl.value !== "camera") renderModeSelectEl.value = "camera";
+        if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== "camera") renderModeMobileSelectEl.value = "camera";
+        return AVATAR_FLAGS.AVATAR_MODE;
+      }
       if ((nextMode === "avatar_overlay" || nextMode === "avatar_only") && !activeAvatarAsset) {
         queueMicrotask(() => {
           initializeAvatarRuntimeBootstrap("render_mode_selection").then((ok) => {
@@ -2352,10 +2377,11 @@ CREATE CLICKED: no</pre>
     }
 
     async function loadAvatarAssetForCurrentUser(source = "saved_profile") {
+      if (!isAvatarFeatureEnabled()) return false;
       return window.AvatarRuntime?.loadAvatarAssetForCurrentUser?.(source) || false;
     }
 
-    window.AvatarRuntime?.configureAssetPipeline?.({
+    if (isAvatarFeatureEnabled()) window.AvatarRuntime?.configureAssetPipeline?.({
       getStatusRef: getAvatarRuntimeStatusRef,
       getRenderMode,
       getProfile: () => USER_PROFILE,
@@ -2396,6 +2422,10 @@ CREATE CLICKED: no</pre>
     });
 
     function openAvatarModal() {
+      if (!isAvatarFeatureEnabled()) {
+        setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+        return false;
+      }
       avatarModelUrlInput.value = USER_PROFILE?.avatar?.avatarModelUrl || "";
       avatarThumbUrlInput.value = USER_PROFILE?.avatar?.avatarThumbnailUrl || "";
       avatarCreationStatusEl.textContent = "Idle.";
@@ -3782,6 +3812,7 @@ CREATE CLICKED: no</pre>
       const nextDeg = (avatarFacingDeg + 90) % 360;
       applyAvatarFacingCalibration(nextDeg, { persist: true, source: "facing_rotate_90" });
     };
+    if (isAvatarFeatureEnabled()) {
     window.RuntimeOrchestrator.configureAvatarRuntime({
       refs: {
         avatarCreateBtn, closeAvatarModalBtn, saveAvatarBtn, clearAvatarBtn, uploadAvatarBtn,
@@ -3804,7 +3835,16 @@ CREATE CLICKED: no</pre>
         openAvatarModal();
       }
     });
+    } else {
+      [avatarCreateBtn, launchAvaturnBtn, avatarFileInput, uploadAvatarBtn, saveAvatarBtn, clearAvatarBtn, avatarModelUrlInput, avatarThumbUrlInput, avatarFacingSelectEl, avatarRotate90Btn, avatarStageMobileSelectEl].filter(Boolean).forEach((el) => {
+        el.disabled = true;
+        el.setAttribute?.("aria-disabled", "true");
+      });
+      if (avatarModalEl) avatarModalEl.classList.add("hidden");
+      setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+    }
     launchAvaturnBtn.onclick = () => {
+      if (!isAvatarFeatureEnabled()) return false;
       avatarCreationStatusEl.textContent = "Opening Avaturn creator popup…";
       const popup = window.open(AVATAR_CREATOR_URL, "avaturn_creator", "popup=true,width=1100,height=800");
       if (!popup) {
@@ -3870,11 +3910,11 @@ CREATE CLICKED: no</pre>
     // ---- Boot ----
     window.addEventListener("load", async () => {
       avatarStageMode = resolveInitialStageMode();
-      applyAvatarStageMode(avatarStageMode, { persist: false });
+      if (isAvatarFeatureEnabled()) applyAvatarStageMode(avatarStageMode, { persist: false });
       refreshBuildStamp();
       refreshCameraUiState();
       avatarFacingDeg = resolveInitialAvatarFacingDeg();
-      applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
+      if (isAvatarFeatureEnabled()) applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "initial" });
       applyRenderModeSelection(resolveInitialRenderMode(), { persist: false, source: "initial" });
       trackPilotEvent("app_loaded", {
         buildVersion: APP_BUILD_VERSION,
