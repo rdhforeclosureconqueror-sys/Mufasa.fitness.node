@@ -22,10 +22,10 @@
   const frontendUrlEl = document.getElementById("frontendUrl");
   const backendUrlEl = document.getElementById("backendUrl");
 
-  const FALLBACK_NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
-  const nodeBaseUrl = (localStorage.getItem("maatNodeBaseUrl")
+  const nodeBaseUrl = (window.RuntimeState?.getBackendOrigin?.()
+    || window.MAAT_BACKEND_ORIGIN
     || window.MAAT_NODE_BASE_URL
-    || FALLBACK_NODE_BASE_URL)
+    || window.location.origin)
     .replace(/\/$/, "");
   const client = window.MufasaBackendRead?.createClient({
     baseUrl: nodeBaseUrl,

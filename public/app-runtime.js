@@ -1,7 +1,7 @@
 (function initAppRuntime(globalScope){
   'use strict';
 
-  const NODE_BASE = 'https://mufasa-fitness-node.onrender.com';
+  const NODE_BASE = globalScope.RuntimeState?.getBackendOrigin?.() || globalScope.location.origin;
   const HYDRATE_DEBOUNCE_MS = 1200;
   const state = {
     lastFeatureClick: null,

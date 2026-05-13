@@ -1,7 +1,6 @@
 (function initRuntimeState(globalScope){
   "use strict";
   const global = globalScope || window;
-  const DEFAULT_NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
   const DEFAULT_BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
   const DEFAULT_REQUIRED_POSE_DEPS = [
     {
@@ -184,10 +183,38 @@
     return { perfStart: headPerfStart, audit: global.__startupResourceAudit };
   }
 
-  function getEndpoints(){
-    const nodeBaseUrl = DEFAULT_NODE_BASE_URL;
-    const brainBaseUrl = DEFAULT_BRAIN_BASE_URL;
+  function trimTrailingSlash(value){
+    return String(value || "").trim().replace(/\/+$/g, "");
+  }
+
+  function normalizeBackendOrigin(value){
+    const raw = trimTrailingSlash(value);
+    if (!raw) return "";
+    if (!/^[a-z][a-z\d+.-]*:/i.test(raw)) return "";
+    try {
+      return new URL(raw).origin;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function getBackendOrigin(){
+    const configuredOrigin = [
+      global.MAAT_BACKEND_ORIGIN,
+      global.MAAT_NODE_BASE_URL,
+      global.__MAAT_BACKEND_ORIGIN,
+      global.__MAAT_RUNTIME_CONFIG?.backendOrigin,
+      global.__MAAT_RUNTIME_CONFIG?.nodeBaseUrl
+    ].map(normalizeBackendOrigin).find(Boolean);
+    const locationOrigin = normalizeBackendOrigin(global.location?.origin);
+    const nodeBaseUrl = configuredOrigin || locationOrigin;
     try { global.localStorage?.setItem("maatNodeBaseUrl", nodeBaseUrl); } catch (_) {}
+    return nodeBaseUrl;
+  }
+
+  function getEndpoints(){
+    const nodeBaseUrl = getBackendOrigin();
+    const brainBaseUrl = DEFAULT_BRAIN_BASE_URL;
     return Object.freeze({
       brainBaseUrl,
       askUrl: `${brainBaseUrl}/ask`,
@@ -205,7 +232,7 @@
   }
 
   function createBackendReadClient(){
-    return global.MufasaBackendRead?.createClient({ baseUrl: DEFAULT_NODE_BASE_URL, storagePrefix: "maat" });
+    return global.MufasaBackendRead?.createClient({ baseUrl: getBackendOrigin(), storagePrefix: "maat" });
   }
 
   function getHeadPerfStart(){ return headPerfStart; }
@@ -213,6 +240,7 @@
   global.RuntimeState = {
     initHeadRuntime,
     isAvatarFeatureEnabled,
+    getBackendOrigin,
     getEndpoints,
     createBackendReadClient,
     getHeadPerfStart
