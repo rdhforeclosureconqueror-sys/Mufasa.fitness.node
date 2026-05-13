@@ -23,10 +23,13 @@
     }
   }
 
-  const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+  function trimTrailingSlash(value) {
+    return String(value || "").trim().replace(/\/+$/g, "");
+  }
 
-  function resolveBaseUrl() {
-    return NODE_BASE_URL;
+  function resolveBaseUrl(baseUrl) {
+    const runtimeOrigin = window.RuntimeState?.getBackendOrigin?.();
+    return trimTrailingSlash(baseUrl || runtimeOrigin || window.location?.origin);
   }
 
   function createClient({ baseUrl = "" } = {}) {

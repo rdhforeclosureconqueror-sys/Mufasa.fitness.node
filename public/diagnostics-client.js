@@ -159,7 +159,8 @@
     report.source = source;
     report.reason = reason || null;
     try {
-      await fetch("https://mufasa-fitness-node.onrender.com/api/admin/diagnostics/report", {
+      const backendOrigin = globalScope.RuntimeState?.getBackendOrigin?.() || globalScope.location?.origin || "";
+      await fetch(`${backendOrigin}/api/admin/diagnostics/report`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(report)

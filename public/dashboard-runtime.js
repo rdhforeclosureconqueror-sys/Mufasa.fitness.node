@@ -7,7 +7,6 @@
   const RUNTIME_TAG = "[DASHBOARD_RUNTIME]";
   const PROGRESS_TAG = "[PROGRESS_RUNTIME]";
   const RETENTION_TAG = "[RETENTION_RUNTIME]";
-  const FALLBACK_NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
   const state = {
     completionKeys: new Set(),
     completionPromises: new Map(),
@@ -19,9 +18,10 @@
   };
 
   function getBaseUrl() {
-    const configured = window.localStorage?.getItem("maatNodeBaseUrl")
+    const configured = window.RuntimeState?.getBackendOrigin?.()
+      || window.MAAT_BACKEND_ORIGIN
       || window.MAAT_NODE_BASE_URL
-      || FALLBACK_NODE_BASE_URL;
+      || window.location.origin;
     return String(configured || "").replace(/\/$/, "");
   }
 

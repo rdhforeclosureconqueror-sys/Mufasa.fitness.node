@@ -971,7 +971,7 @@ CREATE CLICKED: no</pre>
     const ASK_URL = RUNTIME_ENDPOINTS.askUrl || BRAIN_BASE_URL + "/ask";
     const PROGRAM_URL = RUNTIME_ENDPOINTS.programUrl || BRAIN_BASE_URL + "/coach/program/generate";
 
-    const NODE_BASE_URL = "https://mufasa-fitness-node.onrender.com";
+    const NODE_BASE_URL = RUNTIME_ENDPOINTS.nodeBaseUrl || window.RuntimeState?.getBackendOrigin?.() || window.location.origin;
     const NODE_COMMAND_URL = RUNTIME_ENDPOINTS.nodeCommandUrl || NODE_BASE_URL + "/command";
     const NODE_PROFILE_URL = RUNTIME_ENDPOINTS.nodeProfileUrl || NODE_BASE_URL + "/api/me/profile";
     const NODE_SESSION_START_URL = RUNTIME_ENDPOINTS.nodeSessionStartUrl || NODE_BASE_URL + "/api/sessions";
@@ -1262,7 +1262,7 @@ CREATE CLICKED: no</pre>
       try {
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(new Error("timeout_2s")), 2000);
-        const res = await fetch("https://mufasa-fitness-node.onrender.com/__version", { cache: "no-store", signal: controller.signal });
+        const res = await fetch(NODE_BASE_URL + "/__version", { cache: "no-store", signal: controller.signal });
         window.clearTimeout(timeoutId);
         bootStatus.backendVersionReached = true;
         const payload = await res.json().catch(() => ({}));
