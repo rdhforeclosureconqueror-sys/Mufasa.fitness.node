@@ -37,6 +37,10 @@
     return `${dashboardApiBaseUrl}${pathname}`;
   }
 
+  function getDashboardAuthToken() {
+    return window.AuthStateRuntime?.getAuthToken?.() || client?.getAuthToken?.() || null;
+  }
+
   function read(key, fallback) {
     return client ? client.readJSON(key, fallback) : fallback;
   }
@@ -297,16 +301,27 @@
     const payload = typeof collector === "function" ? collector() : { collectorMissing: true };
 
     try {
-      const authToken = client?.getAuthToken?.() || null;
+      const authToken = getDashboardAuthToken();
+      if (!authToken) {
+        const missingTokenError = new Error("missing_auth_token");
+        missingTokenError.code = "MISSING_AUTH_TOKEN";
+        throw missingTokenError;
+      }
       const res = await fetch(backendUrl("/api/admin/diagnostics/report"), {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
+          authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({ ...payload, source: "manual" })
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        const requestError = new Error(json?.error?.message || json?.error || `request_failed_${res.status}`);
+        requestError.status = res.status;
+        requestError.payload = json;
+        throw requestError;
+      }
       const report = json?.data || null;
       const summary = report?.openAiSummary || {};
       const pilot = report?.pilotReadiness || {};

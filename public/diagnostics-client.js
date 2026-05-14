@@ -154,20 +154,65 @@
     return sanitizePayload(payload);
   }
 
+  function getDiagnosticsAuthToken() {
+    const authStateToken = globalScope.AuthStateRuntime?.getAuthToken?.();
+    if (authStateToken && String(authStateToken).trim()) return String(authStateToken).trim();
+    const appToken = globalScope.APP_AUTH?.token;
+    if (appToken && String(appToken).trim()) return String(appToken).trim();
+    const backendOrigin = globalScope.RuntimeState?.getBackendOrigin?.() || globalScope.location?.origin || "";
+    const clientToken = globalScope.MufasaBackendRead?.createClient?.({
+      baseUrl: backendOrigin,
+      storagePrefix: "maat"
+    })?.getAuthToken?.();
+    if (clientToken && String(clientToken).trim()) return String(clientToken).trim();
+    try {
+      const storedToken = globalScope.localStorage?.getItem?.("maatAuthToken");
+      if (storedToken && String(storedToken).trim()) return String(storedToken).trim();
+    } catch (_) {}
+    return null;
+  }
+
   async function postDiagnostic(source, reason) {
     const report = collectDiagnosticReport();
     report.source = source;
     report.reason = reason || null;
+    globalScope.__lastDiagnosticReport = report;
+
+    const token = getDiagnosticsAuthToken();
+    if (!token) {
+      const result = { ok: false, skipped: true, reason: "missing_auth_token", report };
+      state.lastReportStatus = result;
+      globalScope.__lastDiagnosticReportStatus = result;
+      return result;
+    }
+
     try {
       const backendOrigin = globalScope.RuntimeState?.getBackendOrigin?.() || globalScope.location?.origin || "";
-      await fetch(`${backendOrigin}/api/admin/diagnostics/report`, {
+      const res = await fetch(`${backendOrigin}/api/admin/diagnostics/report`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(report)
       });
-    } catch {
-      // local-only fallback
-      globalScope.__lastDiagnosticReport = report;
+      const payload = await res.json().catch(() => null);
+      const result = {
+        ok: Boolean(res.ok && payload?.ok),
+        status: res.status,
+        skipped: false,
+        report,
+        response: payload
+      };
+      if (!result.ok) result.reason = res.status === 401 || res.status === 403 ? "admin_diagnostics_unauthorized" : "request_failed";
+      state.lastReportStatus = result;
+      globalScope.__lastDiagnosticReportStatus = result;
+      return result;
+    } catch (error) {
+      const result = { ok: false, skipped: false, reason: "network_error", error: error?.message || String(error), report };
+      state.lastReportStatus = result;
+      globalScope.__lastDiagnosticReportStatus = result;
+      return result;
     }
   }
 
