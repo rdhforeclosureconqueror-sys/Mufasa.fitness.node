@@ -3544,6 +3544,12 @@ CREATE CLICKED: no</pre>
       return document.getElementById("saveProfileFormBtn");
     }
 
+    function getCalendarApplyButton() {
+      return document.getElementById("calendarApplyBtn");
+    }
+
+    const calendarApplyBtn = getCalendarApplyButton();
+
     function isProfileSaveHandlerReady() {
       const profileSaveButton = getProfileSaveButton();
       return typeof profileSaveButton?.onclick === "function" || typeof window.ProfileWriteRuntime?.saveProfileToNode === "function";

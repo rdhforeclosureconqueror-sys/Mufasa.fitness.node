@@ -206,9 +206,18 @@
     </div>
   </div>
 
+  <script>
+    window.__MAAT_RUNTIME_CONFIG__ = Object.freeze({
+      ...(window.__MAAT_RUNTIME_CONFIG__ || {}),
+      backendOrigin: "https://mufasa-fitness-node.onrender.com"
+    });
+    window.MAAT_BACKEND_ORIGIN = window.__MAAT_RUNTIME_CONFIG__.backendOrigin;
+  </script>
+  <script src="/runtime-state.js?v=20260506"></script>
+  <script src="/auth-state-runtime.js?v=20260506"></script>
   <script src="/diagnostics-client.js?v=20260426"></script>
   <script src="/backend-read.js"></script>
-  <script src="/dashboard-runtime.js?v=20260506"></script>
-  <script src="/dashboard.js?v=20260506"></script>
+  <script src="/dashboard-runtime.js?v=20260514"></script>
+  <script src="/dashboard.js?v=20260514"></script>
 </body>
 </html>
