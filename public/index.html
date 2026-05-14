@@ -14,6 +14,13 @@
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     console.log("[AVATAR_FEATURE]", window.ENABLE_AVATAR_FEATURE ? "enabled" : "disabled");
   </script>
+  <script>
+    window.__MAAT_RUNTIME_CONFIG__ = Object.freeze({
+      ...(window.__MAAT_RUNTIME_CONFIG__ || {}),
+      backendOrigin: "https://mufasa-fitness-node.onrender.com"
+    });
+    window.MAAT_BACKEND_ORIGIN = window.__MAAT_RUNTIME_CONFIG__.backendOrigin;
+  </script>
 
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>

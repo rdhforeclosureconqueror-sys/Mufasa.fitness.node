@@ -23,11 +23,24 @@ const activeFrontendFiles = [
   "public/fitness.js"
 ];
 
-test("Phase 5B/5C active frontend files do not pin app-owned Render backend origins", () => {
-  for (const rel of activeFrontendFiles) {
+test("Phase 5B/5C active frontend files do not pin app-owned Render backend origins outside static runtime config", () => {
+  for (const rel of activeFrontendFiles.filter((file) => file !== "public/index.html")) {
     const source = fs.readFileSync(path.join(repoRoot, rel), "utf8");
-    assert.doesNotMatch(source, /https:\/\/mufasa-fitness-node\.onrender\.com/, `${rel} must use the runtime backend resolver instead of the old Render backend origin`);
+    assert.doesNotMatch(source, /https:\/\/mufasa-fitness-node\.onrender\.com/, `${rel} must use the runtime backend resolver instead of the Render backend origin`);
   }
+});
+
+test("static frontend config sets backend origin before runtime auth scripts load", () => {
+  const source = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  const configIndex = source.indexOf('backendOrigin: "https://mufasa-fitness-node.onrender.com"');
+  const runtimeStateIndex = source.indexOf('<script src="/runtime-state.js');
+  const authCoreIndex = source.indexOf('<script src="/auth-core.js"');
+
+  assert.notEqual(configIndex, -1, "public/index.html must configure the split-deployment backend origin");
+  assert.notEqual(runtimeStateIndex, -1, "public/index.html must load runtime-state.js");
+  assert.notEqual(authCoreIndex, -1, "public/index.html must load auth-core.js");
+  assert.ok(configIndex < runtimeStateIndex, "backend origin config must run before runtime-state.js");
+  assert.ok(configIndex < authCoreIndex, "backend origin config must run before auth-core.js");
 });
 
 test("runtime-state exposes a same-origin default backend resolver", () => {
