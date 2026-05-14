@@ -35,6 +35,15 @@ function createUserStore({ userDir }) {
     return createEmptyUser(userId);
   }
 
+  function listUsers() {
+    ensureDirs();
+    return fs.readdirSync(userDir)
+      .filter((name) => name.endsWith(".json"))
+      .map((name) => name.slice(0, -5))
+      .filter(isSafeUserId)
+      .map((userId) => loadUser(userId));
+  }
+
   function saveUser(user) {
     if (!user || !user.userId) {
       throw new ApiError("INVALID_USER_RECORD", "Cannot save invalid user record", 500);
@@ -88,6 +97,7 @@ function createUserStore({ userDir }) {
   return {
     ensureDirs,
     loadUser,
+    listUsers,
     saveUser,
     updateUser,
     userPath
