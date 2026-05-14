@@ -34,6 +34,49 @@
   }
   function boolText(value){ return value ? 'yes' : 'no'; }
   function getToken(){ return globalScope.APP_AUTH?.token || globalScope.localStorage?.getItem('maatAuthToken') || null; }
+  function supportsCamera(){ return Boolean(globalScope.navigator?.mediaDevices?.getUserMedia); }
+  function setButtonEnabled(el, enabled, reason){
+    if (!el) return false;
+    el.disabled = !enabled;
+    if (enabled) el.removeAttribute('disabled');
+    else el.setAttribute('disabled', 'disabled');
+    el.style.pointerEvents = enabled ? 'auto' : '';
+    if (reason) {
+      el.title = reason;
+      el.setAttribute('aria-label', `${el.textContent || el.id}: ${reason}`);
+    } else {
+      el.removeAttribute('title');
+    }
+    return true;
+  }
+  function getPrimaryButtonReasons(){
+    const auth = globalScope.APP_AUTH || {};
+    const authenticated = auth.isAuthenticated === true;
+    const cameraActive = Boolean(globalScope.WorkoutRuntime?.getState?.().cameraActive || globalScope.document?.getElementById?.('video')?.srcObject);
+    const cameraSupported = supportsCamera();
+    return {
+      dashboard: authenticated ? '' : 'Sign in to open your dashboard.',
+      library: authenticated ? '' : 'Sign in to open the exercise library.',
+      camera: !authenticated ? 'Sign in before connecting camera.' : (!cameraSupported ? 'This browser does not expose navigator.mediaDevices.getUserMedia.' : ''),
+      start: cameraActive ? '' : 'Connect camera before starting a workout. If no program is ready, choose a workout from the library first.',
+      fullscreen: cameraActive ? '' : 'Connect camera before expanding the camera preview.',
+      assessment: cameraActive ? '' : 'Connect camera before starting the overhead squat assessment.'
+    };
+  }
+  function applyPrimaryButtonState(reason){
+    const auth = globalScope.APP_AUTH || {};
+    if (auth.isAuthenticated !== true) return;
+    const reasons = getPrimaryButtonReasons();
+    const cameraActive = Boolean(globalScope.WorkoutRuntime?.getState?.().cameraActive || globalScope.document?.getElementById?.('video')?.srcObject);
+    setButtonEnabled(globalScope.document.getElementById('dashboardBtn'), true, reasons.dashboard);
+    setButtonEnabled(globalScope.document.getElementById('exerciseLibraryBtn'), true, reasons.library);
+    setButtonEnabled(globalScope.document.getElementById('connectBtn'), supportsCamera(), reasons.camera);
+    setButtonEnabled(globalScope.document.getElementById('startBtn'), cameraActive && !reasons.start, reasons.start);
+    setButtonEnabled(globalScope.document.getElementById('fullscreenCameraBtn'), cameraActive, reasons.fullscreen);
+    setButtonEnabled(globalScope.document.getElementById('ohsaBtn'), cameraActive, reasons.assessment);
+    state.lastButtonStateReason = reason || 'primary-button-state';
+    state.lastButtonDisabledReasons = reasons;
+  }
 
   function updateFeaturePanel(reason){
     const panel = globalScope.document.getElementById('featureActivationStatus');
@@ -44,6 +87,8 @@
     const profileSummary = globalScope.document.getElementById('profileSummary');
     const retentionStatus = globalScope.document.getElementById('retentionFlowStatus');
     const workoutLibraryBtn = globalScope.document.getElementById('exerciseLibraryBtn');
+    const fullscreenBtn = globalScope.document.getElementById('fullscreenCameraBtn');
+    const ohsaBtn = globalScope.document.getElementById('ohsaBtn');
     const auth = globalScope.APP_AUTH || {};
     const profileReady = Boolean(profileSummary && !/not signed in|loading/i.test(profileSummary.textContent || ''));
     const retentionReady = Boolean(retentionStatus && !/sign in|loading/i.test(retentionStatus.textContent || ''));
@@ -56,6 +101,11 @@
       `dashboard enabled: ${boolText(Boolean(dashboardBtn && !dashboardBtn.disabled))}`,
       `camera enabled: ${boolText(Boolean(cameraBtn && !cameraBtn.disabled))}`,
       `start workout enabled: ${boolText(Boolean(startBtn && !startBtn.disabled))}`,
+      `start workout disabled reason: ${startBtn?.title || 'none'}`,
+      `fullscreen camera enabled: ${boolText(Boolean(fullscreenBtn && !fullscreenBtn.disabled))}`,
+      `fullscreen camera disabled reason: ${fullscreenBtn?.title || 'none'}`,
+      `assessment enabled: ${boolText(Boolean(ohsaBtn && !ohsaBtn.disabled))}`,
+      `assessment disabled reason: ${ohsaBtn?.title || 'none'}`,
       `workout library enabled: ${boolText(Boolean(workoutLibraryBtn && !workoutLibraryBtn.disabled))}`,
       `last feature click: ${state.lastFeatureClick || 'none'}`,
       `last feature backend URL: ${state.lastFeatureBackendUrl || 'none'}`,
@@ -170,7 +220,7 @@
       });
     }
     if (typeof globalScope.bindPrimaryButtonsAfterLogin === 'function') globalScope.bindPrimaryButtonsAfterLogin(`app-runtime:${reason}`);
-    ['dashboardBtn','exerciseLibraryBtn','connectBtn'].forEach((id) => { const el = globalScope.document.getElementById(id); if (el) { el.disabled = false; el.removeAttribute('disabled'); } });
+    applyPrimaryButtonState(`activated:${reason}`);
     bindFeatureClicks();
     updateFeaturePanel(`activated:${reason}`);
   }
@@ -178,5 +228,5 @@
   ['auth:ready','auth:changed'].forEach((evt)=> globalScope.addEventListener(evt, ()=>forceActivate(evt)));
   globalScope.addEventListener('DOMContentLoaded', ()=>updateFeaturePanel('DOMContentLoaded'));
   globalScope.addEventListener('load', ()=>forceActivate('load'));
-  globalScope.__appRuntime = { forceActivate, updateFeaturePanel, state };
+  globalScope.__appRuntime = { forceActivate, updateFeaturePanel, applyPrimaryButtonState, state };
 })(window);

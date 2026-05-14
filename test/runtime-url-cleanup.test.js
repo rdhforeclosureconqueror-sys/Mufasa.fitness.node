@@ -100,3 +100,36 @@ test("camera activation path delegates click handling to connectCamera and getUs
   assert.match(workoutRuntime, /global\.navigator\.mediaDevices\.getUserMedia\(\{ video: true, audio: false \}\)/, "WorkoutRuntime should request the camera stream");
   assert.match(workoutRuntime, /const video = getVideoElement\(\);[\s\S]*video\.srcObject = stream;[\s\S]*await video\.play\(\);/, "WorkoutRuntime should attach the stream to a video element and play it");
 });
+
+test("index defines toSafeUserId before hydration config uses it", () => {
+  const source = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  const helperIndex = source.indexOf("function toSafeUserId(value)");
+  const configureIndex = source.indexOf("window.AppHydrationRuntime?.configure");
+  const depIndex = source.indexOf("toSafeUserId,", configureIndex);
+
+  assert.notEqual(helperIndex, -1, "index should define a local toSafeUserId fallback helper");
+  assert.notEqual(configureIndex, -1, "index should configure AppHydrationRuntime");
+  assert.notEqual(depIndex, -1, "AppHydrationRuntime should receive toSafeUserId explicitly");
+  assert.ok(helperIndex < depIndex, "toSafeUserId must be defined before hydration config uses the shorthand dependency");
+  assert.match(source, /window\.toSafeUserId = window\.toSafeUserId \|\| toSafeUserId;/, "toSafeUserId should also be exposed for runtime diagnostics/fallbacks");
+});
+
+test("app runtime primary button gating leaves navigation enabled and documents blocked workout controls", () => {
+  const runtime = fs.readFileSync(path.join(repoRoot, "public/app-runtime.js"), "utf8");
+
+  assert.match(runtime, /function supportsCamera\(\)\{ return Boolean\(globalScope\.navigator\?\.mediaDevices\?\.getUserMedia\); \}/, "camera support must be detected via navigator.mediaDevices.getUserMedia");
+  assert.match(runtime, /setButtonEnabled\(globalScope\.document\.getElementById\('dashboardBtn'\), true, reasons\.dashboard\);/, "authenticated dashboard navigation should remain enabled");
+  assert.match(runtime, /setButtonEnabled\(globalScope\.document\.getElementById\('exerciseLibraryBtn'\), true, reasons\.library\);/, "authenticated exercise library navigation should remain enabled");
+  assert.match(runtime, /setButtonEnabled\(globalScope\.document\.getElementById\('connectBtn'\), supportsCamera\(\), reasons\.camera\);/, "camera button should be enabled only when browser camera support exists");
+  assert.match(runtime, /Connect camera before starting a workout/, "start workout disabled state should explain the camera/workout prerequisite");
+  assert.match(runtime, /Connect camera before expanding the camera preview/, "expand camera disabled state should explain the camera prerequisite");
+  assert.match(runtime, /Connect camera before starting the overhead squat assessment/, "assessment disabled state should explain the camera prerequisite");
+  assert.match(runtime, /start workout disabled reason:/, "feature panel should surface the start workout disabled reason");
+});
+
+test("primary button destinations remain dashboard and exercise library pages", () => {
+  const buttonRuntime = fs.readFileSync(path.join(repoRoot, "public/button-runtime.js"), "utf8");
+
+  assert.match(buttonRuntime, /globalScope\.location\.href = "\/dashboard\.html";/, "My Dashboard should navigate to /dashboard.html");
+  assert.match(buttonRuntime, /globalScope\.location\.href = "\/exercise-library\.html";/, "Exercise Library should navigate to /exercise-library.html");
+});

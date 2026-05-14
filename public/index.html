@@ -1316,6 +1316,16 @@ CREATE CLICKED: no</pre>
     let USER_ID = "guest";
     let USER_PROFILE = null;
     let calendarMeta = null; // {startDateISO, weeks, daysPerWeek, completedDates:Set<string>}
+
+    function toSafeUserId(value) {
+      return String(value || "user")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 80) || "user";
+    }
+    window.toSafeUserId = window.toSafeUserId || toSafeUserId;
     const backendTruthState = {
       bridge: { mode: "unknown", message: "Checking backend sign-in..." },
       profileRead: { mode: "unknown", message: "Checking backend profile..." }
