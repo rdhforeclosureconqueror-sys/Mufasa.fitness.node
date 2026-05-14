@@ -12,6 +12,7 @@ const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = 
 const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
+const { createMembershipService } = require("./src/services/membershipService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -23,6 +24,11 @@ const {
   validateOhsaSubmission,
   validateAuthBridge
 } = require("./src/validation/meValidators");
+const {
+  validateCheckoutConfig,
+  validateWebhookConfig,
+  resolvePublicBaseUrl
+} = require("./src/validation/billingValidation");
 const {
   validateClientIntake,
   validateGoalsBaseline,
@@ -251,7 +257,14 @@ function createApp(options = {}) {
 
   app.use(cors(corsOptions));
   app.options("*", cors(corsOptions));
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.json({
+    limit: "2mb",
+    verify: (req, _res, buf) => {
+      if (req.originalUrl === "/api/billing/webhook") {
+        req.rawBody = Buffer.from(buf);
+      }
+    }
+  }));
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -284,6 +297,10 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
+  const membershipService = createMembershipService({
+    userStore,
+    stripeClient: options.stripeClient
+  });
   const tokenDenylist = createTokenDenylistStore({
     filePath: path.join(rootDir, "data", "ops", "token-denylist.json"),
     retentionMs: Number(process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS || 1000 * 60 * 60 * 24 * 14)
@@ -1495,6 +1512,33 @@ function createApp(options = {}) {
       providerVerified: Boolean(req.auth.providerVerified),
       identityClass: req.auth.identityClass || "manual_unverified"
     });
+  }));
+
+  app.get("/api/me/membership", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, membershipService.getMembership(req.auth.userId));
+  }));
+
+  app.post("/api/billing/create-checkout-session", requireAuth, asyncHandler(async (req, res) => {
+    const checkoutConfig = validateCheckoutConfig(process.env);
+    const baseUrl = resolvePublicBaseUrl({ env: process.env, req });
+    const checkout = await membershipService.createCheckoutSession({
+      userId: req.auth.userId,
+      secretKey: checkoutConfig.secretKey,
+      priceId: checkoutConfig.priceId,
+      baseUrl
+    });
+    return ok(res, req.requestId, checkout, 201);
+  }));
+
+  app.post("/api/billing/webhook", asyncHandler(async (req, res) => {
+    const webhookConfig = validateWebhookConfig(process.env);
+    const event = membershipService.verifyStripeWebhookSignature({
+      rawBody: req.rawBody,
+      signatureHeader: req.get("stripe-signature"),
+      webhookSecret: webhookConfig.webhookSecret
+    });
+    const result = membershipService.handleStripeEvent(event);
+    return ok(res, req.requestId, { received: true, ...result });
   }));
 
   app.post("/api/pilot/events", asyncHandler(async (req, res) => {

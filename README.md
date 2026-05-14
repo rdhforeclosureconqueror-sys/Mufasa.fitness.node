@@ -2,6 +2,30 @@
 
 Pilot fitness backend with explicit API write routes, controlled legacy fallback, and bounded rollout hardening.
 
+## Phase 7 minimal Stripe Checkout membership
+
+Pilot billing is intentionally limited to one server-configured Stripe Checkout price and file-backed membership state. It is not a billing dashboard, coupon system, invoice UI, tenant billing system, or multi-plan manager.
+
+Routes:
+- `GET /api/me/membership` requires bearer auth and returns the authenticated user's membership. Users without stored membership receive `{ status: "inactive", plan: "free" }` plus null Stripe fields.
+- `POST /api/billing/create-checkout-session` requires bearer auth, reads `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID` from the server environment, ignores client-supplied price IDs, and returns the Checkout session `id` and `url`.
+- `POST /api/billing/webhook` does not use bearer auth. It verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET` and handles `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted` to update the file-backed membership record.
+
+Required env for billing:
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID`
+- `PUBLIC_BASE_URL` for stable Checkout success/cancel redirects; if omitted, the request host is used as a fallback.
+
+Membership fields persisted on the user record:
+- `userId`
+- `status`
+- `plan`
+- `stripeCustomerId`
+- `stripeSubscriptionId`
+- `currentPeriodEnd`
+- `updatedAt`
+
 ## Authorization model (bounded)
 
 Roles:
