@@ -304,10 +304,31 @@ test("diagnostics access requires auth + admin email allowlist", async (t) => {
   const unauthenticatedRes = await fetch(baseUrl + "/api/admin/diagnostics/recent");
   assert.equal(unauthenticatedRes.status, 401);
 
+  const unauthenticatedPostRes = await fetch(baseUrl + "/api/admin/diagnostics/report", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ build: { appBuildVersion: "unauthenticated" } })
+  });
+  assert.equal(unauthenticatedPostRes.status, 401);
+
   const nonAdminRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
     headers: { authorization: `Bearer ${nonAdminToken}` }
   });
   assert.equal(nonAdminRes.status, 403);
+
+  const nonAdminPostRes = await fetch(baseUrl + "/api/admin/diagnostics/report", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${nonAdminToken}` },
+    body: JSON.stringify({ build: { appBuildVersion: "non-admin" } })
+  });
+  assert.equal(nonAdminPostRes.status, 403);
+
+  const firstAdminPostRes = await fetch(baseUrl + "/api/admin/diagnostics/report", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${firstAdminToken}` },
+    body: JSON.stringify({ build: { appBuildVersion: "admin-post" } })
+  });
+  assert.equal(firstAdminPostRes.status, 201);
 
   const firstAdminRes = await fetch(baseUrl + "/api/admin/diagnostics/recent", {
     headers: { authorization: `Bearer ${firstAdminToken}` }

@@ -61,3 +61,59 @@ test("collector returns safe defaults when browser globals are unavailable", () 
   assert.equal(report.build.url, null);
   assert.ok(report.runtime);
 });
+
+test("diagnostics client attaches bearer token when posting admin report", async () => {
+  const calls = [];
+  const ctx = loadClient({
+    AuthStateRuntime: { getAuthToken: () => "admin-token-123" },
+    RuntimeState: { getBackendOrigin: () => "https://node.example" },
+    fetch: async (url, options) => {
+      calls.push({ url, options });
+      return { ok: true, status: 201, json: async () => ({ ok: true, data: { id: "diag_1" } }) };
+    }
+  });
+
+  const result = await ctx.__runDiagnosticNow();
+
+  assert.equal(result.ok, true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://node.example/api/admin/diagnostics/report");
+  assert.equal(calls[0].options.headers.authorization, "Bearer admin-token-123");
+  assert.equal(calls[0].options.headers["content-type"], "application/json");
+});
+
+test("diagnostics client skips admin report when bearer token is missing", async () => {
+  let fetchCalled = false;
+  const ctx = loadClient({
+    fetch: async () => {
+      fetchCalled = true;
+      return { ok: true, status: 201, json: async () => ({ ok: true }) };
+    }
+  });
+
+  const result = await ctx.__runDiagnosticNow();
+
+  assert.equal(fetchCalled, false);
+  assert.equal(result.ok, false);
+  assert.equal(result.skipped, true);
+  assert.equal(result.reason, "missing_auth_token");
+  assert.equal(ctx.__lastDiagnosticReportStatus.reason, "missing_auth_token");
+});
+
+test("diagnostics client reports protected admin failures instead of treating them as success", async () => {
+  const ctx = loadClient({
+    APP_AUTH: { token: "not-admin-token", user: { id: "regular_user" } },
+    fetch: async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({ ok: false, error: { message: "forbidden" } })
+    })
+  });
+
+  const result = await ctx.__runDiagnosticNow();
+
+  assert.equal(result.ok, false);
+  assert.equal(result.skipped, false);
+  assert.equal(result.status, 403);
+  assert.equal(result.reason, "admin_diagnostics_unauthorized");
+});
