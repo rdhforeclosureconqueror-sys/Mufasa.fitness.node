@@ -35,6 +35,73 @@
   function boolText(value){ return value ? 'yes' : 'no'; }
   function getToken(){ return globalScope.APP_AUTH?.token || globalScope.localStorage?.getItem('maatAuthToken') || null; }
 
+  function isAuthenticated(){ return (globalScope.APP_AUTH || {}).isAuthenticated === true || Boolean(getToken()); }
+
+  function setButtonInteractive(el, enabled, reason){
+    if (!el) return false;
+    el.disabled = !enabled;
+    if (enabled) {
+      el.removeAttribute('disabled');
+      el.removeAttribute('data-disabled');
+      el.setAttribute('aria-disabled', 'false');
+      el.style.pointerEvents = 'auto';
+      el.classList?.remove?.('disabled', 'is-disabled', 'btn-disabled');
+      if (reason) el.title = reason;
+    } else {
+      el.setAttribute('disabled', 'disabled');
+      el.setAttribute('aria-disabled', 'true');
+      if (reason) {
+        el.title = reason;
+        el.setAttribute('data-blocked-reason', reason);
+      }
+    }
+    return true;
+  }
+
+  function clearStaleAppError(reason){
+    const stale = globalScope.__lastAppError;
+    if (typeof stale === 'string' && /toSafeUserId/i.test(stale)) {
+      globalScope.__lastAppError = null;
+      console.log('[APP_RUNTIME] cleared stale app error', { reason, stale });
+      globalScope.updateActivationStatusPanel?.(`cleared stale app error:${reason}`);
+      return true;
+    }
+    return false;
+  }
+
+  function getStartWorkoutBlockedReason(){
+    const retentionStatus = globalScope.document.getElementById('retentionFlowStatus');
+    const retentionReady = Boolean(retentionStatus && !/not_ready|sign in|loading/i.test(retentionStatus.textContent || ''));
+    const workoutState = globalScope.WorkoutProgressionRuntime?.getState?.() || {};
+    const plan = globalScope.WorkoutProgressionRuntime?.getPlan?.() || null;
+    const hasPlan = Boolean(plan?.exercises?.length || workoutState.activeWorkoutId || workoutState.activeProgramId);
+    if (!retentionReady && !hasPlan) return 'Complete intake/goals or choose an exercise first.';
+    return '';
+  }
+
+  function applyAuthenticatedPilotButtonGates(reason){
+    if (!isAuthenticated()) return false;
+    ['dashboardBtn','exerciseLibraryBtn','connectBtn','runSystemDiagnosticBtn'].forEach((id) => {
+      setButtonInteractive(globalScope.document.getElementById(id), true);
+    });
+
+    const startBtn = globalScope.document.getElementById('startBtn');
+    const blockedReason = getStartWorkoutBlockedReason();
+    if (startBtn && blockedReason && startBtn.disabled) {
+      startBtn.setAttribute('data-blocked-reason', blockedReason);
+      startBtn.title = blockedReason;
+      startBtn.setAttribute('aria-disabled', 'true');
+    }
+
+    const cameraConnected = globalScope.WorkoutRuntime?.getState?.().cameraActive === true || globalScope.__cameraStatus === 'connected';
+    if (cameraConnected) {
+      setButtonInteractive(globalScope.document.getElementById('fullscreenCameraBtn'), true);
+      setButtonInteractive(globalScope.document.getElementById('ohsaBtn'), true);
+    }
+    clearStaleAppError(reason);
+    return true;
+  }
+
   function updateFeaturePanel(reason){
     const panel = globalScope.document.getElementById('featureActivationStatus');
     if (!panel) return;
@@ -56,6 +123,7 @@
       `dashboard enabled: ${boolText(Boolean(dashboardBtn && !dashboardBtn.disabled))}`,
       `camera enabled: ${boolText(Boolean(cameraBtn && !cameraBtn.disabled))}`,
       `start workout enabled: ${boolText(Boolean(startBtn && !startBtn.disabled))}`,
+      `start workout blocked reason: ${startBtn?.getAttribute?.('data-blocked-reason') || getStartWorkoutBlockedReason() || 'none'}`,
       `workout library enabled: ${boolText(Boolean(workoutLibraryBtn && !workoutLibraryBtn.disabled))}`,
       `last feature click: ${state.lastFeatureClick || 'none'}`,
       `last feature backend URL: ${state.lastFeatureBackendUrl || 'none'}`,
@@ -170,13 +238,14 @@
       });
     }
     if (typeof globalScope.bindPrimaryButtonsAfterLogin === 'function') globalScope.bindPrimaryButtonsAfterLogin(`app-runtime:${reason}`);
-    ['dashboardBtn','exerciseLibraryBtn','connectBtn'].forEach((id) => { const el = globalScope.document.getElementById(id); if (el) { el.disabled = false; el.removeAttribute('disabled'); } });
+    applyAuthenticatedPilotButtonGates(reason);
     bindFeatureClicks();
     updateFeaturePanel(`activated:${reason}`);
   }
 
   ['auth:ready','auth:changed'].forEach((evt)=> globalScope.addEventListener(evt, ()=>forceActivate(evt)));
-  globalScope.addEventListener('DOMContentLoaded', ()=>updateFeaturePanel('DOMContentLoaded'));
+  globalScope.addEventListener('DOMContentLoaded', ()=>{ applyAuthenticatedPilotButtonGates('DOMContentLoaded'); updateFeaturePanel('DOMContentLoaded'); });
   globalScope.addEventListener('load', ()=>forceActivate('load'));
-  globalScope.__appRuntime = { forceActivate, updateFeaturePanel, state };
+  globalScope.addEventListener('camera:connected', ()=>{ applyAuthenticatedPilotButtonGates('camera:connected'); updateFeaturePanel('camera:connected'); });
+  globalScope.__appRuntime = { forceActivate, updateFeaturePanel, state, applyAuthenticatedPilotButtonGates, clearStaleAppError, getStartWorkoutBlockedReason };
 })(window);
