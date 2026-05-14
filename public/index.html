@@ -3613,14 +3613,27 @@ CREATE CLICKED: no</pre>
         trackPilotEvent("camera_connect_success", { detectorReady: Boolean(detector) });
         markPerfMetric("cameraBootMs", Math.round(performance.now() - cameraBootStartedAt));
         setPersonLayerSuppressed(false); lastRenderMode = "camera"; startBtn.disabled = false; fullscreenCameraBtn.disabled = false; refreshCameraUiState(); ohsaBtn.disabled = false; defineExerciseBtn.disabled = false;
+        [startBtn, fullscreenCameraBtn, ohsaBtn, defineExerciseBtn].filter(Boolean).forEach((el) => { el.removeAttribute("disabled"); el.setAttribute("aria-disabled", "false"); el.style.pointerEvents = "auto"; el.classList.remove("disabled", "is-disabled", "btn-disabled"); });
+        window.dispatchEvent(new CustomEvent("camera:connected", { detail: { source: "afterConnectCamera" } }));
       },
       onCameraError: (e) => {
         console.error("Camera error", e);
-        window.__cameraStatus = `failed_${String(e?.name || e?.message || "unknown").toLowerCase()}`;
-        window.__cameraConnectSuccess = false; window.__cameraFailureReason = String(e?.name || e?.message || "unknown");
-        poseStatusEl.textContent = "Could not connect camera. Check permission settings, close other camera apps, and try again.";
+        const rawReason = String(e?.name || e?.message || "unknown");
+        const lowerReason = rawReason.toLowerCase();
+        let userMessage = "Browser blocked camera. Check permission settings, close other camera apps, and try again.";
+        if (/getusermedia unavailable|mediaDevices|getUserMedia|notfound|not supported|unsupported/i.test(rawReason)) {
+          userMessage = "Camera unsupported in this browser or no camera device was found.";
+        } else if (/notallowed|permission|denied|security/i.test(rawReason)) {
+          userMessage = "Camera permission denied. Allow camera access in the browser and try again.";
+        } else if (/notreadable|abort|in use|blocked/i.test(rawReason)) {
+          userMessage = "Browser blocked camera or another app is using it. Close other camera apps and try again.";
+        }
+        window.__cameraStatus = `failed_${lowerReason}`;
+        window.__cameraConnectSuccess = false; window.__cameraFailureReason = rawReason;
+        poseStatusEl.textContent = userMessage;
         poseStatusEl.classList.add("status-bad");
-        trackPilotEvent("camera_connect_failed", { reason: e?.name || e?.message || "unknown" });
+        window.__appRuntime?.updateFeaturePanel?.("camera-error");
+        trackPilotEvent("camera_connect_failed", { reason: rawReason, userMessage });
       },
       ...window.WorkoutRuntime.createSessionCallbackGlue({
         refs: { startBtn, canvasEl, ctx },
