@@ -87,6 +87,35 @@
     else tracker.markPending?.(name, extra);
   }
 
+  function markStartTrace(name, status = 'pass', extra = {}, error) {
+    markLiveBreakpoint(name, status, { source: 'WorkoutRuntime.startWorkout', ...(extra || {}) }, error);
+    global.__appRuntime?.updateFeaturePanel?.(`start-trace:${name}:${status}`);
+  }
+
+  function normalizeSessionError(err, requestDetails = {}) {
+    const payload = err?.payload || err?.response || null;
+    const backendMessage = payload?.error?.message || payload?.message || (typeof payload?.error === 'string' ? payload.error : null);
+    const backendCode = payload?.error?.code || payload?.code || err?.code || null;
+    const status = err?.status || err?.statusCode || err?.responseStatus || null;
+    const message = backendMessage || err?.message || String(err || 'session_create_failed');
+    return {
+      status,
+      code: backendCode,
+      message,
+      requestUrl: requestDetails.requestUrl || requestDetails.url || null,
+      requestBody: requestDetails.requestBody || null
+    };
+  }
+
+  function normalizePoseRuntimeError(err) {
+    const message = err?.message || String(err || 'pose_runtime_failed');
+    let code = 'model load failed';
+    if (/window\.tf|tensorflow|tfjs|tf is not defined/i.test(message)) code = 'TensorFlow missing';
+    else if (/poseDetection|MoveNet|movenet|SupportedModels/i.test(message)) code = 'MoveNet missing';
+    else if (/createDetector|detector/i.test(message)) code = 'detector create failed';
+    return { code, message };
+  }
+
   function setBrainStatus(status, reason){
     const brainEl = byId('brainStatus');
     const chipEl = byId('brainChipText');
@@ -168,23 +197,52 @@
   async function startWorkout(){
     console.log('[WORKOUT_LIFECYCLE] startWorkout enter', { running: state.running, sessionId: state.sessionId, cameraActive: state.cameraActive });
     markLiveBreakpoint('workout-start-clicked', 'pass', { running: state.running, cameraActive: state.cameraActive });
+    markStartTrace('workoutStartClicked', 'pass', { running: state.running, cameraActive: state.cameraActive });
+    markStartTrace('workoutStartHandlerEntered', 'pass', { running: state.running, sessionId: state.sessionId || null });
     try {
       ensureRequiredDom(['startBtn', 'video', 'workoutHud', 'hudExerciseName', 'hudSet', 'hudReps', 'hudTempo', 'hudRest', 'hudNextExercise', 'hudCoachCue', 'poseStatus', 'brainStatus']);
       if (!state.cameraActive && !getVideoElement()?.srcObject) throw new Error('connect camera before starting workout');
-      await getFn('ensureDetectorReady')?.();
-      const detectorReady = getFn('isDetectorReady') ? getFn('isDetectorReady')() : true;
-      if (!detectorReady) throw new Error('movement detector is not ready after camera connect');
       if (!state.running) {
         await getFn('prepareWorkoutStart')?.();
+        markStartTrace('selectedWorkoutResolved', 'pass', { prepared: true });
         const sessionPayload = getFn('buildSessionPayload') ? getFn('buildSessionPayload')() : { source: 'workout-runtime' };
+        markStartTrace('fallbackWorkoutApplied', 'pass', { applied: sessionPayload?.source === 'pilot_default_workout' || sessionPayload?.programId === 'pilot-fallback', workoutId: sessionPayload.workoutId || null, exerciseId: sessionPayload.exerciseId || null });
+        markStartTrace('sessionPayloadBuilt', 'pass', { workoutId: sessionPayload?.workoutId || null, programId: sessionPayload?.programId || null, exerciseId: sessionPayload?.exerciseId || null, selectedWorkout: sessionPayload?.selectedWorkout || null });
+        const requestDetails = { requestUrl: getFn('getSessionCreateUrl')?.() || null, requestBody: sessionPayload };
         console.log('[WORKOUT_LIFECYCLE] creating session', sessionPayload);
-        const sessionRes = await requireFn('createSession')(sessionPayload);
+        markStartTrace('sessionCreateAttempted', 'pass', requestDetails);
+        let sessionRes;
+        try {
+          sessionRes = await requireFn('createSession')(sessionPayload);
+        } catch (sessionErr) {
+          const failure = normalizeSessionError(sessionErr, requestDetails);
+          markStartTrace('sessionCreateFailed', 'fail', failure, sessionErr);
+          setVisibleError(`Session create failed (${failure.status || 'no-status'}): ${failure.code || 'no-code'} ${failure.message}. URL: ${failure.requestUrl || 'unknown'}`);
+          throw sessionErr;
+        }
+        const sessionId = getSessionId(sessionRes);
+        markStartTrace('sessionCreateSucceeded', 'pass', { sessionId, response: sessionRes || null, requestUrl: requestDetails.requestUrl });
         getFn('onSessionCreated')?.(sessionRes);
-        state.sessionId = getSessionId(sessionRes);
+        state.sessionId = sessionId;
         console.log('[WORKOUT_LIFECYCLE] session created', { sessionId: state.sessionId });
         markLiveBreakpoint('session-created', 'pass', { sessionId: state.sessionId });
         if (!state.sessionId) throw new Error('session id missing from /api/sessions response');
         state.running = true;
+        markStartTrace('liveModeEntered', 'pass', { sessionId: state.sessionId });
+        markLiveBreakpoint('live-mode-entered', 'pass', { sessionId: state.sessionId });
+        markStartTrace('poseRuntimeLoadAttempted', 'pass', { sessionId: state.sessionId });
+        markLiveBreakpoint('pose-runtime-loading', 'pass', { sessionId: state.sessionId });
+        try {
+          await getFn('ensureDetectorReady')?.();
+          const detectorReady = getFn('isDetectorReady') ? getFn('isDetectorReady')() : true;
+          if (!detectorReady) throw new Error('movement detector is not ready after camera connect');
+          markStartTrace('poseRuntimeLoaded', 'pass', { detectorReady });
+        } catch (poseErr) {
+          const failure = normalizePoseRuntimeError(poseErr);
+          markStartTrace('poseRuntimeFailed', 'fail', failure, poseErr);
+          setVisibleError(`Pose runtime failed: ${failure.code}: ${failure.message}`);
+          throw poseErr;
+        }
         await getFn('onWorkoutStarted')?.(state.sessionId, sessionRes);
         setPoseStatus(`Workout started: ${state.sessionId}`);
         setBrainStatus('Coach ready.', 'Ma’at 2.0: coach ready');
@@ -202,9 +260,10 @@
       return { running: false, sessionId: state.sessionId };
     } catch (err) {
       console.error('[WORKOUT_LIFECYCLE] startWorkout error', err);
-      markLiveBreakpoint(state.sessionId ? 'pose-loop-started' : 'session-created', 'fail', { source: 'WorkoutRuntime.startWorkout' }, err);
+      const failedMilestone = state.sessionId ? 'pose-loop-started' : 'session-created';
+      markLiveBreakpoint(failedMilestone, 'fail', { source: 'WorkoutRuntime.startWorkout' }, err);
       getFn('onWorkoutStartError')?.(err);
-      setVisibleError(`Start workout error: ${err?.message || err}`);
+      if (!state.lastError) setVisibleError(`Start workout error: ${err?.message || err}`);
       updateRuntimeState();
       throw err;
     }
@@ -280,7 +339,9 @@
           scheduledWorkoutId: startedState.activeWorkoutId,
           programId: startedState.activeProgramId
         });
+        global.__liveWorkoutBreakpoints?.markPass?.('guidancePromptStarted', { source: 'WorkoutRuntime.onWorkoutStarted', sessionId: createdSessionId });
         await glueDeps.getCoachRuntime?.()?.speakWorkoutIntro?.(getCurrentExerciseMeta());
+        global.__liveWorkoutBreakpoints?.markPass?.('poseLoopStarted', { source: 'WorkoutRuntime.onWorkoutStarted', sessionId: createdSessionId });
         glueDeps.runPoseLoop?.();
         glueDeps.updateActivationStatusPanel?.('workout-started');
         glueDeps.updateAuthPropagationStatus?.('workout-started');

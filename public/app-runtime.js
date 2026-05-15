@@ -135,7 +135,8 @@
       `camera video element found/created: ${boolText(cameraDiag.videoElementReady)}`,
       `camera video playing: ${boolText(cameraDiag.videoPlaying)}`,
       `camera last error: ${cameraDiag.lastCameraError || 'none'}`,
-      globalScope.__liveWorkoutBreakpoints?.summaryLine?.() || 'live workout breakpoint: tracker unavailable'
+      globalScope.__liveWorkoutBreakpoints?.summaryLine?.() || 'live workout breakpoint: tracker unavailable',
+      ...(globalScope.__liveWorkoutBreakpoints?.traceLines?.() || [])
     ].join('\n');
   }
 

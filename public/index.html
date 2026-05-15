@@ -3167,9 +3167,21 @@ CREATE CLICKED: no</pre>
     }
 
     async function ensureLivePoseDetectorReady() {
-      if (!detector) await initDetector();
-      if (!detector) throw new Error("Pose detection unavailable. Check model/runtime load.");
-      return detector;
+      window.__liveWorkoutBreakpoints?.markPass?.("poseRuntimeLoadAttempted", { source: "ensureLivePoseDetectorReady" });
+      try {
+        if (!detector) await initDetector();
+        if (!detector) throw new Error("Pose detection unavailable. Check model/runtime load.");
+        window.__liveWorkoutBreakpoints?.markPass?.("poseRuntimeLoaded", { source: "ensureLivePoseDetectorReady", detectorReady: true });
+        return detector;
+      } catch (error) {
+        const reason = error?.message || String(error || "pose_runtime_failed");
+        let code = "model load failed";
+        if (/window\.tf|tensorflow|tfjs|tf is not defined/i.test(reason)) code = "TensorFlow missing";
+        else if (/poseDetection|MoveNet|movenet|SupportedModels/i.test(reason)) code = "MoveNet missing";
+        else if (/createDetector|detector/i.test(reason)) code = "detector create failed";
+        window.__liveWorkoutBreakpoints?.markFail?.("poseRuntimeFailed", error, { source: "ensureLivePoseDetectorReady", code, message: reason });
+        throw error;
+      }
     }
 
     function publishLiveGuidance(message, options = {}) {
@@ -3381,6 +3393,7 @@ CREATE CLICKED: no</pre>
         isRunning: () => running === true,
         onPoseFrame: ({ pose, posePacket }) => {
           window.__liveWorkoutBreakpoints?.markPass?.("first-pose-frame", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
+          window.__liveWorkoutBreakpoints?.markPass?.("firstPoseFrameReceived", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
           if (!window.RepAnalysisRuntime?.processPoseFrame) {
             const error = new Error("RepAnalysisRuntime.processPoseFrame missing");
             window.__liveWorkoutBreakpoints?.markFail?.("rep-analysis-called", error, { source: "runPoseLoop.onPoseFrame" });
@@ -3400,6 +3413,7 @@ CREATE CLICKED: no</pre>
       });
       animId = { stop: loop.stop };
       window.__liveWorkoutBreakpoints?.markPass?.("pose-loop-started", { hasStop: typeof loop?.stop === "function" });
+      window.__liveWorkoutBreakpoints?.markPass?.("poseLoopStarted", { source: "runPoseLoop", hasStop: typeof loop?.stop === "function" });
       return loop;
       } catch (error) {
         window.__liveWorkoutBreakpoints?.markFail?.("pose-loop-started", error, { source: "runPoseLoop" });
@@ -3409,6 +3423,7 @@ CREATE CLICKED: no</pre>
 
     async function startWorkout() {
       window.__liveWorkoutBreakpoints?.markPass?.("workout-start-clicked", { source: "inline startWorkout" });
+      window.__liveWorkoutBreakpoints?.markPass?.("workoutStartClicked", { source: "inline startWorkout" });
       if (typeof window.WorkoutRuntime?.startWorkout !== "function") {
         const error = new Error("WorkoutRuntime.startWorkout missing");
         window.__liveWorkoutBreakpoints?.markFail?.("session-created", error, { source: "inline startWorkout" });
@@ -3778,6 +3793,7 @@ CREATE CLICKED: no</pre>
           setRunning: (value) => { running = Boolean(value); },
           setSessionId: (value) => { sessionId = value; },
           getSessionId: () => sessionId,
+          getSessionCreateUrl: () => NODE_SESSION_START_URL,
           refreshCameraUiState,
           trackPilotEvent,
           getCoachRuntime: requireCoachRuntime,
