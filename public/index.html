@@ -881,6 +881,9 @@ CREATE CLICKED: no</pre>
 
       <select id="workoutSelect">
         <option value="">— Select a workout —</option>
+        <option value="pilot_bodyweight_squat">Bodyweight Squat (Pilot Starter)</option>
+        <option value="pilot_push_up">Push-Up (Pilot Starter)</option>
+        <option value="pilot_lunge">Lunge (Pilot Starter)</option>
         <option value="ai_today">Ma’at 2.0 – Today’s Program</option>
         <option value="nasm_total_body_a">NASM Total Body A (Template)</option>
         <option value="yoga_back_release">Yoga Back Release Flow (Template)</option>
@@ -2755,6 +2758,27 @@ CREATE CLICKED: no</pre>
 
     // Static workout templates
     const STATIC_WORKOUTS = {
+      pilot_bodyweight_squat: {
+        title: "Bodyweight Squat",
+        text: "Pilot starter workout. Equipment: bodyweight. Intake can be completed later.",
+        exercises: [
+          { exerciseId: "bodyweight_squat", name: "Bodyweight Squat", sets: 3, targetReps: 10, restSeconds: 60, tempo: "3-1-1", instructions: ["Stand tall, squat under control, then return to standing."], formCues: ["Keep chest tall.", "Track knees over toes."] }
+        ]
+      },
+      pilot_push_up: {
+        title: "Push-Up",
+        text: "Pilot starter workout. Equipment: bodyweight. Intake can be completed later.",
+        exercises: [
+          { exerciseId: "push_up", name: "Push-Up", sets: 3, targetReps: 8, restSeconds: 60, tempo: "2-1-2", instructions: ["Keep a straight line from shoulders to heels and press the floor away."], formCues: ["Brace your core.", "Keep elbows controlled."] }
+        ]
+      },
+      pilot_lunge: {
+        title: "Lunge",
+        text: "Pilot starter workout. Equipment: bodyweight. Intake can be completed later.",
+        exercises: [
+          { exerciseId: "lunge", name: "Lunge", sets: 3, targetReps: 8, restSeconds: 60, tempo: "3-1-1", instructions: ["Step into a lunge, lower under control, then return to standing."], formCues: ["Keep torso tall.", "Track front knee over toes."] }
+        ]
+      },
       nasm_total_body_a: {
         title: "NASM Total Body A",
         text:
@@ -2794,9 +2818,9 @@ CREATE CLICKED: no</pre>
       if (!template) throw new Error(`unknown workout selection: ${workoutId}`);
       return {
         schemaVersion: 1,
-        source: "workout-select",
+        source: workoutId.startsWith("pilot_") ? "pilot_default_workout" : "workout-select",
         selectedAt: new Date().toISOString(),
-        programId: "template",
+        programId: workoutId.startsWith("pilot_") ? "pilot-fallback" : "template",
         scheduledWorkoutId: workoutId,
         title: template.title,
         notes: template.text,
@@ -2817,6 +2841,19 @@ CREATE CLICKED: no</pre>
       localStorage.removeItem(ACTIVE_WORKOUT_SELECTION_KEY);
       window.__ACTIVE_WORKOUT_SELECTION = null;
       console.log("[WORKOUT_SELECTION] cleared", { reason });
+    }
+
+    function ensurePilotDefaultWorkoutSelection(reason = "start-workout") {
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem(ACTIVE_WORKOUT_SELECTION_KEY) || "null"); } catch (_) {}
+      if (stored?.exercises?.length) return stored;
+      const selectedValue = workoutSelectEl?.value || "pilot_bodyweight_squat";
+      const workoutId = STATIC_WORKOUTS[selectedValue] ? selectedValue : "pilot_bodyweight_squat";
+      if (workoutSelectEl && !workoutSelectEl.value) workoutSelectEl.value = workoutId;
+      const selection = persistCanonicalWorkoutSelection(buildCanonicalWorkoutSelection(workoutId));
+      renderWorkoutPlan(selection);
+      addLog("system", `Pilot default workout selected (${reason}): ${selection.title}.`);
+      return selection;
     }
 
     function renderWorkoutPlan(plan) {
@@ -3311,14 +3348,22 @@ CREATE CLICKED: no</pre>
     async function startOhsa() {
       console.log("[OHSA_RUNTIME] inline startOhsa delegator invoked");
       markPerfMetric("progressScanBootMs", 0);
+      if (!window.PoseRuntime?.startPoseLoop) {
+        const message = "Pose runtime is unavailable. Overhead Squat Assessment cannot start.";
+        poseStatusEl.textContent = message;
+        poseStatusEl.classList.add("status-bad");
+        throw new Error(message);
+      }
       if (!window.AssessmentRuntime?.startOhsa) throw new Error("AssessmentRuntime.startOhsa missing");
       return window.AssessmentRuntime.startOhsa();
     }
 
     async function startDefineExercise() {
-      console.log("[DEFINE_EXERCISE] inline startDefineExercise delegator invoked");
-      if (!window.AssessmentRuntime?.startDefineExercise) throw new Error("AssessmentRuntime.startDefineExercise missing");
-      return window.AssessmentRuntime.startDefineExercise();
+      console.log("[DEFINE_EXERCISE] inline startDefineExercise pilot fallback invoked");
+      const message = "Custom workout creation is not available in this pilot. Choose Squat, Push-Up, or Lunge to start.";
+      poseStatusEl.textContent = message;
+      addLog("system", message);
+      return { ok: false, pilotUnavailable: true, message };
     }
 
     function runPoseLoop() {
@@ -3369,6 +3414,7 @@ CREATE CLICKED: no</pre>
         window.__liveWorkoutBreakpoints?.markFail?.("session-created", error, { source: "inline startWorkout" });
         throw error;
       }
+      ensurePilotDefaultWorkoutSelection("start-workout");
       console.log("[WORKOUT_LIFECYCLE] startWorkout requested");
       return window.WorkoutRuntime.startWorkout();
     }
@@ -3954,7 +4000,7 @@ CREATE CLICKED: no</pre>
 
   const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
   if (!SpeechRecognitionClass) {
-    const message = "Speech recognition not supported in this browser. On iPhone/Safari, Web Speech API dictation may be unavailable.";
+    const message = "Voice recognition is not supported in this browser. Use text coach.";
     if (voiceSupportStatusEl) {
       voiceSupportStatusEl.textContent = message;
       voiceSupportStatusEl.classList.add("status-bad");

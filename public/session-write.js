@@ -147,7 +147,7 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { authorization: `Bearer ${token}` } : {})
+          ...(token ? { authorization: `Bearer ${token}`, Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify(body || {})
       });
@@ -166,7 +166,8 @@
       }
 
       if (!res.ok || (payload && payload.ok === false)) {
-        const err = new Error(payload?.error?.message || payload?.error || `request_failed_${res.status}`);
+        const errorText = payload?.error?.message || payload?.message || (typeof payload?.error === "string" ? payload.error : null) || `request_failed_${res.status}`;
+        const err = new Error(errorText);
         err.code = "REQUEST_FAILED";
         err.status = res.status;
         err.payload = payload;
@@ -237,9 +238,31 @@
       return true;
     }
 
+    function normalizePilotSessionPayload(payload = {}) {
+      const exerciseId = payload.exerciseId || payload.currentExercise?.exerciseId || payload.exercises?.[0]?.exerciseId || "bodyweight_squat";
+      const exerciseName = payload.exerciseName || payload.currentExercise?.name || payload.exercises?.[0]?.name || (exerciseId === "push_up" ? "Push-Up" : exerciseId === "lunge" ? "Lunge" : "Bodyweight Squat");
+      return {
+        ...payload,
+        workoutId: payload.workoutId || payload.scheduledWorkoutId || `pilot_${exerciseId}`,
+        scheduledWorkoutId: payload.scheduledWorkoutId || payload.workoutId || `pilot_${exerciseId}`,
+        exerciseId,
+        exerciseName,
+        selectedWorkout: payload.selectedWorkout || exerciseName,
+        goal: payload.goal || "N/A",
+        programId: payload.programId || "pilot-fallback",
+        source: payload.source || "pilot_default_workout",
+        equipment: payload.equipment || "bodyweight",
+        injuries: payload.injuries || "N/A",
+        limitations: payload.limitations || "N/A",
+        experienceLevel: payload.experienceLevel || payload.trainingExperience || "N/A",
+        notes: payload.notes || "Started with pilot default workout; intake can be completed later."
+      };
+    }
+
     async function startSession(payload) {
+      const normalizedPayload = normalizePilotSessionPayload(payload || {});
       try {
-        const sessionResult = await postJSON(`${baseUrl}/api/sessions`, payload, true);
+        const sessionResult = await postJSON(`${baseUrl}/api/sessions`, normalizedPayload, true);
         trackExplicitSuccess("session_start");
         if (typeof onSessionSaveSuccess === "function") {
           onSessionSaveSuccess({ action: "session_start", mode: "explicit_api" });
@@ -265,7 +288,7 @@
           reason
         });
         try {
-          await sendLegacyCommand("fitness.startSession", { ...payload, _fallbackReason: reason });
+          await sendLegacyCommand("fitness.startSession", { ...normalizedPayload, _fallbackReason: reason });
           if (typeof onSessionSaveSuccess === "function") {
             onSessionSaveSuccess({ action: "session_start", mode: "legacy_fallback", reason });
           }
@@ -398,6 +421,7 @@
       getObservabilitySnapshot,
       getWriteModeStatus,
       _classifyFallbackReasonForTests: classifyFallbackReason,
+      _normalizePilotSessionPayloadForTests: normalizePilotSessionPayload,
       _flushRepQueueForTests: flushRepQueue
     };
   }
