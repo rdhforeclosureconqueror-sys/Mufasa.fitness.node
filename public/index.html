@@ -1336,6 +1336,7 @@ CREATE CLICKED: no</pre>
     let lastStepBackSpokenAt = 0;
     let stepBackPromptCount = 0;
     let upperBodyReadyPromptShown = false;
+    let fullBodyWaitingShown = false;
 
     let lastNodeRepSentAt = 0;
     let lastDepthScore = 0;
@@ -3023,6 +3024,7 @@ CREATE CLICKED: no</pre>
       window.__liveWorkoutBreakpoints?.markPass?.("detector-init-started", { source: "initDetector" });
       console.log("[POSE_RUNTIME] initDetector bridge invoked");
       try {
+      if (detector) return detector;
       if (window.PoseRuntime?.initMoveNetDetector) {
         detector = await window.PoseRuntime.initMoveNetDetector({
           ensurePoseRuntime: window.__ensurePoseRuntime,
@@ -3032,6 +3034,7 @@ CREATE CLICKED: no</pre>
           trackingCapabilities,
           logTrackerCapabilities
         });
+        if (!detector) throw new Error("Pose detection unavailable. Check model/runtime load.");
         window.__liveWorkoutBreakpoints?.markPass?.("detector-ready", { source: "PoseRuntime.initMoveNetDetector", detectorReady: Boolean(detector) });
         return detector;
       }
@@ -3066,8 +3069,14 @@ CREATE CLICKED: no</pre>
       window.__liveWorkoutBreakpoints?.markPass?.("detector-ready", { source: "legacy initDetector", detectorReady: Boolean(detector), tfBackend: tf.getBackend?.() || "unknown" });
       return detector;
       } catch (error) {
+        const reason = error?.message || String(error || "pose_detector_init_failed");
+        const normalized = /Pose detection unavailable/i.test(reason)
+          ? reason
+          : `Pose detection unavailable. Check model/runtime load. ${reason}`;
+        poseStatusEl.textContent = normalized;
+        poseStatusEl.classList.add("status-bad");
         window.__liveWorkoutBreakpoints?.markFail?.("detector-ready", error, { source: "initDetector" });
-        throw error;
+        throw new Error(normalized);
       }
     }
 
@@ -3120,8 +3129,55 @@ CREATE CLICKED: no</pre>
       return { faceDetector, handDetector };
     }
 
+    async function ensureLivePoseDetectorReady() {
+      if (!detector) await initDetector();
+      if (!detector) throw new Error("Pose detection unavailable. Check model/runtime load.");
+      return detector;
+    }
+
+    function publishLiveGuidance(message, options = {}) {
+      if (poseStatusEl) {
+        poseStatusEl.textContent = message;
+        poseStatusEl.classList.remove("status-bad");
+        poseStatusEl.classList.add("status-ok");
+      }
+      if (hudCoachCueEl) hudCoachCueEl.textContent = message;
+      if (options.log !== false) addLog("system", message);
+      if (options.speak) {
+        requireCoachRuntime().speak(message, "rep").catch((err) => console.warn("live guidance speech failed", err));
+      }
+    }
+
+    function handleLiveFullBodyGuidance(analysis, options = {}) {
+      if (!running && !options.active) return;
+      if (!detector) {
+        publishLiveGuidance("Pose detection unavailable. Check model/runtime load.", { log: true });
+        return;
+      }
+      if (analysis?.fullBody) {
+        if (!fullBodyAcquired) publishLiveGuidance("Full body in frame. Tracking started.", { log: true });
+        fullBodyAcquired = true;
+        fullBodyWaitingShown = false;
+        window.__liveWorkoutBreakpoints?.markPass?.("full-body-acquired", { source: "live-guidance" });
+        return;
+      }
+      if (fullBodyAcquired) return;
+      const now = Date.now();
+      if (stepBackPromptCount < 3 && now - lastStepBackSpokenAt >= STEP_BACK_COOLDOWN) {
+        stepBackPromptCount += 1;
+        lastStepBackSpokenAt = now;
+        publishLiveGuidance("Step back so I can see your full body.", { speak: true, log: true });
+        return;
+      }
+      if (stepBackPromptCount >= 3 && !fullBodyWaitingShown) {
+        fullBodyWaitingShown = true;
+        publishLiveGuidance("Waiting for full body in frame.", { log: true });
+      }
+    }
+
     async function connectCamera() {
       window.__liveWorkoutBreakpoints?.markPass?.("camera-clicked", { source: "inline connectCamera" });
+
       if (typeof window.WorkoutRuntime?.connectCamera !== "function") {
         const error = new Error("WorkoutRuntime.connectCamera missing");
         window.__liveWorkoutBreakpoints?.markFail?.("camera-stream-received", error, { source: "inline connectCamera" });
@@ -3138,7 +3194,11 @@ CREATE CLICKED: no</pre>
       initDetector,
       isRunning: () => running,
       startWorkout,
-      analyzeSquatForm,
+      analyzeSquatForm: (pose, formResult) => {
+        const analysis = analyzeSquatForm(pose, formResult);
+        handleLiveFullBodyGuidance(analysis, { active: true });
+        return analysis;
+      },
       addLog,
       markPerfMetric,
       nodeOhsaUrl: NODE_OHSA_URL,
@@ -3281,6 +3341,8 @@ CREATE CLICKED: no</pre>
             window.__liveWorkoutBreakpoints?.markFail?.("rep-analysis-called", error, { source: "runPoseLoop.onPoseFrame" });
             throw error;
           }
+          const guidanceAnalysis = window.RepAnalysisRuntime.analyzeSquatForm?.(pose, window.__lastFormResult || null) || { fullBody: false };
+          handleLiveFullBodyGuidance(guidanceAnalysis);
           window.__liveWorkoutBreakpoints?.markPass?.("rep-analysis-called", { source: "runPoseLoop.onPoseFrame" });
           window.RepAnalysisRuntime.processPoseFrame({ pose, posePacket });
         },
@@ -3576,7 +3638,7 @@ CREATE CLICKED: no</pre>
     window.__forceAppActivationRender = () => updateActivationStatusPanel("manual-rescue");
 
     window.RuntimeOrchestrator.configureWorkoutRuntime({
-      ensureDetectorReady: () => detector,
+      ensureDetectorReady: ensureLivePoseDetectorReady,
       isDetectorReady: () => Boolean(detector),
       beforeConnectCamera: () => {
         trackPilotEvent("camera_connect_started");
@@ -3661,8 +3723,8 @@ CREATE CLICKED: no</pre>
             if (partial.totalReps != null) totalReps = Number(partial.totalReps || 0);
             if (partial.repPhase) repPhase = partial.repPhase;
           },
-          setFullBodyAcquired: (value) => { fullBodyAcquired = Boolean(value); },
-          setStepBackPromptCount: (value) => { stepBackPromptCount = Number(value || 0); },
+          setFullBodyAcquired: (value) => { fullBodyAcquired = Boolean(value); if (!value) fullBodyWaitingShown = false; },
+          setStepBackPromptCount: (value) => { stepBackPromptCount = Number(value || 0); lastStepBackSpokenAt = 0; fullBodyWaitingShown = false; },
           setUpperBodyReadyPromptShown: (value) => { upperBodyReadyPromptShown = Boolean(value); },
           addLog,
           updateActivationStatusPanel,
@@ -3889,6 +3951,16 @@ CREATE CLICKED: no</pre>
 
   // prime iPhone audio (must happen inside the user tap)
   try { await requireCoachRuntime().speak("Voice is on.", "rep"); } catch (e) { console.warn("prime speak failed", e); }
+
+  const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  if (!SpeechRecognitionClass) {
+    const message = "Speech recognition not supported in this browser. On iPhone/Safari, Web Speech API dictation may be unavailable.";
+    if (voiceSupportStatusEl) {
+      voiceSupportStatusEl.textContent = message;
+      voiceSupportStatusEl.classList.add("status-bad");
+    }
+    addLog("system", message);
+  }
 
   requireCoachRuntime().toggleListening();
 };
