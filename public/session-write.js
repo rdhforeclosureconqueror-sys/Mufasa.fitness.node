@@ -140,15 +140,18 @@
       if (authRequired && !token) {
         const err = new Error("missing_auth_token");
         err.code = "MISSING_AUTH_TOKEN";
+        err.url = url;
+        err.requestBody = body || {};
         throw err;
       }
 
+      const requestHeaders = {
+        "Content-Type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}`, Authorization: `Bearer ${token}` } : {})
+      };
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { authorization: `Bearer ${token}`, Authorization: `Bearer ${token}` } : {})
-        },
+        headers: requestHeaders,
         body: JSON.stringify(body || {})
       });
 
@@ -162,6 +165,9 @@
         err.code = "UNAUTHORIZED";
         err.status = res.status;
         err.payload = payload;
+        err.url = url;
+        err.requestBody = body || {};
+        err.responseStatus = res.status;
         throw err;
       }
 
@@ -171,10 +177,20 @@
         err.code = "REQUEST_FAILED";
         err.status = res.status;
         err.payload = payload;
+        err.url = url;
+        err.requestBody = body || {};
+        err.responseStatus = res.status;
         throw err;
       }
 
-      return payload?.data || null;
+      const data = payload?.data || null;
+      if (data && typeof data === "object") {
+        Object.defineProperty(data, "__sessionWriteTrace", {
+          value: { url, status: res.status, body: body || {}, authHeaderPresent: Boolean(token), responseBody: payload },
+          enumerable: false, configurable: true
+        });
+      }
+      return data;
     }
 
     async function sendLegacyCommand(command, payload) {
@@ -261,14 +277,44 @@
 
     async function startSession(payload) {
       const normalizedPayload = normalizePilotSessionPayload(payload || {});
+      const sessionUrl = `${baseUrl}/api/sessions`;
+      const token = getAuthToken?.();
+      if (typeof window !== "undefined") {
+        window.__liveWorkoutBreakpoints?.markPass?.("sessionCreateAttempted", {
+          source: "SessionWrite.startSession",
+          requestUrl: sessionUrl,
+          authorization: token ? "Bearer <token>" : "missing",
+          requestBody: normalizedPayload
+        });
+      }
       try {
-        const sessionResult = await postJSON(`${baseUrl}/api/sessions`, normalizedPayload, true);
+        const sessionResult = await postJSON(sessionUrl, normalizedPayload, true);
+        if (typeof window !== "undefined") {
+          window.__liveWorkoutBreakpoints?.markPass?.("sessionCreateSucceeded", {
+            source: "SessionWrite.startSession",
+            requestUrl: sessionUrl,
+            status: sessionResult?.__sessionWriteTrace?.status || null,
+            requestBody: normalizedPayload,
+            responseBody: sessionResult?.__sessionWriteTrace?.responseBody || sessionResult || null
+          });
+        }
         trackExplicitSuccess("session_start");
         if (typeof onSessionSaveSuccess === "function") {
           onSessionSaveSuccess({ action: "session_start", mode: "explicit_api" });
         }
         return sessionResult;
       } catch (err) {
+        if (typeof window !== "undefined") {
+          window.__liveWorkoutBreakpoints?.markFail?.("sessionCreateFailed", err, {
+            source: "SessionWrite.startSession",
+            requestUrl: err?.url || sessionUrl,
+            status: err?.status || err?.responseStatus || null,
+            code: err?.payload?.error?.code || err?.code || null,
+            message: err?.payload?.error?.message || err?.payload?.message || err?.message || String(err),
+            requestBody: err?.requestBody || normalizedPayload,
+            responseBody: err?.payload || null
+          });
+        }
         const reason = trackFallback("session_start", err);
         if (!isFallbackAllowedForAction("session_start")) {
           const gateErr = makeFallbackGateError("session_start", err, reason);

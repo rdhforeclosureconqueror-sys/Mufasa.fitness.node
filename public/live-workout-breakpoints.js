@@ -11,8 +11,25 @@
     'detector-init-started',
     'detector-ready',
     'workout-start-clicked',
+    'workoutStartClicked',
+    'workoutStartHandlerEntered',
+    'selectedWorkoutResolved',
+    'fallbackWorkoutApplied',
+    'sessionPayloadBuilt',
+    'sessionCreateAttempted',
+    'sessionCreateSucceeded',
+    'sessionCreateFailed',
     'session-created',
+    'liveModeEntered',
+    'live-mode-entered',
+    'poseRuntimeLoadAttempted',
+    'pose-runtime-loading',
+    'poseRuntimeLoaded',
+    'poseRuntimeFailed',
+    'guidancePromptStarted',
+    'poseLoopStarted',
     'pose-loop-started',
+    'firstPoseFrameReceived',
     'first-pose-frame',
     'rep-analysis-called',
     'first-rep-counted',
@@ -76,10 +93,16 @@
   state.markPending = (name, extra) => update(name, 'pending', extra, null);
   state.markPass = (name, extra) => update(name, 'pass', extra, null);
   state.markFail = (name, error, extra) => update(name, 'fail', extra, error);
+  function shouldSkipBlocking(name) {
+    if (name === 'sessionCreateFailed' && state.milestones.sessionCreateSucceeded?.status === 'pass') return true;
+    if (name === 'poseRuntimeFailed' && state.milestones.poseRuntimeLoaded?.status === 'pass') return true;
+    return false;
+  }
+
   state.getFirstBlocking = () => {
     for (const name of state.order) {
       const item = state.milestones[name];
-      if (!item || item.status === 'pass') continue;
+      if (!item || item.status === 'pass' || shouldSkipBlocking(name)) continue;
       return { name, ...item };
     }
     return null;
@@ -95,6 +118,14 @@
     const detail = first.error ? ` (${first.error})` : '';
     return `live workout breakpoint: ${first.name} ${first.status}${detail}`;
   };
+  state.traceLines = () => state.order
+    .filter((name) => /workoutStart|selectedWorkout|fallbackWorkout|session|liveMode|poseRuntime|guidancePrompt|poseLoopStarted|firstPoseFrameReceived/.test(name))
+    .map((name) => {
+      const item = state.milestones[name] || {};
+      const detail = item.error ? ` error=${item.error}` : '';
+      const extra = item.extra ? ` extra=${JSON.stringify(item.extra).slice(0, 240)}` : '';
+      return `live workout trace: ${name} ${item.status || 'pending'}${detail}${extra}`;
+    });
 
   global.__liveWorkoutBreakpoints = state;
 

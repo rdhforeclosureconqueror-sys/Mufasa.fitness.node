@@ -20,6 +20,12 @@
     return tracker.summaryLine();
   }
 
+  function getLiveWorkoutTraceLines() {
+    const tracker = global.__liveWorkoutBreakpoints;
+    if (typeof tracker?.traceLines !== 'function') return [];
+    return tracker.traceLines();
+  }
+
   function renderLiveWorkoutBreakpointStatus(reason = 'update') {
     const tracker = global.__liveWorkoutBreakpoints;
     const line = getLiveWorkoutBreakpointLine();
@@ -28,8 +34,8 @@
       if (!panel) return;
       const current = String(panel.textContent || '');
       if (!current.trim() || current.trim().toLowerCase().startsWith('pending')) return;
-      const lines = current.split('\n').filter((entry) => !entry.startsWith('live workout breakpoint:'));
-      lines.push(line);
+      const lines = current.split('\n').filter((entry) => !entry.startsWith('live workout breakpoint:') && !entry.startsWith('live workout trace:'));
+      lines.push(line, ...getLiveWorkoutTraceLines());
       panel.textContent = lines.join('\n');
     });
     return { reason, firstBlocking: tracker?.getFirstBlocking?.() || null };
@@ -56,7 +62,8 @@
       `app runtime started: ${bootStatus.appRuntimeStarted ? 'yes' : 'no'}`,
       `feature gates enabled: ${bootStatus.featureGatesEnabled ? 'yes' : 'no'}`,
       `last boot error: ${bootStatus.lastBootError || 'none'}`,
-      getLiveWorkoutBreakpointLine()
+      getLiveWorkoutBreakpointLine(),
+      ...getLiveWorkoutTraceLines()
     ].join('\n');
   }
 
