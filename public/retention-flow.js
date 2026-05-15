@@ -148,17 +148,39 @@
   }
 
   function inferStep() {
-    if (!state.intake?.completedAt) return 1;
-    if (!state.goalsBaseline?.goal) return 2;
-    if (!state.currentProgram?.programId) return 3;
-    if (!state.completionDates.includes(todayKey())) return 6;
-    return 9;
+    if (!state.goalsBaseline?.goal) return 1;
+    if (!state.intake?.completedAt) return 2;
+    if (!window.lastOhsaSummary?.createdAt) return 3;
+    if (!state.completionDates.includes(todayKey()) && Number(state.progressDashboard?.workoutsCompleted || 0) < 1) return 4;
+    return 4;
+  }
+
+  function getOnboardingProgress() {
+    return [
+      { label: "Goals", complete: Boolean(state.goalsBaseline?.goal), message: "Now we know what motivates you." },
+      { label: "Medical/history basics", complete: Boolean(state.intake?.completedAt), message: "Now we have the basics needed to guide safer training." },
+      { label: "Overhead Squat Assessment", complete: Boolean(window.lastOhsaSummary?.createdAt), message: "Now we have a movement baseline." },
+      { label: "First Workout", complete: state.completionDates.includes(todayKey()) || Number(state.progressDashboard?.workoutsCompleted || 0) > 0, message: "Now we have your first performance baseline." }
+    ];
   }
 
   function renderStatus() {
     const step = inferStep();
     const retentionStatus = state.progressDashboard?.retentionMotivationStatus || "NOT_READY";
-    statusEl.textContent = `Flow: Profile → Intake → Goals → Program → Calendar → Daily Workout → Complete → Dashboard. Current step ${step}/9. Retention Motivation Status: ${retentionStatus}`;
+    const progress = getOnboardingProgress()
+      .map((item) => `${item.complete ? "✓" : "○"} ${item.label}`)
+      .join(" • ");
+    statusEl.textContent = `Onboarding progress (${step}/4): ${progress}. Retention Motivation Status: ${retentionStatus}`;
+  }
+
+  function renderProgressCard() {
+    contentEl.innerHTML += `
+      <div class="retention-card" id="rfOnboardingProgress">
+        <strong>Onboarding Progress</strong>
+        <div class="retention-muted">Complete your intake so Ma’at can build a safer, more personalized program.</div>
+        <ul>${getOnboardingProgress().map((item) => `<li><strong>${item.complete ? "Complete" : "Pending"}:</strong> ${esc(item.label)}${item.complete ? ` — ${esc(item.message)}` : ""}</li>`).join("")}</ul>
+        <div class="retention-muted">Overhead Squat Assessment is available after camera connects, but pilot starter workouts are not blocked by OHSA.</div>
+      </div>`;
   }
 
   function renderRetentionMetricsCard() {
@@ -207,7 +229,7 @@
   }
 
   function renderIntakeForm() {
-    contentEl.innerHTML = `
+    contentEl.innerHTML += `
       <div class="retention-card">
         <strong>1) Client Intake</strong>
         <div class="retention-grid">
@@ -222,28 +244,33 @@
         <label>Equipment (comma-separated)<input id="rfIntakeEquipment" value="${esc((state.intake?.equipment || []).join(", "))}" /></label>
         <label><input id="rfDisclaimer" type="checkbox" ${state.intake?.medicalDisclaimerConsent ? "checked" : ""}/> I consent to medical disclaimer.</label>
         <button id="rfSaveIntakeBtn">Save Intake</button>
+        <div class="retention-muted">You can return and edit these intake basics later.</div>
       </div>`;
 
     document.getElementById("rfSaveIntakeBtn").onclick = async () => {
       try {
         const payload = {
-          name: document.getElementById("rfIntakeName").value.trim(),
-          age: Number(document.getElementById("rfIntakeAge").value),
-          sex: document.getElementById("rfIntakeSex").value.trim() || null,
-          heightCm: Number(document.getElementById("rfIntakeHeight").value),
+          name: document.getElementById("rfIntakeName").value.trim() || "N/A",
+          age: Number(document.getElementById("rfIntakeAge").value) || null,
+          sex: document.getElementById("rfIntakeSex").value.trim() || "N/A",
+          heightCm: Number(document.getElementById("rfIntakeHeight").value) || null,
           weightKg: Number(document.getElementById("rfIntakeWeight").value) || null,
           goals: document.getElementById("rfIntakeGoals").value.split(",").map((x) => x.trim()).filter(Boolean),
           injuries: document.getElementById("rfIntakeInjuries").value.split(",").map((x) => x.trim()).filter(Boolean),
-          limitations: [],
-          trainingExperience: null,
+          limitations: ["N/A"],
+          trainingExperience: "N/A",
           equipment: document.getElementById("rfIntakeEquipment").value.split(",").map((x) => x.trim()).filter(Boolean),
           schedule: null,
           preferredWorkoutDays: [],
           medicalDisclaimerConsent: document.getElementById("rfDisclaimer").checked,
-          notes: null
+          notes: "N/A"
         };
+        if (!payload.goals.length) payload.goals = ["N/A"];
+        if (!payload.injuries.length) payload.injuries = ["N/A"];
+        if (!payload.equipment.length) payload.equipment = ["bodyweight"];
         const saved = await authedRequest("/api/client-intake", { method: "POST", body: payload });
         state.intake = saved.intake;
+        statusEl.textContent = "Now we have the basics needed to guide safer training.";
         await refreshAndRender();
       } catch (err) {
         alert(`Unable to save intake: ${err.message}`);
@@ -278,6 +305,7 @@
         };
         const saved = await authedRequest("/api/goals-baseline", { method: "POST", body: payload });
         state.goalsBaseline = saved.goalsBaseline;
+        statusEl.textContent = "Now we know what motivates you.";
         await refreshAndRender();
       } catch (err) {
         alert(`Unable to save goals/baseline: ${err.message}`);
@@ -628,8 +656,9 @@
       await refreshState();
       renderStatus();
       contentEl.innerHTML = "";
+      renderProgressCard();
       renderIntakeForm();
-      if (state.intake?.completedAt) renderGoalsBaselineForm();
+      renderGoalsBaselineForm();
       if (state.goalsBaseline?.goal) renderProgramCards();
       if (state.currentProgram?.programId) {
         renderRewardSummaryCard();
@@ -686,6 +715,7 @@
         state.completionDates.push(state.selectedDate);
         saveCompletionDates();
       }
+      statusEl.textContent = "Now we have your first performance baseline.";
       await refreshAndRender('workout:completed');
     } catch (err) {
       console.error("[RETENTION_RUNTIME] workout completion sync failed", err);
