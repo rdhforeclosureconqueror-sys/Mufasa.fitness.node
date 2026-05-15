@@ -150,12 +150,19 @@
 
   function buildAskPayload(question, options = {}) {
     const context = buildChatContext(options);
+    const sessionId = options.sessionId || context.sessionId || global.__ACTIVE_WORKOUT_STATE?.sessionId || null;
+    const mode = options.mode || context.mode || "chat";
+    const contextPayload = typeof context === "string" ? context : JSON.stringify(context || {});
     return {
       question,
+      user_id: context.userId || undefined,
+      session_id: sessionId,
+      telemetry: options.telemetry || context.telemetry || null,
+      context: contextPayload,
+      mode,
+      // Backward-compatible aliases for older chat services; canonical fields above match the Node proxy.
       q: question,
       message: question,
-      context,
-      user_id: context.userId || undefined,
       profile: context.profile || undefined
     };
   }
@@ -508,7 +515,7 @@
 
     const lower = transcript.toLowerCase();
     if (!lower.includes("mufasa") && !lower.includes("coach")) return;
-    const cleaned = lower.replace("hey", "").replace("mufasa", "").replace("coach", "").trim();
+    const cleaned = lower.replace(/hey coach/g, "").replace(/hey/g, "").replace(/mufasa/g, "").replace(/coach/g, "").trim();
     const message = cleaned || "give me a quick status update on my workout.";
     dispatchCoachCommand(message, transcript);
   }
@@ -519,9 +526,10 @@
     state.recognitionSupported = Boolean(SpeechRecognitionClass);
     if (!SpeechRecognitionClass) {
       const reason = "speech_recognition_unsupported";
-      setListeningStatus("Speech recognition not supported in this browser.", false);
+      const message = "Speech recognition not supported in this browser. On iPhone/Safari, Web Speech API dictation may be unavailable.";
+      setListeningStatus(message, false);
       setCoachStatus("Mic unavailable: speech recognition not supported", { mode: "bad", chipText: "Ma’at 2.0: mic unavailable", source: "speech-recognition" });
-      deps.addLog?.("system", "Speech recognition not supported in this browser.");
+      deps.addLog?.("system", message);
       log("recognition", "unsupported", { reason });
       return null;
     }

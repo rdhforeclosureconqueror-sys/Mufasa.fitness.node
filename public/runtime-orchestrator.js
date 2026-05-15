@@ -222,15 +222,33 @@
   function configureButtonRuntime({ refs = {}, deps = {}, handlers = {} } = {}) {
     try {
       if (refs.startBtn) global.ButtonRuntime?.bindStartWorkoutButton?.({ startBtn: refs.startBtn, startWorkout: handlers.startWorkout, nodeBaseUrl: deps.nodeBaseUrl });
-      if (refs.fullscreenCameraBtn) refs.fullscreenCameraBtn.onclick = () => handlers.setCameraFullscreen?.(!deps.getCameraFullscreen?.());
+      if (refs.fullscreenCameraBtn) refs.fullscreenCameraBtn.onclick = () => {
+        const cameraActive = Boolean(global.WorkoutRuntime?.getState?.().cameraActive || global.document?.getElementById?.('video')?.srcObject);
+        if (!cameraActive) {
+          const message = 'Connect camera first.';
+          const poseStatus = global.document?.getElementById?.('poseStatus');
+          const featurePanel = global.document?.getElementById?.('featureActivationStatus');
+          if (poseStatus) poseStatus.textContent = message;
+          if (featurePanel && !String(featurePanel.textContent || '').includes(message)) {
+            featurePanel.textContent = `${featurePanel.textContent || ''}\n${message}`.trim();
+          }
+          deps.addLog?.('system', message);
+          return false;
+        }
+        return handlers.setCameraFullscreen?.(!deps.getCameraFullscreen?.());
+      };
       if (refs.exitCameraBtn) refs.exitCameraBtn.onclick = () => handlers.setCameraFullscreen?.(false);
       if (refs.exitCameraMobileBtn) refs.exitCameraMobileBtn.onclick = () => handlers.setCameraFullscreen?.(false);
       if (refs.stopWorkoutFsBtn) refs.stopWorkoutFsBtn.onclick = () => { if (deps.isRunning?.()) handlers.startWorkout?.(); };
       if (refs.workoutToggleMobileBtn) {
         refs.workoutToggleMobileBtn.onclick = () => {
-          if (!deps.isDetectorReady?.() && !deps.isRunning?.()) {
-            deps.addLog?.("system", "Connect camera first to begin workout.");
-            return;
+          const cameraActive = Boolean(global.WorkoutRuntime?.getState?.().cameraActive || global.document?.getElementById?.('video')?.srcObject);
+          if (!cameraActive && !deps.isRunning?.()) {
+            const message = 'Connect camera first.';
+            const poseStatus = global.document?.getElementById?.('poseStatus');
+            if (poseStatus) poseStatus.textContent = message;
+            deps.addLog?.('system', message);
+            return false;
           }
           handlers.startWorkout?.();
         };
