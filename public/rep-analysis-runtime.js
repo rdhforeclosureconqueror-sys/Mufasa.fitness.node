@@ -22,6 +22,11 @@
   const DOWN_DEPTH_THRESHOLD = 0.55;
   const UP_DEPTH_THRESHOLD = 0.35;
   const MIN_REP_INTERVAL_MS = 350;
+  const LOWER_BODY_MIN_SCORE = 0.35;
+  const KNEE_DEPTH_GOOD_ANGLE = 115;
+  const HIP_KNEE_LEVEL_TOLERANCE_RATIO = 0.08;
+  const LOWER_BODY_MISSING_FEEDBACK = 'I need to see your hips, knees, and ankles.';
+  const LOWER_BODY_MOVE_BACK_FEEDBACK = 'Move back so I can see hips, knees, and ankles.';
 
   function log(message, details) {
     if (details === undefined) console.log(`[REP_ANALYSIS] ${message}`);
@@ -70,9 +75,23 @@
     return snapshot();
   }
 
+  const KEYPOINT_INDEX_BY_NAME = Object.freeze({
+    nose: 0, left_eye: 1, right_eye: 2, left_ear: 3, right_ear: 4,
+    left_shoulder: 5, right_shoulder: 6, left_elbow: 7, right_elbow: 8,
+    left_wrist: 9, right_wrist: 10, left_hip: 11, right_hip: 12,
+    left_knee: 13, right_knee: 14, left_ankle: 15, right_ankle: 16
+  });
+
   function getKeypoint(pose, name) {
-    if (!pose || !pose.keypoints) return null;
-    return pose.keypoints.find((kp) => kp.name === name || kp.part === name) || null;
+    if (!pose || !Array.isArray(pose.keypoints)) return null;
+    return pose.keypoints.find((kp) => kp.name === name || kp.part === name) || pose.keypoints[KEYPOINT_INDEX_BY_NAME[name]] || null;
+  }
+
+  function keypointScore(kp) { return Number(kp?.score || 0); }
+  function reliable(kp, threshold = LOWER_BODY_MIN_SCORE) { return Boolean(kp && keypointScore(kp) >= threshold); }
+  function average(values) {
+    const nums = values.filter((value) => Number.isFinite(value));
+    return nums.length ? nums.reduce((sum, value) => sum + value, 0) / nums.length : null;
   }
 
   function getAngleDegrees(a, b, c) {
@@ -99,7 +118,9 @@
   }
 
   function analyzeSquatForm(pose, formResult = null) {
-    if (!pose) return { fullBody: false, depthScore: 0, goodForm: false, kneeAngle: 180, torsoAngle: 90, kneeValgus: 0 };
+    if (!pose) {
+      return { fullBody: false, lowerBodyReliable: false, depthStatus: 'depth unknown', depthScore: 0, goodForm: false, kneeAngle: 180, torsoAngle: 90, kneeValgus: 0, feedback: LOWER_BODY_MISSING_FEEDBACK };
+    }
     const leftHip = getKeypoint(pose, 'left_hip');
     const rightHip = getKeypoint(pose, 'right_hip');
     const leftKnee = getKeypoint(pose, 'left_knee');
@@ -108,20 +129,84 @@
     const rightAnkle = getKeypoint(pose, 'right_ankle');
     const leftShoulder = getKeypoint(pose, 'left_shoulder');
     const rightShoulder = getKeypoint(pose, 'right_shoulder');
-    const required = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
-    const fullBody = required.every((kp) => kp && kp.score > 0.3);
+    const lowerBody = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
+    const lowerBodyReliable = lowerBody.every((kp) => reliable(kp));
+    const shouldersReliable = reliable(leftShoulder) && reliable(rightShoulder);
+    const fullBody = shouldersReliable && lowerBodyReliable;
+    const scores = {
+      leftHip: keypointScore(leftHip), rightHip: keypointScore(rightHip),
+      leftKnee: keypointScore(leftKnee), rightKnee: keypointScore(rightKnee),
+      leftAnkle: keypointScore(leftAnkle), rightAnkle: keypointScore(rightAnkle)
+    };
+
+    if (!lowerBodyReliable) {
+      return {
+        fullBody, lowerBodyReliable: false, depthStatus: 'depth unknown', depthScore: 0, goodForm: false,
+        kneeAngle: 180, torsoAngle: 90, kneeValgus: 0, squatPhase: 'standing', keypointScores: scores,
+        feedback: lowerBody.every((kp) => keypointScore(kp) <= 0) ? LOWER_BODY_MISSING_FEEDBACK : LOWER_BODY_MOVE_BACK_FEEDBACK,
+        needsLowerBody: true
+      };
+    }
+
     const leftKneeAngle = getAngleDegrees(leftHip, leftKnee, leftAnkle);
     const rightKneeAngle = getAngleDegrees(rightHip, rightKnee, rightAnkle);
-    const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2 || 180;
-    const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
-    const leftTorsoAngle = getAngleDegrees(leftShoulder, leftHip, leftAnkle);
-    const rightTorsoAngle = getAngleDegrees(rightShoulder, rightHip, rightAnkle);
-    const torsoAngle = (leftTorsoAngle + rightTorsoAngle) / 2 || 90;
+    const kneeAngle = average([leftKneeAngle, rightKneeAngle]) ?? 180;
+    const angleDepthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
+
+    const avgHipY = average([leftHip.y, rightHip.y]);
+    const avgKneeY = average([leftKnee.y, rightKnee.y]);
+    const avgAnkleY = average([leftAnkle.y, rightAnkle.y]);
+    const lowerLegSpan = Math.max(1, Math.abs((avgAnkleY ?? 0) - (avgKneeY ?? 0)));
+    const hipKneeTolerance = Math.max(8, lowerLegSpan * HIP_KNEE_LEVEL_TOLERANCE_RATIO);
+    const hipAtOrBelowKnee = Number.isFinite(avgHipY) && Number.isFinite(avgKneeY) && avgHipY >= avgKneeY - hipKneeTolerance;
+    const verticalDepthScore = Number.isFinite(avgHipY) && Number.isFinite(avgKneeY)
+      ? Math.max(0, Math.min(1, 0.35 + ((avgHipY - (avgKneeY - hipKneeTolerance)) / Math.max(1, hipKneeTolerance * 2)) * 0.65))
+      : 0;
+    const depthScore = Math.max(angleDepthScore, verticalDepthScore);
+    const depthGood = hipAtOrBelowKnee || kneeAngle <= KNEE_DEPTH_GOOD_ANGLE;
+    const depthStatus = depthGood ? 'depth good' : 'depth high';
+
+    const leftTorsoAngle = reliable(leftShoulder) ? getAngleDegrees(leftShoulder, leftHip, leftAnkle) : null;
+    const rightTorsoAngle = reliable(rightShoulder) ? getAngleDegrees(rightShoulder, rightHip, rightAnkle) : null;
+    const torsoAngle = average([leftTorsoAngle, rightTorsoAngle]) ?? 90;
     const kneeValgus = computeKneeValgus(leftHip, rightHip, leftKnee, rightKnee);
-    const deterministicGoodForm = fullBody && depthScore > 0.6 && kneeAngle > 50 && torsoAngle > 60;
+    const notTooDeep = kneeAngle > 45;
+    const torsoOk = !shouldersReliable || torsoAngle > 58;
+    const deterministicGoodForm = fullBody && depthGood && notTooDeep && torsoOk;
     const formStatus = formResult?.overallStatus || null;
-    const goodForm = formStatus ? formStatus === 'GOOD' : deterministicGoodForm;
-    return { fullBody, depthScore, goodForm, kneeAngle, torsoAngle, kneeValgus };
+    const externalGood = formStatus ? formStatus === 'GOOD' || (depthGood && formResult?.regions?.knees !== 'BAD') : deterministicGoodForm;
+    return {
+      fullBody, lowerBodyReliable, depthStatus, depthScore, goodForm: Boolean(externalGood && depthGood),
+      kneeAngle, torsoAngle, kneeValgus, hipAtOrBelowKnee, squatPhase: depthGood ? 'bottom' : (depthScore > 0.25 ? 'descending' : 'standing'),
+      keypointScores: scores, feedback: depthGood ? 'Depth good.' : 'Go slightly deeper while keeping control.', needsLowerBody: false
+    };
+  }
+
+  function resolveSquatPhase(squat, previousDepthScore = 0) {
+    if (!squat?.lowerBodyReliable) return 'standing';
+    if (squat.depthStatus === 'depth good') return 'bottom';
+    const delta = Number(squat.depthScore || 0) - Number(previousDepthScore || 0);
+    if (squat.depthScore <= UP_DEPTH_THRESHOLD) return 'standing';
+    if (delta < -0.025) return 'ascending';
+    return 'descending';
+  }
+
+  function calibrateSquatFormResult(formResult, squat) {
+    if (!formResult || !squat) return formResult || null;
+    const next = { ...formResult };
+    if (!squat.lowerBodyReliable) {
+      next.overallStatus = 'UNKNOWN';
+      next.corrections = [{ priority: 1, text: squat.feedback || LOWER_BODY_MISSING_FEEDBACK }];
+      next.repValid = false;
+      return next;
+    }
+    if (squat.depthStatus === 'depth good') {
+      next.corrections = (next.corrections || []).filter((cue) => !/deeper|depth/i.test(String(cue?.text || '')));
+      next.regions = { ...(next.regions || {}), hips: 'GOOD' };
+      if (!next.corrections.length && next.overallStatus === 'WARNING') next.overallStatus = 'GOOD';
+      next.repValid = next.repValid || squat.depthScore >= DOWN_DEPTH_THRESHOLD;
+    }
+    return next;
   }
 
   function evaluateForm(pose, posePacket) {
@@ -141,8 +226,11 @@
   function processPoseFrame({ pose, posePacket } = {}) {
     try {
       const now = Date.now();
-      const formResult = evaluateForm(pose, posePacket);
-      const squat = analyzeSquatForm(pose, formResult);
+      const previousDepthScore = state.lastDepthScore;
+      const rawFormResult = evaluateForm(pose, posePacket);
+      const squat = analyzeSquatForm(pose, rawFormResult);
+      squat.squatPhase = resolveSquatPhase(squat, previousDepthScore);
+      const formResult = calibrateSquatFormResult(rawFormResult, squat);
       state.lastAnalysisAt = new Date(now).toISOString();
       state.lastFormResult = formResult;
       state.lastDepthScore = squat.depthScore;
