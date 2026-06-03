@@ -168,6 +168,16 @@ function sanitizeAuthHeader(headerValue) {
   return `${scheme || "unknown"} [redacted:${Math.min(token.length, 12)}]`;
 }
 
+
+function redactTtsSecrets(value, env = process.env) {
+  if (value == null) return value;
+  let text = String(value);
+  for (const secret of [env.SKILL_WORLD_TTS_TOKEN, env.AIVOICE_API_KEY]) {
+    if (secret) text = text.split(secret).join("[redacted]");
+  }
+  return text;
+}
+
 function sanitizeSpeakHeaders(req) {
   return {
     authorization: sanitizeAuthHeader(req.get("authorization")),
@@ -1066,7 +1076,16 @@ function createApp(options = {}) {
       const AIVOICE_URL = /\/speak$/i.test(normalizedVoiceUpstream)
         ? normalizedVoiceUpstream
         : `${normalizedVoiceUpstream}/speak`;
+      const SKILL_WORLD_TTS_TOKEN = process.env.SKILL_WORLD_TTS_TOKEN || "";
       const AIVOICE_API_KEY = process.env.AIVOICE_API_KEY || "";
+
+      if (!SKILL_WORLD_TTS_TOKEN) {
+        console.warn("[tts] internal token missing", {
+          requestId: req.requestId,
+          url: AIVOICE_URL
+        });
+        return res.status(500).json({ ok: false, error: "TTS_INTERNAL_TOKEN_MISSING" });
+      }
 
       const upstreamSpeakBody = { text, voice, format, speed, pitch };
       console.info("[tts] upstream request", {
@@ -1078,6 +1097,7 @@ function createApp(options = {}) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-internal-token": SKILL_WORLD_TTS_TOKEN,
           ...(AIVOICE_API_KEY ? { "X-AIVOICE-KEY": AIVOICE_API_KEY } : {})
         },
         body: JSON.stringify(upstreamSpeakBody)
@@ -1090,9 +1110,12 @@ function createApp(options = {}) {
           status: r.status,
           url: AIVOICE_URL,
           body: upstreamSpeakBody,
-          response: msg || null
+          response: msg ? redactTtsSecrets(msg) : null
         });
-        return res.status(r.status).send(msg || "aivoice error");
+        if (r.status === 401) {
+          return res.status(502).json({ ok: false, error: "TTS_PROVIDER_AUTH_FAILED" });
+        }
+        return res.status(r.status).send(msg ? redactTtsSecrets(msg) : "aivoice error");
       }
 
       res.setHeader("Content-Type", r.headers.get("content-type") || "audio/mpeg");
@@ -1105,7 +1128,7 @@ function createApp(options = {}) {
         res.send(buf);
       }
     } catch (e) {
-      res.status(500).json({ ok: false, error: "proxy_failed", message: String(e) });
+      res.status(500).json({ ok: false, error: "proxy_failed", message: redactTtsSecrets(e) });
     }
   });
 
