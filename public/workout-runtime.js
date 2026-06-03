@@ -401,7 +401,7 @@
       pushup: 'pushup',
       lunge: 'lunge'
     });
-    const phaseState = { pattern: null, phase: null, sawBottom: false, bottomGood: false, warnings: [] };
+    const phaseState = { pattern: null, phase: null, sawBottom: false, bottomGood: false, warnings: [], startedAtTop: false };
 
     function normalizeName(value){ return String(value || '').trim().toLowerCase().replace(/[–—]/g, '-'); }
     function mapExerciseToMovementPattern(exercise = {}){
@@ -500,7 +500,7 @@
       const names = ['left_shoulder','right_shoulder','left_elbow','right_elbow','left_wrist','right_wrist','left_hip','right_hip'];
       const points = collect(pose, names);
       const confidence = confidenceStatus(points, names);
-      if (!confidence.ok) return baseResult('pushup', 'top', confidence, { feedback: 'I need to see your shoulders, elbows, wrists, and hips.' });
+      if (!confidence.ok) return baseResult('pushup', 'top', confidence, { confidenceFeedback: 'Move so I can see your shoulders, elbows, wrists, and hips.', feedback: 'Move so I can see your shoulders, elbows, wrists, and hips.' });
       const elbowAngle = avg([
         angle(points.left_shoulder, points.left_elbow, points.left_wrist),
         angle(points.right_shoulder, points.right_elbow, points.right_wrist)
@@ -560,26 +560,29 @@
         phaseState.sawBottom = false;
         phaseState.bottomGood = false;
         phaseState.warnings = [];
+        phaseState.startedAtTop = false;
       }
+      const finishPhase = pattern === 'pushup' ? 'top' : (pattern === 'lunge' ? 'standing/split stance' : 'standing');
+      if (!phaseState.sawBottom && analysis.phase === finishPhase) phaseState.startedAtTop = true;
       let repDetected = false;
-      if (analysis.phase === 'bottom') {
+      if (analysis.phase === 'bottom' && (pattern !== 'pushup' || phaseState.startedAtTop)) {
         phaseState.sawBottom = true;
         phaseState.bottomGood = Boolean(analysis.goodRepCandidate);
         phaseState.warnings = analysis.formWarning ? [analysis.formWarning] : [];
       }
-      const finishPhase = pattern === 'pushup' ? 'top' : (pattern === 'lunge' ? 'standing/split stance' : 'standing');
       if (phaseState.sawBottom && analysis.phase === finishPhase && phaseState.phase && phaseState.phase !== finishPhase) {
         repDetected = true;
         analysis.goodRep = Boolean(phaseState.bottomGood && !phaseState.warnings.length);
         phaseState.sawBottom = false;
         phaseState.bottomGood = false;
         phaseState.warnings = [];
+        phaseState.startedAtTop = true;
       }
       phaseState.phase = analysis.phase;
       analysis.repDetected = repDetected;
       return analysis;
     }
-    function resetCycle(){ phaseState.pattern = null; phaseState.phase = null; phaseState.sawBottom = false; phaseState.bottomGood = false; phaseState.warnings = []; }
+    function resetCycle(){ phaseState.pattern = null; phaseState.phase = null; phaseState.sawBottom = false; phaseState.bottomGood = false; phaseState.warnings = []; phaseState.startedAtTop = false; }
     function renderVisibleFormStatus(analysis){
       const lines = [
         `movement pattern: ${analysis?.movementPattern || 'unknown'}`,
@@ -644,8 +647,10 @@
       return engine.toLegacySquatShape(engine.analyzeSquat(pose));
     };
     runtime.processPoseFrame = function processPilotPoseFrame({ pose, posePacket } = {}){
-      const exercise = repDeps.getCurrentExerciseMeta?.() || {};
+      const challengeActive = global.PushupChallengeRuntime?.isActive?.() === true;
+      const exercise = challengeActive ? { name: 'Push-Up', movementPattern: 'pushup' } : (repDeps.getCurrentExerciseMeta?.() || {});
       const analysis = engine.completeCycle(engine.analyzeMovement({ pose: pose || { keypoints: posePacket?.keypoints || [] }, exercise }));
+      if (challengeActive) global.PushupChallengeRuntime?.handlePoseAnalysis?.(analysis);
       if (analysis.repDetected) {
         pilotState.repCount += 1;
         pilotState.totalReps += 1;
@@ -668,10 +673,246 @@
     return true;
   }
 
+
+  function installPushupChallengeRuntime(){
+    if (global.PushupChallengeRuntime?.version === 'phase26') return global.PushupChallengeRuntime;
+    const engine = installPilotFormRuleEngine();
+    const challengeState = {
+      active: false,
+      preflight: false,
+      participant: null,
+      variant: 'standard_pushup',
+      multiplier: 1,
+      validRepCount: 0,
+      score: 0,
+      rejectedRepReason: 'none',
+      keypointsVisible: false,
+      saveStatus: 'not_saved',
+      remainingSeconds: 60,
+      timerId: null,
+      endsAt: null,
+      lastSavedResult: null
+    };
+    const VARIANTS = Object.freeze({
+      standard_pushup: { label: 'Standard Push-Up', multiplier: 1, note: 'Standard Push-Up: valid rep = 1 point.' },
+      one_hand_pushup: { label: 'One-Hand Push-Up', multiplier: 2, note: 'One-hand push-up scoring uses push-up form detection plus 2x challenge multiplier.' }
+    });
+    function challengeById(id){ return global.document?.getElementById(id) || null; }
+    function challengeText(id, text){ const el = challengeById(id); if (el) el.textContent = text; return el; }
+    function getChallengeBase(){ return global.RuntimeState?.getBackendOrigin?.() || global.location?.origin || ''; }
+    function boolWord(value){ return value ? 'yes' : 'no'; }
+    function getVariantConfig(variant){ return VARIANTS[variant] || VARIANTS.standard_pushup; }
+    function collectParticipant(){
+      const displayName = String(challengeById('challengeDisplayName')?.value || '').trim();
+      const email = String(challengeById('challengeEmail')?.value || '').trim();
+      const phone = String(challengeById('challengePhone')?.value || '').trim();
+      const team = String(challengeById('challengeTeam')?.value || '').trim();
+      const consent = challengeById('challengeConsent')?.checked === true;
+      const variant = challengeById('challengeVariantSelect')?.value || 'standard_pushup';
+      return { displayName, email, phone, team, consent, variant };
+    }
+    function renderChallengeDiagnostics(){
+      const text = [
+        `challengeModeActive: ${boolWord(challengeState.active || challengeState.preflight)}`,
+        `challengeVariant: ${challengeState.variant}`,
+        `pushupKeypointsVisible: ${boolWord(challengeState.keypointsVisible)}`,
+        `validRepCount: ${challengeState.validRepCount}`,
+        `score: ${challengeState.score}`,
+        `rejectedRepReason: ${challengeState.rejectedRepReason || 'none'}`,
+        `leaderboardSaveStatus: ${challengeState.saveStatus || 'not_saved'}`
+      ].join('\n');
+      challengeText('challengeDiagnosticsStatus', text);
+      const panel = challengeById('featureActivationStatus');
+      if (panel) {
+        const block = `challengeModeActive: ${boolWord(challengeState.active || challengeState.preflight)}\nchallengeVariant: ${challengeState.variant}\npushupKeypointsVisible: ${boolWord(challengeState.keypointsVisible)}\nvalidRepCount: ${challengeState.validRepCount}\nscore: ${challengeState.score}\nrejectedRepReason: ${challengeState.rejectedRepReason || 'none'}\nleaderboardSaveStatus: ${challengeState.saveStatus || 'not_saved'}`;
+        if (!panel.textContent.includes('challengeModeActive:')) panel.textContent += `\n${block}`;
+        else panel.textContent = panel.textContent.replace(/challengeModeActive:[\s\S]*$/m, block);
+      }
+    }
+    function renderChallengeScore(){
+      challengeText('challengeValidReps', String(challengeState.validRepCount));
+      challengeText('challengeScore', String(challengeState.score));
+      challengeText('challengeRejectedReason', challengeState.rejectedRepReason || 'None');
+      challengeText('challengeSaveStatus', challengeState.saveStatus || 'not_saved');
+      renderChallengeDiagnostics();
+    }
+    function updateVariantNote(){
+      const variant = challengeById('challengeVariantSelect')?.value || challengeState.variant;
+      challengeText('challengeVariantNote', getVariantConfig(variant).note);
+      challengeState.variant = variant;
+      challengeState.multiplier = getVariantConfig(variant).multiplier;
+      renderChallengeDiagnostics();
+    }
+    function renderLeaderboard(rows = []){
+      const body = challengeById('challengeLeaderboardBody');
+      if (!body) return;
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="8">No challenge results yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map((row) => `<tr><td>${row.rank}</td><td>${escapeHtml(row.displayName)}</td><td>${escapeHtml(row.team || '')}</td><td>${escapeHtml(row.variantLabel || row.variant)}</td><td>${row.validRepCount}</td><td>${row.multiplier}x</td><td>${row.score}</td><td>${escapeHtml(row.timestamp)}</td></tr>`).join('');
+    }
+    function escapeHtml(value){
+      return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+    }
+    async function loadLeaderboard(){
+      const res = await global.fetch(`${getChallengeBase()}/api/challenges/pushup/leaderboard`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error?.message || json?.message || 'leaderboard load failed');
+      const rows = json?.data?.leaderboard || json?.leaderboard || [];
+      renderLeaderboard(rows);
+      return rows;
+    }
+    async function saveResult(){
+      if (!challengeState.participant) return null;
+      challengeState.saveStatus = 'saving';
+      renderChallengeScore();
+      const payload = {
+        ...challengeState.participant,
+        variant: challengeState.variant,
+        validRepCount: challengeState.validRepCount,
+        multiplier: challengeState.multiplier,
+        score: challengeState.score
+      };
+      const res = await global.fetch(`${getChallengeBase()}/api/challenges/pushup/results`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error?.message || json?.message || 'challenge result save failed');
+      challengeState.lastSavedResult = json?.data?.result || json?.result || null;
+      challengeState.saveStatus = 'saved';
+      renderChallengeScore();
+      await loadLeaderboard().catch(() => null);
+      return challengeState.lastSavedResult;
+    }
+    function setChallengeButtons(active){
+      const start = challengeById('challengeStartBtn');
+      const stop = challengeById('challengeStopBtn');
+      if (start) start.disabled = active;
+      if (stop) stop.disabled = !active;
+    }
+    function stopChallenge(reason = 'stopped'){
+      challengeState.preflight = false;
+      if (challengeState.timerId) global.clearInterval(challengeState.timerId);
+      challengeState.timerId = null;
+      const wasActive = challengeState.active;
+      challengeState.active = false;
+      setChallengeButtons(false);
+      challengeText('challengeTimer', reason === 'time' ? 'Time!' : 'Stopped');
+      getFn('stopChallengePoseLoop')?.();
+      renderChallengeScore();
+      if (wasActive) {
+        saveResult().catch((err) => {
+          challengeState.saveStatus = `save_failed: ${err?.message || err}`;
+          renderChallengeScore();
+        });
+      }
+      return { ...challengeState };
+    }
+    function startTimer(durationSeconds){
+      challengeState.remainingSeconds = durationSeconds;
+      challengeState.endsAt = Date.now() + durationSeconds * 1000;
+      challengeText('challengeTimer', `${durationSeconds}s`);
+      challengeState.timerId = global.setInterval(() => {
+        challengeState.remainingSeconds = Math.max(0, Math.ceil((challengeState.endsAt - Date.now()) / 1000));
+        challengeText('challengeTimer', `${challengeState.remainingSeconds}s`);
+        if (challengeState.remainingSeconds <= 0) stopChallenge('time');
+      }, 250);
+    }
+    async function startChallenge(options = {}){
+      const participant = { ...collectParticipant(), ...(options.participant || {}) };
+      if (!participant.displayName) throw new Error('Display name is required.');
+      if (participant.consent !== true) throw new Error('Consent is required to enter the leaderboard challenge.');
+      if (!state.cameraActive && !getVideoElement()?.srcObject) throw new Error('Connect camera first.');
+      const variant = participant.variant || 'standard_pushup';
+      const config = getVariantConfig(variant);
+      challengeState.participant = participant;
+      challengeState.variant = variant;
+      challengeState.multiplier = config.multiplier;
+      challengeState.validRepCount = 0;
+      challengeState.score = 0;
+      challengeState.rejectedRepReason = 'Waiting for top push-up position.';
+      challengeState.keypointsVisible = false;
+      challengeState.preflight = true;
+      challengeState.saveStatus = 'not_saved';
+      challengeState.lastSavedResult = null;
+      engine.resetCycle();
+      global.RepAnalysisRuntime?.reset?.({ repCount: 0, totalReps: 0, phase: 'top' });
+      setChallengeButtons(true);
+      renderChallengeScore();
+      getFn('startChallengePoseLoop')?.();
+      await waitForPushupVisibility(Number(options.visibilityTimeoutMs || 3000));
+      for (const label of ['3', '2', '1']) {
+        challengeText('challengeTimer', label);
+        await new Promise((resolve) => global.setTimeout(resolve, Number(options.countdownMs || 1000)));
+      }
+      challengeState.preflight = false;
+      challengeState.active = true;
+      challengeState.rejectedRepReason = 'Counting valid push-ups only.';
+      renderChallengeScore();
+      startTimer(Number(options.durationSeconds || 60));
+      return { ...challengeState };
+    }
+    async function waitForPushupVisibility(timeoutMs){
+      const started = Date.now();
+      challengeState.rejectedRepReason = 'Move so I can see your shoulders, elbows, wrists, and hips.';
+      renderChallengeScore();
+      while (Date.now() - started < timeoutMs) {
+        if (challengeState.keypointsVisible) return true;
+        await new Promise((resolve) => global.setTimeout(resolve, 100));
+      }
+      challengeState.preflight = false;
+      setChallengeButtons(false);
+      getFn('stopChallengePoseLoop')?.();
+      throw new Error('Move so I can see your shoulders, elbows, wrists, and hips.');
+    }
+    function handlePoseAnalysis(analysis = {}){
+      if (!challengeState.active && !challengeState.preflight) return;
+      challengeState.keypointsVisible = Boolean(analysis.keypointConfidenceOk);
+      if (!analysis.keypointConfidenceOk) {
+        challengeState.rejectedRepReason = 'Move so I can see your shoulders, elbows, wrists, and hips.';
+      } else if (challengeState.preflight) {
+        challengeState.rejectedRepReason = 'Keypoints visible. Get ready.';
+      } else if (analysis.repDetected && analysis.goodRep) {
+        challengeState.validRepCount += 1;
+        challengeState.score = challengeState.validRepCount * challengeState.multiplier;
+        challengeState.rejectedRepReason = 'Last rep counted.';
+      } else if (analysis.formWarning) {
+        challengeState.rejectedRepReason = analysis.formWarning;
+      } else if (analysis.phase !== 'top') {
+        challengeState.rejectedRepReason = analysis.depthStatus || 'Finish the full top-bottom-top rep.';
+      }
+      renderChallengeScore();
+    }
+    function onChallengeEvent(id, type, handler){ const el = challengeById(id); if (typeof el?.addEventListener === 'function') el.addEventListener(type, handler); }
+    function onChallengeClick(id, handler){ onChallengeEvent(id, 'click', handler); }
+    function attachChallengeUi(){
+      onChallengeClick('pushupChallengeEntryBtn', () => challengeById('pushupChallengePanel')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
+      onChallengeClick('dashboardChallengeLeaderboardBtn', () => { challengeById('pushupChallengePanel')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }); loadLeaderboard().catch((err) => { challengeState.saveStatus = `leaderboard_failed: ${err?.message || err}`; renderChallengeScore(); }); });
+      onChallengeClick('challengeConnectCameraBtn', () => global.WorkoutRuntime?.connectCamera?.());
+      onChallengeClick('challengeStartBtn', () => startChallenge().catch((err) => { challengeState.rejectedRepReason = err?.message || String(err); renderChallengeScore(); }));
+      onChallengeClick('challengeStopBtn', () => stopChallenge('stopped'));
+      onChallengeClick('challengeLeaderboardBtn', () => loadLeaderboard().catch((err) => { challengeState.saveStatus = `leaderboard_failed: ${err?.message || err}`; renderChallengeScore(); }));
+      onChallengeEvent('challengeVariantSelect', 'change', updateVariantNote);
+      updateVariantNote();
+      renderChallengeScore();
+    }
+    if (global.document?.readyState === 'loading') global.document.addEventListener('DOMContentLoaded', attachChallengeUi, { once: true });
+    else attachChallengeUi();
+    const api = { version: 'phase26', VARIANTS, isActive: () => challengeState.active || challengeState.preflight, getState: () => ({ ...challengeState }), startChallenge, stopChallenge, handlePoseAnalysis, loadLeaderboard, saveResult, renderLeaderboard, updateVariantNote };
+    global.PushupChallengeRuntime = api;
+    if (typeof module !== 'undefined' && module.exports) module.exports = { ...(module.exports || {}), PushupChallengeRuntime: api };
+    return api;
+  }
+
+
   function configureWorkoutRuntime(nextDeps){ deps = { ...deps, ...(nextDeps || {}) }; }
 
   installPilotFormRuleEngine();
   installPilotRepAnalysisAdapter();
+  installPushupChallengeRuntime();
 
   global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, getState: () => ({ ...state }) };
   global.startWorkout = (...args) => global.WorkoutRuntime.startWorkout(...args);

@@ -13,6 +13,7 @@ const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createMembershipService } = require("./src/services/membershipService");
+const { createChallengeService } = require("./src/services/challengeService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -297,11 +298,13 @@ function createApp(options = {}) {
   const USER_DIR = path.join(DATA_DIR, "users");
   const PILOT_EVENT_LOG_PATH = path.join(OPS_DIR, "pilot-events.ndjson");
   const DIAGNOSTIC_REPORT_PATH = path.join(OPS_DIR, "diagnostic-reports.ndjson");
+  const PUSHUP_CHALLENGE_PATH = path.join(OPS_DIR, "pushup-challenge-results.json");
 
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (avatarFeatureEnabled && !fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
   const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
+  const challengeService = createChallengeService({ filePath: PUSHUP_CHALLENGE_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
   userStore.ensureDirs();
@@ -1562,6 +1565,17 @@ function createApp(options = {}) {
     });
     const result = membershipService.handleStripeEvent(event);
     return ok(res, req.requestId, { received: true, ...result });
+  }));
+
+  // ---- Public event challenge endpoints (Phase 26 push-up pilot) ----
+  app.post("/api/challenges/pushup/results", asyncHandler(async (req, res) => {
+    const result = challengeService.savePushupResult(req.body || {});
+    return ok(res, req.requestId, { result }, 201);
+  }));
+
+  app.get("/api/challenges/pushup/leaderboard", asyncHandler(async (req, res) => {
+    const leaderboard = challengeService.getPushupLeaderboard({ limit: req.query?.limit });
+    return ok(res, req.requestId, leaderboard, 200);
   }));
 
   app.post("/api/pilot/events", asyncHandler(async (req, res) => {

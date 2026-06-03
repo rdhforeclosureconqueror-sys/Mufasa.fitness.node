@@ -223,6 +223,8 @@
       nodeCommandUrl: `${nodeBaseUrl}/command`,
       nodeProfileUrl: `${nodeBaseUrl}/api/me/profile`,
       nodeSessionStartUrl: `${nodeBaseUrl}/api/sessions`,
+      pushupChallengeResultsUrl: `${nodeBaseUrl}/api/challenges/pushup/results`,
+      pushupChallengeLeaderboardUrl: `${nodeBaseUrl}/api/challenges/pushup/leaderboard`,
       nodeOhsaUrl: `${nodeBaseUrl}/api/ohsa`,
       nodePilotEventsUrl: `${nodeBaseUrl}/api/pilot/events`,
       aiVoiceUrl: `${nodeBaseUrl}/api/speak`,

@@ -650,8 +650,27 @@
       repTimer = setTimeout(flushRepQueue, repDebounceMs);
     }
 
+
+    async function savePushupChallengeResult(payload = {}) {
+      return postJSON(`${baseUrl}/api/challenges/pushup/results`, payload, false, "pushup_challenge_result");
+    }
+
+    async function getPushupChallengeLeaderboard() {
+      const res = await fetch(`${baseUrl}/api/challenges/pushup/leaderboard`, { method: "GET", headers: { accept: "application/json" } });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || payload?.ok === false) {
+        const err = new Error(payload?.error?.message || payload?.message || `request_failed_${res.status}`);
+        err.code = "REQUEST_FAILED";
+        err.status = res.status;
+        err.payload = payload;
+        throw err;
+      }
+      return payload;
+    }
     return {
       startSession,
+      savePushupChallengeResult,
+      getPushupChallengeLeaderboard,
       completeSession,
       enqueueRepUpdate,
       trackExplicitSuccess,
