@@ -41,6 +41,28 @@
     return (v || "").toString().toLowerCase().trim();
   }
 
+  const PILOT_MOVEMENT_PATTERN_BY_EXERCISE = Object.freeze({
+    "bodyweight squat": "squat",
+    "bodyweight_squat": "squat",
+    "bodyweight-squat": "squat",
+    "push-up": "pushup",
+    "push up": "pushup",
+    "push_up": "pushup",
+    "lunge": "lunge"
+  });
+
+  function mapPilotExerciseToMovementPattern(exercise = {}) {
+    const candidates = [exercise.movementPattern, exercise.pattern, exercise.exerciseId, exercise.id, exercise.name, exercise.exerciseName]
+      .map((value) => normalize(value).replace(/[–—]/g, "-"))
+      .filter(Boolean);
+    for (const candidate of candidates) {
+      if (PILOT_MOVEMENT_PATTERN_BY_EXERCISE[candidate]) return PILOT_MOVEMENT_PATTERN_BY_EXERCISE[candidate];
+      const underscored = candidate.replace(/\s+/g, "_");
+      if (PILOT_MOVEMENT_PATTERN_BY_EXERCISE[underscored]) return PILOT_MOVEMENT_PATTERN_BY_EXERCISE[underscored];
+    }
+    return null;
+  }
+
   function safeText(v, fallback = "") {
     return (typeof v === "string" && v.trim()) ? v : fallback;
   }
@@ -417,5 +439,5 @@
     }
   });
 
-  window.MufasaFitness = { loaded: true, version: "diagnostics-v1" };
+  window.MufasaFitness = { loaded: true, version: "diagnostics-v1", mapPilotExerciseToMovementPattern };
 })();

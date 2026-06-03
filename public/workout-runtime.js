@@ -377,7 +377,301 @@
     };
   }
 
+
+  // Phase 24: minimal pilot form-rule engine for default workout movements only.
+  function installPilotFormRuleEngine(){
+    if (global.__PILOT_FORM_RULE_ENGINE?.version === 'phase24') return global.__PILOT_FORM_RULE_ENGINE;
+
+    const KEYPOINT_INDEX_BY_NAME = Object.freeze({
+      nose: 0, left_eye: 1, right_eye: 2, left_ear: 3, right_ear: 4,
+      left_shoulder: 5, right_shoulder: 6, left_elbow: 7, right_elbow: 8,
+      left_wrist: 9, right_wrist: 10, left_hip: 11, right_hip: 12,
+      left_knee: 13, right_knee: 14, left_ankle: 15, right_ankle: 16
+    });
+    const MIN_SCORE = 0.35;
+    const CONFIDENCE_FEEDBACK = 'I need to see your hips, knees, and ankles.';
+    const PILOT_PATTERN_BY_EXERCISE = Object.freeze({
+      'bodyweight squat': 'squat',
+      'bodyweight_squat': 'squat',
+      'bodyweight-squat': 'squat',
+      squat: 'squat',
+      'push-up': 'pushup',
+      'push up': 'pushup',
+      push_up: 'pushup',
+      pushup: 'pushup',
+      lunge: 'lunge'
+    });
+    const phaseState = { pattern: null, phase: null, sawBottom: false, bottomGood: false, warnings: [] };
+
+    function normalizeName(value){ return String(value || '').trim().toLowerCase().replace(/[–—]/g, '-'); }
+    function mapExerciseToMovementPattern(exercise = {}){
+      const candidates = [exercise.movementPattern, exercise.pattern, exercise.exerciseId, exercise.id, exercise.name, exercise.exerciseName]
+        .map(normalizeName)
+        .filter(Boolean);
+      for (const candidate of candidates) {
+        if (PILOT_PATTERN_BY_EXERCISE[candidate]) return PILOT_PATTERN_BY_EXERCISE[candidate];
+        const slug = candidate.replace(/\s+/g, '_');
+        if (PILOT_PATTERN_BY_EXERCISE[slug]) return PILOT_PATTERN_BY_EXERCISE[slug];
+      }
+      return null;
+    }
+    function getKeypoint(source, name){
+      const keypoints = Array.isArray(source) ? source : source?.keypoints;
+      if (!Array.isArray(keypoints)) return null;
+      return keypoints.find((kp) => (kp?.name || kp?.part) === name) || keypoints[KEYPOINT_INDEX_BY_NAME[name]] || null;
+    }
+    function score(kp){ return Number(kp?.score || 0); }
+    function hasXY(kp){ return Number.isFinite(Number(kp?.x)) && Number.isFinite(Number(kp?.y)); }
+    function reliable(kp){ return Boolean(kp && hasXY(kp) && score(kp) >= MIN_SCORE); }
+    function avg(values){ const nums = values.filter(Number.isFinite); return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null; }
+    function midpoint(a,b){ return reliable(a) && reliable(b) ? { x:(a.x+b.x)/2, y:(a.y+b.y)/2, score: Math.min(score(a), score(b)) } : null; }
+    function angle(a,b,c){
+      if (!hasXY(a) || !hasXY(b) || !hasXY(c)) return null;
+      const abx = a.x - b.x, aby = a.y - b.y, cbx = c.x - b.x, cby = c.y - b.y;
+      const mag = Math.hypot(abx, aby) * Math.hypot(cbx, cby);
+      if (!mag) return null;
+      return Math.acos(Math.max(-1, Math.min(1, (abx*cbx + aby*cby) / mag))) * 180 / Math.PI;
+    }
+    function collect(source, names){
+      const points = {};
+      for (const name of names) points[name] = getKeypoint(source, name);
+      return points;
+    }
+    function confidenceStatus(points, requiredNames){
+      const missing = requiredNames.filter((name) => !reliable(points[name]));
+      return {
+        ok: missing.length === 0,
+        status: missing.length ? 'keypoint confidence too low' : 'keypoint confidence ok',
+        missing,
+        minScore: Math.min(...requiredNames.map((name) => score(points[name])))
+      };
+    }
+    function baseResult(pattern, phase, confidence, extra = {}){
+      const confidenceOk = Boolean(confidence?.ok);
+      const depthStatus = confidenceOk ? (extra.depthStatus || extra.status || 'status unknown') : (extra.depthStatus || 'keypoint confidence too low');
+      const feedback = confidenceOk ? (extra.feedback || 'Tracking form.') : (extra.confidenceFeedback || CONFIDENCE_FEEDBACK);
+      return {
+        movementPattern: pattern,
+        pattern,
+        phase,
+        repPhase: phase,
+        depthStatus,
+        status: depthStatus,
+        confidenceStatus: confidence?.status || 'keypoint confidence too low',
+        keypointConfidenceOk: confidenceOk,
+        missingKeypoints: confidence?.missing || [],
+        feedback,
+        formWarning: confidenceOk ? (extra.formWarning || null) : feedback,
+        needsLowerBody: !confidenceOk && (confidence?.missing || []).some((name) => /hip|knee|ankle/.test(name)),
+        goodRepCandidate: Boolean(confidenceOk && extra.goodRepCandidate),
+        goodForm: Boolean(confidenceOk && extra.goodRepCandidate),
+        repDetected: false,
+        goodRep: false,
+        metrics: extra.metrics || {}
+      };
+    }
+    function analyzeSquat(pose){
+      const names = ['left_hip','right_hip','left_knee','right_knee','left_ankle','right_ankle','left_shoulder','right_shoulder'];
+      const points = collect(pose, names);
+      const confidence = confidenceStatus(points, names);
+      if (!confidence.ok) return baseResult('squat', 'standing', confidence, { depthStatus: 'lower body not visible' });
+      const hipY = avg([points.left_hip.y, points.right_hip.y]);
+      const kneeY = avg([points.left_knee.y, points.right_knee.y]);
+      const ankleY = avg([points.left_ankle.y, points.right_ankle.y]);
+      const lowerLegSpan = Math.max(1, Math.abs((ankleY ?? 0) - (kneeY ?? 0)));
+      const tolerance = Math.max(8, lowerLegSpan * 0.08);
+      const hipAtOrBelowKnee = Number.isFinite(hipY) && Number.isFinite(kneeY) && hipY >= kneeY - tolerance;
+      const kneeAngle = avg([
+        angle(points.left_hip, points.left_knee, points.left_ankle),
+        angle(points.right_hip, points.right_knee, points.right_ankle)
+      ]) ?? 180;
+      const depthScore = Math.max(0, Math.min(1, (180 - kneeAngle) / 90));
+      const depthGood = hipAtOrBelowKnee || kneeAngle <= 115;
+      const phase = depthGood ? 'bottom' : (depthScore > 0.18 || (Number.isFinite(hipY) && Number.isFinite(kneeY) && hipY > kneeY - lowerLegSpan * 0.7) ? 'descending' : 'standing');
+      return baseResult('squat', phase, confidence, {
+        depthStatus: depthGood ? 'depth good' : 'depth high',
+        feedback: depthGood ? 'Depth good.' : 'Go slightly deeper while keeping control.',
+        formWarning: depthGood ? null : 'Go slightly deeper while keeping control.',
+        goodRepCandidate: depthGood,
+        metrics: { hipY, kneeY, ankleY, kneeAngle, depthScore, hipAtOrBelowKnee }
+      });
+    }
+    function analyzePushup(pose){
+      const names = ['left_shoulder','right_shoulder','left_elbow','right_elbow','left_wrist','right_wrist','left_hip','right_hip'];
+      const points = collect(pose, names);
+      const confidence = confidenceStatus(points, names);
+      if (!confidence.ok) return baseResult('pushup', 'top', confidence, { feedback: 'I need to see your shoulders, elbows, wrists, and hips.' });
+      const elbowAngle = avg([
+        angle(points.left_shoulder, points.left_elbow, points.left_wrist),
+        angle(points.right_shoulder, points.right_elbow, points.right_wrist)
+      ]) ?? 180;
+      const shoulder = midpoint(points.left_shoulder, points.right_shoulder);
+      const hip = midpoint(points.left_hip, points.right_hip);
+      const bodySpan = Math.max(1, Math.abs((hip?.x ?? 0) - (shoulder?.x ?? 0)) + Math.abs((hip?.y ?? 0) - (shoulder?.y ?? 0)));
+      const hipSagging = reliable(shoulder) && reliable(hip) && hip.y - shoulder.y > Math.max(30, bodySpan * 0.32);
+      const bottom = elbowAngle <= 105;
+      const top = elbowAngle >= 150;
+      const phase = bottom ? 'bottom' : (top ? 'top' : 'descending');
+      const good = bottom && !hipSagging;
+      return baseResult('pushup', phase, confidence, {
+        depthStatus: bottom ? 'depth good' : (top ? 'top' : 'depth high'),
+        feedback: hipSagging ? 'Brace your body line; hips are sagging.' : (bottom ? 'Depth good.' : 'Bend elbows under control.'),
+        formWarning: hipSagging ? 'hips sagging' : (bottom ? null : 'elbow bend/depth needs work'),
+        goodRepCandidate: good,
+        metrics: { elbowAngle, hipSagging }
+      });
+    }
+    function analyzeLunge(pose){
+      const names = ['left_hip','right_hip','left_knee','right_knee','left_ankle','right_ankle'];
+      const points = collect(pose, names);
+      const confidence = confidenceStatus(points, names);
+      if (!confidence.ok) return baseResult('lunge', 'standing/split stance', confidence, { depthStatus: 'lower body not visible' });
+      const leftKneeAngle = angle(points.left_hip, points.left_knee, points.left_ankle) ?? 180;
+      const rightKneeAngle = angle(points.right_hip, points.right_knee, points.right_ankle) ?? 180;
+      const frontSide = leftKneeAngle <= rightKneeAngle ? 'left' : 'right';
+      const backSide = frontSide === 'left' ? 'right' : 'left';
+      const frontKneeAngle = frontSide === 'left' ? leftKneeAngle : rightKneeAngle;
+      const backKnee = points[`${backSide}_knee`];
+      const backAnkle = points[`${backSide}_ankle`];
+      const backKneeDrop = reliable(backKnee) && reliable(backAnkle) && Math.abs(backAnkle.y - backKnee.y) < 120;
+      const bottom = frontKneeAngle <= 125 && backKneeDrop;
+      const standing = leftKneeAngle >= 155 && rightKneeAngle >= 155;
+      const phase = bottom ? 'bottom' : (standing ? 'standing/split stance' : 'descending');
+      const warning = !bottom ? (frontKneeAngle > 125 ? 'front knee bend needs work' : 'back knee drop needs work') : null;
+      return baseResult('lunge', phase, confidence, {
+        depthStatus: bottom ? 'depth good' : 'depth high',
+        feedback: bottom ? 'Depth good.' : (warning === 'front knee bend needs work' ? 'Bend the front knee more under control.' : 'Drop the back knee under control.'),
+        formWarning: warning,
+        goodRepCandidate: bottom,
+        metrics: { frontSide, frontKneeAngle, backKneeDrop, leftKneeAngle, rightKneeAngle }
+      });
+    }
+    function analyzeMovement({ pose, exercise } = {}){
+      const pattern = mapExerciseToMovementPattern(exercise) || 'squat';
+      if (pattern === 'pushup') return analyzePushup(pose);
+      if (pattern === 'lunge') return analyzeLunge(pose);
+      return analyzeSquat(pose);
+    }
+    function completeCycle(analysis){
+      const pattern = analysis?.pattern || analysis?.movementPattern || 'squat';
+      if (phaseState.pattern !== pattern) {
+        phaseState.pattern = pattern;
+        phaseState.phase = null;
+        phaseState.sawBottom = false;
+        phaseState.bottomGood = false;
+        phaseState.warnings = [];
+      }
+      let repDetected = false;
+      if (analysis.phase === 'bottom') {
+        phaseState.sawBottom = true;
+        phaseState.bottomGood = Boolean(analysis.goodRepCandidate);
+        phaseState.warnings = analysis.formWarning ? [analysis.formWarning] : [];
+      }
+      const finishPhase = pattern === 'pushup' ? 'top' : (pattern === 'lunge' ? 'standing/split stance' : 'standing');
+      if (phaseState.sawBottom && analysis.phase === finishPhase && phaseState.phase && phaseState.phase !== finishPhase) {
+        repDetected = true;
+        analysis.goodRep = Boolean(phaseState.bottomGood && !phaseState.warnings.length);
+        phaseState.sawBottom = false;
+        phaseState.bottomGood = false;
+        phaseState.warnings = [];
+      }
+      phaseState.phase = analysis.phase;
+      analysis.repDetected = repDetected;
+      return analysis;
+    }
+    function resetCycle(){ phaseState.pattern = null; phaseState.phase = null; phaseState.sawBottom = false; phaseState.bottomGood = false; phaseState.warnings = []; }
+    function renderVisibleFormStatus(analysis){
+      const lines = [
+        `movement pattern: ${analysis?.movementPattern || 'unknown'}`,
+        `phase: ${analysis?.phase || 'unknown'}`,
+        `depth/status: ${analysis?.depthStatus || analysis?.status || 'unknown'}`,
+        `keypoint confidence: ${analysis?.confidenceStatus || 'unknown'}`,
+        `rep quality: ${analysis?.repDetected ? (analysis.goodRep ? 'good rep' : 'needs work') : (analysis?.goodRepCandidate ? 'good rep candidate' : 'needs work')}`
+      ];
+      const formStatus = byId('formRuleStatus');
+      if (formStatus) formStatus.textContent = lines.join('\n');
+      const diag = byId('poseDiagnosticsStatus');
+      if (diag) {
+        const existing = String(diag.textContent || '').replace(/\n?movement pattern:[\s\S]*$/m, '');
+        diag.textContent = `${existing}\n${lines.join('\n')}`.trim();
+      }
+      if (analysis?.feedback) {
+        const cue = byId('hudCoachCue');
+        if (cue) cue.textContent = analysis.feedback;
+      }
+    }
+    function toLegacySquatShape(analysis){
+      return {
+        ...analysis,
+        fullBody: Boolean(analysis.keypointConfidenceOk),
+        lowerBodyReliable: Boolean(analysis.keypointConfidenceOk),
+        squatPhase: analysis.phase,
+        depthScore: Number(analysis.metrics?.depthScore || (analysis.depthStatus === 'depth good' ? 1 : 0)),
+        kneeAngle: Number(analysis.metrics?.kneeAngle || 180),
+        hipAtOrBelowKnee: Boolean(analysis.metrics?.hipAtOrBelowKnee),
+        goodForm: Boolean(analysis.goodRepCandidate)
+      };
+    }
+    const api = { version: 'phase24', MIN_SCORE, CONFIDENCE_FEEDBACK, mapExerciseToMovementPattern, analyzeMovement, analyzeSquat, analyzePushup, analyzeLunge, completeCycle, resetCycle, renderVisibleFormStatus, toLegacySquatShape };
+    global.__PILOT_FORM_RULE_ENGINE = api;
+    if (typeof module !== 'undefined' && module.exports) module.exports = { ...(module.exports || {}), PilotFormRuleEngine: api };
+    return api;
+  }
+
+  function installPilotRepAnalysisAdapter(){
+    const engine = installPilotFormRuleEngine();
+    const runtime = global.RepAnalysisRuntime;
+    if (!runtime || runtime.__phase24PilotAdapterInstalled) return false;
+    const original = { configure: runtime.configure, reset: runtime.reset, getState: runtime.getState };
+    const pilotState = { repCount: 0, totalReps: 0, goodRepCount: 0, repPhase: 'standing', lastAnalysis: null, lastRepAt: null };
+    let repDeps = {};
+    runtime.configure = function configurePilot(nextDeps = {}){
+      repDeps = { ...repDeps, ...(nextDeps || {}) };
+      return original.configure?.call(runtime, nextDeps) || runtime.getState();
+    };
+    runtime.reset = function resetPilot(nextState = {}){
+      pilotState.repCount = Number(nextState.repCount || 0);
+      pilotState.totalReps = Number(nextState.totalReps || 0);
+      pilotState.goodRepCount = 0;
+      pilotState.repPhase = String(nextState.phase || nextState.repPhase || 'standing');
+      pilotState.lastAnalysis = null;
+      pilotState.lastRepAt = null;
+      engine.resetCycle();
+      original.reset?.call(runtime, { ...nextState, phase: pilotState.repPhase });
+      return runtime.getState();
+    };
+    runtime.analyzeSquatForm = function analyzePilotSquatForm(pose){
+      return engine.toLegacySquatShape(engine.analyzeSquat(pose));
+    };
+    runtime.processPoseFrame = function processPilotPoseFrame({ pose, posePacket } = {}){
+      const exercise = repDeps.getCurrentExerciseMeta?.() || {};
+      const analysis = engine.completeCycle(engine.analyzeMovement({ pose: pose || { keypoints: posePacket?.keypoints || [] }, exercise }));
+      if (analysis.repDetected) {
+        pilotState.repCount += 1;
+        pilotState.totalReps += 1;
+        if (analysis.goodRep) pilotState.goodRepCount += 1;
+        pilotState.lastRepAt = new Date().toISOString();
+        repDeps.onRepComplete?.({ repCount: pilotState.repCount, totalReps: pilotState.totalReps, goodRep: analysis.goodRep, goodForm: analysis.goodRep, formWarning: analysis.formWarning, analysis });
+        global.__liveWorkoutBreakpoints?.markPass?.('first-rep-counted', { repCount: pilotState.repCount, totalReps: pilotState.totalReps, movementPattern: analysis.movementPattern, goodRep: analysis.goodRep });
+      }
+      pilotState.repPhase = analysis.phase;
+      pilotState.lastAnalysis = analysis;
+      global.__lastRepAnalysis = { ...analysis, repCount: pilotState.repCount, totalReps: pilotState.totalReps, goodRepCount: pilotState.goodRepCount };
+      engine.renderVisibleFormStatus(analysis);
+      repDeps.onAnalysis?.({ repCount: pilotState.repCount, totalReps: pilotState.totalReps, goodRepCount: pilotState.goodRepCount, repPhase: pilotState.repPhase, analysis, repCompleted: analysis.repDetected, formResult: null });
+      return runtime.getState();
+    };
+    runtime.getState = function getPilotState(){
+      return { ...(original.getState?.call(runtime) || {}), ...pilotState, lastAnalysis: pilotState.lastAnalysis };
+    };
+    runtime.__phase24PilotAdapterInstalled = true;
+    return true;
+  }
+
   function configureWorkoutRuntime(nextDeps){ deps = { ...deps, ...(nextDeps || {}) }; }
+
+  installPilotFormRuleEngine();
+  installPilotRepAnalysisAdapter();
 
   global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, getState: () => ({ ...state }) };
   global.startWorkout = (...args) => global.WorkoutRuntime.startWorkout(...args);

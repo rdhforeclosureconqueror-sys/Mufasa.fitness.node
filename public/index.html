@@ -847,6 +847,14 @@ CREATE CLICKED: no</pre>
       <div class="status-line"><strong>BOOT_CORE_LOADED:</strong> <span id="bootCoreLoadedMarker">no</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
+      <div id="formRulePanel" class="small-card" style="margin-top:10px;">
+        <strong>Pilot form rule status</strong>
+        <pre id="formRuleStatus" class="diagPre muted" style="white-space:pre-wrap;">movement pattern: squat
+phase: standing
+depth/status: waiting
+keypoint confidence: waiting
+rep quality: waiting</pre>
+      </div>
       <div id="poseDiagnosticsPanel" class="small-card" style="margin-top:10px;">
         <strong>Pose diagnostics</strong>
         <pre id="poseDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">poseKeypointsReceived: no
@@ -1467,8 +1475,11 @@ skeletonOverlayActive: no</pre>
         `leftAnkle score: ${score("left_ankle").toFixed(2)}`,
         `rightAnkle score: ${score("right_ankle").toFixed(2)}`,
         `skeletonOverlayActive: ${skeletonOverlayActive ? "yes" : "no"}`,
-        `squatPhase: ${analysis?.squatPhase || repPhase || "standing"}`,
-        `depthStatus: ${analysis?.depthStatus || "depth unknown"}`
+        `movement pattern: ${analysis?.movementPattern || analysis?.pattern || "squat"}`,
+        `phase: ${analysis?.phase || analysis?.squatPhase || repPhase || "standing"}`,
+        `depth/status: ${analysis?.depthStatus || analysis?.status || "depth unknown"}`,
+        `keypoint confidence: ${analysis?.confidenceStatus || (analysis?.fullBody ? "keypoint confidence ok" : "unknown")}`,
+        `rep quality: ${analysis?.repDetected ? (analysis?.goodRep ? "good rep" : "needs work") : (analysis?.goodRepCandidate || analysis?.goodForm ? "good rep candidate" : "needs work")}`
       ].join("\n");
     }
 
