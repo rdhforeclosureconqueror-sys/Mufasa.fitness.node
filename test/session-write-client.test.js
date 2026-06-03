@@ -244,3 +244,208 @@ test("legacy fallback can require explicit actions via client config gate", asyn
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "http://node/api/sessions");
 });
+
+test("session create, reps, and complete use the same canonical token resolver", async (t) => {
+  const calls = [];
+  const originalFetch = global.fetch;
+  const originalAuthRuntime = globalThis.AuthStateRuntime;
+  const originalAppAuth = globalThis.APP_AUTH;
+  const originalLocalStorage = globalThis.localStorage;
+
+  globalThis.AuthStateRuntime = {
+    getCanonicalAuthState: () => ({ token: "canonical-token" }),
+    getAuthToken: () => "runtime-token"
+  };
+  globalThis.APP_AUTH = { token: "app-token" };
+  globalThis.localStorage = { getItem: () => "stored-token" };
+  global.fetch = async (url, init = {}) => {
+    calls.push({ url, headers: init.headers || {}, body: JSON.parse(init.body || "{}") });
+    return {
+      ok: true,
+      status: 200,
+      async json() { return { ok: true, data: {} }; }
+    };
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    globalThis.AuthStateRuntime = originalAuthRuntime;
+    globalThis.APP_AUTH = originalAppAuth;
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "pilot_user",
+    getAuthTokenInfo: () => ({ token: "injected-token", source: "injected" }),
+    repDebounceMs: 10,
+    logger: { log() {}, warn() {}, error() {} }
+  });
+
+  await client.startSession({ sessionId: "sess_shared" });
+  client.enqueueRepUpdate({ sessionId: "sess_shared", totalReps: 7, repsThisSet: 7 });
+  await delay(40);
+  await client.completeSession("sess_shared", { repsCompleted: 7 });
+
+  assert.equal(calls.length, 3);
+  assert.deepEqual(calls.map((call) => call.url), [
+    "http://node/api/sessions",
+    "http://node/api/sessions/sess_shared/reps",
+    "http://node/api/sessions/sess_shared/complete"
+  ]);
+  assert.ok(calls.every((call) => call.headers.Authorization === "Bearer canonical-token"));
+  const diagnostics = client.getPersistenceDiagnosticsSnapshot();
+  assert.equal(diagnostics.sessionCreateTokenSource, "AuthStateRuntime.getCanonicalAuthState");
+  assert.equal(diagnostics.repPersistTokenSource, "AuthStateRuntime.getCanonicalAuthState");
+  assert.equal(diagnostics.completeTokenSource, "AuthStateRuntime.getCanonicalAuthState");
+});
+
+test("APP_AUTH token wins over stale localStorage token when AuthStateRuntime is unavailable", async (t) => {
+  const calls = [];
+  const originalFetch = global.fetch;
+  const originalAuthRuntime = globalThis.AuthStateRuntime;
+  const originalAppAuth = globalThis.APP_AUTH;
+  const originalLocalStorage = globalThis.localStorage;
+
+  delete globalThis.AuthStateRuntime;
+  globalThis.APP_AUTH = { token: "fresh-app-token" };
+  globalThis.localStorage = { getItem: (key) => key === "maatAuthToken" ? "stale-storage-token" : null };
+  global.fetch = async (url, init = {}) => {
+    calls.push({ url, headers: init.headers || {} });
+    return {
+      ok: true,
+      status: 200,
+      async json() { return { ok: true, data: {} }; }
+    };
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    globalThis.AuthStateRuntime = originalAuthRuntime;
+    globalThis.APP_AUTH = originalAppAuth;
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "pilot_user",
+    getAuthToken: () => "injected-token",
+    repDebounceMs: 10,
+    logger: { warn() {} }
+  });
+
+  await client.startSession({ sessionId: "sess_app_auth" });
+  client.enqueueRepUpdate({ sessionId: "sess_app_auth", totalReps: 2 });
+  await delay(40);
+
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((call) => call.headers.Authorization === "Bearer fresh-app-token"));
+  assert.equal(client.getPersistenceDiagnosticsSnapshot().repPersistTokenSource, "window.APP_AUTH.token");
+});
+
+test("create success plus reps invalid_token shows warning and does not trigger legacy fallback", async (t) => {
+  const calls = [];
+  const warnings = [];
+  const originalFetch = global.fetch;
+  const originalAuthRuntime = globalThis.AuthStateRuntime;
+
+  globalThis.AuthStateRuntime = {
+    getCanonicalAuthState: () => ({ token: "canonical-token" }),
+    getAuthToken: () => "canonical-token"
+  };
+  global.fetch = async (url, init = {}) => {
+    calls.push({ url, headers: init.headers || {}, bodyText: init.body || "" });
+    if (url.endsWith("/reps")) {
+      return {
+        ok: false,
+        status: 401,
+        headers: { get: (name) => /www-authenticate/i.test(name) ? 'Bearer error="invalid_token"' : null },
+        async json() { return { ok: false, error: { message: "unauthorized" } }; }
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      async json() { return { ok: true, data: {} }; }
+    };
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    globalThis.AuthStateRuntime = originalAuthRuntime;
+  });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "pilot_user",
+    repDebounceMs: 10,
+    onFallbackUsed: (notice) => warnings.push(notice),
+    logger: { warn(message) { warnings.push(message); }, log() {}, error() {} }
+  });
+
+  await client.startSession({ sessionId: "sess_invalid" });
+  client.enqueueRepUpdate({ sessionId: "sess_invalid", totalReps: 3 });
+  await delay(40);
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, "http://node/api/sessions");
+  assert.equal(calls[1].url, "http://node/api/sessions/sess_invalid/reps");
+  assert.ok(!calls.some((call) => call.url === "http://node/command"));
+  assert.equal(client.getObservabilitySnapshot().fallbackToLegacy.rep_update, 0);
+  const diagnostics = client.getPersistenceDiagnosticsSnapshot();
+  assert.equal(diagnostics.repPersistStatus, 401);
+  assert.equal(diagnostics.repPersistErrorCode, "invalid_token");
+  assert.equal(diagnostics.repPersistAuthHeaderPresent, true);
+  assert.equal(diagnostics.lastPersistenceMessage, "Workout started, but reps are not saving. Please log in again.");
+  assert.ok(warnings.includes("Workout started, but reps are not saving. Please log in again."));
+});
+
+test("session persistence diagnostics never display token values", async (t) => {
+  const originalFetch = global.fetch;
+  const originalAuthRuntime = globalThis.AuthStateRuntime;
+  const secretToken = "secret-token-that-must-not-display";
+
+  globalThis.AuthStateRuntime = {
+    getCanonicalAuthState: () => ({ token: secretToken }),
+    getAuthToken: () => secretToken
+  };
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    async json() { return { ok: true, data: {} }; }
+  });
+  t.after(() => {
+    global.fetch = originalFetch;
+    globalThis.AuthStateRuntime = originalAuthRuntime;
+  });
+
+  const client = createSessionWriteClient({
+    baseUrl: "http://node",
+    commandUrl: "http://node/command",
+    getUserId: () => "pilot_user",
+    repDebounceMs: 10,
+    logger: { warn() {} }
+  });
+
+  await client.startSession({ sessionId: "sess_no_token_display" });
+  client.enqueueRepUpdate({ sessionId: "sess_no_token_display", totalReps: 1 });
+  await delay(40);
+
+  const serializedDiagnostics = JSON.stringify(client.getPersistenceDiagnosticsSnapshot());
+  assert.ok(!serializedDiagnostics.includes(secretToken));
+  assert.ok(serializedDiagnostics.includes("AuthStateRuntime.getCanonicalAuthState"));
+});
+
+test("Phase 24 pilot form-rule engine remains present", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const workoutRuntime = fs.readFileSync(path.join(__dirname, "../public/workout-runtime.js"), "utf8");
+  const phase24Test = fs.readFileSync(path.join(__dirname, "phase24-pilot-form-rule-engine.test.js"), "utf8");
+
+  assert.match(workoutRuntime, /Phase 24: minimal pilot form-rule engine/);
+  assert.match(workoutRuntime, /pushup/);
+  assert.match(workoutRuntime, /lunge/);
+  assert.match(phase24Test, /deep squat keypoints produce depth good/);
+});

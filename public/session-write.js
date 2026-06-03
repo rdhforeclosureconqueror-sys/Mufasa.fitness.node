@@ -48,11 +48,16 @@
     const persistenceDiagnostics = {
       sessionCreateAttempted: false,
       sessionCreateSucceeded: false,
+      sessionCreateTokenSource: null,
       repPersistAttempted: false,
       repPersistSucceeded: false,
       repPersistFailed: false,
+      repPersistTokenSource: null,
+      repPersistAuthHeaderPresent: false,
       repPersistStatus: null,
       repPersistErrorCode: null,
+      completeTokenSource: null,
+      lastPersistenceMessage: null,
       tokenSourceUsed: null
     };
 
@@ -134,20 +139,71 @@
       return getPersistenceDiagnosticsSnapshot();
     }
 
-    function normalizeAuthTokenInfo(candidate) {
+    function getGlobalScope() {
+      if (typeof globalThis !== "undefined") return globalThis;
+      if (typeof window !== "undefined") return window;
+      return {};
+    }
+
+    function normalizeAuthTokenInfo(candidate, defaultSource = "injected_getAuthToken") {
       if (candidate && typeof candidate === "object") {
         const token = candidate.token ? String(candidate.token).trim() : null;
-        return { token: token || null, source: candidate.source || (token ? "custom" : "missing") };
+        return { token: token || null, source: candidate.source || (token ? defaultSource : "missing") };
       }
       const token = candidate ? String(candidate).trim() : null;
-      return { token: token || null, source: token ? "injected_getAuthToken" : "missing" };
+      return { token: token || null, source: token ? defaultSource : "missing" };
+    }
+
+    function readStoredAuthToken(globalScope) {
+      try { return globalScope.localStorage?.getItem?.("maatAuthToken") || null; } catch (_) { return null; }
     }
 
     function resolveAuthTokenInfo() {
-      if (typeof getAuthTokenInfo === "function") {
-        return normalizeAuthTokenInfo(getAuthTokenInfo());
+      const globalScope = getGlobalScope();
+      const authState = globalScope.AuthStateRuntime?.getCanonicalAuthState?.();
+      const canonicalToken = authState?.token ? String(authState.token).trim() : null;
+      if (canonicalToken) return { token: canonicalToken, source: "AuthStateRuntime.getCanonicalAuthState" };
+
+      const runtimeToken = globalScope.AuthStateRuntime?.getAuthToken?.();
+      if (runtimeToken && String(runtimeToken).trim()) {
+        return { token: String(runtimeToken).trim(), source: "AuthStateRuntime.getAuthToken" };
       }
-      return normalizeAuthTokenInfo(getAuthToken?.());
+
+      const appAuthToken = globalScope.APP_AUTH?.token ? String(globalScope.APP_AUTH.token).trim() : null;
+      if (appAuthToken) return { token: appAuthToken, source: "window.APP_AUTH.token" };
+
+      const storedToken = readStoredAuthToken(globalScope);
+      if (storedToken && String(storedToken).trim()) {
+        return { token: String(storedToken).trim(), source: "localStorage.maatAuthToken" };
+      }
+
+      const isBrowserScope = Boolean(globalScope.window === globalScope || globalScope.document);
+      if (!isBrowserScope && typeof getAuthTokenInfo === "function") {
+        const injectedInfo = normalizeAuthTokenInfo(getAuthTokenInfo(), "injected_getAuthTokenInfo");
+        if (injectedInfo.token) return injectedInfo;
+      }
+
+      if (!isBrowserScope) {
+        const injectedToken = normalizeAuthTokenInfo(getAuthToken?.());
+        if (injectedToken.token) return injectedToken;
+      }
+      return { token: null, source: "missing" };
+    }
+
+    function buildAuthenticatedJSONRequest(action) {
+      const authInfo = resolveAuthTokenInfo();
+      const { token } = authInfo;
+      const requestHeaders = {
+        "Content-Type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}`, Authorization: `Bearer ${token}` } : {})
+      };
+      return {
+        action,
+        authInfo,
+        token,
+        requestHeaders,
+        authHeaderPresent: Boolean(token)
+      };
     }
 
     function getErrorCodeFromUnauthorized(res, payload) {
@@ -166,7 +222,7 @@
         action,
         status: err.status,
         errorCode: "invalid_token",
-        message: "Session expired. Please log in again."
+        message: action === "rep_update" ? "Workout started, but reps are not saving. Please log in again." : "Session expired. Please log in again."
       };
       if (typeof window !== "undefined") {
         const poseStatus = window.document?.getElementById?.("poseStatus");
@@ -208,22 +264,19 @@
       return gateErr;
     }
 
-    async function postJSON(url, body, authRequired) {
-      const authInfo = resolveAuthTokenInfo();
-      const { token } = authInfo;
+    async function postJSON(url, body, authRequired, action = null) {
+      const authRequest = buildAuthenticatedJSONRequest(action);
+      const { authInfo, token, requestHeaders } = authRequest;
       publishPersistenceDiagnostics({ tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing") });
       if (authRequired && !token) {
         const err = new Error("missing_auth_token");
         err.code = "MISSING_AUTH_TOKEN";
         err.url = url;
         err.requestBody = body || {};
+        err.authInfo = { source: authInfo.source || "missing", authHeaderPresent: false };
         throw err;
       }
 
-      const requestHeaders = {
-        "Content-Type": "application/json",
-        ...(token ? { authorization: `Bearer ${token}`, Authorization: `Bearer ${token}` } : {})
-      };
       const res = await fetch(url, {
         method: "POST",
         headers: requestHeaders,
@@ -244,6 +297,7 @@
         err.url = url;
         err.requestBody = body || {};
         err.responseStatus = res.status;
+        err.authInfo = { source: authInfo.source || "missing", authHeaderPresent: authRequest.authHeaderPresent };
         throw err;
       }
 
@@ -257,13 +311,14 @@
         err.url = url;
         err.requestBody = body || {};
         err.responseStatus = res.status;
+        err.authInfo = { source: authInfo.source || "missing", authHeaderPresent: authRequest.authHeaderPresent };
         throw err;
       }
 
       const data = payload?.data || null;
       if (data && typeof data === "object") {
         Object.defineProperty(data, "__sessionWriteTrace", {
-          value: { url, status: res.status, body: body || {}, authHeaderPresent: Boolean(token), responseBody: payload },
+          value: { url, status: res.status, body: body || {}, authHeaderPresent: authRequest.authHeaderPresent, tokenSource: authInfo.source || "missing", responseBody: payload },
           enumerable: false, configurable: true
         });
       }
@@ -358,7 +413,13 @@
       const sessionUrl = `${baseUrl}/api/sessions`;
       const authInfo = resolveAuthTokenInfo();
       const token = authInfo.token;
-      publishPersistenceDiagnostics({ sessionCreateAttempted: true, sessionCreateSucceeded: false, tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing") });
+      publishPersistenceDiagnostics({
+        sessionCreateAttempted: true,
+        sessionCreateSucceeded: false,
+        sessionCreateTokenSource: authInfo.source || (token ? "unknown" : "missing"),
+        tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing"),
+        lastPersistenceMessage: "Starting workout session."
+      });
       if (typeof window !== "undefined") {
         window.__liveWorkoutBreakpoints?.markPass?.("sessionCreateAttempted", {
           source: "SessionWrite.startSession",
@@ -368,12 +429,16 @@
         });
       }
       try {
-        const sessionResult = await postJSON(sessionUrl, normalizedPayload, true);
-        publishPersistenceDiagnostics({ sessionCreateSucceeded: true });
+        const sessionResult = await postJSON(sessionUrl, normalizedPayload, true, "session_start");
+        publishPersistenceDiagnostics({
+          sessionCreateSucceeded: true,
+          sessionCreateTokenSource: sessionResult?.__sessionWriteTrace?.tokenSource || authInfo.source || "missing",
+          lastPersistenceMessage: "Workout session started."
+        });
         if (typeof window !== "undefined") {
           window.__liveWorkoutBreakpoints?.markPass?.("sessionCreateSucceeded", {
             source: "SessionWrite.startSession",
-            tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing"),
+            tokenSourceUsed: sessionResult?.__sessionWriteTrace?.tokenSource || authInfo.source || (token ? "unknown" : "missing"),
             requestUrl: sessionUrl,
             status: sessionResult?.__sessionWriteTrace?.status || null,
             requestBody: normalizedPayload,
@@ -439,10 +504,12 @@
 
     async function completeSession(sessionId, payload) {
       if (!sessionId) return;
+      const preflightAuthInfo = resolveAuthTokenInfo();
       try {
-        publishPersistenceDiagnostics({ tokenSourceUsed: resolveAuthTokenInfo().source });
+        publishPersistenceDiagnostics({ completeTokenSource: preflightAuthInfo.source || "missing", tokenSourceUsed: preflightAuthInfo.source || "missing", lastPersistenceMessage: "Completing workout session." });
         logger.log?.("[SESSION_COMPLETION] POST /api/sessions/:sessionId/complete", { sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null });
-        const result = await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true);
+        const result = await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true, "session_complete");
+        publishPersistenceDiagnostics({ completeTokenSource: result?.__sessionWriteTrace?.tokenSource || preflightAuthInfo.source || "missing", lastPersistenceMessage: "Workout session completed." });
         trackExplicitSuccess("session_complete");
         if (typeof onSessionSaveSuccess === "function") {
           onSessionSaveSuccess({ action: "session_complete", mode: "explicit_api", sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null });
@@ -505,13 +572,40 @@
         ts: repPayload.ts || Date.now()
       };
 
+      const preflightAuthInfo = resolveAuthTokenInfo();
       try {
-        publishPersistenceDiagnostics({ repPersistAttempted: true, repPersistSucceeded: false, repPersistFailed: false, repPersistStatus: null, repPersistErrorCode: null, tokenSourceUsed: resolveAuthTokenInfo().source });
-        await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sid)}/reps`, explicitBody, true);
-        publishPersistenceDiagnostics({ repPersistSucceeded: true, repPersistFailed: false, repPersistStatus: 200, repPersistErrorCode: null });
+        publishPersistenceDiagnostics({
+          repPersistAttempted: true,
+          repPersistSucceeded: false,
+          repPersistFailed: false,
+          repPersistTokenSource: preflightAuthInfo.source || "missing",
+          repPersistAuthHeaderPresent: Boolean(preflightAuthInfo.token),
+          repPersistStatus: null,
+          repPersistErrorCode: null,
+          tokenSourceUsed: preflightAuthInfo.source || "missing",
+          lastPersistenceMessage: "Saving workout reps."
+        });
+        const result = await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sid)}/reps`, explicitBody, true, "rep_update");
+        publishPersistenceDiagnostics({
+          repPersistSucceeded: true,
+          repPersistFailed: false,
+          repPersistTokenSource: result?.__sessionWriteTrace?.tokenSource || preflightAuthInfo.source || "missing",
+          repPersistAuthHeaderPresent: result?.__sessionWriteTrace?.authHeaderPresent !== false,
+          repPersistStatus: result?.__sessionWriteTrace?.status || 200,
+          repPersistErrorCode: null,
+          lastPersistenceMessage: "Workout reps saved."
+        });
         trackExplicitSuccess("rep_update");
       } catch (err) {
-        publishPersistenceDiagnostics({ repPersistSucceeded: false, repPersistFailed: true, repPersistStatus: err?.status || err?.responseStatus || null, repPersistErrorCode: err?.errorCode || err?.payload?.error?.code || err?.code || null });
+        publishPersistenceDiagnostics({
+          repPersistSucceeded: false,
+          repPersistFailed: true,
+          repPersistTokenSource: err?.authInfo?.source || preflightAuthInfo.source || "missing",
+          repPersistAuthHeaderPresent: err?.authInfo?.authHeaderPresent === true,
+          repPersistStatus: err?.status || err?.responseStatus || null,
+          repPersistErrorCode: err?.errorCode || err?.payload?.error?.code || err?.code || null,
+          lastPersistenceMessage: isInvalidTokenError(err) ? "Workout started, but reps are not saving. Please log in again." : "Workout reps could not be saved."
+        });
         if (handleInvalidToken(err, "rep_update")) throw err;
         logger.warn("Rep update API unavailable; using /command fallback.", { status: err?.status || null, errorCode: err?.errorCode || err?.code || null, message: err?.message || String(err) });
         const reason = trackFallback("rep_update", err);
