@@ -405,7 +405,7 @@
       box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
     }
 
-    input[type="text"] {
+    input[type="text"], input[type="email"], input[type="tel"] {
       flex: 1;
       border-radius: 999px;
       border: 1px solid rgba(55, 65, 81, 0.9);
@@ -416,7 +416,7 @@
       outline: none;
     }
 
-    input[type="text"]::placeholder { color: #6b7280; }
+    input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="tel"]::placeholder { color: #6b7280; }
 
     select {
       width: 100%;
@@ -461,6 +461,28 @@
     .log-line.you { color: #e5e7eb; }
     .log-line.coach { color: #a5b4fc; }
     .log-line.system { color: #6b7280; font-style: italic; }
+
+    .challenge-card {
+      border: 1px solid rgba(34, 197, 94, 0.75);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(6, 78, 59, 0.18);
+      display: grid;
+      gap: 8px;
+    }
+    .challenge-card label { display: grid; gap: 4px; font-size: 0.82rem; color: #d1fae5; }
+    .challenge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .challenge-consent { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; gap: 8px; }
+    .challenge-consent input { margin-top: 3px; }
+    .challenge-score-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .challenge-score-row .chip { border-color: #22c55e; color: #bbf7d0; }
+    .challenge-table-wrap { overflow-x: auto; border: 1px solid rgba(55,65,81,.9); border-radius: 10px; }
+    .challenge-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .challenge-table th, .challenge-table td { padding: 6px 8px; border-bottom: 1px solid rgba(55,65,81,.75); text-align: left; white-space: nowrap; }
+    .challenge-table th { color: #fde68a; background: rgba(2,6,23,.7); }
+    .challenge-note { color: #bfdbfe; font-size: 0.78rem; }
+    @media (max-width: 800px) { .challenge-grid { grid-template-columns: 1fr; } }
+
 
     /* ---- Calendar ---- */
     #calendarView {
@@ -800,6 +822,7 @@ CREATE CLICKED: no</pre>
         <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
+        <button id="pushupChallengeEntryBtn" type="button">Push-Up Challenge</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
@@ -855,6 +878,53 @@ depth/status: waiting
 keypoint confidence: waiting
 rep quality: waiting</pre>
       </div>
+
+      <div id="pushupChallengePanel" class="challenge-card" style="margin-top:10px;" aria-live="polite">
+        <h2 style="margin:0;">Push-Up Challenge</h2>
+        <p class="subtitle" style="margin:0;">Quick rugby-game pilot. No intake, program assignment, OHSA, payment, or full profile required.</p>
+        <div class="challenge-grid">
+          <label>Display name *<input id="challengeDisplayName" type="text" maxlength="80" placeholder="Leaderboard name" /></label>
+          <label>Team<input id="challengeTeam" type="text" maxlength="80" placeholder="Optional team" /></label>
+          <label>Email<input id="challengeEmail" type="email" maxlength="160" placeholder="Optional; hidden from leaderboard" /></label>
+          <label>Phone<input id="challengePhone" type="tel" maxlength="40" placeholder="Optional; hidden from leaderboard" /></label>
+        </div>
+        <label>Variant
+          <select id="challengeVariantSelect">
+            <option value="standard_pushup">Standard Push-Up</option>
+            <option value="one_hand_pushup">One-Hand Push-Up</option>
+          </select>
+        </label>
+        <p id="challengeVariantNote" class="challenge-note">Standard Push-Up: valid rep = 1 point.</p>
+        <label class="challenge-consent"><input id="challengeConsent" type="checkbox" /> <span>I agree this is a fitness challenge and my display name, team, and score may appear on the leaderboard.</span></label>
+        <div class="challenge-note">Stop if you feel pain or dizziness. This is not medical advice. Ask staff before participating if you have an injury.</div>
+        <div class="btn-row">
+          <button id="challengeConnectCameraBtn" type="button" class="secondary">Connect Camera</button>
+          <button id="challengeStartBtn" type="button">Start 60s Challenge</button>
+          <button id="challengeStopBtn" type="button" class="secondary" disabled>Stop Challenge</button>
+          <button id="challengeLeaderboardBtn" type="button" class="secondary">View Leaderboard</button>
+        </div>
+        <div class="challenge-score-row">
+          <span class="chip">Countdown/Time: <span id="challengeTimer">Ready</span></span>
+          <span class="chip">Valid reps: <span id="challengeValidReps">0</span></span>
+          <span class="chip">Score: <span id="challengeScore">0</span></span>
+          <span class="chip">Save: <span id="challengeSaveStatus">Not saved</span></span>
+        </div>
+        <div class="status-line"><strong>Rejected rep reason:</strong> <span id="challengeRejectedReason">None</span></div>
+        <pre id="challengeDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">challengeModeActive: no
+challengeVariant: standard_pushup
+pushupKeypointsVisible: no
+validRepCount: 0
+score: 0
+rejectedRepReason: none
+leaderboardSaveStatus: not_saved</pre>
+        <div class="challenge-table-wrap">
+          <table class="challenge-table" aria-label="Push-Up Challenge leaderboard">
+            <thead><tr><th>Rank</th><th>Name</th><th>Team</th><th>Variant</th><th>Valid reps</th><th>Multiplier</th><th>Score</th><th>Timestamp</th></tr></thead>
+            <tbody id="challengeLeaderboardBody"><tr><td colspan="8">No results loaded yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <div id="poseDiagnosticsPanel" class="small-card" style="margin-top:10px;">
         <strong>Pose diagnostics</strong>
         <pre id="poseDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">poseKeypointsReceived: no
@@ -912,6 +982,11 @@ skeletonOverlayActive: no</pre>
 
       <div id="workoutPlanView">
         Your workout plan will appear here after profile bootstrap and program selection.
+      </div>
+      <div class="small-card" style="margin-top:10px;">
+        <strong>Event Leaderboard</strong>
+        <p class="subtitle" style="margin:4px 0 8px 0;">View quick Push-Up Challenge results without starting intake or a program.</p>
+        <button id="dashboardChallengeLeaderboardBtn" type="button" class="secondary">View Push-Up Challenge Leaderboard</button>
       </div>
 
       <h2 style="margin-top:12px;">Workout Calendar</h2>
@@ -3129,6 +3204,12 @@ skeletonOverlayActive: no</pre>
           trackPilotEvent,
           addLog,
           getCoachRuntime: requireCoachRuntime,
+          startChallengePoseLoop: runPoseLoop,
+          stopChallengePoseLoop: () => {
+            if (animId?.stop) animId.stop();
+            else if (animId) cancelAnimationFrame(animId);
+            animId = null;
+          },
           refreshCameraUiState,
           setPersonLayerSuppressed,
           setAvatar3dCanvasVisibility,
@@ -3943,6 +4024,12 @@ skeletonOverlayActive: no</pre>
           refreshCameraUiState,
           trackPilotEvent,
           getCoachRuntime: requireCoachRuntime,
+          startChallengePoseLoop: runPoseLoop,
+          stopChallengePoseLoop: () => {
+            if (animId?.stop) animId.stop();
+            else if (animId) cancelAnimationFrame(animId);
+            animId = null;
+          },
           runPoseLoop,
           getAnimId: () => animId,
           setPersonLayerSuppressed,

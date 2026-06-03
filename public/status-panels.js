@@ -29,7 +29,7 @@
   function renderLiveWorkoutBreakpointStatus(reason = 'update') {
     const tracker = global.__liveWorkoutBreakpoints;
     const line = getLiveWorkoutBreakpointLine();
-    ['authPropagationStatus', 'appActivationStatus', 'featureActivationStatus', 'systemBootStatus'].forEach((panelId) => {
+    ['authPropagationStatus', 'appActivationStatus', 'featureActivationStatus', 'systemBootStatus', 'challengeDiagnosticsStatus'].forEach((panelId) => {
       const panel = document.getElementById(panelId);
       if (!panel) return;
       const current = String(panel.textContent || '');
@@ -88,7 +88,8 @@
         `auth:changed fired: ${dbg.authChangedFired ? 'yes' : 'no'}`,
         `last auth event timestamp: ${dbg.lastAuthEventAt || 'none'}`,
         `last auth error: ${dbg.lastAuthError || 'none'}`,
-        getLiveWorkoutBreakpointLine()
+        getLiveWorkoutBreakpointLine(),
+        `push-up challenge runtime: ${global.PushupChallengeRuntime ? 'yes' : 'no'}`
       ];
       panelEl.textContent = payload.join('\n');
     } catch (error) {

@@ -126,6 +126,9 @@
       `camera stream received: ${boolText(cameraDiag.streamReceived)}`,
       `camera video element found/created: ${boolText(cameraDiag.videoElementReady)}`,
       `camera video playing: ${boolText(cameraDiag.videoPlaying)}`,
+      `challengeModeActive: ${boolText(globalScope.PushupChallengeRuntime?.isActive?.() === true)}`,
+      `challengeVariant: ${globalScope.PushupChallengeRuntime?.getState?.().variant || 'none'}`,
+      `leaderboardSaveStatus: ${globalScope.PushupChallengeRuntime?.getState?.().saveStatus || 'not_saved'}`,
       `camera last error: ${cameraDiag.lastCameraError || 'none'}`,
       globalScope.__liveWorkoutBreakpoints?.summaryLine?.() || 'live workout breakpoint: tracker unavailable',
       ...(globalScope.__liveWorkoutBreakpoints?.traceLines?.() || [])
