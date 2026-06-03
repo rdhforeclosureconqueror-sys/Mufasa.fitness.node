@@ -118,12 +118,12 @@ test('Dashboard, Exercise Library, and System Diagnostic are enabled for authent
   assert.equal(context.location.href, '/exercise-library.html');
 });
 
-test('Start Workout explains missing setup instead of being silently disabled', async () => {
+test('Start Workout is not blocked by missing setup after pilot defaults', async () => {
   const { context, elements } = createRuntimeHarness();
   await context.__appRuntime.forceActivate('phase13-test');
-  assert.equal(elements.startBtn.getAttribute('data-blocked-reason'), 'Complete intake/goals or choose an exercise first.');
+  assert.equal(elements.startBtn.getAttribute('data-blocked-reason'), null);
   context.__appRuntime.updateFeaturePanel('phase13-test');
-  assert.match(elements.featureActivationStatus.textContent, /start workout blocked reason: Complete intake\/goals or choose an exercise first\./);
+  assert.match(elements.featureActivationStatus.textContent, /start workout blocked reason: none/);
 });
 
 test('Overhead Squat Assessment and Expand Camera become enabled after camera connects', async () => {

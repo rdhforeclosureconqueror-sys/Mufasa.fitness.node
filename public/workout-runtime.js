@@ -201,7 +201,10 @@
     markStartTrace('workoutStartHandlerEntered', 'pass', { running: state.running, sessionId: state.sessionId || null });
     try {
       ensureRequiredDom(['startBtn', 'video', 'workoutHud', 'hudExerciseName', 'hudSet', 'hudReps', 'hudTempo', 'hudRest', 'hudNextExercise', 'hudCoachCue', 'poseStatus', 'brainStatus']);
-      if (!state.cameraActive && !getVideoElement()?.srcObject) throw new Error('connect camera before starting workout');
+      if (!state.cameraActive && !getVideoElement()?.srcObject) {
+        setVisibleError('Connect camera first.');
+        throw new Error('Connect camera first.');
+      }
       if (!state.running) {
         await getFn('prepareWorkoutStart')?.();
         markStartTrace('selectedWorkoutResolved', 'pass', { prepared: true });

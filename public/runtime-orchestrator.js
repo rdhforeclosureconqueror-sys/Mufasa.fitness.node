@@ -221,7 +221,33 @@
 
   function configureButtonRuntime({ refs = {}, deps = {}, handlers = {} } = {}) {
     try {
-      if (refs.startBtn) global.ButtonRuntime?.bindStartWorkoutButton?.({ startBtn: refs.startBtn, startWorkout: handlers.startWorkout, nodeBaseUrl: deps.nodeBaseUrl });
+      const isCameraConnected = () => Boolean(global.WorkoutRuntime?.getState?.().cameraActive || global.document?.getElementById?.('video')?.srcObject);
+      const showConnectCameraFirst = () => {
+        const message = 'Connect camera first.';
+        const poseStatus = global.document?.getElementById?.('poseStatus');
+        const brainStatus = global.document?.getElementById?.('brainStatus');
+        const featurePanel = global.document?.getElementById?.('featureActivationStatus');
+        if (poseStatus) poseStatus.textContent = message;
+        if (brainStatus) brainStatus.textContent = message;
+        if (featurePanel && !String(featurePanel.textContent || '').includes(message)) {
+          featurePanel.textContent = `${featurePanel.textContent || ''}\n${message}`.trim();
+        }
+        deps.addLog?.('system', message);
+        return false;
+      };
+      const startLiveWorkout = async () => {
+        if (!isCameraConnected()) return showConnectCameraFirst();
+        const canonicalStart = global.WorkoutRuntime?.startWorkout || handlers.startWorkout;
+        if (typeof canonicalStart !== 'function') throw new Error('WorkoutRuntime.startWorkout unavailable');
+        return canonicalStart.call(global.WorkoutRuntime || global);
+      };
+      if (refs.startBtn) {
+        global.ButtonRuntime?.bindStartWorkoutButton?.({ startBtn: refs.startBtn, startWorkout: startLiveWorkout, nodeBaseUrl: deps.nodeBaseUrl });
+        refs.startBtn.onclick = async () => {
+          console.log('[FEATURE_CLICK] start_workout');
+          return startLiveWorkout();
+        };
+      }
       if (refs.fullscreenCameraBtn) refs.fullscreenCameraBtn.onclick = () => {
         const cameraActive = Boolean(global.WorkoutRuntime?.getState?.().cameraActive || global.document?.getElementById?.('video')?.srcObject);
         if (!cameraActive) {
@@ -242,15 +268,8 @@
       if (refs.stopWorkoutFsBtn) refs.stopWorkoutFsBtn.onclick = () => { if (deps.isRunning?.()) handlers.startWorkout?.(); };
       if (refs.workoutToggleMobileBtn) {
         refs.workoutToggleMobileBtn.onclick = () => {
-          const cameraActive = Boolean(global.WorkoutRuntime?.getState?.().cameraActive || global.document?.getElementById?.('video')?.srcObject);
-          if (!cameraActive && !deps.isRunning?.()) {
-            const message = 'Connect camera first.';
-            const poseStatus = global.document?.getElementById?.('poseStatus');
-            if (poseStatus) poseStatus.textContent = message;
-            deps.addLog?.('system', message);
-            return false;
-          }
-          handlers.startWorkout?.();
+          if (!isCameraConnected() && !deps.isRunning?.()) return showConnectCameraFirst();
+          return startLiveWorkout();
         };
       }
       if (refs.ohsaBtn) refs.ohsaBtn.onclick = handlers.startOhsa;

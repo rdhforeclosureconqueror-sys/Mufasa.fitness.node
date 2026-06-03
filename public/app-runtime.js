@@ -70,12 +70,6 @@
   }
 
   function getStartWorkoutBlockedReason(){
-    const retentionStatus = globalScope.document.getElementById('retentionFlowStatus');
-    const retentionReady = Boolean(retentionStatus && !/not_ready|sign in|loading/i.test(retentionStatus.textContent || ''));
-    const workoutState = globalScope.WorkoutProgressionRuntime?.getState?.() || {};
-    const plan = globalScope.WorkoutProgressionRuntime?.getPlan?.() || null;
-    const hasPlan = Boolean(plan?.exercises?.length || workoutState.activeWorkoutId || workoutState.activeProgramId);
-    if (!retentionReady && !hasPlan) return 'Complete intake/goals or choose an exercise first.';
     return '';
   }
 
@@ -86,11 +80,9 @@
     });
 
     const startBtn = globalScope.document.getElementById('startBtn');
-    const blockedReason = getStartWorkoutBlockedReason();
-    if (startBtn && blockedReason && startBtn.disabled) {
-      startBtn.setAttribute('data-blocked-reason', blockedReason);
-      startBtn.title = blockedReason;
-      startBtn.setAttribute('aria-disabled', 'true');
+    if (startBtn) {
+      startBtn.removeAttribute?.('data-blocked-reason');
+      if (startBtn.title === 'Complete intake/goals or choose an exercise first.') startBtn.title = '';
     }
 
     const cameraConnected = globalScope.WorkoutRuntime?.getState?.().cameraActive === true || globalScope.__cameraStatus === 'connected';
@@ -215,6 +207,26 @@
     if (startBtn) startBtn.addEventListener('click', () => {
       logClick('start_workout');
       updateFeaturePanel('start click observed');
+      setTimeout(() => {
+        const milestone = globalScope.__liveWorkoutBreakpoints?.milestones?.workoutStartHandlerEntered;
+        if (milestone?.status === 'pass') return;
+        const cameraConnected = globalScope.WorkoutRuntime?.getState?.().cameraActive === true || Boolean(globalScope.document.getElementById('video')?.srcObject);
+        if (!cameraConnected) {
+          setError('Connect camera first.');
+          updateFeaturePanel('start click missing camera');
+          return;
+        }
+        const start = globalScope.WorkoutRuntime?.startWorkout;
+        if (typeof start !== 'function') {
+          setError('WorkoutRuntime.startWorkout unavailable');
+          updateFeaturePanel('start delegation missing');
+          return;
+        }
+        Promise.resolve(start.call(globalScope.WorkoutRuntime)).catch((error) => {
+          setError(error?.message || String(error || 'start workout failed'));
+          updateFeaturePanel('start delegation failed');
+        });
+      }, 0);
     }, { passive: true });
   }
 
