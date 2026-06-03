@@ -28,5 +28,7 @@ test("session-write keeps shared APP_AUTH getter wiring for pilot mode", () => {
   const sessionWrite = read("public/session-write.js");
 
   assert.match(indexHtml, /getAuthToken:\s*\(\)\s*=>\s*getAuthToken\(\)/, "session-write client wiring does not use shared APP_AUTH getter");
-  assert.match(sessionWrite, /const token = getAuthToken\?\.\(\)/, "session-write client does not use injected token getter");
+  assert.match(indexHtml, /getAuthTokenInfo:\s*\(\)\s*=>\s*getAuthTokenInfo\(\)/, "session-write client wiring does not expose source-aware auth getter");
+  assert.match(sessionWrite, /function resolveAuthTokenInfo\(\)/, "session-write client does not resolve the injected source-aware token getter");
+  assert.match(sessionWrite, /normalizeAuthTokenInfo\(getAuthToken\?\.\(\)\)/, "session-write client does not keep injected getAuthToken fallback");
 });

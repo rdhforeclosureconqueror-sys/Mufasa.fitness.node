@@ -2525,8 +2525,34 @@ CREATE CLICKED: no</pre>
       };
     }
 
+    function getAuthTokenInfo() {
+      const authState = window.AuthStateRuntime?.getCanonicalAuthState?.();
+      const authStateToken = authState?.token ? String(authState.token).trim() : null;
+      if (authStateToken) return { token: authStateToken, source: "AuthStateRuntime.getCanonicalAuthState" };
+
+      const runtimeToken = window.AuthStateRuntime?.getAuthToken?.();
+      if (runtimeToken && String(runtimeToken).trim()) return { token: String(runtimeToken).trim(), source: "AuthStateRuntime.getAuthToken" };
+
+      const appAuthToken = window.APP_AUTH?.token ? String(window.APP_AUTH.token).trim() : null;
+      if (appAuthToken) return { token: appAuthToken, source: "window.APP_AUTH.token" };
+
+      const storedToken = localStorage.getItem("maatAuthToken");
+      if (storedToken && String(storedToken).trim()) return { token: String(storedToken).trim(), source: "localStorage.maatAuthToken" };
+      return { token: null, source: "missing" };
+    }
+
     function getAuthToken() {
-      return window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || null;
+      return getAuthTokenInfo().token;
+    }
+
+    function safeUserIdFrom(value) {
+      const cleaned = String(value || "user")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 80);
+      return cleaned || "user";
     }
 
     // Auth state ownership is delegated to /auth-state-runtime.js.
@@ -2545,6 +2571,7 @@ CREATE CLICKED: no</pre>
       commandUrl: NODE_COMMAND_URL,
       getUserId: () => USER_ID,
       getAuthToken: () => getAuthToken(),
+      getAuthTokenInfo: () => getAuthTokenInfo(),
       repDebounceMs: 500,
       logger: console,
       legacyFallbackRequireExplicitActions: LEGACY_FALLBACK_REQUIRE_EXPLICIT_ACTIONS,
@@ -3897,7 +3924,7 @@ CREATE CLICKED: no</pre>
       setUserId: (userId) => { USER_ID = userId; window.USER_ID = userId; return USER_ID; },
       getCalendarMeta: () => calendarMeta,
       setCalendarMeta: (meta) => { calendarMeta = meta; return calendarMeta; },
-      toSafeUserId,
+      toSafeUserId: safeUserIdFrom,
       markPerfMetric,
       bindPrimaryButtonsAfterLogin: window.bindPrimaryButtonsAfterLogin,
       renderSystemBootStatus,

@@ -13,6 +13,7 @@
       commandUrl,
       getUserId,
       getAuthToken,
+      getAuthTokenInfo,
       repDebounceMs = 450,
       logger = console,
       observabilityStorageKey = "maatWriteObservabilityV1",
@@ -43,6 +44,16 @@
       lastFallback: null,
       lastBlockedFallback: null,
       updatedAt: null
+    };
+    const persistenceDiagnostics = {
+      sessionCreateAttempted: false,
+      sessionCreateSucceeded: false,
+      repPersistAttempted: false,
+      repPersistSucceeded: false,
+      repPersistFailed: false,
+      repPersistStatus: null,
+      repPersistErrorCode: null,
+      tokenSourceUsed: null
     };
 
     function persistObservability() {
@@ -108,8 +119,70 @@
       return JSON.parse(JSON.stringify(observability));
     }
 
+    function getPersistenceDiagnosticsSnapshot() {
+      return JSON.parse(JSON.stringify(persistenceDiagnostics));
+    }
+
+    function publishPersistenceDiagnostics(patch = {}) {
+      Object.assign(persistenceDiagnostics, patch);
+      if (typeof window !== "undefined") {
+        window.__sessionPersistenceDiagnostics = getPersistenceDiagnosticsSnapshot();
+        try {
+          window.dispatchEvent?.(new CustomEvent("mufasa:session-persistence-diagnostics", { detail: window.__sessionPersistenceDiagnostics }));
+        } catch (_) {}
+      }
+      return getPersistenceDiagnosticsSnapshot();
+    }
+
+    function normalizeAuthTokenInfo(candidate) {
+      if (candidate && typeof candidate === "object") {
+        const token = candidate.token ? String(candidate.token).trim() : null;
+        return { token: token || null, source: candidate.source || (token ? "custom" : "missing") };
+      }
+      const token = candidate ? String(candidate).trim() : null;
+      return { token: token || null, source: token ? "injected_getAuthToken" : "missing" };
+    }
+
+    function resolveAuthTokenInfo() {
+      if (typeof getAuthTokenInfo === "function") {
+        return normalizeAuthTokenInfo(getAuthTokenInfo());
+      }
+      return normalizeAuthTokenInfo(getAuthToken?.());
+    }
+
+    function getErrorCodeFromUnauthorized(res, payload) {
+      const wwwAuthenticate = typeof res?.headers?.get === "function" ? res.headers.get("www-authenticate") || res.headers.get("WWW-Authenticate") : null;
+      if (/invalid_token/i.test(String(wwwAuthenticate || ""))) return "invalid_token";
+      return payload?.error?.code || payload?.code || (typeof payload?.error === "string" ? payload.error : null) || "unauthorized";
+    }
+
+    function isInvalidTokenError(err) {
+      return err?.status === 401 && String(err?.errorCode || err?.payload?.error?.code || err?.payload?.error || err?.message || "").toLowerCase() === "invalid_token";
+    }
+
+    function handleInvalidToken(err, action) {
+      if (!isInvalidTokenError(err)) return false;
+      const notice = {
+        action,
+        status: err.status,
+        errorCode: "invalid_token",
+        message: "Session expired. Please log in again."
+      };
+      if (typeof window !== "undefined") {
+        const poseStatus = window.document?.getElementById?.("poseStatus");
+        const brainStatus = window.document?.getElementById?.("brainStatus");
+        if (poseStatus) poseStatus.textContent = notice.message;
+        if (brainStatus) brainStatus.textContent = notice.message;
+        try {
+          window.dispatchEvent?.(new CustomEvent("mufasa:session-auth-expired", { detail: notice }));
+        } catch (_) {}
+      }
+      logger.warn?.(notice.message, { action, status: err.status, errorCode: notice.errorCode });
+      return true;
+    }
+
     function getWriteModeStatus() {
-      const token = getAuthToken?.();
+      const { token } = resolveAuthTokenInfo();
       const fallbackTotal = Object.values(observability.fallbackToLegacy).reduce((sum, count) => sum + count, 0);
       const blockedTotal = Object.values(observability.blockedFallback).reduce((sum, count) => sum + count, 0);
       if (!token) {
@@ -136,7 +209,9 @@
     }
 
     async function postJSON(url, body, authRequired) {
-      const token = getAuthToken?.();
+      const authInfo = resolveAuthTokenInfo();
+      const { token } = authInfo;
+      publishPersistenceDiagnostics({ tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing") });
       if (authRequired && !token) {
         const err = new Error("missing_auth_token");
         err.code = "MISSING_AUTH_TOKEN";
@@ -165,6 +240,7 @@
         err.code = "UNAUTHORIZED";
         err.status = res.status;
         err.payload = payload;
+        err.errorCode = getErrorCodeFromUnauthorized(res, payload);
         err.url = url;
         err.requestBody = body || {};
         err.responseStatus = res.status;
@@ -177,6 +253,7 @@
         err.code = "REQUEST_FAILED";
         err.status = res.status;
         err.payload = payload;
+        err.errorCode = getErrorCodeFromUnauthorized(res, payload);
         err.url = url;
         err.requestBody = body || {};
         err.responseStatus = res.status;
@@ -195,12 +272,13 @@
 
     async function sendLegacyCommand(command, payload) {
       const fallbackReason = payload?._fallbackReason || "unspecified";
+      const authInfo = resolveAuthTokenInfo();
       const res = await fetch(commandUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-fallback-reason": fallbackReason,
-          ...(getAuthToken?.() ? { authorization: `Bearer ${getAuthToken()}` } : {})
+          ...(authInfo.token ? { authorization: `Bearer ${authInfo.token}` } : {})
         },
         body: JSON.stringify({
           domain: "fitness",
@@ -278,7 +356,9 @@
     async function startSession(payload) {
       const normalizedPayload = normalizePilotSessionPayload(payload || {});
       const sessionUrl = `${baseUrl}/api/sessions`;
-      const token = getAuthToken?.();
+      const authInfo = resolveAuthTokenInfo();
+      const token = authInfo.token;
+      publishPersistenceDiagnostics({ sessionCreateAttempted: true, sessionCreateSucceeded: false, tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing") });
       if (typeof window !== "undefined") {
         window.__liveWorkoutBreakpoints?.markPass?.("sessionCreateAttempted", {
           source: "SessionWrite.startSession",
@@ -289,9 +369,11 @@
       }
       try {
         const sessionResult = await postJSON(sessionUrl, normalizedPayload, true);
+        publishPersistenceDiagnostics({ sessionCreateSucceeded: true });
         if (typeof window !== "undefined") {
           window.__liveWorkoutBreakpoints?.markPass?.("sessionCreateSucceeded", {
             source: "SessionWrite.startSession",
+            tokenSourceUsed: authInfo.source || (token ? "unknown" : "missing"),
             requestUrl: sessionUrl,
             status: sessionResult?.__sessionWriteTrace?.status || null,
             requestBody: normalizedPayload,
@@ -309,11 +391,17 @@
             source: "SessionWrite.startSession",
             requestUrl: err?.url || sessionUrl,
             status: err?.status || err?.responseStatus || null,
-            code: err?.payload?.error?.code || err?.code || null,
+            code: err?.errorCode || err?.payload?.error?.code || err?.code || null,
             message: err?.payload?.error?.message || err?.payload?.message || err?.message || String(err),
             requestBody: err?.requestBody || normalizedPayload,
             responseBody: err?.payload || null
           });
+        }
+        if (handleInvalidToken(err, "session_start")) {
+          if (typeof onSessionSaveFailed === "function") {
+            onSessionSaveFailed({ action: "session_start", mode: "explicit_api", reason: "invalid_token", error: err });
+          }
+          throw err;
         }
         const reason = trackFallback("session_start", err);
         if (!isFallbackAllowedForAction("session_start")) {
@@ -352,6 +440,7 @@
     async function completeSession(sessionId, payload) {
       if (!sessionId) return;
       try {
+        publishPersistenceDiagnostics({ tokenSourceUsed: resolveAuthTokenInfo().source });
         logger.log?.("[SESSION_COMPLETION] POST /api/sessions/:sessionId/complete", { sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null });
         const result = await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/complete`, payload, true);
         trackExplicitSuccess("session_complete");
@@ -360,7 +449,13 @@
         }
         return result;
       } catch (err) {
-        logger.error?.("[SESSION_COMPLETION] explicit complete failed", { sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null, message: err?.message || String(err) });
+        logger.error?.("[SESSION_COMPLETION] explicit complete failed", { sessionId, workoutId: payload?.workoutId || payload?.scheduledWorkoutId || null, message: err?.message || String(err), status: err?.status || null, errorCode: err?.errorCode || err?.code || null });
+        if (handleInvalidToken(err, "session_complete")) {
+          if (typeof onSessionSaveFailed === "function") {
+            onSessionSaveFailed({ action: "session_complete", mode: "explicit_api", reason: "invalid_token", error: err });
+          }
+          throw err;
+        }
         const reason = trackFallback("session_complete", err);
         if (!isFallbackAllowedForAction("session_complete")) {
           const gateErr = makeFallbackGateError("session_complete", err, reason);
@@ -411,10 +506,14 @@
       };
 
       try {
+        publishPersistenceDiagnostics({ repPersistAttempted: true, repPersistSucceeded: false, repPersistFailed: false, repPersistStatus: null, repPersistErrorCode: null, tokenSourceUsed: resolveAuthTokenInfo().source });
         await postJSON(`${baseUrl}/api/sessions/${encodeURIComponent(sid)}/reps`, explicitBody, true);
+        publishPersistenceDiagnostics({ repPersistSucceeded: true, repPersistFailed: false, repPersistStatus: 200, repPersistErrorCode: null });
         trackExplicitSuccess("rep_update");
       } catch (err) {
-        logger.warn("Rep update API unavailable; using /command fallback.", err);
+        publishPersistenceDiagnostics({ repPersistSucceeded: false, repPersistFailed: true, repPersistStatus: err?.status || err?.responseStatus || null, repPersistErrorCode: err?.errorCode || err?.payload?.error?.code || err?.code || null });
+        if (handleInvalidToken(err, "rep_update")) throw err;
+        logger.warn("Rep update API unavailable; using /command fallback.", { status: err?.status || null, errorCode: err?.errorCode || err?.code || null, message: err?.message || String(err) });
         const reason = trackFallback("rep_update", err);
         if (!isFallbackAllowedForAction("rep_update")) {
           throw makeFallbackGateError("rep_update", err, reason);
@@ -465,6 +564,7 @@
       trackFallback,
       trackFallbackBlocked,
       getObservabilitySnapshot,
+      getPersistenceDiagnosticsSnapshot,
       getWriteModeStatus,
       _classifyFallbackReasonForTests: classifyFallbackReason,
       _normalizePilotSessionPayloadForTests: normalizePilotSessionPayload,
