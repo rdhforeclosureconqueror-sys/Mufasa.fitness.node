@@ -188,6 +188,13 @@
       height: 100%;
       object-fit: cover;
     }
+    #video { z-index: 0; }
+    #overlay {
+      pointer-events: none;
+      z-index: 3;
+      opacity: 1;
+      mix-blend-mode: normal;
+    }
     #avatar3d {
       pointer-events: none;
       z-index: 2;
@@ -840,6 +847,12 @@ CREATE CLICKED: no</pre>
       <div class="status-line"><strong>BOOT_CORE_LOADED:</strong> <span id="bootCoreLoadedMarker">no</span></div>
       <div class="status-line"><strong>Exercise:</strong> <span id="exerciseLabel">Bodyweight Squat</span></div>
       <div class="status-line"><strong>Reps (this set):</strong> <span id="repCount">0</span></div>
+      <div id="poseDiagnosticsPanel" class="small-card" style="margin-top:10px;">
+        <strong>Pose diagnostics</strong>
+        <pre id="poseDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">poseKeypointsReceived: no
+visibleKeypointCount: 0
+skeletonOverlayActive: no</pre>
+      </div>
       <div id="voiceSupportStatus"></div>
       <div id="authPropagationPanel" class="small-card" style="margin-top:10px;">
         <strong>Auth Propagation Status</strong>
@@ -1085,6 +1098,7 @@ CREATE CLICKED: no</pre>
     const ctx = requestCanvasContext(canvasEl, "2d");
 
     const poseStatusEl = document.getElementById("poseStatus");
+    const poseDiagnosticsStatusEl = document.getElementById("poseDiagnosticsStatus");
     const trackingModeStatusEl = document.getElementById("trackingModeStatus");
     const stageModeStatusEl = document.getElementById("stageModeStatus");
     const avatarModeStatusEl = document.getElementById("avatarModeStatus");
@@ -1403,6 +1417,97 @@ CREATE CLICKED: no</pre>
       [11, 13], [13, 15],
       [12, 14], [14, 16]
     ];
+
+    const MOVENET_KEYPOINT_NAMES = [
+      "nose", "left_eye", "right_eye", "left_ear", "right_ear",
+      "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
+      "left_wrist", "right_wrist", "left_hip", "right_hip",
+      "left_knee", "right_knee", "left_ankle", "right_ankle"
+    ];
+    const SKELETON_KEYPOINT_MIN_SCORE = 0.3;
+    let lastPoseDiagnosticsAt = 0;
+    let skeletonOverlayActive = false;
+
+    function getPoseKeypoints(pose, posePacket = null) {
+      const points = posePacket?.keypoints || pose?.keypoints || [];
+      return Array.isArray(points) ? points : [];
+    }
+
+    function getNamedPosePoint(points, name) {
+      const index = MOVENET_KEYPOINT_NAMES.indexOf(name);
+      return points.find((kp) => kp?.name === name || kp?.part === name) || points[index] || null;
+    }
+
+    function resizeSkeletonOverlayToVideo() {
+      if (!canvasEl || !videoEl) return false;
+      const rect = videoEl.getBoundingClientRect?.() || canvasEl.getBoundingClientRect?.() || { width: 0, height: 0 };
+      const width = Math.round(videoEl.videoWidth || rect.width || canvasEl.clientWidth || 640);
+      const height = Math.round(videoEl.videoHeight || rect.height || canvasEl.clientHeight || 480);
+      if (width > 0 && height > 0 && (canvasEl.width !== width || canvasEl.height !== height)) {
+        canvasEl.width = width;
+        canvasEl.height = height;
+      }
+      return canvasEl.width > 0 && canvasEl.height > 0;
+    }
+
+    function updatePoseDiagnostics(points, analysis = null) {
+      if (!poseDiagnosticsStatusEl) return;
+      const now = Date.now();
+      if (now - lastPoseDiagnosticsAt < 250) return;
+      lastPoseDiagnosticsAt = now;
+      const score = (name) => Number(getNamedPosePoint(points, name)?.score || 0);
+      const visibleKeypointCount = points.filter((kp) => Number(kp?.score || 0) >= SKELETON_KEYPOINT_MIN_SCORE).length;
+      poseDiagnosticsStatusEl.textContent = [
+        `poseKeypointsReceived: ${points.length ? "yes" : "no"}`,
+        `visibleKeypointCount: ${visibleKeypointCount}`,
+        `leftHip score: ${score("left_hip").toFixed(2)}`,
+        `rightHip score: ${score("right_hip").toFixed(2)}`,
+        `leftKnee score: ${score("left_knee").toFixed(2)}`,
+        `rightKnee score: ${score("right_knee").toFixed(2)}`,
+        `leftAnkle score: ${score("left_ankle").toFixed(2)}`,
+        `rightAnkle score: ${score("right_ankle").toFixed(2)}`,
+        `skeletonOverlayActive: ${skeletonOverlayActive ? "yes" : "no"}`,
+        `squatPhase: ${analysis?.squatPhase || repPhase || "standing"}`,
+        `depthStatus: ${analysis?.depthStatus || "depth unknown"}`
+      ].join("\n");
+    }
+
+    function drawSkeletonOverlay(pose, posePacket = null, analysis = null) {
+      const points = getPoseKeypoints(pose, posePacket);
+      if (!ctx || !canvasEl) return false;
+      resizeSkeletonOverlayToVideo();
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      const good = (kp) => kp && Number(kp.score || 0) >= SKELETON_KEYPOINT_MIN_SCORE;
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, canvasEl.width * 0.006);
+      ctx.strokeStyle = analysis?.depthStatus === "depth good" ? "rgba(34, 197, 94, 0.96)" : "rgba(250, 204, 21, 0.96)";
+      ctx.fillStyle = "rgba(56, 189, 248, 0.98)";
+      for (const [a, b] of SKELETON_EDGES) {
+        const p1 = points[a];
+        const p2 = points[b];
+        if (!good(p1) || !good(p2)) continue;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+      for (const kp of points) {
+        if (!good(kp)) continue;
+        ctx.beginPath();
+        ctx.arc(kp.x, kp.y, Math.max(4, canvasEl.width * 0.008), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      skeletonOverlayActive = points.some(good);
+      updatePoseDiagnostics(points, analysis);
+      return skeletonOverlayActive;
+    }
+
+    window.__phase23PoseOverlay = {
+      drawSkeletonOverlay, resizeSkeletonOverlayToVideo, updatePoseDiagnostics, getPoseKeypoints
+    };
 
     const AVATAR_MODE_STORAGE_KEY = "maatAvatarRenderMode";
     const AVATAR_FACING_STORAGE_KEY = "maatAvatarFacingDeg";
@@ -2928,6 +3033,7 @@ CREATE CLICKED: no</pre>
     }
 
     function analyzeSquatForm(pose, formResult = null) {
+      if (window.RepAnalysisRuntime?.analyzeSquatForm) return window.RepAnalysisRuntime.analyzeSquatForm(pose, formResult);
       if (!pose) {
         return { fullBody:false, depthScore:0, goodForm:false, kneeAngle:180, torsoAngle:90, kneeValgus:0 };
       }
@@ -3427,7 +3533,9 @@ CREATE CLICKED: no</pre>
             throw error;
           }
           const guidanceAnalysis = window.RepAnalysisRuntime.analyzeSquatForm?.(pose, window.__lastFormResult || null) || { fullBody: false };
+          drawSkeletonOverlay(pose, posePacket, guidanceAnalysis);
           handleLiveFullBodyGuidance(guidanceAnalysis);
+          if (guidanceAnalysis?.needsLowerBody && guidanceAnalysis?.feedback && hudCoachCueEl) hudCoachCueEl.textContent = guidanceAnalysis.feedback;
           window.__liveWorkoutBreakpoints?.markPass?.("rep-analysis-called", { source: "runPoseLoop.onPoseFrame" });
           window.RepAnalysisRuntime.processPoseFrame({ pose, posePacket });
         },
