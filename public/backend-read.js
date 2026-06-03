@@ -47,12 +47,24 @@
       }
     }
 
-    function getAuthToken() {
+    function getAuthTokenInfo() {
+      const authState = window.AuthStateRuntime?.getCanonicalAuthState?.();
+      const authStateToken = authState?.token ? String(authState.token).trim() : null;
+      if (authStateToken) return { token: authStateToken, source: "AuthStateRuntime.getCanonicalAuthState" };
+
+      const runtimeToken = window.AuthStateRuntime?.getAuthToken?.();
+      if (runtimeToken && String(runtimeToken).trim()) return { token: String(runtimeToken).trim(), source: "AuthStateRuntime.getAuthToken" };
+
       const appToken = window.APP_AUTH?.token;
-      if (appToken && String(appToken).trim()) return String(appToken).trim();
+      if (appToken && String(appToken).trim()) return { token: String(appToken).trim(), source: "window.APP_AUTH.token" };
+
       const persisted = localStorage.getItem("maatAuthToken");
-      if (persisted && String(persisted).trim()) return String(persisted).trim();
-      return null;
+      if (persisted && String(persisted).trim()) return { token: String(persisted).trim(), source: "localStorage.maatAuthToken" };
+      return { token: null, source: "missing" };
+    }
+
+    function getAuthToken() {
+      return getAuthTokenInfo().token;
     }
 
     function setAuthToken(token) {
@@ -150,6 +162,7 @@
       readJSON,
       writeJSON,
       getAuthToken,
+      getAuthTokenInfo,
       setAuthToken,
       clearAuthToken,
       fetchProfile,
