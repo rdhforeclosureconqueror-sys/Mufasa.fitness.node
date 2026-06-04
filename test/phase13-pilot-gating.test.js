@@ -145,7 +145,7 @@ test('stale toSafeUserId error is cleared after authenticated activation', async
 });
 
 test('camera error copy distinguishes unsupported, denied, and browser-blocked failures', () => {
-  const index = fs.readFileSync(path.join(repoRoot, 'public/index.html'), 'utf8');
+  const index = fs.readFileSync(path.join(repoRoot, 'public/workout.html'), 'utf8');
   assert.match(index, /Camera unsupported in this browser or no camera device was found\./);
   assert.match(index, /Camera permission denied\. Allow camera access in the browser and try again\./);
   assert.match(index, /Browser blocked camera or another app is using it\./);

@@ -6,7 +6,7 @@ const path = require("node:path");
 const repoRoot = path.resolve(__dirname, "..");
 const activeFrontendFiles = [
   "public/runtime-state.js",
-  "public/index.html",
+  "public/workout.html",
   "public/diagnostics-client.js",
   "public/dashboard.js",
   "public/backend-read.js",
@@ -24,21 +24,21 @@ const activeFrontendFiles = [
 ];
 
 test("Phase 5B/5C active frontend files do not pin app-owned Render backend origins outside static runtime config", () => {
-  for (const rel of activeFrontendFiles.filter((file) => file !== "public/index.html")) {
+  for (const rel of activeFrontendFiles.filter((file) => file !== "public/workout.html")) {
     const source = fs.readFileSync(path.join(repoRoot, rel), "utf8");
     assert.doesNotMatch(source, /https:\/\/mufasa-fitness-node\.onrender\.com/, `${rel} must use the runtime backend resolver instead of the Render backend origin`);
   }
 });
 
 test("static frontend config sets backend origin before runtime auth scripts load", () => {
-  const source = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  const source = fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
   const configIndex = source.indexOf('backendOrigin: "https://mufasa-fitness-node.onrender.com"');
   const runtimeStateIndex = source.indexOf('<script src="/runtime-state.js');
   const authCoreIndex = source.indexOf('<script src="/auth-core.js"');
 
-  assert.notEqual(configIndex, -1, "public/index.html must configure the split-deployment backend origin");
-  assert.notEqual(runtimeStateIndex, -1, "public/index.html must load runtime-state.js");
-  assert.notEqual(authCoreIndex, -1, "public/index.html must load auth-core.js");
+  assert.notEqual(configIndex, -1, "public/workout.html must configure the split-deployment backend origin");
+  assert.notEqual(runtimeStateIndex, -1, "public/workout.html must load runtime-state.js");
+  assert.notEqual(authCoreIndex, -1, "public/workout.html must load auth-core.js");
   assert.ok(configIndex < runtimeStateIndex, "backend origin config must run before runtime-state.js");
   assert.ok(configIndex < authCoreIndex, "backend origin config must run before auth-core.js");
 });
@@ -83,7 +83,7 @@ test("dashboard history and diagnostics routes are built from backend origin", (
 });
 
 test("index page guards missing calendarApplyBtn references", () => {
-  const source = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  const source = fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
   assert.match(source, /function getCalendarApplyButton\(\) \{[\s\S]*return document\.getElementById\("calendarApplyBtn"\);[\s\S]*\}/, "index should resolve the optional calendar button through document.getElementById");
   assert.match(source, /const calendarApplyBtn = getCalendarApplyButton\(\);/, "index should define calendarApplyBtn before optional handler checks use it");
   assert.match(source, /calendar: typeof calendarApplyBtn\?\.onclick === "function"/, "calendar handler checks should remain optional");
@@ -92,7 +92,7 @@ test("index page guards missing calendarApplyBtn references", () => {
 test("camera activation path delegates click handling to connectCamera and getUserMedia", () => {
   const buttonRuntime = fs.readFileSync(path.join(repoRoot, "public/button-runtime.js"), "utf8");
   const workoutRuntime = fs.readFileSync(path.join(repoRoot, "public/workout-runtime.js"), "utf8");
-  const index = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  const index = fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
 
   assert.match(buttonRuntime, /refs\.connectBtn\) refs\.connectBtn\.onclick = async \(\) => \{[\s\S]*return globalScope\.connectCamera\(\);[\s\S]*\};/, "camera button should invoke global connectCamera from a user click");
   assert.match(index, /if \(typeof connectCamera === "function"\) window\.connectCamera = connectCamera;/, "index should expose connectCamera after activation wiring");

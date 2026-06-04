@@ -47,7 +47,7 @@ test('Phase 14 Expand Camera surfaces connect-camera-first instead of silently d
 });
 
 test('Phase 14 OHSA and Start Workout normalize missing pose runtime to a visible detector error', () => {
-  const source = read('public/index.html');
+  const source = read('public/workout.html');
   assert.match(source, /async function ensureLivePoseDetectorReady\(\)/);
   assert.match(source, /Pose detection unavailable\. Check model\/runtime load\./);
   assert.match(source, /ensureDetectorReady: ensureLivePoseDetectorReady/);
@@ -55,7 +55,7 @@ test('Phase 14 OHSA and Start Workout normalize missing pose runtime to a visibl
 });
 
 test('Phase 14 live guidance prompts step back at most three times, then waits silently', () => {
-  const source = read('public/index.html');
+  const source = read('public/workout.html');
   assert.match(source, /Step back so I can see your full body\./);
   assert.match(source, /Waiting for full body in frame\./);
   assert.match(source, /stepBackPromptCount < 3/);
@@ -64,7 +64,7 @@ test('Phase 14 live guidance prompts step back at most three times, then waits s
 });
 
 test('Phase 14 pose frames feed rep analysis and Bodyweight Squat has a rep path', () => {
-  const index = read('public/index.html');
+  const index = read('public/workout.html');
   const repAnalysis = read('public/rep-analysis-runtime.js');
   assert.match(index, /RepAnalysisRuntime\.processPoseFrame\(\{ pose, posePacket \}\)/);
   assert.match(repAnalysis, /exerciseId:[\s\S]*'bodyweight_squat'/);
@@ -73,7 +73,7 @@ test('Phase 14 pose frames feed rep analysis and Bodyweight Squat has a rep path
 });
 
 test('Phase 14 wake-word support detects unsupported Safari/iPhone browsers clearly', () => {
-  const source = read('public/coach-runtime.js') + read('public/index.html');
+  const source = read('public/coach-runtime.js') + read('public/workout.html');
   assert.match(source, /SpeechRecognition \|\| window\.webkitSpeechRecognition/);
   assert.match(source, /hey coach/);
   assert.match(source, /mufasa/);

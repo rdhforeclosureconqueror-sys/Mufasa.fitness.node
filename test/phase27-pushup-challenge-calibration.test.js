@@ -110,7 +110,7 @@ function feedRep(runtime, options = {}) {
 }
 
 test("Phase 27 participant does not need to choose a push-up variant before challenge", () => {
-  const source = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+  const source = fs.readFileSync(path.join(__dirname, "..", "public", "workout.html"), "utf8");
   assert.doesNotMatch(source, /challengeVariantSelect/);
   assert.match(source, /Do any valid push-up variation\. Two-hand reps count 1 point\. One-hand reps count 2 points\./);
   const svc = createChallengeService({ filePath: path.join(fs.mkdtempSync(path.join(require("node:os").tmpdir(), "pushup27-")), "pushup.json") });

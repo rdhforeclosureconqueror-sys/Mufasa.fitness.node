@@ -12,7 +12,7 @@ function read(rel) {
 }
 
 test("frontend code has no stale calls to retired auth routes", () => {
-  const indexHtml = read("public/index.html");
+  const indexHtml = read("public/workout.html");
   const backendRead = read("public/backend-read.js");
   const sessionWrite = read("public/session-write.js");
   const combined = `${indexHtml}\n${backendRead}\n${sessionWrite}`;
@@ -24,7 +24,7 @@ test("frontend code has no stale calls to retired auth routes", () => {
 });
 
 test("session-write keeps shared APP_AUTH getter wiring for pilot mode", () => {
-  const indexHtml = read("public/index.html");
+  const indexHtml = read("public/workout.html");
   const sessionWrite = read("public/session-write.js");
 
   assert.match(indexHtml, /getAuthToken:\s*\(\)\s*=>\s*getAuthToken\(\)/, "session-write client wiring does not use shared APP_AUTH getter");

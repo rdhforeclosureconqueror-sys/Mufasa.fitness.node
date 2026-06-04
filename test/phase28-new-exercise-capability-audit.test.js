@@ -23,7 +23,7 @@ function loadPilotFormEngine() {
 }
 
 test("Phase 28 Request New Exercise is visible and opens pilot-safe unavailable messaging", () => {
-  const html = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "..", "public", "workout.html"), "utf8");
   assert.match(html, /id="defineExerciseBtn"[^>]*>Request New Exercise<\/button>/);
   assert.match(html, /Custom exercise creation is coming soon\. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge\./);
   assert.doesNotMatch(html, /id="defineExerciseBtn"[^>]*disabled/);
