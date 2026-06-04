@@ -822,6 +822,7 @@ CREATE CLICKED: no</pre>
         <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" type="button">Request New Exercise</button>
+        <button id="exerciseTemplateDraftBtn" class="secondary" type="button" hidden>Create Exercise Template Draft</button>
         <button id="pushupChallengeEntryBtn" type="button">Push-Up Challenge</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
@@ -858,6 +859,43 @@ CREATE CLICKED: no</pre>
           <span class="chip-dot"></span>
           <span id="brainChipText">Ma’at 2.0: ready</span>
         </span>
+      </div>
+
+
+      <div id="exerciseTemplateBuilderPanel" class="card hidden" data-coach-template-builder hidden>
+        <h2 style="margin-top:0;">Coach Demo Exercise Template Builder</h2>
+        <p class="muted">Foundation only: draft templates stay private until demo capture, phase review, test mode, and coach/admin approval complete.</p>
+        <div class="grid2">
+          <label>Exercise name<input id="templateExerciseName" placeholder="Example: Dumbbell Curl"></label>
+          <label>Movement pattern
+            <select id="templateMovementPattern">
+              <option value="squat">squat</option>
+              <option value="push">push</option>
+              <option value="pull">pull</option>
+              <option value="lunge">lunge</option>
+              <option value="hinge">hinge</option>
+              <option value="curl">curl</option>
+              <option value="core">core</option>
+              <option value="carry">carry</option>
+              <option value="rotation">rotation</option>
+              <option value="other">other</option>
+            </select>
+          </label>
+          <label>Description<input id="templateDescription" placeholder="What clean reps should look like"></label>
+          <label>Equipment<input id="templateEquipment" placeholder="Bodyweight, dumbbells, band"></label>
+          <label>Difficulty<input id="templateDifficulty" placeholder="beginner/intermediate/advanced"></label>
+          <label>Positions<input id="templatePositions" placeholder="bottom, top, bottom"></label>
+        </div>
+        <div class="btn-row">
+          <button id="createTemplateDraftBtn" type="button">Save Draft</button>
+          <button id="captureFrontDemoBtn" class="secondary" type="button">Capture front_view demo</button>
+          <button id="captureSideDemoBtn" class="secondary" type="button">Capture side_view demo</button>
+          <button id="captureExtraDemoBtn" class="secondary" type="button">Capture optional_extra_view demo</button>
+          <button id="reviewTemplatePhasesBtn" class="secondary" type="button">Review Suggested Phases</button>
+          <button id="testTemplateBtn" class="secondary" type="button">Test Template</button>
+          <button id="approveTemplateBtn" class="secondary" type="button">Approve Template</button>
+        </div>
+        <pre id="exerciseTemplateBuilderStatus" class="diagPre muted" style="white-space:pre-wrap;">No private draft loaded. Required slots: front_view and side_view; optional: optional_extra_view. Raw video is not stored.</pre>
       </div>
 
       <div class="status-line"><strong>Pose:</strong> <span id="poseStatus">Not started.</span></div>
@@ -1214,6 +1252,22 @@ skeletonOverlayActive: no</pre>
     const trackingModeMobileStatusEl = document.getElementById("trackingModeMobileStatus");
     const ohsaBtn = document.getElementById("ohsaBtn");
     const defineExerciseBtn = document.getElementById("defineExerciseBtn");
+    const exerciseTemplateDraftBtn = document.getElementById("exerciseTemplateDraftBtn");
+    const exerciseTemplateBuilderPanel = document.getElementById("exerciseTemplateBuilderPanel");
+    const exerciseTemplateBuilderStatusEl = document.getElementById("exerciseTemplateBuilderStatus");
+    const templateExerciseNameEl = document.getElementById("templateExerciseName");
+    const templateMovementPatternEl = document.getElementById("templateMovementPattern");
+    const templateDescriptionEl = document.getElementById("templateDescription");
+    const templateEquipmentEl = document.getElementById("templateEquipment");
+    const templateDifficultyEl = document.getElementById("templateDifficulty");
+    const templatePositionsEl = document.getElementById("templatePositions");
+    const createTemplateDraftBtn = document.getElementById("createTemplateDraftBtn");
+    const captureFrontDemoBtn = document.getElementById("captureFrontDemoBtn");
+    const captureSideDemoBtn = document.getElementById("captureSideDemoBtn");
+    const captureExtraDemoBtn = document.getElementById("captureExtraDemoBtn");
+    const reviewTemplatePhasesBtn = document.getElementById("reviewTemplatePhasesBtn");
+    const testTemplateBtn = document.getElementById("testTemplateBtn");
+    const approveTemplateBtn = document.getElementById("approveTemplateBtn");
     const muteBtn = document.getElementById("muteBtn");
     const askBtn = document.getElementById("askBtn");
     const questionInput = document.getElementById("questionInput");
@@ -3600,13 +3654,208 @@ skeletonOverlayActive: no</pre>
       return window.AssessmentRuntime.startOhsa();
     }
 
+    const TEMPLATE_BUILDER_CAPTURE_MS = 5000;
+    let activeExerciseTemplateDraft = null;
+
+    function getCurrentAuthUser() {
+      return window.APP_AUTH?.user || window.__LAST_AUTH_USER || null;
+    }
+
+    function isCoachTemplateBuilderRole(user = getCurrentAuthUser()) {
+      const roles = [user?.role, ...(Array.isArray(user?.roles) ? user.roles : [])].map((role) => String(role || "").toLowerCase());
+      return roles.some((role) => ["super_admin", "admin", "trainer"].includes(role));
+    }
+
+    function updateTemplateBuilderAccess() {
+      const allowed = isCoachTemplateBuilderRole();
+      if (exerciseTemplateDraftBtn) {
+        exerciseTemplateDraftBtn.hidden = !allowed;
+        exerciseTemplateDraftBtn.style.display = allowed ? "" : "none";
+      }
+      return allowed;
+    }
+
+    function setTemplateBuilderStatus(message, payload = null) {
+      const text = payload ? `${message}\n${JSON.stringify(payload, null, 2)}` : message;
+      if (exerciseTemplateBuilderStatusEl) exerciseTemplateBuilderStatusEl.textContent = text;
+      if (poseStatusEl) poseStatusEl.textContent = message;
+      addLog("system", message);
+    }
+
+    function openTemplateBuilderPanel() {
+      if (!isCoachTemplateBuilderRole()) return startDefineExercise();
+      if (exerciseTemplateBuilderPanel) {
+        exerciseTemplateBuilderPanel.hidden = false;
+        exerciseTemplateBuilderPanel.classList.remove("hidden");
+      }
+      setTemplateBuilderStatus("Coach template draft builder opened. Drafts are private and cannot score normal users until approved active.");
+      return { ok: true, builderOpen: true };
+    }
+
+    function authHeaders() {
+      const token = getAuthToken();
+      return token ? { authorization: `Bearer ${token}` } : {};
+    }
+
+    async function templateFetch(route, options = {}) {
+      const res = await fetch(`${NODE_BASE_URL}${route}`, {
+        method: options.method || "GET",
+        headers: { "content-type": "application/json", ...authHeaders(), ...(options.headers || {}) },
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.ok === false) throw new Error(json?.error?.message || json?.message || json?.error || `template route failed: ${res.status}`);
+      return json.data || json;
+    }
+
+    function readTemplateDraftForm() {
+      const positions = String(templatePositionsEl?.value || "")
+        .split(",")
+        .map((name, index) => ({ name: name.trim(), order: index + 1 }))
+        .filter((position) => position.name);
+      return {
+        exerciseName: templateExerciseNameEl?.value?.trim() || "Custom Exercise Draft",
+        movementPattern: templateMovementPatternEl?.value || "other",
+        description: templateDescriptionEl?.value?.trim() || "",
+        equipment: templateEquipmentEl?.value?.trim() || "",
+        difficulty: templateDifficultyEl?.value?.trim() || "unspecified",
+        positions
+      };
+    }
+
+    async function createTemplateDraftFromForm() {
+      if (!isCoachTemplateBuilderRole()) return startDefineExercise();
+      const data = await templateFetch("/api/exercise-templates", { method: "POST", body: readTemplateDraftForm() });
+      activeExerciseTemplateDraft = data.template;
+      setTemplateBuilderStatus(`Draft saved: ${activeExerciseTemplateDraft.exerciseName} (${activeExerciseTemplateDraft.status})`, activeExerciseTemplateDraft);
+      return activeExerciseTemplateDraft;
+    }
+
+    function cameraConnectedForTemplateBuilder() {
+      return Boolean(videoEl?.srcObject || window.WorkoutRuntime?.getState?.().cameraActive);
+    }
+
+    async function ensureTemplateCaptureReady() {
+      if (!cameraConnectedForTemplateBuilder()) throw new Error("Camera must be connected before demo capture.");
+      if (!window.PoseRuntime?.startPoseLoop) throw new Error("MoveNet pose runtime is unavailable.");
+      if (!detector && window.PoseRuntime?.initMoveNetDetector) await initDetector();
+      if (!detector) throw new Error("MoveNet must be loaded before demo capture.");
+    }
+
+    async function captureTemplateFrames(slot, durationMs = TEMPLATE_BUILDER_CAPTURE_MS) {
+      await ensureTemplateCaptureReady();
+      const frames = [];
+      setTemplateBuilderStatus(`Capturing ${slot} demo for about ${Math.round(durationMs / 1000)} seconds… frame count: 0`);
+      return await new Promise((resolve, reject) => {
+        let loop = null;
+        const startedAt = performance.now();
+        const finish = () => {
+          try { loop?.stop?.(); } catch (_) {}
+          resolve(frames);
+        };
+        const timer = setTimeout(finish, durationMs);
+        try {
+          loop = window.PoseRuntime.startPoseLoop({
+            video: videoEl,
+            detector,
+            canvasEl,
+            ctx,
+            requestCanvasContext,
+            getCanvasContextType,
+            trackingMode: "full_body",
+            onPoseFrame: ({ pose, posePacket }) => {
+              const keypoints = posePacket?.keypoints || pose?.keypoints || [];
+              frames.push({ timestamp: Math.round(performance.now() - startedAt), keypoints });
+              const visible = keypoints.filter((kp) => Number(kp?.score || 0) >= 0.3).length;
+              const confidence = keypoints.length ? keypoints.reduce((sum, kp) => sum + Number(kp?.score || 0), 0) / keypoints.length : 0;
+              if (exerciseTemplateBuilderStatusEl) exerciseTemplateBuilderStatusEl.textContent = `Capturing ${slot}: ${frames.length} frames\nQuality: visible keypoints ${visible}, average confidence ${confidence.toFixed(2)}`;
+            },
+            onError: (error) => {
+              clearTimeout(timer);
+              try { loop?.stop?.(); } catch (_) {}
+              reject(error);
+            }
+          });
+        } catch (error) {
+          clearTimeout(timer);
+          reject(error);
+        }
+      });
+    }
+
+    async function captureTemplateDemo(slot) {
+      if (!activeExerciseTemplateDraft) await createTemplateDraftFromForm();
+      const frames = await captureTemplateFrames(slot);
+      const data = await templateFetch(`/api/exercise-templates/${activeExerciseTemplateDraft.id}/demo-captures`, {
+        method: "POST",
+        body: { slot, durationMs: TEMPLATE_BUILDER_CAPTURE_MS, frames }
+      });
+      activeExerciseTemplateDraft = data.template;
+      setTemplateBuilderStatus(`${slot} demo saved with ${data.capture.frameCount} MoveNet keypoint frames. Raw video was not stored.`, { quality: data.capture.quality, suggestedPhases: data.suggestedPhases });
+      return data;
+    }
+
+    async function reviewTemplatePhases() {
+      if (!activeExerciseTemplateDraft) throw new Error("Create or load a draft before phase review.");
+      const phases = (activeExerciseTemplateDraft.phases || []).length
+        ? activeExerciseTemplateDraft.phases
+        : [{ name: "start", order: 1, keyFrame: 0 }, { name: "finish", order: 2, keyFrame: 1 }];
+      const data = await templateFetch(`/api/exercise-templates/${activeExerciseTemplateDraft.id}`, {
+        method: "PUT",
+        body: {
+          phases,
+          requiredKeypoints: ["left_shoulder", "right_shoulder", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"],
+          measurementRules: ["elbowAngle", "kneeAngle", "hipAngle", "torsoAngle", "shoulderHipAnkleAlignment"],
+          repCycle: phases.map((phase) => phase.name),
+          feedbackRules: ["low_keypoint_confidence", "phase_order_mismatch", "range_of_motion_too_small"]
+        }
+      });
+      activeExerciseTemplateDraft = data.template;
+      setTemplateBuilderStatus(`Phase review saved. Status: ${activeExerciseTemplateDraft.status}. Suggested phases are still private.`, activeExerciseTemplateDraft.phases);
+      return activeExerciseTemplateDraft;
+    }
+
+    async function testTemplateDraft() {
+      if (!activeExerciseTemplateDraft) throw new Error("Create or load a draft before test mode.");
+      const frames = await captureTemplateFrames("test_mode", TEMPLATE_BUILDER_CAPTURE_MS);
+      const data = await templateFetch(`/api/exercise-templates/${activeExerciseTemplateDraft.id}/test-runs`, { method: "POST", body: { frames } });
+      activeExerciseTemplateDraft = data.template;
+      setTemplateBuilderStatus(`Template test complete. Would count rep: ${data.testRun.wouldCountRep ? "yes" : "no"}. This was not saved as a public workout result.`, data.testRun.rejectedReasons);
+      return data;
+    }
+
+    async function approveTemplateDraft() {
+      if (!activeExerciseTemplateDraft) throw new Error("Create or load a draft before approval.");
+      const data = await templateFetch(`/api/exercise-templates/${activeExerciseTemplateDraft.id}/approve`, { method: "POST", body: { activate: true } });
+      activeExerciseTemplateDraft = data.template;
+      setTemplateBuilderStatus(`Template approved. Status: ${activeExerciseTemplateDraft.status}. Only active templates may be considered for future custom scoring.`, activeExerciseTemplateDraft);
+      return activeExerciseTemplateDraft;
+    }
+
     async function startDefineExercise() {
+      if (isCoachTemplateBuilderRole()) return openTemplateBuilderPanel();
       console.log("[DEFINE_EXERCISE] inline startDefineExercise pilot fallback invoked");
       const message = "Custom exercise creation is coming soon. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge.";
       poseStatusEl.textContent = message;
       addLog("system", message);
       return { ok: false, pilotUnavailable: true, message };
     }
+
+    function bindTemplateBuilderButtons() {
+      updateTemplateBuilderAccess();
+      if (exerciseTemplateDraftBtn) exerciseTemplateDraftBtn.onclick = openTemplateBuilderPanel;
+      if (createTemplateDraftBtn) createTemplateDraftBtn.onclick = () => createTemplateDraftFromForm().catch((error) => setTemplateBuilderStatus(`Draft save failed: ${error?.message || error}`));
+      if (captureFrontDemoBtn) captureFrontDemoBtn.onclick = () => captureTemplateDemo("front_view").catch((error) => setTemplateBuilderStatus(`front_view capture failed: ${error?.message || error}`));
+      if (captureSideDemoBtn) captureSideDemoBtn.onclick = () => captureTemplateDemo("side_view").catch((error) => setTemplateBuilderStatus(`side_view capture failed: ${error?.message || error}`));
+      if (captureExtraDemoBtn) captureExtraDemoBtn.onclick = () => captureTemplateDemo("optional_extra_view").catch((error) => setTemplateBuilderStatus(`optional_extra_view capture failed: ${error?.message || error}`));
+      if (reviewTemplatePhasesBtn) reviewTemplatePhasesBtn.onclick = () => reviewTemplatePhases().catch((error) => setTemplateBuilderStatus(`Phase review failed: ${error?.message || error}`));
+      if (testTemplateBtn) testTemplateBtn.onclick = () => testTemplateDraft().catch((error) => setTemplateBuilderStatus(`Test mode failed: ${error?.message || error}`));
+      if (approveTemplateBtn) approveTemplateBtn.onclick = () => approveTemplateDraft().catch((error) => setTemplateBuilderStatus(`Approval failed: ${error?.message || error}`));
+    }
+
+    window.addEventListener?.("auth:changed", bindTemplateBuilderButtons);
+    window.addEventListener?.("auth:ready", bindTemplateBuilderButtons);
+    bindTemplateBuilderButtons();
 
     function runPoseLoop() {
       console.log("[POSE_RUNTIME] runPoseLoop bridge invoked");

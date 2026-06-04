@@ -14,6 +14,7 @@ const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
+const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -299,12 +300,14 @@ function createApp(options = {}) {
   const PILOT_EVENT_LOG_PATH = path.join(OPS_DIR, "pilot-events.ndjson");
   const DIAGNOSTIC_REPORT_PATH = path.join(OPS_DIR, "diagnostic-reports.ndjson");
   const PUSHUP_CHALLENGE_PATH = path.join(OPS_DIR, "pushup-challenge-results.json");
+  const EXERCISE_TEMPLATE_PATH = path.join(OPS_DIR, "exercise-templates.json");
 
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (avatarFeatureEnabled && !fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
   const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
   const challengeService = createChallengeService({ filePath: PUSHUP_CHALLENGE_PATH });
+  const exerciseTemplateService = createExerciseTemplateService({ filePath: EXERCISE_TEMPLATE_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
   userStore.ensureDirs();
@@ -1594,6 +1597,84 @@ function createApp(options = {}) {
     };
     appendPilotEvent(record);
     return ok(res, req.requestId, { accepted: true }, 202);
+  }));
+
+
+  function requireTemplateBuilderRole(req, _res, next) {
+    if (!req.auth?.userId) throw new ApiError("UNAUTHENTICATED", "Authentication required", 401);
+    const role = String(req.authz?.role || req.auth?.role || "user").toLowerCase();
+    if (!["super_admin", "admin", "trainer"].includes(role)) {
+      throw new ApiError("FORBIDDEN", "Exercise template builder requires admin or trainer role", 403);
+    }
+    return next();
+  }
+
+  function templateActor(req) {
+    return {
+      userId: req.auth?.userId || null,
+      email: req.auth?.email || null,
+      role: req.authz?.role || req.auth?.role || "user"
+    };
+  }
+
+  // ---- Phase 29 coach/admin custom exercise template draft endpoints ----
+  app.post("/api/exercise-templates", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    const template = exerciseTemplateService.createDraft(req.body || {}, templateActor(req));
+    return ok(res, req.requestId, { template }, 201);
+  }));
+
+  app.get("/api/exercise-templates", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    const templates = exerciseTemplateService.listTemplates();
+    return ok(res, req.requestId, { templates, count: templates.length });
+  }));
+
+  app.get("/api/exercise-templates/active/scoring", requireAuth, asyncHandler(async (req, res) => {
+    const templates = exerciseTemplateService.getActiveScoringTemplates().map((template) => ({
+      id: template.id,
+      exerciseName: template.exerciseName,
+      movementPattern: template.movementPattern,
+      status: template.status,
+      phases: template.phases,
+      requiredKeypoints: template.requiredKeypoints,
+      measurementRules: template.measurementRules,
+      repCycle: template.repCycle,
+      feedbackRules: template.feedbackRules
+    }));
+    return ok(res, req.requestId, { templates, count: templates.length });
+  }));
+
+  app.get("/api/exercise-templates/:id", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    const template = exerciseTemplateService.getTemplate(req.params.id);
+    return ok(res, req.requestId, { template });
+  }));
+
+  app.put("/api/exercise-templates/:id", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    if (["approved", "active"].includes(String(req.body?.status || ""))) {
+      throw new ApiError("VALIDATION_ERROR", "Use the approval route to approve or activate templates", 400);
+    }
+    const template = exerciseTemplateService.updateTemplate(req.params.id, req.body || {});
+    return ok(res, req.requestId, { template });
+  }));
+
+  app.post("/api/exercise-templates/:id/demo-captures", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    if (req.body?.rawVideo || req.body?.video || req.body?.videoBlob || req.body?.videoData) {
+      throw new ApiError("VALIDATION_ERROR", "Raw video storage is not enabled for exercise template demos", 400);
+    }
+    const result = exerciseTemplateService.addDemoCapture(req.params.id, req.body || {});
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.post("/api/exercise-templates/:id/test-runs", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    if (req.body?.rawVideo || req.body?.video || req.body?.videoBlob || req.body?.videoData) {
+      throw new ApiError("VALIDATION_ERROR", "Raw video storage is not enabled for exercise template test runs", 400);
+    }
+    const result = exerciseTemplateService.addTestRun(req.params.id, req.body || {});
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.post("/api/exercise-templates/:id/approve", requireAuth, requireTemplateBuilderRole, asyncHandler(async (req, res) => {
+    const template = exerciseTemplateService.approveTemplate(req.params.id, templateActor(req), { activate: req.body?.activate === true });
+    return ok(res, req.requestId, { template });
   }));
 
   // ---- Exercise DB endpoints ----

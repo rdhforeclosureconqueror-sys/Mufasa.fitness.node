@@ -546,6 +546,10 @@
         metrics: { frontSide, frontKneeAngle, backKneeDrop, leftKneeAngle, rightKneeAngle }
       });
     }
+    function isCustomTemplateEligibleForScoring(template){
+      return Boolean(template && template.status === 'active');
+    }
+
     function unsupportedMovementResult(exercise = {}){
       const label = exercise?.name || exercise?.exerciseName || exercise?.exerciseId || exercise?.id || 'selected exercise';
       const feedback = `Live form judging is not available for ${label}. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge.`;
@@ -641,7 +645,7 @@
         goodForm: Boolean(analysis.goodRepCandidate)
       };
     }
-    const api = { version: 'phase24', MIN_SCORE, CONFIDENCE_FEEDBACK, mapExerciseToMovementPattern, analyzeMovement, analyzeSquat, analyzePushup, analyzeLunge, completeCycle, resetCycle, renderVisibleFormStatus, toLegacySquatShape };
+    const api = { version: 'phase24', MIN_SCORE, CONFIDENCE_FEEDBACK, mapExerciseToMovementPattern, isCustomTemplateEligibleForScoring, analyzeMovement, analyzeSquat, analyzePushup, analyzeLunge, completeCycle, resetCycle, renderVisibleFormStatus, toLegacySquatShape };
     global.__PILOT_FORM_RULE_ENGINE = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = { ...(module.exports || {}), PilotFormRuleEngine: api };
     return api;
