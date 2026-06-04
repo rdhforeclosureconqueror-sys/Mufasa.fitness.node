@@ -120,6 +120,6 @@ test("Phase 16 progressive intake and onboarding progress are visible and editab
 
 test("Phase 16 OHSA and custom workout pilot behavior are explicit", () => {
   assert.match(indexHtml, /Pose runtime is unavailable\. Overhead Squat Assessment cannot start\./);
-  assert.match(indexHtml, /Custom workout creation is not available in this pilot\. Choose Squat, Push-Up, or Lunge to start\./);
+  assert.match(indexHtml, /Custom exercise creation is coming soon\. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge\./);
   assert.match(retentionFlow, /pilot starter workouts are not blocked by OHSA/);
 });
