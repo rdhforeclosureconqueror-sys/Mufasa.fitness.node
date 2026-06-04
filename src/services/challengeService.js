@@ -23,7 +23,10 @@ function safeLeaderboardRow(record) {
     variant: record.variant,
     variantLabel: record.variantLabel,
     validRepCount: record.validRepCount,
+    twoHandRepCount: record.twoHandRepCount || 0,
+    oneHandRepCount: record.oneHandRepCount || 0,
     multiplier: record.multiplier,
+    totalScore: record.totalScore ?? record.score,
     score: record.score,
     timestamp: record.timestamp
   };
@@ -62,13 +65,18 @@ function createChallengeService({ filePath }) {
     if (!displayName) throw new ApiError("VALIDATION_ERROR", "displayName is required", 400);
     if (payload.consent !== true) throw new ApiError("VALIDATION_ERROR", "Challenge leaderboard consent is required", 400);
 
-    const variant = cleanString(payload.variant, 40) || "standard_pushup";
-    const variantConfig = VARIANTS[variant];
-    if (!variantConfig) throw new ApiError("VALIDATION_ERROR", "Unsupported push-up challenge variant", 400, { allowedVariants: Object.keys(VARIANTS) });
+    const variant = cleanString(payload.variant, 40) || "auto";
+    const autoScored = variant === "auto" || Number.isFinite(Number(payload.totalScore)) || Number.isFinite(Number(payload.score));
+    const variantConfig = VARIANTS[variant] || (autoScored ? { label: "Auto-classified Push-Up", multiplier: 1 } : null);
+    if (!variantConfig) throw new ApiError("VALIDATION_ERROR", "Unsupported push-up challenge variant", 400, { allowedVariants: [...Object.keys(VARIANTS), "auto"] });
 
     const validRepCount = Math.max(0, Math.floor(Number(payload.validRepCount || 0)));
+    const twoHandRepCount = Math.max(0, Math.floor(Number(payload.twoHandRepCount || 0)));
+    const oneHandRepCount = Math.max(0, Math.floor(Number(payload.oneHandRepCount || 0)));
     const multiplier = variantConfig.multiplier;
-    const score = validRepCount * multiplier;
+    const computedAutoScore = twoHandRepCount + oneHandRepCount * 2 + Math.max(0, validRepCount - twoHandRepCount - oneHandRepCount);
+    const score = autoScored ? Math.max(0, Math.floor(Number(payload.totalScore ?? payload.score ?? computedAutoScore))) : validRepCount * multiplier;
+    const totalScore = score;
     const timestamp = new Date().toISOString();
     const record = {
       id: `pushup_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
@@ -79,7 +87,10 @@ function createChallengeService({ filePath }) {
       variant,
       variantLabel: variantConfig.label,
       validRepCount,
+      twoHandRepCount,
+      oneHandRepCount,
       multiplier,
+      totalScore,
       score,
       timestamp
     };
