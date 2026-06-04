@@ -649,8 +649,9 @@
     runtime.processPoseFrame = function processPilotPoseFrame({ pose, posePacket } = {}){
       const challengeActive = global.PushupChallengeRuntime?.isActive?.() === true;
       const exercise = challengeActive ? { name: 'Push-Up', movementPattern: 'pushup' } : (repDeps.getCurrentExerciseMeta?.() || {});
-      const analysis = engine.completeCycle(engine.analyzeMovement({ pose: pose || { keypoints: posePacket?.keypoints || [] }, exercise }));
-      if (challengeActive) global.PushupChallengeRuntime?.handlePoseAnalysis?.(analysis);
+      const poseForAnalysis = pose || { keypoints: posePacket?.keypoints || [] };
+      const analysis = engine.completeCycle(engine.analyzeMovement({ pose: poseForAnalysis, exercise }));
+      if (challengeActive) global.PushupChallengeRuntime?.handlePoseAnalysis?.({ ...analysis, pose: poseForAnalysis });
       if (analysis.repDetected) {
         pilotState.repCount += 1;
         pilotState.totalReps += 1;
@@ -675,238 +676,517 @@
 
 
   function installPushupChallengeRuntime(){
-    if (global.PushupChallengeRuntime?.version === 'phase26') return global.PushupChallengeRuntime;
-    const engine = installPilotFormRuleEngine();
+    if (global.PushupChallengeRuntime?.version === 'phase27') return global.PushupChallengeRuntime;
+
+    const MIN_SCORE = 0.35;
+    const CHALLENGE_SECONDS = 60;
+    const FULL_BODY_PROMPT = 'Step back so I can see your full body.';
+    const KEYPOINT_PROMPT = 'Move so I can see your shoulders, elbows, wrists, and hips.';
+    const VARIANTS = Object.freeze({
+      two_hand: { label: 'Two-hand push-up', points: 1 },
+      one_hand: { label: 'One-hand push-up', points: 2 },
+      unknown: { label: 'Variant unclear', points: 1 }
+    });
+    const phaseOrder = Object.freeze({
+      not_calibrated: 'not_calibrated',
+      waiting_for_full_body: 'waiting_for_full_body',
+      calibrating_bottom: 'calibrating_bottom',
+      bottom_captured: 'bottom_captured',
+      calibrating_top: 'calibrating_top',
+      top_captured: 'top_captured',
+      calibrated: 'calibrated',
+      challenge_running: 'challenge_running',
+      challenge_complete: 'challenge_complete'
+    });
     const challengeState = {
       active: false,
       preflight: false,
+      calibrationStatus: phaseOrder.not_calibrated,
       participant: null,
-      variant: 'standard_pushup',
-      multiplier: 1,
       validRepCount: 0,
+      twoHandRepCount: 0,
+      oneHandRepCount: 0,
+      totalScore: 0,
       score: 0,
-      rejectedRepReason: 'none',
+      lastRepVariant: null,
+      lastRepPoints: 0,
+      rejectedRepReason: 'Not started.',
       keypointsVisible: false,
-      saveStatus: 'not_saved',
-      remainingSeconds: 60,
+      pushupStanceDetected: false,
+      bodyAlignmentStatus: 'unknown',
+      armDepthStatus: 'unknown',
+      lockoutStatus: 'unknown',
+      bottomElbowAngle: null,
+      topElbowAngle: null,
+      calibratedRange: null,
+      requiredRange: null,
+      supportArm: null,
+      bottomCapture: null,
+      topCapture: null,
+      cyclePhase: 'waiting_down',
+      cycleBottomAngle: null,
+      cycleTopAngle: null,
+      cycleVariant: 'unknown',
+      cycleBodyStatus: 'unknown',
       timerId: null,
+      remainingSeconds: CHALLENGE_SECONDS,
       endsAt: null,
-      lastSavedResult: null
+      saveStatus: 'not_saved',
+      lastSavedResult: null,
+      leaderboard: []
     };
-    const VARIANTS = Object.freeze({
-      standard_pushup: { label: 'Standard Push-Up', multiplier: 1, note: 'Standard Push-Up: valid rep = 1 point.' },
-      one_hand_pushup: { label: 'One-Hand Push-Up', multiplier: 2, note: 'One-hand push-up scoring uses push-up form detection plus 2x challenge multiplier.' }
-    });
+
     function challengeById(id){ return global.document?.getElementById(id) || null; }
-    function challengeText(id, text){ const el = challengeById(id); if (el) el.textContent = text; return el; }
-    function getChallengeBase(){ return global.RuntimeState?.getBackendOrigin?.() || global.location?.origin || ''; }
+    function challengeText(id, value){ const el = challengeById(id); if (el) el.textContent = String(value); }
     function boolWord(value){ return value ? 'yes' : 'no'; }
-    function getVariantConfig(variant){ return VARIANTS[variant] || VARIANTS.standard_pushup; }
-    function collectParticipant(){
-      const displayName = String(challengeById('challengeDisplayName')?.value || '').trim();
-      const email = String(challengeById('challengeEmail')?.value || '').trim();
-      const phone = String(challengeById('challengePhone')?.value || '').trim();
-      const team = String(challengeById('challengeTeam')?.value || '').trim();
-      const consent = challengeById('challengeConsent')?.checked === true;
-      const variant = challengeById('challengeVariantSelect')?.value || 'standard_pushup';
-      return { displayName, email, phone, team, consent, variant };
+    function rounded(value){ return Number.isFinite(Number(value)) ? Math.round(Number(value)) : null; }
+    function prettyAngle(value){ const n = rounded(value); return n === null ? 'n/a' : `${n}°`; }
+    function getFn(name){ return deps?.[name] || global[name]; }
+    function getChallengeBase(){ return deps?.apiBaseUrl || global.__API_BASE_URL__ || ''; }
+    function now(){ return Date.now(); }
+    function score(kp){ return Number(kp?.score || 0); }
+    function hasXY(kp){ return Number.isFinite(Number(kp?.x)) && Number.isFinite(Number(kp?.y)); }
+    function reliable(kp, threshold = MIN_SCORE){ return Boolean(kp && hasXY(kp) && score(kp) >= threshold); }
+    function getKeypoint(source, name){
+      const keypoints = Array.isArray(source) ? source : source?.keypoints;
+      if (!Array.isArray(keypoints)) return null;
+      const idx = { nose:0,left_eye:1,right_eye:2,left_ear:3,right_ear:4,left_shoulder:5,right_shoulder:6,left_elbow:7,right_elbow:8,left_wrist:9,right_wrist:10,left_hip:11,right_hip:12,left_knee:13,right_knee:14,left_ankle:15,right_ankle:16 }[name];
+      return keypoints.find((kp) => (kp?.name || kp?.part) === name) || keypoints[idx] || null;
     }
-    function renderChallengeDiagnostics(){
-      const text = [
-        `challengeModeActive: ${boolWord(challengeState.active || challengeState.preflight)}`,
-        `challengeVariant: ${challengeState.variant}`,
-        `pushupKeypointsVisible: ${boolWord(challengeState.keypointsVisible)}`,
-        `validRepCount: ${challengeState.validRepCount}`,
-        `score: ${challengeState.score}`,
-        `rejectedRepReason: ${challengeState.rejectedRepReason || 'none'}`,
-        `leaderboardSaveStatus: ${challengeState.saveStatus || 'not_saved'}`
-      ].join('\n');
-      challengeText('challengeDiagnosticsStatus', text);
-      const panel = challengeById('featureActivationStatus');
-      if (panel) {
-        const block = `challengeModeActive: ${boolWord(challengeState.active || challengeState.preflight)}\nchallengeVariant: ${challengeState.variant}\npushupKeypointsVisible: ${boolWord(challengeState.keypointsVisible)}\nvalidRepCount: ${challengeState.validRepCount}\nscore: ${challengeState.score}\nrejectedRepReason: ${challengeState.rejectedRepReason || 'none'}\nleaderboardSaveStatus: ${challengeState.saveStatus || 'not_saved'}`;
-        if (!panel.textContent.includes('challengeModeActive:')) panel.textContent += `\n${block}`;
-        else panel.textContent = panel.textContent.replace(/challengeModeActive:[\s\S]*$/m, block);
-      }
+    function angle(a,b,c){
+      if (!hasXY(a) || !hasXY(b) || !hasXY(c)) return null;
+      const abx = a.x-b.x, aby = a.y-b.y, cbx = c.x-b.x, cby = c.y-b.y;
+      const mag = Math.hypot(abx, aby) * Math.hypot(cbx, cby);
+      if (!mag) return null;
+      return Math.acos(Math.max(-1, Math.min(1, (abx*cbx + aby*cby) / mag))) * 180 / Math.PI;
     }
+    function avg(values){ const nums = values.filter((v) => Number.isFinite(Number(v))).map(Number); return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null; }
+    function midpoint(a,b){ return reliable(a) && reliable(b) ? { x:(a.x+b.x)/2, y:(a.y+b.y)/2, score:Math.min(score(a), score(b)) } : null; }
+    function distance(a,b){ return hasXY(a) && hasXY(b) ? Math.hypot(a.x-b.x, a.y-b.y) : null; }
+
+    function readParticipant(){
+      return {
+        displayName: challengeById('challengeDisplayName')?.value?.trim(),
+        team: challengeById('challengeTeam')?.value?.trim(),
+        email: challengeById('challengeEmail')?.value?.trim(),
+        phone: challengeById('challengePhone')?.value?.trim(),
+        consent: challengeById('challengeConsent')?.checked === true
+      };
+    }
+    function setChallengeButtons(running){
+      const start = challengeById('challengeStartBtn');
+      const stop = challengeById('challengeStopBtn');
+      if (start) start.disabled = Boolean(running);
+      if (stop) stop.disabled = !running;
+    }
+    function resetChallengeCounters(){
+      Object.assign(challengeState, {
+        validRepCount: 0, twoHandRepCount: 0, oneHandRepCount: 0, totalScore: 0, score: 0,
+        lastRepVariant: null, lastRepPoints: 0, cyclePhase: 'waiting_down', cycleBottomAngle: null,
+        cycleTopAngle: null, cycleVariant: 'unknown', cycleBodyStatus: 'unknown'
+      });
+    }
+    function resetCalibration(){
+      Object.assign(challengeState, {
+        calibrationStatus: phaseOrder.not_calibrated,
+        bottomElbowAngle: null, topElbowAngle: null, calibratedRange: null, requiredRange: null,
+        supportArm: null, bottomCapture: null, topCapture: null,
+        armDepthStatus: 'unknown', lockoutStatus: 'unknown', bodyAlignmentStatus: 'unknown',
+        pushupStanceDetected: false, keypointsVisible: false
+      });
+    }
+    function variantLabel(value){ return value === 'one_hand' ? 'one-hand' : value === 'two_hand' ? 'two-hand' : value === 'unknown' ? 'unclear' : 'none'; }
     function renderChallengeScore(){
-      challengeText('challengeValidReps', String(challengeState.validRepCount));
-      challengeText('challengeScore', String(challengeState.score));
-      challengeText('challengeRejectedReason', challengeState.rejectedRepReason || 'None');
+      challengeText('challengeValidReps', challengeState.validRepCount);
+      challengeText('challengeScore', challengeState.totalScore);
       challengeText('challengeSaveStatus', challengeState.saveStatus || 'not_saved');
-      renderChallengeDiagnostics();
-    }
-    function updateVariantNote(){
-      const variant = challengeById('challengeVariantSelect')?.value || challengeState.variant;
-      challengeText('challengeVariantNote', getVariantConfig(variant).note);
-      challengeState.variant = variant;
-      challengeState.multiplier = getVariantConfig(variant).multiplier;
-      renderChallengeDiagnostics();
+      challengeText('challengeRejectedReason', challengeState.rejectedRepReason || 'None');
+      const note = challengeById('challengeVariantNote');
+      if (note) note.textContent = 'Do any valid push-up variation. Two-hand reps count 1 point. One-hand reps count 2 points.';
+      const diagnostics = challengeById('challengeDiagnosticsStatus');
+      if (diagnostics) {
+        diagnostics.textContent = [
+          `challengeModeActive: ${boolWord(challengeState.active || challengeState.preflight)}`,
+          `calibrationStatus: ${challengeState.calibrationStatus}`,
+          `bottomElbowAngle: ${prettyAngle(challengeState.bottomElbowAngle)}`,
+          `topElbowAngle: ${prettyAngle(challengeState.topElbowAngle)}`,
+          `calibratedRange: ${prettyAngle(challengeState.calibratedRange)}`,
+          `requiredRange: ${prettyAngle(challengeState.requiredRange)}`,
+          `pushupStanceDetected: ${boolWord(challengeState.pushupStanceDetected)}`,
+          `bodyAlignmentStatus: ${challengeState.bodyAlignmentStatus}`,
+          `armDepthStatus: ${challengeState.armDepthStatus}`,
+          `lockoutStatus: ${challengeState.lockoutStatus}`,
+          `lastRepVariant: ${variantLabel(challengeState.lastRepVariant)}`,
+          `lastRepPoints: ${challengeState.lastRepPoints}`,
+          `validRepCount: ${challengeState.validRepCount}`,
+          `twoHandRepCount: ${challengeState.twoHandRepCount}`,
+          `oneHandRepCount: ${challengeState.oneHandRepCount}`,
+          `totalScore: ${challengeState.totalScore}`,
+          `rejectedRepReason: ${challengeState.rejectedRepReason || 'none'}`,
+          `leaderboardSaveStatus: ${challengeState.saveStatus || 'not_saved'}`
+        ].join('\n');
+      }
     }
     function renderLeaderboard(rows = []){
       const body = challengeById('challengeLeaderboardBody');
       if (!body) return;
       if (!rows.length) {
-        body.innerHTML = '<tr><td colspan="8">No challenge results yet.</td></tr>';
+        body.innerHTML = '<tr><td colspan="8">No results loaded yet.</td></tr>';
         return;
       }
-      body.innerHTML = rows.map((row) => `<tr><td>${row.rank}</td><td>${escapeHtml(row.displayName)}</td><td>${escapeHtml(row.team || '')}</td><td>${escapeHtml(row.variantLabel || row.variant)}</td><td>${row.validRepCount}</td><td>${row.multiplier}x</td><td>${row.score}</td><td>${escapeHtml(row.timestamp)}</td></tr>`).join('');
-    }
-    function escapeHtml(value){
-      return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+      body.innerHTML = rows.map((row, idx) => {
+        const rank = row.rank || idx + 1;
+        const scoreValue = row.totalScore ?? row.score ?? 0;
+        const twoHand = row.twoHandRepCount ?? (row.variant === 'standard_pushup' ? row.validRepCount : 0) ?? 0;
+        const oneHand = row.oneHandRepCount ?? (row.variant === 'one_hand_pushup' ? row.validRepCount : 0) ?? 0;
+        return `<tr><td>${rank}</td><td>${row.displayName || ''}</td><td>${row.team || ''}</td><td>${scoreValue}</td><td>${row.validRepCount || 0}</td><td>${twoHand}</td><td>${oneHand}</td><td>${row.timestamp || ''}</td></tr>`;
+      }).join('');
     }
     async function loadLeaderboard(){
-      const res = await global.fetch(`${getChallengeBase()}/api/challenges/pushup/leaderboard`);
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error?.message || json?.message || 'leaderboard load failed');
-      const rows = json?.data?.leaderboard || json?.leaderboard || [];
+      const sessionWrite = deps?.sessionWrite || global.SessionWrite;
+      const data = sessionWrite?.getPushupChallengeLeaderboard ? await sessionWrite.getPushupChallengeLeaderboard() : await (await global.fetch(`${getChallengeBase()}/api/challenges/pushup/leaderboard`)).json();
+      const rows = data?.data?.leaderboard || data?.leaderboard || [];
+      challengeState.leaderboard = rows;
       renderLeaderboard(rows);
       return rows;
     }
     async function saveResult(){
       if (!challengeState.participant) return null;
-      challengeState.saveStatus = 'saving';
-      renderChallengeScore();
       const payload = {
         ...challengeState.participant,
-        variant: challengeState.variant,
         validRepCount: challengeState.validRepCount,
-        multiplier: challengeState.multiplier,
-        score: challengeState.score
+        twoHandRepCount: challengeState.twoHandRepCount,
+        oneHandRepCount: challengeState.oneHandRepCount,
+        totalScore: challengeState.totalScore,
+        score: challengeState.totalScore,
+        lastRepVariant: challengeState.lastRepVariant,
+        lastRepPoints: challengeState.lastRepPoints,
+        calibration: {
+          bottomElbowAngle: challengeState.bottomElbowAngle,
+          topElbowAngle: challengeState.topElbowAngle,
+          calibratedRange: challengeState.calibratedRange,
+          requiredRange: challengeState.requiredRange,
+          supportArm: challengeState.supportArm
+        }
       };
-      const res = await global.fetch(`${getChallengeBase()}/api/challenges/pushup/results`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error?.message || json?.message || 'challenge result save failed');
-      challengeState.lastSavedResult = json?.data?.result || json?.result || null;
+      challengeState.saveStatus = 'saving';
+      renderChallengeScore();
+      const sessionWrite = deps?.sessionWrite || global.SessionWrite;
+      const result = sessionWrite?.savePushupChallengeResult ? await sessionWrite.savePushupChallengeResult(payload) : await (await global.fetch(`${getChallengeBase()}/api/challenges/pushup/results`, { method:'POST', headers:{ 'content-type':'application/json' }, body:JSON.stringify(payload) })).json();
       challengeState.saveStatus = 'saved';
+      challengeState.lastSavedResult = result?.data?.result || result?.result || result;
       renderChallengeScore();
       await loadLeaderboard().catch(() => null);
       return challengeState.lastSavedResult;
     }
-    function setChallengeButtons(active){
-      const start = challengeById('challengeStartBtn');
-      const stop = challengeById('challengeStopBtn');
-      if (start) start.disabled = active;
-      if (stop) stop.disabled = !active;
+
+    function analyzeChallengePose(input = {}){
+      const pose = input.pose || input;
+      const p = {
+        ls:getKeypoint(pose,'left_shoulder'), rs:getKeypoint(pose,'right_shoulder'), le:getKeypoint(pose,'left_elbow'), re:getKeypoint(pose,'right_elbow'),
+        lw:getKeypoint(pose,'left_wrist'), rw:getKeypoint(pose,'right_wrist'), lh:getKeypoint(pose,'left_hip'), rh:getKeypoint(pose,'right_hip'),
+        la:getKeypoint(pose,'left_ankle'), ra:getKeypoint(pose,'right_ankle')
+      };
+      const shoulderOk = reliable(p.ls) && reliable(p.rs);
+      const hipOk = reliable(p.lh) && reliable(p.rh);
+      const leftArmOk = reliable(p.ls) && reliable(p.le) && reliable(p.lw);
+      const rightArmOk = reliable(p.rs) && reliable(p.re) && reliable(p.rw);
+      const twoHandOk = shoulderOk && hipOk && leftArmOk && rightArmOk;
+      const oneHandCandidateOk = shoulderOk && hipOk && (leftArmOk || rightArmOk);
+      const fullBodyVisible = shoulderOk && hipOk && (reliable(p.la) || reliable(p.ra)) && (leftArmOk || rightArmOk);
+      const keypointConfidenceOk = twoHandOk || oneHandCandidateOk;
+      const missing = [];
+      for (const [name, ok] of [['left_shoulder',reliable(p.ls)],['right_shoulder',reliable(p.rs)],['left_elbow',reliable(p.le)],['right_elbow',reliable(p.re)],['left_wrist',reliable(p.lw)],['right_wrist',reliable(p.rw)],['left_hip',reliable(p.lh)],['right_hip',reliable(p.rh)]]) if (!ok) missing.push(name);
+      const shoulder = midpoint(p.ls,p.rs);
+      const hip = midpoint(p.lh,p.rh);
+      const ankle = midpoint(p.la,p.ra) || (reliable(p.la) ? p.la : reliable(p.ra) ? p.ra : null);
+      const torsoSpan = Math.max(1, distance(shoulder, hip) || 1);
+      const shoulderWidth = Math.max(1, distance(p.ls, p.rs) || 1);
+      const leftWristAway = reliable(p.lw) && reliable(p.ls) && distance(p.lw, p.ls) > Math.max(torsoSpan * 1.25, shoulderWidth * 3);
+      const rightWristAway = reliable(p.rw) && reliable(p.rs) && distance(p.rw, p.rs) > Math.max(torsoSpan * 1.25, shoulderWidth * 3);
+      let supportArm = leftArmOk && rightArmOk ? 'both' : leftArmOk ? 'left' : rightArmOk ? 'right' : null;
+      if (leftArmOk && rightWristAway) supportArm = 'left';
+      if (rightArmOk && leftWristAway) supportArm = 'right';
+      const leftElbowAngle = leftArmOk ? angle(p.ls,p.le,p.lw) : null;
+      const rightElbowAngle = rightArmOk ? angle(p.rs,p.re,p.rw) : null;
+      const elbowAngle = supportArm === 'left' ? leftElbowAngle : supportArm === 'right' ? rightElbowAngle : avg([leftElbowAngle, rightElbowAngle]);
+      const shoulderHipSlope = shoulder && hip ? Math.abs(hip.y - shoulder.y) / torsoSpan : 99;
+      const horizontalEnough = shoulder && hip ? Math.abs(hip.x - shoulder.x) >= Math.max(25, Math.abs(hip.y - shoulder.y) * 1.2) : false;
+      let lineStatus = 'unknown';
+      if (shoulder && hip) {
+        let bendRatio = shoulderHipSlope;
+        if (ankle) {
+          const bodyLength = Math.max(1, distance(shoulder, ankle) || torsoSpan);
+          const expectedHipY = shoulder.y + ((ankle.y - shoulder.y) * ((hip.x - shoulder.x) / Math.max(1, ankle.x - shoulder.x)));
+          bendRatio = Math.min(bendRatio, Math.abs(hip.y - expectedHipY) / bodyLength);
+        }
+        lineStatus = bendRatio <= 0.16 ? 'green' : bendRatio <= 0.28 ? 'yellow' : 'red';
+      }
+      const pushupStanceDetected = Boolean(keypointConfidenceOk && horizontalEnough && lineStatus !== 'red');
+      const oppositeAway = supportArm === 'left' ? rightWristAway : supportArm === 'right' ? leftWristAway : false;
+      let variant = 'unknown';
+      if (twoHandOk && supportArm === 'both' && !leftWristAway && !rightWristAway) variant = 'two_hand';
+      if ((supportArm === 'left' || supportArm === 'right') && oppositeAway && fullBodyVisible) variant = 'one_hand';
+      const armDepthStatus = Number.isFinite(elbowAngle) ? (elbowAngle <= 100 ? 'green' : elbowAngle <= 110 ? 'yellow' : 'red') : 'red';
+      const lockoutStatus = Number.isFinite(elbowAngle) ? (elbowAngle >= 160 ? 'green' : elbowAngle >= 150 ? 'yellow' : 'red') : 'red';
+      return { pose, keypointConfidenceOk, fullBodyVisible, missing, leftElbowAngle, rightElbowAngle, elbowAngle, supportArm, variant, bodyAlignmentStatus: lineStatus, pushupStanceDetected, armDepthStatus, lockoutStatus };
     }
-    function stopChallenge(reason = 'stopped'){
-      challengeState.preflight = false;
+
+    function updatePoseDiagnostics(poseAnalysis){
+      challengeState.keypointsVisible = Boolean(poseAnalysis.keypointConfidenceOk);
+      challengeState.pushupStanceDetected = Boolean(poseAnalysis.pushupStanceDetected);
+      challengeState.bodyAlignmentStatus = poseAnalysis.bodyAlignmentStatus || 'unknown';
+      challengeState.armDepthStatus = poseAnalysis.armDepthStatus || 'unknown';
+      challengeState.lockoutStatus = poseAnalysis.lockoutStatus || 'unknown';
+    }
+    function captureCalibrationPose(kind, poseAnalysis){
+      return {
+        kind,
+        elbowAngle: poseAnalysis.elbowAngle,
+        leftElbowAngle: poseAnalysis.leftElbowAngle,
+        rightElbowAngle: poseAnalysis.rightElbowAngle,
+        keypointConfidenceOk: poseAnalysis.keypointConfidenceOk,
+        bodyAlignmentStatus: poseAnalysis.bodyAlignmentStatus,
+        supportArm: poseAnalysis.supportArm,
+        variant: poseAnalysis.variant,
+        timestamp: new Date().toISOString()
+      };
+    }
+    function validBottomCalibration(poseAnalysis){
+      if (!poseAnalysis.fullBodyVisible) return { ok:false, reason: FULL_BODY_PROMPT };
+      if (!poseAnalysis.keypointConfidenceOk) return { ok:false, reason: KEYPOINT_PROMPT };
+      if (poseAnalysis.bodyAlignmentStatus === 'red') return { ok:false, reason: 'Keep your body straight before calibration.' };
+      if (!Number.isFinite(poseAnalysis.elbowAngle) || poseAnalysis.elbowAngle < 70 || poseAnalysis.elbowAngle > 105) return { ok:false, reason: 'Bend your elbows closer to 90 degrees for the bottom position.' };
+      return { ok:true };
+    }
+    function validTopCalibration(poseAnalysis){
+      if (!poseAnalysis.fullBodyVisible) return { ok:false, reason: FULL_BODY_PROMPT };
+      if (!poseAnalysis.keypointConfidenceOk) return { ok:false, reason: KEYPOINT_PROMPT };
+      if (poseAnalysis.bodyAlignmentStatus === 'red') return { ok:false, reason: 'Keep your body straight before calibration.' };
+      if (!Number.isFinite(poseAnalysis.elbowAngle) || poseAnalysis.elbowAngle < 150 || poseAnalysis.elbowAngle > 180) return { ok:false, reason: 'Push up higher until your arms are nearly straight.' };
+      return { ok:true };
+    }
+    function finishCalibration(){
+      const range = Number(challengeState.topElbowAngle) - Number(challengeState.bottomElbowAngle);
+      if (!Number.isFinite(range) || range < 50 || challengeState.bottomElbowAngle < 70 || challengeState.bottomElbowAngle > 105 || challengeState.topElbowAngle < 150 || challengeState.topElbowAngle > 180) {
+        challengeState.calibrationStatus = phaseOrder.not_calibrated;
+        challengeState.rejectedRepReason = 'Calibration failed. Reset and try again with your full body in view.';
+        return false;
+      }
+      challengeState.calibratedRange = range;
+      challengeState.requiredRange = range * 0.8;
+      challengeState.calibrationStatus = phaseOrder.calibrated;
+      challengeState.rejectedRepReason = 'Calibration complete. Starting challenge.';
+      return true;
+    }
+    function processCalibration(poseAnalysis){
+      updatePoseDiagnostics(poseAnalysis);
+      if (challengeState.calibrationStatus === phaseOrder.waiting_for_full_body) {
+        if (!poseAnalysis.fullBodyVisible) { challengeState.rejectedRepReason = FULL_BODY_PROMPT; return false; }
+        challengeState.calibrationStatus = phaseOrder.calibrating_bottom;
+        challengeState.rejectedRepReason = 'Get into the bottom push-up position with your elbows near 90 degrees and hold still.';
+        return false;
+      }
+      if (challengeState.calibrationStatus === phaseOrder.calibrating_bottom) {
+        const validation = validBottomCalibration(poseAnalysis);
+        if (!validation.ok) { challengeState.rejectedRepReason = validation.reason; return false; }
+        challengeState.bottomCapture = captureCalibrationPose('bottom', poseAnalysis);
+        challengeState.bottomElbowAngle = poseAnalysis.elbowAngle;
+        challengeState.supportArm = poseAnalysis.supportArm;
+        challengeState.calibrationStatus = phaseOrder.bottom_captured;
+        challengeState.rejectedRepReason = 'Now push up to the top position with your arms nearly straight and hold still.';
+        return false;
+      }
+      if (challengeState.calibrationStatus === phaseOrder.bottom_captured) {
+        challengeState.calibrationStatus = phaseOrder.calibrating_top;
+        challengeState.rejectedRepReason = 'Now push up to the top position with your arms nearly straight and hold still.';
+        return false;
+      }
+      if (challengeState.calibrationStatus === phaseOrder.calibrating_top) {
+        const validation = validTopCalibration(poseAnalysis);
+        if (!validation.ok) { challengeState.rejectedRepReason = validation.reason; return false; }
+        challengeState.topCapture = captureCalibrationPose('top', poseAnalysis);
+        challengeState.topElbowAngle = poseAnalysis.elbowAngle;
+        challengeState.calibrationStatus = phaseOrder.top_captured;
+        return finishCalibration();
+      }
+      return challengeState.calibrationStatus === phaseOrder.calibrated;
+    }
+
+    function thresholds(){
+      if (Number.isFinite(challengeState.bottomElbowAngle) && Number.isFinite(challengeState.topElbowAngle) && Number.isFinite(challengeState.requiredRange)) {
+        return {
+          bottom: challengeState.bottomElbowAngle + Math.max(8, challengeState.calibratedRange * 0.12),
+          top: challengeState.topElbowAngle - Math.max(8, challengeState.calibratedRange * 0.12),
+          required: challengeState.requiredRange
+        };
+      }
+      return { bottom: 100, top: 160, required: 48 };
+    }
+    function reject(reason){ challengeState.rejectedRepReason = reason; return false; }
+    function countRep(variant){
+      const safeVariant = variant === 'one_hand' ? 'one_hand' : variant === 'two_hand' ? 'two_hand' : 'unknown';
+      const points = VARIANTS[safeVariant]?.points || 1;
+      challengeState.validRepCount += 1;
+      if (safeVariant === 'one_hand') challengeState.oneHandRepCount += 1;
+      if (safeVariant === 'two_hand') challengeState.twoHandRepCount += 1;
+      challengeState.lastRepVariant = safeVariant;
+      challengeState.lastRepPoints = points;
+      challengeState.totalScore += points;
+      challengeState.score = challengeState.totalScore;
+      challengeState.rejectedRepReason = safeVariant === 'unknown' ? 'Last rep counted; variant unclear.' : 'Last rep counted.';
+      challengeState.cyclePhase = 'waiting_down';
+      challengeState.cycleBottomAngle = null;
+      challengeState.cycleTopAngle = null;
+      challengeState.cycleVariant = 'unknown';
+      return true;
+    }
+    function processChallengeRep(poseAnalysis){
+      updatePoseDiagnostics(poseAnalysis);
+      if (!poseAnalysis.keypointConfidenceOk) return reject(KEYPOINT_PROMPT);
+      if (!poseAnalysis.pushupStanceDetected) return reject(poseAnalysis.bodyAlignmentStatus === 'red' ? 'Keep your body straight.' : 'Get into a push-up stance before reps count.');
+      if (poseAnalysis.bodyAlignmentStatus === 'red') return reject('Keep your body straight.');
+      const t = thresholds();
+      const elbow = Number(poseAnalysis.elbowAngle);
+      if (!Number.isFinite(elbow)) return reject(KEYPOINT_PROMPT);
+      const atDown = elbow <= t.bottom;
+      const atUp = elbow >= t.top;
+      if (challengeState.cyclePhase === 'waiting_down') {
+        if (atDown) {
+          challengeState.cyclePhase = 'waiting_up';
+          challengeState.cycleBottomAngle = elbow;
+          challengeState.cycleVariant = poseAnalysis.variant;
+          challengeState.cycleBodyStatus = poseAnalysis.bodyAlignmentStatus;
+          challengeState.rejectedRepReason = 'Bottom reached. Push up to lockout.';
+          return false;
+        }
+        return reject(elbow > 120 ? 'Bend your elbows closer to 90 degrees for the bottom position.' : 'Start each rep from the calibrated bottom position.');
+      }
+      if (challengeState.cyclePhase === 'waiting_up') {
+        if (atUp) {
+          const range = elbow - Number(challengeState.cycleBottomAngle);
+          if (range < t.required) {
+            challengeState.cyclePhase = 'waiting_down';
+            return reject('Use at least 80% of your calibrated push-up range.');
+          }
+          challengeState.cyclePhase = 'waiting_return_down';
+          challengeState.cycleTopAngle = elbow;
+          if (poseAnalysis.variant !== 'unknown') challengeState.cycleVariant = poseAnalysis.variant;
+          challengeState.rejectedRepReason = 'Top lockout reached. Return to bottom to finish the rep.';
+          return false;
+        }
+        return reject('Push up higher until your arms are nearly straight.');
+      }
+      if (challengeState.cyclePhase === 'waiting_return_down') {
+        if (atDown) {
+          const fullRange = Number(challengeState.cycleTopAngle) - elbow;
+          if (fullRange < t.required) {
+            challengeState.cyclePhase = 'waiting_down';
+            return reject('Use at least 80% of your calibrated push-up range.');
+          }
+          const finalVariant = poseAnalysis.variant !== 'unknown' ? poseAnalysis.variant : challengeState.cycleVariant;
+          return countRep(finalVariant);
+        }
+        return reject('Return near your calibrated bottom position to complete the rep.');
+      }
+      challengeState.cyclePhase = 'waiting_down';
+      return false;
+    }
+
+    async function stopChallenge(reason = 'stopped'){
       if (challengeState.timerId) global.clearInterval(challengeState.timerId);
       challengeState.timerId = null;
-      const wasActive = challengeState.active;
+      const wasRunning = challengeState.active;
       challengeState.active = false;
+      challengeState.preflight = false;
+      challengeState.calibrationStatus = phaseOrder.challenge_complete;
       setChallengeButtons(false);
-      challengeText('challengeTimer', reason === 'time' ? 'Time!' : 'Stopped');
       getFn('stopChallengePoseLoop')?.();
+      challengeText('challengeTimer', reason === 'time' ? 'Time!' : 'Stopped');
       renderChallengeScore();
-      if (wasActive) {
-        saveResult().catch((err) => {
-          challengeState.saveStatus = `save_failed: ${err?.message || err}`;
-          renderChallengeScore();
-        });
+      if (wasRunning && challengeState.validRepCount >= 0) {
+        try { await saveResult(); }
+        catch (err) { challengeState.saveStatus = `save_failed: ${err?.message || err}`; renderChallengeScore(); }
       }
       return { ...challengeState };
     }
-    function startTimer(durationSeconds){
+    function startTimer(durationSeconds = CHALLENGE_SECONDS){
       challengeState.remainingSeconds = durationSeconds;
-      challengeState.endsAt = Date.now() + durationSeconds * 1000;
+      challengeState.endsAt = now() + durationSeconds * 1000;
       challengeText('challengeTimer', `${durationSeconds}s`);
       challengeState.timerId = global.setInterval(() => {
-        challengeState.remainingSeconds = Math.max(0, Math.ceil((challengeState.endsAt - Date.now()) / 1000));
+        challengeState.remainingSeconds = Math.max(0, Math.ceil((challengeState.endsAt - now()) / 1000));
         challengeText('challengeTimer', `${challengeState.remainingSeconds}s`);
         if (challengeState.remainingSeconds <= 0) stopChallenge('time');
       }, 250);
     }
-    async function startChallenge(options = {}){
-      const participant = { ...collectParticipant(), ...(options.participant || {}) };
-      if (!participant.displayName) throw new Error('Display name is required.');
-      if (participant.consent !== true) throw new Error('Consent is required to enter the leaderboard challenge.');
-      if (!state.cameraActive && !getVideoElement()?.srcObject) throw new Error('Connect camera first.');
-      const variant = participant.variant || 'standard_pushup';
-      const config = getVariantConfig(variant);
-      challengeState.participant = participant;
-      challengeState.variant = variant;
-      challengeState.multiplier = config.multiplier;
-      challengeState.validRepCount = 0;
-      challengeState.score = 0;
-      challengeState.rejectedRepReason = 'Waiting for top push-up position.';
-      challengeState.keypointsVisible = false;
-      challengeState.preflight = true;
-      challengeState.saveStatus = 'not_saved';
-      challengeState.lastSavedResult = null;
-      engine.resetCycle();
-      global.RepAnalysisRuntime?.reset?.({ repCount: 0, totalReps: 0, phase: 'top' });
-      setChallengeButtons(true);
-      renderChallengeScore();
-      getFn('startChallengePoseLoop')?.();
-      await waitForPushupVisibility(Number(options.visibilityTimeoutMs || 3000));
-      for (const label of ['3', '2', '1']) {
-        challengeText('challengeTimer', label);
-        await new Promise((resolve) => global.setTimeout(resolve, Number(options.countdownMs || 1000)));
-      }
-      challengeState.preflight = false;
-      challengeState.active = true;
-      challengeState.rejectedRepReason = 'Counting valid push-ups only.';
-      renderChallengeScore();
-      startTimer(Number(options.durationSeconds || 60));
-      return { ...challengeState };
-    }
-    async function waitForPushupVisibility(timeoutMs){
-      const started = Date.now();
-      challengeState.rejectedRepReason = 'Move so I can see your shoulders, elbows, wrists, and hips.';
-      renderChallengeScore();
-      while (Date.now() - started < timeoutMs) {
-        if (challengeState.keypointsVisible) return true;
-        await new Promise((resolve) => global.setTimeout(resolve, 100));
+    async function waitForCalibration(timeoutMs){
+      const started = now();
+      while (now() - started < timeoutMs) {
+        if (challengeState.calibrationStatus === phaseOrder.calibrated) return true;
+        await new Promise((resolve) => global.setTimeout(resolve, 50));
       }
       challengeState.preflight = false;
       setChallengeButtons(false);
       getFn('stopChallengePoseLoop')?.();
-      throw new Error('Move so I can see your shoulders, elbows, wrists, and hips.');
+      throw new Error(challengeState.rejectedRepReason || 'Calibration failed. Reset and try again with your full body in view.');
+    }
+    async function startChallenge(options = {}){
+      const participant = readParticipant();
+      if (!participant.displayName) throw new Error('Display name is required for the leaderboard.');
+      if (participant.consent !== true) throw new Error('Consent is required to enter the leaderboard challenge.');
+      challengeState.participant = participant;
+      resetChallengeCounters();
+      resetCalibration();
+      challengeState.preflight = true;
+      challengeState.active = false;
+      challengeState.calibrationStatus = phaseOrder.waiting_for_full_body;
+      challengeState.rejectedRepReason = FULL_BODY_PROMPT;
+      challengeState.saveStatus = 'not_saved';
+      setChallengeButtons(true);
+      renderChallengeScore();
+      global.RepAnalysisRuntime?.reset?.({ repCount: 0, totalReps: 0, phase: 'bottom' });
+      getFn('startChallengePoseLoop')?.();
+      await waitForCalibration(Number(options.calibrationTimeoutMs || 10000));
+      for (const label of ['3', '2', '1']) {
+        challengeText('challengeTimer', label);
+        await new Promise((resolve) => global.setTimeout(resolve, Number(options.countdownMs ?? 1000)));
+      }
+      challengeState.preflight = false;
+      challengeState.active = true;
+      challengeState.calibrationStatus = phaseOrder.challenge_running;
+      challengeState.rejectedRepReason = 'Counting valid push-ups only.';
+      renderChallengeScore();
+      startTimer(Number(options.durationSeconds || CHALLENGE_SECONDS));
+      return { ...challengeState };
     }
     function handlePoseAnalysis(analysis = {}){
-      if (!challengeState.active && !challengeState.preflight) return;
-      challengeState.keypointsVisible = Boolean(analysis.keypointConfidenceOk);
-      if (!analysis.keypointConfidenceOk) {
-        challengeState.rejectedRepReason = 'Move so I can see your shoulders, elbows, wrists, and hips.';
-      } else if (challengeState.preflight) {
-        challengeState.rejectedRepReason = 'Keypoints visible. Get ready.';
-      } else if (analysis.repDetected && analysis.goodRep) {
-        challengeState.validRepCount += 1;
-        challengeState.score = challengeState.validRepCount * challengeState.multiplier;
-        challengeState.rejectedRepReason = 'Last rep counted.';
-      } else if (analysis.formWarning) {
-        challengeState.rejectedRepReason = analysis.formWarning;
-      } else if (analysis.phase !== 'top') {
-        challengeState.rejectedRepReason = analysis.depthStatus || 'Finish the full top-bottom-top rep.';
-      }
+      if (!challengeState.active && !challengeState.preflight) return { ...challengeState };
+      const poseAnalysis = analysis.elbowAngle ? analysis : analyzeChallengePose(analysis.pose || analysis);
+      if (challengeState.preflight) processCalibration(poseAnalysis);
+      else if (challengeState.active) processChallengeRep(poseAnalysis);
       renderChallengeScore();
+      return { ...challengeState };
     }
+    function updateVariantNote(){ renderChallengeScore(); }
     function onChallengeEvent(id, type, handler){ const el = challengeById(id); if (typeof el?.addEventListener === 'function') el.addEventListener(type, handler); }
     function onChallengeClick(id, handler){ onChallengeEvent(id, 'click', handler); }
     function attachChallengeUi(){
       onChallengeClick('pushupChallengeEntryBtn', () => challengeById('pushupChallengePanel')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
       onChallengeClick('dashboardChallengeLeaderboardBtn', () => { challengeById('pushupChallengePanel')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }); loadLeaderboard().catch((err) => { challengeState.saveStatus = `leaderboard_failed: ${err?.message || err}`; renderChallengeScore(); }); });
       onChallengeClick('challengeConnectCameraBtn', () => global.WorkoutRuntime?.connectCamera?.());
-      onChallengeClick('challengeStartBtn', () => startChallenge().catch((err) => { challengeState.rejectedRepReason = err?.message || String(err); renderChallengeScore(); }));
+      onChallengeClick('challengeStartBtn', () => startChallenge().catch((err) => { challengeState.preflight = false; challengeState.active = false; setChallengeButtons(false); challengeState.rejectedRepReason = err?.message || String(err); renderChallengeScore(); }));
       onChallengeClick('challengeStopBtn', () => stopChallenge('stopped'));
       onChallengeClick('challengeLeaderboardBtn', () => loadLeaderboard().catch((err) => { challengeState.saveStatus = `leaderboard_failed: ${err?.message || err}`; renderChallengeScore(); }));
-      onChallengeEvent('challengeVariantSelect', 'change', updateVariantNote);
-      updateVariantNote();
       renderChallengeScore();
     }
     if (global.document?.readyState === 'loading') global.document.addEventListener('DOMContentLoaded', attachChallengeUi, { once: true });
     else attachChallengeUi();
-    const api = { version: 'phase26', VARIANTS, isActive: () => challengeState.active || challengeState.preflight, getState: () => ({ ...challengeState }), startChallenge, stopChallenge, handlePoseAnalysis, loadLeaderboard, saveResult, renderLeaderboard, updateVariantNote };
+    const api = { version: 'phase27', VARIANTS, isActive: () => challengeState.active || challengeState.preflight, getState: () => ({ ...challengeState }), startChallenge, stopChallenge, handlePoseAnalysis, loadLeaderboard, saveResult, renderLeaderboard, updateVariantNote, analyzeChallengePose };
     global.PushupChallengeRuntime = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = { ...(module.exports || {}), PushupChallengeRuntime: api };
     return api;
   }
-
 
   function configureWorkoutRuntime(nextDeps){ deps = { ...deps, ...(nextDeps || {}) }; }
 

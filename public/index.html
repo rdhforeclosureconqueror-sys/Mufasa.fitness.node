@@ -888,13 +888,7 @@ rep quality: waiting</pre>
           <label>Email<input id="challengeEmail" type="email" maxlength="160" placeholder="Optional; hidden from leaderboard" /></label>
           <label>Phone<input id="challengePhone" type="tel" maxlength="40" placeholder="Optional; hidden from leaderboard" /></label>
         </div>
-        <label>Variant
-          <select id="challengeVariantSelect">
-            <option value="standard_pushup">Standard Push-Up</option>
-            <option value="one_hand_pushup">One-Hand Push-Up</option>
-          </select>
-        </label>
-        <p id="challengeVariantNote" class="challenge-note">Standard Push-Up: valid rep = 1 point.</p>
+        <p id="challengeVariantNote" class="challenge-note">Do any valid push-up variation. Two-hand reps count 1 point. One-hand reps count 2 points.</p>
         <label class="challenge-consent"><input id="challengeConsent" type="checkbox" /> <span>I agree this is a fitness challenge and my display name, team, and score may appear on the leaderboard.</span></label>
         <div class="challenge-note">Stop if you feel pain or dizziness. This is not medical advice. Ask staff before participating if you have an injury.</div>
         <div class="btn-row">
@@ -911,15 +905,26 @@ rep quality: waiting</pre>
         </div>
         <div class="status-line"><strong>Rejected rep reason:</strong> <span id="challengeRejectedReason">None</span></div>
         <pre id="challengeDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">challengeModeActive: no
-challengeVariant: standard_pushup
-pushupKeypointsVisible: no
+calibrationStatus: not_calibrated
+bottomElbowAngle: n/a
+topElbowAngle: n/a
+calibratedRange: n/a
+requiredRange: n/a
+pushupStanceDetected: no
+bodyAlignmentStatus: unknown
+armDepthStatus: unknown
+lockoutStatus: unknown
+lastRepVariant: none
+lastRepPoints: 0
 validRepCount: 0
-score: 0
+twoHandRepCount: 0
+oneHandRepCount: 0
+totalScore: 0
 rejectedRepReason: none
 leaderboardSaveStatus: not_saved</pre>
         <div class="challenge-table-wrap">
           <table class="challenge-table" aria-label="Push-Up Challenge leaderboard">
-            <thead><tr><th>Rank</th><th>Name</th><th>Team</th><th>Variant</th><th>Valid reps</th><th>Multiplier</th><th>Score</th><th>Timestamp</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Name</th><th>Team</th><th>Total score</th><th>Valid reps</th><th>Two-hand reps</th><th>One-hand reps</th><th>Timestamp</th></tr></thead>
             <tbody id="challengeLeaderboardBody"><tr><td colspan="8">No results loaded yet.</td></tr></tbody>
           </table>
         </div>
