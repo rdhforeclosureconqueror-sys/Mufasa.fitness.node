@@ -7,7 +7,7 @@ const path = require("node:path");
 
 const { createSessionWriteClient } = require("../public/session-write.js");
 
-const indexHtml = fs.readFileSync(path.join(__dirname, "../public/index.html"), "utf8");
+const indexHtml = fs.readFileSync(path.join(__dirname, "../public/workout.html"), "utf8");
 const retentionFlow = fs.readFileSync(path.join(__dirname, "../public/retention-flow.js"), "utf8");
 const workoutRuntime = fs.readFileSync(path.join(__dirname, "../public/workout-runtime.js"), "utf8");
 

@@ -11,7 +11,7 @@ const { createSessionWriteClient } = require("../public/session-write.js");
 const repoRoot = path.resolve(__dirname, "..");
 const workoutRuntimeSource = fs.readFileSync(path.join(repoRoot, "public/workout-runtime.js"), "utf8");
 const liveBreakpointSource = fs.readFileSync(path.join(repoRoot, "public/live-workout-breakpoints.js"), "utf8");
-const indexHtml = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+const indexHtml = fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
 const statusPanels = fs.readFileSync(path.join(repoRoot, "public/status-panels.js"), "utf8");
 
 function createRuntimeHarness(overrides = {}) {

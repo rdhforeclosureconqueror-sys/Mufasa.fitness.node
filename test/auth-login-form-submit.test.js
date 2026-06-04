@@ -12,7 +12,7 @@ function read(relPath) {
 }
 
 test("frontend includes login form and delegates auth submit ownership to auth-core", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   const authCore = read("public/auth-core.js");
   const authUi = read("public/auth-ui.js");
   assert.match(html, /<script src="\/auth-core\.js" defer><\/script>/, "auth-core runtime must be loaded as the auth form request owner");
@@ -48,7 +48,7 @@ test("frontend includes login form and delegates auth submit ownership to auth-c
 });
 
 test("frontend has only one auth login form id and auth-core duplicate mitigation", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   const authCore = read("public/auth-core.js");
   const formIdCount = (html.match(/id="authLoginForm"/g) || []).length;
   assert.equal(formIdCount, 1, "expected exactly one authLoginForm in shell");
@@ -58,7 +58,7 @@ test("frontend has only one auth login form id and auth-core duplicate mitigatio
 
 test("root legacy index is not edited during avatar quarantine", () => {
   const rootHtml = read("index.html");
-  const publicHtml = read("public/index.html");
+  const publicHtml = read("public/workout.html");
   assert.doesNotMatch(rootHtml, /ENABLE_AVATAR_FEATURE/, "root legacy index.html must remain outside Phase 1 avatar quarantine edits");
   assert.match(publicHtml, /ENABLE_AVATAR_FEATURE/, "public index should own Phase 1 avatar quarantine wiring");
 });

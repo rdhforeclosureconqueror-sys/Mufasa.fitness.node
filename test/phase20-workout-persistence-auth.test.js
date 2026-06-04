@@ -59,7 +59,7 @@ test("Phase 20 session create, reps, and complete use the same canonical current
 });
 
 test("Phase 20 APP_AUTH/AuthStateRuntime token wins over stale localStorage token in session writes and reads", () => {
-  const indexHtml = read("public/index.html");
+  const indexHtml = read("public/workout.html");
   const backendRead = read("public/backend-read.js");
 
   assert.match(indexHtml, /function getAuthTokenInfo\(\)[\s\S]*AuthStateRuntime\?\.getCanonicalAuthState/);
@@ -137,7 +137,7 @@ test("Phase 20 session persistence diagnostics expose safe fields only", async (
 });
 
 test("Phase 20 active public shell has no unguarded toSafeUserId reference", () => {
-  const indexHtml = read("public/index.html");
+  const indexHtml = read("public/workout.html");
   assert.doesNotMatch(indexHtml, /\btoSafeUserId,\s*\n/);
   assert.match(indexHtml, /toSafeUserId: safeUserIdFrom/);
   assert.match(indexHtml, /function safeUserIdFrom\(value\)/);

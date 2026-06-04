@@ -10,31 +10,31 @@ function read(relPath) {
 }
 
 test("login shell loads without TensorFlow/Three script tags", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.doesNotMatch(html, /<script[^>]+src="https:\/\/cdn\.jsdelivr\.net\/npm\/@tensorflow\/tfjs/i, "TensorFlow CDN script should not be eager-loaded");
   assert.doesNotMatch(html, /<script[^>]+src="https:\/\/cdn\.jsdelivr\.net\/npm\/@tensorflow-models\/pose-detection/i, "MoveNet script should not be eager-loaded");
   assert.doesNotMatch(html, /<script type="module">[\s\S]*Three ESM import started/, "Three bootstrap module should not run eagerly");
 });
 
 test("retention/avatar loading does not block auth flow", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.doesNotMatch(html, /await\s+loadAvatarAssetForCurrentUser\("login_profile"\)/);
   assert.doesNotMatch(html, /await\s+loadAvatarAssetForCurrentUser\("backend_profile"\)/);
   assert.doesNotMatch(html, /await\s+loadAvatarAssetForCurrentUser\("local_cache"\)/);
 });
 
 test("camera start triggers lazy pose runtime load", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.match(html, /async function initDetector\([\s\S]*await window\.__ensurePoseRuntime\(\)/, "initDetector should lazy-load pose runtime");
 });
 
 test("avatar mode path triggers lazy three runtime", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.match(html, /initializeAvatarRuntimeBootstrap\("render_mode_selection"\)/, "Avatar render mode should trigger lazy runtime init");
 });
 
 test("progress scan boot metric is tracked from OHSA start", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.match(html, /function startOhsa\([\s\S]*markPerfMetric\("progressScanBootMs"/, "OHSA start should track progress scan boot metric");
 });
 
@@ -48,7 +48,7 @@ test("workout runtime preserves video-playing milestone after downstream detecto
 
 
 test("coach voice controls call coach runtime directly", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.doesNotMatch(html, /async function speak\(|async function unlockAudioOnce\(|function stopAllSpeech\(/, "inline coach voice compatibility delegators should be removed");
   assert.match(html, /requireCoachRuntime\(\)\.unlockAudioOnce\(\)/, "listen button should unlock audio through coach runtime directly");
   assert.match(html, /requireCoachRuntime\(\)\.speak\("Voice is on\.", "rep"\)/, "listen button voice prime should use coach runtime directly");
@@ -83,7 +83,7 @@ test("coach runtime exposes ready/speaking/listening/unavailable Ma’at status 
 
 
 test("remaining inline dangerous sections are explicitly marked", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   for (const marker of [
     "[INLINE_REMAINING] auth/profile shell",
     "[INLINE_REMAINING] boot diagnostics",
@@ -102,7 +102,7 @@ test("workout start auto-selects a live default when no workout is selected", ()
   assert.match(runtime, /function prepareWorkoutStart\(\) \{\n\s*const plan = hydrateActiveWorkoutPlan\(\{ allowDefault: true \}\);/, "start should hydrate a default plan instead of blocking session creation when no selection exists");
 });
 test("missing profile save button cannot crash activation handler checks", () => {
-  const html = read("public/index.html");
+  const html = read("public/workout.html");
   assert.match(html, /function getProfileSaveButton\(\)[\s\S]*document\.getElementById\("saveProfileFormBtn"\)/, "profile save button lookup should be DOM-safe");
   assert.match(html, /function isProfileSaveHandlerReady\(\)[\s\S]*ProfileWriteRuntime\?\.saveProfileToNode/, "profile handler readiness should fall back to ProfileWriteRuntime");
   assert.match(html, /saveProfileFormBtn:\s*getProfileSaveButton\(\)/, "post-login refs should pass a safe profile save lookup result");

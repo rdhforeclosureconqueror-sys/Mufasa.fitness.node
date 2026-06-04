@@ -173,6 +173,13 @@
     }
   }
 
+  function setWorkoutFocusMode(enabled, reason = 'manual') {
+    state.focusMode = Boolean(enabled);
+    global.document?.body?.classList?.toggle('workout-focus', state.focusMode);
+    setText('hudFormStatus', state.focusMode ? 'Focus mode active' : 'Coach ready');
+    global.__phase30WorkoutFocus = { enabled: state.focusMode, reason, at: new Date().toISOString() };
+  }
+
   function setCameraFullscreen(enabled){
     state.fullscreen = Boolean(enabled);
     global.document?.body?.classList?.toggle('camera-fullscreen', state.fullscreen);
@@ -188,6 +195,7 @@
     state.cameraActive = false;
     state.fullscreen = false;
     global.document?.body?.classList?.remove('camera-fullscreen');
+    setWorkoutFocusMode(false, 'camera-stopped');
     refreshCameraControls();
     setEnabled('startBtn', false);
     getFn('onCameraStopped')?.();
@@ -249,6 +257,8 @@
         await getFn('onWorkoutStarted')?.(state.sessionId, sessionRes);
         setPoseStatus(`Workout started: ${state.sessionId}`);
         setBrainStatus('Coach ready.', 'Ma’at 2.0: coach ready');
+        setText('hudFormStatus', 'Coach ready');
+        setWorkoutFocusMode(true, 'workout-started');
         refreshCameraControls();
         updateRuntimeState();
         global.__appRuntime?.updateFeaturePanel?.('workout-started');
@@ -257,6 +267,7 @@
       state.running = false;
       console.log('[WORKOUT_LIFECYCLE] stopping workout', { sessionId: state.sessionId });
       await getFn('onWorkoutStopped')?.(state.sessionId);
+      setWorkoutFocusMode(false, 'workout-stopped');
       refreshCameraControls();
       updateRuntimeState();
       global.__appRuntime?.updateFeaturePanel?.('workout-stopped');
@@ -829,6 +840,8 @@
     function renderChallengeScore(){
       challengeText('challengeValidReps', challengeState.validRepCount);
       challengeText('challengeScore', challengeState.totalScore);
+      challengeText('hudChallengeScore', challengeState.totalScore);
+      challengeText('hudFormStatus', challengeState.rejectedRepReason || challengeState.bodyAlignmentStatus || 'Coach ready');
       challengeText('challengeSaveStatus', challengeState.saveStatus || 'not_saved');
       challengeText('challengeRejectedReason', challengeState.rejectedRepReason || 'None');
       const note = challengeById('challengeVariantNote');
@@ -1131,6 +1144,7 @@
       challengeState.preflight = false;
       challengeState.calibrationStatus = phaseOrder.challenge_complete;
       setChallengeButtons(false);
+      setWorkoutFocusMode(false, `challenge-${reason}`);
       getFn('stopChallengePoseLoop')?.();
       challengeText('challengeTimer', reason === 'time' ? 'Time!' : 'Stopped');
       renderChallengeScore();
@@ -1158,6 +1172,7 @@
       }
       challengeState.preflight = false;
       setChallengeButtons(false);
+      setWorkoutFocusMode(false, 'challenge-calibration-failed');
       getFn('stopChallengePoseLoop')?.();
       throw new Error(challengeState.rejectedRepReason || 'Calibration failed. Reset and try again with your full body in view.');
     }
@@ -1170,6 +1185,7 @@
       resetCalibration();
       challengeState.preflight = true;
       challengeState.active = false;
+      setWorkoutFocusMode(true, 'challenge-preflight');
       challengeState.calibrationStatus = phaseOrder.waiting_for_full_body;
       challengeState.rejectedRepReason = FULL_BODY_PROMPT;
       challengeState.saveStatus = 'not_saved';
@@ -1186,6 +1202,7 @@
       challengeState.active = true;
       challengeState.calibrationStatus = phaseOrder.challenge_running;
       challengeState.rejectedRepReason = 'Counting valid push-ups only.';
+      setWorkoutFocusMode(true, 'challenge-running');
       renderChallengeScore();
       startTimer(Number(options.durationSeconds || CHALLENGE_SECONDS));
       return { ...challengeState };
@@ -1224,7 +1241,7 @@
   installPilotRepAnalysisAdapter();
   installPushupChallengeRuntime();
 
-  global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, getState: () => ({ ...state }) };
+  global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, setWorkoutFocusMode, getState: () => ({ ...state }) };
   global.startWorkout = (...args) => global.WorkoutRuntime.startWorkout(...args);
   global.connectCamera = (...args) => global.WorkoutRuntime.connectCamera(...args);
 })(typeof window !== 'undefined' ? window : globalThis);

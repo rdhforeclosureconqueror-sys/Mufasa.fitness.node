@@ -7,7 +7,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
-const indexHtml = fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+const indexHtml = fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
 const repAnalysisSource = fs.readFileSync(path.join(repoRoot, "public/rep-analysis-runtime.js"), "utf8");
 
 function loadRepRuntime() {

@@ -6,7 +6,7 @@ const path = require("node:path");
 const repoRoot = path.resolve(__dirname, "..");
 
 function readShell() {
-  return fs.readFileSync(path.join(repoRoot, "public/index.html"), "utf8");
+  return fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
 }
 
 test("canonical auth shell keeps authLoginForm and does not force builder auth", () => {

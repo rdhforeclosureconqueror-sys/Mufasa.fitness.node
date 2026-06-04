@@ -190,7 +190,7 @@ test("Phase 29 built-in Squat, Push-Up, Lunge, and Push-Up Challenge remain inta
 });
 
 test("Phase 29 Request New Exercise pilot-safe message remains visible", () => {
-  const html = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "..", "public", "workout.html"), "utf8");
   assert.match(html, /id="defineExerciseBtn"[^>]*>Request New Exercise<\/button>/);
   assert.match(html, /Custom exercise creation is coming soon\. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge\./);
   assert.match(html, /id="exerciseTemplateDraftBtn"[^>]*hidden>Create Exercise Template Draft<\/button>/);
