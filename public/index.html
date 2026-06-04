@@ -821,7 +821,7 @@ CREATE CLICKED: no</pre>
         <button id="startBtn" class="secondary" disabled>Start Workout</button>
         <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
-        <button id="defineExerciseBtn" class="secondary" disabled>New Exercise</button>
+        <button id="defineExerciseBtn" class="secondary" type="button">Request New Exercise</button>
         <button id="pushupChallengeEntryBtn" type="button">Push-Up Challenge</button>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
@@ -3602,7 +3602,7 @@ skeletonOverlayActive: no</pre>
 
     async function startDefineExercise() {
       console.log("[DEFINE_EXERCISE] inline startDefineExercise pilot fallback invoked");
-      const message = "Custom workout creation is not available in this pilot. Choose Squat, Push-Up, or Lunge to start.";
+      const message = "Custom exercise creation is coming soon. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge.";
       poseStatusEl.textContent = message;
       addLog("system", message);
       return { ok: false, pilotUnavailable: true, message };

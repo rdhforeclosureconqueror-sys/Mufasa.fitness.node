@@ -546,14 +546,40 @@
         metrics: { frontSide, frontKneeAngle, backKneeDrop, leftKneeAngle, rightKneeAngle }
       });
     }
+    function unsupportedMovementResult(exercise = {}){
+      const label = exercise?.name || exercise?.exerciseName || exercise?.exerciseId || exercise?.id || 'selected exercise';
+      const feedback = `Live form judging is not available for ${label}. For this pilot, use Squat, Push-Up, Lunge, or Push-Up Challenge.`;
+      return {
+        movementPattern: 'unknown',
+        pattern: 'unknown',
+        phase: 'unsupported',
+        repPhase: 'unsupported',
+        depthStatus: 'tracking unavailable',
+        status: 'tracking unavailable',
+        confidenceStatus: 'tracking unavailable',
+        keypointConfidenceOk: false,
+        missingKeypoints: [],
+        feedback,
+        formWarning: 'Tracking unavailable for this exercise in pilot.',
+        needsLowerBody: false,
+        goodRepCandidate: false,
+        goodForm: false,
+        repDetected: false,
+        goodRep: false,
+        unsupportedExercise: true,
+        metrics: {}
+      };
+    }
     function analyzeMovement({ pose, exercise } = {}){
-      const pattern = mapExerciseToMovementPattern(exercise) || 'squat';
+      const pattern = mapExerciseToMovementPattern(exercise);
       if (pattern === 'pushup') return analyzePushup(pose);
       if (pattern === 'lunge') return analyzeLunge(pose);
-      return analyzeSquat(pose);
+      if (pattern === 'squat') return analyzeSquat(pose);
+      return unsupportedMovementResult(exercise);
     }
     function completeCycle(analysis){
-      const pattern = analysis?.pattern || analysis?.movementPattern || 'squat';
+      const pattern = analysis?.pattern || analysis?.movementPattern || 'unknown';
+      if (pattern === 'unknown') return { ...(analysis || {}), repDetected: false, goodRep: false };
       if (phaseState.pattern !== pattern) {
         phaseState.pattern = pattern;
         phaseState.phase = null;
