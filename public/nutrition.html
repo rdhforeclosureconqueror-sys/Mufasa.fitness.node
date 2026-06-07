@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pocket PT — Nutrition Journal</title>
+  <style>
+    :root{--bg:#06101f;--panel:rgba(255,255,255,.07);--panel2:rgba(255,255,255,.1);--line:rgba(233,241,255,.16);--text:#edf6ff;--muted:rgba(237,246,255,.68);--gold:#ffd35a;--green:#42ffa0;--red:#ff6b86;--blue:#72c7ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 520px at 10% 0,rgba(255,211,90,.12),transparent 58%),radial-gradient(900px 540px at 95% 8%,rgba(66,255,160,.1),transparent 58%),var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}header{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);background:rgba(6,16,31,.92);backdrop-filter:blur(10px)}a,.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);border-radius:12px;padding:10px 12px;text-decoration:none;cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--gold),#fff0a3);color:#171200;font-weight:800}.btn.green{border-color:rgba(66,255,160,.4);color:var(--green)}.btn.danger{border-color:rgba(255,107,134,.4);color:var(--red)}main{max-width:1180px;margin:0 auto;padding:18px}.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.card{border:1px solid var(--line);background:var(--panel);border-radius:22px;padding:18px;box-shadow:0 18px 48px rgba(0,0,0,.32)}h1,h2,h3{margin:0 0 10px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.method{min-height:120px;text-align:left}.summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.metric{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px}.metric strong{font-size:24px;display:block}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.panel{display:none}.panel.active{display:block}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.24);color:var(--text);padding:10px;margin:6px 0 10px}label{font-size:12px;color:var(--muted)}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.05);margin:8px 0}.row-main{min-width:0}.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:11px;color:var(--muted);margin:2px}.pill.estimated{color:#ffe58a;border-color:rgba(255,211,90,.45)}video{width:100%;max-height:320px;background:#000;border-radius:16px;border:1px solid var(--line)}.review{border:1px dashed rgba(255,211,90,.45);border-radius:16px;padding:12px;margin-top:10px}.notice{background:rgba(255,211,90,.1);border:1px solid rgba(255,211,90,.28);border-radius:14px;padding:10px;color:#fff3bd}.auth-wall{text-align:center;padding:48px 18px}.mobile-stack{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:920px){.hero,.mobile-stack{grid-template-columns:1fr}.grid,.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){header{align-items:flex-start;flex-direction:column}.grid,.summary{grid-template-columns:1fr}.row{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong>Pocket PT Nutrition Journal</strong><div class="muted">Private account-based food logging</div></div>
+    <nav aria-label="Nutrition navigation"><a href="/workout.html">Workout</a> <a href="/dashboard.html">Dashboard</a> <a href="/">Home</a></nav>
+  </header>
+  <main id="nutritionApp">
+    <section id="authWall" class="card auth-wall" hidden>
+      <h1>Sign in to use your nutrition journal.</h1>
+      <p class="muted">Nutrition logging requires a valid account session so your private food journal is never shown to another user.</p>
+      <a class="btn primary" href="/workout.html?next=nutrition">Go to login</a>
+    </section>
+    <section id="journalShell" hidden>
+      <div class="hero">
+        <div class="card">
+          <h1>Log food, review estimates, and track your day.</h1>
+          <p class="muted">Use barcode lookup, USDA common-food search, natural-language drafts, recent foods, saved meals, or custom foods. Confirm every entry before it is saved.</p>
+          <div class="grid" aria-label="Food logging methods">
+            <button class="btn method primary" data-open="scanPanel"><strong>A. Scan Barcode</strong><br><span>UPC/EAN packaged foods</span></button>
+            <button class="btn method" data-open="searchPanel"><strong>B. Search Foods</strong><br><span>USDA common foods</span></button>
+            <button class="btn method" data-open="naturalPanel"><strong>C. Tell Pocket PT What I Ate</strong><br><span>Reviewable draft</span></button>
+            <button class="btn method green" data-open="recentPanel"><strong>D. Repeat Recent Meal</strong><br><span>Recent and saved meals</span></button>
+          </div>
+          <div class="tabs"><button class="btn" data-open="customPanel">Add Custom Food</button><button class="btn" id="saveMealBtn">Save as Meal</button><button class="btn" id="refreshBtn">Refresh Today</button></div>
+        </div>
+        <aside class="card">
+          <h2>Daily calorie and macro totals</h2>
+          <input type="date" id="journalDate" />
+          <div id="dailySummary" class="summary" aria-live="polite"></div>
+          <p class="muted">Totals are shown without personal calorie targets unless a verified target flow is added later. Approximate values are labeled estimated.</p>
+        </aside>
+      </div>
+      <section class="mobile-stack">
+        <div class="card">
+          <div id="scanPanel" class="panel active"><h2>Scan Barcode</h2><p class="notice">Camera access requires HTTPS in production. Product information may be incomplete. Review before saving.</p><video id="scannerVideo" playsinline muted hidden></video><div class="tabs"><button class="btn primary" id="startScanBtn">Start camera scan</button><button class="btn" id="stopScanBtn">Stop scanner</button></div><label>Manual barcode fallback</label><input id="manualBarcode" inputmode="numeric" placeholder="Enter UPC or EAN" /><button class="btn" id="lookupBarcodeBtn">Lookup barcode</button><div id="barcodeStatus" class="muted"></div><div id="productReview" class="review" hidden></div></div>
+          <div id="searchPanel" class="panel"><h2>Search Foods</h2><label>Food search</label><input id="foodSearchInput" placeholder="banana, scrambled eggs, chicken breast" /><button class="btn primary" id="foodSearchBtn">Search USDA foods</button><div id="foodResults"></div></div>
+          <div id="naturalPanel" class="panel"><h2>Tell Pocket PT what you ate</h2><textarea id="naturalText" rows="4" placeholder="I ate two scrambled eggs, two slices of wheat toast, and a banana."></textarea><button class="btn primary" id="draftBtn">Create review draft</button><div id="draftReview"></div></div>
+          <div id="recentPanel" class="panel"><h2>Repeat Recent Meal</h2><button class="btn" id="loadRecentBtn">Load recent foods and saved meals</button><div id="recentList"></div><div id="mealList"></div></div>
+          <div id="customPanel" class="panel"><h2>Add Custom Food</h2><div id="customForm"></div></div>
+        </div>
+        <div class="card"><h2>Today’s entries</h2><div id="entriesList"></div><h2>Pocket PT nutrition education</h2><div id="educationSummary" class="muted"></div></div>
+      </section>
+    </section>
+  </main>
+  <script src="/auth-state-runtime.js"></script>
+  <script src="/nutrition-runtime.js"></script>
+</body>
+</html>

@@ -15,6 +15,7 @@ const { createUserDataService } = require("./src/services/userDataService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
+const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -313,6 +314,11 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
+  const nutritionService = createNutritionService({ userStore });
+  const nutritionProviderClient = createProviderClient({
+    fetchImpl: options.fetch || global.fetch,
+    env: process.env
+  });
   const membershipService = createMembershipService({
     userStore,
     stripeClient: options.stripeClient
@@ -518,6 +524,10 @@ function createApp(options = {}) {
   app.get("/exercise-library.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
+  });
+  app.get("/nutrition.html", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    res.sendFile(path.join(PUBLIC_DIR, "nutrition.html"));
   });
   app.get("/avatar-runtime.js", (req, res, next) => {
     if (avatarFeatureEnabled) return next();
@@ -1756,6 +1766,78 @@ function createApp(options = {}) {
       userId: req.auth?.userId || req.body?.userId
     }, req.params.id);
     const result = sessionService.completeSession(parsed);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+
+  // ---- Phase 32 Nutrition Journal APIs ----
+  app.get("/api/nutrition/barcodes/:barcode", requireAuth, asyncHandler(async (req, res) => {
+    const result = await nutritionProviderClient.lookupBarcode(req.params.barcode);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/nutrition/foods/search", requireAuth, asyncHandler(async (req, res) => {
+    const result = await nutritionProviderClient.searchUsda(req.query.q, req.query.limit);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/nutrition/foods/:fdcId", requireAuth, asyncHandler(async (req, res) => {
+    const result = await nutritionProviderClient.getUsdaFood(req.params.fdcId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/nutrition/drafts/natural-language", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.naturalLanguageDraft(req.auth.userId, req.body?.text || req.body?.description || "");
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/me/nutrition/entries", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.listEntries(req.auth.userId, req.query.date);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/me/nutrition/entries", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.createEntry(req.auth.userId, req.body || {});
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.put("/api/me/nutrition/entries/:entryId", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.updateEntry(req.auth.userId, req.params.entryId, req.body || {});
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.delete("/api/me/nutrition/entries/:entryId", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.deleteEntry(req.auth.userId, req.params.entryId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/me/nutrition/summary", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.summarize(req.auth.userId, req.query.date);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.get("/api/me/nutrition/recent", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.recent(req.auth.userId, req.query.limit);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/me/nutrition/meals", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.createMeal(req.auth.userId, req.body || {});
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/me/nutrition/meals", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.listMeals(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
+  }));
+
+  app.post("/api/me/nutrition/meals/:mealId/log", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.logMeal(req.auth.userId, req.params.mealId, req.body || {});
+    return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/me/nutrition/education", requireAuth, asyncHandler(async (req, res) => {
+    const result = nutritionService.educationSummary(req.auth.userId, req.query.date);
     return ok(res, req.requestId, result, 200);
   }));
 
