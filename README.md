@@ -277,3 +277,17 @@ When strict mode is off (default), these remain warning-oriented and visible in 
 - bootstrap/super-admin configuration summary
 - persisted override recovery status and startup warnings
 - recent admin audit activity summary
+
+## Phase 32 nutrition journal
+
+Pocket PT includes an authenticated nutrition journal at `/nutrition.html`. Nutrition logging requires a valid account session and stores entries only under the authenticated `req.auth.userId` record. The first version supports barcode packaged-food lookup, USDA common-food search, manual/custom foods, reviewable natural-language drafts, recent foods, saved meals, edit/delete behavior, and daily calorie/macro summaries.
+
+### Nutrition provider environment
+
+- `USDA_FDC_API_KEY` — backend-only USDA FoodData Central API key used by `/api/nutrition/foods/search` and `/api/nutrition/foods/:fdcId`. Do not expose this key in browser JavaScript.
+- `NUTRITION_PROVIDER_TIMEOUT_MS` — optional timeout for Open Food Facts and USDA requests. Default: `7000`.
+- `NUTRITION_CACHE_TTL_MS` — optional in-memory cache TTL for provider search/detail responses. Default: `1800000`.
+- `OPEN_FOOD_FACTS_BASE_URL` — optional Open Food Facts API base URL. Default: `https://world.openfoodfacts.org`.
+- `OPEN_FOOD_FACTS_USER_AGENT` — optional descriptive User-Agent for Open Food Facts requests. Open Food Facts barcode lookup does not require a private service secret for this integration.
+
+Nutrition values from providers can be incomplete. The UI labels estimated entries when serving conversion or source nutrient data is uncertain, and Pocket PT nutrition education is general information only, not a medical diagnosis or therapeutic diet prescription.

@@ -914,6 +914,7 @@ CREATE CLICKED: no</pre>
         <nav class="workout-nav" aria-label="Workout navigation">
           <a href="/">Home</a>
           <a href="/dashboard.html">Dashboard</a>
+          <a href="/nutrition.html">Nutrition Journal</a>
           <a href="/exercise-library.html">Exercise Library</a>
         </nav>
       </div>
@@ -979,6 +980,7 @@ CREATE CLICKED: no</pre>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
+        <button id="nutritionBtn" class="secondary" type="button">🥗 Nutrition Journal</button>
         <button id="diagnosticsToggleBtn" class="secondary" type="button" data-diagnostic-control hidden>Show Diagnostics</button>
         <button id="runSystemDiagnosticBtn" class="secondary" data-diagnostic-control hidden>🩺 Run System Diagnostic</button>
         <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
@@ -1434,6 +1436,7 @@ skeletonOverlayActive: no</pre>
     const calendarViewEl = document.getElementById("calendarView");
     const dashboardBtn = document.getElementById("dashboardBtn");
     const exerciseLibraryBtn = document.getElementById("exerciseLibraryBtn");
+    const nutritionBtn = document.getElementById("nutritionBtn");
     const workoutHudEl = document.getElementById("workoutHud");
     const hudExerciseNameEl = document.getElementById("hudExerciseName");
     const hudSetEl = document.getElementById("hudSet");
@@ -1445,6 +1448,8 @@ skeletonOverlayActive: no</pre>
     const skipRestBtn = document.getElementById("skipRestBtn");
     const repeatSetBtn = document.getElementById("repeatSetBtn");
     const nextExerciseBtn = document.getElementById("nextExerciseBtn");
+
+    if (nutritionBtn) nutritionBtn.onclick = () => { window.location.href = "/nutrition.html"; };
 
     const AVATAR_STAGE_MODE_STORAGE_KEY = "maatAvatarStageMode";
     const ALLOWED_STAGE_MODES = new Set(["fixed", "follow_pose"]);

@@ -74,10 +74,10 @@ test("Phase 31 unsupported nutrition and medical claims are handled safely", () 
   const html = read("public/index.html");
   const publicText = visibleText(html);
 
-  assert.match(publicText, /Meal tracking and nutrition planning are being developed/);
-  assert.match(publicText, /Coming soon/);
+  assert.match(publicText, /Barcode food lookup, common food search, food journal, daily calorie and macro totals, recent\/saved meals, and general Pocket PT nutrition education are available now after Phase 32/);
+  assert.match(publicText, /Available now after Phase 32/);
   assert.doesNotMatch(publicText, /diet-plan creation is available/i);
-  assert.doesNotMatch(publicText, /active calorie calculation/i);
+  assert.match(publicText, /does not prescribe therapeutic diets or present estimated calories as exact/i);
   assert.doesNotMatch(publicText, /diagnose pain/i);
   assert.doesNotMatch(publicText, /treat injuries/i);
   assert.match(publicText, /For pain, injury, medical conditions, or urgent concerns, consult a qualified healthcare professional\./);
