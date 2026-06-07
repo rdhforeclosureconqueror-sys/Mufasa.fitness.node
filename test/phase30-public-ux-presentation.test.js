@@ -11,17 +11,17 @@ const read = (rel) => fs.readFileSync(path.join(repoRoot, rel), "utf8");
 test("Phase 30 landing page renders polished public entry with required CTAs and safety copy", () => {
   const html = read("public/index.html");
   assert.match(html, /id="landingHeadline"/);
-  assert.match(html, /AI coaching that makes every rep/);
+  assert.match(html, /Training That Learns Your Routine/);
   assert.match(html, /id="landingChallengeCta"[^>]*href="\/workout\.html#pushupChallengePanel"/);
   assert.match(html, /id="landingWorkoutCta"[^>]*href="\/workout\.html"/);
-  assert.match(html, /id="landingLoginCta"[^>]*>Member Login \/ Open App<\/a>/);
+  assert.match(html, /id="landingLoginCta"[^>]*>Member Login<\/a>/);
   assert.match(html, /id="landingDashboardCta"[^>]*href="\/dashboard\.html"/);
-  assert.match(html, /Camera tracks movement/);
-  assert.match(html, /AI coach gives guidance/);
-  assert.match(html, /Reps and form are scored/);
-  assert.match(html, /Progress can be saved/);
-  assert.match(html, /Stop if you feel pain or dizziness\./);
-  assert.match(html, /This is not medical advice\./);
+  assert.match(html, /Movement and Form Feedback/);
+  assert.match(html, /Ask Pocket PT/);
+  assert.match(html, /Rep and Workout Tracking/);
+  assert.match(html, /Progress History/);
+  assert.match(html, /For pain, injury, medical conditions, or urgent concerns, consult a qualified healthcare professional\./);
+  assert.match(html, /does not diagnose injuries, replace a doctor, replace a physical therapist, or replace a registered dietitian\./);
 });
 
 test("Phase 30 workout app remains accessible and normal view removes the empty developer-style left panel", () => {
