@@ -2,64 +2,161 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pocket PT | AI Movement Coach</title>
+  <title>Pocket PT | Digital Training System</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="Pocket PT is a pilot-ready AI movement coach with camera-guided workouts, push-up challenge scoring, and progress tracking." />
+  <meta name="description" content="Pocket PT helps you choose workouts, track reps and progress, improve supported movements, and stay accountable to your training goals." />
   <link rel="icon" href="data:,">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:#020617; --panel:rgba(15,23,42,.76); --panel-soft:rgba(15,23,42,.48);
-      --green:#22c55e; --green-2:#86efac; --gold:#facc15; --amber:#f59e0b;
-      --text:#f8fafc; --muted:#94a3b8; --danger:#f87171; --line:rgba(148,163,184,.18);
-      --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px);
+      color-scheme: dark;
+      --bg:#020617;
+      --bg-2:#07111f;
+      --panel:rgba(15,23,42,.78);
+      --panel-strong:rgba(2,6,23,.88);
+      --panel-soft:rgba(15,23,42,.5);
+      --green:#22c55e;
+      --green-2:#86efac;
+      --green-dark:#052e16;
+      --gold:#facc15;
+      --amber:#f59e0b;
+      --text:#f8fafc;
+      --muted:#a7b3c7;
+      --line:rgba(148,163,184,.18);
+      --line-bright:rgba(134,239,172,.38);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
     }
-    html, body { min-height:100%; background:var(--bg); color:var(--text); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    html { min-height: 100%; scroll-behavior: smooth; }
     body {
-      overflow-x:hidden;
+      min-height: 100%;
+      overflow-x: hidden;
       background:
-        radial-gradient(circle at 18% 10%, rgba(34,197,94,.18), transparent 30%),
-        radial-gradient(circle at 88% 12%, rgba(250,204,21,.14), transparent 30%),
-        linear-gradient(135deg, #020617 0%, #07111f 52%, #020617 100%);
-      padding: calc(22px + var(--safe-top)) calc(18px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(18px + var(--safe-left));
+        radial-gradient(circle at 16% 8%, rgba(34,197,94,.2), transparent 28%),
+        radial-gradient(circle at 88% 16%, rgba(250,204,21,.16), transparent 28%),
+        linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 52%, #01030a 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: calc(22px + var(--safe-top)) calc(18px + var(--safe-right)) calc(28px + var(--safe-bottom)) calc(18px + var(--safe-left));
     }
-    a { color:inherit; }
-    .landing-shell { width:min(1180px, 100%); margin:0 auto; }
-    .nav { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:44px; }
-    .brand { display:flex; align-items:center; gap:10px; font-weight:850; letter-spacing:.02em; }
-    .brand-mark { width:36px; height:36px; border-radius:14px; background:linear-gradient(135deg,var(--green),var(--gold)); box-shadow:0 0 28px rgba(34,197,94,.55); }
-    .nav-links { display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; }
-    .hero { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr); gap:28px; align-items:center; }
-    .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid rgba(34,197,94,.45); border-radius:999px; background:rgba(6,78,59,.22); color:var(--green-2); font-weight:700; font-size:.82rem; margin-bottom:16px; }
-    h1 { font-size:clamp(2.6rem, 7vw, 5.7rem); line-height:.95; letter-spacing:-.07em; max-width:820px; }
-    .headline-accent { color:var(--green-2); text-shadow:0 0 34px rgba(34,197,94,.45); }
-    .hero-copy { margin:20px 0 24px; color:#cbd5e1; font-size:clamp(1.02rem, 2vw, 1.25rem); line-height:1.65; max-width:680px; }
-    .cta-row { display:flex; flex-wrap:wrap; gap:12px; margin:22px 0; }
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:46px; padding:12px 18px; border-radius:999px; border:1px solid rgba(148,163,184,.22); text-decoration:none; font-weight:800; transition:transform .16s ease, border-color .16s ease, background .16s ease; }
-    .btn:hover { transform:translateY(-2px); }
-    .btn.primary { background:linear-gradient(135deg,var(--green),#16a34a); color:#02130a; border-color:rgba(134,239,172,.6); box-shadow:0 16px 45px rgba(34,197,94,.22); }
-    .btn.gold { background:linear-gradient(135deg,var(--gold),var(--amber)); color:#1f1300; border-color:rgba(253,230,138,.7); }
-    .btn.ghost { background:rgba(15,23,42,.7); color:#e2e8f0; }
-    .hero-card { position:relative; overflow:hidden; min-height:430px; border:1px solid var(--line); border-radius:30px; padding:22px; background:linear-gradient(180deg,rgba(15,23,42,.82),rgba(2,6,23,.72)); box-shadow:0 34px 100px rgba(0,0,0,.45); }
-    .hero-card:before { content:""; position:absolute; inset:-40% -20% auto auto; width:280px; height:280px; border-radius:999px; background:rgba(34,197,94,.24); filter:blur(12px); }
-    .camera-preview { position:relative; aspect-ratio:4/3; border-radius:24px; background:radial-gradient(circle at center, rgba(34,197,94,.18), rgba(0,0,0,.95)); border:1px solid rgba(34,197,94,.34); overflow:hidden; display:grid; place-items:center; }
-    .scan-ring { width:min(64%, 260px); aspect-ratio:1; border-radius:999px; border:1px solid rgba(134,239,172,.55); box-shadow:0 0 70px rgba(34,197,94,.22), inset 0 0 50px rgba(34,197,94,.12); }
-    .hud { position:absolute; left:16px; right:16px; bottom:16px; display:grid; gap:8px; }
-    .hud-row { display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:14px; background:rgba(2,6,23,.78); border:1px solid rgba(148,163,184,.16); color:#dbeafe; font-size:.88rem; }
-    .metric-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
-    .metric { padding:14px; border:1px solid var(--line); border-radius:18px; background:rgba(15,23,42,.52); }
-    .metric strong { display:block; font-size:1.45rem; color:var(--green-2); }
-    .section { margin-top:34px; padding:24px; border:1px solid var(--line); border-radius:28px; background:var(--panel-soft); }
-    .section h2 { font-size:clamp(1.5rem,3vw,2.2rem); margin-bottom:14px; }
-    .steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
-    .step { padding:16px; border-radius:20px; background:rgba(2,6,23,.54); border:1px solid rgba(148,163,184,.15); }
-    .step-number { color:var(--gold); font-weight:900; margin-bottom:8px; }
-    .step p, .safety p { color:var(--muted); line-height:1.5; }
-    .safety { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center; border-color:rgba(248,113,113,.25); }
-    .safety strong { color:#fecaca; }
-    @media (max-width:860px) { .hero { grid-template-columns:1fr; } .steps { grid-template-columns:1fr 1fr; } .nav { align-items:flex-start; flex-direction:column; } }
-    @media (max-width:560px) { .steps, .metric-strip, .safety { grid-template-columns:1fr; } .cta-row .btn, .nav-links .btn { width:100%; } }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148,163,184,.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,.055) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.85), rgba(0,0,0,.18));
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto -20% -30% -20%;
+      height: 360px;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(34,197,94,.16), transparent 70%);
+      filter: blur(10px);
+    }
+    a { color: inherit; }
+    p { color: var(--muted); line-height: 1.65; }
+    .landing-shell { position: relative; z-index: 1; width: min(1180px, 100%); margin: 0 auto; }
+    .nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: clamp(34px, 6vw, 72px); }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; letter-spacing: .02em; }
+    .brand-mark { width: 38px; height: 38px; border-radius: 15px; background: linear-gradient(135deg,var(--green),var(--gold)); box-shadow: 0 0 32px rgba(34,197,94,.55); }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.24);
+      text-decoration: none;
+      font-weight: 850;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+    }
+    .btn:hover, .btn:focus-visible { transform: translateY(-2px); border-color: var(--line-bright); outline: none; box-shadow: 0 0 0 4px rgba(34,197,94,.14); }
+    .btn.primary { background: linear-gradient(135deg,var(--green),#16a34a); color: #02130a; border-color: rgba(134,239,172,.72); box-shadow: 0 18px 45px rgba(34,197,94,.24); }
+    .btn.gold { background: linear-gradient(135deg,var(--gold),var(--amber)); color: #1f1300; border-color: rgba(253,230,138,.74); }
+    .btn.ghost { background: rgba(15,23,42,.72); color: #e2e8f0; }
+    .btn.subtle { background: transparent; color: #dbeafe; }
+    .hero { display: grid; grid-template-columns: minmax(0,1.04fr) minmax(320px,.96fr); gap: clamp(24px, 5vw, 56px); align-items: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid rgba(34,197,94,.46); border-radius: 999px; background: rgba(6,78,59,.24); color: var(--green-2); font-weight: 800; font-size: .84rem; margin-bottom: 18px; }
+    .pulse { width: 8px; height: 8px; border-radius: 999px; background: var(--green); box-shadow: 0 0 18px var(--green); }
+    h1 { font-size: clamp(2.55rem, 7vw, 5.85rem); line-height: .95; letter-spacing: -.07em; max-width: 840px; }
+    .headline-accent { color: var(--green-2); text-shadow: 0 0 38px rgba(34,197,94,.45); }
+    .hero-copy { margin: 22px 0 24px; color: #d2dbea; font-size: clamp(1.03rem, 2vw, 1.26rem); line-height: 1.66; max-width: 720px; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0; }
+    .pathway-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+    .pathway { padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(2,6,23,.5); }
+    .pathway strong { display: block; color: #eef6ff; margin-bottom: 4px; }
+    .pathway span { color: var(--muted); font-size: .9rem; }
+    .hero-card { position: relative; overflow: hidden; min-height: 468px; border: 1px solid var(--line); border-radius: 34px; padding: 22px; background: linear-gradient(180deg,rgba(15,23,42,.86),rgba(2,6,23,.74)); box-shadow: 0 34px 100px rgba(0,0,0,.45); }
+    .hero-card::before { content:""; position:absolute; inset:-36% -16% auto auto; width:320px; height:320px; border-radius:999px; background:rgba(34,197,94,.24); filter:blur(14px); }
+    .hero-card::after { content:""; position:absolute; inset:auto auto -18% -18%; width:260px; height:260px; border-radius:999px; background:rgba(250,204,21,.12); filter:blur(20px); }
+    .training-console { position: relative; z-index: 1; display: grid; gap: 14px; }
+    .console-top { display: flex; justify-content: space-between; align-items: center; color: var(--green-2); font-weight: 850; letter-spacing: .05em; text-transform: uppercase; font-size: .78rem; }
+    .camera-preview { position: relative; aspect-ratio: 4/3; border-radius: 26px; background: radial-gradient(circle at center, rgba(34,197,94,.18), rgba(0,0,0,.95)); border: 1px solid rgba(34,197,94,.34); overflow: hidden; display: grid; place-items: center; }
+    .scan-ring { width: min(64%, 270px); aspect-ratio: 1; border-radius: 999px; border: 1px solid rgba(134,239,172,.58); box-shadow: 0 0 70px rgba(34,197,94,.24), inset 0 0 50px rgba(34,197,94,.13); animation: breathe 4s ease-in-out infinite; }
+    .scan-line { position: absolute; left: 10%; right: 10%; height: 2px; background: linear-gradient(90deg, transparent, var(--green-2), transparent); box-shadow: 0 0 16px rgba(134,239,172,.75); animation: scan 5s ease-in-out infinite; }
+    .hud { position: absolute; left: 16px; right: 16px; bottom: 16px; display: grid; gap: 8px; }
+    .hud-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(2,6,23,.78); border: 1px solid rgba(148,163,184,.16); color: #dbeafe; font-size: .9rem; }
+    .hud-row strong { color: #f8fafc; text-align: right; }
+    .metric-strip { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .metric { padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(15,23,42,.56); }
+    .metric strong { display: block; font-size: 1.45rem; color: var(--green-2); }
+    .metric span { color: var(--muted); font-size: .9rem; }
+    .section { margin-top: clamp(34px, 6vw, 70px); }
+    .section-panel { padding: clamp(20px, 4vw, 32px); border: 1px solid var(--line); border-radius: 30px; background: var(--panel-soft); box-shadow: 0 26px 80px rgba(0,0,0,.2); }
+    .section-kicker { color: var(--gold); font-weight: 900; letter-spacing: .12em; text-transform: uppercase; font-size: .78rem; margin-bottom: 8px; }
+    .section h2 { font-size: clamp(1.65rem, 3.4vw, 2.65rem); line-height: 1.05; letter-spacing: -.04em; margin-bottom: 12px; }
+    .section-intro { max-width: 780px; margin-bottom: 22px; }
+    .problem-grid, .capability-grid, .question-grid, .status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .problem-card, .capability-card, .question-card, .status-card, .flow-step { position: relative; padding: 18px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel-strong); overflow: hidden; }
+    .capability-card { min-height: 230px; display: grid; gap: 10px; align-content: start; transition: transform .16s ease, border-color .16s ease; }
+    .capability-card:hover { transform: translateY(-3px); border-color: var(--line-bright); }
+    .problem-card h3, .capability-card h3, .flow-step h3, .status-card h3 { font-size: 1.05rem; margin-bottom: 8px; }
+    .tag { display: inline-flex; width: fit-content; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(134,239,172,.36); background: rgba(6,78,59,.2); color: var(--green-2); font-weight: 850; font-size: .76rem; }
+    .tag.gold { border-color: rgba(250,204,21,.42); background: rgba(120,53,15,.25); color: #fde68a; }
+    .card-action { color: #e8fff1; font-weight: 850; margin-top: auto; }
+    .flow-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; counter-reset: flow; }
+    .flow-step { min-height: 190px; }
+    .flow-step::before { counter-increment: flow; content: "0" counter(flow); display: inline-flex; margin-bottom: 12px; color: var(--gold); font-weight: 950; }
+    .question-card { color: #eaf2ff; font-weight: 780; }
+    .split { display: grid; grid-template-columns: minmax(0,1fr) minmax(300px,.72fr); gap: 18px; align-items: stretch; }
+    .nutrition-card, .safety-card { padding: 22px; border: 1px solid var(--line); border-radius: 24px; background: var(--panel-strong); }
+    .safety-card { border-color: rgba(250,204,21,.3); }
+    .safety-card strong { color: #fde68a; }
+    .footer-cta { text-align: center; padding: clamp(28px, 5vw, 48px); }
+    .footer-cta p { margin: 0 auto 18px; max-width: 680px; }
+    @keyframes breathe { 0%, 100% { transform: scale(.96); opacity: .72; } 50% { transform: scale(1.03); opacity: 1; } }
+    @keyframes scan { 0%, 100% { top: 18%; opacity: .25; } 50% { top: 76%; opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .scan-ring, .scan-line { animation: none; }
+      .btn, .capability-card { transition: none; }
+      .btn:hover, .btn:focus-visible, .capability-card:hover { transform: none; }
+    }
+    @media (max-width: 980px) {
+      .hero, .split { grid-template-columns: 1fr; }
+      .pathway-row, .problem-grid, .capability-grid, .question-grid, .status-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .flow-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    }
+    @media (max-width: 640px) {
+      body { padding-left: calc(14px + var(--safe-left)); padding-right: calc(14px + var(--safe-right)); }
+      .nav { align-items: flex-start; flex-direction: column; }
+      .nav-links, .cta-row { width: 100%; }
+      .cta-row .btn, .nav-links .btn { width: 100%; }
+      .pathway-row, .problem-grid, .capability-grid, .question-grid, .status-grid, .flow-grid, .metric-strip { grid-template-columns: 1fr; }
+      .hero-card { min-height: auto; }
+      .section-panel { border-radius: 24px; }
+    }
   </style>
 </head>
 <body>
@@ -67,7 +164,7 @@
     <nav class="nav" aria-label="Public navigation">
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Pocket PT</span></div>
       <div class="nav-links">
-        <a class="btn ghost" href="/workout.html">Open App</a>
+        <a class="btn ghost" href="/workout.html">Member Login</a>
         <a class="btn ghost" href="/dashboard.html">Dashboard</a>
         <a class="btn ghost" href="/exercise-library.html">Exercise Library</a>
       </div>
@@ -75,50 +172,155 @@
 
     <section class="hero" aria-labelledby="landingHeadline">
       <div>
-        <div class="eyebrow">● Pilot-ready movement intelligence</div>
-        <h1 id="landingHeadline">AI coaching that makes every rep <span class="headline-accent">visible.</span></h1>
-        <p class="hero-copy">Pocket PT uses your camera to guide workouts, count reps, score form, and save progress in a lightweight pilot experience built for events, members, and coaches.</p>
+        <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> Your on-call fitness guide</div>
+        <h1 id="landingHeadline">Training That Learns Your Routine, Tracks Your Progress, and <span class="headline-accent">Keeps You Moving.</span></h1>
+        <p class="hero-copy">Pocket PT helps you know what to do, tracks what you complete, watches supported movements, and keeps your training connected to your goals.</p>
         <div class="cta-row" aria-label="Primary actions">
-          <a id="landingChallengeCta" class="btn gold" href="/workout.html#pushupChallengePanel">Try Push-Up Challenge</a>
-          <a id="landingWorkoutCta" class="btn primary" href="/workout.html">Start Workout</a>
-          <a id="landingLoginCta" class="btn ghost" href="/workout.html">Member Login / Open App</a>
-          <a id="landingDashboardCta" class="btn ghost" href="/dashboard.html">View Dashboard</a>
+          <a id="landingWorkoutCta" class="btn primary" href="/workout.html">Start With Pocket PT</a>
+          <a id="landingChallengeCta" class="btn gold" href="/workout.html#pushupChallengePanel">Try the Push-Up Challenge</a>
+          <a id="landingLoginCta" class="btn ghost" href="/workout.html">Member Login</a>
+          <a id="landingDashboardCta" class="btn subtle" href="/dashboard.html">Open My Dashboard</a>
+        </div>
+        <div class="pathway-row" aria-label="Product pathways">
+          <div class="pathway"><strong>New user</strong><span>Start With Pocket PT</span></div>
+          <div class="pathway"><strong>Returning user</strong><span>Member Login</span></div>
+          <div class="pathway"><strong>Event participant</strong><span>Try the Push-Up Challenge</span></div>
+          <div class="pathway"><strong>Authenticated member</strong><span>Open My Dashboard</span></div>
         </div>
       </div>
 
-      <aside class="hero-card" aria-label="Workout preview">
-        <div class="camera-preview">
-          <div class="scan-ring" aria-hidden="true"></div>
-          <div class="hud">
-            <div class="hud-row"><span>Exercise</span><strong>Push-Up Challenge</strong></div>
-            <div class="hud-row"><span>Reps</span><strong>24</strong></div>
-            <div class="hud-row"><span>Coach cue</span><strong>Keep your body straight</strong></div>
+      <aside class="hero-card" aria-label="Pocket PT workout preview">
+        <div class="training-console">
+          <div class="console-top"><span>Pocket PT session</span><span>Available now</span></div>
+          <div class="camera-preview">
+            <div class="scan-ring" aria-hidden="true"></div>
+            <div class="scan-line" aria-hidden="true"></div>
+            <div class="hud">
+              <div class="hud-row"><span>Today</span><strong>Push + Core</strong></div>
+              <div class="hud-row"><span>Movement cue</span><strong>Keep your body straight</strong></div>
+              <div class="hud-row"><span>Progress</span><strong>History saved when signed in</strong></div>
+            </div>
           </div>
-        </div>
-        <div class="metric-strip" aria-label="Pilot capabilities">
-          <div class="metric"><strong>60s</strong><span>event challenge</span></div>
-          <div class="metric"><strong>AI</strong><span>movement cues</span></div>
-          <div class="metric"><strong>Live</strong><span>leaderboard</span></div>
+          <div class="metric-strip" aria-label="Available platform capabilities">
+            <div class="metric"><strong>Reps</strong><span>tracked in workouts</span></div>
+            <div class="metric"><strong>Goals</strong><span>connected to intake</span></div>
+            <div class="metric"><strong>Live</strong><span>challenge leaderboard</span></div>
+          </div>
         </div>
       </aside>
     </section>
 
-    <section class="section" aria-labelledby="howItWorksTitle">
-      <h2 id="howItWorksTitle">How it works</h2>
-      <div class="steps">
-        <div class="step"><div class="step-number">01</div><h3>Camera tracks movement</h3><p>Connect your camera so the coach can see exercise positions and range of motion.</p></div>
-        <div class="step"><div class="step-number">02</div><h3>AI coach gives guidance</h3><p>Clean, user-facing cues help you adjust without exposing developer diagnostics.</p></div>
-        <div class="step"><div class="step-number">03</div><h3>Reps and form are scored</h3><p>Workouts and the Push-Up Challenge keep rep counts, form status, and scores visible.</p></div>
-        <div class="step"><div class="step-number">04</div><h3>Progress can be saved</h3><p>Authenticated members can keep workouts, leaderboards, and dashboard history connected.</p></div>
+    <section class="section section-panel" aria-labelledby="problemsTitle">
+      <div class="section-kicker">Real training problems</div>
+      <h2 id="problemsTitle">Built for the moments when consistency usually breaks.</h2>
+      <p class="section-intro">Pocket PT turns common training friction into clear next actions using flows that already exist in the workout app, dashboard, challenge mode, and exercise library.</p>
+      <div class="problem-grid">
+        <article class="problem-card"><h3>Struggling to stay consistent?</h3><p>Use check-ins, workout history, and dashboard progress to keep your routine visible.</p></article>
+        <article class="problem-card"><h3>Unsure what workout to do next?</h3><p>Choose a starter workout, open your current program, or use the exercise library to send an exercise into the workout app.</p></article>
+        <article class="problem-card"><h3>Tired of losing track of progress?</h3><p>Signed-in members can save completed sessions and review history from the dashboard.</p></article>
+        <article class="problem-card"><h3>Wondering whether your form is correct?</h3><p>Camera-guided tracking gives cues for supported movements such as squats, push-ups, and lunges.</p></article>
+        <article class="problem-card"><h3>Need your plan to reflect performance?</h3><p>Pocket PT keeps goals, intake, reps, check-ins, and workout history together so training can become more personalized over time.</p></article>
+        <article class="problem-card"><h3>Want answers between sessions?</h3><p>Bring practical workout, substitution, recovery, and mobility questions to the text coach in the workout app.</p></article>
       </div>
     </section>
 
-    <section class="section safety" aria-label="Pilot safety notice">
-      <div>
-        <h2>Pilot safety</h2>
-        <p><strong>Stop if you feel pain or dizziness.</strong> This pilot experience is for fitness guidance only. <strong>This is not medical advice.</strong></p>
+    <section class="section section-panel" aria-labelledby="capabilitiesTitle">
+      <div class="section-kicker">What Pocket PT can do</div>
+      <h2 id="capabilitiesTitle">A capability-led training system, not another static workout list.</h2>
+      <p class="section-intro">Each card connects a verified platform capability to the next useful action.</p>
+      <div id="capabilityCards" class="capability-grid">
+        <article class="capability-card"><span class="tag">Available now</span><h3>Personalized Training Path</h3><p><strong>Problem:</strong> your plan gets scattered across notes and memory.</p><p><strong>Pocket PT:</strong> keeps goals, intake, current program data, check-ins, and history connected for signed-in members.</p><p class="card-action">Next action: Start With Pocket PT.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Movement and Form Feedback</h3><p><strong>Problem:</strong> you cannot always tell if a rep matches the intended movement.</p><p><strong>Pocket PT:</strong> uses the camera for supported movement patterns and shows practical form cues.</p><p class="card-action">Next action: Connect Camera in the workout app.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Rep and Workout Tracking</h3><p><strong>Problem:</strong> completed work disappears after the session.</p><p><strong>Pocket PT:</strong> tracks reps in supported flows and saves authenticated workout completions.</p><p class="card-action">Next action: Start a workout.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Progress History</h3><p><strong>Problem:</strong> it is hard to see whether training is adding up.</p><p><strong>Pocket PT:</strong> shows workout history, active workout status, and consistency indicators on the dashboard.</p><p class="card-action">Next action: Open My Dashboard.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Goals and Check-Ins</h3><p><strong>Problem:</strong> accountability fades when goals are not reviewed.</p><p><strong>Pocket PT:</strong> supports intake, goals baseline, scheduled training, and check-ins after login.</p><p class="card-action">Next action: Complete your onboarding flow.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Exercise Library</h3><p><strong>Problem:</strong> finding a movement and bringing it into training takes too many steps.</p><p><strong>Pocket PT:</strong> provides a searchable exercise library with a workout selection pathway.</p><p class="card-action">Next action: Browse the Exercise Library.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Challenges and Leaderboards</h3><p><strong>Problem:</strong> short-term motivation needs a clear event and visible score.</p><p><strong>Pocket PT:</strong> runs a Push-Up Challenge with consent, scoring, save status, and leaderboard results.</p><p class="card-action">Next action: Try the Push-Up Challenge.</p></article>
+        <article class="capability-card"><span class="tag">Available now</span><h3>Ask Pocket PT</h3><p><strong>Problem:</strong> simple training questions come up when a trainer is not physically present.</p><p><strong>Pocket PT:</strong> accepts practical typed questions from the workout app and can use session context.</p><p class="card-action">Next action: Ask a question in the workout app.</p></article>
+        <article class="capability-card"><span class="tag gold">Role gated</span><h3>Coach and Trainer Tools</h3><p><strong>Problem:</strong> new scoring templates need private review before normal users see them.</p><p><strong>Pocket PT:</strong> includes an authenticated trainer/admin template draft flow that remains hidden from public visitors.</p><p class="card-action">Next action: Authorized roles open tools inside the workout app.</p></article>
       </div>
-      <a class="btn primary" href="/workout.html">Enter Workout App</a>
+    </section>
+
+    <section class="section section-panel" aria-labelledby="howUseTitle">
+      <div class="section-kicker">How you use Pocket PT</div>
+      <h2 id="howUseTitle">A simple daily loop from goal to next session.</h2>
+      <div class="flow-grid">
+        <article class="flow-step"><h3>Tell Pocket PT about your goals.</h3><p>Sign in and complete intake, goals, and check-in steps when prompted.</p></article>
+        <article class="flow-step"><h3>Choose or receive a workout.</h3><p>Select a starter template, open the current program, or use an exercise from the library.</p></article>
+        <article class="flow-step"><h3>Connect the camera when needed.</h3><p>Use movement tracking for supported exercise patterns and challenge mode.</p></article>
+        <article class="flow-step"><h3>Complete the work.</h3><p>Pocket PT tracks reps in supported flows and shows cues while you train.</p></article>
+        <article class="flow-step"><h3>Review progress and history.</h3><p>Open the dashboard to see completed sessions, consistency, and active workout status.</p></article>
+        <article class="flow-step"><h3>Return or ask a question.</h3><p>Continue from your training flow or ask a practical workout, recovery, or mobility question.</p></article>
+      </div>
+    </section>
+
+    <section class="section section-panel" aria-labelledby="questionsTitle">
+      <div class="section-kicker">Questions you can bring to Pocket PT</div>
+      <h2 id="questionsTitle">Ask for practical guidance when you need the next move.</h2>
+      <p class="section-intro">Use the text conversation in the workout app for grounded fitness questions. Keep pain, injury, and medical concerns with qualified professionals.</p>
+      <div class="question-grid">
+        <div class="question-card">“What workout should I do today?”</div>
+        <div class="question-card">“How should I adjust this exercise?”</div>
+        <div class="question-card">“What can I do for recovery after leg day?”</div>
+        <div class="question-card">“Show me a stretch for tight hips.”</div>
+        <div class="question-card">“How has my workout consistency changed?”</div>
+        <div class="question-card">“What exercise can I substitute today?”</div>
+        <div class="question-card">“How many workouts have I completed?”</div>
+        <div class="question-card">“Which starter workout matches push, squat, or lunge practice?”</div>
+        <div class="question-card">“Where can I review my Push-Up Challenge score?”</div>
+      </div>
+    </section>
+
+    <section class="section section-panel" aria-labelledby="accountabilityTitle">
+      <div class="section-kicker">Consistency and accountability</div>
+      <h2 id="accountabilityTitle">Your training stays organized after the workout ends.</h2>
+      <div class="status-grid">
+        <article class="status-card"><h3>Organized sessions</h3><p>Workout selection, calendar views, and active workout state keep your next action visible.</p></article>
+        <article class="status-card"><h3>Completed work</h3><p>Authenticated workout tracking saves completions to history.</p></article>
+        <article class="status-card"><h3>Progress history</h3><p>The dashboard shows history, consistency indicators, and recent training information.</p></article>
+        <article class="status-card"><h3>Check-ins</h3><p>Weekly check-ins help connect training with how you are doing over time.</p></article>
+        <article class="status-card"><h3>Missed activity signals</h3><p>Calendar and completion views make planned versus completed training easier to spot.</p></article>
+        <article class="status-card"><h3>Continue where you stopped</h3><p>Current program and active workout views help you return to the next useful step.</p></article>
+      </div>
+    </section>
+
+    <section class="section split" aria-labelledby="personalizationTitle">
+      <div class="section-panel">
+        <div class="section-kicker">Personalization over time</div>
+        <h2 id="personalizationTitle">One place for goals, history, reps, check-ins, and performance.</h2>
+        <p>Pocket PT keeps your goals, workout history, and performance information together so your training can become more personalized over time.</p>
+        <p>Current personalization uses information from profile, intake, goals, completed workouts, check-ins, selected programs, and supported movement performance. Advanced automatic plan adaptation should be treated as a future growth area, not a live guarantee.</p>
+      </div>
+      <div class="nutrition-card" aria-labelledby="nutritionTitle">
+        <span class="tag gold">Coming soon</span>
+        <h2 id="nutritionTitle">Nutrition planning</h2>
+        <p>Meal tracking and nutrition planning are being developed to bring training and daily habits into one place.</p>
+        <p>Pocket PT does not currently advertise live diet-plan creation, calorie calculation, or meal logging from this public landing page.</p>
+      </div>
+    </section>
+
+    <section class="section split" aria-labelledby="recoveryTitle">
+      <div class="section-panel">
+        <div class="section-kicker">Recovery and mobility</div>
+        <h2 id="recoveryTitle">Guidance for training days, lighter days, and mobility work.</h2>
+        <p>Pocket PT can provide general fitness, mobility, and recovery suggestions, including practical stretching or workout-adjustment ideas through the workout conversation flow.</p>
+      </div>
+      <div class="safety-card" aria-label="Safety guidance">
+        <h2>Safety first</h2>
+        <p><strong>For pain, injury, medical conditions, or urgent concerns, consult a qualified healthcare professional.</strong></p>
+        <p>Pocket PT is a fitness guidance and accountability system. It does not diagnose injuries, replace a doctor, replace a physical therapist, or replace a registered dietitian.</p>
+      </div>
+    </section>
+
+    <section class="section section-panel footer-cta" aria-labelledby="finalCtaTitle">
+      <div class="section-kicker">Start your next session</div>
+      <h2 id="finalCtaTitle">Your Training Plan. Your Progress. Your Pocket PT.</h2>
+      <p>Open the workout app, join the Push-Up Challenge, or return to your dashboard when you are signed in.</p>
+      <div class="cta-row" style="justify-content:center;" aria-label="Final actions">
+        <a class="btn primary" href="/workout.html">Start With Pocket PT</a>
+        <a class="btn gold" href="/workout.html#pushupChallengePanel">Try the Push-Up Challenge</a>
+        <a class="btn ghost" href="/dashboard.html">Open My Dashboard</a>
+      </div>
     </section>
   </main>
 </body>
