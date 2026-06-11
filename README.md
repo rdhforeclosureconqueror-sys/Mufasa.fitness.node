@@ -2,29 +2,62 @@
 
 Pilot fitness backend with explicit API write routes, controlled legacy fallback, and bounded rollout hardening.
 
-## Phase 7 minimal Stripe Checkout membership
+## Phase 41 live Stripe Embedded Checkout membership
 
-Pilot billing is intentionally limited to one server-configured Stripe Checkout price and file-backed membership state. It is not a billing dashboard, coupon system, invoice UI, tenant billing system, or multi-plan manager.
+Pocket PT billing uses Stripe Embedded Checkout for one server-configured recurring subscription price. Customers stay on `/membership.html`; Stripe-hosted secure components collect all card numbers, CVC values, and expiration dates. Pocket PT never collects, transmits, logs, or stores raw payment credentials.
 
 Routes:
-- `GET /api/me/membership` requires bearer auth and returns the authenticated user's membership. Users without stored membership receive `{ status: "inactive", plan: "free" }` plus null Stripe fields.
-- `POST /api/billing/create-checkout-session` requires bearer auth, reads `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID` from the server environment, ignores client-supplied price IDs, and returns the Checkout session `id` and `url`.
-- `POST /api/billing/webhook` does not use bearer auth. It verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET` and handles `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted` to update the file-backed membership record.
+- `GET /api/billing/plan` returns safe public plan display data from trusted backend configuration, including the plan name and official price label.
+- `GET /api/me/membership` requires bearer auth and returns the authenticated user's normalized membership, including `hasAccess` and entitlement rules.
+- `POST /api/billing/checkout-session` requires bearer auth, reads `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID` from the backend environment, creates/reuses the authenticated user's Stripe Customer, creates a `mode=subscription` and `ui_mode=embedded` Checkout Session, and returns only safe session data such as `clientSecret`.
+- `POST /api/billing/create-checkout-session` is retained as a compatibility alias but now returns embedded checkout data instead of a redirect URL.
+- `POST /api/billing/portal-session` requires bearer auth and creates a Stripe billing portal session only for the Stripe Customer stored on the authenticated user's own membership record.
+- `POST /api/billing/webhook` does not use bearer auth. It verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET` and handles `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, and `invoice.payment_failed`.
 
-Required env for billing:
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PRICE_ID`
-- `PUBLIC_BASE_URL` for stable Checkout success/cancel redirects; if omitted, the request host is used as a fallback.
+Required backend env for live billing:
+- `BILLING_ENABLED=true`
+- `STRIPE_LIVE_MODE=true`
+- `STRIPE_SECRET_KEY=sk_live_...`
+- `STRIPE_WEBHOOK_SECRET=whsec_...`
+- `STRIPE_PRICE_ID=price_...`
+- `FRONTEND_PUBLIC_URL=https://mufasafitsite.onrender.com`
+- `BACKEND_PUBLIC_URL=https://mufasa-fitness-node.onrender.com`
+
+Required frontend public env/config:
+- `STRIPE_PUBLISHABLE_KEY=pk_live_...`
+- If the frontend build requires Vite-style naming, mirror it as `VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...`.
+- Static deployments can expose the same safe publishable value via `window.STRIPE_PUBLISHABLE_KEY`, `window.VITE_STRIPE_PUBLISHABLE_KEY`, `window.__STRIPE_PUBLISHABLE_KEY__`, or `window.__MAAT_RUNTIME_CONFIG.stripePublishableKey` before `/membership.js` loads.
+
+Webhook endpoint:
+- `https://mufasa-fitness-node.onrender.com/api/billing/webhook`
 
 Membership fields persisted on the user record:
 - `userId`
-- `status`
-- `plan`
 - `stripeCustomerId`
 - `stripeSubscriptionId`
+- `stripePriceId`
+- `status`
+- `plan`
 - `currentPeriodEnd`
+- `cancelAtPeriodEnd`
+- `lastInvoiceStatus`
+- `createdAt`
 - `updatedAt`
+
+Entitlement rules:
+- `active`: grants access.
+- `trialing`: grants access.
+- `past_due`: does not grant access, but duplicate checkout is blocked so the user is directed to billing management.
+- `unpaid`: does not grant access.
+- `canceled`: does not grant access.
+- `incomplete`: does not grant access until verified Stripe subscription/payment events recover it.
+- `incomplete_expired`: does not grant access.
+
+Duplicate-subscription protection blocks new checkout sessions when the authenticated user's stored subscription status is `active`, `trialing`, `past_due`, or `incomplete`; the frontend should direct those users to the billing portal instead.
+
+Ops preflight:
+- When `BILLING_ENABLED=true`, production preflight fails closed if Stripe secret key, price ID, webhook secret, or a frontend publishable key is missing.
+- In live/production mode it validates prefixes without printing secret values: backend secret starts with `sk_live_`, publishable key starts with `pk_live_`, webhook secret starts with `whsec_`, and price starts with `price_`.
 
 ## Authorization model (bounded)
 

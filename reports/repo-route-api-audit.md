@@ -1,11 +1,12 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-04-29T02:00:01.620Z
+Generated: 2026-06-11T16:07:41.694Z
 
 ## Backend Route Inventory
 
 | Method | Path | Auth required | Permission | Expected body/query | Purpose | Response type |
 |---|---|---|---|---|---|---|
+| GET | /avatar-runtime.js | no | none | none/optional | application route | JSON/file |
 | GET | /__version | no | none | none/optional | backend build/version probe | JSON/file |
 | GET | /__diagnostic-smoke | no | none | none/optional | diagnostic smoke endpoint | JSON/file |
 | GET | /health | no | none | none/optional | service health summary | JSON/file |
@@ -13,20 +14,48 @@ Generated: 2026-04-29T02:00:01.620Z
 | GET | /api/admin/diagnostics/recent | yes | OPS_READ_OBSERVABILITY | none/optional | store/read browser diagnostics reports | JSON/file |
 | POST | /api/speak | no | none | none/optional | application route | JSON/file |
 | POST | /api/auth/login | no | none | none/optional | application route | JSON/file |
+| POST | /api/auth/register | no | none | none/optional | application route | JSON/file |
 | GET | /api/auth/me | yes | none | none/optional | application route | JSON/file |
 | POST | /api/auth/logout | no | none | none/optional | application route | JSON/file |
-| GET | /api/auth/pilot-login | no | none | none/optional | application route | JSON/file |
-| POST | /api/auth/pilot-login | no | none | none/optional | application route | JSON/file |
-| POST | /api/auth/pilot-session | no | none | none/optional | application route | JSON/file |
 | POST | /api/auth/bridge | no | none | provider, trustMode, and identity claim (googleIdToken/googleEmail/googleSub/userId) | issue app auth token from provider/manual identity claims | JSON/file |
 | GET | /api/me | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/membership | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/billing/plan | no | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
+| POST | /api/billing/checkout-session | yes | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
+| POST | /api/billing/create-checkout-session | yes | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
+| POST | /api/billing/portal-session | yes | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
+| POST | /api/billing/webhook | no | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
+| POST | /api/challenges/pushup/results | no | none | none/optional | application route | JSON/file |
+| GET | /api/challenges/pushup/leaderboard | no | none | none/optional | application route | JSON/file |
 | POST | /api/pilot/events | no | none | none/optional | application route | JSON/file |
+| POST | /api/exercise-templates | yes | none | none/optional | application route | JSON/file |
+| GET | /api/exercise-templates | yes | none | none/optional | application route | JSON/file |
+| GET | /api/exercise-templates/active/scoring | yes | none | none/optional | application route | JSON/file |
+| GET | /api/exercise-templates/:id | yes | none | none/optional | application route | JSON/file |
+| PUT | /api/exercise-templates/:id | yes | none | none/optional | application route | JSON/file |
+| POST | /api/exercise-templates/:id/demo-captures | yes | none | none/optional | application route | JSON/file |
+| POST | /api/exercise-templates/:id/test-runs | yes | none | none/optional | application route | JSON/file |
+| POST | /api/exercise-templates/:id/approve | yes | none | none/optional | application route | JSON/file |
 | GET | /api/exercises/index | no | none | none/optional | exercise catalog reads | JSON/file |
 | GET | /api/exercises/search | no | none | query/path parameters | exercise catalog reads | JSON/file |
 | GET | /api/exercises/:slug | no | none | query/path parameters | exercise catalog reads | JSON/file |
 | POST | /api/sessions | yes | none | JSON payload validated server-side | session lifecycle writes | JSON/file |
 | POST | /api/sessions/:id/reps | yes | none | JSON payload validated server-side | session lifecycle writes | JSON/file |
 | POST | /api/sessions/:id/complete | yes | none | JSON payload validated server-side | session lifecycle writes | JSON/file |
+| GET | /api/nutrition/barcodes/:barcode | yes | none | none/optional | application route | JSON/file |
+| GET | /api/nutrition/foods/search | yes | none | query/path parameters | application route | JSON/file |
+| GET | /api/nutrition/foods/:fdcId | yes | none | none/optional | application route | JSON/file |
+| POST | /api/nutrition/drafts/natural-language | yes | none | none/optional | application route | JSON/file |
+| GET | /api/me/nutrition/entries | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/entries | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| PUT | /api/me/nutrition/entries/:entryId | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| DELETE | /api/me/nutrition/entries/:entryId | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/summary | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/recent | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/meals | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/meals | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/meals/:mealId/log | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/education | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | GET | /api/me/profile | yes | none | JSON payload validated server-side | authenticated user profile/history reads | JSON/file |
 | PUT | /api/me/profile | yes | none | JSON payload validated server-side | authenticated user profile/history reads | JSON/file |
 | POST | /api/ohsa | yes | none | JSON payload validated server-side | application route | JSON/file |
@@ -52,15 +81,10 @@ Generated: 2026-04-29T02:00:01.620Z
 
 | File + line | Method | URL/path | Backend base used | Auth token included | Diagnostic capture |
 |---|---|---|---|---|---|
-| index.html:1330 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:2483 | GET | dynamic | external/unknown | no/unknown | no |
-| index.html:3028 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:3050 | GET | dynamic | external/unknown | yes/conditional | no |
-| index.html:3493 | POST | dynamic | external/unknown | yes/conditional | no |
-| index.html:3795 | GET | /health | relative origin | no/unknown | no |
-| index.html:3943 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:3997 | POST | dynamic | external/unknown | no/unknown | no |
-| index.html:5288 | POST | dynamic | external/unknown | yes/conditional | no |
+| index.html:1152 | POST | dynamic | external/unknown | no/unknown | no |
+| index.html:1255 | GET | https://mufasa-fitness-node.onrender.com/__version | external/unknown | no/unknown | no |
+| index.html:2149 | GET | dynamic | external/unknown | no/unknown | no |
+| index.html:2973 | GET | /health | relative origin | no/unknown | no |
 | dashboard.js:214 | GET | dynamic | external/unknown | no/unknown | no |
 | dashboard.js:233 | GET | /__version | backend base var | no/unknown | yes |
 | dashboard.js:245 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
@@ -69,29 +93,22 @@ Generated: 2026-04-29T02:00:01.620Z
 | session-write.js:147 | POST | dynamic | external/unknown | yes/conditional | no |
 | session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
 | fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
-| exercise-library.js:150 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:1330 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:2483 | GET | dynamic | external/unknown | no/unknown | no |
-| public/index.html:3028 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3050 | GET | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3493 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/index.html:3795 | GET | /health | relative origin | no/unknown | no |
-| public/index.html:3943 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:3997 | POST | dynamic | external/unknown | no/unknown | no |
-| public/index.html:5288 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/dashboard.js:215 | GET | dynamic | external/unknown | no/unknown | no |
-| public/dashboard.js:234 | GET | /__version | backend base var | no/unknown | yes |
-| public/dashboard.js:246 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
-| public/dashboard.js:302 | POST | /api/admin/diagnostics/report | backend base var | yes/conditional | yes |
-| public/backend-read.js:76 | GET | dynamic | backend base var | yes/conditional | no |
-| public/session-write.js:147 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/session-write.js:182 | POST | dynamic | external/unknown | yes/conditional | no |
-| public/fitness.js:121 | GET | dynamic | external/unknown | no/unknown | no |
-| public/exercise-library.js:150 | GET | dynamic | external/unknown | no/unknown | no |
-| public/diagnostics-client.js:162 | POST | /api/admin/diagnostics/report | relative origin | no/unknown | yes |
-| public/landing-diagnostics.js:31 | GET | dynamic | external/unknown | no/unknown | yes |
-| public/landing-diagnostics.js:44 | GET | dynamic | external/unknown | no/unknown | yes |
-| public/landing-diagnostics.js:140 | POST | dynamic | external/unknown | yes/conditional | yes |
+| exercise-library.js:219 | GET | dynamic | external/unknown | no/unknown | no |
+| public/dashboard.js:218 | GET | dynamic | external/unknown | no/unknown | no |
+| public/dashboard.js:237 | GET | /__version | backend base var | no/unknown | yes |
+| public/dashboard.js:249 | GET | /__diagnostic-smoke | backend base var | no/unknown | yes |
+| public/dashboard.js:310 | POST | /api/admin/diagnostics/report | backend base var | yes/conditional | yes |
+| public/backend-read.js:93 | GET | dynamic | backend base var | yes/conditional | no |
+| public/session-write.js:280 | POST | dynamic | external/unknown | no/unknown | no |
+| public/session-write.js:331 | POST | dynamic | external/unknown | yes/conditional | no |
+| public/session-write.js:659 | GET | ${baseUrl}/api/challenges/pushup/leaderboard | backend base var | no/unknown | no |
+| public/fitness.js:143 | GET | dynamic | external/unknown | no/unknown | no |
+| public/exercise-library.js:219 | GET | dynamic | external/unknown | no/unknown | no |
+| public/diagnostics-client.js:191 | POST | ${backendOrigin}/api/admin/diagnostics/report | external/unknown | yes/conditional | yes |
+| public/landing-diagnostics.js:54 | GET | dynamic | external/unknown | no/unknown | yes |
+| public/landing-diagnostics.js:67 | GET | dynamic | external/unknown | no/unknown | yes |
+| public/landing-diagnostics.js:167 | POST | dynamic | external/unknown | yes/conditional | yes |
+| public/membership.js:65 | GET | dynamic | external/unknown | yes/conditional | no |
 
 ## Static Asset/Runtime Inventory
 

@@ -4,6 +4,41 @@ const { parseAuthorizationConfig } = require("./authorization");
 const { validateAuthorizationConfigShape, validateParsedEnforcementConfig } = require("./authzEnforcementValidation");
 const { parseTrustPolicyConfig, validateTrustPolicy, summarizeTrustPolicy } = require("./trustPolicy");
 
+
+function isBillingEnabled(env) {
+  return String(env.BILLING_ENABLED || env.STRIPE_BILLING_ENABLED || "").trim().toLowerCase() === "true";
+}
+
+function validateBillingPreflight(env, issues, warnings) {
+  if (!isBillingEnabled(env)) {
+    warnings.push("BILLING_ENABLED is not true; live Stripe billing preflight checks are not enforced.");
+    return;
+  }
+
+  const required = [
+    "STRIPE_SECRET_KEY",
+    "STRIPE_PRICE_ID",
+    "STRIPE_WEBHOOK_SECRET"
+  ];
+  for (const key of required) {
+    if (!String(env[key] || "").trim()) issues.push(`${key} is required when BILLING_ENABLED=true.`);
+  }
+
+  const publishableKey = String(env.STRIPE_PUBLISHABLE_KEY || env.VITE_STRIPE_PUBLISHABLE_KEY || "").trim();
+  if (!publishableKey) issues.push("STRIPE_PUBLISHABLE_KEY or VITE_STRIPE_PUBLISHABLE_KEY is required when BILLING_ENABLED=true.");
+
+  const liveMode = String(env.STRIPE_LIVE_MODE || env.NODE_ENV || "").trim().toLowerCase();
+  const requireLivePrefixes = liveMode === "true" || liveMode === "live" || liveMode === "production" || String(env.NODE_ENV || "").toLowerCase() === "production";
+  const secretKey = String(env.STRIPE_SECRET_KEY || "").trim();
+  const webhookSecret = String(env.STRIPE_WEBHOOK_SECRET || "").trim();
+  const priceId = String(env.STRIPE_PRICE_ID || "").trim();
+
+  if (requireLivePrefixes && secretKey && !secretKey.startsWith("sk_live_")) issues.push("STRIPE_SECRET_KEY must begin with sk_live_ in production live mode.");
+  if (requireLivePrefixes && publishableKey && !publishableKey.startsWith("pk_live_")) issues.push("Stripe publishable key must begin with pk_live_ in production live mode.");
+  if (webhookSecret && !webhookSecret.startsWith("whsec_")) issues.push("STRIPE_WEBHOOK_SECRET must begin with whsec_.");
+  if (priceId && !priceId.startsWith("price_")) issues.push("STRIPE_PRICE_ID must begin with price_.");
+}
+
 function runControlPlanePreflight({ env = process.env, enforceableActions = [], trustPolicy = null } = {}) {
   const issues = [];
   const warnings = [];
@@ -65,6 +100,7 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [], 
   const trustValidation = validateTrustPolicy(parsedTrustPolicy);
   warnings.push(...trustValidation.warnings);
   issues.push(...trustValidation.issues);
+  validateBillingPreflight(env, issues, warnings);
 
   const manualBridgeEnabled = env.AUTH_BRIDGE_ALLOW_MANUAL !== "false";
   const unverifiedGoogleEnabled = env.AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE !== "false";
@@ -89,11 +125,14 @@ function runControlPlanePreflight({ env = process.env, enforceableActions = [], 
       invalidActionCount: invalidActions.length,
       trustPolicy: summarizeTrustPolicy(parsedTrustPolicy),
       manualBridgeEnabled,
-      unverifiedGoogleEnabled
+      unverifiedGoogleEnabled,
+      billingEnabled: isBillingEnabled(env)
     }
   };
 }
 
 module.exports = {
-  runControlPlanePreflight
+  runControlPlanePreflight,
+  isBillingEnabled,
+  validateBillingPreflight
 };
