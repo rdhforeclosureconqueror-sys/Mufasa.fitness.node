@@ -29,8 +29,11 @@ const {
 } = require("./src/validation/meValidators");
 const {
   validateCheckoutConfig,
+  validatePortalConfig,
   validateWebhookConfig,
-  resolvePublicBaseUrl
+  rejectRawPaymentCredentialFields,
+  resolveMembershipReturnUrl,
+  getPublicBillingPlan
 } = require("./src/validation/billingValidation");
 const {
   validateClientIntake,
@@ -1557,16 +1560,48 @@ function createApp(options = {}) {
     return ok(res, req.requestId, membershipService.getMembership(req.auth.userId));
   }));
 
-  app.post("/api/billing/create-checkout-session", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/billing/plan", asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, getPublicBillingPlan(process.env));
+  }));
+
+  app.post("/api/billing/checkout-session", requireAuth, asyncHandler(async (req, res) => {
+    rejectRawPaymentCredentialFields(req.body);
     const checkoutConfig = validateCheckoutConfig(process.env);
-    const baseUrl = resolvePublicBaseUrl({ env: process.env, req });
+    const returnUrl = resolveMembershipReturnUrl({ env: process.env, req });
     const checkout = await membershipService.createCheckoutSession({
       userId: req.auth.userId,
+      email: req.auth.email,
       secretKey: checkoutConfig.secretKey,
       priceId: checkoutConfig.priceId,
-      baseUrl
+      returnUrl
     });
-    return ok(res, req.requestId, checkout, 201);
+    const status = checkout.duplicateProtected ? 200 : 201;
+    return ok(res, req.requestId, checkout, status);
+  }));
+
+  app.post("/api/billing/create-checkout-session", requireAuth, asyncHandler(async (req, res) => {
+    rejectRawPaymentCredentialFields(req.body);
+    const checkoutConfig = validateCheckoutConfig(process.env);
+    const returnUrl = resolveMembershipReturnUrl({ env: process.env, req });
+    const checkout = await membershipService.createCheckoutSession({
+      userId: req.auth.userId,
+      email: req.auth.email,
+      secretKey: checkoutConfig.secretKey,
+      priceId: checkoutConfig.priceId,
+      returnUrl
+    });
+    const status = checkout.duplicateProtected ? 200 : 201;
+    return ok(res, req.requestId, checkout, status);
+  }));
+
+  app.post("/api/billing/portal-session", requireAuth, asyncHandler(async (req, res) => {
+    const portalConfig = validatePortalConfig(process.env);
+    const portal = await membershipService.createPortalSession({
+      userId: req.auth.userId,
+      secretKey: portalConfig.secretKey,
+      returnUrl: resolveMembershipReturnUrl({ env: process.env, req })
+    });
+    return ok(res, req.requestId, portal, 201);
   }));
 
   app.post("/api/billing/webhook", asyncHandler(async (req, res) => {
