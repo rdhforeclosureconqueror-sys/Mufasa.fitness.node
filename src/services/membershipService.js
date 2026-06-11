@@ -5,6 +5,7 @@ const { ApiError } = require("../lib/apiResponse");
 
 const ACCESS_GRANTED_STATUSES = new Set(["active", "trialing"]);
 const DUPLICATE_PROTECTED_STATUSES = new Set(["active", "trialing", "past_due", "incomplete"]);
+const TRIAL_PERIOD_DAYS = 7;
 const INACTIVE_SUBSCRIPTION_STATUSES = new Set(["canceled", "incomplete_expired", "unpaid", "paused"]);
 const BILLING_PLAN = "stripe_embedded_subscription";
 const SAFE_WEBHOOK_EVENT_MEMORY = 20;
@@ -54,9 +55,13 @@ function inactiveMembership(userId) {
     stripePriceId: null,
     status,
     plan: "free",
+    trialStart: null,
+    trialEnd: null,
+    canceledAt: null,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
     lastInvoiceStatus: null,
+    trialReminder: null,
     createdAt: null,
     updatedAt: null,
     hasAccess: false,
@@ -77,9 +82,13 @@ function normalizeMembership(userId, membership) {
     stripePriceId: membership.stripePriceId || null,
     status,
     plan: String(membership.plan || (status === "inactive" ? "free" : BILLING_PLAN)),
+    trialStart: normalizeTimestamp(membership.trialStart),
+    trialEnd: normalizeTimestamp(membership.trialEnd),
+    canceledAt: normalizeTimestamp(membership.canceledAt),
     currentPeriodEnd: normalizeTimestamp(membership.currentPeriodEnd),
     cancelAtPeriodEnd: membership.cancelAtPeriodEnd === true,
     lastInvoiceStatus: membership.lastInvoiceStatus || null,
+    trialReminder: membership.trialReminder && typeof membership.trialReminder === "object" ? membership.trialReminder : null,
     createdAt: normalizeTimestamp(membership.createdAt),
     updatedAt: normalizeTimestamp(membership.updatedAt),
     hasAccess: hasMembershipAccess(status),
@@ -156,10 +165,12 @@ function createFetchStripeClient({ fetchImpl = global.fetch } = {}) {
       customer: customerId || undefined,
       customer_email: customerId ? undefined : email || undefined,
       client_reference_id: userId,
+      payment_method_collection: "always",
       line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { userId, authenticatedEmail: email || undefined },
+      metadata: { userId, authenticatedEmail: email || undefined, stripePriceId: priceId },
       subscription_data: {
-        metadata: { userId, authenticatedEmail: email || undefined }
+        trial_period_days: TRIAL_PERIOD_DAYS,
+        metadata: { userId, authenticatedEmail: email || undefined, stripePriceId: priceId }
       }
     }, { idempotencyKey });
   }
@@ -243,6 +254,9 @@ function subscriptionMembershipPatch(subscription) {
     stripeCustomerId: typeof subscription?.customer === "string" ? subscription.customer : subscription?.customer?.id || null,
     stripeSubscriptionId: subscription?.id || null,
     stripePriceId: extractPriceIdFromSubscription(subscription),
+    trialStart: normalizeTimestamp(subscription?.trial_start),
+    trialEnd: normalizeTimestamp(subscription?.trial_end),
+    canceledAt: normalizeTimestamp(subscription?.canceled_at),
     currentPeriodEnd: normalizeTimestamp(subscription?.current_period_end),
     cancelAtPeriodEnd: subscription?.cancel_at_period_end === true
   };
@@ -271,9 +285,12 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
     userStore.updateUser(userId, (user) => {
       const previous = normalizeMembership(userId, user.membership);
       const now = nowTimestamp();
+      const nextStatus = String((patch && patch.status) || previous.status || "inactive").toLowerCase();
       membership = {
         ...previous,
         ...patch,
+        status: nextStatus,
+        hasAccess: hasMembershipAccess(nextStatus),
         userId,
         createdAt: previous.createdAt || now,
         updatedAt: now
@@ -352,12 +369,17 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
       email: sanitizeEmail(email),
       customerId,
       returnUrl,
+      trialPeriodDays: TRIAL_PERIOD_DAYS,
+      paymentMethodCollection: "always",
       idempotencyKey: `pocket-pt-embedded-checkout-${userId}-${priceId}`
     });
 
+    const trialEnd = normalizeTimestamp(session?.subscription?.trial_end) || (nowTimestamp() + TRIAL_PERIOD_DAYS * 24 * 60 * 60 * 1000);
     return {
       clientSecret: session?.client_secret || session?.clientSecret || null,
       duplicateProtected: false,
+      trialPeriodDays: TRIAL_PERIOD_DAYS,
+      trialEnd,
       membership: getMembership(userId)
     };
   }
@@ -399,6 +421,8 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
         stripeSubscriptionId: typeof object.subscription === "string" ? object.subscription : object.subscription?.id || null,
         stripePriceId: object?.metadata?.stripePriceId || null,
         lastInvoiceStatus: paymentStatus || null,
+        trialStart: normalizeTimestamp(object?.subscription?.trial_start),
+        trialEnd: normalizeTimestamp(object?.subscription?.trial_end),
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false
       });
@@ -416,6 +440,39 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
       const eventState = markWebhookEventProcessed(userId, eventId);
       if (eventState.duplicate) return { handled: true, duplicate: true, userId, membership: getMembership(userId) };
       const membership = updateMembership(userId, patch);
+      return { handled: true, duplicate: false, userId, membership };
+    }
+
+    if (eventType === "customer.subscription.trial_will_end") {
+      const patch = subscriptionMembershipPatch(object);
+      const userId = object?.metadata?.userId || findUserIdByStripeIds({
+        customerId: patch.stripeCustomerId,
+        subscriptionId: patch.stripeSubscriptionId
+      });
+      if (!userId) return { handled: false, reason: "missing_user_id" };
+      const eventState = markWebhookEventProcessed(userId, eventId);
+      if (eventState.duplicate) return { handled: true, duplicate: true, userId, membership: getMembership(userId) };
+      patch.trialReminder = {
+        status: "pending",
+        eventId,
+        notifiedAt: nowTimestamp(),
+        trialEnd: patch.trialEnd || null,
+        message: patch.trialEnd ? `Your Pocket PT trial ends on ${new Date(patch.trialEnd).toISOString()}. Your membership will renew monthly unless you cancel before then.` : "Your Pocket PT trial is ending soon."
+      };
+      const membership = updateMembership(userId, patch);
+      return { handled: true, duplicate: false, userId, membership, notificationPrepared: true };
+    }
+
+    if (eventType === "invoice.created") {
+      const userId = extractUserIdFromInvoice(object, findUserIdByStripeIds);
+      if (!userId) return { handled: false, reason: "missing_user_id" };
+      const eventState = markWebhookEventProcessed(userId, eventId);
+      if (eventState.duplicate) return { handled: true, duplicate: true, userId, membership: getMembership(userId) };
+      const membership = updateMembership(userId, {
+        lastInvoiceStatus: String(object?.status || "created").toLowerCase(),
+        stripeCustomerId: typeof object.customer === "string" ? object.customer : object.customer?.id || null,
+        stripeSubscriptionId: typeof object.subscription === "string" ? object.subscription : object.subscription?.id || null
+      });
       return { handled: true, duplicate: false, userId, membership };
     }
 
@@ -462,5 +519,6 @@ module.exports = {
   hasMembershipAccess,
   entitlementForStatus,
   ACCESS_GRANTED_STATUSES,
-  DUPLICATE_PROTECTED_STATUSES
+  DUPLICATE_PROTECTED_STATUSES,
+  TRIAL_PERIOD_DAYS
 };

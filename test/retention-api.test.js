@@ -322,3 +322,52 @@ test("visual progress scan respects feature flag and supports comparison", async
     assert.equal(/body fat|diagnosis|exact inches/i.test(payloadText), false);
   }, { env: { ENABLE_VISUAL_PROGRESS_SCAN: "true" } });
 });
+
+test("authoritative onboarding status persists across reads, edits, OHSA, workout, and accounts", async (t) => {
+  await withServer(t, async ({ baseUrl }) => {
+    const token = await loginToken(baseUrl);
+    const auth = { authorization: `Bearer ${token}` };
+
+    let status = await request(baseUrl, "/api/me/onboarding-status", { headers: auth });
+    assert.equal(status.res.status, 200);
+    assert.equal(status.json.data.completionCount, 1); // OHSA is skipped_for_pilot for starter flow.
+    assert.equal(status.json.data.sections.intake.status, "pending");
+    assert.equal(status.json.data.sections.goals.status, "pending");
+
+    const intake = await request(baseUrl, "/api/client-intake", {
+      method: "POST",
+      headers: auth,
+      body: { name: "Onboard", age: 34, height: 178, goals: ["strength"], injuries: [], limitations: [], equipment: ["bodyweight"], medicalDisclaimerConsent: true }
+    });
+    assert.equal(intake.res.status, 201);
+    const intakeCompletedAt = intake.json.data.intake.completedAt;
+    status = await request(baseUrl, "/api/me/onboarding-status", { headers: auth });
+    assert.equal(status.json.data.sections.intake.status, "complete");
+    assert.equal(status.json.data.sections.medicalHistory.status, "complete");
+    assert.equal(status.json.data.sections.intake.completedAt, intakeCompletedAt);
+
+    const edited = await request(baseUrl, "/api/client-intake", {
+      method: "POST",
+      headers: auth,
+      body: { name: "Onboard Edited", age: 34, height: 178, goals: ["strength"], injuries: [], limitations: [], equipment: ["bands"], medicalDisclaimerConsent: true }
+    });
+    assert.equal(edited.json.data.intake.completedAt, intakeCompletedAt);
+    assert.ok(edited.json.data.intake.updatedAt >= intakeCompletedAt);
+
+    await request(baseUrl, "/api/goals-baseline", { method: "POST", headers: auth, body: { goal: "strength", baseline: { formScoreBaseline: 70 } } });
+    await request(baseUrl, "/api/ohsa", { method: "POST", headers: auth, body: { summary: { createdAt: new Date().toISOString(), findings: ["ok"] } } });
+    await request(baseUrl, "/api/workouts/track", { method: "POST", headers: auth, body: { programId: "phase42_manual", workoutId: "first", exercisesCompleted: ["squat"], reps: 10, sets: 1, formScore: 80, completionStatus: "completed" } });
+    status = await request(baseUrl, "/api/me/onboarding-status", { headers: auth });
+    assert.equal(status.json.data.completionCount, status.json.data.totalCount);
+    assert.equal(status.json.data.sections.goals.status, "complete");
+    assert.equal(status.json.data.sections.overheadSquatAssessment.status, "complete");
+    assert.equal(status.json.data.sections.firstWorkout.status, "complete");
+
+    const otherLogin = await request(baseUrl, "/api/auth/login", { method: "POST", body: { email: "other@example.test", password: "top-secret", testUserId: "other_user" } });
+    assert.equal(otherLogin.res.status, 200);
+    const other = { authorization: `Bearer ${otherLogin.json.token}` };
+    const otherStatus = await request(baseUrl, "/api/me/onboarding-status", { headers: other });
+    assert.equal(otherStatus.json.data.sections.intake.status, "pending");
+    assert.equal(otherStatus.json.data.sections.goals.status, "pending");
+  }, { env: { NODE_ENV: "test", AUTH_TEST_LOGIN_FIXTURE_ENABLED: "true" } });
+});

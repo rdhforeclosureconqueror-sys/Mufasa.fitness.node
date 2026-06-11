@@ -3,6 +3,78 @@
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isCompleteTimestamp(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0;
+}
+
+function buildSection(status, completedAt = null, updatedAt = null) {
+  return {
+    status,
+    completedAt: isCompleteTimestamp(completedAt) ? Number(completedAt) : null,
+    updatedAt: isCompleteTimestamp(updatedAt) ? Number(updatedAt) : null
+  };
+}
+
+function deriveOnboardingStatus(userId, user) {
+  const intake = user?.clientIntake || null;
+  const goals = user?.goalsBaseline || null;
+  const ohsaItems = Array.isArray(user?.ohsa) ? user.ohsa : [];
+  const workouts = Array.isArray(user?.workoutTracking) ? user.workoutTracking : [];
+  const completedWorkout = workouts.find((item) => String(item?.completionStatus || "").toLowerCase() === "completed") || null;
+  const latestOhsa = ohsaItems.length ? ohsaItems[ohsaItems.length - 1] : null;
+
+  const intakeComplete = Boolean(
+    intake
+    && isCompleteTimestamp(intake.completedAt)
+    && isNonEmptyString(intake.name)
+    && Array.isArray(intake.goals)
+    && intake.goals.length > 0
+    && intake.medicalDisclaimerConsent === true
+  );
+  const goalsComplete = Boolean(
+    goals
+    && isNonEmptyString(goals.goal)
+    && goals.baseline
+    && typeof goals.baseline === "object"
+  );
+  const medicalHistoryComplete = intakeComplete;
+  const ohsaComplete = Boolean(latestOhsa && (latestOhsa.ts || latestOhsa.createdAt));
+  const firstWorkoutComplete = Boolean(completedWorkout);
+
+  const sections = {
+    intake: buildSection(intakeComplete ? "complete" : "pending", intake?.completedAt, intake?.updatedAt),
+    goals: buildSection(goalsComplete ? "complete" : "pending", goals?.completedAt, goals?.updatedAt),
+    medicalHistory: buildSection(medicalHistoryComplete ? "complete" : "pending", intake?.completedAt, intake?.updatedAt),
+    overheadSquatAssessment: buildSection(ohsaComplete ? "complete" : "skipped_for_pilot", latestOhsa?.ts || latestOhsa?.createdAt, latestOhsa?.ts || latestOhsa?.createdAt),
+    firstWorkout: buildSection(firstWorkoutComplete ? "complete" : "pending", completedWorkout?.ts, completedWorkout?.ts)
+  };
+  const ordered = ["intake", "goals", "medicalHistory", "overheadSquatAssessment", "firstWorkout"];
+  const completionCount = ordered.filter((key) => sections[key].status === "complete" || sections[key].status === "skipped_for_pilot").length;
+  const nextKey = ordered.find((key) => sections[key].status === "pending") || null;
+  const links = {
+    intake: "client-intake",
+    goals: "goals-baseline",
+    medicalHistory: "client-intake",
+    overheadSquatAssessment: "ohsa",
+    firstWorkout: "workout"
+  };
+  return {
+    userId,
+    sections,
+    completionCount,
+    totalCount: ordered.length,
+    nextRequiredAction: nextKey ? { section: nextKey, action: links[nextKey] } : null,
+    editableSections: ordered.map((section) => ({ section, action: links[section] })),
+    updatedAt: Math.max(...ordered.map((key) => sections[key].updatedAt || sections[key].completedAt || 0), Number(user?.updatedAt) || 0) || null
+  };
+}
+
 function normalizeProfile(profile) {
   if (!profile) {
     return {
@@ -146,10 +218,15 @@ function createUserDataService({ userStore }) {
     const now = Date.now();
     let saved = null;
     userStore.updateUser(userId, (user) => {
+      const previous = user.clientIntake || {};
+      const complete = isNonEmptyString(intake.name)
+        && Array.isArray(intake.goals)
+        && intake.goals.length > 0
+        && intake.medicalDisclaimerConsent === true;
       user.clientIntake = {
-        ...(user.clientIntake || {}),
+        ...previous,
         ...intake,
-        completedAt: user.clientIntake?.completedAt || now,
+        completedAt: complete ? (previous.completedAt || now) : null,
         updatedAt: now,
         source
       };
@@ -174,9 +251,12 @@ function createUserDataService({ userStore }) {
     const now = Date.now();
     let goalsBaseline = null;
     userStore.updateUser(userId, (user) => {
+      const previous = user.goalsBaseline || {};
+      const complete = isNonEmptyString(payload.goal) && payload.baseline && typeof payload.baseline === "object";
       user.goalsBaseline = {
-        ...(user.goalsBaseline || {}),
+        ...previous,
         ...payload,
+        completedAt: complete ? (previous.completedAt || now) : null,
         updatedAt: now,
         source
       };
@@ -431,6 +511,11 @@ function createUserDataService({ userStore }) {
     };
   }
 
+  function getOnboardingStatus(userId) {
+    const user = userStore.loadUser(userId);
+    return deriveOnboardingStatus(userId, user);
+  }
+
   function getHistory(userId, { limit = 10 } = {}) {
     const user = userStore.loadUser(userId);
     const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, Math.floor(limit))) : 10;
@@ -504,6 +589,7 @@ function createUserDataService({ userStore }) {
     getProgressDashboard,
     submitOhsa,
     getOhsaHistory,
+    getOnboardingStatus,
     getHistory
   };
 }

@@ -26,9 +26,9 @@
     </nav>
     <section class="grid">
       <article class="hero">
-        <div class="eyebrow"><span class="pulse" aria-hidden="true"></span>Live embedded Stripe subscription</div>
+        <div class="eyebrow"><span class="pulse" aria-hidden="true"></span>7-day card-required Stripe trial</div>
         <h1>Train with Pocket PT every month.</h1>
-        <p class="copy">Unlock guided workouts, dashboard continuity, challenges, route splits, and nutrition support with a secure recurring membership.</p>
+        <p class="copy">Start your 7-day free trial. Add a payment method today, but you will not be charged until your trial ends. Cancel before the displayed trial-end date and time to avoid the first monthly charge.</p>
         <div class="price" aria-live="polite"><strong id="planPrice">Loading official price…</strong><span id="planInterval">/ month</span></div>
         <h2 id="planName">Pocket PT Monthly Membership</h2>
         <div class="features" aria-label="Membership benefits">
@@ -36,18 +36,22 @@
           <div class="feature"><span class="check">✓</span><span>Workout, challenge, route split, and nutrition experiences stay connected to your account.</span></div>
           <div class="feature"><span class="check">✓</span><span>Secure billing management through Stripe-hosted customer portal.</span></div>
         </div>
+        <p class="fine"><strong>No charge today.</strong> Payment method required.</p>
+        <p class="fine" id="trialDisclosure">7-day free trial. Payment method required. Cancel before the displayed trial-end date and time to avoid the first monthly charge. After the trial, membership renews monthly until canceled.</p>
+        <p class="fine">Trial ends: <strong id="trialEndTimestamp">Shown after Stripe creates your trial.</strong><br/>First billing date: <strong id="firstBillingDate">Shown after Stripe creates your trial.</strong></p>
+        <p class="fine" id="trialReminder"></p>
         <p class="fine" id="recurringDisclosure">Recurring monthly subscription. Stripe securely collects payment credentials; Pocket PT never collects, receives, logs, or stores raw card numbers, CVC, or expiration dates.</p>
         <p class="fine"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></p>
       </article>
       <section class="checkout-card" aria-labelledby="checkoutTitle">
-        <h2 id="checkoutTitle">Secure payment</h2>
+        <h2 id="checkoutTitle">Secure trial signup</h2>
         <div class="status-card"><p class="status" id="membershipStatus"><span class="loader" aria-hidden="true"></span> Checking account and membership status…</p></div>
         <div id="alreadySubscribed" class="hidden">
           <p class="fine">Your membership is already active or needs billing attention. Manage your subscription instead of creating a duplicate checkout.</p>
           <div class="actions"><button class="btn gold" id="manageBillingBtn" type="button">Manage billing</button><a class="btn primary" href="/dashboard.html">Go to dashboard</a></div>
         </div>
         <div id="successPanel" class="hidden">
-          <p class="fine">Thanks — if Stripe has verified the payment event, your membership will show active below. Access is granted only by verified backend webhook state.</p>
+          <p class="fine">Thanks — if Stripe has verified the subscription event, your membership will show trialing or active below. Access is granted only by verified backend webhook state.</p>
           <div class="actions"><a class="btn primary" href="/dashboard.html">Continue to dashboard</a><button class="btn" id="refreshStatusBtn" type="button">Refresh status</button></div>
         </div>
         <div id="checkoutShell">
