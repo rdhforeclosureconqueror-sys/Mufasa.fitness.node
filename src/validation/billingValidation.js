@@ -97,7 +97,9 @@ function getPublicBillingPlan(env = process.env) {
     priceLabel: String(env.MEMBERSHIP_PRICE_LABEL || "Official monthly price shown in secure Stripe checkout").trim(),
     interval: "month",
     currency: String(env.MEMBERSHIP_PRICE_CURRENCY || "usd").trim().toLowerCase(),
-    recurringDisclosure: "Recurring monthly subscription. Manage or cancel from the secure Stripe billing portal."
+    recurringDisclosure: "Recurring monthly subscription. Manage or cancel from the secure Stripe billing portal.",
+    trialPeriodDays: 7,
+    trialDisclosure: "7-day free trial. Payment method required. Cancel before the displayed trial-end date and time to avoid the first monthly charge. After the trial, membership renews monthly until canceled."
   };
 }
 

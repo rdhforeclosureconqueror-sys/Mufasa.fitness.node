@@ -3,7 +3,7 @@
 
   const global = globalScope || window;
   const STRIPE_JS_SRC = "https://js.stripe.com/v3/";
-  const state = { embeddedCheckout: null, mounted: false };
+  const state = { embeddedCheckout: null, mounted: false, plan: null, pendingTrialEnd: null };
 
   function $(id) { return global.document.getElementById(id); }
   function setText(id, value) { const el = $(id); if (el) el.textContent = value; }
@@ -79,15 +79,36 @@
     return payload?.data || null;
   }
 
+  function formatDateTime(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) return "the displayed trial-end date and time";
+    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" }).format(new Date(numeric));
+  }
+
+  function trialDisclosure(trialEnd) {
+    const price = state.plan?.priceLabel || "the monthly price shown above";
+    return `7-day free trial. Payment method required. Cancel before ${formatDateTime(trialEnd)} to avoid the first monthly charge. After the trial, membership renews monthly until canceled. Monthly price: ${price}.`;
+  }
+
+  function renderTrialDates(trialEnd) {
+    if (!trialEnd) return;
+    setText("trialEndTimestamp", formatDateTime(trialEnd));
+    setText("firstBillingDate", formatDateTime(trialEnd));
+    setText("trialDisclosure", trialDisclosure(trialEnd));
+  }
+
   async function loadPlan() {
     try {
       const plan = await requestJSON("/api/billing/plan", { auth: false });
+      state.plan = plan || {};
       setText("planName", plan?.name || "Pocket PT Monthly Membership");
       setText("planPrice", plan?.priceLabel || "Official price shown in secure Stripe checkout");
       setText("planInterval", plan?.interval ? `/ ${plan.interval}` : "/ month");
-      setText("recurringDisclosure", `${plan?.recurringDisclosure || "Recurring monthly subscription."} Stripe securely collects payment credentials; Pocket PT never collects raw card numbers, CVC, or expiration dates.`);
+      setText("recurringDisclosure", `${plan?.trialDisclosure || "7-day free trial. Payment method required. Cancel before the displayed trial-end date and time to avoid the first monthly charge. After the trial, membership renews monthly until canceled."} Stripe securely collects payment credentials; Pocket PT never collects raw card numbers, CVC, or expiration dates.`);
+      setText("trialDisclosure", plan?.trialDisclosure || trialDisclosure(null));
     } catch (_) {
       setText("planPrice", "Official price shown in secure Stripe checkout");
+      setText("trialDisclosure", trialDisclosure(null));
     }
   }
 
@@ -97,14 +118,18 @@
 
   function renderMembership(membership) {
     if (!membership) return;
+    if (membership.trialEnd) renderTrialDates(membership.trialEnd);
+    if (membership.trialReminder?.message) setText("trialReminder", membership.trialReminder.message);
     if (membership.hasAccess) {
-      setStatus("Membership active. You can continue to the dashboard.", "success");
+      const label = membership.status === "trialing" ? `Trialing until ${formatDateTime(membership.trialEnd)}. No charge today; first billing is scheduled when the trial ends.` : "Membership active. You can continue to the dashboard.";
+      setStatus(label, "success");
       show("alreadySubscribed", true);
       show("checkoutShell", false);
       return;
     }
     if (membership.entitlement?.duplicateProtected) {
-      setStatus(`Subscription status: ${membership.status}. Manage billing to resolve it.`, "warn");
+      const statusMessage = membership.status === "past_due" ? "Payment failed or is past due. Manage billing to restore access." : `Subscription status: ${membership.status}. Manage billing to resolve it.`;
+      setStatus(statusMessage, "warn");
       show("alreadySubscribed", true);
       show("checkoutShell", false);
     }
@@ -121,6 +146,10 @@
     if (!stripeLoaded || typeof global.Stripe !== "function") throw new Error("stripe_js_unavailable");
 
     const session = await requestJSON("/api/billing/checkout-session", { method: "POST", body: {} });
+    if (session?.trialEnd) {
+      state.pendingTrialEnd = session.trialEnd;
+      renderTrialDates(session.trialEnd);
+    }
     if (session?.duplicateProtected) {
       renderMembership(session.membership);
       return;
@@ -131,7 +160,7 @@
     state.embeddedCheckout = await stripe.initEmbeddedCheckout({ clientSecret: session.clientSecret });
     state.embeddedCheckout.mount("#embedded-checkout");
     state.mounted = true;
-    setStatus("Complete payment below without leaving Pocket PT.");
+    setStatus("Start your 7-day free trial below. No charge today; Stripe securely collects the required payment method.");
   }
 
   async function refreshAndMaybeMount() {

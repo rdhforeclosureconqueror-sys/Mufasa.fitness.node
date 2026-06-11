@@ -58,7 +58,8 @@
     checkIns: [],
     progressDashboard: null,
     exerciseIndex: null,
-    latestRewardSummary: null
+    latestRewardSummary: null,
+    onboardingStatus: null
   };
 
   function readJSON(key, fallback) {
@@ -148,19 +149,22 @@
   }
 
   function inferStep() {
-    if (!state.goalsBaseline?.goal) return 1;
-    if (!state.intake?.completedAt) return 2;
-    if (!window.lastOhsaSummary?.createdAt) return 3;
-    if (!state.completionDates.includes(todayKey()) && Number(state.progressDashboard?.workoutsCompleted || 0) < 1) return 4;
+    const sections = state.onboardingStatus?.sections || {};
+    if (sections.goals?.status !== "complete") return 1;
+    if (sections.intake?.status !== "complete" || sections.medicalHistory?.status !== "complete") return 2;
+    if (!["complete", "skipped_for_pilot"].includes(sections.overheadSquatAssessment?.status)) return 3;
+    if (sections.firstWorkout?.status !== "complete") return 4;
     return 4;
   }
 
   function getOnboardingProgress() {
+    const sections = state.onboardingStatus?.sections || {};
     return [
-      { label: "Goals", complete: Boolean(state.goalsBaseline?.goal), message: "Now we know what motivates you." },
-      { label: "Medical/history basics", complete: Boolean(state.intake?.completedAt), message: "Now we have the basics needed to guide safer training." },
-      { label: "Overhead Squat Assessment", complete: Boolean(window.lastOhsaSummary?.createdAt), message: "Now we have a movement baseline." },
-      { label: "First Workout", complete: state.completionDates.includes(todayKey()) || Number(state.progressDashboard?.workoutsCompleted || 0) > 0, message: "Now we have your first performance baseline." }
+      { label: "Intake", complete: sections.intake?.status === "complete", message: "Now we have your intake basics." },
+      { label: "Goals", complete: sections.goals?.status === "complete", message: "Now we know what motivates you." },
+      { label: "Medical/history basics", complete: sections.medicalHistory?.status === "complete", message: "Now we have the basics needed to guide safer training." },
+      { label: "Overhead Squat Assessment", complete: ["complete", "skipped_for_pilot"].includes(sections.overheadSquatAssessment?.status), message: sections.overheadSquatAssessment?.status === "skipped_for_pilot" ? "Pilot starter workouts are not blocked by OHSA." : "Now we have a movement baseline." },
+      { label: "First Workout", complete: sections.firstWorkout?.status === "complete", message: "Now we have your first performance baseline." }
     ];
   }
 
@@ -170,7 +174,9 @@
     const progress = getOnboardingProgress()
       .map((item) => `${item.complete ? "✓" : "○"} ${item.label}`)
       .join(" • ");
-    statusEl.textContent = `Onboarding progress (${step}/4): ${progress}. Retention Motivation Status: ${retentionStatus}`;
+    const count = state.onboardingStatus?.completionCount ?? getOnboardingProgress().filter((item) => item.complete).length;
+    const total = state.onboardingStatus?.totalCount ?? getOnboardingProgress().length;
+    statusEl.textContent = `Onboarding progress (${count}/${total}, next step ${step}): ${progress}. Retention Motivation Status: ${retentionStatus}`;
   }
 
   function renderProgressCard() {
@@ -636,12 +642,13 @@
       throw new Error("Sign in to begin onboarding flow.");
     }
 
-    const [intake, goals, currentProgram, checkIns, dashboard] = await Promise.all([
+    const [intake, goals, currentProgram, checkIns, dashboard, onboardingStatus] = await Promise.all([
       authedRequest("/api/client-intake"),
       authedRequest("/api/goals-baseline"),
       authedRequest("/api/programs/current"),
       authedRequest("/api/check-ins"),
-      authedRequest("/api/progress/dashboard")
+      authedRequest("/api/progress/dashboard"),
+      authedRequest("/api/me/onboarding-status")
     ]);
 
     state.intake = intake.intake || null;
@@ -649,6 +656,7 @@
     state.currentProgram = currentProgram.program || null;
     state.checkIns = Array.isArray(checkIns.items) ? checkIns.items : [];
     state.progressDashboard = dashboard;
+    state.onboardingStatus = onboardingStatus;
   }
 
   async function refreshAndRender(reason = "runtime") {
@@ -670,10 +678,10 @@
         renderProgressNarrative();
       }
       window.__retentionMotivationStatus = {
-        intakeComplete: Boolean(state.intake?.completedAt),
-        goalSet: Boolean(state.goalsBaseline?.goal),
+        intakeComplete: state.onboardingStatus?.sections?.intake?.status === "complete",
+        goalSet: state.onboardingStatus?.sections?.goals?.status === "complete",
         programAssigned: Boolean(state.currentProgram?.programId),
-        firstWorkoutCompleted: Number(state.progressDashboard?.workoutsCompleted || 0) > 0,
+        firstWorkoutCompleted: state.onboardingStatus?.sections?.firstWorkout?.status === "complete",
         weeklyReviewReady: Boolean(state.progressDashboard?.weeklyReview?.weekSummary),
         coachMessagingReady: Array.isArray(state.progressDashboard?.coachMessaging?.messages) && state.progressDashboard.coachMessaging.messages.length > 0,
         progressNarrativeReady: Boolean(state.progressDashboard?.progressNarrative?.nextMilestone),

@@ -87,7 +87,9 @@ function baseBillingEnv(t) {
     STRIPE_PRICE_ID: "price_server_only",
     STRIPE_WEBHOOK_SECRET: "whsec_test_secret",
     FRONTEND_PUBLIC_URL: "https://mufasafitsite.onrender.com",
-    MEMBERSHIP_PRICE_LABEL: "$29 / month"
+    MEMBERSHIP_PRICE_LABEL: "$29 / month",
+    NODE_ENV: "test",
+    MEMBERSHIP_GATE_TEST_ENFORCED: "true"
   });
 }
 
@@ -377,4 +379,73 @@ test("membership page uses Stripe Embedded Checkout and does not include raw car
   assert.doesNotMatch(html, /name=["'](?:card|number|cvc|cvv|exp|expiration)/i);
   assert.doesNotMatch(js, /cardNumber|card_number|securityCode|exp_month|exp_year/i);
   assert.doesNotMatch(html + js, /sk_live_|sk_test_|whsec_/);
+});
+
+test("seven-day card-required checkout, membership gate, trial reminders, and access statuses", async (t) => {
+  enableTestLoginFixture(t);
+  baseBillingEnv(t);
+  let observedCheckout = null;
+  const stripeClient = {
+    async createCustomer() { return { id: "cus_trial_user" }; },
+    async createCheckoutSession(args) { observedCheckout = args; return { id: "cs_trial", client_secret: "cs_trial_secret" }; }
+  };
+  await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
+    const memberToken = await loginFixtureToken(baseUrl, "billing_trial_member");
+    const blocked = await get(baseUrl, "/api/progress/dashboard", { authorization: `Bearer ${memberToken}` });
+    assert.equal(blocked.res.status, 402);
+    assert.equal(blocked.json?.code, "membership_required");
+    assert.equal(blocked.json?.membershipUrl, "/membership.html");
+
+    const checkout = await post(baseUrl, "/api/billing/checkout-session", { priceId: "price_bad", trialPeriodDays: 30 }, { authorization: `Bearer ${memberToken}` });
+    assert.equal(checkout.res.status, 201);
+    assert.equal(checkout.json?.data?.clientSecret, "cs_trial_secret");
+    assert.equal(checkout.json?.data?.trialPeriodDays, 7);
+    assert.ok(Number.isFinite(checkout.json?.data?.trialEnd));
+    assert.equal(observedCheckout.priceId, "price_server_only");
+    assert.equal(observedCheckout.trialPeriodDays, 7);
+    assert.equal(observedCheckout.paymentMethodCollection, "always");
+
+    const subscriptionPayload = JSON.stringify({
+      id: "evt_trial_subscription_created",
+      type: "customer.subscription.created",
+      data: { object: { id: "sub_trial", customer: "cus_trial_user", status: "trialing", trial_start: 1770000000, trial_end: 1770604800, current_period_end: 1770604800, cancel_at_period_end: false, metadata: { userId: "billing_trial_member" }, items: { data: [{ price: { id: "price_server_only" } }] } } }
+    });
+    await post(baseUrl, "/api/billing/webhook", subscriptionPayload, { "stripe-signature": stripeSignature(subscriptionPayload, "whsec_test_secret") });
+
+    const allowedTrial = await get(baseUrl, "/api/progress/dashboard", { authorization: `Bearer ${memberToken}` });
+    assert.equal(allowedTrial.res.status, 200);
+    let membership = await get(baseUrl, "/api/me/membership", { authorization: `Bearer ${memberToken}` });
+    assert.equal(membership.json?.data?.status, "trialing");
+    assert.equal(membership.json?.data?.hasAccess, true);
+    assert.equal(membership.json?.data?.trialEnd, 1770604800000);
+
+    const reminderPayload = JSON.stringify({
+      id: "evt_trial_will_end",
+      type: "customer.subscription.trial_will_end",
+      data: { object: { id: "sub_trial", customer: "cus_trial_user", status: "trialing", trial_start: 1770000000, trial_end: 1770604800, current_period_end: 1770604800, metadata: { userId: "billing_trial_member" }, items: { data: [{ price: { id: "price_server_only" } }] } } }
+    });
+    const reminder = await post(baseUrl, "/api/billing/webhook", reminderPayload, { "stripe-signature": stripeSignature(reminderPayload, "whsec_test_secret") });
+    assert.equal(reminder.res.status, 200);
+    assert.equal(reminder.json?.data?.notificationPrepared, true);
+    membership = await get(baseUrl, "/api/me/membership", { authorization: `Bearer ${memberToken}` });
+    assert.match(membership.json?.data?.trialReminder?.message, /trial ends/i);
+
+    const canceledPayload = JSON.stringify({
+      id: "evt_trial_canceled",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_trial", customer: "cus_trial_user", status: "canceled", canceled_at: 1770500000, trial_end: 1770604800, current_period_end: 1770604800, metadata: { userId: "billing_trial_member" } } }
+    });
+    await post(baseUrl, "/api/billing/webhook", canceledPayload, { "stripe-signature": stripeSignature(canceledPayload, "whsec_test_secret") });
+    membership = await get(baseUrl, "/api/me/membership", { authorization: `Bearer ${memberToken}` });
+    assert.equal(membership.json?.data?.status, "canceled");
+    assert.equal(membership.json?.data?.hasAccess, false);
+    assert.equal(membership.json?.data?.canceledAt, 1770500000000);
+
+    const adminToken = await loginFixtureToken(baseUrl, "pilot_admin");
+    const adminAllowed = await get(baseUrl, "/api/progress/dashboard", { authorization: `Bearer ${adminToken}` });
+    assert.equal(adminAllowed.res.status, 200);
+    const user = JSON.parse(fs.readFileSync(path.join(tmpRoot, "data", "users", "billing_trial_member.json"), "utf8"));
+    assert.equal(user.membership.hasAccess, false);
+    assert.equal(user.membership.status, "canceled");
+  });
 });

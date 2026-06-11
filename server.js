@@ -326,6 +326,32 @@ function createApp(options = {}) {
     userStore,
     stripeClient: options.stripeClient
   });
+
+  function hasOperatorBillingBypass(req) {
+    const role = String(req.authz?.role || req.auth?.role || "").toLowerCase();
+    return req.auth?.userId === "pilot_admin" || ["super_admin", "admin", "operator"].includes(role);
+  }
+
+  function requireMembershipEntitlement(req, _res, next) {
+    if (String(process.env.NODE_ENV || "").toLowerCase() === "test" && process.env.MEMBERSHIP_GATE_TEST_ENFORCED !== "true") {
+      req.membershipEntitlement = { hasAccess: true, bypass: true, reason: "test_environment_bypass" };
+      return next();
+    }
+    if (hasOperatorBillingBypass(req)) {
+      req.membershipEntitlement = { hasAccess: true, bypass: true, reason: "admin_operator_bypass" };
+      return next();
+    }
+    const membership = membershipService.getMembership(req.auth.userId);
+    if (membership.hasAccess) {
+      req.membershipEntitlement = { hasAccess: true, bypass: false, membership };
+      return next();
+    }
+    return _res.status(402).json({
+      code: "membership_required",
+      message: "Start your 7-day free trial to continue.",
+      membershipUrl: "/membership.html"
+    });
+  }
   const tokenDenylist = createTokenDenylistStore({
     filePath: path.join(rootDir, "data", "ops", "token-denylist.json"),
     retentionMs: Number(process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS || 1000 * 60 * 60 * 24 * 14)
@@ -1557,7 +1583,16 @@ function createApp(options = {}) {
   }));
 
   app.get("/api/me/membership", requireAuth, asyncHandler(async (req, res) => {
-    return ok(res, req.requestId, membershipService.getMembership(req.auth.userId));
+    const membership = membershipService.getMembership(req.auth.userId);
+    return ok(res, req.requestId, {
+      ...membership,
+      billingBypass: hasOperatorBillingBypass(req) ? { hasAccess: true, reason: "admin_operator_bypass" } : null
+    });
+  }));
+
+  app.get("/api/me/onboarding-status", requireAuth, asyncHandler(async (req, res) => {
+    const result = userDataService.getOnboardingStatus(req.auth.userId);
+    return ok(res, req.requestId, result, 200);
   }));
 
   app.get("/api/billing/plan", asyncHandler(async (req, res) => {
@@ -1774,7 +1809,7 @@ function createApp(options = {}) {
   });
 
   // ---- Structured Session API (pilot hardening) ----
-  app.post("/api/sessions", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/sessions", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionCreate({
       ...(req.body || {}),
@@ -1784,7 +1819,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.post("/api/sessions/:id/reps", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/sessions/:id/reps", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateRepUpdate({
       ...(req.body || {}),
@@ -1794,7 +1829,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.post("/api/sessions/:id/complete", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/sessions/:id/complete", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionComplete({
       ...(req.body || {}),
@@ -1806,72 +1841,72 @@ function createApp(options = {}) {
 
 
   // ---- Phase 32 Nutrition Journal APIs ----
-  app.get("/api/nutrition/barcodes/:barcode", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/nutrition/barcodes/:barcode", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = await nutritionProviderClient.lookupBarcode(req.params.barcode);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.get("/api/nutrition/foods/search", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/nutrition/foods/search", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = await nutritionProviderClient.searchUsda(req.query.q, req.query.limit);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.get("/api/nutrition/foods/:fdcId", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/nutrition/foods/:fdcId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = await nutritionProviderClient.getUsdaFood(req.params.fdcId);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.post("/api/nutrition/drafts/natural-language", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/nutrition/drafts/natural-language", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.naturalLanguageDraft(req.auth.userId, req.body?.text || req.body?.description || "");
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.get("/api/me/nutrition/entries", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/me/nutrition/entries", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.listEntries(req.auth.userId, req.query.date);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.post("/api/me/nutrition/entries", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/entries", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.createEntry(req.auth.userId, req.body || {});
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.put("/api/me/nutrition/entries/:entryId", requireAuth, asyncHandler(async (req, res) => {
+  app.put("/api/me/nutrition/entries/:entryId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.updateEntry(req.auth.userId, req.params.entryId, req.body || {});
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.delete("/api/me/nutrition/entries/:entryId", requireAuth, asyncHandler(async (req, res) => {
+  app.delete("/api/me/nutrition/entries/:entryId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.deleteEntry(req.auth.userId, req.params.entryId);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.get("/api/me/nutrition/summary", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/me/nutrition/summary", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.summarize(req.auth.userId, req.query.date);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.get("/api/me/nutrition/recent", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/me/nutrition/recent", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.recent(req.auth.userId, req.query.limit);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.post("/api/me/nutrition/meals", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/meals", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.createMeal(req.auth.userId, req.body || {});
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.get("/api/me/nutrition/meals", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/me/nutrition/meals", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.listMeals(req.auth.userId);
     return ok(res, req.requestId, result, 200);
   }));
 
-  app.post("/api/me/nutrition/meals/:mealId/log", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/meals/:mealId/log", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.logMeal(req.auth.userId, req.params.mealId, req.body || {});
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.get("/api/me/nutrition/education", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/me/nutrition/education", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.educationSummary(req.auth.userId, req.query.date);
     return ok(res, req.requestId, result, 200);
   }));
@@ -1984,7 +2019,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.post("/api/workouts/track", requireAuth, asyncHandler(async (req, res) => {
+  app.post("/api/workouts/track", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const tracking = validateWorkoutTracking(req.body);
     const result = userDataService.appendWorkoutTracking({
       userId: req.auth.userId,
@@ -1994,7 +2029,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.get("/api/workouts/reward/latest", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/workouts/reward/latest", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const dashboard = userDataService.getProgressDashboard(req.auth.userId);
     return ok(res, req.requestId, {
       userId: req.auth.userId,
@@ -2019,7 +2054,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
-  app.get("/api/progress/dashboard", requireAuth, asyncHandler(async (req, res) => {
+  app.get("/api/progress/dashboard", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = userDataService.getProgressDashboard(req.auth.userId);
     return ok(res, req.requestId, result, 200);
   }));
