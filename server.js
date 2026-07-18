@@ -1906,6 +1906,55 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
+
+  app.get("/api/me/nutrition/grocery-options", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.getGroceryOptions(req.query || {}), 200);
+  }));
+
+  app.get("/api/me/nutrition/weekly-plan/current", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.currentWeeklyPlan(req.auth.userId, req.query.date), 200);
+  }));
+
+  app.post("/api/me/nutrition/weekly-plans", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.createWeeklyPlan(req.auth.userId, req.body || {}), 201);
+  }));
+
+  app.patch("/api/me/nutrition/weekly-plans/:planId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.updateWeeklyPlan(req.auth.userId, req.params.planId, req.body || {}), 200);
+  }));
+
+  app.post("/api/me/nutrition/weekly-plans/:planId/grocery-items", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.upsertGroceryItem(req.auth.userId, req.params.planId, req.body || {}), 201);
+  }));
+
+  app.patch("/api/me/nutrition/weekly-plans/:planId/grocery-items/:itemId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.upsertGroceryItem(req.auth.userId, req.params.planId, req.body || {}, req.params.itemId), 200);
+  }));
+
+  app.post("/api/me/nutrition/weekly-plans/:planId/generate-missions", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.generateMissions(req.auth.userId, req.params.planId, req.body || {}), 201);
+  }));
+
+  app.get("/api/me/nutrition/weekly-plans/:planId/missions", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.listMissions(req.auth.userId, req.params.planId, req.query.date), 200);
+  }));
+
+  app.patch("/api/me/nutrition/missions/:missionId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.updateMission(req.auth.userId, req.params.missionId, req.body || {}), 200);
+  }));
+
+  app.post("/api/me/nutrition/missions/:missionId/manual-progress", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.manualProgress(req.auth.userId, req.params.missionId, req.body || {}), 201);
+  }));
+
+  app.get("/api/me/nutrition/weekly-plans/:planId/review", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.weeklyReview(req.auth.userId, req.params.planId), 200);
+  }));
+
+  app.post("/api/me/nutrition/weekly-plans/ai-draft/validate", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, nutritionService.validateAiDraft(req.body || {}), 200);
+  }));
+
   app.get("/api/me/nutrition/education", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.educationSummary(req.auth.userId, req.query.date);
     return ok(res, req.requestId, result, 200);

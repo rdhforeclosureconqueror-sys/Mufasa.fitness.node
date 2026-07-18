@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pocketpt.example/schemas/nutrition-weekly-ai-draft.schema.json",
+  "title": "Pocket PT Weekly Nutrition AI Draft",
+  "type": "object",
+  "required": [
+    "title",
+    "groceryCategorySuggestions",
+    "proposedMissions",
+    "educationalRationale",
+    "safetyFlags",
+    "assumptions",
+    "status"
+  ],
+  "properties": {
+    "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "status": { "const": "draft" },
+    "templateTags": { "type": "array", "items": { "type": "string", "maxLength": 80 }, "maxItems": 24 },
+    "groceryCategorySuggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["categoryKey"],
+        "properties": {
+          "categoryKey": {
+            "enum": [
+              "lean_protein",
+              "fatty_fish",
+              "plant_protein",
+              "leafy_greens",
+              "colorful_vegetables",
+              "fruit",
+              "healthy_fats",
+              "whole_food_carbohydrates",
+              "dairy_or_alternative",
+              "hydration"
+            ]
+          },
+          "groceryOptionIds": { "type": "array", "items": { "type": "string" }, "maxItems": 20 },
+          "customSuggestions": { "type": "array", "items": { "type": "string", "maxLength": 120 }, "maxItems": 10 },
+          "rationale": { "type": "string", "maxLength": 1000 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "proposedMissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["missionType", "title", "description", "targetQuantity", "targetUnit"],
+        "properties": {
+          "missionType": { "enum": ["food_category", "specific_food", "protein_event", "hydration_checkpoint", "variety"] },
+          "title": { "type": "string", "maxLength": 160 },
+          "description": { "type": "string", "maxLength": 1000 },
+          "categoryKey": { "type": "string" },
+          "groceryOptionId": { "type": "string" },
+          "targetQuantity": { "type": "number", "minimum": 0 },
+          "targetUnit": { "enum": ["serving", "ounce", "gram", "item", "occurrence"] },
+          "educationalRationale": { "type": "string", "maxLength": 1000 }
+        },
+        "additionalProperties": false
+      },
+      "maxItems": 35
+    },
+    "educationalRationale": { "type": "string", "minLength": 1, "maxLength": 3000 },
+    "safetyFlags": { "type": "array", "items": { "type": "string", "maxLength": 120 }, "maxItems": 20 },
+    "assumptions": { "type": "array", "items": { "type": "string", "maxLength": 240 }, "maxItems": 20 }
+  },
+  "additionalProperties": false
+}
