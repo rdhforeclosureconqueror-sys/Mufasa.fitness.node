@@ -1,9 +1,16 @@
 "use strict";
 
 const { ApiError } = require("../lib/apiResponse");
+const AI_DRAFT_SCHEMA_DOCUMENT = require("../../docs/nutrition-weekly-ai-draft.schema.json");
 
 const MEAL_TYPES = new Set(["breakfast", "lunch", "dinner", "snack", "other"]);
 const SOURCES = new Set(["open_food_facts", "usda_fdc", "custom", "natural_language", "saved_meal"]);
+const WEEKLY_PLAN_STATUSES = new Set(["draft", "shopping", "active", "completed", "archived"]);
+const WEEKLY_PLAN_SOURCES = new Set(["system_template", "coach", "member", "ai_draft"]);
+const MISSION_TYPES = new Set(["food_category", "specific_food", "protein_event", "hydration_checkpoint", "variety"]);
+const MISSION_STATUSES = new Set(["pending", "in_progress", "completed", "skipped"]);
+const MISSION_SOURCES = new Set(["generated", "coach", "member", "ai_draft"]);
+const TARGET_UNITS = new Set(["serving", "ounce", "gram", "item", "occurrence"]);
 const DEFAULT_TIMEOUT_MS = 7000;
 const DEFAULT_CACHE_TTL_MS = 1000 * 60 * 30;
 
@@ -218,6 +225,50 @@ function normalizeUsdaFood(food) {
   };
 }
 
+
+const CATEGORY_DEFINITIONS = [
+  ["lean_protein", "Lean protein"], ["fatty_fish", "Fatty fish"], ["plant_protein", "Plant protein"], ["leafy_greens", "Leafy greens"], ["colorful_vegetables", "Colorful vegetables"], ["fruit", "Fruit"], ["healthy_fats", "Healthy fats"], ["whole_food_carbohydrates", "Whole-food carbohydrates"], ["dairy_or_alternative", "Dairy or alternative"], ["hydration", "Hydration"]
+];
+const CATEGORY_LABELS = Object.fromEntries(CATEGORY_DEFINITIONS);
+const STARTER_GROCERY_CATALOG = [
+  ["chicken_breast", "Chicken breast", "lean_protein", "1 cooked palm-size serving", 165, 31, ["athlete", "muscle_support", "quick_prep"]],
+  ["turkey", "Turkey", "lean_protein", "1 cooked palm-size serving", null, null, ["budget", "quick_prep"]],
+  ["eggs", "Eggs", "lean_protein", "1 egg", 70, 6, ["budget", "quick_prep", "vegetarian"]],
+  ["salmon", "Salmon", "fatty_fish", "1 cooked fillet", null, null, ["athlete", "endurance"]],
+  ["sardines", "Sardines", "fatty_fish", "1 tin", null, null, ["budget", "shelf_stable"]],
+  ["tuna", "Tuna", "fatty_fish", "1 pouch or tin", null, null, ["budget", "shelf_stable", "quick_prep"]],
+  ["beans", "Beans", "plant_protein", "1/2 cup cooked", null, null, ["budget", "vegetarian", "vegan", "gluten_free"]],
+  ["lentils", "Lentils", "plant_protein", "1/2 cup cooked", null, null, ["budget", "vegetarian", "vegan", "shelf_stable"]],
+  ["tofu", "Tofu", "plant_protein", "1/2 block", null, null, ["vegetarian", "vegan", "dairy_free"]],
+  ["greek_yogurt", "Greek yogurt", "dairy_or_alternative", "1 cup", null, null, ["quick_prep", "vegetarian", "muscle_support"]],
+  ["spinach", "Spinach", "leafy_greens", "1 cup", null, null, ["quick_prep", "vegetarian", "vegan"]],
+  ["kale", "Kale", "leafy_greens", "1 cup", null, null, ["vegetarian", "vegan", "budget"]],
+  ["broccoli", "Broccoli", "colorful_vegetables", "1 cup", null, null, ["budget", "vegetarian", "vegan"]],
+  ["carrots", "Carrots", "colorful_vegetables", "1 cup", null, null, ["budget", "quick_prep", "vegetarian", "vegan"]],
+  ["peppers", "Peppers", "colorful_vegetables", "1 cup", null, null, ["quick_prep", "vegetarian", "vegan"]],
+  ["berries", "Berries", "fruit", "1 cup", null, null, ["quick_prep", "vegetarian", "vegan"]],
+  ["bananas", "Bananas", "fruit", "1 medium", null, null, ["budget", "quick_prep", "endurance"]],
+  ["apples", "Apples", "fruit", "1 medium", null, null, ["budget", "quick_prep"]],
+  ["avocado", "Avocado", "healthy_fats", "1/4 to 1/2 avocado", null, null, ["vegetarian", "vegan", "dairy_free"]],
+  ["nuts", "Nuts", "healthy_fats", "1 small handful", null, null, ["shelf_stable", "quick_prep"]],
+  ["seeds", "Seeds", "healthy_fats", "1 tablespoon", null, null, ["shelf_stable", "vegetarian", "vegan"]],
+  ["olive_oil", "Olive oil", "healthy_fats", "1 tablespoon", null, null, ["shelf_stable", "vegetarian", "vegan"]],
+  ["oats", "Oats", "whole_food_carbohydrates", "1/2 cup dry", null, null, ["budget", "shelf_stable"]],
+  ["brown_rice", "Brown rice", "whole_food_carbohydrates", "1/2 cup cooked", null, null, ["budget", "shelf_stable", "gluten_free"]],
+  ["quinoa", "Quinoa", "whole_food_carbohydrates", "1/2 cup cooked", null, null, ["vegetarian", "vegan", "gluten_free"]],
+  ["potatoes", "Potatoes", "whole_food_carbohydrates", "1 medium", null, null, ["budget", "gluten_free"]],
+  ["sweet_potatoes", "Sweet potatoes", "whole_food_carbohydrates", "1 medium", null, null, ["budget", "gluten_free"]],
+  ["whole_grain_bread", "Whole-grain bread", "whole_food_carbohydrates", "1 slice", null, null, ["quick_prep", "budget"]],
+  ["milk", "Milk", "dairy_or_alternative", "1 cup", null, null, ["quick_prep", "vegetarian"]],
+  ["soy_milk", "Soy milk", "dairy_or_alternative", "1 cup", null, null, ["vegetarian", "vegan", "dairy_free"]],
+  ["almond_milk", "Almond milk", "dairy_or_alternative", "1 cup", null, null, ["vegetarian", "vegan", "dairy_free"]],
+  ["water", "Water", "hydration", "8 ounces", 0, 0, ["quick_prep"]]
+].map(([id, canonicalName, categoryKey, defaultServingDescription, approximateCalories, approximateProteinGrams, tags]) => ({ id, canonicalName, categoryKey, fdcId: null, defaultServingDescription, approximateCalories, approximateProteinGrams, tags, active: true, createdAt: "2026-07-18T00:00:00.000Z", updatedAt: "2026-07-18T00:00:00.000Z" }));
+function mondayOf(raw = new Date()) { const d = raw instanceof Date ? new Date(raw) : new Date(String(raw)); if (!Number.isFinite(d.getTime())) return parseLocalDate(null); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() - day + 1); return d.toISOString().slice(0, 10); }
+function addDays(date, days) { const d = new Date(`${date}T00:00:00.000Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
+function titleizeCategory(key) { return CATEGORY_LABELS[key] || String(key || "food option").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }
+function normalizeNameKey(value) { return safeString(value, 180).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+
 function createProviderClient({ fetchImpl = global.fetch, env = process.env } = {}) {
   const cache = new Map();
   const timeoutMs = Math.max(1000, Number(env.NUTRITION_PROVIDER_TIMEOUT_MS || DEFAULT_TIMEOUT_MS));
@@ -343,6 +394,7 @@ function createNutritionService({ userStore }) {
       if (["open_food_facts", "usda_fdc", "custom"].includes(entry.source)) upsertSavedFood(store, entry);
       user.events = user.events || [];
       user.events.push({ command: "nutrition.entryCreated", ts: Date.now(), payload: { entryId: entry.entryId, source: entry.source } });
+      matchAllEntriesToMissions(store, userId);
       return user;
     });
     return { userId, entry: clone(entry) };
@@ -357,6 +409,7 @@ function createNutritionService({ userStore }) {
       store.entries[index] = updated;
       user.events = user.events || [];
       user.events.push({ command: "nutrition.entryUpdated", ts: Date.now(), payload: { entryId } });
+      matchAllEntriesToMissions(store, userId);
       return user;
     });
     return { userId, entry: clone(updated) };
@@ -374,6 +427,7 @@ function createNutritionService({ userStore }) {
       if (store.entries.length === before) throw new ApiError("NOT_FOUND", "Nutrition entry not found", 404);
       user.events = user.events || [];
       user.events.push({ command: "nutrition.entryDeleted", ts: Date.now(), payload: { entryId } });
+      matchAllEntriesToMissions(store, userId);
       return user;
     });
     return { userId, deleted: Boolean(deleted), entryId };
@@ -459,6 +513,63 @@ function createNutritionService({ userStore }) {
     if (/toast|bread|cereal|yogurt/i.test(phrase)) q.push("Which brand or serving size?");
     return q.slice(0, 3);
   }
+
+  function weeklyStore(user) {
+    const store = nutritionStore(user);
+    store.weeklyPlans = Array.isArray(store.weeklyPlans) ? store.weeklyPlans : [];
+    store.weeklyGroceryItems = Array.isArray(store.weeklyGroceryItems) ? store.weeklyGroceryItems : [];
+    store.dailyMissions = Array.isArray(store.dailyMissions) ? store.dailyMissions : [];
+    store.missionProgressEvents = Array.isArray(store.missionProgressEvents) ? store.missionProgressEvents : [];
+    return store;
+  }
+  function getGroceryOptions(filters = {}) {
+    const category = safeString(filters.categoryKey || "", 80);
+    const options = STARTER_GROCERY_CATALOG.filter((o) => o.active && (!category || o.categoryKey === category));
+    return { categories: CATEGORY_DEFINITIONS.map(([key, label]) => ({ key, label })), options: clone(options), count: options.length, guidance: "Choose foods that fit your preferences, availability, budget, allergies, and routine. This is educational guidance, not a prescribed diet." };
+  }
+  function normalizePlan(input, userId, existing = null, actorUserId = null) {
+    const weekStartDate = mondayOf(input.weekStartDate || existing?.weekStartDate || new Date());
+    const status = WEEKLY_PLAN_STATUSES.has(input.status) ? input.status : (existing?.status || "shopping");
+    const sourceType = WEEKLY_PLAN_SOURCES.has(input.sourceType) ? input.sourceType : (existing?.sourceType || "member");
+    return { id: existing?.id || `nwp_${Date.now()}_${cryptoRandom()}`, userId, title: safeString(input.title || existing?.title || `Weekly nutrition missions ${weekStartDate}`, 160), weekStartDate, status, sourceType, templateKey: safeString(input.templateKey || existing?.templateKey || "", 80) || null, calorieTarget: positiveNumber(input.calorieTarget ?? existing?.calorieTarget, null), proteinGramsTarget: positiveNumber(input.proteinGramsTarget ?? existing?.proteinGramsTarget, null), waterOuncesTarget: positiveNumber(input.waterOuncesTarget ?? existing?.waterOuncesTarget, null), templateTags: parseArray(input.templateTags ?? existing?.templateTags ?? [], 24), createdByUserId: existing?.createdByUserId || actorUserId || userId, activatedAt: status === "active" ? (existing?.activatedAt || nowIso()) : (existing?.activatedAt || null), completedAt: status === "completed" ? (existing?.completedAt || nowIso()) : (existing?.completedAt || null), createdAt: existing?.createdAt || nowIso(), updatedAt: nowIso() };
+  }
+  function createWeeklyPlan(userId, input = {}) {
+    let plan;
+    userStore.updateUser(userId, (user) => { const store = weeklyStore(user); const draft = normalizePlan(input, userId, null, userId); const conflict = store.weeklyPlans.find((p) => p.userId === userId && p.weekStartDate === draft.weekStartDate && !["archived"].includes(p.status)); if (conflict) throw new ApiError("CONFLICT", "A weekly nutrition plan already exists for this week", 409); if (draft.status === "active") store.weeklyPlans.forEach((p) => { if (p.status === "active") p.status = "archived"; }); store.weeklyPlans.push(draft); plan = draft; return user; });
+    return { userId, plan: clone(plan) };
+  }
+  function currentWeeklyPlan(userId, date = null) {
+    const user = userStore.loadUser(userId); const store = weeklyStore(user); const weekStartDate = mondayOf(date || new Date());
+    let plan = store.weeklyPlans.find((p) => p.userId === userId && p.status === "active") || store.weeklyPlans.find((p) => p.userId === userId && p.weekStartDate === weekStartDate && p.status !== "archived") || null;
+    if (!plan) return { userId, plan: null, weekStartDate, categories: getGroceryOptions().categories };
+    return planBundle(userId, plan.id);
+  }
+  function findPlan(store, userId, planId) { const plan = store.weeklyPlans.find((p) => p.id === String(planId) && p.userId === userId); if (!plan) throw new ApiError("NOT_FOUND", "Weekly nutrition plan not found", 404); return plan; }
+  function updateWeeklyPlan(userId, planId, input = {}) { let plan; userStore.updateUser(userId, (user) => { const store = weeklyStore(user); const existing = findPlan(store, userId, planId); const next = normalizePlan({ ...existing, ...input }, userId, existing, userId); if (next.status === "active") store.weeklyPlans.forEach((p) => { if (p.id !== existing.id && p.status === "active") p.status = "archived"; }); Object.assign(existing, next); plan = existing; return user; }); return { userId, plan: clone(plan) }; }
+  function normalizeGroceryState(input, existing = {}) {
+    existing = existing || {};
+    const keys = ["selectedForShopping", "acquired", "alreadyAtHome", "unavailable"];
+    const hasStatePatch = keys.some((key) => Object.prototype.hasOwnProperty.call(input, key));
+    const state = Object.fromEntries(keys.map((key) => [key, Boolean(hasStatePatch ? input[key] : existing[key])]));
+    if (state.unavailable) return { selectedForShopping: false, acquired: false, alreadyAtHome: false, unavailable: true };
+    if (state.acquired) return { selectedForShopping: true, acquired: true, alreadyAtHome: false, unavailable: false };
+    if (state.alreadyAtHome) return { selectedForShopping: true, acquired: false, alreadyAtHome: true, unavailable: false };
+    return { selectedForShopping: state.selectedForShopping, acquired: false, alreadyAtHome: false, unavailable: false };
+  }
+  function upsertGroceryItem(userId, planId, input = {}, itemId = null) { let item; userStore.updateUser(userId, (user) => { const store = weeklyStore(user); findPlan(store, userId, planId); const option = STARTER_GROCERY_CATALOG.find((o) => o.id === safeString(input.groceryOptionId || input.grocery_option_id || "", 80)); const existing = itemId ? store.weeklyGroceryItems.find((i) => i.id === String(itemId) && i.weeklyPlanId === planId) : null; if (itemId && !existing) throw new ApiError("NOT_FOUND", "Grocery item not found", 404); const categoryKey = safeString(input.categoryKey || existing?.categoryKey || option?.categoryKey || "", 80); if (!CATEGORY_LABELS[categoryKey]) throw new ApiError("VALIDATION_ERROR", "A valid grocery category is required", 400); const customName = safeString(input.customName || existing?.customName || "", 120) || null; if (!option && !customName) throw new ApiError("VALIDATION_ERROR", "Choose a catalog option or enter a custom food name", 400); item = Object.assign(existing || {}, { id: existing?.id || `nwg_${Date.now()}_${cryptoRandom()}`, weeklyPlanId: planId, groceryOptionId: option?.id || existing?.groceryOptionId || null, customName, categoryKey, desiredQuantity: safeString(input.desiredQuantity ?? existing?.desiredQuantity ?? "", 40) || null, quantityUnit: safeString(input.quantityUnit ?? existing?.quantityUnit ?? "", 40) || null, ...normalizeGroceryState(input, existing), memberNotes: safeString(input.memberNotes ?? existing?.memberNotes ?? "", 500) || null, createdAt: existing?.createdAt || nowIso(), updatedAt: nowIso() }); if (!existing) store.weeklyGroceryItems.push(item); return user; }); return { userId, item: clone(item) }; }
+  function pantryFor(store, planId) { return store.weeklyGroceryItems.filter((i) => i.weeklyPlanId === planId && (i.acquired || i.alreadyAtHome) && !i.unavailable); }
+  function generateMissions(userId, planId, input = {}) { let missions; userStore.updateUser(userId, (user) => { const store = weeklyStore(user); const plan = findPlan(store, userId, planId); const existing = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); if (existing.length && !input.confirmRegenerate) { missions = existing; return user; } if (existing.some((m) => m.status === "completed") && !input.confirmRegenerate) throw new ApiError("CONFLICT", "Regeneration requires confirmation because mission progress exists", 409); const pantry = pantryFor(store, planId); const byCat = {}; pantry.forEach((i) => { (byCat[i.categoryKey] ||= []).push(i); }); const prefs = ["lean_protein", "plant_protein", "leafy_greens", "colorful_vegetables", "fruit", "healthy_fats", "whole_food_carbohydrates", "dairy_or_alternative", "fatty_fish"]; const created = []; for (let d = 0; d < 7; d++) { const date = addDays(plan.weekStartDate, d); const cats = prefs.filter((c) => byCat[c]?.length).slice(d % 3, d % 3 + 4); if (cats.length < 3) cats.push(...prefs.filter((c) => byCat[c]?.length && !cats.includes(c)).slice(0, 3 - cats.length)); for (const c of cats.slice(0, 4)) { const options = byCat[c]; const chosen = options[d % options.length]; created.push({ id: `ndm_${Date.now()}_${d}_${created.length}_${cryptoRandom()}`, weeklyPlanId: planId, missionDate: date, missionType: c.includes("protein") || c === "lean_protein" ? "protein_event" : "food_category", title: `Include ${titleizeCategory(c).toLowerCase()}`, description: `Add one available ${titleizeCategory(c).toLowerCase()} option in a way that fits your day.`, categoryKey: c, groceryOptionId: null, targetQuantity: 1, targetUnit: "serving", targetTime: null, status: "pending", progressValue: 0, source: "generated", qualifyingFoods: options.map(labelForGroceryItem), rotationExample: labelForGroceryItem(chosen), createdAt: nowIso(), updatedAt: nowIso() }); } if (plan.waterOuncesTarget && byCat.hydration?.length) created.push({ id: `ndm_${Date.now()}_${d}_hydr_${cryptoRandom()}`, weeklyPlanId: planId, missionDate: date, missionType: "hydration_checkpoint", title: "Hydration check-in", description: "Log water toward your explicit hydration target if that target already fits your plan.", categoryKey: "hydration", groceryOptionId: "water", targetQuantity: Math.min(32, plan.waterOuncesTarget), targetUnit: "ounce", targetTime: "afternoon", status: "pending", progressValue: 0, source: "generated", qualifyingFoods: ["Water"], createdAt: nowIso(), updatedAt: nowIso() }); } store.dailyMissions = store.dailyMissions.filter((m) => m.weeklyPlanId !== planId); store.missionProgressEvents = store.missionProgressEvents.filter((e) => !existing.some((m) => m.id === e.missionId)); store.dailyMissions.push(...created); missions = created; matchAllEntriesToMissions(store, userId); return user; }); return { userId, missions: clone(missions), count: missions.length }; }
+  function labelForGroceryItem(item) { const opt = STARTER_GROCERY_CATALOG.find((o) => o.id === item.groceryOptionId); return opt?.canonicalName || item.customName || "available food"; }
+  function matchEntryCategory(entry) { const sourceId = safeString(entry.sourceId || "", 80); const byId = STARTER_GROCERY_CATALOG.find((o) => o.id === sourceId || (o.fdcId && o.fdcId === sourceId)); if (byId) return { categoryKey: byId.categoryKey, confidence: 0.95 }; const key = normalizeNameKey(entry.foodName); const byName = STARTER_GROCERY_CATALOG.find((o) => normalizeNameKey(o.canonicalName) === key); if (byName) return { categoryKey: byName.categoryKey, confidence: 0.9 }; return null; }
+  function recalcMissionProgress(store, userId) { store.dailyMissions.forEach((m) => { const events = store.missionProgressEvents.filter((e) => e.missionId === m.id && e.userId === userId); const total = events.reduce((sum, e) => sum + (Number(e.progressAmount) || 0), 0); m.progressValue = round(total, 2) || 0; if (m.status !== "skipped") m.status = total >= Number(m.targetQuantity || 1) ? "completed" : (total > 0 ? "in_progress" : "pending"); m.updatedAt = nowIso(); }); }
+  function matchAllEntriesToMissions(store, userId) { store.weeklyPlans = Array.isArray(store.weeklyPlans) ? store.weeklyPlans : []; store.weeklyGroceryItems = Array.isArray(store.weeklyGroceryItems) ? store.weeklyGroceryItems : []; store.dailyMissions = Array.isArray(store.dailyMissions) ? store.dailyMissions : []; store.missionProgressEvents = Array.isArray(store.missionProgressEvents) ? store.missionProgressEvents : []; store.missionProgressEvents = store.missionProgressEvents.filter((e) => e.source !== "automatic"); for (const entry of store.entries.filter((e) => e.userId === userId)) { const match = matchEntryCategory(entry); if (!match) continue; for (const m of store.dailyMissions.filter((m) => m.missionDate === entry.localDate && m.categoryKey === match.categoryKey)) { if (store.missionProgressEvents.some((e) => e.missionId === m.id && e.nutritionEntryId === entry.entryId)) continue; store.missionProgressEvents.push({ id: `nmpe_${Date.now()}_${cryptoRandom()}`, missionId: m.id, userId, nutritionEntryId: entry.entryId, progressAmount: 1, source: "automatic", classificationConfidence: match.confidence, notes: "Matched from approved grocery catalog metadata.", createdAt: nowIso() }); } } recalcMissionProgress(store, userId); }
+  function updateMission(userId, missionId, input = {}) { let mission; userStore.updateUser(userId, (user) => { const store = weeklyStore(user); mission = store.dailyMissions.find((m) => m.id === missionId && store.weeklyPlans.some((p) => p.id === m.weeklyPlanId && p.userId === userId)); if (!mission) throw new ApiError("NOT_FOUND", "Mission not found", 404); if (MISSION_STATUSES.has(input.status)) mission.status = input.status; mission.updatedAt = nowIso(); return user; }); return { userId, mission: clone(mission) }; }
+  function manualProgress(userId, missionId, input = {}) { let event; userStore.updateUser(userId, (user) => { const store = weeklyStore(user); const mission = store.dailyMissions.find((m) => m.id === missionId && store.weeklyPlans.some((p) => p.id === m.weeklyPlanId && p.userId === userId)); if (!mission) throw new ApiError("NOT_FOUND", "Mission not found", 404); event = { id: `nmpe_${Date.now()}_${cryptoRandom()}`, missionId, userId, nutritionEntryId: null, progressAmount: positiveNumber(input.progressAmount, 1) || 1, source: "manual", classificationConfidence: null, notes: safeString(input.notes || "Manual member confirmation", 300), createdAt: nowIso() }; store.missionProgressEvents.push(event); recalcMissionProgress(store, userId); return user; }); return { userId, event: clone(event) }; }
+  function listMissions(userId, planId, date = null) { const user = userStore.loadUser(userId); const store = weeklyStore(user); findPlan(store, userId, planId); let missions = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); if (date) missions = missions.filter((m) => m.missionDate === parseLocalDate(date)); return { userId, missions: clone(missions), count: missions.length }; }
+  function planBundle(userId, planId) { const user = userStore.loadUser(userId); const store = weeklyStore(user); const plan = findPlan(store, userId, planId); const groceryItems = store.weeklyGroceryItems.filter((i) => i.weeklyPlanId === planId); const pantry = pantryFor(store, planId); const missions = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); return { userId, plan: clone(plan), groceryItems: clone(groceryItems), pantry: clone(pantry), missions: clone(missions), categories: getGroceryOptions().categories, progress: { groceryPrepared: pantry.length, grocerySelected: groceryItems.filter((i) => i.selectedForShopping || i.acquired || i.alreadyAtHome).length, missionsCompleted: missions.filter((m) => m.status === "completed").length, missionCount: missions.length } }; }
+  function weeklyReview(userId, planId) { const user = userStore.loadUser(userId); const store = weeklyStore(user); const plan = findPlan(store, userId, planId); const end = addDays(plan.weekStartDate, 6); const entries = store.entries.filter((e) => e.userId === userId && e.localDate >= plan.weekStartDate && e.localDate <= end); const totals = emptyTotals(); entries.forEach((e) => addTotals(totals, e)); const categoriesIncluded = Array.from(new Set(entries.map(matchEntryCategory).filter(Boolean).map((m) => m.categoryKey))); const missions = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); return { userId, plan: clone(plan), weekEndDate: end, groceryItems: clone(store.weeklyGroceryItems.filter((i) => i.weeklyPlanId === planId)), foodsLogged: clone(entries.map((e) => ({ entryId: e.entryId, foodName: e.foodName, localDate: e.localDate, calories: e.calories }))), missionCompletionByDay: Object.fromEntries([...Array(7)].map((_, i) => { const date = addDays(plan.weekStartDate, i); const day = missions.filter((m) => m.missionDate === date); return [date, { completed: day.filter((m) => m.status === "completed").length, total: day.length }]; })), categoriesIncluded, nutritionTotals: finalizeTotals(totals), feedback: "Review what you added and what felt realistic. Skips are information for next week, not failure." }; }
+  function validateAiDraft(input = {}) { const errors = []; if (!safeString(input.title, 160)) errors.push("title is required"); const suggestions = Array.isArray(input.groceryCategorySuggestions) ? input.groceryCategorySuggestions : []; for (const s of suggestions) { if (!CATEGORY_LABELS[s.categoryKey]) errors.push(`invalid category: ${s.categoryKey}`); (s.groceryOptionIds || []).forEach((id) => { if (!STARTER_GROCERY_CATALOG.some((o) => o.id === id)) errors.push(`unknown grocery option: ${id}`); }); } const status = safeString(input.status || "draft", 20); if (status !== "draft") errors.push("AI drafts must remain in draft status"); return { valid: errors.length === 0, errors, schema: AI_DRAFT_SCHEMA }; }
+
   function educationSummary(userId, date) {
     const summary = summarize(userId, date);
     const entries = listEntries(userId, date).entries;
@@ -473,8 +584,10 @@ function createNutritionService({ userStore }) {
       "This is general education, not a medical diagnosis or therapeutic diet prescription."
     ] };
   }
-  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary };
+  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, validateAiDraft, planBundle };
 }
+
+const AI_DRAFT_SCHEMA = AI_DRAFT_SCHEMA_DOCUMENT;
 
 module.exports = {
   createNutritionService,
@@ -482,5 +595,8 @@ module.exports = {
   validateBarcode,
   normalizeOpenFoodFactsProduct,
   normalizeUsdaFood,
-  calculateFromBasis
+  calculateFromBasis,
+  STARTER_GROCERY_CATALOG,
+  CATEGORY_DEFINITIONS,
+  AI_DRAFT_SCHEMA
 };
