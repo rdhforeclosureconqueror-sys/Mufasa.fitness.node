@@ -128,7 +128,7 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
   const authStateJs = fs.readFileSync(path.join(__dirname, "..", "public", "auth-state-runtime.js"), "utf8");
   const nutritionJs = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition-runtime.js"), "utf8");
 
-  async function runNutritionRuntime({ stored = {}, appAuth = null, authMeOk = true } = {}) {
+  async function runNutritionRuntime({ stored = {}, appAuth = null, authMeOk = true, authMeStatus = null, authMeThrows = false } = {}) {
     const listeners = {};
     const elements = new Map();
     function makeElement(id) {
@@ -147,7 +147,7 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
       }).get(id);
     }
     [
-      "authWall", "journalShell", "journalDate", "startScanBtn", "stopScanBtn", "lookupBarcodeBtn", "manualBarcode",
+      "authWall", "sessionStatus", "sessionStatusMessage", "sessionRetryLink", "journalShell", "journalDate", "startScanBtn", "stopScanBtn", "lookupBarcodeBtn", "manualBarcode",
       "foodSearchBtn", "draftBtn", "refreshBtn", "loadRecentBtn", "saveMealBtn", "customForm", "customSaveBtn",
       "entriesList", "dailySummary", "educationSummary", "scannerVideo", "barcodeStatus", "productReview",
       "foodSearchInput", "foodResults", "draftReview", "naturalText", "recentList", "mealList"
@@ -167,7 +167,8 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
         removeItem: (key) => { delete stored[key]; }
       },
       navigator: { mediaDevices: null },
-      location: { origin: "" },
+      location: { origin: "https://mufasafitsite.onrender.com" },
+      MAAT_BACKEND_ORIGIN: "https://mufasa-fitness-node.onrender.com",
       document: {
         readyState: "loading",
         addEventListener: (name, fn) => { listeners[name] = fn; },
@@ -179,12 +180,14 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
       dispatchEvent: () => {},
       fetch: async (path, options = {}) => {
         requests.push({ path, options });
-        if (path === "/api/auth/me") {
-          return new Response(JSON.stringify(authMeOk ? { ok: true, data: { user: { userId: "nutrition_user" } } } : { ok: false, error: "invalid" }), { status: authMeOk ? 200 : 401, headers: { "content-type": "application/json" } });
+        if (String(path) === "https://mufasa-fitness-node.onrender.com/api/auth/me") {
+          if (authMeThrows) throw new Error("network_down");
+          const status = authMeStatus || (authMeOk ? 200 : 401);
+          return new Response(JSON.stringify(authMeOk ? { ok: true, data: { user: { userId: "nutrition_user" } } } : { ok: false, error: "invalid" }), { status, headers: { "content-type": "application/json" } });
         }
-        if (String(path).startsWith("/api/me/nutrition/entries")) return new Response(JSON.stringify({ ok: true, data: { entries: [] } }), { status: 200, headers: { "content-type": "application/json" } });
-        if (String(path).startsWith("/api/me/nutrition/summary")) return new Response(JSON.stringify({ ok: true, data: { fullDay: { calories: 0, proteinGrams: 0, carbohydrateGrams: 0, fatGrams: 0, fiberGrams: 0, sodiumMilligrams: 0, mealsLogged: 0, estimatedEntryCount: 0 } } }), { status: 200, headers: { "content-type": "application/json" } });
-        if (String(path).startsWith("/api/me/nutrition/education")) return new Response(JSON.stringify({ ok: true, data: { messages: [] } }), { status: 200, headers: { "content-type": "application/json" } });
+        if (String(path).startsWith("https://mufasa-fitness-node.onrender.com/api/me/nutrition/entries")) return new Response(JSON.stringify({ ok: true, data: { entries: [] } }), { status: 200, headers: { "content-type": "application/json" } });
+        if (String(path).startsWith("https://mufasa-fitness-node.onrender.com/api/me/nutrition/summary")) return new Response(JSON.stringify({ ok: true, data: { fullDay: { calories: 0, proteinGrams: 0, carbohydrateGrams: 0, fatGrams: 0, fiberGrams: 0, sodiumMilligrams: 0, mealsLogged: 0, estimatedEntryCount: 0 } } }), { status: 200, headers: { "content-type": "application/json" } });
+        if (String(path).startsWith("https://mufasa-fitness-node.onrender.com/api/me/nutrition/education")) return new Response(JSON.stringify({ ok: true, data: { messages: [] } }), { status: 200, headers: { "content-type": "application/json" } });
         throw new Error(`unexpected fetch ${path}`);
       }
     };
@@ -198,7 +201,7 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
   }
 
   const canonical = await runNutritionRuntime({ stored: { maatAuthToken: "canonical-token" } });
-  assert.equal(canonical.requests[0].path, "/api/auth/me");
+  assert.equal(canonical.requests[0].path, "https://mufasa-fitness-node.onrender.com/api/auth/me");
   assert.equal(canonical.requests[0].options.headers.authorization, "Bearer canonical-token");
   assert.equal(canonical.elements.get("journalShell").hidden, false);
   assert.equal(canonical.elements.get("authWall").hidden, true);
@@ -216,11 +219,21 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
   assert.equal(missing.elements.get("authWall").hidden, false);
   assert.equal(missing.elements.get("journalShell").hidden, true);
 
-  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: "invalid-token" }, authMeOk: false });
+  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: "invalid-token" }, authMeOk: false, authMeStatus: 401 });
   assert.equal(invalid.requests[0].options.headers.authorization, "Bearer invalid-token");
   assert.equal(invalid.elements.get("authWall").hidden, false);
   assert.equal(invalid.elements.get("journalShell").hidden, true);
   assert.equal(invalid.stored.maatAuthToken, undefined);
+
+  const unavailable = await runNutritionRuntime({ stored: { maatAuthToken: "server-error-token" }, authMeOk: false, authMeStatus: 503 });
+  assert.equal(unavailable.elements.get("authWall").hidden, true);
+  assert.equal(unavailable.elements.get("journalShell").hidden, true);
+  assert.equal(unavailable.elements.get("sessionStatus").hidden, false);
+  assert.equal(unavailable.stored.maatAuthToken, "server-error-token");
+
+  const networkError = await runNutritionRuntime({ stored: { maatAuthToken: "network-token" }, authMeThrows: true });
+  assert.equal(networkError.elements.get("sessionStatus").hidden, false);
+  assert.equal(networkError.stored.maatAuthToken, "network-token");
 
   const logout = await runNutritionRuntime({ stored: { maatAuthToken: "logout-token" }, appAuth: { token: "logout-token", user: { userId: "nutrition_user" }, isAuthenticated: true } });
   logout.context.AuthStateRuntime.clearCanonicalAuthState("test_logout", { clearLastUser: true });
@@ -245,4 +258,24 @@ test("Phase 32 frontend exposes authenticated nutrition flow and scanner compati
   assert.match(js, /lastScanAt/);
   assert.match(js, /manualBarcode/);
   assert.match(js, /api\/auth\/me/);
+  assert.match(html, /runtime-state\.js\?v=20260506/);
+  assert.match(html, /auth-state-runtime\.js\?v=20260506/);
+  assert.match(html, /nutrition-runtime\.js\?v=20260718/);
+  assert.match(html, /backendOrigin: "https:\/\/mufasa-fitness-node\.onrender\.com"/);
+  assert.match(js, /backendUrl\(path\)/);
+});
+
+test("Phase 32 Nutrition Journal navigation reuses same-origin member destinations", () => {
+  const workoutHtml = fs.readFileSync(path.join(__dirname, "..", "public", "workout.html"), "utf8");
+  const dashboardHtml = fs.readFileSync(path.join(__dirname, "..", "public", "dashboard.html"), "utf8");
+  const indexHtml = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+  const nutritionHtml = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition.html"), "utf8");
+
+  assert.match(workoutHtml, /id="nutritionBtn"[^>]*>🥗 Nutrition Journal<\/button>/);
+  assert.match(workoutHtml, /nutritionBtn\) nutritionBtn\.onclick = \(\) => \{ window\.location\.href = "\/nutrition\.html"; \}/);
+  assert.match(workoutHtml, /<a href="\/nutrition\.html">Nutrition Journal<\/a>/);
+  assert.match(dashboardHtml, /href="\/nutrition\.html"[^>]*>Nutrition Journal<\/a>/);
+  assert.match(indexHtml, /href="\/nutrition\.html"[^>]*>Nutrition Journal<\/a>/);
+  assert.match(indexHtml, /id="landingNutritionCta"[^>]*href="\/nutrition\.html"[^>]*>Open Nutrition Journal<\/a>/);
+  assert.doesNotMatch(nutritionHtml, /https:\/\/mufasafitsite\.onrender\.com\/nutrition\.html/);
 });

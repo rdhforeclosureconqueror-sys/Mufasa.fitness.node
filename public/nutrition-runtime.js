@@ -4,28 +4,47 @@
   const state = { token: null, entries: [], selectedEntryIds: new Set(), stream: null, scanTimer: null, lastBarcode: null, lastScanAt: 0, zxingReader: null };
   function today() { return new Date().toISOString().slice(0, 10); }
   function authToken() { return window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || localStorage.getItem("authToken") || localStorage.getItem("pocket_pt_auth_token") || null; }
+  function backendUrl(path) {
+    const baseUrl = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || window.MAAT_NODE_BASE_URL || window.location.origin).replace(/\/$/, "");
+    return `${baseUrl}${path}`;
+  }
   async function api(path, options = {}) {
     const token = state.token || authToken();
-    const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}), ...(token ? { authorization: `Bearer ${token}` } : {}) } });
+    const res = await fetch(backendUrl(path), { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}), ...(token ? { authorization: `Bearer ${token}` } : {}) } });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || json.ok === false) { const err = new Error(json.error?.message || json.error || "Request failed"); err.status = res.status; err.payload = json; throw err; }
     return json.data || json;
   }
-  function showAuthWall() { $("authWall").hidden = false; $("journalShell").hidden = true; }
-  function showJournal() { $("authWall").hidden = true; $("journalShell").hidden = false; }
+  function setVisible(id) { ["authWall", "sessionStatus", "journalShell"].forEach((key) => { const el = $(key); if (el) el.hidden = key !== id; }); }
+  function showAuthWall() { setVisible("authWall"); }
+  function showSessionStatus(message, retry = true) {
+    const msg = $("sessionStatusMessage");
+    const retryLink = $("sessionRetryLink");
+    if (msg) msg.textContent = message || "Nutrition Journal could not verify your member session yet. Please try again.";
+    if (retryLink) retryLink.hidden = retry === false;
+    setVisible("sessionStatus");
+  }
+  function showJournal() { setVisible("journalShell"); }
   async function requireSession() {
+    showSessionStatus("Checking your signed-in member session…", false);
     state.token = authToken();
     if (!state.token) return showAuthWall();
     try {
       if (window.AuthStateRuntime?.refreshAuthStatus) {
         const auth = await window.AuthStateRuntime.refreshAuthStatus({ token: state.token, reason: "nutrition:requireSession" });
-        if (!auth?.ok) return showAuthWall();
+        if (!auth?.ok) {
+          if (auth?.reason === "auth_unavailable") return showSessionStatus("Nutrition Journal could not reach the member session service. Your sign-in was not cleared; please retry in a moment.");
+          return showAuthWall();
+        }
         state.token = auth.token || state.token;
       } else {
         await api("/api/auth/me");
       }
       showJournal(); await refreshAll();
-    } catch (_) { showAuthWall(); }
+    } catch (error) {
+      if (error?.status === 401 || error?.status === 403 || error?.code === "MISSING_AUTH_TOKEN") return showAuthWall();
+      showSessionStatus("Nutrition Journal loaded your session but could not load journal data. Please retry in a moment.");
+    }
   }
   function setPanel(id) { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === id)); }
   function mealTypeSelect(value = "snack") { return `<select data-field="mealType"><option ${value === "breakfast" ? "selected" : ""}>breakfast</option><option ${value === "lunch" ? "selected" : ""}>lunch</option><option ${value === "dinner" ? "selected" : ""}>dinner</option><option ${value === "snack" ? "selected" : ""}>snack</option><option ${value === "other" ? "selected" : ""}>other</option></select>`; }
@@ -73,5 +92,5 @@
   function escapeHtml(v) { return String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
   document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = startScanner; $("stopScanBtn").onclick = stopScanner; $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); requireSession(); });
   window.addEventListener("pagehide", stopScanner);
-  window.NutritionRuntime = { startScanner, stopScanner, handleDetected, lookupBarcode, requireSession };
+  window.NutritionRuntime = { startScanner, stopScanner, handleDetected, lookupBarcode, requireSession, authToken, backendUrl };
 })();
