@@ -122,6 +122,112 @@ test("Phase 32 serving calculations and natural-language drafts require confirma
   }, providerFetch);
 });
 
+
+
+test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves auth-wall behavior", async () => {
+  const authStateJs = fs.readFileSync(path.join(__dirname, "..", "public", "auth-state-runtime.js"), "utf8");
+  const nutritionJs = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition-runtime.js"), "utf8");
+
+  async function runNutritionRuntime({ stored = {}, appAuth = null, authMeOk = true } = {}) {
+    const listeners = {};
+    const elements = new Map();
+    function makeElement(id) {
+      return elements.get(id) || elements.set(id, {
+        id,
+        hidden: true,
+        value: "",
+        textContent: "",
+        innerHTML: "",
+        dataset: {},
+        style: {},
+        classList: { toggle() {}, add() {}, remove() {} },
+        querySelector: () => ({ value: "snack" }),
+        querySelectorAll: () => [],
+        pause() {}
+      }).get(id);
+    }
+    [
+      "authWall", "journalShell", "journalDate", "startScanBtn", "stopScanBtn", "lookupBarcodeBtn", "manualBarcode",
+      "foodSearchBtn", "draftBtn", "refreshBtn", "loadRecentBtn", "saveMealBtn", "customForm", "customSaveBtn",
+      "entriesList", "dailySummary", "educationSummary", "scannerVideo", "barcodeStatus", "productReview",
+      "foodSearchInput", "foodResults", "draftReview", "naturalText", "recentList", "mealList"
+    ].forEach(makeElement);
+
+    const requests = [];
+    const context = {
+      console,
+      setTimeout,
+      clearTimeout,
+      Date,
+      Promise,
+      CustomEvent: function CustomEvent(type, init) { return { type, detail: init?.detail }; },
+      localStorage: {
+        getItem: (key) => Object.prototype.hasOwnProperty.call(stored, key) ? stored[key] : null,
+        setItem: (key, value) => { stored[key] = String(value); },
+        removeItem: (key) => { delete stored[key]; }
+      },
+      navigator: { mediaDevices: null },
+      location: { origin: "" },
+      document: {
+        readyState: "loading",
+        addEventListener: (name, fn) => { listeners[name] = fn; },
+        getElementById: makeElement,
+        querySelectorAll: () => [],
+        createEvent: () => ({ initCustomEvent(type, _bubbles, _cancelable, detail) { this.type = type; this.detail = detail; } })
+      },
+      addEventListener: (name, fn) => { listeners[`window:${name}`] = fn; },
+      dispatchEvent: () => {},
+      fetch: async (path, options = {}) => {
+        requests.push({ path, options });
+        if (path === "/api/auth/me") {
+          return new Response(JSON.stringify(authMeOk ? { ok: true, data: { user: { userId: "nutrition_user" } } } : { ok: false, error: "invalid" }), { status: authMeOk ? 200 : 401, headers: { "content-type": "application/json" } });
+        }
+        if (String(path).startsWith("/api/me/nutrition/entries")) return new Response(JSON.stringify({ ok: true, data: { entries: [] } }), { status: 200, headers: { "content-type": "application/json" } });
+        if (String(path).startsWith("/api/me/nutrition/summary")) return new Response(JSON.stringify({ ok: true, data: { fullDay: { calories: 0, proteinGrams: 0, carbohydrateGrams: 0, fatGrams: 0, fiberGrams: 0, sodiumMilligrams: 0, mealsLogged: 0, estimatedEntryCount: 0 } } }), { status: 200, headers: { "content-type": "application/json" } });
+        if (String(path).startsWith("/api/me/nutrition/education")) return new Response(JSON.stringify({ ok: true, data: { messages: [] } }), { status: 200, headers: { "content-type": "application/json" } });
+        throw new Error(`unexpected fetch ${path}`);
+      }
+    };
+    context.window = context;
+    if (appAuth) context.APP_AUTH = appAuth;
+    require("node:vm").runInNewContext(authStateJs, context);
+    require("node:vm").runInNewContext(nutritionJs, context);
+    await listeners.DOMContentLoaded();
+    await new Promise((resolve) => setImmediate(resolve));
+    return { requests, elements, stored, context };
+  }
+
+  const canonical = await runNutritionRuntime({ stored: { maatAuthToken: "canonical-token" } });
+  assert.equal(canonical.requests[0].path, "/api/auth/me");
+  assert.equal(canonical.requests[0].options.headers.authorization, "Bearer canonical-token");
+  assert.equal(canonical.elements.get("journalShell").hidden, false);
+  assert.equal(canonical.elements.get("authWall").hidden, true);
+
+  const legacyAuthToken = await runNutritionRuntime({ stored: { authToken: "legacy-auth-token" } });
+  assert.equal(legacyAuthToken.requests[0].options.headers.authorization, "Bearer legacy-auth-token");
+  assert.equal(legacyAuthToken.elements.get("journalShell").hidden, false);
+
+  const legacyPocketToken = await runNutritionRuntime({ stored: { pocket_pt_auth_token: "legacy-pocket-token" } });
+  assert.equal(legacyPocketToken.requests[0].options.headers.authorization, "Bearer legacy-pocket-token");
+  assert.equal(legacyPocketToken.elements.get("journalShell").hidden, false);
+
+  const missing = await runNutritionRuntime();
+  assert.equal(missing.requests.length, 0);
+  assert.equal(missing.elements.get("authWall").hidden, false);
+  assert.equal(missing.elements.get("journalShell").hidden, true);
+
+  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: "invalid-token" }, authMeOk: false });
+  assert.equal(invalid.requests[0].options.headers.authorization, "Bearer invalid-token");
+  assert.equal(invalid.elements.get("authWall").hidden, false);
+  assert.equal(invalid.elements.get("journalShell").hidden, true);
+  assert.equal(invalid.stored.maatAuthToken, undefined);
+
+  const logout = await runNutritionRuntime({ stored: { maatAuthToken: "logout-token" }, appAuth: { token: "logout-token", user: { userId: "nutrition_user" }, isAuthenticated: true } });
+  logout.context.AuthStateRuntime.clearCanonicalAuthState("test_logout", { clearLastUser: true });
+  assert.equal(logout.stored.maatAuthToken, undefined);
+  assert.equal(logout.context.APP_AUTH.token, null);
+});
+
 test("Phase 32 frontend exposes authenticated nutrition flow and scanner compatibility", () => {
   const html = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition.html"), "utf8");
   const js = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition-runtime.js"), "utf8");

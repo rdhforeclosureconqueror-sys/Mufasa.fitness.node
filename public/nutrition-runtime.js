@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const state = { token: null, entries: [], selectedEntryIds: new Set(), stream: null, scanTimer: null, lastBarcode: null, lastScanAt: 0, zxingReader: null };
   function today() { return new Date().toISOString().slice(0, 10); }
-  function authToken() { return window.APP_AUTH?.token || localStorage.getItem("authToken") || localStorage.getItem("pocket_pt_auth_token") || null; }
+  function authToken() { return window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || localStorage.getItem("authToken") || localStorage.getItem("pocket_pt_auth_token") || null; }
   async function api(path, options = {}) {
     const token = state.token || authToken();
     const res = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}), ...(token ? { authorization: `Bearer ${token}` } : {}) } });
@@ -16,7 +16,16 @@
   async function requireSession() {
     state.token = authToken();
     if (!state.token) return showAuthWall();
-    try { await api("/api/auth/me"); showJournal(); await refreshAll(); } catch (_) { showAuthWall(); }
+    try {
+      if (window.AuthStateRuntime?.refreshAuthStatus) {
+        const auth = await window.AuthStateRuntime.refreshAuthStatus({ token: state.token, reason: "nutrition:requireSession" });
+        if (!auth?.ok) return showAuthWall();
+        state.token = auth.token || state.token;
+      } else {
+        await api("/api/auth/me");
+      }
+      showJournal(); await refreshAll();
+    } catch (_) { showAuthWall(); }
   }
   function setPanel(id) { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === id)); }
   function mealTypeSelect(value = "snack") { return `<select data-field="mealType"><option ${value === "breakfast" ? "selected" : ""}>breakfast</option><option ${value === "lunch" ? "selected" : ""}>lunch</option><option ${value === "dinner" ? "selected" : ""}>dinner</option><option ${value === "snack" ? "selected" : ""}>snack</option><option ${value === "other" ? "selected" : ""}>other</option></select>`; }
