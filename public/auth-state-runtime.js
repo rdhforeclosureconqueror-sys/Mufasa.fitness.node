@@ -111,7 +111,7 @@
   async function refreshAuthStatus(options = {}) {
     const reason = options.reason || "refreshAuthStatus";
     const token = options.token || global.APP_AUTH?.token || getStoredToken();
-    const baseUrl = options.baseUrl || global.RuntimeState?.getEndpoints?.().nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.location?.origin;
+    const baseUrl = options.baseUrl || global.RuntimeState?.getEndpoints?.().nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.MAAT_BACKEND_ORIGIN || global.MAAT_NODE_BASE_URL || global.location?.origin;
     if (!token) {
       clearCanonicalAuthState(`${reason}:missing_token`, { forceDispatch: options.forceDispatch === true });
       return { ok: false, reason: "missing_token", auth: global.APP_AUTH };
@@ -123,15 +123,36 @@
       });
       const payload = await res.json().catch(() => ({}));
       const user = payload?.user || payload?.data?.user;
-      if (!res.ok || !payload?.ok || !user) throw new Error(payload?.error || "invalid_session");
+      if (res.status === 401 || res.status === 403) {
+        const error = new Error(payload?.error || "invalid_session");
+        error.status = res.status;
+        throw error;
+      }
+      if (!res.ok || payload?.ok === false) {
+        const error = new Error(payload?.error?.message || payload?.error || `auth_unavailable_${res.status}`);
+        error.status = res.status;
+        error.code = res.status >= 500 ? "AUTH_UNAVAILABLE" : "INVALID_SESSION";
+        throw error;
+      }
+      if (!user) {
+        const error = new Error("invalid_session");
+        error.code = "INVALID_SESSION";
+        throw error;
+      }
       const auth = setCanonicalAuthState({ token, user }, { reason });
       return { ok: true, token, user, auth };
     } catch (error) {
       const debug = ensureDebugState();
       debug.lastAuthError = error?.message || String(error || "unknown_auth_refresh_error");
-      clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true });
-      if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh failed", error);
-      return { ok: false, reason: "invalid_session", error, auth: global.APP_AUTH };
+      const status = Number(error?.status || 0);
+      const invalidSession = status === 401 || status === 403 || error?.code === "INVALID_SESSION";
+      if (invalidSession) {
+        clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true });
+        if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh failed", error);
+        return { ok: false, reason: "invalid_session", error, auth: global.APP_AUTH };
+      }
+      if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh unavailable", error);
+      return { ok: false, reason: "auth_unavailable", error, auth: global.APP_AUTH };
     }
   }
 

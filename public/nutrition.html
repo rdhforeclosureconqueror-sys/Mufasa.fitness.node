@@ -19,6 +19,11 @@
       <p class="muted">Nutrition logging requires a valid account session so your private food journal is never shown to another user.</p>
       <a class="btn primary" href="/workout.html?next=nutrition">Go to login</a>
     </section>
+    <section id="sessionStatus" class="card auth-wall" hidden aria-live="polite">
+      <h1>Checking your member session…</h1>
+      <p class="muted" id="sessionStatusMessage">Nutrition Journal is connecting to your signed-in Pocket PT account.</p>
+      <a class="btn primary" id="sessionRetryLink" href="/nutrition.html">Try again</a>
+    </section>
     <section id="journalShell" hidden>
       <div class="hero">
         <div class="card">
@@ -51,7 +56,15 @@
       </section>
     </section>
   </main>
-  <script src="/auth-state-runtime.js"></script>
-  <script src="/nutrition-runtime.js"></script>
+  <script>
+    window.__MAAT_RUNTIME_CONFIG__ = Object.freeze({
+      ...(window.__MAAT_RUNTIME_CONFIG__ || {}),
+      backendOrigin: "https://mufasa-fitness-node.onrender.com"
+    });
+    window.MAAT_BACKEND_ORIGIN = window.__MAAT_RUNTIME_CONFIG__.backendOrigin;
+  </script>
+  <script src="/runtime-state.js?v=20260506"></script>
+  <script src="/auth-state-runtime.js?v=20260506"></script>
+  <script src="/nutrition-runtime.js?v=20260718"></script>
 </body>
 </html>
