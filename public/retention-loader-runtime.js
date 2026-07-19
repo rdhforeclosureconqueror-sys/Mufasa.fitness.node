@@ -145,7 +145,12 @@
 
   async function loadScript(source) {
     const scriptSrc = state.scriptSrc || DEFAULT_SCRIPT_SRC;
+    if (!global.document?.querySelector?.('link[data-retention-journey-style]')) {
+      const style = global.document?.createElement?.("link");
+      if (style) { style.rel = "stylesheet"; style.href = "/retention-journey-wizard.css?v=20260719"; style.dataset.retentionJourneyStyle = "true"; global.document.head?.appendChild?.(style); }
+    }
     if (typeof global.__loadExternalScript === "function") {
+      if (!global.RetentionJourneyWizard) await withTimeout(global.__loadExternalScript("/retention-journey-wizard.js?v=20260719"), state.loadTimeoutMs, "retention_wizard_load");
       return withTimeout(global.__loadExternalScript(scriptSrc), state.loadTimeoutMs, "retention_flow_load");
     }
     return withTimeout(new Promise((resolve, reject) => {
@@ -159,7 +164,11 @@
       script.defer = true;
       script.onload = () => resolve(true);
       script.onerror = () => reject(new Error(`script_load_failed:${scriptSrc}`));
-      global.document.head?.appendChild?.(script);
+      const appendFlow = () => global.document.head?.appendChild?.(script);
+      if (!global.RetentionJourneyWizard) {
+        const wizard = global.document.createElement("script"); wizard.src = "/retention-journey-wizard.js?v=20260719";
+        wizard.onload = appendFlow; wizard.onerror = () => reject(new Error("script_load_failed:retention-journey-wizard")); global.document.head?.appendChild?.(wizard);
+      } else appendFlow();
       global.__startupResourceAudit?.deferredScripts?.push?.(scriptSrc);
     }), state.loadTimeoutMs, "retention_flow_load");
   }
