@@ -10,13 +10,21 @@ const ROLES = Object.freeze({
 const PERMISSIONS = Object.freeze({
   OPS_READ_OBSERVABILITY: "ops.read_observability",
   OPS_MANAGE_ENFORCEMENT: "ops.manage_enforcement",
-  OPS_READ_AUTHZ: "ops.read_authz"
+  OPS_READ_AUTHZ: "ops.read_authz",
+  TRAINER_WORKSPACE_READ: "trainer.workspace.read",
+  TRAINER_CLIENTS_READ: "trainer.clients.read",
+  TRAINER_CLIENT_PROGRAMS_WRITE: "trainer.clients.programs.write",
+  TRAINER_CLIENT_NOTES_READ: "trainer.clients.notes.read",
+  TRAINER_CLIENT_NOTES_WRITE: "trainer.clients.notes.write",
+  ADMIN_TRAINER_ASSIGNMENTS_MANAGE: "admin.trainer_assignments.manage"
 });
 
 const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.SUPER_ADMIN]: Object.values(PERMISSIONS),
-  [ROLES.ADMIN]: [PERMISSIONS.OPS_READ_OBSERVABILITY, PERMISSIONS.OPS_MANAGE_ENFORCEMENT, PERMISSIONS.OPS_READ_AUTHZ],
-  [ROLES.TRAINER]: [],
+  [ROLES.ADMIN]: Object.values(PERMISSIONS),
+  [ROLES.TRAINER]: [PERMISSIONS.TRAINER_WORKSPACE_READ, PERMISSIONS.TRAINER_CLIENTS_READ,
+    PERMISSIONS.TRAINER_CLIENT_PROGRAMS_WRITE, PERMISSIONS.TRAINER_CLIENT_NOTES_READ,
+    PERMISSIONS.TRAINER_CLIENT_NOTES_WRITE],
   [ROLES.USER]: []
 });
 

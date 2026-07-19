@@ -11,6 +11,8 @@ const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
+const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
+const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
@@ -294,6 +296,7 @@ function createApp(options = {}) {
   const legacyLimit = createRateLimiter({ name: "legacy-command", max: 60, windowMs: 60_000 });
   const challengeLimit = createRateLimiter({ name: "pushup-results", max: 20, windowMs: 60_000 });
   const telemetryLimit = createRateLimiter({ name: "pilot-events", max: 60, windowMs: 60_000 });
+  const trainerWriteLimit = createRateLimiter({ name: "trainer-writes", max: 30, windowMs: 60_000 });
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -328,6 +331,8 @@ function createApp(options = {}) {
 
   const userStore = createUserStore({ userDir: USER_DIR });
   userStore.ensureDirs();
+  const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
+  const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
@@ -1621,6 +1626,40 @@ function createApp(options = {}) {
     ok(res, req.requestId, personalizationService.getPersonalization(req.auth.userId), 200)));
   app.get("/api/me/member-home", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, memberHomeService.read(req.auth.userId), 200)));
+
+  const permission = (name) => requirePermission(authorizationResolver, name);
+  const trainerClientGuard = (name) => [requireAuth, permission(name)];
+  app.get("/api/trainer/workspace", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_WORKSPACE_READ), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { trainer: { userId: req.auth.userId }, clientCount: trainerWorkspaceService.listClients(req.auth.userId).length, memberExperienceUrl: "/dashboard.html" })));
+  app.get("/api/trainer/clients", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENTS_READ), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { clients: trainerWorkspaceService.listClients(req.auth.userId, req.query) })));
+  app.get("/api/trainer/clients/:clientUserId", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENTS_READ), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, trainerWorkspaceService.detail(req.auth.userId, req.params.clientUserId))));
+  app.get("/api/trainer/clients/:clientUserId/program", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENTS_READ), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, trainerWorkspaceService.program(req.auth.userId, req.params.clientUserId))));
+  app.put("/api/trainer/clients/:clientUserId/program", trainerWriteLimit, ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENT_PROGRAMS_WRITE), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, trainerWorkspaceService.assignProgram(req.auth.userId, req.params.clientUserId, req.body))));
+  app.get("/api/trainer/clients/:clientUserId/notes", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENT_NOTES_READ), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { notes: trainerWorkspaceService.notes(req.auth.userId, req.params.clientUserId) })));
+  app.post("/api/trainer/clients/:clientUserId/notes", trainerWriteLimit, ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENT_NOTES_WRITE), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, trainerWorkspaceService.addNote(req.auth.userId, req.params.clientUserId, req.body), 201)));
+
+  app.get("/api/admin/trainer-assignments", requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { assignments: trainerWorkspaceStore.listAssignments() })));
+  app.post("/api/admin/trainer-assignments", trainerWriteLimit, requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), asyncHandler(async (req, res) => {
+    const trainerUserId = String(req.body?.trainerUserId || ""), clientUserId = String(req.body?.clientUserId || "");
+    if (!/^[A-Za-z0-9._-]{1,128}$/.test(trainerUserId) || !/^[A-Za-z0-9._-]{1,128}$/.test(clientUserId)) throw new ApiError("INVALID_ASSIGNMENT", "Valid trainerUserId and clientUserId are required", 422);
+    if (trainerUserId === clientUserId) throw new ApiError("INVALID_ASSIGNMENT", "Trainer and client must be different users", 422);
+    if (authorizationResolver.resolveRole({ userId: trainerUserId }).role !== authorizationResolver.ROLES.TRAINER) throw new ApiError("INVALID_TRAINER", "Trainer is not eligible", 422);
+    if (!userStore.listUsers().some((u) => u.userId === clientUserId)) throw new ApiError("INVALID_CLIENT", "Client is not eligible", 422);
+    const result = trainerWorkspaceStore.createAssignment({ trainerUserId, clientUserId, assignedByUserId: req.auth.userId });
+    return ok(res, req.requestId, result.assignment, result.created ? 201 : 200);
+  }));
+  app.delete("/api/admin/trainer-assignments/:assignmentId", trainerWriteLimit, requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, trainerWorkspaceStore.deactivateAssignment(req.params.assignmentId, req.auth.userId))));
+
+  app.get("/trainer.html", requireAuth, permission(authorizationResolver.PERMISSIONS.TRAINER_WORKSPACE_READ), (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "trainer.html")));
+  app.get("/admin-trainer-assignments.html", requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "admin-trainer-assignments.html")));
 
   app.get("/api/billing/plan", asyncHandler(async (req, res) => {
     return ok(res, req.requestId, getPublicBillingPlan(process.env));
