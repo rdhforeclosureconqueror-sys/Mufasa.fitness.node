@@ -1,0 +1,88 @@
+===== BEGIN REPORT =====
+
+TITLE
+Phase 12C – Browser Acceptance, Intake Flow Repair, and Resume Experience
+
+STATUS
+IMPLEMENTATION COMPLETE; BROWSER MATRIX PENDING ENVIRONMENT ACCESS.
+Original Save and Continue defect: FIXED.
+
+ROOT CAUSE
+The intake save action had no interaction lock. Under a slow request, a second activation could enter the same save/navigation path while the first request was still pending. The sequence guard then deliberately ignored an older response, but the UI did not disable the controls or identify the pending action as non-repeatable. This produced the reported apparent no-op: the member could activate Save and Continue again while navigation was unresolved and had no deterministic completion/error action. Transport errors also discarded the attempted patch as a retry action, and retention-flow converted every non-OK response to a generic path-prefixed error without preserving HTTP status, preventing the wizard from explaining session expiry or other failures.
+
+DEFECTS FOUND
+1. Save/navigation buttons remained active during an in-flight save.
+2. Failed saves did not offer an explicit retry using the exact attempted values.
+3. HTTP status was lost between the request layer and wizard.
+4. Offline, expired-session, conflict, throttling, and server failures lacked tailored member-facing messages.
+5. Navigation labels did not match the requested member language.
+6. Enter-key continuation was not explicitly handled.
+
+DEFECTS FIXED
+1. Added a single-flight guard and disabled intake navigation/submission controls while saving.
+2. Preserved the failed patch in memory, retained current DOM values, and added a visible Retry save action.
+3. Propagated HTTP status and error code from retention-flow.
+4. Added clear messages for 400, 401, 403, 404, 409, 429, 500, offline, and general network/server failure.
+5. Changed actions to Previous, Return later, and Save & Continue.
+6. Added Enter-key continuation while excluding multiline, button, checkbox, and radio interactions.
+
+INTAKE FLOW
+Create, update, autosave, manual Return later save, Previous, Save & Continue, submit, and submitted review remain backed by the canonical journey intake API. Saves are now single-flight. A successful transition uses the server-returned currentStep and progress. A failed transition stays on the current step, keeps entered values, announces failure, and permits retry. Existing server validation prevents skipped required sections and incomplete submission.
+
+RESUME FLOW
+The existing authenticated boot fetches /api/me/retention/intake and creates the wizard from the persisted intake and progress. Draft currentStep, answers, completed count, and progress are restored. Submitted and needs_review states render read-only completion UI with an explicit submitted-answer review control; the implementation adds no new edit bypass and therefore preserves existing Journey/version rules.
+
+BROWSER RESULTS
+No Chrome, Edge, Safari, Firefox, Chromium, Playwright, Puppeteer, or browser automation binary/package was available in this container. An attempted temporary jsdom installation was rejected by the configured package registry with HTTP 403 and made no repository change. Browser-oriented source regression tests passed, but the named real-browser matrix, browser Back/Forward, new-tab, close/reopen, and browser screenshot remain pending on browser-capable infrastructure.
+
+MOBILE RESULTS
+Responsive browser rendering could not be visually exercised because no browser engine was available. Existing mobile structured-control coverage passed. The changed controls use native buttons and the existing responsive wizard CSS; touch-specific device validation remains pending.
+
+ERROR HANDLING
+400: answer-review message and field details when supplied.
+401: session-expired/sign-in message; current page values remain.
+403: permission message.
+404: intake-service-not-found message.
+409: another-tab conflict and refresh guidance.
+429: wait-and-retry guidance.
+500: server-save failure and retry guidance.
+Offline: offline/reconnect message and retained answers.
+Network timeout/server unavailable: request error remains visible with Retry save; an explicit client-side timeout is not introduced in this phase.
+
+FILES CHANGED
+public/retention-flow.js
+public/retention-journey-wizard.js
+test/journey-intake.test.js
+test/retention-journey-wizard.test.js
+test/phase12c-browser-intake.test.js
+reports/phase12c-browser-intake-report.txt
+
+TESTS
+npm test: PASS.
+node --test test/phase12c-browser-intake.test.js test/retention-journey-wizard.test.js test/journey-intake.test.js: PASS (22/22).
+npm run lint: PASS.
+node --check public/retention-journey-wizard.js: PASS.
+node --check public/retention-flow.js: PASS.
+npm run repo:route-audit: PASS with two pre-existing frontend asset probe warnings caused by the audit's unavailable live target.
+Startup: PASS on port 3219 in NODE_ENV=test.
+GET /health: PASS (HTTP 200, ok:true).
+HEAD /workout.html: PASS (HTTP 200).
+
+VALIDATION
+Regression suite covered journey intake/service, authentication, member home, recommendations, personalization, generated workouts, progression, adaptation, sessions, and the wider application suite. No deployment or push was performed. Runtime startup warned that production auth secrets and bootstrap super-admin configuration were intentionally absent in the test environment.
+
+COMMIT
+Repair intake browser flow and resume experience
+One implementation commit only.
+
+REMAINING RISKS
+1. Cross-browser and physical-device acceptance remains unverified in this browserless environment.
+2. Browser Back/Forward currently follows page-level browser history; step-level history entries were not added, avoiding unsafe unsaved-state navigation semantics.
+3. Open-in-new-tab conflict behavior depends on the existing last-write persistence model; 409 messaging is ready when the API reports a conflict, but the API does not currently expose draft revision tokens.
+4. There is no explicit fetch timeout/AbortController; browser/network rejection is handled, but a connection that never settles can remain pending.
+5. Submitted review summarizes the existing selected fields rather than every intake answer.
+
+REMAINING WORK
+Run the requested Chrome, Edge, Safari, and Firefox desktop/mobile/tablet matrix on browser-capable infrastructure, including throttled/offline/session-expiry scenarios, touch, focus, double-click, Back/Forward, new-tab, close/reopen, and screenshot evidence. Consider revision/ETag conflict control and a defined client timeout in a separately scoped change.
+
+===== END REPORT =====

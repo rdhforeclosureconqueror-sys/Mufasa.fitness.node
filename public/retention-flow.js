@@ -132,7 +132,19 @@
 
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || !payload?.ok) {
-      const error = new Error(`${path}: ${payload?.error?.message || `request_failed_${res.status}`}`);
+      const messages = {
+        400: "Some answers need your attention.",
+        401: "Your session expired. Sign in again; your answers are still on this page.",
+        403: "You do not have permission to save this intake.",
+        404: "The intake service could not be found.",
+        409: "This intake changed elsewhere. Refresh before trying again.",
+        429: "Too many save attempts. Wait a moment, then retry.",
+        500: "The server could not save your intake. Try again."
+      };
+      const message = payload?.error?.message || messages[res.status] || `Unable to save (server response ${res.status}).`;
+      const error = new Error(message);
+      error.status = res.status;
+      error.code = payload?.error?.code || null;
       error.details = payload?.error?.details || null;
       throw error;
     }

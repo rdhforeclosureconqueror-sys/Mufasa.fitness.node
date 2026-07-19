@@ -56,7 +56,7 @@ test("wizard markup provides associated errors, focus targets, groups and naviga
   assert.match(goals, /fieldset/); assert.match(goals, /legend/); assert.match(goals, /aria-describedby="rjw-goals-secondaryGoals-error"/); assert.match(goals, /id="rjw-step-heading" tabindex="-1"/);
   const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
   assert.match(source, /Unsaved changes/); assert.match(source, /Saving…/); assert.match(source, /Save failed/); assert.match(source, /queue\.then/); assert.match(source, /mine !== sequence/);
-  assert.match(source, /Back one step/); assert.match(source, /Save and continue/); assert.match(source, /\[aria-invalid=true\]/);
+  assert.match(source, />Previous</); assert.match(source, /Save &amp; Continue/); assert.match(source, /\[aria-invalid=true\]/);
 });
 
 test("submitted views use member-safe language and no raw health enums", () => {
