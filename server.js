@@ -13,6 +13,7 @@ const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
+const { createPersonalizationService } = require("./src/services/personalizationService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
@@ -319,6 +320,7 @@ function createApp(options = {}) {
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
+  const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
   const nutritionProviderClient = createProviderClient({
     fetchImpl: options.fetch || global.fetch,
@@ -1607,6 +1609,8 @@ function createApp(options = {}) {
     ok(res, req.requestId, journeyIntakeService.progress(req.auth.userId), 200)));
   app.get("/api/me/journey-profile", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, journeyIntakeService.get(req.auth.userId).journeyProfile, 200)));
+  app.get("/api/me/personalization", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, personalizationService.getPersonalization(req.auth.userId), 200)));
 
   app.get("/api/billing/plan", asyncHandler(async (req, res) => {
     return ok(res, req.requestId, getPublicBillingPlan(process.env));
@@ -1970,7 +1974,7 @@ function createApp(options = {}) {
 
   app.get("/api/me/nutrition/education", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = nutritionService.educationSummary(req.auth.userId, req.query.date);
-    return ok(res, req.requestId, result, 200);
+    return ok(res, req.requestId, { ...result, nutritionPriorities: personalizationService.getNutritionPriorities(req.auth.userId) }, 200);
   }));
 
   // ---- Explicit profile / OHSA / history endpoints ----
@@ -2023,7 +2027,7 @@ function createApp(options = {}) {
 
   app.get("/api/me/ohsa", requireAuth, asyncHandler(async (req, res) => {
     const result = userDataService.getOhsaHistory(req.auth.userId);
-    return ok(res, req.requestId, result, 200);
+    return ok(res, req.requestId, { ...result, recommendedAssessments: personalizationService.getAssessmentRecommendations(req.auth.userId) }, 200);
   }));
 
   app.get("/api/me/history", requireAuth, asyncHandler(async (req, res) => {
@@ -2065,7 +2069,7 @@ function createApp(options = {}) {
 
   app.get("/api/programs/current", requireAuth, asyncHandler(async (req, res) => {
     const result = userDataService.getProgram(req.auth.userId);
-    return ok(res, req.requestId, result, 200);
+    return ok(res, req.requestId, { ...result, workoutRecommendation: personalizationService.getWorkoutRecommendation(req.auth.userId) }, 200);
   }));
 
   app.post("/api/programs", requireAuth, asyncHandler(async (req, res) => {
@@ -2118,7 +2122,7 @@ function createApp(options = {}) {
 
   app.get("/api/progress/dashboard", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = userDataService.getProgressDashboard(req.auth.userId);
-    return ok(res, req.requestId, result, 200);
+    return ok(res, req.requestId, { ...result, dashboardConfiguration: personalizationService.getDashboardConfiguration(req.auth.userId) }, 200);
   }));
 
   app.get("/api/visual-progress-scans", requireAuth, asyncHandler(async (req, res) => {

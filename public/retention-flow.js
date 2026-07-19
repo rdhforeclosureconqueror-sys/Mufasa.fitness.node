@@ -59,8 +59,11 @@
     progressDashboard: null,
     exerciseIndex: null,
     latestRewardSummary: null,
-    onboardingStatus: null
-    ,journeyIntake: null, journeyProgress: null, journeySaveState: "Saved"
+    onboardingStatus: null,
+    journeyIntake: null,
+    journeyProgress: null,
+    journeySaveState: "Saved",
+    personalization: null
   };
 
   function readJSON(key, fallback) {
@@ -671,13 +674,15 @@
       throw new Error("Sign in to begin onboarding flow.");
     }
 
-    const [intake, goals, currentProgram, checkIns, dashboard, onboardingStatus, journey] = await Promise.all([
+    const [intake, goals, currentProgram, checkIns, dashboard, onboardingStatus, journey, personalization] = await Promise.all([
       authedRequest("/api/client-intake"),
       authedRequest("/api/goals-baseline"),
       authedRequest("/api/programs/current"),
       authedRequest("/api/check-ins"),
       authedRequest("/api/progress/dashboard"),
-      authedRequest("/api/me/onboarding-status"), authedRequest("/api/me/retention/intake")
+      authedRequest("/api/me/onboarding-status"),
+      authedRequest("/api/me/retention/intake"),
+      authedRequest("/api/me/personalization")
     ]);
 
     state.intake = intake.intake || null;
@@ -686,7 +691,9 @@
     state.checkIns = Array.isArray(checkIns.items) ? checkIns.items : [];
     state.progressDashboard = dashboard;
     state.onboardingStatus = onboardingStatus;
-    state.journeyIntake=journey.intake; state.journeyProgress=journey.progress;
+    state.journeyIntake = journey.intake;
+    state.journeyProgress = journey.progress;
+    state.personalization = personalization;
   }
 
   async function refreshAndRender(reason = "runtime") {
@@ -695,8 +702,15 @@
       renderStatus();
       contentEl.innerHTML = "";
       renderJourneyWizard();
-      contentEl.innerHTML += `<div class="retention-grid" aria-label="Later journey stages"><div class="retention-card"><strong>Assessment</strong><div class="retention-muted">${state.onboardingStatus?.sections?.overheadSquatAssessment?.status === "complete" ? "Complete" : "Optional · not started"}</div></div><div class="retention-card"><strong>First Workout</strong><div class="retention-muted">${state.onboardingStatus?.sections?.firstWorkout?.status === "complete" ? "Complete" : "Not started"}</div></div><div class="retention-card"><strong>Weekly Habits</strong><div class="retention-muted">Available after your program begins.</div></div></div>`;
-      if (state.goalsBaseline?.goal) renderProgramCards();
+      const assessmentStatus = state.onboardingStatus?.sections?.overheadSquatAssessment?.status === "complete"
+        ? "Complete"
+        : state.personalization?.featureFlags?.requiresHealthReview
+          ? "Pending health review"
+          : state.personalization?.featureFlags?.hasAssessmentRecommendations
+            ? "Recommended · not started"
+            : "Optional · not started";
+      contentEl.innerHTML += `<div class="retention-grid" aria-label="Later journey stages"><div class="retention-card"><strong>Assessment</strong><div class="retention-muted">${assessmentStatus}</div></div><div class="retention-card"><strong>First Workout</strong><div class="retention-muted">${state.onboardingStatus?.sections?.firstWorkout?.status === "complete" ? "Complete" : "Not started"}</div></div><div class="retention-card"><strong>Weekly Habits</strong><div class="retention-muted">Available after your program begins.</div></div></div>`;
+      if (state.personalization?.recommendedWorkoutCategory || state.goalsBaseline?.goal) renderProgramCards();
       if (state.currentProgram?.programId) {
         renderRewardSummaryCard();
         renderCalendar();
