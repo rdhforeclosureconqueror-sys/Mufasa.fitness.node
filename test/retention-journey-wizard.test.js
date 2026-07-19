@@ -55,7 +55,7 @@ test("wizard markup provides associated errors, focus targets, groups and naviga
   const goals = wizard.renderStep(r, "goals");
   assert.match(goals, /fieldset/); assert.match(goals, /legend/); assert.match(goals, /aria-describedby="rjw-goals-secondaryGoals-error"/); assert.match(goals, /id="rjw-step-heading" tabindex="-1"/);
   const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
-  assert.match(source, /Unsaved changes/); assert.match(source, /Saving…/); assert.match(source, /Save failed/); assert.match(source, /mine < applied/);
+  assert.match(source, /Unsaved changes/); assert.match(source, /Saving…/); assert.match(source, /Save failed/); assert.match(source, /queue\.then/); assert.match(source, /mine !== sequence/);
   assert.match(source, /Back one step/); assert.match(source, /Save and continue/); assert.match(source, /\[aria-invalid=true\]/);
 });
 
@@ -63,6 +63,12 @@ test("submitted views use member-safe language and no raw health enums", () => {
   const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
   assert.match(source, /Intake submitted/); assert.match(source, /Do not begin testing or strenuous activity/); assert.match(source, /not a diagnosis or automatic clearance/); assert.match(source, /Review submitted answers/);
   assert.doesNotMatch(source, /CURRENT_PAIN_OR_INJURY|MEDICAL_CLEARANCE_REQUIRED/);
+});
+
+test("server validation detail shapes map to fields and sections", () => {
+  assert.deepEqual(wizard.mapServerErrors({ message: "invalid date", details: { field: "profile.dateOfBirth" } }), { "profile.dateOfBirth": "invalid date" });
+  assert.deepEqual(wizard.mapServerErrors({ details: { fields: ["goals", "schedule"] } }), { goals: "Complete this section before submitting.", schedule: "Complete this section before submitting." });
+  assert.deepEqual(wizard.mapServerErrors({ details: { issues: [{ path: ["goals", "primaryGoal"], message: "Required" }] } }), { "goals.primaryGoal": "Required" });
 });
 
 test("Universal Intake is isolated from comma-separated legacy intake", () => {
