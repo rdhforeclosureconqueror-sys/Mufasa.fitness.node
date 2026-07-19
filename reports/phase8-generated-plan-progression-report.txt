@@ -1,0 +1,99 @@
+===== BEGIN REPORT =====
+TITLE:
+Phase 8 - Deterministic Weekly Progression and Plan Lifecycle
+
+STATUS:
+Complete. Deterministic generated-plan lifecycle, evaluation, recommendation, acceptance, member presentation, persistence, and dashboard projection are implemented. No deployment or push was performed.
+
+AUDIT RESULTS:
+The existing generatedWorkoutPlan is a single persisted recommendation wrapper containing a deterministic builder plan, generator version, Journey Profile version, generation timestamp, and recommendation-only marker. It remains the backward-compatible current-plan pointer.
+The existing generatedWorkoutExecutions collection is member-scoped and contains plan version, session identity, status, exercise-level prescribed and completed sets, completion flags, and server timestamps. These are authoritative progression inputs. Completed records are not modified by progression.
+Generated session completion also appends workoutTracking. That collection is safe for existing streak and dashboard summaries, but progression uses generatedWorkoutExecutions directly to avoid ambiguity or duplicate rule inputs.
+Weekly check-ins persist validated painFlag, soreness from 1 to 10, energy from 1 to 10, sleep hours from 0 to 24, and adherence from 0 to 100. The evaluator uses the latest persisted check-in and does not infer diagnosis or clearance.
+Journey Profile safely supplies version, explicit health-review requirement, equipment availability, experience, frequency, and session-duration limits. programRecommendation supplies the existing deterministic recommendation and generator version where available.
+A persisted user.program is the coach-assigned program signal and has precedence over generated recommendations. A selectedProgram remains ahead of generated content in the existing delivery read model. Neither is overwritten.
+Existing dashboard and streak calculations derive completed workout counts from workoutTracking and check-in trends from checkIns. Phase 8 adds a small generated progression projection without changing those calculations or Weekly Nutrition Missions.
+
+PLAN LIFECYCLE:
+The generatedWorkoutPlans collection stores explicit immutable versions with lifecycleVersion, planId, planVersion, generatorVersion, sourceJourneyProfileVersion, programRecommendationVersion, weekNumber, constrained status, createdAt, activatedAt, completedAt, supersededAt, recommendationOnly, healthReviewRestricted, previousPlanVersion, and progressionReason.
+Legacy generatedWorkoutPlan records migrate on the first progression write. Reads remain compatible before migration, and accepted versions update the legacy pointer shape.
+Historical plan prescriptions are cloned. Evaluation creates a new recommended version rather than changing the prior prescription. Acceptance marks the prior lifecycle record completed and activates the new version. Completed prescriptions and execution history are never regenerated or edited.
+Supported lifecycle statuses are recommended, active, completed, superseded, and restricted.
+
+PROGRESSION EVALUATOR:
+The evaluator summarizes prescribed sessions, unique completed sessions, session adherence, prescribed and actual completed sets, exercise completion, completion timestamps, the latest bounded check-in, health-review state, and assigned-program precedence.
+Every record includes outcome, reasonCodes, a member-readable explanation, inputSummary, evaluatedAt, and evaluatorVersion 1.
+The same plan version can have only one evaluation record. Stable progression identifiers and persisted results make refresh and duplicate POST behavior idempotent and reproducible.
+
+PROGRESSION RULES:
+All numerical values are centralized in src/config/generatedWorkoutProgression.js.
+Health review returns HEALTH_REVIEW_BLOCKED before all other rules and creates no unrestricted next plan.
+An active coach-assigned program returns ASSIGNED_PROGRAM_ACTIVE and creates or activates no generated next plan.
+Session adherence below 50 percent returns INCOMPLETE_WEEK.
+At or above 50 percent session adherence, reported pain, soreness at least 7, energy at most 3, or sleep below 6 hours returns DELOAD.
+PROGRESS requires at least 80 percent session adherence plus a check-in with adherence at least 70 percent, no pain flag, soreness at most 6, energy at least 4, and sleep at least 6 hours.
+All remaining mixed or unavailable recovery evidence returns MAINTAIN.
+
+NEXT-WEEK GENERATION:
+A next recommendation is cloned from the immutable prior plan and advances plan and week versions deterministically.
+PROGRESS changes only the first eligible prescription variable: a numeric rep range advances by one inside the maximum rep boundary, a numeric rep target advances by one, or sets advance by one if reps are capped or not eligible.
+MAINTAIN and INCOMPLETE_WEEK preserve prescription. DELOAD reduces set volume by the configured 0.75 factor with a one-set floor. Restricted or blocked health-review state never yields unrestricted content.
+Exercise order is preserved. There is no random selection, AI, LLM, or catalog expansion.
+
+SAFETY BOUNDARIES:
+Sets are bounded from 1 through 5 and reps from 1 through 20. Frequency is capped at 6 sessions weekly. Duration is capped at 120 minutes and by the member Journey Profile limit.
+Every generated exercise must exist in the normalized catalog and require equipment explicitly available to the member. Consequently unsupported barbell work and unknown exercises are removed rather than substituted or invented.
+Health-review members receive no unrestricted progression. Coach-assigned programs are never overwritten and prevent acceptance. Historical execution records are read only.
+
+API:
+GET /api/me/generated-workout-progression returns a stable empty state or current lifecycle state, latest completed week, evaluation availability, latest evaluation, and next action.
+POST /api/me/generated-workout-progression/evaluate performs member-owned idempotent evaluation and creates at most one recommended plan version.
+POST /api/me/generated-workout-progression/accept idempotently accepts the latest eligible recommendation. It rejects missing eligibility and active assigned-program precedence.
+All three endpoints require the existing authentication middleware and derive ownership only from the authenticated user ID.
+
+MEMBER EXPERIENCE:
+The existing workout page now adds a weekly progress panel without redesigning generated workout delivery. It shows sessions completed, adherence, a plain recovery summary, readable recommendation, explanation, next-week readiness, and an Accept next week action.
+Internal reason codes are not rendered. Health messaging does not imply diagnosis or automatic clearance. Browser storage is not used as progression authority.
+A screenshot could not be captured because no Chromium, Chrome, or Chromium Browser executable is installed in the validation environment.
+
+PERSISTENCE:
+generatedWorkoutPlans stores versioned plan lifecycle records. generatedWorkoutProgressions stores separate read-only evaluation history with progressionId, fromPlanVersion, optional toPlanVersion, outcome, reasonCodes, inputSummary, evaluatorVersion, evaluatedAt, acceptedAt, and status.
+The existing generatedWorkoutPlan and generatedWorkoutExecutions shapes remain supported. Stable IDs and from-plan uniqueness prevent duplicate evaluation and plan creation across refreshes.
+
+DASHBOARD INTEGRATION:
+The existing progress dashboard response now exposes generatedWorkoutProgression with currentWeek, weeklyAdherence, outcome, and nextRecommendedAction. It consumes persisted progression output and does not duplicate evaluator thresholds in frontend code.
+Existing dashboard architecture, streak logic, retention outputs, and Weekly Nutrition Missions are unchanged.
+
+FILES CHANGED:
+src/config/generatedWorkoutProgression.js
+src/services/generatedWorkoutProgressionService.js
+src/services/userDataService.js
+server.js
+public/workout.html
+public/generated-workout-runtime.js
+test/generated-workout-progression.test.js
+reports/phase8-generated-plan-progression-report.txt
+
+TESTS:
+test/generated-workout-progression.test.js covers every evaluator outcome, centralized thresholds, legacy migration, immutable history, bounded set and rep changes, deloading, normalized catalog and equipment protection, duration and frequency limits, idempotent evaluation and acceptance, duplicate prevention, cross-service refresh persistence, ownership isolation, assigned-program and health-review protection, authenticated route registration, member-readable rendering, and absence of browser-storage authority.
+test/generated-workout-delivery.test.js covers legacy delivery compatibility, immutable plan execution, ownership, assigned precedence, health restrictions, and generated workout UI.
+Existing builder, program generation, Journey, retention, dashboard, and workout tracking paths passed their focused suites and the complete repository suite.
+
+VALIDATION:
+PASS: node --test test/generated-workout-progression.test.js test/generated-workout-delivery.test.js
+PASS: node --test test/generated-workout-progression.test.js test/generated-workout-delivery.test.js test/workout-plan-builder.test.js test/program-generation.test.js test/journey-intake.test.js test/journey-recommendations.test.js test/retention-api.test.js test/retention-journey-wizard.test.js
+PASS: npm test - 338 tests passed.
+PASS: npm run lint.
+PASS: node --check src/services/generatedWorkoutProgressionService.js.
+PASS: node --check src/services/userDataService.js.
+PASS: node --check public/generated-workout-runtime.js.
+PASS: git diff --check.
+PASS WITH ENVIRONMENT WARNINGS: PORT=3219 NODE_ENV=test node server.js and curl -fsS http://127.0.0.1:3219/health returned ok true. The health payload was degraded because production auth secrets and bootstrap super-admin configuration are intentionally absent in the test environment.
+WARNING: which chromium-browser || which chromium || which google-chrome found no browser executable, so screenshot validation was unavailable.
+
+COMMIT:
+Add deterministic generated plan progression
+
+REMAINING WORK:
+None for Phase 8. Production deployment and push were intentionally not performed.
+===== END REPORT =====

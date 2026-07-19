@@ -423,6 +423,9 @@ function createUserDataService({ userStore }) {
     const retentionMotivationStatus = Object.values(retentionChecks).every(Boolean)
       ? "READY"
       : (Object.values(retentionChecks).some(Boolean) ? "READY_WITH_WARNINGS" : "NOT_READY");
+    const generatedPlans = Array.isArray(user.generatedWorkoutPlans) ? user.generatedWorkoutPlans : [];
+    const currentGeneratedPlan = generatedPlans.find((plan) => ["active", "recommended", "restricted"].includes(plan.status)) || generatedPlans.at(-1) || null;
+    const latestGeneratedProgression = (user.generatedWorkoutProgressions || []).at(-1) || null;
 
     return {
       userId,
@@ -473,7 +476,13 @@ function createUserDataService({ userStore }) {
         weekly: "Review your week and lock in next week."
       },
       retentionChecks,
-      retentionMotivationStatus
+      retentionMotivationStatus,
+      generatedWorkoutProgression: {
+        currentWeek: currentGeneratedPlan?.weekNumber || user.generatedWorkoutPlan?.plan?.week || null,
+        weeklyAdherence: latestGeneratedProgression?.inputSummary?.sessionAdherencePercent ?? null,
+        outcome: latestGeneratedProgression?.outcome || null,
+        nextRecommendedAction: latestGeneratedProgression?.status === "recommended" ? "ACCEPT_NEXT_WEEK" : null
+      }
     };
   }
 

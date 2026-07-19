@@ -14,6 +14,7 @@ const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
+const { createGeneratedWorkoutProgressionService } = require("./src/services/generatedWorkoutProgressionService");
 const { createPersonalizationService } = require("./src/services/personalizationService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
@@ -322,6 +323,7 @@ function createApp(options = {}) {
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
+  const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
   const nutritionProviderClient = createProviderClient({
@@ -2076,6 +2078,18 @@ function createApp(options = {}) {
 
   app.get("/api/me/generated-workout-plan", requireAuth, asyncHandler(async (req, res) => {
     return ok(res, req.requestId, generatedWorkoutService.readModel(req.auth.userId), 200);
+  }));
+
+  app.get("/api/me/generated-workout-progression", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, generatedWorkoutProgressionService.state(req.auth.userId), 200);
+  }));
+
+  app.post("/api/me/generated-workout-progression/evaluate", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, generatedWorkoutProgressionService.evaluate(req.auth.userId), 200);
+  }));
+
+  app.post("/api/me/generated-workout-progression/accept", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, generatedWorkoutProgressionService.accept(req.auth.userId), 200);
   }));
 
   app.post("/api/me/generated-workout-executions", requireAuth, asyncHandler(async (req, res) => {
