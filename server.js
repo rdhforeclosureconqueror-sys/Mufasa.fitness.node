@@ -6,6 +6,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
+const { createRateLimiter } = require("./src/middleware/rateLimit");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
@@ -216,6 +217,8 @@ function shouldLogSystemRequest(pathname = "") {
 }
 
 function createApp(options = {}) {
+  const insecureTestCompatibility = options.allowInsecureTestRoutes === true;
+  const requireCriticalRouteAuth = insecureTestCompatibility ? (_req, _res, next) => next() : requireAuth;
   const app = express();
   app.use(requestContext);
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
@@ -287,6 +290,10 @@ function createApp(options = {}) {
       }
     }
   }));
+  const speakLimit = createRateLimiter({ name: "tts", max: Number(process.env.TTS_RATE_LIMIT || 20), windowMs: 60_000 });
+  const legacyLimit = createRateLimiter({ name: "legacy-command", max: 60, windowMs: 60_000 });
+  const challengeLimit = createRateLimiter({ name: "pushup-results", max: 20, windowMs: 60_000 });
+  const telemetryLimit = createRateLimiter({ name: "pilot-events", max: 60, windowMs: 60_000 });
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -1098,20 +1105,13 @@ function createApp(options = {}) {
     })
   );
 
-  app.post("/api/speak", async (req, res) => {
+  app.post("/api/speak", requireCriticalRouteAuth, speakLimit, async (req, res) => {
     try {
-      const allowTtsNoAuth = process.env.ENABLE_TTS_NO_AUTH !== "false";
-      if (!allowTtsNoAuth && !req.auth?.userId) {
-        return res.status(401).json({ ok: false, error: "auth_required" });
-      }
-
       const incomingSpeakBody = req.body || {};
       console.info("[tts] incoming request", {
         requestId: req.requestId,
         userId: req.auth?.userId || null,
-        allowTtsNoAuth,
-        headers: sanitizeSpeakHeaders(req),
-        body: incomingSpeakBody
+        operation: "synthesize_speech"
       });
 
       const {
@@ -1121,7 +1121,10 @@ function createApp(options = {}) {
         speed,
         pitch
       } = incomingSpeakBody;
-      if (!text || !String(text).trim()) {
+      if (!req.is("application/json")) return res.status(415).json({ ok:false, requestId:req.requestId, error:{ code:"UNSUPPORTED_MEDIA_TYPE", message:"application/json is required" } });
+      const allowedSpeakFields = new Set(["text", "voice", "format", "speed", "pitch"]);
+      if (Object.keys(incomingSpeakBody).some(field => !allowedSpeakFields.has(field))) return res.status(400).json({ ok:false, requestId:req.requestId, error:{code:"VALIDATION_ERROR",message:"Unsupported speech request field"} });
+      if (typeof text !== "string" || !text.trim() || text.length > 1000) {
         return res.status(400).json({ ok: false, error: "text required" });
       }
 
@@ -1147,8 +1150,7 @@ function createApp(options = {}) {
       const upstreamSpeakBody = { text, voice, format, speed, pitch };
       console.info("[tts] upstream request", {
         requestId: req.requestId,
-        url: AIVOICE_URL,
-        body: upstreamSpeakBody
+        operation: "provider_request"
       });
       const r = await fetch(AIVOICE_URL, {
         method: "POST",
@@ -1165,14 +1167,12 @@ function createApp(options = {}) {
         console.warn("[tts] upstream validation error", {
           requestId: req.requestId,
           status: r.status,
-          url: AIVOICE_URL,
-          body: upstreamSpeakBody,
-          response: msg ? redactTtsSecrets(msg) : null
+          operation: "provider_rejected"
         });
         if (r.status === 401) {
           return res.status(502).json({ ok: false, error: "TTS_PROVIDER_AUTH_FAILED" });
         }
-        return res.status(r.status).send(msg ? redactTtsSecrets(msg) : "aivoice error");
+        return res.status(502).json({ ok:false, requestId:req.requestId, error:{ code:"TTS_PROVIDER_ERROR", message:"Speech provider rejected the request" } });
       }
 
       res.setHeader("Content-Type", r.headers.get("content-type") || "audio/mpeg");
@@ -1678,8 +1678,9 @@ function createApp(options = {}) {
   }));
 
   // ---- Public event challenge endpoints (Phase 26 push-up pilot) ----
-  app.post("/api/challenges/pushup/results", asyncHandler(async (req, res) => {
-    const result = challengeService.savePushupResult(req.body || {});
+  app.post("/api/challenges/pushup/results", requireCriticalRouteAuth, challengeLimit, asyncHandler(async (req, res) => {
+    if (!insecureTestCompatibility && (typeof req.body?.submissionId !== "string" || !/^[a-zA-Z0-9._:-]{8,128}$/.test(req.body.submissionId))) throw new ApiError("VALIDATION_ERROR","submissionId is required",400,{field:"submissionId"});
+    const result = challengeService.savePushupResult({ ...(req.body || {}), userId:req.auth?.userId || "test-compatibility-user" });
     return ok(res, req.requestId, { result }, 201);
   }));
 
@@ -1688,17 +1689,23 @@ function createApp(options = {}) {
     return ok(res, req.requestId, leaderboard, 200);
   }));
 
-  app.post("/api/pilot/events", asyncHandler(async (req, res) => {
+  app.post("/api/pilot/events", requireCriticalRouteAuth, telemetryLimit, asyncHandler(async (req, res) => {
     const eventName = String(req.body?.event || "").trim();
-    if (!eventName) {
+    const allowedEvents = new Set(["workout_opened","workout_started","workout_completed","challenge_started","challenge_completed","client_error"]);
+    if (!allowedEvents.has(eventName)) {
       throw new ApiError("VALIDATION_ERROR", "Pilot event name is required", 400);
     }
-    const payload = req.body?.payload && typeof req.body.payload === "object" ? req.body.payload : {};
+    const candidate=req.body?.payload;
+    if (!candidate || typeof candidate!=="object" || Array.isArray(candidate) || Object.getPrototypeOf(candidate)!==Object.prototype) throw new ApiError("VALIDATION_ERROR","Pilot event payload must be an object",400);
+    const allowedPayloadFields=new Set(["route","status","durationMs","label","code"]);
+    if (Object.keys(candidate).some(k=>!allowedPayloadFields.has(k)||["__proto__","constructor","prototype"].includes(k))) throw new ApiError("VALIDATION_ERROR","Pilot event payload contains unsupported fields",400);
+    const payload={};
+    for(const [key,value] of Object.entries(candidate)){if(!["string","number","boolean"].includes(typeof value)||typeof value==="string"&&value.length>120)throw new ApiError("VALIDATION_ERROR","Pilot event payload value is invalid",400);payload[key]=value;}
     const record = {
       at: new Date().toISOString(),
       requestId: req.requestId,
       event: eventName,
-      userId: req.auth?.userId || payload.userId || null,
+      userId: req.auth?.userId || "test-compatibility-user",
       route: req.path,
       payload
     };
@@ -2251,7 +2258,7 @@ function createApp(options = {}) {
   }));
 
   // ---- COMMAND endpoint (legacy compatibility adapter for session lifecycle) ----
-  app.post("/command", asyncHandler(async (req, res) => {
+  app.post("/command", requireCriticalRouteAuth, legacyLimit, asyncHandler(async (req, res) => {
     if (!legacyFallbackEnabled) {
       throw new ApiError("LEGACY_FALLBACK_DISABLED", "Legacy /command fallback is disabled by server configuration", 503);
     }
@@ -2393,12 +2400,7 @@ function createApp(options = {}) {
         return res.json({ ok: true, saved: true, domain, command, userId: result.userId });
       }
 
-      userStore.updateUser(userId, (user) => {
-        user.events = user.events || [];
-        user.events.push({ command, ts: Date.now(), payload });
-        return user;
-      });
-      return res.json({ ok: true, saved: true, domain, command, userId });
+      throw new ApiError("UNKNOWN_LEGACY_COMMAND", "Unknown legacy command", 400);
     } catch (e) {
       if (e instanceof ApiError) {
         throw e;

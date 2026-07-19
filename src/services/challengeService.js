@@ -70,6 +70,8 @@ function createChallengeService({ filePath }) {
     const variantConfig = VARIANTS[variant] || (autoScored ? { label: "Auto-classified Push-Up", multiplier: 1 } : null);
     if (!variantConfig) throw new ApiError("VALIDATION_ERROR", "Unsupported push-up challenge variant", 400, { allowedVariants: [...Object.keys(VARIANTS), "auto"] });
 
+    const countFields = ["validRepCount", "twoHandRepCount", "oneHandRepCount"];
+    for (const field of countFields) if (payload[field] != null && (!Number.isInteger(payload[field]) || payload[field] < 0 || payload[field] > 10000)) throw new ApiError("VALIDATION_ERROR", `${field} must be an integer from 0 to 10000`, 400, { field });
     const validRepCount = Math.max(0, Math.floor(Number(payload.validRepCount || 0)));
     const twoHandRepCount = Math.max(0, Math.floor(Number(payload.twoHandRepCount || 0)));
     const oneHandRepCount = Math.max(0, Math.floor(Number(payload.oneHandRepCount || 0)));
@@ -78,6 +80,12 @@ function createChallengeService({ filePath }) {
     const score = autoScored ? Math.max(0, Math.floor(Number(payload.totalScore ?? payload.score ?? computedAutoScore))) : validRepCount * multiplier;
     const totalScore = score;
     const timestamp = new Date().toISOString();
+    const submissionId = cleanString(payload.submissionId, 128) || null;
+    const userId = cleanString(payload.userId, 128) || null;
+    const results = readResults();
+    if (submissionId && userId && results.some(item => item.submissionId === submissionId && item.userId === userId)) {
+      throw new ApiError("DUPLICATE_SUBMISSION", "Challenge result was already submitted", 409);
+    }
     const record = {
       id: `pushup_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
       displayName,
@@ -93,8 +101,9 @@ function createChallengeService({ filePath }) {
       totalScore,
       score,
       timestamp
+      ,submissionId
+      ,userId
     };
-    const results = readResults();
     results.push(record);
     writeResults(results);
     return safeLeaderboardRow(record);

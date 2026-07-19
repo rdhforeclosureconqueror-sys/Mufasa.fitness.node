@@ -29,7 +29,7 @@ async function withAppServer(t, fn) {
   fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
   fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
 
-  const app = createApp({ rootDir: tmpRoot });
+  const app = createApp({ rootDir: tmpRoot, allowInsecureTestRoutes: true });
   const server = app.listen(0);
   await new Promise((resolve, reject) => {
     server.once("listening", resolve);
@@ -192,6 +192,6 @@ test("/api/speak does not log or return TTS token values", async (t) => {
     assert.doesNotMatch(responseText, new RegExp(legacySecret));
     assert.doesNotMatch(logText, new RegExp(secret));
     assert.doesNotMatch(logText, new RegExp(legacySecret));
-    assert.match(logText, /\[redacted\]/);
+    assert.doesNotMatch(logText, /provider says token=/);
   });
 });

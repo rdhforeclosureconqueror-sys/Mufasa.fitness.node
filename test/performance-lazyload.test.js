@@ -110,15 +110,15 @@ test("missing profile save button cannot crash activation handler checks", () =>
   assert.doesNotMatch(html, /[,{]\s*saveProfileFormBtn\s*[,}]/, "saveProfileFormBtn must not be used as an object shorthand/bare variable");
 });
 
-test("coach backend tracing logs exact request body and validation errors", () => {
+test("coach backend tracing omits speech text and provider validation bodies", () => {
   const runtime = read("public/coach-runtime.js");
   const server = read("server.js");
   assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/ask request[\s\S]*body: requestBody/, "coach chat should log the exact /ask request body");
   assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/ask validation error[\s\S]*response: payload/, "coach chat should log /ask validation response payloads");
-  assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/api\/speak request[\s\S]*body: requestBody/, "coach voice should log the exact /api/speak request body");
-  assert.match(runtime, /\[COACH_BACKEND_TRACE\] \/api\/speak validation error[\s\S]*response: errTxt/, "coach voice should log /api/speak validation responses");
-  assert.match(server, /\[tts\] incoming request[\s\S]*body: incomingSpeakBody/, "server /api/speak should log incoming body");
-  assert.match(server, /\[tts\] upstream validation error[\s\S]*body: upstreamSpeakBody[\s\S]*response: msg/, "server /api/speak should log upstream validation errors");
+  assert.doesNotMatch(runtime, /\/api\/speak request[\s\S]{0,160}body: requestBody/, "coach voice must not log spoken text");
+  assert.doesNotMatch(runtime, /\/api\/speak validation error[\s\S]{0,200}response: errTxt/, "coach voice must not log provider bodies");
+  assert.doesNotMatch(server, /\[tts\] incoming request[\s\S]{0,200}body: incomingSpeakBody/, "server must not log spoken text");
+  assert.doesNotMatch(server, /\[tts\] upstream validation error[\s\S]{0,240}body: upstreamSpeakBody/, "server must not log speech provider bodies");
 });
 
 test("avatar create button binding is clickable and reports missing DOM", () => {

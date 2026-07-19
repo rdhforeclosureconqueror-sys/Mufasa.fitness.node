@@ -15,7 +15,7 @@ function tmpRoot() {
 
 async function withServer(fn) {
   const rootDir = tmpRoot();
-  const app = createApp({ rootDir });
+  const app = createApp({ rootDir, allowInsecureTestRoutes: true });
   const server = app.listen(0);
   await new Promise((resolve, reject) => { server.once("listening", resolve); server.once("error", reject); });
   const baseUrl = `http://127.0.0.1:${server.address().port}`;

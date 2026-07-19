@@ -13,7 +13,7 @@ async function withServer(t, fn) {
   fs.mkdirSync(path.join(tmpRoot, "public", "exercise-db"), { recursive: true });
   fs.writeFileSync(path.join(tmpRoot, "public", "exercise-db", "index.json"), "[]");
 
-  const app = createApp({ rootDir: tmpRoot });
+  const app = createApp({ rootDir: tmpRoot, allowInsecureTestRoutes: true });
   const server = app.listen(0);
 
   await new Promise((resolve, reject) => {

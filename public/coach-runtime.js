@@ -385,7 +385,7 @@
     const voice = refs.voiceSelectEl?.value || DEFAULT_VOICES[0];
     const format = "mp3";
     const requestBody = { text, voice, format };
-    console.log("[COACH_BACKEND_TRACE] /api/speak request", { url, body: requestBody });
+    console.log("[COACH_BACKEND_TRACE] /api/speak request", { url, operation: "synthesize_speech", textLength: requestBody.text.length });
     const res = await global.fetch(url, {
       method: "POST",
       headers: {
@@ -396,7 +396,7 @@
     });
     if (!res.ok) {
       const errTxt = await res.text().catch(() => "");
-      console.error("[COACH_BACKEND_TRACE] /api/speak validation error", { url, status: res.status, body: requestBody, response: errTxt });
+      console.error("[COACH_BACKEND_TRACE] /api/speak validation error", { url, status: res.status, operation: "synthesize_speech_failed" });
       throw new Error(`HTTP ${res.status}${errTxt ? ` ${errTxt}` : ""}`);
     }
     const blob = await res.blob();
