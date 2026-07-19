@@ -1605,6 +1605,8 @@ function createApp(options = {}) {
     ok(res, req.requestId, journeyIntakeService.submit(req.auth.userId), 200)));
   app.get("/api/me/retention/intake/progress", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, journeyIntakeService.progress(req.auth.userId), 200)));
+  app.get("/api/me/journey-profile", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, journeyIntakeService.get(req.auth.userId).journeyProfile, 200)));
 
   app.get("/api/billing/plan", asyncHandler(async (req, res) => {
     return ok(res, req.requestId, getPublicBillingPlan(process.env));
