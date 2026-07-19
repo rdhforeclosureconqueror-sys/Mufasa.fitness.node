@@ -51,11 +51,11 @@ function deriveOnboardingStatus(userId, user) {
     intake: buildSection(intakeComplete ? "complete" : "pending", intake?.completedAt, intake?.updatedAt),
     goals: buildSection(goalsComplete ? "complete" : "pending", goals?.completedAt, goals?.updatedAt),
     medicalHistory: buildSection(medicalHistoryComplete ? "complete" : "pending", intake?.completedAt, intake?.updatedAt),
-    overheadSquatAssessment: buildSection(ohsaComplete ? "complete" : "skipped_for_pilot", latestOhsa?.ts || latestOhsa?.createdAt, latestOhsa?.ts || latestOhsa?.createdAt),
+    overheadSquatAssessment: buildSection(ohsaComplete ? "complete" : "not_started", latestOhsa?.ts || latestOhsa?.createdAt, latestOhsa?.ts || latestOhsa?.createdAt),
     firstWorkout: buildSection(firstWorkoutComplete ? "complete" : "pending", completedWorkout?.ts, completedWorkout?.ts)
   };
   const ordered = ["intake", "goals", "medicalHistory", "overheadSquatAssessment", "firstWorkout"];
-  const completionCount = ordered.filter((key) => sections[key].status === "complete" || sections[key].status === "skipped_for_pilot").length;
+  const completionCount = ordered.filter((key) => sections[key].status === "complete").length;
   const nextKey = ordered.find((key) => sections[key].status === "pending") || null;
   const links = {
     intake: "client-intake",
