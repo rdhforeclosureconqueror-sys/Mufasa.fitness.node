@@ -3,6 +3,7 @@
 const { ApiError } = require("../lib/apiResponse");
 
 const PATHWAYS = ["general_fitness", "yoga_wellness", "athlete_performance"];
+const STEPS = ["pathway_selection", "identity_profile", "goals", "health_safety", "training_context", "schedule", "pathway_details", "final_review"];
 const SECTIONS = ["identity", "profile", "pathwaySelection", "goals", "healthSafety", "trainingContext", "schedule", "athletePerformance", "rugbySupplement", "generalFitness", "yogaWellness"];
 
 function fail(field, message) { throw new ApiError("VALIDATION_ERROR", `${field}: ${message}`, 400, { field }); }
@@ -49,7 +50,10 @@ function validateSection(name, value) {
 function validateJourneyPatch(input) {
   const payload = object(input, "Request body"); const out = {};
   for (const key of Object.keys(payload)) {
-    if (key === "currentStep") out.currentStep = string(payload[key], key, 80);
+    if (key === "currentStep") {
+      out.currentStep = string(payload[key], key, 80);
+      if (!STEPS.includes(out.currentStep)) fail(key, "must be a supported intake step");
+    }
     else if (key === "pathwaySelection") {
       const p = object(payload[key], key); const selected = unique(p.selected, "pathwaySelection.selected", 2, 40);
       if (selected.length === 0) fail("pathwaySelection.selected", "must select one or two pathways");
