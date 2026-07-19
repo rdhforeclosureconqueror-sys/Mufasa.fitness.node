@@ -95,15 +95,41 @@ function createGeneratedWorkoutService({ userStore, userDataService }) {
   }
 
   function complete(userId, executionId) {
-    let result, track = false;
+    let result, alreadyCompleted = false, reconciledTracking = false;
     userStore.updateUser(userId, user => {
       const execution=(user.generatedWorkoutExecutions||[]).find(x=>x.executionId===executionId);
       if(!execution) throw new ApiError("EXECUTION_NOT_FOUND","Generated workout execution was not found",404);
-      if(execution.status==="completed") { result=execution; return user; }
-      const now=iso(); execution.status="completed"; execution.completedAt=now; execution.updatedAt=now; execution.exerciseProgress.forEach(x=>{ if(x.completedSets>=Number(x.prescribedSets||0))x.completed=true; }); result=execution; track=true; return user;
+      const persistedPlan = user.generatedWorkoutPlan?.plan;
+      const planSession = persistedPlan?.sessions?.find((item,index)=>sessionId(item,index)===execution.sessionId);
+      if (!persistedPlan || persistedPlan.version !== execution.planVersion || !planSession) {
+        throw new ApiError("EXECUTION_REFERENCE_INVALID", "Generated workout execution references an unavailable plan session", 409);
+      }
+      alreadyCompleted=execution.status==="completed";
+      if (!alreadyCompleted) {
+        const now=iso(); execution.status="completed"; execution.completedAt=now; execution.updatedAt=now;
+        execution.exerciseProgress.forEach(x=>{ if(x.completedSets>=Number(x.prescribedSets||0))x.completed=true; });
+      }
+      const trackingId=`generated-execution:${execution.executionId}`;
+      user.workoutTracking=Array.isArray(user.workoutTracking)?user.workoutTracking:[];
+      let tracking=user.workoutTracking.find(x=>x.idempotencyKey===trackingId);
+      if (!tracking) {
+        tracking={
+          workoutId:`generated:${execution.planVersion}:${execution.sessionId}`,
+          programId:`generated-plan-v${execution.planVersion}`,
+          completionStatus:"completed",
+          exercisesCompleted:execution.exerciseProgress.filter(x=>x.completed).map(x=>x.exerciseId),
+          sets:execution.exerciseProgress.reduce((n,x)=>n+x.completedSets,0),
+          source:"generated-workout",
+          trackedAt:execution.completedAt,
+          idempotencyKey:trackingId
+        };
+        user.workoutTracking.push(tracking);
+        reconciledTracking=alreadyCompleted;
+      }
+      result=execution;
+      return user;
     });
-    if(track && userDataService) userDataService.appendWorkoutTracking({userId,tracking:{workoutId:`generated:${result.planVersion}:${result.sessionId}`,programId:`generated-plan-v${result.planVersion}`,completionStatus:"completed",exercisesCompleted:result.exerciseProgress.filter(x=>x.completed).map(x=>x.exerciseId),sets:result.exerciseProgress.reduce((n,x)=>n+x.completedSets,0)},source:"generated-workout"});
-    return { execution: result, alreadyCompleted: !track };
+    return { execution: result, alreadyCompleted, reconciledTracking };
   }
 
   return { readModel, start, update, complete };

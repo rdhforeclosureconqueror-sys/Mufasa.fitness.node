@@ -1,0 +1,84 @@
+===== BEGIN REPORT =====
+TITLE:
+Phase 12A – Critical Correctness and Security Remediation
+
+STATUS:
+PARTIALLY COMPLETE. The critical public-write/provider-cost boundaries and generated-workout split write were corrected. F-003, F-007, and F-028 remain PARTIALLY CLOSED because this narrow batch establishes enforceable contracts and tests for the confirmed paths but does not yet supply every requested black-box matrix case or migrate every intentional browser sink.
+
+BASELINE:
+Branch: work. The working tree was clean before changes. Phase 11 audit commit 71fab7c (Expand Phase 11 copy-paste audit) is present through merge commit a777050. The focused baseline command covered authentication, personalization/profile, Journey, generated delivery/progression, adaptation, workout persistence, challenge/public writes, control-plane, and speech: 78 passed, 0 failed. Baseline output also confirmed that /api/speak logged the raw incoming and upstream speech bodies, validating F-003.
+
+F-003 SENSITIVE LOGGING:
+PARTIALLY CLOSED. Server and browser speech diagnostics now record allowlisted request ID, authenticated user ID, operation, status, and text length only. Spoken text, complete request bodies, provider response bodies, authorization values, and provider secrets are not logged. The Phase 12A capture test injects a unique health-like Unicode secret and proves it is absent. Existing profile/OHSA write logging was confirmed to use request ID/user ID/action metadata, but dedicated successful-profile, failed-profile, OHSA, and Journey log-capture cases are still required before this finding can be fully closed.
+
+F-004 ROUTE DISPOSITIONS:
+POST /command: authenticated deprecated compatibility route, explicitly controlled by LEGACY_FALLBACK_ENABLED and action enforcement, rate limited, cross-user selection rejected, unknown commands rejected, and deprecation headers retained. A test-only createApp option preserves historical unit fixtures and is never enabled by production startup.
+POST /api/speak: authenticated member route, JSON-only, allowlisted fields, 1,000-character text limit, provider-safe errors, and cost-bearing rate limit.
+POST /api/challenges/pushup/results: authenticated member route with server-derived user identity, bounded integer repetitions, required submission identifier, and per-user replay rejection. Public leaderboard reads remain public and omit private contact/identity fields.
+POST /api/pilot/events: authenticated telemetry route with an event-name allowlist, flat scalar payload allowlist, bounded strings, rejection of identity/prototype/nested fields, server-derived identity, and a rate limit.
+F-004 status: CLOSED for the audited four routes.
+
+RATE LIMITS:
+A small server-authoritative in-memory fixed-window limiter protects speech, legacy command, push-up result, and pilot-event writes. It returns stable 429 JSON, preserves requestId, and emits Retry-After. Tests prove the first legitimate request proceeds and the over-limit request is rejected. This is single-process protection only; counters do not coordinate across replicas and reset on restart.
+
+F-005 WORKOUT COMPLETION:
+CLOSED. Generated completion now validates the persisted plan/session reference, completes the execution, and appends or confirms canonical workoutTracking within one userStore.updateUser callback and one persisted user write. The idempotency key is derived from executionId. Retry returns the completed execution without duplicate history; a formerly completed execution missing tracking is reconciled. Tests cover initial completion, repeated completion, one-write behavior, missing-tracking repair, plan immutability, foreign ownership, completed-mutation rejection, assigned-program precedence, and persisted progression compatibility. The synchronous repository update means same-process calls serialize at the JavaScript execution boundary; multi-process file-write serialization remains outside this persistence abstraction.
+
+F-007 AUTHORIZATION CONTRACT:
+PARTIALLY CLOSED. config/route-authorization-contract.js inventories all 109 statically declared Express routes with method, path, authentication, roles, permissions, membership, ownership, feature flag, public-output, rate-limit, public-write, and compatibility policy. The audit test compares both directions and fails for missing/orphan routes, missing ownership/privilege, unclassified public writes, or missing output policy. Focused black-box tests cover anonymous denial on all four remediated writes, authenticated owner telemetry, body identity rejection, and malformed/unknown telemetry. Existing authentication/control-plane suites cover expired tokens, revocation metadata, permission denial, role allowlists, and protected member routes. A complete Phase 1–10 route-by-route cross-user/role/permission/membership/feature matrix remains required before full closure.
+
+F-028 OUTPUT SANITIZATION:
+PARTIALLY CLOSED. A shared safe-rendering utility provides textContent display and rejects javascript: and unsafe data: URLs without HTML double escaping. Tests cover tags, event attributes, quotes, ampersands, Unicode, and active URLs. A repository sink-inventory test scans browser JS/HTML and requires every dangerous sink file to have a reviewed justification. Confirmed generated-workout/Journey/nutrition templates retain their existing escaping contracts. Broad replacement of reviewed structural innerHTML templates is intentionally deferred; each remaining allowlisted sink still requires route-to-sink reachability validation before full closure.
+
+ERROR SAFETY:
+Touched authenticated routes use the existing central envelope for authentication/validation errors. Rate-limit responses include requestId. Speech provider failures no longer return raw provider bodies and never return secrets, stacks, or filesystem paths. Statuses used are 400 validation, 401 unauthenticated, 409 replay/reference conflict, 415 unsupported media type, 429 rate limit, 500 missing server configuration, and 502 provider failure.
+
+COMPATIBILITY:
+Old /command behavior allowed unauthenticated mutation when enabled and stored unknown actions. New behavior always authenticates production calls, derives/compares identity, and rejects unknown actions. LEGACY_FALLBACK_ENABLED=false remains the fail-safe rollback switch; action-level enforcement can block individual compatibility commands. Existing session clients retain deprecation headers and authenticated compatibility behavior. Speech and challenge browser consumers must now send the normal bearer token; challenge writes must include a stable submissionId. Public challenge reads are unchanged. allowInsecureTestRoutes exists only as an explicit createApp test-fixture option and is not read from environment or production startup.
+
+FILES CHANGED:
+server.js; src/middleware/rateLimit.js; src/services/challengeService.js; src/services/generatedWorkoutService.js; config/route-authorization-contract.js; config/intentional-html-sinks.js; public/safe-rendering.js; public/coach-runtime.js; test/phase12a-security-remediation.test.js; test/generated-workout-delivery.test.js; test/performance-lazyload.test.js; test/phase26-pushup-challenge.test.js; test/session-api.test.js; test/tts-speak-proxy.test.js; this report.
+
+TESTS:
+Baseline focused suite: 78 passed, 0 failed.
+Focused Phase 12A and generated-delivery suite: passed.
+Updated compatibility/speech/challenge/session suite: 60 passed, 0 failed.
+Full repository suite: 352 passed, 0 failed.
+
+VALIDATION:
+npm test: passed, 352 tests.
+npm run lint: passed (selfcheck ok).
+node --check server.js and node --check config/route-authorization-contract.js: passed.
+git diff --check: passed.
+Startup with a configured auth secret: passed.
+GET /health against the local running target: HTTP success and safe JSON; development health was degraded only because bootstrap super-admin/trust hardening environment values were intentionally absent.
+node scripts/repo-route-audit.js: passed; warned that two vendor Three.js asset probes had no running-target response.
+Route contract inventory test: passed for 109 routes.
+No deploy and no push were performed.
+
+ROLLBACK:
+Legacy route restrictions: reverting restores unauthenticated risk and unknown-command persistence; prefer temporarily enabling only documented action compatibility rather than reverting authentication. No persisted-shape incompatibility is created by restriction alone.
+Rate limiter: reverting removes single-process protection and does not affect persisted data.
+Generated completion: reverting can reintroduce split-write divergence. New workoutTracking records add idempotencyKey/source/trackedAt fields that legacy readers tolerate as additive JSON; rollback does not require migration, but a reverted completion may fail to recognize these keys and can append duplicate history.
+Authorization contract: contract/test removal has no runtime data effect but removes route-addition assurance.
+Output safety: reverting utility/client logging changes has no data effect but re-exposes unsafe URL and sensitive speech diagnostics. The sink allowlist is test-only documentation.
+Challenge identity/replay: persisted challenge records now include additive userId and submissionId. Legacy readers ignore these fields; rollback is data-compatible but removes ownership/replay enforcement.
+
+COMMIT:
+Harden critical correctness and security boundaries (single implementation commit; final commit identifier recorded by repository history).
+
+FINDINGS CLOSED:
+F-004 – CLOSED.
+F-005 – CLOSED.
+
+FINDINGS PARTIALLY CLOSED:
+F-003 – PARTIALLY CLOSED.
+F-007 – PARTIALLY CLOSED.
+F-028 – PARTIALLY CLOSED.
+
+REMAINING RISKS:
+The limiter is per process. The file repository has no cross-process transaction lock. Complete profile/OHSA/Journey log-absence captures are missing. The authorization contract classifies all routes but the exhaustive Phase 1–10 black-box matrix is incomplete. Reviewed innerHTML sinks remain and rely on local escaping discipline. Browser consumers must adopt authenticated challenge submissionId behavior.
+
+REMAINING WORK:
+Add profile success/failure, OHSA, Journey, and workout-failure log capture tests; build the exhaustive member authorization matrix including wrong-role, missing-permission, membership, expired/revoked/malformed token, and disabled-feature cases per route; migrate or reachability-test remaining allowlisted member-facing sinks; add multi-process persistence coordination or document single-process deployment enforcement; add duration/client timestamp challenge fields only if a verified consumer requires them, with strict validation.
+===== END REPORT =====
