@@ -1545,5 +1545,197 @@ module.exports = Object.freeze([
     "rateLimit": null,
     "compatibility": null,
     "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/trainer/workspace",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "authenticated-trainer",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/trainer/clients",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "authenticated-trainer",
+    "featureFlag": null,
+    "publicOutput": "sensitive-private",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/trainer/clients/:clientUserId",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "active-trainer-client-assignment",
+    "featureFlag": null,
+    "publicOutput": "sensitive-private",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/trainer/clients/:clientUserId/program",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "active-trainer-client-assignment",
+    "featureFlag": null,
+    "publicOutput": "sensitive-private",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "PUT",
+    "path": "/api/trainer/clients/:clientUserId/program",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "active-trainer-client-assignment",
+    "featureFlag": null,
+    "publicOutput": "sensitive-private",
+    "rateLimit": "trainer-writes",
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/trainer/clients/:clientUserId/notes",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "active-trainer-client-assignment",
+    "featureFlag": null,
+    "publicOutput": "sensitive-private",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/trainer/clients/:clientUserId/notes",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "active-trainer-client-assignment",
+    "featureFlag": null,
+    "publicOutput": "sensitive-private",
+    "rateLimit": "trainer-writes",
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/trainer-assignments",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "privileged",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/trainer-assignments",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "privileged",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": "trainer-writes",
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/admin/trainer-assignments/:assignmentId",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "privileged",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": "trainer-writes",
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/trainer.html",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "authenticated-trainer",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
+    "path": "/admin-trainer-assignments.html",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "declared-by-route-middleware"
+    ],
+    "membership": "not-required",
+    "ownership": "authenticated-trainer",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
   }
 ]);

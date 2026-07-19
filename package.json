@@ -19,7 +19,9 @@
     "diagnostics:routes": "node scripts/diagnostics-routes.js",
     "repo:route-audit": "node scripts/repo-route-audit.js",
     "diagnostics:routes:local": "node scripts/diagnostics-routes-local.js",
-    "pilot:readiness:local": "node scripts/pilot-readiness-local.js"
+    "pilot:readiness:local": "node scripts/pilot-readiness-local.js",
+    "security:check": "node --test test/phase12a-security-remediation.test.js",
+    "test:security": "node --test test/auth-hardening-phase13.test.js test/phase12a-security-remediation.test.js test/trainer-workspace.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

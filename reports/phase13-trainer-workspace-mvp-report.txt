@@ -1,0 +1,102 @@
+===== BEGIN REPORT =====
+TITLE
+Phase 13 – Trainer Workspace MVP
+
+STATUS
+IMPLEMENTED. Server-enforced assigned-client workspace, program assignment, private notes, and administrator assignment controls are complete. Real-browser acceptance is not complete because no browser engine is installed in the environment.
+
+BASELINE
+Phase 12C member intake, Journey resume, Member Home, generated workout, workout delivery, progression, adaptation, nutrition, authentication, and Phase 12 controls were retained. The full post-change suite passed 359 tests.
+
+EXISTING TRAINER CAPABILITIES FOUND
+The authorization resolver already defined a trainer role backed by AUTHZ_TRAINER_USER_IDS and AUTHZ_TRAINER_SUBJECTS, but its permission set was empty. Existing coach-assigned programs used user.program and already had precedence over member-selected, generated, and legacy plans. Existing “coach” runtime features are workout voice/form coaching and are unrelated to human trainer-client ownership. These foundations were reused: trainer allowlists remain the canonical role source, user.program remains the active assigned-program compatibility field, and generated plans remain separate. No competing legacy trainer-client assignment model was found or retired.
+
+ARCHITECTURE
+Added a JSON-backed canonical trainer workspace repository under data/trainer-workspace.json, a purpose-built service/output-policy layer, authenticated Express routes, trainer/admin browser surfaces, role-aware navigation, automated authorization tests, and route-contract entries. This follows existing persistence rather than replacing it.
+
+AUTHORIZATION MODEL
+Added trainer.workspace.read, trainer.clients.read, trainer.clients.programs.write, trainer.clients.notes.read, trainer.clients.notes.write, and admin.trainer_assignments.manage. Trainers retain normal /api/me member capabilities. Every client route derives trainer identity exclusively from the verified bearer token and checks active assignment. Members, anonymous callers, wrong trainers, self-client access, inactive assignments, and missing permissions are denied. Assignment-denial responses are uniform and do not disclose client existence.
+
+ASSIGNMENT MODEL
+Assignments preserve ID, trainer/client IDs, active/inactive status, assigning administrator, assignment/deactivation actors and timestamps, and created/updated timestamps. Duplicate active creation is idempotent (HTTP 200 with the existing record); initial/reactivated creation returns 201. Deactivation is soft and history is retained. Repository APIs cover create, deactivate, get, list all/by trainer/by client, and active-access checks. Administrators validate distinct users, configured trainer eligibility, and persisted member eligibility.
+
+TRAINER WORKSPACE
+GET /api/trainer/workspace authors workspace metadata and member-home switch URL. /trainer.html provides loading, empty, retry/error messaging, client navigation, detail review, program assignment, notes, and a responsive layout. Server APIs remain the security boundary.
+
+CLIENT LIST
+GET /api/trainer/clients emits only active assigned-client summaries: permitted display name, status, pathway, intake/health/program status, recent workout, progression, and next action. Search plus intake, health, program, and activity filters run after assignment scoping. Raw intake, email, medical answers, and health flags are absent from list output.
+
+CLIENT OVERVIEW
+GET /api/trainer/clients/:clientUserId separates summary, Journey, relevant health restrictions/warnings, training, nutrition, and assessment summaries. Defensive missing-data handling is included. Provider payloads and unrelated personal fields are never returned.
+
+PROGRAM ASSIGNMENT
+GET/PUT program endpoints enforce active assignment and write permission. Payload IDs/titles are validated. Replacements end the prior assignment and retain history; assigning trainer/timestamps are recorded. Repeating the same active assignment is idempotent. status=inactive safely ends an assignment without deleting history. user.program preserves trainer > member-selected > generated > legacy precedence, while generated plans are not mutated.
+
+TRAINER NOTES
+GET/POST note endpoints enforce separate read/write permissions and active trainer-client ownership. Notes are scoped to their authoring trainer in this MVP, retain author/timestamps, cap text at 4,000 characters, and are rendered only with textContent/white-space text display. Request logs contain method/path metadata only and do not log note bodies.
+
+ADMINISTRATION
+GET/POST/DELETE /api/admin/trainer-assignments are administrator-permission guarded and write-rate-limited. The minimal admin page creates assignments from trainer/client user IDs, reviews full active/inactive history and actor timestamps, and deactivates without deletion. Trainers cannot self-assign clients.
+
+BROWSER RESULTS
+NOT COMPLETED WITH A REAL BROWSER. No Chromium, Chrome, or browser engine executable is installed. Browser-oriented HTML/JS/CSS surfaces and safe-DOM behaviors are covered by source/security regression checks, but no claim of real-browser desktop/mobile acceptance or screenshot is made.
+
+SECURITY RESULTS
+Assigned-only list/detail enforcement, cross-trainer denial, member/anonymous denial, inactive denial, admin-only assignment control, path/body identity isolation, safe note text, maximum note length, list redaction, bearer credential hardening, route-contract completeness, and write rate limits passed automated tests. Existing malformed/expired/revoked credential coverage passed the focused security suite. Application request logging records no request bodies.
+
+FILES CHANGED
+config/route-authorization-contract.js
+package.json
+public/dashboard.html
+public/admin-trainer-assignments.html
+public/admin-trainer-assignments.js
+public/trainer-navigation.js
+public/trainer.css
+public/trainer.html
+public/trainer.js
+server.js
+src/lib/authorization.js
+src/repositories/trainerWorkspaceStore.js
+src/services/trainerWorkspaceService.js
+test/trainer-workspace.test.js
+reports/phase13-trainer-workspace-mvp-report.txt
+
+TESTS
+Full Node test suite: 359 passed, 0 failed.
+Focused trainer workspace: 3 passed, 0 failed.
+Security check: 4 passed, 0 failed.
+Focused security suite: 13 passed, 0 failed.
+Trainer tests cover lifecycle/idempotency/reactivation/history; invalid trainer/client/self; assigned-only lists; search non-leakage; list redaction; cross-trainer/member/anonymous/inactive denial; detail sections; program precedence/history; note safety/limits; and administrator isolation.
+
+VALIDATION
+npm test: PASS (359/359).
+npm run lint: PASS.
+npm run security:check: PASS (4/4).
+npm run test:security: PASS (13/13).
+npm run repo:route-audit: PASS, with two non-blocking external frontend asset probe warnings caused by unavailable remote fetches.
+git diff --check: PASS.
+node --check for every changed JavaScript file: PASS.
+Application startup with NODE_ENV=test, a 32+ character AUTH_TOKEN_SECRET, PILOT_LOGIN_PASSWORD, and PORT=31913: PASS.
+GET /health: HTTP success with ok=true and authConfigured=true; expected local-test degraded preflight warnings remain because bootstrap production allowlists/billing are intentionally not configured.
+
+COMPATIBILITY
+Member endpoints and navigation remain separate and unchanged except for a hidden role-authorized Trainer Workspace link. Trainer accounts still use all member endpoints. Existing assigned-program read precedence is preserved through user.program. No persistence replacement, deployment, or push occurred.
+
+ROLLBACK
+Revert the single implementation commit. This removes routes/UI/service/repository/permissions/tests/report. Existing data/trainer-workspace.json can be retained for audit/history or archived; no user-record migration is required. Historical trainerProgramAssignments added to user records are additive and ignored by prior code.
+
+COMMIT
+One implementation commit with message: Implement assigned-client trainer workspace MVP
+
+COMPLETED REQUIREMENTS
+Explicit permissions; trainer/member coexistence; canonical historical assignment persistence and repository APIs; admin-only create/list/deactivate; server-authored workspace/client/detail/program/note APIs; assigned-only access; purpose-built redacted list; search/filters/states; separated permitted overview; program validation/history/precedence/removal; private safe notes; trainer/member switching; admin management page; centralized auth/errors; write rate limits; route contract; focused and full regression validation; health startup check; one commit; no deploy/push.
+
+PARTIALLY COMPLETED REQUIREMENTS
+The administrator MVP uses explicit user-ID inputs rather than a server-provided autocomplete directory. Browser-oriented UI is implemented and responsive, but real-browser acceptance and screenshot evidence could not be performed without an installed engine. Test coverage relies on the existing malformed/expired/revoked suites plus new role/assignment cases rather than duplicating every credential case in trainer-workspace.test.js.
+
+REMAINING RISKS
+JSON persistence follows current repository conventions but has process-local atomicity only and is not suitable for multi-instance concurrent writes. Trainer eligibility remains environment-allowlist based. The overview intentionally maps heterogeneous legacy member records defensively; future canonical schemas may warrant richer projections. Health-output policy should be reviewed by the privacy owner before production trainer rollout.
+
+REMAINING WORK
+Install a real browser engine and run authenticated desktop/mobile acceptance, capture screenshots, and validate keyboard/screen-reader behavior. Consider an administrator-safe trainer/member search endpoint and autocomplete. Before multi-instance production use, migrate assignment/note/program history to the future canonical transactional persistence layer without changing API semantics.
+===== END REPORT =====
