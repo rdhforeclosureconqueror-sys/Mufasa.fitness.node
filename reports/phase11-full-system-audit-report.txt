@@ -1,0 +1,1038 @@
+===== BEGIN REPORT =====
+
+TITLE:
+Phase 11 – Full-System Audit With Copy-Paste Report
+
+STATUS:
+COMPLETE — AUDIT ONLY. NO-GO for production. No application code, feature, architecture, UI, deployment, or defect correction was performed. The only repository change is this audit report.
+
+EXECUTIVE SUMMARY:
+Phases 1–10 form a working server-authoritative journey: intake is saved, a canonical journey profile is derived, personalization and deterministic plans are produced, executions and workout history are persisted, progression and adaptation are calculated, and member home composes next actions. The strongest controls are consistent use of req.auth.userId on self-service routes, deterministic generation, user-scoped object lookup, explicit validators on core flows, and 347 passing tests.
+
+Production release is not ready. Two blockers remain: file-backed whole-record persistence has no transaction or multi-writer safety, and the health response explicitly reports a degraded, failed preflight configuration. High risks include health-data payload logging, public/legacy write and cost surfaces, incomplete authorization proof, non-atomic workout completion, fragmented browser authority, and absence of browser/accessibility acceptance coverage.
+
+Passing tests do not prove unasserted behavior. There are no multi-process persistence tests, exhaustive endpoint/role/ownership tests, full browser journeys, accessibility automation, or production-environment acceptance tests. The recommended first remediation batch is Phase 12A critical correctness and security: make generated completion recoverable/idempotent, remove sensitive logging, fail closed on legacy and public write boundaries, and establish an exhaustive authorization contract. Durable persistence migration and production configuration remain mandatory before release.
+
+AUDIT BREAKDOWN:
+Total blocker count: 2.
+Total high count: 8.
+Total medium count: 10.
+Total low count: 7.
+Total informational count: 5.
+Recommended first remediation batch: Batch 1, Phase 12A critical correctness and security.
+Estimated number of remediation batches: 5.
+
+A. Must fix before browser testing, in implementation order:
+1. F-003 — remove health/profile payloads from logs before browser test data is entered.
+2. F-005 — make generated workout completion atomic or safely reconcilable so browser retries cannot split state.
+3. F-004 — close unauthenticated/legacy write and cost-abuse paths needed by browser flows.
+4. F-007 — create the route/role/ownership/entitlement contract before acceptance testing.
+5. F-006 — establish one browser API/auth authority and consistent 401/402/retry behavior.
+6. F-008 — add end-to-end browser acceptance coverage.
+7. F-018 — eliminate navigation dead ends and confusing recovery paths without redesign.
+8. F-028 — add sink-level output sanitization verification.
+
+B. Must fix before production, in implementation order:
+1. F-001 — replace or harden nontransactional file persistence.
+2. F-002 — make production readiness fail closed and separate liveness from readiness.
+3. F-003, F-004, F-007 — close sensitive logging, public/legacy surface, and authorization assurance risks.
+4. F-009, F-013, F-015, F-020 — preserve immutable history; add migrations, rollback, backup, and privacy operations.
+5. F-017, F-019, F-021 — harden CORS/token/DOM-XSS posture, environment contracts, and errors/status.
+6. F-012, F-014 — address member-home fan-out and unbounded record growth.
+7. F-008 and F-024 — pass browser, accessibility, and production-configuration suites.
+
+C. Safe to defer until after MVP launch only with named risk acceptance:
+1. F-022 — modularize server composition.
+2. F-023 — remove duplicate root/public assets after served-graph proof.
+3. F-025 — remove duplicate catalog key.
+4. F-026 — improve syntax tooling for vendor ESM.
+5. F-027 — reduce residual dynamic HTML sinks.
+6. F-029 — formalize feature/route/navigation manifests.
+7. F-030 — mature structured observability and SLOs.
+8. Informational findings F-031 through F-035.
+
+MUST FIX BEFORE BROWSER TESTING:
+Browser testing must not begin with real member data until F-003 is closed. The browser acceptance environment also needs deterministic write semantics for completion (F-005), controlled write/cost endpoints (F-004), a complete authorization matrix (F-007), and unified client error/auth authority (F-006). Browser acceptance itself must cover F-008, F-018, and F-028. This ordering prevents tests from normalizing unsafe logs, inconsistent persistence, or false-positive happy paths.
+
+MUST FIX BEFORE PRODUCTION:
+F-001 and F-002 are release blockers. All HIGH findings require correction or explicit security/product risk acceptance. Immutable history, schema migration, backup/restore, privacy handling, production environment validation, liveness/readiness semantics, concurrency, and cross-device persistence must be proven. A single durable-volume instance is not sufficient evidence for safe production operation.
+
+SAFE TO DEFER:
+Composition cleanup, duplicate asset retirement, minor catalog cleanup, vendor syntax-tool ergonomics, feature manifest cleanup, and observability maturity can follow MVP only if they do not conceal reachable security or member-flow defects. No BLOCKER or HIGH item is safe to defer.
+
+END-TO-END ARCHITECTURE:
+1. Node composition and API
+- Owner: server.js createApp.
+- Responsibilities: middleware order, CORS, JSON parsing, static delivery, request context, auth/authz, entitlement, route validation, service wiring, health, diagnostics, billing, TTS, uploads, challenges, and API error handling.
+- Dependencies: Express, filesystem, middleware, validators, services, repository, providers, environment configuration.
+- API boundary: 109 app route declarations were inventoried in server.js. Product, operational, provider, public, and compatibility routes share one process.
+- Coupling: server.js is 2,451 lines; unrelated concerns share startup and failure blast radius.
+
+2. Authentication and authorization
+- Owners: src/middleware/auth.js; src/lib/authToken.js; authorization, providerIdentity, trustPolicy, tokenDenylist, and control-plane libraries.
+- Responsibilities: bearer-token verification/revocation, req.auth/req.authz, permission checks, role mapping, explicit user-scope checks, bridge trust.
+- Canonical authority: signed token claims plus environment role/allowlist policy and file-backed token denylist.
+- Hidden dependency: self-service isolation relies on every route passing req.auth.userId into every service.
+
+3. Persistence
+- Owner: src/repositories/userStore.js.
+- Responsibilities: safe user filename derivation, defaults/migration normalization, synchronous JSON load/save/update.
+- Boundary: most Phase 1–10 state is one data/users/<user>.json aggregate; membership, challenge, template, audit, denylist, diagnostic, and control-plane data use other JSON/NDJSON files.
+- Constraint: no database transaction, optimistic version, inter-process lock, atomic journal, migration runner, or restore workflow was identified.
+
+4. Journey and profile, Phases 1–3
+- Owners: journeyIntakeService, journeyIntakeValidators, journeyRecommendationEngine, retention-flow and profile-write runtimes.
+- Responsibilities: legacy migration, partial wizard validation, health flags, completion, submit, canonical profile derivation.
+- API: /api/me/retention/intake GET/PATCH/submit/progress and /api/me/journey-profile.
+- Canonical boundary: memberJourneyProfile is current mutable intake; journeyProfile is the derived submitted model. Legacy profile/clientIntake/goalsBaseline remain compatibility sources.
+
+5. Personalization, Phase 4
+- Owner: personalizationService.
+- Responsibilities: canonical journey context and workout, nutrition, assessment, and dashboard projections.
+- Dependency: journeyIntakeService. A personalization read may trigger lazy persistence through journey get/ensure.
+
+6. Generator and plan builder, Phases 5–6
+- Owners: programGenerationEngine, journeyRecommendationEngine/buildWorkoutPlan, fitness domain catalogs.
+- Responsibilities: deterministic templates, substitutions, schedule/experience scaling, health restriction.
+- Canonical boundary: generatedWorkoutPlan is the current compatibility projection; generatedWorkoutPlans is lifecycle history after migration; coach-assigned program takes precedence.
+
+7. Delivery and tracking, Phase 7
+- Owners: generatedWorkoutService, sessionService, userDataService, generated-workout/session/workout browser runtimes.
+- Responsibilities: read model, execution lifecycle, structured reps, legacy tracking, rewards/dashboard.
+- Boundary: generatedWorkoutExecutions, structured sessions, and workoutTracking overlap. Completion bridges execution into workoutTracking with a second write.
+
+8. Progression, Phase 8
+- Owner: generatedWorkoutProgressionService.
+- Responsibilities: aggregate adherence/recovery, deterministic evaluation, recommend/accept/supersede plans.
+- Canonical boundary: generatedWorkoutPlans and generatedWorkoutProgressions; generatedWorkoutPlan is updated as compatibility projection.
+
+9. Adaptation, Phase 9
+- Owner: trainingAdaptationService.
+- Responsibilities: deterministic advice from plan, execution, progression, and latest recovery evidence.
+- Boundary: authenticated server read composed into member home; underlying persisted evidence must remain authoritative.
+
+10. Member home, Phase 10
+- Owner: memberHomeService plus dashboard/app hydration runtimes.
+- Responsibilities: compose journey, personalization, plan, progression, adaptation, nutrition, and progress; resolve next best action.
+- Boundary: computed server projection, not a separately persisted model. Multiple service reads may not represent one atomic snapshot.
+
+11. Supporting domains
+- nutritionService owns journal, meals, weekly plans, groceries, missions, reviews, and education in the user aggregate; provider client owns external food lookup.
+- userDataService owns compatibility profile/OHSA/intake/goals/program/check-ins/scans/tracking/dashboard records.
+- membershipService owns membership and Stripe boundary.
+- challengeService and exerciseTemplateService own shared ops JSON stores.
+- Pose/avatar/rep/form engines own device inference only; server persistence must own durable completion.
+
+Duplication, coupling, hidden dependencies, cycles, dead code, compatibility:
+- Duplicate root/public copies exist for fitness, runtime-orchestrator, auth-state, dashboard, and HTML assets.
+- Multiple browser clients and token/base-URL authorities duplicate fetch/error logic.
+- Legacy /command, profile, client-intake, goals-baseline, session, and workoutTracking flows coexist with canonical journey/generated execution flows.
+- generatedWorkoutPlan and generatedWorkoutPlans duplicate current plan state.
+- No direct CommonJS import cycle was observed. Logical write cycles exist between generated completion and legacy tracking, and between progression history and current-plan projection.
+- Avatar and visual scans are feature-disabled by default while their code remains shipped; operational/pilot/diagnostic pages coexist with member assets.
+- Root-level assets outside PUBLIC_DIR appear potentially obsolete/unserved and require served-graph proof before deletion.
+
+SOURCE OF TRUTH:
+- Authentication: verified bearer token and denylist; browser token caches are not canonical.
+- Authorization: server authorization resolver and environment policy; UI visibility is not authorization.
+- Journey draft: memberJourneyProfile.
+- Submitted journey: journeyProfile, derived from intake.
+- Personalization: server projection derived from journeyProfile/version.
+- Coach program: user.program when assigned; generated recommendation remains secondary.
+- Current generated plan: generatedWorkoutPlans active lifecycle record should be authoritative; generatedWorkoutPlan remains compatibility projection and can drift.
+- Plan history: generatedWorkoutPlans.
+- Generated session history: generatedWorkoutExecutions.
+- Weekly progression: generatedWorkoutProgressions.
+- Adaptation: persisted/derived server adaptation output and versioned input evidence.
+- Nutrition: server user aggregate; browser panels are projections.
+- Assessments: OHSA history and feature-gated scan records in user aggregate.
+- Workout history: currently fragmented among generated executions, structured sessions, and workoutTracking.
+- Member home: server-computed projection, never localStorage.
+- Device inference: browser owns transient camera/pose/rep state only.
+
+SECURITY:
+Observed positive controls:
+- Bearer authentication, expiry, revocation, request IDs, JSON size limit, standardized API envelopes, user-scoped storage calls, explicit role/permission middleware, membership gates, core validators, Stripe raw-body handling, payment-field rejection, path-safe user IDs, and selected public-output sanitizers.
+
+Authenticated route inventory requiring continuing security review:
+- Identity: GET /api/auth/me; GET /api/me; GET /api/me/membership; GET /api/me/onboarding-status.
+- Journey: GET/PATCH /api/me/retention/intake; POST /submit; GET /progress; GET /api/me/journey-profile; GET /api/me/personalization; GET /api/me/member-home.
+- Billing: POST /api/billing/checkout-session; POST /api/billing/create-checkout-session; POST /api/billing/portal-session.
+- Templates: POST/GET /api/exercise-templates; GET/PUT /:id; POST demo-captures, test-runs, approve; GET active/scoring.
+- Sessions: POST /api/sessions; POST /api/sessions/:id/reps; POST /api/sessions/:id/complete.
+- Nutrition: all barcode/food/draft routes and every /api/me/nutrition entry, summary, recent, meal, grocery, weekly-plan, mission, review, validation, and education route.
+- Health/profile/history: GET/PUT /api/me/profile; POST /api/ohsa; GET /api/me/ohsa; GET /api/me/history; GET/POST /api/client-intake; GET/POST /api/goals-baseline.
+- Plans: GET /api/programs/current; GET generated-workout-plan/progression/training-adaptation; POST progression evaluate/accept; POST/PATCH/complete generated executions; POST /api/programs.
+- Tracking: POST /api/workouts/track; GET reward/latest; GET/POST check-ins; GET progress/dashboard; GET/POST visual scans; POST avatar/upload.
+- Privileged control-plane routes at server.js route block before product APIs: every diagnostics, observability, authorization, enforcement, audit, and readiness route needs explicit permission/denial proof.
+
+Routes requiring remediation or formal disposition:
+- /command: legacy unauthenticated compatibility write boundary; disable or authenticate/enforce every action.
+- POST /api/speak: unauthenticated upstream cost surface; authenticate/rate-limit/size-limit.
+- POST /api/challenges/pushup/results: unauthenticated public write and identity/performance-data integrity risk.
+- POST /api/pilot/events: unauthenticated telemetry pollution/privacy/log injection risk.
+- POST /api/auth/login, /register, /bridge: add rate limiting, brute-force controls, strict provider verification, and production allowlist policy.
+- POST /api/auth/logout: verify presented-token/JTI revocation behavior and multi-instance denylist consistency.
+- POST /api/billing/webhook: verify signature, replay, event idempotency, out-of-order events, and durable processing.
+- GET /health: minimize authorization config and absolute filesystem disclosure; split liveness/readiness.
+- Public exercise detail errors: do not return absolute jsonPath.
+- Visual scans/avatar: add consent, privacy/audit/retention controls; ensure feature-disabled UI is unreachable.
+- Generated plan/progression/adaptation reads and mutations: decide and consistently enforce membership entitlement.
+- Active scoring templates: prove sanitizeTemplateForPublic excludes captures, test results, and operator metadata.
+- POST /api/programs: exhaustively test client/trainer/admin cross-user assignment semantics.
+
+Input/output/mass assignment:
+- Core profile, OHSA, session, retention, billing, and journey routes call validators.
+- Nutrition and execution services validate locally but use inconsistent schemas; generated execution PATCH accepts req.body at the route boundary and depends on service allowlisting.
+- Persistence keys derive from req.auth.userId on self-service routes, limiting client mass assignment of owner ID.
+- Dynamic browser innerHTML is extensive. Escape helpers exist in several runtimes, but output safety is not systematically proven.
+- Profile logging currently copies sensitive input to logs, defeating otherwise user-scoped response controls.
+
+Session assumptions:
+- Tokens are JavaScript-readable rather than HttpOnly cookies; DOM XSS compromises the session.
+- CORS permits all origins when ALLOWED_ORIGINS is empty.
+- Logout and revocation depend on durable, shared denylist state.
+- Membership is bypassed by default in tests unless MEMBERSHIP_GATE_TEST_ENFORCED=true.
+- Weak/default secret and bridge configurations are warnings unless strict startup is enabled.
+
+PERSISTENCE:
+Journey:
+- One mutable draft; no immutable draft history, compare-and-swap, or cross-device conflict detection.
+- Lazy legacy migration writes during GET and has no migration ledger.
+- Repeated submit overwrites timestamps/current derived records rather than appending immutable submission snapshots.
+
+Journey Profile:
+- Version/provenance exists in derived outputs, but dedicated immutable historical profile snapshots are absent.
+- Recommendation and plan source-profile versions are useful but not referentially enforced.
+
+generatedWorkoutPlan:
+- Current compatibility projection. It can diverge from lifecycle history after partial/manual/legacy writes.
+
+generatedWorkoutPlans:
+- Plan version/status history supports progression. No database uniqueness constraint protects planVersion or active-plan cardinality under concurrency.
+
+generatedWorkoutExecutions:
+- User-scoped lookup protects ownership. Start needs concurrent duplicate-start proof. Completion is repeat-aware but performs tracking in a second update.
+
+generatedWorkoutProgressions:
+- Evaluation deduplicates by fromPlanVersion and acceptance is repeat-safe in one process. Concurrent processes can still race.
+- No compensating rollback record; statuses/timestamps are mutated.
+
+Training adaptation:
+- Deterministic outputs are traceable only to the extent input versions/reason codes are persisted.
+- Late edits to check-ins/executions and recalculation behavior lack concurrency/migration proof.
+
+Nutrition:
+- Weekly plan duplicate prevention and mission credit behavior have tests.
+- Journal edit/delete mutates health-related truth without audit/tombstone history.
+- Entries, meals, grocery state, missions, and plans grow inside one user file; reads scan and writes rewrite it.
+- Provider provenance does not create a durable, versioned copy of all external source semantics.
+
+Assessments:
+- OHSA is append-oriented; scans are gated. Records are plaintext application JSON absent documented platform encryption/key policy.
+- Retention, deletion/export, backup, and access audit are not encoded.
+
+workoutTracking:
+- Append history exists, while weekly check-ins are upserted.
+- Stable idempotency is inconsistent across legacy tracking, structured sessions, generated executions, and /command.
+- Partial bridges can create orphan/disagreeing representations.
+
+Member home:
+- Correctly computed rather than persisted, avoiding a stale duplicate snapshot.
+- Reads are not from one immutable request snapshot and can observe mixed versions.
+
+Unbounded growth, rollback, migration, cross-device:
+- User arrays have no explicit archival/pagination/retention ceiling.
+- No orphan scanner, database constraints, transaction log, point-in-time restore, migration CLI, schema compatibility matrix, or restore drill was found.
+- Cross-device persistence works only for successfully completed server writes; concurrent device writes are last-writer-wins.
+- Local file storage assumes one process and durable shared volume; ephemeral/serverless/horizontal deployments are unsafe.
+
+AUTHORIZATION:
+- Self-service routes generally pass req.auth.userId; object IDs are resolved within the user record.
+- Explicit target IDs use ensureUserScopedAccess; builder routes use role middleware; control-plane routes use permissions; selected product routes use membership entitlement.
+- Authorization is not proven complete because there is no generated route contract across all 109 route declarations.
+- Required matrix: unauthenticated 401; wrong role 403; other-user object nondisclosure; owner success; admin/trainer delegation; entitlement 402; feature flag off; revoked/expired token; malformed claims; bootstrap admin; control-plane audit event.
+- UI hiding is not a control. Direct URLs to template builder, diagnostics, pilot, avatar, and scan surfaces must be tested against server enforcement.
+
+VALIDATION:
+Only audit-safe checks were used. No application code was modified to make checks pass.
+- npm test: PASS, 347 passed, 0 failed.
+- npm run lint: PASS.
+- Application-owned JavaScript syntax validation with node --check, excluding node_modules and public/vendor ESM: PASS.
+- git diff --check: PASS after report update.
+- Startup: PASS with temporary audit-only PORT, AUTH_TOKEN_SECRET, and PILOT_LOGIN_PASSWORD.
+- Health HTTP: PASS (200 and ok:true); readiness: FAIL (degraded:true, preflight.ok:false, strictStartup.passed:false).
+- npm audit --omit=dev: WARNING, registry audit endpoint returned HTTP 403; dependency vulnerability status could not be established from the environment.
+- npm run repo:route-audit: PASS with two warnings because live frontend asset probes had no running target during that tool invocation; the script generated its normal report, which was reverted to avoid unrelated changes.
+- Static route inventory: 109 app route declarations reviewed.
+- Test inventory: 48 *.test.js files reviewed; full suite executed.
+
+CONCURRENCY AND IDEMPOTENCY:
+- userStore update is synchronous only within one event loop; it is not a lock across processes/containers and has no optimistic version.
+- Two devices/processes can load the same user, apply different mutations, and overwrite one another.
+- Generated evaluation/accept and nutrition weekly-plan/mission logic are logically duplicate-aware in serial execution, not proven under parallel execution.
+- Generated completion spans two writes; crash/retry can separate execution completion from tracking/reward/progression evidence.
+- Webhook event replay/out-of-order handling requires durable event IDs and transaction proof.
+- Intake submit, generated start, legacy workout tracking, check-in upsert, meal logging, manual mission progress, and public challenge results need explicit stable idempotency keys or documented repeat semantics.
+- Required tests: parallel worker writes, two-tab/two-device writes, process kill between writes, corrupt/truncated file, ENOSPC/permission error, webhook replay/out-of-order, retry after response loss, and reconciliation/orphan scan.
+
+FRONTEND:
+Member-facing pages/runtimes:
+- public/index.html and app/boot/hydration/auth/retention runtimes: application shell, login, onboarding, navigation, member state.
+- public/dashboard.html and dashboard runtimes: progress/member projections.
+- public/workout.html plus workout-runtime, session-write, pose, rep-analysis, form-engine, HUD, avatar, progression, and generated-workout runtimes: delivery and device inference.
+- public/exercise-library.html/runtime: exercise search and local selection handoff.
+- public/nutrition.html/runtime: journal, weekly grocery, missions, summaries, education.
+- public/membership.html/runtime: plan, membership status, embedded Stripe checkout/portal.
+- Account/profile/intake surfaces: authenticated member writes and journey compatibility paths.
+- Exercise-template-builder and operational/diagnostic/pilot pages: not ordinary member flows but shipped/routable assets requiring role-aware visibility.
+
+Loading/empty/error/retry:
+- Loading/empty copy exists for generated plan, nutrition, membership, exercise library, retention, and leaderboard states.
+- Error handling is inconsistent: some modules announce/render errors; some async click handlers throw; 401/402 behavior differs by client.
+- Central retry/backoff/abort behavior is absent. Response parsing assumes JSON in several direct fetch clients.
+- Stale browser state spans APP_AUTH, RuntimeState, BackendRead, localStorage keys, and direct location.origin requests.
+
+Navigation dead ends/confusing paths:
+1. Exercise library stores selection in localStorage then redirects to /index.html#today-workout; another device, storage clear, or failed handoff loses the continuation.
+2. Generated-plan empty state does not always provide a direct intake action inside the component.
+3. Progression evaluation can surface before clear eligibility; failures do not consistently link to the needed check-in/session/review.
+4. Health-restricted plan copy does not consistently link to one review/contact workflow.
+5. Avatar/scan bundles may be visible while endpoints return feature-disabled 404.
+6. Legacy profile/intake/goals and canonical wizard can write different records without reconciliation explanation.
+7. Membership 402 may become a generic error rather than a trial/membership action.
+8. Token expiry/logout may leave unauthorized panels because multiple clients recover differently.
+9. Root-level duplicate assets may be edited while public versions are served.
+10. Operational/template-builder pages rely on direct URLs and fragmented role-aware navigation.
+11. Refresh/back after modal/generated session activity needs focus and state restoration proof.
+12. Offline/timeout/retry after a successful server write can encourage duplicate submission.
+
+Legacy conflicts and unreachable features:
+- /command, legacy session/profile/intake/goals/tracking, and canonical APIs coexist.
+- Root/public runtime copies and compatibility globals can conflict.
+- Feature flags leave avatar/scan code present but default-inaccessible.
+- Server authority is strongest after writes; local workout selection and transient pose/rep state are device-only and not cross-device.
+
+ACCESSIBILITY:
+Positive static evidence includes semantic buttons/headings, aria-label, aria-live, role=alert, aria-pressed, dialog use, and focus restoration in generated workout.
+
+Unproven/defective risk areas:
+- No axe, keyboard, screen-reader, contrast, reduced-motion, zoom/reflow, or touch-target automated release gate.
+- Dynamic innerHTML replacement can destroy focus/live-region continuity.
+- Dialog trap, Escape, inert background, initial/return focus, and unsupported fallback need browser proof.
+- Camera/pose/avatar/audio experiences need equivalent nonvisual/nonaudio controls and status.
+- Canvas/3D/pose overlays need accessible alternatives; sensor success cannot be the only completion path.
+- Form errors must associate to fields, focus the first invalid field, and announce consistently.
+- Responsive validation is needed at mobile widths, 200%/400% zoom, landscape, virtual keyboard, and long translated/user content.
+
+PERFORMANCE:
+BLOCKER:
+- Synchronous whole-user JSON read/parse/stringify/write has no concurrency control and can block the event loop, lose writes, or corrupt production state (F-001).
+
+HIGH:
+- Member home fans out across seven services; each can independently load/aggregate the same user and journey read can lazily write (F-012).
+- Growing nutrition, execution, check-in, and tracking arrays are repeatedly scanned and the whole aggregate is rewritten (F-014).
+- Generated completion performs a second full user update for tracking (F-005).
+- workout.html is 4,773 lines and loads a broad runtime/device surface; lazy-load behavior needs browser network/CPU proof.
+
+MEDIUM:
+- Dashboard/history/nutrition/progression/adaptation repeatedly aggregate embedded arrays.
+- Hydration clients can call overlapping /api/me, onboarding, member-home, plan, progression, dashboard, and nutrition projections.
+- Shared ops JSON stores can serialize/block global work.
+- Exercise index/search is a linear filter and must confirm caching behavior.
+
+LOW:
+- JSON deep clones add size-proportional CPU.
+- Full innerHTML panel replacement reparses markup and rebinds handlers.
+- Verbose logging serializes payloads and adds I/O.
+
+INFORMATIONAL:
+- Establish realistic long-history fixtures and budgets before optimizing.
+- Measure event-loop delay, p50/p95/p99 endpoint latency, file size, parse/stringify time, browser JS parse/execute, requests per page, and memory.
+- Optimize only after correctness/persistence boundaries are fixed; caching inconsistent snapshots would worsen correctness.
+
+OBSERVABILITY:
+- Positive: request IDs, standardized errors, request logs, admin audit chain/checkpoints, startup warnings, health diagnostics, control-plane alerts.
+- Gaps: sensitive profile payload logging; mixed console/structured formats; no uniform latency/result metrics; no member-home dependency timing; no persistence file-size/write-failure metrics; no SLO/error-budget contract.
+- Admin audit is file-backed and shares durability limitations.
+- Read access to health/assessment/nutrition is not comprehensively audited as sensitive-data access.
+- Required: field allowlist/redaction, structured severity, route outcome/latency, trace correlation, write/retry/orphan metrics, alert ownership, retention/access policies, and privacy-safe diagnostics.
+
+DEPLOYMENT:
+Environment:
+- Production must require strong AUTH_TOKEN_SECRET, strict verified trust, explicit ALLOWED_ORIGINS, bootstrap super-admin, CONTROL_PLANE_STRICT_STARTUP, provider secrets/URLs, billing webhook/price/return settings where enabled, durable data paths, and explicit feature flags.
+- Development/test bypasses must be impossible in production.
+
+Startup/health:
+- Startup and exercise index pass. Default behavior warns rather than fails.
+- /health returns HTTP 200 while degraded/not ready and discloses internal authorization/storage detail.
+- Split minimal liveness from authenticated/detailed readiness; deployment must gate traffic on readiness.
+
+Runtime assumptions:
+- Node >=18 is declared; audit ran on Node 24.15.0. Pin and test the production major.
+- Current stores assume one writer and durable local volume; rolling replicas, serverless, ephemeral disks, and horizontal scale are unsafe.
+- Verify reverse-proxy/trust-proxy behavior before relying on forwarded origin headers.
+- Avatar uploads under public web root are unsuitable for private biometric media.
+
+Rollback/backup/migration:
+- Git rollback does not roll back JSON data/schema.
+- No predeploy snapshot gate, encrypted backup proof, restore drill, migration ledger, downgrade path, or point-in-time recovery was found.
+- Provider side effects, Stripe events, and token revocation need independent incident/rollback plans.
+
+Production decision:
+NO-GO until both blockers close, HIGH security/correctness items close or receive explicit ownership, dependency audit succeeds in a permitted environment, and browser/accessibility/production-config acceptance passes.
+
+TEST COVERAGE:
+Phase map:
+- Phase 1 Universal Intake: test/journey-intake.test.js; test/retention-journey-wizard.test.js.
+- Phase 2 Journey Wizard: retention-journey-wizard, journey-intake, form-feedback tests.
+- Phase 3 Journey Profile: journey-intake and journey-recommendations tests.
+- Phase 4 Canonical Personalization: personalization-service and journey-recommendations tests.
+- Phase 5 Program Generator: program-generation tests.
+- Phase 6 Workout Plan Builder: workout-plan-builder and program-generation tests.
+- Phase 7 Workout Delivery: generated-workout-delivery, session-api, session-write-client, and phase20-workout-persistence-auth tests.
+- Phase 8 Weekly Progression: generated-workout-progression; weekly-nutrition-missions for nutrition progression.
+- Phase 9 Training Adaptation: training-adaptation tests.
+- Phase 10 Member Experience: member-home, auth-shell/hydration/runtime, membership, and nutrition tests.
+- Cross-cutting security/runtime: auth-hardening-phase13, auth-migration, auth-shell-guard, auth-login-form-submit, pilot-login, control-plane-hardening, route/runtime tests.
+
+Missing coverage:
+- Full Phase 1–10 browser journeys on desktop/mobile, refresh/back, two tabs/devices, offline/timeouts, response loss, token expiry/revocation, 402, and provider errors.
+- Accessibility automation and manual keyboard/screen-reader evidence.
+- Multi-process/filesystem concurrency, crash, partial JSON, disk-full, permissions, recovery, and restore.
+- Historical schema migration matrix, future-version rejection, downgrade/forward-fix, and backup restore.
+- Exhaustive 109-route authentication/role/ownership/entitlement/feature matrix.
+- Rate limit, replay, brute force, CORS, DOM XSS sink, log redaction, oversized nested input, prototype-pollution, Unicode/path edge tests.
+- Concurrent idempotency for intake submit, execution start/complete, progression evaluate/accept, tracking, check-in, meal/manual mission progress, and webhook.
+- Stripe/food/TTS malformed/timeout/provider acceptance and camera/microphone denial/device loss.
+- Production configuration test with strict startup, real readiness criteria, no bypass, durable paths, backup/restore, and supported Node version.
+- Load/latency/memory budgets for startup, member home, dashboard, progression, adaptation, and long user histories.
+
+BLOCKERS:
+F-001
+Severity:
+BLOCKER
+Component:
+userStore and all Phase 1–10 persistence
+Evidence:
+src/repositories/userStore.js persists one JSON document per user; services use loadUser/updateUser; no transactional store, cross-process lock, optimistic version, atomic journal, or recovery protocol was identified.
+User impact:
+A member can lose intake, workout, progression, nutrition, or assessment updates when two devices/requests race or a process/disk fails.
+Technical impact:
+Lost updates, partial/corrupt records, blocked event loop, unsafe replicas, unsafe ephemeral deployment, and no reliable rollback.
+Recommended correction:
+Adopt transactional durable persistence with schema constraints, atomic migration, idempotency, integrity scanning, encrypted backup, and tested restore. If an interim file stage is unavoidable, use atomic temp-write/fsync/rename, locking, versions, and reconciliation.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-002
+Severity:
+BLOCKER
+Component:
+Production configuration and readiness
+Evidence:
+Validated /health returned degraded:true, preflight.ok:false, strictStartup.passed:false, no bootstrap super-admin, low-trust modes enabled, and strict startup disabled.
+User impact:
+Users may be routed to a deployment that is alive but not safely configured for authentication, administration, billing, or trust.
+Technical impact:
+Misconfiguration fails open or only warns; orchestration cannot distinguish liveness from safe readiness.
+Recommended correction:
+Define and validate a production environment schema, enable strict startup, require verified trust and bootstrap recovery, split liveness/readiness, minimize public health output, and gate deployment on readiness.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13B – Deployment readiness
+
+HIGH FINDINGS:
+F-003
+Severity:
+HIGH
+Component:
+Profile and health-data logging
+Evidence:
+server.js logs the complete incoming profile payload and repeats it on validation failure.
+User impact:
+Identity, body measurements, injuries, or health details can be exposed to operators/log consumers beyond intended account access.
+Technical impact:
+Sensitive data duplication, excessive retention, incident scope expansion, and privacy/compliance risk.
+Recommended correction:
+Log only allowlisted metadata; redact identity/health fields; add log-capture redaction tests and production retention/access policy.
+Estimated effort:
+Small
+Recommended phase:
+Phase 12A – Critical correctness and security
+
+F-004
+Severity:
+HIGH
+Component:
+Legacy and unauthenticated write/cost routes
+Evidence:
+/command remains a public compatibility boundary; /api/speak, pushup results, and pilot events lack requireAuth; health showed legacy fallback enabled and all action enforcement false.
+User impact:
+Abuse can pollute records/leaderboards/telemetry, incur provider cost, or bypass expected authenticated workflows.
+Technical impact:
+Weak trust boundary, replay/brute-force/cost amplification, and configuration-dependent write security.
+Recommended correction:
+Authenticate or explicitly isolate each route, rate/size/replay limit it, enforce all legacy actions, migrate clients, and disable /command and low-trust bridge modes in production.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 12A – Critical correctness and security
+
+F-005
+Severity:
+HIGH
+Component:
+Generated workout completion integrity
+Evidence:
+generatedWorkoutService.complete first updates generated execution, then separately calls userDataService.appendWorkoutTracking.
+User impact:
+A completed workout can be missing from history, rewards, progression, adaptation, or member home after a failure/retry.
+Technical impact:
+Non-atomic duplicate/orphan state and ambiguous reconciliation.
+Recommended correction:
+Commit completion and tracking in one transaction with a stable idempotency key, or use a durable outbox and reconciliation job; test crash/retry boundaries.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 12A – Critical correctness and security
+
+F-006
+Severity:
+HIGH
+Component:
+Browser API/auth authority
+Evidence:
+APP_AUTH, MufasaBackendRead, RuntimeState, localStorage base URLs, session-write, auth-core, and direct fetch/location.origin calls coexist.
+User impact:
+Members can see stale data, inconsistent sign-in/membership recovery, duplicate submissions, or dead panels.
+Technical impact:
+Token/origin drift, inconsistent error contracts, unnecessary calls, and increased DOM-XSS session impact.
+Recommended correction:
+Establish one browser API/auth authority with one server origin, token lifecycle, request dedupe, abort/retry policy, and 401/402 recovery; retain UI design.
+Estimated effort:
+Large
+Recommended phase:
+Phase 12B – Browser acceptance defects
+
+F-007
+Severity:
+HIGH
+Component:
+Authorization assurance
+Evidence:
+Middleware patterns are generally sound, but no exhaustive contract maps all 109 route declarations to authentication, role, permission, ownership, membership, feature, and output controls.
+User impact:
+A missed gate can expose or mutate another member’s health, workout, nutrition, billing, or operational data.
+Technical impact:
+IDOR/privilege-regression risk cannot be bounded by the current tests.
+Recommended correction:
+Generate a route inventory contract and black-box 401/403/402/cross-user matrix for every authenticated route and role, including sanitizer and audit assertions.
+Estimated effort:
+Large
+Recommended phase:
+Phase 12A – Critical correctness and security
+
+F-008
+Severity:
+HIGH
+Component:
+Browser and accessibility release confidence
+Evidence:
+The 4,773-line workout page and dynamic member runtimes have static/unit coverage but no full browser or automated accessibility suite.
+User impact:
+Critical onboarding, workout, nutrition, membership, focus, keyboard, and mobile failures can ship undetected.
+Technical impact:
+Hydration/auth races, navigation dead ends, responsive defects, and accessibility regressions lack a release gate.
+Recommended correction:
+Add end-to-end browser journeys, mobile viewports, two-tab/refresh/token-expiry/provider mocks, axe checks, keyboard and manual assistive-technology acceptance.
+Estimated effort:
+Large
+Recommended phase:
+Phase 12C – Accessibility and responsive defects
+
+F-009
+Severity:
+HIGH
+Component:
+Health/biometric privacy and lifecycle
+Evidence:
+Profile, OHSA, scans, avatar, workout, and nutrition records are plaintext application files; consent, encryption/key policy, access audit, retention/export/deletion, and backup policy are not comprehensively implemented/documented.
+User impact:
+Sensitive personal and health data can be overexposed, retained too long, or unavailable for export/deletion.
+Technical impact:
+Large breach scope and unproven privacy/operational obligations.
+Recommended correction:
+Classify data; use encrypted private storage/key management; add consent, least privilege, access audits, retention, deletion/export, backup, and incident procedures.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13A – Release hardening
+
+F-010
+Severity:
+HIGH
+Component:
+Production security defaults and session assumptions
+Evidence:
+Empty ALLOWED_ORIGINS permits any origin; bearer tokens are JavaScript-readable; default/weak secrets and low-trust bridges warn unless strict startup is active; denylist is local file state.
+User impact:
+A configuration error or DOM XSS can compromise accounts, and logout may not revoke sessions across instances.
+Technical impact:
+Fail-open configuration, expanded XSS blast radius, and inconsistent multi-instance revocation.
+Recommended correction:
+Require explicit origins and secrets, strict verified identity, CSP/sink hardening, shared durable revocation or short-lived token design, and production-negative tests.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13A – Release hardening
+
+MEDIUM FINDINGS:
+F-011
+Severity:
+MEDIUM
+Component:
+Journey and profile immutable history
+Evidence:
+memberJourneyProfile is overwritten and submit updates current derived records; no append-only intake/profile submission ledger exists.
+User impact:
+Members and coaches cannot reliably reconstruct historical consent, health flags, or the recommendation basis.
+Technical impact:
+Weak auditability, rollback, and migration verification.
+Recommended correction:
+Append versioned snapshots with actor, source, schema, timestamps, and integrity hash while retaining an explicit current pointer.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13A – Release hardening
+
+F-012
+Severity:
+MEDIUM
+Component:
+Member-home and dashboard composition
+Evidence:
+memberHomeService calls journey, personalization, plan, progression, adaptation, nutrition, and progress services, which can repeatedly load/aggregate the user.
+User impact:
+Home/dashboard latency and inconsistent cards increase as history grows.
+Technical impact:
+Repeated synchronous I/O and mixed-version snapshots.
+Recommended correction:
+Use one immutable request-scoped user snapshot and pure projections; instrument and enforce latency budgets.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13A – Release hardening
+
+F-013
+Severity:
+MEDIUM
+Component:
+Migration and rollback
+Evidence:
+Legacy migration occurs lazily during reads; no migration runner, ledger, dry-run, forward-version rejection, downgrade, or restore gate was found.
+User impact:
+A bad release can silently rewrite or make member records unreadable without safe recovery.
+Technical impact:
+Unrepeatable schema changes and no controlled rollback.
+Recommended correction:
+Create explicit versioned migrations with dry-run, checksums, backups, compatibility policy, rollback/forward-fix runbooks, and fixtures for every historical schema.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-014
+Severity:
+MEDIUM
+Component:
+Unbounded user-record growth
+Evidence:
+Nutrition entries/meals/plans/missions, executions, tracking, check-ins, and assessments are embedded arrays scanned and rewritten as one user file.
+User impact:
+Long-tenure accounts become slower and more failure-prone.
+Technical impact:
+Unbounded parse/memory/linear scan/stringify/write amplification.
+Recommended correction:
+Move to indexed/paginated storage, define retention/archive policy, and load-test realistic long histories.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-015
+Severity:
+MEDIUM
+Component:
+Backup, restore, orphan, and privacy operations
+Evidence:
+No automated orphan scanner, encrypted backup proof, restore drill, point-in-time recovery, deletion/export workflow, or recovery SLO was identified.
+User impact:
+Data can be permanently lost or remain inconsistent/unmanageable after incidents.
+Technical impact:
+No operational recovery or integrity assurance.
+Recommended correction:
+Implement scheduled encrypted backups, restore drills, integrity/orphan reports, retention jobs, export/deletion, and measured RPO/RTO.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-016
+Severity:
+MEDIUM
+Component:
+Duplicate plan and workout models
+Evidence:
+generatedWorkoutPlan/generatedWorkoutPlans and executions/structured sessions/workoutTracking/command records overlap.
+User impact:
+Different pages can disagree about current plan, completion, history, reward, or next action.
+Technical impact:
+Drift, orphan records, confusing migrations, and duplicated aggregation.
+Recommended correction:
+Document one authoritative lifecycle, treat compatibility fields as projections, add consistency/reconciliation checks, then retire layers only with telemetry and parity tests.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13A – Release hardening
+
+F-017
+Severity:
+MEDIUM
+Component:
+CORS and DOM output safety
+Evidence:
+CORS allows every origin when unconfigured; numerous dynamic innerHTML sinks exist; escaping is local and inconsistent rather than centrally verified.
+User impact:
+Injected content can steal a bearer token or alter health/workout actions.
+Technical impact:
+High-impact DOM XSS and configuration risk.
+Recommended correction:
+Require production origin allowlist, deploy a strong CSP, inventory/test sinks, sanitize untrusted rich content, and prefer textContent/DOM construction.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13A – Release hardening
+
+F-018
+Severity:
+MEDIUM
+Component:
+Member navigation and recovery
+Evidence:
+LocalStorage exercise handoff, feature-gated routes, fragmented 401/402 handling, generic progression errors, and dual legacy/canonical paths create documented dead ends.
+User impact:
+Members can be stranded after refresh, device change, health restriction, membership gate, or token expiry.
+Technical impact:
+Unreliable end-to-end completion and duplicate retry risk.
+Recommended correction:
+Add explicit recovery actions for intake, health review, membership, sign-in, and retry; server-persist continuation state; validate every route without redesign.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 12B – Browser acceptance defects
+
+F-019
+Severity:
+MEDIUM
+Component:
+Environment contract
+Evidence:
+Many environment toggles alter auth, trust, billing, features, and compatibility; most invalid/default states warn unless strict startup is enabled.
+User impact:
+Identical code can behave insecurely or lose functionality between environments.
+Technical impact:
+Configuration drift and unreproducible deployments.
+Recommended correction:
+Use a typed required-by-environment schema, secret references, config fingerprint, forbidden production values, and predeployment validation.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-020
+Severity:
+MEDIUM
+Component:
+Assessments and mutable nutrition history
+Evidence:
+OHSA is append-oriented, but profile/journal edits and deletes mutate health-related truth without comprehensive version/tombstone/audit history.
+User impact:
+Members/coaches cannot reconstruct why historical guidance changed.
+Technical impact:
+Weak clinical-safety traceability and rollback.
+Recommended correction:
+Version health-affecting records, preserve tombstones/audit metadata, and connect recommendations to immutable input versions.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13A – Release hardening
+
+LOW FINDINGS:
+F-021
+Severity:
+LOW
+Component:
+Health and error response semantics
+Evidence:
+/health returns 200 when degraded/not ready and exposes detailed authorization/storage state; public exercise errors can include jsonPath.
+User impact:
+Users may be routed to degraded service; attackers gain unnecessary topology detail.
+Technical impact:
+Misleading orchestration/alerts and minor information disclosure.
+Recommended correction:
+Split status endpoints, return readiness failure status, authenticate detailed diagnostics, and remove filesystem paths from client errors.
+Estimated effort:
+Small
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-022
+Severity:
+LOW
+Component:
+Server composition
+Evidence:
+server.js is 2,451 lines spanning product, ops, auth, billing, providers, uploads, and static routes.
+User impact:
+Indirect: broader regressions and slower incident resolution.
+Technical impact:
+High review burden and blast radius.
+Recommended correction:
+Document route ownership now; modularize only after freeze with contract/parity tests and no redesign.
+Estimated effort:
+Large
+Recommended phase:
+Phase 13A – Release hardening
+
+F-023
+Severity:
+LOW
+Component:
+Duplicate assets and dead code
+Evidence:
+Root/public copies of fitness, dashboard, auth-state, runtime-orchestrator, and HTML assets exist; PUBLIC_DIR serves public assets.
+User impact:
+Fixes can appear absent if the wrong copy is edited.
+Technical impact:
+Dead code, bundle ambiguity, and maintenance cost.
+Recommended correction:
+Generate a served/imported asset graph and checksums; remove only proven obsolete copies after browser parity.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13A – Release hardening
+
+F-024
+Severity:
+LOW
+Component:
+Production-configuration testing
+Evidence:
+Tests normally bypass membership unless explicitly enforced and do not run a complete strict production environment acceptance scenario.
+User impact:
+Production-only gating or startup failures can escape CI.
+Technical impact:
+False confidence from development/test defaults.
+Recommended correction:
+Add CI profiles for strict production startup, entitlements, verified bridge, origins, providers, readiness, and forbidden bypasses.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13B – Deployment readiness
+
+F-025
+Severity:
+LOW
+Component:
+Compatibility catalog hygiene
+Evidence:
+legacyDependencyCatalog in server.js declares the profile key twice with the same value.
+User impact:
+None currently observable.
+Technical impact:
+Overwritten duplicate key signals weak dead-code review.
+Recommended correction:
+Remove the duplicate under a focused catalog assertion after freeze.
+Estimated effort:
+Small
+Recommended phase:
+Phase 13A – Release hardening
+
+F-026
+Severity:
+LOW
+Component:
+Syntax validation tooling
+Evidence:
+A broad node --check treats vendored Three.js ESM as CommonJS and fails even though application-owned syntax passes.
+User impact:
+None directly.
+Technical impact:
+Noisy validation can hide real syntax failures or encourage skipping the check.
+Recommended correction:
+Codify application source globs and validate vendor ESM with ESM-aware tooling/integrity checks.
+Estimated effort:
+Small
+Recommended phase:
+Phase 13A – Release hardening
+
+F-027
+Severity:
+LOW
+Component:
+Frontend rendering performance
+Evidence:
+Large panels use template-string innerHTML replacement and handler rebinding; multiple modules deep-clone JSON projections.
+User impact:
+Slower interaction on low-end/mobile devices as data grows.
+Technical impact:
+Repeated parse, allocation, and garbage collection.
+Recommended correction:
+Measure first; incrementally update high-cost panels and avoid unnecessary clones while preserving UI.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 12B – Browser acceptance defects
+
+INFORMATIONAL FINDINGS:
+F-028
+Severity:
+INFORMATIONAL
+Component:
+Output sanitization inventory
+Evidence:
+Several runtimes use escape helpers and APIs return JSON, but no automated map links every untrusted field to every DOM sink.
+User impact:
+No confirmed exploit; future fields may be rendered unsafely.
+Technical impact:
+Sanitization assurance is manual and fragile.
+Recommended correction:
+Add a dangerous-sink lint/test inventory and review all member-generated/provider strings.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 12A – Critical correctness and security
+
+F-029
+Severity:
+INFORMATIONAL
+Component:
+Feature flags and unreachable UI
+Evidence:
+Avatar and visual scans default disabled while code/assets remain; pilot/diagnostic/operational pages coexist with member delivery.
+User impact:
+Potential confusing links or unnecessary downloads.
+Technical impact:
+Reachability and exposure are hard to reason about.
+Recommended correction:
+Maintain and test a feature-route-navigation manifest for each environment.
+Estimated effort:
+Small
+Recommended phase:
+Phase 12B – Browser acceptance defects
+
+F-030
+Severity:
+INFORMATIONAL
+Component:
+Observability maturity
+Evidence:
+Request IDs and audit logs exist, but uniform route latency, result, persistence size/failure, dependency timing, and SLO metrics are absent.
+User impact:
+Slower detection and resolution of member-facing degradation.
+Technical impact:
+Capacity and regression decisions lack quantitative evidence.
+Recommended correction:
+Add privacy-safe structured metrics/traces, SLOs, alert ownership, and retention controls.
+Estimated effort:
+Medium
+Recommended phase:
+Phase 13A – Release hardening
+
+F-031
+Severity:
+INFORMATIONAL
+Component:
+Direct dependency vulnerability status
+Evidence:
+npm audit --omit=dev could not query the registry advisory endpoint because it returned HTTP 403.
+User impact:
+No vulnerability was confirmed, but exposure is unknown.
+Technical impact:
+Release evidence lacks a current dependency advisory result.
+Recommended correction:
+Run npm audit or approved SCA tooling in CI/network environment with registry access; triage without opportunistic upgrades during audit freeze.
+Estimated effort:
+Small
+Recommended phase:
+Phase 13A – Release hardening
+
+F-032
+Severity:
+INFORMATIONAL
+Component:
+Route audit live probes
+Evidence:
+npm run repo:route-audit passed but warned that two Three.js frontend assets could not be live-probed because no target was running during that invocation.
+User impact:
+No confirmed failure; 3D/avatar assets may fail only in deployed routing.
+Technical impact:
+Static route inventory is stronger than live asset evidence.
+Recommended correction:
+Run existing route audit against the started release candidate and require all intended asset probes.
+Estimated effort:
+Small
+Recommended phase:
+Phase 12B – Browser acceptance defects
+
+REMEDIATION BATCHES:
+Batch 1 — Phase 12A critical correctness and security:
+F-003, F-004, F-005, F-007, F-028. Remove sensitive logs; control legacy/public routes; make completion recoverable/idempotent; establish authorization/sanitization contracts.
+
+Batch 2 — Phase 12B browser acceptance defects:
+F-006, F-018, F-027, F-029, F-032. Unify browser authority, close navigation/retry dead ends, validate performance/reachability/live assets without redesign.
+
+Batch 3 — Phase 12C accessibility and responsive defects:
+F-008. Deliver full browser, mobile, keyboard, axe, zoom/reflow, sensor-denial, and assistive-technology acceptance.
+
+Batch 4 — Phase 13A release hardening:
+F-009, F-010, F-011, F-012, F-016, F-017, F-020, F-022, F-023, F-025, F-026, F-030, F-031. Close privacy/security history, snapshot composition, compatibility consistency, DOM/CORS posture, observability, dependency evidence, and controlled cleanup.
+
+Batch 5 — Phase 13B deployment readiness:
+F-001, F-002, F-013, F-014, F-015, F-019, F-021, F-024. Durable transactional storage, production configuration/readiness, migrations, bounded storage, backup/restore, status semantics, and production CI.
+
+Batch exit rule:
+A batch is complete only when its corrections have automated evidence, rollback instructions, named ownership, and no unresolved blocker introduced by the change. Production remains NO-GO until Batch 5 and all predecessor release gates pass.
+
+VALIDATION RUN:
+PASS — npm test — 347 passed, 0 failed.
+PASS — npm run lint.
+PASS — find application-owned JavaScript excluding node_modules/public/vendor and run node --check.
+PASS — git diff --check after report update.
+PASS — startup with temporary audit-only PORT=31212, AUTH_TOKEN_SECRET, and PILOT_LOGIN_PASSWORD; exercise index present and server listened.
+PARTIAL/FAIL READINESS — curl /health returned HTTP 200 and ok:true, but degraded:true, preflight.ok:false, strictStartup.passed:false.
+WARNING — npm audit --omit=dev — registry advisory endpoint returned HTTP 403; vulnerability status unresolved due environment access.
+PASS WITH WARNINGS — npm run repo:route-audit — audit passed; two live frontend vendor probes lacked a running target during invocation.
+PASS — static route inventory review — 109 app route declarations.
+PASS — test inventory review — 48 test files; phase mapping recorded above.
+
+FILES CHANGED:
+reports/phase11-full-system-audit-report.txt only.
+No application code, configuration, UI, test, dependency, migration, generated application data, or deployment file was intentionally changed.
+
+COMMIT:
+Report-only workflow commit. The final commit hash is returned with the response/PR metadata because a commit cannot contain its own final hash without changing itself.
+
+REMAINING WORK:
+- Do not implement corrections in Phase 11.
+- Assign an owner and disposition to F-001 through F-032.
+- Start Batch 1 with F-003, F-004, F-005, F-007, and F-028.
+- Do not begin real-data browser acceptance until the “must fix before browser testing” gate closes.
+- Do not release until both blockers, all required HIGH findings, dependency audit, production readiness, migration/restore, browser, accessibility, and concurrency evidence pass.
+- Re-run only the approved validation suite after future remediation work and attach machine-readable route/test/config evidence.
+
+===== END REPORT =====
