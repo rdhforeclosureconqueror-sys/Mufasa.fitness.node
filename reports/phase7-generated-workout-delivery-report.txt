@@ -1,0 +1,65 @@
+===== BEGIN REPORT =====
+TITLE:
+Phase 7 – Generated Workout Plan Delivery and Session Execution
+
+STATUS:
+Complete. Generated plans are delivered as optional, member-owned recommendations and can be executed with server-authoritative progress and completion persistence.
+
+AUDIT RESULTS:
+Workout discovery currently lives in public/workout.html through the Today’s Workout selector, static pilot starters, Ma’at program option, exercise-library handoff, retention calendar, and canonical workout:selected events. The active workout experience uses workout-runtime.js, workout-progression-runtime.js, the camera/HUD controls, and canonical active-workout selection. Existing completion flows use POST /api/workouts/track, workout:completed browser events, dashboard-runtime.js, and retention-flow.js. Existing tracking accepts workoutId, programId, completionStatus, exercise/repetition/set data, form score, duration, calories, and notes through retention validators and userDataService. Session-level camera history is stored in user.sessions by sessionService; retention workout history is stored in user.workoutTracking. Coach assignment is persisted separately as user.program and read through /api/programs/current. Legacy entry points include static workout selection, exercise library selection, retention calendar detail, legacy fitness command routes, and pilot fallback selection.
+
+GENERATED PLAN API:
+Added authenticated GET /api/me/generated-workout-plan. It returns a safe read model with availability, precedence source, plan and generator versions, recommendation-only status, recommended identifier/title, week, deterministic sessions and prescriptions, progression guidance, restriction copy, generated timestamp, and persisted execution state. It omits user ownership fields and intake answers. Missing plans return the stable successful shape { available: false, plan: null, activeProgramSource: ... }.
+
+PROGRAM PRECEDENCE:
+The read model explicitly resolves coach-assigned user.program first, member-selected user.selectedProgram second, generated recommendation third, and legacy fallback last. An assigned program remains the active source and is shown above the optional generated recommendation; generated intake submission and execution never mutate it.
+
+WEEKLY PLAN UI:
+Added a compact Recommended weekly plan section to the existing Today’s Workout area. It presents the readable program title, recommendation-only label, frequency, session duration, current week, focus, exercise count, persisted state, and health restriction. Responsive cards reuse the existing page styling without replacing the workout experience.
+
+SESSION DETAIL:
+An accessible dialog renders only the persisted read model: title, focus, duration, ordered exercises, name, sets, reps/duration, rest, notes, equipment, and safe progression guidance. The browser does not generate, select, or substitute exercises.
+
+SESSION EXECUTION:
+Members can start or resume one in-progress execution, save exercise completed sets and completion state, leave/close the detail, return after refresh, and finish. Start, progress, and finish operations use authenticated API writes. The generated plan remains immutable.
+
+PERSISTENCE MODEL:
+Added version 1 generatedWorkoutExecutions on the member record. Each record has executionVersion, UUID executionId, planVersion, stable derived sessionId, weekNumber, status, startedAt, updatedAt, completedAt, and bounded exerciseProgress. Progress contains exerciseId, prescribedSets, completedSets, actualReps, actualDuration, completed, and notes. Writes validate session/exercise membership, integer bounds, booleans, string lengths, status, and authenticated ownership. Plans are referenced rather than copied.
+
+COMPLETION INTEGRATION:
+Completion atomically marks the execution and then appends one canonical generated-workout record to existing workoutTracking, refreshing the existing reward/retention authority. Repeated completion returns the existing result and does not append again. State is filesystem-backed user persistence, visible on refresh or another device, and never derives authority from localStorage.
+
+HEALTH REVIEW:
+Restricted plans expose explicit non-diagnostic restriction text. Only their sole restricted starter session is executable, progression is explicitly prohibited pending review, unrestricted content is not exposed, and completion copy states that completion does not imply medical clearance.
+
+ACCESSIBILITY:
+Session cards use native buttons; details use a labelled modal dialog; close restores focus to the opening control; status updates use a polite live region; every sets and completion input has an associated label; controls meet a 44-pixel minimum target; responsive grids, wrapping, bounded widths, and flex wrapping prevent horizontal overflow on mobile.
+
+FILES CHANGED:
+server.js
+src/services/generatedWorkoutService.js
+public/workout.html
+public/generated-workout-runtime.js
+test/generated-workout-delivery.test.js
+reports/phase7-generated-workout-delivery-report.txt
+
+TESTS:
+Focused generated delivery coverage verifies safe empty state, ownership isolation, precedence, recommendation visibility, weekly UI markers, detail and controls, start/resume persistence, progress validation, cross-read completion state, duplicate completion protection, health restrictions, plan immutability, legacy fallback, and absence of localStorage authority. Existing workout-plan builder, program generation, Journey, retention, and workout persistence suites also passed. The full repository suite passed 330 tests.
+
+VALIDATION:
+PASS: node --test test/generated-workout-delivery.test.js test/workout-plan-builder.test.js test/program-generation.test.js test/journey-intake.test.js test/retention-api.test.js test/phase20-workout-persistence-auth.test.js
+PASS: npm test
+PASS: npm run lint
+PASS: node --check server.js
+PASS: node --check src/services/generatedWorkoutService.js
+PASS: node --check public/generated-workout-runtime.js
+PASS: git diff --check
+PASS: PORT=3199 node server.js with curl -fsS http://127.0.0.1:3199/health (health returned ok; expected local configuration warnings remained visible and strict startup was not enabled).
+Screenshot tooling was unavailable in the container, so no browser screenshot was captured.
+
+COMMIT:
+Deliver generated plans through workout sessions
+
+REMAINING WORK:
+No required Phase 7 work remains. Deployment and push were intentionally not performed.
+===== END REPORT =====

@@ -456,6 +456,14 @@
       min-height: 60px;
       white-space: pre-wrap;
     }
+    .generated-plan { margin-top:12px; padding:14px; border:1px solid rgba(255,215,128,.35); border-radius:12px; overflow-wrap:anywhere; }
+    .generated-plan-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr)); gap:10px; }
+    .generated-session-card { min-width:0; padding:12px; border:1px solid rgba(255,255,255,.18); border-radius:10px; }
+    .generated-session-card button, .generated-session-dialog button { min-height:44px; }
+    .generated-session-dialog { width:min(680px,calc(100% - 24px)); max-height:90vh; overflow:auto; border-radius:12px; }
+    .generated-exercise { padding:10px 0; border-top:1px solid rgba(0,0,0,.15); overflow-wrap:anywhere; }
+    .generated-exercise-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .generated-exercise-controls input { width:7rem; max-width:100%; }
 
     .log-line { margin-bottom: 4px; }
     .log-line.you { color: #e5e7eb; }
@@ -1181,6 +1189,15 @@ skeletonOverlayActive: no</pre>
       <div id="workoutPlanView">
         Your workout plan will appear here after profile bootstrap and program selection.
       </div>
+      <section id="generatedWorkoutPlan" class="generated-plan" aria-labelledby="generatedWorkoutPlanTitle">
+        <h2 id="generatedWorkoutPlanTitle">Recommended weekly plan</h2>
+        <p id="generatedWorkoutPlanStatus" role="status" aria-live="polite">Sign in to load your recommendation.</p>
+        <div id="generatedWorkoutPlanContent"></div>
+      </section>
+      <dialog id="generatedSessionDialog" class="generated-session-dialog" aria-labelledby="generatedSessionTitle">
+        <button id="generatedSessionClose" type="button" class="secondary">Close session details</button>
+        <div id="generatedSessionContent"></div>
+      </dialog>
       <div class="small-card" style="margin-top:10px;">
         <strong>Event Leaderboard</strong>
         <p class="subtitle" style="margin:4px 0 8px 0;">View quick Push-Up Challenge results without starting intake or a program.</p>
@@ -1249,6 +1266,7 @@ skeletonOverlayActive: no</pre>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260507"></script>
+  <script src="/generated-workout-runtime.js?v=20260719"></script>
   <script src="/runtime-orchestrator.js?v=20260506"></script>
   <script src="/retention-loader-runtime.js?v=20260507"></script>
   <script src="/app-hydration-runtime.js?v=20260507"></script>
