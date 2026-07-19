@@ -51,6 +51,7 @@
       border-radius:12px;
       cursor:pointer;
       box-shadow: var(--glow);
+      min-height:44px;
     }
     .wrap{max-width:1100px; margin:0 auto; padding:16px;}
     .grid{
@@ -133,6 +134,10 @@
     .ai-summary-grid{display:grid;grid-template-columns:160px 1fr;gap:6px 10px;font-size:12px;}
     .ai-summary-grid .label{color:var(--muted);}
     @media (max-width:700px){.ai-summary-grid{grid-template-columns:1fr;}}
+    .member-home-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .member-home-actions a{text-decoration:none;overflow-wrap:anywhere}
+    .member-home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px}
+    @media(max-width:600px){header{align-items:flex-start;flex-direction:column}header>div:last-child{width:100%;flex-wrap:wrap}.wrap{padding:10px}.row{flex-direction:column}}
   </style>
 </head>
 <body>
@@ -150,6 +155,13 @@
   </header>
 
   <div class="wrap">
+    <main id="memberHome" aria-labelledby="memberHomeTitle">
+      <section class="card" style="margin-bottom:14px;">
+        <h2 id="memberHomeTitle">Your member home</h2>
+        <p id="memberHomeStatus" class="muted" role="status" aria-live="polite">Loading your Journey and next step…</p>
+        <div id="memberHomeContent" hidden></div>
+      </section>
+    </main>
     <div class="grid">
       <div class="card">
         <h2>This Week</h2>
@@ -219,6 +231,7 @@
   <script src="/diagnostics-client.js?v=20260426"></script>
   <script src="/backend-read.js"></script>
   <script src="/dashboard-runtime.js?v=20260514"></script>
+  <script src="/member-home-runtime.js?v=20260719"></script>
   <script src="/dashboard.js?v=20260514"></script>
 </body>
 </html>
