@@ -1,0 +1,48 @@
+===== BEGIN REPORT =====
+TITLE:
+Phase 9 – Adaptive Training Intelligence (Deterministic)
+
+STATUS:
+Complete. The deterministic adaptation engine, derived member history, member insights, dashboard projections, protections, and regression coverage are implemented. No deployment or push was performed.
+
+TRAINING HISTORY:
+A reusable summary now derives completed weeks, completed and missed sessions, adherence percentage and history, progression/deload/maintain/health-review history, incomplete weeks, exercise completion percentage, and average sleep, soreness, and energy from existing persisted member records. It does not persist or mutate the summary and supports legacy generated-plan records.
+
+ADAPTATION ENGINE:
+A versioned, deterministic rule engine evaluates long-term history and returns a future-facing recommendation only. It can recommend following an assigned program, completing health review, extending recovery, reducing progression rate, reviewing progression earlier, or maintaining the current level.
+
+RULES:
+Assigned-program precedence and health-review restrictions are evaluated first. Two recent deloads recommend recovery emphasis; multiple recent incomplete weeks reduce the progression rate; at least three completed weeks and 90% adherence recommend earlier progression review. Recommendations never skip a phase, identify at most one variable for review, never select exercises, and do not modify equipment, plans, executions, or historical records. No AI, machine learning, or randomness is used.
+
+MEMBER INSIGHTS:
+Deterministic, non-diagnostic statements report session adherence, excellent recovery when persisted thresholds qualify, and the applicable maintain, recovery, progression-review, assigned-program, or health-review recommendation. No medical advice or clearance is provided.
+
+DASHBOARD:
+The existing progress dashboard now exposes a derived consistency score, adherence trend, progression trend, recommended focus, next milestone, and member-readable insights. The authenticated /api/me/training-adaptation endpoint exposes the complete derived model.
+
+FILES CHANGED:
+src/services/trainingAdaptationService.js
+src/services/userDataService.js
+server.js
+test/training-adaptation.test.js
+reports/phase9-training-adaptation-report.txt
+
+TESTS:
+Focused adaptation tests cover aggregation, deterministic decisions, progression limits, insights, dashboard projections, legacy records, assigned-program precedence, health-review precedence, and input immutability. Existing Journey, workout, progression, program generation, dashboard, API, and runtime regression suites passed. The full repository suite passed.
+
+VALIDATION:
+PASS - node --test test/training-adaptation.test.js
+PASS - node --test test/journey-intake.test.js test/journey-recommendations.test.js test/personalization-service.test.js
+PASS - node --test test/generated-workout-delivery.test.js test/generated-workout-progression.test.js test/program-generation.test.js test/workout-plan-builder.test.js
+PASS - node --test test/retention-api.test.js test/runtime-url-cleanup.test.js
+PASS - npm test
+PASS - npm run lint
+PASS - node --check server.js && node --check src/services/userDataService.js && node --check src/services/trainingAdaptationService.js && node --check test/training-adaptation.test.js
+PASS - startup validation on PORT=39199 with GET /__version
+
+COMMIT:
+Implement deterministic training adaptation engine
+
+REMAINING WORK:
+None for Phase 9. Deployment and push were intentionally not performed.
+===== END REPORT =====
