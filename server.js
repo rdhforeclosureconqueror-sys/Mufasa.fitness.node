@@ -13,6 +13,7 @@ const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
+const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
 const { createPersonalizationService } = require("./src/services/personalizationService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
@@ -320,6 +321,7 @@ function createApp(options = {}) {
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
+  const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
   const nutritionProviderClient = createProviderClient({
@@ -2070,6 +2072,24 @@ function createApp(options = {}) {
   app.get("/api/programs/current", requireAuth, asyncHandler(async (req, res) => {
     const result = userDataService.getProgram(req.auth.userId);
     return ok(res, req.requestId, { ...result, workoutRecommendation: personalizationService.getWorkoutRecommendation(req.auth.userId) }, 200);
+  }));
+
+  app.get("/api/me/generated-workout-plan", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, generatedWorkoutService.readModel(req.auth.userId), 200);
+  }));
+
+  app.post("/api/me/generated-workout-executions", requireAuth, asyncHandler(async (req, res) => {
+    const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : "";
+    if (!sessionId || sessionId.length > 128) throw new ApiError("VALIDATION_ERROR", "sessionId is required", 400, { field: "sessionId" });
+    return ok(res, req.requestId, generatedWorkoutService.start(req.auth.userId, sessionId), 201);
+  }));
+
+  app.patch("/api/me/generated-workout-executions/:executionId", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, generatedWorkoutService.update(req.auth.userId, req.params.executionId, req.body), 200);
+  }));
+
+  app.post("/api/me/generated-workout-executions/:executionId/complete", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, generatedWorkoutService.complete(req.auth.userId, req.params.executionId), 200);
   }));
 
   app.post("/api/programs", requireAuth, asyncHandler(async (req, res) => {
