@@ -18,6 +18,8 @@
     "ops:pilot-checks": "node scripts/run-pilot-control-plane-checks.js",
     "diagnostics:routes": "node scripts/diagnostics-routes.js",
     "repo:route-audit": "node scripts/repo-route-audit.js",
+    "security:check": "node scripts/security-repository-check.js",
+    "test:security": "node --test test/phase12a-security-remediation.test.js test/phase12b-security-assurance.test.js",
     "diagnostics:routes:local": "node scripts/diagnostics-routes-local.js",
     "pilot:readiness:local": "node scripts/pilot-readiness-local.js"
   },

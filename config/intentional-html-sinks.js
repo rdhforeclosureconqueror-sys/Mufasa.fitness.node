@@ -1,16 +1,15 @@
 "use strict";
-// Temporary, reviewed template-rendering sinks. Every entry requires escaping of interpolated untrusted values.
+// Phase 12B reviewed browser sink baseline. Counts make additions fail the repository check.
 module.exports = Object.freeze({
-  "public/generated-workout-runtime.js": "Member workout templates use the local esc() encoder for all persisted display values.",
-  "public/retention-journey-wizard.js": "Journey review templates encode persisted answers with esc().",
-  "public/nutrition-runtime.js": "Nutrition templates encode provider/member strings with escapeHtml(); structural templates are constants.",
-  "public/workout-runtime.js": "Challenge table template is reviewed and member strings must remain encoded.",
-  "public/retention-flow.js": "Legacy retention structural templates use esc() for interpolated member data.",
-  "public/dashboard.js": "Dashboard structural templates require follow-up consolidation; error formatter escapes text.",
-  "public/profile-runtime.js": "Profile summary uses escaped fixed status output only.",
-  "public/member-home-runtime.js": "Member home template uses local esc() for API strings.",
-  "public/exercise-library.js": "Exercise cards encode catalog data; error output is rendered as text.",
-  "public/app-hydration-runtime.js": "Only clears an existing container.",
-  "public/coach-runtime.js": "Only clears a select before createElement option rendering."
-  ,"public/workout.html": "Compatibility bootstrap writes a constant local script tag only; no untrusted interpolation."
+  "public/app-hydration-runtime.js": { count: 1, safety: "Clears an existing container; no HTML is interpolated." },
+  "public/coach-runtime.js": { count: 1, safety: "Clears a select before createElement option rendering." },
+  "public/dashboard.js": { count: 6, safety: "Structural templates only; API/member strings pass the local HTML encoder." },
+  "public/exercise-library.js": { count: 3, safety: "Catalog display values pass esc(); failures render encoded text." },
+  "public/generated-workout-runtime.js": { count: 6, safety: "Persisted workout display values pass esc(); remaining markup is constant." },
+  "public/member-home-runtime.js": { count: 1, safety: "API display strings pass the local esc() encoder." },
+  "public/nutrition-runtime.js": { count: 19, safety: "Provider/member strings pass escapeHtml(); structural templates are constants." },
+  "public/profile-runtime.js": { count: 1, safety: "Renders only fixed status markup and encoded output." },
+  "public/retention-flow.js": { count: 15, safety: "Persisted/member values pass esc(); structural markup is constant." },
+  "public/retention-journey-wizard.js": { count: 3, safety: "Journey answers pass esc() before template insertion." },
+  "public/workout-runtime.js": { count: 2, safety: "Challenge display values pass escapeHtml(); structural table markup is constant." }
 });

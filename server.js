@@ -299,8 +299,6 @@ function createApp(options = {}) {
     console.info("[request]", {
       method: req.method,
       path: req.path,
-      origin: resolveRequestOrigin(req),
-      userAgent: req.get("user-agent") || null,
       requestId: req.requestId || null
     });
     next();
@@ -481,7 +479,6 @@ function createApp(options = {}) {
     }
     if (allowed && req.authz?.resolutionReason === "admin_email_allowlist") {
       console.info("[authz] admin allowlist access granted", {
-        email: req.auth?.email || null,
         permission,
         endpoint: req.originalUrl || req.path || null
       });
@@ -565,19 +562,19 @@ function createApp(options = {}) {
         .replace(/__ENABLE_AVATAR_FEATURE__/g, avatarFeatureEnabled ? "true" : "false")
     );
   });
-  app.get("/dashboard.html", (_req, res) => {
+  app.get("/dashboard.html", requireAuth, (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "dashboard.html"));
   });
-  app.get("/exercise-library.html", (_req, res) => {
+  app.get("/exercise-library.html", requireAuth, (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "exercise-library.html"));
   });
-  app.get("/nutrition.html", (_req, res) => {
+  app.get("/nutrition.html", requireAuth, (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "nutrition.html"));
   });
-  app.get("/avatar-runtime.js", (req, res, next) => {
+  app.get("/avatar-runtime.js", requireAuth, (req, res, next) => {
     if (avatarFeatureEnabled) return next();
     console.info("[avatar-runtime] disabled", { requestId: req.requestId || null });
     return fail(res, req.requestId || "unknown", {
@@ -599,7 +596,7 @@ function createApp(options = {}) {
       avatarFeatureEnabled
     });
   });
-  app.get("/__diagnostic-smoke", (req, res) => {
+  app.get("/__diagnostic-smoke", requireAuth, (req, res) => {
     console.info("[diagnostic-smoke]", { requestId: req.requestId, route: req.path });
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({
@@ -630,7 +627,7 @@ function createApp(options = {}) {
       fs.mkdirSync(path.dirname(PILOT_EVENT_LOG_PATH), { recursive: true });
       fs.appendFileSync(PILOT_EVENT_LOG_PATH, `${JSON.stringify(event)}\n`);
     } catch (error) {
-      console.warn("[pilot-events] append failed", { message: error?.message || String(error) });
+      console.warn("[pilot-events] append failed", { requestId: req.requestId, operation: "append" });
     }
   }
 
@@ -1142,7 +1139,7 @@ function createApp(options = {}) {
       if (!SKILL_WORLD_TTS_TOKEN) {
         console.warn("[tts] internal token missing", {
           requestId: req.requestId,
-          url: AIVOICE_URL
+          operation: "provider_configuration"
         });
         return res.status(500).json({ ok: false, error: "TTS_INTERNAL_TOKEN_MISSING" });
       }
@@ -1192,7 +1189,7 @@ function createApp(options = {}) {
   const configuredSeedEmail = String(process.env.LOGIN_SEED_EMAIL || "").trim().toLowerCase()
     || String((authorizationConfig.adminEmails || [])[0] || "").trim().toLowerCase()
     || "rdhforeclosureconquer@gmail.com";
-  console.info("[auth-login] seed email configured", { seedEmail: configuredSeedEmail });
+  console.info("[auth-login] seed identity configured", { configured: Boolean(configuredSeedEmail) });
 
   const AUTH_SEED_USER = Object.freeze({
     id: "pilot_admin",
@@ -1233,10 +1230,10 @@ function createApp(options = {}) {
     const fixtureEnabled = String(process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED || "").trim().toLowerCase() === "true";
     const isTestEnv = String(process.env.NODE_ENV || "").trim().toLowerCase() === "test";
     const hasFixtureFields = req.body?.testUserId != null || req.body?.testRole != null;
-    console.info("[auth-login] request received", { emailNormalized, hasPassword, requestId });
+    console.info("[auth-login] request received", { hasEmail: Boolean(emailNormalized), hasPassword, requestId });
 
     const reject = (status, reason, error = "Invalid email or password") => {
-      console.warn("[auth-login] rejected", { reason, emailNormalized, requestId });
+      console.warn("[auth-login] rejected", { reason, requestId });
       return res.status(status).json({ ok: false, error });
     };
 
@@ -1270,7 +1267,7 @@ function createApp(options = {}) {
         identityClass: "provider_verified"
       });
 
-      console.info("[auth-login] success", { userId, emailNormalized: email || AUTH_SEED_USER.email, requestId });
+      console.info("[auth-login] success", { userId, requestId });
       return res.status(200).json({
         ok: true,
         token: token.token,
@@ -1298,7 +1295,7 @@ function createApp(options = {}) {
         providerVerified: true,
         identityClass: "provider_verified"
       });
-      console.info("[auth-login] success", { userId: registeredUser.id, emailNormalized: registeredUser.email, requestId });
+      console.info("[auth-login] success", { userId: registeredUser.id, requestId });
       return res.status(200).json({
         ok: true,
         token: registeredToken.token,
@@ -1326,7 +1323,7 @@ function createApp(options = {}) {
       identityClass: "provider_verified"
     });
 
-    console.info("[auth-login] success", { userId: AUTH_SEED_USER.id, emailNormalized: AUTH_SEED_USER.email, requestId });
+    console.info("[auth-login] success", { userId: AUTH_SEED_USER.id, requestId });
     return res.status(200).json({
       ok: true,
       token: token.token,
@@ -1409,7 +1406,6 @@ function createApp(options = {}) {
     const requestProvider = String(req.body?.provider || "").trim().toLowerCase() || null;
     const hasGoogleEmail = Boolean(req.body?.googleEmail);
     const hasIdToken = Boolean(req.body?.googleIdToken);
-    const requestEmail = req.body?.googleEmail || null;
     if (rawTrustMode && !requestedTrustMode) {
       console.warn("[auth-bridge] rejected", {
         origin: requestOrigin || null,
@@ -1417,7 +1413,6 @@ function createApp(options = {}) {
         provider: requestProvider,
         hasGoogleEmail,
         hasIdToken,
-        email: requestEmail,
         reason: "invalid_trust_mode"
       });
       throw new ApiError("FORBIDDEN", "Unsupported auth bridge trustMode", 403, { reason: "invalid_trust_mode" });
@@ -1433,7 +1428,6 @@ function createApp(options = {}) {
           provider: requestProvider,
           hasGoogleEmail,
           hasIdToken,
-          email: requestEmail,
           reason: deriveAuthBridgeRejectionReason(error)
         });
       }
@@ -1464,7 +1458,6 @@ function createApp(options = {}) {
       googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
       hasGoogleEmail: Boolean(claims.googleEmail),
       hasIdToken: Boolean(claims.googleIdToken),
-      email: claims.googleEmail || null
     });
     let resolvedIdentity;
     try {
@@ -1480,7 +1473,6 @@ function createApp(options = {}) {
         provider: effectiveRequestProvider,
         hasGoogleEmail: Boolean(claims.googleEmail),
         hasIdToken: Boolean(claims.googleIdToken),
-        email: claims.googleEmail || null,
         claimPath: bridgeDiagnostics.claimPath,
         payloadKeys: bridgeDiagnostics.payloadKeys,
         googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
@@ -1527,7 +1519,6 @@ function createApp(options = {}) {
         provider: effectiveRequestProvider,
         hasGoogleEmail: Boolean(claims.googleEmail),
         hasIdToken: Boolean(claims.googleIdToken),
-        email: claims.googleEmail || null,
         reason: rejectionReason
       });
       throw new ApiError(
@@ -1792,7 +1783,7 @@ function createApp(options = {}) {
   }));
 
   // ---- Exercise DB endpoints ----
-  app.get("/api/exercises/index", (_req, res) => {
+  app.get("/api/exercises/index", requireAuth, (_req, res) => {
     const idx = loadExerciseIndex();
     if (!idx) {
       return res.status(404).json({
@@ -1805,7 +1796,7 @@ function createApp(options = {}) {
     res.json({ ok: true, exercises, count: exercises.length });
   });
 
-  app.get("/api/exercises/search", (req, res) => {
+  app.get("/api/exercises/search", requireAuth, (req, res) => {
     const q = String(req.query.q || "").trim().toLowerCase();
     const idx = loadExerciseIndex();
     if (!idx) return res.status(404).json({ ok: false, error: "Missing exercise index.json" });
@@ -1813,11 +1804,11 @@ function createApp(options = {}) {
     const list = normalizeExerciseIndexList(idx);
     const results = (!q ? list : list.filter(x => exerciseSearchText(x).includes(q))).slice(0, q ? 100 : 50);
 
-    console.info("[EXERCISE_LIBRARY] search", { q, total: list.length, results: results.length });
+    console.info("[EXERCISE_LIBRARY] search", { total: list.length, results: results.length });
     res.json({ ok: true, q, results, count: results.length });
   });
 
-  app.get("/api/exercises/:slug", (req, res) => {
+  app.get("/api/exercises/:slug", requireAuth, (req, res) => {
     const slug = req.params.slug;
     const idx = loadExerciseIndex();
     if (!idx) return res.status(404).json({ ok: false, error: "Missing exercise index.json" });
@@ -2005,7 +1996,7 @@ function createApp(options = {}) {
     console.info("[profile] incoming payload", {
       requestId: req.requestId,
       userId: req.auth?.userId || null,
-      payload: req.body
+      operation: "profile_update"
     });
 
     let profilePayload;
@@ -2016,9 +2007,7 @@ function createApp(options = {}) {
         console.warn("[profile] validation failed", {
           requestId: req.requestId,
           userId: req.auth?.userId || null,
-          message: error.message,
-          field: error.message?.split(" ")[0] || null,
-          payload: req.body
+          field: error.details?.field || null
         });
       }
       throw error;
@@ -2427,7 +2416,7 @@ function createApp(options = {}) {
       }, err.status);
     }
 
-    console.error("Unhandled error", { requestId, error: err?.message || String(err) });
+    console.error("Unhandled error", { requestId, operation: "request_failed" });
     return fail(res, requestId, {
       code: "INTERNAL_ERROR",
       message: "An unexpected error occurred"

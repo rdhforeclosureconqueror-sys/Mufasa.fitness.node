@@ -1,0 +1,76 @@
+===== BEGIN REPORT =====
+
+TITLE
+Phase 12B – Security Assurance, Authorization Verification, and Browser Safety Validation
+
+STATUS
+COMPLETE. Verification-focused changes and automated evidence close F-003, F-007, and F-028. No deployment or push was performed.
+
+F-003
+CLOSED
+Automated console capture drives profile update and validation failure, Journey draft and submission, OHSA, nutrition, generated-workout start/completion failure, challenge, speech/provider failure, authentication failure, and authorization failure paths. Unique canary values cover a name, email, injury/health answer, body measurement, notes, bearer credential, cookie, provider secret, and raw provider response; every canary is asserted absent from the complete captured log stream. Application logging was narrowed to operational identifiers, route/action/status, booleans, and bounded reason codes. Profile request bodies and validation values, login/bridge email addresses, request user-agent/origin fields, provider URL/response text, and unhandled exception messages are not logged.
+
+F-007
+CLOSED
+The machine-readable authorization contract contains 109 unique route declarations and is compared exactly with the Express declaration inventory. The black-box matrix exercises every authenticated contract route with anonymous, malformed, expired, and valid owner credentials. Applicable matrix dimensions additionally cover an ordinary user on every privileged route (wrong role/missing permission), every membership-gated route without membership, every feature-flagged route while disabled, parameterized unknown resources, cross-user program assignment, server-derived challenge identity, and denylisted/revoked credentials. The verification found and corrected missing guards on diagnostic smoke, avatar runtime, protected HTML pages, and exercise catalog routes. Existing public behavior for version and billing plan is retained and accurately documented in the contract.
+
+F-028
+CLOSED
+All remaining first-party browser HTML mutation sinks are explicitly inventoried by file, exact occurrence count, and safety rationale. The repository check rejects unreviewed files and any count increase. javascript: form actions and document.write bootstrap loading were removed; script loading now uses createElement with a constant local URL. safeUrl removes ASCII/C1 control characters before scheme detection, rejects javascript:, all general data: URLs, SVG data, and obfuscated scheme forms, and permits only tightly formed base64 PNG/JPEG/GIF/WebP data images when explicitly requested. Rendering tests preserve payloads only as text for script tags, event handlers, SVG, encoded entities, Unicode bidi text, and prototype-pollution key names.
+
+AUTHORIZATION COVERAGE
+109/109 route declarations are contract-locked. Every route marked authentication=required is exercised under anonymous, owner credential, malformed token, and expired token conditions. Every privileged contract entry is exercised for wrong-role and missing-permission denial. Every membership=required entry is exercised without membership. Every featureFlag entry is exercised disabled. Revocation, cross-user assignment, spoofed body identity, unknown resource identifiers, and public-route metadata are separately verified. Additions, removals, duplicates, or missing policy fields fail scripts/security-repository-check.js and the Phase 12A/12B contract tests.
+
+LOGGING COVERAGE
+Covered operations: profile update; failed profile validation; Journey draft save; Journey submit; OHSA submit; nutrition update; generated workout start/completion failure; authentication failure; authorization failure; speech request/provider failure; challenge submission. Prohibited canaries: names, email, health/injury content, measurement, notes, bearer token, cookie, provider secret, raw provider response, and request-body personal data. Assertions check absence from all console log/info/warn/error output.
+
+HTML SINK INVENTORY
+11 first-party files, 58 reviewed assignments total: app-hydration-runtime.js (1), coach-runtime.js (1), dashboard.js (6), exercise-library.js (3), generated-workout-runtime.js (6), member-home-runtime.js (1), nutrition-runtime.js (19), profile-runtime.js (1), retention-flow.js (15), retention-journey-wizard.js (3), workout-runtime.js (2). Each entry in config/intentional-html-sinks.js records why its structural templates or encoded interpolation are safe. No document.write remains. No active javascript: form action remains.
+
+STATIC ANALYSIS
+scripts/security-repository-check.js fails on route/contract set drift, duplicate routes, missing authorization metadata, new or count-increased HTML sinks, missing sink rationale, document.write, javascript: attribute URLs, unsafe data: attribute URLs, and prohibited logging patterns. npm run security:check is the CI-ready entry point; npm run test:security runs both Phase 12 security suites.
+
+FILES CHANGED
+config/intentional-html-sinks.js
+config/route-authorization-contract.js
+index.html
+package.json
+public/safe-rendering.js
+public/workout.html
+reports/phase12b-security-assurance-report.txt
+scripts/security-repository-check.js
+server.js
+test/auth-login-form-submit.test.js
+test/auth-shell-guard.test.js
+test/phase12b-security-assurance.test.js
+
+TESTS
+PASS: npm run security:check – 109 routes and 11 reviewed sink files.
+PASS: npm run test:security – 9/9 tests.
+PASS: node --test test/phase12b-security-assurance.test.js – 5/5 focused security, authorization matrix, log capture, revocation, and browser-safety tests.
+PASS: focused auth shell, billing, and diagnostics regression – 36/36 tests.
+PASS: npm test – 357/357 tests, including workout completion, challenge submission, speech, legacy compatibility, rate limiting, authorization, generated plans, Journey, Nutrition, and Member Home.
+
+VALIDATION
+PASS: npm run lint – selfcheck ok.
+PASS: node --check across all first-party JavaScript files.
+PASS: git diff --check.
+PASS: startup validation – server listened successfully with an explicit 32+ character auth secret.
+PASS: GET /health – HTTP success and JSON service status returned; local development health is intentionally degraded because production bootstrap allowlists/billing are not configured.
+PASS: npm run repo:route-audit – route audit passed; two external-style Three.js asset probes warned because the audit had no running target for HEAD/GET probes.
+
+COMMIT
+Phase 12B implementation and this report are committed together on the current branch with commit subject: Close Phase 12B security assurance findings.
+
+FINDINGS CLOSED
+F-003 – CLOSED
+F-007 – CLOSED
+F-028 – CLOSED
+
+REMAINING RISKS
+Intentional legacy template sinks remain, but their exact count and documented encoding assumptions are frozen by automated checks. A future change within an already reviewed sink expression requires reviewer attention even when the total count is unchanged. Local health reports expected non-production preflight warnings because deployment configuration is outside this phase.
+
+REMAINING WORK
+No remaining Phase 12B finding work. Deployment configuration, deployment, persistence replacement, architectural changes, and UI redesign remain explicitly out of scope.
+
+===== END REPORT =====
