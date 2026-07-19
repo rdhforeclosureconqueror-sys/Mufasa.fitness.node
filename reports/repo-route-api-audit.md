@@ -1,6 +1,6 @@
 # Repo Route/API Audit Report
 
-Generated: 2026-06-11T16:07:41.694Z
+Generated: 2026-07-19T21:51:34.800Z
 
 ## Backend Route Inventory
 
@@ -20,6 +20,25 @@ Generated: 2026-06-11T16:07:41.694Z
 | POST | /api/auth/bridge | no | none | provider, trustMode, and identity claim (googleIdToken/googleEmail/googleSub/userId) | issue app auth token from provider/manual identity claims | JSON/file |
 | GET | /api/me | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | GET | /api/me/membership | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/onboarding-status | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/retention/intake | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| PATCH | /api/me/retention/intake | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/retention/intake/submit | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/retention/intake/progress | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/journey-profile | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/personalization | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/member-home | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/trainer/workspace | no | TRAINER_WORKSPACE_READ | none/optional | application route | JSON/file |
+| GET | /api/trainer/clients | no | TRAINER_CLIENTS_READ | none/optional | application route | JSON/file |
+| GET | /api/trainer/clients/:clientUserId | no | TRAINER_CLIENTS_READ | none/optional | application route | JSON/file |
+| GET | /api/trainer/clients/:clientUserId/program | no | TRAINER_CLIENTS_READ | none/optional | application route | JSON/file |
+| PUT | /api/trainer/clients/:clientUserId/program | no | TRAINER_CLIENT_PROGRAMS_WRITE | none/optional | application route | JSON/file |
+| GET | /api/trainer/clients/:clientUserId/notes | no | TRAINER_CLIENT_NOTES_READ | none/optional | application route | JSON/file |
+| POST | /api/trainer/clients/:clientUserId/notes | no | TRAINER_CLIENT_NOTES_WRITE | none/optional | application route | JSON/file |
+| GET | /api/admin/trainer-assignments | yes | ADMIN_TRAINER_ASSIGNMENTS_MANAGE | none/optional | application route | JSON/file |
+| GET | /api/admin/trainer-directory | yes | ADMIN_TRAINER_ASSIGNMENTS_MANAGE | none/optional | application route | JSON/file |
+| POST | /api/admin/trainer-assignments | yes | ADMIN_TRAINER_ASSIGNMENTS_MANAGE | none/optional | application route | JSON/file |
+| DELETE | /api/admin/trainer-assignments/:assignmentId | yes | ADMIN_TRAINER_ASSIGNMENTS_MANAGE | none/optional | application route | JSON/file |
 | GET | /api/billing/plan | no | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
 | POST | /api/billing/checkout-session | yes | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
 | POST | /api/billing/create-checkout-session | yes | none | none/optional | Stripe embedded checkout, billing portal, and webhook handling | JSON/file |
@@ -55,6 +74,18 @@ Generated: 2026-06-11T16:07:41.694Z
 | POST | /api/me/nutrition/meals | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | GET | /api/me/nutrition/meals | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | POST | /api/me/nutrition/meals/:mealId/log | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/grocery-options | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/weekly-plan/current | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/weekly-plans | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| PATCH | /api/me/nutrition/weekly-plans/:planId | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/weekly-plans/:planId/grocery-items | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| PATCH | /api/me/nutrition/weekly-plans/:planId/grocery-items/:itemId | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/weekly-plans/:planId/generate-missions | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/weekly-plans/:planId/missions | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| PATCH | /api/me/nutrition/missions/:missionId | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/missions/:missionId/manual-progress | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/nutrition/weekly-plans/:planId/review | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/nutrition/weekly-plans/ai-draft/validate | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | GET | /api/me/nutrition/education | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | GET | /api/me/profile | yes | none | JSON payload validated server-side | authenticated user profile/history reads | JSON/file |
 | PUT | /api/me/profile | yes | none | JSON payload validated server-side | authenticated user profile/history reads | JSON/file |
@@ -66,6 +97,14 @@ Generated: 2026-06-11T16:07:41.694Z
 | GET | /api/goals-baseline | yes | none | none/optional | application route | JSON/file |
 | POST | /api/goals-baseline | yes | none | none/optional | application route | JSON/file |
 | GET | /api/programs/current | yes | none | none/optional | application route | JSON/file |
+| GET | /api/me/generated-workout-plan | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/generated-workout-progression | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| GET | /api/me/training-adaptation | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/generated-workout-progression/evaluate | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/generated-workout-progression/accept | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/generated-workout-executions | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| PATCH | /api/me/generated-workout-executions/:executionId | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
+| POST | /api/me/generated-workout-executions/:executionId/complete | yes | none | none/optional | authenticated user profile/history reads | JSON/file |
 | POST | /api/programs | yes | none | none/optional | application route | JSON/file |
 | POST | /api/workouts/track | yes | none | none/optional | application route | JSON/file |
 | GET | /api/workouts/reward/latest | yes | none | none/optional | application route | JSON/file |

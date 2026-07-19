@@ -13,6 +13,7 @@ const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = 
 const { createUserStore } = require("./src/repositories/userStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
+const { createTrainerDirectoryService } = require("./src/services/trainerDirectoryService");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
@@ -297,6 +298,7 @@ function createApp(options = {}) {
   const challengeLimit = createRateLimiter({ name: "pushup-results", max: 20, windowMs: 60_000 });
   const telemetryLimit = createRateLimiter({ name: "pilot-events", max: 60, windowMs: 60_000 });
   const trainerWriteLimit = createRateLimiter({ name: "trainer-writes", max: 30, windowMs: 60_000 });
+  const trainerDirectoryLimit = createRateLimiter({ name: "trainer-directory", max: 30, windowMs: 60_000 });
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -333,6 +335,7 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
+  const trainerDirectoryService = createTrainerDirectoryService({ userStore, trainerWorkspaceStore, authorizationResolver });
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
@@ -1646,6 +1649,8 @@ function createApp(options = {}) {
 
   app.get("/api/admin/trainer-assignments", requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), asyncHandler(async (req, res) =>
     ok(res, req.requestId, { assignments: trainerWorkspaceStore.listAssignments() })));
+  app.get("/api/admin/trainer-directory", requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), trainerDirectoryLimit, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, trainerDirectoryService.search(req.query))));
   app.post("/api/admin/trainer-assignments", trainerWriteLimit, requireAuth, permission(authorizationResolver.PERMISSIONS.ADMIN_TRAINER_ASSIGNMENTS_MANAGE), asyncHandler(async (req, res) => {
     const trainerUserId = String(req.body?.trainerUserId || ""), clientUserId = String(req.body?.clientUserId || "");
     if (!/^[A-Za-z0-9._-]{1,128}$/.test(trainerUserId) || !/^[A-Za-z0-9._-]{1,128}$/.test(clientUserId)) throw new ApiError("INVALID_ASSIGNMENT", "Valid trainerUserId and clientUserId are required", 422);

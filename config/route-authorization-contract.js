@@ -1691,6 +1691,22 @@ module.exports = Object.freeze([
     "publicWrite": null
   },
   {
+    "method": "GET",
+    "path": "/api/admin/trainer-directory",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [
+      "admin.trainer_assignments.manage"
+    ],
+    "membership": "not-required",
+    "ownership": "privileged",
+    "featureFlag": null,
+    "publicOutput": "purpose-built-directory-allowlist",
+    "rateLimit": "trainer-directory",
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
     "method": "DELETE",
     "path": "/api/admin/trainer-assignments/:assignmentId",
     "authentication": "required",
