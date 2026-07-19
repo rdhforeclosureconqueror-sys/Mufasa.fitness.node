@@ -330,7 +330,8 @@ test("authoritative onboarding status persists across reads, edits, OHSA, workou
 
     let status = await request(baseUrl, "/api/me/onboarding-status", { headers: auth });
     assert.equal(status.res.status, 200);
-    assert.equal(status.json.data.completionCount, 1); // OHSA is skipped_for_pilot for starter flow.
+    assert.equal(status.json.data.completionCount, 0);
+    assert.equal(status.json.data.sections.overheadSquatAssessment.status, "not_started");
     assert.equal(status.json.data.sections.intake.status, "pending");
     assert.equal(status.json.data.sections.goals.status, "pending");
 

@@ -12,6 +12,7 @@ const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = 
 const { createUserStore } = require("./src/repositories/userStore");
 const { createSessionService } = require("./src/services/sessionService");
 const { createUserDataService } = require("./src/services/userDataService");
+const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
@@ -317,6 +318,7 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const sessionService = createSessionService({ userStore });
   const userDataService = createUserDataService({ userStore });
+  const journeyIntakeService = createJourneyIntakeService({ userStore });
   const nutritionService = createNutritionService({ userStore });
   const nutritionProviderClient = createProviderClient({
     fetchImpl: options.fetch || global.fetch,
@@ -1594,6 +1596,15 @@ function createApp(options = {}) {
     const result = userDataService.getOnboardingStatus(req.auth.userId);
     return ok(res, req.requestId, result, 200);
   }));
+
+  app.get("/api/me/retention/intake", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, journeyIntakeService.get(req.auth.userId), 200)));
+  app.patch("/api/me/retention/intake", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, journeyIntakeService.patch(req.auth.userId, req.body), 200)));
+  app.post("/api/me/retention/intake/submit", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, journeyIntakeService.submit(req.auth.userId), 200)));
+  app.get("/api/me/retention/intake/progress", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, journeyIntakeService.progress(req.auth.userId), 200)));
 
   app.get("/api/billing/plan", asyncHandler(async (req, res) => {
     return ok(res, req.requestId, getPublicBillingPlan(process.env));
