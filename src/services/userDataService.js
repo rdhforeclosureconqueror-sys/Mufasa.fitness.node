@@ -1,5 +1,7 @@
 "use strict";
 
+const { adaptTraining } = require("./trainingAdaptationService");
+
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -389,6 +391,7 @@ function createUserDataService({ userStore }) {
 
   function getProgressDashboard(userId) {
     const user = userStore.loadUser(userId);
+    const trainingAdaptation = adaptTraining(user);
     const workouts = user.workoutTracking || [];
     const checkIns = user.checkIns || [];
     const formScores = workouts.map((w) => w.formScore).filter((n) => Number.isFinite(n));
@@ -482,7 +485,9 @@ function createUserDataService({ userStore }) {
         weeklyAdherence: latestGeneratedProgression?.inputSummary?.sessionAdherencePercent ?? null,
         outcome: latestGeneratedProgression?.outcome || null,
         nextRecommendedAction: latestGeneratedProgression?.status === "recommended" ? "ACCEPT_NEXT_WEEK" : null
-      }
+      },
+      trainingAdaptation: trainingAdaptation.dashboard,
+      memberTrainingInsights: trainingAdaptation.insights
     };
   }
 

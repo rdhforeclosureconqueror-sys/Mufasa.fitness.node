@@ -15,6 +15,7 @@ const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
 const { createGeneratedWorkoutProgressionService } = require("./src/services/generatedWorkoutProgressionService");
+const { createTrainingAdaptationService } = require("./src/services/trainingAdaptationService");
 const { createPersonalizationService } = require("./src/services/personalizationService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
@@ -324,6 +325,7 @@ function createApp(options = {}) {
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
+  const trainingAdaptationService = createTrainingAdaptationService({ userStore });
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
   const nutritionProviderClient = createProviderClient({
@@ -2082,6 +2084,10 @@ function createApp(options = {}) {
 
   app.get("/api/me/generated-workout-progression", requireAuth, asyncHandler(async (req, res) => {
     return ok(res, req.requestId, generatedWorkoutProgressionService.state(req.auth.userId), 200);
+  }));
+
+  app.get("/api/me/training-adaptation", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, trainingAdaptationService.read(req.auth.userId), 200);
   }));
 
   app.post("/api/me/generated-workout-progression/evaluate", requireAuth, asyncHandler(async (req, res) => {
