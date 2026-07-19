@@ -1,0 +1,76 @@
+===== BEGIN REPORT =====
+TITLE:
+Phase 10 – Member Experience Completion and Feature Freeze
+
+STATUS:
+Complete. The authenticated dashboard now provides a canonical, server-authored member home and one deterministic next best action.
+
+AUDIT RESULTS:
+The signed-in flow was inspected across the dashboard, Universal Intake/Journey wizard, generated workout delivery, workout execution, progression, adaptation, nutrition, assessment, and progress APIs and pages. Existing capabilities were split between workout.html, nutrition.html, and dashboard.html; generated plan and progression were usable but not summarized on the landing dashboard. Nutrition and assessment had working entry points but weak cross-feature discoverability. Journey resume existed in the workout page but had no dashboard-level next step. The old dashboard emphasized workout history and exposed redundant local-reset and diagnostic content; those legacy controls were retained because their operational and compatibility consumers were not proven dead. The new member-home section closes the principal discovery dead end without replacing those entry points. Canonical links target existing page elements, and server-readable empty states cover absent plans, missions, assessments, and history. No conflicting browser-side recommendation tree was found or introduced.
+
+MEMBER HOME MODEL:
+GET /api/me/member-home is authenticated and ownership-scoped. It composes the existing Journey, personalization, generated workout, progression, adaptation, nutrition, and progress services. It exposes safe presentation summaries, dashboard module configuration, one primary action, secondary actions, and empty-state guidance. It deliberately excludes raw health answers, health flags, internal ownership fields, and diagnostics.
+
+NEXT BEST ACTION:
+The server resolver applies the requested precedence: Journey completion, health review, workout resume, assessment, next workout, next-week review, nutrition mission, active program, then progress insights. Every action has a readable type, title, explanation, working route, and eligibility label. Only one primary action is returned. The browser renders the returned action and contains no copy of the decision tree.
+
+MEMBER HOME UI:
+The existing dashboard.html now begins with a compact member-home section containing Journey status, primary action, active program source, next workout, weekly progress, nutrition focus, assessment recommendation, adaptation insight, and health-review state. Loading, ready, unavailable, and retry messaging are announced. Existing design tokens and cards were reused rather than redesigning the page.
+
+NAVIGATION:
+Member navigation now reaches Universal Intake, generated workout plan, resumable sessions, progression, nutrition journal/missions, assessment, and progress from the existing dashboard. Targets were verified against existing pages and element IDs. Required legacy navigation remains available.
+
+STATE CONSISTENCY:
+Journey completion and health review come from Journey/personalization services; active-program precedence and sessions come from generated workout delivery; progression, nutrition, assessment, adaptation, and dashboard summaries come from their canonical services. Server persistence remains authoritative. Member-facing enum values are translated into readable labels. The member-home browser runtime does not use localStorage or sessionStorage.
+
+LEGACY COMPATIBILITY:
+Legacy intake is migrated only through the existing non-destructive Journey compatibility path. Members without a Journey Profile, generated plan, workout history, nutrition mission, or assessment receive useful empty states. Assigned programs retain precedence over selected, generated, and fallback programs. No destructive page-load migration was added.
+
+ACCESSIBILITY:
+The member home uses a labelled main region, ordered headings, an aria-live status, descriptive link text, a labelled navigation region, 44px minimum controls, wrapping content, responsive card columns, and single-column/safe wrapping behavior on small screens. Automated markup checks passed. No compatible graphical browser was available, so browser acceptance, focus traversal, screen-reader behavior, and horizontal-overflow validation are not claimed.
+
+FEATURE FREEZE:
+FEATURE DEVELOPMENT IS NOW FROZEN.
+Further work is limited to:
+auditing
+browser acceptance testing
+bug fixes
+security hardening
+performance hardening
+deployment readiness
+
+Legacy diagnostic and local-fallback dashboard code was retained intentionally because removal safety was not established. No broad rewrite or new product domain was introduced. Duplicate next-action logic was avoided by keeping resolution server-only. Existing Journey migration and legacy dashboard entry paths remain temporary compatibility paths.
+
+FILES CHANGED:
+server.js
+src/services/memberHomeService.js
+public/dashboard.html
+public/member-home-runtime.js
+test/member-home.test.js
+reports/phase10-member-experience-completion-report.txt
+
+TESTS:
+Focused tests cover the member-home model, deterministic precedence, incomplete Journey, health review, workout resume, assessment, next generated workout, progression acceptance, nutrition mission, assigned-program precedence, empty/legacy fallback, cross-feature consistency, safe labels, raw-health exclusion, browser rule non-duplication, lack of browser-storage authority, and mobile/accessibility markup. Existing Journey, workout plan, generated delivery, progression, adaptation, nutrition, dashboard, and retention suites were also executed.
+
+VALIDATION:
+Focused Phase 10 member-home tests passed.
+Journey and recommendation tests passed.
+Generated workout delivery and plan-builder tests passed.
+Progression and adaptation tests passed.
+Nutrition journal and mission tests passed.
+Dashboard and retention tests passed.
+Full repository tests passed.
+Repository lint/selfcheck passed.
+Node syntax validation passed.
+git diff --check passed.
+Local startup and /health endpoint validation passed.
+
+COMMIT:
+Complete journey-driven member experience
+
+KNOWN DEFERRED ITEMS:
+Real-browser acceptance testing remains required for keyboard order, focus behavior, screen-reader announcements, dialogs, touch interaction, and viewport overflow. The legacy dashboard diagnostics and Reset Local Data affordance remain intentionally pending a separate defect/hardening audit. Post-login routing remains the established application behavior; member home is consolidated into the existing dashboard rather than forcing a potentially breaking redirect.
+
+REMAINING WORK:
+Only auditing, browser acceptance testing, bug fixes, security hardening, performance hardening, and deployment readiness remain. Do not add product features after this marker.
+===== END REPORT =====

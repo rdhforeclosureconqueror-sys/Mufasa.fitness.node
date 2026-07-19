@@ -21,6 +21,7 @@ const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
+const { createMemberHomeService } = require("./src/services/memberHomeService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -328,6 +329,7 @@ function createApp(options = {}) {
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
+  const memberHomeService = createMemberHomeService({ journeyIntakeService, personalizationService, generatedWorkoutService, generatedWorkoutProgressionService, trainingAdaptationService, nutritionService, userDataService });
   const nutritionProviderClient = createProviderClient({
     fetchImpl: options.fetch || global.fetch,
     env: process.env
@@ -1617,6 +1619,8 @@ function createApp(options = {}) {
     ok(res, req.requestId, journeyIntakeService.get(req.auth.userId).journeyProfile, 200)));
   app.get("/api/me/personalization", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, personalizationService.getPersonalization(req.auth.userId), 200)));
+  app.get("/api/me/member-home", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, memberHomeService.read(req.auth.userId), 200)));
 
   app.get("/api/billing/plan", asyncHandler(async (req, res) => {
     return ok(res, req.requestId, getPublicBillingPlan(process.env));
