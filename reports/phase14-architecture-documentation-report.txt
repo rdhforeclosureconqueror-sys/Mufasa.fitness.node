@@ -1,0 +1,90 @@
+===== BEGIN REPORT =====
+
+TITLE
+Phase 14 – Architecture, Operations, and Release Documentation
+
+STATUS
+COMPLETE — documentation-only phase. No application behavior, runtime code, persistence implementation, deployment configuration, or feature behavior changed. No deployment or push was performed.
+
+DOCUMENTS CREATED
+- docs/architecture/system-architecture.md — system/layer/request/auth/workflow/client/API architecture and PlantUML diagrams.
+- docs/architecture/domain-model.md — entity purposes, lifecycles, ownership, relationships, sources of truth, and entity diagram.
+- docs/api/api-reference.md — exhaustive HTTP API inventory and schemas.
+- docs/security/authorization.md — roles, permissions, protection, ownership, assignment, administrative, feature, output, and limiting policies with diagrams.
+- docs/architecture/storage.md — file persistence layout, lifecycle, atomicity boundaries, limitations, backup/restore, and future migration path.
+- docs/deployment/deployment-guide.md — environment, startup, health, proxy/HTTPS, secrets, logs, backups, monitoring, restore, and production checklist.
+- docs/operations/runbook.md — restart, health, diagnosis, logs, backups, recovery, and workflow troubleshooting.
+- docs/release/release-checklist.md — preflight, browser, mobile, accessibility, role workflows, deployment, rollback, and post-deployment checks.
+- docs/known-limitations.md — file/single-process, acceptance, operations, provider, and migration constraints.
+- docs/architecture/code-inventory.md — folders, services, repositories, middleware, libraries, browser modules, and entry points.
+- reports/phase14-architecture-documentation-report.txt — this completion report.
+
+ARCHITECTURE COVERAGE
+- Describes the current single-process Express/browser/services/repository architecture without proposing an implementation change.
+- Covers request and authentication/authorization lifecycles, Member/Trainer/Administrator workflows, external providers, data boundaries, browser modules, and API organization.
+- Includes high-level, entity relationship, authorization decision, and trainer assignment PlantUML diagrams.
+- Connects architecture to the domain model, storage, code inventory, API, security, deployment, and operations documents through relative links.
+
+API COVERAGE
+- Documents all 114 registered JSON/operational routes discovered in server.js, including explicit APIs, health/version/smoke, and deprecated /command.
+- Groups routes under Authentication, Journey, Member, Nutrition, Workout, Progression, Trainer, Administration, and Diagnostics/Operations; compatibility and protected-page surfaces are also called out.
+- Each route row identifies method/path, authentication/permissions, request and response schema, common status codes, and purpose. Shared envelope, type, ownership, membership, and error conventions are defined once to avoid ambiguity.
+
+SECURITY COVERAGE
+- Documents user, trainer, admin, and super-admin resolution and the complete named permission set.
+- Covers bearer verification, token denylist, self-ownership, membership entitlement, active trainer assignment checks, break-glass constraints, feature/trust/enforcement flags, sensitive output policy, audit behavior, and in-memory rate-limit limitations.
+- Explicitly identifies reverse-proxy, browser/API, disk, external-provider, trainer, and administrative trust boundaries.
+
+OPERATIONS COVERAGE
+- Provides startup/restart and health procedures, symptom/status diagnosis, request-ID log correlation, backup verification, consistent restore, and security/integrity incident handling.
+- Provides focused user recovery and trainer assignment, intake, workout/progression, nutrition/provider troubleshooting.
+- Documents single-writer, persistent-volume, monitoring, secrets, HTTPS/proxy, audit, and backup requirements.
+
+RELEASE COVERAGE
+- Provides evidence-oriented gates for tests, lint, security, preflight, startup, and health.
+- Covers Chrome, Edge, Firefox, Safari, iOS Safari, Android Chrome, accessibility, screen readers, Member/Trainer/Administrator workflows, deployment, rollback, and post-deployment observation.
+- Preserves browser and screen-reader acceptance as explicit pending known limitations rather than claiming unperformed acceptance.
+
+VALIDATION
+- PASS: npm run lint completed the repository selfcheck successfully.
+- PASS: npm test completed 359 tests with 359 passing, zero failures, zero skips, and zero cancellations.
+- PASS: a repository-local Python link check resolved every relative Markdown link in all docs files.
+- PASS: route-inventory comparison found 114 of 114 registered JSON/operational server routes represented in docs/api/api-reference.md, with no missing routes.
+- PASS: all Markdown code fences are balanced.
+- PASS: git diff --check reported no whitespace errors.
+- PASS BY REVIEW: PlantUML blocks use matched @startuml/@enduml delimiters and standard actor, rectangle, database, cloud, entity, participant, activity, message, and relationship syntax.
+- ENVIRONMENT WARNING: the PlantUML CLI was not installed; an attempted temporary download of the upstream validator was rejected with HTTP 403, so no rendered diagram artifacts were generated or committed.
+
+FILES CHANGED
+- docs/api/api-reference.md
+- docs/architecture/code-inventory.md
+- docs/architecture/domain-model.md
+- docs/architecture/storage.md
+- docs/architecture/system-architecture.md
+- docs/deployment/deployment-guide.md
+- docs/known-limitations.md
+- docs/operations/runbook.md
+- docs/release/release-checklist.md
+- docs/security/authorization.md
+- reports/phase14-architecture-documentation-report.txt
+
+COMMIT
+Add architecture and operations documentation
+One documentation commit was created on the current branch. It contains documentation/report files only. It was not pushed.
+
+REMAINING DOCUMENTATION GAPS
+- Record actual supported browser/device version matrix and completed acceptance evidence; browser acceptance remains pending.
+- Record dedicated screen-reader combinations and results; screen-reader verification remains pending.
+- Add platform-specific supervisor, persistent-volume, secret-manager, DNS/TLS, log-retention, backup destination/retention, and on-call contacts when a production platform is selected.
+- Generate and publish rendered PlantUML diagrams in a documentation pipeline that has the PlantUML validator available.
+- Before persistence migration, add versioned physical JSON schemas/data dictionary and repository contract/import reconciliation specifications.
+- Keep the API reference synchronized with server.js and the machine-readable route authorization contract whenever routes or policies change.
+
+RECOMMENDED NEXT STEPS
+1. Have engineering, security, operations, product, and accessibility owners review and sign off these documents.
+2. Run the release checklist in a production-like environment and attach browser, mobile, assistive-technology, backup/restore, and role-workflow evidence.
+3. Select the production platform and replace generic runbook placeholders with exact, least-privilege operational commands and escalation contacts.
+4. Add CI checks for relative links, route inventory drift, Markdown style, and PlantUML compilation.
+5. Treat a SQLite/PostgreSQL migration as a separate designed and tested phase; do not bypass the repository/cutover/reconciliation steps documented here.
+
+===== END REPORT =====
