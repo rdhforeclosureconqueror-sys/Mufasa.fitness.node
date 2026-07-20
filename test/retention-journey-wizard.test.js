@@ -76,6 +76,30 @@ test("Step 1 reads the save payload from the currently checked controls", () => 
   });
 });
 
+test("production Step 1 markup matches the delegated browser event contract", () => {
+  const r = intake();
+  const html = wizard.renderStep(r, "pathway_selection");
+  assert.match(html, /<label class="rjw-pathway"><input type="checkbox" data-pathway="yoga_wellness"/);
+  assert.match(html, /<label class="rjw-pathway"><input type="checkbox" data-pathway="athlete_performance"/);
+
+  r.pathwaySelection = wizard.normalizePathway({ selected: ["yoga_wellness", "athlete_performance"], primary: "athlete_performance" });
+  const rerendered = wizard.renderStep(r, "pathway_selection");
+  assert.match(rerendered, /name="journeyPrimary" value="yoga_wellness"/);
+  assert.match(rerendered, /name="journeyPrimary" value="athlete_performance" checked/);
+
+  const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
+  assert.match(source, /section\.addEventListener\("change", event =>/);
+  assert.match(source, /el\?\.matches\?\.\("\[data-pathway\]"\)/);
+  assert.doesNotMatch(source, /querySelectorAll\("\[data-pathway\]"\)\.forEach/);
+});
+
+test("a save response cannot claim Saved after a newer control revision", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
+  assert.match(source, /savedRevision=revision/);
+  assert.match(source, /savedRevision !== revision/);
+  assert.match(source, /function dirty\(\) \{ revision\+\+/);
+});
+
 test("conditional pathway sections and Rugby visibility preserve stored answers", () => {
   const r = intake();
   r.pathwaySelection = { selected: ["general_fitness", "yoga_wellness"], primary: "general_fitness" };
