@@ -203,13 +203,13 @@
   }
 
   function renderProgressCard() {
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card" id="rfOnboardingProgress">
         <strong>Onboarding Progress</strong>
         <div class="retention-muted">Complete your intake so Ma’at can build a safer, more personalized program.</div>
         <ul>${getOnboardingProgress().map((item) => `<li><strong>${item.complete ? "Complete" : "Pending"}:</strong> ${esc(item.label)}${item.complete ? ` — ${esc(item.message)}` : ""}</li>`).join("")}</ul>
         <div class="retention-muted">Overhead Squat Assessment is available after camera connects, but pilot starter workouts are not blocked by OHSA.</div>
-      </div>`;
+      </div>`);
   }
 
   /* The retired client-intake forms below remain reachable from the legacy
@@ -237,7 +237,7 @@
     const streak = state.progressDashboard?.streak || {};
     const weekly = state.progressDashboard?.weeklyReview || {};
     const prompts = state.progressDashboard?.habitLoopPrompts || {};
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>Retention Motivation</strong>
         <div class="retention-grid">
@@ -256,13 +256,13 @@
           </ul>
           <div class="retention-muted">${esc(weekly.weekSummary || "Weekly summary will appear after check-in.")}</div>
         </div>
-      </div>`;
+      </div>`);
   }
 
   function renderRewardSummaryCard() {
     const reward = state.latestRewardSummary || state.progressDashboard?.rewardSummary || null;
     if (!reward) return;
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card" style="border-color:rgba(74,222,128,.8);background:rgba(22,163,74,.2);">
         <strong>🏆 Post-workout reward</strong>
         <div class="retention-grid">
@@ -275,11 +275,11 @@
         <div><strong>Streak update:</strong> ${esc(reward.streakUpdate || "Streak updated")}</div>
         <div><strong>Next scheduled workout:</strong> ${esc(reward.nextScheduledWorkout || "See calendar")}</div>
         <div style="margin-top:6px;"><strong>${esc(reward.momentumMessage || "You’re building momentum.")}</strong></div>
-      </div>`;
+      </div>`);
   }
 
   function renderIntakeForm() {
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>1) Client Intake</strong>
         <div class="retention-grid">
@@ -295,7 +295,7 @@
         <label><input id="rfDisclaimer" type="checkbox" ${state.intake?.medicalDisclaimerConsent ? "checked" : ""}/> I consent to medical disclaimer.</label>
         <button id="rfSaveIntakeBtn">Save Intake</button>
         <div class="retention-muted">You can return and edit these intake basics later.</div>
-      </div>`;
+      </div>`);
 
     document.getElementById("rfSaveIntakeBtn").onclick = async () => {
       try {
@@ -329,7 +329,7 @@
   }
 
   function renderGoalsBaselineForm() {
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>2) Goals + Baseline</strong>
         <label>Primary Goal
@@ -340,7 +340,7 @@
         <label>Measurements (comma-separated)<input id="rfMeasurements" value="${esc((state.goalsBaseline?.baseline?.measurements || []).join(", "))}" /></label>
         <label>Visual scan link<input id="rfVisualScan" value="${esc(state.goalsBaseline?.baseline?.visualProgressScan || "")}" /></label>
         <button id="rfSaveGoalBtn">Save Goals + Baseline</button>
-      </div>`;
+      </div>`);
 
     document.getElementById("rfSaveGoalBtn").onclick = async () => {
       try {
@@ -364,7 +364,7 @@
   }
 
   function renderProgramCards() {
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>3) Programs</strong>
         <div class="retention-muted">Pick one and assign it to your account.</div>
@@ -376,7 +376,7 @@
             <button data-rf-program-index="${index}">Use this program</button>
           </div>
         `).join("")}
-      </div>`;
+      </div>`);
 
     Array.from(contentEl.querySelectorAll("[data-rf-program-index]")).forEach((btn) => {
       btn.onclick = async () => {
@@ -426,7 +426,7 @@
     }
 
     html += "</div><div class=\"retention-muted\">Click a scheduled day to open daily workout detail.</div></div>";
-    contentEl.innerHTML += html;
+    contentEl.insertAdjacentHTML("beforeend", html);
 
     Array.from(contentEl.querySelectorAll("[data-rf-date]")).forEach((btn) => {
       btn.onclick = () => {
@@ -503,7 +503,7 @@
     if (existing) {
       existing.outerHTML = detailsMarkup;
     } else {
-      contentEl.innerHTML += detailsMarkup;
+      contentEl.insertAdjacentHTML("beforeend", detailsMarkup);
     }
 
     const startBtn = document.getElementById("rfStartWorkoutBtn");
@@ -567,7 +567,7 @@
     const latestTs = latest?.ts ? Number(latest.ts) : 0;
     const stale = !latestTs || (Date.now() - latestTs) > (7 * 24 * 60 * 60 * 1000);
 
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>8) Weekly Review ${stale ? "(Prompted)" : "(Up to date)"}</strong>
         <div class="retention-muted">Latest check-in: ${latestTs ? new Date(latestTs).toLocaleDateString() : "none"}</div>
@@ -586,7 +586,7 @@
         <label>Visual scan link (optional)<input id="rfVisualScanOptional" value="${esc(latest?.visualScanOptional || "")}"></label>
         <label>Next week focus<input id="rfNextWeekFocus" value="${esc(latest?.nextWeekFocus || "")}"></label>
         <button id="rfSaveCheckinBtn">Save Weekly Review</button>
-      </div>`;
+      </div>`);
 
     document.getElementById("rfSaveCheckinBtn").onclick = async () => {
       try {
@@ -628,7 +628,7 @@
       return Math.round(arr.reduce((sum, value) => sum + Number(value || 0), 0) / arr.length);
     };
 
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>9) Progress Dashboard</strong>
         <div class="retention-grid">
@@ -641,13 +641,13 @@
         <ul>
           ${scans.length ? scans.map((scan) => `<li><a href="${esc(scan.frontImageUrl || scan.sideImageUrl || scan.backImageUrl || "#")}" target="_blank" rel="noopener">${esc(scan.captureLabel || scan.scanId || "scan")}</a></li>`).join("") : "<li>No visual scans yet. Add baseline scan link in Goals + Baseline.</li>"}
         </ul>
-      </div>`;
+      </div>`);
   }
 
   function renderProgressNarrative() {
     const story = state.progressDashboard?.progressNarrative || {};
     const coachMessages = state.progressDashboard?.coachMessaging?.messages || [];
-    contentEl.innerHTML += `
+    contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
         <strong>Your Progress Story</strong>
         <div class="retention-grid">
@@ -665,7 +665,7 @@
           <strong>Coach messages</strong>
           <ul>${coachMessages.map((msg) => `<li><strong>${esc(msg.type)}:</strong> ${esc(msg.text)}</li>`).join("")}</ul>
         </div>
-      </div>`;
+      </div>`);
   }
 
   async function refreshState() {
@@ -721,7 +721,7 @@
           : state.personalization?.featureFlags?.hasAssessmentRecommendations
             ? "Recommended · not started"
             : "Optional · not started";
-      contentEl.innerHTML += `<div class="retention-grid" aria-label="Later journey stages"><div class="retention-card"><strong>Assessment</strong><div class="retention-muted">${assessmentStatus}</div></div><div class="retention-card"><strong>First Workout</strong><div class="retention-muted">${state.onboardingStatus?.sections?.firstWorkout?.status === "complete" ? "Complete" : "Not started"}</div></div><div class="retention-card"><strong>Weekly Habits</strong><div class="retention-muted">Available after your program begins.</div></div></div>`;
+      contentEl.insertAdjacentHTML("beforeend", `<div class="retention-grid" aria-label="Later journey stages"><div class="retention-card"><strong>Assessment</strong><div class="retention-muted">${assessmentStatus}</div></div><div class="retention-card"><strong>First Workout</strong><div class="retention-muted">${state.onboardingStatus?.sections?.firstWorkout?.status === "complete" ? "Complete" : "Not started"}</div></div><div class="retention-card"><strong>Weekly Habits</strong><div class="retention-muted">Available after your program begins.</div></div></div>`);
       if (state.personalization?.recommendedWorkoutCategory || state.goalsBaseline?.goal) renderProgramCards();
       if (state.currentProgram?.programId) {
         renderRewardSummaryCard();
