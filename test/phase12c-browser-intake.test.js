@@ -28,7 +28,8 @@ test("Phase 12C maps HTTP, offline, retry, and session-expiry failures", () => {
 });
 
 test("Phase 12C guards duplicate actions and supports keyboard continuation", () => {
-  assert.match(wizardSource, /if \(busy\) return pending/);
+  assert.match(wizardSource, /if\(advancing\)return/);
+  assert.doesNotMatch(wizardSource, /if \(busy\) return pending/);
   assert.match(wizardSource, /setBusy\(true\)/);
   assert.match(wizardSource, /event\.key === "Enter"/);
   assert.match(wizardSource, /event\.preventDefault\(\)/);

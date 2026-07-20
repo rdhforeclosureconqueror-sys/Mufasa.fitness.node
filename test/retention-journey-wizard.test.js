@@ -36,6 +36,46 @@ test("pathway selection is capped and safely reassigns primary", () => {
   assert.equal(wizard.LIMITS["athletePerformance.performancePriorities"], 3);
 });
 
+test("Step 1 derives primary choices for one and two selected pathways", () => {
+  const r = intake();
+  r.pathwaySelection = wizard.normalizePathway({ selected: ["yoga_wellness"] });
+  let html = wizard.renderStep(r, "pathway_selection");
+  assert.match(html, /name="journeyPrimary" value="yoga_wellness" checked/);
+  assert.doesNotMatch(html, /Select a pathway first/);
+  r.pathwaySelection = wizard.normalizePathway({ selected: ["yoga_wellness", "athlete_performance"], primary: "yoga_wellness" });
+  html = wizard.renderStep(r, "pathway_selection");
+  assert.match(html, /value="yoga_wellness" checked/);
+  assert.match(html, /value="athlete_performance"/);
+});
+
+test("Step 1 validation is specific and removing a primary follows product rules", () => {
+  assert.deepEqual(wizard.validatePathwaySelection({ selected: [], primary: null }), { "pathwaySelection.selected": "Choose at least one pathway." });
+  assert.deepEqual(wizard.validatePathwaySelection({ selected: ["yoga_wellness", "athlete_performance"], primary: null }), { "pathwaySelection.primary": "Choose a primary pathway." });
+  assert.deepEqual(wizard.validatePathwaySelection({ selected: ["yoga_wellness", "athlete_performance"], primary: "athlete_performance" }), {});
+  assert.deepEqual(wizard.normalizePathway({ selected: ["yoga_wellness"], primary: "athlete_performance" }), { selected: ["yoga_wellness"], primary: "yoga_wellness" });
+  assert.deepEqual(wizard.normalizePathway({ selected: ["yoga_wellness", "general_fitness"], primary: "athlete_performance" }), { selected: ["yoga_wellness", "general_fitness"], primary: null });
+});
+
+test("Step 1 reads the save payload from the currently checked controls", () => {
+  const controls = {
+    querySelectorAll(selector) {
+      assert.equal(selector, "[data-pathway]:checked");
+      return [
+        { dataset: { pathway: "yoga_wellness" } },
+        { dataset: { pathway: "athlete_performance" } }
+      ];
+    },
+    querySelector(selector) {
+      assert.equal(selector, '[name="journeyPrimary"]:checked');
+      return { value: "athlete_performance" };
+    }
+  };
+  assert.deepEqual(wizard.pathwaySelectionFromControls(controls), {
+    selected: ["yoga_wellness", "athlete_performance"],
+    primary: "athlete_performance"
+  });
+});
+
 test("conditional pathway sections and Rugby visibility preserve stored answers", () => {
   const r = intake();
   r.pathwaySelection = { selected: ["general_fitness", "yoga_wellness"], primary: "general_fitness" };
@@ -56,6 +96,7 @@ test("wizard markup provides associated errors, focus targets, groups and naviga
   assert.match(goals, /fieldset/); assert.match(goals, /legend/); assert.match(goals, /aria-describedby="rjw-goals-secondaryGoals-error"/); assert.match(goals, /id="rjw-step-heading" tabindex="-1"/);
   const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
   assert.match(source, /Unsaved changes/); assert.match(source, /Saving…/); assert.match(source, /Save failed/); assert.match(source, /queue\.then/); assert.match(source, /mine !== sequence/);
+  assert.doesNotMatch(source, /if \(busy\) return pending/); assert.match(source, /if\(advancing\)return/);
   assert.match(source, />Previous</); assert.match(source, /Save &amp; Continue/); assert.match(source, /\[aria-invalid=true\]/);
 });
 
