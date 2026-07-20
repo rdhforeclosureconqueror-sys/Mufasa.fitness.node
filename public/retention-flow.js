@@ -5,7 +5,9 @@
   const root = document.getElementById("retentionFlowRoot");
   const statusEl = document.getElementById("retentionFlowStatus");
   const contentEl = document.getElementById("retentionFlowContent");
-  if (!root || !statusEl || !contentEl) return;
+  const debugMemberHome = new URLSearchParams(window.location.search || "").get("debugMemberHome") === "1";
+  const debug = (message, detail) => { if (debugMemberHome) console.info("[MEMBER_HOME]", message, detail || ""); };
+  debug("initialized");
 
   const GOAL_OPTIONS = [
     "fat_loss",
@@ -84,6 +86,20 @@
   function todayKey() {
     return new Date().toISOString().slice(0, 10);
   }
+
+  function normalizeCalendarDate(value) {
+    const runtimeType = value === null ? "null" : value instanceof Date ? "Date" : typeof value;
+    debug("date field", { field: "workoutDate", type: runtimeType });
+    const date = value instanceof Date
+      ? new Date(value.getTime())
+      : (typeof value === "string" || typeof value === "number" ? new Date(value) : null);
+    if (!date || !Number.isFinite(date.getTime())) { debug("date normalization fallback", { field: "workoutDate" }); return null; }
+    const key = date.toISOString().slice(0, 10);
+    debug("date normalization success", { field: "workoutDate" });
+    return { date, key, label: key.slice(5, 10) };
+  }
+  window.MemberHomeDateRuntime = Object.freeze({ normalizeCalendarDate });
+  if (!root || !statusEl || !contentEl) return;
 
   function esc(value) {
     return String(value == null ? "" : value)
@@ -414,15 +430,17 @@
     for (let i = 0; i < totalDays; i += 1) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
-      const dayOfWeek = date.getDay();
-      const dateKey = date.toISOString().slice(0, 10);
+      const normalizedDate = normalizeCalendarDate(date);
+      if (!normalizedDate) continue;
+      const dayOfWeek = normalizedDate.date.getDay();
+      const dateKey = normalizedDate.key;
       const scheduled = dayOfWeek > 0 && dayOfWeek <= (program.daysPerWeek || 3);
       const done = state.completionDates.includes(dateKey);
       const classes = ["retention-cal-day"];
       if (scheduled) classes.push("scheduled");
       if (done) classes.push("done");
       if (dateKey === today) classes.push("today");
-      html += `<button type="button" class="${classes.join(" ")}" data-rf-date="${dateKey}">${date.slice(5, 10)}</button>`;
+      html += `<button type="button" class="${classes.join(" ")}" data-rf-date="${dateKey}">${normalizedDate.label}</button>`;
     }
 
     html += "</div><div class=\"retention-muted\">Click a scheduled day to open daily workout detail.</div></div>";

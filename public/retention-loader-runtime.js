@@ -7,7 +7,7 @@
   const LOADER_TAG = "[RETENTION_LOADER]";
   const READY_TAG = "[RETENTION_READY]";
   const ERROR_TAG = "[RETENTION_ERROR]";
-  const DEFAULT_SCRIPT_SRC = "/retention-flow.js?v=20260720a";
+  const DEFAULT_SCRIPT_SRC = "/retention-flow.js?v=20260720b";
   const DEFAULT_LOAD_TIMEOUT_MS = 10000;
 
   const state = {
