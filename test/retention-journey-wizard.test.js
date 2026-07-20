@@ -56,6 +56,26 @@ test("Step 1 validation is specific and removing a primary follows product rules
   assert.deepEqual(wizard.normalizePathway({ selected: ["yoga_wellness", "general_fitness"], primary: "athlete_performance" }), { selected: ["yoga_wellness", "general_fitness"], primary: null });
 });
 
+test("Step 1 reads the save payload from the currently checked controls", () => {
+  const controls = {
+    querySelectorAll(selector) {
+      assert.equal(selector, "[data-pathway]:checked");
+      return [
+        { dataset: { pathway: "yoga_wellness" } },
+        { dataset: { pathway: "athlete_performance" } }
+      ];
+    },
+    querySelector(selector) {
+      assert.equal(selector, '[name="journeyPrimary"]:checked');
+      return { value: "athlete_performance" };
+    }
+  };
+  assert.deepEqual(wizard.pathwaySelectionFromControls(controls), {
+    selected: ["yoga_wellness", "athlete_performance"],
+    primary: "athlete_performance"
+  });
+});
+
 test("conditional pathway sections and Rugby visibility preserve stored answers", () => {
   const r = intake();
   r.pathwaySelection = { selected: ["general_fitness", "yoga_wellness"], primary: "general_fitness" };
