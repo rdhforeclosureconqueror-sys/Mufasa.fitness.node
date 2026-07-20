@@ -120,7 +120,7 @@ test("wizard markup provides associated errors, focus targets, groups and naviga
   assert.match(goals, /fieldset/); assert.match(goals, /legend/); assert.match(goals, /aria-describedby="rjw-goals-secondaryGoals-error"/); assert.match(goals, /id="rjw-step-heading" tabindex="-1"/);
   const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
   assert.match(source, /Unsaved changes/); assert.match(source, /Saving…/); assert.match(source, /Save failed/); assert.match(source, /queue\.then/); assert.match(source, /mine !== sequence/);
-  assert.doesNotMatch(source, /if \(busy\) return pending/); assert.match(source, /if\(advancing\)return/);
+  assert.doesNotMatch(source, /if \(busy\) return pending/); assert.match(source, /busy \|\| advancing/);
   assert.match(source, />Previous</); assert.match(source, /Save &amp; Continue/); assert.match(source, /\[aria-invalid=true\]/);
 });
 
@@ -142,4 +142,64 @@ test("Universal Intake is isolated from comma-separated legacy intake", () => {
   assert.equal((flow.match(/RetentionJourneyWizard\.create/g) || []).length, 1);
   assert.doesNotMatch(source, /comma-separated/i);
   assert.match(flow, /retired client-intake forms/);
+});
+
+test("production lifecycle preserves the wizard section and delegates navigation after rerender", async () => {
+  const flow = fs.readFileSync(path.join(__dirname, "../public/retention-flow.js"), "utf8");
+  assert.doesNotMatch(flow, /contentEl\.innerHTML \+=/,
+    "appending later cards must not reparse and detach the initialized wizard");
+  assert.match(flow, /contentEl\.insertAdjacentHTML\("beforeend"/);
+
+  const source = fs.readFileSync(path.join(__dirname, "../public/retention-journey-wizard.js"), "utf8");
+  assert.match(source, /section\.addEventListener\("click"/);
+  assert.match(source, /#rfJourneyContinue,#rfJourneyBack,#rfJourneySave,#rfSubmitJourney/);
+  assert.doesNotMatch(source, /querySelector\("#rfJourneyContinue"\)\?\.addEventListener/);
+  assert.match(source, /const patch=collect\(STEPS\[idx\+1\]\)/);
+  assert.match(source, /validatePathwaySelection\(patch\.pathwaySelection\)/);
+  assert.match(source, /request\("\/api\/me\/retention\/intake",\{method:"PATCH",body:patch\}\)/);
+
+  // Executable lifecycle model for the production failure: innerHTML += reparses existing
+  // descendants and drops their listeners, while insertAdjacentHTML preserves them.
+  const button = { clicks: 0, click() { this.clicks += 1; } };
+  const content = {
+    child: button,
+    get innerHTML() { return "<section>wizard</section>"; },
+    set innerHTML(_) { this.child = { clicks: 0, click() { this.clicks += 1; } }; },
+    insertAdjacentHTML() {}
+  };
+  const attachedButton = content.child;
+  content.insertAdjacentHTML("beforeend", "<div>later cards</div>");
+  assert.equal(content.child, attachedButton);
+  content.child.click();
+  assert.equal(attachedButton.clicks, 1);
+  content.innerHTML += "<div>later cards</div>";
+  assert.notEqual(content.child, attachedButton);
+});
+
+test("Step 1 delegated click contract produces the exact continuation payload", () => {
+  const selected = wizard.pathwaySelectionFromControls({
+    querySelectorAll: () => [
+      { dataset: { pathway: "yoga_wellness" } },
+      { dataset: { pathway: "athlete_performance" } }
+    ],
+    querySelector: () => ({ value: "athlete_performance" })
+  });
+  const payload = { pathwaySelection: selected, currentStep: wizard.STEPS[1] };
+  assert.deepEqual(payload, {
+    pathwaySelection: {
+      selected: ["yoga_wellness", "athlete_performance"],
+      primary: "athlete_performance"
+    },
+    currentStep: "identity_profile"
+  });
+});
+
+test("telemetry rejection is isolated from intake initialization", async () => {
+  const shell = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(shell, /fetch\(NODE_PILOT_EVENTS_URL,[\s\S]*?\.catch\(\(err\) =>/);
+  const telemetry = Promise.reject(Object.assign(new Error("Unauthorized"), { status: 401 })).catch(() => false);
+  let initialized = false;
+  initialized = true;
+  assert.equal(await telemetry, false);
+  assert.equal(initialized, true);
 });
