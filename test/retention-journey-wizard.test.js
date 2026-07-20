@@ -132,7 +132,7 @@ test("submitted views use member-safe language and no raw health enums", () => {
 
 test("server validation detail shapes map to fields and sections", () => {
   assert.deepEqual(wizard.mapServerErrors({ message: "invalid date", details: { field: "profile.dateOfBirth" } }), { "profile.dateOfBirth": "invalid date" });
-  assert.deepEqual(wizard.mapServerErrors({ details: { fields: ["goals", "schedule"] } }), { goals: "Complete this section before submitting.", schedule: "Complete this section before submitting." });
+  assert.deepEqual(wizard.mapServerErrors({ details: { fields: ["goals", "schedule"] } }), { goals: "Goals: Complete this section before submitting.", schedule: "Schedule: Complete this section before submitting." });
   assert.deepEqual(wizard.mapServerErrors({ details: { issues: [{ path: ["goals", "primaryGoal"], message: "Required" }] } }), { "goals.primaryGoal": "Required" });
 });
 
@@ -203,3 +203,6 @@ test("telemetry rejection is isolated from intake initialization", async () => {
   assert.equal(await telemetry, false);
   assert.equal(initialized, true);
 });
+
+test("numeric browser contracts serialize canonical values, align constraints, and show readable errors",()=>{const r=intake();r.trainingContext.activeDaysPerWeek="3";r.schedule.realisticSessionsPerWeek=3;r.schedule.preferredSessionMinutes="90";assert.match(wizard.renderStep(r,"training_context"),/type="number"[^>]*value="3"[^>]*min="1" max="7" step="1"/);const schedule=wizard.renderStep(r,"schedule");assert.match(schedule,/value="3"[^>]*min="1" max="7" step="1"/);assert.match(schedule,/value="90"[^>]*min="15" max="180" step="1"/);assert.deepEqual(wizard.validateNumericPatch({trainingContext:{activeDaysPerWeek:3}}),{});assert.match(wizard.validateNumericPatch({trainingContext:{activeDaysPerWeek:null}})["trainingContext.activeDaysPerWeek"],/Enter how many days/);assert.match(wizard.validateNumericPatch({schedule:{realisticSessionsPerWeek:3.5}})["schedule.realisticSessionsPerWeek"],/whole number/);assert.match(wizard.mapServerErrors({details:{field:"schedule.preferredSessionMinutes"}})["schedule.preferredSessionMinutes"],/whole minutes/)});
+test("final review maps exact server requirements to readable, navigable steps",()=>{const mapped=wizard.mapServerErrors({details:{incomplete:[{step:"training_context",path:"trainingContext.activeDaysPerWeek",message:"Training Context: Enter how many days per week you currently train."},{step:"schedule",path:"schedule.realisticSessionsPerWeek",message:"Schedule: Enter how many sessions per week you can realistically complete."}]}});assert.deepEqual(Object.keys(mapped),["trainingContext.activeDaysPerWeek","schedule.realisticSessionsPerWeek"]);assert.doesNotMatch(Object.values(mapped).join(" "),/trainingContext\.activeDaysPerWeek|Complete this section/);const source=fs.readFileSync(path.join(__dirname,"../public/retention-journey-wizard.js"),"utf8");assert.match(source,/data-review-step/);assert.match(source,/summary\)\.focus/)});
