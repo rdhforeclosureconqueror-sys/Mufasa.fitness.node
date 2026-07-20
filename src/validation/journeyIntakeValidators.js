@@ -17,6 +17,13 @@ function string(v, field, max = 1000) {
 }
 function boolean(v, field) { if (v == null) return null; if (typeof v !== "boolean") fail(field, "must be a boolean"); return v; }
 function number(v, field, min, max) { if (v == null || v === "") return null; const n = Number(v); if (!Number.isFinite(n) || n < min || n > max) fail(field, `must be between ${min} and ${max}`); return n; }
+function integer(v, field, min, max) {
+  if (v == null || v === "") return null;
+  if ((typeof v !== "number" && typeof v !== "string") || (typeof v === "string" && !/^-?\d+$/.test(v.trim()))) fail(field, `must be a whole number from ${min} to ${max}`);
+  const n = Number(v);
+  if (!Number.isSafeInteger(n) || n < min || n > max) fail(field, `must be a whole number from ${min} to ${max}`);
+  return n;
+}
 function date(v, field) { const s = string(v, field, 10); if (s == null) return null; if (!/^\d{4}-\d{2}-\d{2}$/.test(s) || Number.isNaN(Date.parse(`${s}T00:00:00Z`)) || new Date(`${s}T00:00:00Z`).toISOString().slice(0,10) !== s) fail(field, "must be a valid YYYY-MM-DD date"); return s; }
 function array(v, field, max = 20, itemMax = 200) {
   if (v == null) return [];
@@ -30,8 +37,8 @@ const schema = {
   profile: { dateOfBirth:[date], genderIdentity:[string,80], genderSelfDescription:[string,200], heightCm:[number,50,300], weightKg:[number,20,450] },
   goals: { primaryGoal:[string,160], secondaryGoals:[array,3,160], successDefinition:[string,1000], importantDate:[date] },
   healthSafety: { currentPainOrInjury:[string,1200], receivingTreatmentOrRehab:[boolean], instructedToAvoidStrenuousExercise:[string,1200], concussionHistory:[string,1200], conditions:[array,20,160], details:[string,2000], believesExerciseIsSafe:[string,40], coachNotesBeforeTesting:[string,1200], medicalDisclaimerConsent:[boolean] },
-  trainingContext: { activeDaysPerWeek:[string,40], currentTrainingTypes:[array,20,120], selfRatedFitnessLevel:[string,80], gymAccess:[string,80], fieldTrackAccess:[string,80], availableEquipment:[array,40,120] },
-  schedule: { preferredStartDate:[date], availableDays:[array,7,20], availableTimes:[array,10,80], realisticSessionsPerWeek:[string,40], preferredSessionMinutes:[number,15,180], limitations:[string,1000] },
+  trainingContext: { activeDaysPerWeek:[integer,1,7], currentTrainingTypes:[array,20,120], selfRatedFitnessLevel:[string,80], gymAccess:[string,80], fieldTrackAccess:[string,80], availableEquipment:[array,40,120] },
+  schedule: { preferredStartDate:[date], availableDays:[array,7,20], availableTimes:[array,10,80], realisticSessionsPerWeek:[integer,1,7], preferredSessionMinutes:[integer,15,180], limitations:[string,1000] },
   athletePerformance: { enabled:[boolean], sport:[string,80], sportOther:[string,120], currentLevel:[string,120], performancePriorities:[array,3,160], currentTeamOrClub:[string,200] },
   rugbySupplement: { enabled:[boolean], experienceYears:[string,40], formats:[array,2,40], clubStatus:[string,100], currentOrProspectiveClub:[string,200], playingStatus:[string,100], primaryPosition:[string,100], secondaryPosition:[string,100], highestLevelPlayed:[string,160], previousTeams:[string,1000], performanceLimiters:[string,1200], previousTestResults:[string,1200], preferredCoachingStyle:[string,500], additionalContext:[string,1500] },
   generalFitness: { enabled:[boolean], weightChangeGoal:[string,120], desiredWeightChange:[number,-300,300], motivation:[string,1000] },
