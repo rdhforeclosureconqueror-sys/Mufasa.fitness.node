@@ -16,7 +16,7 @@ test("frontend includes login form and delegates auth submit ownership to auth-c
   const authCore = read("public/auth-core.js");
   const authUi = read("public/auth-ui.js");
   assert.match(html, /<script src="\/auth-core\.js" defer><\/script>/, "auth-core runtime must be loaded as the auth form request owner");
-  assert.match(html, /<form id="authLoginForm" action="javascript:void\(0\)" method="post"/, "auth login form must force post semantics");
+  assert.match(html, /<form id="authLoginForm" action="#" method="post"/, "auth login form must force post semantics");
   assert.doesNotMatch(html, /id="authLoginForm"[^>]*onsubmit=/, "auth login form must not use inline onsubmit blocker");
   assert.match(html, /id="authLoginSubmit"/, "auth login submit button must exist");
   assert.match(html, /id="authLoginSubmit" type="submit"/, "auth login submit button must be submit type");

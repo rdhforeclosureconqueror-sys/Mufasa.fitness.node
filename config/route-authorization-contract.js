@@ -19,13 +19,13 @@ module.exports = Object.freeze([
   {
     "method": "GET",
     "path": "/__version",
-    "authentication": "required",
+    "authentication": "public",
     "allowedRoles": [],
     "requiredPermissions": [],
     "membership": "not-required",
-    "ownership": "authenticated-user",
+    "ownership": "not-applicable",
     "featureFlag": null,
-    "publicOutput": "authenticated-safe",
+    "publicOutput": "public-safe",
     "rateLimit": null,
     "compatibility": null,
     "publicWrite": null
@@ -177,13 +177,13 @@ module.exports = Object.freeze([
   {
     "method": "GET",
     "path": "/api/billing/plan",
-    "authentication": "required",
+    "authentication": "public",
     "allowedRoles": [],
     "requiredPermissions": [],
     "membership": "not-required",
-    "ownership": "authenticated-user",
+    "ownership": "not-applicable",
     "featureFlag": null,
-    "publicOutput": "authenticated-safe",
+    "publicOutput": "public-safe",
     "rateLimit": null,
     "compatibility": null,
     "publicWrite": null

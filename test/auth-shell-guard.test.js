@@ -11,7 +11,7 @@ function readShell() {
 
 test("canonical auth shell keeps authLoginForm and does not force builder auth", () => {
   const html = readShell();
-  assert.match(html, /<form id="authLoginForm" action="javascript:void\(0\)" method="post"/, "canonical auth form should remain present");
+  assert.match(html, /<form id="authLoginForm" action="#" method="post"/, "canonical auth form should remain present");
   assert.match(html, /<script src="\/auth-core\.js" defer><\/script>/, "auth-core must own login submit handling");
   assert.match(html, /const BUILDER_MODE_FULL_ACCESS = false/, "builder full-access mode must be disabled in product shell");
   assert.match(html, /let DISABLE_LOGIN_FOR_PILOT = false/, "frontend pilot bypass flag must default off");
