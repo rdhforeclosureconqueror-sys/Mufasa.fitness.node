@@ -106,6 +106,7 @@ function validateProgramAssignment(input) {
   const payload = assertObject(input, "Request body");
   return {
     clientId: asString(payload.clientId, "clientId", { required: true, max: 128 }),
+    title: asString(payload.title, "title", { required: false, max: 120 }),
     goal: validateGoalCategory(payload.goal, "goal"),
     durationWeeks: asNumber(payload.durationWeeks, "durationWeeks", { required: true, min: 1, max: 104 }),
     daysPerWeek: asNumber(payload.daysPerWeek, "daysPerWeek", { required: true, min: 1, max: 7 }),

@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const { ApiError } = require("../lib/apiResponse");
 const { byId } = require("../workouts/exerciseCatalog");
+const { resolveMemberProgramState } = require("./memberProgramState");
 
 const EXECUTION_VERSION = 1;
 const STATUSES = new Set(["in_progress", "completed"]);
@@ -23,15 +24,16 @@ function exerciseId(item, index) { return item.exerciseId || `exercise_${index +
 function createGeneratedWorkoutService({ userStore, userDataService }) {
   function readModel(userId) {
     const user = userStore.loadUser(userId);
+    const programState = resolveMemberProgramState(user);
     const persisted = user.generatedWorkoutPlan;
-    if (!persisted?.plan) return { available: false, plan: null, activeProgramSource: user.program ? "coach_assigned" : user.selectedProgram ? "member_selected" : "legacy_fallback" };
+    if (!persisted?.plan) return { available: false, plan: null, activeProgramSource: programState.source, assignedProgram: programState.activeProgram };
     const plan = persisted.plan;
     const executions = Array.isArray(user.generatedWorkoutExecutions) ? user.generatedWorkoutExecutions : [];
     const recommendation = user.programRecommendation?.recommendedProgram || {};
     return {
       available: true,
-      activeProgramSource: user.program ? "coach_assigned" : user.selectedProgram ? "member_selected" : "generated_recommendation",
-      assignedProgram: user.program ? { programId: user.program.programId || null, title: user.program.title || "Assigned program" } : null,
+      activeProgramSource: programState.source,
+      assignedProgram: programState.activeProgram ? { programId: programState.activeProgram.programId || null, title: programState.activeProgram.title || programState.activeProgram.goal || "Active program" } : null,
       plan: {
         planVersion: plan.version,
         generatorVersion: persisted.generatorVersion,
@@ -52,6 +54,7 @@ function createGeneratedWorkoutService({ userStore, userDataService }) {
 
   function findSession(userId, requestedSessionId) {
     const model = readModel(userId);
+    if (model.assignedProgram) throw new ApiError("ACTIVE_PROGRAM_PRECEDENCE", "The active program is authoritative; generated sessions are previews only", 409);
     if (!model.available) throw new ApiError("GENERATED_PLAN_NOT_FOUND", "No generated workout plan is available", 404);
     const session = model.plan.sessions.find(item => item.sessionId === requestedSessionId);
     if (!session) throw new ApiError("SESSION_NOT_FOUND", "Generated workout session was not found", 404);

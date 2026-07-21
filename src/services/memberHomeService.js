@@ -40,8 +40,9 @@ function createMemberHomeService({ journeyIntakeService, personalizationService,
     const nutrition = nutritionService.currentWeeklyPlan(userId);
     const progress = userDataService.getProgressDashboard(userId);
     const sessions = workout.plan?.sessions || [];
-    const inProgress = sessions.find(item => item.status === "in_progress") || null;
-    const nextWorkout = sessions.find(item => item.status === "not_started") || null;
+    const generatedIsActive = workout.activeProgramSource === "generated_active";
+    const inProgress = generatedIsActive ? sessions.find(item => item.status === "in_progress") || null : null;
+    const nextWorkout = generatedIsActive ? sessions.find(item => item.status === "not_started") || null : null;
     const incompleteMission = (nutrition.missions || []).find(item => !["completed", "skipped"].includes(item.status)) || null;
     const assessmentItems = personalization.recommendedAssessments || [];
     const assessment = assessmentItems[0] || null;
@@ -50,8 +51,8 @@ function createMemberHomeService({ journeyIntakeService, personalizationService,
     const source = workout.activeProgramSource;
     const activeProgram = source === "coach_assigned"
       ? { source: "Assigned program", title: workout.assignedProgram?.title || "Assigned program" }
-      : source === "member_selected" ? { source: "Selected program", title: "Your selected program" }
-        : source === "generated_recommendation" ? { source: "Journey recommendation", title: workout.plan?.recommendedProgram?.title || "Recommended weekly plan" }
+      : source === "member_selected" ? { source: "Selected program", title: workout.assignedProgram?.title || "Your selected program" }
+        : source === "generated_active" ? { source: "Generated program", title: workout.plan?.recommendedProgram?.title || "Generated weekly plan" }
           : { source: "No active program", title: "Complete your Journey to receive a recommendation" };
     const model = {
       version: 1,

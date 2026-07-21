@@ -380,16 +380,17 @@
   }
 
   function renderProgramCards() {
+    const hasActiveProgram = Boolean(state.currentProgram?.programId);
     contentEl.insertAdjacentHTML("beforeend", `
       <div class="retention-card">
-        <strong>3) Programs</strong>
-        <div class="retention-muted">Pick one and assign it to your account.</div>
+        <strong>3) ${hasActiveProgram ? "Available Recommendations" : "Programs"}</strong>
+        ${hasActiveProgram ? `<div><strong>Current Active Program:</strong> ${esc(state.currentProgram.title || state.currentProgram.goal || "Assigned program")}</div><div class="retention-muted">Recommendations do not replace your active program unless you explicitly confirm a switch.</div>` : '<div class="retention-muted">Pick one and assign it to your account.</div>'}
         ${PROGRAM_LIBRARY.map((program, index) => `
           <div class="retention-card">
             <div><strong>${esc(program.title)}</strong></div>
             <div class="retention-muted">Goal: ${esc(program.goal)} • ${program.daysPerWeek} days/week • ${program.durationWeeks} weeks</div>
             <div class="retention-muted">Focus: ${esc(program.movementFocus.join(", "))}</div>
-            <button data-rf-program-index="${index}">Use this program</button>
+            <button data-rf-program-index="${index}" data-rf-action="${hasActiveProgram ? "switch" : "assign"}">${hasActiveProgram ? "Switch Program" : "Use this program"}</button>
           </div>
         `).join("")}
       </div>`);
@@ -397,11 +398,18 @@
     Array.from(contentEl.querySelectorAll("[data-rf-program-index]")).forEach((btn) => {
       btn.onclick = async () => {
         const program = PROGRAM_LIBRARY[Number(btn.getAttribute("data-rf-program-index"))];
+        const switching = btn.getAttribute("data-rf-action") === "switch";
+        if (switching && !window.confirm(`Switch from your current active program to ${program.title}?`)) return;
+        if (state.currentProgram?.goal === program.goal && Number(state.currentProgram?.durationWeeks) === program.durationWeeks) {
+          statusEl.textContent = "That program is already active; no duplicate assignment was created.";
+          return;
+        }
         try {
           const assigned = await authedRequest("/api/programs", {
             method: "POST",
             body: {
               clientId: state.userId,
+              title: program.title,
               goal: program.goal,
               durationWeeks: program.durationWeeks,
               daysPerWeek: program.daysPerWeek,
