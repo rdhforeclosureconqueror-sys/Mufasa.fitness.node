@@ -86,6 +86,16 @@ function isAvatarFeatureEnabled(env = process.env) {
   return env.ENABLE_AVATAR_FEATURE === "true";
 }
 
+function assertProductionPersistenceConfig({ env = process.env, rootDirWasExplicit = false, dataDirWasExplicit = false } = {}) {
+  if (env.NODE_ENV !== "production" || rootDirWasExplicit || dataDirWasExplicit) return;
+  if (!String(env.POCKET_PT_DATA_DIR || "").trim()) {
+    throw new Error("POCKET_PT_DATA_DIR is required in production and must point to an attached persistent volume");
+  }
+  if (env.ENABLE_AVATAR_FEATURE === "true" && !String(env.POCKET_PT_AVATAR_UPLOAD_DIR || "").trim()) {
+    throw new Error("POCKET_PT_AVATAR_UPLOAD_DIR is required in production when avatar uploads are enabled");
+  }
+}
+
 function normalizeAuthBridgeTrustMode(raw) {
   const mode = String(raw || "").trim().toLowerCase();
   if (!mode) return null;
@@ -219,6 +229,10 @@ function shouldLogSystemRequest(pathname = "") {
 }
 
 function createApp(options = {}) {
+  assertProductionPersistenceConfig({
+    rootDirWasExplicit: Boolean(options.rootDir),
+    dataDirWasExplicit: Boolean(options.dataDir)
+  });
   const insecureTestCompatibility = options.allowInsecureTestRoutes === true;
   const requireCriticalRouteAuth = insecureTestCompatibility ? (_req, _res, next) => next() : requireAuth;
   const app = express();
@@ -229,13 +243,18 @@ function createApp(options = {}) {
   const disableLoginForPilot = pilotBypassRuntimeAllowed && process.env.DISABLE_LOGIN_FOR_PILOT === "true";
 
   const rootDir = options.rootDir || process.cwd();
+  // Transactional/member state must be separable from the application image. On
+  // Render this directory is pointed at the mounted persistent disk; rootDir is
+  // intentionally retained as the development/test default.
+  const DATA_DIR = path.resolve(options.dataDir || process.env.POCKET_PT_DATA_DIR || path.join(rootDir, "data"));
+  const OPS_DIR = path.join(DATA_DIR, "ops");
   const writeObservability = createWriteObservability();
   const auditLog = createAdminAuditLog({
-    filePath: path.join(rootDir, "data", "ops", "admin-audit.ndjson"),
+    filePath: path.join(OPS_DIR, "admin-audit.ndjson"),
     maxBytes: Number(process.env.ADMIN_AUDIT_MAX_BYTES || 512 * 1024),
     maxArchives: Number(process.env.ADMIN_AUDIT_MAX_ARCHIVES || 4),
     hashChain: process.env.ADMIN_AUDIT_HASH_CHAIN !== "false",
-    checkpointFilePath: process.env.ADMIN_AUDIT_CHECKPOINT_FILE_PATH || path.join(rootDir, "data", "ops", "admin-audit.checkpoints.ndjson"),
+    checkpointFilePath: process.env.ADMIN_AUDIT_CHECKPOINT_FILE_PATH || path.join(OPS_DIR, "admin-audit.checkpoints.ndjson"),
     checkpointIntervalMs: Number(process.env.ADMIN_AUDIT_CHECKPOINT_INTERVAL_MS || 0)
   });
   const controlPlaneAlerts = createControlPlaneAlertEmitter({
@@ -251,7 +270,7 @@ function createApp(options = {}) {
   const baseActionEnforcement = parseActionEnforcementFromEnv(process.env);
   const runtimeEnforcementOverrides = {};
   const enforcementOverrideStore = createEnforcementStateStore({
-    filePath: path.join(rootDir, "data", "ops", "enforcement-overrides.json"),
+    filePath: path.join(OPS_DIR, "enforcement-overrides.json"),
     enforceableActions: ENFORCEABLE_ACTIONS
   });
   const persistedOverrideState = enforcementOverrideStore.load();
@@ -311,11 +330,9 @@ function createApp(options = {}) {
 
   // ---- Paths ----
   const PUBLIC_DIR = path.join(rootDir, "public");
-  const AVATAR_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "avatars");
+  const AVATAR_UPLOAD_DIR = path.resolve(options.avatarUploadDir || process.env.POCKET_PT_AVATAR_UPLOAD_DIR || path.join(PUBLIC_DIR, "uploads", "avatars"));
   const EX_DB_DIR = path.join(PUBLIC_DIR, "exercise-db");
   const EX_INDEX_PATH = path.join(EX_DB_DIR, "index.json");
-  const DATA_DIR = path.join(rootDir, "data");
-  const OPS_DIR = path.join(DATA_DIR, "ops");
   const USER_DIR = path.join(DATA_DIR, "users");
   const PILOT_EVENT_LOG_PATH = path.join(OPS_DIR, "pilot-events.ndjson");
   const DIAGNOSTIC_REPORT_PATH = path.join(OPS_DIR, "diagnostic-reports.ndjson");
@@ -377,7 +394,7 @@ function createApp(options = {}) {
     });
   }
   const tokenDenylist = createTokenDenylistStore({
-    filePath: path.join(rootDir, "data", "ops", "token-denylist.json"),
+    filePath: path.join(OPS_DIR, "token-denylist.json"),
     retentionMs: Number(process.env.AUTH_TOKEN_DENYLIST_RETENTION_MS || 1000 * 60 * 60 * 24 * 14)
   });
   const trustPolicyConfig = parseTrustPolicyConfig(process.env);
@@ -2488,5 +2505,6 @@ module.exports = {
   ENFORCEABLE_ACTIONS,
   parseActionEnforcementFromEnv,
   createApp,
+  assertProductionPersistenceConfig,
   isAvatarFeatureEnabled
 };

@@ -18,7 +18,7 @@ The MVP deliberately uses local JSON/NDJSON rather than a database.
 | `public/exercise-db/**` and `data/exercise.json` | Version-controlled exercise reference/catalog data, not member transactional data. | Build tooling/deployment artifact. |
 | `public/uploads/avatars/` | Optional avatar binary uploads. | Avatar upload route; feature flag controlled. |
 
-Runtime directories are created at startup. User IDs are restricted to 1–128 letters, digits, dots, underscores, or hyphens, preventing directory traversal.
+Runtime directories are created at startup. `POCKET_PT_DATA_DIR` relocates the complete `data/` tree, including operational stores, onto durable storage; it is mandatory when the normal production entry point starts. `POCKET_PT_AVATAR_UPLOAD_DIR` similarly relocates avatar binaries and is mandatory in production when that feature is enabled. User IDs are restricted to 1–128 letters, digits, dots, underscores, or hyphens, preventing directory traversal.
 
 ## Repository responsibilities and file lifecycle
 
@@ -35,7 +35,7 @@ Trainer workspace and enforcement override writes serialize to a process-specifi
 * Whole-file, synchronous reads/writes block the event loop and scale with aggregate size.
 * There are no cross-file transactions, foreign keys, schema migrations, query indexes, record locks, or optimistic concurrency for most files.
 * Multiple Node processes or hosts can lose updates and corrupt append/replace ordering; operate one writer process against local durable storage.
-* Local ephemeral container disks can erase state on replacement; production requires a persistent volume and external backups.
+* Local ephemeral container disks are discarded on replacement; production requires a persistent volume and external backups. The production startup guard prevents an unconfigured normal entry-point boot, but cannot prove that the configured path is backed by a real volume.
 * Secrets and personal data rely on OS/volume access controls; application-level encryption at rest is not implemented.
 
 ## Backup and restore

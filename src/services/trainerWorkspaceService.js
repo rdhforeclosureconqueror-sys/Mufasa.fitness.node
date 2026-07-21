@@ -16,13 +16,14 @@ function createTrainerWorkspaceService({ store, userStore, authorizationResolver
   function summary(user) {
     const journey = user.journeyProfile || user.retention?.journeyProfile || {};
     const intake = user.journeyIntake || user.retention?.intake || {};
-    const sessions = Object.values(user.sessions || {}).filter((s) => s.completedAt || s.status === "completed");
-    const last = sessions.sort((a, b) => String(b.completedAt || "").localeCompare(String(a.completedAt || "")))[0];
+    const sessions = Object.values(user.sessions || {}).filter((s) => s.completedAt || s.endedAt || s.status === "completed");
+    const completedAt = (session) => session.completedAt || (session.endedAt ? new Date(session.endedAt).toISOString() : null);
+    const last = sessions.sort((a, b) => String(completedAt(b) || "").localeCompare(String(completedAt(a) || "")))[0];
     return { ...identity(user), clientStatus: "active", journeyPathway: journey.pathway || journey.primaryGoal || null,
       intakeStatus: intake.status || (journey.submittedAt ? "complete" : "incomplete"),
       healthReviewStatus: journey.healthReviewRequired ? "required" : "clear",
       programStatus: user.program ? "trainer_assigned" : user.selectedProgram ? "member_selected" : user.generatedWorkoutPlan ? "generated" : "none",
-      mostRecentWorkoutDate: last?.completedAt || null, progressionStatus: user.generatedWorkoutProgressions?.at(-1)?.status || null,
+      mostRecentWorkoutDate: last ? completedAt(last) : null, progressionStatus: user.generatedWorkoutProgressions?.at(-1)?.status || null,
       nextAction: journey.healthReviewRequired ? "Complete health review" : user.program ? "Continue assigned program" : "Review training plan" };
   }
   function listClients(trainerUserId, query = {}) {
@@ -39,9 +40,12 @@ function createTrainerWorkspaceService({ store, userStore, authorizationResolver
     return { summary: summary(user), journey: { pathway: journey.pathway || null, goals: clone(journey.goals || journey.primaryGoal || null), submittedAt: journey.submittedAt || null },
       health: { restrictions: clone(journey.healthRestrictions || journey.healthFlags || []), reviewRequired: Boolean(journey.healthReviewRequired), warnings: clone(journey.reviewWarnings || []) },
       training: { activeProgram: clone(user.program || user.selectedProgram || user.generatedWorkoutPlan || null), source: summary(user).programStatus,
-        recentWorkouts: Object.values(user.sessions || {}).filter((s) => s.completedAt).slice(-10).map((s) => ({ id: s.id || s.sessionId, completedAt: s.completedAt })), progression: clone(user.generatedWorkoutProgressions?.at(-1) || null), adaptation: clone(user.trainingAdaptation?.recommendation || null) },
+        recentWorkouts: Object.values(user.sessions || {}).filter((s) => s.completedAt || s.endedAt).slice(-10).map((s) => ({ id: s.id || s.sessionId, completedAt: s.completedAt || new Date(s.endedAt).toISOString() })), progression: clone(user.generatedWorkoutProgressions?.at(-1) || null), adaptation: clone(user.trainingAdaptation?.recommendation || null) },
       nutrition: { recommendation: clone(user.nutritionRecommendation?.summary || null), weeklyMission: clone(user.nutritionMissions?.find((m) => m.status === "active") || null), completedCount: (user.nutritionMissions || []).filter((m) => m.status === "completed").length },
-      assessments: { summaries: clone((user.assessments || []).map((a) => ({ id: a.id, type: a.type, status: a.status, completedAt: a.completedAt }))), pending: clone(journey.assessmentRequirements || []) } };
+      assessments: { summaries: clone([
+        ...(user.assessments || []).map((a) => ({ id: a.id, type: a.type, status: a.status, completedAt: a.completedAt })),
+        ...(user.ohsa || []).map((a, index) => ({ id: a.id || `ohsa_${index}`, type: "overhead_squat", status: "completed", completedAt: a.completedAt || (a.ts ? new Date(a.ts).toISOString() : null) }))
+      ]), pending: clone(journey.assessmentRequirements || []) } };
   }
   function program(trainerUserId, clientUserId) { requireAccess(trainerUserId, clientUserId); const u = userStore.loadUser(clientUserId); return { active: clone(u.program || null), history: clone(u.trainerProgramAssignments || []) }; }
   function assignProgram(trainerUserId, clientUserId, payload) {
