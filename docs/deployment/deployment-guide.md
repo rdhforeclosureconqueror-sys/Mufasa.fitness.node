@@ -8,7 +8,7 @@ Start from `.env.example`; production secrets belong in the platform secret mana
 
 | Area | Variables | Production guidance |
 |---|---|---|
-| Runtime | `NODE_ENV=production`, `PORT` (default application convention is 3000), `BASE_URL`, `PUBLIC_BASE_URL`, `BACKEND_PUBLIC_URL`, `FRONTEND_PUBLIC_URL` | Use canonical HTTPS URLs; bind privately behind proxy where possible. |
+| Runtime | `NODE_ENV=production`, `PORT` (default application convention is 3000), `BASE_URL`, `PUBLIC_BASE_URL`, `BACKEND_PUBLIC_URL`, `FRONTEND_PUBLIC_URL`, `POCKET_PT_DATA_DIR`, and (when avatars are enabled) `POCKET_PT_AVATAR_UPLOAD_DIR` | Mount a Render persistent disk at `/var/data`; set the data path to `/var/data/pocket-pt/data` and avatar path to `/var/data/pocket-pt/avatars`. The server refuses a normal production boot without these paths. |
 | Authentication | `AUTH_TOKEN_SECRET`, `PILOT_LOGIN_PASSWORD`, `LOGIN_SEED_EMAIL`, `AUTH_TOKEN_MIN_SECRET_LENGTH`, `AUTH_TOKEN_MAX_TTL_MS`, `AUTH_TOKEN_CLOCK_SKEW_MS`, `AUTH_TOKEN_DENYLIST_RETENTION_MS` | Unique high-entropy secret; rotate with an explicit session invalidation plan. |
 | Origin/trust | `ALLOWED_ORIGINS`, `AUTH_BRIDGE_ALLOW_MANUAL=false`, `AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE=false`, provider identity settings | Exact HTTPS origins, no wildcard with credentials; keep low-trust bridges off. |
 | Authorization | `AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS` or `AUTHZ_BOOTSTRAP_SUPER_ADMIN_SUBJECTS`; optional `AUTHZ_ADMIN_USER_IDS`, `AUTHZ_ADMIN_SUBJECTS`, `AUTHZ_TRAINER_USER_IDS`, `AUTHZ_TRAINER_SUBJECTS`, `ADMIN_EMAILS` | Configure deterministic least-privilege allowlists; always retain one tested bootstrap path. |
@@ -21,6 +21,8 @@ Start from `.env.example`; production secrets belong in the platform secret mana
 Use `rg 'process\.env\.' server.js src .env.example` during release review to detect variables added after this document.
 
 ## Install, startup, and health
+
+On Render, **create and attach a persistent disk before the first production write**. A service restart reuses that disk. A redeploy/cold boot replaces the container filesystem but reattaches the disk, so only paths below its mount survive. Setting an environment variable to a path under the repository (or another container-local directory) does not make it durable. Keep a single instance because the JSON repositories do not coordinate multiple writers. Existing results on an old ephemeral instance are not copied automatically: recover them from that instance or a backup into the mounted tree before replacement, if still accessible.
 
 ```bash
 npm ci
