@@ -282,6 +282,11 @@ function createUserDataService({ userStore }) {
     const now = Date.now();
     let saved = null;
     userStore.updateUser(userId, (user) => {
+      const duplicateSelfAssignment = actorUserId === userId && user.program
+        && user.program.goal === program.goal
+        && user.program.durationWeeks === program.durationWeeks
+        && user.program.daysPerWeek === program.daysPerWeek;
+      if (duplicateSelfAssignment) { saved = user.program; return user; }
       user.program = {
         ...program,
         programId: user.program?.programId || `prog_${now}`,

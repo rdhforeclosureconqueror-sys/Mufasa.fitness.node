@@ -48,7 +48,7 @@ test("member-home has safe legacy empty states, assigned-program precedence, and
 });
 
 test("cross-feature resume, assessment, workout, progression and nutrition states use canonical service outputs", () => {
-  const workout = { available:true, activeProgramSource:"generated_recommendation", plan:{ week:2, status:"active", recommendedProgram:{ title:"Foundation" }, sessions:[{ sessionId:"s1", executionId:"e1", title:"Session one", status:"in_progress" },{ sessionId:"s2", title:"Session two", status:"not_started" }] } };
+  const workout = { available:true, activeProgramSource:"generated_active", plan:{ week:2, status:"active", recommendedProgram:{ title:"Foundation" }, sessions:[{ sessionId:"s1", executionId:"e1", title:"Session one", status:"in_progress" },{ sessionId:"s2", title:"Session two", status:"not_started" }] } };
   assert.equal(setup({ workout, assessment:true }).primaryAction.type, "resume_workout");
   workout.plan.sessions[0].status = "completed";
   assert.equal(setup({ workout, assessment:true }).primaryAction.type, "complete_assessment");
