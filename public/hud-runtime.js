@@ -58,6 +58,7 @@
       hudRepsEl: deps.hudRepsEl || byId('hudReps'),
       hudTempoEl: deps.hudTempoEl || byId('hudTempo'),
       hudRestEl: deps.hudRestEl || byId('hudRest'),
+      hudTimerStateEl: deps.hudTimerStateEl || byId('hudTimerState'),
       hudNextExerciseEl: deps.hudNextExerciseEl || byId('hudNextExercise'),
       hudCoachCueEl: deps.hudCoachCueEl || byId('hudCoachCue'),
       exerciseLabelEl: deps.exerciseLabelEl || byId('exerciseLabel'),
@@ -114,13 +115,14 @@
       if (refs.hudExerciseNameEl) refs.hudExerciseNameEl.textContent = workoutState.currentExercise || '--';
       if (refs.hudSetEl) refs.hudSetEl.textContent = `${Number(workoutState.activeSetIndex || 0) + 1} of ${totalSets}`;
       if (refs.hudRepsEl) refs.hudRepsEl.textContent = `${Number(workoutState.repCount || 0)} / ${workoutState.targetReps || '--'}`;
-      if (refs.hudTempoEl) refs.hudTempoEl.textContent = workoutState.tempo || '--';
-      if (refs.hudRestEl) refs.hudRestEl.textContent = workoutState.setStatus === 'rest' ? `${restRemainingSec}s` : 'Ready';
+      if (refs.hudTempoEl) refs.hudTempoEl.textContent = `${workoutState.tempo || '--'}${workoutState.tempoDescription ? ` — ${workoutState.tempoDescription}` : ''}`;
+      if (refs.hudRestEl) refs.hudRestEl.textContent = `${Number(workoutState.remainingSeconds ?? restRemainingSec)} seconds remaining`;
+      if (refs.hudTimerStateEl) refs.hudTimerStateEl.textContent = workoutState.setStatus === 'transition' ? `Transition (${workoutState.timerStatus})` : (workoutState.timerStatus || 'idle');
       if (refs.hudNextExerciseEl) refs.hudNextExerciseEl.textContent = workoutState.nextExercise || '--';
       if (refs.hudCoachCueEl) refs.hudCoachCueEl.textContent = getPrimaryCue(formResult, { activeWorkoutPlan: plan, activeWorkoutState: workoutState });
       if (refs.exerciseLabelEl) refs.exerciseLabelEl.textContent = workoutState.currentExercise || '--';
       if (refs.repCountEl) refs.repCountEl.textContent = String(workoutState.repCount || 0);
-      if (refs.workoutHudEl) refs.workoutHudEl.classList.toggle('resting', workoutState.setStatus === 'rest');
+      if (refs.workoutHudEl) refs.workoutHudEl.classList.toggle('resting', workoutState.setStatus === 'transition');
       const isDebug = global.__debugWorkoutOverlay === true || Boolean(deps.isAvatarDebug?.());
       if (refs.avatarDebugOverlayEl) refs.avatarDebugOverlayEl.style.display = isDebug ? 'block' : 'none';
       return snapshot();

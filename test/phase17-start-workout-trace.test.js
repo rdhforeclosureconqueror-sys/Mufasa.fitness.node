@@ -126,7 +126,7 @@ test("Phase 17 successful session creation advances to liveModeEntered", async (
   assert.equal(context.__liveWorkoutBreakpoints.milestones["live-mode-entered"].status, "pass");
 });
 
-test("Phase 17 pose runtime load failure advances to poseRuntimeFailed with clear message", async () => {
+test("pose runtime load failure is reported while workout startup continues", async () => {
   const { context, elements } = createRuntimeHarness();
   context.WorkoutRuntime.configureWorkoutRuntime({
     prepareWorkoutStart() {},
@@ -137,12 +137,13 @@ test("Phase 17 pose runtime load failure advances to poseRuntimeFailed with clea
     onWorkoutStarted: async () => {}
   });
 
-  await assert.rejects(() => context.WorkoutRuntime.startWorkout(), /window\.tf/);
+  const result = await context.WorkoutRuntime.startWorkout();
 
   const milestone = context.__liveWorkoutBreakpoints.milestones.poseRuntimeFailed;
   assert.equal(milestone.status, "fail");
   assert.equal(milestone.extra.code, "TensorFlow missing");
-  assert.match(elements.get("poseStatus").textContent, /Pose runtime failed: TensorFlow missing/);
+  assert.equal(result.running, true);
+  assert.match(elements.get("poseStatus").textContent, /Camera\/form unavailable:.*window\.tf.*Timer continues/);
 });
 
 test("Phase 17 failed /api/sessions shows status/error instead of pending", async (t) => {
