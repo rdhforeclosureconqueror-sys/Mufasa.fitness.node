@@ -73,10 +73,11 @@
     try {
       requireRuntime("HudRuntime.configure", "HudRuntime.configure")(hud);
       requireRuntime("WorkoutProgressionRuntime.configure", "WorkoutProgressionRuntime.configure")(progression);
-      const { skipRestBtn, repeatSetBtn, nextExerciseBtn } = controls || {};
-      if (skipRestBtn) skipRestBtn.onclick = () => global.WorkoutProgressionRuntime.skipRest();
-      if (repeatSetBtn) repeatSetBtn.onclick = () => global.WorkoutProgressionRuntime.repeatSet();
-      if (nextExerciseBtn) nextExerciseBtn.onclick = () => global.WorkoutProgressionRuntime.nextExercise();
+      const { pauseWorkoutBtn, extendWorkoutBtn, skipExerciseBtn, endWorkoutBtn } = controls || {};
+      if (pauseWorkoutBtn) pauseWorkoutBtn.onclick = () => { const state=global.WorkoutProgressionRuntime.togglePause(); pauseWorkoutBtn.textContent=state.timerStatus==='paused'?'Resume':'Pause'; };
+      if (extendWorkoutBtn) extendWorkoutBtn.onclick = () => global.WorkoutProgressionRuntime.extendTime();
+      if (skipExerciseBtn) skipExerciseBtn.onclick = () => { if (global.confirm?.('Skip this exercise?')) global.WorkoutProgressionRuntime.skipExercise(); };
+      if (endWorkoutBtn) endWorkoutBtn.onclick = () => { if (global.confirm?.('End this workout early?')) global.WorkoutProgressionRuntime.endWorkout(); };
       requireRuntime("RepAnalysisRuntime.configure", "RepAnalysisRuntime.configure")(repAnalysis);
       markConfigured("workout-progression-runtime", {
         hasSessionWrite: Boolean(progression.sessionWrite),

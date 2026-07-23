@@ -3,491 +3,60 @@
   const global = globalScope || window;
   const ACTIVE_WORKOUT_SELECTION_KEY = 'ACTIVE_WORKOUT_SELECTION_V1';
   const ACTIVE_WORKOUT_COMPLETION_KEY = 'ACTIVE_WORKOUT_COMPLETION_V1';
-
-  let deps = {};
-  let activeWorkoutPlan = null;
-  let restTimerId = null;
-  let restRemainingSec = 0;
-  let completedEventDispatched = false;
-  let sessionStartedAt = null;
-  let sessionId = null;
+  const TIMED_STATE_KEY = 'ACTIVE_TIMED_WORKOUT_V1';
+  const DEFAULT_WORK_SECONDS = 30;
+  const TRANSITION_SECONDS = 5;
+  const DEFAULT_SETS = 3;
+  const DEFAULT_TEMPO = '3-1-3';
+  let deps = {}, activeWorkoutPlan = null, timerId = null, completionPromise = null, transitionPromise = null;
   let state = initialState();
+  const now = () => Number(deps.now?.() ?? Date.now());
+  const diagnosticEnabled = (() => { try { return new URLSearchParams(global.location?.search || '').get('debugTimedWorkout') === '1'; } catch (_) { return false; } })();
 
-  function log(message, details) {
-    if (details === undefined) console.log(`[WORKOUT_PROGRESS] ${message}`);
-    else console.log(`[WORKOUT_PROGRESS] ${message}`, details);
-  }
-
-  function selectionLog(message, details) {
-    if (details === undefined) console.log(`[WORKOUT_SELECTION] ${message}`);
-    else console.log(`[WORKOUT_SELECTION] ${message}`, details);
-  }
-
-  function planLog(message, details) {
-    if (details === undefined) console.log(`[WORKOUT_PLAN] ${message}`);
-    else console.log(`[WORKOUT_PLAN] ${message}`, details);
-  }
-
-  function retentionSignal(message, details) {
-    if (details === undefined) console.log(`[RETENTION_SIGNAL] ${message}`);
-    else console.log(`[RETENTION_SIGNAL] ${message}`, details);
-  }
-
-  function initialState() {
-    return {
-      activeProgramId: null,
-      activeWorkoutId: null,
-      activeExerciseIndex: 0,
-      activeSetIndex: 0,
-      currentExercise: null,
-      targetReps: 10,
-      targetTime: null,
-      tempo: '3-1-1',
-      restSeconds: 60,
-      nextExercise: null,
-      repCount: 0,
-      totalReps: 0,
-      setStatus: 'idle',
-      workoutStatus: 'idle'
-    };
-  }
-
-  function byId(id) { return global.document?.getElementById(id) || null; }
-
-  function setVisibleRuntimeError(message) {
-    const poseStatus = byId('poseStatus');
-    const brainStatus = byId('brainStatus');
-    const panel = byId('featureActivationStatus');
-    if (poseStatus) {
-      poseStatus.textContent = message;
-      poseStatus.classList?.add?.('status-bad');
-    }
-    if (brainStatus) brainStatus.textContent = message;
-    if (panel && !String(panel.textContent || '').includes(message)) {
-      panel.textContent = `${panel.textContent || ''}\nworkout progression error: ${message}`.trim();
-    }
-  }
-
-  function normalizeExercisePrescription(exercise, fallbackIndex = 0) {
-    const sets = Number(exercise?.sets || 3);
-    const repsRaw = Number(exercise?.targetReps || exercise?.reps || 10);
-    const targetReps = Number.isFinite(repsRaw) && repsRaw > 0 ? repsRaw : 10;
-    return {
-      exerciseId: String(exercise?.exerciseId || exercise?.id || `exercise_${fallbackIndex + 1}`),
-      name: String(exercise?.name || `Exercise ${fallbackIndex + 1}`),
-      sets: Number.isFinite(sets) && sets > 0 ? sets : 1,
-      targetReps,
-      targetTime: Number(exercise?.targetTime || 0) || null,
-      restSeconds: Number(exercise?.restSeconds || exercise?.restSec || 60) || 60,
-      tempo: String(exercise?.tempo || '3-1-1'),
-      instructions: Array.isArray(exercise?.instructions) ? exercise.instructions : [],
-      formCues: Array.isArray(exercise?.formCues) ? exercise.formCues : [],
-      commonMistakes: Array.isArray(exercise?.commonMistakes) ? exercise.commonMistakes : []
-    };
-  }
-
-  function createDefaultLiveWorkoutSelection() {
-    return {
-      schemaVersion: 1,
-      source: 'live-workout-default',
-      selectedAt: new Date().toISOString(),
-      programId: 'template',
-      scheduledWorkoutId: 'live_bodyweight_squat_default',
-      title: 'Live Bodyweight Squat',
-      notes: 'Auto-selected so the camera → detector → workout path can start when no workout has been chosen yet.',
-      exercises: [
-        {
-          exerciseId: 'bodyweight_squat',
-          name: 'Bodyweight Squat',
-          sets: 1,
-          targetReps: 10,
-          restSeconds: 60,
-          tempo: '3-1-1',
-          instructions: ['Stand tall, squat under control, then return to standing.'],
-          formCues: ['Keep chest tall.', 'Track knees over toes.']
-        }
-      ]
-    };
-  }
-
-  function hydrateActiveWorkoutPlan(options = {}) {
-    const { allowDefault = false } = options || {};
-    let stored = null;
-    try { stored = JSON.parse(global.localStorage?.getItem(ACTIVE_WORKOUT_SELECTION_KEY) || 'null'); } catch (err) {
-      throw new Error(`invalid active workout selection: ${err?.message || err}`);
-    }
-    if (!stored && allowDefault) {
-      stored = createDefaultLiveWorkoutSelection();
-      try { global.localStorage?.setItem(ACTIVE_WORKOUT_SELECTION_KEY, JSON.stringify(stored)); } catch (_) {}
-      global.__ACTIVE_WORKOUT_SELECTION = stored;
-      selectionLog('auto-selected default live workout', { workoutId: stored.scheduledWorkoutId, exercises: stored.exercises.length });
-    }
-    if (!stored) {
-      activeWorkoutPlan = null;
-      updateState({ activeProgramId: null, activeWorkoutId: null, currentExercise: null, workoutStatus: 'idle', setStatus: 'idle' }, { render: false });
-      selectionLog('no active workout selection');
-      return null;
-    }
-    if (!Array.isArray(stored.exercises) || stored.exercises.length < 1) {
-      throw new Error('active workout selection has no exercises');
-    }
-    activeWorkoutPlan = {
-      programId: stored.programId || null,
-      scheduledWorkoutId: stored.scheduledWorkoutId || stored.workoutId || `workout_${Date.now()}`,
-      title: stored.title || 'Workout',
-      notes: stored.notes || null,
-      source: stored.source || 'unknown',
-      selectedAt: stored.selectedAt || null,
-      exercises: stored.exercises.map((exercise, index) => normalizeExercisePrescription(exercise, index))
-    };
-    updateState({
-      activeProgramId: activeWorkoutPlan.programId,
-      activeWorkoutId: activeWorkoutPlan.scheduledWorkoutId
-    }, { render: false });
-    selectionLog('hydrated active selection', { source: activeWorkoutPlan.source, workoutId: activeWorkoutPlan.scheduledWorkoutId, exercises: activeWorkoutPlan.exercises.length });
-    planLog('hydrated workout plan', { workoutId: activeWorkoutPlan.scheduledWorkoutId, title: activeWorkoutPlan.title, exercises: activeWorkoutPlan.exercises.map((exercise) => exercise.exerciseId) });
-    return getPlan();
-  }
-
-  function publishState() {
-    const exportedState = getState();
-    global.__ACTIVE_WORKOUT_STATE = exportedState;
-    global.ACTIVE_WORKOUT_STATE = exportedState;
-  }
-
-  function decorateCurrentState() {
-    if (!activeWorkoutPlan) return;
-    const current = activeWorkoutPlan.exercises[state.activeExerciseIndex] || activeWorkoutPlan.exercises[0];
-    const next = activeWorkoutPlan.exercises[state.activeExerciseIndex + 1] || null;
-    state.currentExercise = current?.name || null;
-    state.targetReps = current?.targetReps || null;
-    state.targetTime = current?.targetTime || null;
-    state.tempo = current?.tempo || '3-1-1';
-    state.restSeconds = current?.restSeconds || 60;
-    state.nextExercise = next?.name || 'Workout complete';
-  }
-
-  function render(formResult = null) {
-    if (!global.HudRuntime?.render) throw new Error('HudRuntime.render missing');
-    return global.HudRuntime.render({
-      activeWorkoutPlan,
-      activeWorkoutState: state,
-      formResult,
-      restRemainingSec
-    });
-  }
-
-  function updateState(partial = {}, options = {}) {
-    state = { ...state, ...(partial || {}) };
-    decorateCurrentState();
-    publishState();
-    if (options.render !== false) render(options.formResult || null);
-    deps.onStateChange?.(getState(), getPlan());
-    log('state updated', { workoutStatus: state.workoutStatus, setStatus: state.setStatus, exercise: state.currentExercise, set: state.activeSetIndex + 1, reps: state.repCount, totalReps: state.totalReps });
-    return getState();
-  }
-
-  function stopRestTimer(options = {}) {
-    if (restTimerId) clearInterval(restTimerId);
-    restTimerId = null;
-    restRemainingSec = 0;
-    if (options.render) render(options.formResult || null);
-  }
-
-  function advanceWorkoutProgress(forceNextExercise = false) {
-    const exercise = activeWorkoutPlan?.exercises?.[state.activeExerciseIndex];
-    if (!exercise) return completeWorkoutSession();
-    if (!forceNextExercise && state.activeSetIndex + 1 < exercise.sets) {
-      updateState({ activeSetIndex: state.activeSetIndex + 1, repCount: 0, setStatus: 'active' });
-      deps.onSetStarted?.(state.activeSetIndex + 1, getCurrentExerciseMeta());
-      return getState();
-    }
-    if (state.activeExerciseIndex + 1 < activeWorkoutPlan.exercises.length) {
-      updateState({ activeExerciseIndex: state.activeExerciseIndex + 1, activeSetIndex: 0, repCount: 0, setStatus: 'active' });
-      deps.onExerciseStarted?.(getCurrentExerciseMeta());
-      return getState();
-    }
-    return completeWorkoutSession();
-  }
-
-  function startRestTimer(seconds) {
-    stopRestTimer();
-    restRemainingSec = Math.max(0, Number(seconds || state.restSeconds || 60));
-    updateState({ setStatus: 'rest' });
-    log('rest started', { seconds: restRemainingSec, exercise: state.currentExercise, set: state.activeSetIndex + 1 });
-    if (restRemainingSec <= 0) return advanceWorkoutProgress(false);
-    restTimerId = setInterval(() => {
-      restRemainingSec = Math.max(0, restRemainingSec - 1);
-      render();
-      if (restRemainingSec <= 0) {
-        stopRestTimer();
-        advanceWorkoutProgress(false);
-      }
-    }, 1000);
-    return getState();
-  }
-
-  async function completeWorkoutSession() {
-    if (completedEventDispatched) return getState();
-    stopRestTimer();
-    updateState({ workoutStatus: 'completed', setStatus: 'completed' });
-    const canonicalSessionId = sessionId || deps.getSessionId?.() || null;
-    const durationMs = sessionStartedAt ? Math.max(0, Date.now() - sessionStartedAt) : 0;
-    const completion = {
-      sessionId: canonicalSessionId,
-      scheduledWorkoutId: state.activeWorkoutId,
-      workoutId: state.activeWorkoutId,
-      completedExercises: activeWorkoutPlan?.exercises?.slice(0, state.activeExerciseIndex + 1).map((x) => x.name) || [],
-      completedSets: state.activeSetIndex + 1,
-      repsCompleted: state.totalReps,
-      formScoreSummary: Number((global.__lastFormResult?.overallScore || 0).toFixed(3)),
-      durationSeconds: Math.round(durationMs / 1000),
-      notes: activeWorkoutPlan?.notes || null,
-      completedAt: new Date().toISOString()
-    };
-    try { global.localStorage?.setItem(ACTIVE_WORKOUT_COMPLETION_KEY, JSON.stringify(completion)); } catch (_) {}
-    if (canonicalSessionId) {
-      const sessionWrite = deps.sessionWrite || global.SessionWrite || null;
-      if (!sessionWrite?.completeSession) {
-        const err = new Error('SessionWrite.completeSession missing');
-        console.error('[SESSION_COMPLETION] failed', err);
-        global.__liveWorkoutBreakpoints?.markFail?.('workout-completed', err, { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
-        setVisibleRuntimeError('Workout completion failed: SessionWrite.completeSession missing');
-        throw err;
-      }
-      try {
-        console.log('[SESSION_COMPLETION] completing session', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
-        await sessionWrite.completeSession(canonicalSessionId, {
-          repsCompleted: state.totalReps,
-          exerciseId: getCurrentExerciseId(),
-          scheduledWorkoutId: state.activeWorkoutId,
-          workoutId: state.activeWorkoutId,
-          completedAt: completion.completedAt
-        });
-        console.log('[SESSION_COMPLETION] completeSession saved', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
-      } catch (err) {
-        deps.onCompleteSaveError?.(err);
-        console.error('[SESSION_COMPLETION] session_complete write failed', err);
-        global.__liveWorkoutBreakpoints?.markFail?.('workout-completed', err, { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
-        setVisibleRuntimeError(`Workout completion failed: ${err?.message || err}`);
-        throw err;
-      }
-    }
-    completedEventDispatched = true;
-    global.__liveWorkoutBreakpoints?.markPass?.('workout-completed', { sessionId: canonicalSessionId, totalReps: state.totalReps, workoutId: state.activeWorkoutId });
-    console.log('[SESSION_COMPLETION] dispatching workout:completed', { sessionId: canonicalSessionId, workoutId: state.activeWorkoutId });
-    global.dispatchEvent?.(new global.CustomEvent('workout:completed', { detail: completion }));
-    deps.trackPilotEvent?.('workout_completed', { sessionId: canonicalSessionId, totalReps: state.totalReps });
-    deps.onRetentionSignal?.({ sessionId: canonicalSessionId, totalReps: state.totalReps, completedAt: completion.completedAt });
-    retentionSignal('workout completed', { sessionId: canonicalSessionId, totalReps: state.totalReps });
-    deps.onWorkoutCompleted?.(completion);
-    console.log('[WORKOUT_COMPLETE] workout completed', completion);
-    return getState();
-  }
-
+  function diagnostic(event, detail = {}) { if (diagnosticEnabled) console.info('[TIMED_WORKOUT]', event, detail); }
+  function initialState() { return { activeProgramId:null, activeWorkoutId:null, activeExerciseIndex:0, activeSetIndex:0, currentExercise:null, targetReps:10, targetTime:null, tempo:DEFAULT_TEMPO, tempoDescription:'3 seconds movement phase, 1 second hold, 3 seconds return phase', nextExercise:null, repCount:0, totalReps:0, setStatus:'idle', workoutStatus:'idle', timerStatus:'idle', intervalDurationSeconds:DEFAULT_WORK_SECONDS, extensionSeconds:0, remainingSeconds:DEFAULT_WORK_SECONDS, countdownStartedWithSeconds:DEFAULT_WORK_SECONDS, intervalStartedAt:null, remainingSecondsAtPause:null, transitionRemainingSeconds:0, completedSets:[], skippedExercises:[], startedAt:null, completedAt:null, sessionId:null, completionPersisted:false, tenSecondAnnounced:false }; }
+  function byId(id){ return global.document?.getElementById(id) || null; }
+  function announce(message){ const el=byId('timedWorkoutAnnouncements'); if(el) el.textContent=message; deps.onAnnounce?.(message); }
+  function validPositive(value, fallback){ const n=Number(value); return Number.isFinite(n)&&n>0 ? Math.round(n) : fallback; }
+  function tempoDescription(tempo){ const p=String(tempo||DEFAULT_TEMPO).split('-'); return p.length===3&&p.every(x=>/^\d+$/.test(x)) ? `${p[0]} seconds movement phase, ${p[1]} second${p[1]==='1'?'':'s'} hold, ${p[2]} seconds return phase` : String(tempo||DEFAULT_TEMPO); }
+  function normalizeExercisePrescription(exercise={}, index=0){ const tempo=String(exercise.tempo||DEFAULT_TEMPO); return { exerciseId:String(exercise.exerciseId||exercise.id||`exercise_${index+1}`), name:String(exercise.name||`Exercise ${index+1}`), sets:validPositive(exercise.sets,DEFAULT_SETS), targetReps:validPositive(exercise.targetReps||exercise.reps,10), targetTime:validPositive(exercise.targetTime||exercise.duration||exercise.durationSeconds,DEFAULT_WORK_SECONDS), tempo, tempoDescription:tempoDescription(tempo), instructions:Array.isArray(exercise.instructions)?exercise.instructions:[], formCues:Array.isArray(exercise.formCues)?exercise.formCues:[] }; }
+  function createDefaultLiveWorkoutSelection() { return {schemaVersion:1,source: 'live-workout-default',programId:'template',scheduledWorkoutId:'live_bodyweight_squat_default',title:'Live Bodyweight Squat',exercises:[{exerciseId: 'bodyweight_squat',name: 'Bodyweight Squat'}]}; }
+  function hydrateActiveWorkoutPlan({allowDefault=false}={}){ let raw=null; try{raw=JSON.parse(global.localStorage?.getItem(ACTIVE_WORKOUT_SELECTION_KEY)||'null');}catch(e){throw new Error(`invalid active workout selection: ${e.message}`);} if(!raw&&allowDefault){raw=createDefaultLiveWorkoutSelection();global.localStorage?.setItem(ACTIVE_WORKOUT_SELECTION_KEY,JSON.stringify(raw));} if(!raw){activeWorkoutPlan=null;return null;} if(!Array.isArray(raw.exercises)||!raw.exercises.length)throw new Error('active workout selection has no exercises'); activeWorkoutPlan={programId:raw.programId||null,scheduledWorkoutId:raw.scheduledWorkoutId||raw.workoutId||`workout_${now()}`,title:raw.title||'Workout',notes:raw.notes||null,source:raw.source||'unknown',exercises:raw.exercises.map(normalizeExercisePrescription)}; state.activeProgramId=activeWorkoutPlan.programId;state.activeWorkoutId=activeWorkoutPlan.scheduledWorkoutId;decorate();publish();return getPlan(); }
+  function currentExercise(){return activeWorkoutPlan?.exercises?.[state.activeExerciseIndex]||null;}
+  function decorate(){const cur=currentExercise();if(!cur)return;state.currentExercise=cur.name;state.targetReps=cur.targetReps;state.targetTime=cur.targetTime;state.tempo=cur.tempo;state.tempoDescription=cur.tempoDescription;state.nextExercise=activeWorkoutPlan.exercises[state.activeExerciseIndex+1]?.name||'Workout complete';}
+  function publish(){global.__ACTIVE_WORKOUT_STATE=getState();global.ACTIVE_WORKOUT_STATE=getState();}
+  function render(formResult=null){global.HudRuntime?.render?.({activeWorkoutPlan,activeWorkoutState:state,formResult,restRemainingSec:state.transitionRemainingSeconds});}
+  function update(patch={},options={}){Object.assign(state,patch);decorate();publish();if(options.persist!==false)persist();if(options.render!==false)render(options.formResult);deps.onStateChange?.(getState(),getPlan());return getState();}
+  function persist(){try{global.localStorage?.setItem(TIMED_STATE_KEY,JSON.stringify({...state,version:1,savedAt:new Date(now()).toISOString()}));}catch(_){} }
+  function clearTick(){if(timerId!=null)global.clearInterval(timerId);timerId=null;}
+  function calculatedRemaining(){if(state.timerStatus==='paused')return state.remainingSecondsAtPause??state.remainingSeconds;if(!state.intervalStartedAt)return state.remainingSeconds;return Math.max(0,Math.ceil((new Date(state.intervalStartedAt).getTime()+state.countdownStartedWithSeconds*1000-now())/1000));}
+  function scheduleTick(){clearTick();if(state.timerStatus!=='running')return;timerId=global.setInterval(tick,250);}
+  function tick(){if(state.timerStatus!=='running')return;const remaining=calculatedRemaining();if(remaining!==state.remainingSeconds){state.remainingSeconds=remaining;publish();render();}if(remaining<=10&&!state.tenSecondAnnounced){state.tenSecondAnnounced=true;announce('Ten seconds remaining.');persist();}if(remaining<=0)expireInterval();}
+  function beginWork(seconds=currentExercise()?.targetTime||DEFAULT_WORK_SECONDS,{announceStart=true}={}){const duration=validPositive(seconds,DEFAULT_WORK_SECONDS);transitionPromise=null;update({setStatus:'active',workoutStatus:'in_progress',timerStatus:'running',intervalDurationSeconds:duration,extensionSeconds:0,remainingSeconds:duration,countdownStartedWithSeconds:duration,remainingSecondsAtPause:null,intervalStartedAt:new Date(now()).toISOString(),transitionRemainingSeconds:0,tenSecondAnnounced:false});scheduleTick();diagnostic('interval started',{exerciseIndex:state.activeExerciseIndex,setIndex:state.activeSetIndex,duration});if(announceStart)announce(`Set ${state.activeSetIndex+1} of ${currentExercise().sets} started for ${currentExercise().name}.`);}
   function prepareWorkoutStart() {
     const plan = hydrateActiveWorkoutPlan({ allowDefault: true });
-    if (!plan?.exercises?.length) throw new Error('select a workout before starting');
-    completedEventDispatched = false;
-    sessionStartedAt = Date.now();
-    sessionId = null;
-    stopRestTimer();
-    updateState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, totalReps: 0, setStatus: 'ready', workoutStatus: 'ready' });
-    return getState();
+    if (!plan) throw new Error('workout plan unavailable');
+    clearTick();completionPromise=null;transitionPromise=null;state={...initialState(),activeProgramId:activeWorkoutPlan.programId,activeWorkoutId:activeWorkoutPlan.scheduledWorkoutId,setStatus:'ready',workoutStatus:'ready'};decorate();persist();render();diagnostic('timer initialized',{duration:currentExercise().targetTime});return getState();
   }
-
-  function startWorkout(createdSessionId) {
-    sessionId = createdSessionId || deps.getSessionId?.() || null;
-    if (!sessionId) throw new Error('workout progression requires a canonical session id');
-    if (!activeWorkoutPlan) hydrateActiveWorkoutPlan();
-    sessionStartedAt = sessionStartedAt || Date.now();
-    updateState({ activeExerciseIndex: 0, activeSetIndex: 0, repCount: 0, totalReps: 0, setStatus: 'active', workoutStatus: 'in_progress' });
-    log('workout started', { sessionId, workoutId: state.activeWorkoutId, programId: state.activeProgramId });
-    return getState();
-  }
-
-  function pauseWorkout() {
-    stopRestTimer();
-    updateState({ workoutStatus: 'paused', setStatus: 'paused' });
-    return getState();
-  }
-
-  function handleRepAnalysis(snapshot = {}, formResult = null) {
-    const nextRepCount = Number(snapshot.repCount ?? state.repCount ?? 0);
-    const nextTotalReps = Number(snapshot.totalReps ?? state.totalReps ?? 0);
-    updateState({ repCount: nextRepCount, totalReps: nextTotalReps }, { formResult });
-    return getState();
-  }
-
-  function handleRepComplete(snapshot = {}, formResult = null) {
-    const nextRepCount = Number(snapshot.repCount ?? state.repCount ?? 0);
-    const nextTotalReps = Number(snapshot.totalReps ?? state.totalReps ?? 0);
-    updateState({ repCount: nextRepCount, totalReps: nextTotalReps }, { formResult });
-    if (state.targetReps && state.repCount >= state.targetReps && state.setStatus === 'active') {
-      const exercise = activeWorkoutPlan?.exercises?.[state.activeExerciseIndex] || null;
-      const finalSetForExercise = !exercise || state.activeSetIndex + 1 >= exercise.sets;
-      const finalExerciseForWorkout = !activeWorkoutPlan?.exercises?.length || state.activeExerciseIndex + 1 >= activeWorkoutPlan.exercises.length;
-      if (finalSetForExercise && finalExerciseForWorkout) {
-        return advanceWorkoutProgress(false);
-      }
-      startRestTimer(state.restSeconds);
-    }
-    return getState();
-  }
-
-  function skipRest() {
-    if (state.setStatus !== 'rest') return getState();
-    stopRestTimer();
-    return advanceWorkoutProgress(false);
-  }
-
-  function repeatSet() {
-    stopRestTimer();
-    return updateState({ repCount: 0, setStatus: 'active' });
-  }
-
-  function nextExercise() {
-    stopRestTimer();
-    return advanceWorkoutProgress(true);
-  }
-
-  function getCurrentExerciseMeta() {
-    return activeWorkoutPlan?.exercises?.[state.activeExerciseIndex] || null;
-  }
-
-  function getCurrentExerciseId() {
-    return getCurrentExerciseMeta()?.exerciseId || null;
-  }
-
-  function getPlan() {
-    return activeWorkoutPlan ? { ...activeWorkoutPlan, exercises: activeWorkoutPlan.exercises.map((exercise) => ({ ...exercise })) } : null;
-  }
-
-  function getState() {
-    return { ...state, restRemainingSec, sessionId };
-  }
-
-  function createSessionCallbackGlue(options = {}) {
-    const {
-      refs = {},
-      deps: glueDeps = {}
-    } = options || {};
-    const getRepState = () => glueDeps.getRepState?.() || {};
-    const setRepState = (partial = {}) => glueDeps.setRepState?.(partial);
-    return {
-      progression: {
-        sessionWrite: glueDeps.sessionWrite || global.SessionWrite,
-        getSessionId: glueDeps.getSessionId,
-        trackPilotEvent: glueDeps.trackPilotEvent,
-        onStateChange: (progressState) => {
-          setRepState({
-            repCount: Number(progressState?.repCount || 0),
-            totalReps: Number(progressState?.totalReps || 0)
-          });
-        },
-        onSetStarted: (setNumber) => {
-          glueDeps.getCoachRuntime?.()?.speakSetStarted?.(setNumber);
-        },
-        onExerciseStarted: (exercise) => {
-          glueDeps.getCoachRuntime?.()?.speakExerciseStarted?.(exercise);
-        },
-        onWorkoutCompleted: () => {
-          glueDeps.setRunning?.(false);
-          if (refs.startBtn) refs.startBtn.textContent = 'Start Workout';
-          glueDeps.refreshCameraUiState?.();
-          glueDeps.addLog?.('system', 'Workout complete.');
-          glueDeps.getCoachRuntime?.()?.speakWorkoutCompleted?.();
-          glueDeps.setPersonLayerSuppressed?.(false);
-          glueDeps.setAvatar3dCanvasVisibility?.(false);
-          glueDeps.setLastRenderMode?.('camera');
-          const animId = glueDeps.getAnimId?.();
-          if (animId?.stop) animId.stop();
-          else if (animId) global.cancelAnimationFrame?.(animId);
-        },
-        onCompleteSaveError: () => {
-          glueDeps.addLog?.('system', 'Workout finished locally, but save failed. Check connection, then restart app to retry sync.');
-        },
-        onRetentionSignal: () => {
-          const calendarMeta = glueDeps.getCalendarMeta?.();
-          if (!calendarMeta) return;
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const key = today.toISOString().slice(0, 10);
-          calendarMeta.completedDates.add(key);
-          glueDeps.buildCalendarFromMeta?.();
-          glueDeps.persistUser?.();
-        }
-      },
-      repAnalysis: {
-        formEngine: glueDeps.formEngine,
-        getCurrentExerciseMeta: glueDeps.getCurrentExerciseMeta,
-        getCurrentExerciseId: glueDeps.getCurrentExerciseId,
-        onAnalysis: ({ formResult, analysis } = {}) => {
-          glueDeps.syncRepAnalysisState?.(global.RepAnalysisRuntime?.getState?.() || {});
-          const current = getRepState();
-          global.WorkoutProgressionRuntime.handleRepAnalysis({
-            repCount: current.repCount,
-            totalReps: current.totalReps
-          }, formResult || null);
-          glueDeps.renderWorkoutHud?.(formResult || null);
-          if (analysis?.fullBody) glueDeps.setFullBodyAcquired?.(true);
-        },
-        onRepComplete: ({ repCount: nextRepCount, totalReps: nextTotalReps, depthScore, goodForm, formResult } = {}) => {
-          setRepState({
-            repCount: Number(nextRepCount || 0),
-            totalReps: Number(nextTotalReps || 0),
-            lastDepthScore: Number(depthScore || 0),
-            lastGoodForm: Boolean(goodForm)
-          });
-          const current = getRepState();
-          global.WorkoutProgressionRuntime.handleRepComplete({
-            repCount: current.repCount,
-            totalReps: current.totalReps
-          }, formResult || null);
-          glueDeps.sendRepToNode?.(depthScore);
-          const cue = goodForm ? 'Good rep.' : glueDeps.getPrimaryCue?.(formResult);
-          glueDeps.getCoachRuntime?.()?.speakRepFeedback?.(cue, 'rep');
-        }
-      }
-    };
-  }
-
-  function configure(nextDeps) {
-    deps = { ...deps, ...(nextDeps || {}) };
-    publishState();
-    log('configured', { hasSessionWrite: Boolean(deps.sessionWrite?.completeSession), hasHudRuntime: Boolean(global.HudRuntime?.render) });
-    return getState();
-  }
-
-  function safeCall(fn, label) {
-    return (...args) => {
-      try { return fn(...args); }
-      catch (err) {
-        const message = `${label} failed: ${err?.message || err}`;
-        console.error('[WORKOUT_PROGRESS] error', err);
-        setVisibleRuntimeError(message);
-        throw err;
-      }
-    };
-  }
-
-  global.WorkoutProgressionRuntime = {
-    configure,
-    hydrateActiveWorkoutPlan: safeCall(hydrateActiveWorkoutPlan, 'Workout plan hydration'),
-    prepareWorkoutStart: safeCall(prepareWorkoutStart, 'Workout preparation'),
-    startWorkout: safeCall(startWorkout, 'Workout progression start'),
-    pauseWorkout: safeCall(pauseWorkout, 'Workout pause'),
-    handleRepAnalysis: safeCall(handleRepAnalysis, 'Rep analysis progression'),
-    handleRepComplete: safeCall(handleRepComplete, 'Rep completion progression'),
-    skipRest: safeCall(skipRest, 'Skip rest'),
-    repeatSet: safeCall(repeatSet, 'Repeat set'),
-    nextExercise: safeCall(nextExercise, 'Next exercise'),
-    completeWorkoutSession: safeCall(completeWorkoutSession, 'Workout completion'),
-    createSessionCallbackGlue,
-    getCurrentExerciseMeta,
-    getCurrentExerciseId,
-    getPlan,
-    getState
-  };
-  log('loaded');
-})(typeof window !== 'undefined' ? window : globalThis);
+  function startWorkout(createdSessionId){state.sessionId=createdSessionId||deps.getSessionId?.()||state.sessionId;if(!state.sessionId)throw new Error('workout progression requires a canonical session id');state.startedAt=state.startedAt||new Date(now()).toISOString();beginWork(currentExercise().targetTime,{announceStart:false});announce('Workout started.');return getState();}
+  function pauseWorkout(){if(!['running'].includes(state.timerStatus))return getState();const remaining=calculatedRemaining();clearTick();update({timerStatus:'paused',workoutStatus:'paused',remainingSeconds:remaining,remainingSecondsAtPause:remaining,intervalStartedAt:null});announce('Workout paused.');diagnostic('timer paused',{phase:state.setStatus,remaining});return getState();}
+  function resumeWorkout(){if(state.timerStatus!=='paused')return getState();const remaining=state.remainingSecondsAtPause??state.remainingSeconds;update({timerStatus:'running',workoutStatus:'in_progress',remainingSeconds:remaining,countdownStartedWithSeconds:remaining,remainingSecondsAtPause:null,intervalStartedAt:new Date(now()).toISOString()});scheduleTick();announce('Workout resumed.');diagnostic('timer resumed',{phase:state.setStatus,remaining});return getState();}
+  function togglePause(){return state.timerStatus==='paused'?resumeWorkout():pauseWorkout();}
+  function extendTime(){if(state.setStatus!=='active'||!['running','paused'].includes(state.timerStatus))return getState();const remaining=calculatedRemaining()+15;const patch={remainingSeconds:remaining,countdownStartedWithSeconds:remaining,extensionSeconds:state.extensionSeconds+15};if(state.timerStatus==='paused')patch.remainingSecondsAtPause=remaining;else patch.intervalStartedAt=new Date(now()).toISOString();update(patch);diagnostic('extension applied',{extensionSeconds:state.extensionSeconds,remaining});return getState();}
+  function setKey(){return `${state.activeExerciseIndex}:${state.activeSetIndex}`;}
+  async function expireInterval(){if(state.setStatus!=='active'||transitionPromise){diagnostic('duplicate transition prevented',{phase:state.setStatus});return transitionPromise||getState();}diagnostic('interval expired',{exerciseIndex:state.activeExerciseIndex,setIndex:state.activeSetIndex});clearTick();transitionPromise=(async()=>{update({setStatus:'completing_set',timerStatus:'persisting',remainingSeconds:0,intervalStartedAt:null});diagnostic('set completion requested',{exerciseIndex:state.activeExerciseIndex,setIndex:state.activeSetIndex});if(!state.completedSets.includes(setKey()))state.completedSets=[...state.completedSets,setKey()];persist();await deps.onSetCompletionPersist?.(getState(),getCurrentExerciseMeta());diagnostic('set completion persisted',{exerciseIndex:state.activeExerciseIndex,setIndex:state.activeSetIndex});startTransition();return getState();})().catch(e=>{transitionPromise=null;throw e;});return transitionPromise;}
+  function startTransition(){update({setStatus:'transition',timerStatus:'running',transitionRemainingSeconds:TRANSITION_SECONDS,remainingSeconds:TRANSITION_SECONDS,countdownStartedWithSeconds:TRANSITION_SECONDS,intervalStartedAt:new Date(now()).toISOString(),remainingSecondsAtPause:null});announce('Five-second transition started.');diagnostic('transition started',{seconds:TRANSITION_SECONDS});scheduleTick();}
+  async function advance(){clearTick();update({setStatus:'advancing',timerStatus:'advancing',remainingSeconds:0,transitionRemainingSeconds:0});const ex=currentExercise();let target;if(state.activeSetIndex+1<ex.sets){state.activeSetIndex++;target={type:'set',exerciseIndex:state.activeExerciseIndex,setIndex:state.activeSetIndex};deps.onSetStarted?.(state.activeSetIndex+1,currentExercise());}else if(state.activeExerciseIndex+1<activeWorkoutPlan.exercises.length){state.activeExerciseIndex++;state.activeSetIndex=0;target={type:'exercise',exerciseIndex:state.activeExerciseIndex,setIndex:0};deps.onExerciseStarted?.(currentExercise());}else target={type:'workout_complete'};diagnostic('progression target selected',target);transitionPromise=null;if(target.type==='workout_complete')return completeWorkoutSession();decorate();announce(target.type==='set'?`Next set: set ${state.activeSetIndex+1} of ${currentExercise().sets}.`:`Next exercise: ${currentExercise().name}.`);beginWork(currentExercise().targetTime,{announceStart:false});return getState();}
+  function transitionTick(){const remaining=calculatedRemaining();state.transitionRemainingSeconds=remaining;state.remainingSeconds=remaining;publish();render();if(remaining<=0)advance();}
+  const originalTick=tick; tick=function(){if(state.setStatus==='transition')return transitionTick();return originalTick();};
+  async function completeWorkoutSession(){if(state.completionPersisted||completionPromise)return completionPromise||getState();clearTick();diagnostic('workout completion requested',{});completionPromise=(async()=>{const completedAt=new Date(now()).toISOString();update({workoutStatus:'completed',setStatus:'completed',timerStatus:'completed',completedAt,completionPersisted:false});const completion={sessionId:state.sessionId,scheduledWorkoutId:state.activeWorkoutId,workoutId:state.activeWorkoutId,completedExercises:activeWorkoutPlan.exercises.map(x=>x.name),completedSets:state.completedSets.length,repsCompleted:state.totalReps,durationSeconds:state.startedAt?Math.max(0,Math.round((now()-new Date(state.startedAt).getTime())/1000)):0,completedAt};global.localStorage?.setItem(ACTIVE_WORKOUT_COMPLETION_KEY,JSON.stringify(completion));if(state.sessionId)await (deps.sessionWrite||global.SessionWrite)?.completeSession?.(state.sessionId,{repsCompleted:state.totalReps,exerciseId:getCurrentExerciseId(),scheduledWorkoutId:state.activeWorkoutId,workoutId:state.activeWorkoutId,completedAt});update({completionPersisted:true});diagnostic('workout completion persisted',{});global.dispatchEvent?.(new global.CustomEvent('workout:completed',{detail:completion}));deps.onRetentionSignal?.(completion);deps.onWorkoutCompleted?.(completion);announce('Workout completed.');return getState();})();return completionPromise;}
+  function skipExercise(){if(!currentExercise()||state.workoutStatus==='completed')return getState();const id=currentExercise().exerciseId;if(!state.skippedExercises.includes(id))state.skippedExercises=[...state.skippedExercises,id];clearTick();transitionPromise=null;if(state.activeExerciseIndex+1<activeWorkoutPlan.exercises.length){state.activeExerciseIndex++;state.activeSetIndex=0;decorate();announce(`Next exercise: ${currentExercise().name}.`);beginWork(currentExercise().targetTime,{announceStart:false});}else completeWorkoutSession();return getState();}
+  function endWorkout(){clearTick();transitionPromise=null;update({workoutStatus:'ended_early',setStatus:'ended_early',timerStatus:'ended',completedAt:new Date(now()).toISOString()});announce('Workout ended early.');deps.onWorkoutEnded?.(getState());return getState();}
+  function restore(){let saved;try{saved=JSON.parse(global.localStorage?.getItem(TIMED_STATE_KEY)||'null');}catch(_){return null;}if(!saved||saved.version!==1||saved.workoutStatus==='completed'||saved.workoutStatus==='ended_early')return null;hydrateActiveWorkoutPlan();if(!activeWorkoutPlan||saved.activeWorkoutId!==activeWorkoutPlan.scheduledWorkoutId)return null;state={...initialState(),...saved};decorate();diagnostic('refresh state restored',{timerStatus:state.timerStatus,phase:state.setStatus});if(state.timerStatus==='running'){const remaining=calculatedRemaining();state.remainingSeconds=remaining;if(state.setStatus==='transition')state.transitionRemainingSeconds=remaining;if(remaining<=0){if(state.setStatus==='transition')advance();else expireInterval();}else scheduleTick();}publish();render();return getState();}
+  function handleRepAnalysis(snapshot={},formResult=null){update({repCount:Number(snapshot.repCount??state.repCount),totalReps:Number(snapshot.totalReps??state.totalReps)},{persist:false,formResult});return getState();}
+  function handleRepComplete(snapshot={},formResult=null){return handleRepAnalysis(snapshot,formResult);}
+  function getCurrentExerciseMeta(){return currentExercise();} function getCurrentExerciseId(){return currentExercise()?.exerciseId||null;} function getPlan(){return activeWorkoutPlan?{...activeWorkoutPlan,exercises:activeWorkoutPlan.exercises.map(x=>({...x}))}:null;} function getState(){return {...state,completedSets:[...state.completedSets],skippedExercises:[...state.skippedExercises]};}
+  function configure(next={}){deps={...deps,...next};publish();return getState();}
+  function createSessionCallbackGlue({refs={},deps:glue={}}={}){return {progression:{sessionWrite:glue.sessionWrite||global.SessionWrite,getSessionId:glue.getSessionId,trackPilotEvent:glue.trackPilotEvent,onStateChange:s=>glue.setRepState?.({repCount:s.repCount,totalReps:s.totalReps}),onSetStarted:(n)=>glue.getCoachRuntime?.()?.speakSetStarted?.(n),onExerciseStarted:e=>glue.getCoachRuntime?.()?.speakExerciseStarted?.(e),onWorkoutCompleted:()=>{glue.setRunning?.(false);if(refs.startBtn)refs.startBtn.textContent='Start Workout';glue.refreshCameraUiState?.();glue.addLog?.('system','Workout complete.');glue.getCoachRuntime?.()?.speakWorkoutCompleted?.();},onRetentionSignal:()=>{const c=glue.getCalendarMeta?.();if(!c)return;const key=new Date().toISOString().slice(0,10);c.completedDates.add(key);glue.buildCalendarFromMeta?.();glue.persistUser?.();}},repAnalysis:{formEngine:glue.formEngine,getCurrentExerciseMeta:glue.getCurrentExerciseMeta,getCurrentExerciseId:glue.getCurrentExerciseId,onAnalysis:({formResult}={})=>{glue.syncRepAnalysisState?.(global.RepAnalysisRuntime?.getState?.()||{});const s=glue.getRepState?.()||{};handleRepAnalysis(s,formResult);glue.renderWorkoutHud?.(formResult);},onRepComplete:({repCount,totalReps,depthScore,goodForm,formResult}={})=>{glue.setRepState?.({repCount:Number(repCount||0),totalReps:Number(totalReps||0),lastDepthScore:Number(depthScore||0),lastGoodForm:Boolean(goodForm)});handleRepComplete({repCount,totalReps},formResult);glue.sendRepToNode?.(depthScore);}}};}
+  global.WorkoutProgressionRuntime={configure,hydrateActiveWorkoutPlan,prepareWorkoutStart,startWorkout,pauseWorkout,resumeWorkout,togglePause,extendTime,expireInterval,skipExercise,endWorkout,restore,handleRepAnalysis,handleRepComplete,completeWorkoutSession,createSessionCallbackGlue,getCurrentExerciseMeta,getCurrentExerciseId,getPlan,getState,constants:{DEFAULT_WORK_SECONDS,TRANSITION_SECONDS,DEFAULT_SETS,DEFAULT_TEMPO}};
+})(typeof window!=='undefined'?window:globalThis);

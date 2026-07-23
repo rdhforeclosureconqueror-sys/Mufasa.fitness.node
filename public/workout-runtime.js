@@ -197,7 +197,7 @@
     global.document?.body?.classList?.remove('camera-fullscreen');
     setWorkoutFocusMode(false, 'camera-stopped');
     refreshCameraControls();
-    setEnabled('startBtn', false);
+    setEnabled('startBtn', true);
     getFn('onCameraStopped')?.();
     updateRuntimeState();
   }
@@ -209,10 +209,6 @@
     markStartTrace('workoutStartHandlerEntered', 'pass', { running: state.running, sessionId: state.sessionId || null });
     try {
       ensureRequiredDom(['startBtn', 'video', 'workoutHud', 'hudExerciseName', 'hudSet', 'hudReps', 'hudTempo', 'hudRest', 'hudNextExercise', 'hudCoachCue', 'poseStatus', 'brainStatus']);
-      if (!state.cameraActive && !getVideoElement()?.srcObject) {
-        setVisibleError('Connect camera first.');
-        throw new Error('Connect camera first.');
-      }
       if (!state.running) {
         await getFn('prepareWorkoutStart')?.();
         markStartTrace('selectedWorkoutResolved', 'pass', { prepared: true });
@@ -241,21 +237,20 @@
         state.running = true;
         markStartTrace('liveModeEntered', 'pass', { sessionId: state.sessionId });
         markLiveBreakpoint('live-mode-entered', 'pass', { sessionId: state.sessionId });
-        markStartTrace('poseRuntimeLoadAttempted', 'pass', { sessionId: state.sessionId });
-        markLiveBreakpoint('pose-runtime-loading', 'pass', { sessionId: state.sessionId });
-        try {
-          await getFn('ensureDetectorReady')?.();
-          const detectorReady = getFn('isDetectorReady') ? getFn('isDetectorReady')() : true;
-          if (!detectorReady) throw new Error('movement detector is not ready after camera connect');
-          markStartTrace('poseRuntimeLoaded', 'pass', { detectorReady });
-        } catch (poseErr) {
-          const failure = normalizePoseRuntimeError(poseErr);
-          markStartTrace('poseRuntimeFailed', 'fail', failure, poseErr);
-          setVisibleError(`Pose runtime failed: ${failure.code}: ${failure.message}`);
-          throw poseErr;
+        if (state.cameraActive || getVideoElement()?.srcObject) {
+          markStartTrace('poseRuntimeLoadAttempted', 'pass', { sessionId: state.sessionId });
+          try {
+            await getFn('ensureDetectorReady')?.();
+            markStartTrace('poseRuntimeLoaded', 'pass', { detectorReady: Boolean(getFn('isDetectorReady')?.()) });
+          } catch (poseErr) {
+            markStartTrace('poseRuntimeFailed', 'fail', normalizePoseRuntimeError(poseErr), poseErr);
+            setPoseStatus(`Camera/form unavailable: ${poseErr?.message || poseErr}. Timer continues.`);
+          }
+        } else {
+          setPoseStatus('Camera not connected. Timer is available.');
         }
         await getFn('onWorkoutStarted')?.(state.sessionId, sessionRes);
-        setPoseStatus(`Workout started: ${state.sessionId}`);
+        if (state.cameraActive) setPoseStatus(`Workout started: ${state.sessionId}`);
         setBrainStatus('Coach ready.', 'Ma’at 2.0: coach ready');
         setText('hudFormStatus', 'Coach ready');
         setWorkoutFocusMode(true, 'workout-started');

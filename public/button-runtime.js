@@ -7,7 +7,7 @@
 
   function setPrimaryButtonsEnabled(enabled, refs){
     refs = refs || {};
-    [refs.dashboardBtn, refs.exerciseLibraryBtn, refs.connectBtn, refs.runSystemDiagnosticBtn, refs.saveProfileFormBtn, refs.calendarApplyBtn]
+    [refs.dashboardBtn, refs.exerciseLibraryBtn, refs.connectBtn, refs.startBtn, refs.runSystemDiagnosticBtn, refs.saveProfileFormBtn, refs.calendarApplyBtn]
       .filter(Boolean)
       .forEach((el) => {
         if (enabled) {

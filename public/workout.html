@@ -644,9 +644,8 @@
       gap: 4px;
     }
     .hud-line { color: #e5e7eb; }
-    .hud-actions { display: none; margin-top: 6px; gap: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .hud-actions button { min-height: 34px; font-size: 0.72rem; padding: 6px 8px; }
-    .workout-hud.resting .hud-actions { display: grid; }
+    .hud-actions { display: grid; margin-top: 8px; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hud-actions button { min-height: 44px; font-size: 0.82rem; padding: 9px 10px; }
     .retention-shell {
       border: 1px solid rgba(96,165,250,.3);
       background: rgba(15,23,42,.35);
@@ -940,18 +939,21 @@ CREATE CLICKED: no</pre>
         <div id="workoutHud" class="workout-hud" aria-live="polite">
           <div class="hud-line"><strong>Exercise:</strong> <span id="hudExerciseName">Bodyweight Squat</span></div>
           <div class="hud-line"><strong>Set:</strong> <span id="hudSet">1 of 3</span></div>
-          <div class="hud-line"><strong>Reps:</strong> <span id="hudReps">0 / 10</span></div>
+          <div class="hud-line"><strong>Detected reps:</strong> <span id="hudReps">0 / 10</span></div>
           <div class="hud-line"><strong>Score:</strong> <span id="hudChallengeScore">0</span></div>
           <div class="hud-line"><strong>Form:</strong> <span id="hudFormStatus">Coach ready</span></div>
-          <div class="hud-line"><strong>Tempo:</strong> <span id="hudTempo">3-1-1</span></div>
-          <div class="hud-line"><strong>Rest:</strong> <span id="hudRest">Ready</span></div>
+          <div class="hud-line"><strong>Tempo:</strong> <span id="hudTempo">3-1-3 — 3 seconds movement phase, 1 second hold, 3 seconds return phase</span></div>
+          <div class="hud-line"><strong>Timer:</strong> <span id="hudRest">30 seconds remaining</span></div>
+          <div class="hud-line"><strong>Timer state:</strong> <span id="hudTimerState">idle</span></div>
           <div class="hud-line"><strong>Next:</strong> <span id="hudNextExercise">--</span></div>
           <div class="hud-line"><strong>Cue:</strong> <span id="hudCoachCue">Brace first. Stay smooth.</span></div>
           <div id="hudActions" class="hud-actions">
-            <button id="skipRestBtn" class="secondary" type="button">Skip Rest</button>
-            <button id="repeatSetBtn" class="secondary" type="button">Repeat Set</button>
-            <button id="nextExerciseBtn" class="secondary" type="button">Next Exercise</button>
+            <button id="pauseWorkoutBtn" class="secondary" type="button">Pause</button>
+            <button id="extendWorkoutBtn" class="secondary" type="button">+15 Seconds</button>
+            <button id="skipExerciseBtn" class="secondary" type="button">Skip Exercise</button>
+            <button id="endWorkoutBtn" class="secondary" type="button">End Workout</button>
           </div>
+          <div id="timedWorkoutAnnouncements" class="sr-only" role="status" aria-live="assertive" aria-atomic="true"></div>
         </div>
         <div id="cameraFsActions" class="camera-fs-actions" aria-live="polite">
           <button id="exitCameraBtn" class="secondary" type="button">Exit Camera</button>
@@ -979,7 +981,7 @@ CREATE CLICKED: no</pre>
 
       <div class="btn-row">
         <button id="connectBtn">Connect Camera</button>
-        <button id="startBtn" class="secondary" disabled>Start Workout</button>
+        <button id="startBtn" class="secondary">Start Workout</button>
         <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" type="button">Request New Exercise</button>
@@ -1252,8 +1254,8 @@ skeletonOverlayActive: no</pre>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
-  <script src="/hud-runtime.js?v=20260506"></script>
-  <script src="/workout-progression-runtime.js?v=20260506"></script>
+  <script src="/hud-runtime.js?v=20260723-timed1"></script>
+  <script src="/workout-progression-runtime.js?v=20260723-timed1"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260507"></script>
   <script>
@@ -1263,12 +1265,12 @@ skeletonOverlayActive: no</pre>
   </script>
   <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
-  <script src="/button-runtime.js?v=20260505"></script>
+  <script src="/button-runtime.js?v=20260723-timed1"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
-  <script src="/workout-runtime.js?v=20260507"></script>
+  <script src="/workout-runtime.js?v=20260723-timed1"></script>
   <script src="/generated-workout-runtime.js?v=20260720"></script>
-  <script src="/runtime-orchestrator.js?v=20260506"></script>
+  <script src="/runtime-orchestrator.js?v=20260723-timed1"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
   <script src="/app-hydration-runtime.js?v=20260507"></script>
 
@@ -1462,12 +1464,13 @@ skeletonOverlayActive: no</pre>
     const hudRepsEl = document.getElementById("hudReps");
     const hudTempoEl = document.getElementById("hudTempo");
     const hudRestEl = document.getElementById("hudRest");
+    const hudTimerStateEl = document.getElementById("hudTimerState");
     const hudNextExerciseEl = document.getElementById("hudNextExercise");
     const hudCoachCueEl = document.getElementById("hudCoachCue");
-    const skipRestBtn = document.getElementById("skipRestBtn");
-    const repeatSetBtn = document.getElementById("repeatSetBtn");
-    const nextExerciseBtn = document.getElementById("nextExerciseBtn");
-
+    const pauseWorkoutBtn = document.getElementById("pauseWorkoutBtn");
+    const extendWorkoutBtn = document.getElementById("extendWorkoutBtn");
+    const skipExerciseBtn = document.getElementById("skipExerciseBtn");
+    const endWorkoutBtn = document.getElementById("endWorkoutBtn");
     if (nutritionBtn) nutritionBtn.onclick = () => { window.location.href = "/nutrition.html"; };
 
     const AVATAR_STAGE_MODE_STORAGE_KEY = "maatAvatarStageMode";
@@ -3480,6 +3483,7 @@ skeletonOverlayActive: no</pre>
           hudRepsEl,
           hudTempoEl,
           hudRestEl,
+          hudTimerStateEl,
           hudNextExerciseEl,
           hudCoachCueEl,
           exerciseLabelEl,
@@ -3492,7 +3496,7 @@ skeletonOverlayActive: no</pre>
           isAvatarDebug: () => AVATAR_FLAGS.AVATAR_DEBUG
         },
         progression: workoutGlue.progression,
-        controls: { skipRestBtn, repeatSetBtn, nextExerciseBtn },
+        controls: { pauseWorkoutBtn, extendWorkoutBtn, skipExerciseBtn, endWorkoutBtn },
         repAnalysis: workoutGlue.repAnalysis
       });
       console.log("[REP_ANALYSIS] extracted runtime configured");
@@ -4310,6 +4314,7 @@ skeletonOverlayActive: no</pre>
     const bootWorkoutPlan = hydrateActiveWorkoutPlan();
     renderWorkoutPlan(bootWorkoutPlan);
     if (bootWorkoutPlan?.exercises?.length) updateActiveWorkoutState({ workoutStatus: "ready", setStatus: "ready" });
+    window.WorkoutProgressionRuntime.restore();
     window.addEventListener("workout:selected", (event) => {
       const detail = event?.detail;
       if (detail) {
@@ -4483,7 +4488,7 @@ skeletonOverlayActive: no</pre>
     });
     
     window.RuntimeOrchestrator.configurePostLoginActivation({
-      refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, runSystemDiagnosticBtn, saveProfileFormBtn: getProfileSaveButton(), calendarApplyBtn },
+      refs: { dashboardBtn, exerciseLibraryBtn, connectBtn, startBtn, runSystemDiagnosticBtn, saveProfileFormBtn: getProfileSaveButton(), calendarApplyBtn },
       deps: {
         connectCamera,
         addLog,
