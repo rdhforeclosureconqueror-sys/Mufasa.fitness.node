@@ -838,7 +838,27 @@
     body.workout-focus .workout-hud,body.camera-fullscreen .workout-hud{display:grid;gap:7px}.focus-heading{display:flex;justify-content:space-between;align-items:start;gap:10px;font-size:clamp(.9rem,4vw,1.15rem)}.focus-heading strong{overflow-wrap:anywhere}.focus-heading span{flex:none;white-space:nowrap}.focus-timer{font:800 clamp(3.5rem,20vw,7rem)/.9 ui-monospace,SFMono-Regular,monospace;text-align:center;letter-spacing:-.06em;text-shadow:0 2px 8px #000,0 0 2px #000}.focus-state{text-align:center;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.focus-cue{text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.focus-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.focus-actions button,.details-close{min-height:44px;justify-content:center}.focus-end{opacity:.9}.workout-details{max-height:min(32dvh,220px);overflow:auto;padding:10px;border-radius:10px;background:rgba(2,6,23,.95);font-size:.82rem}.workout-details[hidden]{display:none!important}
     body.workout-focus #cameraMobileControls,body.workout-focus #stopWorkoutFsBtn,body.workout-focus #renderModeControl,body.workout-focus #avatarDebugOverlay{display:none!important}body.workout-focus #cameraFsActions{display:none!important}body.camera-fullscreen.workout-focus #cameraFsActions{display:inline-flex!important}body.camera-fullscreen.workout-focus #stopWorkoutFsBtn{display:none!important}body.camera-fullscreen.workout-focus .video-shell{height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px)}body.camera-fullscreen.workout-focus .workout-hud{padding-top:max(10px,var(--safe-top))}
     @media (max-width:430px){.workout-hud{inset:6px 6px auto;max-width:calc(100% - 12px)}.focus-timer{font-size:clamp(3.35rem,19vw,5rem)}}@media (prefers-reduced-motion:reduce){.workout-hud *,button{transition:none!important;animation:none!important}}
-</style>
+
+    /* Focus2: attribute is applied to the real application root before optional I/O. */
+    #appShell[data-workout-focus="active"] .workout-support-pane,
+    #appShell[data-workout-focus="active"] #poseDiagnosticsPanel,
+    #appShell[data-workout-focus="active"] #voiceSupportStatus,
+    #appShell[data-workout-focus="active"] #voiceSelect,
+    #appShell[data-workout-focus="active"] #renderModeControl,
+    #appShell[data-workout-focus="active"] #cameraMobileControls,
+    #appShell[data-workout-focus="active"] #stopWorkoutFsBtn,
+    #appShell[data-workout-focus="active"] #repCount,
+    #appShell[data-workout-focus="active"] #poseStatus,
+    #appShell[data-workout-focus="active"] #brainStatus,
+    #appShell[data-workout-focus="active"] #exerciseLabel,
+    #appShell[data-workout-focus="active"] #trackingModeStatus,
+    #appShell[data-workout-focus="active"] #avatarModeStatus,
+    #appShell[data-workout-focus="active"] #coach-log { display:none!important; }
+    #appShell[data-workout-focus="active"] { grid-template-columns:minmax(0,1fr)!important; width:100%; max-width:none; }
+    #appShell[data-workout-focus="active"] .workout-stage-pane { min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 20px); padding:0; }
+    #appShell[data-workout-focus="active"] .video-shell { min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px); height:auto; aspect-ratio:auto; }
+    #appShell[data-workout-focus="active"] .workout-hud { display:grid!important; }
+  </style>
 </head>
 
 <body>
@@ -1260,14 +1280,15 @@ skeletonOverlayActive: no</pre>
   <script src="/diagnostics-client.js?v=20260426b"></script>
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
-  <script src="/pose-runtime.js?v=20260506"></script>
+  <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
+  <script src="/pose-runtime.js?v=20260724-focus2"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
-  <script src="/hud-runtime.js?v=20260724-focus1"></script>
-  <script src="/workout-progression-runtime.js?v=20260724-focus1"></script>
+  <script src="/hud-runtime.js?v=20260724-focus2"></script>
+  <script src="/workout-progression-runtime.js?v=20260724-focus2"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
-  <script src="/coach-runtime.js?v=20260507"></script>
+  <script src="/coach-runtime.js?v=20260724-focus2"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
       document.write('<script src="/avatar-runtime.js?v=20260506a"><\/script>');
@@ -1275,12 +1296,12 @@ skeletonOverlayActive: no</pre>
   </script>
   <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
-  <script src="/button-runtime.js?v=20260724-focus1"></script>
+  <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
-  <script src="/workout-runtime.js?v=20260724-focus1"></script>
-  <script src="/generated-workout-runtime.js?v=20260720"></script>
-  <script src="/runtime-orchestrator.js?v=20260724-focus1"></script>
+  <script src="/workout-runtime.js?v=20260724-focus2"></script>
+  <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
+  <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
   <script src="/app-hydration-runtime.js?v=20260507"></script>
 
@@ -3453,6 +3474,7 @@ skeletonOverlayActive: no</pre>
           trackPilotEvent,
           addLog,
           getCoachRuntime: requireCoachRuntime,
+          isPoseProcessingEnabled: () => new URLSearchParams(window.location.search).get('enablePoseProcessing') === '1',
           startChallengePoseLoop: runPoseLoop,
           stopChallengePoseLoop: () => {
             if (animId?.stop) animId.stop();
@@ -4374,6 +4396,7 @@ skeletonOverlayActive: no</pre>
     window.RuntimeOrchestrator.configureWorkoutRuntime({
       ensureDetectorReady: ensureLivePoseDetectorReady,
       isDetectorReady: () => Boolean(detector),
+      isPoseProcessingEnabled: () => new URLSearchParams(window.location.search).get('enablePoseProcessing') === '1',
       beforeConnectCamera: () => {
         trackPilotEvent("camera_connect_started");
         window.__cameraStatus = "connecting";
@@ -4402,9 +4425,9 @@ skeletonOverlayActive: no</pre>
         canvasEl.width = videoWidth; canvasEl.height = videoHeight;
         avatar3dCanvasEl.width = videoWidth; avatar3dCanvasEl.height = videoHeight;
         setAvatar3dCanvasVisibility(false); resizeAvatarThreeRuntime();
-        poseStatusEl.textContent = "Camera connected. Loading movement tracker…";
-        await initDetector(); await initOptionalTrackers(); updateTrackingMode(currentTrackingMode, performance.now());
-        poseStatusEl.textContent = "Camera ready. You can start your workout now."; poseStatusEl.classList.add("status-ok");
+        const poseEnabled = new URLSearchParams(window.location.search).get('enablePoseProcessing') === '1';
+        if (poseEnabled) { poseStatusEl.textContent = "Camera connected. Loading movement tracker…"; await initDetector(); await initOptionalTrackers(); updateTrackingMode(currentTrackingMode, performance.now()); }
+        poseStatusEl.textContent = poseEnabled ? "Camera and optional movement tracking ready." : "Camera ready for self-view. Optional movement tracking is off."; poseStatusEl.classList.add("status-ok");
         window.__cameraStatus = "connected"; window.__cameraConnectSuccess = true; window.__cameraLastConnectedAt = new Date().toISOString();
         trackPilotEvent("camera_connect_success", { detectorReady: Boolean(detector) });
         markPerfMetric("cameraBootMs", Math.round(performance.now() - cameraBootStartedAt));

@@ -78,8 +78,8 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-04-27T00:00:00Z-client-workout-hud";
-const INDEX_CACHE_BUST_TOKEN = "20260427";
+const APP_BUILD_VERSION = "2026-07-24T00:00:00Z-workout-focus2";
+const INDEX_CACHE_BUST_TOKEN = "20260724-focus2";
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
 
 function isAvatarFeatureEnabled(env = process.env) {
@@ -2467,7 +2467,7 @@ function createApp(options = {}) {
 
 
   // ---- Static assets ----
-  app.use(express.static(PUBLIC_DIR));
+  app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html")) res.set(SHELL_NO_STORE_HEADERS); } }));
 
   // ---- central error handler ----
   app.use((err, req, res, _next) => {

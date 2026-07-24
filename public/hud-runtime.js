@@ -2,6 +2,11 @@
   'use strict';
 
   const global = globalScope || window;
+  if (global.__POCKET_PT_HUD_RUNTIME_INITIALIZED) {
+    if (new URLSearchParams(global.location?.search || '').get('debugWorkoutPerformance') === '1') console.info('[WORKOUT_PERF] duplicate HUD runtime initialization ignored');
+    return;
+  }
+  global.__POCKET_PT_HUD_RUNTIME_INITIALIZED = true;
   const state = global.__HUD_RUNTIME_STATE = {
     ...(global.__HUD_RUNTIME_STATE || {}),
     loaded: true,
@@ -95,6 +100,7 @@
 
   function render(options = {}) {
     try {
+      if (global.__workoutPerformance) global.__workoutPerformance.hudRenders += 1;
       const workoutState = options.activeWorkoutState || deps.getActiveWorkoutState?.() || {};
       const plan = options.activeWorkoutPlan || deps.getActiveWorkoutPlan?.() || null;
       const formResult = options.formResult || null;
@@ -146,10 +152,24 @@
     }
   }
 
+  function updateTimer(workoutState = {}) {
+    if (global.__workoutPerformance) global.__workoutPerformance.timerUpdates += 1;
+    const timer = byId('hudTimer');
+    const label = byId('hudTimerState');
+    const seconds = Number(workoutState.remainingSeconds || 0);
+    if (timer) {
+      timer.textContent = formatTime(seconds);
+      timer.setAttribute('aria-label', `${focusLabel(workoutState)}: ${seconds} seconds remaining`);
+    }
+    if (label) label.textContent = focusLabel(workoutState);
+    state.timerUpdates = Number(state.timerUpdates || 0) + 1;
+    return snapshot();
+  }
+
   function snapshot() {
     return { ...state };
   }
 
-  global.HudRuntime = { configure, render, getPrimaryCue, getState: snapshot };
+  global.HudRuntime = { configure, render, updateTimer, getPrimaryCue, getState: snapshot };
   log('loaded');
 })(typeof window !== 'undefined' ? window : globalThis);

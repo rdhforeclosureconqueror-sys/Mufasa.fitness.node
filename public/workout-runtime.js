@@ -1,6 +1,11 @@
 (function initWorkoutRuntime(globalScope){
   'use strict';
   const global = globalScope || window;
+  if (global.__POCKET_PT_WORKOUT_RUNTIME_INITIALIZED) {
+    if (new URLSearchParams(global.location?.search || '').get('debugWorkoutPerformance') === '1') console.info('[WORKOUT_PERF] duplicate workout runtime initialization ignored');
+    return;
+  }
+  global.__POCKET_PT_WORKOUT_RUNTIME_INITIALIZED = true;
   const state = { running: false, sessionId: null, cameraStream: null, cameraActive: false, fullscreen: false };
   let deps = {};
   let actionPending = false;
@@ -139,6 +144,7 @@
       markCameraDiagnostics({ streamReceived: true });
       markLiveBreakpoint('camera-stream-received', 'pass', { tracks: typeof stream?.getTracks === 'function' ? stream.getTracks().length : null });
       state.cameraStream = stream;
+      if (global.__workoutPerformance) global.__workoutPerformance.cameraStreams += 1;
       state.cameraActive = true;
       const video = getVideoElement();
       if (!video) throw new Error('video preview element missing (#video)');
@@ -179,6 +185,9 @@
   function setWorkoutFocusMode(enabled, reason = 'manual') {
     state.focusMode = Boolean(enabled);
     global.document?.body?.classList?.toggle('workout-focus', state.focusMode);
+    const root = byId('appShell');
+    root?.classList?.toggle?.('workout-focus', state.focusMode);
+    if (root?.dataset) root.dataset.workoutFocus = state.focusMode ? 'active' : 'inactive';
     setText('hudFormStatus', state.focusMode ? 'Focus mode active' : 'Coach ready');
     global.__phase30WorkoutFocus = { enabled: state.focusMode, reason, at: new Date().toISOString() };
     if(state.focusMode)focusDiagnostic('focus mode entered');
@@ -218,6 +227,8 @@
       ensureRequiredDom(['startBtn', 'video', 'workoutHud', 'hudExerciseName', 'hudSet', 'hudReps', 'hudTempo', 'hudRest', 'hudNextExercise', 'hudCoachCue', 'poseStatus', 'brainStatus']);
       if (!state.running) {
         await getFn('prepareWorkoutStart')?.();
+        // Enter focus before network, camera, or optional pose work can delay startup.
+        setWorkoutFocusMode(true, 'workout-preparing');
         markStartTrace('selectedWorkoutResolved', 'pass', { prepared: true });
         const sessionPayload = getFn('buildSessionPayload') ? getFn('buildSessionPayload')() : { source: 'workout-runtime' };
         markStartTrace('fallbackWorkoutApplied', 'pass', { applied: sessionPayload?.source === 'pilot_default_workout' || sessionPayload?.programId === 'pilot-fallback', workoutId: sessionPayload.workoutId || null, exerciseId: sessionPayload.exerciseId || null });
@@ -244,7 +255,7 @@
         state.running = true;
         markStartTrace('liveModeEntered', 'pass', { sessionId: state.sessionId });
         markLiveBreakpoint('live-mode-entered', 'pass', { sessionId: state.sessionId });
-        if (state.cameraActive || getVideoElement()?.srcObject) {
+        if ((state.cameraActive || getVideoElement()?.srcObject) && getFn('isPoseProcessingEnabled')?.()) {
           markStartTrace('poseRuntimeLoadAttempted', 'pass', { sessionId: state.sessionId });
           try {
             await getFn('ensureDetectorReady')?.();
@@ -357,8 +368,10 @@
         });
         global.__liveWorkoutBreakpoints?.markPass?.('guidancePromptStarted', { source: 'WorkoutRuntime.onWorkoutStarted', sessionId: createdSessionId });
         await glueDeps.getCoachRuntime?.()?.speakWorkoutIntro?.(getCurrentExerciseMeta());
-        global.__liveWorkoutBreakpoints?.markPass?.('poseLoopStarted', { source: 'WorkoutRuntime.onWorkoutStarted', sessionId: createdSessionId });
-        glueDeps.runPoseLoop?.();
+        if (glueDeps.isPoseProcessingEnabled?.()) {
+          global.__liveWorkoutBreakpoints?.markPass?.('poseLoopStarted', { source: 'WorkoutRuntime.onWorkoutStarted', sessionId: createdSessionId });
+          glueDeps.runPoseLoop?.();
+        }
         glueDeps.updateActivationStatusPanel?.('workout-started');
         glueDeps.updateAuthPropagationStatus?.('workout-started');
         global.__appRuntime?.updateFeaturePanel?.('workout-started');
