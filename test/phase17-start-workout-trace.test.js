@@ -134,6 +134,7 @@ test("pose runtime load failure is reported while workout startup continues", as
     createSession: async () => ({ sessionId: "sess_phase17_pose_fail" }),
     ensureDetectorReady: async () => { throw new Error("missing detector dependency: window.tf"); },
     isDetectorReady: () => false,
+    isPoseProcessingEnabled: () => true,
     onWorkoutStarted: async () => {}
   });
 

@@ -193,6 +193,10 @@
   }
 
   function startPoseLoop(options) {
+    if (state.loopRunning && state.activeLoop) {
+      if (new URLSearchParams(global.location?.search || '').get('debugWorkoutPerformance') === '1') console.info('[WORKOUT_PERF] duplicate pose loop initialization ignored');
+      return state.activeLoop;
+    }
     const {
       detector,
       video,
@@ -237,6 +241,8 @@
         return;
       }
       try {
+        if (global.document?.hidden) { frameId = requestAnimationFrame(frame); return; }
+        if (global.__workoutPerformance) global.__workoutPerformance.poseInferenceCalls += 1;
         const poses = await detector.estimatePoses(video, { flipHorizontal: true });
         const pose = Array.isArray(poses) && poses.length ? poses[0] : null;
         const posePacket = normalizePosePacket(pose, video);
@@ -262,7 +268,7 @@
     }
 
     frameId = requestAnimationFrame(frame);
-    return {
+    state.activeLoop = {
       stop() {
         stopped = true;
         state.loopRunning = false;
@@ -270,6 +276,7 @@
         log('pose loop stop requested');
       }
     };
+    return state.activeLoop;
   }
 
   global.PoseRuntime = {

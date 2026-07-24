@@ -5,7 +5,7 @@
 
   const state = {
     configured: false,
-    muted: false,
+    muted: true,
     audioUnlocked: false,
     speechLock: false,
     repFeedbackAllowed: true,
@@ -378,6 +378,7 @@
   }
 
   async function speakWithBackend(text, source) {
+    if (global.__workoutPerformance) global.__workoutPerformance.voiceRequests += 1;
     const url = deps.voiceUrl;
     if (!url) throw new Error("/api/speak url missing");
     if (typeof global.fetch !== "function") throw new Error("fetch_unavailable");
@@ -458,6 +459,7 @@
       log("voice", "backend speaking", { source, chars: phrase.length });
       return { ok: true, backend: true };
     } catch (backendErr) {
+      if (global.__workoutPerformance && /abort/i.test(normalizeReason(backendErr))) global.__workoutPerformance.abortedVoiceRequests += 1;
       const backendReason = setBackendFailed(normalizeReason(backendErr), source);
       try {
         speakWithBrowserFallback(phrase, source);
@@ -613,6 +615,10 @@
   }
 
   function configure(config = {}) {
+    if (state.configured) {
+      if (new URLSearchParams(global.location?.search || '').get('debugWorkoutPerformance') === '1') console.info('[WORKOUT_PERF] duplicate voice runtime initialization ignored');
+      return snapshot();
+    }
     refs = { ...refs, ...(config.refs || {}) };
     deps = { ...deps, ...(config.deps || {}) };
     ensureAudioPlayer();
@@ -625,6 +631,7 @@
       global.askCoach.__coachRuntimeDelegator = true;
     }
     state.configured = true;
+    setMuted(true);
     setReady("configure");
     log("coach", "configured", { hasVoiceUrl: Boolean(deps.voiceUrl), hasAskUrl: Boolean(getChatUrl()), hasTypedChat: Boolean(refs.askBtn && refs.questionInput), hasSpeechSynth: "speechSynthesis" in global, hasSpeechRecognition: state.recognitionSupported });
     return snapshot();
