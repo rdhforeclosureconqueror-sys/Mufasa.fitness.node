@@ -387,14 +387,18 @@
     const format = "mp3";
     const requestBody = { text, voice, format };
     console.log("[COACH_BACKEND_TRACE] /api/speak request", { url, operation: "synthesize_speech", textLength: requestBody.text.length });
-    const res = await global.fetch(url, {
+    const controller = typeof global.AbortController === "function" ? new global.AbortController() : null;
+    const timeoutId = controller ? global.setTimeout?.(() => controller.abort(), 8000) : null;
+    let res;
+    try { res = await global.fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(authToken ? { authorization: `Bearer ${authToken}` } : {})
       },
-      body: JSON.stringify(requestBody)
-    });
+      body: JSON.stringify(requestBody),
+      ...(controller ? { signal: controller.signal } : {})
+    }); } finally { if (timeoutId != null) global.clearTimeout?.(timeoutId); }
     if (!res.ok) {
       const errTxt = await res.text().catch(() => "");
       console.error("[COACH_BACKEND_TRACE] /api/speak validation error", { url, status: res.status, operation: "synthesize_speech_failed" });
@@ -406,16 +410,20 @@
     const player = ensureAudioPlayer();
     if (!player) throw new Error("audio_player_unavailable");
     player.src = urlObj;
-    player.onended = () => {
-      global.URL?.revokeObjectURL?.(urlObj);
-      releaseLocks(source);
-    };
-    player.onerror = () => {
-      global.URL?.revokeObjectURL?.(urlObj);
-      setVoiceUnavailable("audio_playback_error", source);
-      releaseLocks(source);
-    };
-    await player.play();
+    await new Promise(async (resolve, reject) => {
+      player.onended = () => {
+        global.URL?.revokeObjectURL?.(urlObj);
+        releaseLocks(source);
+        resolve();
+      };
+      player.onerror = () => {
+        global.URL?.revokeObjectURL?.(urlObj);
+        setVoiceUnavailable("audio_playback_error", source);
+        releaseLocks(source);
+        reject(new Error("audio_playback_error"));
+      };
+      try { await player.play(); } catch (error) { reject(error); }
+    });
   }
 
   function speakWithBrowserFallback(text, source) {
@@ -426,12 +434,15 @@
     const utterance = new global.SpeechSynthesisUtterance(text);
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
-    utterance.onend = () => releaseLocks(source);
-    utterance.onerror = (event) => {
-      setVoiceUnavailable(`browser_speech_error: ${event?.error || "unknown_error"}`, source);
-      releaseLocks(source);
-    };
-    global.speechSynthesis.speak(utterance);
+    return new Promise((resolve, reject) => {
+      utterance.onend = () => { releaseLocks(source); resolve(); };
+      utterance.onerror = (event) => {
+        setVoiceUnavailable(`browser_speech_error: ${event?.error || "unknown_error"}`, source);
+        releaseLocks(source);
+        reject(new Error(event?.error || "browser_speech_error"));
+      };
+      global.speechSynthesis.speak(utterance);
+    });
   }
 
   async function speak(text, source = "system") {
@@ -462,7 +473,7 @@
       if (global.__workoutPerformance && /abort/i.test(normalizeReason(backendErr))) global.__workoutPerformance.abortedVoiceRequests += 1;
       const backendReason = setBackendFailed(normalizeReason(backendErr), source);
       try {
-        speakWithBrowserFallback(phrase, source);
+        await speakWithBrowserFallback(phrase, source);
         log("voice", "browser fallback speaking", { source, backendReason });
         return { ok: true, backend: false, fallback: true, backendReason };
       } catch (fallbackErr) {

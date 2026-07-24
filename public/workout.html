@@ -975,6 +975,8 @@ CREATE CLICKED: no</pre>
           <div id="workoutDetailsPanel" class="workout-details" hidden>
             <button id="closeWorkoutDetailsBtn" class="secondary details-close" type="button">Close Details</button>
             <button id="skipExerciseBtn" class="secondary" type="button">Skip Exercise</button>
+            <label><input id="detailsWorkoutVoiceToggle" type="checkbox" role="switch" aria-label="Workout Voice" checked> Workout Voice</label>
+            <label><input id="detailsGuidedCoachToggle" type="checkbox" role="switch" aria-label="Guided Coach" checked> Guided Coach</label>
             <div><strong>Detected reps:</strong> <span id="hudReps">0 / 10</span></div>
             <div><strong>Score:</strong> <span id="hudChallengeScore">0</span></div>
             <div><strong>Tempo:</strong> <span id="hudTempo">3-1-3</span></div>
@@ -1012,6 +1014,9 @@ CREATE CLICKED: no</pre>
       <div class="btn-row">
         <button id="connectBtn">Connect Camera</button>
         <button id="startBtn" class="secondary">Start Workout</button>
+        <label><input id="workoutVoiceToggle" type="checkbox" role="switch" aria-label="Workout Voice" checked> Workout Voice</label>
+        <label><input id="guidedCoachToggle" type="checkbox" role="switch" aria-label="Guided Coach" aria-describedby="guidedCoachHelp" checked> Guided Coach</label>
+        <span id="guidedCoachHelp" class="sr-only">Explains each new exercise before the timer begins.</span>
         <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" type="button">Request New Exercise</button>
@@ -1286,9 +1291,10 @@ skeletonOverlayActive: no</pre>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
   <script src="/hud-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-progression-runtime.js?v=20260724-focus2"></script>
+  <script src="/workout-coach-runtime.js?v=20260724-guided-wc1"></script>
+  <script src="/workout-progression-runtime.js?v=20260724-guided-wp1"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
-  <script src="/coach-runtime.js?v=20260724-focus2"></script>
+  <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
       document.write('<script src="/avatar-runtime.js?v=20260506a"><\/script>');
