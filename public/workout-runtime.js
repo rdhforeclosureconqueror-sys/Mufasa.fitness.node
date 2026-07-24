@@ -3,6 +3,9 @@
   const global = globalScope || window;
   const state = { running: false, sessionId: null, cameraStream: null, cameraActive: false, fullscreen: false };
   let deps = {};
+  let actionPending = false;
+  const focusDebug = (()=>{try{return new URLSearchParams(global.location?.search||'').get('debugWorkoutFocus')==='1';}catch(_){return false;}})();
+  function focusDiagnostic(event){if(focusDebug)console.info('[WORKOUT_FOCUS]',event);}
 
   function getFn(name){ return typeof deps[name] === 'function' ? deps[name] : null; }
   function requireFn(name){ const fn = getFn(name); if (!fn) throw new Error(`${name} missing`); return fn; }
@@ -178,10 +181,12 @@
     global.document?.body?.classList?.toggle('workout-focus', state.focusMode);
     setText('hudFormStatus', state.focusMode ? 'Focus mode active' : 'Coach ready');
     global.__phase30WorkoutFocus = { enabled: state.focusMode, reason, at: new Date().toISOString() };
+    if(state.focusMode)focusDiagnostic('focus mode entered');
   }
 
   function setCameraFullscreen(enabled){
     state.fullscreen = Boolean(enabled);
+    focusDiagnostic(state.fullscreen?'expanded view entered':'expanded view exited');
     global.document?.body?.classList?.toggle('camera-fullscreen', state.fullscreen);
     getFn('onCameraFullscreenChanged')?.(state.fullscreen);
     refreshCameraControls();
@@ -203,6 +208,8 @@
   }
 
   async function startWorkout(){
+    if(actionPending){focusDiagnostic('duplicate control suppressed');return {running:state.running,sessionId:state.sessionId,suppressed:true};}
+    actionPending=true;
     console.log('[WORKOUT_LIFECYCLE] startWorkout enter', { running: state.running, sessionId: state.sessionId, cameraActive: state.cameraActive });
     markLiveBreakpoint('workout-start-clicked', 'pass', { running: state.running, cameraActive: state.cameraActive });
     markStartTrace('workoutStartClicked', 'pass', { running: state.running, cameraActive: state.cameraActive });
@@ -275,7 +282,7 @@
       if (!state.lastError) setVisibleError(`Start workout error: ${err?.message || err}`);
       updateRuntimeState();
       throw err;
-    }
+    } finally { actionPending=false; }
   }
 
   function createSessionCallbackGlue(options = {}) {

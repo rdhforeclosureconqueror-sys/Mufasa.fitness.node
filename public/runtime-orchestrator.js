@@ -74,10 +74,12 @@
       requireRuntime("HudRuntime.configure", "HudRuntime.configure")(hud);
       requireRuntime("WorkoutProgressionRuntime.configure", "WorkoutProgressionRuntime.configure")(progression);
       const { pauseWorkoutBtn, extendWorkoutBtn, skipExerciseBtn, endWorkoutBtn } = controls || {};
-      if (pauseWorkoutBtn) pauseWorkoutBtn.onclick = () => { const state=global.WorkoutProgressionRuntime.togglePause(); pauseWorkoutBtn.textContent=state.timerStatus==='paused'?'Resume':'Pause'; };
-      if (extendWorkoutBtn) extendWorkoutBtn.onclick = () => global.WorkoutProgressionRuntime.extendTime();
-      if (skipExerciseBtn) skipExerciseBtn.onclick = () => { if (global.confirm?.('Skip this exercise?')) global.WorkoutProgressionRuntime.skipExercise(); };
-      if (endWorkoutBtn) endWorkoutBtn.onclick = () => { if (global.confirm?.('End this workout early?')) global.WorkoutProgressionRuntime.endWorkout(); };
+      let actionLocked=false;
+      const oncePerTap=(action)=>()=>{if(actionLocked){if(new URLSearchParams(global.location?.search||'').get('debugWorkoutFocus')==='1')console.info('[WORKOUT_FOCUS]','duplicate control suppressed');return;}actionLocked=true;try{return action();}finally{global.setTimeout?.(()=>{actionLocked=false;},300);}};
+      if (pauseWorkoutBtn) pauseWorkoutBtn.onclick = oncePerTap(() => { const state=global.WorkoutProgressionRuntime.togglePause(); pauseWorkoutBtn.textContent=state.timerStatus==='paused'?'Resume':'Pause'; });
+      if (extendWorkoutBtn) extendWorkoutBtn.onclick = oncePerTap(() => global.WorkoutProgressionRuntime.extendTime());
+      if (skipExerciseBtn) skipExerciseBtn.onclick = oncePerTap(() => { if (global.confirm?.('Skip this exercise?')) global.WorkoutProgressionRuntime.skipExercise(); });
+      if (endWorkoutBtn) endWorkoutBtn.onclick = oncePerTap(() => { if (global.confirm?.('End this workout early?')) global.WorkoutProgressionRuntime.endWorkout(); });
       requireRuntime("RepAnalysisRuntime.configure", "RepAnalysisRuntime.configure")(repAnalysis);
       markConfigured("workout-progression-runtime", {
         hasSessionWrite: Boolean(progression.sessionWrite),

@@ -58,6 +58,10 @@
       hudRepsEl: deps.hudRepsEl || byId('hudReps'),
       hudTempoEl: deps.hudTempoEl || byId('hudTempo'),
       hudRestEl: deps.hudRestEl || byId('hudRest'),
+      hudTimerEl: deps.hudTimerEl || byId('hudTimer'),
+      workoutDetailsBtn: byId('workoutDetailsBtn'),
+      closeWorkoutDetailsBtn: byId('closeWorkoutDetailsBtn'),
+      workoutDetailsPanel: byId('workoutDetailsPanel'),
       hudTimerStateEl: deps.hudTimerStateEl || byId('hudTimerState'),
       hudNextExerciseEl: deps.hudNextExerciseEl || byId('hudNextExercise'),
       hudCoachCueEl: deps.hudCoachCueEl || byId('hudCoachCue'),
@@ -85,6 +89,10 @@
     return cue;
   }
 
+  function formatTime(seconds) { const safe=Math.max(0,Number(seconds)||0); return `${String(Math.floor(safe/60)).padStart(2,'0')}:${String(Math.floor(safe%60)).padStart(2,'0')}`; }
+  function focusLabel(workoutState) { if(workoutState.setStatus==='preparing')return 'Get ready'; if(workoutState.setStatus==='transition')return 'Transition'; if(workoutState.setStatus==='completed')return 'Completed'; if(workoutState.timerStatus==='paused')return 'Paused'; if(workoutState.timerStatus==='running')return 'Running'; return 'Ready'; }
+  function bindDetails(refs){ if(!refs.workoutDetailsBtn||refs.workoutDetailsBtn.dataset.focusBound)return; const setOpen=(open)=>{refs.workoutDetailsPanel.hidden=!open;refs.workoutDetailsBtn.setAttribute('aria-expanded',String(open));if(open)refs.closeWorkoutDetailsBtn?.focus?.();if(new URLSearchParams(global.location?.search||'').get('debugWorkoutFocus')==='1')console.info('[WORKOUT_FOCUS]',open?'details opened':'details closed');}; refs.workoutDetailsBtn.addEventListener('click',()=>setOpen(true));refs.closeWorkoutDetailsBtn?.addEventListener('click',()=>setOpen(false));refs.workoutDetailsBtn.dataset.focusBound='1'; }
+
   function render(options = {}) {
     try {
       const workoutState = options.activeWorkoutState || deps.getActiveWorkoutState?.() || {};
@@ -92,6 +100,9 @@
       const formResult = options.formResult || null;
       const restRemainingSec = Number(options.restRemainingSec ?? deps.getRestRemainingSec?.() ?? 0);
       const refs = getRefs();
+      bindDetails(refs);
+      const debugFocus=new URLSearchParams(global.location?.search||'').get('debugWorkoutFocus')==='1';
+      const debugDetails=byId('workoutDebugDetails');if(debugDetails)debugDetails.hidden=!debugFocus;
       const now = Date.now();
       state.lastRenderAt = new Date(now).toISOString();
       state.workoutStatus = workoutState.workoutStatus || 'idle';
@@ -113,11 +124,12 @@
       }
       const totalSets = plan?.exercises?.[workoutState.activeExerciseIndex || 0]?.sets || 1;
       if (refs.hudExerciseNameEl) refs.hudExerciseNameEl.textContent = workoutState.currentExercise || '--';
-      if (refs.hudSetEl) refs.hudSetEl.textContent = `${Number(workoutState.activeSetIndex || 0) + 1} of ${totalSets}`;
+      if (refs.hudSetEl) refs.hudSetEl.textContent = `Set ${Number(workoutState.activeSetIndex || 0) + 1} of ${totalSets}`;
       if (refs.hudRepsEl) refs.hudRepsEl.textContent = `${Number(workoutState.repCount || 0)} / ${workoutState.targetReps || '--'}`;
       if (refs.hudTempoEl) refs.hudTempoEl.textContent = `${workoutState.tempo || '--'}${workoutState.tempoDescription ? ` — ${workoutState.tempoDescription}` : ''}`;
       if (refs.hudRestEl) refs.hudRestEl.textContent = `${Number(workoutState.remainingSeconds ?? restRemainingSec)} seconds remaining`;
-      if (refs.hudTimerStateEl) refs.hudTimerStateEl.textContent = workoutState.setStatus === 'transition' ? `Transition (${workoutState.timerStatus})` : (workoutState.timerStatus || 'idle');
+      if (refs.hudTimerEl) { refs.hudTimerEl.textContent=formatTime(workoutState.remainingSeconds ?? restRemainingSec); refs.hudTimerEl.setAttribute('aria-label',`${focusLabel(workoutState)}: ${Number(workoutState.remainingSeconds ?? restRemainingSec)} seconds remaining`); }
+      if (refs.hudTimerStateEl) refs.hudTimerStateEl.textContent = focusLabel(workoutState);
       if (refs.hudNextExerciseEl) refs.hudNextExerciseEl.textContent = workoutState.nextExercise || '--';
       if (refs.hudCoachCueEl) refs.hudCoachCueEl.textContent = getPrimaryCue(formResult, { activeWorkoutPlan: plan, activeWorkoutState: workoutState });
       if (refs.exerciseLabelEl) refs.exerciseLabelEl.textContent = workoutState.currentExercise || '--';

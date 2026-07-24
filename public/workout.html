@@ -833,6 +833,11 @@
       .clean-status-strip { grid-template-columns:1fr; }
     }
 
+    /* Mobile-first Workout Focus Mode: preserve the camera as the primary surface. */
+    .workout-hud { position:absolute; inset:8px 8px auto; z-index:25; display:none; max-width:min(calc(100% - 16px),440px); padding:10px; border-radius:14px; background:linear-gradient(180deg,rgba(2,6,23,.9),rgba(2,6,23,.68)); color:#fff; box-sizing:border-box; }
+    body.workout-focus .workout-hud,body.camera-fullscreen .workout-hud{display:grid;gap:7px}.focus-heading{display:flex;justify-content:space-between;align-items:start;gap:10px;font-size:clamp(.9rem,4vw,1.15rem)}.focus-heading strong{overflow-wrap:anywhere}.focus-heading span{flex:none;white-space:nowrap}.focus-timer{font:800 clamp(3.5rem,20vw,7rem)/.9 ui-monospace,SFMono-Regular,monospace;text-align:center;letter-spacing:-.06em;text-shadow:0 2px 8px #000,0 0 2px #000}.focus-state{text-align:center;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.focus-cue{text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.focus-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.focus-actions button,.details-close{min-height:44px;justify-content:center}.focus-end{opacity:.9}.workout-details{max-height:min(32dvh,220px);overflow:auto;padding:10px;border-radius:10px;background:rgba(2,6,23,.95);font-size:.82rem}.workout-details[hidden]{display:none!important}
+    body.workout-focus #cameraMobileControls,body.workout-focus #stopWorkoutFsBtn,body.workout-focus #renderModeControl,body.workout-focus #avatarDebugOverlay{display:none!important}body.workout-focus #cameraFsActions{display:none!important}body.camera-fullscreen.workout-focus #cameraFsActions{display:inline-flex!important}body.camera-fullscreen.workout-focus #stopWorkoutFsBtn{display:none!important}body.camera-fullscreen.workout-focus .video-shell{height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px)}body.camera-fullscreen.workout-focus .workout-hud{padding-top:max(10px,var(--safe-top))}
+    @media (max-width:430px){.workout-hud{inset:6px 6px auto;max-width:calc(100% - 12px)}.focus-timer{font-size:clamp(3.35rem,19vw,5rem)}}@media (prefers-reduced-motion:reduce){.workout-hud *,button{transition:none!important;animation:none!important}}
 </style>
 </head>
 
@@ -936,23 +941,28 @@ CREATE CLICKED: no</pre>
         <canvas id="overlay"></canvas>
         <canvas id="avatar3d"></canvas>
         <div id="avatarDebugOverlay" aria-live="polite">Cue: Stay controlled.</div>
-        <div id="workoutHud" class="workout-hud" aria-live="polite">
-          <div class="hud-line"><strong>Exercise:</strong> <span id="hudExerciseName">Bodyweight Squat</span></div>
-          <div class="hud-line"><strong>Set:</strong> <span id="hudSet">1 of 3</span></div>
-          <div class="hud-line"><strong>Detected reps:</strong> <span id="hudReps">0 / 10</span></div>
-          <div class="hud-line"><strong>Score:</strong> <span id="hudChallengeScore">0</span></div>
-          <div class="hud-line"><strong>Form:</strong> <span id="hudFormStatus">Coach ready</span></div>
-          <div class="hud-line"><strong>Tempo:</strong> <span id="hudTempo">3-1-3 — 3 seconds movement phase, 1 second hold, 3 seconds return phase</span></div>
-          <div class="hud-line"><strong>Timer:</strong> <span id="hudRest">30 seconds remaining</span></div>
-          <div class="hud-line"><strong>Timer state:</strong> <span id="hudTimerState">idle</span></div>
-          <div class="hud-line"><strong>Next:</strong> <span id="hudNextExercise">--</span></div>
-          <div class="hud-line"><strong>Cue:</strong> <span id="hudCoachCue">Brace first. Stay smooth.</span></div>
-          <div id="hudActions" class="hud-actions">
-            <button id="pauseWorkoutBtn" class="secondary" type="button">Pause</button>
-            <button id="extendWorkoutBtn" class="secondary" type="button">+15 Seconds</button>
-            <button id="skipExerciseBtn" class="secondary" type="button">Skip Exercise</button>
-            <button id="endWorkoutBtn" class="secondary" type="button">End Workout</button>
+        <div id="workoutHud" class="workout-hud" aria-label="Workout focus mode">
+          <div class="focus-heading"><strong id="hudExerciseName">Bodyweight Squat</strong><span id="hudSet">Set 1 of 3</span></div>
+          <div id="hudTimer" class="focus-timer" role="timer" aria-label="Time remaining">00:30</div>
+          <div id="hudTimerState" class="focus-state" role="status">Ready</div>
+          <div id="hudCoachCue" class="focus-cue">Stay controlled and breathe.</div>
+          <div id="hudActions" class="hud-actions focus-actions">
+            <button id="pauseWorkoutBtn" type="button">Pause</button>
+            <button id="extendWorkoutBtn" type="button">+15 Seconds</button>
+            <button id="workoutDetailsBtn" class="secondary" type="button" aria-expanded="false" aria-controls="workoutDetailsPanel">Details</button>
+            <button id="endWorkoutBtn" class="secondary focus-end" type="button">End Workout</button>
           </div>
+          <div id="workoutDetailsPanel" class="workout-details" hidden>
+            <button id="closeWorkoutDetailsBtn" class="secondary details-close" type="button">Close Details</button>
+            <button id="skipExerciseBtn" class="secondary" type="button">Skip Exercise</button>
+            <div><strong>Detected reps:</strong> <span id="hudReps">0 / 10</span></div>
+            <div><strong>Score:</strong> <span id="hudChallengeScore">0</span></div>
+            <div><strong>Tempo:</strong> <span id="hudTempo">3-1-3</span></div>
+            <div><strong>Form:</strong> <span id="hudFormStatus">Coach ready</span></div>
+            <div><strong>Next:</strong> <span id="hudNextExercise">--</span></div>
+            <div id="workoutDebugDetails" hidden><strong>Tracking:</strong> <span id="hudTrackingStatus">Unavailable</span></div>
+          </div>
+          <span id="hudRest" hidden>30 seconds remaining</span>
           <div id="timedWorkoutAnnouncements" class="sr-only" role="status" aria-live="assertive" aria-atomic="true"></div>
         </div>
         <div id="cameraFsActions" class="camera-fs-actions" aria-live="polite">
@@ -1254,8 +1264,8 @@ skeletonOverlayActive: no</pre>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
-  <script src="/hud-runtime.js?v=20260723-timed1"></script>
-  <script src="/workout-progression-runtime.js?v=20260723-timed1"></script>
+  <script src="/hud-runtime.js?v=20260724-focus1"></script>
+  <script src="/workout-progression-runtime.js?v=20260724-focus1"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260507"></script>
   <script>
@@ -1265,12 +1275,12 @@ skeletonOverlayActive: no</pre>
   </script>
   <script src="/profile-write-runtime.js?v=20260507"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
-  <script src="/button-runtime.js?v=20260723-timed1"></script>
+  <script src="/button-runtime.js?v=20260724-focus1"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
-  <script src="/workout-runtime.js?v=20260723-timed1"></script>
+  <script src="/workout-runtime.js?v=20260724-focus1"></script>
   <script src="/generated-workout-runtime.js?v=20260720"></script>
-  <script src="/runtime-orchestrator.js?v=20260723-timed1"></script>
+  <script src="/runtime-orchestrator.js?v=20260724-focus1"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
   <script src="/app-hydration-runtime.js?v=20260507"></script>
 
