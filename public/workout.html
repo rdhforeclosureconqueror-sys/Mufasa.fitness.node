@@ -966,6 +966,7 @@ CREATE CLICKED: no</pre>
           <div id="hudTimer" class="focus-timer" role="timer" aria-label="Time remaining">00:30</div>
           <div id="hudTimerState" class="focus-state" role="status">Ready</div>
           <div id="hudCoachCue" class="focus-cue">Stay controlled and breathe.</div>
+          <div id="postSetFormFeedbackCard" class="focus-cue" role="status" aria-live="polite" hidden><strong>Form Feedback</strong><div id="postSetFormFeedbackMessage"></div><small id="postSetFormFeedbackConfidence"></small></div>
           <div id="hudActions" class="hud-actions focus-actions">
             <button id="pauseWorkoutBtn" type="button">Pause</button>
             <button id="extendWorkoutBtn" type="button">+15 Seconds</button>
@@ -977,6 +978,11 @@ CREATE CLICKED: no</pre>
             <button id="skipExerciseBtn" class="secondary" type="button">Skip Exercise</button>
             <label><input id="detailsWorkoutVoiceToggle" type="checkbox" role="switch" aria-label="Workout Voice" checked> Workout Voice</label>
             <label><input id="detailsGuidedCoachToggle" type="checkbox" role="switch" aria-label="Guided Coach" checked> Guided Coach</label>
+            <label><input id="detailsPersonalizedCoachingToggle" type="checkbox" role="switch" aria-label="Personalized Coaching"> Personalized Coaching</label>
+            <small>Uses your preferred name occasionally during coaching.</small>
+            <label><input id="detailsPostSetFormFeedbackToggle" type="checkbox" role="switch" aria-label="Post-Set Form Feedback"> Post-Set Form Feedback</label>
+            <small>Uses camera pose estimates to provide a brief form summary after each set.</small>
+            <small>Camera-based form feedback is an estimate and may be affected by camera angle, lighting, clothing, and visibility.</small>
             <div><strong>Detected reps:</strong> <span id="hudReps">0 / 10</span></div>
             <div><strong>Score:</strong> <span id="hudChallengeScore">0</span></div>
             <div><strong>Tempo:</strong> <span id="hudTempo">3-1-3</span></div>
@@ -1016,6 +1022,10 @@ CREATE CLICKED: no</pre>
         <button id="startBtn" class="secondary">Start Workout</button>
         <label><input id="workoutVoiceToggle" type="checkbox" role="switch" aria-label="Workout Voice" checked> Workout Voice</label>
         <label><input id="guidedCoachToggle" type="checkbox" role="switch" aria-label="Guided Coach" aria-describedby="guidedCoachHelp" checked> Guided Coach</label>
+        <label><input id="personalizedCoachingToggle" type="checkbox" role="switch" aria-label="Personalized Coaching"> Personalized Coaching</label>
+        <small>Uses your preferred name occasionally during coaching.</small>
+        <label><input id="postSetFormFeedbackToggle" type="checkbox" role="switch" aria-label="Post-Set Form Feedback"> Post-Set Form Feedback</label>
+        <small>Uses camera pose estimates to provide a brief form summary after each set.</small>
         <span id="guidedCoachHelp" class="sr-only">Explains each new exercise before the timer begins.</span>
         <button id="fullscreenCameraBtn" class="secondary" disabled>Expand Camera</button>
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
@@ -1291,8 +1301,9 @@ skeletonOverlayActive: no</pre>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
   <script src="/hud-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-coach-runtime.js?v=20260724-guided-wc1"></script>
-  <script src="/workout-progression-runtime.js?v=20260724-guided-wp1"></script>
+  <script src="/workout-coach-runtime.js?v=20260724-form-wc2"></script>
+  <script src="/workout-form-runtime.js?v=20260724-form-fr1"></script>
+  <script src="/workout-progression-runtime.js?v=20260724-form-wp2"></script>
   <script src="/dashboard-runtime.js?v=20260506"></script>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
