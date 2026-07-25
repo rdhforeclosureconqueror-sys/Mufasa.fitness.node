@@ -1,0 +1,62 @@
+{
+  "translationSchemaVersion": 1,
+  "sourceLocale": "en-US",
+  "exerciseId": "cat_cow",
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "metadataFingerprint": "sha256:8bffa7982d55d3e25cfb1ce3390ff8c12dd72d715316c544b89e46feec2e79de",
+  "sourceContent": {
+    "displayName": "Cat-Cow Flow",
+    "setupCues": [
+      "Start on your hands and knees.",
+      "Stack your shoulders over your hands and hips over your knees."
+    ],
+    "movementCues": [
+      "Move smoothly between spinal flexion and extension with your breath."
+    ],
+    "safetyCues": [],
+    "cadence": {
+      "phaseOne": "Round",
+      "hold": "Breathe",
+      "phaseTwo": "Extend"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "cat_cow_encouragement_1",
+          "template": "Keep breathing.",
+          "supportsName": false
+        },
+        {
+          "id": "cat_cow_encouragement_2",
+          "template": "Move smoothly.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [],
+      "correctiveForm": [],
+      "uncertainForm": [],
+      "completion": [
+        {
+          "id": "cat_cow_completion_1",
+          "template": "Nice work.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "cat_cow_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    }
+  },
+  "protectedMeaning": {
+    "exerciseIdentityMustNotChange": true,
+    "safetyMeaningMustNotWeaken": true,
+    "uncertaintyMustNotBecomeCertainty": true,
+    "correctionMustRemainNonMedical": true,
+    "placeholdersMustBePreserved": true
+  }
+}

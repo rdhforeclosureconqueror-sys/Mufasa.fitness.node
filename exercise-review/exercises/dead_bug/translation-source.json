@@ -1,0 +1,63 @@
+{
+  "translationSchemaVersion": 1,
+  "sourceLocale": "en-US",
+  "exerciseId": "dead_bug",
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "metadataFingerprint": "sha256:01cac43a972adf2edc9800baaf8a986d15229ea787cd44060677ad376b8b8d55",
+  "sourceContent": {
+    "displayName": "Dead Bug",
+    "setupCues": [
+      "Lie on your back.",
+      "Bring your knees over your hips.",
+      "Reach your arms toward the ceiling."
+    ],
+    "movementCues": [
+      "Extend the opposite arm and leg, then return with control."
+    ],
+    "safetyCues": [],
+    "cadence": {
+      "phaseOne": "Reach",
+      "hold": "Hold",
+      "phaseTwo": "Return"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "dead_bug_encouragement_1",
+          "template": "Keep breathing.",
+          "supportsName": false
+        },
+        {
+          "id": "dead_bug_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [],
+      "correctiveForm": [],
+      "uncertainForm": [],
+      "completion": [
+        {
+          "id": "dead_bug_completion_1",
+          "template": "Good job.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "dead_bug_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    }
+  },
+  "protectedMeaning": {
+    "exerciseIdentityMustNotChange": true,
+    "safetyMeaningMustNotWeaken": true,
+    "uncertaintyMustNotBecomeCertainty": true,
+    "correctionMustRemainNonMedical": true,
+    "placeholdersMustBePreserved": true
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "handoffSchemaVersion": 1,
+  "purpose": "secondary_fitness_review",
+  "authority": {
+    "fitnessBotMayRecommend": true,
+    "fitnessBotMayTranslate": true,
+    "fitnessBotMayApprove": false,
+    "fitnessBotMayPublish": false,
+    "humanTrainerRequired": true
+  },
+  "exercise": {
+    "exerciseId": "dumbbell_bicep_curl",
+    "displayName": "Dumbbell Bicep Curl",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataAssetVersion": "20260725-em1",
+    "metadataFingerprint": "sha256:afcb3a994ce47aa3ce238bbe66a7d325b7c50daf447e2d1faca8f3ad50347999",
+    "approvalStatus": "draft",
+    "instructions": {
+      "setupCues": [
+        "Stand tall with the weights at your sides.",
+        "Keep your elbows close to your body."
+      ],
+      "movementCues": [
+        "Curl the weights, pause, then lower with control."
+      ],
+      "safetyCues": []
+    },
+    "cadence": {
+      "phaseOne": "Curl",
+      "hold": "Hold",
+      "phaseTwo": "Lower"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "dumbbell_bicep_curl_encouragement_1",
+          "template": "Keep your elbows steady.",
+          "supportsName": false
+        },
+        {
+          "id": "dumbbell_bicep_curl_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [],
+      "correctiveForm": [],
+      "uncertainForm": [],
+      "completion": [
+        {
+          "id": "dumbbell_bicep_curl_completion_1",
+          "template": "Nice work.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "dumbbell_bicep_curl_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    },
+    "poseAnalysis": {
+      "supported": false,
+      "requiredView": "not_supported",
+      "minimumUsableFramePercentage": 60,
+      "minimumOverallConfidence": 0.75,
+      "rules": []
+    },
+    "limitations": [
+      "Automated form judgment is unsupported; elbow position, shoulder movement, and curl range are not implemented and weights may occlude landmarks."
+    ]
+  },
+  "requestedReview": {
+    "instructions": true,
+    "cadence": true,
+    "safety": true,
+    "coachingPhrases": true,
+    "cameraSetup": true,
+    "poseFeasibility": true,
+    "formRules": true,
+    "thresholdRationale": true,
+    "limitations": true,
+    "translationReadiness": true
+  },
+  "requiredResponseSchema": {
+    "responseSchemaVersion": 1,
+    "reviewerType": "fitness_ai",
+    "reviewerName": null,
+    "exerciseId": "dumbbell_bicep_curl",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataFingerprint": "sha256:afcb3a994ce47aa3ce238bbe66a7d325b7c50daf447e2d1faca8f3ad50347999",
+    "recommendation": "accept_with_minor_revisions",
+    "confidence": "medium",
+    "proposals": {
+      "instructions": [],
+      "cadence": [],
+      "safety": [],
+      "phrases": [],
+      "cameraSetup": [],
+      "poseAnalysis": [],
+      "thresholds": [],
+      "limitations": []
+    },
+    "translationRecommendations": [],
+    "questionsForTrainer": [],
+    "approval": {
+      "status": "not_authorized",
+      "mayChangeProductionStatus": false
+    }
+  }
+}

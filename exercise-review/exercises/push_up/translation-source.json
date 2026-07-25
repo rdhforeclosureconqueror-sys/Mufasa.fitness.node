@@ -1,0 +1,80 @@
+{
+  "translationSchemaVersion": 1,
+  "sourceLocale": "en-US",
+  "exerciseId": "push_up",
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+  "sourceContent": {
+    "displayName": "Push-Up",
+    "setupCues": [
+      "Place your hands beneath your shoulders.",
+      "Brace in a straight line from shoulders to heels."
+    ],
+    "movementCues": [
+      "Lower your body with control, pause, then press the floor away."
+    ],
+    "safetyCues": [],
+    "cadence": {
+      "phaseOne": "Lower",
+      "hold": "Hold",
+      "phaseTwo": "Press"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "push_up_encouragement_1",
+          "template": "Keep your body strong.",
+          "supportsName": false
+        },
+        {
+          "id": "push_up_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [
+        {
+          "id": "push_up_form_positive_1",
+          "template": "Your body position stayed controlled.",
+          "supportsName": false
+        }
+      ],
+      "correctiveForm": [
+        {
+          "id": "push_up_form_corrective_1",
+          "template": "On the next set, try keeping your hips in line with your shoulders.",
+          "supportsName": false
+        }
+      ],
+      "uncertainForm": [
+        {
+          "id": "push_up_form_uncertain_1",
+          "template": "I could not get a clear enough view of your body position.",
+          "supportsName": false
+        }
+      ],
+      "completion": [
+        {
+          "id": "push_up_completion_1",
+          "template": "Good job.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "push_up_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    }
+  },
+  "protectedMeaning": {
+    "exerciseIdentityMustNotChange": true,
+    "safetyMeaningMustNotWeaken": true,
+    "uncertaintyMustNotBecomeCertainty": true,
+    "correctionMustRemainNonMedical": true,
+    "placeholdersMustBePreserved": true
+  }
+}

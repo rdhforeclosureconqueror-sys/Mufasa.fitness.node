@@ -1,0 +1,80 @@
+{
+  "translationSchemaVersion": 1,
+  "sourceLocale": "en-US",
+  "exerciseId": "side_bridge",
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "metadataFingerprint": "sha256:adf753ae1be5f3912594acc6bee8780bbd8ba68c202b89feb4efa7e120360345",
+  "sourceContent": {
+    "displayName": "Side Bridge",
+    "setupCues": [
+      "Lie on your side with your elbow beneath your shoulder.",
+      "Stack or stagger your feet comfortably."
+    ],
+    "movementCues": [
+      "Lift your hips into a strong line, pause, then lower with control."
+    ],
+    "safetyCues": [],
+    "cadence": {
+      "phaseOne": "Lift",
+      "hold": "Hold",
+      "phaseTwo": "Lower"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "side_bridge_encouragement_1",
+          "template": "Keep breathing.",
+          "supportsName": false
+        },
+        {
+          "id": "side_bridge_encouragement_2",
+          "template": "Stay strong.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [
+        {
+          "id": "side_bridge_form_positive_1",
+          "template": "Your side position stayed controlled.",
+          "supportsName": false
+        }
+      ],
+      "correctiveForm": [
+        {
+          "id": "side_bridge_form_corrective_1",
+          "template": "On the next set, keep your hips in line with your shoulders.",
+          "supportsName": false
+        }
+      ],
+      "uncertainForm": [
+        {
+          "id": "side_bridge_form_uncertain_1",
+          "template": "I could not get a clear enough side view.",
+          "supportsName": false
+        }
+      ],
+      "completion": [
+        {
+          "id": "side_bridge_completion_1",
+          "template": "Good job.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "side_bridge_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    }
+  },
+  "protectedMeaning": {
+    "exerciseIdentityMustNotChange": true,
+    "safetyMeaningMustNotWeaken": true,
+    "uncertaintyMustNotBecomeCertainty": true,
+    "correctionMustRemainNonMedical": true,
+    "placeholdersMustBePreserved": true
+  }
+}
