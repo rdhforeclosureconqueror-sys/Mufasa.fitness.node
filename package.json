@@ -22,7 +22,8 @@
     "pilot:readiness:local": "node scripts/pilot-readiness-local.js",
     "security:check": "node --test test/phase12a-security-remediation.test.js",
     "test:security": "node --test test/auth-hardening-phase13.test.js test/phase12a-security-remediation.test.js test/trainer-workspace.test.js",
-    "validate:exercise-metadata": "node scripts/validate-exercise-metadata.js"
+    "validate:exercise-metadata": "node scripts/validate-exercise-metadata.js",
+    "export:exercise-metadata-review": "node scripts/export-exercise-metadata-review.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
