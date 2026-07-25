@@ -1,0 +1,156 @@
+{
+  "handoffSchemaVersion": 1,
+  "purpose": "secondary_fitness_review",
+  "authority": {
+    "fitnessBotMayRecommend": true,
+    "fitnessBotMayTranslate": true,
+    "fitnessBotMayApprove": false,
+    "fitnessBotMayPublish": false,
+    "humanTrainerRequired": true
+  },
+  "exercise": {
+    "exerciseId": "bodyweight_squat",
+    "displayName": "Bodyweight Squat",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataAssetVersion": "20260725-em1",
+    "metadataFingerprint": "sha256:b546305327a89d78f60c7da43b97bad55f1c1e83b8cc41603fc3ed1b991eaf07",
+    "approvalStatus": "draft",
+    "instructions": {
+      "setupCues": [
+        "Stand with your feet in a comfortable stance.",
+        "Keep your chest tall."
+      ],
+      "movementCues": [
+        "Sit your hips back, pause with control, then stand tall."
+      ],
+      "safetyCues": []
+    },
+    "cadence": {
+      "phaseOne": "Sit back",
+      "hold": "Hold",
+      "phaseTwo": "Stand"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "bodyweight_squat_encouragement_1",
+          "template": "Keep your rhythm.",
+          "supportsName": false
+        },
+        {
+          "id": "bodyweight_squat_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [
+        {
+          "id": "bodyweight_squat_form_positive_1",
+          "template": "Your squat stayed controlled.",
+          "supportsName": false
+        }
+      ],
+      "correctiveForm": [
+        {
+          "id": "bodyweight_squat_form_corrective_1",
+          "template": "On the next set, keep your torso controlled as you stand.",
+          "supportsName": false
+        }
+      ],
+      "uncertainForm": [
+        {
+          "id": "bodyweight_squat_form_uncertain_1",
+          "template": "I could not get a clear enough side view.",
+          "supportsName": false
+        }
+      ],
+      "completion": [
+        {
+          "id": "bodyweight_squat_completion_1",
+          "template": "Good job.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "bodyweight_squat_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    },
+    "poseAnalysis": {
+      "supported": true,
+      "requiredView": "side",
+      "minimumUsableFramePercentage": 60,
+      "minimumOverallConfidence": 0.75,
+      "rules": [
+        {
+          "id": "torso_control",
+          "type": "alignment_deviation",
+          "measurement": "alignment_deviation",
+          "landmarks": [
+            "shoulder",
+            "hip",
+            "ankle"
+          ],
+          "thresholds": {
+            "maximumDeviationDegrees": 35
+          },
+          "minimumLandmarkConfidence": 0.75,
+          "minimumAffectedFramePercentage": 35,
+          "minimumConsecutiveDurationMs": 500,
+          "priority": 1,
+          "feedback": {
+            "good": "bodyweight_squat_form_positive_1",
+            "needsAttention": "bodyweight_squat_form_corrective_1",
+            "uncertain": "bodyweight_squat_form_uncertain_1"
+          }
+        }
+      ]
+    },
+    "limitations": [
+      "The current shoulder–hip–ankle angle does not measure squat depth, knee tracking, or torso position independently, especially from an unsuitable view."
+    ]
+  },
+  "requestedReview": {
+    "instructions": true,
+    "cadence": true,
+    "safety": true,
+    "coachingPhrases": true,
+    "cameraSetup": true,
+    "poseFeasibility": true,
+    "formRules": true,
+    "thresholdRationale": true,
+    "limitations": true,
+    "translationReadiness": true
+  },
+  "requiredResponseSchema": {
+    "responseSchemaVersion": 1,
+    "reviewerType": "fitness_ai",
+    "reviewerName": null,
+    "exerciseId": "bodyweight_squat",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataFingerprint": "sha256:b546305327a89d78f60c7da43b97bad55f1c1e83b8cc41603fc3ed1b991eaf07",
+    "recommendation": "accept_with_minor_revisions",
+    "confidence": "medium",
+    "proposals": {
+      "instructions": [],
+      "cadence": [],
+      "safety": [],
+      "phrases": [],
+      "cameraSetup": [],
+      "poseAnalysis": [],
+      "thresholds": [],
+      "limitations": []
+    },
+    "translationRecommendations": [],
+    "questionsForTrainer": [],
+    "approval": {
+      "status": "not_authorized",
+      "mayChangeProductionStatus": false
+    }
+  }
+}

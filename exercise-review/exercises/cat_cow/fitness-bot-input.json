@@ -1,0 +1,115 @@
+{
+  "handoffSchemaVersion": 1,
+  "purpose": "secondary_fitness_review",
+  "authority": {
+    "fitnessBotMayRecommend": true,
+    "fitnessBotMayTranslate": true,
+    "fitnessBotMayApprove": false,
+    "fitnessBotMayPublish": false,
+    "humanTrainerRequired": true
+  },
+  "exercise": {
+    "exerciseId": "cat_cow",
+    "displayName": "Cat-Cow Flow",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataAssetVersion": "20260725-em1",
+    "metadataFingerprint": "sha256:8bffa7982d55d3e25cfb1ce3390ff8c12dd72d715316c544b89e46feec2e79de",
+    "approvalStatus": "draft",
+    "instructions": {
+      "setupCues": [
+        "Start on your hands and knees.",
+        "Stack your shoulders over your hands and hips over your knees."
+      ],
+      "movementCues": [
+        "Move smoothly between spinal flexion and extension with your breath."
+      ],
+      "safetyCues": []
+    },
+    "cadence": {
+      "phaseOne": "Round",
+      "hold": "Breathe",
+      "phaseTwo": "Extend"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "cat_cow_encouragement_1",
+          "template": "Keep breathing.",
+          "supportsName": false
+        },
+        {
+          "id": "cat_cow_encouragement_2",
+          "template": "Move smoothly.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [],
+      "correctiveForm": [],
+      "uncertainForm": [],
+      "completion": [
+        {
+          "id": "cat_cow_completion_1",
+          "template": "Nice work.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "cat_cow_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    },
+    "poseAnalysis": {
+      "supported": false,
+      "requiredView": "not_supported",
+      "minimumUsableFramePercentage": 60,
+      "minimumOverallConfidence": 0.75,
+      "rules": []
+    },
+    "limitations": [
+      "Automated form judgment is unsupported; MoveNet has no detailed spinal segmentation for precise curvature assessment."
+    ]
+  },
+  "requestedReview": {
+    "instructions": true,
+    "cadence": true,
+    "safety": true,
+    "coachingPhrases": true,
+    "cameraSetup": true,
+    "poseFeasibility": true,
+    "formRules": true,
+    "thresholdRationale": true,
+    "limitations": true,
+    "translationReadiness": true
+  },
+  "requiredResponseSchema": {
+    "responseSchemaVersion": 1,
+    "reviewerType": "fitness_ai",
+    "reviewerName": null,
+    "exerciseId": "cat_cow",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataFingerprint": "sha256:8bffa7982d55d3e25cfb1ce3390ff8c12dd72d715316c544b89e46feec2e79de",
+    "recommendation": "accept_with_minor_revisions",
+    "confidence": "medium",
+    "proposals": {
+      "instructions": [],
+      "cadence": [],
+      "safety": [],
+      "phrases": [],
+      "cameraSetup": [],
+      "poseAnalysis": [],
+      "thresholds": [],
+      "limitations": []
+    },
+    "translationRecommendations": [],
+    "questionsForTrainer": [],
+    "approval": {
+      "status": "not_authorized",
+      "mayChangeProductionStatus": false
+    }
+  }
+}

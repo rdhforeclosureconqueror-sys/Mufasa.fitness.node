@@ -1,0 +1,116 @@
+{
+  "handoffSchemaVersion": 1,
+  "purpose": "secondary_fitness_review",
+  "authority": {
+    "fitnessBotMayRecommend": true,
+    "fitnessBotMayTranslate": true,
+    "fitnessBotMayApprove": false,
+    "fitnessBotMayPublish": false,
+    "humanTrainerRequired": true
+  },
+  "exercise": {
+    "exerciseId": "dead_bug",
+    "displayName": "Dead Bug",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataAssetVersion": "20260725-em1",
+    "metadataFingerprint": "sha256:01cac43a972adf2edc9800baaf8a986d15229ea787cd44060677ad376b8b8d55",
+    "approvalStatus": "draft",
+    "instructions": {
+      "setupCues": [
+        "Lie on your back.",
+        "Bring your knees over your hips.",
+        "Reach your arms toward the ceiling."
+      ],
+      "movementCues": [
+        "Extend the opposite arm and leg, then return with control."
+      ],
+      "safetyCues": []
+    },
+    "cadence": {
+      "phaseOne": "Reach",
+      "hold": "Hold",
+      "phaseTwo": "Return"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "dead_bug_encouragement_1",
+          "template": "Keep breathing.",
+          "supportsName": false
+        },
+        {
+          "id": "dead_bug_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [],
+      "correctiveForm": [],
+      "uncertainForm": [],
+      "completion": [
+        {
+          "id": "dead_bug_completion_1",
+          "template": "Good job.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "dead_bug_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    },
+    "poseAnalysis": {
+      "supported": false,
+      "requiredView": "not_supported",
+      "minimumUsableFramePercentage": 60,
+      "minimumOverallConfidence": 0.75,
+      "rules": []
+    },
+    "limitations": [
+      "Automated form judgment is unsupported; the current measurement set cannot establish torso stability, pelvic control, or opposite-limb coordination."
+    ]
+  },
+  "requestedReview": {
+    "instructions": true,
+    "cadence": true,
+    "safety": true,
+    "coachingPhrases": true,
+    "cameraSetup": true,
+    "poseFeasibility": true,
+    "formRules": true,
+    "thresholdRationale": true,
+    "limitations": true,
+    "translationReadiness": true
+  },
+  "requiredResponseSchema": {
+    "responseSchemaVersion": 1,
+    "reviewerType": "fitness_ai",
+    "reviewerName": null,
+    "exerciseId": "dead_bug",
+    "schemaVersion": 1,
+    "profileVersion": 1,
+    "metadataFingerprint": "sha256:01cac43a972adf2edc9800baaf8a986d15229ea787cd44060677ad376b8b8d55",
+    "recommendation": "accept_with_minor_revisions",
+    "confidence": "medium",
+    "proposals": {
+      "instructions": [],
+      "cadence": [],
+      "safety": [],
+      "phrases": [],
+      "cameraSetup": [],
+      "poseAnalysis": [],
+      "thresholds": [],
+      "limitations": []
+    },
+    "translationRecommendations": [],
+    "questionsForTrainer": [],
+    "approval": {
+      "status": "not_authorized",
+      "mayChangeProductionStatus": false
+    }
+  }
+}

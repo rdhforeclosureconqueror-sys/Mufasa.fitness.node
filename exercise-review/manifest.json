@@ -1,0 +1,56 @@
+{
+  "workspaceSchemaVersion": 1,
+  "metadataAssetVersion": "20260725-em1",
+  "sourceLocale": "en-US",
+  "exercises": [
+    {
+      "exerciseId": "dead_bug",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:01cac43a972adf2edc9800baaf8a986d15229ea787cd44060677ad376b8b8d55",
+      "path": "exercises/dead_bug"
+    },
+    {
+      "exerciseId": "cat_cow",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:8bffa7982d55d3e25cfb1ce3390ff8c12dd72d715316c544b89e46feec2e79de",
+      "path": "exercises/cat_cow"
+    },
+    {
+      "exerciseId": "push_up",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+      "path": "exercises/push_up"
+    },
+    {
+      "exerciseId": "bodyweight_squat",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:b546305327a89d78f60c7da43b97bad55f1c1e83b8cc41603fc3ed1b991eaf07",
+      "path": "exercises/bodyweight_squat"
+    },
+    {
+      "exerciseId": "squat",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:ed756f2142a3c98ead7904d311fd1d2d26a2c222d0d2a634c188f6d685791652",
+      "path": "exercises/squat"
+    },
+    {
+      "exerciseId": "dumbbell_bicep_curl",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:afcb3a994ce47aa3ce238bbe66a7d325b7c50daf447e2d1faca8f3ad50347999",
+      "path": "exercises/dumbbell_bicep_curl"
+    },
+    {
+      "exerciseId": "side_bridge",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "metadataFingerprint": "sha256:adf753ae1be5f3912594acc6bee8780bbd8ba68c202b89feb4efa7e120360345",
+      "path": "exercises/side_bridge"
+    }
+  ]
+}

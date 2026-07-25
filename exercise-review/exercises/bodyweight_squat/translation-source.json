@@ -1,0 +1,80 @@
+{
+  "translationSchemaVersion": 1,
+  "sourceLocale": "en-US",
+  "exerciseId": "bodyweight_squat",
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "metadataFingerprint": "sha256:b546305327a89d78f60c7da43b97bad55f1c1e83b8cc41603fc3ed1b991eaf07",
+  "sourceContent": {
+    "displayName": "Bodyweight Squat",
+    "setupCues": [
+      "Stand with your feet in a comfortable stance.",
+      "Keep your chest tall."
+    ],
+    "movementCues": [
+      "Sit your hips back, pause with control, then stand tall."
+    ],
+    "safetyCues": [],
+    "cadence": {
+      "phaseOne": "Sit back",
+      "hold": "Hold",
+      "phaseTwo": "Stand"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "bodyweight_squat_encouragement_1",
+          "template": "Keep your rhythm.",
+          "supportsName": false
+        },
+        {
+          "id": "bodyweight_squat_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [
+        {
+          "id": "bodyweight_squat_form_positive_1",
+          "template": "Your squat stayed controlled.",
+          "supportsName": false
+        }
+      ],
+      "correctiveForm": [
+        {
+          "id": "bodyweight_squat_form_corrective_1",
+          "template": "On the next set, keep your torso controlled as you stand.",
+          "supportsName": false
+        }
+      ],
+      "uncertainForm": [
+        {
+          "id": "bodyweight_squat_form_uncertain_1",
+          "template": "I could not get a clear enough side view.",
+          "supportsName": false
+        }
+      ],
+      "completion": [
+        {
+          "id": "bodyweight_squat_completion_1",
+          "template": "Good job.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "bodyweight_squat_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    }
+  },
+  "protectedMeaning": {
+    "exerciseIdentityMustNotChange": true,
+    "safetyMeaningMustNotWeaken": true,
+    "uncertaintyMustNotBecomeCertainty": true,
+    "correctionMustRemainNonMedical": true,
+    "placeholdersMustBePreserved": true
+  }
+}

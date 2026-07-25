@@ -1,0 +1,62 @@
+{
+  "translationSchemaVersion": 1,
+  "sourceLocale": "en-US",
+  "exerciseId": "dumbbell_bicep_curl",
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "metadataFingerprint": "sha256:afcb3a994ce47aa3ce238bbe66a7d325b7c50daf447e2d1faca8f3ad50347999",
+  "sourceContent": {
+    "displayName": "Dumbbell Bicep Curl",
+    "setupCues": [
+      "Stand tall with the weights at your sides.",
+      "Keep your elbows close to your body."
+    ],
+    "movementCues": [
+      "Curl the weights, pause, then lower with control."
+    ],
+    "safetyCues": [],
+    "cadence": {
+      "phaseOne": "Curl",
+      "hold": "Hold",
+      "phaseTwo": "Lower"
+    },
+    "phrases": {
+      "encouragement": [
+        {
+          "id": "dumbbell_bicep_curl_encouragement_1",
+          "template": "Keep your elbows steady.",
+          "supportsName": false
+        },
+        {
+          "id": "dumbbell_bicep_curl_encouragement_2",
+          "template": "Stay controlled.",
+          "supportsName": false
+        }
+      ],
+      "positiveForm": [],
+      "correctiveForm": [],
+      "uncertainForm": [],
+      "completion": [
+        {
+          "id": "dumbbell_bicep_curl_completion_1",
+          "template": "Nice work.",
+          "supportsName": false
+        }
+      ],
+      "recovery": [
+        {
+          "id": "dumbbell_bicep_curl_recovery_1",
+          "template": "Take a breath.",
+          "supportsName": false
+        }
+      ]
+    }
+  },
+  "protectedMeaning": {
+    "exerciseIdentityMustNotChange": true,
+    "safetyMeaningMustNotWeaken": true,
+    "uncertaintyMustNotBecomeCertainty": true,
+    "correctionMustRemainNonMedical": true,
+    "placeholdersMustBePreserved": true
+  }
+}
