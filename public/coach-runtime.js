@@ -28,6 +28,28 @@
   let deps = {};
   let ttsPlayer = null;
   let recognition = null;
+  const lifecycleTrace = [];
+  const TRACE_LIMIT = 100;
+
+  function trace(module, event, details = {}) {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      module,
+      event,
+      state: {
+        muted: state.muted,
+        listening: state.listening,
+        audioUnlocked: state.audioUnlocked,
+        speechLock: state.speechLock
+      },
+      ...details,
+      error: details.error ? normalizeReason(details.error) : null
+    };
+    lifecycleTrace.push(entry);
+    if (lifecycleTrace.length > TRACE_LIMIT) lifecycleTrace.shift();
+    console.debug("[SPEECH_LIFECYCLE]", entry);
+    return entry;
+  }
 
   function log(channel, message, details) {
     const tag = channel === "voice" ? "[VOICE_RUNTIME]"
@@ -41,6 +63,34 @@
                     : "[COACH_RUNTIME]";
     if (details === undefined) console.log(tag, message);
     else console.log(tag, message, details);
+  }
+
+  function tracePermissionState() {
+    const query = global.navigator?.permissions?.query;
+    if (typeof query !== "function") {
+      trace("permission", "query-unavailable");
+      return;
+    }
+    Promise.resolve(query.call(global.navigator.permissions, { name: "microphone" }))
+      .then((status) => {
+        trace("permission", "microphone-state", { permissionState: status?.state || "unknown" });
+        if (status) status.onchange = () => trace("permission", "microphone-change", { permissionState: status.state || "unknown" });
+      })
+      .catch((error) => trace("permission", "query-error", { error }));
+  }
+
+  function traceSpeechSynthesis() {
+    const synthesis = global.speechSynthesis;
+    if (!synthesis || typeof synthesis.getVoices !== "function") {
+      trace("tts-browser", "unavailable");
+      return;
+    }
+    const reportVoices = (event) => {
+      const voices = synthesis.getVoices() || [];
+      trace("tts-browser", event, { voiceCount: voices.length, defaultVoice: voices.find((voice) => voice.default)?.name || null });
+    };
+    reportVoices("voices-initial");
+    synthesis.addEventListener?.("voiceschanged", () => reportVoices("voiceschanged"));
   }
 
   function normalizeReason(reason) {
@@ -351,6 +401,7 @@
     }
     try {
       const ctx = new AudioContextClass();
+      trace("audio-context", "created", { contextState: ctx.state || "unknown" });
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       gain.gain.value = 0.00001;
@@ -359,11 +410,13 @@
       osc.start();
       osc.stop(ctx.currentTime + 0.02);
       await ctx.resume();
+      trace("audio-context", "resumed", { contextState: ctx.state || "unknown" });
       state.audioUnlocked = true;
       setVoiceSupport("Audio unlocked ✅ Voice will play now.", true);
       log("voice", "audio unlocked");
       return true;
     } catch (err) {
+      trace("audio-context", "resume-error", { error: err });
       setVoiceUnavailable(`audio_unlock_failed: ${normalizeReason(err)}`, "unlock");
       return false;
     }
@@ -386,6 +439,7 @@
     const voice = refs.voiceSelectEl?.value || DEFAULT_VOICES[0];
     const format = "mp3";
     const requestBody = { text, voice, format };
+    trace("tts-backend", "request", { source, voice, textLength: text.length });
     console.log("[COACH_BACKEND_TRACE] /api/speak request", { url, operation: "synthesize_speech", textLength: requestBody.text.length });
     const controller = typeof global.AbortController === "function" ? new global.AbortController() : null;
     const timeoutId = controller ? global.setTimeout?.(() => controller.abort(), 8000) : null;
@@ -405,6 +459,7 @@
       throw new Error(`HTTP ${res.status}${errTxt ? ` ${errTxt}` : ""}`);
     }
     const blob = await res.blob();
+    trace("tts-backend", "response", { source, bytes: blob.size ?? null });
     const urlObj = global.URL?.createObjectURL?.(blob);
     if (!urlObj) throw new Error("object_url_unavailable");
     const player = ensureAudioPlayer();
@@ -412,17 +467,19 @@
     player.src = urlObj;
     await new Promise(async (resolve, reject) => {
       player.onended = () => {
+        trace("audio-player", "ended", { source });
         global.URL?.revokeObjectURL?.(urlObj);
         releaseLocks(source);
         resolve();
       };
       player.onerror = () => {
+        trace("audio-player", "error", { source, error: "audio_playback_error" });
         global.URL?.revokeObjectURL?.(urlObj);
         setVoiceUnavailable("audio_playback_error", source);
         releaseLocks(source);
         reject(new Error("audio_playback_error"));
       };
-      try { await player.play(); } catch (error) { reject(error); }
+      try { await player.play(); trace("audio-player", "playing", { source }); } catch (error) { trace("audio-player", "play-rejected", { source, error }); reject(error); }
     });
   }
 
@@ -431,17 +488,21 @@
       throw new Error("browser_speech_synthesis_unavailable");
     }
     global.speechSynthesis.cancel();
+    trace("tts-browser", "cancel-before-speak", { source });
     const utterance = new global.SpeechSynthesisUtterance(text);
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
     return new Promise((resolve, reject) => {
-      utterance.onend = () => { releaseLocks(source); resolve(); };
+      utterance.onstart = () => trace("tts-browser", "start", { source });
+      utterance.onend = () => { trace("tts-browser", "end", { source }); releaseLocks(source); resolve(); };
       utterance.onerror = (event) => {
+        trace("tts-browser", "error", { source, error: event?.error || "unknown_error" });
         setVoiceUnavailable(`browser_speech_error: ${event?.error || "unknown_error"}`, source);
         releaseLocks(source);
         reject(new Error(event?.error || "browser_speech_error"));
       };
       global.speechSynthesis.speak(utterance);
+      trace("tts-browser", "queued", { source, textLength: text.length });
     });
   }
 
@@ -520,6 +581,7 @@
   }
 
   function handleRecognitionResult(event) {
+    trace("stt", "result", { resultIndex: event?.resultIndex ?? null, resultCount: event?.results?.length ?? 0 });
     const results = event?.results;
     const transcript = results?.[results.length - 1]?.[0]?.transcript?.trim?.() || "";
     if (!transcript || transcript === state.lastTranscript) return;
@@ -551,12 +613,26 @@
     recognition.lang = deps.recognitionLang || "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
+    const traceRecognitionEvent = (eventName) => (event) => trace("stt", eventName, {
+      error: eventName === "error" ? (event?.error || "unknown_error") : null,
+      resultIndex: eventName === "result" ? (event?.resultIndex ?? null) : undefined
+    });
+    recognition.onstart = traceRecognitionEvent("start");
+    recognition.onaudiostart = traceRecognitionEvent("audiostart");
+    recognition.onsoundstart = traceRecognitionEvent("soundstart");
+    recognition.onspeechstart = traceRecognitionEvent("speechstart");
     recognition.onresult = handleRecognitionResult;
+    recognition.onnomatch = traceRecognitionEvent("nomatch");
+    recognition.onspeechend = traceRecognitionEvent("speechend");
+    recognition.onsoundend = traceRecognitionEvent("soundend");
+    recognition.onaudioend = traceRecognitionEvent("audioend");
     recognition.onerror = (event) => {
       const exactError = event?.error || normalizeReason(event);
+      trace("stt", "error", { error: exactError, message: event?.message || null });
       setMicFailure(exactError, "speech-recognition-error");
     };
     recognition.onend = () => {
+      trace("stt", "end");
       log("recognition", "ended", { listening: state.listening });
       if (!state.listening) return;
       try {
@@ -571,6 +647,7 @@
   }
 
   function startListening() {
+    tracePermissionState();
     const stt = ensureRecognition();
     if (!stt) return { ok: false, reason: "speech_recognition_unsupported" };
     try {
@@ -579,6 +656,7 @@
       state.lastTranscript = "";
       updateListenButton();
       stt.start();
+      trace("stt", "start-requested");
       setListeningStatus("Listening for 'Mufasa' or 'Coach'...", true);
       setCoachStatus("Listening", { mode: "ok", chipText: "Ma’at 2.0: listening", source: "speech-recognition" });
       deps.addLog?.("system", "Listening for 'Mufasa' or 'Coach'...");
@@ -593,7 +671,7 @@
   function stopListening() {
     state.listening = false;
     updateListenButton();
-    try { recognition?.stop?.(); } catch (err) { log("mic", "stop failed", normalizeReason(err)); }
+    try { recognition?.stop?.(); trace("stt", "stop-requested"); } catch (err) { trace("stt", "stop-error", { error: err }); log("mic", "stop failed", normalizeReason(err)); }
     setListeningStatus("Stopped listening.", true);
     setReady("speech-recognition-stopped");
     deps.addLog?.("system", "Stopped listening.");
@@ -635,6 +713,7 @@
     ensureAudioPlayer();
     initVoiceDropdown();
     updateVoiceCapabilityStatus();
+    traceSpeechSynthesis();
     updateListenButton();
     bindTypedChatHandlers();
     if (typeof global.askCoach !== "function" || global.askCoach.__coachRuntimeDelegator) {
@@ -690,6 +769,7 @@
     setSpeaking,
     setVoiceUnavailable,
     setBackendFailed,
-    getState: snapshot
+    getState: snapshot,
+    getSpeechTrace: () => lifecycleTrace.map((entry) => ({ ...entry, state: { ...entry.state } }))
   };
 })(typeof window !== "undefined" ? window : globalThis);

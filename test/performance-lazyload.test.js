@@ -68,6 +68,12 @@ test("coach runtime owns browser speech recognition lifecycle", () => {
   assert.match(runtime, /global\.SpeechRecognition \|\| global\.webkitSpeechRecognition/, "coach runtime should own browser speech recognition setup");
   assert.match(runtime, /recognition\.onresult = handleRecognitionResult/, "coach runtime should own transcript handling");
   assert.match(runtime, /recognition\.onerror =/, "coach runtime should own mic error handling");
+  for (const event of ["onstart", "onaudiostart", "onsoundstart", "onspeechstart", "onresult", "onnomatch", "onerror", "onspeechend", "onsoundend", "onaudioend", "onend"]) {
+    assert.match(runtime, new RegExp(`recognition\\.${event}\\s*=`), `coach runtime should trace ${event.slice(2)}`);
+  }
+  assert.match(runtime, /\[SPEECH_LIFECYCLE\]/, "speech investigation should emit one structured lifecycle channel");
+  assert.match(runtime, /timestamp: new Date\(\)\.toISOString\(\)/, "speech lifecycle entries should be timestamped");
+  assert.match(runtime, /getSpeechTrace/, "bounded speech evidence should be available to browser diagnostics");
 });
 
 
