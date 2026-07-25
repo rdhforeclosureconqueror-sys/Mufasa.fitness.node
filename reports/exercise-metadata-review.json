@@ -1,0 +1,668 @@
+{
+  "exportVersion": 1,
+  "metadataAssetVersion": "20260725-em1",
+  "profiles": [
+    {
+      "exerciseId": "dead_bug",
+      "displayName": "Dead Bug",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:01cac43a972adf2edc9800baaf8a986d15229ea787cd44060677ad376b8b8d55",
+      "instructions": {
+        "setupCues": [
+          "Lie on your back.",
+          "Bring your knees over your hips.",
+          "Reach your arms toward the ceiling."
+        ],
+        "movementCues": [
+          "Extend the opposite arm and leg, then return with control."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Reach",
+        "hold": "Hold",
+        "phaseTwo": "Return"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "dead_bug_encouragement_1",
+            "template": "Keep breathing.",
+            "supportsName": false
+          },
+          {
+            "id": "dead_bug_encouragement_2",
+            "template": "Stay controlled.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [],
+        "correctiveForm": [],
+        "uncertainForm": [],
+        "completion": [
+          {
+            "id": "dead_bug_completion_1",
+            "template": "Good job.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "dead_bug_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": false,
+        "requiredView": "not_supported",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": []
+      },
+      "limitations": [
+        "Automated form judgment is unsupported; the current measurement set cannot establish torso stability, pelvic control, or opposite-limb coordination."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    },
+    {
+      "exerciseId": "cat_cow",
+      "displayName": "Cat-Cow Flow",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:8bffa7982d55d3e25cfb1ce3390ff8c12dd72d715316c544b89e46feec2e79de",
+      "instructions": {
+        "setupCues": [
+          "Start on your hands and knees.",
+          "Stack your shoulders over your hands and hips over your knees."
+        ],
+        "movementCues": [
+          "Move smoothly between spinal flexion and extension with your breath."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Round",
+        "hold": "Breathe",
+        "phaseTwo": "Extend"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "cat_cow_encouragement_1",
+            "template": "Keep breathing.",
+            "supportsName": false
+          },
+          {
+            "id": "cat_cow_encouragement_2",
+            "template": "Move smoothly.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [],
+        "correctiveForm": [],
+        "uncertainForm": [],
+        "completion": [
+          {
+            "id": "cat_cow_completion_1",
+            "template": "Nice work.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "cat_cow_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": false,
+        "requiredView": "not_supported",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": []
+      },
+      "limitations": [
+        "Automated form judgment is unsupported; MoveNet has no detailed spinal segmentation for precise curvature assessment."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    },
+    {
+      "exerciseId": "push_up",
+      "displayName": "Push-Up",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+      "instructions": {
+        "setupCues": [
+          "Place your hands beneath your shoulders.",
+          "Brace in a straight line from shoulders to heels."
+        ],
+        "movementCues": [
+          "Lower your body with control, pause, then press the floor away."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Lower",
+        "hold": "Hold",
+        "phaseTwo": "Press"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "push_up_encouragement_1",
+            "template": "Keep your body strong.",
+            "supportsName": false
+          },
+          {
+            "id": "push_up_encouragement_2",
+            "template": "Stay controlled.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [
+          {
+            "id": "push_up_form_positive_1",
+            "template": "Your body position stayed controlled.",
+            "supportsName": false
+          }
+        ],
+        "correctiveForm": [
+          {
+            "id": "push_up_form_corrective_1",
+            "template": "On the next set, try keeping your hips in line with your shoulders.",
+            "supportsName": false
+          }
+        ],
+        "uncertainForm": [
+          {
+            "id": "push_up_form_uncertain_1",
+            "template": "I could not get a clear enough view of your body position.",
+            "supportsName": false
+          }
+        ],
+        "completion": [
+          {
+            "id": "push_up_completion_1",
+            "template": "Good job.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "push_up_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": true,
+        "requiredView": "side",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": [
+          {
+            "id": "body_alignment",
+            "type": "alignment_deviation",
+            "measurement": "alignment_deviation",
+            "landmarks": [
+              "shoulder",
+              "hip",
+              "ankle"
+            ],
+            "thresholds": {
+              "maximumDeviationDegrees": 18
+            },
+            "minimumLandmarkConfidence": 0.75,
+            "minimumAffectedFramePercentage": 35,
+            "minimumConsecutiveDurationMs": 500,
+            "priority": 1,
+            "feedback": {
+              "good": "push_up_form_positive_1",
+              "needsAttention": "push_up_form_corrective_1",
+              "uncertain": "push_up_form_uncertain_1"
+            }
+          }
+        ]
+      },
+      "limitations": [
+        "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    },
+    {
+      "exerciseId": "bodyweight_squat",
+      "displayName": "Bodyweight Squat",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:b546305327a89d78f60c7da43b97bad55f1c1e83b8cc41603fc3ed1b991eaf07",
+      "instructions": {
+        "setupCues": [
+          "Stand with your feet in a comfortable stance.",
+          "Keep your chest tall."
+        ],
+        "movementCues": [
+          "Sit your hips back, pause with control, then stand tall."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Sit back",
+        "hold": "Hold",
+        "phaseTwo": "Stand"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "bodyweight_squat_encouragement_1",
+            "template": "Keep your rhythm.",
+            "supportsName": false
+          },
+          {
+            "id": "bodyweight_squat_encouragement_2",
+            "template": "Stay controlled.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [
+          {
+            "id": "bodyweight_squat_form_positive_1",
+            "template": "Your squat stayed controlled.",
+            "supportsName": false
+          }
+        ],
+        "correctiveForm": [
+          {
+            "id": "bodyweight_squat_form_corrective_1",
+            "template": "On the next set, keep your torso controlled as you stand.",
+            "supportsName": false
+          }
+        ],
+        "uncertainForm": [
+          {
+            "id": "bodyweight_squat_form_uncertain_1",
+            "template": "I could not get a clear enough side view.",
+            "supportsName": false
+          }
+        ],
+        "completion": [
+          {
+            "id": "bodyweight_squat_completion_1",
+            "template": "Good job.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "bodyweight_squat_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": true,
+        "requiredView": "side",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": [
+          {
+            "id": "torso_control",
+            "type": "alignment_deviation",
+            "measurement": "alignment_deviation",
+            "landmarks": [
+              "shoulder",
+              "hip",
+              "ankle"
+            ],
+            "thresholds": {
+              "maximumDeviationDegrees": 35
+            },
+            "minimumLandmarkConfidence": 0.75,
+            "minimumAffectedFramePercentage": 35,
+            "minimumConsecutiveDurationMs": 500,
+            "priority": 1,
+            "feedback": {
+              "good": "bodyweight_squat_form_positive_1",
+              "needsAttention": "bodyweight_squat_form_corrective_1",
+              "uncertain": "bodyweight_squat_form_uncertain_1"
+            }
+          }
+        ]
+      },
+      "limitations": [
+        "The current shoulder–hip–ankle angle does not measure squat depth, knee tracking, or torso position independently, especially from an unsuitable view."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    },
+    {
+      "exerciseId": "squat",
+      "displayName": "Squat",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:ed756f2142a3c98ead7904d311fd1d2d26a2c222d0d2a634c188f6d685791652",
+      "instructions": {
+        "setupCues": [
+          "Stand with your feet in a comfortable stance.",
+          "Keep your chest tall."
+        ],
+        "movementCues": [
+          "Sit your hips back, pause with control, then stand tall."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Sit back",
+        "hold": "Hold",
+        "phaseTwo": "Stand"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "squat_encouragement_1",
+            "template": "Keep your rhythm.",
+            "supportsName": false
+          },
+          {
+            "id": "squat_encouragement_2",
+            "template": "Stay controlled.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [
+          {
+            "id": "squat_form_positive_1",
+            "template": "Your squat stayed controlled.",
+            "supportsName": false
+          }
+        ],
+        "correctiveForm": [
+          {
+            "id": "squat_form_corrective_1",
+            "template": "On the next set, keep your torso controlled as you stand.",
+            "supportsName": false
+          }
+        ],
+        "uncertainForm": [
+          {
+            "id": "squat_form_uncertain_1",
+            "template": "I could not get a clear enough side view.",
+            "supportsName": false
+          }
+        ],
+        "completion": [
+          {
+            "id": "squat_completion_1",
+            "template": "Good job.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "squat_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": true,
+        "requiredView": "side",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": [
+          {
+            "id": "torso_control",
+            "type": "alignment_deviation",
+            "measurement": "alignment_deviation",
+            "landmarks": [
+              "shoulder",
+              "hip",
+              "ankle"
+            ],
+            "thresholds": {
+              "maximumDeviationDegrees": 35
+            },
+            "minimumLandmarkConfidence": 0.75,
+            "minimumAffectedFramePercentage": 35,
+            "minimumConsecutiveDurationMs": 500,
+            "priority": 1,
+            "feedback": {
+              "good": "squat_form_positive_1",
+              "needsAttention": "squat_form_corrective_1",
+              "uncertain": "squat_form_uncertain_1"
+            }
+          }
+        ]
+      },
+      "limitations": [
+        "The current shoulder–hip–ankle angle does not measure squat depth, knee tracking, load, or torso position independently."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    },
+    {
+      "exerciseId": "dumbbell_bicep_curl",
+      "displayName": "Dumbbell Bicep Curl",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:afcb3a994ce47aa3ce238bbe66a7d325b7c50daf447e2d1faca8f3ad50347999",
+      "instructions": {
+        "setupCues": [
+          "Stand tall with the weights at your sides.",
+          "Keep your elbows close to your body."
+        ],
+        "movementCues": [
+          "Curl the weights, pause, then lower with control."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Curl",
+        "hold": "Hold",
+        "phaseTwo": "Lower"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "dumbbell_bicep_curl_encouragement_1",
+            "template": "Keep your elbows steady.",
+            "supportsName": false
+          },
+          {
+            "id": "dumbbell_bicep_curl_encouragement_2",
+            "template": "Stay controlled.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [],
+        "correctiveForm": [],
+        "uncertainForm": [],
+        "completion": [
+          {
+            "id": "dumbbell_bicep_curl_completion_1",
+            "template": "Nice work.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "dumbbell_bicep_curl_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": false,
+        "requiredView": "not_supported",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": []
+      },
+      "limitations": [
+        "Automated form judgment is unsupported; elbow position, shoulder movement, and curl range are not implemented and weights may occlude landmarks."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    },
+    {
+      "exerciseId": "side_bridge",
+      "displayName": "Side Bridge",
+      "schemaVersion": 1,
+      "profileVersion": 1,
+      "approvalStatus": "draft",
+      "metadataFingerprint": "sha256:adf753ae1be5f3912594acc6bee8780bbd8ba68c202b89feb4efa7e120360345",
+      "instructions": {
+        "setupCues": [
+          "Lie on your side with your elbow beneath your shoulder.",
+          "Stack or stagger your feet comfortably."
+        ],
+        "movementCues": [
+          "Lift your hips into a strong line, pause, then lower with control."
+        ],
+        "safetyCues": []
+      },
+      "cadence": {
+        "phaseOne": "Lift",
+        "hold": "Hold",
+        "phaseTwo": "Lower"
+      },
+      "phrases": {
+        "encouragement": [
+          {
+            "id": "side_bridge_encouragement_1",
+            "template": "Keep breathing.",
+            "supportsName": false
+          },
+          {
+            "id": "side_bridge_encouragement_2",
+            "template": "Stay strong.",
+            "supportsName": false
+          }
+        ],
+        "positiveForm": [
+          {
+            "id": "side_bridge_form_positive_1",
+            "template": "Your side position stayed controlled.",
+            "supportsName": false
+          }
+        ],
+        "correctiveForm": [
+          {
+            "id": "side_bridge_form_corrective_1",
+            "template": "On the next set, keep your hips in line with your shoulders.",
+            "supportsName": false
+          }
+        ],
+        "uncertainForm": [
+          {
+            "id": "side_bridge_form_uncertain_1",
+            "template": "I could not get a clear enough side view.",
+            "supportsName": false
+          }
+        ],
+        "completion": [
+          {
+            "id": "side_bridge_completion_1",
+            "template": "Good job.",
+            "supportsName": false
+          }
+        ],
+        "recovery": [
+          {
+            "id": "side_bridge_recovery_1",
+            "template": "Take a breath.",
+            "supportsName": false
+          }
+        ]
+      },
+      "poseAnalysis": {
+        "supported": true,
+        "requiredView": "side",
+        "minimumUsableFramePercentage": 60,
+        "minimumOverallConfidence": 0.75,
+        "rules": [
+          {
+            "id": "body_alignment",
+            "type": "alignment_deviation",
+            "measurement": "alignment_deviation",
+            "landmarks": [
+              "shoulder",
+              "hip",
+              "ankle"
+            ],
+            "thresholds": {
+              "maximumDeviationDegrees": 18
+            },
+            "minimumLandmarkConfidence": 0.75,
+            "minimumAffectedFramePercentage": 35,
+            "minimumConsecutiveDurationMs": 500,
+            "priority": 1,
+            "feedback": {
+              "good": "side_bridge_form_positive_1",
+              "needsAttention": "side_bridge_form_corrective_1",
+              "uncertain": "side_bridge_form_uncertain_1"
+            }
+          }
+        ]
+      },
+      "limitations": [
+        "A two-dimensional shoulder–hip–ankle angle is unreliable when the lower body is obscured and cannot establish three-dimensional alignment."
+      ],
+      "reviewFields": {
+        "reviewerName": null,
+        "reviewerCredential": null,
+        "reviewedAt": null,
+        "decision": null,
+        "comments": null
+      }
+    }
+  ]
+}
