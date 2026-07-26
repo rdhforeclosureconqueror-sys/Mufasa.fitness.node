@@ -4729,11 +4729,6 @@ skeletonOverlayActive: no</pre>
     };
 
   listenBtn.onclick = async () => {
-  try { await requireCoachRuntime().unlockAudioOnce(); } catch (e) { console.warn("unlockAudioOnce failed", e); }
-
-  // prime iPhone audio (must happen inside the user tap)
-  try { await requireCoachRuntime().speak("Voice is on.", "rep"); } catch (e) { console.warn("prime speak failed", e); }
-
   const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
   if (!SpeechRecognitionClass) {
     const message = "Voice recognition is not supported in this browser. Use text coach.";
@@ -4744,7 +4739,11 @@ skeletonOverlayActive: no</pre>
     addLog("system", message);
   }
 
-  requireCoachRuntime().toggleListening();
+  try {
+    const runtime = requireCoachRuntime();
+    if (runtime.getState().listening) runtime.stopListening();
+    else await runtime.activateVoice();
+  } catch (e) { console.warn("voice activation failed", e); }
 };
 
 

@@ -2,6 +2,7 @@
   const global = globalScope || window;
   const DEFAULT_VOICES = ["alloy", "verse", "aria", "ember", "coral"];
   const GOOD_REP_COOLDOWN_MS = 2500;
+  const DEFAULT_CONVERSATION_TIMEOUT_MS = 25000;
 
   const state = {
     configured: false,
@@ -17,6 +18,8 @@
     listening: false,
     lastMicError: null,
     lastTranscript: "",
+    conversationActive: false,
+    conversationState: "IDLE",
     recognitionSupported: false,
     chatBusy: false,
     lastChatError: null,
@@ -28,6 +31,11 @@
   let deps = {};
   let ttsPlayer = null;
   let recognition = null;
+  let voiceActivation = null;
+  let conversationTimer = null;
+  let recognitionPausedForSpeech = false;
+  let recognitionActive = false;
+  let speechFinishedWhilePausing = false;
   const lifecycleTrace = [];
   const TRACE_LIMIT = 100;
 
@@ -39,6 +47,7 @@
       state: {
         muted: state.muted,
         listening: state.listening,
+        conversationState: state.conversationState,
         audioUnlocked: state.audioUnlocked,
         speechLock: state.speechLock
       },
@@ -49,6 +58,33 @@
     if (lifecycleTrace.length > TRACE_LIMIT) lifecycleTrace.shift();
     console.debug("[SPEECH_LIFECYCLE]", entry);
     return entry;
+  }
+
+  function setConversationState(nextState, reason) {
+    const previousState = state.conversationState;
+    if (previousState === nextState) return;
+    state.conversationState = nextState;
+    state.conversationActive = nextState !== "IDLE";
+    trace("conversation", "state-change", { previousState, nextState, reason });
+  }
+
+  function clearConversationTimer() {
+    if (conversationTimer != null) global.clearTimeout?.(conversationTimer);
+    conversationTimer = null;
+  }
+
+  function endConversation(reason = "ended") {
+    clearConversationTimer();
+    setConversationState("IDLE", reason);
+  }
+
+  function touchConversation(reason = "interaction") {
+    if (!state.conversationActive) return;
+    clearConversationTimer();
+    const timeoutMs = Number(deps.conversationTimeoutMs) || DEFAULT_CONVERSATION_TIMEOUT_MS;
+    conversationTimer = global.setTimeout?.(() => endConversation("inactivity-timeout"), timeoutMs) ?? null;
+    conversationTimer?.unref?.();
+    trace("conversation", "timeout-armed", { reason, timeoutMs });
   }
 
   function log(channel, message, details) {
@@ -428,6 +464,26 @@
       state.repFeedbackAllowed = true;
     }
     if (state.lastStatus === "Speaking") setReady("speech-ended");
+    if (state.conversationActive) {
+      setConversationState("LISTENING", "speech-ended");
+      touchConversation("assistant-response-ended");
+    }
+    if (recognitionPausedForSpeech && state.listening) {
+      if (recognitionActive) speechFinishedWhilePausing = true;
+      else resumeRecognitionAfterSpeech();
+    }
+  }
+
+  function resumeRecognitionAfterSpeech() {
+    if (!recognitionPausedForSpeech || !state.listening || recognitionActive) return;
+    recognitionPausedForSpeech = false;
+    speechFinishedWhilePausing = false;
+    try {
+      recognition?.start?.();
+      trace("stt", "resumed-after-speech");
+    } catch (err) {
+      setMicFailure(normalizeReason(err), "speech-recognition-resume");
+    }
   }
 
   async function speakWithBackend(text, source) {
@@ -520,6 +576,13 @@
     if (!unlocked) return { ok: false, reason: state.lastVoiceError || "audio_unlock_failed" };
 
     stopAllSpeech();
+    if (state.conversationActive && state.listening && !recognitionPausedForSpeech) {
+      recognitionPausedForSpeech = true;
+      speechFinishedWhilePausing = false;
+      setConversationState("RESPONDING", source);
+      try { recognition?.stop?.(); trace("stt", "paused-for-speech", { source }); }
+      catch (err) { trace("stt", "pause-for-speech-error", { source, error: err }); }
+    }
     if (source === "llm") {
       state.speechLock = true;
       state.repFeedbackAllowed = false;
@@ -549,6 +612,9 @@
     const normalized = normalizeReason(reason);
     state.lastMicError = normalized;
     state.listening = false;
+    recognitionActive = false;
+    recognitionPausedForSpeech = false;
+    endConversation("mic-failure");
     updateListenButton();
     setListeningStatus(`Mic error: ${normalized}`, false);
     setCoachStatus(`Mic error: ${normalized}`, { mode: "bad", chipText: "Ma’at 2.0: mic error", source });
@@ -570,7 +636,16 @@
       return false;
     }
     try {
-      dispatcher(command, { transcript, source: "speech-recognition" });
+      setConversationState("PROCESSING", "intent-dispatched");
+      touchConversation("intent-dispatched");
+      Promise.resolve(dispatcher(command, { transcript, source: "speech-recognition" }))
+        .then(() => {
+          if (state.conversationActive && state.conversationState === "PROCESSING") {
+            setConversationState("LISTENING", "intent-processed");
+            touchConversation("intent-processed");
+          }
+        })
+        .catch((err) => log("command", "async dispatch failed", { error: normalizeReason(err), command }));
       return true;
     } catch (err) {
       const reason = normalizeReason(err);
@@ -589,9 +664,25 @@
     log("recognition", "transcript", { transcript });
 
     const lower = transcript.toLowerCase();
-    if (!lower.includes("mufasa") && !lower.includes("coach")) return;
-    const cleaned = lower.replace(/hey coach/g, "").replace(/hey/g, "").replace(/mufasa/g, "").replace(/coach/g, "").trim();
-    const message = cleaned || "give me a quick status update on my workout.";
+    if (state.conversationActive && /\b(goodbye|cancel|stop listening|end conversation|that's all|that is all)\b/i.test(lower)) {
+      endConversation("user-exit");
+      return;
+    }
+    const hasWakePhrase = lower.includes("mufasa") || lower.includes("coach");
+    if (!hasWakePhrase && !state.conversationActive) return;
+    if (hasWakePhrase) {
+      setConversationState("WAKE_DETECTED", "wake-phrase");
+      touchConversation("wake-phrase");
+    }
+    const cleaned = hasWakePhrase
+      ? lower.replace(/hey coach/g, "").replace(/hey/g, "").replace(/mufasa/g, "").replace(/coach/g, "").trim()
+      : transcript.trim();
+    if (!cleaned) {
+      speak("Hi, how can I help?", "conversation-wake")
+        .catch((err) => log("voice", "wake greeting failed", normalizeReason(err)));
+      return;
+    }
+    const message = cleaned;
     dispatchCoachCommand(message, transcript);
   }
 
@@ -617,7 +708,10 @@
       error: eventName === "error" ? (event?.error || "unknown_error") : null,
       resultIndex: eventName === "result" ? (event?.resultIndex ?? null) : undefined
     });
-    recognition.onstart = traceRecognitionEvent("start");
+    recognition.onstart = (event) => {
+      recognitionActive = true;
+      traceRecognitionEvent("start")(event);
+    };
     recognition.onaudiostart = traceRecognitionEvent("audiostart");
     recognition.onsoundstart = traceRecognitionEvent("soundstart");
     recognition.onspeechstart = traceRecognitionEvent("speechstart");
@@ -632,9 +726,14 @@
       setMicFailure(exactError, "speech-recognition-error");
     };
     recognition.onend = () => {
+      recognitionActive = false;
       trace("stt", "end");
       log("recognition", "ended", { listening: state.listening });
       if (!state.listening) return;
+      if (recognitionPausedForSpeech) {
+        if (speechFinishedWhilePausing) resumeRecognitionAfterSpeech();
+        return;
+      }
       try {
         recognition.start();
         log("recognition", "restarted");
@@ -654,6 +753,7 @@
       state.listening = true;
       state.lastMicError = null;
       state.lastTranscript = "";
+      endConversation("listening-started");
       updateListenButton();
       stt.start();
       trace("stt", "start-requested");
@@ -670,6 +770,10 @@
 
   function stopListening() {
     state.listening = false;
+    recognitionPausedForSpeech = false;
+    recognitionActive = false;
+    speechFinishedWhilePausing = false;
+    endConversation("voice-off");
     updateListenButton();
     try { recognition?.stop?.(); trace("stt", "stop-requested"); } catch (err) { trace("stt", "stop-error", { error: err }); log("mic", "stop failed", normalizeReason(err)); }
     setListeningStatus("Stopped listening.", true);
@@ -682,6 +786,39 @@
   function toggleListening() {
     log("mic", "toggle requested", { listening: state.listening });
     return state.listening ? stopListening() : startListening();
+  }
+
+  function teardownVoiceServices(reason = "application-teardown") {
+    if (state.listening || state.conversationActive) stopListening();
+    else endConversation(reason);
+    stopAllSpeech();
+    trace("voice-control", "services-torn-down", { reason });
+  }
+
+  function activateVoice() {
+    if (voiceActivation) return voiceActivation;
+    if (state.listening && !state.muted) {
+      trace("voice-control", "activation-already-active");
+      return Promise.resolve({ ok: true, listening: true, alreadyActive: true });
+    }
+    voiceActivation = (async () => {
+      trace("voice-control", "activation-requested");
+      // Startup remains muted. Only this explicit user action enables output, and
+      // it must do so before the iOS audio prime is attempted.
+      setMuted(false);
+      trace("voice-control", "unmuted");
+      const unlocked = await unlockAudioOnce();
+      const speech = unlocked
+        ? await speak("Voice is on.", "rep")
+        : { ok: false, reason: state.lastVoiceError || "audio_unlock_failed" };
+      const listening = startListening();
+      trace("voice-control", "activation-complete", {
+        speechOk: Boolean(speech?.ok),
+        listeningOk: Boolean(listening?.ok)
+      });
+      return { ok: Boolean(listening?.ok), unlocked, speech, ...listening };
+    })().finally(() => { voiceActivation = null; });
+    return voiceActivation;
   }
 
   function canSpeakRepFeedback(now = Date.now()) {
@@ -716,6 +853,7 @@
     traceSpeechSynthesis();
     updateListenButton();
     bindTypedChatHandlers();
+    global.addEventListener?.("pagehide", () => teardownVoiceServices("pagehide"), { once: true });
     if (typeof global.askCoach !== "function" || global.askCoach.__coachRuntimeDelegator) {
       global.askCoach = askCoach;
       global.askCoach.__coachRuntimeDelegator = true;
@@ -761,8 +899,10 @@
     unlockAudioOnce,
     stopAllSpeech,
     toggleListening,
+    activateVoice,
     startListening,
     stopListening,
+    teardownVoiceServices,
     setMuted,
     toggleMuted,
     setReady,
