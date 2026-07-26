@@ -4739,7 +4739,11 @@ skeletonOverlayActive: no</pre>
     addLog("system", message);
   }
 
-  try { await requireCoachRuntime().activateVoice(); } catch (e) { console.warn("voice activation failed", e); }
+  try {
+    const runtime = requireCoachRuntime();
+    if (runtime.getState().listening) runtime.stopListening();
+    else await runtime.activateVoice();
+  } catch (e) { console.warn("voice activation failed", e); }
 };
 
 

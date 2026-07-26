@@ -7,7 +7,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(require.resolve('../public/coach-runtime.js'), 'utf8');
 
-function harness() {
+function harness({ conversationTimeoutMs = 25000 } = {}) {
   const events = [];
   const recognizers = [];
   let fetches = 0;
@@ -43,7 +43,7 @@ function harness() {
   scope.window = scope;
   scope.globalThis = scope;
   vm.runInNewContext(source, scope);
-  scope.CoachRuntime.configure({ refs: { ttsPlayer: player }, deps: { voiceUrl: '/api/speak', dispatchCommand: (message) => events.push(`command-${message}`) } });
+  scope.CoachRuntime.configure({ refs: { ttsPlayer: player }, deps: { voiceUrl: '/api/speak', conversationTimeoutMs, dispatchCommand: (message) => events.push(`command-${message}`) } });
   return { runtime: scope.CoachRuntime, events, recognizers, fetches: () => fetches };
 }
 
@@ -81,4 +81,43 @@ test('wake phrase dispatches intent and a normal recognition end restarts the si
   assert.equal(recognizer.starts, 2);
   assert.equal(h.recognizers.length, 1);
   assert.ok(h.runtime.getSpeechTrace().some((entry) => entry.module === 'stt' && entry.event === 'result'));
+});
+
+test('wake-only greeting opens a session and recognition resumes after its single response', async () => {
+  const h = harness();
+  await h.runtime.activateVoice();
+  const recognizer = h.recognizers[0];
+  recognizer.onresult({ resultIndex: 0, results: [[{ transcript: 'Hey Mufasa' }]] });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.runtime.getState().conversationState, 'LISTENING');
+  assert.equal(h.fetches(), 2);
+  assert.equal(h.recognizers.length, 1);
+  assert.equal(recognizer.starts, 2);
+  assert.equal(h.events.filter((event) => event === 'speech-play').length, 2);
+});
+
+test('inactivity timeout returns the conversation to idle and requires a new wake phrase', async () => {
+  const h = harness({ conversationTimeoutMs: 20 });
+  await h.runtime.activateVoice();
+  const recognizer = h.recognizers[0];
+  recognizer.onresult({ resultIndex: 0, results: [[{ transcript: 'Hey Mufasa start my workout' }]] });
+  await new Promise((resolve) => setTimeout(resolve, 35));
+  assert.equal(h.runtime.getState().conversationState, 'IDLE');
+  recognizer.onresult({ resultIndex: 0, results: [[{ transcript: 'Pause' }]] });
+  assert.equal(h.events.filter((event) => event === 'command-Pause').length, 0);
+});
+
+test('goodbye exits the session and Voice Off exits immediately', async () => {
+  const h = harness();
+  await h.runtime.activateVoice();
+  const recognizer = h.recognizers[0];
+  recognizer.onresult({ resultIndex: 0, results: [[{ transcript: 'Hey Mufasa start my workout' }]] });
+  recognizer.onresult({ resultIndex: 0, results: [[{ transcript: 'goodbye' }]] });
+  assert.equal(h.runtime.getState().conversationState, 'IDLE');
+  assert.equal(h.runtime.getState().listening, true);
+  recognizer.onresult({ resultIndex: 0, results: [[{ transcript: 'Hey Mufasa pause' }]] });
+  assert.equal(h.runtime.getState().conversationActive, true);
+  h.runtime.stopListening();
+  assert.equal(h.runtime.getState().conversationState, 'IDLE');
+  assert.equal(h.runtime.getState().listening, false);
 });
