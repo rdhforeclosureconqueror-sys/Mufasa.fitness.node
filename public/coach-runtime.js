@@ -17,6 +17,7 @@
     listening: false,
     lastMicError: null,
     lastTranscript: "",
+    conversationActive: false,
     recognitionSupported: false,
     chatBusy: false,
     lastChatError: null,
@@ -28,6 +29,7 @@
   let deps = {};
   let ttsPlayer = null;
   let recognition = null;
+  let voiceActivation = null;
   const lifecycleTrace = [];
   const TRACE_LIMIT = 100;
 
@@ -589,8 +591,15 @@
     log("recognition", "transcript", { transcript });
 
     const lower = transcript.toLowerCase();
-    if (!lower.includes("mufasa") && !lower.includes("coach")) return;
-    const cleaned = lower.replace(/hey coach/g, "").replace(/hey/g, "").replace(/mufasa/g, "").replace(/coach/g, "").trim();
+    const hasWakePhrase = lower.includes("mufasa") || lower.includes("coach");
+    if (!hasWakePhrase && !state.conversationActive) return;
+    if (hasWakePhrase) {
+      state.conversationActive = true;
+      trace("conversation", "wake-phrase");
+    }
+    const cleaned = hasWakePhrase
+      ? lower.replace(/hey coach/g, "").replace(/hey/g, "").replace(/mufasa/g, "").replace(/coach/g, "").trim()
+      : transcript.trim();
     const message = cleaned || "give me a quick status update on my workout.";
     dispatchCoachCommand(message, transcript);
   }
@@ -654,6 +663,7 @@
       state.listening = true;
       state.lastMicError = null;
       state.lastTranscript = "";
+      state.conversationActive = false;
       updateListenButton();
       stt.start();
       trace("stt", "start-requested");
@@ -670,6 +680,7 @@
 
   function stopListening() {
     state.listening = false;
+    state.conversationActive = false;
     updateListenButton();
     try { recognition?.stop?.(); trace("stt", "stop-requested"); } catch (err) { trace("stt", "stop-error", { error: err }); log("mic", "stop failed", normalizeReason(err)); }
     setListeningStatus("Stopped listening.", true);
@@ -682,6 +693,32 @@
   function toggleListening() {
     log("mic", "toggle requested", { listening: state.listening });
     return state.listening ? stopListening() : startListening();
+  }
+
+  function activateVoice() {
+    if (voiceActivation) return voiceActivation;
+    if (state.listening && !state.muted) {
+      trace("voice-control", "activation-already-active");
+      return Promise.resolve({ ok: true, listening: true, alreadyActive: true });
+    }
+    voiceActivation = (async () => {
+      trace("voice-control", "activation-requested");
+      // Startup remains muted. Only this explicit user action enables output, and
+      // it must do so before the iOS audio prime is attempted.
+      setMuted(false);
+      trace("voice-control", "unmuted");
+      const unlocked = await unlockAudioOnce();
+      const speech = unlocked
+        ? await speak("Voice is on.", "rep")
+        : { ok: false, reason: state.lastVoiceError || "audio_unlock_failed" };
+      const listening = startListening();
+      trace("voice-control", "activation-complete", {
+        speechOk: Boolean(speech?.ok),
+        listeningOk: Boolean(listening?.ok)
+      });
+      return { ok: Boolean(listening?.ok), unlocked, speech, ...listening };
+    })().finally(() => { voiceActivation = null; });
+    return voiceActivation;
   }
 
   function canSpeakRepFeedback(now = Date.now()) {
@@ -761,6 +798,7 @@
     unlockAudioOnce,
     stopAllSpeech,
     toggleListening,
+    activateVoice,
     startListening,
     stopListening,
     setMuted,

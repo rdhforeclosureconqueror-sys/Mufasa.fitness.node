@@ -50,9 +50,8 @@ test("workout runtime preserves video-playing milestone after downstream detecto
 test("coach voice controls call coach runtime directly", () => {
   const html = read("public/workout.html");
   assert.doesNotMatch(html, /async function speak\(|async function unlockAudioOnce\(|function stopAllSpeech\(/, "inline coach voice compatibility delegators should be removed");
-  assert.match(html, /requireCoachRuntime\(\)\.unlockAudioOnce\(\)/, "listen button should unlock audio through coach runtime directly");
-  assert.match(html, /requireCoachRuntime\(\)\.speak\("Voice is on\.", "rep"\)/, "listen button voice prime should use coach runtime directly");
-  assert.match(html, /requireCoachRuntime\(\)\.toggleListening\(\)/, "listen button should delegate mic lifecycle to coach runtime directly");
+  assert.match(html, /requireCoachRuntime\(\)\.activateVoice\(\)/, "listen button should delegate the ordered voice activation lifecycle to coach runtime");
+  assert.doesNotMatch(html, /requireCoachRuntime\(\)\.speak\("Voice is on\.", "rep"\)/, "the shell must not create a second voice prime");
   assert.doesNotMatch(html, /new\s+(?:window\.)?(?:SpeechRecognition|webkitSpeechRecognition)\(/, "inline shell must not construct browser speech recognition");
 });
 
