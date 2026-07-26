@@ -2,7 +2,8 @@
   const global = globalScope || window;
   const DEFAULT_VOICES = ["alloy", "verse", "aria", "ember", "coral"];
   const GOOD_REP_COOLDOWN_MS = 2500;
-  const DEFAULT_CONVERSATION_TIMEOUT_MS = 25000;
+  const DEFAULT_CONVERSATION_TIMEOUT_MS = 30000;
+  const DEFAULT_CONVERSATION_WARNING_MS = 20000;
 
   const state = {
     configured: false,
@@ -24,7 +25,9 @@
     chatBusy: false,
     lastChatError: null,
     lastQuestion: "",
-    lastAnswer: ""
+    lastAnswer: "",
+    activeSpeech: null,
+    warningIssued: false
   };
 
   let refs = {};
@@ -33,9 +36,10 @@
   let recognition = null;
   let voiceActivation = null;
   let conversationTimer = null;
-  let recognitionPausedForSpeech = false;
+  let conversationWarningTimer = null;
   let recognitionActive = false;
-  let speechFinishedWhilePausing = false;
+  let utteranceSequence = 0;
+  let activeSpeech = null;
   const lifecycleTrace = [];
   const TRACE_LIMIT = 100;
 
@@ -65,12 +69,14 @@
     if (previousState === nextState) return;
     state.conversationState = nextState;
     state.conversationActive = nextState !== "IDLE";
-    trace("conversation", "state-change", { previousState, nextState, reason });
+    trace("conversation", "conversation.state_changed", { previousState, nextState, reason });
   }
 
   function clearConversationTimer() {
     if (conversationTimer != null) global.clearTimeout?.(conversationTimer);
+    if (conversationWarningTimer != null) global.clearTimeout?.(conversationWarningTimer);
     conversationTimer = null;
+    conversationWarningTimer = null;
   }
 
   function endConversation(reason = "ended") {
@@ -82,7 +88,28 @@
     if (!state.conversationActive) return;
     clearConversationTimer();
     const timeoutMs = Number(deps.conversationTimeoutMs) || DEFAULT_CONVERSATION_TIMEOUT_MS;
-    conversationTimer = global.setTimeout?.(() => endConversation("inactivity-timeout"), timeoutMs) ?? null;
+    const warningEnabled = deps.conversationWarningEnabled !== false;
+    const warningMs = Number(deps.conversationWarningMs) || DEFAULT_CONVERSATION_WARNING_MS;
+    state.warningIssued = false;
+    if (warningEnabled && warningMs > 0 && warningMs < timeoutMs) {
+      conversationWarningTimer = global.setTimeout?.(() => {
+        if (!state.conversationActive || activeSpeech || state.warningIssued) return;
+        state.warningIssued = true;
+        trace("conversation", "conversation.warning_started");
+        speak("I'm still here if you need me.", "system", { owner: "system", interruptible: false, timerNeutral: true });
+      }, warningMs) ?? null;
+      conversationWarningTimer?.unref?.();
+    }
+    conversationTimer = global.setTimeout?.(() => {
+      if (activeSpeech) {
+        touchConversation("speech-active-at-timeout");
+        return;
+      }
+      trace("conversation", "conversation.timeout");
+      const finish = () => { endConversation("inactivity-timeout"); stopRecognitionCleanly("inactivity-timeout"); };
+      if (state.muted) finish();
+      else speak("Okay, I'll stop listening.", "system", { owner: "system", interruptible: false, timerNeutral: true }).finally(finish);
+    }, timeoutMs) ?? null;
     conversationTimer?.unref?.();
     trace("conversation", "timeout-armed", { reason, timeoutMs });
   }
@@ -417,7 +444,16 @@
     setVoiceSupport("Voice ready. Tap 'Voice On' to enable audio + mic.", true);
   }
 
-  function stopAllSpeech() {
+  function speechOwnerFor(source, options = {}) {
+    if (options.owner) return options.owner;
+    if (/conversation|llm/.test(source)) return "conversation";
+    if (/guided/.test(source)) return "guided_coach";
+    if (/rep|workout|cadence|encouragement/.test(source)) return "workout_voice";
+    return "system";
+  }
+
+  function stopAllSpeech(reason = "explicit-cleanup") {
+    if (activeSpeech) cancelActiveSpeech(reason, { acknowledge: false, force: true });
     try { global.speechSynthesis?.cancel?.(); } catch (err) { log("voice", "speechSynthesis cancel failed", normalizeReason(err)); }
     try {
       const player = ensureAudioPlayer();
@@ -426,6 +462,26 @@
     } catch (err) {
       log("voice", "audio player stop failed", normalizeReason(err));
     }
+  }
+
+  function cancelActiveSpeech(reason, options = {}) {
+    const response = activeSpeech;
+    if (!response || (!response.interruptible && !options.force) || response.cancelRequested) return false;
+    response.cancelRequested = true;
+    response.cancelReason = reason;
+    response.controller?.abort?.();
+    trace("speech", "speech.response_cancel_requested", { speechOwner: response.owner, utteranceId: response.id, cancellationReason: reason });
+    try { global.speechSynthesis?.cancel?.(); } catch (error) { trace("speech", "speech.cancel_error", { error, utteranceId: response.id }); }
+    try { const player = ensureAudioPlayer(); player?.pause?.(); if (player) { player.currentTime = 0; player.removeAttribute?.("src"); } }
+    catch (error) { trace("speech", "speech.cancel_error", { error, utteranceId: response.id }); }
+    response.settle?.({ cancelled: true });
+    finishSpeech(response, "cancelled");
+    if (options.acknowledge && !response.acknowledged && !state.muted && state.listening) {
+      response.acknowledged = true;
+      trace("speech", "speech.stop_acknowledged", { utteranceId: response.id });
+      speak("Stopped.", "system", { owner: "system", interruptible: false }).catch(() => {});
+    }
+    return true;
   }
 
   async function unlockAudioOnce() {
@@ -458,7 +514,7 @@
     }
   }
 
-  function releaseLocks(source) {
+  function releaseLocks(source, timerNeutral = false) {
     if (source === "llm") {
       state.speechLock = false;
       state.repFeedbackAllowed = true;
@@ -466,27 +522,22 @@
     if (state.lastStatus === "Speaking") setReady("speech-ended");
     if (state.conversationActive) {
       setConversationState("LISTENING", "speech-ended");
-      touchConversation("assistant-response-ended");
-    }
-    if (recognitionPausedForSpeech && state.listening) {
-      if (recognitionActive) speechFinishedWhilePausing = true;
-      else resumeRecognitionAfterSpeech();
+      if (!timerNeutral) touchConversation("assistant-response-ended");
     }
   }
 
-  function resumeRecognitionAfterSpeech() {
-    if (!recognitionPausedForSpeech || !state.listening || recognitionActive) return;
-    recognitionPausedForSpeech = false;
-    speechFinishedWhilePausing = false;
-    try {
-      recognition?.start?.();
-      trace("stt", "resumed-after-speech");
-    } catch (err) {
-      setMicFailure(normalizeReason(err), "speech-recognition-resume");
-    }
+  function finishSpeech(response, completionReason = "completed") {
+    if (!response || response.finished) return;
+    response.finished = true;
+    if (activeSpeech === response) activeSpeech = null;
+    state.activeSpeech = null;
+    trace("speech", completionReason === "cancelled" ? "speech.response_cancelled" : "speech.response_completed", {
+      speechOwner: response.owner, utteranceId: response.id, cancellationReason: response.cancelReason || null
+    });
+    releaseLocks(response.source, response.timerNeutral);
   }
 
-  async function speakWithBackend(text, source) {
+  async function speakWithBackend(text, source, response) {
     if (global.__workoutPerformance) global.__workoutPerformance.voiceRequests += 1;
     const url = deps.voiceUrl;
     if (!url) throw new Error("/api/speak url missing");
@@ -498,6 +549,7 @@
     trace("tts-backend", "request", { source, voice, textLength: text.length });
     console.log("[COACH_BACKEND_TRACE] /api/speak request", { url, operation: "synthesize_speech", textLength: requestBody.text.length });
     const controller = typeof global.AbortController === "function" ? new global.AbortController() : null;
+    response.controller = controller;
     const timeoutId = controller ? global.setTimeout?.(() => controller.abort(), 8000) : null;
     let res;
     try { res = await global.fetch(url, {
@@ -515,6 +567,7 @@
       throw new Error(`HTTP ${res.status}${errTxt ? ` ${errTxt}` : ""}`);
     }
     const blob = await res.blob();
+    if (response.cancelRequested) throw new Error("speech_cancelled");
     trace("tts-backend", "response", { source, bytes: blob.size ?? null });
     const urlObj = global.URL?.createObjectURL?.(blob);
     if (!urlObj) throw new Error("object_url_unavailable");
@@ -522,39 +575,39 @@
     if (!player) throw new Error("audio_player_unavailable");
     player.src = urlObj;
     await new Promise(async (resolve, reject) => {
+      response.settle = resolve;
       player.onended = () => {
         trace("audio-player", "ended", { source });
         global.URL?.revokeObjectURL?.(urlObj);
-        releaseLocks(source);
+        finishSpeech(response);
         resolve();
       };
       player.onerror = () => {
         trace("audio-player", "error", { source, error: "audio_playback_error" });
         global.URL?.revokeObjectURL?.(urlObj);
         setVoiceUnavailable("audio_playback_error", source);
-        releaseLocks(source);
         reject(new Error("audio_playback_error"));
       };
       try { await player.play(); trace("audio-player", "playing", { source }); } catch (error) { trace("audio-player", "play-rejected", { source, error }); reject(error); }
     });
   }
 
-  function speakWithBrowserFallback(text, source) {
+  function speakWithBrowserFallback(text, source, response) {
     if (!("speechSynthesis" in global) || typeof global.SpeechSynthesisUtterance !== "function") {
       throw new Error("browser_speech_synthesis_unavailable");
     }
-    global.speechSynthesis.cancel();
-    trace("tts-browser", "cancel-before-speak", { source });
     const utterance = new global.SpeechSynthesisUtterance(text);
+    response.utterance = utterance;
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
     return new Promise((resolve, reject) => {
       utterance.onstart = () => trace("tts-browser", "start", { source });
-      utterance.onend = () => { trace("tts-browser", "end", { source }); releaseLocks(source); resolve(); };
+      response.settle = resolve;
+      utterance.onend = () => { trace("tts-browser", "end", { source }); finishSpeech(response); resolve(); };
       utterance.onerror = (event) => {
         trace("tts-browser", "error", { source, error: event?.error || "unknown_error" });
         setVoiceUnavailable(`browser_speech_error: ${event?.error || "unknown_error"}`, source);
-        releaseLocks(source);
+        finishSpeech(response, response.cancelRequested ? "cancelled" : "completed");
         reject(new Error(event?.error || "browser_speech_error"));
       };
       global.speechSynthesis.speak(utterance);
@@ -562,7 +615,7 @@
     });
   }
 
-  async function speak(text, source = "system") {
+  async function speak(text, source = "system", options = {}) {
     const phrase = String(text || "").trim();
     if (!phrase) return { ok: false, skipped: true, reason: "empty_text" };
     state.lastSource = source;
@@ -570,18 +623,24 @@
       const reason = setVoiceUnavailable("muted", source);
       return { ok: false, reason };
     }
+    if (activeSpeech) return { ok: false, skipped: true, reason: "speech_in_progress" };
     if (state.speechLock && source === "rep") return { ok: false, skipped: true, reason: "speech_lock" };
 
     const unlocked = await unlockAudioOnce();
     if (!unlocked) return { ok: false, reason: state.lastVoiceError || "audio_unlock_failed" };
 
-    stopAllSpeech();
-    if (state.conversationActive && state.listening && !recognitionPausedForSpeech) {
-      recognitionPausedForSpeech = true;
-      speechFinishedWhilePausing = false;
+    const response = {
+      id: `speech-${++utteranceSequence}`, source, owner: speechOwnerFor(source, options),
+      interruptible: options.interruptible ?? /conversation|llm|guided/.test(source),
+      startedAt: new Date().toISOString(), cancelRequested: false, finished: false, timerNeutral: Boolean(options.timerNeutral)
+    };
+    activeSpeech = response;
+    state.activeSpeech = { id: response.id, source: response.owner, interruptible: response.interruptible, startedAt: response.startedAt };
+    trace("speech", "speech.response_started", { speechOwner: response.owner, utteranceId: response.id, interruptible: response.interruptible });
+    if (state.conversationActive && state.listening) {
+      if (!response.timerNeutral) clearConversationTimer();
       setConversationState("RESPONDING", source);
-      try { recognition?.stop?.(); trace("stt", "paused-for-speech", { source }); }
-      catch (err) { trace("stt", "pause-for-speech-error", { source, error: err }); }
+      trace("speech", "speech.interrupt_mode_started", { speechOwner: response.owner, utteranceId: response.id });
     }
     if (source === "llm") {
       state.speechLock = true;
@@ -590,19 +649,21 @@
 
     setSpeaking(source);
     try {
-      await speakWithBackend(phrase, source);
+      await speakWithBackend(phrase, source, response);
+      if (response.cancelRequested) return { ok: false, cancelled: true, reason: response.cancelReason };
       log("voice", "backend speaking", { source, chars: phrase.length });
       return { ok: true, backend: true };
     } catch (backendErr) {
       if (global.__workoutPerformance && /abort/i.test(normalizeReason(backendErr))) global.__workoutPerformance.abortedVoiceRequests += 1;
+      if (response.cancelRequested) return { ok: false, cancelled: true, reason: response.cancelReason };
       const backendReason = setBackendFailed(normalizeReason(backendErr), source);
       try {
-        await speakWithBrowserFallback(phrase, source);
+        await speakWithBrowserFallback(phrase, source, response);
         log("voice", "browser fallback speaking", { source, backendReason });
         return { ok: true, backend: false, fallback: true, backendReason };
       } catch (fallbackErr) {
         const reason = setVoiceUnavailable(`browser_fallback_failed: ${normalizeReason(fallbackErr)}`, source);
-        releaseLocks(source);
+        finishSpeech(response, response.cancelRequested ? "cancelled" : "completed");
         return { ok: false, reason, backendReason };
       }
     }
@@ -613,7 +674,6 @@
     state.lastMicError = normalized;
     state.listening = false;
     recognitionActive = false;
-    recognitionPausedForSpeech = false;
     endConversation("mic-failure");
     updateListenButton();
     setListeningStatus(`Mic error: ${normalized}`, false);
@@ -627,7 +687,6 @@
     const command = String(message || "").trim();
     if (!command) return false;
     deps.addLog?.("you", `🎙️ ${transcript}`);
-    stopAllSpeech();
     log("command", "dispatch", { command, transcript });
     const dispatcher = deps.dispatchCommand || deps.askCoach || global.askCoach;
     if (typeof dispatcher !== "function") {
@@ -655,16 +714,45 @@
     }
   }
 
+  function normalizedWords(transcript) {
+    return String(transcript || "").toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9']+/g, " ").trim().split(/\s+/).filter(Boolean);
+  }
+
+  function classifySpeechIntent(transcript) {
+    const words = normalizedWords(transcript);
+    const joined = words.join(" ");
+    if (["goodbye", "cancel", "stop listening", "end conversation", "that's all", "that is all"].includes(joined)) return "exit";
+    const prefixes = [[], ["mufasa"], ["coach"], ["hey", "mufasa"], ["hey", "coach"]];
+    if (prefixes.some((prefix) => words.length === prefix.length + 1 && prefix.every((word, index) => words[index] === word) && words.at(-1) === "stop")) return "stop";
+    return "other";
+  }
+
   function handleRecognitionResult(event) {
     trace("stt", "result", { resultIndex: event?.resultIndex ?? null, resultCount: event?.results?.length ?? 0 });
     const results = event?.results;
     const transcript = results?.[results.length - 1]?.[0]?.transcript?.trim?.() || "";
     if (!transcript || transcript === state.lastTranscript) return;
     state.lastTranscript = transcript;
-    log("recognition", "transcript", { transcript });
+    log("recognition", "transcript classified", { classification: "recognized_transcript" });
 
     const lower = transcript.toLowerCase();
-    if (state.conversationActive && /\b(goodbye|cancel|stop listening|end conversation|that's all|that is all)\b/i.test(lower)) {
+    const intent = classifySpeechIntent(transcript);
+    if (activeSpeech && state.conversationActive) {
+      if (intent === "exit") {
+        cancelActiveSpeech("conversation-exit", { force: true });
+        endConversation("user-exit");
+        return;
+      }
+      if (intent === "stop") {
+        trace("speech", "speech.stop_intent_detected", { normalizedIntent: "stop", speechOwner: activeSpeech.owner, utteranceId: activeSpeech.id });
+        setConversationState("STOPPING", "stop-intent");
+        cancelActiveSpeech("member-stop", { acknowledge: true });
+        return;
+      }
+      trace("speech", "speech.transcript_ignored_during_response", { normalizedIntent: "ignored_non_stop_transcript", speechOwner: activeSpeech.owner, utteranceId: activeSpeech.id });
+      return;
+    }
+    if (state.conversationActive && intent === "exit") {
       endConversation("user-exit");
       return;
     }
@@ -730,12 +818,11 @@
       trace("stt", "end");
       log("recognition", "ended", { listening: state.listening });
       if (!state.listening) return;
-      if (recognitionPausedForSpeech) {
-        if (speechFinishedWhilePausing) resumeRecognitionAfterSpeech();
-        return;
-      }
+      if (activeSpeech) trace("recognition", "recognition.resume_requested", { speechOwner: activeSpeech.owner, utteranceId: activeSpeech.id });
       try {
+        if (recognitionActive) return;
         recognition.start();
+        trace("recognition", "recognition.resumed");
         log("recognition", "restarted");
       } catch (err) {
         setMicFailure(normalizeReason(err), "speech-recognition-restart");
@@ -755,7 +842,7 @@
       state.lastTranscript = "";
       endConversation("listening-started");
       updateListenButton();
-      stt.start();
+      if (!recognitionActive) stt.start();
       trace("stt", "start-requested");
       setListeningStatus("Listening for 'Mufasa' or 'Coach'...", true);
       setCoachStatus("Listening", { mode: "ok", chipText: "Ma’at 2.0: listening", source: "speech-recognition" });
@@ -768,12 +855,10 @@
     }
   }
 
-  function stopListening() {
+  function stopRecognitionCleanly(reason = "voice-off") {
     state.listening = false;
-    recognitionPausedForSpeech = false;
     recognitionActive = false;
-    speechFinishedWhilePausing = false;
-    endConversation("voice-off");
+    endConversation(reason);
     updateListenButton();
     try { recognition?.stop?.(); trace("stt", "stop-requested"); } catch (err) { trace("stt", "stop-error", { error: err }); log("mic", "stop failed", normalizeReason(err)); }
     setListeningStatus("Stopped listening.", true);
@@ -781,6 +866,13 @@
     deps.addLog?.("system", "Stopped listening.");
     log("mic", "stopped");
     return { ok: true, listening: false };
+  }
+
+  function stopListening() {
+    cancelActiveSpeech("voice-off", { force: true });
+    const result = stopRecognitionCleanly("voice-off");
+    setReady("speech-recognition-stopped");
+    return result;
   }
 
   function toggleListening() {
@@ -869,7 +961,8 @@
     state.muted = Boolean(muted);
     if (refs.muteBtn) refs.muteBtn.textContent = state.muted ? "🔇 Unmute" : "🔊 Mute";
     if (state.muted) {
-      stopAllSpeech();
+      stopAllSpeech("voice-off");
+      if (state.listening || state.conversationActive) stopRecognitionCleanly("voice-off");
       setVoiceUnavailable("muted", "mute-toggle");
     } else {
       setReady("mute-toggle");
