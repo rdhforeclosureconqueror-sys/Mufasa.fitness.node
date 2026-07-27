@@ -1,0 +1,42 @@
+{
+  "exerciseId": "push_up",
+  "displayName": "Push-Up",
+  "schemaVersion": 1,
+  "sourceVersion": 2,
+  "exerciseFamily": "horizontal_press",
+  "movementPatterns": ["horizontal_push"],
+  "equipment": ["bodyweight"],
+  "bodyPosition": "floor_based",
+  "kineticChain": "closed",
+  "laterality": "bilateral",
+  "movementType": "dynamic",
+  "difficulty": "beginner",
+  "primaryJoints": ["shoulder", "elbow"],
+  "secondaryJoints": [],
+  "primaryMuscles": ["pectoralis_major", "triceps", "anterior_deltoid"],
+  "secondaryMuscles": [],
+  "balanceRequirement": "stable_four_point_support",
+  "supportSurface": "floor",
+  "loadType": "bodyweight",
+  "phases": {"phaseOne":"lower","hold":"hold","phaseTwo":"press"},
+  "cameraCandidates": ["side"],
+  "candidateMeasurements": ["body_alignment"],
+  "unsupportedAssessments": ["pain","wrist_comfort","elbow_angle","depth","three_dimensional_alignment"],
+  "translationRiskTerms": ["brace","press the floor away"],
+  "trainerReviewRequirements": ["content","safety","camera","translations","pose_threshold_evidence"],
+  "overrides": {
+    "instruction": {
+      "setupCues": ["Place your hands approximately under your shoulders.", "Brace in a straight line from shoulders to heels."],
+      "movementCues": ["Lower your body with control, pause, then press the floor away.", "Inhale as you lower. Exhale as you press."]
+    },
+    "phrases": {
+      "encouragement": ["Keep your body in one straight line.", "Stay controlled."],
+      "positiveForm": "Your body alignment stayed controlled.",
+      "correctiveForm": "On the next set, try keeping your hips in line with your shoulders.",
+      "uncertainForm": "I could not get a clear enough side view to evaluate your body alignment."
+    },
+    "camera": {"requiredView":"side","guidance":"Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion."},
+    "poseCapabilityId": "push_up.side.body_alignment",
+    "existingFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb"
+  }
+}

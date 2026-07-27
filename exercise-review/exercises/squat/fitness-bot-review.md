@@ -67,6 +67,11 @@ The current shoulder–hip–ankle angle does not measure squat depth, knee trac
 - Minimum usable frames: 60%
 - Minimum overall confidence: 0.75
 
+
+## Automated Analysis Scope
+
+No automated analysis scope is defined.
+
 ## Pose Measurements
 
 - torso_control: alignment_deviation; landmarks shoulder, hip, ankle

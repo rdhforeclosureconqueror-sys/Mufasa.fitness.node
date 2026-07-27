@@ -37,7 +37,9 @@ function buildReviewExport(profiles=metadata.profiles) {
       cadence:JSON.parse(JSON.stringify(profile.cadence)),
       phrases:JSON.parse(JSON.stringify(profile.phrases)),
       poseAnalysis:JSON.parse(JSON.stringify(profile.poseAnalysis)),
-      limitations:[...(LIMITATIONS[profile.exerciseId]||[])],
+      cameraGuidance:profile.cameraGuidance||null,
+      automatedAnalysisScope:profile.automatedAnalysisScope||null,
+      limitations:[...(profile.limitations||LIMITATIONS[profile.exerciseId]||[])],
       reviewFields:{...REVIEW_FIELDS}
     }))
   };

@@ -1,12 +1,17 @@
 {
-  "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
+  "generatedNotice": "GENERATED FILE — DO NOT EDIT; edit the exercise source or controlled rules.",
   "exerciseId": "push_up",
   "displayName": "Push-Up",
   "schemaVersion": 1,
+  "sourceVersion": 2,
   "profileVersion": 2,
-  "metadataAssetVersion": "20260725-em1",
-  "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
+  "generatorVersion": "1.0.0",
+  "taxonomyVersion": "1.0.0",
+  "templateVersion": "1.0.0",
+  "capabilityRegistryVersion": "1.0.0",
   "approvalStatus": "draft",
+  "humanReviewStatus": "pending",
+  "translationStatus": "pending",
   "instructions": {
     "setupCues": [
       "Place your hands approximately under your shoulders.",
@@ -76,10 +81,15 @@
       }
     ]
   },
-  "cameraGuidance": "Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion.",
+  "camera": {
+    "requiredView": "side",
+    "guidance": "Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion."
+  },
   "automatedAnalysisScope": "Automated assessment evaluates shoulder–hip–ankle body alignment only.",
-  "poseAnalysis": {
+  "automatedFormAnalysis": {
     "supported": true,
+    "capabilityId": "push_up.side.body_alignment",
+    "validationStatus": "trainer_review_required",
     "requiredView": "side",
     "minimumUsableFramePercentage": 60,
     "minimumOverallConfidence": 0.75,
@@ -111,5 +121,21 @@
   "limitations": [
     "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment.",
     "Camera placement, lighting, landmark occlusion, and incomplete body visibility may reduce pose-estimation reliability."
-  ]
+  ],
+  "unsupportedAssessments": [
+    "pain",
+    "wrist_comfort",
+    "elbow_angle",
+    "depth",
+    "three_dimensional_alignment"
+  ],
+  "resolvedFrom": {
+    "safetyCues": "defaults.global",
+    "completion": "defaults.global",
+    "recovery": "defaults.global",
+    "cadence": "families.horizontal_press",
+    "setupCues": "exercise.push_up",
+    "movementCues": "exercise.push_up"
+  },
+  "metadataFingerprint": "sha256:8b6ebf2ead10b590208a5604626b2dcc15bcc3f0d3f087508b0dfc9bf2b52662"
 }

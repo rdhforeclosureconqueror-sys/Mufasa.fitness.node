@@ -25,7 +25,10 @@
     "validate:exercise-metadata": "node scripts/validate-exercise-metadata.js",
     "export:exercise-metadata-review": "node scripts/export-exercise-metadata-review.js",
     "generate:exercise-review-workspace": "node scripts/generate-exercise-review-workspace.js",
-    "validate:fitness-bot-review": "node scripts/validate-fitness-bot-review.js"
+    "validate:fitness-bot-review": "node scripts/validate-fitness-bot-review.js",
+    "generate:exercise-profiles": "node scripts/generate-exercise-profiles.js",
+    "migrate:exercise-profiles:dry-run": "node scripts/migrate-exercise-profiles.js --dry-run",
+    "audit:exercise-release": "node scripts/audit-exercise-release.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

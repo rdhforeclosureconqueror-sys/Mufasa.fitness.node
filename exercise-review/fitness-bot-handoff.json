@@ -13,6 +13,7 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "dead_bug",
         "displayName": "Dead Bug",
         "schemaVersion": 1,
@@ -67,6 +68,8 @@
             }
           ]
         },
+        "cameraGuidance": null,
+        "automatedAnalysisScope": null,
         "poseAnalysis": {
           "supported": false,
           "requiredView": "not_supported",
@@ -129,6 +132,7 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "cat_cow",
         "displayName": "Cat-Cow Flow",
         "schemaVersion": 1,
@@ -182,6 +186,8 @@
             }
           ]
         },
+        "cameraGuidance": null,
+        "automatedAnalysisScope": null,
         "poseAnalysis": {
           "supported": false,
           "requiredView": "not_supported",
@@ -244,22 +250,28 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "push_up",
         "displayName": "Push-Up",
         "schemaVersion": 1,
-        "profileVersion": 1,
+        "profileVersion": 2,
         "metadataAssetVersion": "20260725-em1",
-        "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+        "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
         "approvalStatus": "draft",
         "instructions": {
           "setupCues": [
-            "Place your hands beneath your shoulders.",
+            "Place your hands approximately under your shoulders.",
             "Brace in a straight line from shoulders to heels."
           ],
           "movementCues": [
-            "Lower your body with control, pause, then press the floor away."
+            "Lower your body with control, pause, then press the floor away.",
+            "Inhale as you lower. Exhale as you press."
           ],
-          "safetyCues": []
+          "safetyCues": [
+            "Perform each repetition with control.",
+            "Stop the exercise if you experience unexpected pain.",
+            "Breathe normally throughout the movement."
+          ]
         },
         "cadence": {
           "phaseOne": "Lower",
@@ -270,7 +282,7 @@
           "encouragement": [
             {
               "id": "push_up_encouragement_1",
-              "template": "Keep your body strong.",
+              "template": "Keep your body in one straight line.",
               "supportsName": false
             },
             {
@@ -282,7 +294,7 @@
           "positiveForm": [
             {
               "id": "push_up_form_positive_1",
-              "template": "Your body position stayed controlled.",
+              "template": "Your body alignment stayed controlled.",
               "supportsName": false
             }
           ],
@@ -296,7 +308,7 @@
           "uncertainForm": [
             {
               "id": "push_up_form_uncertain_1",
-              "template": "I could not get a clear enough view of your body position.",
+              "template": "I could not get a clear enough side view to evaluate your body alignment.",
               "supportsName": false
             }
           ],
@@ -315,6 +327,8 @@
             }
           ]
         },
+        "cameraGuidance": "Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion.",
+        "automatedAnalysisScope": "Automated assessment evaluates shoulder–hip–ankle body alignment only.",
         "poseAnalysis": {
           "supported": true,
           "requiredView": "side",
@@ -346,7 +360,8 @@
           ]
         },
         "limitations": [
-          "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment."
+          "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment.",
+          "Camera placement, lighting, landmark occlusion, and incomplete body visibility may reduce pose-estimation reliability."
         ]
       },
       "requestedReview": {
@@ -367,8 +382,8 @@
         "reviewerName": null,
         "exerciseId": "push_up",
         "schemaVersion": 1,
-        "profileVersion": 1,
-        "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+        "profileVersion": 2,
+        "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
         "recommendation": "accept_with_minor_revisions",
         "confidence": "medium",
         "proposals": {
@@ -400,6 +415,7 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "bodyweight_squat",
         "displayName": "Bodyweight Squat",
         "schemaVersion": 1,
@@ -471,6 +487,8 @@
             }
           ]
         },
+        "cameraGuidance": null,
+        "automatedAnalysisScope": null,
         "poseAnalysis": {
           "supported": true,
           "requiredView": "side",
@@ -556,6 +574,7 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "squat",
         "displayName": "Squat",
         "schemaVersion": 1,
@@ -627,6 +646,8 @@
             }
           ]
         },
+        "cameraGuidance": null,
+        "automatedAnalysisScope": null,
         "poseAnalysis": {
           "supported": true,
           "requiredView": "side",
@@ -712,6 +733,7 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "dumbbell_bicep_curl",
         "displayName": "Dumbbell Bicep Curl",
         "schemaVersion": 1,
@@ -765,6 +787,8 @@
             }
           ]
         },
+        "cameraGuidance": null,
+        "automatedAnalysisScope": null,
         "poseAnalysis": {
           "supported": false,
           "requiredView": "not_supported",
@@ -827,6 +851,7 @@
         "humanTrainerRequired": true
       },
       "exercise": {
+        "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
         "exerciseId": "side_bridge",
         "displayName": "Side Bridge",
         "schemaVersion": 1,
@@ -898,6 +923,8 @@
             }
           ]
         },
+        "cameraGuidance": null,
+        "automatedAnalysisScope": null,
         "poseAnalysis": {
           "supported": true,
           "requiredView": "side",

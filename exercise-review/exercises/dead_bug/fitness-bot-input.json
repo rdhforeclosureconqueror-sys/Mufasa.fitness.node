@@ -9,6 +9,7 @@
     "humanTrainerRequired": true
   },
   "exercise": {
+    "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
     "exerciseId": "dead_bug",
     "displayName": "Dead Bug",
     "schemaVersion": 1,
@@ -63,6 +64,8 @@
         }
       ]
     },
+    "cameraGuidance": null,
+    "automatedAnalysisScope": null,
     "poseAnalysis": {
       "supported": false,
       "requiredView": "not_supported",

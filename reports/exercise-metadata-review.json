@@ -63,6 +63,8 @@
         "minimumOverallConfidence": 0.75,
         "rules": []
       },
+      "cameraGuidance": null,
+      "automatedAnalysisScope": null,
       "limitations": [
         "Automated form judgment is unsupported; the current measurement set cannot establish torso stability, pelvic control, or opposite-limb coordination."
       ],
@@ -134,6 +136,8 @@
         "minimumOverallConfidence": 0.75,
         "rules": []
       },
+      "cameraGuidance": null,
+      "automatedAnalysisScope": null,
       "limitations": [
         "Automated form judgment is unsupported; MoveNet has no detailed spinal segmentation for precise curvature assessment."
       ],
@@ -149,18 +153,23 @@
       "exerciseId": "push_up",
       "displayName": "Push-Up",
       "schemaVersion": 1,
-      "profileVersion": 1,
+      "profileVersion": 2,
       "approvalStatus": "draft",
-      "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+      "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
       "instructions": {
         "setupCues": [
-          "Place your hands beneath your shoulders.",
+          "Place your hands approximately under your shoulders.",
           "Brace in a straight line from shoulders to heels."
         ],
         "movementCues": [
-          "Lower your body with control, pause, then press the floor away."
+          "Lower your body with control, pause, then press the floor away.",
+          "Inhale as you lower. Exhale as you press."
         ],
-        "safetyCues": []
+        "safetyCues": [
+          "Perform each repetition with control.",
+          "Stop the exercise if you experience unexpected pain.",
+          "Breathe normally throughout the movement."
+        ]
       },
       "cadence": {
         "phaseOne": "Lower",
@@ -171,7 +180,7 @@
         "encouragement": [
           {
             "id": "push_up_encouragement_1",
-            "template": "Keep your body strong.",
+            "template": "Keep your body in one straight line.",
             "supportsName": false
           },
           {
@@ -183,7 +192,7 @@
         "positiveForm": [
           {
             "id": "push_up_form_positive_1",
-            "template": "Your body position stayed controlled.",
+            "template": "Your body alignment stayed controlled.",
             "supportsName": false
           }
         ],
@@ -197,7 +206,7 @@
         "uncertainForm": [
           {
             "id": "push_up_form_uncertain_1",
-            "template": "I could not get a clear enough view of your body position.",
+            "template": "I could not get a clear enough side view to evaluate your body alignment.",
             "supportsName": false
           }
         ],
@@ -246,8 +255,11 @@
           }
         ]
       },
+      "cameraGuidance": "Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion.",
+      "automatedAnalysisScope": "Automated assessment evaluates shoulder–hip–ankle body alignment only.",
       "limitations": [
-        "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment."
+        "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment.",
+        "Camera placement, lighting, landmark occlusion, and incomplete body visibility may reduce pose-estimation reliability."
       ],
       "reviewFields": {
         "reviewerName": null,
@@ -358,6 +370,8 @@
           }
         ]
       },
+      "cameraGuidance": null,
+      "automatedAnalysisScope": null,
       "limitations": [
         "The current shoulder–hip–ankle angle does not measure squat depth, knee tracking, or torso position independently, especially from an unsuitable view."
       ],
@@ -470,6 +484,8 @@
           }
         ]
       },
+      "cameraGuidance": null,
+      "automatedAnalysisScope": null,
       "limitations": [
         "The current shoulder–hip–ankle angle does not measure squat depth, knee tracking, load, or torso position independently."
       ],
@@ -541,6 +557,8 @@
         "minimumOverallConfidence": 0.75,
         "rules": []
       },
+      "cameraGuidance": null,
+      "automatedAnalysisScope": null,
       "limitations": [
         "Automated form judgment is unsupported; elbow position, shoulder movement, and curl range are not implemented and weights may occlude landmarks."
       ],
@@ -653,6 +671,8 @@
           }
         ]
       },
+      "cameraGuidance": null,
+      "automatedAnalysisScope": null,
       "limitations": [
         "A two-dimensional shoulder–hip–ankle angle is unreliable when the lower body is obscured and cannot establish three-dimensional alignment."
       ],
