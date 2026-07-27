@@ -21,7 +21,11 @@
     <section class="card privacy"><h2>Privacy and storage</h2><p>Raw video is never persisted. This device stores up to 10 sessions containing normalized landmarks, timestamps, repetition events, confidence, supported alignment findings, and version metadata.</p></section>
   </aside></div>
 </main>
-<script defer src="/runtime-state.js"></script>
+<script src="/runtime-state.js"></script>
+<script>
+  window.RuntimeState?.initHeadRuntime?.();
+  console.log("__ensurePoseRuntime =", window.__ensurePoseRuntime);
+</script>
 <script defer src="/pose-runtime.js"></script>
 <script defer src="/exercise-metadata.js"></script>
 <script defer src="/push-up-challenge.js"></script>
