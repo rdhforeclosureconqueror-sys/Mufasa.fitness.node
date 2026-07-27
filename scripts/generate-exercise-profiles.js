@@ -1,45 +1,14 @@
 #!/usr/bin/env node
 'use strict';
-
-const fs = require('node:fs');
-const path = require('node:path');
-const {generateProfile,generateReview,generateTranslationSource,loadSource,validateGeneratedProfile} = require('./lib/exercise-profile-generator');
-
-function writeIfChanged(file, content) {
-  fs.mkdirSync(path.dirname(file), {recursive:true});
-  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === content) return false;
-  fs.writeFileSync(file, content, 'utf8');
-  return true;
-}
-
-function generateExercise(id, {dryRun=false,expectedFingerprint}={}) {
-  const source = loadSource(id);
-  if (expectedFingerprint && source.overrides.existingFingerprint !== expectedFingerprint) throw new Error(`Stale fingerprint: expected ${expectedFingerprint}, source guard is ${source.overrides.existingFingerprint}.`);
-  const result = generateProfile(source);
-  if (!result.validation.valid) throw new Error(JSON.stringify(result.validation,null,2));
-  const generatedValidation = validateGeneratedProfile(result.profile);
-  if (!generatedValidation.valid) throw new Error(JSON.stringify(generatedValidation,null,2));
-  const outputDirectory = path.resolve(__dirname,'../generated/exercise-profiles',id);
-  const artifacts = {
-    profile:path.join(outputDirectory,'profile.generated.json'),
-    review:path.join(outputDirectory,'review.generated.md'),
-    translationSource:path.join(outputDirectory,'translation-source.generated.json')
-  };
-  const content = {
-    profile:`${JSON.stringify(result.profile,null,2)}\n`,
-    review:generateReview(result.profile),
-    translationSource:`${JSON.stringify(generateTranslationSource(result.profile),null,2)}\n`
-  };
-  const changed = [];
-  if (!dryRun) for (const key of Object.keys(artifacts)) if (writeIfChanged(artifacts[key],content[key])) changed.push(key);
-  return {exerciseId:id,dryRun,outputDirectory,artifacts,changed,metadataFingerprint:result.profile.metadataFingerprint,validation:result.validation,generatedValidation};
-}
-
-if (require.main === module) {
-  const id = process.argv.find(arg=>arg.startsWith('--exercise='))?.split('=')[1] || 'push_up';
-  const dryRun = process.argv.includes('--dry-run');
-  const expectedFingerprint = process.argv.find(arg=>arg.startsWith('--expected-fingerprint='))?.split('=')[1];
-  console.log(JSON.stringify(generateExercise(id,{dryRun,expectedFingerprint}),null,2));
-}
-
-module.exports={generateExercise,writeIfChanged};
+const fs=require('node:fs'),path=require('node:path');
+const {ROOT,generateProfile,generateReview,generateTranslationSource,runtimeAdapter,loadSource,validateGeneratedProfile}=require('./lib/exercise-profile-generator');
+const GENERATED=path.join(ROOT,'generated/exercise-profiles'),RUNTIME=path.join(ROOT,'public/exercise-metadata.js'),TEMPLATE=path.join(ROOT,'scripts/templates/exercise-metadata.js');
+const json=v=>`${JSON.stringify(v,null,2)}\n`;
+function writeIfChanged(file,content){fs.mkdirSync(path.dirname(file),{recursive:true});if(fs.existsSync(file)&&fs.readFileSync(file,'utf8')===content)return false;fs.writeFileSync(file,content);return true;}
+function sourceIds(){return fs.readdirSync(path.join(ROOT,'exercise-generation/sources')).filter(x=>x.endsWith('.json')).map(x=>path.basename(x,'.json')).sort();}
+function build(id){const result=generateProfile(loadSource(id));if(!result.validation.valid)throw new Error(JSON.stringify(result.validation,null,2));const checked=validateGeneratedProfile(result.profile);if(!checked.valid)throw new Error(JSON.stringify(checked,null,2));return {...result,generatedValidation:checked};}
+function renderRuntime(profiles){if(profiles.length!==1||profiles[0].exerciseId!=='push_up')throw new Error('Runtime template currently accepts exactly the normalized Push-Up source; migrate legacy profiles before adding sources.');const template=fs.readFileSync(TEMPLATE,'utf8');return `/* GENERATED FILE — DO NOT EDIT. Run npm run generate:exercise-profiles. */\n${template.replace('__PUSH_UP_PROFILE__',JSON.stringify(runtimeAdapter(profiles[0])))}`;}
+function generateAll({dryRun=false,expectedFingerprint}={}){const built=sourceIds().map(build),profiles=built.map(x=>x.profile);if(expectedFingerprint&&profiles[0].metadataFingerprint!==expectedFingerprint)throw new Error(`Stale fingerprint: expected ${expectedFingerprint}, canonical profile is ${profiles[0].metadataFingerprint}.`);const outputs=new Map();for(const p of profiles){const dir=path.join(GENERATED,p.exerciseId);outputs.set(path.join(dir,'profile.generated.json'),json(p));outputs.set(path.join(dir,'review.generated.md'),generateReview(p));outputs.set(path.join(dir,'translation-source.generated.json'),json(generateTranslationSource(p)));outputs.set(path.join(dir,'runtime.generated.json'),json(runtimeAdapter(p)));}outputs.set(path.join(GENERATED,'manifest.generated.json'),json({manifestSchemaVersion:1,profiles:profiles.map(p=>({exerciseId:p.exerciseId,schemaVersion:p.schemaVersion,sourceVersion:p.sourceVersion,profileVersion:p.profileVersion,generatorVersion:p.generatorVersion,rulesVersion:p.rulesVersion,capabilityRegistryVersion:p.capabilityRegistryVersion,metadataFingerprint:p.metadataFingerprint,path:`${p.exerciseId}/profile.generated.json`}))}));outputs.set(RUNTIME,renderRuntime(profiles));const changed=[];if(!dryRun)for(const[file,content]of outputs)if(writeIfChanged(file,content))changed.push(path.relative(ROOT,file));return {dryRun,profiles:profiles.map(p=>({exerciseId:p.exerciseId,metadataFingerprint:p.metadataFingerprint,warnings:built.find(x=>x.profile===p).validation.warnings})),changed};}
+function generateExercise(id,options={}){if(!sourceIds().includes(id))throw new Error(`Unknown normalized source: ${id}`);const all=generateAll(options),p=all.profiles.find(x=>x.exerciseId===id),dir=path.join(GENERATED,id);return {...p,dryRun:!!options.dryRun,outputDirectory:dir,artifacts:{profile:path.join(dir,'profile.generated.json'),review:path.join(dir,'review.generated.md'),translationSource:path.join(dir,'translation-source.generated.json'),runtime:path.join(dir,'runtime.generated.json')},changed:all.changed};}
+if(require.main===module){const id=process.argv.find(x=>x.startsWith('--exercise='))?.split('=')[1],dryRun=process.argv.includes('--dry-run'),expectedFingerprint=process.argv.find(x=>x.startsWith('--expected-fingerprint='))?.split('=')[1];console.log(JSON.stringify(id?generateExercise(id,{dryRun,expectedFingerprint}):generateAll({dryRun,expectedFingerprint}),null,2));}
+module.exports={generateAll,generateExercise,writeIfChanged,sourceIds,renderRuntime};

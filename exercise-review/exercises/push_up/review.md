@@ -7,7 +7,7 @@ GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE
 Exercise ID: push_up
 Schema Version: 1
 Profile Version: 2
-Metadata Fingerprint: sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4
+Metadata Fingerprint: sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361
 
 ## Current Status
 

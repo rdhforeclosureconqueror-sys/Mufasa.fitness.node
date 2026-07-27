@@ -15,7 +15,7 @@
     "schemaVersion": 1,
     "profileVersion": 2,
     "metadataAssetVersion": "20260725-em1",
-    "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
+    "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361",
     "approvalStatus": "draft",
     "instructions": {
       "setupCues": [
@@ -90,6 +90,8 @@
     "automatedAnalysisScope": "Automated assessment evaluates shoulder–hip–ankle body alignment only.",
     "poseAnalysis": {
       "supported": true,
+      "capabilityId": "push_up.side.body_alignment",
+      "validationStatus": "trainer_review_required",
       "requiredView": "side",
       "minimumUsableFramePercentage": 60,
       "minimumOverallConfidence": 0.75,
@@ -142,7 +144,7 @@
     "exerciseId": "push_up",
     "schemaVersion": 1,
     "profileVersion": 2,
-    "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
+    "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361",
     "recommendation": "accept_with_minor_revisions",
     "confidence": "medium",
     "proposals": {

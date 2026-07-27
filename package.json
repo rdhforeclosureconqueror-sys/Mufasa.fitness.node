@@ -27,6 +27,11 @@
     "generate:exercise-review-workspace": "node scripts/generate-exercise-review-workspace.js",
     "validate:fitness-bot-review": "node scripts/validate-fitness-bot-review.js",
     "generate:exercise-profiles": "node scripts/generate-exercise-profiles.js",
+    "generate:exercise-runtime": "node scripts/generate-exercise-profiles.js",
+    "validate:exercise-schemas": "node scripts/validate-exercise-generation.js",
+    "validate:exercise-semantics": "node scripts/validate-exercise-semantics.js",
+    "test:exercise-parity": "node --test test/exercise-runtime-parity.test.js",
+    "verify:generated-artifacts": "node scripts/verify-generated-artifacts.js",
     "migrate:exercise-profiles:dry-run": "node scripts/migrate-exercise-profiles.js --dry-run",
     "audit:exercise-release": "node scripts/audit-exercise-release.js"
   },

@@ -1,10 +1,10 @@
-GENERATED FILE — DO NOT EDIT; edit the exercise source or controlled rules.
+GENERATED FILE — DO NOT EDIT; edit exercise-generation/sources or controlled generation inputs.
 
 # Exercise Review: Push-Up
 
 - Exercise ID: push_up
 - Profile version: 2
-- Fingerprint: sha256:8b6ebf2ead10b590208a5604626b2dcc15bcc3f0d3f087508b0dfc9bf2b52662
+- Fingerprint: sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361
 - Status: draft; human review pending; translation pending
 
 ## Setup
