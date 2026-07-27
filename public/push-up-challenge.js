@@ -83,8 +83,8 @@
       const threshold = this.profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
       return { timestamp, side: normalized.side, landmarks: normalized.landmarks, frameConfidence, usable: confidences.every(score => score >= threshold) };
     }
-    async start(video) {
-      const detector = await this.poseRuntime.initMoveNetDetector();
+    async start(video, { detector } = {}) {
+      detector = detector || await this.poseRuntime.initMoveNetDetector();
       this.loop = this.poseRuntime.startPoseLoop({ detector, video, isRunning: () => Boolean(this.loop), onPoseFrame: ({ pose }) => {
         const frame = this.transform(pose, { width: video.videoWidth, height: video.videoHeight });
         this.onFrame(frame);
