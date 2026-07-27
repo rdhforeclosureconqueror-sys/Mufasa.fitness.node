@@ -1,21 +1,24 @@
 {
-  "generatedNotice": "GENERATED FILE — DO NOT EDIT; edit exercise-generation/sources or controlled generation inputs.",
-  "exerciseId": "push_up",
-  "displayName": "Push-Up",
-  "aliases": [
-    "pushup",
-    "push-up"
-  ],
   "schemaVersion": 1,
+  "exerciseId": "push_up",
   "sourceVersion": 2,
   "profileVersion": 2,
   "generatorVersion": "2.0.0",
   "rulesVersion": "1.0.0",
   "capabilityRegistryVersion": "1.0.0",
-  "approvalStatus": "draft",
-  "humanReviewStatus": "pending",
-  "translationStatus": "pending",
-  "instructions": {
+  "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361",
+  "displayName": "Push-Up",
+  "aliases": [
+    "pushup",
+    "push-up"
+  ],
+  "approval": {
+    "status": "draft",
+    "reviewerId": null,
+    "reviewedAt": null,
+    "notes": "Awaiting qualified trainer review."
+  },
+  "instruction": {
     "setupCues": [
       "Place your hands approximately under your shoulders.",
       "Brace in a straight line from shoulders to heels."
@@ -84,12 +87,7 @@
       }
     ]
   },
-  "camera": {
-    "requiredView": "side",
-    "guidance": "Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion."
-  },
-  "automatedAnalysisScope": "Automated assessment evaluates shoulder–hip–ankle body alignment only.",
-  "automatedFormAnalysis": {
+  "poseAnalysis": {
     "supported": true,
     "capabilityId": "push_up.side.body_alignment",
     "validationStatus": "trainer_review_required",
@@ -121,6 +119,8 @@
       }
     ]
   },
+  "cameraGuidance": "Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion.",
+  "automatedAnalysisScope": "Automated assessment evaluates shoulder–hip–ankle body alignment only.",
   "limitations": [
     "A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment.",
     "Camera placement, lighting, landmark occlusion, and incomplete body visibility may reduce pose-estimation reliability."
@@ -132,13 +132,9 @@
     "depth",
     "three_dimensional_alignment"
   ],
-  "resolvedFrom": {
-    "safetyCues": "defaults.global",
-    "completion": "defaults.global",
-    "recovery": "defaults.global",
-    "cadence": "families.horizontal_press",
-    "setupCues": "exercise.push_up",
-    "movementCues": "exercise.push_up"
-  },
-  "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361"
+  "runtimeContract": {
+    "poseTraceCompatible": true,
+    "sessionRecorderCompatible": true,
+    "comparisonInput": "normalized_pose_trace"
+  }
 }

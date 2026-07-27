@@ -1,10 +1,15 @@
 {
-  "generatedNotice": "GENERATED FILE — DO NOT EDIT; edit the exercise source or controlled rules.",
+  "generatedNotice": "GENERATED FILE — DO NOT EDIT; edit exercise-generation/sources or controlled generation inputs.",
   "translationSchemaVersion": 1,
   "sourceLocale": "en-US",
   "exerciseId": "push_up",
+  "schemaVersion": 1,
+  "sourceVersion": 2,
   "profileVersion": 2,
-  "metadataFingerprint": "sha256:8b6ebf2ead10b590208a5604626b2dcc15bcc3f0d3f087508b0dfc9bf2b52662",
+  "generatorVersion": "2.0.0",
+  "rulesVersion": "1.0.0",
+  "capabilityRegistryVersion": "1.0.0",
+  "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361",
   "status": "draft_pending_human_approval",
   "sourceContent": {
     "displayName": "Push-Up",

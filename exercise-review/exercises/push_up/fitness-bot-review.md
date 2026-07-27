@@ -19,7 +19,7 @@ GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE
 Exercise ID: push_up
 Schema Version: 1
 Profile Version: 2
-Metadata Fingerprint: sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4
+Metadata Fingerprint: sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361
 
 ## Current Status
 
@@ -117,7 +117,7 @@ Return exactly these headings: Overall Recommendation (Accept as written / Accep
   "exerciseId": "push_up",
   "schemaVersion": 1,
   "profileVersion": 2,
-  "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
+  "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361",
   "recommendation": "accept_with_minor_revisions",
   "confidence": "medium",
   "proposals": {
@@ -148,7 +148,7 @@ Set targetLocale, regionalAudience, formality, and readingLevel. Translate meani
   "translationSchemaVersion": 1,
   "exerciseId": "push_up",
   "profileVersion": 2,
-  "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
+  "metadataFingerprint": "sha256:790aeedc2dbf92cf9d8084c065fe4e899f0868bb753aa1b231d4d4604f276361",
   "sourceLocale": "en-US",
   "targetLocale": "<set targetLocale>",
   "regionalAudience": "<set regionalAudience>",

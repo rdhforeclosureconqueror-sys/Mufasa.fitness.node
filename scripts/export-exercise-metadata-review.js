@@ -19,7 +19,7 @@ const LIMITATIONS = Object.freeze({
 });
 
 function fingerprint(profile) {
-  return `sha256:${crypto.createHash('sha256').update(JSON.stringify(profile)).digest('hex')}`;
+  return profile.metadataFingerprint || `sha256:${crypto.createHash('sha256').update(JSON.stringify(profile)).digest('hex')}`;
 }
 
 function buildReviewExport(profiles=metadata.profiles) {

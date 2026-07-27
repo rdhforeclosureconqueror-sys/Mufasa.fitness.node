@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generatedNotice",
+    "exerciseId",
+    "displayName",
+    "aliases",
+    "schemaVersion",
+    "sourceVersion",
+    "profileVersion",
+    "generatorVersion",
+    "rulesVersion",
+    "capabilityRegistryVersion",
+    "approvalStatus",
+    "humanReviewStatus",
+    "translationStatus",
+    "instructions",
+    "cadence",
+    "phrases",
+    "camera",
+    "automatedAnalysisScope",
+    "automatedFormAnalysis",
+    "limitations",
+    "unsupportedAssessments",
+    "resolvedFrom",
+    "metadataFingerprint"
+  ],
+  "properties": {
+    "generatedNotice": {
+      "type": "string"
+    },
+    "exerciseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "sourceVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "profileVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generatorVersion": {
+      "type": "string"
+    },
+    "rulesVersion": {
+      "type": "string"
+    },
+    "capabilityRegistryVersion": {
+      "type": "string"
+    },
+    "approvalStatus": {
+      "const": "draft"
+    },
+    "humanReviewStatus": {
+      "const": "pending"
+    },
+    "translationStatus": {
+      "const": "pending"
+    },
+    "instructions": {
+      "type": "object"
+    },
+    "cadence": {
+      "type": "object"
+    },
+    "phrases": {
+      "type": "object"
+    },
+    "camera": {
+      "type": "object"
+    },
+    "automatedAnalysisScope": {
+      "type": "string"
+    },
+    "automatedFormAnalysis": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "unsupportedAssessments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "resolvedFrom": {
+      "type": "object"
+    },
+    "metadataFingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
