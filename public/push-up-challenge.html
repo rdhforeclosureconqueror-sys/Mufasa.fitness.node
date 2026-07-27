@@ -10,9 +10,9 @@
 <body>
 <header><div><p class="muted">Camera-based training · private by default</p><h1>Push-Up Challenge</h1></div><a class="back" href="/dashboard.html">Back to Dashboard</a></header>
 <main>
-  <section class="card" aria-labelledby="setupTitle"><h2 id="setupTitle">Camera setup</h2><p id="cameraGuidance">Loading the validated exercise guidance…</p><ol><li>Put the camera at your side on a stable surface.</li><li>Keep your shoulders, hips, and ankles visible for the full session.</li><li>Use even lighting and avoid landmark occlusion.</li></ol><label><input id="sideConfirmed" type="checkbox"> I have positioned the camera at my side and my full shoulder–hip–ankle line is visible.</label><button id="cameraBtn" class="primary">Enable camera</button><p id="cameraStatus" role="status" class="muted">Camera is off.</p></section>
+  <section class="card" aria-labelledby="setupTitle"><h2 id="setupTitle">Camera setup</h2><p id="cameraGuidance">Loading the validated exercise guidance…</p><ol><li>Put the camera at your side on a stable surface.</li><li>Keep your shoulders, hips, and ankles visible for the full session.</li><li>Use even lighting and avoid landmark occlusion.</li></ol><label><input id="sideConfirmed" type="checkbox"> I have positioned the camera at my side and my full shoulder–hip–ankle line is visible.</label><button id="cameraBtn" class="primary" disabled>Loading pose engine…</button><button id="retryBtn" hidden>Retry pose engine</button><p id="cameraStatus" role="status" class="muted">Loading pose engine…</p></section>
   <div class="grid"><div>
-    <section class="card"><div class="stage"><video id="camera" muted playsinline></video><canvas id="liveSkeleton" width="960" height="540" aria-label="Live landmark skeleton"></canvas><canvas id="ghostSkeleton" width="960" height="540" aria-label="Previous session ghost skeleton"></canvas></div><div class="controls"><button id="practiceBtn">Start Practice</button><button id="challengeBtn" class="primary">Start Challenge</button><button id="finishBtn" disabled>Finish session</button></div></section>
+    <section class="card"><div class="stage"><video id="camera" muted playsinline></video><canvas id="liveSkeleton" width="960" height="540" aria-label="Live landmark skeleton"></canvas><canvas id="ghostSkeleton" width="960" height="540" aria-label="Previous session ghost skeleton"></canvas></div><div class="controls"><button id="practiceBtn" disabled>Start Practice</button><button id="challengeBtn" class="primary" disabled>Start Challenge</button><button id="finishBtn" disabled>Finish session</button></div></section>
     <section class="card"><h2>Live supported feedback</h2><div class="stats"><div class="stat"><span class="muted">Mode</span><strong id="mode">Idle</strong></div><div class="stat"><span class="muted">Repetitions</span><strong id="reps">0</strong></div><div class="stat"><span class="muted">Confidence</span><strong id="confidence">Waiting</strong></div></div><p id="alignment">Only shoulder–hip–ankle alignment is evaluated.</p></section>
   </div><aside>
     <section class="card"><h2>Session summary</h2><p id="summary" class="summary muted">Complete a Practice or Challenge session to see its summary.</p></section>
@@ -21,5 +21,9 @@
     <section class="card privacy"><h2>Privacy and storage</h2><p>Raw video is never persisted. This device stores up to 10 sessions containing normalized landmarks, timestamps, repetition events, confidence, supported alignment findings, and version metadata.</p></section>
   </aside></div>
 </main>
-<script src="/runtime-state.js"></script><script src="/pose-runtime.js"></script><script src="/exercise-metadata.js"></script><script src="/push-up-challenge.js"></script><script src="/push-up-challenge-page.js"></script>
+<script defer src="/runtime-state.js"></script>
+<script defer src="/pose-runtime.js"></script>
+<script defer src="/exercise-metadata.js"></script>
+<script defer src="/push-up-challenge.js"></script>
+<script defer src="/push-up-challenge-page.js"></script>
 </body></html>

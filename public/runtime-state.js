@@ -71,6 +71,7 @@
         script.onerror = () => reject(new Error(`script_load_failed:${src}`));
         document.head.appendChild(script);
       });
+      task.catch(() => lazyScriptCache.delete(src));
       lazyScriptCache.set(src, task);
       global.__startupResourceAudit?.deferredScripts?.push(src);
       return task;
@@ -139,7 +140,11 @@
         }
         global.__markPerfMetric?.("poseModelLoadMs", Math.round(performance.now() - startedAt));
         return true;
-      })();
+      })().catch((error) => {
+        // A transient CDN/network failure must not permanently poison Retry.
+        poseRuntimePromise = null;
+        throw error;
+      });
       return poseRuntimePromise;
     };
     return global.__ensurePoseRuntime;
