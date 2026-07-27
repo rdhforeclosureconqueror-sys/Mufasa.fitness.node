@@ -9,6 +9,7 @@
     "humanTrainerRequired": true
   },
   "exercise": {
+    "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
     "exerciseId": "dumbbell_bicep_curl",
     "displayName": "Dumbbell Bicep Curl",
     "schemaVersion": 1,
@@ -62,6 +63,8 @@
         }
       ]
     },
+    "cameraGuidance": null,
+    "automatedAnalysisScope": null,
     "poseAnalysis": {
       "supported": false,
       "requiredView": "not_supported",

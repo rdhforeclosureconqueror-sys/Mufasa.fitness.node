@@ -1,10 +1,11 @@
 {
+  "generatedNotice": "GENERATED FILE — DO NOT EDIT; edit the exercise source or controlled rules.",
   "translationSchemaVersion": 1,
   "sourceLocale": "en-US",
   "exerciseId": "push_up",
-  "schemaVersion": 1,
   "profileVersion": 2,
-  "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
+  "metadataFingerprint": "sha256:8b6ebf2ead10b590208a5604626b2dcc15bcc3f0d3f087508b0dfc9bf2b52662",
+  "status": "draft_pending_human_approval",
   "sourceContent": {
     "displayName": "Push-Up",
     "setupCues": [
@@ -76,10 +77,9 @@
     }
   },
   "protectedMeaning": {
-    "exerciseIdentityMustNotChange": true,
-    "safetyMeaningMustNotWeaken": true,
+    "phraseIdsMustNotChange": true,
+    "placeholdersMustBePreserved": true,
     "uncertaintyMustNotBecomeCertainty": true,
-    "correctionMustRemainNonMedical": true,
-    "placeholdersMustBePreserved": true
+    "safetyMeaningMustNotWeaken": true
   }
 }

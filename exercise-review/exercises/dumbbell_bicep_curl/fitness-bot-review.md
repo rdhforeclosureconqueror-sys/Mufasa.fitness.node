@@ -67,6 +67,11 @@ Automated form judgment is unsupported; elbow position, shoulder movement, and c
 - Minimum usable frames: 60%
 - Minimum overall confidence: 0.75
 
+
+## Automated Analysis Scope
+
+No automated analysis scope is defined.
+
 ## Pose Measurements
 
 - None.

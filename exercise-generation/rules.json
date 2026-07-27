@@ -1,0 +1,22 @@
+{
+  "versions": {"generator":"1.0.0","taxonomy":"1.0.0","templates":"1.0.0","capabilities":"1.0.0"},
+  "defaults": {
+    "global": {"safetyCues":["Perform each repetition with control.","Stop the exercise if you experience unexpected pain.","Breathe normally throughout the movement."],"completion":"Good job.","recovery":"Take a breath."},
+    "equipment": {"bodyweight": {}},
+    "families": {"horizontal_press":{"cadence":{"phaseOne":"Lower","hold":"Hold","phaseTwo":"Press"}}},
+    "bodyPositions": {"floor_based": {}}
+  },
+  "capabilities": [{
+    "capabilityId":"push_up.side.body_alignment",
+    "exerciseIds":["push_up"],
+    "exerciseFamilies":["horizontal_press"],
+    "view":"side",
+    "measurement":"alignment_deviation",
+    "requiredLandmarks":["shoulder","hip","ankle"],
+    "validationStatus":"trainer_review_required",
+    "thresholdProfileId":"body_alignment_v1",
+    "supportedFindings":["body_alignment"],
+    "unsupportedFindings":["pain","wrist_comfort","elbow_angle","depth","three_dimensional_alignment"]
+  }],
+  "thresholdProfiles": {"body_alignment_v1":{"maximumDeviationDegrees":18,"minimumLandmarkConfidence":0.75,"minimumAffectedFramePercentage":35,"minimumConsecutiveDurationMs":500,"minimumUsableFramePercentage":60,"minimumOverallConfidence":0.75}}
+}

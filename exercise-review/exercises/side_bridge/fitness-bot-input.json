@@ -9,6 +9,7 @@
     "humanTrainerRequired": true
   },
   "exercise": {
+    "generatedNotice": "GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE",
     "exerciseId": "side_bridge",
     "displayName": "Side Bridge",
     "schemaVersion": 1,
@@ -80,6 +81,8 @@
         }
       ]
     },
+    "cameraGuidance": null,
+    "automatedAnalysisScope": null,
     "poseAnalysis": {
       "supported": true,
       "requiredView": "side",

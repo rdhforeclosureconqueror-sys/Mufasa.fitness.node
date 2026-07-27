@@ -18,8 +18,8 @@ GENERATED FILE — DO NOT EDIT PRODUCTION METADATA HERE
 
 Exercise ID: push_up
 Schema Version: 1
-Profile Version: 1
-Metadata Fingerprint: sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb
+Profile Version: 2
+Metadata Fingerprint: sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4
 
 ## Current Status
 
@@ -27,20 +27,21 @@ draft. Human review: Pending. Fitness Bot review: Pending. Translation: Pending.
 
 ## Quick Summary
 
-**Instruction coaching:** Place your hands beneath your shoulders. Brace in a straight line from shoulders to heels. Lower your body with control, pause, then press the floor away. Cadence: Lower / Hold / Press. These words guide a member and are not automated findings.
+**Instruction coaching:** Place your hands approximately under your shoulders. Brace in a straight line from shoulders to heels. Lower your body with control, pause, then press the floor away. Inhale as you lower. Exhale as you press. Cadence: Lower / Hold / Press. These words guide a member and are not automated findings.
 
 **Automated form judgment:** Supported only for the defined side camera view and rules below; uncertainty and confidence gates apply.
 
-A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment.
+A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment. Camera placement, lighting, landmark occlusion, and incomplete body visibility may reduce pose-estimation reliability.
 
 ## Setup
 
-- Place your hands beneath your shoulders.
+- Place your hands approximately under your shoulders.
 - Brace in a straight line from shoulders to heels.
 
 ## Movement
 
 - Lower your body with control, pause, then press the floor away.
+- Inhale as you lower. Exhale as you press.
 
 ## Cadence
 
@@ -50,14 +51,16 @@ A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain
 
 ## Safety
 
-- No exercise-specific safety cue is currently defined; trainer decision required.
+- Perform each repetition with control.
+- Stop the exercise if you experience unexpected pain.
+- Breathe normally throughout the movement.
 
 ## Coaching Phrases
 
-- encouragement: push_up_encouragement_1 — Keep your body strong. | push_up_encouragement_2 — Stay controlled.
-- positiveForm: push_up_form_positive_1 — Your body position stayed controlled.
+- encouragement: push_up_encouragement_1 — Keep your body in one straight line. | push_up_encouragement_2 — Stay controlled.
+- positiveForm: push_up_form_positive_1 — Your body alignment stayed controlled.
 - correctiveForm: push_up_form_corrective_1 — On the next set, try keeping your hips in line with your shoulders.
-- uncertainForm: push_up_form_uncertain_1 — I could not get a clear enough view of your body position.
+- uncertainForm: push_up_form_uncertain_1 — I could not get a clear enough side view to evaluate your body alignment.
 - completion: push_up_completion_1 — Good job.
 - recovery: push_up_recovery_1 — Take a breath.
 
@@ -66,6 +69,11 @@ A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain
 - Required view: side
 - Minimum usable frames: 60%
 - Minimum overall confidence: 0.75
+- Guidance: Position the camera at the side and keep the shoulders, hips, and ankles visible throughout the movement. Avoid major landmark occlusion.
+
+## Automated Analysis Scope
+
+Automated assessment evaluates shoulder–hip–ankle body alignment only.
 
 ## Pose Measurements
 
@@ -82,6 +90,7 @@ A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain
 ## Technical Limitations
 
 - A two-dimensional shoulder–hip–ankle angle cannot assess wrist comfort, pain, elbow angle, depth, or full three-dimensional alignment.
+- Camera placement, lighting, landmark occlusion, and incomplete body visibility may reduce pose-estimation reliability.
 
 ## Decisions Required
 
@@ -107,8 +116,8 @@ Return exactly these headings: Overall Recommendation (Accept as written / Accep
   "reviewerName": null,
   "exerciseId": "push_up",
   "schemaVersion": 1,
-  "profileVersion": 1,
-  "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+  "profileVersion": 2,
+  "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
   "recommendation": "accept_with_minor_revisions",
   "confidence": "medium",
   "proposals": {
@@ -138,8 +147,8 @@ Set targetLocale, regionalAudience, formality, and readingLevel. Translate meani
 {
   "translationSchemaVersion": 1,
   "exerciseId": "push_up",
-  "profileVersion": 1,
-  "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+  "profileVersion": 2,
+  "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
   "sourceLocale": "en-US",
   "targetLocale": "<set targetLocale>",
   "regionalAudience": "<set regionalAudience>",

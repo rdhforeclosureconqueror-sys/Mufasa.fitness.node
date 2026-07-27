@@ -20,8 +20,8 @@
     {
       "exerciseId": "push_up",
       "schemaVersion": 1,
-      "profileVersion": 1,
-      "metadataFingerprint": "sha256:370eb528d709d4ed5c141ae6271b04d45116bf1a1d2a9ddc899d7a05642072bb",
+      "profileVersion": 2,
+      "metadataFingerprint": "sha256:eda3e0679463a072e40901c6b226c37552a0523a00897d07826b18d4b97464b4",
       "path": "exercises/push_up"
     },
     {
