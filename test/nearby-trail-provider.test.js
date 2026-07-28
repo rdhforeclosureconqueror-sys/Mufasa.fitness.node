@@ -42,6 +42,15 @@ test("Google Places diagnostics are useful and never expose secrets or coordinat
   assert.match(output,/initialization/);assert.match(output,/selection/);assert.match(output,/normalizationFailures/);assert.match(output,/httpStatus/);
   assert.doesNotMatch(output,/server-secret|1\.001|1\.002|longitude|latitude/);
 });
+test("Google Places authentication diagnostics include sanitized upstream error fields",async()=>{
+  const {createGooglePlacesTrailProvider}=require("../src/services/nearbyTrailService"),entries=[];
+  const logger={info(){},warn:(...args)=>entries.push(args)};
+  const details=[{"@type":"type.googleapis.com/google.rpc.ErrorInfo",reason:"API_KEY_INVALID",metadata:{service:"places.googleapis.com",apiKey:"server-secret",latitude:"1.001",authorization:"Bearer private"}}];
+  const provider=createGooglePlacesTrailProvider({apiKey:"server-secret",fetchImpl:async()=>response(403,{error:{code:403,status:"PERMISSION_DENIED",message:"API key server-secret is invalid.",details}}),logger,now:(()=>{let tick=100;return()=>tick+=5;})()});
+  await assert.rejects(provider.searchNearbyTrails(input),error=>error.code==="TRAIL_PROVIDER_AUTH_FAILED");
+  assert.deepEqual(entries,[["[trail-provider]",{provider:"google_places",event:"response",httpStatus:403,googleErrorStatus:"PERMISSION_DENIED",googleErrorMessage:"API key [REDACTED] is invalid.",durationMs:5,code:"TRAIL_PROVIDER_AUTH_FAILED",googleErrorDetails:[{"@type":"type.googleapis.com/google.rpc.ErrorInfo",reason:"API_KEY_INVALID",metadata:{service:"places.googleapis.com",apiKey:"[REDACTED]",latitude:"[REDACTED]",authorization:"[REDACTED]"}}]}]]);
+  assert.doesNotMatch(JSON.stringify(entries),/server-secret|1\.001|Bearer private/);
+});
 
 test("multi-provider falls back, deduplicates nearby names, and sorts distance",async()=>{
  const {createMultiTrailProvider}=require("../src/services/nearbyTrailService");let fallbackCalls=0;const health=()=>({configured:true});
