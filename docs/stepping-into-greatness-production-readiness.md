@@ -42,3 +42,21 @@ Production validation must verify HTTPS and authentication, complete one control
 No physical-device or browser matrix has been completed by automation. Background geolocation may stop when the OS suspends the page. GPS/elevation accuracy varies by hardware and environment. Streaks and active days use UTC rather than member timezone. Weekly summaries are a rolling seven-day UTC window. JSON storage prevents safe horizontal multi-process writes. Operational event history is bounded. Step achievements and provider imports are unavailable. There are no public routes or live location sharing.
 
 Apple Health, Health Connect, Fitbit, Garmin, Strava, step synchronization, crew management, messaging, followers, public routes, live location sharing, and advanced leaderboards are explicitly future scope.
+
+## Distance goals and nearby trails manual mobile checklist (human validation required)
+
+Do not mark these items complete without a human performing them on a physical phone.
+
+- [ ] Confirm Move, Challenges, The Greatness Movement, Your Journey, and Connections are reachable.
+- [ ] Select a 0.5-mile goal, start recording, and confirm progress and remaining distance update.
+- [ ] Pause before the goal, move, and confirm paused movement does not complete it.
+- [ ] Resume, cross the goal, and confirm the milestone fires exactly once.
+- [ ] Confirm recording continues with auto-finish off; repeat and confirm one finish with auto-finish enabled.
+- [ ] Finish and confirm saving has no `activityType.replaceAll` error.
+- [ ] Confirm the goal appears in the summary, Journey list, and activity detail.
+- [ ] Select Find trails near me and confirm the location-purpose message appears.
+- [ ] Search multiple radii; confirm nearest-first results and that unavailable metadata is not fabricated.
+- [ ] Open external directions and confirm no route is publicly shared.
+- [ ] Deny trail-search permission and confirm ordinary recording remains available.
+
+The OpenStreetMap Overpass adapter processes the current coordinates transiently and returns OpenStreetMap attribution. Operators must comply with the [OpenStreetMap copyright and attribution requirements](https://www.openstreetmap.org/copyright) and the selected Overpass instance's usage policy. Exact search coordinates are not stored, included in analytics, or added to community payloads.
