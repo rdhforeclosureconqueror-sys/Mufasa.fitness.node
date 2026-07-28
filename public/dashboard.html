@@ -53,6 +53,26 @@
       box-shadow: var(--glow);
       min-height:44px;
     }
+    .btn:hover{background:rgba(255,255,255,.09)}
+    .btn:active{background:rgba(255,255,255,.13)}
+    .btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+    .dashboard-actions{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));
+      gap:10px;
+      align-items:stretch;
+      flex:1 1 560px;
+    }
+    .dashboard-actions .btn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      height:100%;
+      text-align:center;
+      text-decoration:none;
+      overflow-wrap:anywhere;
+    }
     .wrap{max-width:1100px; margin:0 auto; padding:16px;}
     .grid{
       display:grid;
@@ -137,7 +157,7 @@
     .member-home-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
     .member-home-actions a{text-decoration:none;overflow-wrap:anywhere}
     .member-home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px}
-    @media(max-width:600px){header{align-items:flex-start;flex-direction:column}header>div:last-child{width:100%;flex-wrap:wrap}.wrap{padding:10px}.row{flex-direction:column}}
+    @media(max-width:600px){header{align-items:flex-start;flex-direction:column}.dashboard-actions{width:100%;grid-template-columns:1fr}.wrap{padding:10px}.row{flex-direction:column}}
   </style>
 </head>
 <body>
@@ -147,12 +167,13 @@
     <div class="sub">Client view: backend-synced weekly workouts + safe local fallback</div>
     <div class="sub" style="margin-top:6px; font-weight:700;">Diagnostics build active</div>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;">
+    <nav class="dashboard-actions" aria-label="Dashboard actions">
       <button id="resetBtn" class="btn">Reset Local Data</button>
-      <a id="pushUpChallengeLink" class="btn" href="/push-up-challenge.html" style="text-decoration:none; display:inline-block;">Push-Up Challenge</a>
-      <a class="btn" href="/nutrition.html" style="text-decoration:none; display:inline-block;">Nutrition Journal</a>
-      <a class="btn" href="/" style="text-decoration:none; display:inline-block;">Back to App</a>
-    </div>
+      <a id="pushUpChallengeLink" class="btn" href="/push-up-challenge.html">Push-Up Challenge</a>
+      <a id="nutritionJournalLink" class="btn" href="/nutrition.html">Nutrition Journal</a>
+      <a id="steppingIntoGreatnessLink" class="btn" href="/greatness.html">Stepping Into Greatness</a>
+      <a id="backToAppLink" class="btn" href="/">Back to App</a>
+    </nav>
   </header>
 
   <div class="wrap">
