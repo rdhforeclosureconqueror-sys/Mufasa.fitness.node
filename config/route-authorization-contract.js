@@ -6,6 +6,7 @@ module.exports = Object.freeze([
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
     ["POST", "/api/me/greatness/nearby-trails/search", "privacy-safe-provider-results"],
+    ["GET", "/api/me/greatness/nearby-trails/provider-health", "privacy-safe-provider-health"],
     ["POST", "/api/me/greatness/operational-events", "owner-scoped-analytics-acknowledgement"],
     ["DELETE", "/api/me/greatness/activities/:activityId", "owner-scoped"],
     ["GET", "/api/me/greatness/activities/:activityId/route", "sensitive-private"],
