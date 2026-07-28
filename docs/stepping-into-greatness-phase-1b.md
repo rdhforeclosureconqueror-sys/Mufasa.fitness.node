@@ -4,7 +4,7 @@
 
 The mobile web recorder exposes live elapsed, moving and paused time, accepted-only distance, smoothed current pace (the last four accepted segments, withheld below 50 metres or 15 seconds), average moving pace, GPS quality and sample counts. Browser background execution is not continuous: interruption recovery always pauses and resets the location baseline.
 
-Accepted coordinates are private by default, bounded to 2,000 uniformly sampled points, and returned only through the authenticated owner-scoped route endpoint. Rejected coordinates, routes, exact start/end locations and coordinates are excluded from feed and weekly-summary payloads. Deleting an activity must delete its embedded route and revoke its contributions; a user-facing deletion flow is deferred. There is no live route sharing or public discovery. The dependency-free canvas preview avoids map credentials and displays a fallback when fewer than two points exist.
+Accepted coordinates are private by default, bounded to 2,000 uniformly sampled points, and returned only through the authenticated owner-scoped route endpoint. Rejected coordinates, routes, exact start/end locations and coordinates are excluded from feed and weekly-summary payloads. Phase 1C uses audit-safe **soft deletion**. A deleted activity retains its identifier, deletion timestamp and revocation trail, while its embedded route points are erased. Deleted activities are excluded from Journey, feed, challenges, records, lifetime totals and summaries. There is no live route sharing or public discovery. The dependency-free canvas preview avoids map credentials and displays a fallback when fewer than two points exist.
 
 User JSON writes use same-directory temporary files and atomic rename. Synchronous in-process calls serialize writes in one Node process. This is **not** transactionally safe across processes; multi-process deployments require a database or coordinated locking layer.
 
@@ -48,3 +48,15 @@ Weekly community summaries use a rolling seven-day UTC window and aggregate veri
 30. Record approximate known distance, application-recorded distance, GPS-quality rating, and defects.
 
 Status: **Not performed. A human must complete this test on a physical device; do not mark it complete from automated simulation.**
+
+
+## Phase 1C mobile validation additions
+
+31. Delete the completed activity and confirm it disappears from Journey and the Movement Feed.
+32. Confirm challenge and lifetime-distance totals decrease.
+33. Confirm personal records fall back to the best eligible remaining activity.
+34. Edit every community privacy setting and confirm hidden fields disappear from feed responses.
+35. Leave and rejoin; confirm Journey remains and membership/feed records are not duplicated.
+36. Simulate a failed save, retry with the same `clientSessionId`, and confirm no duplicate activity, mark, record, contribution, or feed event.
+
+The persistence model serializes synchronous writes within one Node.js process and uses same-directory temporary-file replacement. It is not transactionally safe across multiple processes. Weekly summaries use a rolling seven-day window ending at request time; active-day and streak boundaries are UTC calendar days.

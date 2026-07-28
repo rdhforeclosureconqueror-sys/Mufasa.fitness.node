@@ -5,9 +5,11 @@ module.exports = Object.freeze([
   ...[
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
+    ["DELETE", "/api/me/greatness/activities/:activityId", "owner-scoped"],
     ["GET", "/api/me/greatness/activities/:activityId/route", "sensitive-private"],
     ["POST", "/api/me/greatness/membership", "authenticated-safe"],
     ["DELETE", "/api/me/greatness/membership", "authenticated-safe"],
+    ["PATCH", "/api/me/greatness/membership/settings", "authenticated-safe"],
     ["GET", "/api/me/greatness/movement-feed", "privacy-filtered-community"]
   ].map(([method, routePath, publicOutput]) => Object.freeze({
     method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
