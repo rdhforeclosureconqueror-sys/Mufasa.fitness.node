@@ -1626,10 +1626,14 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.activity(req.auth.userId, req.params.activityId))));
   app.get("/api/me/greatness/activities/:activityId/route", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.route(req.auth.userId, req.params.activityId))));
+  app.delete("/api/me/greatness/activities/:activityId", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.remove(req.auth.userId, req.params.activityId))));
   app.post("/api/me/greatness/membership", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.join(req.auth.userId, req.body?.visibilityPreferences), 201)));
   app.delete("/api/me/greatness/membership", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.leave(req.auth.userId))));
+  app.patch("/api/me/greatness/membership/settings", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.updateSettings(req.auth.userId, req.body?.visibilityPreferences))));
   app.get("/api/me/greatness/movement-feed", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, { events: steppingService.feed(req.auth.userId) })));
   app.get("/api/me/greatness/community-summary", requireAuth, asyncHandler(async (req, res) =>
