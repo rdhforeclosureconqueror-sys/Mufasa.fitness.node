@@ -25,6 +25,7 @@ const { createChallengeService } = require("./src/services/challengeService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
+const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -347,6 +348,7 @@ function createApp(options = {}) {
   const exerciseTemplateService = createExerciseTemplateService({ filePath: EXERCISE_TEMPLATE_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
+  const steppingService = createSteppingIntoGreatnessService({ userStore });
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
@@ -1615,6 +1617,19 @@ function createApp(options = {}) {
       identityClass: req.auth.identityClass || "manual_unverified"
     });
   }));
+
+  app.get("/api/me/greatness/journey", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.journey(req.auth.userId))));
+  app.post("/api/me/greatness/activities", requireAuth, createRateLimiter({ windowMs: 60_000, max: 20 }), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.complete(req.auth.userId, req.body), 201)));
+  app.get("/api/me/greatness/activities/:activityId/route", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.route(req.auth.userId, req.params.activityId))));
+  app.post("/api/me/greatness/membership", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.join(req.auth.userId, req.body?.visibilityPreferences), 201)));
+  app.delete("/api/me/greatness/membership", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.leave(req.auth.userId))));
+  app.get("/api/me/greatness/movement-feed", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { events: steppingService.feed(req.auth.userId) })));
 
   app.get("/api/me/membership", requireAuth, asyncHandler(async (req, res) => {
     const membership = membershipService.getMembership(req.auth.userId);

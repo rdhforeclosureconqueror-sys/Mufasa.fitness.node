@@ -2,6 +2,19 @@
 
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
+  ...[
+    ["GET", "/api/me/greatness/journey", "sensitive-private"],
+    ["POST", "/api/me/greatness/activities", "sensitive-private"],
+    ["GET", "/api/me/greatness/activities/:activityId/route", "sensitive-private"],
+    ["POST", "/api/me/greatness/membership", "authenticated-safe"],
+    ["DELETE", "/api/me/greatness/membership", "authenticated-safe"],
+    ["GET", "/api/me/greatness/movement-feed", "privacy-filtered-community"]
+  ].map(([method, routePath, publicOutput]) => Object.freeze({
+    method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
+    membership: "not-required", ownership: "authenticated-user", featureFlag: null, publicOutput,
+    rateLimit: method === "POST" && routePath.endsWith("activities") ? "20/minute/user" : null,
+    compatibility: null, publicWrite: null
+  })),
   {
     "method": "GET",
     "path": "/__diagnostic-smoke",
