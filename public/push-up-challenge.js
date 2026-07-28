@@ -12,6 +12,8 @@
   const LANDMARK_NAMES = ['shoulder', 'hip', 'ankle'];
   const SIDES = ['left', 'right'];
   const CONNECTIONS = [['shoulder', 'hip'], ['hip', 'ankle']];
+  const TRACKING_STATES = Object.freeze({ SEARCHING:'SEARCHING', STABILIZING:'STABILIZING', LOCKED:'LOCKED', DEGRADED:'DEGRADED', RECOVERING:'RECOVERING', LOST:'LOST' });
+  const TRACKING_DEFAULTS = Object.freeze({ dropoutGraceMs:750, hardLossMs:2000, recoveryRequiredFrames:4, initialLockRequiredFrames:5, confidenceAlpha:.35, trackingMargin:.08, displayPredictionMs:180 });
 
   const clone = value => JSON.parse(JSON.stringify(value));
   const id = () => global.crypto?.randomUUID?.() || `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -97,7 +99,30 @@
     select(keypoints,threshold){const candidates=SIDES.map(side=>{const points=LANDMARK_NAMES.map(name=>(keypoints||[]).find(p=>(p.name||p.part)===`${side}_${name}`));return{side,points,score:points.reduce((s,p)=>s+Number(p?.score||0),0)/LANDMARK_NAMES.length,usable:points.every(p=>Number(p?.score||0)>=threshold)};});const best=candidates.sort((a,b)=>b.score-a.score)[0];if(!this.activeSide){if(best.usable&&this.candidate===best.side)this.streak++;else{this.candidate=best.usable?best.side:null;this.streak=best.usable?1:0;}if(this.streak>=this.initialSideRequiredFrames){this.activeSide=best.side;this.streak=0;}return this.activeSide?candidates.find(x=>x.side===this.activeSide):best;}const current=candidates.find(x=>x.side===this.activeSide),alternative=candidates.find(x=>x.side!==this.activeSide);if(!current.usable&&alternative.usable||alternative.usable&&alternative.score>=current.score+this.sideSwitchConfidenceMargin){this.streak=this.candidate===alternative.side?this.streak+1:1;this.candidate=alternative.side;if(this.streak>=this.sideSwitchRequiredFrames){this.activeSide=alternative.side;this.streak=0;}}else{this.candidate=null;this.streak=0;}return candidates.find(x=>x.side===this.activeSide);}
   }
 
+  class TrackingStateMachine {
+    constructor(options={}){Object.assign(this,TRACKING_DEFAULTS,options);this.reset();}
+    reset(){this.state=TRACKING_STATES.SEARCHING;this.usableFrameStreak=0;this.unusableFrameStreak=0;this.recoveryFrameStreak=0;this.dropoutStartedAt=null;this.lastSuccessfulPoseAt=null;this.longestDropoutMs=0;this.totalTrackingLossMs=0;this.recoveryEvents=0;this.lastTimestamp=null;this.recoveredThisFrame=false;}
+    update(analysisUsable,timestamp=Date.now()){
+      this.recoveredThisFrame=false;const elapsed=this.lastTimestamp==null?0:Math.max(0,timestamp-this.lastTimestamp);this.lastTimestamp=timestamp;
+      if(analysisUsable){this.lastSuccessfulPoseAt=timestamp;this.usableFrameStreak++;this.unusableFrameStreak=0;
+        if(this.dropoutStartedAt!=null){const duration=Math.max(0,timestamp-this.dropoutStartedAt);this.longestDropoutMs=Math.max(this.longestDropoutMs,duration);this.dropoutStartedAt=null;}
+        if(this.state===TRACKING_STATES.SEARCHING||this.state===TRACKING_STATES.STABILIZING){this.state=this.usableFrameStreak>=this.initialLockRequiredFrames?TRACKING_STATES.LOCKED:TRACKING_STATES.STABILIZING;}
+        else if(this.state===TRACKING_STATES.DEGRADED||this.state===TRACKING_STATES.LOST||this.state===TRACKING_STATES.RECOVERING){if(this.state!==TRACKING_STATES.RECOVERING){this.recoveryFrameStreak=0;this.recoveryEvents++;}this.state=TRACKING_STATES.RECOVERING;this.recoveryFrameStreak++;if(this.recoveryFrameStreak>=this.recoveryRequiredFrames){this.state=TRACKING_STATES.LOCKED;this.recoveredThisFrame=true;this.recoveryFrameStreak=0;}}
+      }else{this.totalTrackingLossMs+=elapsed;this.unusableFrameStreak++;this.usableFrameStreak=0;this.recoveryFrameStreak=0;if(this.dropoutStartedAt==null)this.dropoutStartedAt=timestamp;const duration=timestamp-this.dropoutStartedAt;this.longestDropoutMs=Math.max(this.longestDropoutMs,duration);if(this.state===TRACKING_STATES.SEARCHING||this.state===TRACKING_STATES.STABILIZING)this.state=duration>=this.hardLossMs?TRACKING_STATES.LOST:TRACKING_STATES.SEARCHING;else this.state=duration>=this.hardLossMs?TRACKING_STATES.LOST:TRACKING_STATES.DEGRADED;}
+      return this.state;
+    }
+    get currentDropoutMs(){return this.dropoutStartedAt==null?0:Math.max(0,(this.lastTimestamp||Date.now())-this.dropoutStartedAt);}
+  }
+
+  /* Backward-compatible readiness adapter; capture uses the richer state machine above. */
   class PoseStabilityGate {constructor({readyFrames=5,lostFrames=3}={}){this.readyFrames=readyFrames;this.lostFrames=lostFrames;this.reset();}reset(){this.usableFrameStreak=0;this.unusableFrameStreak=0;this.poseReady=false;}update(usable){if(usable){this.usableFrameStreak++;this.unusableFrameStreak=0;if(this.usableFrameStreak>=this.readyFrames)this.poseReady=true;}else{this.unusableFrameStreak++;this.usableFrameStreak=0;if(this.unusableFrameStreak>=this.lostFrames)this.poseReady=false;}return this.poseReady;}}
+
+  class LandmarkContinuity {
+    constructor(options={}){Object.assign(this,TRACKING_DEFAULTS,options);this.reset();}
+    reset(){this.history=Object.fromEntries(LANDMARK_NAMES.map(name=>[name,{lastReliablePosition:null,lastReliableTimestamp:null,previousReliablePosition:null,confidenceEMA:null,missingDurationMs:0}]));}
+    update(landmarks,threshold,timestamp){const analysis={},display={};for(const name of LANDMARK_NAMES){const point=landmarks[name],item=this.history[name],confidence=Number(point?.confidence||0);item.confidenceEMA=item.confidenceEMA==null?confidence:this.confidenceAlpha*confidence+(1-this.confidenceAlpha)*item.confidenceEMA;const reliable=Boolean(point&&confidence>=threshold);analysis[name]=reliable?point:null;if(reliable){item.previousReliablePosition=item.lastReliablePosition;item.lastReliablePosition={...point};item.lastReliableTimestamp=timestamp;item.missingDurationMs=0;display[name]={...point,cached:false};}else{item.missingDurationMs=item.lastReliableTimestamp==null?0:timestamp-item.lastReliableTimestamp;const held=item.lastReliablePosition;if(held&&item.missingDurationMs<=this.dropoutGraceMs){let x=held.x,y=held.y;if(item.previousReliablePosition&&item.lastReliableTimestamp!=null&&item.missingDurationMs<=this.displayPredictionMs){const vx=held.x-item.previousReliablePosition.x,vy=held.y-item.previousReliablePosition.y;x=Math.max(0,Math.min(1,x+vx));y=Math.max(0,Math.min(1,y+vy));}display[name]={...held,x,y,cached:true,displayOnly:true};}else display[name]=null;}}
+      return{analysis,display,diagnostics:Object.fromEntries(LANDMARK_NAMES.map(name=>[name,{confidence:landmarks[name]?.confidence||0,...this.history[name]}]))};}
+  }
 
   class LandmarkSmoother {constructor(alpha=.45){this.alpha=alpha;this.reset();}reset(){this.previous=null;}apply(landmarks){const next={};for(const name of LANDMARK_NAMES){const point=landmarks[name],old=this.previous?.[name];next[name]=point?{...point,x:old?this.alpha*point.x+(1-this.alpha)*old.x:point.x,y:old?this.alpha*point.y+(1-this.alpha)*old.y:point.y}:null;}this.previous=next;return next;}}
 
@@ -127,42 +152,48 @@
   }
 
   class PoseCaptureEngine {
-    constructor({ profile, onFrame = () => {}, poseRuntime = global.PoseRuntime } = {}) {
-      this.profile = profile; this.onFrame = onFrame; this.poseRuntime = poseRuntime; this.loop = null;this.inferenceInProgress=false;this.sideTracker=new SideTracker();this.smoother=new LandmarkSmoother();this.stability=new PoseStabilityGate();
+    constructor({ profile, onFrame = () => {}, onStatus=()=>{}, poseRuntime = global.PoseRuntime, trackingOptions={}, now=()=>Date.now(), setTimer=global.setInterval?.bind(global), clearTimer=global.clearInterval?.bind(global) } = {}) {
+      this.profile=profile;this.onFrame=onFrame;this.onStatus=onStatus;this.poseRuntime=poseRuntime;this.trackingOptions=trackingOptions;this.now=now;this.setTimer=setTimer;this.clearTimer=clearTimer;this.loop=null;this.video=null;this.detector=null;this.inferenceInProgress=false;this.sideTracker=new SideTracker();this.smoother=new LandmarkSmoother();this.tracking=new TrackingStateMachine(trackingOptions);this.stability=this.tracking;this.continuity=new LandmarkContinuity(trackingOptions);this.personLock=null;this.lastInferenceStartedAt=null;this.lastInferenceCompletedAt=null;this.lastSuccessfulPoseAt=null;this.consecutiveInferenceErrors=0;this.poseLoopRestartCount=0;this.restartAttempts=0;this.watchdogTimer=null;
     }
     transform(pose, dimensions, timestamp = Date.now()) {
       const threshold = this.profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
       const tracked=this.sideTracker.select(pose?.keypoints||[],threshold);
-      const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})), dimensions.width, dimensions.height);
+      const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})).filter(Boolean), dimensions.width, dimensions.height);
       const confidences = LANDMARK_NAMES.map(name => normalized.landmarks[name]?.confidence || 0);
       const frameConfidence = Math.min(...confidences);
       let usable=confidences.every(score => score >= threshold)&&LANDMARK_NAMES.every(name=>{const p=normalized.landmarks[name];return p&&p.x>=.02&&p.x<=.98&&p.y>=.02&&p.y<=.98;});
-      const landmarks=usable?this.smoother.apply(normalized.landmarks):Object.fromEntries(LANDMARK_NAMES.map(name=>[name,confidences[LANDMARK_NAMES.indexOf(name)]>=threshold?normalized.landmarks[name]:null]));
-      return { timestamp, side: tracked?.side||normalized.side, landmarks, frameConfidence, usable, poseReady:this.stability.update(usable) };
+      const torso=this.torsoReference(normalized.landmarks);if(usable&&!this.acceptPerson(torso))usable=false;const continuity=this.continuity.update(normalized.landmarks,threshold,timestamp);const landmarks=usable?this.smoother.apply(continuity.analysis):continuity.analysis;const trackingState=this.tracking.update(usable,timestamp);if(usable)this.lastSuccessfulPoseAt=timestamp;
+      return {timestamp,side:tracked?.side||normalized.side,landmarks,displayLandmarks:continuity.display,landmarkDiagnostics:continuity.diagnostics,frameConfidence,usable,analysisUsable:usable,displayTrackable:Object.values(continuity.display).some(Boolean),sessionComparable:usable,trackingState,poseReady:trackingState===TRACKING_STATES.LOCKED,recoveredThisFrame:this.tracking.recoveredThisFrame,torsoCenter:torso?.center||this.personLock?.center||null,torsoScale:torso?.scale||this.personLock?.scale||null};
     }
+    torsoReference(landmarks){const shoulder=landmarks.shoulder,hip=landmarks.hip;if(!shoulder||!hip)return null;return{center:{x:(shoulder.x+hip.x)/2,y:(shoulder.y+hip.y)/2},scale:Math.max(.001,Math.hypot(shoulder.x-hip.x,shoulder.y-hip.y))};}
+    acceptPerson(torso){if(!torso)return false;if(!this.personLock){this.personLock=torso;return true;}const distance=Math.hypot(torso.center.x-this.personLock.center.x,torso.center.y-this.personLock.center.y),ratio=torso.scale/this.personLock.scale;if(distance>Math.max(.25,this.personLock.scale*2.5)||ratio<.45||ratio>2.2)return false;this.personLock=torso;return true;}
     async start(video, { detector } = {}) {
-      detector = detector || await this.poseRuntime.initMoveNetDetector();
-      this.loop = this.poseRuntime.startPoseLoop({ detector, video, isRunning: () => Boolean(this.loop), onPoseFrame: ({ pose }) => {if(this.inferenceInProgress)return;this.inferenceInProgress=true;try{this.onFrame(this.transform(pose,{width:video.videoWidth,height:video.videoHeight}));}finally{this.inferenceInProgress=false;}}});
+      if(this.loop)return this.loop;this.video=video;this.detector=detector||await this.poseRuntime.initMoveNetDetector();this.startLoop();this.startWatchdog();
       return this.loop;
     }
-    stop() { this.loop?.stop?.(); this.loop = null;this.resetTracking(); }
-    resetTracking(){this.inferenceInProgress=false;this.sideTracker.reset();this.smoother.reset();this.stability.reset();}
+    startLoop(){if(this.loop)return this.loop;this.loop=this.poseRuntime.startPoseLoop({detector:this.detector,video:this.video,isRunning:()=>Boolean(this.loop),onPoseFrame:({pose})=>{if(this.inferenceInProgress)return;this.inferenceInProgress=true;this.lastInferenceStartedAt=this.now();try{if(!this.video?.videoWidth||!this.video?.videoHeight)return;const frame=this.transform(pose,{width:this.video.videoWidth,height:this.video.videoHeight},this.now());this.consecutiveInferenceErrors=0;this.onFrame(frame);}catch(error){this.consecutiveInferenceErrors++;console.error('[PUSH_UP_TRACKING] frame processing failed',error);}finally{this.lastInferenceCompletedAt=this.now();this.inferenceInProgress=false;}},onError:error=>{this.consecutiveInferenceErrors++;this.inferenceInProgress=false;console.warn('[PUSH_UP_TRACKING] transient inference error; retrying',error);}});return this.loop;}
+    startWatchdog(){if(this.watchdogTimer||!this.setTimer)return;this.watchdogTimer=this.setTimer(()=>this.watchdogTick(this.now()),500);this.watchdogTimer?.unref?.();}
+    watchdogTick(now=this.now()){if(!this.loop||this.inferenceInProgress)return false;const reference=this.lastInferenceCompletedAt||this.lastInferenceStartedAt;if(reference==null||now-reference<2500)return false;if(this.restartAttempts>=3){this.onStatus('Pose tracking needs attention. Finish Session remains available.');return false;}const old=this.loop;this.loop=null;old.stop?.();this.restartAttempts++;this.poseLoopRestartCount++;this.lastInferenceCompletedAt=now;this.onStatus('Pose tracking paused — restarting safely…');this.startLoop();return true;}
+    stop(){this.loop?.stop?.();this.loop=null;if(this.watchdogTimer!=null)this.clearTimer?.(this.watchdogTimer);this.watchdogTimer=null;this.resetTracking();}
+    resetTracking(){this.inferenceInProgress=false;this.sideTracker.reset();this.smoother.reset();this.tracking.reset();this.continuity.reset();this.personLock=null;this.restartAttempts=0;}
+    diagnostics(){return{trackingState:this.tracking.state,lastSuccessfulPoseAt:this.lastSuccessfulPoseAt,currentDropoutDurationMs:this.tracking.currentDropoutMs,longestDropoutDurationMs:this.tracking.longestDropoutMs,usableFrameStreak:this.tracking.usableFrameStreak,unusableFrameStreak:this.tracking.unusableFrameStreak,recoveryFrameStreak:this.tracking.recoveryFrameStreak,activeSide:this.sideTracker.activeSide,torsoCenter:this.personLock?.center||null,lastInferenceStartedAt:this.lastInferenceStartedAt,lastInferenceCompletedAt:this.lastInferenceCompletedAt,consecutiveInferenceErrors:this.consecutiveInferenceErrors,poseLoopRestartCount:this.poseLoopRestartCount,landmarks:this.continuity.history};}
   }
 
   class RepetitionEventEngine {
     constructor({ movementThreshold = .045 } = {}) { this.movementThreshold = movementThreshold; this.reset(); }
-    reset() { this.baseline = null; this.phase = 'top'; this.count = 0; this.events = []; }
+    reset() { this.baseline=null;this.phase='top';this.lastConfirmedRepPhase='top';this.lastConfirmedRepTimestamp=null;this.trackingInterruptionStartedAt=null;this.requiresSafeReestablishment=false;this.count=0;this.events=[]; }
     observe(frame) {
-      if (!frame.usable || !frame.landmarks.hip) return null;
+      if(!frame.usable||frame.trackingState&&frame.trackingState!==TRACKING_STATES.LOCKED||!frame.landmarks.hip){if(this.trackingInterruptionStartedAt==null)this.trackingInterruptionStartedAt=frame.timestamp;this.requiresSafeReestablishment=true;return null;}
       const y = frame.landmarks.hip.y;
       if (this.baseline == null) this.baseline = y;
+      if(this.requiresSafeReestablishment){this.trackingInterruptionStartedAt=null;this.requiresSafeReestablishment=false;this.baseline=Math.min(this.baseline,y);if(this.phase==='away'&&y-this.baseline<=this.movementThreshold/2)this.phase='top';this.lastConfirmedRepPhase=this.phase;this.lastConfirmedRepTimestamp=frame.timestamp;return null;}
       this.baseline = Math.min(this.baseline, y);
       if (this.phase === 'top' && y - this.baseline >= this.movementThreshold) this.phase = 'away';
       if (this.phase === 'away' && y - this.baseline <= this.movementThreshold / 2) {
         const event = { index: ++this.count, timestamp: frame.timestamp, type: 'repetition_completed', complete: true };
         this.events.push(event); this.phase = 'top'; return event;
       }
-      return null;
+      this.lastConfirmedRepPhase=this.phase;this.lastConfirmedRepTimestamp=frame.timestamp;return null;
     }
   }
 
@@ -188,7 +219,7 @@
       this.session = { schemaVersion: SESSION_SCHEMA_VERSION, sessionId: id(), userId: this.userId, mode, versionMetadata: sessionVersionMetadata(this.profile), sessionStartedAt: new Date().toISOString(), sessionEndedAt: null, requiredViewEstablished: Boolean(requiredViewEstablished), normalizedLandmarkFrames: [], repetitionEvents: [], supportedAlignmentFindings: [], summary: null, invalidationReason: null };
       return this.session;
     }
-    frame(frame) { if (this.session) this.session.normalizedLandmarkFrames.push(clone(frame)); }
+    frame(frame) { if(this.session){const observed={...frame};delete observed.displayLandmarks;delete observed.landmarkDiagnostics;this.session.normalizedLandmarkFrames.push(clone(observed));} }
     repetition(event) { if (this.session) this.session.repetitionEvents.push(clone(event)); }
     finish() {
       this.session.sessionEndedAt = new Date().toISOString();
@@ -205,7 +236,8 @@
       if (affectedFramePercentage >= rule.minimumAffectedFramePercentage && longestRunMs >= rule.minimumConsecutiveDurationMs) this.session.supportedAlignmentFindings.push({ measurement: rule.measurement, finding: 'alignment_needs_attention', affectedFramePercentage, consecutiveDurationMs: longestRunMs });
       const classification = classifySession(this.session, this.profile);
       this.session.invalidationReason = classification.invalidationReason;
-      this.session.summary = { valid: classification.valid, validRepetitions: this.session.repetitionEvents.filter(e => e.complete).length, completionTimeMs: Date.parse(this.session.sessionEndedAt) - Date.parse(this.session.sessionStartedAt), usableFramePercentage: classification.usableFramePercentage, overallConfidence: classification.overallConfidence };
+      let totalTrackingLossDurationMs=0,longestContinuousDropoutMs=0,trackingRunStart=null,lastTrackingFrame=null,recoveryEvents=0;for(const frame of frames){if(!frame.usable){if(trackingRunStart==null)trackingRunStart=frame.timestamp;if(lastTrackingFrame!=null)totalTrackingLossDurationMs+=Math.max(0,frame.timestamp-lastTrackingFrame);longestContinuousDropoutMs=Math.max(longestContinuousDropoutMs,frame.timestamp-trackingRunStart);}else if(trackingRunStart!=null){recoveryEvents++;trackingRunStart=null;}lastTrackingFrame=frame.timestamp;}
+      this.session.summary = { valid: classification.valid, validRepetitions: this.session.repetitionEvents.filter(e => e.complete).length, completionTimeMs: Date.parse(this.session.sessionEndedAt) - Date.parse(this.session.sessionStartedAt), usableFramePercentage: classification.usableFramePercentage, overallConfidence: classification.overallConfidence,totalTrackingLossDurationMs,longestContinuousDropoutMs,recoveryEvents };
       return clone(this.session);
     }
     serialize() { return JSON.stringify(this.session); }
@@ -245,8 +277,9 @@
       if (!this.context || !frame) return; const ctx = this.context, w = this.canvas.clientWidth||this.canvas.width, h = this.canvas.clientHeight||this.canvas.height,dpr=this.transform?.devicePixelRatio||1,map=p=>this.transform?this.transform.map(p):{screenX:p.x*w,screenY:p.y*h};
       ctx.setTransform?.(dpr,0,0,dpr,0,0);
       ctx.clearRect(0,0,w,h); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4;
-      for (const [from,to] of CONNECTIONS) { const a=frame.landmarks[from], b=frame.landmarks[to]; if(!a||!b||a.confidence<this.minimumConfidence||b.confidence<this.minimumConfidence)continue;const aa=map(a),bb=map(b);ctx.beginPath();ctx.moveTo(aa.screenX,aa.screenY);ctx.lineTo(bb.screenX,bb.screenY);ctx.stroke(); }
-      for (const point of Object.values(frame.landmarks)) if(point&&point.confidence>=this.minimumConfidence){const p=map(point);ctx.beginPath();ctx.arc(p.screenX,p.screenY,6,0,Math.PI*2);ctx.fill();}
+      const points=frame.displayLandmarks||frame.landmarks,degraded=frame.trackingState===TRACKING_STATES.DEGRADED||frame.trackingState===TRACKING_STATES.RECOVERING;ctx.globalAlpha=degraded ? .45 : 1;ctx.setLineDash?.(degraded?[8,6]:[]);
+      for (const [from,to] of CONNECTIONS) { const a=points[from], b=points[to]; if(!a||!b||(!a.cached&&a.confidence<this.minimumConfidence)||(!b.cached&&b.confidence<this.minimumConfidence))continue;const aa=map(a),bb=map(b);ctx.beginPath();ctx.moveTo(aa.screenX,aa.screenY);ctx.lineTo(bb.screenX,bb.screenY);ctx.stroke(); }
+      for (const point of Object.values(points)) if(point&&(point.cached||point.confidence>=this.minimumConfidence)){const p=map(point);ctx.beginPath();ctx.arc(p.screenX,p.screenY,6,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;ctx.setLineDash?.([]);
     }
   }
 
@@ -258,5 +291,5 @@
     reset() { this.state='idle';this.mode=null; }
   }
 
-  return Object.freeze({ SESSION_SCHEMA_VERSION, POSE_MODEL, POSE_MODEL_VERSION, LANDMARK_NAMES, getPushUpProfile, sessionVersionMetadata, normalizeLandmarks, alignmentDeviation, classifySession,createVideoScreenTransform,cameraErrorMessage,CameraController,SideTracker,PoseStabilityGate,LandmarkSmoother, PoseCaptureEngine, ExerciseSessionEngine, RepetitionEventEngine, PerformanceRecorder, ComparisonEngine, GhostRenderer, PersonalBestStore });
+  return Object.freeze({ SESSION_SCHEMA_VERSION, POSE_MODEL, POSE_MODEL_VERSION, LANDMARK_NAMES,TRACKING_STATES,TRACKING_DEFAULTS,getPushUpProfile,sessionVersionMetadata,normalizeLandmarks,alignmentDeviation,classifySession,createVideoScreenTransform,cameraErrorMessage,CameraController,SideTracker,PoseStabilityGate,TrackingStateMachine,LandmarkContinuity,LandmarkSmoother,PoseCaptureEngine,ExerciseSessionEngine,RepetitionEventEngine,PerformanceRecorder,ComparisonEngine,GhostRenderer,PersonalBestStore });
 });
