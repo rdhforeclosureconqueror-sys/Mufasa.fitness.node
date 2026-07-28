@@ -33,6 +33,15 @@ test("Google Places maps stable provider failures",async()=>{
   for(const [status,body,code] of [[403,{error:{}},"TRAIL_PROVIDER_AUTH_FAILED"],[429,{error:{status:"RESOURCE_EXHAUSTED",details:[{reason:"QUOTA_EXCEEDED"}]}},"TRAIL_PROVIDER_QUOTA_EXCEEDED"],[429,{error:{}},"TRAIL_PROVIDER_RATE_LIMITED"],[500,{error:{}},"TRAIL_PROVIDER_UNAVAILABLE"]]){const p=createGooglePlacesTrailProvider({apiKey:"x",fetchImpl:async()=>response(status,body),logger:{warn(){}}});await assert.rejects(p.searchNearbyTrails(input),e=>e.code===code);}
   const malformed=createGooglePlacesTrailProvider({apiKey:"x",fetchImpl:async()=>response(200,{places:{}}),logger:{warn(){}}});await assert.rejects(malformed.searchNearbyTrails(input),e=>e.code==="TRAIL_PROVIDER_BAD_RESPONSE");
 });
+test("Google Places diagnostics are useful and never expose secrets or coordinates",async()=>{
+  const {createConfiguredTrailProvider}=require("../src/services/nearbyTrailService");
+  const entries=[],logger={info:(...args)=>entries.push(args),warn:(...args)=>entries.push(args)};
+  const provider=createConfiguredTrailProvider({env:{TRAIL_PROVIDER:"google_places",GOOGLE_MAPS_API_KEY:"server-secret"},fetchImpl:async()=>response(200,{places:[{id:"ok",displayName:{text:"Valid Trail"},location:{latitude:1.002,longitude:2}},{id:"bad"}]}),logger});
+  await provider.searchNearbyTrails({...input,limit:1});
+  const output=JSON.stringify(entries);
+  assert.match(output,/initialization/);assert.match(output,/selection/);assert.match(output,/normalizationFailures/);assert.match(output,/httpStatus/);
+  assert.doesNotMatch(output,/server-secret|1\.001|1\.002|longitude|latitude/);
+});
 
 test("multi-provider falls back, deduplicates nearby names, and sorts distance",async()=>{
  const {createMultiTrailProvider}=require("../src/services/nearbyTrailService");let fallbackCalls=0;const health=()=>({configured:true});
