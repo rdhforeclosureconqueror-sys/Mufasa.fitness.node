@@ -26,7 +26,9 @@ function createUserStore({ userDir }) {
 
   function writeJSON(p, obj) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
-    fs.writeFileSync(p, JSON.stringify(obj, null, 2));
+    const temporary = `${p}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(temporary, JSON.stringify(obj, null, 2));
+    fs.renameSync(temporary, p);
   }
 
   function loadUser(userId) {

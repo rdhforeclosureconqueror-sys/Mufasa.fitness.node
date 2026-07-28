@@ -13,4 +13,5 @@ module.exports = Object.freeze({
   "public/app-hydration-runtime.js": "Only clears an existing container.",
   "public/coach-runtime.js": "Only clears a select before createElement option rendering."
   ,"public/workout.html": "Compatibility bootstrap writes a constant local script tag only; no untrusted interpolation."
+  ,"public/greatness.js": "Greatness templates render server-controlled activity enums, identifiers, numeric metrics, and fixed application copy; route geometry is drawn to canvas."
 });
