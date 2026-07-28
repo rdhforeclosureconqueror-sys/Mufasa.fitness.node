@@ -3,28 +3,88 @@
 const { ApiError } = require("../lib/apiResponse");
 const ALLOWED_RADII = Object.freeze([8046.72, 16093.44, 40233.6, 80467.2]);
 const MAX_LIMIT = 25;
-const OVERPASS_QUERY = `[out:json][timeout:15];(nwr[highway=trailhead](around:RADIUS,LAT,LON);relation[route~"hiking|foot|walking"](around:RADIUS,LAT,LON);nwr[highway~"path|footway"][name](around:RADIUS,LAT,LON);nwr[leisure~"park|nature_reserve"][name](around:RADIUS,LAT,LON););out center tags;`;
+const QUERY_VERSION = "v2-named-trails";
+const DEFAULT_ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const ERROR_MESSAGES = Object.freeze({
+  TRAIL_PROVIDER_TIMEOUT: "Trail search took too long. Please try again.",
+  TRAIL_PROVIDER_RATE_LIMITED: "The trail-data service is busy right now. Please try again shortly.",
+  TRAIL_PROVIDER_UNAVAILABLE: "Trail search is temporarily unavailable. Please try again.",
+  TRAIL_PROVIDER_BAD_RESPONSE: "The trail-data service returned an invalid response. Please try again.",
+  TRAIL_PROVIDER_CONFIGURATION_ERROR: "Trail discovery is not configured on this server.",
+  TRAIL_SEARCH_INVALID_INPUT: "The trail search location or radius is invalid.",
+  TRAIL_SEARCH_NO_RESULTS: "No trails were found within this radius. Try expanding the search area."
+});
 
+function trailError(code, status = 503) { return new ApiError(code, ERROR_MESSAGES[code], status); }
 function validateSearch(input) {
-  const latitude=Number(input?.latitude), longitude=Number(input?.longitude), radiusMeters=Number(input?.radiusMeters), limit=Number(input?.limit ?? 15);
-  if(!Number.isFinite(latitude)||latitude < -90||latitude > 90) throw new ApiError("INVALID_LATITUDE","Latitude is invalid",400);
-  if(!Number.isFinite(longitude)||longitude < -180||longitude > 180) throw new ApiError("INVALID_LONGITUDE","Longitude is invalid",400);
-  if(!ALLOWED_RADII.includes(radiusMeters)) throw new ApiError("INVALID_RADIUS","Choose a supported search radius",400);
-  if(!Number.isInteger(limit)||limit<1||limit>MAX_LIMIT) throw new ApiError("INVALID_RESULT_LIMIT",`Result limit must be between 1 and ${MAX_LIMIT}`,400);
-  return {latitude,longitude,radiusMeters,limit};
+  const latitude = Number(input?.latitude), longitude = Number(input?.longitude), radiusMeters = Number(input?.radiusMeters), limit = Number(input?.limit ?? 15);
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180 || !ALLOWED_RADII.includes(radiusMeters) || !Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) throw trailError("TRAIL_SEARCH_INVALID_INPUT", 400);
+  return { latitude, longitude, radiusMeters, limit };
+}
+function parseEndpoints(env = process.env, { useDefaults = true } = {}) {
+  const raw = env.OVERPASS_API_URLS || env.OVERPASS_API_URL || (useDefaults ? DEFAULT_ENDPOINTS.join(",") : "");
+  return raw.split(",").map(x => x.trim()).filter(Boolean).map(value => {
+    let url; try { url = new URL(value); } catch { throw trailError("TRAIL_PROVIDER_CONFIGURATION_ERROR", 503); }
+    if (url.protocol !== "https:" || !url.hostname || !url.pathname.endsWith("/api/interpreter") || url.username || url.password) throw trailError("TRAIL_PROVIDER_CONFIGURATION_ERROR", 503);
+    return url.toString();
+  });
 }
 function haversine(a,b){const r=Math.PI/180,q=Math.sin((b.latitude-a.latitude)*r/2)**2+Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin((b.longitude-a.longitude)*r/2)**2;return 6371000*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
 function clean(value){return typeof value === "string" && value.trim() ? value.trim().slice(0,200) : undefined;}
-function normalizeElement(element, origin){
+function normalizeElement(element, origin) {
   const latitude=Number(element?.lat ?? element?.center?.lat),longitude=Number(element?.lon ?? element?.center?.lon),tags=element?.tags;
   if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||!tags||typeof tags!=="object") return null;
   const name=clean(tags.name); if(!name)return null;
   const length=Number(tags.distance || tags.length), elevation=Number(tags.ele_gain);
-  return {id:`osm:${element.type}:${element.id}`,name,latitude,longitude,distanceFromUserMeters:haversine(origin,{latitude,longitude}),trailType:clean(tags.route||tags.highway||tags.leisure),lengthMeters:Number.isFinite(length)&&length>0?length:undefined,difficulty:clean(tags.sac_scale||tags.difficulty),elevationGainMeters:Number.isFinite(elevation)&&elevation>=0?elevation:undefined,surface:clean(tags.surface),accessibility:clean(tags.wheelchair),provider:"OpenStreetMap",providerUrl:`https://www.openstreetmap.org/${encodeURIComponent(element.type)}/${encodeURIComponent(element.id)}`,attribution:"© OpenStreetMap contributors"};
+  return {id:`osm:${element.type}:${element.id}`,name,latitude,longitude,distanceFromUserMeters:haversine(origin,{latitude,longitude}),trailType:clean(tags.route||tags.highway||tags.leisure||tags.boundary),lengthMeters:Number.isFinite(length)&&length>0?length:undefined,difficulty:clean(tags.sac_scale||tags.difficulty),elevationGainMeters:Number.isFinite(elevation)&&elevation>=0?elevation:undefined,surface:clean(tags.surface),accessibility:clean(tags.wheelchair),provider:"OpenStreetMap",providerUrl:`https://www.openstreetmap.org/${encodeURIComponent(element.type)}/${encodeURIComponent(element.id)}`,attribution:"© OpenStreetMap contributors"};
 }
-function createOverpassTrailProvider({fetchImpl=global.fetch,endpoint="https://overpass-api.de/api/interpreter"}={}){
-  if(!/^https:\/\//.test(endpoint)) throw new Error("Overpass endpoint must use HTTPS");
-  return {async searchNearbyTrails(input){const query=OVERPASS_QUERY.replaceAll("RADIUS",String(Math.round(input.radiusMeters))).replaceAll("LAT",String(input.latitude)).replaceAll("LON",String(input.longitude));let response;try{response=await fetchImpl(endpoint,{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded","user-agent":"MufasaFitness-TrailSearch/1.0"},body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(18000)});}catch(_){throw new ApiError("TRAIL_PROVIDER_UNAVAILABLE","Trail search is temporarily unavailable",503);}if(response.status===429)throw new ApiError("TRAIL_PROVIDER_RATE_LIMIT","Trail provider is busy; try again shortly",503);if(!response.ok)throw new ApiError("TRAIL_PROVIDER_UNAVAILABLE","Trail search is temporarily unavailable",503);const body=await response.json().catch(()=>null);if(!body||!Array.isArray(body.elements))throw new ApiError("MALFORMED_TRAIL_RESPONSE","Trail provider returned an invalid response",502);return body.elements.map(x=>normalizeElement(x,input)).filter(Boolean).sort((a,b)=>a.distanceFromUserMeters-b.distanceFromUserMeters).slice(0,input.limit);}};
+function buildQuery(input, includeAreas = false) {
+  const r=Math.round(input.radiusMeters), p=`(around:${r},${input.latitude},${input.longitude})`;
+  const narrow = `nwr[highway=trailhead]${p};relation[route~"^(hiking|foot|walking)$"][name]${p};nwr[highway~"^(path|footway)$"][name]${p};`;
+  const areas = `nwr[leisure=park][name]${p};nwr[boundary~"^(protected_area|national_park)$"][name]${p};nwr[leisure=nature_reserve][name]${p};`;
+  return `[out:json][timeout:8];(${includeAreas ? areas : narrow});out center tags ${MAX_LIMIT};`;
 }
-function createNearbyTrailService({provider}){return {async search(_userId,input){const validated=validateSearch(input);return {trails:await provider.searchNearbyTrails(validated),searchedAt:new Date().toISOString(),locationStored:false};}};}
-module.exports={ALLOWED_RADII,MAX_LIMIT,validateSearch,normalizeElement,createOverpassTrailProvider,createNearbyTrailService};
+function classify(error) { if (typeof error?.code === "string" && error.code.startsWith("TRAIL_")) return error; if (error?.name === "AbortError" || error?.name === "TimeoutError") return trailError("TRAIL_PROVIDER_TIMEOUT",504); return trailError("TRAIL_PROVIDER_UNAVAILABLE",503); }
+function logDiagnostic(logger, data) { logger.info?.("[trail-provider]", { provider:"overpass", ...data }); }
+async function readBody(response, { parseTimeoutMs, maxBytes, signal }) {
+  const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),parseTimeoutMs);
+  const abort=()=>controller.abort(); signal?.addEventListener("abort",abort,{once:true});
+  try {
+    const reader=response.body?.getReader?.();
+    if (!reader) { const text=await response.text(); if(Buffer.byteLength(text)>maxBytes) throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502); return text; }
+    const chunks=[]; let size=0;
+    while(true){const read=reader.read(); const result=await Promise.race([read,new Promise((_,reject)=>controller.signal.addEventListener("abort",()=>reject(trailError("TRAIL_PROVIDER_TIMEOUT",504)),{once:true}))]);if(result.done)break;size+=result.value.byteLength;if(size>maxBytes){reader.cancel();throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);}chunks.push(Buffer.from(result.value));}
+    return Buffer.concat(chunks).toString("utf8");
+  } finally { clearTimeout(timer); signal?.removeEventListener("abort",abort); }
+}
+function createOverpassTrailProvider({fetchImpl=global.fetch,endpoints,timeoutMs=10000,connectTimeoutMs=4000,parseTimeoutMs=2000,maxResponseBytes=1_000_000,logger=console,now=Date.now}={}) {
+  const urls=endpoints || parseEndpoints(); const health={provider:"overpass",configured:urls.length>0,endpoints:urls.map(url=>({hostname:new URL(url).hostname,status:"unknown",latencyMs:null,lastSuccessfulRequestTime:null}))};
+  async function request(input, includeAreas, url, budgetDeadline) {
+    const started=now(), controller=new AbortController(), remaining=Math.max(1,budgetDeadline-started), totalTimer=setTimeout(()=>controller.abort(),remaining), connectTimer=setTimeout(()=>controller.abort(),Math.min(connectTimeoutMs,remaining)); let response, bytes=null, contentType=null;
+    try {
+      response=await fetchImpl(url,{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded","accept":"application/json","user-agent":"MufasaFitness-TrailSearch/2.0"},body:new URLSearchParams({data:buildQuery(input,includeAreas)}),signal:controller.signal}); clearTimeout(connectTimer);
+      contentType=response.headers?.get?.("content-type") || null;
+      if(response.status===429)throw trailError("TRAIL_PROVIDER_RATE_LIMITED",503);
+      if(!response.ok){const upstream=trailError("TRAIL_PROVIDER_UNAVAILABLE",503);upstream.retryable=[502,503,504].includes(response.status);throw upstream;}
+      if(!/json/i.test(contentType||""))throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);
+      const text=await readBody(response,{parseTimeoutMs:Math.min(parseTimeoutMs,Math.max(1,budgetDeadline-now())),maxBytes:maxResponseBytes,signal:controller.signal}); bytes=Buffer.byteLength(text);
+      let body; try{body=JSON.parse(text);}catch{throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);}
+      if(!Array.isArray(body?.elements))throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);
+      const entry=health.endpoints.find(x=>x.hostname===new URL(url).hostname);entry.status="reachable";entry.latencyMs=now()-started;entry.lastSuccessfulRequestTime=new Date().toISOString();
+      logDiagnostic(logger,{hostname:new URL(url).hostname,httpStatus:response.status,timeoutCategory:null,responseContentType:contentType,responseBytes:bytes,durationMs:now()-started,code:"OK"}); return body.elements;
+    } catch(raw) {
+      const error=classify(raw), entry=health.endpoints.find(x=>x.hostname===new URL(url).hostname);entry.status="unreachable";entry.latencyMs=now()-started;
+      logDiagnostic(logger,{hostname:new URL(url).hostname,httpStatus:response?.status||null,timeoutCategory:error.code==="TRAIL_PROVIDER_TIMEOUT"?(response?"total_or_body":"connection_or_total"):null,responseContentType:contentType,responseBytes:bytes,durationMs:now()-started,code:error.code}); throw error;
+    } finally {clearTimeout(connectTimer);clearTimeout(totalTimer);controller.abort();}
+  }
+  return { health:()=>JSON.parse(JSON.stringify(health)), async searchNearbyTrails(input){if(!urls.length)throw trailError("TRAIL_PROVIDER_CONFIGURATION_ERROR",503);const deadline=now()+timeoutMs;let last;
+    for(let i=0;i<Math.min(2,urls.length);i++){try{let elements=await request(input,false,urls[i],deadline);let normalized=elements.map(x=>normalizeElement(x,input)).filter(Boolean);if(normalized.length<Math.min(3,input.limit)&&deadline-now()>1000){const extra=await request(input,true,urls[i],deadline);normalized=normalized.concat(extra.map(x=>normalizeElement(x,input)).filter(Boolean));}const unique=[...new Map(normalized.map(x=>[x.id,x])).values()].sort((a,b)=>a.distanceFromUserMeters-b.distanceFromUserMeters).slice(0,input.limit);return unique;}catch(error){last=error;const retryable=error.code==="TRAIL_PROVIDER_TIMEOUT"||error.code==="TRAIL_PROVIDER_RATE_LIMITED"||(error.code==="TRAIL_PROVIDER_UNAVAILABLE"&&error.retryable!==false);if(!retryable||deadline<=now())break;}}
+    throw last||trailError("TRAIL_PROVIDER_UNAVAILABLE",503);
+  }};
+}
+function coarseKey(input){return `${QUERY_VERSION}:${input.radiusMeters}:${Math.round(input.latitude*20)/20}:${Math.round(input.longitude*20)/20}`;}
+function createNearbyTrailService({provider,ttlMs=Number(process.env.TRAIL_CACHE_TTL_MS)||1_800_000,maxEntries=Number(process.env.TRAIL_CACHE_MAX_ENTRIES)||250,now=Date.now}={}) {
+  const cache=new Map(); const cleanup=()=>{for(const[k,v]of cache)if(now()-v.savedAt>ttlMs*2)cache.delete(k);while(cache.size>maxEntries)cache.delete(cache.keys().next().value);};
+  return {health:()=>provider.health?.()||{provider:"overpass",configured:true,endpoints:[]},async search(_userId,input){const validated=validateSearch(input),key=coarseKey(validated);cleanup();const cached=cache.get(key);if(cached&&now()-cached.savedAt<=ttlMs)return{trails:cached.trails,searchedAt:new Date(cached.savedAt).toISOString(),locationStored:false,cached:true,stale:false};try{const trails=await provider.searchNearbyTrails(validated);cache.set(key,{trails,savedAt:now()});cleanup();if(!trails.length)throw trailError("TRAIL_SEARCH_NO_RESULTS",404);return{trails,searchedAt:new Date().toISOString(),locationStored:false,cached:false,stale:false};}catch(error){if(cached&&now()-cached.savedAt<=ttlMs*2)return{trails:cached.trails,searchedAt:new Date(cached.savedAt).toISOString(),locationStored:false,cached:true,stale:true};throw error;}},_cache:cache};
+}
+module.exports={ALLOWED_RADII,MAX_LIMIT,QUERY_VERSION,ERROR_MESSAGES,validateSearch,parseEndpoints,buildQuery,coarseKey,normalizeElement,createOverpassTrailProvider,createNearbyTrailService};

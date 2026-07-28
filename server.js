@@ -26,7 +26,7 @@ const { createExerciseTemplateService } = require("./src/services/exerciseTempla
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
-const { createNearbyTrailService, createOverpassTrailProvider } = require("./src/services/nearbyTrailService");
+const { createNearbyTrailService, createOverpassTrailProvider, parseEndpoints } = require("./src/services/nearbyTrailService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -350,7 +350,10 @@ function createApp(options = {}) {
 
   const userStore = createUserStore({ userDir: USER_DIR });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
-  const nearbyTrailService = createNearbyTrailService({ provider: options.nearbyTrailProvider || createOverpassTrailProvider({ fetchImpl:options.fetch || global.fetch, endpoint:process.env.OVERPASS_API_URL || "https://overpass-api.de/api/interpreter" }) });
+  let trailEndpoints = [];
+  try { trailEndpoints = parseEndpoints(process.env); } catch (error) { console.warn("[trail-provider] no usable endpoint configured", { provider: "overpass", code: error.code }); }
+  const trailProvider = options.nearbyTrailProvider || createOverpassTrailProvider({ fetchImpl: options.fetch || global.fetch, endpoints: trailEndpoints, timeoutMs: Number(process.env.TRAIL_SEARCH_TIMEOUT_MS) || 10_000 });
+  const nearbyTrailService = createNearbyTrailService({ provider: trailProvider });
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
@@ -1626,6 +1629,8 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.complete(req.auth.userId, req.body), 201)));
   app.post("/api/me/greatness/nearby-trails/search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
+  app.get("/api/me/greatness/nearby-trails/provider-health", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, nearbyTrailService.health())));
   app.post("/api/me/greatness/operational-events", requireAuth, createRateLimiter({ windowMs: 60_000, max: 120 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.recordOperationalEvent(req.auth.userId, req.body?.eventName), 202)));
   app.get("/api/me/greatness/activities/:activityId", requireAuth, asyncHandler(async (req, res) =>

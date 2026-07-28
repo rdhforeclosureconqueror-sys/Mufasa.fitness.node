@@ -65,3 +65,21 @@ Restore procedure:
 * Release/rollback owner, maintenance window, backup ID, smoke identities, and rollback decision threshold recorded.
 
 See the [operations runbook](../operations/runbook.md) and [release checklist](../release/release-checklist.md).
+
+## Nearby Trails provider (Render)
+
+Set these Render service environment variables, then choose **Manual Deploy → Deploy latest commit**:
+
+```text
+TRAIL_PROVIDER=overpass
+OVERPASS_API_URLS=https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter
+TRAIL_SEARCH_TIMEOUT_MS=10000
+TRAIL_CACHE_TTL_MS=1800000
+TRAIL_CACHE_MAX_ENTRIES=250
+```
+
+`OVERPASS_API_URL` remains supported for a single endpoint. Endpoints must be HTTPS URLs ending in `/api/interpreter`. The defaults provide a 10-second total retry budget, a 30-minute cache TTL, and 250 cache entries. Do not configure a browser proxy or expose provider configuration to client code. Render permits outbound HTTPS by default; verify DNS/TLS and ensure any platform request timeout exceeds 10 seconds with `npm run test:trails-live` in the Render Shell.
+
+Provider diagnostics are privacy-safe `[trail-provider]` records in **Render Dashboard → Service → Logs**. An authenticated operator can call `GET /api/me/greatness/nearby-trails/provider-health` with the normal bearer token; it reports hostnames and status only. A missing/invalid configuration emits a startup warning without stopping activity recording.
+
+To roll back, open **Deploys**, select the last known-good deploy, and choose **Rollback**. Restore the prior environment-variable values if they changed, then verify `/health` and the provider-health endpoint.

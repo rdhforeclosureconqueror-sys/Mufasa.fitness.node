@@ -33,7 +33,8 @@
     "test:exercise-parity": "node --test test/exercise-runtime-parity.test.js",
     "verify:generated-artifacts": "node scripts/verify-generated-artifacts.js",
     "migrate:exercise-profiles:dry-run": "node scripts/migrate-exercise-profiles.js --dry-run",
-    "audit:exercise-release": "node scripts/audit-exercise-release.js"
+    "audit:exercise-release": "node scripts/audit-exercise-release.js",
+    "test:trails-live": "node scripts/trails-live-check.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
