@@ -19,6 +19,7 @@ const GPS_DEFAULTS = Object.freeze({
 });
 
 const MILE_METERS = 1609.344;
+const KILOMETER_METERS = 1000;
 const BADGES = Object.freeze([
   ["first_step", "First Step", "journey", "activity_count", 1, "count"],
   ["first_walk", "First Walk", "journey", "walk_count", 1, "count"],
@@ -38,4 +39,4 @@ const FUTURE_STEP_BADGES = Object.freeze([1000, 5000, 10000, 25000, 50000, 10000
   achievementKey: `steps_${threshold}`, name: `${threshold.toLocaleString("en-US")} Steps`, description: "Requires a trusted step source", category: "steps", metric: "steps", threshold, unit: "steps", repeatable: false, enabled: false, requiresVerifiedActivity: true
 })));
 
-module.exports = { ACTIVITY_TYPES, ACTIVE_CHALLENGE_METRICS, FUTURE_CHALLENGE_METRICS, DEFAULT_PRIVACY, GPS_DEFAULTS, BADGES, FUTURE_STEP_BADGES, MILE_METERS };
+module.exports = { ACTIVITY_TYPES, ACTIVE_CHALLENGE_METRICS, FUTURE_CHALLENGE_METRICS, DEFAULT_PRIVACY, GPS_DEFAULTS, BADGES, FUTURE_STEP_BADGES, MILE_METERS, KILOMETER_METERS };

@@ -1622,6 +1622,8 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.journey(req.auth.userId))));
   app.post("/api/me/greatness/activities", requireAuth, createRateLimiter({ windowMs: 60_000, max: 20 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.complete(req.auth.userId, req.body), 201)));
+  app.get("/api/me/greatness/activities/:activityId", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.activity(req.auth.userId, req.params.activityId))));
   app.get("/api/me/greatness/activities/:activityId/route", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.route(req.auth.userId, req.params.activityId))));
   app.post("/api/me/greatness/membership", requireAuth, asyncHandler(async (req, res) =>
@@ -1630,6 +1632,12 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.leave(req.auth.userId))));
   app.get("/api/me/greatness/movement-feed", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, { events: steppingService.feed(req.auth.userId) })));
+  app.get("/api/me/greatness/community-summary", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.weeklySummary(req.auth.userId))));
+  app.get("/api/me/greatness/challenges", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { challenges: steppingService.challengeList(req.auth.userId) })));
+  app.post("/api/me/greatness/challenges/:challengeId/enrollment", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.enroll(req.auth.userId, req.params.challengeId), 201)));
 
   app.get("/api/me/membership", requireAuth, asyncHandler(async (req, res) => {
     const membership = membershipService.getMembership(req.auth.userId);

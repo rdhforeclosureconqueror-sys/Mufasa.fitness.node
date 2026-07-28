@@ -1750,5 +1750,9 @@ module.exports = Object.freeze([
     "rateLimit": null,
     "compatibility": null,
     "publicWrite": null
-  }
+  },
+  { "method":"GET", "path":"/api/me/greatness/activities/:activityId", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user-self", "featureFlag":null, "publicOutput":"owner-scoped", "rateLimit":null, "compatibility":null, "publicWrite":null },
+  { "method":"GET", "path":"/api/me/greatness/community-summary", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"greatness-movement", "ownership":"authenticated-user-self", "featureFlag":null, "publicOutput":"privacy-safe-aggregate", "rateLimit":null, "compatibility":null, "publicWrite":null },
+  { "method":"GET", "path":"/api/me/greatness/challenges", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user-self", "featureFlag":null, "publicOutput":"authenticated-safe", "rateLimit":null, "compatibility":null, "publicWrite":null },
+  { "method":"POST", "path":"/api/me/greatness/challenges/:challengeId/enrollment", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user-self", "featureFlag":null, "publicOutput":"owner-scoped", "rateLimit":null, "compatibility":null, "publicWrite":null }
 ]);
