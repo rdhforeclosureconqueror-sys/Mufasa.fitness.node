@@ -324,3 +324,31 @@ Pocket PT includes an authenticated nutrition journal at `/nutrition.html`. Nutr
 - `OPEN_FOOD_FACTS_USER_AGENT` — optional descriptive User-Agent for Open Food Facts requests. Open Food Facts barcode lookup does not require a private service secret for this integration.
 
 Nutrition values from providers can be incomplete. The UI labels estimated entries when serving conversion or source nutrient data is uncertain, and Pocket PT nutrition education is general information only, not a medical diagnosis or therapeutic diet prescription.
+
+## Nearby Trails providers and Render deployment
+
+Trail discovery runs entirely on the server. Select `TRAIL_PROVIDER=google_places`,
+`overpass`, or `auto` (Google first, Overpass fallback). Production defaults:
+
+```text
+TRAIL_PROVIDER=google_places
+GOOGLE_MAPS_API_KEY=<secret>
+TRAIL_SEARCH_TIMEOUT_MS=10000
+TRAIL_CACHE_TTL_MS=1800000
+TRAIL_CACHE_MAX_ENTRIES=500
+```
+
+In the Render dashboard, open the web service, choose **Environment**, add the five
+variables above (mark the Google key secret), save, and choose **Manual Deploy >
+Deploy latest commit**. Inspect sanitized `[trail-provider]` entries under **Logs**;
+they contain no key, query, or coordinates. While authenticated, call
+`GET /api/me/greatness/nearby-trails/provider-health`. From a Render Shell run
+`npm run test:trails-live`; it uses a public test location and never prints it or the
+key. In browser developer tools verify neither page source, loaded JavaScript, nor
+network response contains `GOOGLE_MAPS_API_KEY` or its value.
+
+To roll back, use **Deploys**, select the preceding successful deploy, and choose
+**Rollback**. If provider configuration must also be reverted, restore the previous
+Environment values and redeploy. Exact member coordinates exist only in the active
+request. Cache keys round locations to 0.05 degrees, contain no member identity, and
+expire; search coordinates are not persisted or included in community events.

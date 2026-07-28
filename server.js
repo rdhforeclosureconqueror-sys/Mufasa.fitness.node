@@ -26,7 +26,7 @@ const { createExerciseTemplateService } = require("./src/services/exerciseTempla
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
-const { createNearbyTrailService, createOverpassTrailProvider, parseEndpoints } = require("./src/services/nearbyTrailService");
+const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -350,9 +350,7 @@ function createApp(options = {}) {
 
   const userStore = createUserStore({ userDir: USER_DIR });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
-  let trailEndpoints = [];
-  try { trailEndpoints = parseEndpoints(process.env); } catch (error) { console.warn("[trail-provider] no usable endpoint configured", { provider: "overpass", code: error.code }); }
-  const trailProvider = options.nearbyTrailProvider || createOverpassTrailProvider({ fetchImpl: options.fetch || global.fetch, endpoints: trailEndpoints, timeoutMs: Number(process.env.TRAIL_SEARCH_TIMEOUT_MS) || 10_000 });
+  const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
   const nearbyTrailService = createNearbyTrailService({ provider: trailProvider });
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });

@@ -6,8 +6,11 @@ const MAX_LIMIT = 25;
 const QUERY_VERSION = "v2-named-trails";
 const DEFAULT_ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
 const ERROR_MESSAGES = Object.freeze({
-  TRAIL_PROVIDER_TIMEOUT: "Trail search took too long. Please try again.",
-  TRAIL_PROVIDER_RATE_LIMITED: "The trail-data service is busy right now. Please try again shortly.",
+  TRAIL_PROVIDER_NOT_CONFIGURED: "Trail discovery is not currently configured.",
+  TRAIL_PROVIDER_AUTH_FAILED: "Trail search is temporarily unavailable.",
+  TRAIL_PROVIDER_QUOTA_EXCEEDED: "Trail search is temporarily unavailable due to provider limits. Please try again later.",
+  TRAIL_PROVIDER_TIMEOUT: "Trail search took too long. Try again or choose a smaller radius.",
+  TRAIL_PROVIDER_RATE_LIMITED: "Trail search is temporarily unavailable due to provider limits. Please try again later.",
   TRAIL_PROVIDER_UNAVAILABLE: "Trail search is temporarily unavailable. Please try again.",
   TRAIL_PROVIDER_BAD_RESPONSE: "The trail-data service returned an invalid response. Please try again.",
   TRAIL_PROVIDER_CONFIGURATION_ERROR: "Trail discovery is not configured on this server.",
@@ -82,9 +85,47 @@ function createOverpassTrailProvider({fetchImpl=global.fetch,endpoints,timeoutMs
     throw last||trailError("TRAIL_PROVIDER_UNAVAILABLE",503);
   }};
 }
+
+const GOOGLE_PLACES_URL = "https://places.googleapis.com/v1/places:searchNearby";
+const GOOGLE_FIELD_MASK = "places.id,places.displayName,places.location,places.primaryType,places.types,places.googleMapsUri";
+const TRAIL_TYPES = ["hiking_area"];
+function googleError(status, body) {
+  const reason=body?.error?.details?.map(x=>x.reason).find(Boolean)||body?.error?.status;
+  if(status===401 || status===403) return trailError("TRAIL_PROVIDER_AUTH_FAILED",503);
+  if(status===429 && /quota/i.test(String(reason))) return trailError("TRAIL_PROVIDER_QUOTA_EXCEEDED",503);
+  if(status===429) return trailError("TRAIL_PROVIDER_RATE_LIMITED",503);
+  return trailError(status>=500?"TRAIL_PROVIDER_UNAVAILABLE":"TRAIL_PROVIDER_BAD_RESPONSE",status>=500?503:502);
+}
+function normalizeGooglePlace(place, origin) {
+  const latitude=Number(place?.location?.latitude),longitude=Number(place?.location?.longitude),name=clean(place?.displayName?.text);
+  if(!place?.id||!name||!Number.isFinite(latitude)||!Number.isFinite(longitude))return null;
+  return {id:`google:${place.id}`,name,latitude,longitude,distanceFromUserMeters:haversine(origin,{latitude,longitude}),trailType:clean(place.primaryType||place.types?.[0]),provider:"Google Places",providerUrl:clean(place.googleMapsUri)||`https://www.google.com/maps/search/?api=1&query_place_id=${encodeURIComponent(place.id)}`,attribution:"Google Places"};
+}
+function createGooglePlacesTrailProvider({fetchImpl=global.fetch,apiKey=process.env.GOOGLE_MAPS_API_KEY,timeoutMs=10000,logger=console,now=Date.now}={}) {
+  const health={provider:"google_places",configured:Boolean(apiKey),reachable:false,lastSuccessfulRequestTime:null,lastFailureCategory:null,responseLatencyMs:null};
+  async function request(input, expanded) {
+    const started=now(),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+    try {
+      const body={includedTypes:expanded?["park"]:TRAIL_TYPES,maxResultCount:Math.min(20,input.limit),rankPreference:"DISTANCE",locationRestriction:{circle:{center:{latitude:input.latitude,longitude:input.longitude},radius:Math.min(50000,input.radiusMeters)}}};
+      const response=await fetchImpl(GOOGLE_PLACES_URL,{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":apiKey,"x-goog-fieldmask":GOOGLE_FIELD_MASK},body:JSON.stringify(body),signal:controller.signal});
+      let payload;try{payload=await response.json();}catch{throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);}
+      if(!response.ok)throw googleError(response.status,payload);
+      if(payload?.places!==undefined&&!Array.isArray(payload.places))throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);
+      health.reachable=true;health.lastSuccessfulRequestTime=new Date().toISOString();health.lastFailureCategory=null;health.responseLatencyMs=now()-started;
+      logger.info?.("[trail-provider]",{provider:"google_places",httpStatus:response.status,durationMs:health.responseLatencyMs,code:"OK"});
+      return (payload.places||[]).map(x=>normalizeGooglePlace(x,input)).filter(Boolean);
+    } catch(raw) {const error=classify(raw);health.reachable=false;health.lastFailureCategory=error.code;health.responseLatencyMs=now()-started;logger.warn?.("[trail-provider]",{provider:"google_places",durationMs:health.responseLatencyMs,code:error.code});throw error;} finally{clearTimeout(timer);}
+  }
+  return {health:()=>({...health}),async searchNearbyTrails(input){if(!apiKey)throw trailError("TRAIL_PROVIDER_NOT_CONFIGURED",503);let trails=await request(input,false);if(trails.length<Math.min(3,input.limit))trails=trails.concat(await request(input,true));return deduplicateAndRank(trails,input.limit);}};
+}
+function metadataScore(trail){return ["trailType","lengthMeters","difficulty","elevationGainMeters","surface","accessibility","providerUrl","attribution"].filter(k=>trail[k]!=null).length+(trail.trailType&&/trail|hiking|walking|greenway/i.test(trail.trailType)?3:0);}
+/** Duplicates are the same normalized name within 150 metres. */
+function deduplicateAndRank(trails,limit=MAX_LIMIT){const kept=[];for(const trail of trails.filter(Boolean).sort((a,b)=>metadataScore(b)-metadataScore(a))){const name=trail.name.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();const duplicate=kept.find(x=>x._name===name&&haversine(x,trail)<=150);if(!duplicate)kept.push({...trail,_name:name});else if(duplicate.provider!==trail.provider){duplicate.attribution=[duplicate.attribution,trail.attribution].filter(Boolean).join("; ");}}return kept.sort((a,b)=>a.distanceFromUserMeters-b.distanceFromUserMeters).slice(0,limit).map(({_name,...x})=>x);}
+function createMultiTrailProvider({primary,fallback}){return {health:()=>({provider:"auto",configured:Boolean(primary?.health().configured||fallback?.health().configured),providers:[primary?.health(),fallback?.health()].filter(Boolean)}),async searchNearbyTrails(input){let firstError,results=[];try{results=await primary.searchNearbyTrails(input);}catch(e){firstError=e;}if(!results.length){try{results=await fallback.searchNearbyTrails(input);}catch(e){throw firstError||e;}}return deduplicateAndRank(results,input.limit);}};}
+function createConfiguredTrailProvider({env=process.env,fetchImpl=global.fetch,logger=console}={}){const selected=(env.TRAIL_PROVIDER||"auto").toLowerCase();let endpoints=[];try{endpoints=parseEndpoints(env,{useDefaults:false});}catch{}const google=createGooglePlacesTrailProvider({fetchImpl,apiKey:env.GOOGLE_MAPS_API_KEY,timeoutMs:Number(env.TRAIL_SEARCH_TIMEOUT_MS)||10000,logger});const overpass=createOverpassTrailProvider({fetchImpl,endpoints,timeoutMs:Number(env.TRAIL_SEARCH_TIMEOUT_MS)||10000,logger});if(selected==="google_places")return google;if(selected==="overpass")return overpass;if(selected==="auto")return google.health().configured?createMultiTrailProvider({primary:google,fallback:overpass}):overpass.health().configured?overpass:{health:()=>({provider:"auto",configured:false,reachable:false}),searchNearbyTrails:async()=>{throw trailError("TRAIL_PROVIDER_NOT_CONFIGURED",503);}};throw trailError("TRAIL_PROVIDER_NOT_CONFIGURED",503);}
 function coarseKey(input){return `${QUERY_VERSION}:${input.radiusMeters}:${Math.round(input.latitude*20)/20}:${Math.round(input.longitude*20)/20}`;}
 function createNearbyTrailService({provider,ttlMs=Number(process.env.TRAIL_CACHE_TTL_MS)||1_800_000,maxEntries=Number(process.env.TRAIL_CACHE_MAX_ENTRIES)||250,now=Date.now}={}) {
   const cache=new Map(); const cleanup=()=>{for(const[k,v]of cache)if(now()-v.savedAt>ttlMs*2)cache.delete(k);while(cache.size>maxEntries)cache.delete(cache.keys().next().value);};
-  return {health:()=>provider.health?.()||{provider:"overpass",configured:true,endpoints:[]},async search(_userId,input){const validated=validateSearch(input),key=coarseKey(validated);cleanup();const cached=cache.get(key);if(cached&&now()-cached.savedAt<=ttlMs)return{trails:cached.trails,searchedAt:new Date(cached.savedAt).toISOString(),locationStored:false,cached:true,stale:false};try{const trails=await provider.searchNearbyTrails(validated);cache.set(key,{trails,savedAt:now()});cleanup();if(!trails.length)throw trailError("TRAIL_SEARCH_NO_RESULTS",404);return{trails,searchedAt:new Date().toISOString(),locationStored:false,cached:false,stale:false};}catch(error){if(cached&&now()-cached.savedAt<=ttlMs*2)return{trails:cached.trails,searchedAt:new Date(cached.savedAt).toISOString(),locationStored:false,cached:true,stale:true};throw error;}},_cache:cache};
+  return {health:()=>({...((provider.health?.())||{provider:"unknown",configured:false}),cacheStatus:{entries:cache.size,ttlMs,maxEntries}}),async search(_userId,input){const validated=validateSearch(input),key=coarseKey(validated);cleanup();const cached=cache.get(key);if(cached&&now()-cached.savedAt<=ttlMs)return{trails:cached.trails,searchedAt:new Date(cached.savedAt).toISOString(),locationStored:false,cached:true,stale:false};try{const trails=await provider.searchNearbyTrails(validated);cache.set(key,{trails,savedAt:now()});cleanup();if(!trails.length)throw trailError("TRAIL_SEARCH_NO_RESULTS",404);return{trails,searchedAt:new Date().toISOString(),locationStored:false,cached:false,stale:false};}catch(error){if(cached&&now()-cached.savedAt<=ttlMs*2)return{trails:cached.trails,searchedAt:new Date(cached.savedAt).toISOString(),locationStored:false,cached:true,stale:true};throw error;}},_cache:cache};
 }
-module.exports={ALLOWED_RADII,MAX_LIMIT,QUERY_VERSION,ERROR_MESSAGES,validateSearch,parseEndpoints,buildQuery,coarseKey,normalizeElement,createOverpassTrailProvider,createNearbyTrailService};
+module.exports={ALLOWED_RADII,MAX_LIMIT,QUERY_VERSION,ERROR_MESSAGES,validateSearch,parseEndpoints,buildQuery,coarseKey,normalizeElement,normalizeGooglePlace,deduplicateAndRank,createGooglePlacesTrailProvider,createMultiTrailProvider,createConfiguredTrailProvider,createOverpassTrailProvider,createNearbyTrailService};
