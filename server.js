@@ -2503,7 +2503,7 @@ function createApp(options = {}) {
 
 
   // ---- Static assets ----
-  app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html")) res.set(SHELL_NO_STORE_HEADERS); } }));
+  app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));
 
   // ---- central error handler ----
   app.use((err, req, res, _next) => {
