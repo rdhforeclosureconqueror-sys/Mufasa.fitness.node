@@ -96,6 +96,19 @@ function googleError(status, body) {
   if(status===429) return trailError("TRAIL_PROVIDER_RATE_LIMITED",503);
   return trailError(status>=500?"TRAIL_PROVIDER_UNAVAILABLE":"TRAIL_PROVIDER_BAD_RESPONSE",status>=500?503:502);
 }
+function sanitizeGoogleDiagnostic(value, apiKey, input) {
+  if (value === undefined) return undefined;
+  const sensitiveName = /(?:api.?key|authorization|credential|token|latitude|longitude|\blat\b|\blng\b)/i;
+  const secrets=[apiKey,input?.latitude,input?.longitude].filter(item=>item!==undefined&&item!==null&&String(item));
+  const sanitize = (item, key) => {
+    if (key && sensitiveName.test(key)) return "[REDACTED]";
+    if (typeof item === "string") return secrets.reduce((text,secret)=>text.split(String(secret)).join("[REDACTED]"),item);
+    if (Array.isArray(item)) return item.map(entry => sanitize(entry));
+    if (item && typeof item === "object") return Object.fromEntries(Object.entries(item).map(([name,entry]) => [name,sanitize(entry,name)]));
+    return item;
+  };
+  return sanitize(value);
+}
 function normalizeGooglePlace(place, origin) {
   const latitude=Number(place?.location?.latitude),longitude=Number(place?.location?.longitude),name=clean(place?.displayName?.text);
   if(!place?.id||!name||!Number.isFinite(latitude)||!Number.isFinite(longitude))return null;
@@ -105,11 +118,11 @@ function createGooglePlacesTrailProvider({fetchImpl=global.fetch,apiKey=process.
   const health={provider:"google_places",configured:Boolean(apiKey),reachable:false,lastSuccessfulRequestTime:null,lastFailureCategory:null,responseLatencyMs:null};
   logger.info?.("[trail-provider]",{provider:"google_places",event:"initialization",configured:health.configured,code:health.configured?"OK":"TRAIL_PROVIDER_NOT_CONFIGURED"});
   async function request(input, expanded) {
-    const started=now(),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);let response;
+    const started=now(),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);let response,payload;
     try {
       const body={includedTypes:expanded?["park"]:TRAIL_TYPES,maxResultCount:Math.min(20,input.limit),rankPreference:"DISTANCE",locationRestriction:{circle:{center:{latitude:input.latitude,longitude:input.longitude},radius:Math.min(50000,input.radiusMeters)}}};
       response=await fetchImpl(GOOGLE_PLACES_URL,{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":apiKey,"x-goog-fieldmask":GOOGLE_FIELD_MASK},body:JSON.stringify(body),signal:controller.signal});
-      let payload;try{payload=await response.json();}catch{throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);}
+      try{payload=await response.json();}catch{throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);}
       if(!response.ok)throw googleError(response.status,payload);
       if(payload?.places!==undefined&&!Array.isArray(payload.places))throw trailError("TRAIL_PROVIDER_BAD_RESPONSE",502);
       const places=payload.places||[],normalized=places.map(x=>normalizeGooglePlace(x,input)).filter(Boolean),normalizationFailures=places.length-normalized.length;
@@ -117,7 +130,7 @@ function createGooglePlacesTrailProvider({fetchImpl=global.fetch,apiKey=process.
       logger.info?.("[trail-provider]",{provider:"google_places",event:"response",httpStatus:response.status,durationMs:health.responseLatencyMs,resultCount:places.length,normalizedCount:normalized.length,normalizationFailures,code:normalizationFailures?"TRAIL_NORMALIZATION_PARTIAL":"OK"});
       if(normalizationFailures)logger.warn?.("[trail-provider]",{provider:"google_places",event:"normalization",normalizationFailures,code:"TRAIL_NORMALIZATION_PARTIAL"});
       return normalized;
-    } catch(raw) {const error=classify(raw);health.reachable=false;health.lastFailureCategory=error.code;health.responseLatencyMs=now()-started;logger.warn?.("[trail-provider]",{provider:"google_places",event:"response",httpStatus:response?.status||null,durationMs:health.responseLatencyMs,code:error.code});throw error;} finally{clearTimeout(timer);}
+    } catch(raw) {const error=classify(raw),google=payload?.error;health.reachable=false;health.lastFailureCategory=error.code;health.responseLatencyMs=now()-started;const diagnostic={provider:"google_places",event:"response",httpStatus:response?.status??null,googleErrorStatus:sanitizeGoogleDiagnostic(clean(google?.status),apiKey,input)||null,googleErrorMessage:sanitizeGoogleDiagnostic(clean(google?.message),apiKey,input)||null,durationMs:health.responseLatencyMs,code:error.code};const details=sanitizeGoogleDiagnostic(google?.details,apiKey,input);if(details!==undefined)diagnostic.googleErrorDetails=details;logger.warn?.("[trail-provider]",diagnostic);throw error;} finally{clearTimeout(timer);}
   }
   return {health:()=>({...health}),async searchNearbyTrails(input){if(!apiKey)throw trailError("TRAIL_PROVIDER_NOT_CONFIGURED",503);let trails=await request(input,false);if(trails.length<Math.min(3,input.limit))trails=trails.concat(await request(input,true));return deduplicateAndRank(trails,input.limit);}};
 }

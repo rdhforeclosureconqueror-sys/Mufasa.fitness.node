@@ -3,7 +3,7 @@ const { createGooglePlacesTrailProvider } = require("../src/services/nearbyTrail
 (async()=>{
   const started=Date.now();
   try {
-    const provider=createGooglePlacesTrailProvider({apiKey:process.env.GOOGLE_MAPS_API_KEY,timeoutMs:Number(process.env.TRAIL_SEARCH_TIMEOUT_MS)||10000,logger:{info(){},warn(){}}});
+    const provider=createGooglePlacesTrailProvider({apiKey:process.env.GOOGLE_MAPS_API_KEY,timeoutMs:Number(process.env.TRAIL_SEARCH_TIMEOUT_MS)||10000,logger:{info(){},warn(...args){console.error(...args);}}});
     const results=await provider.searchNearbyTrails({latitude:38.8895,longitude:-77.0353,radiusMeters:8046.72,limit:3});
     console.log("Provider: google_places");console.log("HTTP status category: success");console.log("Response duration ms:",Date.now()-started);console.log("Normalized result count:",results.length);
     if(!results.length)throw Object.assign(new Error("No results"),{code:"TRAIL_SEARCH_NO_RESULTS"});
