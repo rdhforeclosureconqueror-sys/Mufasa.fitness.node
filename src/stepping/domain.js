@@ -25,9 +25,12 @@ const BADGES = Object.freeze([
   ["first_walk", "First Walk", "journey", "walk_count", 1, "count"],
   ["first_run", "First Run", "journey", "run_count", 1, "count"],
   ["first_trail", "First Trail", "trail", "trail_count", 1, "count"],
+  ["first_half_mile", "First 0.5 Mile", "distance", "single_distance", 804.672, "meters"],
   ["first_mile", "First Mile", "distance", "single_distance", MILE_METERS, "meters"],
   ["first_5k", "First 5K", "distance", "single_distance", 5000, "meters"],
   ["first_10k", "First 10K", "distance", "single_distance", 10000, "meters"],
+  ["first_half_marathon", "First Half Marathon", "distance", "single_distance", 21097.5, "meters"],
+  ["first_marathon", "First Marathon", "distance", "single_distance", 42195, "meters"],
   ...[[10,"Finding Your Stride"],[25,"Momentum"],[50,"Going the Distance"],[100,"Century in Motion"],[250,"Pathmaker"],[500,"Greatness in Motion"],[1000,"Thousand-Mile Journey"]]
     .map(([miles, name]) => [`lifetime_${miles}_miles`, name, "distance", "lifetime_distance", miles * MILE_METERS, "meters"]),
   ["three_strong_days", "Three Strong Days", "consistency", "active_day_streak", 3, "days"],
