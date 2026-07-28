@@ -5,6 +5,7 @@ module.exports = Object.freeze([
   ...[
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
+    ["POST", "/api/me/greatness/operational-events", "owner-scoped-analytics-acknowledgement"],
     ["DELETE", "/api/me/greatness/activities/:activityId", "owner-scoped"],
     ["GET", "/api/me/greatness/activities/:activityId/route", "sensitive-private"],
     ["POST", "/api/me/greatness/membership", "authenticated-safe"],
@@ -14,7 +15,7 @@ module.exports = Object.freeze([
   ].map(([method, routePath, publicOutput]) => Object.freeze({
     method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
     membership: "not-required", ownership: "authenticated-user", featureFlag: null, publicOutput,
-    rateLimit: method === "POST" && routePath.endsWith("activities") ? "20/minute/user" : null,
+    rateLimit: method === "POST" && routePath.endsWith("operational-events") ? "120/minute/user" : (method === "GET" ? null : "20/minute/user"),
     compatibility: null, publicWrite: null
   })),
   {

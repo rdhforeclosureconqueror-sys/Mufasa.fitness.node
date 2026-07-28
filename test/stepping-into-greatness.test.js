@@ -101,3 +101,37 @@ test("verification is normalized and client escalation is rejected",()=>{const {
 test("community settings update current feed visibility and membership remains unique",()=>{const {service,userStore}=fixture();service.join("maya");const a=service.complete("maya",valid({privacy:{activityVisibleToCommunity:true,paceVisible:true,exactStartTimeVisible:true}}));assert.equal(service.feed("maya")[0].activityId,a.activityId);service.updateSettings("maya",{showPace:false,showExactStartTime:false});const event=service.feed("maya")[0];assert.equal("averagePaceSecondsPerKilometer" in event.summaryData,false);assert.equal("startedAt" in event.summaryData,false);service.updateSettings("maya",{showActivities:false});assert.equal(service.feed("maya").length,0);service.leave("maya");assert.equal(service.journey("maya").activities.length,1);service.join("maya");assert.equal(userStore.loadUser("maya").steppingIntoGreatness.memberships.length,1);});
 
 test("manual and estimated verification remain ineligible and challenge rules are declarative",()=>{const { verificationFor, CHALLENGES }=require("../src/services/steppingIntoGreatnessService");assert.equal(verificationFor("manual",null,"valid").personalRecordEligibility,false);assert.equal(verificationFor("estimated",null,"valid").challengeEligibility,false);assert.ok(CHALLENGES.every(c=>Array.isArray(c.allowedVerificationLevels)));});
+
+test("community visibility settings reject unknown and non-boolean values",()=>{
+  const {service}=fixture();
+  assert.throws(()=>service.join("maya",{showActivities:"yes"}),/true or false/);
+  assert.throws(()=>service.join("maya",{routeVisible:true}),/Unsupported setting/);
+  service.join("maya",{showActivities:false});
+  assert.throws(()=>service.updateSettings("maya",null),/must be an object/);
+  assert.equal(service.membership("maya").visibilityPreferences.showActivities,false);
+});
+
+test("all greatness mutation routes apply explicit rate limiting",()=>{
+  const server=fs.readFileSync(path.join(__dirname,"../server.js"),"utf8");
+  const routes=[
+    'post("/api/me/greatness/activities"',
+    'delete("/api/me/greatness/activities/:activityId"',
+    'post("/api/me/greatness/membership"',
+    'delete("/api/me/greatness/membership"',
+    'patch("/api/me/greatness/membership/settings"',
+    'post("/api/me/greatness/challenges/:challengeId/enrollment"'
+  ];
+  for(const route of routes){const declaration=server.slice(server.indexOf(route),server.indexOf(route)+180);assert.match(declaration,/createRateLimiter/);}
+});
+
+test("recorder exposes distinct permission, GPS acquisition, recovery, and accessible save states",()=>{
+  const js=fs.readFileSync(path.join(__dirname,"../public/greatness.js"),"utf8"),html=fs.readFileSync(path.join(__dirname,"../public/greatness.html"),"utf8");
+  for(const state of ["requesting_permission","permission_denied","waiting_for_gps","active","paused","finishing","completed","save_failed"])assert.ok(js.includes(state));
+  assert.match(js,/GPS acquired/);assert.match(js,/Finish retries the same session safely/);assert.match(html,/aria-busy="false"/);assert.match(html,/role="alert"/);
+});
+
+test("operational analytics allowlist stores no caller metadata or location",()=>{
+  const {service,userStore}=fixture();service.recordOperationalEvent("maya","gps_acquired");
+  assert.throws(()=>service.recordOperationalEvent("maya","raw_coordinates"),/Unsupported operational event/);
+  const event=userStore.loadUser("maya").steppingIntoGreatness.operationalEvents[0];assert.deepEqual(event.metadata,{});assert.equal(event.eventName,"gps_acquired");
+});
