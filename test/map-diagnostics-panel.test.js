@@ -12,7 +12,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
-  assert.match(source, /DIAGNOSTICS_VERSION = "nearby-mobile-transport-20260729"/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "nearby-backend-route-20260729"/);
   assert.match(source, /Map diagnostics build:/);
   assert.match(source, /Map Debug/);
 });
@@ -34,8 +34,8 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
-  assert.match(html, /src="map-diagnostics\.js\?v=nearby-mobile-transport-20260729"/);
-  assert.match(runtime, /map-diagnostics\.js\?v=nearby-mobile-transport-20260729/);
+  assert.match(html, /src="map-diagnostics\.js\?v=nearby-backend-route-20260729"/);
+  assert.match(runtime, /map-diagnostics\.js\?v=nearby-backend-route-20260729/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
 });
@@ -50,4 +50,6 @@ test("nearby trail comparison captures matching redacted request and response ev
   assert.match(runtime, /\[REDACTED\]/);
   assert.match(runtime, /requestHeaders:Object\.fromEntries/);
   assert.match(runtime, /headers\["X-Request-ID"\]=clientRequestId/);
+  assert.match(runtime, /new URL\("\/api\/me\/greatness\/nearby-trails\/search",backendOrigin\(\)\)\.href/);
+  assert.match(runtime, /https:\/\/mufasa-fitness-node\.onrender\.com/);
 });

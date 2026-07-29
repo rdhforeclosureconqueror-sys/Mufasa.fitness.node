@@ -1,5 +1,5 @@
 const ADMIN_ROLES = new Set(["admin", "super_admin"]);
-const DIAGNOSTICS_VERSION = "nearby-mobile-transport-20260729";
+const DIAGNOSTICS_VERSION = "nearby-backend-route-20260729";
 const SECRET_KEY = /(?:api.?key|authorization|cookie|secret|token|password)/i;
 const FAILURE_EVENT = /(?:failure|error)$/;
 const STEP_EVENTS = [
