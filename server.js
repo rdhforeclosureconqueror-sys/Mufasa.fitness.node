@@ -30,6 +30,7 @@ const { createSteppingIntoGreatnessService } = require("./src/services/steppingI
 const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
 const { parseGeoJSON, parseGpx } = require("./src/trails/geometry");
+const { planVerifiedRoute, unavailableRoute } = require("./src/services/goalRoutePlanner");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -1633,6 +1634,8 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.complete(req.auth.userId, req.body), 201)));
   app.post("/api/me/greatness/nearby-trails/search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
+  app.post("/api/me/greatness/trails/text-search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
+    ok(res, req.requestId, await nearbyTrailService.textSearch(req.auth.userId, req.body))));
   app.get("/api/me/greatness/nearby-trails/provider-health", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, nearbyTrailService.health())));
   app.get("/api/browser-config", (req, res) => {
@@ -1645,6 +1648,7 @@ function createApp(options = {}) {
     });
   });
   app.get("/api/me/greatness/trails/:trailId", requireAuth, asyncHandler(async (req, res) => { const route = trailRouteStore.get(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));
+  app.post("/api/me/greatness/trails/:trailId/goal-routes", requireAuth, asyncHandler(async (req, res) => { const route=trailRouteStore.get(req.params.trailId),target=Number(req.body?.targetDistanceMeters);if(!Number.isFinite(target)||target<100||target>100000)throw new ApiError("INVALID_ROUTE_GOAL","Choose a distance between 100 metres and 100 kilometres",400);if(!route||route.verificationStatus!=="admin_verified"||route.geometry?.length<2)return ok(res,req.requestId,{options:[unavailableRoute(req.body?.place,target)]});return ok(res,req.requestId,{options:planVerifiedRoute({targetDistanceMeters:target,geometry:route.geometry,routeType:route.routeType,tolerancePercent:Number(process.env.ROUTE_DISTANCE_TOLERANCE_PERCENT)||2})}); }));
   const requireTrailAdmin = (req, _res, next) => ["super_admin", "admin"].includes(req.authz?.role || req.auth?.role) ? next() : next(new ApiError("FORBIDDEN", "Trail route management requires an admin role", 403));
   app.get("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => ok(res, req.requestId, { routes: trailRouteStore.list() })));
   app.post("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => { const geometry = req.body?.importFormat === "gpx" ? parseGpx(req.body.importData) : req.body?.importFormat === "geojson" ? parseGeoJSON(req.body.importData) : req.body?.geometry; return ok(res, req.requestId, trailRouteStore.save({ ...req.body, geometry }), 201); }));
