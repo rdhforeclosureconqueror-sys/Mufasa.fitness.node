@@ -1,0 +1,57 @@
+TITLE: NASM-STYLE MOVEMENT SCIENCE – SUMMARY
+
+KINETIC CHAIN
+Human movement = integrated system of:
+- Nervous system (control)
+- Muscular system (prime movers, stabilizers, synergists)
+- Skeletal system (levers and joints)
+
+MUSCLE ACTIONS
+- CONCENTRIC: muscle shortens, accelerates movement.
+- ECCENTRIC: muscle lengthens under tension, decelerates and controls.
+- ISOMETRIC: muscle length constant, stabilizes joints.
+
+MUSCLE ROLES
+- PRIME MOVER: main driver (e.g. glute max in hip extension).
+- SYNERGIST: assists the prime mover.
+- STABILIZER: prevents unwanted movement.
+- ANTAGONIST: performs opposite action, must coordinate and release.
+
+PLANES AND AXES
+- SAGITTAL / medial-lateral axis: flexion/extension.
+- FRONTAL / anterior-posterior axis: abduction/adduction, lateral flexion.
+- TRANSVERSE / longitudinal axis: rotation, horizontal ab/adduction.
+
+POSTURAL ALIGNMENT CHECKPOINTS (standing)
+- Feet: straight, hip-width, weight balanced over tripod of foot.
+- Knees: in line with 2nd/3rd toe, not caving inward.
+- Hips/pelvis: neutral, not excessively anterior or posterior tilted.
+- Lumbar spine: natural curve, not extreme extension.
+- Thoracic: tall, no rounding.
+- Shoulders: level, not internally rotated or elevated.
+- Head: neutral, ears over shoulders, not forward.
+
+COMMON COMPENSATIONS
+- FEET: flattening (overpronation), turning out.
+- KNEES: valgus (caving in) or varus (bowing out).
+- HIPS / LOW BACK: excessive arch or rounding.
+- SHOULDERS: elevation, protraction, internal rotation.
+- HEAD: forward head.
+
+PROGRAMMING PHASES (inspired by NASM OPT)
+- STABILIZATION:
+  Goal: joint stability, control, endurance.
+  Focus: balance, slow tempo, controlled breathing, light loads.
+
+- STRENGTH:
+  Goal: increase force production and coordination under load.
+  Focus: 6–12 reps, moderate tempo, multi-joint lifts.
+
+- POWER:
+  Goal: rate of force development.
+  Focus: explosive intent, jump / throw / sprint patterns, couple strength + speed drills.
+
+KEY PRINCIPLES
+- Use integrated warm-ups: tissue prep → mobility → activation → movement prep.
+- Train movements before muscles; planes before body parts.
+- Quality reps first, then quantity.
