@@ -12,6 +12,7 @@ function createTrailResponseDiagnostics({ logger = console } = {}) {
     if (req.path !== TRAIL_SEARCH_PATH) return next();
 
     const state = { bytesWritten: 0, jsonExecuted: false, endExecuted: false, finished: false, closedEarly: false };
+    const socketBytesAtStart = Number(req.socket?.bytesWritten) || 0;
     req.trailResponseDiagnostics = state;
     const originalJson = res.json.bind(res);
     const originalSend = res.send.bind(res);
@@ -22,7 +23,12 @@ function createTrailResponseDiagnostics({ logger = console } = {}) {
       userId: req.auth?.userId || null,
       userAgent: req.get("user-agent") || null,
       hostname: req.hostname || req.get("host") || null,
+      method: req.method || null,
+      originalUrl: req.originalUrl || req.url || null,
+      renderService: process.env.RENDER_SERVICE_NAME || process.env.RENDER_SERVICE_ID || null,
+      deployedCommit: process.env.RENDER_GIT_COMMIT || process.env.APPLICATION_COMMIT || null,
       bytesWritten: state.bytesWritten,
+      socketBytesWritten: Math.max(0, (Number(req.socket?.bytesWritten) || socketBytesAtStart) - socketBytesAtStart),
       contentType: res.getHeader("content-type") || null,
       contentLength: res.getHeader("content-length") || null,
       resJsonExecuted: state.jsonExecuted,
@@ -30,6 +36,8 @@ function createTrailResponseDiagnostics({ logger = console } = {}) {
       headersSent: res.headersSent,
       compressionEnabled: Boolean(res.getHeader("content-encoding")),
       contentEncoding: res.getHeader("content-encoding") || null,
+      cacheControl: res.getHeader("cache-control") || null,
+      transferEncoding: res.getHeader("transfer-encoding") || null,
       responseStreamClosedEarly: state.closedEarly
     });
 

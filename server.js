@@ -303,7 +303,8 @@ function createApp(options = {}) {
     },
     credentials: false,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Request-ID"],
+    exposedHeaders: ["X-Request-ID", "Content-Length", "Content-Type", "Cache-Control", "Content-Encoding"],
     optionsSuccessStatus: 200
   };
 
