@@ -53,6 +53,18 @@ test("truncates raw diagnostic bodies to 500 characters", async () => {
   await assert.rejects(parseTrailSearchResponse(new Response("x".repeat(700), { headers: { "content-type": "text/plain" } })), error => error.diagnostic.rawResponseBody.length === 500 && error.diagnostic.rawResponseTruncated === true);
 });
 
+test("reports response length, empty classification, and successful validation", async () => {
+  const { parseTrailSearchResponse } = await subject();
+  const events = [];
+  const body = JSON.stringify({ trails: [] });
+  await parseTrailSearchResponse(response(body), { logger: (stage, details) => events.push({ stage, details }) });
+  const success = events.find(item => item.stage === "response_validation_success").details;
+  assert.equal(success.responseLength, body.length);
+  assert.equal(success.parserResult, "JSON parsed and schema normalized");
+  assert.equal(success.validationRule, "passed");
+  await assert.rejects(parseTrailSearchResponse(response("")), error => error.diagnostic.responseKind === "empty");
+});
+
 test("classifies authentication and provider HTTP failures before contract validation", async () => {
   const { parseTrailSearchResponse } = await subject();
   await assert.rejects(parseTrailSearchResponse(response(JSON.stringify({ ok: false, error: { code: "UNAUTHORIZED", message: "Sign in" } }), 401)), error => error.code === "AUTH_REQUIRED" && error.httpStatus === 401);
