@@ -37,8 +37,8 @@ test("reports the exact parser evidence and validation rule", async () => {
     assert.equal(error.diagnostic.contentType, "text/html");
     return true;
   });
-  assert.equal(events[0].stage, "response_received_before_validation");
-  assert.equal(events[0].details.httpStatus, 200);
+  const beforeValidation = events.find(item => item.stage === "response_received_before_validation");
+  assert.equal(beforeValidation.details.httpStatus, 200);
 
   await assert.rejects(parseTrailSearchResponse(response(JSON.stringify({ success: true, trailsFound: [] }))), error => {
     assert.deepEqual(error.diagnostic.parsedObjectKeys, ["success", "trailsFound"]);
@@ -60,9 +60,27 @@ test("reports response length, empty classification, and successful validation",
   await parseTrailSearchResponse(response(body), { logger: (stage, details) => events.push({ stage, details }) });
   const success = events.find(item => item.stage === "response_validation_success").details;
   assert.equal(success.responseLength, body.length);
+  assert.equal(success.responseBytes, Buffer.byteLength(body));
+  assert.equal(success.cloneTextLength, body.length);
+  assert.equal(success.bodyUsedBeforeRead, false);
+  assert.equal(success.bodyUsedAfterRead, true);
+  assert.equal(success.responseOk, true);
+  assert.equal(success.responseType, "default");
   assert.equal(success.parserResult, "JSON parsed and schema normalized");
   assert.equal(success.validationRule, "passed");
   await assert.rejects(parseTrailSearchResponse(response("")), error => error.diagnostic.responseKind === "empty");
+});
+
+test("captures request ID and transport headers before consuming the body", async () => {
+  const { parseTrailSearchResponse } = await subject();
+  const events = [];
+  const body = JSON.stringify({ trails: [] });
+  await parseTrailSearchResponse(new Response(body, { headers: { "content-type": "application/json", "content-length": String(body.length), "x-request-id": "trail-request-42" } }), { logger: (stage, details) => events.push({ stage, details }) });
+  const headers = events.find(item => item.stage === "response_headers_received").details;
+  assert.equal(headers.requestId, "trail-request-42");
+  assert.equal(headers.contentLength, String(body.length));
+  assert.equal(headers.cloneTextLength, body.length);
+  assert.equal(headers.bodyUsedBeforeRead, false);
 });
 
 test("classifies authentication and provider HTTP failures before contract validation", async () => {
