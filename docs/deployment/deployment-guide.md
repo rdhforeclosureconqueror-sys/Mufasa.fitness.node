@@ -68,6 +68,12 @@ See the [operations runbook](../operations/runbook.md) and [release checklist](.
 
 ## Nearby Trails provider (Render)
 
+`DEBUG_MAP=true` is a runtime variable on the Node web service that serves
+`/api/browser-config` (`mufasa-fitness-node` in the documented production setup),
+not a frontend build variable. After changing it, redeploy that service. The public
+endpoint exposes only the map browser key, `debugMapEnabled`, and a non-secret
+application revision; it never serializes the process environment.
+
 Set these Render service environment variables, then choose **Manual Deploy → Deploy latest commit**:
 
 ```text

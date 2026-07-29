@@ -1634,9 +1634,11 @@ function createApp(options = {}) {
     ok(res, req.requestId, nearbyTrailService.health())));
   app.get("/api/browser-config", (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    const applicationCommit = String(process.env.RENDER_GIT_COMMIT || process.env.APPLICATION_COMMIT || "");
     return ok(res, req.requestId, {
       googleMapsBrowserApiKey: process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || null,
-      debugMap: String(process.env.DEBUG_MAP || "").toLowerCase() === "true"
+      debugMapEnabled: String(process.env.DEBUG_MAP || "").toLowerCase() === "true",
+      applicationCommit: /^[0-9a-f]{7,64}$/i.test(applicationCommit) ? applicationCommit : "unknown"
     });
   });
   app.get("/api/me/greatness/trails/:trailId", requireAuth, asyncHandler(async (req, res) => { const route = trailRouteStore.get(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));
