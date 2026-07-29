@@ -99,7 +99,9 @@ export async function initializeMapDiagnostics(token) {
     const [config,account]=await Promise.all([configRequest,authRequest]);
     const role=typeof account.role==="string"?account.role.trim().toLowerCase():"";
     const rolePresent=Boolean(role);
-    const authorized=ADMIN_ROLES.has(role)||config.debugMapEnabled===true;
+    const explicitlyRequested=new URLSearchParams(globalThis.location?.search||"").has("mapDiagnostics");
+    const userEnabled=account?.diagnosticsEnabled===true;
+    const authorized=explicitlyRequested||(userEnabled&&(ADMIN_ROLES.has(role)||config.debugMapEnabled===true));
     console.info("diagnostics_authorization_checked");
     console.info(`diagnostics_authorized: ${authorized}`);
     console.info(`role_present: ${rolePresent}`);
