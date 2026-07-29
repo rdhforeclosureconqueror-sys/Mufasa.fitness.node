@@ -42,7 +42,13 @@ export function normalizeTrailSearchEnvelope(body) {
 export async function parseTrailSearchResponse(response, { logger } = {}) {
   const httpStatus = response.status;
   const contentType = response.headers?.get?.("content-type") || "(missing)";
-  const baseDiagnostic = { httpStatus, contentType, responseUrl: response.url || "(same-origin response URL unavailable)", cacheControl: response.headers?.get?.("cache-control") || "(missing)", responseAge: response.headers?.get?.("age") || "(missing)", rateLimitRemaining: response.headers?.get?.("ratelimit-remaining") || response.headers?.get?.("x-ratelimit-remaining") || "(missing)", expectedSchema: EXPECTED_SCHEMA };
+  const bodyUsedBeforeRead = Boolean(response.bodyUsed);
+  let cloneTextLength = null;
+  let cloneReadError = null;
+  try { cloneTextLength = (await response.clone().text()).length; }
+  catch (error) { cloneReadError = `${error?.name || "Error"}: ${error?.message || String(error)}`; }
+  const baseDiagnostic = { httpStatus, contentType, requestId: response.headers?.get?.("x-request-id") || "(missing)", contentLength: response.headers?.get?.("content-length") || "(missing)", responseOk: Boolean(response.ok), responseType: response.type || "(missing)", redirected: Boolean(response.redirected), bodyUsedBeforeRead, cloneTextLength, cloneReadError, responseUrl: response.url || "(same-origin response URL unavailable)", cacheControl: response.headers?.get?.("cache-control") || "(missing)", responseAge: response.headers?.get?.("age") || "(missing)", rateLimitRemaining: response.headers?.get?.("ratelimit-remaining") || response.headers?.get?.("x-ratelimit-remaining") || "(missing)", expectedSchema: EXPECTED_SCHEMA };
+  emit(logger, "response_headers_received", baseDiagnostic);
   let text;
   try { text = await response.text(); }
   catch (cause) {
@@ -50,7 +56,7 @@ export async function parseTrailSearchResponse(response, { logger } = {}) {
     emit(logger, "response_received_before_validation", diagnostic);
     throw new TrailResponseError("Unable to read trail response body", { httpStatus, parseSucceeded: false, validationStep: diagnostic.validationRule, diagnostic, cause });
   }
-  const diagnostic = { ...baseDiagnostic, responseLength: text.length, redirected: Boolean(response.redirected), rawResponseBody: text.slice(0, RAW_BODY_LIMIT), rawResponseTruncated: text.length > RAW_BODY_LIMIT, responseKind: responseKind(text, contentType), parsedObjectKeys: [], receivedSchema: "not parsed", parserResult: "pending", validationRule: "pending" };
+  const diagnostic = { ...baseDiagnostic, responseLength: text.length, responseBytes: new TextEncoder().encode(text).byteLength, bodyUsedAfterRead: Boolean(response.bodyUsed), rawResponseBody: text.slice(0, RAW_BODY_LIMIT), rawResponseTruncated: text.length > RAW_BODY_LIMIT, responseKind: responseKind(text, contentType), parsedObjectKeys: [], receivedSchema: "not parsed", parserResult: "pending", validationRule: "pending" };
   emit(logger, "response_received_before_validation", diagnostic);
   if (!text.trim()) {
     Object.assign(diagnostic, { receivedSchema: "empty body", parserResult: "failed", validationRule: "response body must not be empty" });

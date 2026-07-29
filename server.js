@@ -6,6 +6,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
+const { createTrailResponseDiagnostics, logTrailResponseException } = require("./src/middleware/trailResponseDiagnostics");
 const { createRateLimiter } = require("./src/middleware/rateLimit");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
@@ -241,6 +242,7 @@ function createApp(options = {}) {
   const requireCriticalRouteAuth = insecureTestCompatibility ? (_req, _res, next) => next() : requireAuth;
   const app = express();
   app.use(requestContext);
+  app.use(createTrailResponseDiagnostics({ logger: options.logger || console }));
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
   const avatarFeatureEnabled = isAvatarFeatureEnabled(process.env);
   const pilotBypassRuntimeAllowed = process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development";
@@ -2525,6 +2527,7 @@ function createApp(options = {}) {
 
   // ---- central error handler ----
   app.use((err, req, res, _next) => {
+    logTrailResponseException(req, res, err, options.logger || console);
     const requestId = req.requestId || "unknown";
     if (err instanceof ApiError) {
       if (err.status === 401) {
