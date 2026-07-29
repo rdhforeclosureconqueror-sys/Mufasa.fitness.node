@@ -29,7 +29,7 @@ test("route persistence requires attribution and geometry before admin verificat
 });
 
 test("browser map helpers number markers and calculate bounds", async () => {
-  const source = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8").replace(/export /g, "");
+  const source = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8").replace(/^import .*$/m, "").replace(/export /g, "");
   const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport {createMapPayload,payloadBounds,markerLabel}`).toString("base64")}`;
   const { createMapPayload, payloadBounds, markerLabel } = await import(moduleUrl);
   const payload = createMapPayload({ latitude: 1, longitude: 2 }, [{ id: "a", name: "A", latitude: 3, longitude: 4 }, { id: "b", name: "B", latitude: -1, longitude: 5 }]);

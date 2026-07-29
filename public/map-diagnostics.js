@@ -1,5 +1,7 @@
+import { backendUrl } from "./backend-origin.js?v=mobile-map-config-route-20260729";
+
 const ADMIN_ROLES = new Set(["admin", "super_admin"]);
-const DIAGNOSTICS_VERSION = "nearby-backend-route-20260729";
+const DIAGNOSTICS_VERSION = "mobile-map-config-route-20260729";
 const SECRET_KEY = /(?:api.?key|authorization|cookie|secret|token|password)/i;
 const FAILURE_EVENT = /(?:failure|error)$/;
 const STEP_EVENTS = [
@@ -45,7 +47,7 @@ function updateDerived(event, details, now) {
   if (event === "map_render_complete") { state.timings.mapRender = duration(state.starts.render, now); state.facts.mapStatus = "rendered"; }
   if (event === "backend_http_status") state.facts.nearbyTrailsHttpStatus = details.status;
   if (event === "trail_count_rendered") state.facts.trailsReturned = details.count;
-  if (event === "markers_added") state.facts.markersCreated = details.markerCount;
+  if (event === "markers_created" || event === "markers_added") state.facts.markersCreated = details.markerCount;
   state.facts.scriptLoaded = Boolean(globalThis.google?.maps);
   state.facts.googleExists = Boolean(globalThis.google);
   state.facts.googleMapsExists = Boolean(globalThis.google?.maps);
@@ -92,8 +94,8 @@ export async function initializeMapDiagnostics(token) {
   if (state.enabled) return true;
   if (state.initializing) return state.initializing;
   state.initializing=(async()=>{
-    const configRequest=fetch("/api/browser-config",{cache:"no-store"}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
-    const authRequest=fetch("/api/me",{credentials:"same-origin",headers:token?{Authorization:`Bearer ${token}`}:{}}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
+    const configRequest=fetch(backendUrl("/api/browser-config"),{cache:"no-store",credentials:"omit",redirect:"error"}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
+    const authRequest=fetch(backendUrl("/api/me"),{credentials:"omit",headers:token?{Authorization:`Bearer ${token}`}:{}}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
     const [config,account]=await Promise.all([configRequest,authRequest]);
     const role=typeof account.role==="string"?account.role.trim().toLowerCase():"";
     const rolePresent=Boolean(role);
