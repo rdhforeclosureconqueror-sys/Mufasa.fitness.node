@@ -5,9 +5,12 @@ module.exports = Object.freeze([
   ...[
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
+    ["POST", "/api/me/greatness/activities/start-with-route", "sensitive-private"],
+    ["POST", "/api/me/greatness/challenges/:challengeId/route-suggestions", "generated-route-options"],
     ["POST", "/api/me/greatness/nearby-trails/search", "privacy-safe-provider-results"],
     ["GET", "/api/me/greatness/nearby-trails/provider-health", "privacy-safe-provider-health"],
     ["POST", "/api/me/greatness/operational-events", "owner-scoped-analytics-acknowledgement"],
+    ["POST", "/api/me/greatness/trails/:trailId/goal-routes/alternatives", "generated-route-options"],
     ["DELETE", "/api/me/greatness/activities/:activityId", "owner-scoped"],
     ["GET", "/api/me/greatness/activities/:activityId/route", "sensitive-private"],
     ["POST", "/api/me/greatness/membership", "authenticated-safe"],
@@ -17,7 +20,7 @@ module.exports = Object.freeze([
   ].map(([method, routePath, publicOutput]) => Object.freeze({
     method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
     membership: "not-required", ownership: "authenticated-user", featureFlag: null, publicOutput,
-    rateLimit: method === "POST" && routePath.endsWith("operational-events") ? "120/minute/user" : (method === "GET" ? null : "20/minute/user"),
+    rateLimit: method === "POST" && routePath.endsWith("operational-events") ? "120/minute/user" : (routePath.includes("goal-routes") || routePath.endsWith("route-suggestions") ? "6/minute/user" : (method === "GET" ? null : "20/minute/user")),
     compatibility: null, publicWrite: null
   })),
   {
@@ -1763,7 +1766,7 @@ module.exports = Object.freeze([
   { "method":"GET", "path":"/api/browser-config", "authentication":"public", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":null, "featureFlag":null, "publicOutput":"restricted-browser-key-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
   { "method":"GET", "path":"/api/me/greatness/trails/:trailId", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user", "featureFlag":null, "publicOutput":"attributed-trail-route", "rateLimit":null, "compatibility":null, "publicWrite":null },
   { "method":"POST", "path":"/api/me/greatness/trails/text-search", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user", "featureFlag":null, "publicOutput":"normalized-place-results", "rateLimit":"10/minute", "compatibility":null, "publicWrite":null },
-  { "method":"POST", "path":"/api/me/greatness/trails/:trailId/goal-routes", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user", "featureFlag":null, "publicOutput":"generated-route-options", "rateLimit":null, "compatibility":null, "publicWrite":null },
+  { "method":"POST", "path":"/api/me/greatness/trails/:trailId/goal-routes", "authentication":"required", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"authenticated-user", "featureFlag":null, "publicOutput":"generated-route-options", "rateLimit":"6/minute/user", "compatibility":null, "publicWrite":null },
   { "method":"GET", "path":"/api/admin/trail-routes", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
   { "method":"POST", "path":"/api/admin/trail-routes", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
   { "method":"PATCH", "path":"/api/admin/trail-routes/:trailId/disable", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
