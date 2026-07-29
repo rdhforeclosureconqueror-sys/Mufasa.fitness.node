@@ -36,7 +36,7 @@ Route imports support GPX, GeoJSON LineString, manually supplied ordered coordin
 
 ## Known limitations
 
-Graph planning currently creates connected out-and-back geometry; a loop request may be returned as a partial-loop/out-and-back plan. It does not perform full loop-cycle search. Generated routes are planning aids, not turn-by-turn navigation. Users must follow closures, posted signs, property boundaries, and local conditions.
+Graph planning searches the usable pedestrian network for vertex-simple, edge-connected cycles. It rejects inaccessible, missing, non-finite, and zero-length geometry before planning. A loop goal is assembled only along a detected cycle as complete circuits followed, when needed, by an interpolated partial circuit; it never adds a straight-line closure. Candidates prefer verified geometry, trail adherence, park containment, target accuracy, fewer detectable road crossings, less edge repetition, and simpler directions, in that order. When no reliable cycle contains the snapped start, planning retains the connected out-and-back fallback. Generated routes are planning aids, not turn-by-turn navigation. Users must follow closures, posted signs, property boundaries, and local conditions.
 
 ## Google Cloud browser key
 

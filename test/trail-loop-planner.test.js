@@ -1,0 +1,25 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict");
+const {detectSimpleCycles,planTrailGraphRoute}=require("../src/services/trailGraphPlanner");
+
+function square({edgeLength=1000,edgeOverrides=()=>({}),parkBoundary=null}={}){
+  const nodes={a:{id:"a",latitude:32.94,longitude:-96.83},b:{id:"b",latitude:32.94,longitude:-96.82},c:{id:"c",latitude:32.95,longitude:-96.82},d:{id:"d",latitude:32.95,longitude:-96.83}};
+  const pairs=[["a","b"],["b","c"],["c","d"],["d","a"]],edges=pairs.map(([from,to],index)=>({id:`e${index}`,from,to,lengthMeters:edgeLength,access:"permitted",source:"openstreetmap",...edgeOverrides(index)}));
+  return{nodes,edges,parkBoundary,source:"openstreetmap",attribution:"test graph"};
+}
+const start={latitude:32.94,longitude:-96.83};
+
+test("Vitruvian-style internal geometry is detected as a connected simple loop",()=>{
+  const graph=square({parkBoundary:[[-96.831,32.939],[-96.819,32.939],[-96.819,32.951],[-96.831,32.951],[-96.831,32.939]]});
+  assert.equal(detectSimpleCycles(graph).length,1);
+  const route=planTrailGraphRoute({targetDistanceMeters:4000,graph,startPoint:start,routeType:"loop"})[0];
+  assert.equal(route.routeType,"loop");assert.equal(route.loopCount,1);assert.equal(route.partialLoopDistance,0);assert.equal(route.parkContainment,100);assert.deepEqual(route.polyline[0],route.polyline.at(-1));
+});
+test("two full loops repeat only connected graph edges",()=>{const route=planTrailGraphRoute({targetDistanceMeters:8000,graph:square(),startPoint:start,routeType:"loop"})[0];assert.equal(route.loopCount,2);assert.equal(route.partialLoopDistance,0);assert.equal(route.estimatedDistance,8000);assert.equal(route.polyline.length,9);});
+test("one full loop plus a partial loop interpolates its finish along an edge",()=>{const route=planTrailGraphRoute({targetDistanceMeters:4500,graph:square(),startPoint:start,routeType:"loop"})[0];assert.equal(route.routeType,"partial_loop");assert.equal(route.loopCount,1);assert.equal(route.partialLoopDistance,500);assert.equal(route.estimatedDistance,4500);assert.notDeepEqual(route.startPoint,route.endPoint);assert.ok(route.endPoint.longitude>route.startPoint.longitude);assert.equal(route.turnaroundPoint,null);});
+test("5K is composed from complete loops and an interpolated remainder",()=>{const route=planTrailGraphRoute({targetDistanceMeters:5000,graph:square({edgeLength:600}),startPoint:start,routeType:"loop"})[0];assert.equal(route.loopCount,2);assert.ok(Math.abs(route.partialLoopDistance-200)<1e-9);assert.ok(Math.abs(route.estimatedDistance-5000)<1e-9);assert.ok(Math.abs(route.distanceError)<1e-9);});
+test("disconnected pseudo-cycle is rejected instead of receiving straight-line closure",()=>{const graph=square();graph.edges.pop();assert.deepEqual(detectSimpleCycles(graph),[]);const route=planTrailGraphRoute({targetDistanceMeters:1000,graph,startPoint:start,routeType:"loop"})[0];assert.equal(route.routeType,"out_and_back");assert.deepEqual(route.polyline,route.polyline.slice().reverse());});
+test("a cycle containing an inaccessible edge is rejected",()=>{const graph=square({edgeOverrides:index=>index===2?{access:"private"}:{}});assert.deepEqual(detectSimpleCycles(graph),[]);assert.equal(planTrailGraphRoute({targetDistanceMeters:1000,graph,startPoint:start,routeType:"loop"})[0].routeType,"out_and_back");});
+test("cycle ranking favors adherence before target-distance accuracy",()=>{const graph=square({edgeLength:1000,edgeOverrides:()=>({trailAdherencePercent:100})});graph.nodes.e={id:"e",latitude:32.93,longitude:-96.82};graph.nodes.f={id:"f",latitude:32.93,longitude:-96.83};graph.edges.push({id:"r1",from:"a",to:"b",lengthMeters:1250,access:"permitted",trailAdherencePercent:40},{id:"r2",from:"b",to:"e",lengthMeters:1250,access:"permitted",trailAdherencePercent:40},{id:"r3",from:"e",to:"f",lengthMeters:1250,access:"permitted",trailAdherencePercent:40},{id:"r4",from:"f",to:"a",lengthMeters:1250,access:"permitted",trailAdherencePercent:40});const route=planTrailGraphRoute({targetDistanceMeters:5000,graph,startPoint:start,routeType:"loop"})[0];assert.equal(route.trailAdherence,100);assert.equal(route.loopCount,1);assert.equal(route.partialLoopDistance,1000);});
+test("a graph without a usable loop honestly falls back to connected out-and-back",()=>{const graph=square();graph.edges=graph.edges.slice(0,2);const route=planTrailGraphRoute({targetDistanceMeters:1200,graph,startPoint:start,routeType:"loop"})[0];assert.equal(route.routeType,"out_and_back");assert.equal(route.loopCount,0);assert.equal(route.trailAdherence,100);assert.deepEqual(route.startPoint,route.endPoint);});
+test("non-finite and zero-length cycle geometry is rejected",()=>{const graph=square();graph.nodes.c.latitude=NaN;graph.edges[0].lengthMeters=0;assert.deepEqual(detectSimpleCycles(graph),[]);});
