@@ -35,6 +35,7 @@ test("nearby trail response diagnostics correlate identity, headers, and exact b
   assert.equal(finish.resJsonExecuted, true);
   assert.equal(finish.resEndExecuted, true);
   assert.equal(finish.contentLength, expectedBytes);
+  assert.equal(finish.socketBytesWritten, 0);
   assert.equal(finish.compressionEnabled, false);
   assert.equal(finish.responseStreamClosedEarly, false);
 });

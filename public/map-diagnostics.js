@@ -1,5 +1,5 @@
 const ADMIN_ROLES = new Set(["admin", "super_admin"]);
-const DIAGNOSTICS_VERSION = "nearby-request-comparison-20260729";
+const DIAGNOSTICS_VERSION = "nearby-mobile-transport-20260729";
 const SECRET_KEY = /(?:api.?key|authorization|cookie|secret|token|password)/i;
 const FAILURE_EVENT = /(?:failure|error)$/;
 const STEP_EVENTS = [
@@ -9,7 +9,8 @@ const STEP_EVENTS = [
   ["Marker Library Loaded", "marker_library_loaded"], ["Map Created", "map_created"],
   ["Markers Added", "markers_added"], ["Trail Route Rendered", "trail_route_rendered"]
 ];
-const state = { enabled: false, initializing: null, events: [], facts: { authorizationStatus: "unknown", mapStatus: "not started" }, trailSnapshots: { desktop: null, iphone: null }, timings: {}, starts: {}, error: null, stopped: false, retry: null, clear: null, panel: null, launcher: null };
+const DEVICE_KINDS = ["desktop", "iphone", "android"];
+const state = { enabled: false, initializing: null, events: [], facts: { authorizationStatus: "unknown", mapStatus: "not started" }, trailSnapshots: { desktop: null, iphone: null, android: null }, timings: {}, starts: {}, error: null, stopped: false, retry: null, clear: null, panel: null, launcher: null };
 
 function safe(value, depth = 0) {
   if (depth > 4) return "[truncated]";
@@ -23,15 +24,15 @@ function browserFacts() {
   const ua = navigator.userAgent || "Unavailable";
   return { userAgent: ua, iOSVersion: ua.match(/OS (\d+[_\d]*) like Mac OS X/)?.[1]?.replaceAll("_", ".") || "Unavailable", safariVersion: ua.match(/Version\/([\d.]+).*Safari/)?.[1] || "Unavailable", origin: location.origin, href: location.href };
 }
-function deviceKind() { return /iPhone/i.test(navigator.userAgent || "") ? "iphone" : "desktop"; }
+function deviceKind() { const ua=navigator.userAgent||"";return /iPhone|iPad|iPod/i.test(ua)?"iphone":/Android/i.test(ua)?"android":"desktop"; }
 function changedFields(a, b) {
   if (!a || !b) return [];
   const fields=["requestUrl","method","queryParameters","credentialsMode","cookiesPresent","responseStatus","finalResponseUrl","redirectOccurred","contentType","cacheControl","responseLength","responseClassification","parsedSchema","validationResult"];
   return fields.filter(key=>JSON.stringify(a[key]??null)!==JSON.stringify(b[key]??null));
 }
-function comparison() { const {desktop,iphone}=state.trailSnapshots,differences=changedFields(desktop,iphone),causal=differences.some(field=>["responseStatus","finalResponseUrl","redirectOccurred","contentType","responseClassification","parsedSchema","validationResult"].includes(field));return { desktop, iphone, complete:Boolean(desktop&&iphone), differences, conclusion:!desktop||!iphone?"Capture both a successful desktop request and an iPhone request.":differences.length?`Desktop and iPhone requests differ in these fields:\n${differences.map((field,index)=>`${index+1}. ${field}`).join("\n")}`:"Desktop and iPhone requests are identical.", sufficientToExplainFailure:causal?"Yes — a response or validation difference can explain the failure.":differences.length?"No — only non-causal request metadata differs.":"No" }; }
+function comparison() { const {desktop,iphone,android}=state.trailSnapshots;const compare=mobile=>{const differences=changedFields(desktop,mobile),causal=differences.some(field=>["responseStatus","finalResponseUrl","redirectOccurred","contentType","responseClassification","parsedSchema","validationResult"].includes(field));return {differences,causal};};const ios=compare(iphone),droid=compare(android);return {desktop,iphone,android,complete:Boolean(desktop&&iphone&&android),iphoneDifferences:ios.differences,androidDifferences:droid.differences,conclusion:!desktop||!iphone||!android?"Capture a successful desktop request, an iPhone request, and an Android request.":`Desktop vs iPhone differences: ${ios.differences.join(", ")||"none"}.\nDesktop vs Android differences: ${droid.differences.join(", ")||"none"}.`,sufficientToExplainFailure:ios.causal||droid.causal?"Yes — a response or validation difference can explain the failure.":"No"}; }
 export function recordTrailRequestSnapshot(snapshot) { const kind=deviceKind();if(kind==="desktop"&&snapshot.validationResult!=="passed")return;const clean=safe({ ...snapshot, applicationCommit: state.facts.applicationCommit || snapshot.applicationCommit || "unknown" });state.trailSnapshots[kind]=clean;try{localStorage.setItem(`mapDiagnostics.trailSnapshot.${kind}`,JSON.stringify(clean));}catch{}render(); }
-function comparisonTable(result) { const fields=[["Request URL","requestUrl"],["Method","method"],["Query parameters","queryParameters"],["Credentials mode","credentialsMode"],["Cookies present","cookiesPresent"],["Response status","responseStatus"],["Final response URL","finalResponseUrl"],["Redirect occurred","redirectOccurred"],["Content-Type","contentType"],["Cache-Control","cacheControl"],["Response length","responseLength"],["Response classification","responseClassification"],["Parsed schema","parsedSchema"],["Validation result","validationResult"]];return `<table><thead><tr><th>Field</th><th>Desktop</th><th>iPhone</th></tr></thead><tbody>${fields.map(([label,key])=>`<tr><th>${label}</th><td>${escape(typeof result.desktop?.[key]==="object"?JSON.stringify(result.desktop[key]):result.desktop?.[key]??"—")}</td><td>${escape(typeof result.iphone?.[key]==="object"?JSON.stringify(result.iphone[key]):result.iphone?.[key]??"—")}</td></tr>`).join("")}</tbody></table><pre>${escape(result.conclusion)}\nSufficient to explain iPhone failure: ${escape(result.sufficientToExplainFailure)}</pre>`; }
+function comparisonTable(result) { const fields=[["Request ID","requestId"],["Request URL","requestUrl"],["Method","method"],["Query parameters","queryParameters"],["Credentials mode","credentialsMode"],["Cookies present","cookiesPresent"],["Response status","responseStatus"],["Final response URL","finalResponseUrl"],["Redirect occurred","redirectOccurred"],["Content-Type","contentType"],["Content-Length","contentLength"],["Content-Encoding","contentEncoding"],["Transfer-Encoding","transferEncoding"],["Cache-Control","cacheControl"],["Response length","responseLength"],["UTF-8 bytes","clientBytesReceived"],["Response classification","responseClassification"],["Parsed schema","parsedSchema"],["Validation result","validationResult"]];const cell=(device,key)=>escape(typeof result[device]?.[key]==="object"?JSON.stringify(result[device][key]):result[device]?.[key]??"—");return `<table><thead><tr><th>Field</th><th>Desktop</th><th>iPhone</th><th>Android</th></tr></thead><tbody>${fields.map(([label,key])=>`<tr><th>${label}</th>${DEVICE_KINDS.map(device=>`<td>${cell(device,key)}</td>`).join("")}</tr>`).join("")}</tbody></table><pre>${escape(result.conclusion)}\nSufficient to explain mobile failure: ${escape(result.sufficientToExplainFailure)}</pre>`; }
 function duration(start, end) { return start == null || end == null ? null : `${Math.max(0, end - start).toFixed(1)} ms`; }
 function updateDerived(event, details, now) {
   if (event === "browser_config_request_started") state.starts.config = now;
@@ -104,7 +105,7 @@ export async function initializeMapDiagnostics(token) {
     state.enabled=true;
     state.facts.authorizationStatus=ADMIN_ROLES.has(role)?"authorized by role":"authorized by server debug flag";
     state.facts.applicationCommit=typeof config.applicationCommit==="string"?config.applicationCommit:"unknown";
-    for(const kind of ["desktop","iphone"]){try{state.trailSnapshots[kind]=JSON.parse(localStorage.getItem(`mapDiagnostics.trailSnapshot.${kind}`)||"null");}catch{state.trailSnapshots[kind]=null;}}
+    for(const kind of DEVICE_KINDS){try{state.trailSnapshots[kind]=JSON.parse(localStorage.getItem(`mapDiagnostics.trailSnapshot.${kind}`)||"null");}catch{state.trailSnapshots[kind]=null;}}
     state.launcher=document.createElement("button");state.launcher.type="button";state.launcher.className="map-debug-launcher";state.launcher.textContent="Map Debug";state.launcher.setAttribute("aria-expanded","true");
     state.panel=document.createElement("aside");state.panel.className="map-diagnostics";state.panel.setAttribute("aria-label","Map diagnostics");
     state.launcher.onclick=()=>{state.panel.hidden=!state.panel.hidden;state.launcher.setAttribute("aria-expanded",String(!state.panel.hidden));if(!state.panel.hidden)render();};
