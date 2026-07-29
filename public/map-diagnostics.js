@@ -1,4 +1,5 @@
 const ADMIN_ROLES = new Set(["admin", "super_admin"]);
+const DIAGNOSTICS_VERSION = "4edfbb5";
 const SECRET_KEY = /(?:api.?key|authorization|cookie|secret|token|password)/i;
 const FAILURE_EVENT = /(?:failure|error)$/;
 const STEP_EVENTS = [
@@ -8,7 +9,7 @@ const STEP_EVENTS = [
   ["Marker Library Loaded", "marker_library_loaded"], ["Map Created", "map_created"],
   ["Markers Added", "markers_added"], ["Trail Route Rendered", "trail_route_rendered"]
 ];
-const state = { enabled: false, events: [], facts: {}, timings: {}, starts: {}, error: null, stopped: false, retry: null, clear: null, panel: null };
+const state = { enabled: false, initializing: null, events: [], facts: { authorizationStatus: "unknown", mapStatus: "not started" }, timings: {}, starts: {}, error: null, stopped: false, retry: null, clear: null, panel: null, launcher: null };
 
 function safe(value, depth = 0) {
   if (depth > 4) return "[truncated]";
@@ -31,7 +32,7 @@ function updateDerived(event, details, now) {
   if (event === "maps_library_import_started") state.starts.library = now;
   if (event === "marker_library_loaded") state.timings.libraryImport = duration(state.starts.library, now);
   if (event === "map_created") { state.facts.mapCreated = "Yes"; state.starts.render = now; }
-  if (event === "map_render_complete") state.timings.mapRender = duration(state.starts.render, now);
+  if (event === "map_render_complete") { state.timings.mapRender = duration(state.starts.render, now); state.facts.mapStatus = "rendered"; }
   if (event === "backend_http_status") state.facts.nearbyTrailsHttpStatus = details.status;
   if (event === "trail_count_rendered") state.facts.trailsReturned = details.count;
   if (event === "markers_added") state.facts.markersCreated = details.markerCount;
@@ -41,6 +42,7 @@ function updateDerived(event, details, now) {
   state.facts.importLibraryExists = Boolean(globalThis.google?.maps?.importLibrary);
   state.facts.markerLibraryLoaded ||= event === "marker_library_loaded";
   if (FAILURE_EVENT.test(event) || details.error) { state.error = safe(details.error || details); state.stopped = true; }
+  if (event === "browser_config_request_started") state.facts.mapStatus = "starting";
 }
 export function mapDiagnostic(event, details = {}) {
   const clean = safe(details), now = performance.now();
@@ -58,7 +60,7 @@ function render() {
   const completed = new Set(state.events.map(item => item.event)); if (state.facts.browser_key_present) completed.add("browser_key_present");
   const steps = STEP_EVENTS.map(([label,event]) => `<div class="${completed.has(event)?"diag-ok":state.error?"diag-pending":"diag-pending"}">${completed.has(event)?"✓":"○"} ${label}</div>`).join("");
   const f=state.facts,t=state.timings,e=state.error;
-  state.panel.innerHTML=`<h2>Map Diagnostics</h2>${steps}<p class="diag-status ${e?"diag-fail":"diag-ok"}">Status: ${e?"FAILED":completed.has("map_render_complete")?"SUCCESS":"RUNNING"}</p>
+  state.panel.innerHTML=`<h2>Map Diagnostics</h2><p><strong>Diagnostics loaded</strong><br>Map diagnostics build: ${DIAGNOSTICS_VERSION}</p><dl>${row("Diagnostics version",DIAGNOSTICS_VERSION)}${row("Application commit",escape(f.applicationCommit||"unknown"))}${row("Current hostname",escape(location.hostname))}${row("Current pathname",escape(location.pathname))}${row("Authorization status",escape(f.authorizationStatus||"unknown"))}${row("Map status",escape(f.mapStatus||"not started"))}</dl>${steps}<p class="diag-status ${e?"diag-fail":"diag-ok"}">Status: ${e?"FAILED":completed.has("map_render_complete")?"SUCCESS":"RUNNING"}</p>
   <h3>Browser</h3><dl>${row("User Agent",escape(browserFacts().userAgent))}${row("iOS",browserFacts().iOSVersion)}${row("Safari",browserFacts().safariVersion)}</dl>
   <h3>Host</h3><dl>${row("Origin",escape(location.origin))}${row("Href",escape(location.href))}</dl>
   <h3>Browser Config</h3><dl>${row("HTTP",f.browserConfigHttpStatus)}${row("JSON received",f.jsonReceived?"Yes":"No")}${row("Key present",f.browserKeyPresent)}${row("Key null",f.browserKeyNull)}</dl>
@@ -67,7 +69,8 @@ function render() {
   <h3>Timing</h3><dl>${row("Browser config",t.browserConfig)}${row("Script load",t.scriptLoad)}${row("Library import",t.libraryImport)}${row("Map render",t.mapRender)}</dl>
   ${e?`<h3 class="diag-fail">Error</h3><dl>${row("Code",escape(e.code))}${row("Name",escape(e.name))}${row("Message",escape(e.message))}${row("HTTP",escape(e.httpStatus))}${row("Host",escape(location.hostname))}</dl><details><summary>Stack trace</summary><pre>${escape(e.stack||"Unavailable")}</pre></details>`:""}
   <h3>Timeline</h3><pre>${state.events.map(x=>`[${x.time}] ${x.event}${Object.keys(x.details||{}).length?` ${JSON.stringify(x.details)}`:""}`).join("\n")||"Waiting for map initialization…"}</pre>
-  <div class="diag-controls"><button data-diag="copy">Copy Diagnostics</button><button data-diag="refresh">Refresh Diagnostics</button><button data-diag="retry">Retry Map Initialization</button><button data-diag="clear">Clear Map Cache</button></div>`;
+  <div class="diag-controls"><button data-diag="close">Close</button><button data-diag="copy">Copy Diagnostics</button><button data-diag="refresh">Refresh Diagnostics</button><button data-diag="retry">Retry Map Initialization</button><button data-diag="clear">Clear Map Cache</button></div>`;
+  state.panel.querySelector('[data-diag="close"]').onclick=()=>{ state.panel.hidden=true;state.launcher.setAttribute("aria-expanded","false"); };
   state.panel.querySelector('[data-diag="copy"]').onclick=async()=>navigator.clipboard.writeText(report());
   state.panel.querySelector('[data-diag="refresh"]').onclick=()=>{ state.facts={};state.timings={};state.starts={};state.events=[];state.error=null;state.stopped=false;render(); };
   state.panel.querySelector('[data-diag="retry"]').onclick=async()=>{ state.error=null;state.stopped=false;state.events=[];state.timings={};state.starts={};render();await state.retry?.(); };
@@ -75,8 +78,31 @@ function render() {
 }
 export function configureMapDiagnostics({ retry, clear } = {}) { state.retry=retry;state.clear=clear; }
 export async function initializeMapDiagnostics(token) {
-  let config = {}; try { const response=await fetch("/api/browser-config",{cache:"no-store"});config=(await response.json())?.data||{}; } catch {}
-  let role="user"; try { const response=await fetch("/api/me",{credentials:"same-origin",headers:token?{Authorization:`Bearer ${token}`}:{}}); role=(await response.json())?.data?.role||"user"; } catch {}
-  if (!ADMIN_ROLES.has(role) && config.debugMap !== true) return false;
-  state.enabled=true;state.panel=document.createElement("aside");state.panel.className="map-diagnostics";state.panel.setAttribute("aria-label","Map diagnostics");document.body.append(state.panel);render();return true;
+  if (state.enabled) return true;
+  if (state.initializing) return state.initializing;
+  state.initializing=(async()=>{
+    const configRequest=fetch("/api/browser-config",{cache:"no-store"}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
+    const authRequest=fetch("/api/me",{credentials:"same-origin",headers:token?{Authorization:`Bearer ${token}`}:{}}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
+    const [config,account]=await Promise.all([configRequest,authRequest]);
+    const role=typeof account.role==="string"?account.role.trim().toLowerCase():"";
+    const rolePresent=Boolean(role);
+    const authorized=ADMIN_ROLES.has(role)||config.debugMapEnabled===true;
+    console.info("diagnostics_authorization_checked");
+    console.info(`diagnostics_authorized: ${authorized}`);
+    console.info(`role_present: ${rolePresent}`);
+    if (!authorized) return false;
+    state.enabled=true;
+    state.facts.authorizationStatus=ADMIN_ROLES.has(role)?"authorized by role":"authorized by server debug flag";
+    state.facts.applicationCommit=typeof config.applicationCommit==="string"?config.applicationCommit:"unknown";
+    state.launcher=document.createElement("button");state.launcher.type="button";state.launcher.className="map-debug-launcher";state.launcher.textContent="Map Debug";state.launcher.setAttribute("aria-expanded","true");
+    state.panel=document.createElement("aside");state.panel.className="map-diagnostics";state.panel.setAttribute("aria-label","Map diagnostics");
+    state.launcher.onclick=()=>{state.panel.hidden=!state.panel.hidden;state.launcher.setAttribute("aria-expanded",String(!state.panel.hidden));if(!state.panel.hidden)render();};
+    document.body.append(state.launcher,state.panel);render();return true;
+  })().finally(()=>{state.initializing=null;});
+  return state.initializing;
 }
+
+// Loaded directly by greatness.html so diagnostics authorization is independent
+// of failures elsewhere in the application module graph.
+const bootstrapToken=()=>{try{return globalThis.AuthStateRuntime?.getAuthToken?.()||localStorage.getItem("maat_auth_token")||localStorage.getItem("authToken");}catch{return undefined;}};
+initializeMapDiagnostics(bootstrapToken());

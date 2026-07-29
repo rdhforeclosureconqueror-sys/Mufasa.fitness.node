@@ -1,7 +1,7 @@
 import { BrowserLocationTracker, browserTrackingLimitations } from "./greatness-location-tracker.js";
 import { createRecoveryStore } from "./greatness-recovery-store.js";
 import { clearGoogleMapsCache, createMapPayload, renderTrailMap } from "./trail-map.js";
-import { configureMapDiagnostics, initializeMapDiagnostics, mapDiagnostic } from "./map-diagnostics.js";
+import { configureMapDiagnostics, initializeMapDiagnostics, mapDiagnostic } from "./map-diagnostics.js?v=4edfbb5";
 import { parseTrailSearchResponse } from "./trail-response.js";
 const $=id=>document.getElementById(id), ui=Object.fromEntries(["activity","sessionState","syncState","distance","elapsed","moving","paused","currentPace","averagePace","gpsQuality","accepted","rejected","status","weak","start","pause","resume","finish","cancel","summary","recovery","goalProgress","goalLabel","goalCompleted","goalRemaining","goalPercent","goalBar"].map(id=>[id,$(id)]));
 const tracker=new BrowserLocationTracker(), recoveryStore=createRecoveryStore(), KEY=recoveryStore.SESSION_KEY;let session=null,timer=null,watchError=false,finishing=false,transientState="idle",lastQuality="";

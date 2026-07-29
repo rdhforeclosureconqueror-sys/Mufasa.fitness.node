@@ -5,13 +5,16 @@ const path = require("node:path");
 
 test("map diagnostics is admin/debug gated and redacts credentials", () => {
   const source = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
-  assert.match(source, /ADMIN_ROLES\.has\(role\).*config\.debugMap !== true/);
+  assert.match(source, /ADMIN_ROLES\.has\(role\)\|\|config\.debugMapEnabled===true/);
   assert.match(source, /\[REDACTED\]/);
   assert.match(source, /SECRET_KEY/);
   assert.doesNotMatch(source, /googleMapsBrowserApiKey[^\n]*innerHTML/);
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "4edfbb5"/);
+  assert.match(source, /Map diagnostics build:/);
+  assert.match(source, /Map Debug/);
 });
 
 test("map instrumentation covers configuration, libraries, markers, failures, and timing", () => {
@@ -23,5 +26,16 @@ test("map instrumentation covers configuration, libraries, markers, failures, an
 
 test("browser config exposes only the debug boolean alongside the browser key", () => {
   const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
-  assert.match(server, /debugMap: String\(process\.env\.DEBUG_MAP/);
+  assert.match(server, /debugMapEnabled: String\(process\.env\.DEBUG_MAP/);
+  assert.match(server, /RENDER_GIT_COMMIT/);
+});
+
+test("greatness page loads diagnostics independently with a cache-busting revision", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
+  const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
+  assert.match(html, /src="map-diagnostics\.js\?v=4edfbb5"/);
+  assert.match(runtime, /map-diagnostics\.js\?v=4edfbb5/);
+  assert.match(css, /safe-area-inset-bottom/);
+  assert.match(css, /z-index:2147483001/);
 });
