@@ -1632,7 +1632,10 @@ function createApp(options = {}) {
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
   app.get("/api/me/greatness/nearby-trails/provider-health", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, nearbyTrailService.health())));
-  app.get("/api/browser-config", (req, res) => ok(res, req.requestId, { googleMapsBrowserApiKey: process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || null }));
+  app.get("/api/browser-config", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return ok(res, req.requestId, { googleMapsBrowserApiKey: process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || null });
+  });
   app.get("/api/me/greatness/trails/:trailId", requireAuth, asyncHandler(async (req, res) => { const route = trailRouteStore.get(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));
   const requireTrailAdmin = (req, _res, next) => ["super_admin", "admin"].includes(req.authz?.role || req.auth?.role) ? next() : next(new ApiError("FORBIDDEN", "Trail route management requires an admin role", 403));
   app.get("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => ok(res, req.requestId, { routes: trailRouteStore.list() })));
