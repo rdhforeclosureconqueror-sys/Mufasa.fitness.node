@@ -1,0 +1,166 @@
+===== BEGIN REPORT =====
+
+TITLE
+Phase 13B – Trainer Workspace Browser Acceptance, Accessibility, and Admin Directory
+
+STATUS
+REAL BROWSER ACCEPTANCE: NOT COMPLETED
+KEYBOARD ACCEPTANCE: NOT COMPLETED
+SCREEN-READER ACCEPTANCE: NOT COMPLETED
+ADMIN DIRECTORY: COMPLETE
+
+The administrator directory, autocomplete workflow, responsive/accessibility source repairs, authorization contract, route inventory, and focused automated coverage are complete. Real-browser, manual keyboard, manual screen-reader, and screenshot acceptance are not claimed because no browser engine was available and installation was blocked by repository access policy.
+
+BASELINE
+The worktree was clean at the start. Phase 13 already provided trainer assignment persistence, assigned-client authorization, workspace APIs and pages, program assignment, trainer notes, navigation, and automated trainer security tests. No browser framework or browser dependency was declared in package.json.
+
+BROWSER ENVIRONMENT
+Searches of PATH, /usr/bin, /usr/local/bin, /opt, and project dependencies found no Chromium, Chrome, Firefox, WebKit, Playwright, Puppeteer, or Selenium engine. The existing phase12c-browser-intake test is a Node source/runtime simulation rather than a real browser harness.
+
+A project-local Playwright installation was attempted with:
+npm install --save-dev playwright@1.55.0
+
+It failed with HTTP 403 Forbidden from https://registry.npmjs.org/playwright. TLS, registry, proxy, and package-security settings were not weakened. package.json and package-lock.json were not changed by the failed installation. Consequently no real-browser workflow, viewport inspection, browser accessibility tree inspection, or screenshot capture was possible.
+
+DIRECTORY ARCHITECTURE
+GET /api/admin/trainer-directory is protected by requireAuth and admin.trainer_assignments.manage, then by its own per-actor trainer-directory rate limiter. A purpose-built trainerDirectoryService reads users, resolves their configured role, classifies trainer/member candidates, computes assignment status only from active assignment records, deduplicates by stable user ID, and sorts deterministically by display name then user ID. It supports q, type, limit, and offset cursor pagination.
+
+Queries normalize repeated whitespace and trim edges. q is limited to 2–80 characters and rejects control characters. type is restricted to trainer or member. limit is an integer from 1–20. cursor is a non-negative safe integer. Results are capped, stable, and duplicate-free.
+
+DIRECTORY OUTPUT POLICY
+The response allowlist is exactly userId, displayName, roleType, accountStatus, and assignmentStatus, plus page-level nextCursor. It does not spread or serialize raw users. Tests seed email, Journey/health, private note, and medical-like fields and verify those values and field names are absent. Admin and super-admin accounts are excluded from member results. Search errors disclose validation policy only, not candidate existence or record contents.
+
+ADMIN AUTOCOMPLETE
+Raw IDs are no longer the primary production interaction. The admin page has separate trainer and member comboboxes, a selected-pair review, and a disabled-until-valid assignment action. Stable IDs remain internal after selection while display names are shown.
+
+Requests debounce for 300 ms. Each new search aborts the previous AbortController and uses a monotonically increasing request number plus current-input comparison to ignore stale results. Editing search text clears its old selection. Loading, empty, error/retry, selection, success, and deactivation states are announced through live regions. Duplicate submissions are blocked while a request is active. HTTP status is retained on client errors for status-specific conflict messaging.
+
+The combobox supports Arrow Up/Down, Enter selection, Escape dismissal, mouse/touch selection, aria-activedescendant, aria-expanded, listbox/option roles, and focus return to the input. All result names and history values render with textContent rather than HTML parsing.
+
+TRAINER ACCEPTANCE RESULTS
+Automated API regression passed for assigned-only client listing, search/filter isolation, client overview sections, program creation/replacement/history, literal hostile note text, private notes, unassigned direct-detail denial, and deactivated-assignment denial. Trainer/member route navigation remains present and protected by server middleware.
+
+The specified real-browser login, refresh, sign-out/sign-in, filter-by-filter, page navigation, and visual inspection workflow was not executed because no browser engine could be obtained. REAL BROWSER ACCEPTANCE remains NOT COMPLETED.
+
+ADMIN ACCEPTANCE RESULTS
+Automated HTTP tests passed for administrator assignment creation, deterministic idempotent duplicate behavior (201 then 200), assignment history, deactivation, restored access denial, directory trainer/member search, no results, authorization denial, pagination, redaction, and rate limiting. The browser UI workflow itself was not executed in a real browser.
+
+MOBILE RESULTS
+Responsive CSS now uses zero-minimum grid tracks, global border-box sizing, overflow wrapping, a single-column breakpoint at 760px, full-width stacked mobile form controls, 44px minimum controls, bounded result menus, and no fixed content widths. These changes cover the requested 375px mobile and 768px tablet stacking behavior at source level; 1440px retains two columns.
+
+No 375x667, 768x1024, or 1440x900 real-browser viewport was executed. Visual mobile acceptance remains pending.
+
+KEYBOARD RESULTS
+KEYBOARD ACCEPTANCE: NOT COMPLETED
+
+Source-level and automated contract review confirms semantic buttons/inputs, Tab-reachable controls, visible :focus-visible outlines, Arrow Up/Down list navigation, Enter selection, Escape close/focus return, disabled-submit handling, and no custom focus trap. Status is programmatically focused after create/deactivate/error feedback. These contracts passed automated checks, but the complete Tab/Shift+Tab/Space workflow was not manually executed in a real browser, so keyboard acceptance is not claimed complete.
+
+SCREEN-READER RESULTS
+SCREEN-READER ACCEPTANCE: NOT COMPLETED
+
+Semantic review added or confirmed unique page titles, main content, labeled navigation, hierarchical headings, explicit input/textarea labels, field help, fieldsets/legends, status live regions, combobox/listbox semantics, accessible button names, loading/empty feedback, and focusable overall status. Native controls are used wherever possible. No dialog or table is present; assignment history uses named articles/cards.
+
+No screen reader was available or executed. Manual announcements, browse mode, and accessible-tree behavior remain pending.
+
+DEFECTS FOUND
+1. Reproduction: administrator assignment creation required memorizing and typing raw user IDs. Root cause: the Phase 13 admin page exposed only two unassisted text inputs.
+2. Reproduction: rapidly changing a future directory search could allow older responses to replace newer results. Root cause: there was no directory search or request lifecycle.
+3. Reproduction: trainer program and note fields were identifiable only by placeholder text. Root cause: the inputs lacked explicit labels.
+4. Reproduction: narrow layouts and long names could overflow grid tracks or produce controls smaller than a reliable touch target. Root cause: min-content grid sizing and minimal responsive rules.
+5. Reproduction: admin errors lost their HTTP status and deactivation could be submitted repeatedly. Root cause: the API helper reduced errors to message-only Error objects and buttons were not disabled during requests.
+
+DEFECTS FIXED
+1. Replaced primary raw-ID fields with directory-backed display-name comboboxes and an explicit selected-pair review. Regression: admin autocomplete source/accessibility contract test and directory integration tests.
+2. Added 300ms debounce, AbortController cancellation, request sequence checks, and current-input matching. Regression: stale-response protection contract assertions.
+3. Added explicit labels to trainer program and private-note controls, plus page/navigation/live-region semantics. Regression: lint and source accessibility contract checks.
+4. Added zero-minimum responsive grids, stacking, wrapping, 44px controls, and visible focus styles. Regression: CSS source review and lint.
+5. Preserved HTTP status, guarded submitting state, disabled in-flight deactivation buttons, retry feedback, and focused outcome announcements. Regression: duplicate-submission and error-state source contract checks.
+
+SECURITY RESULTS
+Anonymous directory access returns 401; members and trainers return 403; administrators are allowed. Existing auth-hardening coverage verifies malformed, expired, and revoked token behavior on protected routes. Directory-specific tests cover query boundaries, type/limit/cursor validation, stable ordering, pagination, no results, independent rate limiting, strict output allowlisting, and absence of seeded email, Journey, health, medical-like, trainer-note, and authorization fields.
+
+The route authorization contract now inventories the directory with required admin.trainer_assignments.manage permission, privileged ownership, allowlisted output, and trainer-directory rate limiting. The static route audit requires the directory, trainer clients, and assignment routes. The UI never uses innerHTML and does not log queries, results, selections, or selected user details. Server-side trainer/client authorization logic was not weakened or replaced.
+
+FILES CHANGED
+config/route-authorization-contract.js
+public/admin-trainer-assignments.html
+public/admin-trainer-assignments.js
+public/trainer.css
+public/trainer.html
+reports/phase13b-trainer-acceptance-admin-directory-report.txt
+scripts/repo-route-audit.js
+server.js
+src/services/trainerDirectoryService.js
+test/trainer-workspace.test.js
+
+TESTS
+PASS: node --check server.js
+PASS: node --check src/services/trainerDirectoryService.js
+PASS: node --check public/admin-trainer-assignments.js
+PASS: node --check public/trainer.js
+PASS: node --test test/trainer-workspace.test.js (6/6)
+PASS: npm test (362/362)
+PASS: npm run lint
+PASS: npm run security:check (4/4)
+PASS: npm run test:security (16/16)
+PASS WITH ENVIRONMENT WARNING: npm run repo:route-audit. Repository audit passed, but its two external frontend asset HEAD probes could not fetch GLTFLoader.js and BufferGeometryUtils.js.
+PASS: git diff --check
+BLOCKED: npm install --save-dev playwright@1.55.0 (npm registry returned HTTP 403 Forbidden)
+
+SCREENSHOTS
+No screenshots were captured. A perceptible web UI change was made, but screenshot capture requires a real browser engine; none was installed, and project-local installation was blocked by HTTP 403. No personal or health information was placed in screenshot artifacts.
+
+VALIDATION
+The application started successfully with local test configuration including a 32+ character AUTH_TOKEN_SECRET and configured admin/trainer IDs. GET /health returned HTTP 200 with ok=true and authConfigured=true. Anonymous GET /trainer.html returned 401. Anonymous GET /admin-trainer-assignments.html returned 401, confirming both HTML entry routes remain server-protected.
+
+All requested validation commands passed, subject only to the documented external asset probe warning. All changed JavaScript passed syntax validation. Real-browser and screen-reader validations were not executed and are explicitly not claimed.
+
+COMPATIBILITY
+Existing assignment endpoints and payloads remain intact. Duplicate assignment behavior remains deterministic and idempotent. Exact IDs remain internal payload values after directory selection. Persistence remains the Phase 13 file-backed stores. Trainer workspace authorization and member experience were not redesigned. No chat, scheduling, billing, deployment, or persistence replacement was added.
+
+ROLLBACK
+Revert the single implementation commit named "Complete trainer acceptance and admin directory". This removes the directory route/service/tests and restores the prior admin and trainer HTML/CSS/JavaScript. Existing assignment data requires no migration and remains readable because persistence format was unchanged.
+
+COMMIT
+One implementation commit is created with the required message:
+Complete trainer acceptance and admin directory
+
+No push or deployment was performed.
+
+COMPLETED REQUIREMENTS
+- Administrator-only, permission-protected, independently rate-limited directory API.
+- Normalized bounded validation, stable pagination/ordering, and duplicate suppression.
+- Purpose-built privacy-preserving output allowlist.
+- Trainer/member search and display-name selection without primary raw-ID entry.
+- Selected-pair review, assignment creation, duplicate prevention, and deactivation UI.
+- Debounce, cancellation, stale-response rejection, loading/empty/error/retry feedback.
+- Keyboard interaction implementation and accessible announcements at source level.
+- Responsive and semantic source repairs.
+- Focused directory, authorization, privacy, lifecycle, and UI contract tests.
+- Authorization contract and static route inventory updates.
+- Requested regression, lint, security, route-audit, syntax, health, and diff checks.
+
+PARTIALLY COMPLETED REQUIREMENTS
+- Responsive acceptance: implementation/source review complete; real viewport inspection pending.
+- Keyboard accessibility: interaction contracts implemented/tested; manual real-browser workflow pending.
+- Screen-reader semantics: source review and improvements complete; actual screen-reader run pending.
+- Trainer/admin browser acceptance: API lifecycle coverage complete; real-browser workflows pending.
+- Screenshot evidence: required states identified, capture blocked by absent browser.
+
+REMAINING RISKS
+- Browser-specific combobox focus/announcement behavior has not been observed.
+- Visual overflow at exact requested viewports has not been measured by layout APIs.
+- Native screen-reader/browser combinations may announce listbox updates differently.
+- The in-memory rate limiter is per process, consistent with the existing repository limiter, and is not a distributed production quota.
+- Assignment history cards currently display stable IDs because the historical assignment API does not include directory display names; assignment creation and selection show names as required.
+
+REMAINING WORK
+1. Restore approved npm registry access or provide an existing supported browser binary without weakening security policy.
+2. Execute trainer, administrator, and unauthorized-user acceptance workflows in Chromium or the repository-approved engine.
+3. Run 375x667, 768x1024, and 1440x900 viewport checks including horizontal overflow assertions.
+4. Execute complete keyboard-only Tab/Shift+Tab/Enter/Space/Escape/arrow workflows.
+5. Execute a screen-reader pass (for example NVDA/Firefox, NVDA/Chrome, VoiceOver/Safari, or the project standard).
+6. Capture the five requested privacy-safe screenshots after browser execution.
+7. Record any browser-only defects and add regression tests before marking acceptance complete.
+
+===== END REPORT =====

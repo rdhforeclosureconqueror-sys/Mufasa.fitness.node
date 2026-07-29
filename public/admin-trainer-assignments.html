@@ -1,1 +1,30 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trainer assignments</title><link rel="stylesheet" href="trainer.css"></head><body><header><h1>Trainer–client assignments</h1><a href="/dashboard.html">Member Home</a></header><main><section class="panel"><h2>Create assignment</h2><form id="create"><label>Trainer user ID<input name="trainerUserId" required></label><label>Client user ID<input name="clientUserId" required></label><button>Assign</button></form><p id="status" role="status"></p></section><section class="panel"><h2>Assignment history</h2><div id="assignments"></div></section></main><script src="admin-trainer-assignments.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trainer assignment management</title><link rel="stylesheet" href="trainer.css"></head>
+<body>
+<header><h1>Trainer–client assignments</h1><nav aria-label="Account"><a href="/dashboard.html">Member Home</a></nav></header>
+<main class="admin-main">
+  <section class="panel" aria-labelledby="create-heading">
+    <h2 id="create-heading">Create assignment</h2>
+    <p id="directory-help">Search by display name, then select a result. Enter at least two characters.</p>
+    <form id="create">
+      <div class="combobox-field">
+        <label for="trainer-search">Trainer</label>
+        <input id="trainer-search" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="trainer-results" aria-describedby="directory-help" required>
+        <ul id="trainer-results" class="directory-results" role="listbox" aria-label="Trainer results" hidden></ul>
+        <p id="trainer-feedback" class="field-feedback" role="status" aria-live="polite"></p>
+      </div>
+      <div class="combobox-field">
+        <label for="member-search">Member</label>
+        <input id="member-search" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="member-results" aria-describedby="directory-help" required>
+        <ul id="member-results" class="directory-results" role="listbox" aria-label="Member results" hidden></ul>
+        <p id="member-feedback" class="field-feedback" role="status" aria-live="polite"></p>
+      </div>
+      <fieldset class="selection-review"><legend>Selected pair</legend><p><strong>Trainer:</strong> <span id="selected-trainer">None selected</span></p><p><strong>Member:</strong> <span id="selected-member">None selected</span></p></fieldset>
+      <button id="assign" disabled>Assign selected pair</button>
+    </form>
+    <p id="status" role="status" aria-live="polite" tabindex="-1"></p>
+  </section>
+  <section class="panel" aria-labelledby="history-heading"><h2 id="history-heading">Assignment history</h2><div id="assignments" aria-live="polite"><p>Loading assignment history…</p></div></section>
+</main>
+<script src="admin-trainer-assignments.js"></script></body></html>
