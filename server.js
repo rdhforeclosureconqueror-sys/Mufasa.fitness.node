@@ -27,6 +27,8 @@ const { createNutritionService, createProviderClient } = require("./src/services
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
 const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
+const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
+const { parseGeoJSON, parseGpx } = require("./src/trails/geometry");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -351,7 +353,8 @@ function createApp(options = {}) {
   const userStore = createUserStore({ userDir: USER_DIR });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
-  const nearbyTrailService = createNearbyTrailService({ provider: trailProvider });
+  const trailRouteStore = createTrailRouteStore({ filePath: options.trailRouteFilePath || path.join(DATA_DIR, "trail-routes.json") });
+  const nearbyTrailService = createNearbyTrailService({ provider: trailProvider, routeStore: trailRouteStore });
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
@@ -1629,6 +1632,13 @@ function createApp(options = {}) {
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
   app.get("/api/me/greatness/nearby-trails/provider-health", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, nearbyTrailService.health())));
+  app.get("/api/browser-config", (req, res) => ok(res, req.requestId, { googleMapsBrowserApiKey: process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || null }));
+  app.get("/api/me/greatness/trails/:trailId", requireAuth, asyncHandler(async (req, res) => { const route = trailRouteStore.get(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));
+  const requireTrailAdmin = (req, _res, next) => ["super_admin", "admin"].includes(req.authz?.role || req.auth?.role) ? next() : next(new ApiError("FORBIDDEN", "Trail route management requires an admin role", 403));
+  app.get("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => ok(res, req.requestId, { routes: trailRouteStore.list() })));
+  app.post("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => { const geometry = req.body?.importFormat === "gpx" ? parseGpx(req.body.importData) : req.body?.importFormat === "geojson" ? parseGeoJSON(req.body.importData) : req.body?.geometry; return ok(res, req.requestId, trailRouteStore.save({ ...req.body, geometry }), 201); }));
+  app.patch("/api/admin/trail-routes/:trailId/disable", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => { const route = trailRouteStore.disable(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));
+  app.get("/admin-trail-routes.html", requireAuth, requireTrailAdmin, (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "admin-trail-routes.html")));
   app.post("/api/me/greatness/operational-events", requireAuth, createRateLimiter({ windowMs: 60_000, max: 120 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.recordOperationalEvent(req.auth.userId, req.body?.eventName), 202)));
   app.get("/api/me/greatness/activities/:activityId", requireAuth, asyncHandler(async (req, res) =>
