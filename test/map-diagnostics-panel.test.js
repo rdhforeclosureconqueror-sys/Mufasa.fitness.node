@@ -12,7 +12,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
-  assert.match(source, /DIAGNOSTICS_VERSION = "nearby-backend-route-20260729"/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "mobile-map-config-route-20260729"/);
   assert.match(source, /Map diagnostics build:/);
   assert.match(source, /Map Debug/);
 });
@@ -20,7 +20,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
 test("map instrumentation covers configuration, libraries, markers, failures, and timing", () => {
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
   const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
-  for (const event of ["browser_config_request_started", "maps_script_loaded", "maps_namespace_ready", "maps_library_loaded", "marker_library_loaded", "map_created", "markers_added", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
+  for (const event of ["browser_config_request_started", "browser_config_http_status", "browser_config_parsed", "browser_key_present", "maps_script_appended", "maps_loader_callback", "maps_namespace_ready", "maps_libraries_ready", "map_created", "markers_created", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
   for (const timing of ["browserConfig", "scriptLoad", "libraryImport", "mapRender"]) assert.match(diagnostics, new RegExp(timing));
 });
 
@@ -34,10 +34,26 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
-  assert.match(html, /src="map-diagnostics\.js\?v=nearby-backend-route-20260729"/);
-  assert.match(runtime, /map-diagnostics\.js\?v=nearby-backend-route-20260729/);
+  assert.match(html, /src="map-diagnostics\.js\?v=mobile-map-config-route-20260729"/);
+  assert.match(html, /src="greatness\.js\?v=mobile-map-config-route-20260729"/);
+  assert.match(runtime, /trail-map\.js\?v=mobile-map-config-route-20260729/);
+  assert.match(runtime, /map-diagnostics\.js\?v=mobile-map-config-route-20260729/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
+});
+
+test("map configuration resolves against the shared backend origin without credentials or redirects", () => {
+  const helper = fs.readFileSync(path.join(__dirname, "../public/backend-origin.js"), "utf8");
+  const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
+  const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
+  assert.match(helper, /RuntimeState\?\.getBackendOrigin/);
+  assert.match(helper, /MAAT_BACKEND_ORIGIN/);
+  assert.match(helper, /__MAAT_RUNTIME_CONFIG__/);
+  assert.match(helper, /https:\/\/mufasa-fitness-node\.onrender\.com/);
+  assert.match(map, /backendUrl\("\/api\/browser-config"\)/);
+  assert.match(map, /credentials: "omit", redirect: "error"/);
+  assert.doesNotMatch(map, /fetch\("\/api\/browser-config"/);
+  assert.match(diagnostics, /backendUrl\("\/api\/browser-config"\)/);
 });
 
 test("nearby trail comparison captures matching redacted request and response evidence", () => {
@@ -51,5 +67,5 @@ test("nearby trail comparison captures matching redacted request and response ev
   assert.match(runtime, /requestHeaders:Object\.fromEntries/);
   assert.match(runtime, /headers\["X-Request-ID"\]=clientRequestId/);
   assert.match(runtime, /new URL\("\/api\/me\/greatness\/nearby-trails\/search",backendOrigin\(\)\)\.href/);
-  assert.match(runtime, /https:\/\/mufasa-fitness-node\.onrender\.com/);
+  assert.match(fs.readFileSync(path.join(__dirname, "../public/backend-origin.js"), "utf8"), /https:\/\/mufasa-fitness-node\.onrender\.com/);
 });
