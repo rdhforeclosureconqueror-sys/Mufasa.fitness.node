@@ -14,6 +14,7 @@ function describeSchema(value) {
 
 function responseKind(text, contentType) {
   const trimmed = text.trim();
+  if (!trimmed) return "empty";
   if (/text\/html|application\/xhtml\+xml/i.test(contentType) || /^\s*(?:<!doctype\s+html|<html\b)/i.test(trimmed)) return "HTML";
   if (/[/+]json\b/i.test(contentType) || /^[{[]/.test(trimmed)) return "JSON";
   return "plain text";
@@ -49,20 +50,21 @@ export async function parseTrailSearchResponse(response, { logger } = {}) {
     emit(logger, "response_received_before_validation", diagnostic);
     throw new TrailResponseError("Unable to read trail response body", { httpStatus, parseSucceeded: false, validationStep: diagnostic.validationRule, diagnostic, cause });
   }
-  const diagnostic = { ...baseDiagnostic, rawResponseBody: text.slice(0, RAW_BODY_LIMIT), rawResponseTruncated: text.length > RAW_BODY_LIMIT, responseKind: responseKind(text, contentType), parsedObjectKeys: [], receivedSchema: "not parsed", validationRule: "pending" };
+  const diagnostic = { ...baseDiagnostic, responseLength: text.length, redirected: Boolean(response.redirected), rawResponseBody: text.slice(0, RAW_BODY_LIMIT), rawResponseTruncated: text.length > RAW_BODY_LIMIT, responseKind: responseKind(text, contentType), parsedObjectKeys: [], receivedSchema: "not parsed", parserResult: "pending", validationRule: "pending" };
   emit(logger, "response_received_before_validation", diagnostic);
   if (!text.trim()) {
-    Object.assign(diagnostic, { receivedSchema: "empty body", validationRule: "response body must not be empty" });
+    Object.assign(diagnostic, { receivedSchema: "empty body", parserResult: "failed", validationRule: "response body must not be empty" });
+    emit(logger, "response_validation_failure", diagnostic);
     throw new TrailResponseError("Empty trail response", { httpStatus, parseSucceeded: false, validationStep: diagnostic.validationRule, diagnostic });
   }
   let body;
   try { body = JSON.parse(text); }
   catch (cause) {
-    Object.assign(diagnostic, { receivedSchema: diagnostic.responseKind, validationRule: diagnostic.responseKind === "HTML" ? "JSON required; HTML response received" : "response body must be valid JSON", parserErrorName: cause.name, parserErrorMessage: cause.message });
+    Object.assign(diagnostic, { receivedSchema: diagnostic.responseKind, parserResult: "failed", validationRule: diagnostic.responseKind === "HTML" ? "JSON required; HTML response received" : "response body must be valid JSON", parserErrorName: cause.name, parserErrorMessage: cause.message });
     emit(logger, "response_validation_failure", diagnostic);
     throw new TrailResponseError(`${cause.name}: ${cause.message}`, { httpStatus, parseSucceeded: false, validationStep: diagnostic.validationRule, diagnostic, cause });
   }
-  Object.assign(diagnostic, { parsedObjectKeys: objectKeys(body), receivedSchema: describeSchema(body) });
+  Object.assign(diagnostic, { parsedObjectKeys: objectKeys(body), receivedSchema: describeSchema(body), parserResult: "JSON parsed" });
   emit(logger, "response_json_parsed", diagnostic);
   if (!response.ok) {
     const code = httpStatus === 401 || httpStatus === 403 ? "AUTH_REQUIRED" : body?.error?.code || body?.code || "REQUEST_FAILED";
@@ -70,7 +72,7 @@ export async function parseTrailSearchResponse(response, { logger } = {}) {
     emit(logger, "response_http_failure", diagnostic);
     throw new TrailResponseError(body?.error?.message || body?.message || `Request failed (${httpStatus})`, { code, httpStatus, validationStep: diagnostic.validationRule, diagnostic });
   }
-  try { return normalizeTrailSearchEnvelope(body); }
+  try { const result = normalizeTrailSearchEnvelope(body); Object.assign(diagnostic, { parserResult: "JSON parsed and schema normalized", validationRule: "passed" }); emit(logger, "response_validation_success", diagnostic); return result; }
   catch (error) {
     Object.assign(diagnostic, { validationRule: error.validationStep || "successful response envelope validation", parserErrorName: error.name, parserErrorMessage: error.message });
     emit(logger, "response_validation_failure", diagnostic);

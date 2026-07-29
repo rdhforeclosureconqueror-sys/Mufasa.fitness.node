@@ -12,7 +12,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
-  assert.match(source, /DIAGNOSTICS_VERSION = "4edfbb5"/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "nearby-request-comparison-20260729"/);
   assert.match(source, /Map diagnostics build:/);
   assert.match(source, /Map Debug/);
 });
@@ -34,8 +34,18 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
-  assert.match(html, /src="map-diagnostics\.js\?v=4edfbb5"/);
-  assert.match(runtime, /map-diagnostics\.js\?v=4edfbb5/);
+  assert.match(html, /src="map-diagnostics\.js\?v=nearby-request-comparison-20260729"/);
+  assert.match(runtime, /map-diagnostics\.js\?v=nearby-request-comparison-20260729/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
+});
+
+test("nearby trail comparison captures matching redacted request and response evidence", () => {
+  const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
+  const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
+  for (const field of ["requestUrl", "queryParameters", "credentialsMode", "cookiesPresent", "responseStatus", "finalResponseUrl", "redirectOccurred", "contentType", "cacheControl", "responseLength", "responseClassification", "parsedSchema", "validationResult"]) assert.match(`${diagnostics}\n${runtime}`, new RegExp(field));
+  assert.match(diagnostics, /Desktop and iPhone requests are identical/);
+  assert.match(diagnostics, /nearbyTrailsComparison/);
+  assert.match(runtime, /\[REDACTED\]/);
+  assert.match(runtime, /requestHeaders:Object\.fromEntries/);
 });
