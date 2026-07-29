@@ -1,275 +1,144 @@
-# Yoga API 🧘‍♀️
+# Yoga-Poses-Dataset
+This project was done as a part of the data collection project of Topics in Deep Learning(TDL).
 
-🛠️ **UDPDATE** New Docker file and compose added. Faster setup locally using the docker. 🛠️
-- [Check the usage section](#installation)
+The Yoga-Pose Dataset is a comprehensive collection of yoga pose images, pose landmarks, and calculated angles for various yoga poses. This dataset serves as a valuable resource for researchers, practitioners, and developers interested in yoga pose detection, recognition, and analysis. Each yoga pose in the dataset is meticulously annotated with pose landmarks and corresponding angles, providing rich ground truth data for machine learning model training and evaluation.
 
-API Rest returning yoga categories and poses including details and images in SVG and png format. If your response looks different, it is normal, modifications can happen. Any new pose or suggestion feel free to reach out or open an issue. The base url is:
+The code utilizes the MediaPipe library for pose estimation, which provides a pre-trained pose detection model. It processes images containing individuals performing yoga poses and extracts the pose landmarks, which are then used to calculate the angles between different body joints.
 
-`https://yoga-api-nzy4.onrender.com/v1`
+## Dataset Contents
 
-## Endpoints usage (get)
+The dataset consists of the following components:
 
-- `/categories` -- all categories
-  - `/categories?id=value` -- category by id
-  - `/categories?name=value` -- category by name
-  - `/categories?id=value&level=value` -- category poses filtered by level
-- `/poses` -- all poses
-  - `/poses?id=value` -- pose by id
-  - `/poses?name=value` -- pose name
-  - `/poses?level=value` -- poses filtered by level
+- <b>Images</b>: High-quality images of different yoga poses captured from various perspectives and angles.
 
-\* **level**: beginner, intermediate, expert
+- <b>Pose Landmarks</b>: Pose landmarks extracted using the MediaPipe Pose model, providing key points representing different body parts in each yoga pose image.
 
-\* **name** : english and not sanskrit or adpated
+- <b>3D Models</b>: Three-dimensional (3D) models generated from the pose landmarks, allowing visualization of the yoga poses in a three-dimensional space.
 
-\* nothing is case-sensitive
+- <b>Calculated Angles</b>: Angles between specific body parts in each yoga pose, providing detailed insights into the pose dynamics and alignment.
 
-**Request base URL:**
+### Yoga Poses Included
 
-```
-https://yoga-api-nzy4.onrender.com/v1
-```
+The dataset covers a wide range of yoga poses, including:
 
-**Response:**
+1. <b>ArdhaChandrasana (Half-Moon)</b>
 
-```json
-{
-  "base": "https://yoga-api-nzy4.onrender.com/v1",
-  "categories": "/categories",
-  "category-by-id": "/categories?id=value",
-  "category-by-name": "/categories?name=value",
-  "category-byID-and-level": "/categories?id=value&level=value",
-  "poses": "/poses",
-  "pose-by-id": "/poses?id=value",
-  "pose-by-name": "/poses?name=value",
-  "poses-by-level": "/poses?level=value"
-}
-```
+![v12](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/52f55bf1-f2fd-4629-b355-c9b49cef6072)
 
-The base URL is the root of the URL. If you ever make a request and you get back a 404 NOT FOUND response, then check the base URL first.
+2. <b>Downward Dog</b>
 
-## Categories
+![downward_dog17](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/432dc745-7a3e-45c2-9780-ed3949ea8ace)
 
-### **Endpoints**
+3. <b>Triangle</b>
 
-- `/categories`
-- `/categories?id=value`
-- `/categories?name=value`
-- `/categories?id=value&level=value`
+![triangle25](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/a60cd04e-e24b-4e88-b305-482754041136)
 
-**Example request categories:**
+4. <b>Veerabhadrasana</b>
 
-```
-https://yoga-api-nzy4.onrender.com/v1/categories
-```
+![Veerabhadrasana_30](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/724d8d76-5267-4448-9e55-d021d5dc637e)
 
-**Example response:**
+5. <b>Natarajasana</b>
 
-```json
-[
-  {
-    "id": 1,
-    "category_name": "Core Yoga",
-    "category_description": "Engage your abdominal muscles with core yoga poses that build a strong and stable center like Boat Pose, Dolphin Pose and Side Plank Pose.",
-    "poses": [ {...}, {...}, {...}, {...}, {...}]
-  },
-  {
-    "id": 2,
-    "category_name": "Seated Yoga",
-    "category_description": " Yoga practice with seated poses that help you find better alignment, increase your flexibility, and relieve lower back pain and discomfort. Tone the belly, massage your internal organs, and relieve lower back pain in these seated yoga poses. ",
-    "poses": [ {...}, {...}, {...}, {...}, {...}]
-  }
-]
-```
+![download](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/87fe37a5-7350-4c54-b30e-f19fe84ea12a)
 
-**Example request category by id or name:**
+6. <b>Vrukshasana</b>
+
+![v59](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/4fd8b74d-4668-4e06-b9c8-8ac6179742c3)
+
+7. <b>BaddhaKonasana</b>
+
+![BK_6](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/44a2f19a-2bc2-4458-8aa4-03c420a9154e)
+
+8. <b>UtkataKonasana</b>
+
+![UK_5](https://github.com/Manoj-2702/TDL-Dataset/assets/103581128/52484a06-559f-4d4d-a4b3-eaa949782729)
+
+
+### Calculated Angles
+
+1. Elbow Angles
 
 ```
-https://yoga-api-nzy4.onrender.com/v1/categories?id=4
-https://yoga-api-nzy4.onrender.com/v1/categories?name=Chest Opening Yoga
+  Left Elbow Angle: Angle between the left shoulder, elbow, and wrist points.
+
+  Right Elbow Angle: Angle between the right shoulder, elbow, and wrist points.
 ```
 
-**Example response:**
-
-```json
-{
-  "id": 4,
-  "category_name": "Chest Opening Yoga",
-  "category_description": "Open your heart and shoulders in chest opening yoga poses like Camel Pose, Fish Pose and Wild Thing.",
-  "poses": [ {...}, {...}, {...}, {...}, {...}]
-
-}
-```
-
-**Example request category poses filtered by level:**
+2. Shoulder Angles
 
 ```
-https://yoga-api-nzy4.onrender.com/v1/categories?id=5&level=beginner
+  Left Shoulder Angle: Angle between the left elbow, shoulder, and hip points.
+
+  Right Shoulder Angle: Angle between the right hip, shoulder, and elbow points.
 ```
 
-**Example response:**
-
-```json
- {
-  "id": 5,
-  "category_name": "Backbend Yoga",
-  "category_description": "Discover the powerful effects of yoga backbends with step-by-step instructions, sequences, and expert advice to keep your practice pain-free.",
-  "poses": [
-     {
-      "id": 8,
-      "category_name": "Backbend Yoga",
-      "difficulty_level": "Beginner",
-      "english_name": "Cow",
-      "sanskrit_name_adapted": "Bitilasana",
-      "sanskrit_name": "Bitilāsana",
-      "translation_name": "bitil = cow, āsana = posture",
-      "pose_benefits": "From  box neutral the ribcage is lifted with a gentle sway in the low back.  The tailbone lifts up into dog tilt.  The eyes are soft and the gaze is to the sky.",
-      "url_svg": "https://res.cloudinary.com/dko1be2jy/image/upload/fl_sanitize/v1676483077/yoga-api/8_wi10sn.svg",
-      "url_png": "https://res.cloudinary.com/dko1be2jy/image/upload/fl_sanitize/v1676483077/yoga-api/8_wi10sn.png",
-      "url_svg_alt": "https://www.dropbox.com/s/neau4ceai1rskh6/cow.svg?raw=1"
-    },
-    {...},
-    {...},
-    {...}
-  ]
-}
-```
-
-**Example category not found:**
+3. Knee Angles
 
 ```
-HTTP/1.0 400 Bad request
-Content-Type: application/json
+  Left Knee Angle: Angle between the left hip, knee, and ankle points.
+
+  Right Knee Angle: Angle between the right hip, knee, and ankle points.
 ```
 
-```json
-{
-  "message": "category not found"
-}
-```
-
-## Poses
-
-### **Endpoints**
-
-- `/poses`
-- `/poses?id=value`
-- `/poses?name=value`
-- `/poses?level=value`
-
-**Example request poses:**
+4. Additional Angles
 
 ```
-https://yoga-api-nzy4.onrender.com/v1/poses
+  Angle for ArdhaChandrasana 1: Angle specific to ArdhaChandrasana, calculated between ankle, hip, and opposite ankle points.
+
+  Angle for ArdhaChandrasana 2: Second angle specific to ArdhaChandrasana, calculated between ankle, hip, and opposite ankle points.
+
+  Hand Angle: Angle between the left elbow, right shoulder, and right elbow points.
+
+  Left Hip Angle: Angle between the left shoulder, left hip, and left knee points.
+
+  Right Hip Angle: Angle between the right shoulder, right hip, and right knee points.
 ```
 
-**Example response:**
+## Setup
 
-```json
-[ {...}, {...}, {...}, {...}, {...}]
-```
-
-**Example request pose by Id or by name:**
+- Clone the repository:
 
 ```
-https://yoga-api-nzy4.onrender.com/v1/poses?id=5
-https://yoga-api-nzy4.onrender.com/v1/poses?name=butterfly
+git clone https://github.com/Manoj-2702/TDL-Dataset.git
 ```
 
-**Example response:**
-
-```json
-{
-  "id": 5,
-  "english_name": "Butterfly",
-  "sanskrit_name_adapted": "Baddha Konasana",
-  "sanskrit_name": "Baddha Koṇāsana",
-  "translation_name": "baddha = bound, koṇa = angle, āsana = posture",
-  "pose_description": "In sitting position, bend both knees and drop the knees to each side, opening the hips.  Bring the soles of the feet together and bring the heels as close to the groin as possible, keeping the knees close to the ground.  The hands may reach down and grasp and maneuver the feet so that the soles are facing upwards and the heels and little toes are connected.  The shoulders should be pulled back and no rounding of the spine.",
-  "pose_benefits": "Opens the hips and groins.  Stretches the shoulders, rib cage and back.  Stimulates the abdominal organs, lungs and heart.",
-  "url_svg": "https://res.cloudinary.com/dko1be2jy/image/upload/fl_sanitize/v1676483074/yoga-api/5_i64gif.svg",
-  "url_png": "https://res.cloudinary.com/dko1be2jy/image/upload/fl_sanitize/v1676483074/yoga-api/5_i64gif.png",
-  "url_svg_alt": "https://www.dropbox.com/s/3h2pts6xbn28dh7/butterfly%3F.svg?raw=1"
-}
-```
-
-**Example request poses level:**
+- Navigate to the project directory:
 
 ```
-https://yoga-api-nzy4.onrender.com/v1/poses?level=intermediate
+cd TDL-Dataset
 ```
 
-**Example response:**
-
-```json
-{
-  "id": 2,
-  "difficulty_level": "Intermediate",
-  "poses": [ {...}, {...}, {...}, {...}, {...}]
-}
-```
-
-**Example pose not found:**
+- Install the required dependencies:
 
 ```
-HTTP/1.0 400 Bad request
-Content-Type: application/json
+pip install -r requirements.txt
 ```
 
-```json
-{
-  "message": "pose not found"
-}
-```
+- Add images to the required pose to the TRAIN Folder and the respective pose folder
 
-## Installation
+## Usage
 
-# DOCKER
+- Ensure that your yoga pose images are stored in the TRAIN/ directory within the project folder.
+
+- Run the script main.py to process the images and collect the pose data:
 
 ```
-  # Build the image
-  docker build -t yoga-api .
-
-  # Run a container using the base image
-  docker run --name dv-yoga-api -p 8000:8000 yoga-api
-
-  # Or using docker compose
-  docker compose up -d
+python main.py
 ```
 
-# NPM or YARN
+## USE
 
-```shell
-    # Clone repo
-    $ git clone git@github.com:alexcumplido/yoga-api.git
-```
+This dataset is used for training deep learning models for detecting yoga poses from an image.
+Researchers, developers, and practitioners can utilize this dataset for various purposes, including:
 
-```shell
-    # Install dependencies
-    npm install
-    yarn install
-```
+- Training and evaluating machine learning models for yoga pose detection and recognition.
+- Conducting experiments and studies on yoga pose dynamics and alignment.
+- Developing applications and tools for yoga practitioners to improve their practice.
 
-```shell
-    # Run project
-    npm start
-    yarn start
-```
+## Results
+
+There will be two datasets which will be created. One containing the labels and the angles calculated. The other dataset contains the mediapipe landmarks for all the images.
 
 ## Contributing
 
-1. Fork the repo
-2. Create a new branch
-3. Implement changes
-4. Commit and submit a pull request with a description
-
-## Credits
-
-This API includes custom data and info from already existing projects. Credits to:
-
-- [rebeccaestes](https://github.com/rebeccaestes/yoga_api) (category description and alternative "url_svg_alt")
-- [chrisman](https://github.com/Stuwert/yoga-builder) (poses details)
-
-## Contact
-
-📫 Reach me via [linkedin](https://www.linkedin.com/in/alexandrecb/)
+Contributions to this project are welcome. If you encounter any issues or have suggestions for improvements, feel free to open an issue or create a pull request.

@@ -1,0 +1,12 @@
+action_key,points,description
+workout_complete,10.0,Workout completed (any)
+minutes_trained,0.1,Per training minute
+water_goal_day,5.0,Hit daily water goal
+sleep_8h,5.0,≥8h sleep logged
+mindset_session,4.0,Meditation/breathwork
+comment_given,1.0,Positive comment given
+friend_invited,8.0,Invite sent/accepted
+group_hosted,15.0,Hosted group session
+merge_day,6.0,Workout + meditation same day
+pb_event,12.0,Personal best achieved
+hr75_20min,8.0,≥75% HRmax for 20 min

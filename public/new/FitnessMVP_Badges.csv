@@ -1,0 +1,19 @@
+badge_id,badge_name,category,default_tier,short_rule,icon_key
+CONS_7DAY,7-Day Starter,Consistency,Beginner,Log any habit 7 days in a row,bronze_earth_leaf
+CONS_28DAY,28-Day Streak,Consistency,Beginner,Log any habit 28 days in a row,bronze_earth_mountain
+CONS_QTR,Quarter Warrior,Consistency,Advanced,Active 90 days in a rolling 120,silver_fire_flame
+CONS_YEAR,Year One Legend,Consistency,Beast,Active 365 days,gold_lightning_crown
+PERF_FIRST,First Sweat,Performance,Beginner,Complete first full workout,bronze_fire_drop
+PERF_HR,Heart Charger,Performance,Advanced,≥75% HRmax for 20 min in one session,silver_fire_bolt
+PERF_PB,Power Surge,Performance,Beast,New personal best in reps/weight/distance,gold_lightning_burst
+PERF_VO2,VO2 Hero,Performance,Beast,Improve cardio score by ≥10% vs prior,gold_lightning_wings
+WELL_WATER,Hydration Hero,Wellness,Beginner,Hit water goal 7 days,bronze_water_wave
+WELL_ZEN,Zen Master,Wellness,Beginner,5 meditations/breath sessions in 7 days,bronze_air_lotus
+WELL_SLEEP,Sleep Guardian,Wellness,Advanced,7 nights with ≥8h sleep,silver_water_moon
+WELL_MERGE,Mind Body Merge,Wellness,Advanced,Workout + meditation same day (x5),silver_air_yin_yang
+COMM_HYPE,Hype Squad,Community,Beginner,Comment on others’ posts 5 times,bronze_air_chat
+COMM_PARTNER,Accountability Partner,Community,Advanced,Invite friend who completes 1 week,silver_water_link
+COMM_LEADER,Squad Leader,Community,Beast,Host a group session/challenge,gold_fire_banner
+COMM_BEACON,Beacon of Change,Community,Elite,Mentor a Beginner → Advanced,platinum_aura_star
+SEAS_BHM,BHM Challenger,Seasonal,Any,Complete 8 themed workouts in Feb,special_obsidian_glow
+ELITE_DIAMOND,Diamond Way,Elite,Elite,3 verified contributions (coach/mentor/content),diamond_prism_aura

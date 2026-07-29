@@ -1,0 +1,5 @@
+tier,metric_key,rule,note
+Beginner,weekly_habits_completion_pct,>=70,2 consecutive weeks
+Advanced,weekly_volume_delta_pct,>=10,vs prior 2-week avg
+Beast,leaderboard_percentile,<=10,Top 10% weekly
+Elite,elite_contributions_verified,>=3,per quarter
