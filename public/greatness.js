@@ -85,12 +85,12 @@ $("findTrails").onclick=()=>{
     trailDiagnostic("geolocation_success");
     $("trailStatus").textContent="Searching nearby trails…";
     const path="/api/me/greatness/nearby-trails/search",authPresent=Boolean(token());
-    trailDiagnostic("backend_request_started",{sameOrigin:new URL(path,window.location.href).origin===window.location.origin,credentialsMode:"same-origin",authenticationPresent:authPresent});
+    trailDiagnostic("backend_request_started",{sameOrigin:new URL(path,window.location.href).origin===window.location.origin,credentialsMode:"same-origin",authenticationPresent:authPresent,sessionState:authPresent?"token-present":"token-missing",browser:navigator.userAgent,renderHost:window.location.host,pageUrl:window.location.href,javascriptUrl:import.meta.url,cacheMode:"no-store"});
     try{
       const headers={"Content-Type":"application/json"},authToken=token();if(authToken)headers.Authorization=`Bearer ${authToken}`;
-      let response;try{response=await fetch(path,{method:"POST",signal:controller.signal,credentials:"same-origin",headers,body:JSON.stringify({latitude:position.coords.latitude,longitude:position.coords.longitude,radiusMeters:Number($("trailRadius").value),limit:15})});}catch(cause){if(cause?.name==="AbortError")throw cause;throw Object.assign(new Error("Network request failed"),{code:"NETWORK_REQUEST_FAILED",cause});}
+      let response;try{response=await fetch(path,{method:"POST",signal:controller.signal,credentials:"same-origin",cache:"no-store",headers,body:JSON.stringify({latitude:position.coords.latitude,longitude:position.coords.longitude,radiusMeters:Number($("trailRadius").value),limit:15})});}catch(cause){if(cause?.name==="AbortError")throw cause;throw Object.assign(new Error("Network request failed"),{code:"NETWORK_REQUEST_FAILED",cause});}
       trailDiagnostic("backend_http_status",{status:response.status});
-      const result=await parseTrailSearchResponse(response);
+      const result=await parseTrailSearchResponse(response,{logger:trailDiagnostic});
       trailDiagnostic("response_parsing_success");
       const mapAvailable=await renderNearbyTrails({latitude:position.coords.latitude,longitude:position.coords.longitude},result.trails);
       trailDiagnostic("trail_count_rendered",{count:result.trails.length});
@@ -98,8 +98,8 @@ $("findTrails").onclick=()=>{
     }catch(error){
       if(error.httpStatus!=null)trailDiagnostic("backend_http_status",{status:error.httpStatus});
       if(error.code)trailDiagnostic("backend_stable_error_code",{code:error.code});
-      if(error.parseSucceeded===false)trailDiagnostic("response_parsing_failure",{reason:"invalid_json",error});else trailDiagnostic("trail_search_failure",{error});
-      if(sequence===trailSearchSequence)$("trailStatus").textContent=error.name==="AbortError"?"Trail search cancelled. Activity recording remains available.":(trailErrorMessages[error.code]||trailErrorMessages.NETWORK_REQUEST_FAILED);
+      if(error.parseSucceeded===false)trailDiagnostic("response_parsing_failure",{parserErrorName:error.name,parserErrorMessage:error.message,validationStep:error.validationStep,diagnostic:error.diagnostic});else trailDiagnostic("trail_search_failure",{error});
+      if(sequence===trailSearchSequence){const diagnostic=error.diagnostic;$("trailStatus").textContent=error.name==="AbortError"?"Trail search cancelled. Activity recording remains available.":error.code==="MALFORMED_RESPONSE"&&diagnostic?`HTTP ${diagnostic.httpStatus}\nContent-Type: ${diagnostic.contentType}\nReceived: ${diagnostic.responseKind} (${diagnostic.receivedSchema})\nExpected: ${diagnostic.expectedSchema}\nFailure: ${error.validationStep}\nParser: ${error.name}: ${error.message}\nRaw response (first 500 characters): ${diagnostic.rawResponseBody||"(empty)"}`:(trailErrorMessages[error.code]||trailErrorMessages.NETWORK_REQUEST_FAILED);}
     }finally{finishTrailSearch(sequence);}
   },error=>{
     if(sequence!==trailSearchSequence)return;

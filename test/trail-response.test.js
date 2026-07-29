@@ -24,6 +24,35 @@ test("rejects HTML, empty, malformed JSON, and an invalid successful contract", 
   await assert.rejects(parseTrailSearchResponse(response(JSON.stringify({ ok: true, data: { results: [] } }))), error => error.code === "MALFORMED_RESPONSE" && error.httpStatus === 200);
 });
 
+test("reports the exact parser evidence and validation rule", async () => {
+  const { parseTrailSearchResponse } = await subject();
+  const events = [];
+  const html = "<!doctype html><html><body>login required</body></html>";
+  await assert.rejects(parseTrailSearchResponse(new Response(html, { status: 200, headers: { "content-type": "text/html" } }), { logger: (stage, details) => events.push({ stage, details }) }), error => {
+    assert.equal(error.name, "TrailResponseError");
+    assert.match(error.message, /SyntaxError/);
+    assert.equal(error.validationStep, "JSON required; HTML response received");
+    assert.equal(error.diagnostic.rawResponseBody, html);
+    assert.equal(error.diagnostic.responseKind, "HTML");
+    assert.equal(error.diagnostic.contentType, "text/html");
+    return true;
+  });
+  assert.equal(events[0].stage, "response_received_before_validation");
+  assert.equal(events[0].details.httpStatus, 200);
+
+  await assert.rejects(parseTrailSearchResponse(response(JSON.stringify({ success: true, trailsFound: [] }))), error => {
+    assert.deepEqual(error.diagnostic.parsedObjectKeys, ["success", "trailsFound"]);
+    assert.match(error.diagnostic.receivedSchema, /success: boolean/);
+    assert.equal(error.validationStep, "successful response envelope must contain a trails array");
+    return true;
+  });
+});
+
+test("truncates raw diagnostic bodies to 500 characters", async () => {
+  const { parseTrailSearchResponse } = await subject();
+  await assert.rejects(parseTrailSearchResponse(new Response("x".repeat(700), { headers: { "content-type": "text/plain" } })), error => error.diagnostic.rawResponseBody.length === 500 && error.diagnostic.rawResponseTruncated === true);
+});
+
 test("classifies authentication and provider HTTP failures before contract validation", async () => {
   const { parseTrailSearchResponse } = await subject();
   await assert.rejects(parseTrailSearchResponse(response(JSON.stringify({ ok: false, error: { code: "UNAUTHORIZED", message: "Sign in" } }), 401)), error => error.code === "AUTH_REQUIRED" && error.httpStatus === 401);
