@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "description": "Persistent trail-route store schema. Copy to POCKET_PT_DATA_DIR/trail-routes.json when pre-provisioning a deployment.",
+  "routes": []
+}
