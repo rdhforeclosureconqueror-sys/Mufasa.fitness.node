@@ -1,4 +1,10 @@
 let loaderPromise;
+function mapError(code, message, cause) {
+  const error = new Error(message);
+  error.code = code;
+  if (cause) error.cause = cause;
+  return error;
+}
 export function createMapPayload(userLocation, trails) {
   const safeTrails = (trails || []).filter(trail => Number.isFinite(trail.latitude) && Number.isFinite(trail.longitude));
   return { user: { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude), approximate: true }, markers: safeTrails.map((trail, index) => ({ number: index + 1, id: trail.id, latitude: trail.latitude, longitude: trail.longitude, name: trail.name })) };
@@ -8,22 +14,46 @@ export function payloadBounds(payload) {
   return { north: Math.max(...points.map(point => point.latitude)), south: Math.min(...points.map(point => point.latitude)), east: Math.max(...points.map(point => point.longitude)), west: Math.min(...points.map(point => point.longitude)) };
 }
 export function markerLabel(number) { return String(number); }
-export async function loadGoogleMaps() {
+export async function loadGoogleMaps(onDiagnostic = () => {}) {
   if (globalThis.google?.maps?.importLibrary) return globalThis.google;
-  if (!loaderPromise) loaderPromise = fetch("/api/browser-config").then(response => response.json()).then(({ data }) => new Promise((resolve, reject) => {
-    if (!data?.googleMapsBrowserApiKey) throw new Error("Interactive map is not configured");
+  if (!loaderPromise) loaderPromise = (async () => {
+    onDiagnostic("browser_config_request_started", { url: new URL("/api/browser-config", globalThis.location?.href).href });
+    let response;
+    try { response = await fetch("/api/browser-config", { cache: "no-store" }); }
+    catch (cause) { throw mapError("BROWSER_CONFIG_NETWORK_ERROR", "Browser map configuration request failed", cause); }
+    onDiagnostic("browser_config_http_status", { status: response.status, contentType: response.headers.get("content-type") || "" });
+    if (!response.ok) throw mapError("BROWSER_CONFIG_HTTP_ERROR", `Browser map configuration failed (${response.status})`);
+    let body;
+    try { body = await response.json(); }
+    catch (cause) { throw mapError("BROWSER_CONFIG_INVALID_JSON", "Browser map configuration returned invalid JSON", cause); }
+    const keyPresent = typeof body?.data?.googleMapsBrowserApiKey === "string" && body.data.googleMapsBrowserApiKey.length > 0;
+    onDiagnostic("browser_config_parsed", { keyPresent, keyNull: body?.data?.googleMapsBrowserApiKey === null });
+    if (!keyPresent) throw mapError("BROWSER_KEY_MISSING", "Interactive map is not configured");
+    return new Promise((resolve, reject) => {
     const callback = `initTrailMaps_${Date.now()}`;
-    globalThis[callback] = () => { delete globalThis[callback]; resolve(globalThis.google); };
-    const script = document.createElement("script"); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(data.googleMapsBrowserApiKey)}&loading=async&callback=${callback}`; script.async = true; script.onerror = () => reject(new Error("Google Maps failed to load")); document.head.append(script);
-  }));
+      globalThis[callback] = () => {
+        delete globalThis[callback];
+        const available = Boolean(globalThis.google?.maps?.importLibrary);
+        onDiagnostic("maps_loader_callback", { googleMapsAvailable: available });
+        available ? resolve(globalThis.google) : reject(mapError("GOOGLE_MAPS_NAMESPACE_MISSING", "Google Maps loaded without the expected namespace"));
+      };
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(body.data.googleMapsBrowserApiKey)}&loading=async&callback=${callback}`;
+      script.async = true;
+      script.onerror = () => reject(mapError("GOOGLE_MAPS_SCRIPT_ERROR", "Google Maps failed to load"));
+      onDiagnostic("maps_script_appended", { host: "maps.googleapis.com" });
+      document.head.append(script);
+    });
+  })().catch(error => { loaderPromise = undefined; throw error; });
   return loaderPromise;
 }
 function numberedPin(PinElement, number, selected = false) { return new PinElement({ glyph: markerLabel(number), background: selected ? "#f1c963" : "#275d50", borderColor: "#fff", glyphColor: selected ? "#172019" : "#fff", scale: selected ? 1.25 : 1 }); }
-export async function renderTrailMap(container, payload, { onSelect = () => {}, selectedId = null, geometry = null } = {}) {
-  const google = await loadGoogleMaps(); const { Map } = await google.maps.importLibrary("maps"); const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+export async function renderTrailMap(container, payload, { onSelect = () => {}, onDiagnostic = () => {}, selectedId = null, geometry = null } = {}) {
+  const google = await loadGoogleMaps(onDiagnostic); onDiagnostic("maps_namespace_ready");
+  const { Map } = await google.maps.importLibrary("maps"); const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker"); onDiagnostic("maps_libraries_ready");
   const map = new Map(container, { mapId: "DEMO_MAP_ID", streetViewControl: false, mapTypeControl: false }); const bounds = new google.maps.LatLngBounds();
   const userPosition = { lat: payload.user.latitude, lng: payload.user.longitude }; bounds.extend(userPosition); new AdvancedMarkerElement({ map, position: userPosition, title: "Your approximate location", content: new PinElement({ background: "#4285f4", glyph: "●", glyphColor: "white" }).element });
   payload.markers.forEach(marker => { const position = { lat: marker.latitude, lng: marker.longitude }; bounds.extend(position); const advancedMarker = new AdvancedMarkerElement({ map, position, title: `${marker.number}. ${marker.name}`, content: numberedPin(PinElement, marker.number, marker.id === selectedId).element }); advancedMarker.addListener("click", () => onSelect(marker.id)); });
-  if (geometry?.length > 1) { const path = geometry.map(point => ({ lat: point.latitude, lng: point.longitude })); path.forEach(point => bounds.extend(point)); new google.maps.Polyline({ map, path, strokeColor: "#f1c963", strokeWeight: 5 }); new AdvancedMarkerElement({ map, position: path[0], title: "Trail start", content: new PinElement({ glyph: "S", background: "#188038" }).element }); new AdvancedMarkerElement({ map, position: path.at(-1), title: "Trail finish", content: new PinElement({ glyph: "F", background: "#c5221f" }).element }); }
-  map.fitBounds(bounds, 48); return map;
+  if (geometry?.length > 1) { const path = geometry.map(point => ({ lat: point.latitude, lng: point.longitude })); path.forEach(point => bounds.extend(point)); new google.maps.Polyline({ map, path, strokeColor: "#f1c963", strokeWeight: 5 }); new AdvancedMarkerElement({ map, position: path[0], title: "Trail start", content: new PinElement({ glyph: "S", background: "#188038" }).element }); new AdvancedMarkerElement({ map, position: path[path.length - 1], title: "Trail finish", content: new PinElement({ glyph: "F", background: "#c5221f" }).element }); }
+  map.fitBounds(bounds, 48); onDiagnostic("map_render_complete", { markerCount: payload.markers.length, geometryPointCount: geometry?.length || 0 }); return map;
 }

@@ -35,5 +35,5 @@ test("map failure remains isolated from valid trail results and missing geometry
   assert.match(js, /Interactive map unavailable\. Trail results remain available\./);
   assert.match(js, /Trail route not yet verified/);
   assert.match(js, /const mapAvailable=await renderNearbyTrails/);
-  assert.match(js, /return true;}catch{return false;/);
+  assert.match(js, /return true;}catch\(error\).*map_render_failure.*return false;/);
 });
