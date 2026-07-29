@@ -31,6 +31,7 @@ const { createNearbyTrailService, createConfiguredTrailProvider } = require("./s
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
 const { parseGeoJSON, parseGpx } = require("./src/trails/geometry");
 const { createGoogleWalkingRouteProvider, createWalkingRouteService } = require("./src/services/walkingRouteService");
+const { createTrailGeometryService, createOverpassGeometryProvider } = require("./src/services/trailGeometryService");
 const {
   validateSessionCreate,
   validateRepUpdate,
@@ -360,7 +361,9 @@ function createApp(options = {}) {
   const trailRouteStore = createTrailRouteStore({ filePath: options.trailRouteFilePath || path.join(DATA_DIR, "trail-routes.json") });
   const nearbyTrailService = createNearbyTrailService({ provider: trailProvider, routeStore: trailRouteStore });
   const walkingRouteProvider = options.walkingRouteProvider || createGoogleWalkingRouteProvider({ apiKey:process.env.GOOGLE_MAPS_API_KEY,fetchImpl:options.fetch||global.fetch,timeoutMs:Number(process.env.GOOGLE_WALKING_ROUTE_TIMEOUT_MS)||8000 });
-  const walkingRouteService = options.walkingRouteService || createWalkingRouteService({ provider:walkingRouteProvider,routeStore:trailRouteStore });
+  const trailGeometryProvider = options.trailGeometryProvider || createOverpassGeometryProvider({fetchImpl:options.fetch||global.fetch});
+  const trailGeometryService = options.trailGeometryService || createTrailGeometryService({routeStore:trailRouteStore,provider:trailGeometryProvider});
+  const walkingRouteService = options.walkingRouteService || createWalkingRouteService({ provider:walkingRouteProvider,routeStore:trailRouteStore,trailGeometryService });
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
