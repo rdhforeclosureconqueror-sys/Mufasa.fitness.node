@@ -1,6 +1,8 @@
 "use strict";
 
 const { haversineMeters } = require("../trails/geometry");
+const { loadRoutePlanningConfig } = require("../config/routePlanningConfig");
+const CONFIG=loadRoutePlanningConfig();
 
 function localPoint(point, origin) {
   const radians = Math.PI / 180;
@@ -26,17 +28,21 @@ function pointInPolygon(point, boundary) {
   }
   return inside;
 }
-function validateRouteCorridor({polyline,trailGraph,parkBoundary,corridorWidthMeters=35,maxOffTrailPercent=10,maxOutsideParkPercent=15}) {
+function validateRouteCorridor({polyline,trailGraph,parkBoundary,corridorWidthMeters=CONFIG.TRAIL_CORRIDOR_WIDTH_METERS,maxOffTrailPercent=CONFIG.TRAIL_ROUTE_MAX_OFF_TRAIL_PERCENT,maxOutsideParkPercent=CONFIG.PARK_ROUTE_MAX_OUTSIDE_PERCENT}) {
+  const validPolyline=Array.isArray(polyline)&&polyline.length>1&&polyline.every(point=>Number.isFinite(point?.latitude)&&point.latitude>=-90&&point.latitude<=90&&Number.isFinite(point?.longitude)&&point.longitude>=-180&&point.longitude<=180);
+  const hasNetwork=Array.isArray(trailGraph?.edges)&&trailGraph.edges.length>0;
+  const hasParkBoundary=pointInPolygon({latitude:0,longitude:0},parkBoundary)!==null;
+  if(!validPolyline||!hasNetwork)return{totalRouteDistanceMeters:0,distanceInsideTrailCorridorMeters:0,distanceOutsideTrailCorridorMeters:0,trailAdherencePercent:0,offTrailPercent:100,distanceInsideParkMeters:hasParkBoundary?0:null,distanceOutsideParkMeters:hasParkBoundary?0:null,insideParkPercent:hasParkBoundary?0:null,outsideParkPercent:hasParkBoundary?100:null,maximumDeviationMeters:null,accepted:false};
   let total=0,insideTrail=0,insidePark=0,maxDeviation=0;
   for(let i=1;i<(polyline||[]).length;i++){
     const a=polyline[i-1],b=polyline[i],length=haversineMeters(a,b),mid={latitude:(a.latitude+b.latitude)/2,longitude:(a.longitude+b.longitude)/2},deviation=distanceToNetwork(mid,trailGraph);
     total+=length;maxDeviation=Math.max(maxDeviation,Number.isFinite(deviation)?deviation:0);
     if(deviation<=corridorWidthMeters)insideTrail+=length;
-    if(pointInPolygon(mid,parkBoundary)!==false)insidePark+=length;
+    if(hasParkBoundary&&pointInPolygon(mid,parkBoundary)===true)insidePark+=length;
   }
-  const pct=value=>total?value/total*100:0,trailAdherencePercent=pct(insideTrail),insideParkPercent=parkBoundary?pct(insidePark):null;
+  const pct=value=>total?value/total*100:0,trailAdherencePercent=pct(insideTrail),insideParkPercent=hasParkBoundary?pct(insidePark):null;
   const offTrailPercent=100-trailAdherencePercent,outsideParkPercent=insideParkPercent==null?null:100-insideParkPercent;
-  return {totalRouteDistanceMeters:total,distanceInsideTrailCorridorMeters:insideTrail,distanceOutsideTrailCorridorMeters:total-insideTrail,trailAdherencePercent,offTrailPercent,distanceInsideParkMeters:parkBoundary?insidePark:null,distanceOutsideParkMeters:parkBoundary?total-insidePark:null,insideParkPercent,outsideParkPercent,maximumDeviationMeters:maxDeviation,accepted:offTrailPercent<=maxOffTrailPercent&&(outsideParkPercent==null||outsideParkPercent<=maxOutsideParkPercent)};
+  return {totalRouteDistanceMeters:total,distanceInsideTrailCorridorMeters:insideTrail,distanceOutsideTrailCorridorMeters:total-insideTrail,trailAdherencePercent,offTrailPercent,distanceInsideParkMeters:hasParkBoundary?insidePark:null,distanceOutsideParkMeters:hasParkBoundary?total-insidePark:null,insideParkPercent,outsideParkPercent,maximumDeviationMeters:maxDeviation,accepted:total>0&&offTrailPercent<=maxOffTrailPercent&&(outsideParkPercent==null||outsideParkPercent<=maxOutsideParkPercent)};
 }
 
 module.exports={pointInPolygon,distanceToNetwork,validateRouteCorridor};

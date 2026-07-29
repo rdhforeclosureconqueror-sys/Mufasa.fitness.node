@@ -4,16 +4,42 @@ Google Places remains the discovery provider. Its place coordinate is shown as a
 
 ## Goal-route source and quality policy
 
-Goal routes are selected in this order: admin-verified GPX/GeoJSON, attributable pedestrian-network geometry, a Google walking route validated against that network, a walking route validated against a reliable park boundary, and finally an honest place-only result. Distance error is considered only after source, trail adherence, and park containment. An unconstrained Google route remains labelled **Google walking route**, includes a warning that containment is unknown, and is never described as a trail route.
+Goal routes are selected in this order: `verified_geometry` (admin-verified GPX/GeoJSON), `trail_network` (OpenStreetMap pedestrian-graph out-and-back), `park_constrained_walking_route` (a Google walking route validated against both the trail corridor and a usable park boundary), `google_walking_route` (unconstrained), and `place_only`. Distance error is considered only after source, trail adherence, and park containment. An unconstrained Google route retains its walking-route warning and is never described as verified or as a trail-network route. A place-only result has an empty polyline rather than invented geometry.
 
-When `OVERPASS_API_URL` is configured, the server retrieves OpenStreetMap `path`, `footway`, `pedestrian`, and walkable `track` ways near the selected place. `access=private` and `foot=no` ways are discarded. Public graph responses are cached by a rounded area and identical requests are coalesced. The server constructs routes on graph edges; it never reads, traces, or scrapes Google basemap tiles.
+When `OVERPASS_API_URL` is configured, the server retrieves OpenStreetMap `path`, `footway`, `pedestrian`, and walkable `track` ways near the selected place. `access=private` and `foot=no` ways are discarded. Public graph responses are cached by a rounded area and identical requests are coalesced. The server constructs routes on connected graph edges; it never reads, traces, or scrapes Google basemap tiles. If Overpass, graph, corridor, or boundary validation is unavailable, the result falls back honestly instead of claiming constraint validation.
 
-Controls: `TRAIL_GRAPH_SEARCH_RADIUS_METERS` (1500), `TRAIL_CORRIDOR_WIDTH_METERS` (35), `TRAIL_ROUTE_MAX_OFF_TRAIL_PERCENT` (10), `PARK_ROUTE_MAX_OUTSIDE_PERCENT` (15), `TRAIL_ROUTE_MAX_CANDIDATES` (4), `TRAIL_GRAPH_CACHE_TTL_MS` (3600000), `TRAIL_ROUTE_TIMEOUT_MS` (8000), and `TRAIL_ROUTE_MAX_GRAPH_NODES` (5000). Set `OVERPASS_API_URL` to a deployment-approved Overpass endpoint whose availability and attribution obligations have been reviewed.
+## Server configuration
 
-Route imports support GPX, GeoJSON LineString, manually supplied ordered coordinates, OpenStreetMap-derived geometry, and municipal GIS exports. Every saved route requires a source identifier. Import tooling runs only in the admin workflow, so normal page rendering never contacts Overpass or another geometry provider. The three initial verification targets—Northaven Trail, Vitruvian Trail, and Brookhaven College Jogging Trail—are suggestions in the admin UI, not seeded or claimed routes.
+All distances are metres, percentages are from 0 to 100, and durations are milliseconds. Invalid, fractional, non-finite, or out-of-range integer settings use these conservative defaults:
+
+| Variable | Default |
+|---|---:|
+| `OVERPASS_API_URL` | unset (trail acquisition disabled) |
+| `TRAIL_GRAPH_SEARCH_RADIUS_METERS` | 1500 |
+| `TRAIL_CORRIDOR_WIDTH_METERS` | 35 |
+| `TRAIL_ROUTE_MAX_OFF_TRAIL_PERCENT` | 10 |
+| `PARK_ROUTE_MAX_OUTSIDE_PERCENT` | 15 |
+| `TRAIL_ROUTE_MAX_CANDIDATES` | 4 |
+| `TRAIL_GRAPH_CACHE_TTL_MS` | 3600000 |
+| `TRAIL_ROUTE_TIMEOUT_MS` | 8000 |
+| `TRAIL_ROUTE_MAX_GRAPH_NODES` | 5000 |
+| `ROUTE_DISTANCE_TOLERANCE_PERCENT` | 5 |
+| `GOOGLE_WALKING_ROUTE_MAX_ATTEMPTS` | 4 |
+| `GOOGLE_WALKING_ROUTE_TIMEOUT_MS` | 8000 |
+| `GOOGLE_WALKING_ROUTE_MAX_WAYPOINT_RADIUS_METERS` | 10000 |
+| `GOOGLE_WALKING_ROUTE_CACHE_TTL_MS` | 900000 |
+| `GOOGLE_WALKING_ROUTE_RATE_LIMIT_PER_MINUTE` | 6 |
+
+Set `OVERPASS_API_URL` only to a deployment-approved Overpass interpreter endpoint whose availability, usage policy, and attribution obligations have been reviewed. Overpass is an optional dependency for live trail graphs. Google Routes API is an optional server-side dependency for walking fallbacks and requires `GOOGLE_MAPS_API_KEY`; its absence produces a place-only fallback.
+
+Route imports support GPX, GeoJSON LineString, manually supplied ordered coordinates, OpenStreetMap-derived geometry, and municipal GIS exports. Every saved route requires a source identifier. The three initial verification targets—Northaven Trail, Vitruvian Trail, and Brookhaven College Jogging Trail—are suggestions in the admin UI, not seeded or claimed routes. In particular, no verified Vitruvian geometry is included unless an administrator actually imports and verifies it.
+
+## Known limitations
+
+Graph planning currently creates connected out-and-back geometry; a loop request may be returned as a partial-loop/out-and-back plan. It does not perform full loop-cycle search. Generated routes are planning aids, not turn-by-turn navigation. Users must follow closures, posted signs, property boundaries, and local conditions.
 
 ## Google Cloud browser key
 
-Create a new key, separate from `GOOGLE_MAPS_API_KEY`. Under **Application restrictions**, choose **Websites** and add the exact production origins as HTTP referrers (for example `https://mufasafitsite.onrender.com/*`), plus explicitly approved preview and local origins such as `http://localhost:3000/*`. Do not use wildcards broader than the owned hostnames. Under **API restrictions**, choose **Restrict key** and select only **Maps JavaScript API**. Do not enable Places API, Routes API, Geocoding API, or server APIs on this key. Set `VITE_GOOGLE_MAPS_BROWSER_API_KEY` in the frontend/runtime environment. Keep `GOOGLE_MAPS_API_KEY` server-side with IP/service restrictions and Places API only.
+Create a browser key separate from `GOOGLE_MAPS_API_KEY`. Restrict it to owned website referrers and only the Maps JavaScript API. The server key used for discovery and walking routes must remain server-side and be restricted to the required Places API and Routes API services. Do not expose it through browser configuration.
 
 Google Maps platform attribution is rendered by the Maps JavaScript API. Imported source attribution remains visible in trail details. Administrators must confirm source licensing and retention rights before import.

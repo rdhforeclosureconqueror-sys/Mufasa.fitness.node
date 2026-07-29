@@ -31,6 +31,8 @@ const { createNearbyTrailService, createConfiguredTrailProvider } = require("./s
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
 const { parseGeoJSON, parseGpx } = require("./src/trails/geometry");
 const { createGoogleWalkingRouteProvider, createWalkingRouteService } = require("./src/services/walkingRouteService");
+const { loadRoutePlanningConfig } = require("./src/config/routePlanningConfig");
+const routePlanningConfig=loadRoutePlanningConfig();
 const { createTrailGeometryService, createOverpassGeometryProvider } = require("./src/services/trailGeometryService");
 const {
   validateSessionCreate,
@@ -360,7 +362,7 @@ function createApp(options = {}) {
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
   const trailRouteStore = createTrailRouteStore({ filePath: options.trailRouteFilePath || path.join(DATA_DIR, "trail-routes.json") });
   const nearbyTrailService = createNearbyTrailService({ provider: trailProvider, routeStore: trailRouteStore });
-  const walkingRouteProvider = options.walkingRouteProvider || createGoogleWalkingRouteProvider({ apiKey:process.env.GOOGLE_MAPS_API_KEY,fetchImpl:options.fetch||global.fetch,timeoutMs:Number(process.env.GOOGLE_WALKING_ROUTE_TIMEOUT_MS)||8000 });
+  const walkingRouteProvider = options.walkingRouteProvider || createGoogleWalkingRouteProvider({ apiKey:process.env.GOOGLE_MAPS_API_KEY,fetchImpl:options.fetch||global.fetch });
   const trailGeometryProvider = options.trailGeometryProvider || createOverpassGeometryProvider({fetchImpl:options.fetch||global.fetch});
   const trailGeometryService = options.trailGeometryService || createTrailGeometryService({routeStore:trailRouteStore,provider:trailGeometryProvider});
   const walkingRouteService = options.walkingRouteService || createWalkingRouteService({ provider:walkingRouteProvider,routeStore:trailRouteStore,trailGeometryService });
@@ -1637,7 +1639,7 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.journey(req.auth.userId))));
   app.post("/api/me/greatness/activities", requireAuth, createRateLimiter({ windowMs: 60_000, max: 20 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.complete(req.auth.userId, req.body), 201)));
-  app.post("/api/me/greatness/activities/start-with-route", requireAuth, createRateLimiter({ windowMs:60_000,max:20 }), asyncHandler(async(req,res)=>{const source=req.body?.selectedRoute?.routeSource,target=Number(req.body?.goal?.distanceMeters);if(!["verified_geometry","google_walking_route","place_only"].includes(source)||!Number.isFinite(target))throw new ApiError("INVALID_ACTIVITY_ROUTE","Select a route and distance goal before starting",400);return ok(res,req.requestId,{accepted:true,routeSource:source,targetDistanceMeters:target,persisted:false});}));
+  app.post("/api/me/greatness/activities/start-with-route", requireAuth, createRateLimiter({ windowMs:60_000,max:20 }), asyncHandler(async(req,res)=>{const source=req.body?.selectedRoute?.routeSource,target=Number(req.body?.goal?.distanceMeters);if(!["verified_geometry","trail_network","park_constrained_walking_route","google_walking_route","place_only"].includes(source)||!Number.isFinite(target))throw new ApiError("INVALID_ACTIVITY_ROUTE","Select a route and distance goal before starting",400);return ok(res,req.requestId,{accepted:true,routeSource:source,targetDistanceMeters:target,persisted:false});}));
   app.post("/api/me/greatness/nearby-trails/search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
   app.post("/api/me/greatness/trails/text-search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
@@ -1654,7 +1656,7 @@ function createApp(options = {}) {
     });
   });
   app.get("/api/me/greatness/trails/:trailId", requireAuth, asyncHandler(async (req, res) => { const route = trailRouteStore.get(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));
-  const goalRouteLimit=createRateLimiter({name:"walking-routes",windowMs:60_000,max:Number(process.env.GOOGLE_WALKING_ROUTE_RATE_LIMIT_PER_MINUTE)||6});
+  const goalRouteLimit=createRateLimiter({name:"walking-routes",windowMs:60_000,max:routePlanningConfig.GOOGLE_WALKING_ROUTE_RATE_LIMIT_PER_MINUTE});
   app.post("/api/me/greatness/trails/:trailId/goal-routes", requireAuth, goalRouteLimit, asyncHandler(async (req, res) => ok(res,req.requestId,await walkingRouteService.generate({...req.body,trailId:req.params.trailId}))));
   app.post("/api/me/greatness/trails/:trailId/goal-routes/alternatives", requireAuth, goalRouteLimit, asyncHandler(async (req,res)=>ok(res,req.requestId,await walkingRouteService.generate({...req.body,trailId:req.params.trailId,routeType:req.body?.routeType||"loop"}))));
   app.post("/api/me/greatness/challenges/:challengeId/route-suggestions", requireAuth, goalRouteLimit, asyncHandler(async(req,res)=>{const discovery=await nearbyTrailService.search(req.auth.userId,req.body),suggestions=[];for(const place of discovery.trails.slice(0,4)){const planned=await walkingRouteService.generate({trailId:place.trailRouteId||place.id,place,startPoint:req.body?.startPoint,targetDistanceMeters:req.body?.targetDistanceMeters,routeType:req.body?.routeType});suggestions.push({...place,routeOption:planned.options[0],routeAttemptCount:planned.attemptCount});}suggestions.sort((a,b)=>(a.routeOption.routeSource==="verified_geometry"?-1:0)-(b.routeOption.routeSource==="verified_geometry"?-1:0)||(a.routeOption.distanceErrorPercent??Infinity)-(b.routeOption.distanceErrorPercent??Infinity)||(a.distanceFromUserMeters??Infinity)-(b.distanceFromUserMeters??Infinity));return ok(res,req.requestId,{challengeId:req.params.challengeId,targetDistanceMeters:Number(req.body?.targetDistanceMeters),suggestions});}));
