@@ -1770,5 +1770,17 @@ module.exports = Object.freeze([
   { "method":"GET", "path":"/api/admin/trail-routes", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
   { "method":"POST", "path":"/api/admin/trail-routes", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
   { "method":"PATCH", "path":"/api/admin/trail-routes/:trailId/disable", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only", "rateLimit":null, "compatibility":null, "publicWrite":null },
-  { "method":"GET", "path":"/admin-trail-routes.html", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only-page", "rateLimit":null, "compatibility":null, "publicWrite":null }
+  { "method":"GET", "path":"/admin-trail-routes.html", "authentication":"required", "allowedRoles":["super_admin","admin"], "requiredPermissions":[], "membership":"not-required", "ownership":"admin-role", "featureFlag":null, "publicOutput":"admin-only-page", "rateLimit":null, "compatibility":null, "publicWrite":null },
+  ...[
+    ["GET", "/internal/gamification/profile/:id"], ["GET", "/internal/gamification/xp/:id"],
+    ["GET", "/internal/gamification/achievements/:id"], ["GET", "/internal/gamification/ledger/:id"],
+    ["GET", "/internal/gamification/replay/status"], ["GET", "/internal/gamification/replay/history"],
+    ["GET", "/internal/gamification/policy/current"], ["GET", "/internal/gamification/integrity"],
+    ["GET", "/internal/gamification/metrics"], ["POST", "/internal/gamification/simulate"],
+    ["POST", "/internal/gamification/replay/all"], ["POST", "/internal/gamification/replay/:id"],
+    ["POST", "/internal/gamification/recalculate/xp/:id"], ["POST", "/internal/gamification/recalculate/achievements/:id"],
+    ["DELETE", "/internal/gamification/projection/:id"]
+  ].map(([method, routePath]) => ({ method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
+    requiredPermissions: ["ops.read_observability"], membership: "not-required", ownership: "internal-administrator",
+    featureFlag: "GAMIFICATION_READ_API", publicOutput: "internal-only", rateLimit: null, compatibility: null, publicWrite: null }))
 ]);
