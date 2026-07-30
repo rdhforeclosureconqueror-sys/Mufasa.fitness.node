@@ -387,3 +387,92 @@ None. Read and notification flags remain off and Sprint 2 outcomes are invisible
 - [x] Existing domain workflows remain stable with evaluation disabled or unavailable.
 - [x] Rollback instructions preserve immutable audit records and restore Sprint 1 behavior.
 - [x] This implementation-log entry matches the final diff and validation results.
+---
+
+# Sprint 3 — XP & Level Policy
+
+**Sprint Number:** 3
+**Objective:** Add deterministic, versioned base-action XP, caps, overlap decisions, strict append-only accounting, correction reversals, and replay-stable level progression without changing Sprint 2 event contracts.
+**Status:** `Complete`
+**Dates:** `2026-07-30` to `2026-07-30`
+
+## Executive Summary
+
+Sprint 3 adds a data-driven XP policy layer to the existing achievement replay. Policy Version `1.0.0` awards the approved 100 base XP for a verified `workout.completed`, capped at 100 XP per UTC day for both its workout category and exact source. Every evaluated source receives an immutable ledger decision, including zero-delta entries with an explicit cap or overlap reason. Achievement XP remains unchanged and additive. Full replay derives lifetime XP and levels by summing the immutable ledger, and corrections append exact base-XP and achievement-XP reversals.
+
+The engine accepts future event sources, categories, effective policy versions, caps, and overlap groups through validated policy data. No new event contract, event payload, endpoint, UI, notification, snapshot, checkpoint, or replay shortcut was introduced. All behavior remains behind the existing disabled-by-default event-capture and evaluation flags.
+
+## Architecture Decisions Applied
+
+- The Sprint 2 event model and immutable source log remain unchanged. Only verified, registered source events can enter runtime through the existing validator; the generic XP evaluator does not expand ingestion authority.
+- Policy selection uses canonical event `occurredAt` against non-overlapping effective intervals. UTC is the only Phase 1 day boundary, preventing machine-locale and replay-time drift.
+- XP amounts, category caps, source caps, overlap membership, overlap identity, and winner strategy are configuration. Business logic contains no reward amount.
+- Overlap Version 1 uses the earliest `(occurredAt, eventId)` event for a subject and configured activity identity. Later duplicates remain represented by zero-delta `overlap_group_skipped` entries.
+- Caps issue whole fixed awards or a zero-delta decision; they never partially issue a base award. Source caps are evaluated independently before category caps, and counters reset on UTC date boundaries.
+- Ledger effect keys and entry IDs are deterministic. Duplicate identical appends are no-ops; conflicting reuse is rejected. Reversals must be unique, equal-and-opposite, same-subject, same-kind, and linked to a non-reversal original.
+- Existing Sprint 2 ledger files remain readable. New writes add the expanded `reason` field, while legacy achievement entries are accepted during load for backward compatibility.
+- Level projection continues to use cumulative lifetime XP and the reviewed Version 1 50-level threshold document. Projection deletion followed by complete bounded-page replay remains authoritative.
+
+## Files Added
+
+- `data/gamification/xp-policy.json` — published Version 1 base-action policy, UTC category/source caps, and overlap policy.
+- `src/gamification/xpPolicyService.js` — policy validation, effective-version resolution, deterministic ordering, cap accounting, overlap decisions, and ledger decision generation.
+- `test/gamification-xp-policy.test.js` — Sprint 3 policy, ledger, correction, replay, and level validation.
+
+## Files Modified
+
+- `server.js` — validates and composes the XP policy service only when the existing evaluation feature is enabled.
+- `src/gamification/achievementService.js` — appends deterministic base-XP decisions and corrections during full replay and supplies explicit reasons for achievement ledger effects.
+- `src/repositories/gamificationLedgerStore.js` — validates expanded entries, immutable duplicate identity, and correction linkage while retaining legacy-file compatibility.
+- `docs/gamification/IMPLEMENTATION_LOG.md` — records the completed Sprint 3 implementation and operational guidance.
+
+## Tests Added
+
+`test/gamification-xp-policy.test.js` covers configured base awards; independent source and category daily caps; UTC reset boundaries; overlap groups; stable ordering; effective policy versions; malformed and overlapping policy rejection; provisional and unknown source exclusion; required ledger fields; duplicate/conflicting effects; invalid, recursive, unequal, and duplicate reversals; multiple replay cycles; projection deletion/rebuild; correction conservation; level recalculation; exact level boundaries; and invalid level curves.
+
+Existing Sprint 1 and Sprint 2 suites continue to validate invalid event quarantine, unchanged event contracts, disabled flags, post-commit failure isolation, achievement determinism, revocations, restart persistence, and bounded full replay.
+
+## Validation Results
+
+- `node --test test/gamification-xp-policy.test.js test/gamification-achievement-engine.test.js` — passed: 13 tests, 0 failures.
+- `npm run lint` — passed: repository self-check completed successfully.
+- `npm test` — passed: see committed delivery report.
+- `git diff --check` — passed: no whitespace errors.
+- `git status --short --branch` — reviewed before the Sprint 3 commit.
+
+## Risks
+
+- Phase 1 file stores retain the approved single-writer limitation. Logical uniqueness and atomic replacement are not a substitute for a multi-process transaction coordinator.
+- UTC daily boundaries are deterministic but not user-local. A versioned timezone-history source is required before publishing local-day caps.
+- Overlap quality depends on authoritative adapters sharing the configured identity. New activity sources must document and test a stable cross-source identity before joining an overlap group.
+- Whole-award caps can leave unused room below a cap. This is intentional and deterministic; changing to partial awards would require a future policy version and economy review.
+- Full replay remains intentionally linear and unoptimized. Growth should be measured before proposing any separately approved snapshot/checkpoint design.
+
+## Deferred Work
+
+- Walking, running, trail, nutrition, and AI-coach runtime awards remain deferred until their authoritative adapters and unchanged-event-model follow-on contracts are approved. The policy engine is ready for those configured sources.
+- User-local daily caps, weekly/lifetime caps, seasonal XP, points, read APIs, notifications, UI, operator tooling, reconciliation reports, and policy simulation remain out of scope.
+- Policy migration/governance workflows and administrative publication signatures should be designed before non-development policy updates are delegated.
+
+## Rollback Strategy
+
+1. Set `GAMIFICATION_EVALUATION=false` and restart. Existing workout completion remains authoritative and unaffected; optionally retain Sprint 1 event capture.
+2. Revert the single Sprint 3 commit. Do not delete or edit event, award, or XP ledger history. Preserve Version 1 base entries as dormant audit evidence.
+3. Projections are disposable and may be removed. Restoring Sprint 2 and replaying rebuilds its achievement/level view from retained compatible records.
+4. If base-XP entries were produced in an enabled environment, do not expose a Sprint 2 projection until an operator-approved reconciliation confirms the intended rollback accounting boundary.
+5. Run the Sprint 1/Sprint 2 gamification tests, `npm run lint`, and `npm test` before completing rollback.
+
+## Recommended Next Sprint
+
+Begin a controlled read-model and observability sprint: reconciliation reports, policy simulation against de-identified event fixtures, cap/overlap metrics, and authenticated internal inspection of immutable outcomes. Keep member-facing APIs, notifications, and UI disabled until economy and privacy review approves exposure.
+
+## Acceptance Criteria
+
+- [x] Base XP is policy-configured, versioned, integer-only, and selected by event occurrence time.
+- [x] Category daily caps, exact-source daily caps, and overlap groups create explicit immutable decisions.
+- [x] Ledger effects contain source event, delta, policy version, reason, timestamp, and correction linkage.
+- [x] Corrections use unique equal-and-opposite append-only reversals; original entries never change.
+- [x] Lifetime XP and reviewed levels reproduce after projection deletion and repeated full replay.
+- [x] Existing achievements, revocations, event contracts, feature defaults, and workout failure isolation remain compatible.
+- [x] Invalid policies, events, ledger entries, conflicts, and reversal linkages are covered by validation and tests.
+- [x] No UI, notifications, snapshots, checkpoints, or replay shortcuts were added.

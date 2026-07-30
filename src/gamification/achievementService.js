@@ -5,7 +5,7 @@ const { evaluateAchievement } = require("./achievementEvaluator");
 
 function stableId(prefix, key) { return `${prefix}_${createHash("sha256").update(key).digest("hex").slice(0, 24)}`; }
 
-function createAchievementService({ eventStore, definitions, awardStore, ledgerStore, projectionService }) {
+function createAchievementService({ eventStore, definitions, awardStore, ledgerStore, projectionService, xpPolicyService = null }) {
   function readStream() {
     const stream = [];
     let cursor = 0;
@@ -31,6 +31,20 @@ function createAchievementService({ eventStore, definitions, awardStore, ledgerS
   function replay() {
     const stream = readStream();
     const events = sourceEvents(stream);
+    if (xpPolicyService) {
+      const originalEvents = stream.filter((event) => event.eventType !== "workout.revoked");
+      for (const entry of xpPolicyService.evaluate(originalEvents)) ledgerStore.append(entry);
+      for (const correction of stream.filter((event) => event.eventType === "workout.revoked")) {
+        const originalEffect = ledgerStore.all().find((entry) => entry.effectKey.startsWith("base-xp:") && entry.sourceEventId === correction.payload.originalEventId && entry.delta > 0);
+        if (originalEffect) {
+          const effectKey = `base-xp-reversal:${originalEffect.entryId}:${correction.eventId}`;
+          ledgerStore.append({ effectKey, entryId: stableId("xpr", effectKey), kind: "lifetime_xp", delta: -originalEffect.delta,
+            subjectUserId: correction.subjectUserId, sourceEventId: correction.eventId, achievementId: null,
+            policyVersion: originalEffect.policyVersion, reason: `source_reversed:${correction.payload.reasonCode}`,
+            occurredAt: correction.occurredAt, reversalOf: originalEffect.entryId });
+        }
+      }
+    }
     const subjects = [...new Set(stream.map((event) => event.subjectUserId))].sort();
     const evaluations = [];
     for (const subjectUserId of subjects) {
@@ -50,7 +64,7 @@ function createAchievementService({ eventStore, definitions, awardStore, ledgerS
           if (definition.reward.lifetimeXp > 0) ledgerStore.append({
             effectKey: `achievement-xp:${awardKey}`, entryId: stableId("xpe", awardKey), kind: "lifetime_xp",
             delta: definition.reward.lifetimeXp, subjectUserId, sourceEventId: qualification.event.eventId,
-            achievementId: definition.id, policyVersion: "achievement-xp-v1", occurredAt: qualification.event.occurredAt, reversalOf: null
+            achievementId: definition.id, policyVersion: "achievement-xp-v1", reason: "achievement_awarded", occurredAt: qualification.event.occurredAt, reversalOf: null
           });
         }
       }
@@ -65,7 +79,7 @@ function createAchievementService({ eventStore, definitions, awardStore, ledgerS
       if (!correction) continue;
       awardStore.append({ recordKey: `revoke:${awardKey}:${correction.eventId}`, kind: "revocation", awardKey, awardId: original.awardId, subjectUserId: original.subjectUserId, achievementId: original.achievementId, correctionEventId: correction.eventId, reasonCode: correction.payload.reasonCode, occurredAt: correction.occurredAt });
       const originalEffect = ledgerStore.all().find((entry) => entry.effectKey === `achievement-xp:${awardKey}`);
-      if (originalEffect) ledgerStore.append({ effectKey: `achievement-xp-reversal:${awardKey}:${correction.eventId}`, entryId: stableId("xpr", `${awardKey}:${correction.eventId}`), kind: "lifetime_xp", delta: -originalEffect.delta, subjectUserId: original.subjectUserId, sourceEventId: correction.eventId, achievementId: original.achievementId, policyVersion: "achievement-xp-v1", occurredAt: correction.occurredAt, reversalOf: originalEffect.entryId });
+      if (originalEffect) ledgerStore.append({ effectKey: `achievement-xp-reversal:${awardKey}:${correction.eventId}`, entryId: stableId("xpr", `${awardKey}:${correction.eventId}`), kind: "lifetime_xp", delta: -originalEffect.delta, subjectUserId: original.subjectUserId, sourceEventId: correction.eventId, achievementId: original.achievementId, policyVersion: "achievement-xp-v1", reason: `achievement_reversed:${correction.payload.reasonCode}`, occurredAt: correction.occurredAt, reversalOf: originalEffect.entryId });
     }
     return projectionService.rebuild({ evaluations, awardRecords: awardStore.all(), ledgerEntries: ledgerStore.all() });
   }
