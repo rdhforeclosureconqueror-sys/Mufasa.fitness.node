@@ -84,3 +84,86 @@ select,input:not([type=checkbox]){min-height:44px;font-size:max(1rem,16px);backg
 @media(prefers-reduced-motion:reduce){.glass-panel:after,.trail-planner:after,.recorder:after{animation:none;transform:none;opacity:.42}}
 @media(max-width:700px){.card{background:linear-gradient(180deg,rgba(1,10,8,.06),rgba(1,10,8,.14)),var(--glass-surface-medium)}}
 @media(prefers-reduced-motion:reduce){.cinematic-layer,.cinematic-color-wash,.cinematic-shimmer,.cinematic-mane,.cinematic-africa,.cinematic-greatness{animation:none!important;transform:none!important}.cinematic-shimmer,.cinematic-mane{display:none}.cinematic-layer{transition:none!important}.cinematic-layer:first-child{opacity:1}}
+
+/*
+ * Cinematic HUD root fix
+ *
+ * The glass tokens were reaching the elements, but the photograph had already
+ * passed through an almost-opaque color wash and vignette. In addition, legacy
+ * panel, card, and child fills were composited on top of one another. Keep one
+ * glass surface per region, keep nested telemetry transparent, and use only a
+ * light edge grade on the artwork itself.
+ */
+.cinematic-color-wash{
+  background:
+    radial-gradient(circle at 65% 23%,rgba(225,184,74,.12),transparent 25%),
+    linear-gradient(105deg,rgba(77,9,11,.08),transparent 38%,rgba(6,72,40,.09)),
+    linear-gradient(90deg,rgba(1,7,5,.12),rgba(6,27,21,.04) 48%,rgba(1,7,5,.11));
+}
+.cinematic-vignette{
+  background:
+    linear-gradient(180deg,rgba(2,8,6,.22),transparent 20%,transparent 72%,rgba(1,4,3,.3)),
+    radial-gradient(ellipse at center,transparent 57%,rgba(0,0,0,.28) 100%);
+}
+
+/* Section wrappers are layout only; they must never become a second pane. */
+main>.panel,
+.panel:not(#move){background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+
+/* One low-blur HUD pane is the authoritative paint for each major region. */
+.glass-surface,
+.glass-panel,
+.card,
+#trailResults article,
+.activity{
+  background:linear-gradient(180deg,rgba(4,22,16,.13),rgba(2,12,9,.18));
+  backdrop-filter:blur(4px) saturate(112%);
+  -webkit-backdrop-filter:blur(4px) saturate(112%);
+}
+.glass-surface--strong,
+.route-details-drawer,
+.selected-action-dock{
+  background:linear-gradient(180deg,rgba(4,22,16,.27),rgba(2,12,9,.34));
+  backdrop-filter:blur(6px) saturate(112%);
+  -webkit-backdrop-filter:blur(6px) saturate(112%);
+}
+.glass-panel:after,.trail-planner:after,.recorder:after{opacity:.22}
+
+nav{
+  background:linear-gradient(180deg,rgba(3,17,13,.25),rgba(3,17,13,.16));
+  backdrop-filter:blur(6px) saturate(112%);
+  -webkit-backdrop-filter:blur(6px) saturate(112%);
+}
+.recorder,.trail-planner{
+  background:linear-gradient(145deg,rgba(5,28,21,.16),rgba(1,10,8,.19));
+  backdrop-filter:blur(4px) saturate(112%);
+  -webkit-backdrop-filter:blur(4px) saturate(112%);
+}
+
+/* Nested HUD readouts do not compound their parent pane's tint or blur. */
+.metrics>div,.gps,.planning-status,.route-telemetry,.route-selector,
+.planner-workspace,.route-notice,.route-detail-notice,.trail-details{
+  background:rgba(2,14,10,.1);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.trail-planner .route-selector,.trail-planner .planner-workspace{background:transparent}
+.route-option,#trailResults article{background:rgba(2,14,10,.16);backdrop-filter:none;-webkit-backdrop-filter:none}
+select,input:not([type=checkbox]){
+  background:rgba(3,18,14,.16);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.warning{background:linear-gradient(90deg,rgba(46,34,8,.22),rgba(3,17,13,.06),transparent)}
+.local-contrast-scrim,.trail-privacy,#status,#recovery p{background:linear-gradient(90deg,rgba(0,10,7,.12),rgba(0,10,7,.04),transparent)}
+.selected-action-dock{background:linear-gradient(180deg,rgba(3,17,13,.3),rgba(3,17,13,.36))}
+
+/* A transparent fallback is preferable to turning every surface into a card. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .glass-surface,.glass-panel,.card,.activity,.trail-planner,.recorder,nav{background:rgba(3,17,13,.3)}
+  .metrics>div,.route-option,.gps,#trailResults article{background:rgba(3,17,13,.18)}
+}
+@media(max-width:700px){
+  .cinematic-color-wash{background:linear-gradient(180deg,rgba(2,8,6,.18),rgba(6,27,21,.08) 38%,rgba(1,4,3,.24)),linear-gradient(110deg,rgba(82,11,18,.07),transparent 45%,rgba(7,80,43,.08))}
+  .card{background:linear-gradient(180deg,rgba(4,22,16,.15),rgba(2,12,9,.2))}
+}
