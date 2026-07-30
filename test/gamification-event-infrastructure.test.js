@@ -27,7 +27,7 @@ function event(overrides = {}) {
 
 test("all gamification switches default off and require an explicit true", () => {
   assert.deepEqual(loadGamificationConfig({}), {
-    eventCapture: false, evaluation: false, readApi: false, notifications: false, leaderboards: false,
+    eventCapture: false, evaluation: false, readApi: false, operations: false, notifications: false, leaderboards: false,
     sources: { workoutCompleted: false }
   });
   assert.equal(loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true" }).eventCapture, true);
