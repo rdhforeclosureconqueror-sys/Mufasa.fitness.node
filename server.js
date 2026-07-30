@@ -17,7 +17,14 @@ const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspa
 const { createSessionService } = require("./src/services/sessionService");
 const { loadGamificationConfig } = require("./src/config/gamification");
 const { createGamificationEventStore } = require("./src/repositories/gamificationEventStore");
+const { createGamificationAwardStore } = require("./src/repositories/gamificationAwardStore");
+const { createGamificationLedgerStore } = require("./src/repositories/gamificationLedgerStore");
+const { createGamificationProjectionStore } = require("./src/repositories/gamificationProjectionStore");
 const { createEventService } = require("./src/gamification/eventService");
+const { createAchievementService } = require("./src/gamification/achievementService");
+const { createProjectionService } = require("./src/gamification/projectionService");
+const { createLevelService } = require("./src/gamification/levelService");
+const { validateAchievementDefinitions } = require("./src/gamification/policyService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
@@ -375,12 +382,32 @@ function createApp(options = {}) {
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
   const gamificationConfig = loadGamificationConfig(options.env || process.env);
   let gamificationEventService = null;
+  let achievementService = null;
   if (gamificationConfig.eventCapture) {
     const gamificationEventStore = createGamificationEventStore({ filePath: options.gamificationEventPath || GAMIFICATION_EVENT_PATH });
     gamificationEventService = createEventService({ eventStore: gamificationEventStore });
+    if (gamificationConfig.evaluation) {
+      const definitions = validateAchievementDefinitions(require(options.gamificationAchievementPath || path.join(rootDir, "data", "gamification", "achievements.json")).definitions);
+      const levels = require(options.gamificationLevelPath || path.join(rootDir, "data", "gamification", "levels.json")).levels;
+      const projectionStore = createGamificationProjectionStore({ filePath: options.gamificationProjectionPath || path.join(DATA_DIR, "gamification", "projections.json") });
+      achievementService = createAchievementService({
+        eventStore: gamificationEventStore,
+        definitions,
+        awardStore: createGamificationAwardStore({ filePath: options.gamificationAwardPath || path.join(DATA_DIR, "gamification", "awards.json") }),
+        ledgerStore: createGamificationLedgerStore({ filePath: options.gamificationLedgerPath || path.join(DATA_DIR, "gamification", "xp-ledger.json") }),
+        projectionService: createProjectionService({ projectionStore, levelService: createLevelService(levels) })
+      });
+      try { achievementService.replay(); } catch (error) {
+        console.error("Gamification startup replay failed", { errorCode: "EVALUATION_FAILED" });
+      }
+    }
   }
   const workoutCompletedAdapter = gamificationConfig.eventCapture && gamificationConfig.sources.workoutCompleted
-    ? (fact) => gamificationEventService.recordWorkoutCompleted(fact)
+    ? (fact) => {
+      const result = gamificationEventService.recordWorkoutCompleted(fact);
+      if (achievementService) achievementService.replay();
+      return result;
+    }
     : null;
   const sessionService = createSessionService({ userStore, workoutCompletedAdapter });
   const userDataService = createUserDataService({ userStore });

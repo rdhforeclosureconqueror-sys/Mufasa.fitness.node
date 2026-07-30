@@ -9,6 +9,14 @@ const EVENT_TYPES = Object.freeze({
       exerciseCountBand: Object.freeze({ type: "enum", values: ["none", "one", "two_to_four", "five_or_more"] }),
       generated: Object.freeze({ type: "boolean" })
     })
+  }),
+  "workout.revoked": Object.freeze({
+    schemaVersion: 1,
+    sources: Object.freeze(["gamification-system"]),
+    payload: Object.freeze({
+      originalEventId: Object.freeze({ type: "event_id" }),
+      reasonCode: Object.freeze({ type: "enum", values: ["source_invalidated", "confirmed_abuse", "rule_defect", "approved_moderation"] })
+    })
   })
 });
 
