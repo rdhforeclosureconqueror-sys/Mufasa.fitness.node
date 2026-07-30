@@ -17,6 +17,19 @@ test('centralizes the cinematic glass hierarchy and reusable surface classes', (
   }
 });
 
+test('keeps foreground glass translucent while maps remain opaque', () => {
+  for (const token of [
+    '--glass-surface-soft:rgba(4,22,16,.19)',
+    '--glass-surface-medium:rgba(4,22,16,.24)',
+    '--glass-surface-strong:rgba(3,17,13,.31)',
+    '--glass-control:rgba(3,18,14,.23)'
+  ]) assert.ok(css.includes(token), `${token} should retain the half-density glass contract`);
+
+  assert.match(css, /nav\{background:linear-gradient\(180deg,rgba\(3,17,13,\.34\),rgba\(3,17,13,\.24\)\)/);
+  assert.match(css, /#trailMap,\.trail-detail-map,\.map-workspace\{background:#081c17;[^}]*backdrop-filter:none/);
+  assert.match(css, /@supports not \(\(backdrop-filter:blur\(1px\)\)[^}]+background-color:rgba\(3,17,13,\.34\)/);
+});
+
 test('major activity, recovery, and trail surfaces opt into semantic glass classes', () => {
   assert.match(html, /recorder glass-panel glass-surface--medium glass-edge-blue/);
   assert.match(html, /trail-planner glass-panel glass-surface--medium glass-edge-emerald/);
@@ -29,7 +42,7 @@ test('major activity, recovery, and trail surfaces opt into semantic glass class
 test('protects readable interactive glass while keeping maps isolated', () => {
   assert.match(css, /input::placeholder\{color:#c6d9d2;opacity:1\}/);
   assert.match(css, /input:focus-visible[^}]+0 0 0 3px/);
-  assert.match(css, /\.danger[^}]+rgba\(91,30,30,.5\)/);
+  assert.match(css, /\.danger[^}]+rgba\(91,30,30,.25\)/);
   assert.match(css, /#trailMap[^}]+backdrop-filter:none/);
   assert.match(css, /@supports not \(\(backdrop-filter:/);
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)[^{]*\{[^}]*glass-panel:after[^}]*animation:none/);
