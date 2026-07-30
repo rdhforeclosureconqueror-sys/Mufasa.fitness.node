@@ -1,0 +1,1860 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "1.0.0",
+  "poses": [
+    {
+      "id": "mountain",
+      "displayName": "Mountain Pose",
+      "aliases": [],
+      "category": "standing",
+      "difficulty": "beginner",
+      "description": "Practice Mountain Pose with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "leftHip",
+        "rightHip"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            165,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "mountain-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            165,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "mountain-rightKnee-alignment"
+        },
+        {
+          "measurement": "leftHip",
+          "range": [
+            165,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "mountain-leftHip-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            165,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "mountain-rightHip-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "mountain-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              165,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "mountain-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              165,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "mountain-leftHip-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left hip toward a comfortable, steady position.",
+          "technicalExplanation": "The leftHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftHip",
+            "range": [
+              165,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "mountain-rightHip-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              165,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [],
+      "progressions": [
+        "chair"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "chair",
+      "displayName": "Chair Pose",
+      "aliases": [],
+      "category": "standing",
+      "difficulty": "beginner",
+      "description": "Practice Chair Pose with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "leftHip",
+        "rightHip"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            80,
+            125
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "chair-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            80,
+            125
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "chair-rightKnee-alignment"
+        },
+        {
+          "measurement": "leftHip",
+          "range": [
+            65,
+            125
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "chair-leftHip-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            65,
+            125
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "chair-rightHip-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "chair-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              80,
+              125
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "chair-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              80,
+              125
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "chair-leftHip-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left hip toward a comfortable, steady position.",
+          "technicalExplanation": "The leftHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftHip",
+            "range": [
+              65,
+              125
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "chair-rightHip-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              65,
+              125
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "tree"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "tree",
+      "displayName": "Tree Pose",
+      "aliases": [],
+      "category": "balance",
+      "difficulty": "beginner",
+      "description": "Practice Tree Pose with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "rightHip"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "unilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            35,
+            85
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "tree-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            160,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "tree-rightKnee-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "tree-rightHip-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "tree-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              35,
+              85
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "tree-toe-supported",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "tree-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              160,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "tree-toe-supported",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "tree-rightHip-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "tree-toe-supported",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "warrior-i"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "warrior-i",
+      "displayName": "Warrior I",
+      "aliases": [],
+      "category": "standing",
+      "difficulty": "intermediate",
+      "description": "Practice Warrior I with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "leftShoulder",
+        "rightShoulder"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            75,
+            115
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-i-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-i-rightKnee-alignment"
+        },
+        {
+          "measurement": "leftShoulder",
+          "range": [
+            145,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-i-leftShoulder-alignment"
+        },
+        {
+          "measurement": "rightShoulder",
+          "range": [
+            145,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-i-rightShoulder-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "warrior-i-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              75,
+              115
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "warrior-i-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "warrior-i-leftShoulder-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left shoulder toward a comfortable, steady position.",
+          "technicalExplanation": "The leftShoulder relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftShoulder",
+            "range": [
+              145,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "warrior-i-rightShoulder-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right shoulder toward a comfortable, steady position.",
+          "technicalExplanation": "The rightShoulder relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightShoulder",
+            "range": [
+              145,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "warrior-ii"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "warrior-ii",
+      "displayName": "Warrior II",
+      "aliases": [],
+      "category": "standing",
+      "difficulty": "beginner",
+      "description": "Practice Warrior II with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "leftShoulder",
+        "rightShoulder"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            75,
+            110
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-ii-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-ii-rightKnee-alignment"
+        },
+        {
+          "measurement": "leftShoulder",
+          "range": [
+            75,
+            110
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-ii-leftShoulder-alignment"
+        },
+        {
+          "measurement": "rightShoulder",
+          "range": [
+            75,
+            110
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "warrior-ii-rightShoulder-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "warrior-ii-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              75,
+              110
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "warrior-ii-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "warrior-ii-leftShoulder-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left shoulder toward a comfortable, steady position.",
+          "technicalExplanation": "The leftShoulder relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftShoulder",
+            "range": [
+              75,
+              110
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "warrior-ii-rightShoulder-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right shoulder toward a comfortable, steady position.",
+          "technicalExplanation": "The rightShoulder relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightShoulder",
+            "range": [
+              75,
+              110
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "triangle"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "triangle",
+      "displayName": "Triangle Pose",
+      "aliases": [],
+      "category": "standing",
+      "difficulty": "intermediate",
+      "description": "Practice Triangle Pose with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "leftShoulder",
+        "rightShoulder"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "triangle-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "triangle-rightKnee-alignment"
+        },
+        {
+          "measurement": "leftShoulder",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "triangle-leftShoulder-alignment"
+        },
+        {
+          "measurement": "rightShoulder",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "triangle-rightShoulder-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "triangle-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "triangle-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "triangle-leftShoulder-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left shoulder toward a comfortable, steady position.",
+          "technicalExplanation": "The leftShoulder relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftShoulder",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "triangle-rightShoulder-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right shoulder toward a comfortable, steady position.",
+          "technicalExplanation": "The rightShoulder relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightShoulder",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "downward-dog"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "downward-dog",
+      "displayName": "Downward-Facing Dog",
+      "aliases": [],
+      "category": "inversion",
+      "difficulty": "beginner",
+      "description": "Practice Downward-Facing Dog with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftHip",
+        "rightHip",
+        "leftElbow",
+        "rightElbow"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftHip",
+          "range": [
+            55,
+            105
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "downward-dog-leftHip-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            55,
+            105
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "downward-dog-rightHip-alignment"
+        },
+        {
+          "measurement": "leftElbow",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "downward-dog-leftElbow-alignment"
+        },
+        {
+          "measurement": "rightElbow",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "downward-dog-rightElbow-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "downward-dog-leftHip-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left hip toward a comfortable, steady position.",
+          "technicalExplanation": "The leftHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftHip",
+            "range": [
+              55,
+              105
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "downward-dog-rightHip-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              55,
+              105
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "downward-dog-leftElbow-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left elbow toward a comfortable, steady position.",
+          "technicalExplanation": "The leftElbow relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftElbow",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "downward-dog-rightElbow-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right elbow toward a comfortable, steady position.",
+          "technicalExplanation": "The rightElbow relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightElbow",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "plank"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "plank",
+      "displayName": "Plank",
+      "aliases": [],
+      "category": "strength",
+      "difficulty": "beginner",
+      "description": "Practice Plank with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftElbow",
+        "rightElbow",
+        "leftHip",
+        "rightHip"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftElbow",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "plank-leftElbow-alignment"
+        },
+        {
+          "measurement": "rightElbow",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "plank-rightElbow-alignment"
+        },
+        {
+          "measurement": "leftHip",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "plank-leftHip-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            155,
+            180
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "plank-rightHip-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "plank-leftElbow-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left elbow toward a comfortable, steady position.",
+          "technicalExplanation": "The leftElbow relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftElbow",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "plank-rightElbow-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right elbow toward a comfortable, steady position.",
+          "technicalExplanation": "The rightElbow relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightElbow",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "plank-leftHip-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left hip toward a comfortable, steady position.",
+          "technicalExplanation": "The leftHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftHip",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "plank-rightHip-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              155,
+              180
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "cobra"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "cobra",
+      "displayName": "Cobra",
+      "aliases": [],
+      "category": "backbend",
+      "difficulty": "beginner",
+      "description": "Practice Cobra with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftElbow",
+        "rightElbow",
+        "leftHip",
+        "rightHip"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftElbow",
+          "range": [
+            105,
+            170
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "cobra-leftElbow-alignment"
+        },
+        {
+          "measurement": "rightElbow",
+          "range": [
+            105,
+            170
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "cobra-rightElbow-alignment"
+        },
+        {
+          "measurement": "leftHip",
+          "range": [
+            115,
+            170
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "cobra-leftHip-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            115,
+            170
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "cobra-rightHip-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "cobra-leftElbow-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left elbow toward a comfortable, steady position.",
+          "technicalExplanation": "The leftElbow relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftElbow",
+            "range": [
+              105,
+              170
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "cobra-rightElbow-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right elbow toward a comfortable, steady position.",
+          "technicalExplanation": "The rightElbow relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightElbow",
+            "range": [
+              105,
+              170
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "cobra-leftHip-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left hip toward a comfortable, steady position.",
+          "technicalExplanation": "The leftHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftHip",
+            "range": [
+              115,
+              170
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "cobra-rightHip-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              115,
+              170
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [
+        "bridge"
+      ],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    },
+    {
+      "id": "bridge",
+      "displayName": "Bridge Pose",
+      "aliases": [],
+      "category": "backbend",
+      "difficulty": "beginner",
+      "description": "Practice Bridge Pose with steady breathing and comfortable, controlled alignment.",
+      "primaryJoints": [
+        "leftKnee",
+        "rightKnee",
+        "leftHip",
+        "rightHip"
+      ],
+      "requiredLandmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ],
+      "minimumConfidence": 0.45,
+      "holdTimeMs": 10000,
+      "entryCriteria": {
+        "stableFrames": 8
+      },
+      "exitCriteria": {
+        "lostFrames": 5
+      },
+      "orientation": "bilateral",
+      "identificationThreshold": 0.62,
+      "expectedAngles": [
+        {
+          "measurement": "leftKnee",
+          "range": [
+            70,
+            115
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "bridge-leftKnee-alignment"
+        },
+        {
+          "measurement": "rightKnee",
+          "range": [
+            70,
+            115
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "bridge-rightKnee-alignment"
+        },
+        {
+          "measurement": "leftHip",
+          "range": [
+            130,
+            175
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "bridge-leftHip-alignment"
+        },
+        {
+          "measurement": "rightHip",
+          "range": [
+            130,
+            175
+          ],
+          "weight": 1,
+          "faultThreshold": 0.25,
+          "faultId": "bridge-rightHip-alignment"
+        }
+      ],
+      "commonFaults": [
+        {
+          "id": "bridge-leftKnee-alignment",
+          "priority": 100,
+          "safety": "optimization",
+          "cue": "Adjust your left knee toward a comfortable, steady position.",
+          "technicalExplanation": "The leftKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftKnee",
+            "range": [
+              70,
+              115
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "bridge-rightKnee-alignment",
+          "priority": 99,
+          "safety": "optimization",
+          "cue": "Adjust your right knee toward a comfortable, steady position.",
+          "technicalExplanation": "The rightKnee relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightKnee",
+            "range": [
+              70,
+              115
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "bridge-leftHip-alignment",
+          "priority": 98,
+          "safety": "optimization",
+          "cue": "Adjust your left hip toward a comfortable, steady position.",
+          "technicalExplanation": "The leftHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "leftHip",
+            "range": [
+              130,
+              175
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        },
+        {
+          "id": "bridge-rightHip-alignment",
+          "priority": 97,
+          "safety": "optimization",
+          "cue": "Adjust your right hip toward a comfortable, steady position.",
+          "technicalExplanation": "The rightHip relationship is outside the reviewed launch tolerance.",
+          "trigger": {
+            "measurement": "rightHip",
+            "range": [
+              130,
+              175
+            ]
+          },
+          "suppression": [
+            "insufficient_visibility",
+            "pain_reported"
+          ],
+          "regression": "reduce-range",
+          "progression": null,
+          "aiContext": "Explain this as a joint relationship, never a diagnosis."
+        }
+      ],
+      "safetyNotes": [
+        "Stop if you feel pain, dizziness, or instability.",
+        "This score is general fitness feedback, not a medical assessment."
+      ],
+      "regressions": [
+        "reduce-range"
+      ],
+      "progressions": [],
+      "prerequisites": [],
+      "scoringWeights": {
+        "confidence": 0.15,
+        "angles": 0.65,
+        "stability": 0.1,
+        "hold": 0.1
+      },
+      "minimumEvidence": {
+        "stableFrames": 8,
+        "consistencyCount": 3
+      },
+      "referenceLandmarks": null,
+      "contentVersion": "1.0.0"
+    }
+  ]
+}

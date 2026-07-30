@@ -29,6 +29,7 @@ function createCoachContextService({ userStore, memberGamificationService = null
     const latestAchievement = gamification?.achievements?.filter((item) => item.state === "earned").at(-1) || null;
     const latestCheckIn = Array.isArray(user.checkIns) ? user.checkIns.at(-1) || null : null;
     const program = user.program || user.generatedWorkoutPlan || null;
+    const yogaSessions = (Array.isArray(user.yogaSessions) ? user.yogaSessions : []).slice().sort((a,b)=>b.completedAt-a.completedAt).slice(0,5);
 
     return {
       schemaVersion: 1,
@@ -56,7 +57,12 @@ function createCoachContextService({ userStore, memberGamificationService = null
         soreness: latestCheckIn.soreness ?? null,
         sleep: latestCheckIn.sleep ?? latestCheckIn.sleepHours ?? null,
         motivation: latestCheckIn.motivation ?? null
-      } : null
+      } : null,
+      yoga: {
+        recent: yogaSessions.map((item)=>({sessionId:item.sessionId,completedAt:item.completedAt,summary:item.summary,progression:item.progression,ruleVersion:item.ruleVersion})),
+        commonlyDetectedFaults: Object.entries(yogaSessions.flatMap(s=>s.poseResults||[]).flatMap(p=>p.faultIds||[]).reduce((a,id)=>(a[id]=(a[id]||0)+1,a),{})).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([faultId,count])=>({faultId,count})),
+        authority: "derived_deterministic_results"
+      }
     };
   }
 

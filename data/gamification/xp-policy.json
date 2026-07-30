@@ -12,13 +12,21 @@
           "category": "workout",
           "overlapGroup": "completed_activity",
           "overlapIdentity": "sourceEntity.id"
+        },
+        "yoga.session.completed": {
+          "xp": 75,
+          "category": "yoga",
+          "overlapGroup": "completed_activity",
+          "overlapIdentity": "sourceEntity.id"
         }
       },
       "dailyCaps": {
-        "workout": 100
+        "workout": 100,
+        "yoga": 150
       },
       "sourceDailyCaps": {
-        "workout.completed": 100
+        "workout.completed": 100,
+        "yoga.session.completed": 150
       },
       "overlapGroups": {
         "completed_activity": {

@@ -15,6 +15,7 @@ const { createUserStore } = require("./src/repositories/userStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
 const { createSessionService } = require("./src/services/sessionService");
+const { createYogaService } = require("./src/services/yogaService");
 const { loadGamificationConfig } = require("./src/config/gamification");
 const { createGamificationEventStore } = require("./src/repositories/gamificationEventStore");
 const { createGamificationGenerationStore } = require("./src/repositories/gamificationGenerationStore");
@@ -455,6 +456,7 @@ function createApp(options = {}) {
     }
     : null;
   const sessionService = createSessionService({ userStore, workoutCompletedAdapter });
+  const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
@@ -2130,6 +2132,9 @@ function createApp(options = {}) {
   });
 
   // ---- Structured Session API (pilot hardening) ----
+  app.get("/api/yoga/catalogue", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>ok(res,req.requestId,yogaService.catalogue(),200)));
+  app.get("/api/yoga/history", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>ok(res,req.requestId,{sessions:yogaService.history(req.auth.userId)},200)));
+  app.post("/api/yoga/sessions/complete", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>{ensureUserScopedAccess(req,req.body?.userId);return ok(res,req.requestId,yogaService.complete(req.auth.userId,req.body),201);}));
   app.post("/api/sessions", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     ensureUserScopedAccess(req, req.body?.userId);
     const parsed = validateSessionCreate({

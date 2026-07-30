@@ -48,8 +48,12 @@ function createEventService({ eventStore, clock = () => new Date(), idFactory = 
       payload: { durationBand: durationBand(session.endedAt - session.startedAt), exerciseCountBand: exerciseCountBand(exercises.size), generated: Boolean(session.programId) }
     });
   }
+  function recordYogaSessionCompleted({ userId, result, correlationId }) {
+    const count=result.poseResults.length, score=result.summary.averageScore ?? 0;
+    return record({eventId:idFactory(),eventType:"yoga.session.completed",schemaVersion:1,occurredAt:new Date(result.completedAt).toISOString(),recordedAt:clock().toISOString(),actorUserId:userId,subjectUserId:userId,source:"yoga-service",sourceEntity:{type:"yoga_session",id:result.recordId,version:1},idempotencyKey:`yoga.session.completed:${result.recordId}`,correlationId:correlationId||`yoga:${result.recordId}`,causationEventId:null,verification:{status:"verified",method:"authoritative-write",riskFlags:[]},payload:{scoreBand:score>=85?"strong":score>=65?"steady":"developing",poseCountBand:count===1?"one":count<5?"two_to_four":"five_or_more",cameraAssisted:result.detectorVersion!=="movenet-unknown"}});
+  }
   function observe() { return Object.freeze({ ...stats, ...eventStore.metrics() }); }
-  return Object.freeze({ record, recordWorkoutCompleted, observe, logger });
+  return Object.freeze({ record, recordWorkoutCompleted, recordYogaSessionCompleted, observe, logger });
 }
 
 module.exports = { createEventService, durationBand, exerciseCountBand };

@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "1.0.0",
+  "sessions": [
+    {
+      "id": "beginner-flow",
+      "name": "Beginner Full-Body Flow",
+      "purpose": "Build familiarity with foundational shapes",
+      "difficulty": "beginner",
+      "durationMinutes": 12,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "mountain",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "chair",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "warrior-ii",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "downward-dog",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "cobra",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "bridge",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "morning-mobility",
+      "name": "Morning Mobility",
+      "purpose": "Move gently through a full-body sequence",
+      "difficulty": "beginner",
+      "durationMinutes": 8,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "mountain",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "chair",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "triangle",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "downward-dog",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "evening-recovery",
+      "name": "Evening Recovery",
+      "purpose": "Slow down with comfortable holds",
+      "difficulty": "beginner",
+      "durationMinutes": 8,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "mountain",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "downward-dog",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "cobra",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "bridge",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "balance-foundations",
+      "name": "Balance Foundations",
+      "purpose": "Practice steady single-leg control",
+      "difficulty": "beginner",
+      "durationMinutes": 6,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "mountain",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "tree",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "warrior-ii",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "hip-mobility",
+      "name": "Hip Mobility",
+      "purpose": "Explore comfortable hip range",
+      "difficulty": "beginner",
+      "durationMinutes": 8,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "chair",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "warrior-i",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "warrior-ii",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "triangle",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "upper-body-mobility",
+      "name": "Upper-Body Mobility",
+      "purpose": "Practice shoulder and trunk control",
+      "difficulty": "beginner",
+      "durationMinutes": 8,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "mountain",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "downward-dog",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "plank",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "cobra",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "core-stability",
+      "name": "Core and Stability",
+      "purpose": "Develop controlled trunk support",
+      "difficulty": "intermediate",
+      "durationMinutes": 6,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "chair",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "plank",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "bridge",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    },
+    {
+      "id": "post-workout-cooldown",
+      "name": "Post-Workout Cooldown",
+      "purpose": "Transition gradually out of training",
+      "difficulty": "beginner",
+      "durationMinutes": 8,
+      "equipment": [
+        "mat"
+      ],
+      "safetyNotes": [
+        "Work within a comfortable range. Stop for pain, dizziness, or instability."
+      ],
+      "poses": [
+        {
+          "poseId": "mountain",
+          "holdSeconds": 30,
+          "transition": "Set up with the full body visible if using the camera.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "triangle",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "downward-dog",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        },
+        {
+          "poseId": "cobra",
+          "holdSeconds": 30,
+          "transition": "Move slowly into the next position.",
+          "restSeconds": 15,
+          "cameraSupported": true
+        }
+      ]
+    }
+  ]
+}
