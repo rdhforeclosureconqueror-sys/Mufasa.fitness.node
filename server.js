@@ -25,6 +25,7 @@ const { createAchievementService } = require("./src/gamification/achievementServ
 const { createProjectionService } = require("./src/gamification/projectionService");
 const { createLevelService } = require("./src/gamification/levelService");
 const { validateAchievementDefinitions } = require("./src/gamification/policyService");
+const { createXpPolicyService, validateXpPolicy } = require("./src/gamification/xpPolicyService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
@@ -389,13 +390,15 @@ function createApp(options = {}) {
     if (gamificationConfig.evaluation) {
       const definitions = validateAchievementDefinitions(require(options.gamificationAchievementPath || path.join(rootDir, "data", "gamification", "achievements.json")).definitions);
       const levels = require(options.gamificationLevelPath || path.join(rootDir, "data", "gamification", "levels.json")).levels;
+      const xpPolicies = validateXpPolicy(require(options.gamificationXpPolicyPath || path.join(rootDir, "data", "gamification", "xp-policy.json")));
       const projectionStore = createGamificationProjectionStore({ filePath: options.gamificationProjectionPath || path.join(DATA_DIR, "gamification", "projections.json") });
       achievementService = createAchievementService({
         eventStore: gamificationEventStore,
         definitions,
         awardStore: createGamificationAwardStore({ filePath: options.gamificationAwardPath || path.join(DATA_DIR, "gamification", "awards.json") }),
         ledgerStore: createGamificationLedgerStore({ filePath: options.gamificationLedgerPath || path.join(DATA_DIR, "gamification", "xp-ledger.json") }),
-        projectionService: createProjectionService({ projectionStore, levelService: createLevelService(levels) })
+        projectionService: createProjectionService({ projectionStore, levelService: createLevelService(levels) }),
+        xpPolicyService: createXpPolicyService(xpPolicies)
       });
       try { achievementService.replay(); } catch (error) {
         console.error("Gamification startup replay failed", { errorCode: "EVALUATION_FAILED" });

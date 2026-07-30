@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "policies": [
+    {
+      "policyVersion": "1.0.0",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "dayBoundary": "UTC",
+      "actions": {
+        "workout.completed": {
+          "xp": 100,
+          "category": "workout",
+          "overlapGroup": "completed_activity",
+          "overlapIdentity": "sourceEntity.id"
+        }
+      },
+      "dailyCaps": {
+        "workout": 100
+      },
+      "sourceDailyCaps": {
+        "workout.completed": 100
+      },
+      "overlapGroups": {
+        "completed_activity": {
+          "strategy": "first_by_occurred_at_then_event_id"
+        }
+      }
+    }
+  ]
+}
