@@ -16,6 +16,8 @@
     "ops:verify-audit": "node scripts/verify-admin-audit-chain.js",
     "ops:preflight": "node scripts/control-plane-preflight.js",
     "ops:migrate-gamification": "node scripts/migrate-gamification-operations.js",
+    "ops:verify-gamification-staging": "node scripts/verify-gamification-staging.js",
+    "ops:rehearse-gamification-rollback": "node scripts/rehearse-gamification-rollback.js",
     "ops:pilot-checks": "node scripts/run-pilot-control-plane-checks.js",
     "diagnostics:routes": "node scripts/diagnostics-routes.js",
     "repo:route-audit": "node scripts/repo-route-audit.js",
