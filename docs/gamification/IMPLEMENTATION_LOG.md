@@ -145,3 +145,112 @@ Exact code/configuration/data steps to revert this sprint, followed by exact pos
 - [ ] Rollback instructions are complete and verified as appropriate.
 - [ ] This implementation-log entry matches the final diff and validation results.
 
+---
+
+# Sprint 1 — Foundation and Event Infrastructure
+
+**Sprint Number:** 1
+
+**Objective:** Establish the disabled-by-default, server-authoritative event foundation and a shadow `workout.completed` adapter. No rewards or user-visible behavior are included.
+
+**Status:** `Complete`
+
+**Dates:** `2026-07-30` to `2026-07-30`
+
+**Related Design Documents:**
+
+- [Phase 1 Implementation Plan — Architectural fit](PHASE_1_IMPLEMENTATION_PLAN.md#2-architectural-fit)
+- [Phase 1 Implementation Plan — Event capture, persistence, and flags](PHASE_1_IMPLEMENTATION_PLAN.md#7-backend-changes)
+- [Event Model — Canonical envelope](EVENT_MODEL.md#2-canonical-envelope)
+- [Event Model — Versioning and compatibility](EVENT_MODEL.md#4-versioning-and-compatibility)
+- [Event Model — Event store schema](EVENT_MODEL.md#9-event-store-schema)
+- [Phase 1 Sprint Sequence — Sprint 1](PHASE_1_SPRINT_SEQUENCE.md#sprint-1--foundation-and-event-infrastructure)
+
+---
+
+## Scope
+
+Implemented versioned event registration and minimization validation, append-only/deduplicated atomic JSON persistence, bounded cursor reads, backup recovery, safe quarantine metadata, observability counters, independent flags, definition-envelope validation, and one post-commit shadow `workout.completed` adapter. Explicitly excluded XP, points, badges, achievements, levels, notifications, read APIs, evaluation, and UI.
+
+## Files Modified
+
+- `.env.example`
+- `server.js`
+- `src/services/sessionService.js`
+- `docs/gamification/IMPLEMENTATION_LOG.md`
+
+## New Files
+
+- `src/config/gamification.js`
+- `src/gamification/eventTypes.js`
+- `src/gamification/validators.js`
+- `src/gamification/eventService.js`
+- `src/repositories/gamificationEventStore.js`
+- `src/repositories/gamificationDefinitionStore.js`
+- `test/gamification-event-infrastructure.test.js`
+- `test/gamification-session-integration.test.js`
+
+## Database / Storage Changes
+
+- When both capture flags are explicitly enabled, the existing `POCKET_PT_DATA_DIR` contains `gamification/events.json`, its prior-snapshot `.bak`, and safe `.quarantine.ndjson` metadata as needed. No new database or alternate runtime was introduced.
+- Store snapshots are versioned and written with temporary-file write, file `fsync`, atomic rename, and directory `fsync`. The prior valid snapshot is retained for recovery.
+
+## API Changes
+
+None. Existing session response bodies and status codes are unchanged. Request correlation IDs are passed internally to event capture.
+
+## UI Changes
+
+None.
+
+## Architecture Decisions
+
+- Reused `server.js`, `sessionService`, `POCKET_PT_DATA_DIR`, and the repository/service composition pattern; no parallel domain authority was created.
+- Capture runs only after `userStore.updateUser` returns successfully. Capture exceptions are converted to privacy-safe operational logs and never alter the committed session response.
+- `(subjectUserId, idempotencyKey)` is the deduplication boundary. The first immutable event and cursor win; retries return `duplicate`.
+- Unknown contracts and invalid input produce metadata-only quarantine entries. Event payloads and validation details are not copied into quarantine or operational failure logs.
+- All flags default off. Global capture and the workout source flag must both be true before the adapter is composed. Evaluation and every later-sprint surface remain off and unimplemented.
+
+## Tests Added
+
+- `test/gamification-event-infrastructure.test.js` — flag defaults; registered envelope minimization and immutability; unknown-version, unsafe-field, enum, and future-skew rejection; deduplication; restart/cursor behavior; bounded reads; backup recovery; safe quarantine; observability; and safe definition-envelope validation.
+- `test/gamification-session-integration.test.js` — authoritative commit ordering, exactly-once adapter invocation for accepted completion, no emission for failed/no-op completion, correlation propagation, and domain-success isolation during capture failure.
+
+## Validation
+
+- `node --test test/gamification-event-infrastructure.test.js test/gamification-session-integration.test.js` — passed: 9 tests, 0 failures.
+- `npm run lint` — passed: repository self-check completed successfully.
+- `npm test` — passed: 710 tests, 0 failures.
+- `git diff --check` — passed: no whitespace errors.
+
+## Risks
+
+- The versioned JSON snapshot store is appropriate for the current single-process persistence convention but is not a multi-process transaction coordinator. Deployment must retain one writer per data directory; a future current-platform datastore migration can preserve the repository interface.
+- Best-effort capture cannot make a session commit and event append one physical transaction. The approved reconciliation/outbox work remains deferred; domain success is intentionally prioritized and capture failures are observable.
+- Backup recovery restores the last prior complete snapshot, so an event from the damaged latest snapshot can require later reconciliation. Immutable source sessions remain authoritative.
+
+## Deferred Work
+
+- Sprint 2: evaluation, achievement rules, awards, projections, and replay effects.
+- Later approved sprints: XP/points, badges, levels, read APIs, notifications, UI, additional source adapters, reconciliation/outbox tooling, backfill, and admin operations.
+- Legacy seed normalization/publication is not performed in this sprint. The definition store only establishes safe version/lifecycle envelope validation; no definition can award or is loaded into an evaluator.
+- Correction/invalidation processing is not emitted by this sole completion adapter and remains within the approved later correction/replay work.
+
+## Rollback
+
+1. Set `GAMIFICATION_SOURCE_WORKOUT_COMPLETED=false` and `GAMIFICATION_EVENT_CAPTURE=false`, then restart the existing Node process. Leave all evaluation/read/notification flags false.
+2. Revert the Sprint 1 commit to remove adapter composition and foundation modules.
+3. Retain `POCKET_PT_DATA_DIR/gamification/` as dormant immutable shadow evidence; do not delete or hand-edit it. Restore `.bak` only for physical corruption and record reconciliation needs.
+4. Run `node --test test/session-api.test.js test/persistence-restart.test.js` and `npm test` to verify authoritative workflows with gamification unavailable.
+
+## Acceptance Criteria
+
+- [x] Every gamification flag defaults off and no later-sprint feature is enabled or implemented.
+- [x] A successful authoritative workout completion can produce one minimized versioned event only after commit; retry/no-op and failed writes produce none.
+- [x] Event persistence is immutable through its public interface, deduplicated, bounded, cursor-addressable, restart-safe, and recoverable from the prior atomic snapshot.
+- [x] Invalid and unknown contracts are rejected and quarantined with safe metadata only.
+- [x] Capture failure cannot alter successful domain responses and emits privacy-safe observable failure data.
+- [x] All required automated tests pass.
+- [x] Existing domain workflows remain stable with gamification disabled or unavailable.
+- [x] Rollback instructions are complete and preserve dormant immutable records.
+- [x] This implementation-log entry matches the final diff and validation results.

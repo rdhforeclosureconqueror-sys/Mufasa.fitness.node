@@ -7,7 +7,7 @@ function pushEvent(user, command, payload) {
   user.events.push({ command, ts: Date.now(), payload });
 }
 
-function createSessionService({ userStore }) {
+function createSessionService({ userStore, workoutCompletedAdapter = null, logger = console }) {
   function startSession({ userId, sessionId, programId = null, exerciseId = null, payload = {} }) {
     const now = Date.now();
     const sid = sessionId || `sess_${now}`;
@@ -80,7 +80,7 @@ function createSessionService({ userStore }) {
     };
   }
 
-  function completeSession({ userId, sessionId, repsCompleted = 0, exerciseId = null, payload = {} }) {
+  function completeSession({ userId, sessionId, repsCompleted = 0, exerciseId = null, payload = {}, correlationId = null }) {
     let endedAt = null;
     let summary = null;
 
@@ -108,11 +108,22 @@ function createSessionService({ userStore }) {
       return user;
     });
 
-    return {
+    const result = {
       sessionId,
       endedAt,
       summary
     };
+    // The user store update above is authoritative. Shadow capture is deliberately
+    // isolated so an unavailable event pipeline cannot change domain success.
+    if (workoutCompletedAdapter) {
+      try {
+        const committed = userStore.loadUser(userId).sessions[sessionId];
+        workoutCompletedAdapter({ userId, session: committed, correlationId });
+      } catch (error) {
+        logger.error("[gamification-event-capture-failed]", { source: "workout.completed", correlationId, errorCode: error.code || "CAPTURE_FAILED" });
+      }
+    }
+    return result;
   }
 
   return {

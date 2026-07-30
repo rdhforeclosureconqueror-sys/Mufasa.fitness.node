@@ -15,6 +15,9 @@ const { createUserStore } = require("./src/repositories/userStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
 const { createSessionService } = require("./src/services/sessionService");
+const { loadGamificationConfig } = require("./src/config/gamification");
+const { createGamificationEventStore } = require("./src/repositories/gamificationEventStore");
+const { createEventService } = require("./src/gamification/eventService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
@@ -345,6 +348,7 @@ function createApp(options = {}) {
   const EX_DB_DIR = path.join(PUBLIC_DIR, "exercise-db");
   const EX_INDEX_PATH = path.join(EX_DB_DIR, "index.json");
   const USER_DIR = path.join(DATA_DIR, "users");
+  const GAMIFICATION_EVENT_PATH = path.join(DATA_DIR, "gamification", "events.json");
   const PILOT_EVENT_LOG_PATH = path.join(OPS_DIR, "pilot-events.ndjson");
   const DIAGNOSTIC_REPORT_PATH = path.join(OPS_DIR, "diagnostic-reports.ndjson");
   const PUSHUP_CHALLENGE_PATH = path.join(OPS_DIR, "pushup-challenge-results.json");
@@ -369,7 +373,16 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
-  const sessionService = createSessionService({ userStore });
+  const gamificationConfig = loadGamificationConfig(options.env || process.env);
+  let gamificationEventService = null;
+  if (gamificationConfig.eventCapture) {
+    const gamificationEventStore = createGamificationEventStore({ filePath: options.gamificationEventPath || GAMIFICATION_EVENT_PATH });
+    gamificationEventService = createEventService({ eventStore: gamificationEventStore });
+  }
+  const workoutCompletedAdapter = gamificationConfig.eventCapture && gamificationConfig.sources.workoutCompleted
+    ? (fact) => gamificationEventService.recordWorkoutCompleted(fact)
+    : null;
+  const sessionService = createSessionService({ userStore, workoutCompletedAdapter });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
@@ -1998,6 +2011,7 @@ function createApp(options = {}) {
       ...(req.body || {}),
       userId: req.auth?.userId || req.body?.userId
     }, req.params.id);
+    parsed.correlationId = req.requestId;
     const result = sessionService.completeSession(parsed);
     return ok(res, req.requestId, result, 200);
   }));
@@ -2431,6 +2445,7 @@ function createApp(options = {}) {
       } else if (command === "fitness.repUpdate") {
         result = sessionService.appendRepUpdate(parsed);
       } else {
+        parsed.correlationId = req.requestId;
         result = sessionService.completeSession(parsed);
       }
 
