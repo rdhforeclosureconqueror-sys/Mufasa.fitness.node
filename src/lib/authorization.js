@@ -17,7 +17,11 @@ const PERMISSIONS = Object.freeze({
   TRAINER_CLIENT_PROGRAMS_WRITE: "trainer.clients.programs.write",
   TRAINER_CLIENT_NOTES_READ: "trainer.clients.notes.read",
   TRAINER_CLIENT_NOTES_WRITE: "trainer.clients.notes.write",
-  ADMIN_TRAINER_ASSIGNMENTS_MANAGE: "admin.trainer_assignments.manage"
+  ADMIN_TRAINER_ASSIGNMENTS_MANAGE: "admin.trainer_assignments.manage",
+  EXERCISE_CONTENT_READ: "exercise.content.read",
+  EXERCISE_CONTENT_MANAGE: "exercise.content.manage",
+  EXERCISE_CONTENT_REVIEW: "exercise.content.review",
+  EXERCISE_CONTENT_PUBLISH: "exercise.content.publish"
 });
 
 const ROLE_PERMISSIONS = Object.freeze({

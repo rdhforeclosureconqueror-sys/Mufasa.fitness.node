@@ -1,7 +1,7 @@
-# Relationships, Progressions, and Substitutions
+# Exercise relationships
 
-Each directed relationship has a stable relationship ID, source and target exercise IDs, type, replacement quality, movement similarity, equipment compatibility, difficulty delta, and compatible goals. Integrity validation rejects missing endpoints, duplicate IDs, and self-links.
+Relationship edges contain canonical source and target IDs, stable relationship ID, direction, difficulty delta, movement similarity, equipment compatibility, replacement quality and compatible goals. They are server-authored and deterministically ordered.
 
-Progression nodes refer to relationship IDs and add prerequisites, minimum competency, movement-quality requirements, equipment, difficulty, and recommended next step. Advancement is returned only when all deterministic gates pass.
+Progression views distinguish the reference path from authoritative member evidence. A progression requiring `controlled_range` and `stable_alignment` is not described as unlocked unless server evidence meets the competency gate. Screen readers receive the same data as semantic lists. Substitution cards explain preserved movement pattern and training intent; changing a prescribed session must be accepted by the Program Engine and is not performed by the Hub.
 
-Substitutions first preserve movement pattern and training intent, then enforce equipment, injury/contraindication, experience, and goal constraints. Direct curated relationships rank above classification-only candidates. Muscle overlap alone is never sufficient. Travel, time, and home/gym scenarios are represented as equipment and constraint inputs rather than separate exercise copies.
+Validation rejects unknown targets, self references, duplicates, dangling/deprecated targets and invalid cycles before a release can be reviewed.
