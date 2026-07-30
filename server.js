@@ -874,6 +874,7 @@ function createApp(options = {}) {
 
   if (gamificationReadService) {
     const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+    const mutationGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.GAMIFICATION_OPERATIONS_MANAGE, trackAdminOpsAuthorizationDecision);
     const userId = (req) => {
       if (!validUserId(req.params.id)) throw new ApiError("INVALID_USER_ID", "A valid user id is required", 422);
       return req.params.id;
@@ -892,11 +893,11 @@ function createApp(options = {}) {
       try { return ok(res, req.requestId, gamificationReadService.simulate(req.body || {})); }
       catch (error) { throw new ApiError("INVALID_SIMULATION", error.message, 422); }
     });
-    app.post("/internal/gamification/replay/all", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.replay().diagnostics));
-    app.post("/internal/gamification/replay/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
-    app.post("/internal/gamification/recalculate/xp/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
-    app.post("/internal/gamification/recalculate/achievements/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
-    app.delete("/internal/gamification/projection/:id", internalGuard, (req, res) => ok(res, req.requestId, { deleted: gamificationReadService.deleteProjection(userId(req)) }));
+    app.post("/internal/gamification/replay/all", mutationGuard, (req, res) => ok(res, req.requestId, gamificationReadService.replay().diagnostics));
+    app.post("/internal/gamification/replay/:id", mutationGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.post("/internal/gamification/recalculate/xp/:id", mutationGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.post("/internal/gamification/recalculate/achievements/:id", mutationGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.delete("/internal/gamification/projection/:id", mutationGuard, (req, res) => ok(res, req.requestId, { deleted: gamificationReadService.deleteProjection(userId(req)) }));
   }
 
   if (replayWorker && policyManager) {

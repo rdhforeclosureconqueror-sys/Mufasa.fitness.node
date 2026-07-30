@@ -1781,7 +1781,7 @@ module.exports = Object.freeze([
     ["POST", "/internal/gamification/recalculate/xp/:id"], ["POST", "/internal/gamification/recalculate/achievements/:id"],
     ["DELETE", "/internal/gamification/projection/:id"]
   ].map(([method, routePath]) => ({ method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
-    requiredPermissions: ["ops.read_observability"], membership: "not-required", ownership: "internal-administrator",
+    requiredPermissions: [method === "GET" || routePath === "/internal/gamification/simulate" ? "ops.read_observability" : "gamification.operations.manage"], membership: "not-required", ownership: "internal-administrator",
     featureFlag: "GAMIFICATION_READ_API", publicOutput: "internal-only", rateLimit: null, compatibility: null, publicWrite: null })),
   ...[
     ["GET", "/internal/gamification/operations/replay/queue"], ["GET", "/internal/gamification/operations/replay/history"],

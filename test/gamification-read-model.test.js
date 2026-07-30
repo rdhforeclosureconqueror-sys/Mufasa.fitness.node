@@ -89,3 +89,12 @@ test("read infrastructure remains disabled by default", () => {
   const config = loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true", GAMIFICATION_EVALUATION: "true" });
   assert.equal(config.readApi, false);
 });
+
+test("gamification read and mutation routes use separate permissions", () => {
+  const contract = require("../config/route-authorization-contract");
+  const permission = (method, routePath) => contract.find((route) => route.method === method && route.path === routePath)?.requiredPermissions;
+  assert.deepEqual(permission("GET", "/internal/gamification/integrity"), ["ops.read_observability"]);
+  assert.deepEqual(permission("POST", "/internal/gamification/simulate"), ["ops.read_observability"]);
+  assert.deepEqual(permission("POST", "/internal/gamification/replay/all"), ["gamification.operations.manage"]);
+  assert.deepEqual(permission("DELETE", "/internal/gamification/projection/:id"), ["gamification.operations.manage"]);
+});
