@@ -1,0 +1,854 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": 1,
+  "reviewStatus": "production_reviewed",
+  "definitions": [
+    {
+      "id": "achievement.workout.1_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "1 Workout",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 50
+      },
+      "badgeId": "badge.workout.1_completed"
+    },
+    {
+      "id": "achievement.workout.2_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "2 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 2
+      },
+      "reward": {
+        "lifetimeXp": 30
+      },
+      "badgeId": "badge.workout.2_completed"
+    },
+    {
+      "id": "achievement.workout.3_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "3 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 3
+      },
+      "reward": {
+        "lifetimeXp": 35
+      },
+      "badgeId": "badge.workout.3_completed"
+    },
+    {
+      "id": "achievement.workout.5_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "5 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 5
+      },
+      "reward": {
+        "lifetimeXp": 50
+      },
+      "badgeId": "badge.workout.5_completed"
+    },
+    {
+      "id": "achievement.workout.10_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "10 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 10
+      },
+      "reward": {
+        "lifetimeXp": 75
+      },
+      "badgeId": "badge.workout.10_completed"
+    },
+    {
+      "id": "achievement.workout.15_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "15 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 15
+      },
+      "reward": {
+        "lifetimeXp": 80
+      },
+      "badgeId": "badge.workout.15_completed"
+    },
+    {
+      "id": "achievement.workout.20_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "20 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 20
+      },
+      "reward": {
+        "lifetimeXp": 90
+      },
+      "badgeId": "badge.workout.20_completed"
+    },
+    {
+      "id": "achievement.workout.25_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "25 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 25
+      },
+      "reward": {
+        "lifetimeXp": 100
+      },
+      "badgeId": "badge.workout.25_completed"
+    },
+    {
+      "id": "achievement.workout.35_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "35 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 35
+      },
+      "reward": {
+        "lifetimeXp": 110
+      },
+      "badgeId": "badge.workout.35_completed"
+    },
+    {
+      "id": "achievement.workout.50_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "50 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 50
+      },
+      "reward": {
+        "lifetimeXp": 125
+      },
+      "badgeId": "badge.workout.50_completed"
+    },
+    {
+      "id": "achievement.workout.75_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "75 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 75
+      },
+      "reward": {
+        "lifetimeXp": 150
+      },
+      "badgeId": "badge.workout.75_completed"
+    },
+    {
+      "id": "achievement.workout.100_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "100 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 100
+      },
+      "reward": {
+        "lifetimeXp": 200
+      },
+      "badgeId": "badge.workout.100_completed"
+    },
+    {
+      "id": "achievement.workout.150_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "150 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 150
+      },
+      "reward": {
+        "lifetimeXp": 225
+      },
+      "badgeId": "badge.workout.150_completed"
+    },
+    {
+      "id": "achievement.workout.200_completed",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "200 Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "threshold": 200
+      },
+      "reward": {
+        "lifetimeXp": 250
+      },
+      "badgeId": "badge.workout.200_completed"
+    },
+    {
+      "id": "achievement.workout.twenty_minutes",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "Twenty Minute Start",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.durationBand": [
+            "20_to_44_min",
+            "45_to_89_min",
+            "90_min_or_more"
+          ]
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 40
+      },
+      "badgeId": "badge.workout.twenty_minutes"
+    },
+    {
+      "id": "achievement.workout.forty_five_minutes",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "Forty-Five Minute Focus",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.durationBand": [
+            "45_to_89_min",
+            "90_min_or_more"
+          ]
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 50
+      },
+      "badgeId": "badge.workout.forty_five_minutes"
+    },
+    {
+      "id": "achievement.workout.ninety_minutes",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "Extended Session",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.durationBand": "90_min_or_more"
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 60
+      },
+      "badgeId": "badge.workout.ninety_minutes"
+    },
+    {
+      "id": "achievement.workout.generated_1",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "1 Generated Workout",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.generated": true
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 40
+      },
+      "badgeId": "badge.workout.generated_1"
+    },
+    {
+      "id": "achievement.workout.generated_5",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "5 Generated Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.generated": true
+        },
+        "threshold": 5
+      },
+      "reward": {
+        "lifetimeXp": 60
+      },
+      "badgeId": "badge.workout.generated_5"
+    },
+    {
+      "id": "achievement.workout.generated_10",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "10 Generated Workouts",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.generated": true
+        },
+        "threshold": 10
+      },
+      "reward": {
+        "lifetimeXp": 80
+      },
+      "badgeId": "badge.workout.generated_10"
+    },
+    {
+      "id": "achievement.workout.variety_start",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "Movement Variety Start",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.exerciseCountBand": "five_or_more"
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 40
+      },
+      "badgeId": "badge.workout.variety_start"
+    },
+    {
+      "id": "achievement.workout.variety_10",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "Movement Variety 10",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.exerciseCountBand": "five_or_more"
+        },
+        "threshold": 10
+      },
+      "reward": {
+        "lifetimeXp": 75
+      },
+      "badgeId": "badge.workout.variety_10"
+    },
+    {
+      "id": "achievement.workout.streak_7",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "7-Day Workout Streak",
+      "visibility": "public",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "streak",
+        "threshold": 7
+      },
+      "reward": {
+        "lifetimeXp": 100
+      },
+      "badgeId": "badge.workout.streak_7"
+    },
+    {
+      "id": "achievement.workout.streak_30",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 1,
+      "name": "30-Day Workout Streak",
+      "visibility": "hidden",
+      "effectiveFrom": "2026-07-30T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "workout.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "streak",
+        "threshold": 30
+      },
+      "reward": {
+        "lifetimeXp": 250
+      },
+      "badgeId": "badge.workout.streak_30"
+    }
+  ]
+}

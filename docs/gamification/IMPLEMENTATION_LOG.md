@@ -254,3 +254,136 @@ None.
 - [x] Existing domain workflows remain stable with gamification disabled or unavailable.
 - [x] Rollback instructions are complete and preserve dormant immutable records.
 - [x] This implementation-log entry matches the final diff and validation results.
+
+---
+
+# Sprint 2 — Achievement Engine
+
+**Sprint Number:** 2
+
+**Objective:** Deliver deterministic event consumption, achievement and progress evaluation, append-only badge/XP outcomes and corrections, level projections, and full replay behind disabled-by-default visibility flags.
+
+**Status:** `Complete`
+
+**Dates:** `2026-07-30` to `2026-07-30`
+
+**Related Design Documents:**
+
+- [Sprint 2 Approved Architecture Decisions](SPRINT_2_APPROVED_DECISIONS.md)
+- [Phase 1 Sprint Sequence — Sprint 2](PHASE_1_SPRINT_SEQUENCE.md#sprint-2--achievement-engine)
+- [Achievement System — Achievement definition architecture](ACHIEVEMENT_SYSTEM.md#5-achievement-definition-architecture)
+- [Achievement System — Evaluation and event relationships](ACHIEVEMENT_SYSTEM.md#7-evaluation-and-event-relationships)
+- [Achievement System — XP architecture](ACHIEVEMENT_SYSTEM.md#9-xp-architecture)
+- [Achievement System — Levels](ACHIEVEMENT_SYSTEM.md#12-levels)
+- [Achievement System — Corrections, revocation, and appeals](ACHIEVEMENT_SYSTEM.md#21-corrections-revocation-and-appeals)
+- [Event Model — Derived events and loops](EVENT_MODEL.md#6-derived-events-and-loops)
+- [Points and XP — Level curve](POINTS_AND_XP.md#3-level-curve)
+
+---
+
+## Scope
+
+Sprint 2 was initially stopped at its design entry gate. It resumed after the correction, replay, catalogue, and reduced Phase 1 scope decisions were approved and recorded in `SPRINT_2_APPROVED_DECISIONS.md`.
+
+Implemented a disabled-by-default shadow achievement engine over the Sprint 1 `workout.completed` source: Catalogue Version 1 with 24 reviewed workout achievements, typed deterministic rules, effective-time and verification filtering, append-only achievement/badge awards, integer lifetime-XP effects, append-only correction revocations and equal-and-opposite XP reversals, reviewed level thresholds, disposable progress projections, stable checksums, bounded-page full replay, deterministic IDs/keys, restart idempotency, and runtime composition after successful event capture. Read APIs, notifications, and UI remain disabled and absent, so outcomes are invisible.
+
+Explicitly excluded prestige, seasons, points/spending, marketplace behavior, cosmetic entitlements, trading, gifting, guilds, leaderboards, loot/random rewards, premium rewards, snapshots, checkpoints, and advanced replay optimization. Non-workout achievements remain deferred until their authoritative domain event adapters exist.
+
+## Files Modified
+
+- `server.js`
+- `src/gamification/eventTypes.js`
+- `src/gamification/validators.js`
+- `docs/gamification/IMPLEMENTATION_LOG.md`
+
+## New Files
+
+- `data/gamification/achievements.json`
+- `data/gamification/levels.json`
+- `docs/gamification/SPRINT_2_APPROVED_DECISIONS.md`
+- `src/gamification/achievementEvaluator.js`
+- `src/gamification/achievementService.js`
+- `src/gamification/levelService.js`
+- `src/gamification/policyService.js`
+- `src/gamification/projectionService.js`
+- `src/gamification/streakProjector.js`
+- `src/repositories/gamificationAwardStore.js`
+- `src/repositories/gamificationLedgerStore.js`
+- `src/repositories/gamificationProjectionStore.js`
+- `test/gamification-achievement-engine.test.js`
+
+## Database / Storage Changes
+
+When event capture and evaluation are both explicitly enabled, Sprint 2 adds `gamification/awards.json`, `gamification/xp-ledger.json`, and `gamification/projections.json` beneath `POCKET_PT_DATA_DIR`. Awards/revocations and XP effects/reversals are append-only and uniquely keyed. Projections are disposable atomic replacements and may be deleted and recreated through full event replay. No snapshot or evaluation-checkpoint store was added.
+
+The existing event store accepts the versioned `workout.revoked` compensating contract. It references the immutable original event, retains an allow-listed correction reason, and never edits or deletes source evidence.
+
+## API Changes
+
+None. No read, event-ingestion, award, correction, or administrative endpoint was added.
+
+## UI Changes
+
+None. Read and notification flags remain off and Sprint 2 outcomes are invisible.
+
+## Architecture Decisions Applied
+
+- Current domain commits and the Sprint 1 immutable event stream remain authoritative; evaluation is composed only after successful event capture and remains isolated by the existing post-commit adapter boundary.
+- `GAMIFICATION_EVALUATION` remains false by default and requires event capture to be enabled. Startup replay failure is logged with a safe code and does not prevent the existing application from starting.
+- Definitions select exact event/schema and verification contracts at event occurrence time. Rule evaluation is bounded, declarative, and rejects unknown operators or unsafe thresholds; it executes no dynamic code.
+- Award, revocation, XP, and reversal keys are deterministic. Repeated live delivery, restart, and replay append no duplicate value.
+- Corrections append a `workout.revoked` event, award revocation, and equal-and-opposite XP reversal. Original events and outcomes remain intact.
+- Projection deletion followed by complete bounded-page replay rebuilds progress, active/revoked state, XP, current level, highest historical level, and the same deterministic checksum without snapshots or checkpoints.
+- Catalogue Version 1 contains only achievements supported by the sole authoritative Sprint 1 event. New domain families can be added through versioned event contracts and definitions without changing evaluator/store architecture.
+
+## Tests Added
+
+- `test/gamification-achievement-engine.test.js` — validates the 24-item catalogue and reviewed 50-level curve; rejects unsafe definitions; covers count, sum, distinct-count, AND, OR, percentage-improvement, streak, effective interval, verification, hidden, and tier behavior; proves occurrence-order determinism, award/XP replay idempotency, projection deletion/rebuild parity, append-only correction/reversal conservation, revoked projections, bounded multi-page replay, and exact level boundaries.
+- Existing Sprint 1 tests additionally cover disabled flags, immutable/deduplicated event persistence, safe validation/quarantine, authoritative post-commit capture, and domain-success isolation.
+
+## Validation
+
+- `node --test test/gamification-achievement-engine.test.js test/gamification-event-infrastructure.test.js test/gamification-session-integration.test.js` — passed: 15 tests, 0 failures.
+- `npm run lint` — passed: repository self-check completed successfully.
+- `npm test` — passed: 716 tests, 0 failures.
+- `git diff --check` — passed: no whitespace errors.
+
+## Risks
+
+- File repositories follow the current single-process `POCKET_PT_DATA_DIR` convention and are not multi-process transaction coordinators. Unique keys make partial evaluation retry-safe, but deployments must retain one writer per data directory.
+- Full replay is intentionally simple and scans the complete event stream in bounded pages. This is the approved Phase 1 tradeoff; snapshots or checkpoints should be considered only after measured replay performance requires them.
+- Catalogue Version 1 is workout-only because Sprint 1 exposes only `workout.completed`. This avoids browser-authored or fabricated evidence but temporarily limits catalogue breadth.
+- UTC is the deterministic fallback for workout streaks because no authoritative timezone-history adapter exists yet. User-local streak definitions must remain unpublished until that source contract is added and tested.
+- Evaluation is synchronous after capture in the current single-process runtime. Domain success remains isolated by the post-commit adapter, but replay latency should be monitored before enabling evaluation for a large event history.
+
+## Deferred Work
+
+- Add walking, running, trail, daily-step, nutrition, AI-coach, and profile achievements only after their authoritative services emit approved, minimized, versioned events.
+- User-local timezone history, grace-day/recovery streak policies, and corresponding DST/timezone-change fixtures remain deferred until an authoritative timezone contract exists. Catalogue V1 publishes UTC workout streaks only.
+- Sprint 3 or the next approved increment should review base-action XP policy, caps, overlap groups, and expanded ledger behavior. Sprint 2 issues only fixed achievement XP and implements no points economy.
+- Read APIs, notifications, frontend presentation, catalogue/badge artwork, administrative correction commands, backfill, reconciliation tooling, rollout analytics, and additional event sources remain assigned to later sprints.
+- All explicit future-phase exclusions in the approved Sprint 2 decision record remain absent.
+
+## Rollback
+
+1. Set `GAMIFICATION_EVALUATION=false` and restart the current Node process. Leave event capture enabled if continued Sprint 1 shadow evidence is desired; otherwise disable `GAMIFICATION_SOURCE_WORKOUT_COMPLETED` and then `GAMIFICATION_EVENT_CAPTURE`.
+2. Revert the Sprint 2 implementation commit. Do not delete or hand-edit `events.json`, `awards.json`, or `xp-ledger.json`; retain them as dormant immutable audit history.
+3. `projections.json` may be deleted because it is disposable. If Sprint 2 is restored, enable evaluation and allow full replay to rebuild it.
+4. Keep read APIs and notifications disabled throughout rollback; no client contract change is required.
+5. Run `node --test test/gamification-event-infrastructure.test.js test/gamification-session-integration.test.js`, `npm run lint`, and `npm test` to verify the Sprint 1 foundation and existing domain workflows.
+
+## Acceptance Criteria
+
+- [x] Approved Sprint 2 architecture decisions are recorded and applied without reopening or redesigning them.
+- [x] Catalogue Version 1 is bounded, versioned, published, validated, and uses only authoritative Sprint 1 evidence.
+- [x] Evaluation and progress are deterministic, effective-time aware, verification aware, bounded, and disabled by default.
+- [x] Awards and badge references trace to exact definitions and source evidence; XP uses integer append-only effects.
+- [x] Corrections preserve immutable history and append award revocations plus equal-and-opposite XP reversals.
+- [x] Duplicate live delivery, restart, and full replay add no award or XP value.
+- [x] Projection deletion and two clean replays produce identical checksums without snapshots or checkpoints.
+- [x] Current and historical levels derive from the reviewed Version 1 threshold table.
+- [x] Read APIs, notifications, UI, and all named future-phase systems remain absent or disabled.
+- [x] Targeted, lint, full-suite, and whitespace validation pass.
+- [x] Existing domain workflows remain stable with evaluation disabled or unavailable.
+- [x] Rollback instructions preserve immutable audit records and restore Sprint 1 behavior.
+- [x] This implementation-log entry matches the final diff and validation results.
