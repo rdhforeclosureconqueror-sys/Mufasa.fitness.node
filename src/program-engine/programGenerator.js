@@ -1,0 +1,14 @@
+"use strict";
+const crypto=require("crypto");
+const {validateInputs,validateProgram}=require("./programValidator");
+const {GOAL_RULES}=require("./programTemplates");
+const {selectExercises}=require("./exerciseSelector");
+const {buildPeriodization}=require("./periodizationEngine");
+const {prescribe}=require("./progressionEngine");
+const {scheduleWeeks,dateKey}=require("./scheduleEngine");
+const CONTENT_VERSION="2026.07.1",GENERATOR_VERSION=1;
+function stableId(value){return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0,20)}
+function generateProgram(raw={},history=[]){const input=validateInputs(raw),startDate=dateKey(raw.startDate||Date.now()),rules=GOAL_RULES[input.goal],mesocycles=buildPeriodization(input.durationWeeks),deloadWeeks=mesocycles.flatMap(m=>m.weeks.filter(w=>w.deload).map(w=>w.week)),selected=selectExercises(input);const id=`prg_${stableId({input,startDate,content:CONTENT_VERSION})}`;
+  const microcycles=scheduleWeeks({startDate,durationWeeks:input.durationWeeks,availableDays:input.availableDays,trainingDays:input.trainingDays,deloadWeeks,workoutFactory:({week,date,index,deload})=>({sessionId:`${id}-w${week}-d${index+1}`,date,type:"workout",status:"scheduled",title:`${input.goal.replaceAll("_"," ")} ${index+1}`,durationMinutes:input.sessionDuration,completionRequirements:{minimumExercisePercent:80},warmUp:{type:"mobility",durationMinutes:5},coolDown:{type:"mobility",durationMinutes:5},exercises:selected.map(x=>({...x,...prescribe({...x,sets:rules.sets,reps:rules.reps,intensity:rules.intensity},{week,deload},history)}))})});
+  return validateProgram({schemaVersion:1,programId:id,title:`${input.experienceLevel} ${input.goal.replaceAll("_"," ")} program`,description:"Deterministic, constraint-aware unified training plan.",goal:input.goal,difficulty:input.experienceLevel,durationWeeks:input.durationWeeks,phase:"foundation",author:"mufasa-program-engine",version:1,contentVersion:CONTENT_VERSION,generatorVersion:GENERATOR_VERSION,equipment:input.equipment,experienceLevel:input.experienceLevel,primaryObjectives:[input.goal],secondaryObjectives:["movement_quality","adherence"],contraindications:input.limitations,weeklySchedule:{trainingDays:input.trainingDays,availableDays:input.availableDays,sessionDuration:input.sessionDuration,preferredSplit:input.preferredSplit},mesocycles,microcycles,completionRequirements:{sessionPercent:80,programPercent:85},progressionRules:{requiresPriorCompletion:true,minimumCompletionPercent:90,neverInferProgress:true},deloadRules:{cadenceWeeks:4,volumeFactor:.6},exerciseSubstitutions:{policy:"preserve_pattern_intent_emphasis_and_difficulty"},programNotes:["Recovery, mobility, and Yoga are authoritative scheduled sessions."],futureCompatibility:{extensions:[],unknownFields:"ignore"}});}
+module.exports={generateProgram,stableId,CONTENT_VERSION,GENERATOR_VERSION};

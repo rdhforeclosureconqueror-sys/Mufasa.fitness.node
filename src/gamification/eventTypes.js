@@ -1,6 +1,7 @@
 "use strict";
 
 const EVENT_TYPES = Object.freeze({
+  ...Object.fromEntries(["program.started","program.completed","week.completed","mesocycle.completed","deload.completed","program.milestone"].map(type=>[type,Object.freeze({schemaVersion:1,sources:Object.freeze(["program-engine"]),payload:Object.freeze({})})])),
   "yoga.session.completed": Object.freeze({
     schemaVersion: 1,
     sources: Object.freeze(["yoga-service"]),
