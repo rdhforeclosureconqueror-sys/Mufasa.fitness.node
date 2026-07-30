@@ -38,7 +38,8 @@ function validateXpPolicy(document) {
 function atPath(value, path) { return path.split(".").reduce((current, part) => current?.[part], value); }
 function stableId(key) { return `xpb_${createHash("sha256").update(key).digest("hex").slice(0, 24)}`; }
 function createXpPolicyService(policies) {
-  function policyAt(timestamp) { return policies.find((policy) => timestamp >= policy.effectiveFrom && (!policy.effectiveTo || timestamp < policy.effectiveTo)); }
+  const currentPolicies = () => typeof policies === "function" ? policies() : policies;
+  function policyAt(timestamp) { return currentPolicies().find((policy) => timestamp >= policy.effectiveFrom && (!policy.effectiveTo || timestamp < policy.effectiveTo)); }
   function evaluate(events) {
     const counters = new Map();
     const overlaps = new Set();

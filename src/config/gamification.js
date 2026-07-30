@@ -9,6 +9,7 @@ function loadGamificationConfig(env = process.env) {
     eventCapture: enabled(env.GAMIFICATION_EVENT_CAPTURE),
     evaluation: enabled(env.GAMIFICATION_EVALUATION),
     readApi: enabled(env.GAMIFICATION_READ_API),
+    operations: enabled(env.GAMIFICATION_OPERATIONS),
     notifications: enabled(env.GAMIFICATION_NOTIFICATIONS),
     leaderboards: enabled(env.GAMIFICATION_LEADERBOARDS),
     sources: Object.freeze({

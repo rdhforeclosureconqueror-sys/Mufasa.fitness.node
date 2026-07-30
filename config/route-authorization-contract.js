@@ -1782,5 +1782,19 @@ module.exports = Object.freeze([
     ["DELETE", "/internal/gamification/projection/:id"]
   ].map(([method, routePath]) => ({ method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
     requiredPermissions: ["ops.read_observability"], membership: "not-required", ownership: "internal-administrator",
-    featureFlag: "GAMIFICATION_READ_API", publicOutput: "internal-only", rateLimit: null, compatibility: null, publicWrite: null }))
+    featureFlag: "GAMIFICATION_READ_API", publicOutput: "internal-only", rateLimit: null, compatibility: null, publicWrite: null })),
+  ...[
+    ["GET", "/internal/gamification/operations/replay/queue"], ["GET", "/internal/gamification/operations/replay/history"],
+    ["GET", "/internal/gamification/operations/replay/:jobId"], ["POST", "/internal/gamification/operations/replay/all"],
+    ["POST", "/internal/gamification/operations/replay/user/:id"], ["POST", "/internal/gamification/operations/projection/rebuild"],
+    ["POST", "/internal/gamification/operations/recalculate/xp"], ["POST", "/internal/gamification/operations/recalculate/achievements"],
+    ["POST", "/internal/gamification/operations/replay/schedule"], ["POST", "/internal/gamification/operations/replay/:jobId/cancel"],
+    ["GET", "/internal/gamification/operations/policies"], ["GET", "/internal/gamification/operations/policies/:version"],
+    ["POST", "/internal/gamification/operations/policies"], ["POST", "/internal/gamification/operations/policies/:version/validate"],
+    ["POST", "/internal/gamification/operations/policies/:version/publish"], ["POST", "/internal/gamification/operations/policies/:version/archive"],
+    ["GET", "/internal/gamification/operations/integrity"], ["GET", "/internal/gamification/operations/metrics"],
+    ["GET", "/internal/gamification/operations/readiness"]
+  ].map(([method, routePath]) => ({ method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
+    requiredPermissions: [method === "GET" ? "ops.read_observability" : "gamification.operations.manage"], membership: "not-required", ownership: "internal-administrator",
+    featureFlag: "GAMIFICATION_OPERATIONS", publicOutput: "internal-only", rateLimit: null, compatibility: null, publicWrite: null }))
 ]);
