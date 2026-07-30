@@ -254,3 +254,94 @@ None.
 - [x] Existing domain workflows remain stable with gamification disabled or unavailable.
 - [x] Rollback instructions are complete and preserve dormant immutable records.
 - [x] This implementation-log entry matches the final diff and validation results.
+
+---
+
+# Sprint 2 — Achievement Engine
+
+**Sprint Number:** 2
+
+**Objective:** Implement deterministic, version-aware achievement evaluation, append-only awards and revocations, aggregate and streak projections, and replay idempotency while keeping all outcomes invisible.
+
+**Status:** `Blocked`
+
+**Dates:** `2026-07-30` to `2026-07-30`
+
+**Related Design Documents:**
+
+- [Phase 1 Sprint Sequence — Sequencing rationale and entry gate](PHASE_1_SPRINT_SEQUENCE.md#sequencing-rationale-and-entry-gate)
+- [Phase 1 Sprint Sequence — Sprint 2](PHASE_1_SPRINT_SEQUENCE.md#sprint-2--achievement-engine)
+- [Design Review — Blocking before implementation](DESIGN_REVIEW.md#blocking-before-implementation)
+- [Design Review — Review exit criteria](DESIGN_REVIEW.md#review-exit-criteria)
+- [Achievement System — Achievement lifecycle](ACHIEVEMENT_SYSTEM.md#6-achievement-lifecycle)
+- [Achievement System — Evaluation and event relationships](ACHIEVEMENT_SYSTEM.md#7-evaluation-and-event-relationships)
+- [Achievement System — Corrections, revocation, and appeals](ACHIEVEMENT_SYSTEM.md#21-corrections-revocation-and-appeals)
+- [Event Model — Late, corrected, and deleted domain data](EVENT_MODEL.md#7-late-corrected-and-deleted-domain-data)
+- [Badge Library — Catalogue rules](BADGE_LIBRARY.md#catalogue-rules)
+
+---
+
+## Scope
+
+Performed the mandatory Sprint 2 design-entry review and stopped before production implementation. Sprint 2 explicitly depends on an approved end-to-end correction/revocation policy, approved projection checkpoint semantics, and a reviewed initial achievement catalogue. Those approvals are not present: the Design Review still lists correction flow, read consistency/checkpoints, and launch-catalogue selection as blocking open questions, and the Initial Badge Library explicitly remains proposed rather than approved production policy.
+
+No evaluator, rule language, award/revocation store, projection store, streak projector, seed definition, runtime composition, or test fixture was implemented. Creating any of those contracts would require assumptions prohibited by the sprint sequence and implementation-log policy.
+
+## Files Modified
+
+- `docs/gamification/IMPLEMENTATION_LOG.md`
+
+## New Files
+
+None.
+
+## Database / Storage Changes
+
+None. No award, revocation, definition, aggregate, projection, or cursor data was created.
+
+## API Changes
+
+None.
+
+## UI Changes
+
+None.
+
+## Tests Added
+
+None. Production implementation and its required comprehensive tests are blocked by the unresolved design entry gate.
+
+## Validation
+
+- `npm run lint` — passed: repository self-check completed successfully with the blocked design record only.
+- `git diff --check` — passed: no whitespace errors.
+- `git status --short` — passed: only this implementation-log update was present before commit.
+
+## Risks
+
+- Implementing before approval could encode an unauthorized correction actor/event/replay boundary, expose inconsistent checkpoint behavior, or execute an unreviewed catalogue. Mitigation: keep `GAMIFICATION_EVALUATION=false`, retain Sprint 1 shadow capture unchanged, and do not add Sprint 2 runtime or persistence contracts.
+- Sprint 2 remains incomplete, so no achievement outcomes exist and no Sprint 3 dependency is satisfied. This is deploy-safe and backward compatible because the existing application and disabled-by-default Sprint 1 event capture are unchanged.
+
+## Deferred Work
+
+- **Design owner approval required:** resolve Design Review blocking question 3 with the complete correction authority, immutable correction contracts, targeted replay boundary, award-revocation rules, safe member explanation, and later compensating-entry authorization.
+- **Design owner approval required:** resolve Design Review blocking question 4 with projection freshness and stale-state semantics plus the durable checkpoint/cursor contract needed by Sprint 2 projections and replay.
+- **Product and required reviewers' approval required:** resolve Design Review blocking question 6 by selecting the bounded initial achievement catalogue and recording ownership, tier spacing, safety, privacy, accessibility, retirement, and publication approval. `BADGE_LIBRARY.md` currently states that its catalogue is only proposed.
+- After those amendments are committed and explicitly approved, restart Sprint 2 from the entry review and implement the evaluator, policies, streak and aggregate projectors, append-only award/revocation and projection stores, reviewed seed documents, runtime shadow composition, deterministic replay, and the complete boundary/failure/rebuild test matrix required by the sprint sequence.
+- Sprints 3–8 remain deferred because Sprint 2 has not satisfied its Definition of Done.
+
+## Rollback
+
+1. No runtime or data rollback is required because this blocked sprint changed documentation only.
+2. If the record itself must be reverted, revert the documentation commit; do not alter Sprint 1 event evidence or stores.
+3. Keep `GAMIFICATION_EVALUATION=false` and all later-sprint visibility flags false.
+4. Run `npm run lint` and `git diff --check` after any documentation revert.
+
+## Acceptance Criteria
+
+- [x] The mandatory design entry review was completed and unresolved authoritative blockers were identified without inventing an implementation contract.
+- [x] No production, storage, API, UI, seed, or test implementation was added while the design gate is unresolved.
+- [x] Existing domain workflows and the independently deployable Sprint 1 foundation remain unchanged.
+- [x] The required approval work and safe restart boundary are documented.
+- [x] Rollback instructions are complete for this documentation-only blocked record.
+- [ ] Sprint 2 achievement-engine outcomes and comprehensive automated tests are complete (blocked pending the approvals listed under **Deferred Work**).
