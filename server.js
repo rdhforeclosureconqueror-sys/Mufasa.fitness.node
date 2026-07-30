@@ -41,6 +41,8 @@ const { createChallengeService } = require("./src/services/challengeService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
+const { createCoachContextService } = require("./src/ai/coachContextService");
+const { createAiCoachService } = require("./src/services/aiCoachService");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
 const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
@@ -458,6 +460,8 @@ function createApp(options = {}) {
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
+  const coachContextService = createCoachContextService({ userStore, memberGamificationService });
+  const aiCoachService = createAiCoachService({ userStore, contextService: coachContextService, responder: options.aiCoachResponder });
   const memberHomeService = createMemberHomeService({ journeyIntakeService, personalizationService, generatedWorkoutService, generatedWorkoutProgressionService, trainingAdaptationService, nutritionService, userDataService });
   const nutritionProviderClient = createProviderClient({
     fetchImpl: options.fetch || global.fetch,
@@ -2454,6 +2458,21 @@ function createApp(options = {}) {
   app.get("/api/progress/dashboard", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = userDataService.getProgressDashboard(req.auth.userId);
     return ok(res, req.requestId, { ...result, dashboardConfiguration: personalizationService.getDashboardConfiguration(req.auth.userId) }, 200);
+  }));
+
+  // The coach reads the same member-scoped authoritative stores as the rest of
+  // the platform. Client-supplied context and user IDs are never accepted.
+  app.get("/api/me/ai-coach", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, aiCoachService.overview(req.auth.userId), 200);
+  }));
+
+  app.post("/api/me/ai-coach/messages", requireAuth, requireMembershipEntitlement,
+    createRateLimiter({ name: "ai-coach", max: 30, windowMs: 60_000 }), asyncHandler(async (req, res) => {
+      return ok(res, req.requestId, await aiCoachService.ask(req.auth.userId, req.body?.message), 200);
+    }));
+
+  app.delete("/api/me/ai-coach/history", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, aiCoachService.clear(req.auth.userId), 200);
   }));
 
   app.get("/api/visual-progress-scans", requireAuth, asyncHandler(async (req, res) => {

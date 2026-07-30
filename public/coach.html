@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mufasa AI Coach</title><link rel="stylesheet" href="/ai-coach.css?v=20260730-1">
+</head>
+<body>
+  <a class="skip" href="#coachInput">Skip to message</a>
+  <header><a href="/dashboard.html" aria-label="Back to member dashboard">← Dashboard</a><div><span class="eyebrow">MUFASA MEMBER EXPERIENCE</span><h1>Your AI Coach</h1><p>Guidance grounded in your recorded progress.</p></div></header>
+  <main class="coach-shell">
+    <aside aria-labelledby="contextTitle"><h2 id="contextTitle">Coach context</h2><div id="contextCards" class="context-grid" aria-live="polite"><p>Loading your progress…</p></div><p class="trust">Your coach explains platform results. It never awards XP, changes levels, or invents missing data.</p></aside>
+    <section class="conversation" aria-labelledby="conversationTitle">
+      <div class="conversation-head"><div><span class="presence" aria-hidden="true"></span><h2 id="conversationTitle">Conversation</h2></div><button id="clearCoach" type="button">Clear history</button></div>
+      <div id="coachMessages" class="messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Coach conversation"></div>
+      <div><h3>Suggested questions</h3><div id="coachSuggestions" class="suggestions" aria-label="Suggested questions"></div></div>
+      <form id="coachForm"><label for="coachInput">Message your coach</label><div class="composer"><textarea id="coachInput" maxlength="2000" rows="2" required placeholder="Ask about your workout, progress, goals, or recovery"></textarea><button id="sendCoach" type="submit">Send<span class="sr-only"> message</span></button></div><p id="coachStatus" role="status" aria-live="polite">Coach is ready.</p></form>
+    </section>
+  </main>
+  <script src="/backend-read.js"></script><script src="/ai-coach.js?v=20260730-1"></script>
+</body></html>

@@ -2,6 +2,15 @@
 
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
+  ...[
+    ["GET", "/api/me/ai-coach", null],
+    ["POST", "/api/me/ai-coach/messages", "30/minute/user"],
+    ["DELETE", "/api/me/ai-coach/history", null]
+  ].map(([method, routePath, rateLimit]) => Object.freeze({
+    method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
+    membership: "required", ownership: "authenticated-user", featureFlag: null,
+    publicOutput: "sensitive-private", rateLimit, compatibility: null, publicWrite: null
+  })),
   { method: "GET", path: "/api/me/gamification", authentication: "required", allowedRoles: [], requiredPermissions: [], membership: "not-required", ownership: "authenticated-user", featureFlag: "GAMIFICATION_READ_API", publicOutput: "sensitive-private", rateLimit: null, compatibility: null, publicWrite: null },
   ...[
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
