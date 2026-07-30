@@ -5,6 +5,8 @@ module.exports = Object.freeze([
   ...[
     ["GET", "/api/me/ai-coach", null],
     ["POST", "/api/me/ai-coach/messages", "30/minute/user"],
+    ["POST", "/api/me/ai-coach/stream", "configured/minute/user"],
+    ["DELETE", "/api/me/ai-coach/generation", null],
     ["DELETE", "/api/me/ai-coach/history", null]
   ].map(([method, routePath, rateLimit]) => Object.freeze({
     method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],

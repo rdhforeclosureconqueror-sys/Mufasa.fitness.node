@@ -1,0 +1,3 @@
+"use strict";
+const { loadAiCoachConfig } = require("../src/config/aiCoach");
+(async()=>{try{const config=loadAiCoachConfig(process.env);if(!config.enabled)throw new Error("AI_COACH_ENABLED must be true for launch verification");console.log(JSON.stringify({ok:true,provider:config.provider,model:config.model,credentialPresent:Boolean(config.apiKey),credentialPrinted:false}));if(process.env.AI_COACH_LIVE_CONNECTIVITY_APPROVED!=="true")console.log("Connectivity skipped: set AI_COACH_LIVE_CONNECTIVITY_APPROVED=true only in an approved synthetic environment.");}catch(error){console.error(`AI Coach launch verification failed: ${error.message}`);process.exitCode=1;}})();

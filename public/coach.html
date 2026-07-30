@@ -13,7 +13,7 @@
       <div class="conversation-head"><div><span class="presence" aria-hidden="true"></span><h2 id="conversationTitle">Conversation</h2></div><button id="clearCoach" type="button">Clear history</button></div>
       <div id="coachMessages" class="messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Coach conversation"></div>
       <div><h3>Suggested questions</h3><div id="coachSuggestions" class="suggestions" aria-label="Suggested questions"></div></div>
-      <form id="coachForm"><label for="coachInput">Message your coach</label><div class="composer"><textarea id="coachInput" maxlength="2000" rows="2" required placeholder="Ask about your workout, progress, goals, or recovery"></textarea><button id="sendCoach" type="submit">Send<span class="sr-only"> message</span></button></div><p id="coachStatus" role="status" aria-live="polite">Coach is ready.</p></form>
+      <form id="coachForm"><label for="coachInput">Message your coach</label><div class="composer"><textarea id="coachInput" maxlength="2000" rows="2" required placeholder="Ask about your workout, progress, goals, or recovery"></textarea><button id="sendCoach" type="submit">Send<span class="sr-only"> message</span></button><button id="stopCoach" type="button" hidden>Stop</button><button id="retryCoach" type="button" hidden>Retry</button></div><p id="coachStatus" role="status" aria-live="polite">Coach is ready.</p></form>
     </section>
   </main>
   <script src="/backend-read.js"></script><script src="/ai-coach.js?v=20260730-1"></script>

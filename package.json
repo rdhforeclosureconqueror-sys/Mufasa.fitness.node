@@ -37,7 +37,8 @@
     "verify:generated-artifacts": "node scripts/verify-generated-artifacts.js",
     "migrate:exercise-profiles:dry-run": "node scripts/migrate-exercise-profiles.js --dry-run",
     "audit:exercise-release": "node scripts/audit-exercise-release.js",
-    "test:trails-live": "node scripts/trails-live-check.js"
+    "test:trails-live": "node scripts/trails-live-check.js",
+    "ai-coach:launch-verify": "node scripts/verify-ai-coach-launch.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
