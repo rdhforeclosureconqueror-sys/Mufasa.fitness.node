@@ -51,19 +51,47 @@ function createGamificationEventStore({ filePath, maxRead = 100 }) {
   }
   state = load();
 
+  // The event log is authoritative.  A process-local snapshot must therefore
+  // never be used as the basis of a write.  The lock directory is created by
+  // the filesystem as one indivisible operation, including on the shared
+  // filesystems supported by the deployment.  The winner reloads the latest
+  // committed snapshot before applying its append.
+  function withWriteLock(operation) {
+    const lockPath = `${filePath}.lock`;
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    const deadline = Date.now() + 10000;
+    while (true) {
+      try {
+        fs.mkdirSync(lockPath);
+        break;
+      } catch (error) {
+        if (error.code !== "EEXIST") throw error;
+        if (Date.now() >= deadline) throw new Error("Timed out acquiring gamification event store write lock");
+        // Atomics.wait provides a synchronous sleep without burning a CPU while
+        // keeping this repository's intentionally synchronous API unchanged.
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
+      }
+    }
+    try { return operation(); } finally { fs.rmdirSync(lockPath); }
+  }
+
   function append(event) {
-    const existing = state.events.find((item) => item.event.subjectUserId === event.subjectUserId && item.event.idempotencyKey === event.idempotencyKey);
-    if (existing) return { status: "duplicate", sequence: existing.sequence, event: existing.event };
-    const item = { sequence: state.nextSequence, event };
-    const next = { schemaVersion: 1, nextSequence: state.nextSequence + 1, events: [...state.events, item] };
-    state = persist(next);
-    return { status: "recorded", sequence: item.sequence, event };
+    return withWriteLock(() => {
+      state = load();
+      const existing = state.events.find((item) => item.event.subjectUserId === event.subjectUserId && item.event.idempotencyKey === event.idempotencyKey);
+      if (existing) return { status: "duplicate", sequence: existing.sequence, event: existing.event };
+      const item = { sequence: state.nextSequence, event };
+      const next = { schemaVersion: 1, nextSequence: state.nextSequence + 1, events: [...state.events, item] };
+      state = persist(next);
+      return { status: "recorded", sequence: item.sequence, event };
+    });
   }
   function readAfter(cursor = 0, limit = maxRead) {
+    state = load();
     const bounded = Math.max(1, Math.min(maxRead, Number.isSafeInteger(limit) ? limit : maxRead));
     return state.events.filter((item) => item.sequence > cursor).slice(0, bounded).map((item) => ({ ...item }));
   }
-  function metrics() { return { count: state.events.length, lastCursor: state.nextSequence - 1 }; }
+  function metrics() { state = load(); return { count: state.events.length, lastCursor: state.nextSequence - 1 }; }
   function quarantineRejected({ eventType = null, schemaVersion = null, errorCode = "INVALID_EVENT", correlationId = null }) {
     fs.mkdirSync(path.dirname(quarantinePath), { recursive: true });
     fs.appendFileSync(quarantinePath, `${JSON.stringify({ recordedAt: new Date().toISOString(), eventType, schemaVersion, errorCode, correlationId })}\n`);

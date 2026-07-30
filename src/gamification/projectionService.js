@@ -12,7 +12,7 @@ function createProjectionService({ projectionStore, levelService }) {
     for (const userId of users) {
       const records = awardRecords.filter((record) => record.subjectUserId === userId);
       const awardStatus = new Map();
-      for (const record of records) awardStatus.set(record.awardKey, record.kind === "award" ? "active" : "revoked");
+      for (const record of records) awardStatus.set(record.awardKey, record.kind === "revocation" ? "revoked" : "active");
       const userLedger = ledgerEntries.filter((entry) => entry.subjectUserId === userId && entry.kind === "lifetime_xp").sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.effectKey.localeCompare(b.effectKey));
       const xp = userLedger.reduce((sum, entry) => sum + entry.delta, 0);
       let runningXp = 0;

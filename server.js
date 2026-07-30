@@ -17,9 +17,7 @@ const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspa
 const { createSessionService } = require("./src/services/sessionService");
 const { loadGamificationConfig } = require("./src/config/gamification");
 const { createGamificationEventStore } = require("./src/repositories/gamificationEventStore");
-const { createGamificationAwardStore } = require("./src/repositories/gamificationAwardStore");
-const { createGamificationLedgerStore } = require("./src/repositories/gamificationLedgerStore");
-const { createGamificationProjectionStore } = require("./src/repositories/gamificationProjectionStore");
+const { createGamificationGenerationStore } = require("./src/repositories/gamificationGenerationStore");
 const { createEventService } = require("./src/gamification/eventService");
 const { createAchievementService } = require("./src/gamification/achievementService");
 const { createProjectionService } = require("./src/gamification/projectionService");
@@ -30,6 +28,7 @@ const { createReadModelService, validUserId } = require("./src/gamification/read
 const { createReplayJobStore } = require("./src/repositories/replayJobStore");
 const { createReplayWorker } = require("./src/gamification/replayWorker");
 const { createPolicyManager } = require("./src/gamification/policyManager");
+const { createGamificationPreflightService } = require("./src/gamification/preflightService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
@@ -391,6 +390,7 @@ function createApp(options = {}) {
   let gamificationReadService = null;
   let replayWorker = null;
   let policyManager = null;
+  let gamificationPreflightService = null;
   if (gamificationConfig.eventCapture) {
     const gamificationEventStore = createGamificationEventStore({ filePath: options.gamificationEventPath || GAMIFICATION_EVENT_PATH });
     gamificationEventService = createEventService({ eventStore: gamificationEventStore });
@@ -405,9 +405,8 @@ function createApp(options = {}) {
       }
       const policyProvider = () => policyManager ? validateXpPolicy({ schemaVersion: 1, policies: policyManager.allPublished() }) : configuredXpPolicies;
       const xpPolicies = policyProvider();
-      const projectionStore = createGamificationProjectionStore({ filePath: options.gamificationProjectionPath || path.join(DATA_DIR, "gamification", "projections.json") });
-      const awardStore = createGamificationAwardStore({ filePath: options.gamificationAwardPath || path.join(DATA_DIR, "gamification", "awards.json") });
-      const ledgerStore = createGamificationLedgerStore({ filePath: options.gamificationLedgerPath || path.join(DATA_DIR, "gamification", "xp-ledger.json") });
+      const generationStore = createGamificationGenerationStore({ directory: options.gamificationGenerationDirectory || path.join(DATA_DIR, "gamification") });
+      const { projectionStore, awardStore, ledgerStore } = generationStore;
       const levelService = createLevelService(levels);
       const xpPolicyService = createXpPolicyService(policyProvider);
       achievementService = createAchievementService({
@@ -416,7 +415,9 @@ function createApp(options = {}) {
         awardStore,
         ledgerStore,
         projectionService: createProjectionService({ projectionStore, levelService }),
-        xpPolicyService
+        xpPolicyService,
+        generationStore,
+        policyVersions: () => policyProvider().map((policy) => policy.policyVersion)
       });
       if (gamificationConfig.readApi) gamificationReadService = createReadModelService({ eventStore: gamificationEventStore,
         projectionStore, ledgerStore, awardStore, achievementService, xpPolicies: policyProvider, xpPolicyService, definitions, levelService });
@@ -427,13 +428,15 @@ function createApp(options = {}) {
         const replayStore = createReplayJobStore({ filePath: options.gamificationReplayPath || path.join(DATA_DIR, "gamification", "replay-jobs.json") });
         replayWorker = createReplayWorker({ store: replayStore, enabled: true, policyVersion: xpPolicies.at(-1)?.policyVersion || null,
           audit: (event) => auditLog.appendEvent({ ...event, source: "gamification-operations" }),
-          execute: async (job, report) => {
+          execute: async (job, report, { assertCommitOwner }) => {
             report({ progressPercentage: 20, currentPhase: "evaluating" });
-            const result = job.userId ? gamificationReadService.rebuild(job.userId) : gamificationReadService.replay(job.replayType);
+            const result = job.userId ? gamificationReadService.rebuild(job.userId, { assertCommitOwner }) : gamificationReadService.replay(job.replayType, { assertCommitOwner });
             const projections = result.projections || (result ? { [job.userId]: result } : {});
             report({ progressPercentage: 90, currentPhase: "persisting_projection" });
             return { eventsProcessed: gamificationEventStore.metrics().count, usersProcessed: Object.keys(projections).length, checksum: result.checksum || result.diagnostics?.projectionChecksum || null };
           } });
+        gamificationPreflightService = createGamificationPreflightService({ dataDirectory: generationStore.directory, eventStore: gamificationEventStore,
+          generationStore, replayStore, policyManager, readModelService: gamificationReadService });
       }
     }
   }
@@ -928,8 +931,9 @@ function createApp(options = {}) {
     app.get("/internal/gamification/operations/metrics", internalGuard, (_req, res) => res.json({ ok: true, metrics: { ...replayWorker.metrics(), ...policyManager.metrics() } }));
     app.get("/internal/gamification/operations/readiness", internalGuard, (req, res) => {
       const auditIntegrity = auditLog.verifyFullChain(); const publishedPolicies = policyManager.allPublished(); const metrics = replayWorker.metrics();
-      const ready = metrics.workerActive && publishedPolicies.length > 0 && auditIntegrity.verified;
-      return ok(res.status(ready ? 200 : 503), req.requestId, { ready, worker: { active: metrics.workerActive, instanceId: metrics.workerInstanceId, activeLease: metrics.activeLease }, storage: { replayStoreReadable: true }, policies: { published: publishedPolicies.length }, audit: { verified: auditIntegrity.verified, issueCount: auditIntegrity.issueCount } });
+      const preflight = gamificationPreflightService.check();
+      const ready = metrics.workerActive && publishedPolicies.length > 0 && auditIntegrity.verified && preflight.ready;
+      return ok(res.status(ready ? 200 : 503), req.requestId, { ready, worker: { active: metrics.workerActive, instanceId: metrics.workerInstanceId, activeLease: metrics.activeLease }, preflight, policies: { published: publishedPolicies.length }, audit: { verified: auditIntegrity.verified, issueCount: auditIntegrity.issueCount } });
     });
   }
 
