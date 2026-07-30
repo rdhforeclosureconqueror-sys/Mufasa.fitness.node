@@ -33,6 +33,12 @@ test("all gamification switches default off and require an explicit true", () =>
   assert.equal(loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true" }).eventCapture, true);
 });
 
+test("gamification feature dependencies fail closed instead of partially initializing", () => {
+  assert.throws(() => loadGamificationConfig({ GAMIFICATION_EVALUATION: "true" }), /requires GAMIFICATION_EVENT_CAPTURE/);
+  assert.throws(() => loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true", GAMIFICATION_READ_API: "true" }), /requires GAMIFICATION_EVALUATION/);
+  assert.throws(() => loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true", GAMIFICATION_EVALUATION: "true", GAMIFICATION_OPERATIONS: "true" }), /requires GAMIFICATION_READ_API/);
+});
+
 test("event validation returns a minimized immutable registered envelope", () => {
   const extra = event({ attackerField: "ignored" });
   const validated = validateEvent(extra, { now: Date.parse("2026-07-30T10:02:00.000Z") });

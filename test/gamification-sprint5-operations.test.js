@@ -66,7 +66,7 @@ test("policy publication enforces validation, immutability, windows, archive, an
 
 test("Sprint 5 operations are independently disabled by default", () => {
   assert.equal(loadGamificationConfig({}).operations, false);
-  assert.equal(loadGamificationConfig({ GAMIFICATION_OPERATIONS: "true" }).operations, true);
+  assert.equal(loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true", GAMIFICATION_EVALUATION: "true", GAMIFICATION_READ_API: "true", GAMIFICATION_OPERATIONS: "true" }).operations, true);
   const worker = createReplayWorker({ store: createReplayJobStore({ filePath: temporary("disabled") }), enabled: false, execute: async () => ({}) });
   assert.throws(() => worker.enqueue({ type: "replay_all" }), (error) => error.code === "REPLAY_DISABLED");
 });

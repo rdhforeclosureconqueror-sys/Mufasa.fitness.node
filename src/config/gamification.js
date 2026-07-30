@@ -5,7 +5,7 @@ function enabled(value) {
 }
 
 function loadGamificationConfig(env = process.env) {
-  return Object.freeze({
+  const config = {
     eventCapture: enabled(env.GAMIFICATION_EVENT_CAPTURE),
     evaluation: enabled(env.GAMIFICATION_EVALUATION),
     readApi: enabled(env.GAMIFICATION_READ_API),
@@ -15,7 +15,14 @@ function loadGamificationConfig(env = process.env) {
     sources: Object.freeze({
       workoutCompleted: enabled(env.GAMIFICATION_SOURCE_WORKOUT_COMPLETED)
     })
-  });
+  };
+  const invalid = [];
+  if (config.evaluation && !config.eventCapture) invalid.push("GAMIFICATION_EVALUATION requires GAMIFICATION_EVENT_CAPTURE");
+  if (config.readApi && !config.evaluation) invalid.push("GAMIFICATION_READ_API requires GAMIFICATION_EVALUATION");
+  if (config.operations && !config.readApi) invalid.push("GAMIFICATION_OPERATIONS requires GAMIFICATION_READ_API");
+  if (config.sources.workoutCompleted && !config.eventCapture) invalid.push("GAMIFICATION_SOURCE_WORKOUT_COMPLETED requires GAMIFICATION_EVENT_CAPTURE");
+  if (invalid.length) throw new Error(`Invalid gamification feature configuration: ${invalid.join("; ")}`);
+  return Object.freeze(config);
 }
 
 module.exports = { loadGamificationConfig };

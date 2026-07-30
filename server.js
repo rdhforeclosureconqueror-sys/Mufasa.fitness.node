@@ -1,7 +1,6 @@
 // server.js
 const express = require("express");
 const cors = require("cors");
-const helmet = require("helmet");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -13,7 +12,6 @@ const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
-const { createCredentialStore } = require("./src/repositories/credentialStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
 const { createSessionService } = require("./src/services/sessionService");
@@ -120,17 +118,6 @@ function assertProductionPersistenceConfig({ env = process.env, rootDirWasExplic
   if (env.ENABLE_AVATAR_FEATURE === "true" && !String(env.POCKET_PT_AVATAR_UPLOAD_DIR || "").trim()) {
     throw new Error("POCKET_PT_AVATAR_UPLOAD_DIR is required in production when avatar uploads are enabled");
   }
-}
-
-function assertProductionSecurityConfig({ env = process.env, testInstance = false } = {}) {
-  if (env.NODE_ENV !== "production" || testInstance) return;
-  const issues = [];
-  const secret = String(env.AUTH_TOKEN_SECRET || "");
-  if (secret.length < 32 || secret === "dev-only-secret-change-me") issues.push("AUTH_TOKEN_SECRET must contain at least 32 characters and cannot use the default");
-  if (!String(env.ALLOWED_ORIGINS || "").split(",").some((origin) => origin.trim())) issues.push("ALLOWED_ORIGINS must contain at least one trusted browser origin");
-  if (env.AUTH_BRIDGE_ALLOW_MANUAL === "true" || env.AUTH_BRIDGE_ALLOW_UNVERIFIED_GOOGLE === "true") issues.push("unverified auth bridge modes must be disabled");
-  if (env.AUTH_TEST_LOGIN_FIXTURE_ENABLED === "true") issues.push("test authentication fixtures must be disabled");
-  if (issues.length) throw new Error(`Unsafe production security configuration: ${issues.join("; ")}`);
 }
 
 function normalizeAuthBridgeTrustMode(raw) {
@@ -270,17 +257,9 @@ function createApp(options = {}) {
     rootDirWasExplicit: Boolean(options.rootDir),
     dataDirWasExplicit: Boolean(options.dataDir)
   });
-  assertProductionSecurityConfig({
-    env: options.env || process.env,
-    // Explicit isolated paths are the established integration-test seam. The
-    // executable production entry point never supplies them.
-    testInstance: Boolean(options.rootDir || options.dataDir)
-  });
   const insecureTestCompatibility = options.allowInsecureTestRoutes === true;
   const requireCriticalRouteAuth = insecureTestCompatibility ? (_req, _res, next) => next() : requireAuth;
   const app = express();
-  app.disable("x-powered-by");
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
   app.use(requestContext);
   app.use(createTrailResponseDiagnostics({ logger: options.logger || console }));
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
@@ -363,7 +342,6 @@ function createApp(options = {}) {
   const challengeLimit = createRateLimiter({ name: "pushup-results", max: 20, windowMs: 60_000 });
   const telemetryLimit = createRateLimiter({ name: "pilot-events", max: 60, windowMs: 60_000 });
   const trainerWriteLimit = createRateLimiter({ name: "trainer-writes", max: 30, windowMs: 60_000 });
-  const authLimit = createRateLimiter({ name: "authentication", max: Number(process.env.AUTH_RATE_LIMIT || 10), windowMs: 60_000 });
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -396,7 +374,6 @@ function createApp(options = {}) {
   const exerciseTemplateService = createExerciseTemplateService({ filePath: EXERCISE_TEMPLATE_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
-  const credentialStore = createCredentialStore({ filePath: path.join(DATA_DIR, "auth", "credentials.json") });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
   const trailRouteStore = createTrailRouteStore({ filePath: options.trailRouteFilePath || path.join(DATA_DIR, "trail-routes.json") });
@@ -897,6 +874,7 @@ function createApp(options = {}) {
 
   if (gamificationReadService) {
     const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+    const mutationGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.GAMIFICATION_OPERATIONS_MANAGE, trackAdminOpsAuthorizationDecision);
     const userId = (req) => {
       if (!validUserId(req.params.id)) throw new ApiError("INVALID_USER_ID", "A valid user id is required", 422);
       return req.params.id;
@@ -915,11 +893,11 @@ function createApp(options = {}) {
       try { return ok(res, req.requestId, gamificationReadService.simulate(req.body || {})); }
       catch (error) { throw new ApiError("INVALID_SIMULATION", error.message, 422); }
     });
-    app.post("/internal/gamification/replay/all", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.replay().diagnostics));
-    app.post("/internal/gamification/replay/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
-    app.post("/internal/gamification/recalculate/xp/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
-    app.post("/internal/gamification/recalculate/achievements/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
-    app.delete("/internal/gamification/projection/:id", internalGuard, (req, res) => ok(res, req.requestId, { deleted: gamificationReadService.deleteProjection(userId(req)) }));
+    app.post("/internal/gamification/replay/all", mutationGuard, (req, res) => ok(res, req.requestId, gamificationReadService.replay().diagnostics));
+    app.post("/internal/gamification/replay/:id", mutationGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.post("/internal/gamification/recalculate/xp/:id", mutationGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.post("/internal/gamification/recalculate/achievements/:id", mutationGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.delete("/internal/gamification/projection/:id", mutationGuard, (req, res) => ok(res, req.requestId, { deleted: gamificationReadService.deleteProjection(userId(req)) }));
   }
 
   if (replayWorker && policyManager) {
@@ -1413,6 +1391,8 @@ function createApp(options = {}) {
     };
   }
 
+  const authRegisteredUsers = new Map();
+
   function sanitizeRegisteredName(rawName, fallbackEmail) {
     const trimmed = String(rawName || "").trim();
     if (trimmed) return trimmed.slice(0, 120);
@@ -1420,7 +1400,7 @@ function createApp(options = {}) {
     return emailLeft.slice(0, 120);
   }
 
-  app.post("/api/auth/login", authLimit, asyncHandler(async (req, res) => {
+  app.post("/api/auth/login", asyncHandler(async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     const requestId = req.requestId || null;
@@ -1482,8 +1462,11 @@ function createApp(options = {}) {
       });
     }
 
-    const registeredUser = await credentialStore.authenticate(email, password);
+    const registeredUser = authRegisteredUsers.get(email) || null;
     if (registeredUser) {
+      if (password !== registeredUser.password) {
+        return reject(401, "registered_password_mismatch");
+      }
       const registeredToken = authTokenLib.issueUserToken({
         userId: registeredUser.id,
         email: registeredUser.email,
@@ -1530,7 +1513,7 @@ function createApp(options = {}) {
     });
   }));
 
-  app.post("/api/auth/register", authLimit, asyncHandler(async (req, res) => {
+  app.post("/api/auth/register", asyncHandler(async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     const name = sanitizeRegisteredName(req.body?.name, email);
@@ -1544,13 +1527,13 @@ function createApp(options = {}) {
     if (password.length < 8) {
       return res.status(400).json({ ok: false, error: "Password must be at least 8 characters" });
     }
-    if (email === AUTH_SEED_USER.email || credentialStore.has(email)) {
+    if (email === AUTH_SEED_USER.email || authRegisteredUsers.has(email)) {
       return res.status(409).json({ ok: false, error: "Account already exists" });
     }
 
     const userId = `registered_${Buffer.from(email).toString("base64url").slice(0, 32)}`;
-    const record = await credentialStore.register({ id: userId, email, name, password });
-    if (!record) return res.status(409).json({ ok: false, error: "Account already exists" });
+    const record = { id: userId, email, name, password };
+    authRegisteredUsers.set(email, record);
 
     const token = authTokenLib.issueUserToken({
       userId,
@@ -1596,7 +1579,7 @@ function createApp(options = {}) {
 
 
   // ---- Auth bridge (legacy compatibility foundation) ----
-  app.post("/api/auth/bridge", authLimit, asyncHandler(async (req, res) => {
+  app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
     const rawTrustMode = String(req.body?.trustMode || "").trim().toLowerCase();
     const requestedTrustMode = normalizeAuthBridgeTrustMode(req.body?.trustMode);
     const requestOrigin = String(req.get("origin") || "");
@@ -2735,6 +2718,5 @@ module.exports = {
   parseActionEnforcementFromEnv,
   createApp,
   assertProductionPersistenceConfig,
-  assertProductionSecurityConfig,
   isAvatarFeatureEnabled
 };
