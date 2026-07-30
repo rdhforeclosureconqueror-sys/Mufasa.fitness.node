@@ -43,6 +43,8 @@ const { createExerciseTemplateService } = require("./src/services/exerciseTempla
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createCoachContextService } = require("./src/ai/coachContextService");
+const { createMemberExerciseService } = require("./src/exercise-intelligence/memberExerciseService");
+const { createExerciseCurationService } = require("./src/exercise-intelligence/exerciseCurationService");
 const { createProgramPersistence, createProgramService } = require("./src/program-engine");
 const { createAiCoachService } = require("./src/services/aiCoachService");
 const { loadAiCoachConfig } = require("./src/config/aiCoach");
@@ -467,6 +469,8 @@ function createApp(options = {}) {
   const nutritionService = createNutritionService({ userStore });
   const programPersistence = createProgramPersistence({ userStore });
   const programService = createProgramService({ persistence: programPersistence, eventAdapter: gamificationEventService ? (fact) => { const result=gamificationEventService.recordProgramEvent(fact); achievementService?.replay(); return result; } : null });
+  const memberExerciseService = createMemberExerciseService({ programService, userStore });
+  const exerciseCurationService = createExerciseCurationService({ audit: event => auditLog.appendEvent({ ...event, source: "exercise-curation" }) });
   const coachContextService = createCoachContextService({ userStore, memberGamificationService, programService });
   const aiCoachConfig = loadAiCoachConfig(options.env || process.env);
   const aiCoachProvider = options.aiCoachProvider || (aiCoachConfig.enabled ? createOpenAiCoachProvider({ config: aiCoachConfig, fetchImpl: options.fetch || global.fetch }) : null);
@@ -2133,6 +2137,34 @@ function createApp(options = {}) {
       res.status(500).json({ ok: false, error: "Failed to parse JSON", message: e.message, meta: item });
     }
   });
+
+  // ---- Authenticated Exercise Hub (canonical, member-safe projections) ----
+  app.get("/api/me/exercises", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.catalog(req.query))));
+  app.get("/api/me/exercises/preferences", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.preferences(req.auth.userId))));
+  app.delete("/api/me/exercises/recent", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.clearRecent(req.auth.userId))));
+  app.get("/api/me/exercises/:exerciseId", requireAuth, asyncHandler(async (req,res)=>{const value=memberExerciseService.get(req.params.exerciseId);memberExerciseService.recordView(req.auth.userId,value.exerciseId);return ok(res,req.requestId,value);}));
+  app.get("/api/me/exercises/:exerciseId/relationships", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.relationships(req.params.exerciseId))));
+  app.get("/api/me/exercises/:exerciseId/program-context", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.programContext(req.auth.userId,req.params.exerciseId))));
+  app.put("/api/me/exercises/:exerciseId/favorite", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.favorite(req.auth.userId,req.params.exerciseId,true))));
+  app.delete("/api/me/exercises/:exerciseId/favorite", requireAuth, asyncHandler(async (req,res)=>ok(res,req.requestId,memberExerciseService.favorite(req.auth.userId,req.params.exerciseId,false))));
+
+  // Bearer-authenticated internal APIs are not cookie-authenticated and therefore
+  // do not accept ambient browser authority. Explicit content permissions are
+  // independently checked for read, author, review, and publish operations.
+  const exerciseRead=permission(authorizationResolver.PERMISSIONS.EXERCISE_CONTENT_READ);
+  const exerciseManage=permission(authorizationResolver.PERMISSIONS.EXERCISE_CONTENT_MANAGE);
+  const exerciseReview=permission(authorizationResolver.PERMISSIONS.EXERCISE_CONTENT_REVIEW);
+  const exercisePublish=permission(authorizationResolver.PERMISSIONS.EXERCISE_CONTENT_PUBLISH);
+  app.get("/internal/exercises",requireAuth,exerciseRead,(req,res)=>ok(res,req.requestId,{exercises:exerciseCurationService.list()}));
+  app.get("/internal/exercises/validation-report",requireAuth,exerciseRead,(req,res)=>ok(res,req.requestId,{drafts:exerciseCurationService.validationReport()}));
+  app.get("/internal/exercises/content-quality",requireAuth,exerciseRead,(req,res)=>ok(res,req.requestId,{exercises:exerciseCurationService.quality()}));
+  app.get("/internal/exercises/:exerciseId",requireAuth,exerciseRead,(req,res)=>ok(res,req.requestId,exerciseCurationService.get(req.params.exerciseId)));
+  app.post("/internal/exercises/:exerciseId/drafts",requireAuth,exerciseManage,(req,res)=>ok(res,req.requestId,exerciseCurationService.create(req.params.exerciseId,req.body,req.auth.userId),201));
+  app.put("/internal/exercises/:exerciseId/drafts/:draftId",requireAuth,exerciseManage,(req,res)=>ok(res,req.requestId,exerciseCurationService.update(req.params.exerciseId,req.params.draftId,req.body,req.auth.userId)));
+  app.post("/internal/exercises/:exerciseId/drafts/:draftId/validate",requireAuth,exerciseManage,(req,res)=>ok(res,req.requestId,exerciseCurationService.validate(req.params.exerciseId,req.params.draftId,req.auth.userId)));
+  app.post("/internal/exercises/:exerciseId/drafts/:draftId/review",requireAuth,exerciseReview,(req,res)=>ok(res,req.requestId,exerciseCurationService.review(req.params.exerciseId,req.params.draftId,req.body||{},req.auth.userId)));
+  app.post("/internal/exercises/:exerciseId/drafts/:draftId/publish",requireAuth,exercisePublish,(req,res)=>ok(res,req.requestId,exerciseCurationService.publish(req.params.exerciseId,req.params.draftId,req.auth.userId),201));
+  app.post("/internal/exercises/releases/:releaseId/rollback",requireAuth,exercisePublish,(req,res)=>ok(res,req.requestId,exerciseCurationService.rollback(req.params.releaseId,req.auth.userId),201));
 
   // ---- Structured Session API (pilot hardening) ----
   app.get("/api/yoga/catalogue", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>ok(res,req.requestId,yogaService.catalogue(),200)));
