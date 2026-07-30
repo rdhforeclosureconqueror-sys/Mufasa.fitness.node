@@ -171,8 +171,12 @@
           refreshProgressDashboard({ visibleErrors: true }),
           refreshRewardAndCheckIns({ visibleErrors: true })
         ]);
+        const projectionRefresh = await window.MufasaProgressionInstance?.load?.({ celebrate: true });
         window.__liveWorkoutBreakpoints?.markPass?.("dashboard-propagated", { key, workoutId: detail?.workoutId || detail?.scheduledWorkoutId || null });
         try {
+          window.dispatchEvent(new CustomEvent("mufasa:workout-completion", {
+            detail: { tracking: trackingPayload, tracked, dashboard: progress, projectionRefresh }
+          }));
           window.dispatchEvent(new CustomEvent("retention:completion-propagated", {
             detail: { key, tracked, history, progress, reward: retentionRefresh.reward, checkIns: retentionRefresh.checkIns }
           }));

@@ -2,6 +2,7 @@
 // Temporary, reviewed template-rendering sinks. Every entry requires escaping of interpolated untrusted values.
 module.exports = Object.freeze({
   "public/gamification.js": "Member progression templates encode every projection-derived string with esc(); numeric and state values are validated server projections.",
+  "public/workout-completion.js": "Completion templates encode every projection, workout, insight, reward, and recommendation string with escapeHtml(); numeric values are normalized before rendering.",
   "public/generated-workout-runtime.js": "Member workout templates use the local esc() encoder for all persisted display values.",
   "public/retention-journey-wizard.js": "Journey review templates encode persisted answers with esc().",
   "public/nutrition-runtime.js": "Nutrition templates encode provider/member strings with escapeHtml(); structural templates are constants.",
