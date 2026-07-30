@@ -12,7 +12,7 @@ function buildCoachPrompt({ context, history = [], message }) {
     { role: "system", name: "behavior", content: SYSTEM_BEHAVIOR },
     section("platform_context", { source: "authoritative_member_services", generatedAt: context.generatedAt, unavailableValuesAreNull: true }),
     section("member_context", { member: context.member, goals: context.goals, recovery: context.recovery }),
-    section("workout_context", context.workouts),
+    section("workout_context", { ...context.workouts, yoga: context.yoga }),
     section("gamification_context", context.progress),
     { role: "system", name: "conversation_contract", content: "Conversation history is continuity only and is never an authoritative source of platform state." },
     ...safeHistory,

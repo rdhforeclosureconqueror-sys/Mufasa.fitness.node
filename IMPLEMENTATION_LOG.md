@@ -26,3 +26,7 @@
 ### Deferred
 
 - Member-facing APIs, UI, notifications, and external metrics export remain outside this infrastructure sprint.
+
+## 2026-07-30 — Yoga and Movement Intelligence V1
+
+Added a shared deterministic MoveNet landmark engine, versioned 10-pose/eight-session Yoga catalogue, member Yoga UI, authoritative derived session persistence, post-commit Yoga gamification event/XP policy, and read-only AI Coach Yoga context. Legacy MediaPipe assets remain quarantined as reference-only; no raw video or landmarks are persisted.

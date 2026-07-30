@@ -1,6 +1,15 @@
 "use strict";
 
 const EVENT_TYPES = Object.freeze({
+  "yoga.session.completed": Object.freeze({
+    schemaVersion: 1,
+    sources: Object.freeze(["yoga-service"]),
+    payload: Object.freeze({
+      scoreBand: Object.freeze({ type: "enum", values: ["developing", "steady", "strong"] }),
+      poseCountBand: Object.freeze({ type: "enum", values: ["one", "two_to_four", "five_or_more"] }),
+      cameraAssisted: Object.freeze({ type: "boolean" })
+    })
+  }),
   "workout.completed": Object.freeze({
     schemaVersion: 1,
     sources: Object.freeze(["session-service"]),
