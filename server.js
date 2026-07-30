@@ -25,6 +25,7 @@ const { createLevelService } = require("./src/gamification/levelService");
 const { validateAchievementDefinitions } = require("./src/gamification/policyService");
 const { createXpPolicyService, validateXpPolicy } = require("./src/gamification/xpPolicyService");
 const { createReadModelService, validUserId } = require("./src/gamification/readModelService");
+const { createMemberExperienceService } = require("./src/gamification/memberExperienceService");
 const { createReplayJobStore } = require("./src/repositories/replayJobStore");
 const { createReplayWorker } = require("./src/gamification/replayWorker");
 const { createPolicyManager } = require("./src/gamification/policyManager");
@@ -388,6 +389,7 @@ function createApp(options = {}) {
   let gamificationEventService = null;
   let achievementService = null;
   let gamificationReadService = null;
+  let memberGamificationService = null;
   let replayWorker = null;
   let policyManager = null;
   let gamificationPreflightService = null;
@@ -421,6 +423,7 @@ function createApp(options = {}) {
       });
       if (gamificationConfig.readApi) gamificationReadService = createReadModelService({ eventStore: gamificationEventStore,
         projectionStore, ledgerStore, awardStore, achievementService, xpPolicies: policyProvider, xpPolicyService, definitions, levelService });
+      if (gamificationReadService) memberGamificationService = createMemberExperienceService({ readModelService: gamificationReadService, definitions, levels });
       try { gamificationReadService ? gamificationReadService.replay("startup") : achievementService.replay(); } catch (error) {
         console.error("Gamification startup replay failed", { errorCode: "EVALUATION_FAILED" });
       }
@@ -874,6 +877,13 @@ function createApp(options = {}) {
       time: new Date().toISOString()
     });
   });
+
+  if (memberGamificationService) {
+    app.get("/api/me/gamification", requireAuth, (req, res) => {
+      res.set("Cache-Control", "private, no-store");
+      return ok(res, req.requestId, memberGamificationService.get(req.auth.userId));
+    });
+  }
 
   if (gamificationReadService) {
     const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);

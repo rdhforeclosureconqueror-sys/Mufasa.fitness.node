@@ -497,3 +497,23 @@ The feature-complete gamification implementation received deployment-readiness d
 ## Safety and remaining inputs
 
 Notifications, leaderboards, and public presentation remain off. Automation never deletes immutable history, mutates approved policy definitions, or bypasses startup preflight. Hosting configuration, persistent-volume details, backup/restore tooling, monitoring platform, identities/permissions, URLs, release commit, cohorts, approvers, and production commands remain explicit human Operator Inputs Required.
+
+## 2026-07-30 — Launch member experience
+
+### Architecture and API
+- Added a self-scoped `GET /api/me/gamification` presentation contract backed exclusively by the replayed projection, catalog, level curve, and XP ledger. The route requires authentication, accepts no member identifier, uses the authenticated subject, and is private/no-store.
+- The member experience adapter removes operational fields and unpublished hidden achievements. It exposes stable versioned level, achievement, badge, streak, recent-reward, and aggregate-stat views. A new member receives an explicit empty contract instead of a fabricated projection.
+
+### Reusable interface system
+- Added reusable progression primitives for level/XP overview, stat tiles, achievement and badge cards, streak motivation, loading skeletons, empty onboarding, and recoverable errors. The dashboard integrates these ahead of weekly training rather than creating a disconnected destination.
+- Motion is limited to progression and feedback, with `prefers-reduced-motion` overrides. Semantic progress values, live loading state, alert recovery, visible focus behavior, and escaped server content support assistive technology and keyboard use.
+
+### Responsive and performance notes
+- Desktop uses a fluid achievement grid; mobile deliberately changes to a touch-friendly horizontal collection and reorganized statistics. Typography and spacing are fluid rather than scaled desktop dimensions.
+- The experience makes one authenticated request, reuses the materialized projection, renders without dependencies, requests no-store personalized content, and uses transform/opacity/width-only lightweight motion.
+
+### Security, risks, and deferred work
+- No user ID, health details, event stream, policy, replay state, administrative metrics, or integrity data enters the member contract. Locked hidden achievements are omitted.
+- Risk: the experience is available only while the production read-projection feature is enabled and projections are current. The existing operations readiness tooling remains the control for that dependency.
+- Deferred: push reward notifications from live completion events, richer badge artwork, achievement detail dialogs, and cross-device notification preferences. The included notification-ready reward contract avoids coupling those additions to operational APIs.
+- Rollback: remove the dashboard stylesheet/script/section and `/api/me/gamification` route/service; the underlying projection engine and existing dashboard remain unchanged.

@@ -2,6 +2,7 @@
 
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
+  { method: "GET", path: "/api/me/gamification", authentication: "required", allowedRoles: [], requiredPermissions: [], membership: "not-required", ownership: "authenticated-user", featureFlag: "GAMIFICATION_READ_API", publicOutput: "sensitive-private", rateLimit: null, compatibility: null, publicWrite: null },
   ...[
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
