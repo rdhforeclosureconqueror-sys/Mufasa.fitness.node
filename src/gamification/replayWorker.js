@@ -1,20 +1,29 @@
 "use strict";
 
 const { randomUUID } = require("crypto");
+const fs = require("fs");
+const { spawn } = require("child_process");
+const path = require("path");
 
 const TYPES = new Set(["replay_all", "replay_user", "rebuild_projection", "recalculate_xp", "recalculate_achievements"]);
 const ACTIVE = new Set(["queued", "running"]);
 
 function createReplayWorker({ store, execute, enabled = false, clock = () => new Date(), idFactory = () => `replay_${randomUUID()}`, defer = setImmediate,
-  replayVersion = 1, policyVersion = null, projectionVersion = 1 }) {
+  replayVersion = 1, policyVersion = null, projectionVersion = 1, instanceId = `worker_${randomUUID()}`, leaseMs = 15 * 60_000, heartbeatMs = 10_000,
+  pollMs = 1_000, audit = () => {} }) {
   const startedAt = clock();
   let pumping = false;
   let timer = null;
   const counters = { failures: 0, cancelled: 0, completed: 0, projectionRebuilds: 0, integrityFailures: 0 };
+  const heartbeatPath = (jobId) => `${store.filePath}.${encodeURIComponent(jobId)}.lease`;
+  function markerIsFresh(job) { try { return Date.now() - fs.statSync(heartbeatPath(job.jobId)).mtimeMs < Math.max(heartbeatMs * 3, 30_000); } catch { return false; } }
+  function startHeartbeat(jobId) {
+    const marker = heartbeatPath(jobId); fs.writeFileSync(marker, instanceId);
+    const child = spawn(process.execPath, [path.join(__dirname, "replayLeaseHeartbeat.js"), marker, String(process.pid), String(heartbeatMs)], { stdio: "ignore" });
+    child.unref(); return { child, marker };
+  }
+  function stopHeartbeat(value) { if (!value) return; try { value.child.kill(); } catch {} try { fs.rmSync(value.marker, { force: true }); } catch {} }
 
-  // A process termination cannot leave a durable lock behind. Interrupted work is
-  // returned to the head of the sequential queue and retains its original time.
-  if (enabled) store.update((state) => { for (const job of state.jobs) if (job.status === "running") { job.status = "queued"; job.startedAt = null; job.currentPhase = "recovered"; } });
   function signature(type, userId) { return `${type}:${userId || "*"}`; }
   function enqueue({ type, userId = null, initiatedBy = "system", scheduledFor = null }) {
     if (!enabled) throw Object.assign(new Error("replay operations are disabled"), { code: "REPLAY_DISABLED" });
@@ -28,6 +37,7 @@ function createReplayWorker({ store, execute, enabled = false, clock = () => new
         elapsedMs: null, eventsProcessed: 0, usersProcessed: 0, progressPercentage: 0, currentPhase: scheduledFor ? "scheduled" : "queued", status: "queued", error: null };
       state.jobs.push(created);
     });
+    audit({ action: "gamification.replay.queued", jobId: created.jobId, replayType: type, initiatedBy });
     pump(); return structuredClone(created);
   }
   function schedule(input) {
@@ -40,7 +50,7 @@ function createReplayWorker({ store, execute, enabled = false, clock = () => new
   function armSchedule() {
     if (timer) clearTimeout(timer);
     const next = store.read().jobs.filter((j) => j.status === "queued" && j.scheduledFor).sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))[0];
-    if (next) timer = setTimeout(() => { timer = null; pump(); }, Math.max(0, new Date(next.scheduledFor) - clock()));
+    if (next) { timer = setTimeout(() => { timer = null; pump(); }, Math.min(2_147_483_647, Math.max(0, new Date(next.scheduledFor) - clock()))); timer.unref?.(); }
   }
   function cancel(jobId) {
     let result;
@@ -50,6 +60,7 @@ function createReplayWorker({ store, execute, enabled = false, clock = () => new
       if (job.status === "queued") finish(state, job, "cancelled", null, {});
       result = job;
     });
+    if (result) audit({ action: "gamification.replay.cancellation_requested", jobId, initiatedBy: result.initiatedBy });
     return result ? structuredClone(result) : null;
   }
   function finish(state, job, status, error, stats) {
@@ -58,7 +69,7 @@ function createReplayWorker({ store, execute, enabled = false, clock = () => new
       progressPercentage: status === "completed" ? 100 : job.progressPercentage, currentPhase: status, error: error ? String(error.message || error) : null });
     const history = { ...job, replayVersion, policyVersion, projectionVersion, durationMs: job.elapsedMs, checksum: stats.checksum || null, completionState: status,
       replayStatistics: { eventsProcessed: job.eventsProcessed, usersProcessed: job.usersProcessed } };
-    state.history.push(history);
+    state.history.push(history); delete job.leaseOwner; delete job.leaseExpiresAt; delete job.leaseClaimedAt; delete job.fencingToken;
     if (status === "failed") counters.failures++; else if (status === "cancelled") counters.cancelled++; else { counters.completed++; if (job.replayType === "rebuild_projection") counters.projectionRebuilds++; }
   }
   function pump() {
@@ -68,15 +79,21 @@ function createReplayWorker({ store, execute, enabled = false, clock = () => new
       try {
         while (true) {
           let selected;
-          store.update((state) => { selected = state.jobs.find((j) => j.status === "queued" && (!j.scheduledFor || new Date(j.scheduledFor) <= clock()));
-            if (selected) { selected.status = "running"; selected.startedAt = clock().toISOString(); selected.currentPhase = "replaying_events"; selected.progressPercentage = 1; } });
+          store.update((state) => { const active = state.jobs.find((j) => j.status === "running" && (markerIsFresh(j) || Date.parse(j.leaseClaimedAt || 0) + Math.max(heartbeatMs * 3, 30_000) > clock())); if (active) return;
+            selected = state.jobs.find((j) => (j.status === "queued" || (j.status === "running" && Date.parse(j.leaseExpiresAt || 0) <= clock())) && (!j.scheduledFor || new Date(j.scheduledFor) <= clock()));
+            if (selected) { const recovered = selected.status === "running"; selected.status = "running"; selected.startedAt ||= clock().toISOString(); selected.currentPhase = recovered ? "recovered" : "replaying_events"; selected.progressPercentage = Math.max(1, selected.progressPercentage || 0); selected.leaseOwner = instanceId; selected.fencingToken = (selected.fencingToken || 0) + 1; selected.leaseClaimedAt = clock().toISOString(); selected.leaseExpiresAt = new Date(clock().getTime() + leaseMs).toISOString(); } });
           if (!selected) break;
+          const token = selected.fencingToken;
+          const externalHeartbeat = startHeartbeat(selected.jobId);
+          const heartbeat = setInterval(() => store.update((state) => { const job = state.jobs.find((j) => j.jobId === selected.jobId); if (job?.status === "running" && job.leaseOwner === instanceId && job.fencingToken === token) job.leaseExpiresAt = new Date(clock().getTime() + leaseMs).toISOString(); }), heartbeatMs); heartbeat.unref?.();
           try {
-            const stats = await execute(structuredClone(selected), (progress) => store.update((state) => { const job = state.jobs.find((j) => j.jobId === selected.jobId); if (job?.status === "running") Object.assign(job, progress); }));
-            store.update((state) => { const job = state.jobs.find((j) => j.jobId === selected.jobId); finish(state, job, job.cancelRequested ? "cancelled" : "completed", null, stats || {}); });
-          } catch (error) { store.update((state) => finish(state, state.jobs.find((j) => j.jobId === selected.jobId), "failed", error, {})); }
+            const stats = await execute(structuredClone(selected), (progress) => store.update((state) => { const job = state.jobs.find((j) => j.jobId === selected.jobId); if (job?.status === "running" && job.leaseOwner === instanceId && job.fencingToken === token) Object.assign(job, progress); }));
+            store.update((state) => { const job = state.jobs.find((j) => j.jobId === selected.jobId); if (job?.leaseOwner === instanceId && job.fencingToken === token) finish(state, job, job.cancelRequested ? "cancelled" : "completed", null, stats || {}); });
+            audit({ action: "gamification.replay.completed", jobId: selected.jobId, replayType: selected.replayType });
+          } catch (error) { store.update((state) => { const job = state.jobs.find((j) => j.jobId === selected.jobId); if (job?.leaseOwner === instanceId && job.fencingToken === token) finish(state, job, "failed", error, {}); }); audit({ action: "gamification.replay.failed", jobId: selected.jobId, errorCode: error.code || "REPLAY_FAILED" }); }
+          finally { clearInterval(heartbeat); stopHeartbeat(externalHeartbeat); }
         }
-      } finally { pumping = false; armSchedule(); }
+      } finally { pumping = false; armSchedule(); if (enabled && !timer) { timer = setTimeout(() => { timer = null; pump(); }, pollMs); timer.unref?.(); } }
     });
   }
   function jobs() { return store.read().jobs; }
@@ -89,10 +106,12 @@ function createReplayWorker({ store, execute, enabled = false, clock = () => new
       averageThroughput: completed.length ? sum(completed, "eventsProcessed") / Math.max(1, sum(completed, "durationMs") / 1000) : 0,
       queueDepth: all.filter((j) => j.status === "queued").length, averageWaitMs: completed.length ? sum(completed.map((h) => ({ wait: new Date(h.startedAt) - new Date(h.queuedAt) })), "wait") / completed.length : 0,
       projectionRebuildCount: historyItems.filter((h) => h.replayType === "rebuild_projection" && h.completionState === "completed").length, integrityFailures: counters.integrityFailures, policyValidationFailures: 0,
-      cancelledJobs: historyItems.filter((h) => h.completionState === "cancelled").length, workerUptimeMs: Math.max(0, clock() - startedAt), workerActive: enabled };
+      cancelledJobs: historyItems.filter((h) => h.completionState === "cancelled").length, workerUptimeMs: Math.max(0, clock() - startedAt), workerActive: enabled, workerInstanceId: instanceId,
+      activeLease: all.find((j) => j.status === "running") ? { owner: all.find((j) => j.status === "running").leaseOwner, expiresAt: all.find((j) => j.status === "running").leaseExpiresAt } : null };
   }
+  function recordIntegrityResult(valid) { if (!valid) counters.integrityFailures++; }
   if (enabled) { pump(); armSchedule(); }
-  return Object.freeze({ enqueue, schedule, cancel, jobs, progress, history, metrics, pump });
+  return Object.freeze({ enqueue, schedule, cancel, jobs, progress, history, metrics, pump, recordIntegrityResult });
 }
 
 module.exports = { createReplayWorker, REPLAY_TYPES: TYPES };

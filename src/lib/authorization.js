@@ -10,6 +10,7 @@ const ROLES = Object.freeze({
 const PERMISSIONS = Object.freeze({
   OPS_READ_OBSERVABILITY: "ops.read_observability",
   OPS_MANAGE_ENFORCEMENT: "ops.manage_enforcement",
+  GAMIFICATION_OPERATIONS_MANAGE: "gamification.operations.manage",
   OPS_READ_AUTHZ: "ops.read_authz",
   TRAINER_WORKSPACE_READ: "trainer.workspace.read",
   TRAINER_CLIENTS_READ: "trainer.clients.read",

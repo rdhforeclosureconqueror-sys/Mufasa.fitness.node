@@ -61,7 +61,11 @@ test("read projection is disposable, deterministic, versioned, and exposes admin
   assert.equal(h.service.profile("user_1"), null);
   const rebuilt = h.service.rebuild("user_1");
   assert.equal(rebuilt.lifetimeXp, profile.lifetimeXp);
+  const historyBeforeIntegrity = h.service.history();
+  const projectionsBeforeIntegrity = h.projectionStore.readAll();
   assert.equal(h.service.verify().valid, true);
+  assert.deepEqual(h.service.history(), historyBeforeIntegrity, "integrity inspection does not run replay");
+  assert.deepEqual(h.projectionStore.readAll(), projectionsBeforeIntegrity, "integrity inspection never repairs projections");
   assert.equal(h.service.analytics().totalXpAwarded, 190);
   assert.equal(h.service.status().replayFailures, 0);
 });

@@ -9,10 +9,11 @@
 - Kept the complete operational control plane behind the independently disabled-by-default `GAMIFICATION_OPERATIONS` flag. Event capture and workout processing remain independent.
 - Preserved authoritative event ordering: replay delegates to the deterministic Sprint 1–4 evaluator and only replaces disposable projections, awards, and derived ledger state.
 - Added Sprint 5 tests for serialization, duplicate rejection, cancellation, progress, persistence, restart recovery, failure lock release, lifecycle publication safety, and feature flags.
+- Production hardening added shared-volume transaction locks, cross-instance worker leases, heartbeat renewal, fencing tokens, revisioned checksummed snapshots, backup recovery, atomic `fsync` persistence, policy activation as the live evaluator source, tamper-evident audit events, a dedicated mutation permission, readiness monitoring, migration tooling, and a deployment/recovery runbook.
 
 ### Deferred
 
-- Distributed multi-process leasing, external metrics exporters, recurring cron expressions, UI, notifications, and member-facing APIs remain deferred. The durable single-consumer worker is scoped to one application deployment instance.
+- Application-level launch infrastructure is complete for a shared POSIX durable volume. Deployment remains responsible for mounting the same volume on every worker instance, securing administrator credentials, collecting the internal metrics endpoint, and configuring alerts. UI, notifications, and member-facing APIs remain outside this backend infrastructure sprint.
 
 ## Sprint 4 — Read Model & Observability (2026-07-30)
 

@@ -70,3 +70,24 @@ test("Sprint 5 operations are independently disabled by default", () => {
   const worker = createReplayWorker({ store: createReplayJobStore({ filePath: temporary("disabled") }), enabled: false, execute: async () => ({}) });
   assert.throws(() => worker.enqueue({ type: "replay_all" }), (error) => error.code === "REPLAY_DISABLED");
 });
+
+test("multiple worker instances coordinate through a durable fenced lease", async () => {
+  const filePath = temporary("distributed"); let active = 0; let maximum = 0; const executions = [];
+  const execute = async (job) => { active++; maximum = Math.max(maximum, active); executions.push(job.jobId); await tick(); active--; return { eventsProcessed: 1, usersProcessed: 1 }; };
+  const first = createReplayWorker({ store: createReplayJobStore({ filePath, ownerId: "store-a" }), enabled: true, instanceId: "instance-a", execute });
+  const second = createReplayWorker({ store: createReplayJobStore({ filePath, ownerId: "store-b" }), enabled: true, instanceId: "instance-b", execute });
+  first.enqueue({ type: "replay_all" }); first.enqueue({ type: "rebuild_projection" }); second.pump();
+  await tick(); await tick(); await tick();
+  assert.equal(maximum, 1); assert.equal(new Set(executions).size, 2);
+  assert.equal(first.history().length, 2);
+});
+
+test("replay store is checksummed, revisioned, migrates v1, and recovers its backup", () => {
+  const filePath = temporary("durability");
+  fs.writeFileSync(filePath, JSON.stringify({ schemaVersion: 1, jobs: [], history: [], schedules: [] }));
+  const store = createReplayJobStore({ filePath }); store.update((state) => state.jobs.push({ jobId: "one", status: "completed" }));
+  store.update((state) => state.jobs.push({ jobId: "two", status: "completed" }));
+  const before = store.read(); assert.equal(before.schemaVersion, 2); assert.ok(before.revision >= 2); assert.match(before.checksum, /^[a-f0-9]{64}$/);
+  fs.writeFileSync(filePath, "{corrupt");
+  assert.equal(store.read().jobs.some((job) => job.jobId === "one"), true);
+});

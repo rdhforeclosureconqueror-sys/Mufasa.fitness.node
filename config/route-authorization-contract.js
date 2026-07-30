@@ -1792,8 +1792,9 @@ module.exports = Object.freeze([
     ["GET", "/internal/gamification/operations/policies"], ["GET", "/internal/gamification/operations/policies/:version"],
     ["POST", "/internal/gamification/operations/policies"], ["POST", "/internal/gamification/operations/policies/:version/validate"],
     ["POST", "/internal/gamification/operations/policies/:version/publish"], ["POST", "/internal/gamification/operations/policies/:version/archive"],
-    ["GET", "/internal/gamification/operations/integrity"], ["GET", "/internal/gamification/operations/metrics"]
+    ["GET", "/internal/gamification/operations/integrity"], ["GET", "/internal/gamification/operations/metrics"],
+    ["GET", "/internal/gamification/operations/readiness"]
   ].map(([method, routePath]) => ({ method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
-    requiredPermissions: ["ops.read_observability"], membership: "not-required", ownership: "internal-administrator",
+    requiredPermissions: [method === "GET" ? "ops.read_observability" : "gamification.operations.manage"], membership: "not-required", ownership: "internal-administrator",
     featureFlag: "GAMIFICATION_OPERATIONS", publicOutput: "internal-only", rateLimit: null, compatibility: null, publicWrite: null }))
 ]);

@@ -397,12 +397,19 @@ function createApp(options = {}) {
     if (gamificationConfig.evaluation) {
       const definitions = validateAchievementDefinitions(require(options.gamificationAchievementPath || path.join(rootDir, "data", "gamification", "achievements.json")).definitions);
       const levels = require(options.gamificationLevelPath || path.join(rootDir, "data", "gamification", "levels.json")).levels;
-      const xpPolicies = validateXpPolicy(require(options.gamificationXpPolicyPath || path.join(rootDir, "data", "gamification", "xp-policy.json")));
+      const configuredXpPolicies = validateXpPolicy(require(options.gamificationXpPolicyPath || path.join(rootDir, "data", "gamification", "xp-policy.json")));
+      if (gamificationConfig.operations) {
+        policyManager = createPolicyManager({ filePath: options.gamificationPolicyRegistryPath || path.join(DATA_DIR, "gamification", "policy-registry.json"), validate: validateXpPolicy,
+          audit: (event) => auditLog.appendEvent({ ...event, source: "gamification-operations" }) });
+        policyManager.seedPublished(configuredXpPolicies);
+      }
+      const policyProvider = () => policyManager ? validateXpPolicy({ schemaVersion: 1, policies: policyManager.allPublished() }) : configuredXpPolicies;
+      const xpPolicies = policyProvider();
       const projectionStore = createGamificationProjectionStore({ filePath: options.gamificationProjectionPath || path.join(DATA_DIR, "gamification", "projections.json") });
       const awardStore = createGamificationAwardStore({ filePath: options.gamificationAwardPath || path.join(DATA_DIR, "gamification", "awards.json") });
       const ledgerStore = createGamificationLedgerStore({ filePath: options.gamificationLedgerPath || path.join(DATA_DIR, "gamification", "xp-ledger.json") });
       const levelService = createLevelService(levels);
-      const xpPolicyService = createXpPolicyService(xpPolicies);
+      const xpPolicyService = createXpPolicyService(policyProvider);
       achievementService = createAchievementService({
         eventStore: gamificationEventStore,
         definitions,
@@ -412,13 +419,14 @@ function createApp(options = {}) {
         xpPolicyService
       });
       if (gamificationConfig.readApi) gamificationReadService = createReadModelService({ eventStore: gamificationEventStore,
-        projectionStore, ledgerStore, awardStore, achievementService, xpPolicies, xpPolicyService, definitions, levelService });
+        projectionStore, ledgerStore, awardStore, achievementService, xpPolicies: policyProvider, xpPolicyService, definitions, levelService });
       try { gamificationReadService ? gamificationReadService.replay("startup") : achievementService.replay(); } catch (error) {
         console.error("Gamification startup replay failed", { errorCode: "EVALUATION_FAILED" });
       }
       if (gamificationConfig.operations && gamificationReadService) {
         const replayStore = createReplayJobStore({ filePath: options.gamificationReplayPath || path.join(DATA_DIR, "gamification", "replay-jobs.json") });
         replayWorker = createReplayWorker({ store: replayStore, enabled: true, policyVersion: xpPolicies.at(-1)?.policyVersion || null,
+          audit: (event) => auditLog.appendEvent({ ...event, source: "gamification-operations" }),
           execute: async (job, report) => {
             report({ progressPercentage: 20, currentPhase: "evaluating" });
             const result = job.userId ? gamificationReadService.rebuild(job.userId) : gamificationReadService.replay(job.replayType);
@@ -426,7 +434,6 @@ function createApp(options = {}) {
             report({ progressPercentage: 90, currentPhase: "persisting_projection" });
             return { eventsProcessed: gamificationEventStore.metrics().count, usersProcessed: Object.keys(projections).length, checksum: result.checksum || result.diagnostics?.projectionChecksum || null };
           } });
-        policyManager = createPolicyManager({ filePath: options.gamificationPolicyRegistryPath || path.join(DATA_DIR, "gamification", "policy-registry.json"), validate: validateXpPolicy });
       }
     }
   }
@@ -894,28 +901,35 @@ function createApp(options = {}) {
 
   if (replayWorker && policyManager) {
     const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+    const mutationGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.GAMIFICATION_OPERATIONS_MANAGE, trackAdminOpsAuthorizationDecision);
     const enqueue = (type) => (req, res) => {
-      try { return ok(res.status(202), req.requestId, replayWorker.enqueue({ type, userId: req.params.id || req.body?.userId || null, initiatedBy: req.auth?.subject || "internal-admin" })); }
+      try { return ok(res.status(202), req.requestId, replayWorker.enqueue({ type, userId: req.params.id || req.body?.userId || null, initiatedBy: req.auth?.userId || "internal-admin" })); }
       catch (error) { throw new ApiError(error.code || "INVALID_REPLAY", error.message, error.code === "DUPLICATE_REPLAY" ? 409 : 422); }
     };
     app.get("/internal/gamification/operations/replay/queue", internalGuard, (_req, res) => res.json({ ok: true, jobs: replayWorker.jobs() }));
     app.get("/internal/gamification/operations/replay/history", internalGuard, (_req, res) => res.json({ ok: true, history: replayWorker.history() }));
     app.get("/internal/gamification/operations/replay/:jobId", internalGuard, (req, res) => ok(res, req.requestId, replayWorker.progress(req.params.jobId)));
-    app.post("/internal/gamification/operations/replay/all", internalGuard, enqueue("replay_all"));
-    app.post("/internal/gamification/operations/replay/user/:id", internalGuard, enqueue("replay_user"));
-    app.post("/internal/gamification/operations/projection/rebuild", internalGuard, enqueue("rebuild_projection"));
-    app.post("/internal/gamification/operations/recalculate/xp", internalGuard, enqueue("recalculate_xp"));
-    app.post("/internal/gamification/operations/recalculate/achievements", internalGuard, enqueue("recalculate_achievements"));
-    app.post("/internal/gamification/operations/replay/schedule", internalGuard, (req, res) => { try { return ok(res.status(202), req.requestId, replayWorker.schedule({ ...(req.body || {}), initiatedBy: req.auth?.subject || "internal-admin" })); } catch (error) { throw new ApiError("INVALID_SCHEDULE", error.message, 422); } });
-    app.post("/internal/gamification/operations/replay/:jobId/cancel", internalGuard, (req, res) => ok(res, req.requestId, replayWorker.cancel(req.params.jobId)));
+    app.post("/internal/gamification/operations/replay/all", mutationGuard, enqueue("replay_all"));
+    app.post("/internal/gamification/operations/replay/user/:id", mutationGuard, enqueue("replay_user"));
+    app.post("/internal/gamification/operations/projection/rebuild", mutationGuard, enqueue("rebuild_projection"));
+    app.post("/internal/gamification/operations/recalculate/xp", mutationGuard, enqueue("recalculate_xp"));
+    app.post("/internal/gamification/operations/recalculate/achievements", mutationGuard, enqueue("recalculate_achievements"));
+    app.post("/internal/gamification/operations/replay/schedule", mutationGuard, (req, res) => { try { return ok(res.status(202), req.requestId, replayWorker.schedule({ ...(req.body || {}), initiatedBy: req.auth?.userId || "internal-admin" })); } catch (error) { throw new ApiError("INVALID_SCHEDULE", error.message, 422); } });
+    app.post("/internal/gamification/operations/replay/:jobId/cancel", mutationGuard, (req, res) => ok(res, req.requestId, replayWorker.cancel(req.params.jobId)));
     app.get("/internal/gamification/operations/policies", internalGuard, (_req, res) => res.json({ ok: true, policies: policyManager.list() }));
     app.get("/internal/gamification/operations/policies/:version", internalGuard, (req, res) => ok(res, req.requestId, policyManager.inspect(req.params.version)));
-    app.post("/internal/gamification/operations/policies", internalGuard, (req, res) => ok(res.status(201), req.requestId, policyManager.create(req.body || {})));
-    app.post("/internal/gamification/operations/policies/:version/validate", internalGuard, (req, res) => ok(res, req.requestId, policyManager.validate(req.params.version)));
-    app.post("/internal/gamification/operations/policies/:version/publish", internalGuard, (req, res) => ok(res, req.requestId, policyManager.publish(req.params.version)));
-    app.post("/internal/gamification/operations/policies/:version/archive", internalGuard, (req, res) => ok(res, req.requestId, policyManager.archive(req.params.version)));
-    app.get("/internal/gamification/operations/integrity", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.verify()));
+    const policyMutation = (operation, successStatus = 200) => (req, res) => { try { const result = operation(req); auditLog.appendEvent({ action: "gamification.policy.admin_mutation", actor: summarizeActor(req), requestId: req.requestId, policyVersion: req.params.version || req.body?.policyVersion }); return ok(res.status(successStatus), req.requestId, result); } catch (error) { throw new ApiError("INVALID_POLICY_OPERATION", error.message, 422); } };
+    app.post("/internal/gamification/operations/policies", mutationGuard, policyMutation((req) => policyManager.create(req.body || {}), 201));
+    app.post("/internal/gamification/operations/policies/:version/validate", mutationGuard, policyMutation((req) => policyManager.validate(req.params.version)));
+    app.post("/internal/gamification/operations/policies/:version/publish", mutationGuard, policyMutation((req) => policyManager.publish(req.params.version)));
+    app.post("/internal/gamification/operations/policies/:version/archive", mutationGuard, policyMutation((req) => policyManager.archive(req.params.version)));
+    app.get("/internal/gamification/operations/integrity", internalGuard, (req, res) => { const report = gamificationReadService.verify(); replayWorker.recordIntegrityResult(report.valid); return ok(res, req.requestId, report); });
     app.get("/internal/gamification/operations/metrics", internalGuard, (_req, res) => res.json({ ok: true, metrics: { ...replayWorker.metrics(), ...policyManager.metrics() } }));
+    app.get("/internal/gamification/operations/readiness", internalGuard, (req, res) => {
+      const auditIntegrity = auditLog.verifyFullChain(); const publishedPolicies = policyManager.allPublished(); const metrics = replayWorker.metrics();
+      const ready = metrics.workerActive && publishedPolicies.length > 0 && auditIntegrity.verified;
+      return ok(res.status(ready ? 200 : 503), req.requestId, { ready, worker: { active: metrics.workerActive, instanceId: metrics.workerInstanceId, activeLease: metrics.activeLease }, storage: { replayStoreReadable: true }, policies: { published: publishedPolicies.length }, audit: { verified: auditIntegrity.verified, issueCount: auditIntegrity.issueCount } });
+    });
   }
 
   app.post(

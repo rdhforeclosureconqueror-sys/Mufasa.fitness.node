@@ -12,6 +12,7 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
   const history = [];
   let failures = 0;
   let lastSuccessfulReplay = null;
+  const currentPolicies = () => typeof xpPolicies === "function" ? xpPolicies() : xpPolicies;
 
   function events() {
     const result = [];
@@ -42,7 +43,7 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
       const record = { operation, status: "succeeded", startedAt: started.toISOString(), completedAt: completed.toISOString(),
         durationMs, eventsProcessed, throughputPerSecond: durationMs ? Number((eventsProcessed * 1000 / durationMs).toFixed(2)) : eventsProcessed,
         projectionChecksum: result.checksum, replayVersion: 1,
-        policyVersion: xpPolicies.at(-1)?.policyVersion || null };
+        policyVersion: currentPolicies().at(-1)?.policyVersion || null };
       history.push(record); lastSuccessfulReplay = record.completedAt;
       return { ...result, diagnostics: structuredClone(record) };
     } catch (error) {
@@ -71,14 +72,13 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
       const expectedEarned = [...active.values()].filter(Boolean).length;
       if (projection.earnedAchievements.length !== expectedEarned) mismatches.push({ userId, field: "achievements" });
     }
-    const first = checksum(projections);
-    const rebuilt = replay("integrity_determinism").checksum;
-    if (first !== rebuilt) mismatches.push({ field: "replayDeterminism", expected: first, actual: rebuilt });
-    return { valid: mismatches.length === 0, mismatches, projectionChecksum: rebuilt, ledgerChecksum: digest(ledgerStore.all()) };
+    // Integrity inspection is deliberately read-only. Determinism is enforced by
+    // replay tests and checksummed history; this endpoint never rebuilds or repairs.
+    return { valid: mismatches.length === 0, mismatches, projectionChecksum: checksum(projections), ledgerChecksum: digest(ledgerStore.all()), replayAlgorithmVersion: 1 };
   }
   function simulate({ userId, policyVersion, eventStream }) {
     if (!validUserId(userId) || !Array.isArray(eventStream) || eventStream.some((e) => e.subjectUserId !== userId)) throw new TypeError("invalid simulation request");
-    const policy = xpPolicies.find((item) => item.policyVersion === policyVersion);
+    const policy = currentPolicies().find((item) => item.policyVersion === policyVersion);
     if (!policy) throw new TypeError("unknown policy version");
     const scopedPolicyService = require("./xpPolicyService").createXpPolicyService([policy]);
     const original = eventStream.filter((event) => event.eventType !== "workout.revoked");
@@ -98,7 +98,7 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
   function deleteProjection(userId) { if (!validUserId(userId)) throw new TypeError("invalid user id"); return projectionStore.removeUser(userId); }
   return Object.freeze({ profile, ledger, status, history: () => structuredClone(history), analytics, replay,
     rebuild: (userId) => { if (!validUserId(userId)) throw new TypeError("invalid user id"); return replay(`rebuild_user:${userId}`).projections[userId] || null; },
-    deleteProjection, verify, simulate, currentPolicy: () => structuredClone(xpPolicies.at(-1) || null), events });
+    deleteProjection, verify, simulate, currentPolicy: () => structuredClone(currentPolicies().at(-1) || null), events });
 }
 
 module.exports = { createReadModelService, digest, validUserId };
