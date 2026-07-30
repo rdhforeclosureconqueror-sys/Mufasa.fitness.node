@@ -1,4 +1,5 @@
 "use strict";
+const {exerciseService}=require("../exercise-intelligence");
 
 const MAX_RECENT_WORKOUTS = 5;
 
@@ -63,7 +64,8 @@ function createCoachContextService({ userStore, memberGamificationService = null
         recentAdherence: programView.analytics.weeklyAdherence.slice(-2),
         completedPercentage: programView.analytics.completionPercentage,
         goalProgress: { goal: program.goal, completionPercentage: programView.analytics.completionPercentage },
-        decisionPolicy: "explain_only"
+        decisionPolicy: "explain_only",
+        exerciseIntelligence: (programView.today?.exercises || programView.nextWorkout?.exercises || []).map((item) => exerciseService.coachContext(item.exerciseId || item.id)).filter(Boolean)
       } : null,
       goals: user.goalsBaseline ? { goal: user.goalsBaseline.goal || null, baseline: user.goalsBaseline.baseline || null } : null,
       recovery: latestCheckIn ? {

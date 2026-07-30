@@ -1,0 +1,7 @@
+"use strict";
+const {getExercise}=require("./exerciseCatalog");
+const CHAINS=[["incline_push_up","push_up","dumbbell_bench_press","bench_press","machine_chest_press"],["bodyweight_squat","goblet_squat","front_squat","back_squat"],["glute_bridge","dumbbell_rdl","barbell_deadlift"],["band_row","one_arm_row","barbell_row"]];
+const relationships=Object.freeze(CHAINS.flatMap((chain,chainIndex)=>chain.slice(0,-1).map((from,index)=>Object.freeze({relationshipId:`rel_${chainIndex}_${index}`,fromExerciseId:from,toExerciseId:chain[index+1],type:"progression",replacementQuality:index===chain.length-2?.82:.9,movementSimilarity:.9,equipmentCompatibility:from===chain[index+1]?1:.6,difficultyDelta:1,goalCompatibility:Object.freeze(["general_fitness","strength","muscle_gain"])}))));
+function validateRelationships(items=relationships){const errors=[];const ids=new Set();for(const item of items){if(ids.has(item.relationshipId))errors.push(`duplicate relationship ${item.relationshipId}`);ids.add(item.relationshipId);if(!getExercise(item.fromExerciseId))errors.push(`unknown source ${item.fromExerciseId}`);if(!getExercise(item.toExerciseId))errors.push(`unknown target ${item.toExerciseId}`);if(item.fromExerciseId===item.toExerciseId)errors.push(`self relationship ${item.relationshipId}`);}return{valid:!errors.length,errors};}
+function related(id,{direction="both"}={}){return relationships.filter(x=>(direction!=="in"&&x.fromExerciseId===id)||(direction!=="out"&&x.toExerciseId===id));}
+module.exports={relationships,related,validateRelationships};
