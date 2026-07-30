@@ -43,6 +43,7 @@ const { createExerciseTemplateService } = require("./src/services/exerciseTempla
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createCoachContextService } = require("./src/ai/coachContextService");
+const { createProgramPersistence, createProgramService } = require("./src/program-engine");
 const { createAiCoachService } = require("./src/services/aiCoachService");
 const { loadAiCoachConfig } = require("./src/config/aiCoach");
 const { createOpenAiCoachProvider } = require("./src/ai/openAiCoachProvider");
@@ -464,7 +465,9 @@ function createApp(options = {}) {
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
-  const coachContextService = createCoachContextService({ userStore, memberGamificationService });
+  const programPersistence = createProgramPersistence({ userStore });
+  const programService = createProgramService({ persistence: programPersistence, eventAdapter: gamificationEventService ? (fact) => { const result=gamificationEventService.recordProgramEvent(fact); achievementService?.replay(); return result; } : null });
+  const coachContextService = createCoachContextService({ userStore, memberGamificationService, programService });
   const aiCoachConfig = loadAiCoachConfig(options.env || process.env);
   const aiCoachProvider = options.aiCoachProvider || (aiCoachConfig.enabled ? createOpenAiCoachProvider({ config: aiCoachConfig, fetchImpl: options.fetch || global.fetch }) : null);
   const aiCoachService = createAiCoachService({ userStore, contextService: coachContextService, responder: options.aiCoachResponder, provider: aiCoachProvider, config: aiCoachConfig });
@@ -2378,9 +2381,17 @@ function createApp(options = {}) {
   }));
 
   app.get("/api/programs/current", requireAuth, asyncHandler(async (req, res) => {
+    const authoritative = programService.view(req.auth.userId);
+    if (authoritative.available) return ok(res, req.requestId, authoritative, 200);
     const result = userDataService.getProgram(req.auth.userId);
-    return ok(res, req.requestId, { ...result, workoutRecommendation: personalizationService.getWorkoutRecommendation(req.auth.userId) }, 200);
+    return ok(res, req.requestId, { ...result, authoritative, workoutRecommendation: personalizationService.getWorkoutRecommendation(req.auth.userId) }, 200);
   }));
+
+  app.post("/api/programs/authoritative", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, programService.assign(req.auth.userId, req.body), 201)));
+
+  app.patch("/api/programs/authoritative/sessions/:sessionId", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, programService.updateSession(req.auth.userId, req.params.sessionId, req.body), 200)));
 
   app.get("/api/me/generated-workout-plan", requireAuth, asyncHandler(async (req, res) => {
     return ok(res, req.requestId, generatedWorkoutService.readModel(req.auth.userId), 200);

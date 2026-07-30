@@ -15,7 +15,7 @@ function compactWorkout(item = {}) {
   };
 }
 
-function createCoachContextService({ userStore, memberGamificationService = null, clock = () => Date.now() }) {
+function createCoachContextService({ userStore, memberGamificationService = null, programService = null, clock = () => Date.now() }) {
   function build(userId) {
     // One authoritative member read is intentionally shared by every context section.
     const user = userStore.loadUser(userId);
@@ -28,7 +28,8 @@ function createCoachContextService({ userStore, memberGamificationService = null
     const gamification = memberGamificationService?.get(userId) || null;
     const latestAchievement = gamification?.achievements?.filter((item) => item.state === "earned").at(-1) || null;
     const latestCheckIn = Array.isArray(user.checkIns) ? user.checkIns.at(-1) || null : null;
-    const program = user.program || user.generatedWorkoutPlan || null;
+    const programView = programService?.view(userId, clock()) || null;
+    const program = programView?.available ? programView.assignment.program : user.program || user.generatedWorkoutPlan || null;
     const yogaSessions = (Array.isArray(user.yogaSessions) ? user.yogaSessions : []).slice().sort((a,b)=>b.completedAt-a.completedAt).slice(0,5);
 
     return {
@@ -50,6 +51,20 @@ function createCoachContextService({ userStore, memberGamificationService = null
         upcoming: program?.nextWorkout || program?.sessions?.find((item) => item.status !== "completed") || null,
         currentProgram: program ? { id: program.programId || program.id || null, title: program.title || null, goal: program.goal || null, daysPerWeek: program.daysPerWeek ?? null, movementFocus: program.movementFocus || null } : null
       },
+      program: programView?.available ? {
+        authority: "program_engine",
+        currentProgram: { id: program.programId, title: program.title, goal: program.goal },
+        currentPhase: programView.assignment.currentPhase,
+        currentWeek: programView.assignment.currentWeek,
+        today: programView.today,
+        nextWorkout: programView.nextWorkout,
+        remainingSessions: programView.upcoming.length,
+        deloadStatus: programView.assignment.deloadStatus,
+        recentAdherence: programView.analytics.weeklyAdherence.slice(-2),
+        completedPercentage: programView.analytics.completionPercentage,
+        goalProgress: { goal: program.goal, completionPercentage: programView.analytics.completionPercentage },
+        decisionPolicy: "explain_only"
+      } : null,
       goals: user.goalsBaseline ? { goal: user.goalsBaseline.goal || null, baseline: user.goalsBaseline.baseline || null } : null,
       recovery: latestCheckIn ? {
         recordedAt: latestCheckIn.ts || latestCheckIn.createdAt || null,
