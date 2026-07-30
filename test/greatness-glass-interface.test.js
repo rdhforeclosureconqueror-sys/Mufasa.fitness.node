@@ -50,3 +50,12 @@ test('protects readable interactive glass while keeping maps isolated', () => {
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /html,body\{max-width:100%;overflow-x:hidden\}/);
 });
+
+test('fixes the rendering root instead of only changing opacity tokens', () => {
+  assert.match(html, /greatness\.css\?v=cinematic-hud-root-fix-20260730/);
+  assert.match(css, /main>\.panel,\s*\.panel:not\(#move\)\{background:transparent/);
+  assert.match(css, /\.trail-planner \.route-selector,\.trail-planner \.planner-workspace\{background:transparent\}/);
+  assert.match(css, /\.cinematic-vignette\{\s*background:[\s\S]*?rgba\(0,0,0,\.28\)/);
+  assert.match(css, /\.recorder,\.trail-planner\{[\s\S]*?blur\(4px\)/);
+  assert.match(css, /\.metrics>div,\.gps,[\s\S]*?backdrop-filter:none/);
+});
