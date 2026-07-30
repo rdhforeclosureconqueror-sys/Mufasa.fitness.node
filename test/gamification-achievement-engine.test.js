@@ -128,6 +128,31 @@ test("correction preserves events and awards while appending revocation and equa
   assert.ok(originalXp > 0);
 });
 
+test("a revoked once-only achievement can be re-earned repeatedly with conserved XP", () => {
+  const h = harness();
+  const first = workout(1);
+  h.eventStore.append(first);
+  assert.equal(h.service.replay().projections.user_1.lifetimeXp, 90);
+  h.eventStore.append(revoked(first, 901));
+  assert.equal(h.service.replay().projections.user_1.lifetimeXp, 0);
+
+  const second = workout(2);
+  h.eventStore.append(second);
+  let result = h.service.replay();
+  assert.equal(result.projections.user_1.lifetimeXp, 90);
+  assert.equal(result.projections.user_1.achievements.find((item) => item.achievementId === "achievement.workout.1_completed").state, "earned");
+  h.eventStore.append(revoked(second, 902));
+  assert.equal(h.service.replay().projections.user_1.lifetimeXp, 0);
+
+  const third = workout(3);
+  h.eventStore.append(third);
+  result = h.service.replay();
+  assert.equal(result.projections.user_1.lifetimeXp, 90);
+  assert.equal(h.awardStore.all().filter((item) => item.kind === "reinstatement" && item.achievementId === "achievement.workout.1_completed").length, 2);
+  assert.equal(h.ledgerStore.all().filter((item) => item.reason === "achievement_reinstated" && item.achievementId === "achievement.workout.1_completed").length, 2);
+  assert.equal(h.service.replay().checksum, result.checksum, "the final cycle remains replay-idempotent");
+});
+
 test("replay consumes more than one bounded event-store page and level boundaries are exact", () => {
   const h = harness();
   for (let index = 1; index <= 101; index += 1) h.eventStore.append(workout(index, { occurredAt: new Date(Date.UTC(2026, 7, 1) + index * 3600000).toISOString(), recordedAt: new Date(Date.UTC(2026, 7, 1) + index * 3600000 + 1000).toISOString() }));

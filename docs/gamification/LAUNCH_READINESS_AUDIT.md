@@ -17,7 +17,9 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 - `d42da7a` — Sprint 5 operations.
 - `fa0ca6c` — Sprint 5 launch hardening.
 
-## Launch-Blocking Findings
+## Launch-Blocking Findings — Remediation Verification (2026-07-30)
+
+All six code launch blockers identified below have been remediated. Each entry preserves the original failing path and records the minimal event-sourced correction and regression proof.
 
 ### G-01 — Critical — The source event store is not safe with more than one application writer
 
@@ -31,6 +33,8 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 
 **Blocks launch:** **Yes.** A single-writer deployment restriction reduces exposure but does not make the documented shared-volume/multi-instance topology safe.
 
+**Remediated:** `gamificationEventStore.append` now acquires an atomic cross-process filesystem lock, reloads the checksummed authoritative snapshot while holding it, deduplicates against that snapshot, assigns the next cursor, and durably publishes before releasing the lock. Reads also reload the active snapshot. The previous exact failure path was two store instances loading cursor N, both selecting N+1, then the second rename overwriting the first. The multi-process regression test starts 12 independent Node writers and proves 12 unique events and contiguous cursors.
+
 ### G-02 — Critical — Replay fencing does not fence projection, award, or ledger writes
 
 **Why it matters:** the worker fencing token protects only replay-job progress and terminal status. `execute` mutates awards, ledger entries, and projections before the worker verifies that it still owns the lease. If a lease is reclaimed after heartbeat loss, a stale worker can still replace projections or append derived records after the new owner completes.
@@ -42,6 +46,8 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 **Effort:** 4–7 days.
 
 **Blocks launch:** **Yes when replay operations are enabled.**
+
+**Remediated:** the worker now supplies an ownership assertion containing its lease owner and fencing token. Replay builds an isolated derived generation and invokes that assertion while holding the generation publication lock, immediately before switching the active manifest. The previous exact path was `replayWorker.execute -> achievementService.replay -> award/ledger/projection writes -> replay job fence check`; therefore the destructive writes preceded the check. Regression tests steal a running worker's token and prove it cannot publish or complete, and directly prove a rejected generation commit leaves the prior active generation unchanged.
 
 ### G-03 — High — Recalculation can retain obsolete XP effects and double-count policy results
 
@@ -55,6 +61,8 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 
 **Blocks launch:** **Yes because recalculation and policy lifecycle are launch scope.**
 
+**Remediated:** every replay now starts from an empty derived generation and atomically replaces the complete active calculation. Policy-version effect keys remain immutable inside a generation, while obsolete policy effects are absent from its replacement. Historical replacement through the lifecycle API is additionally rejected unless a future approved generation recalculation plan is introduced. The prior path appended `base-xp:<old-version>` and then `base-xp:<new-version>` into one permanent ledger. Regression coverage publishes a replacement generation, proves only the new policy effect is active, and rolls back to the prior generation.
+
 ### G-04 — High — Derived stores do not provide a recoverable atomic replay generation
 
 **Why it matters:** award, ledger, and projection files are committed independently. A process failure can leave awards updated, the ledger partially updated, and projections stale. Award, ledger, and projection stores lack the event/replay stores' checksum and backup recovery; several writes omit `fsync`. Startup replay can repair some partial states, but an existing conflicting or corrupt file can stop repair.
@@ -66,6 +74,8 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 **Effort:** 1–2 weeks.
 
 **Blocks launch:** **Yes.**
+
+**Remediated:** awards, ledger, and projections are now fields of one checksummed immutable generation with source cursor, policy versions, and algorithm version. Replay writes only staging memory, persists and fsyncs the complete generation, then atomically switches a checksummed manifest. The previous active generation is retained for validated rollback. The former failure path independently renamed `awards.json`, `xp-ledger.json`, and `projections.json`, so a crash between any two renames exposed mixed state. Regression tests prove partial staging and failed/stale commits are invisible after restart and that rollback restores the complete prior generation.
 
 ### G-05 — High — Revoked achievements cannot be validly re-earned
 
@@ -79,6 +89,8 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 
 **Blocks launch:** **Yes until the state rule is explicit and enforced.**
 
+**Remediated — product rule:** a revoked once-only achievement may be re-earned from new qualifying evidence. The service appends a deterministic reinstatement record and a distinct reinstatement XP effect; a later revocation reverses the currently active positive effect rather than attempting to reverse the original twice. Projections treat awards and reinstatements as active and revocations as inactive. The former path retried the original `award:<once-key>`, received `duplicate`, and left the last revocation authoritative. Regression coverage proves two revoke/re-earn cycles, exact XP conservation, earned projection state, and replay idempotency.
+
 ### G-06 — High — Migration and readiness do not validate the complete persisted system
 
 **Why it matters:** the migration only reads and rewrites `replay-jobs.json`. It does not version, validate, back up, or cross-check events, policies, awards, ledger, and projections. Operational readiness reports replay storage as readable without actually checking every store and does not require a valid integrity report or successful startup replay.
@@ -90,6 +102,8 @@ The three supplied object IDs (`aed13a946278f95b71bf9d67a400dff4881cb421`, `a1a8
 **Effort:** 4–6 days.
 
 **Blocks launch:** **Yes.**
+
+**Remediated:** migration Version 3 loads and validates the event, replay, legacy award, ledger, projection, and policy-registry files; records counts and source cursor; takes a full directory backup; verifies every copied file checksum; creates/imports the first immutable generation; migrates replay storage; and writes a checksummed migration manifest. Runtime preflight validates the source store, active generation, replay store, published policy, writable volume, integrity report, successful startup replay, and compatible applied migration. Readiness now returns 503 unless preflight, worker, policy, and audit-chain checks all pass. Regression coverage applies migration in a temporary production data directory and verifies its backup, manifest, and active generation.
 
 ## Non-Blocking Findings
 
@@ -107,27 +121,27 @@ The policy manager emits lifecycle audit events and the route wrapper emits an a
 
 ## Data Integrity Assessment
 
-For a single process, fixed policy set, and uninterrupted replay, event validation, deterministic ordering, idempotency keys, stable effect/award IDs, exact reversal validation, and checksummed source snapshots provide a solid foundation. The system is not launch-safe under the documented multi-instance topology or interrupted multi-file replay because source writes can be lost and derived files do not form one recoverable generation.
+Event validation, deterministic ordering, idempotency keys, stable effect/award IDs, exact reversal validation, and checksummed source snapshots provide the event-sourced foundation. Cross-process serialization now protects the authoritative append, and one atomic immutable generation makes interrupted replay recoverable without exposing partial derived state.
 
 ## Replay and Projection Assessment
 
-Replay is deterministic in the covered fixed-input tests, paginates the full event stream, sorts policy evaluation by occurrence time and event ID, and rebuilds disposable projections. Job scheduling, cancellation, lease recovery, heartbeat, and job-state fencing are implemented. Launch remains blocked because fencing does not protect the actual derived-state commit, user-specific jobs perform a global replay, and there is no atomic generation or stale-writer rejection at projection publication.
+Replay is deterministic, paginates the full event stream, sorts policy evaluation by occurrence time and event ID, and rebuilds disposable projections inside an isolated generation. Job scheduling, cancellation, lease recovery, heartbeat, job-state fencing, and generation-publication fencing are implemented. User-specific operations intentionally perform a bounded-scope request over a full authoritative replay; this is inefficient but cannot corrupt state.
 
 ## Policy and XP Assessment
 
-Policy documents validate semantic versions, canonical UTC intervals, non-overlapping windows, caps, overlap strategies, and action shapes. Publication requires validation, prevents overlapping published windows, and makes published policies immutable except deprecation. Fixed-policy XP evaluation and caps are deterministic. Historical replacement/recalculation semantics are unsafe because obsolete policy effects remain in the append-only ledger.
+Policy documents validate semantic versions, canonical UTC intervals, non-overlapping windows, caps, overlap strategies, and action shapes. Publication requires validation, prevents overlapping published windows, rejects unplanned historical replacement, and makes published policies immutable except deprecation. Recalculation replaces the complete active derived generation, so obsolete policy effects cannot remain active or double-count.
 
 ## Achievement and Ledger Assessment
 
-Achievement definitions are versioned and bounded; typed rules, verification methods, effective periods, hidden states, streaks, deterministic qualification, duplicate award prevention, append-only revocations, and equal/opposite ledger reversals are tested. Re-qualification after revocation is not represented correctly. The ledger validates new entries and reversals but is not part of an atomic, checksummed replay generation.
+Achievement definitions are versioned and bounded; typed rules, verification methods, effective periods, hidden states, streaks, deterministic qualification, duplicate prevention, append-only revocations/reinstatements, and equal/opposite ledger reversals are tested. The ledger and awards are validated members of the checksummed active replay generation.
 
 ## Persistence and Migration Assessment
 
-`POCKET_PT_DATA_DIR` is required for production persistence. Event, policy, and replay-job stores implement differing levels of checksum, backup, lock, and `fsync` protection; award, ledger, and projection stores are weaker. The current migration safely handles only the replay-job envelope and is insufficient as a launch migration for the complete gamification state.
+`POCKET_PT_DATA_DIR` is required for production persistence. Authoritative events, policy state, replay jobs, immutable generations, and the active manifest use durable atomic publication appropriate to their roles. Migration Version 3 validates all legacy stores, verifies a full backup, imports one complete generation, and records a compatible checksummed migration manifest.
 
 ## Operations and Recovery Assessment
 
-Operational APIs cover queueing, scheduling, cancellation, policy lifecycle, integrity, metrics, and readiness. Replay mutations are audited and a recovery runbook exists. This change closes two operations-control gaps: invalid feature-flag dependency combinations now fail closed, and all legacy synchronous replay/recalculation/projection mutations now require `gamification.operations.manage` rather than the read-only observability permission. Recovery remains incomplete until staged generation commits, full-store preflight, verified backup, and stale-writer rejection exist.
+Operational APIs cover queueing, scheduling, cancellation, policy lifecycle, integrity, metrics, and readiness. Replay mutations are audited and a recovery runbook exists. Feature dependencies fail closed, mutations require `gamification.operations.manage`, generation commits are staged and fenced, and readiness incorporates full-store preflight, verified migration state, startup replay, and integrity.
 
 ## Security and Permission Assessment
 
@@ -137,17 +151,11 @@ Gamification endpoints require authenticated permission checks. Read operations 
 
 Existing tests cover event envelopes, rejection/quarantine, idempotency, restart persistence, corruption recovery, authoritative session integration, achievement operators and replay, revocations, XP caps and overlaps, ledger conflicts/reversals, level boundaries, read-model determinism, simulation immutability, replay operations, cancellation, scheduling, multi-worker serialization, checksummed replay migration, and policy lifecycle. This review also added fail-closed feature-dependency coverage.
 
-Critical missing tests mirror the blockers: concurrent event writers; forced stale replay completion; crash at every derived-store commit boundary; replacement-policy recalculation and rollback; achievement re-earning after revocation; full-store migration/preflight; and restore from the prior complete generation.
+The former critical gaps now have regression coverage: concurrent process writers; forced stale replay completion; invisible interrupted staging; replacement-policy generation and rollback; repeated achievement re-earning; and full-store migration with verified backup. Deployment restore drills remain an operational responsibility.
 
 ## Required Fixes Before Launch
 
-1. Make authoritative event append safe against concurrent writers (G-01).
-2. Fence the actual derived-state commit, not only replay-job metadata (G-02).
-3. Define and implement policy replacement/supersession without double XP (G-03).
-4. Commit awards, ledger, and projections as one validated, recoverable generation (G-04).
-5. Define and implement post-revocation achievement qualification semantics (G-05).
-6. Replace the replay-only migration/readiness check with complete gamification preflight, migration, integrity, backup, and rollback verification (G-06).
-7. Add the missing failure, contention, and recovery tests listed above.
+No code launch blockers remain. G-01 through G-06 and their regression tests are complete. G-07 through G-09 remain non-blocking operational/observability improvements and do not compromise authoritative events or the atomic active derived generation.
 
 ## Deployment-Only Responsibilities
 
@@ -155,6 +163,6 @@ After the code fixes above: mount durable storage at `POCKET_PT_DATA_DIR`; run t
 
 ## Final Status
 
-**NOT READY**
+**READY FOR GAMIFICATION LAUNCH — DEPLOYMENT/CONFIGURATION TASKS REMAIN**
 
-The current implementation has genuine launch blockers that can lose source events, allow stale replay output to publish, double-count XP during policy replacement, leave derived stores in mixed generations, and report readiness without validating the full gamification state. The permission and configuration dependency fixes in this review are ready to merge, but they do not remove those data-integrity blockers.
+The code now preserves authoritative events under concurrent writers, prevents stale replay publication, activates one complete derived generation, safely replaces or rolls back policy calculations, represents achievement reinstatement with conserved XP, and fails readiness until complete persisted-state preflight succeeds. The remaining responsibilities are the deployment-only tasks listed above, including mounted durable storage, applying Migration Version 3 against a verified backup, ordered flag activation, off-host backup/restore drills, least-privilege operator identities, and production alert/export configuration.

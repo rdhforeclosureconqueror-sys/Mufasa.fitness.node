@@ -5,6 +5,8 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 const { loadGamificationConfig } = require("../src/config/gamification");
 const { validateEvent, EventValidationError } = require("../src/gamification/validators");
 const { createEventService } = require("../src/gamification/eventService");
@@ -68,6 +70,25 @@ test("event store deduplicates by subject and key, persists across restart, and 
   assert.equal(restarted.metrics().count, 1);
   assert.deepEqual(restarted.readAfter(0, 100).map((item) => item.sequence), [1]);
   assert.deepEqual(restarted.readAfter(1), []);
+});
+
+test("event store serializes independent process writers without lost events or duplicate cursors", async () => {
+  const filePath = tempFile();
+  const modulePath = path.resolve(__dirname, "../src/repositories/gamificationEventStore.js");
+  const writer = `
+    const { createGamificationEventStore } = require(process.argv[1]);
+    const filePath = process.argv[2]; const id = process.argv[3];
+    const store = createGamificationEventStore({ filePath });
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    store.append({ eventId: 'evt_' + id, subjectUserId: 'user_1', idempotencyKey: 'key_' + id });
+  `;
+  const run = promisify(execFile);
+  await Promise.all(Array.from({ length: 12 }, (_, index) => run(process.execPath, ["-e", writer, modulePath, filePath, String(index)])));
+
+  const records = createGamificationEventStore({ filePath, maxRead: 100 }).readAfter(0, 100);
+  assert.equal(records.length, 12);
+  assert.deepEqual(records.map((item) => item.sequence).sort((a, b) => a - b), Array.from({ length: 12 }, (_, index) => index + 1));
+  assert.equal(new Set(records.map((item) => item.event.idempotencyKey)).size, 12);
 });
 
 test("event store recovers the prior atomic snapshot and records safe corruption metadata", () => {

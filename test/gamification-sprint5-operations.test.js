@@ -59,6 +59,8 @@ test("policy publication enforces validation, immutability, windows, archive, an
   assert.throws(() => manager.publish("1.0.0"), /validated/); manager.validate("1.0.0"); manager.publish("1.0.0");
   assert.equal(manager.published().length, 1); assert.throws(() => manager.archive("1.0.0"), /immutable/);
   manager.create(policy("2.0.0", "2026-06-01T00:00:00.000Z")); manager.validate("2.0.0"); assert.throws(() => manager.publish("2.0.0"), /overlapping/);
+  manager.deprecate("1.0.0");
+  assert.throws(() => manager.publish("2.0.0"), (error) => error.code === "HISTORICAL_POLICY_REPLACEMENT");
   manager.create(policy("9.0.0", "not-a-date")); assert.throws(() => manager.validate("9.0.0")); assert.equal(manager.metrics().policyValidationFailures, 1);
   manager.create(policy("3.0.0", "2027-01-01T00:00:00.000Z")); manager.validate("3.0.0"); manager.archive("3.0.0");
   assert.equal(createPolicyManager({ filePath, validate: validateXpPolicy }).inspect("3.0.0").lifecycleState, "archived");
@@ -80,6 +82,21 @@ test("multiple worker instances coordinate through a durable fenced lease", asyn
   await tick(); await tick(); await tick();
   assert.equal(maximum, 1); assert.equal(new Set(executions).size, 2);
   assert.equal(first.history().length, 2);
+});
+
+test("a worker that loses its fencing token cannot publish after the new owner", async () => {
+  const store = createReplayJobStore({ filePath: temporary("stale-fence") });
+  let continueExecution;
+  const worker = createReplayWorker({ store, enabled: true, instanceId: "old-worker", execute: async (_job, _progress, { assertCommitOwner }) => {
+    await new Promise((resolve) => { continueExecution = resolve; });
+    assertCommitOwner();
+    return { eventsProcessed: 1, usersProcessed: 1 };
+  } });
+  const job = worker.enqueue({ type: "replay_all" }); await tick();
+  store.update((state) => { const current = state.jobs.find((item) => item.jobId === job.jobId); current.leaseOwner = "new-worker"; current.fencingToken += 1; });
+  continueExecution(); await tick(); await tick();
+  assert.equal(worker.history().length, 0, "the stale executor cannot mark or publish completion");
+  assert.equal(store.read().jobs.find((item) => item.jobId === job.jobId).leaseOwner, "new-worker");
 });
 
 test("replay store is checksummed, revisioned, migrates v1, and recovers its backup", () => {

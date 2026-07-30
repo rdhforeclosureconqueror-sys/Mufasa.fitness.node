@@ -33,10 +33,10 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
       dailyCapHits: count("daily_cap_reached"), sourceCapHits: count("source_daily_cap_reached"),
       overlapSuppressions: count("overlap_group_skipped"), replayFrequency: history.length, replayFailures: failures };
   }
-  function replay(operation = "replay_all") {
+  function replay(operation = "replay_all", replayOptions = {}) {
     const started = clock();
     try {
-      const result = achievementService.replay();
+      const result = achievementService.replay(replayOptions);
       const completed = clock();
       const durationMs = Math.max(0, completed.getTime() - started.getTime());
       const eventsProcessed = eventStore.metrics().count;
@@ -68,7 +68,7 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
       if (projection.lifetimeXp !== lifetimeXp) mismatches.push({ userId, field: "lifetimeXp", expected: lifetimeXp, actual: projection.lifetimeXp });
       if (projection.currentLevel !== levelService.forXp(lifetimeXp).level) mismatches.push({ userId, field: "currentLevel" });
       const active = new Map();
-      for (const record of awardStore.all().filter((r) => r.subjectUserId === userId)) active.set(record.awardKey, record.kind === "award");
+      for (const record of awardStore.all().filter((r) => r.subjectUserId === userId)) active.set(record.awardKey, record.kind !== "revocation");
       const expectedEarned = [...active.values()].filter(Boolean).length;
       if (projection.earnedAchievements.length !== expectedEarned) mismatches.push({ userId, field: "achievements" });
     }
@@ -97,7 +97,7 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
   }
   function deleteProjection(userId) { if (!validUserId(userId)) throw new TypeError("invalid user id"); return projectionStore.removeUser(userId); }
   return Object.freeze({ profile, ledger, status, history: () => structuredClone(history), analytics, replay,
-    rebuild: (userId) => { if (!validUserId(userId)) throw new TypeError("invalid user id"); return replay(`rebuild_user:${userId}`).projections[userId] || null; },
+    rebuild: (userId, replayOptions = {}) => { if (!validUserId(userId)) throw new TypeError("invalid user id"); return replay(`rebuild_user:${userId}`, replayOptions).projections[userId] || null; },
     deleteProjection, verify, simulate, currentPolicy: () => structuredClone(currentPolicies().at(-1) || null), events });
 }
 

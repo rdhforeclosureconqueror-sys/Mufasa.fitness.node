@@ -42,6 +42,14 @@ function createPolicyManager({ filePath, validate, clock = () => new Date(), aud
     if (target === "published") {
       if (policy.lifecycleState !== "validated") throw new Error("only validated policies may be published");
       if (state.policies.some((other) => other !== policy && other.lifecycleState === "published" && overlaps(policy, other))) throw new Error("overlapping published policy effective periods");
+      // An append-only ledger cannot safely reinterpret time already covered by
+      // another published policy: versioned effect keys would retain both
+      // answers. Historical replacement is intentionally rejected until a
+      // separately approved generation recalculation is supplied.
+      if (Date.parse(policy.effectiveFrom) < clock().getTime()
+        && state.policies.some((other) => other !== policy && ["published", "deprecated"].includes(other.lifecycleState) && overlaps(policy, other))) {
+        throw Object.assign(new Error("historical policy replacement requires an approved generation recalculation plan"), { code: "HISTORICAL_POLICY_REPLACEMENT" });
+      }
       policy.publishedAt = clock().toISOString();
     }
     if (target === "archived" && !["draft", "validated", "deprecated"].includes(policy.lifecycleState)) throw new Error("policy cannot be archived from its current state");
