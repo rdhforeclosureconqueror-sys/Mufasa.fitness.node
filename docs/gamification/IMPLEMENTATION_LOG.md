@@ -476,3 +476,24 @@ Begin a controlled read-model and observability sprint: reconciliation reports, 
 - [x] Existing achievements, revocations, event contracts, feature defaults, and workout failure isolation remain compatible.
 - [x] Invalid policies, events, ledger entries, conflicts, and reversal linkages are covered by validation and tests.
 - [x] No UI, notifications, snapshots, checkpoints, or replay shortcuts were added.
+
+---
+
+# Deployment Preparation — Staged Launch Readiness
+
+**Date:** `2026-07-30`
+**Status:** `Complete — human deployment/configuration tasks remain`
+
+The feature-complete gamification implementation received deployment-readiness documentation and non-production automation only. No event, XP, achievement, projection, replay, policy, persistence, migration, or public-surface behavior changed. All flags remain disabled by default.
+
+## Delivery
+
+- `docs/gamification/LAUNCH_RUNBOOK.md` inventories configuration and operational dependencies, defines approvals/ownership, copy-ready local/staging/production procedures, rollout gates, monitoring thresholds, rollback, and operator inputs.
+- `docs/gamification/PRODUCTION_SMOKE_TEST.md` defines a synthetic-account, approval-gated production smoke workflow and unrelated-domain regression checklist.
+- `scripts/verify-gamification-staging.js` runs the complete deterministic gamification suite plus isolated writable-storage, migration, backup, and rollback checks; it refuses known production environments and non-empty verification storage.
+- `scripts/rehearse-gamification-rollback.js` proves authoritative store hashes remain unchanged, preserves disposable projection evidence, reports the safe flag-disable order, and performs no production changes.
+- `package.json` exposes both workflows as `ops:` commands.
+
+## Safety and remaining inputs
+
+Notifications, leaderboards, and public presentation remain off. Automation never deletes immutable history, mutates approved policy definitions, or bypasses startup preflight. Hosting configuration, persistent-volume details, backup/restore tooling, monitoring platform, identities/permissions, URLs, release commit, cohorts, approvers, and production commands remain explicit human Operator Inputs Required.
