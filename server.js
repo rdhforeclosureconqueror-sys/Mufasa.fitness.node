@@ -26,6 +26,7 @@ const { createProjectionService } = require("./src/gamification/projectionServic
 const { createLevelService } = require("./src/gamification/levelService");
 const { validateAchievementDefinitions } = require("./src/gamification/policyService");
 const { createXpPolicyService, validateXpPolicy } = require("./src/gamification/xpPolicyService");
+const { createReadModelService, validUserId } = require("./src/gamification/readModelService");
 const { createUserDataService } = require("./src/services/userDataService");
 const { createJourneyIntakeService } = require("./src/services/journeyIntakeService");
 const { createGeneratedWorkoutService } = require("./src/services/generatedWorkoutService");
@@ -384,6 +385,7 @@ function createApp(options = {}) {
   const gamificationConfig = loadGamificationConfig(options.env || process.env);
   let gamificationEventService = null;
   let achievementService = null;
+  let gamificationReadService = null;
   if (gamificationConfig.eventCapture) {
     const gamificationEventStore = createGamificationEventStore({ filePath: options.gamificationEventPath || GAMIFICATION_EVENT_PATH });
     gamificationEventService = createEventService({ eventStore: gamificationEventStore });
@@ -392,15 +394,21 @@ function createApp(options = {}) {
       const levels = require(options.gamificationLevelPath || path.join(rootDir, "data", "gamification", "levels.json")).levels;
       const xpPolicies = validateXpPolicy(require(options.gamificationXpPolicyPath || path.join(rootDir, "data", "gamification", "xp-policy.json")));
       const projectionStore = createGamificationProjectionStore({ filePath: options.gamificationProjectionPath || path.join(DATA_DIR, "gamification", "projections.json") });
+      const awardStore = createGamificationAwardStore({ filePath: options.gamificationAwardPath || path.join(DATA_DIR, "gamification", "awards.json") });
+      const ledgerStore = createGamificationLedgerStore({ filePath: options.gamificationLedgerPath || path.join(DATA_DIR, "gamification", "xp-ledger.json") });
+      const levelService = createLevelService(levels);
+      const xpPolicyService = createXpPolicyService(xpPolicies);
       achievementService = createAchievementService({
         eventStore: gamificationEventStore,
         definitions,
-        awardStore: createGamificationAwardStore({ filePath: options.gamificationAwardPath || path.join(DATA_DIR, "gamification", "awards.json") }),
-        ledgerStore: createGamificationLedgerStore({ filePath: options.gamificationLedgerPath || path.join(DATA_DIR, "gamification", "xp-ledger.json") }),
-        projectionService: createProjectionService({ projectionStore, levelService: createLevelService(levels) }),
-        xpPolicyService: createXpPolicyService(xpPolicies)
+        awardStore,
+        ledgerStore,
+        projectionService: createProjectionService({ projectionStore, levelService }),
+        xpPolicyService
       });
-      try { achievementService.replay(); } catch (error) {
+      if (gamificationConfig.readApi) gamificationReadService = createReadModelService({ eventStore: gamificationEventStore,
+        projectionStore, ledgerStore, awardStore, achievementService, xpPolicies, xpPolicyService, definitions, levelService });
+      try { gamificationReadService ? gamificationReadService.replay("startup") : achievementService.replay(); } catch (error) {
         console.error("Gamification startup replay failed", { errorCode: "EVALUATION_FAILED" });
       }
     }
@@ -839,6 +847,33 @@ function createApp(options = {}) {
       time: new Date().toISOString()
     });
   });
+
+  if (gamificationReadService) {
+    const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+    const userId = (req) => {
+      if (!validUserId(req.params.id)) throw new ApiError("INVALID_USER_ID", "A valid user id is required", 422);
+      return req.params.id;
+    };
+    const found = (value) => { if (!value) throw new ApiError("PROJECTION_NOT_FOUND", "Gamification projection not found", 404); return value; };
+    app.get("/internal/gamification/profile/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.profile(userId(req)))));
+    app.get("/internal/gamification/xp/:id", internalGuard, (req, res) => { const p = found(gamificationReadService.profile(userId(req))); return ok(res, req.requestId, { currentXp: p.currentXp, lifetimeXp: p.lifetimeXp, currentLevel: p.currentLevel, highestLevel: p.highestLevel, ledgerSummary: p.xpLedgerSummary }); });
+    app.get("/internal/gamification/achievements/:id", internalGuard, (req, res) => { const p = found(gamificationReadService.profile(userId(req))); return ok(res, req.requestId, { achievements: p.achievements, earned: p.earnedAchievements, hidden: p.hiddenAchievements, revoked: p.revokedAchievements }); });
+    app.get("/internal/gamification/ledger/:id", internalGuard, (req, res) => ok(res, req.requestId, { entries: gamificationReadService.ledger(userId(req)) }));
+    app.get("/internal/gamification/replay/status", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.status()));
+    app.get("/internal/gamification/replay/history", internalGuard, (req, res) => ok(res, req.requestId, { history: gamificationReadService.history() }));
+    app.get("/internal/gamification/policy/current", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.currentPolicy()));
+    app.get("/internal/gamification/integrity", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.verify()));
+    app.get("/internal/gamification/metrics", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.analytics()));
+    app.post("/internal/gamification/simulate", internalGuard, (req, res) => {
+      try { return ok(res, req.requestId, gamificationReadService.simulate(req.body || {})); }
+      catch (error) { throw new ApiError("INVALID_SIMULATION", error.message, 422); }
+    });
+    app.post("/internal/gamification/replay/all", internalGuard, (req, res) => ok(res, req.requestId, gamificationReadService.replay().diagnostics));
+    app.post("/internal/gamification/replay/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.post("/internal/gamification/recalculate/xp/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.post("/internal/gamification/recalculate/achievements/:id", internalGuard, (req, res) => ok(res, req.requestId, found(gamificationReadService.rebuild(userId(req)))));
+    app.delete("/internal/gamification/projection/:id", internalGuard, (req, res) => ok(res, req.requestId, { deleted: gamificationReadService.deleteProjection(userId(req)) }));
+  }
 
   app.post(
     "/api/admin/diagnostics/report",

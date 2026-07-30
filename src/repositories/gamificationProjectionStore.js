@@ -16,8 +16,16 @@ function createGamificationProjectionStore({ filePath }) {
     if (value?.schemaVersion !== 1 || !value.projections || typeof value.projections !== "object") throw new Error("invalid gamification projection store");
     return structuredClone(value.projections);
   }
+  function read(userId) { return readAll()[userId] || null; }
+  function removeUser(userId) {
+    const projections = readAll();
+    const existed = Object.prototype.hasOwnProperty.call(projections, userId);
+    delete projections[userId];
+    replace(projections);
+    return existed;
+  }
   function remove() { if (fs.existsSync(filePath)) fs.rmSync(filePath); }
-  return Object.freeze({ replace, readAll, remove });
+  return Object.freeze({ replace, readAll, read, removeUser, remove });
 }
 
 module.exports = { createGamificationProjectionStore };
