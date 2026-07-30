@@ -517,3 +517,46 @@ Notifications, leaderboards, and public presentation remain off. Automation neve
 - Risk: the experience is available only while the production read-projection feature is enabled and projections are current. The existing operations readiness tooling remains the control for that dependency.
 - Deferred: push reward notifications from live completion events, richer badge artwork, achievement detail dialogs, and cross-device notification preferences. The included notification-ready reward contract avoids coupling those additions to operational APIs.
 - Rollback: remove the dashboard stylesheet/script/section and `/api/me/gamification` route/service; the underlying projection engine and existing dashboard remain unchanged.
+
+
+---
+
+# Progression and Celebration — Implementation Log
+
+## Launch implementation
+
+The member dashboard treats `GET /api/me/gamification` as its only progression authority. The browser compares successive, authenticated projections solely to choose presentation; it does not calculate XP awards, achievement eligibility, badge eligibility, or levels.
+
+### Animation and celebration architecture
+
+`MufasaProgression` provides a small shared motion token set, projection-difference mapper, and FIFO `CelebrationQueue`. XP, level, achievement, and badge presentations enter one non-modal queue and never overlap. A refresh is requested through `mufasa:gamification-refresh`, allowing workout completion to finish independently. The presenter boundary accepts future optional channels (including sound) without coupling them to the queue; Version 1 intentionally has no audio.
+
+The XP track begins at the previous authoritative projection and transitions to the latest value. Level changes follow XP in the queue, followed by achievements and badges. Presentations auto-dismiss, offer an explicit dismiss control, do not move focus, and never trap input.
+
+### Visual language
+
+Shared CSS tokens define accent colors, radius, shadow, duration, and easing. Progress, summary cards, collection cards, loading skeletons, focus rings, and celebrations use the same restrained glass-and-light treatment. Badge artwork has a deterministic initial-based placeholder until the API supports public artwork. Achievement metadata gracefully defaults to “Milestone” where category, rarity, descriptions, or earned timestamps are not present in the public contract.
+
+### Accessibility and responsive behavior
+
+The progress track retains native progressbar semantics and value text. Live status messages are concise; celebrations are non-modal status regions. Collection cards are keyboard focusable, controls have visible focus, and reduced-motion removes transitions and shimmer. At 600px the summary becomes a two-column layout, collectible cards become a touch-friendly horizontal snap rail, and the celebration remains inside the viewport.
+
+### Performance and security
+
+Motion primarily uses opacity and transform; only the bounded XP fill width animates. Rendering uses the existing projection request and triggers no auxiliary reward calls. User-provided strings are escaped, internal reward identifiers are never displayed, and access remains authenticated and self-scoped. Skeleton dimensions reserve layout space.
+
+## Risks
+
+- Projection refresh events must be emitted by future completion surfaces that want immediate in-session celebrations.
+- The current public contract does not expose achievement descriptions, categories, rarity, artwork, or earned timestamps, so the UI uses launch-safe fallbacks rather than inferring them.
+- Browser-only visual regression infrastructure is not currently configured; semantic and architecture regression coverage is provided with Node tests.
+
+## Deferred work
+
+- Optional sound presenter, disabled by default and subject to an explicit member preference.
+- Server-provided public artwork, rarity, category, description, and earned-at fields.
+- Screenshot baselines when a supported browser visual-test harness is introduced.
+
+## Rollback strategy
+
+Revert the progression sprint commit to restore the prior single-card renderer and stylesheet. No database, API, policy, projection, replay, or persistence rollback is necessary. If only celebrations require mitigation, remove the refresh-event listener and celebration layer while leaving the authoritative dashboard renderer active.
