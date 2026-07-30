@@ -43,6 +43,8 @@ const { createNutritionService, createProviderClient } = require("./src/services
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createCoachContextService } = require("./src/ai/coachContextService");
 const { createAiCoachService } = require("./src/services/aiCoachService");
+const { loadAiCoachConfig } = require("./src/config/aiCoach");
+const { createOpenAiCoachProvider } = require("./src/ai/openAiCoachProvider");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
 const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
@@ -461,7 +463,9 @@ function createApp(options = {}) {
   const personalizationService = createPersonalizationService({ journeyIntakeService });
   const nutritionService = createNutritionService({ userStore });
   const coachContextService = createCoachContextService({ userStore, memberGamificationService });
-  const aiCoachService = createAiCoachService({ userStore, contextService: coachContextService, responder: options.aiCoachResponder });
+  const aiCoachConfig = loadAiCoachConfig(options.env || process.env);
+  const aiCoachProvider = options.aiCoachProvider || (aiCoachConfig.enabled ? createOpenAiCoachProvider({ config: aiCoachConfig, fetchImpl: options.fetch || global.fetch }) : null);
+  const aiCoachService = createAiCoachService({ userStore, contextService: coachContextService, responder: options.aiCoachResponder, provider: aiCoachProvider, config: aiCoachConfig });
   const memberHomeService = createMemberHomeService({ journeyIntakeService, personalizationService, generatedWorkoutService, generatedWorkoutProgressionService, trainingAdaptationService, nutritionService, userDataService });
   const nutritionProviderClient = createProviderClient({
     fetchImpl: options.fetch || global.fetch,
@@ -2467,9 +2471,19 @@ function createApp(options = {}) {
   }));
 
   app.post("/api/me/ai-coach/messages", requireAuth, requireMembershipEntitlement,
-    createRateLimiter({ name: "ai-coach", max: 30, windowMs: 60_000 }), asyncHandler(async (req, res) => {
+    createRateLimiter({ name: "ai-coach", max: aiCoachConfig.requestsPerMinute, windowMs: 60_000 }), asyncHandler(async (req, res) => {
       return ok(res, req.requestId, await aiCoachService.ask(req.auth.userId, req.body?.message), 200);
     }));
+
+  app.post("/api/me/ai-coach/stream", requireAuth, requireMembershipEntitlement,
+    createRateLimiter({ name: "ai-coach-stream", max: aiCoachConfig.requestsPerMinute, windowMs: 60_000 }), asyncHandler(async (req, res) => {
+      const controller = new AbortController(); req.once("close", () => { if (!res.writableEnded) controller.abort(); });
+      res.status(200).set({ "content-type":"application/x-ndjson; charset=utf-8", "cache-control":"no-cache, no-store", "x-accel-buffering":"no" });
+      for await (const event of aiCoachService.generate(req.auth.userId, req.body?.message, { signal: controller.signal })) { if (res.destroyed) break; res.write(`${JSON.stringify(event)}\n`); }
+      if (!res.writableEnded) res.end();
+    }));
+
+  app.delete("/api/me/ai-coach/generation", requireAuth, requireMembershipEntitlement, (req, res) => ok(res, req.requestId, { cancelled: aiCoachService.cancel(req.auth.userId) }, 200));
 
   app.delete("/api/me/ai-coach/history", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     return ok(res, req.requestId, aiCoachService.clear(req.auth.userId), 200);

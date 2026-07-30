@@ -31,3 +31,11 @@ Version 1 ships a truthful provider-unavailable response when no response adapte
 ## Rollback strategy
 
 Remove the three `/api/me/ai-coach` routes and dashboard link to disable the experience. The context, prompt, and UI modules are isolated; workout, session, gamification, and replay systems require no rollback. Existing `aiCoachConversation` fields are additive and may safely remain or be removed by a later data migration.
+
+## Production response pipeline — 2026-07-30
+
+The V1 pipeline adds an environment-validated OpenAI Responses API adapter behind the injected provider boundary. Authenticated NDJSON streaming emits only `response.started`, `response.delta`, `response.replaced`, `response.completed`, `response.cancelled`, and sanitized `response.failed` events. Provider events and identifiers never cross the boundary.
+
+One generation per member is allowed. Cancellation aborts provider work; cancelled, failed, and partial messages are discarded. Only a safety-approved completed user/assistant pair is retained, capped by `AI_COACH_HISTORY_LIMIT`. Deterministic preflight rules handle emergencies, acute injury, self-harm, dangerous restriction, clinical/prohibited-substance advice, authority overrides, and prompt injection. Output is checked again before persistence.
+
+Operational counters contain counts, timing/token estimates, and circuit state—not prompts or messages. Repeated failures open a cooldown circuit without affecting any non-Coach route. The production adapter is off by default; the truthful local fallback remains available.
