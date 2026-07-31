@@ -26,6 +26,7 @@
     start() { if (this.timer) return; this.render(); this.timer = this.setTimer(() => { this.index = (this.index + 1) % this.steps.length; this.render(); }, this.intervalMs); }
     pause() { if (!this.timer) return; this.clearTimer(this.timer); this.timer = null; }
     toggle() { if (this.timer) this.pause(); else this.start(); return Boolean(this.timer); }
+    showPosition(position) { const index = position === 'bottom' ? 1 : position === 'top_complete' ? 2 : 0; this.index=index;this.render(); }
   }
 
   function mount(document) {
@@ -50,6 +51,17 @@
       toggle.setAttribute('aria-pressed', String(!running));
     });
     player.start();
+    player.setLiveTarget = (expected, trackingPaused = false) => {
+      player.pause();
+      const down = expected === 'LOWERING' || expected === 'BOTTOM';
+      player.showPosition(down ? 'bottom' : expected === 'TOP_COMPLETE' ? 'top_complete' : 'top');
+      title.textContent = trackingPaused ? 'Tracking unclear' : down ? 'Down position' : 'Up position';
+      const next = document.getElementById('guidedPreviewNext');
+      if (next) next.textContent = trackingPaused ? 'Sequence progress is paused.' : down ? 'Next: Push up' : 'Next: Lower down';
+      toggle.hidden = true;
+    };
+    player.resumePreview = () => { toggle.hidden=false;player.start(); };
+    if (globalScope) globalScope.__guidedSequencePlayer = player;
     return player;
   }
 
