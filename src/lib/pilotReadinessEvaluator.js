@@ -1,104 +1,43 @@
 "use strict";
 
 const PILOT_STATUS = Object.freeze({
-  READY: "READY",
-  READY_WITH_WARNINGS: "READY_WITH_WARNINGS",
-  NOT_READY: "NOT_READY"
+  READY: "READY", READY_WITH_LIMITATION: "READY_WITH_LIMITATION", DEGRADED: "DEGRADED", BLOCKED: "BLOCKED",
+  DISABLED_INTENTIONALLY: "DISABLED_INTENTIONALLY", EXCLUDED_FROM_V1: "EXCLUDED_FROM_V1", UNKNOWN: "UNKNOWN"
 });
 
 function evaluatePilotReadiness(report = {}) {
-  const blockers = [];
-  const warnings = [];
-  const evidence = [];
-  const missingEvidence = [];
-  const recommendedFixes = [];
-
-  const payload = report?.payload || {};
-  const retention = payload?.retention || {};
-  const runtime = payload?.runtime || {};
-
-  const checks = {
-    intakeComplete: retention.intakeComplete === true,
-    goalSet: retention.goalSet === true,
-    programAssigned: retention.programAssigned === true,
-    firstWorkoutCompleted: retention.firstWorkoutCompleted === true,
-    weeklyCheckInAvailable: retention.weeklyReviewReady === true,
-    progressDashboardActive: retention.progressNarrativeReady === true,
-    visualScanEnabled: retention.visualScanEnabled === true,
-    visualScanUsed: retention.visualScanUsed === true,
-    postWorkoutRewardScreenReady: retention.postWorkoutRewardScreenReady === true,
-    streakSystemReady: retention.streakSystemReady === true,
-    coachMessagingReady: retention.coachMessagingReady === true,
-    habitLoopReady: retention.habitLoopReady === true
-  };
-
-  const requiredChecks = [
-    ["intakeComplete", "Client intake is incomplete.", "Complete /api/client-intake during onboarding."],
-    ["goalSet", "Goal and baseline are not set.", "Create goals + baseline at /api/goals-baseline."],
-    ["programAssigned", "Program has not been assigned.", "Assign a program using /api/programs."],
-    ["firstWorkoutCompleted", "First workout has not been completed.", "Track first workout completion via /api/workouts/track."],
-    ["weeklyCheckInAvailable", "Weekly check-in flow is unavailable.", "Enable weekly review data with /api/check-ins and /api/progress/dashboard."],
-    ["progressDashboardActive", "Progress dashboard is not active.", "Enable /api/progress/dashboard for this user."],
-    ["postWorkoutRewardScreenReady", "Post-workout reward summary is unavailable.", "Save and display reward summary after /api/workouts/track."],
-    ["streakSystemReady", "Streak and consistency signals are not available.", "Expose streak metrics in /api/progress/dashboard."],
-    ["coachMessagingReady", "Deterministic coach messaging is unavailable.", "Enable coach messaging in progress dashboard payload."],
-    ["habitLoopReady", "Habit loop prompts are unavailable.", "Return habit loop prompts for before/during/after/weekly moments."]
+  const payload = report.payload || {};
+  const retention = payload.retention || {};
+  const runtime = payload.runtime || {};
+  const blockers = [], warnings = [], missingEvidence = [], evidence = [], recommendedFixes = [];
+  const journey = [
+    ["intakeComplete", retention.intakeComplete, "Complete onboarding intake."],
+    ["goalSet", retention.goalSet, "Record the member goal and constraints."],
+    ["programAssigned", retention.programAssigned, "Assign a program."],
+    ["activeWorkoutAvailable", retention.activeWorkoutAvailable ?? payload.memberEvidence?.activeWorkout, "Make today's workout available."],
+    ["firstWorkoutCompleted", retention.firstWorkoutCompleted ?? payload.memberEvidence?.firstWorkoutCompleted, "Complete the first workout to trigger history and rewards."],
+    ["workoutHistoryUpdated", retention.workoutHistoryUpdated, "Confirm workout history after completion."],
+    ["gamificationEventRecorded", retention.gamificationEventRecorded, "Confirm workout.completed capture."],
+    ["xpUpdated", retention.xpUpdated, "Confirm XP projection."],
+    ["firstAchievementEvaluated", retention.firstAchievementEvaluated, "Evaluate the first-workout achievement."],
+    ["firstBadgeEvaluated", retention.firstBadgeEvaluated, "Evaluate the first-workout badge."],
+    ["rewardVisible", retention.rewardVisible ?? retention.postWorkoutRewardScreenReady, "Display the reward in Progress & Rewards."],
+    ["progressRewardsUiUpdated", retention.progressRewardsUiUpdated ?? retention.progressNarrativeReady, "Refresh Progress & Rewards."],
+    ["exerciseHubReachable", retention.exerciseHubReachable, "Verify Exercise Hub navigation."],
+    ["yogaReachable", retention.yogaReachable, "Verify Yoga navigation."],
+    ["aiCoachAuthoritativeContext", retention.aiCoachAuthoritativeContext, "Verify authoritative program/member context in AI Coach."]
   ];
-
-  for (const [field, blockerMessage, fix] of requiredChecks) {
+  for (const [field, value, remediation] of journey) {
     evidence.push(`payload.retention.${field}`);
-    const hasEvidence = retention[field] != null
-      || (field === "weeklyCheckInAvailable" && retention.weeklyReviewReady != null)
-      || (field === "progressDashboardActive" && retention.progressNarrativeReady != null);
-    if (!hasEvidence) {
-      missingEvidence.push({ field: `payload.retention.${field}`, label: field });
-      warnings.push(`${field} evidence missing from diagnostic payload.`);
-      continue;
-    }
-    if (!checks[field]) {
-      blockers.push(blockerMessage);
-      recommendedFixes.push(fix);
-    }
+    if (value == null) missingEvidence.push({ field: `payload.retention.${field}`, label: field });
+    else if (value !== true) { warnings.push(`${field} is incomplete for this member.`); recommendedFixes.push(remediation); }
   }
-
-  evidence.push("payload.retention.visualScanEnabled");
-  if (retention.visualScanEnabled == null) {
-    missingEvidence.push({ field: "payload.retention.visualScanEnabled", label: "visualScanEnabled" });
-    warnings.push("Visual progress scan feature flag evidence missing.");
-  } else if (checks.visualScanEnabled && !checks.visualScanUsed) {
-    warnings.push("Visual progress scan is enabled but no scan has been captured yet.");
-    recommendedFixes.push("Capture front/side/back visual progress scan and compare over time.");
-  }
-
-  if (runtime.sessionSaveSuccess === false) {
-    blockers.push("Workout session persistence is failing.");
-    recommendedFixes.push("Fix session persistence before pilot retention rollout.");
-    evidence.push("payload.runtime.sessionSaveSuccess");
-  }
-
-  let pilotStatus = PILOT_STATUS.READY;
-  if (blockers.length > 0) {
-    pilotStatus = PILOT_STATUS.NOT_READY;
-  } else if (warnings.length > 0 || missingEvidence.length > 0) {
-    pilotStatus = PILOT_STATUS.READY_WITH_WARNINGS;
-  }
-
-  const confidence = blockers.length > 0 ? 0.9 : (warnings.length > 0 ? 0.75 : 0.85);
-
-  return {
-    pilotStatus,
-    blockers,
-    warnings,
-    missingEvidence,
-    evidence,
-    recommendedFixes,
-    codexFixMessage: blockers[0] || warnings[0] || "Retention checks look healthy.",
-    confidence,
-    lastCheckedAt: new Date().toISOString()
-  };
+  if (runtime.sessionSaveSuccess === false) { blockers.push("Workout session persistence is failing."); recommendedFixes.push("Restore session persistence."); }
+  const visualScanStatus = retention.visualScanEnabled === true ? PILOT_STATUS.READY_WITH_LIMITATION : PILOT_STATUS.EXCLUDED_FROM_V1;
+  const avatarStatus = payload.features?.avatarEnabled === true ? PILOT_STATUS.UNKNOWN : PILOT_STATUS.DISABLED_INTENTIONALLY;
+  // Member incompleteness is not a platform blocker; only deterministic runtime failures block launch.
+  const pilotStatus = blockers.length ? PILOT_STATUS.BLOCKED : warnings.length || missingEvidence.length ? PILOT_STATUS.READY_WITH_LIMITATION : PILOT_STATUS.READY;
+  return { pilotStatus, platformStatus: pilotStatus, memberStateStatus: warnings.length ? PILOT_STATUS.READY_WITH_LIMITATION : PILOT_STATUS.READY, blockers, warnings, missingEvidence, evidence, recommendedFixes, weeklyCheckInStatus: PILOT_STATUS.EXCLUDED_FROM_V1, visualScanStatus, avatarStatus, codexFixMessage: blockers[0] || warnings[0] || "Version 1 journey checks are healthy.", confidence: blockers.length ? 0.95 : missingEvidence.length ? 0.7 : 0.9, lastCheckedAt: new Date().toISOString() };
 }
 
-module.exports = {
-  PILOT_STATUS,
-  evaluatePilotReadiness
-};
+module.exports = { PILOT_STATUS, evaluatePilotReadiness };
