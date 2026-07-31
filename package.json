@@ -42,7 +42,8 @@
     "legacy:inventory": "node scripts/inventory-legacy-knowledge.js",
     "legacy:reconcile": "node scripts/reconcile-legacy-knowledge.js",
     "legacy:validate": "node scripts/validate-reconciliation-register.js",
-    "legacy:report": "node scripts/report-reconciliation-coverage.js"
+    "legacy:report": "node scripts/report-reconciliation-coverage.js",
+    "security:validate-routes": "node scripts/validate-route-authorization.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

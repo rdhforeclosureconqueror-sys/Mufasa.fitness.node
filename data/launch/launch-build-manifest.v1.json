@@ -1,0 +1,1908 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedFromCommit": "bb71587dad31b3f9d532c859e004f6d2dee5b62d",
+  "branch": "work",
+  "environment": "repository acceptance; not production deployment",
+  "secretValuesIncluded": false,
+  "featureFlags": [
+    {
+      "name": "GAMIFICATION_READ_API",
+      "enabled": false,
+      "source": "environment; defaults closed"
+    },
+    {
+      "name": "GAMIFICATION_EVENTS_ENABLED",
+      "enabled": false,
+      "source": "environment; defaults closed"
+    },
+    {
+      "name": "GAMIFICATION_XP_ENABLED",
+      "enabled": false,
+      "source": "environment; defaults closed"
+    },
+    {
+      "name": "GAMIFICATION_ACHIEVEMENTS_ENABLED",
+      "enabled": false,
+      "source": "environment; defaults closed"
+    }
+  ],
+  "registeredRoutes": [
+    {
+      "method": "GET",
+      "path": "/api/me/exercises",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/exercises/preferences",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/exercises/recent",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/exercises/:exerciseId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/exercises/:exerciseId/relationships",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/exercises/:exerciseId/program-context",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/me/exercises/:exerciseId/favorite",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/exercises/:exerciseId/favorite",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/internal/exercises",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.read"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/exercises/validation-report",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.read"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/exercises/content-quality",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.read"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/exercises/:exerciseId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.read"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/exercises/:exerciseId/drafts",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.manage"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/internal/exercises/:exerciseId/drafts/:draftId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/exercises/:exerciseId/drafts/:draftId/validate",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/exercises/:exerciseId/drafts/:draftId/review",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.review"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/exercises/:exerciseId/drafts/:draftId/publish",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.publish"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/exercises/releases/:releaseId/rollback",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "exercise.content.publish"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/ai-coach",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/ai-coach/messages",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/ai-coach/stream",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/ai-coach/generation",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/ai-coach/history",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/gamification",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/journey",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/activities",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/activities/start-with-route",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/challenges/:challengeId/route-suggestions",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/nearby-trails/search",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/nearby-trails/provider-health",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/operational-events",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/trails/:trailId/goal-routes/alternatives",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/greatness/activities/:activityId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/activities/:activityId/route",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/membership",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/greatness/membership",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/me/greatness/membership/settings",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/movement-feed",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/__diagnostic-smoke",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/__version",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/diagnostics/recent",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/diagnostics/report",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/bridge",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/avatar/upload",
+      "authentication": "required",
+      "featureFlag": "ENABLE_AVATAR_FEATURE",
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/checkout-session",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/create-checkout-session",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing/plan",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/portal-session",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/webhook",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/challenges/pushup/leaderboard",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/challenges/pushup/results",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/check-ins",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/check-ins",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/client-intake",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/client-intake",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/exercise-templates/:id/approve",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/exercise-templates/:id/demo-captures",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/exercise-templates/:id/test-runs",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/exercise-templates/:id",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exercise-templates/:id",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/exercise-templates/active/scoring",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/exercise-templates",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/exercise-templates",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/exercises/:slug",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/exercises/index",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/exercises/search",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/goals-baseline",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/goals-baseline",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/generated-workout-executions/:executionId/complete",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/me/generated-workout-executions/:executionId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/generated-workout-executions",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/generated-workout-plan",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/generated-workout-progression/accept",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/generated-workout-progression/evaluate",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/generated-workout-progression",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/history",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/journey-profile",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/member-home",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/membership",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/education",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/me/nutrition/entries/:entryId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/me/nutrition/entries/:entryId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/entries",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/entries",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/grocery-options",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/meals/:mealId/log",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/meals",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/meals",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/missions/:missionId/manual-progress",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/me/nutrition/missions/:missionId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/recent",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/summary",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/weekly-plan/current",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/weekly-plans/:planId/generate-missions",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/me/nutrition/weekly-plans/:planId/grocery-items/:itemId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/weekly-plans/:planId/grocery-items",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/weekly-plans/:planId/missions",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/nutrition/weekly-plans/:planId/review",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/me/nutrition/weekly-plans/:planId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/weekly-plans/ai-draft/validate",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/nutrition/weekly-plans",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/ohsa",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/onboarding-status",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/personalization",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/profile",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/me/profile",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/retention/intake/progress",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/retention/intake/submit",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/retention/intake",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/me/retention/intake",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/training-adaptation",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/nutrition/barcodes/:barcode",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/nutrition/drafts/natural-language",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/nutrition/foods/:fdcId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/nutrition/foods/search",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/ohsa",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ops/admin-audit/verify",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/ops/admin-audit",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/auth/token-revocations",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/ops/enforcement-config/break-glass",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/ops/enforcement-config",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/ops/enforcement-config",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/ops/write-observability",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/events",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/programs/current",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/programs/authoritative",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/programs/authoritative/sessions/:sessionId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/programs",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/progress/dashboard",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/:id/complete",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/:id/reps",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/speak",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/visual-progress-scans",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/visual-progress-scans",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/yoga/catalogue",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/yoga/history",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/yoga/sessions/complete",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/workouts/reward/latest",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/workouts/track",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/avatar-runtime.js",
+      "authentication": "required",
+      "featureFlag": "ENABLE_AVATAR_FEATURE",
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/command",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard.html",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/exercise-library.html",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": "not-applicable",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/nutrition.html",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/trainer/workspace",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-trainer",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trainer/clients",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-trainer",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trainer/clients/:clientUserId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "active-trainer-client-assignment",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trainer/clients/:clientUserId/program",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "active-trainer-client-assignment",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/trainer/clients/:clientUserId/program",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "active-trainer-client-assignment",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trainer/clients/:clientUserId/notes",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "active-trainer-client-assignment",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trainer/clients/:clientUserId/notes",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "active-trainer-client-assignment",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/trainer-assignments",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/trainer-assignments",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/trainer-assignments/:assignmentId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "privileged",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/trainer.html",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-trainer",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/admin-trainer-assignments.html",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-trainer",
+      "requiredPermissions": [
+        "declared-by-route-middleware"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/activities/:activityId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user-self",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/community-summary",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user-self",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/challenges",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user-self",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/challenges/:challengeId/enrollment",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user-self",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/browser-config",
+      "authentication": "public",
+      "featureFlag": null,
+      "ownership": null,
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/greatness/trails/:trailId",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/trails/text-search",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/greatness/trails/:trailId/goal-routes",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "authenticated-user",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/trail-routes",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "admin-role",
+      "requiredPermissions": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/trail-routes",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "admin-role",
+      "requiredPermissions": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/trail-routes/:trailId/disable",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "admin-role",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/admin-trail-routes.html",
+      "authentication": "required",
+      "featureFlag": null,
+      "ownership": "admin-role",
+      "requiredPermissions": []
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/profile/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/xp/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/achievements/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/ledger/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/replay/status",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/replay/history",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/policy/current",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/integrity",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/metrics",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/simulate",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/replay/all",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/replay/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/recalculate/xp/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/recalculate/achievements/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/internal/gamification/projection/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_READ_API",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/replay/queue",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/replay/history",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/replay/:jobId",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/replay/all",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/replay/user/:id",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/projection/rebuild",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/recalculate/xp",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/recalculate/achievements",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/replay/schedule",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/replay/:jobId/cancel",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/policies",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/policies/:version",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/policies",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/policies/:version/validate",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/policies/:version/publish",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/gamification/operations/policies/:version/archive",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "gamification.operations.manage"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/integrity",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/metrics",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/gamification/operations/readiness",
+      "authentication": "required",
+      "featureFlag": "GAMIFICATION_OPERATIONS",
+      "ownership": "internal-administrator",
+      "requiredPermissions": [
+        "ops.read_observability"
+      ]
+    }
+  ],
+  "memberNavigation": [
+    {
+      "feature": "home",
+      "route": "/dashboard.html"
+    },
+    {
+      "feature": "program",
+      "route": "/dashboard.html#memberHomeTitle"
+    },
+    {
+      "feature": "train",
+      "route": "/workout.html"
+    },
+    {
+      "feature": "exercises",
+      "route": "/exercise-library.html"
+    },
+    {
+      "feature": "yoga",
+      "route": "/yoga.html"
+    },
+    {
+      "feature": "progress-rewards",
+      "route": "/dashboard.html#gamificationExperience"
+    },
+    {
+      "feature": "coach",
+      "route": "/coach.html"
+    },
+    {
+      "feature": "profile-settings",
+      "route": "/"
+    }
+  ],
+  "versions": {
+    "xpPolicy": "1.0.0",
+    "achievementCatalog": "1",
+    "badgeCatalog": "achievement-catalog-1",
+    "exerciseCatalog": "canonical-873",
+    "yogaPoseCatalog": "1.0.0",
+    "yogaSessionCatalog": "1.0.0",
+    "programSchema": "runtime-current; no exported schema version found"
+  },
+  "aiProvider": {
+    "configured": false,
+    "provider": "OpenAI",
+    "liveSmokeRequired": false
+  },
+  "requiredEnvironment": [
+    {
+      "name": "AUTH_TOKEN_SECRET",
+      "configured": false
+    },
+    {
+      "name": "PILOT_LOGIN_PASSWORD",
+      "configured": false
+    },
+    {
+      "name": "OPENAI_API_KEY",
+      "configured": false
+    }
+  ],
+  "databaseAndMigrations": {
+    "status": "runtime repository/file stores; deployment migration verification required",
+    "migrationDirectory": "migrations/"
+  },
+  "capabilityManifestPresent": true
+}

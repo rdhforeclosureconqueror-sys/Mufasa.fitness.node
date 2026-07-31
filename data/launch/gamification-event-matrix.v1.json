@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyVersion": "1.0.0",
+  "events": [
+    {
+      "eventType": "workout.completed",
+      "contractRegistered": true,
+      "xpDecision": {
+        "rewarding": true,
+        "xp": 100
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Ready with Accepted Limitation"
+    },
+    {
+      "eventType": "yoga.session.completed",
+      "contractRegistered": true,
+      "xpDecision": {
+        "rewarding": true,
+        "xp": 75
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Ready with Accepted Limitation"
+    },
+    {
+      "eventType": "program.started",
+      "contractRegistered": false,
+      "xpDecision": {
+        "rewarding": false,
+        "reason": "No active XP policy action; program events are not registered launch reward contracts."
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Excluded from Version 1"
+    },
+    {
+      "eventType": "program.week.completed",
+      "contractRegistered": false,
+      "xpDecision": {
+        "rewarding": false,
+        "reason": "No active XP policy action; program events are not registered launch reward contracts."
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Excluded from Version 1"
+    },
+    {
+      "eventType": "program.mesocycle.completed",
+      "contractRegistered": false,
+      "xpDecision": {
+        "rewarding": false,
+        "reason": "No active XP policy action; program events are not registered launch reward contracts."
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Excluded from Version 1"
+    },
+    {
+      "eventType": "program.deload.completed",
+      "contractRegistered": false,
+      "xpDecision": {
+        "rewarding": false,
+        "reason": "No active XP policy action; program events are not registered launch reward contracts."
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Excluded from Version 1"
+    },
+    {
+      "eventType": "program.completed",
+      "contractRegistered": false,
+      "xpDecision": {
+        "rewarding": false,
+        "reason": "No active XP policy action; program events are not registered launch reward contracts."
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Excluded from Version 1"
+    },
+    {
+      "eventType": "program.milestone",
+      "contractRegistered": false,
+      "xpDecision": {
+        "rewarding": false,
+        "reason": "No active XP policy action; program events are not registered launch reward contracts."
+      },
+      "deduplication": "authoritative event/source identity",
+      "replay": "deterministic when registered",
+      "launchStatus": "Excluded from Version 1"
+    }
+  ]
+}

@@ -3,6 +3,36 @@
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
   ...[
+    ["GET", "/api/me/exercises"],
+    ["GET", "/api/me/exercises/preferences"],
+    ["DELETE", "/api/me/exercises/recent"],
+    ["GET", "/api/me/exercises/:exerciseId"],
+    ["GET", "/api/me/exercises/:exerciseId/relationships"],
+    ["GET", "/api/me/exercises/:exerciseId/program-context"],
+    ["PUT", "/api/me/exercises/:exerciseId/favorite"],
+    ["DELETE", "/api/me/exercises/:exerciseId/favorite"]
+  ].map(([method, routePath]) => Object.freeze({
+    method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
+    membership: "not-required", ownership: "authenticated-user", featureFlag: null,
+    publicOutput: "sensitive-private", rateLimit: null, compatibility: null, publicWrite: null
+  })),
+  ...[
+    ["GET", "/internal/exercises", "exercise.content.read"],
+    ["GET", "/internal/exercises/validation-report", "exercise.content.read"],
+    ["GET", "/internal/exercises/content-quality", "exercise.content.read"],
+    ["GET", "/internal/exercises/:exerciseId", "exercise.content.read"],
+    ["POST", "/internal/exercises/:exerciseId/drafts", "exercise.content.manage"],
+    ["PUT", "/internal/exercises/:exerciseId/drafts/:draftId", "exercise.content.manage"],
+    ["POST", "/internal/exercises/:exerciseId/drafts/:draftId/validate", "exercise.content.manage"],
+    ["POST", "/internal/exercises/:exerciseId/drafts/:draftId/review", "exercise.content.review"],
+    ["POST", "/internal/exercises/:exerciseId/drafts/:draftId/publish", "exercise.content.publish"],
+    ["POST", "/internal/exercises/releases/:releaseId/rollback", "exercise.content.publish"]
+  ].map(([method, routePath, requiredPermission]) => Object.freeze({
+    method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [requiredPermission],
+    membership: "not-required", ownership: "privileged", featureFlag: null,
+    publicOutput: "administrative-private", rateLimit: null, compatibility: null, publicWrite: null
+  })),
+  ...[
     ["GET", "/api/me/ai-coach", null],
     ["POST", "/api/me/ai-coach/messages", "30/minute/user"],
     ["POST", "/api/me/ai-coach/stream", "configured/minute/user"],
