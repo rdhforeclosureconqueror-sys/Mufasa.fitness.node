@@ -38,7 +38,11 @@
     "migrate:exercise-profiles:dry-run": "node scripts/migrate-exercise-profiles.js --dry-run",
     "audit:exercise-release": "node scripts/audit-exercise-release.js",
     "test:trails-live": "node scripts/trails-live-check.js",
-    "ai-coach:launch-verify": "node scripts/verify-ai-coach-launch.js"
+    "ai-coach:launch-verify": "node scripts/verify-ai-coach-launch.js",
+    "legacy:inventory": "node scripts/inventory-legacy-knowledge.js",
+    "legacy:reconcile": "node scripts/reconcile-legacy-knowledge.js",
+    "legacy:validate": "node scripts/validate-reconciliation-register.js",
+    "legacy:report": "node scripts/report-reconciliation-coverage.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

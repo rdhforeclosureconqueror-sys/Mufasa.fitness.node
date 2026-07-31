@@ -1,0 +1,2949 @@
+{
+  "schemaVersion": "1.0.0",
+  "registerVersion": "1",
+  "generatedBy": "scripts/reconcile-legacy-knowledge.js",
+  "legacyRoot": "public/new",
+  "records": [
+    {
+      "reconciliationId": "LKR-800E5C27F6DA",
+      "legacyAssetPath": "public/new/.gitattributes",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": ".gitattributes",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "unknown",
+      "contentFingerprint": "sha256:1a1dbe176bc233b499d35a57db7513f2941c99ab9759f177830c9149be99005b",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 66 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 1a1dbe176bc233b499d35a57db7513f2941c99ab9759f177830c9149be99005b",
+        "Inventory parse result: binary-or-opaque-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-95DA20BFA234",
+      "legacyAssetPath": "public/new/.gitignore",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": ".gitignore",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "unknown",
+      "contentFingerprint": "sha256:a81966701a149617837d1b66bc647a1098b34660671a6ac038638b26fa2e243f",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 2777 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint a81966701a149617837d1b66bc647a1098b34660671a6ac038638b26fa2e243f",
+        "Inventory parse result: binary-or-opaque-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-0FB86E17D335",
+      "legacyAssetPath": "public/new/01_lego_training_blocks.txt",
+      "legacyAssetType": "file",
+      "domain": "program-workout",
+      "title": "01_lego_training_blocks.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:96292be139bbc18fc462d34ba49585d17c84d7bfdb36ecf76f95381a763ce1b8",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Partially Integrated",
+      "currentDestination": "src/program-engine; src/services/generatedWorkoutService.js",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "src/program-engine",
+        "src/services/generatedWorkoutService.js"
+      ],
+      "transferredConcepts": [
+        "movement-pattern workout assembly",
+        "progression and recovery concepts"
+      ],
+      "omittedConcepts": [
+        "legacy block catalogue and named rep schemes"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "text-not-executed; 3091 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Certified trainer",
+      "validationEvidence": [
+        "Fingerprint 96292be139bbc18fc462d34ba49585d17c84d7bfdb36ecf76f95381a763ce1b8",
+        "Inventory parse result: text-not-executed",
+        "Current deterministic engines: src/program-engine/programGenerator.js, progressionEngine.js, periodizationEngine.js"
+      ],
+      "testsCoveringMigratedBehavior": [
+        "test/program-engine.test.js",
+        "test/program-generation.test.js"
+      ],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Create a bounded reviewed content migration package.",
+      "priority": "high value after launch",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "post-launch reconciliation package",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-122121C141F0",
+      "legacyAssetPath": "public/new/02_nasm_movement_basics.txt",
+      "legacyAssetType": "file",
+      "domain": "assessment-corrective",
+      "title": "02_nasm_movement_basics.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:05b169102e91bf7661c50195b498788e06c4491c7783bce6feb684e01f7c7364",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Expert Review",
+      "currentDestination": "Future corrective-movement taxonomy",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Future corrective-movement taxonomy"
+      ],
+      "transferredConcepts": [
+        "basic movement taxonomy"
+      ],
+      "omittedConcepts": [
+        "attribution, clinical-sounding contributor claims"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Not approved for member guidance; clinical, injury, youth, or high-skill implications require qualified review.",
+      "technicalQualityAssessment": "text-not-executed; 2226 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Qualified movement professional and legal/licensing",
+      "validationEvidence": [
+        "Fingerprint 05b169102e91bf7661c50195b498788e06c4491c7783bce6feb684e01f7c7364",
+        "Inventory parse result: text-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Could be mistaken for diagnosis or treatment."
+      ],
+      "recommendedAction": "Quarantine until named qualified reviewers approve or reject it.",
+      "priority": "future domain prerequisite",
+      "ownerRole": "Qualified movement professional",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-FB9BCEE52AE5",
+      "legacyAssetPath": "public/new/03_nasm_overhead_squat_assessment.txt",
+      "legacyAssetType": "file",
+      "domain": "assessment-corrective",
+      "title": "03_nasm_overhead_squat_assessment.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:eaf740e7981d2c8616de719e97ad3bf7b10d205e93bdf2451983665c0b7e54ca",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Expert Review",
+      "currentDestination": "Future corrective-movement rules",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Future corrective-movement rules"
+      ],
+      "transferredConcepts": [
+        "observation and camera-view concept"
+      ],
+      "omittedConcepts": [
+        "causal claims, corrective prescriptions, pain logic"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Not approved for member guidance; clinical, injury, youth, or high-skill implications require qualified review.",
+      "technicalQualityAssessment": "text-not-executed; 2245 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Qualified movement/medical professional",
+      "validationEvidence": [
+        "Fingerprint eaf740e7981d2c8616de719e97ad3bf7b10d205e93bdf2451983665c0b7e54ca",
+        "Inventory parse result: text-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Could be mistaken for diagnosis or treatment."
+      ],
+      "recommendedAction": "Quarantine until named qualified reviewers approve or reject it.",
+      "priority": "future domain prerequisite",
+      "ownerRole": "Qualified movement professional",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-DAA9FFA1CAAA",
+      "legacyAssetPath": "public/new/04_gymnastics_fundamentals_L3_L5.txt",
+      "legacyAssetType": "file",
+      "domain": "gymnastics",
+      "title": "04_gymnastics_fundamentals_L3_L5.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:524d9acba672276e60773009ae7f32704d589054255a193f62195c2569d3f656",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Expert Review",
+      "currentDestination": "Future gymnastics skill graph",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Future gymnastics skill graph"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "skills, prerequisites, spotting and progression rules"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Not approved for member guidance; clinical, injury, youth, or high-skill implications require qualified review.",
+      "technicalQualityAssessment": "text-not-executed; 2329 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Qualified gymnastics coach and safeguarding reviewer",
+      "validationEvidence": [
+        "Fingerprint 524d9acba672276e60773009ae7f32704d589054255a193f62195c2569d3f656",
+        "Inventory parse result: text-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "High-skill and youth safeguarding risk."
+      ],
+      "recommendedAction": "Quarantine until named qualified reviewers approve or reject it.",
+      "priority": "archive candidate",
+      "ownerRole": "Qualified gymnastics coach",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-F9FE1120B87A",
+      "legacyAssetPath": "public/new/05_gymnastics_progressions_L4_to_L8_elite.txt",
+      "legacyAssetType": "file",
+      "domain": "gymnastics",
+      "title": "05_gymnastics_progressions_L4_to_L8_elite.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:1e42f4b1a154a7e54f47592b3a0fc1f9e219b88452384085744b5b874e9ef81a",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Expert Review",
+      "currentDestination": "Future gymnastics skill graph",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Future gymnastics skill graph"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "skills, prerequisites, spotting and progression rules"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Not approved for member guidance; clinical, injury, youth, or high-skill implications require qualified review.",
+      "technicalQualityAssessment": "text-not-executed; 2376 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Qualified gymnastics coach and safeguarding reviewer",
+      "validationEvidence": [
+        "Fingerprint 1e42f4b1a154a7e54f47592b3a0fc1f9e219b88452384085744b5b874e9ef81a",
+        "Inventory parse result: text-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "High-skill and youth safeguarding risk."
+      ],
+      "recommendedAction": "Quarantine until named qualified reviewers approve or reject it.",
+      "priority": "archive candidate",
+      "ownerRole": "Qualified gymnastics coach",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-BDE825BAF3C0",
+      "legacyAssetPath": "public/new/06_coach_cues_and_checklists.txt",
+      "legacyAssetType": "file",
+      "domain": "coaching",
+      "title": "06_coach_cues_and_checklists.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:b15713fa66a41f5073f7576c406fdd69ffde83c14c39db621dcaa314a64eb348",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Partially Integrated",
+      "currentDestination": "Exercise Intelligence and AI Coach safety/context",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Exercise Intelligence and AI Coach safety/context"
+      ],
+      "transferredConcepts": [
+        "general stop-on-pain and quality cues"
+      ],
+      "omittedConcepts": [
+        "reviewed cue IDs and youth-specific checklist"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "text-not-executed; 1281 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Certified trainer/editor",
+      "validationEvidence": [
+        "Fingerprint b15713fa66a41f5073f7576c406fdd69ffde83c14c39db621dcaa314a64eb348",
+        "Inventory parse result: text-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Create a bounded reviewed content migration package.",
+      "priority": "high value after launch",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "post-launch reconciliation package",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-292B04217A80",
+      "legacyAssetPath": "public/new/ArdhaChandrasana_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "ArdhaChandrasana_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:6970ed5032e9ee117461c475d647d2b5815471ee99b58a1c5c86f0860373a439",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "half-moon"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 108144 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 6970ed5032e9ee117461c475d647d2b5815471ee99b58a1c5c86f0860373a439",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-E9D4DD964A8A",
+      "legacyAssetPath": "public/new/BaddhaKonasana_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "BaddhaKonasana_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:7c880c79ae2b18de3117362cccf9f5701fd0e14cc2e4fd41199b397d73d8c7bf",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 110358 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 7c880c79ae2b18de3117362cccf9f5701fd0e14cc2e4fd41199b397d73d8c7bf",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-D0E331B79C12",
+      "legacyAssetPath": "public/new/baseURL.json",
+      "legacyAssetType": "file",
+      "domain": "configuration-security",
+      "title": "baseURL.json",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "json",
+      "contentFingerprint": "sha256:f870ba11f5992852f17d3672f08fb6f4a50055af282cff52274e0b8cd1a4755a",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "configuration/client stub"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "parsed-json; 676 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Security owner",
+      "validationEvidence": [
+        "Fingerprint f870ba11f5992852f17d3672f08fb6f4a50055af282cff52274e0b8cd1a4755a",
+        "Inventory parse result: parsed-json",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-5C31EC04560A",
+      "legacyAssetPath": "public/new/baseurlRouter.js",
+      "legacyAssetType": "file",
+      "domain": "configuration-security",
+      "title": "baseurlRouter.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:4fd7b5f7c39127ec4fdee96162fb1b29ca1fedf87e5d89d2d5f985303219e850",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "configuration/client stub"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 394 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Security owner",
+      "validationEvidence": [
+        "Fingerprint 4fd7b5f7c39127ec4fdee96162fb1b29ca1fedf87e5d89d2d5f985303219e850",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-F304DCB843E6",
+      "legacyAssetPath": "public/new/categoriesRouter.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "categoriesRouter.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:11dc71aef3e2fa5e09da07f6514419a1a71a847d28599f38ef9e038f0522de4e",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 730 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 11dc71aef3e2fa5e09da07f6514419a1a71a847d28599f38ef9e038f0522de4e",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-74523A683F19",
+      "legacyAssetPath": "public/new/check_all.py",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "check_all.py",
+      "briefDescription": "Non-production research script",
+      "detectedFormat": "py",
+      "contentFingerprint": "sha256:d8240f73ba463f156b733e09d6aac5ea92d2fcef1963985b7b3fc80066ff9402",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Archive Only",
+      "currentDestination": "Archive; behavior may inform benchmark specifications",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Archive",
+        "behavior may inform benchmark specifications"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "executable implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "text-not-executed; 1565 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Technical validation only if benchmarked",
+      "validationEvidence": [
+        "Fingerprint d8240f73ba463f156b733e09d6aac5ea92d2fcef1963985b7b3fc80066ff9402",
+        "Inventory parse result: text-not-executed",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Retain solely for provenance/history; never load at runtime.",
+      "priority": "archive candidate",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-C4331E5847DC",
+      "legacyAssetPath": "public/new/compose.yml",
+      "legacyAssetType": "file",
+      "domain": "legacy-infrastructure",
+      "title": "compose.yml",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "yml",
+      "contentFingerprint": "sha256:d3553890313c45b34e0aa325053825a63b328ea4f158c23a5e62a21414440411",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 93 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint d3553890313c45b34e0aa325053825a63b328ea4f158c23a5e62a21414440411",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-BAB70BD2609B",
+      "legacyAssetPath": "public/new/Dataset_ArdhaChandrasana_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_ArdhaChandrasana_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:adf95c0c0b1785732b47d4dc27413798e4c8daeeb198eb0ae1018aa023c26ca0",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "half-moon"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 17913 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint adf95c0c0b1785732b47d4dc27413798e4c8daeeb198eb0ae1018aa023c26ca0",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-6BF18D2D162B",
+      "legacyAssetPath": "public/new/Dataset_ArdhaChandrasana.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_ArdhaChandrasana.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:77c0266eed7775939b86f20d4a3249f0697de3b20856da756c20ffdf1a2ebb82",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "half-moon"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 153259 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 77c0266eed7775939b86f20d4a3249f0697de3b20856da756c20ffdf1a2ebb82",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-2CE0F042D929",
+      "legacyAssetPath": "public/new/Dataset_BaddhaKonasana_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_BaddhaKonasana_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:138fc109a01c2b73c153eac849c352e20d0fd711a3e344a632e7a58e8b9f8d40",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 18119 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 138fc109a01c2b73c153eac849c352e20d0fd711a3e344a632e7a58e8b9f8d40",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-5360E5FCF475",
+      "legacyAssetPath": "public/new/Dataset_BaddhaKonasana.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_BaddhaKonasana.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:9a1de15bd0036f3736bd6d4149bd9b6417796e3a91a2a56738fe7d2734b85984",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 155351 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 9a1de15bd0036f3736bd6d4149bd9b6417796e3a91a2a56738fe7d2734b85984",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-796714B0789C",
+      "legacyAssetPath": "public/new/Dataset_Downward_Dog_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Downward_Dog_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:4a792c57c72d2882a6b537eb6809f966bc0511d62f1308a2a567db5a37ff4a1e",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "downward-dog"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 18532 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 4a792c57c72d2882a6b537eb6809f966bc0511d62f1308a2a567db5a37ff4a1e",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-69BBB6804EEF",
+      "legacyAssetPath": "public/new/Dataset_Downward_Dog.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Downward_Dog.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:8b96fe74a978b637e51b9386c09cbc052de0f73564e2cb9ffa54bd919ecf2b50",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "downward-dog"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 155801 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 8b96fe74a978b637e51b9386c09cbc052de0f73564e2cb9ffa54bd919ecf2b50",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-8CF50AEC2753",
+      "legacyAssetPath": "public/new/Dataset_Natarajasana_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Natarajasana_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:c7aedbf4eb3fbe47331fd6052c09125cd2a0588f76266b76e153285cbb0c140e",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "dancer"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 19366 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint c7aedbf4eb3fbe47331fd6052c09125cd2a0588f76266b76e153285cbb0c140e",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-27D9E484B67E",
+      "legacyAssetPath": "public/new/Dataset_Natarajasana.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Natarajasana.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:977f166662630926dbcbbd7167346e0fca29b532afb1fefbe9393450a60ce25a",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "dancer"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 155960 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 977f166662630926dbcbbd7167346e0fca29b532afb1fefbe9393450a60ce25a",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-68E50197F926",
+      "legacyAssetPath": "public/new/Dataset_Triangle_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Triangle_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:6e1baf4e4ac521ccd69d7fdec0eb5e2323020f68e243e95937ebb66fd0e978bf",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "triangle"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 18023 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 6e1baf4e4ac521ccd69d7fdec0eb5e2323020f68e243e95937ebb66fd0e978bf",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-90EE51D25442",
+      "legacyAssetPath": "public/new/Dataset_Triangle.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Triangle.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:772b2211e4430cf82e183ab512159337aaea740f80cb9905697337b8bb9d0bfe",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "triangle"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 155529 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 772b2211e4430cf82e183ab512159337aaea740f80cb9905697337b8bb9d0bfe",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-803C1811AB9F",
+      "legacyAssetPath": "public/new/Dataset_UtkataKonasana_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_UtkataKonasana_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:b64ea98a3dfe4f7ee505c78a1bcfbc33e1231e0571250448094f31c6a8605f9c",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 19858 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint b64ea98a3dfe4f7ee505c78a1bcfbc33e1231e0571250448094f31c6a8605f9c",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-9BB275AC05AE",
+      "legacyAssetPath": "public/new/Dataset_UtkataKonasana.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_UtkataKonasana.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:820532a70dc57d6e9be917f47f4725305bd1cbc2ca67c7cbd6ac5244d72954ee",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 171870 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 820532a70dc57d6e9be917f47f4725305bd1cbc2ca67c7cbd6ac5244d72954ee",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-088A807C9E6C",
+      "legacyAssetPath": "public/new/Dataset_Veerabhadrasana_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Veerabhadrasana_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:74addf2d5e691d0ae6cd0c1bae2485d75ca72e766563ca438aeea00e849466fa",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "warrior-variant-unresolved"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 18930 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 74addf2d5e691d0ae6cd0c1bae2485d75ca72e766563ca438aeea00e849466fa",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-10B91D648DA0",
+      "legacyAssetPath": "public/new/Dataset_Vrukshasana_Angles.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Vrukshasana_Angles.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:017af02bea68bbfc8f855c18ba89bc6c94b813ef641ca617d53b2d9cb806e3cb",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "tree"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 17833 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 017af02bea68bbfc8f855c18ba89bc6c94b813ef641ca617d53b2d9cb806e3cb",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-AB2838C4391B",
+      "legacyAssetPath": "public/new/Dataset_Vrukshasana.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Dataset_Vrukshasana.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:e116e26b048a9cd20fc52ae8a28535789d3df02009e4f65ac0fce4605491a6cb",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "tree"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 151068 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint e116e26b048a9cd20fc52ae8a28535789d3df02009e4f65ac0fce4605491a6cb",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-6558A9829DAB",
+      "legacyAssetPath": "public/new/Dockerfile",
+      "legacyAssetType": "file",
+      "domain": "legacy-infrastructure",
+      "title": "Dockerfile",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "unknown",
+      "contentFingerprint": "sha256:8af7f7eb2b1532d3e2a0924f53bf1d32014e72faeae98a84360a0a415e0e2910",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 194 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 8af7f7eb2b1532d3e2a0924f53bf1d32014e72faeae98a84360a0a415e0e2910",
+        "Inventory parse result: binary-or-opaque-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-A0E16996DD6F",
+      "legacyAssetPath": "public/new/DownwardDog_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "DownwardDog_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:81b1d1950c8aaed630e4a2fcd8e8223207eba549b812ea1ec7612323a26abd95",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "downward-dog"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 110219 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 81b1d1950c8aaed630e4a2fcd8e8223207eba549b812ea1ec7612323a26abd95",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-2D80698C3E6C",
+      "legacyAssetPath": "public/new/erm.json",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": "erm.json",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "json",
+      "contentFingerprint": "sha256:3e9cf936c54e46b4649b169b2ab938e28ccfc05715572666745652f95929b74b",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Superseded",
+      "currentDestination": "data/yoga/poses.v1.json and schemas",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "data/yoga/poses.v1.json and schemas"
+      ],
+      "transferredConcepts": [
+        "pose/category modelling concept"
+      ],
+      "omittedConcepts": [
+        "invalid pseudo-schema"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "malformed-json; 836 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 3e9cf936c54e46b4649b169b2ab938e28ccfc05715572666745652f95929b74b",
+        "Inventory parse result: malformed-json"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Archive the source and retain replacement decision.",
+      "priority": "archive candidate",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-C9B1BF2BD216",
+      "legacyAssetPath": "public/new/errorHandler.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "errorHandler.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:8a064a7b2b0055c0f4d8515ecbd038b0a69680caf6fc8cd18aca0af254d64811",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 251 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 8a064a7b2b0055c0f4d8515ecbd038b0a69680caf6fc8cd18aca0af254d64811",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-F25D0D6C836C",
+      "legacyAssetPath": "public/new/firebaseConfig.js",
+      "legacyAssetType": "file",
+      "domain": "configuration-security",
+      "title": "firebaseConfig.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:d12c71bf6365e8e1dd98c7b7c3d018355f4a3a9195e6a05c1de730d8cee07207",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "configuration/client stub"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 418 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Security owner",
+      "validationEvidence": [
+        "Fingerprint d12c71bf6365e8e1dd98c7b7c3d018355f4a3a9195e6a05c1de730d8cee07207",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-6BD0A034ABB7",
+      "legacyAssetPath": "public/new/FitnessMVP_Actions.csv",
+      "legacyAssetType": "file",
+      "domain": "gamification",
+      "title": "FitnessMVP_Actions.csv",
+      "briefDescription": "Legacy reward policy or catalogue seed",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:9c955ae434267cec17083f5c3631750b93c1249d50e049ecddd458029b78791b",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Integrated After Transformation",
+      "currentDestination": "src/gamification; data/gamification",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "src/gamification",
+        "data/gamification"
+      ],
+      "transferredConcepts": [
+        "event-sourced rewards",
+        "achievement definitions"
+      ],
+      "omittedConcepts": [
+        "legacy point values and client authority"
+      ],
+      "transformationSummary": "Legacy seeds were redesigned behind authenticated, event-sourced deterministic services; numeric equivalence is not asserted.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "header-inspected; 470 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Product/economy review",
+      "validationEvidence": [
+        "Fingerprint 9c955ae434267cec17083f5c3631750b93c1249d50e049ecddd458029b78791b",
+        "Inventory parse result: header-inspected",
+        "Current event contracts and policies: src/gamification/eventService.js, src/gamification/xpPolicyService.js, src/gamification/achievementEvaluator.js"
+      ],
+      "testsCoveringMigratedBehavior": [
+        "test/gamification-event-infrastructure.test.js",
+        "test/gamification-xp-policy.test.js",
+        "test/gamification-achievement-engine.test.js"
+      ],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Keep legacy read-only; maintain explicit replacement tests.",
+      "priority": "archive candidate",
+      "ownerRole": "Product economy owner",
+      "proposedTargetRelease": "post-launch reconciliation package",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-8F83C488B90A",
+      "legacyAssetPath": "public/new/FitnessMVP_Badges.csv",
+      "legacyAssetType": "file",
+      "domain": "gamification",
+      "title": "FitnessMVP_Badges.csv",
+      "briefDescription": "Legacy reward policy or catalogue seed",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:6422e70e286551a6983934f7fec162dc11ecaa4f8dae6f7e238ad935aa43bf03",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Integrated After Transformation",
+      "currentDestination": "src/gamification; data/gamification",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "src/gamification",
+        "data/gamification"
+      ],
+      "transferredConcepts": [
+        "event-sourced rewards",
+        "achievement definitions"
+      ],
+      "omittedConcepts": [
+        "legacy point values and client authority"
+      ],
+      "transformationSummary": "Legacy seeds were redesigned behind authenticated, event-sourced deterministic services; numeric equivalence is not asserted.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "header-inspected; 1765 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Product/economy review",
+      "validationEvidence": [
+        "Fingerprint 6422e70e286551a6983934f7fec162dc11ecaa4f8dae6f7e238ad935aa43bf03",
+        "Inventory parse result: header-inspected",
+        "Current event contracts and policies: src/gamification/eventService.js, src/gamification/xpPolicyService.js, src/gamification/achievementEvaluator.js"
+      ],
+      "testsCoveringMigratedBehavior": [
+        "test/gamification-event-infrastructure.test.js",
+        "test/gamification-xp-policy.test.js",
+        "test/gamification-achievement-engine.test.js"
+      ],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Keep legacy read-only; maintain explicit replacement tests.",
+      "priority": "archive candidate",
+      "ownerRole": "Product economy owner",
+      "proposedTargetRelease": "post-launch reconciliation package",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-68997132A28A",
+      "legacyAssetPath": "public/new/FitnessMVP_Criteria.csv",
+      "legacyAssetType": "file",
+      "domain": "gamification",
+      "title": "FitnessMVP_Criteria.csv",
+      "briefDescription": "Legacy reward policy or catalogue seed",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:71bd7550cd8d9dca386f8e2f03fed3a5b1327883c482601ba6a0f2ce608a3304",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Integrated After Transformation",
+      "currentDestination": "src/gamification; data/gamification",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "src/gamification",
+        "data/gamification"
+      ],
+      "transferredConcepts": [
+        "event-sourced rewards",
+        "achievement definitions"
+      ],
+      "omittedConcepts": [
+        "legacy point values and client authority"
+      ],
+      "transformationSummary": "Legacy seeds were redesigned behind authenticated, event-sourced deterministic services; numeric equivalence is not asserted.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "header-inspected; 790 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Product/economy review",
+      "validationEvidence": [
+        "Fingerprint 71bd7550cd8d9dca386f8e2f03fed3a5b1327883c482601ba6a0f2ce608a3304",
+        "Inventory parse result: header-inspected",
+        "Current event contracts and policies: src/gamification/eventService.js, src/gamification/xpPolicyService.js, src/gamification/achievementEvaluator.js"
+      ],
+      "testsCoveringMigratedBehavior": [
+        "test/gamification-event-infrastructure.test.js",
+        "test/gamification-xp-policy.test.js",
+        "test/gamification-achievement-engine.test.js"
+      ],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Keep legacy read-only; maintain explicit replacement tests.",
+      "priority": "archive candidate",
+      "ownerRole": "Product economy owner",
+      "proposedTargetRelease": "post-launch reconciliation package",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-43360B4B2ECD",
+      "legacyAssetPath": "public/new/FitnessMVP_Tiers.csv",
+      "legacyAssetType": "file",
+      "domain": "gamification",
+      "title": "FitnessMVP_Tiers.csv",
+      "briefDescription": "Legacy reward policy or catalogue seed",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:93aa114f270ccccd16ee0bffdba5d64e61d534982a1b08535715203f1d8065f8",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Integrated After Transformation",
+      "currentDestination": "src/gamification; data/gamification",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "src/gamification",
+        "data/gamification"
+      ],
+      "transferredConcepts": [
+        "event-sourced rewards",
+        "achievement definitions"
+      ],
+      "omittedConcepts": [
+        "legacy point values and client authority"
+      ],
+      "transformationSummary": "Legacy seeds were redesigned behind authenticated, event-sourced deterministic services; numeric equivalence is not asserted.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "header-inspected; 247 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Product/economy review",
+      "validationEvidence": [
+        "Fingerprint 93aa114f270ccccd16ee0bffdba5d64e61d534982a1b08535715203f1d8065f8",
+        "Inventory parse result: header-inspected",
+        "Current event contracts and policies: src/gamification/eventService.js, src/gamification/xpPolicyService.js, src/gamification/achievementEvaluator.js"
+      ],
+      "testsCoveringMigratedBehavior": [
+        "test/gamification-event-infrastructure.test.js",
+        "test/gamification-xp-policy.test.js",
+        "test/gamification-achievement-engine.test.js"
+      ],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Keep legacy read-only; maintain explicit replacement tests.",
+      "priority": "archive candidate",
+      "ownerRole": "Product economy owner",
+      "proposedTargetRelease": "post-launch reconciliation package",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-A923823DC7D0",
+      "legacyAssetPath": "public/new/https   drive.google.com file d 1mGE64f82r9iqiqQAzJnN6IQZD_hmLvOE view usp=sharing.csv",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": "https   drive.google.com file d 1mGE64f82r9iqiqQAzJnN6IQZD_hmLvOE view usp=sharing.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:5bef18f75ed21874cb3344d4b4c570c228110c4cc6646feaf2c18a99118feaed",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "warrior-variant-unresolved"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "header-inspected; 156642 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 5bef18f75ed21874cb3344d4b4c570c228110c4cc6646feaf2c18a99118feaed",
+        "Inventory parse result: header-inspected"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-95132DEDA9D1",
+      "legacyAssetPath": "public/new/index.html",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": "index.html",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "html",
+      "contentFingerprint": "sha256:181ef3348e5c326bf2bb5fefa2287bc89bb5ef833a862988f495bfae6b198594",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 266 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 181ef3348e5c326bf2bb5fefa2287bc89bb5ef833a862988f495bfae6b198594",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-E58814832A02",
+      "legacyAssetPath": "public/new/index.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "index.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:99ae20290294aadff300433382217a4819ad2ea6ef62cf4c1e2c849627f513fb",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 425 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 99ae20290294aadff300433382217a4819ad2ea6ef62cf4c1e2c849627f513fb",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-B609198B4B14",
+      "legacyAssetPath": "public/new/landmarks.py",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "landmarks.py",
+      "briefDescription": "Non-production research script",
+      "detectedFormat": "py",
+      "contentFingerprint": "sha256:e999474b7f716ad0558d774b61bdef7397c599c7dbb8dd1bb45b28e45fd4b3b7",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Archive Only",
+      "currentDestination": "Archive; behavior may inform benchmark specifications",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Archive",
+        "behavior may inform benchmark specifications"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "executable implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "text-not-executed; 1841 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Technical validation only if benchmarked",
+      "validationEvidence": [
+        "Fingerprint e999474b7f716ad0558d774b61bdef7397c599c7dbb8dd1bb45b28e45fd4b3b7",
+        "Inventory parse result: text-not-executed",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Retain solely for provenance/history; never load at runtime.",
+      "priority": "archive candidate",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-6F59D531240B",
+      "legacyAssetPath": "public/new/LICENSE",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": "LICENSE",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "unknown",
+      "contentFingerprint": "sha256:aac1d233793ec3a1a4ba1d1a9c07c299fb7f80739df3ba1aa8f3f6ccbd56f354",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Archive Only",
+      "currentDestination": "docs/reconciliation provenance evidence",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "docs/reconciliation provenance evidence"
+      ],
+      "transferredConcepts": [
+        "provenance leads"
+      ],
+      "omittedConcepts": [],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 1072 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Owner/legal",
+      "validationEvidence": [
+        "Fingerprint aac1d233793ec3a1a4ba1d1a9c07c299fb7f80739df3ba1aa8f3f6ccbd56f354",
+        "Inventory parse result: binary-or-opaque-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain solely for provenance/history; never load at runtime.",
+      "priority": "archive candidate",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-61276E82105C",
+      "legacyAssetPath": "public/new/maatApi.js",
+      "legacyAssetType": "file",
+      "domain": "configuration-security",
+      "title": "maatApi.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:dbdf5ebf19099ec286dc757ffeece1a05b8c3bf8bf4eb01d05ab9d59e1e165dd",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "configuration/client stub"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 1218 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Security owner",
+      "validationEvidence": [
+        "Fingerprint dbdf5ebf19099ec286dc757ffeece1a05b8c3bf8bf4eb01d05ab9d59e1e165dd",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-B3E4443C294F",
+      "legacyAssetPath": "public/new/main.py",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "main.py",
+      "briefDescription": "Non-production research script",
+      "detectedFormat": "py",
+      "contentFingerprint": "sha256:8a79a127c0afb3373942396d7ddc4bbc5a3d8e73b0a3b651bc36c5e48d0fc924",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Archive Only",
+      "currentDestination": "Archive; behavior may inform benchmark specifications",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Archive",
+        "behavior may inform benchmark specifications"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "executable implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "text-not-executed; 11028 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Technical validation only if benchmarked",
+      "validationEvidence": [
+        "Fingerprint 8a79a127c0afb3373942396d7ddc4bbc5a3d8e73b0a3b651bc36c5e48d0fc924",
+        "Inventory parse result: text-not-executed",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Retain solely for provenance/history; never load at runtime.",
+      "priority": "archive candidate",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-4E9FBF77759D",
+      "legacyAssetPath": "public/new/Natarajasana_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Natarajasana_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:74e3284121515075d4bf6f0561d8c955c11f26f506c0923a7abbbf6ca4b2d149",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "dancer"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 111203 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 74e3284121515075d4bf6f0561d8c955c11f26f506c0923a7abbbf6ca4b2d149",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-BFADC6FF1AA1",
+      "legacyAssetPath": "public/new/package.json",
+      "legacyAssetType": "file",
+      "domain": "legacy-infrastructure",
+      "title": "package.json",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "json",
+      "contentFingerprint": "sha256:f7d6a9c98f200d62394595b1184fcaf45f90012a2f3d8169a934a4c678de70cf",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "parsed-json; 647 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint f7d6a9c98f200d62394595b1184fcaf45f90012a2f3d8169a934a4c678de70cf",
+        "Inventory parse result: parsed-json",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-4163A9265EDA",
+      "legacyAssetPath": "public/new/posesRouter.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "posesRouter.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:cff22727da98cb08409d339439224ee1b339d95bd88f8b658c9d425a6e8ee39b",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 615 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint cff22727da98cb08409d339439224ee1b339d95bd88f8b658c9d425a6e8ee39b",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-DC58F6499933",
+      "legacyAssetPath": "public/new/README.md",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": "README.md",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "md",
+      "contentFingerprint": "sha256:ad99fb1255cf739a0ad4384268ef0fec841971dad82031558ecd921b275ae3ac",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Archive Only",
+      "currentDestination": "docs/reconciliation provenance evidence",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "docs/reconciliation provenance evidence"
+      ],
+      "transferredConcepts": [
+        "provenance leads"
+      ],
+      "omittedConcepts": [],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "text-not-executed; 5178 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Owner/legal",
+      "validationEvidence": [
+        "Fingerprint ad99fb1255cf739a0ad4384268ef0fec841971dad82031558ecd921b275ae3ac",
+        "Inventory parse result: text-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain solely for provenance/history; never load at runtime.",
+      "priority": "archive candidate",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-708C6D32DF7E",
+      "legacyAssetPath": "public/new/requirements.txt",
+      "legacyAssetType": "file",
+      "domain": "legacy-infrastructure",
+      "title": "requirements.txt",
+      "briefDescription": "Legacy domain knowledge document",
+      "detectedFormat": "txt",
+      "contentFingerprint": "sha256:c762fbf921ce8fcf486e34af0f1f077395c137de31190fe4f69f12ab9548cdfa",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 16464 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint c762fbf921ce8fcf486e34af0f1f077395c137de31190fe4f69f12ab9548cdfa",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-361F18035381",
+      "legacyAssetPath": "public/new/schemas.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "schemas.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:37fa015804a7b073619c5c685b923cbba37b30916b09b2b896eb52d37c22568f",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 444 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 37fa015804a7b073619c5c685b923cbba37b30916b09b2b896eb52d37c22568f",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-8E9DFC7247E0",
+      "legacyAssetPath": "public/new/server.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "server.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:c44ced1d6380b709fd977b77ff7b95b095a3aa83e43d17161fc06b4874487e93",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 574 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint c44ced1d6380b709fd977b77ff7b95b095a3aa83e43d17161fc06b4874487e93",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-E302D825A5FD",
+      "legacyAssetPath": "public/new/services.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "services.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:18fb02882cbc5b2c101a49c393a60d5be47e5b005edfb9b995081076f39dc745",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 4230 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 18fb02882cbc5b2c101a49c393a60d5be47e5b005edfb9b995081076f39dc745",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-C25407C31503",
+      "legacyAssetPath": "public/new/stepintograteness1.jpg",
+      "legacyAssetType": "file",
+      "domain": "media",
+      "title": "stepintograteness1.jpg",
+      "briefDescription": "Legacy brand image with unknown production rights",
+      "detectedFormat": "jpg",
+      "contentFingerprint": "sha256:83ba8184ec5397b1c0189fb0c185cb855d23fd2cc35534951e2cbc702530f2a3",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Potential media archive/content curation",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Potential media archive/content curation"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "member-facing media"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 245650 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Rights, accessibility, and image-quality review",
+      "validationEvidence": [
+        "Fingerprint 83ba8184ec5397b1c0189fb0c185cb855d23fd2cc35534951e2cbc702530f2a3",
+        "Inventory parse result: binary-or-opaque-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-20AF9CD03C17",
+      "legacyAssetPath": "public/new/stepintograteness2.jpg",
+      "legacyAssetType": "file",
+      "domain": "media",
+      "title": "stepintograteness2.jpg",
+      "briefDescription": "Legacy brand image with unknown production rights",
+      "detectedFormat": "jpg",
+      "contentFingerprint": "sha256:d15e7b0cbc12f56f123b41894a713a3467435c3d391616bdfa8506864cb49f0b",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Potential media archive/content curation",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Potential media archive/content curation"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "member-facing media"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 256489 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Rights, accessibility, and image-quality review",
+      "validationEvidence": [
+        "Fingerprint d15e7b0cbc12f56f123b41894a713a3467435c3d391616bdfa8506864cb49f0b",
+        "Inventory parse result: binary-or-opaque-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-7A0661166A83",
+      "legacyAssetPath": "public/new/stepintograteness3.jpg",
+      "legacyAssetType": "file",
+      "domain": "media",
+      "title": "stepintograteness3.jpg",
+      "briefDescription": "Legacy brand image with unknown production rights",
+      "detectedFormat": "jpg",
+      "contentFingerprint": "sha256:0d4a1897b791d1ec5e620f9bb1a4507762d7779982278f7f3209bf31d6ba22e1",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Potential media archive/content curation",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Potential media archive/content curation"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "member-facing media"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "No new runtime activation authorized by this audit.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 182199 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Rights, accessibility, and image-quality review",
+      "validationEvidence": [
+        "Fingerprint 0d4a1897b791d1ec5e620f9bb1a4507762d7779982278f7f3209bf31d6ba22e1",
+        "Inventory parse result: binary-or-opaque-not-executed"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Repository/content owner",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-76FD6B44E89B",
+      "legacyAssetPath": "public/new/Triangle_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Triangle_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:9bf7a56f5e13e33384e824bc915ed89c2b909e90ccf5dee11e29aed68e40584c",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "triangle"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 109833 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 9bf7a56f5e13e33384e824bc915ed89c2b909e90ccf5dee11e29aed68e40584c",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-74E99F65B542",
+      "legacyAssetPath": "public/new/UtkataKonasana_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "UtkataKonasana_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:2020ac76c031897ed11df8d761771b5726bf6b6e8163f3ce7fb614fb9ca4e2a0",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 120955 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 2020ac76c031897ed11df8d761771b5726bf6b6e8163f3ce7fb614fb9ca4e2a0",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-D8894DD63AE6",
+      "legacyAssetPath": "public/new/validatorHandler.js",
+      "legacyAssetType": "file",
+      "domain": "legacy-runtime",
+      "title": "validatorHandler.js",
+      "briefDescription": "Legacy prototype JavaScript; inventory never evaluates it",
+      "detectedFormat": "js",
+      "contentFingerprint": "sha256:6b9795f3ea154cec95782c85afdcedf1bf2050633405d4188ea50934d2e7538d",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "text-not-executed; 274 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 6b9795f3ea154cec95782c85afdcedf1bf2050633405d4188ea50934d2e7538d",
+        "Inventory parse result: text-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-0380468E3E68",
+      "legacyAssetPath": "public/new/Veerabhadrasana_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Veerabhadrasana_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:e4c39a0fe7763ac2a2de6b0cfe9f1ea2f86a1db2d21f483cda88462355ce6dc4",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "warrior-variant-unresolved"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 111253 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint e4c39a0fe7763ac2a2de6b0cfe9f1ea2f86a1db2d21f483cda88462355ce6dc4",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-84E47FEF5587",
+      "legacyAssetPath": "public/new/Vrukshana_Combined.csv",
+      "legacyAssetType": "file",
+      "domain": "yoga-movement",
+      "title": "Vrukshana_Combined.csv",
+      "briefDescription": "MediaPipe landmark/angle research dataset",
+      "detectedFormat": "csv",
+      "contentFingerprint": "sha256:445d38932996c011c0b5744432d12de8d461e170ed374e868d75ac77f11980d9",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Requires Technical Validation",
+      "currentDestination": "Research quarantine; future movement-engine benchmark",
+      "canonicalIdsAffected": [
+        "tree"
+      ],
+      "currentModulesAffected": [
+        "Research quarantine",
+        "future movement-engine benchmark"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "row-level landmarks/angles and classifier use"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Research measurements are not safety or diagnosis evidence.",
+      "technicalQualityAssessment": "header-inspected; 106838 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "Data provenance/privacy, movement expert, and ML validation",
+      "validationEvidence": [
+        "Fingerprint 445d38932996c011c0b5744432d12de8d461e170ed374e868d75ac77f11980d9",
+        "Inventory parse result: header-inspected",
+        "Current launch catalog: data/yoga/poses.v1.json; runtime schema: src/movement-engine/index.js"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Unknown dataset provenance/consent/licensing and unvalidated MediaPipe-to-MoveNet compatibility."
+      ],
+      "recommendedAction": "Quarantine and validate provenance, compatibility, and quality before content review.",
+      "priority": "optional enhancement",
+      "ownerRole": "Movement ML/data steward",
+      "proposedTargetRelease": "not scheduled—gated review",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    },
+    {
+      "reconciliationId": "LKR-E548D3453AB9",
+      "legacyAssetPath": "public/new/yoga",
+      "legacyAssetType": "file",
+      "domain": "governance-archive",
+      "title": "yoga",
+      "briefDescription": "Legacy project support or provenance asset",
+      "detectedFormat": "empty-file",
+      "contentFingerprint": "sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "lastKnownSourceContext": "Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+      "primaryReconciliationStatus": "Reject",
+      "currentDestination": "None; current root runtime is authoritative",
+      "canonicalIdsAffected": [],
+      "currentModulesAffected": [
+        "None",
+        "current root runtime is authoritative"
+      ],
+      "transferredConcepts": [],
+      "omittedConcepts": [
+        "alternate runtime/deployment implementation"
+      ],
+      "transformationSummary": "No content-level transformation asserted beyond the evidence listed.",
+      "duplicationAssessment": "No byte-identical legacy duplicate detected.",
+      "safetyAssessment": "Must not regain runtime authority.",
+      "technicalQualityAssessment": "binary-or-opaque-not-executed; 1 bytes; executable source was read only as bytes and never loaded.",
+      "expertReviewRequirement": "None",
+      "validationEvidence": [
+        "Fingerprint 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "Inventory parse result: binary-or-opaque-not-executed",
+        "Explicit replacement decision: docs/legacy-integration/00_MASTER_INDEX.md"
+      ],
+      "testsCoveringMigratedBehavior": [],
+      "documentationReferences": [
+        "docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md",
+        "docs/reconciliation/METHODOLOGY.md"
+      ],
+      "risks": [
+        "Architecture drift if legacy source is used directly."
+      ],
+      "recommendedAction": "Retain only until approved archival disposition; never import or execute.",
+      "priority": "launch critical",
+      "ownerRole": "Architecture/security owner",
+      "proposedTargetRelease": "archive-governance",
+      "notes": "Status applies to this file as a unit; it does not imply row-level approval.",
+      "reconciliationSchemaVersion": "1.0.0"
+    }
+  ]
+}
