@@ -1,0 +1,92 @@
+{
+  "totalAssets": 63,
+  "byStatus": {
+    "Reject": 20,
+    "Partially Integrated": 2,
+    "Requires Expert Review": 4,
+    "Requires Technical Validation": 27,
+    "Archive Only": 5,
+    "Superseded": 1,
+    "Integrated After Transformation": 4
+  },
+  "byDomain": {
+    "governance-archive": 8,
+    "program-workout": 1,
+    "assessment-corrective": 2,
+    "gymnastics": 2,
+    "coaching": 1,
+    "yoga-movement": 26,
+    "configuration-security": 4,
+    "legacy-runtime": 8,
+    "legacy-infrastructure": 4,
+    "gamification": 4,
+    "media": 3
+  },
+  "statusPercentages": {
+    "Fully Integrated": 0,
+    "Integrated After Transformation": 6.3,
+    "Partially Integrated": 3.2,
+    "Superseded": 1.6,
+    "Deferred": 0,
+    "Requires Expert Review": 6.3,
+    "Requires Technical Validation": 42.9,
+    "Archive Only": 7.9,
+    "Reject": 31.7,
+    "Unknown": 0
+  },
+  "transferDimensions": {
+    "architecture": {
+      "transferred": 20,
+      "total": 21,
+      "percentage": 95.2,
+      "definition": "Current authoritative architecture exists or explicit rejection/supersession prevents legacy authority."
+    },
+    "deterministicBehavior": {
+      "transferred": 4,
+      "total": 13,
+      "percentage": 30.8,
+      "definition": "File-level behavior equivalence supported by explicit current implementation evidence."
+    },
+    "structuredContent": {
+      "transferred": 4,
+      "total": 38,
+      "percentage": 10.5,
+      "definition": "Structured/text assets with content or data transfer evidence; transformed architecture alone does not count."
+    },
+    "media": {
+      "transferred": 0,
+      "total": 3,
+      "percentage": 0,
+      "definition": "Legacy image assets approved and mapped for production."
+    },
+    "professionalReview": {
+      "completed": 0,
+      "required": 43,
+      "percentage": 0
+    },
+    "productionActivation": {
+      "ready": 30,
+      "total": 63,
+      "percentage": 47.6
+    }
+  },
+  "currentSystemCoverage": {
+    "canonicalExercises": 873,
+    "richCanonicalExercises": 774,
+    "richCanonicalExercisePercentage": 88.7,
+    "exercisesWithValidatedLegacyMovementMetadata": 0,
+    "yogaLaunchPoses": 10,
+    "yogaLegacyPoseIdentityMatches": 3,
+    "yogaLegacyRuleSetsValidated": 0,
+    "yogaRuleCoveragePercentage": 0,
+    "legacyMediaAssets": 3,
+    "legacyMediaMappedAndApproved": 0,
+    "mediaMappingCoveragePercentage": 0,
+    "legacyProgramKnowledgeAssets": 1,
+    "programTemplatesContentMigrated": 0,
+    "programTemplateCoveragePercentage": 0,
+    "legacyAssessmentRuleAssets": 2,
+    "assessmentRulesProfessionallyApproved": 0,
+    "assessmentRuleCoveragePercentage": 0
+  }
+}

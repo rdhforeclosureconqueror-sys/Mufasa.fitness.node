@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyVersion": "1.0.0",
+  "catalogVersion": 1,
+  "firstXpProducingAction": "workout.completed",
+  "firstAchievement": "achievement.workout.1_completed",
+  "firstBadge": "badge.workout.1_completed",
+  "firstVisibleReward": "100 XP workout-completion award",
+  "firstStreakUpdate": "first verified workout completion day",
+  "firstLevelUp": "first workout: 100 base XP reaches level 2; achievement reward is an additional 50 lifetime XP",
+  "rewards": [
+    {
+      "canonicalRewardId": "xp.workout.completed.v1",
+      "displayName": "Workout completion XP",
+      "rewardType": "xp",
+      "triggeringEvent": "workout.completed",
+      "threshold": 1,
+      "dependencies": [
+        "authoritative persisted workout completion",
+        "gamification feature flags"
+      ],
+      "featureFlag": "GAMIFICATION_XP_ENABLED",
+      "expectedXpEffect": 100,
+      "expectedAchievementEffect": "achievement.workout.1_completed",
+      "expectedBadgeEffect": "badge.workout.1_completed",
+      "expectedCelebration": [
+        "xp",
+        "level",
+        "achievement",
+        "badge"
+      ],
+      "replayBehavior": "deterministic from immutable event; no duplicate ledger effect",
+      "deduplicationBehavior": "source entity/event idempotency",
+      "launchTestInstructions": "Clean member completes one persisted qualifying workout once."
+    },
+    {
+      "canonicalRewardId": "achievement.workout.1_completed",
+      "displayName": "1 Workout",
+      "rewardType": "achievement-and-badge",
+      "triggeringEvent": "workout.completed",
+      "threshold": 1,
+      "dependencies": [
+        "verified authoritative-write event"
+      ],
+      "featureFlag": "GAMIFICATION_ACHIEVEMENTS_ENABLED",
+      "expectedXpEffect": 50,
+      "expectedAchievementEffect": "achievement.workout.1_completed",
+      "expectedBadgeEffect": "badge.workout.1_completed",
+      "expectedCelebration": [
+        "achievement",
+        "badge"
+      ],
+      "replayBehavior": "one-time award reconstructed identically",
+      "deduplicationBehavior": "one-time definition and evidence identity",
+      "launchTestInstructions": "Same first-workout journey."
+    }
+  ]
+}

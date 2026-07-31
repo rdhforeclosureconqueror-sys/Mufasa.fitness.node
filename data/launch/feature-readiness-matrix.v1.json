@@ -1,0 +1,477 @@
+{
+  "schemaVersion": "1.0.0",
+  "allowedStatuses": [
+    "Ready",
+    "Ready with Accepted Limitation",
+    "Hold",
+    "Excluded from Version 1"
+  ],
+  "features": [
+    {
+      "featureId": "onboarding",
+      "name": "Onboarding",
+      "domain": "onboarding",
+      "memberRoute": "/",
+      "apis": [
+        "GET /api/me/onboarding-status"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Browser acceptance and production configuration not signed off"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "program",
+      "name": "My Program",
+      "domain": "program",
+      "memberRoute": "/dashboard.html#memberHomeTitle",
+      "apis": [
+        "GET /api/me/exercises/:exerciseId/program-context",
+        "GET /api/programs/current",
+        "POST /api/programs/authoritative",
+        "PATCH /api/programs/authoritative/sessions/:sessionId",
+        "POST /api/programs",
+        "GET /api/trainer/clients/:clientUserId/program",
+        "PUT /api/trainer/clients/:clientUserId/program"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Full browser lifecycle not signed off"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "dashboard",
+      "name": "Dashboard",
+      "domain": "dashboard",
+      "memberRoute": "/dashboard.html",
+      "apis": [
+        "GET /api/progress/dashboard",
+        "GET /dashboard.html"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Browser acceptance unavailable"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "workout",
+      "name": "Workout",
+      "domain": "workout",
+      "memberRoute": "/workout.html",
+      "apis": [
+        "POST /api/me/generated-workout-executions/:executionId/complete",
+        "PATCH /api/me/generated-workout-executions/:executionId",
+        "POST /api/me/generated-workout-executions",
+        "GET /api/me/generated-workout-plan",
+        "POST /api/me/generated-workout-progression/accept",
+        "POST /api/me/generated-workout-progression/evaluate",
+        "GET /api/me/generated-workout-progression",
+        "GET /api/workouts/reward/latest",
+        "POST /api/workouts/track"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Full clean-account browser journey not executed"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "exercise-hub",
+      "name": "Exercise Hub",
+      "domain": "exercise-hub",
+      "memberRoute": "/exercise-library.html",
+      "apis": [
+        "GET /api/me/exercises",
+        "GET /api/me/exercises/preferences",
+        "DELETE /api/me/exercises/recent",
+        "GET /api/me/exercises/:exerciseId",
+        "GET /api/me/exercises/:exerciseId/relationships",
+        "GET /api/me/exercises/:exerciseId/program-context",
+        "PUT /api/me/exercises/:exerciseId/favorite",
+        "DELETE /api/me/exercises/:exerciseId/favorite",
+        "GET /internal/exercises",
+        "GET /internal/exercises/validation-report",
+        "GET /internal/exercises/content-quality",
+        "GET /internal/exercises/:exerciseId",
+        "POST /internal/exercises/:exerciseId/drafts",
+        "PUT /internal/exercises/:exerciseId/drafts/:draftId",
+        "POST /internal/exercises/:exerciseId/drafts/:draftId/validate",
+        "POST /internal/exercises/:exerciseId/drafts/:draftId/review",
+        "POST /internal/exercises/:exerciseId/drafts/:draftId/publish",
+        "POST /internal/exercises/releases/:releaseId/rollback",
+        "POST /api/exercise-templates/:id/approve",
+        "POST /api/exercise-templates/:id/demo-captures",
+        "POST /api/exercise-templates/:id/test-runs",
+        "GET /api/exercise-templates/:id",
+        "PUT /api/exercise-templates/:id",
+        "GET /api/exercise-templates/active/scoring",
+        "GET /api/exercise-templates",
+        "POST /api/exercise-templates",
+        "GET /api/exercises/:slug",
+        "GET /api/exercises/index",
+        "GET /api/exercises/search",
+        "GET /exercise-library.html"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Cross-browser acceptance not executed"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "yoga",
+      "name": "Yoga",
+      "domain": "yoga",
+      "memberRoute": "/yoga.html",
+      "apis": [
+        "GET /api/yoga/catalogue",
+        "GET /api/yoga/history",
+        "POST /api/yoga/sessions/complete"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "launch-approved catalog only",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "New UI automated structural/service acceptance only"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "progress",
+      "name": "Progress and rewards",
+      "domain": "progress",
+      "memberRoute": "/dashboard.html#gamificationExperience",
+      "apis": [
+        "POST /api/me/generated-workout-progression/accept",
+        "POST /api/me/generated-workout-progression/evaluate",
+        "GET /api/me/generated-workout-progression",
+        "POST /api/me/nutrition/missions/:missionId/manual-progress",
+        "GET /api/me/retention/intake/progress",
+        "GET /api/progress/dashboard",
+        "GET /api/visual-progress-scans",
+        "POST /api/visual-progress-scans"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Feature flags default closed and browser acceptance missing"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "ai-coach",
+      "name": "AI Coach",
+      "domain": "ai-coach",
+      "memberRoute": "/coach.html",
+      "apis": [
+        "GET /api/me/ai-coach",
+        "POST /api/me/ai-coach/messages",
+        "POST /api/me/ai-coach/stream",
+        "DELETE /api/me/ai-coach/generation",
+        "DELETE /api/me/ai-coach/history",
+        "POST /api/me/greatness/nearby-trails/search",
+        "GET /api/me/greatness/nearby-trails/provider-health",
+        "POST /api/me/greatness/trails/:trailId/goal-routes/alternatives",
+        "POST /api/me/nutrition/weekly-plans/ai-draft/validate",
+        "GET /api/me/training-adaptation",
+        "GET /api/trainer/workspace",
+        "GET /api/trainer/clients",
+        "GET /api/trainer/clients/:clientUserId",
+        "GET /api/trainer/clients/:clientUserId/program",
+        "PUT /api/trainer/clients/:clientUserId/program",
+        "GET /api/trainer/clients/:clientUserId/notes",
+        "POST /api/trainer/clients/:clientUserId/notes",
+        "GET /api/admin/trainer-assignments",
+        "POST /api/admin/trainer-assignments",
+        "DELETE /api/admin/trainer-assignments/:assignmentId",
+        "GET /trainer.html",
+        "GET /admin-trainer-assignments.html",
+        "GET /api/me/greatness/trails/:trailId",
+        "POST /api/me/greatness/trails/text-search",
+        "POST /api/me/greatness/trails/:trailId/goal-routes",
+        "GET /api/admin/trail-routes",
+        "POST /api/admin/trail-routes",
+        "PATCH /api/admin/trail-routes/:trailId/disable",
+        "GET /admin-trail-routes.html"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Production provider/configuration and browser smoke pending"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "profile",
+      "name": "Profile and settings",
+      "domain": "profile",
+      "memberRoute": "/",
+      "apis": [
+        "GET /api/me/journey-profile",
+        "GET /api/me/profile",
+        "PUT /api/me/profile",
+        "GET /internal/gamification/profile/:id"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "visible or linked",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Hold",
+      "blockers": [
+        "Dedicated member settings destination not established"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "nutrition",
+      "name": "Nutrition Engine",
+      "domain": "nutrition",
+      "memberRoute": "/nutrition.html",
+      "apis": [
+        "GET /api/me/nutrition/education",
+        "DELETE /api/me/nutrition/entries/:entryId",
+        "PUT /api/me/nutrition/entries/:entryId",
+        "GET /api/me/nutrition/entries",
+        "POST /api/me/nutrition/entries",
+        "GET /api/me/nutrition/grocery-options",
+        "POST /api/me/nutrition/meals/:mealId/log",
+        "GET /api/me/nutrition/meals",
+        "POST /api/me/nutrition/meals",
+        "POST /api/me/nutrition/missions/:missionId/manual-progress",
+        "PATCH /api/me/nutrition/missions/:missionId",
+        "GET /api/me/nutrition/recent",
+        "GET /api/me/nutrition/summary",
+        "GET /api/me/nutrition/weekly-plan/current",
+        "POST /api/me/nutrition/weekly-plans/:planId/generate-missions",
+        "PATCH /api/me/nutrition/weekly-plans/:planId/grocery-items/:itemId",
+        "POST /api/me/nutrition/weekly-plans/:planId/grocery-items",
+        "GET /api/me/nutrition/weekly-plans/:planId/missions",
+        "GET /api/me/nutrition/weekly-plans/:planId/review",
+        "PATCH /api/me/nutrition/weekly-plans/:planId",
+        "POST /api/me/nutrition/weekly-plans/ai-draft/validate",
+        "POST /api/me/nutrition/weekly-plans",
+        "GET /api/nutrition/barcodes/:barcode",
+        "POST /api/nutrition/drafts/natural-language",
+        "GET /api/nutrition/foods/:fdcId",
+        "GET /api/nutrition/foods/search",
+        "GET /nutrition.html"
+      ],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "intentionally hidden from Version 1 navigation",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Excluded from Version 1",
+      "blockers": [
+        "Diet records exist but no launch reward event; domain excluded"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "running-trails",
+      "name": "Running and trails",
+      "domain": "running-trails",
+      "memberRoute": "/greatness.html",
+      "apis": [],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "present",
+      "navigationStatus": "intentionally hidden from Version 1 navigation",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Excluded from Version 1",
+      "blockers": [
+        "Explicit Version 1 exclusion"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    },
+    {
+      "featureId": "corrective",
+      "name": "Corrective assessment",
+      "domain": "corrective",
+      "memberRoute": null,
+      "apis": [],
+      "featureFlag": null,
+      "dependencies": [
+        "authentication",
+        "authoritative backend"
+      ],
+      "backendStatus": "implemented; test evidence varies by feature",
+      "uiStatus": "not member-facing",
+      "navigationStatus": "intentionally hidden from Version 1 navigation",
+      "securityStatus": "automated suites required",
+      "automatedTestStatus": "repository suite",
+      "browserTestStatus": "not completed",
+      "accessibilityStatus": "structural checks only; manual sign-off pending",
+      "contentReviewStatus": "existing production content only",
+      "professionalReviewStatus": "not applicable",
+      "operationalStatus": "deployment sign-off pending",
+      "launchStatus": "Excluded from Version 1",
+      "blockers": [
+        "Professional review absent"
+      ],
+      "ownerRole": "Product/engineering launch owner",
+      "notes": "Ready is intentionally not claimed without every required gate."
+    }
+  ]
+}

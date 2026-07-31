@@ -17,4 +17,5 @@ module.exports = Object.freeze({
   ,"public/greatness.js": "Greatness templates render server-controlled activity enums, identifiers, numeric metrics, and fixed application copy; route geometry is drawn to canvas."
   ,"public/map-diagnostics.js": "Temporary diagnostics templates escape every browser, URL, error, and event value; structural markup is fixed."
   ,"public/admin-trail-routes.js": "Admin route templates encode every persisted value before rendering; structural markup is fixed."
+  ,"public/yoga.js": "Yoga session templates encode every catalog string with esc(); structural empty, error, and completion templates are fixed."
 });
