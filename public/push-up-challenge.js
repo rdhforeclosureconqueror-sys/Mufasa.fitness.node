@@ -10,6 +10,7 @@
   const POSE_MODEL = 'MoveNet.SinglePose.Lightning';
   const POSE_MODEL_VERSION = '2.1.3';
   const LANDMARK_NAMES = ['shoulder', 'hip', 'ankle'];
+  const SEQUENCE_LANDMARK_NAMES = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
   const SIDES = ['left', 'right'];
   const CONNECTIONS = [['shoulder', 'hip'], ['hip', 'ankle']];
   const TRACKING_STATES = Object.freeze({ SEARCHING:'SEARCHING', STABILIZING:'STABILIZING', LOCKED:'LOCKED', DEGRADED:'DEGRADED', RECOVERING:'RECOVERING', LOST:'LOST' });
@@ -159,11 +160,13 @@
       const threshold = this.profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
       const tracked=this.sideTracker.select(pose?.keypoints||[],threshold);
       const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})).filter(Boolean), dimensions.width, dimensions.height);
+      const byName=new Map((pose?.keypoints||[]).map(point=>[point.name||point.part,point]));
+      const sequenceLandmarks=Object.fromEntries(SEQUENCE_LANDMARK_NAMES.map(name=>{const point=byName.get(`${tracked.side}_${name}`);return[name,point&&finite(point.x)&&finite(point.y)?{x:Number(point.x)/dimensions.width,y:Number(point.y)/dimensions.height,confidence:Math.max(0,Math.min(1,Number(point.score||0)))}:null];}));
       const confidences = LANDMARK_NAMES.map(name => normalized.landmarks[name]?.confidence || 0);
       const frameConfidence = Math.min(...confidences);
       let usable=confidences.every(score => score >= threshold)&&LANDMARK_NAMES.every(name=>{const p=normalized.landmarks[name];return p&&p.x>=.02&&p.x<=.98&&p.y>=.02&&p.y<=.98;});
       const torso=this.torsoReference(normalized.landmarks);if(usable&&!this.acceptPerson(torso))usable=false;const continuity=this.continuity.update(normalized.landmarks,threshold,timestamp);const landmarks=usable?this.smoother.apply(continuity.analysis):continuity.analysis;const trackingState=this.tracking.update(usable,timestamp);if(usable)this.lastSuccessfulPoseAt=timestamp;
-      return {timestamp,side:tracked?.side||normalized.side,landmarks,displayLandmarks:continuity.display,landmarkDiagnostics:continuity.diagnostics,frameConfidence,usable,analysisUsable:usable,displayTrackable:Object.values(continuity.display).some(Boolean),sessionComparable:usable,trackingState,poseReady:trackingState===TRACKING_STATES.LOCKED,recoveredThisFrame:this.tracking.recoveredThisFrame,torsoCenter:torso?.center||this.personLock?.center||null,torsoScale:torso?.scale||this.personLock?.scale||null};
+      return {timestamp,side:tracked?.side||normalized.side,landmarks,sequenceLandmarks,displayLandmarks:continuity.display,landmarkDiagnostics:continuity.diagnostics,frameConfidence,usable,analysisUsable:usable,displayTrackable:Object.values(continuity.display).some(Boolean),sessionComparable:usable,trackingState,poseReady:trackingState===TRACKING_STATES.LOCKED,recoveredThisFrame:this.tracking.recoveredThisFrame,torsoCenter:torso?.center||this.personLock?.center||null,torsoScale:torso?.scale||this.personLock?.scale||null};
     }
     torsoReference(landmarks){const shoulder=landmarks.shoulder,hip=landmarks.hip;if(!shoulder||!hip)return null;return{center:{x:(shoulder.x+hip.x)/2,y:(shoulder.y+hip.y)/2},scale:Math.max(.001,Math.hypot(shoulder.x-hip.x,shoulder.y-hip.y))};}
     acceptPerson(torso){if(!torso)return false;if(!this.personLock){this.personLock=torso;return true;}const distance=Math.hypot(torso.center.x-this.personLock.center.x,torso.center.y-this.personLock.center.y),ratio=torso.scale/this.personLock.scale;if(distance>Math.max(.25,this.personLock.scale*2.5)||ratio<.45||ratio>2.2)return false;this.personLock=torso;return true;}
@@ -214,13 +217,14 @@
   }
 
   class PerformanceRecorder {
-    constructor({ profile, userId = 'local-user' }) { this.profile = profile; this.userId = userId; this.session = null; }
+    constructor({ profile, userId = 'local-user', sequenceDefinition = global.PushUpSequenceEngine?.PUSH_UP_SEQUENCE_DEFINITION }) { this.profile = profile; this.userId = userId; this.sequenceDefinition = sequenceDefinition; this.session = null; }
     start({ mode, requiredViewEstablished }) {
-      this.session = { schemaVersion: SESSION_SCHEMA_VERSION, sessionId: id(), userId: this.userId, mode, versionMetadata: sessionVersionMetadata(this.profile), sessionStartedAt: new Date().toISOString(), sessionEndedAt: null, requiredViewEstablished: Boolean(requiredViewEstablished), normalizedLandmarkFrames: [], repetitionEvents: [], supportedAlignmentFindings: [], summary: null, invalidationReason: null };
+      this.session = { schemaVersion: SESSION_SCHEMA_VERSION, sessionId: id(), userId: this.userId, mode, versionMetadata: sessionVersionMetadata(this.profile), sequenceId:this.sequenceDefinition?.sequenceId||null,sequenceVersion:this.sequenceDefinition?.sequenceVersion||null,templateFingerprint:this.sequenceDefinition?.templateFingerprint||null, sessionStartedAt: new Date().toISOString(), sessionEndedAt: null, requiredViewEstablished: Boolean(requiredViewEstablished), normalizedLandmarkFrames: [], repetitionEvents: [], phaseEvents:[],transitionEvents:[],completedSequenceRepetitions:0,interruptedTransitions:0,unscorableDurationMs:0,legacySequenceAgreement:{bothCounted:0,sequenceOnly:0,legacyOnly:0,neitherCounted:0}, supportedAlignmentFindings: [], summary: null, invalidationReason: null };
       return this.session;
     }
     frame(frame) { if(this.session){const observed={...frame};delete observed.displayLandmarks;delete observed.landmarkDiagnostics;this.session.normalizedLandmarkFrames.push(clone(observed));} }
     repetition(event) { if (this.session) this.session.repetitionEvents.push(clone(event)); }
+    sequence(diagnostics, agreement) { if(this.session){Object.assign(this.session,clone(diagnostics));this.session.legacySequenceAgreement[agreement]++;} }
     finish() {
       this.session.sessionEndedAt = new Date().toISOString();
       const rule = this.profile.poseAnalysis.rules[0], frames = this.session.normalizedLandmarkFrames;
@@ -284,12 +288,12 @@
   }
 
   class ExerciseSessionEngine {
-    constructor({ profile, recorder, repetitions }) { this.profile=profile;this.recorder=recorder;this.repetitions=repetitions;this.state='idle';this.mode=null; }
-    start(mode, setup={}) { if(!['practice','challenge'].includes(mode))throw new Error('Unsupported mode.');this.state='active';this.mode=mode;this.repetitions.reset();this.recorder.start({mode, requiredViewEstablished:setup.requiredViewEstablished});return this.state; }
-    observe(frame) { if(this.state!=='active')return null;this.recorder.frame(frame);const event=this.repetitions.observe(frame);if(event)this.recorder.repetition(event);return event; }
+    constructor({ profile, recorder, repetitions, sequenceMatcher = global.PushUpSequenceEngine ? new global.PushUpSequenceEngine.PushUpSequenceMatcher() : null }) { this.profile=profile;this.recorder=recorder;this.repetitions=repetitions;this.sequenceMatcher=sequenceMatcher;this.state='idle';this.mode=null; }
+    start(mode, setup={}) { if(!['practice','challenge'].includes(mode))throw new Error('Unsupported mode.');this.state='active';this.mode=mode;this.repetitions.reset();this.sequenceMatcher?.reset();this.recorder.start({mode, requiredViewEstablished:setup.requiredViewEstablished});return this.state; }
+    observe(frame) { if(this.state!=='active')return null;this.recorder.frame(frame);const event=this.repetitions.observe(frame);if(event)this.recorder.repetition(event);const sequenceResult=this.sequenceMatcher?.observe(frame)||null;const sequenceCounted=Boolean(sequenceResult?.repetitionCompleted),legacyCounted=Boolean(event),agreement=legacyCounted&&sequenceCounted?'bothCounted':sequenceCounted?'sequenceOnly':legacyCounted?'legacyOnly':'neitherCounted';if(this.sequenceMatcher)this.recorder.sequence(this.sequenceMatcher.diagnostics(),agreement);return {legacyEvent:event,sequenceResult,agreement}; }
     finish() { if(this.state!=='active')throw new Error('No active session.');this.state='summary';return this.recorder.finish(); }
     reset() { this.state='idle';this.mode=null; }
   }
 
-  return Object.freeze({ SESSION_SCHEMA_VERSION, POSE_MODEL, POSE_MODEL_VERSION, LANDMARK_NAMES,TRACKING_STATES,TRACKING_DEFAULTS,getPushUpProfile,sessionVersionMetadata,normalizeLandmarks,alignmentDeviation,classifySession,createVideoScreenTransform,cameraErrorMessage,CameraController,SideTracker,PoseStabilityGate,TrackingStateMachine,LandmarkContinuity,LandmarkSmoother,PoseCaptureEngine,ExerciseSessionEngine,RepetitionEventEngine,PerformanceRecorder,ComparisonEngine,GhostRenderer,PersonalBestStore });
+  return Object.freeze({ SESSION_SCHEMA_VERSION, POSE_MODEL, POSE_MODEL_VERSION, LANDMARK_NAMES,SEQUENCE_LANDMARK_NAMES,TRACKING_STATES,TRACKING_DEFAULTS,getPushUpProfile,sessionVersionMetadata,normalizeLandmarks,alignmentDeviation,classifySession,createVideoScreenTransform,cameraErrorMessage,CameraController,SideTracker,PoseStabilityGate,TrackingStateMachine,LandmarkContinuity,LandmarkSmoother,PoseCaptureEngine,ExerciseSessionEngine,RepetitionEventEngine,PerformanceRecorder,ComparisonEngine,GhostRenderer,PersonalBestStore });
 });

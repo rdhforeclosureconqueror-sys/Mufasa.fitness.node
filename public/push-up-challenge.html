@@ -20,7 +20,7 @@
         <g class="arms"><line x1="122" y1="91" x2="82" y2="147"></line><line x1="82" y1="147" x2="66" y2="147"></line></g>
       </svg>
     </div>
-    <div><p class="muted">Guided movement preview</p><h2 id="guidedPreviewTitle" class="sequence-name">Top position</h2><p>Follow one complete push-up: lower with control, then press back to the top. The preview repeats automatically.</p><ol id="sequenceSteps" class="sequence-steps" aria-label="Push-up movement sequence"><li aria-current="step">Top</li><li>Bottom</li><li>Top</li></ol><button id="previewToggle" type="button" aria-pressed="false">Pause preview</button></div>
+    <div><p class="muted">Guided movement preview</p><h2 id="guidedPreviewTitle" class="sequence-name">Top position</h2><p>Follow one complete push-up: lower with control, then press back to the top. Before a session the preview repeats automatically; during a session it waits for your matched position.</p><p id="guidedPreviewNext" aria-live="polite">Next: Lower down</p><ol id="sequenceSteps" class="sequence-steps" aria-label="Push-up movement sequence"><li aria-current="step">Top</li><li>Bottom</li><li>Top</li></ol><button id="previewToggle" type="button" aria-pressed="false">Pause preview</button></div>
   </section>
   <section class="card" aria-labelledby="setupTitle"><h2 id="setupTitle">Camera setup</h2><p id="cameraGuidance">Loading the validated exercise guidance…</p><ol><li>Put the camera at your side on a stable surface.</li><li>Keep your shoulders, hips, and ankles visible for the full session.</li><li>Use even lighting and avoid landmark occlusion.</li></ol><label for="cameraSelect">Camera</label><select id="cameraSelect" disabled><option value="">Front Camera</option></select><p id="currentCamera" class="muted">No camera active.</p><label><input id="sideConfirmed" type="checkbox"> I have positioned the camera at my side and my full shoulder–hip–ankle line is visible.</label><button id="cameraBtn" class="primary" disabled>Loading pose engine…</button><button id="switchCameraBtn" hidden disabled>Switch Camera</button><button id="retryBtn" hidden>Retry</button><p id="cameraStatus" role="status" class="muted">Loading pose engine…</p></section>
   <div class="grid"><div>
@@ -40,6 +40,7 @@
 </script>
 <script defer src="/pose-runtime.js"></script>
 <script defer src="/exercise-metadata.js"></script>
+<script defer src="/push-up-sequence-engine.js"></script>
 <script defer src="/push-up-challenge.js"></script>
 <script defer src="/guided-exercise-sequence.js"></script>
 <script defer src="/push-up-challenge-page.js"></script>
