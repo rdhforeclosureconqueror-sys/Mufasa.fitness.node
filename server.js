@@ -113,8 +113,8 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-07-24T00:00:00Z-workout-focus2";
-const INDEX_CACHE_BUST_TOKEN = "20260724-focus2";
+const APP_BUILD_VERSION = "2026-07-31-launch-readiness";
+const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
 
 function isAvatarFeatureEnabled(env = process.env) {
@@ -1057,6 +1057,21 @@ function createApp(options = {}) {
     } catch (error) { return ok(res, req.requestId, { stripe: { performed: true, status: error?.name === "AbortError" ? "timeout" : "unreachable", priceExists: null, resourcesModified: false } }, 503); }
     finally { clearTimeout(timer); }
   }));
+
+  app.get(
+    "/api/admin/launch-health",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      const frontendManifest = readJSON(path.join(PUBLIC_DIR, "__frontend-version.json"));
+      res.set(SHELL_NO_STORE_HEADERS);
+      return ok(res, req.requestId, buildLaunchHealth({
+        env: options.env || process.env,
+        rootDir,
+        buildVersion: APP_BUILD_VERSION,
+        frontendVersion: frontendManifest.build
+      }));
+    }
+  );
 
   app.get(
     "/api/admin/diagnostics/recent",

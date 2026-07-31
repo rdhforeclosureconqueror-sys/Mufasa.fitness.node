@@ -24,6 +24,7 @@
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
   const openAiSummaryCard = document.getElementById("openAiSummaryCard");
   const deploymentStatus = document.getElementById("deploymentStatus");
+  const launchHealthStatus = document.getElementById("launchHealthStatus");
   const frontendUrlEl = document.getElementById("frontendUrl");
   const backendUrlEl = document.getElementById("backendUrl");
 
@@ -354,6 +355,18 @@
         throw requestError;
       }
       const report = json?.data || null;
+      const launchHealthRes = await fetch(backendUrl("/api/admin/launch-health"), {
+        cache: "no-store",
+        headers: { authorization: `Bearer ${authToken}` }
+      });
+      const launchHealthJson = await launchHealthRes.json().catch(() => null);
+      if (launchHealthStatus) {
+        const health = launchHealthJson?.data;
+        launchHealthStatus.textContent = health?.checks?.map((entry) => {
+          const marker = entry.status === "ready" ? "✅" : entry.status === "blocked" ? "❌" : "⚠️";
+          return `${marker} ${entry.id.replaceAll("_", " ")}: ${entry.status}`;
+        }).join("\n") || `Launch health unavailable (HTTP ${launchHealthRes.status}).`;
+      }
       const summary = report?.openAiSummary || {};
       const pilot = report?.pilotReadiness || {};
       const launchHealth = report?.launchHealth || null;
