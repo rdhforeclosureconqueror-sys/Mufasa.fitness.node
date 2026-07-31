@@ -158,6 +158,10 @@
     .member-home-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
     .member-home-actions a{text-decoration:none;overflow-wrap:anywhere}
     .member-home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px}
+    .experience-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px;margin-bottom:14px}
+    .experience-card{display:flex;flex-direction:column;gap:8px}
+    .experience-card h2,.experience-card p{margin:0}
+    .experience-card .btn{align-self:flex-start;text-decoration:none}
     @media(max-width:600px){header{align-items:flex-start;flex-direction:column}.dashboard-actions{width:100%;grid-template-columns:1fr}.wrap{padding:10px}.row{flex-direction:column}}
   </style>
 </head>
@@ -181,9 +185,7 @@
     </nav>
     <div hidden aria-hidden="true">
       <button id="resetBtn" class="btn">Reset Local Data</button>
-      <a id="pushUpChallengeLink" href="/push-up-challenge.html">Push-Up Challenge</a>
       <a id="nutritionJournalLink" href="/nutrition.html">Nutrition Journal</a>
-      <a id="steppingIntoGreatnessLink" href="/greatness.html">Stepping Into Greatness</a>
       <a id="backToAppLink" href="/">Back to App</a>
     </div>
   </header>
@@ -194,6 +196,21 @@
         <h2 id="memberHomeTitle">Your member home</h2>
         <p id="memberHomeStatus" class="muted" role="status" aria-live="polite">Loading your Journey and next step…</p>
         <div id="memberHomeContent" hidden></div>
+      </section>
+      <section aria-labelledby="memberExperiencesTitle">
+        <h2 id="memberExperiencesTitle">Journeys &amp; challenges</h2>
+        <div class="experience-grid">
+          <article id="steppingIntoGreatnessCard" class="card experience-card">
+            <h2>Stepping Into Greatness</h2>
+            <p id="greatnessSummary" class="muted" role="status">Loading your authoritative journey…</p>
+            <a id="steppingIntoGreatnessLink" class="btn" href="/greatness.html">Stepping Into Greatness</a>
+          </article>
+          <article id="pushUpChallengeCard" class="card experience-card">
+            <h2>Push-Up Challenge</h2>
+            <p id="pushupSummary" class="muted" role="status">Loading your authoritative challenge record…</p>
+            <a id="pushUpChallengeLink" class="btn" href="/push-up-challenge.html">Push-Up Challenge</a>
+          </article>
+        </div>
       </section>
     </main>
     <section id="gamificationExperience" class="card gamification" aria-label="Your progression" aria-live="polite" aria-atomic="false"></section>

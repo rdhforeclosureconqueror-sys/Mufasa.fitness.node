@@ -39,6 +39,7 @@ const { createTrainingAdaptationService } = require("./src/services/trainingAdap
 const { createPersonalizationService } = require("./src/services/personalizationService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
+const { createMemberExperienceCapabilityService } = require("./src/services/memberExperienceCapabilityService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
@@ -383,6 +384,7 @@ function createApp(options = {}) {
 
   const userStore = createUserStore({ userDir: USER_DIR });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
+  const memberExperienceCapabilityService = createMemberExperienceCapabilityService({ userStore, challengeService });
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
   const trailRouteStore = createTrailRouteStore({ filePath: options.trailRouteFilePath || path.join(DATA_DIR, "trail-routes.json") });
   const nearbyTrailService = createNearbyTrailService({ provider: trailProvider, routeStore: trailRouteStore });
@@ -471,7 +473,7 @@ function createApp(options = {}) {
   const programService = createProgramService({ persistence: programPersistence, eventAdapter: gamificationEventService ? (fact) => { const result=gamificationEventService.recordProgramEvent(fact); achievementService?.replay(); return result; } : null });
   const memberExerciseService = createMemberExerciseService({ programService, userStore });
   const exerciseCurationService = createExerciseCurationService({ audit: event => auditLog.appendEvent({ ...event, source: "exercise-curation" }) });
-  const coachContextService = createCoachContextService({ userStore, memberGamificationService, programService });
+  const coachContextService = createCoachContextService({ userStore, memberGamificationService, programService, challengeService });
   const aiCoachConfig = loadAiCoachConfig(options.env || process.env);
   const aiCoachProvider = options.aiCoachProvider || (aiCoachConfig.enabled ? createOpenAiCoachProvider({ config: aiCoachConfig, fetchImpl: options.fetch || global.fetch }) : null);
   const aiCoachService = createAiCoachService({ userStore, contextService: coachContextService, responder: options.aiCoachResponder, provider: aiCoachProvider, config: aiCoachConfig });
@@ -1804,6 +1806,14 @@ function createApp(options = {}) {
 
   app.get("/api/me/greatness/journey", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.journey(req.auth.userId))));
+  app.get("/stepping-into-greatness", (_req, res) => res.redirect(308, "/greatness.html"));
+  app.get("/greatness", (_req, res) => res.redirect(308, "/greatness.html"));
+  app.get("/push-up-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));
+  app.get("/pushup-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));
+  app.get("/api/me/challenges/pushup", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, challengeService.getMemberPushupSummary(req.auth.userId))));
+  app.get("/api/me/experience-capabilities", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, memberExperienceCapabilityService.get(req.auth.userId))));
   app.post("/api/me/greatness/activities", requireAuth, createRateLimiter({ windowMs: 60_000, max: 20 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.complete(req.auth.userId, req.body), 201)));
   app.post("/api/me/greatness/activities/start-with-route", requireAuth, createRateLimiter({ windowMs:60_000,max:20 }), asyncHandler(async(req,res)=>{const source=req.body?.selectedRoute?.routeSource,target=Number(req.body?.goal?.distanceMeters);if(!["verified_geometry","trail_network","park_constrained_walking_route","google_walking_route","place_only"].includes(source)||!Number.isFinite(target))throw new ApiError("INVALID_ACTIVITY_ROUTE","Select a route and distance goal before starting",400);return ok(res,req.requestId,{accepted:true,routeSource:source,targetDistanceMeters:target,persisted:false});}));
