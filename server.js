@@ -102,6 +102,8 @@ const { createDiagnosticStore } = require("./src/lib/diagnosticStore");
 const { summarizeDiagnosticWithOpenAI } = require("./src/lib/diagnosticSummarizer");
 const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
 const { evaluatePilotReadiness } = require("./src/lib/pilotReadinessEvaluator");
+const { buildLaunchHealth, redactedExport } = require("./src/diagnostics/launchHealthService");
+const { publicCapabilityRegistry } = require("./src/diagnostics/capabilityRegistry");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -378,6 +380,7 @@ function createApp(options = {}) {
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (avatarFeatureEnabled && !fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
   const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
+  let latestLaunchHealth = null;
   const challengeService = createChallengeService({ filePath: PUSHUP_CHALLENGE_PATH });
   const exerciseTemplateService = createExerciseTemplateService({ filePath: EXERCISE_TEMPLATE_PATH });
 
@@ -975,16 +978,18 @@ function createApp(options = {}) {
     });
     const summaryResult = await summarizeDiagnosticWithOpenAI({
       expectedSystems: [
-        "pose_tracking",
-        "avatar_runtime",
-        "form_engine",
-        "session_save",
-        "route_health"
+        "deployment", "environment", "storage", "program", "workout", "exercise_intelligence",
+        "yoga", "gamification", "notifications", "leaderboards", "ai_coach", "stripe"
       ],
       buildVersion: payload?.build?.appBuildVersion || APP_BUILD_VERSION,
-      diagnosticReport: payload,
-      routeCheckResults: routeCheck,
-      recentErrors: payload?.errors || null
+      diagnosticReport: {
+        avatarEnabled: payload?.features?.avatarEnabled === true,
+        cameraStatus: ["ready", "unavailable", "denied", "unknown"].includes(payload?.runtime?.cameraStatus) ? payload.runtime.cameraStatus : "unknown",
+        formEnginePresent: Boolean(payload?.runtime?.formEngineStatus),
+        sessionSaveSuccess: payload?.runtime?.sessionSaveSuccess === true
+      },
+      routeCheckResults: { passCount: routeCheck.passCount, protectedCount: routeCheck.protectedCount, failCount: routeCheck.failCount },
+      recentErrors: null
     });
 
     const pilotReadiness = evaluatePilotReadiness({
@@ -993,6 +998,7 @@ function createApp(options = {}) {
       openAiSummaryStatus: summaryResult.status,
       openAiSummary: summaryResult.summary
     });
+    latestLaunchHealth = buildLaunchHealth({ env: process.env, rootDir, dataDir: DATA_DIR, frontendBuild: payload?.build?.appBuildVersion || payload?.build?.frontendBuild, backendBuild: APP_BUILD_VERSION, memberEvidence: payload?.memberEvidence || null });
 
     const report = diagnosticStore.createReport({
       buildVersion: payload?.build?.appBuildVersion || APP_BUILD_VERSION,
@@ -1011,10 +1017,44 @@ function createApp(options = {}) {
       routeCheck,
       pilotReadiness
     });
+    report.launchHealth = latestLaunchHealth;
+    report.aiSummaryStatus = summaryResult.aiSummaryStatus || (summaryResult.status === "ok" ? "valid" : "fallback");
+    report.aiProviderLatencyMs = summaryResult.latencyMs ?? null;
+    report.aiParseFailureCount = summaryResult.parseFailureCount || 0;
+    report.aiFallbackUsed = summaryResult.fallbackUsed === true;
     diagnosticStore.append(report);
     return ok(res, req.requestId, report, 201);
     })
   );
+
+  const diagnosticGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+  const currentHealth = (req = null) => buildLaunchHealth({
+    env: process.env, rootDir, dataDir: DATA_DIR,
+    frontendBuild: req?.body?.frontendBuild || req?.query?.frontendBuild || process.env.FRONTEND_BUILD_VERSION,
+    backendBuild: APP_BUILD_VERSION,
+    memberEvidence: req?.body?.memberEvidence || null
+  });
+  app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
+  app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });
+  app.get("/api/admin/diagnostics/environment", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).environment));
+  app.get("/api/admin/diagnostics/capabilities", diagnosticGuard, (req, res) => ok(res, req.requestId, { capabilities: publicCapabilityRegistry() }));
+  app.get("/api/admin/diagnostics/member-journey", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).memberJourney));
+  app.get("/api/admin/diagnostics/gamification", diagnosticGuard, (req, res) => { const health = latestLaunchHealth || currentHealth(req); return ok(res, req.requestId, { ...health.gamification, rewardSimulation: health.rewardSimulation, notifications: health.notifications, leaderboards: health.leaderboards }); });
+  app.get("/api/admin/diagnostics/billing", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).stripe));
+  app.get("/api/admin/diagnostics/builds", diagnosticGuard, (req, res) => ok(res, req.requestId, currentHealth(req).builds));
+  app.get("/api/admin/diagnostics/export", diagnosticGuard, (req, res) => { res.set("Content-Disposition", "attachment; filename=launch-health-redacted.json"); return ok(res, req.requestId, redactedExport(latestLaunchHealth || currentHealth(req))); });
+  app.post("/api/admin/diagnostics/external-checks", diagnosticGuard, asyncHandler(async (req, res) => {
+    const requested = req.body?.stripe === true;
+    if (!requested) return ok(res, req.requestId, { stripe: { performed: false, status: "opt_in_required" } });
+    const staticHealth = currentHealth(req).stripe;
+    if (staticHealth.status !== "READY") return ok(res, req.requestId, { stripe: { performed: false, status: "static_configuration_invalid" } }, 422);
+    const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await (options.fetch || global.fetch)(`https://api.stripe.com/v1/prices/${encodeURIComponent(process.env.STRIPE_PRICE_ID)}`, { headers: { authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, signal: controller.signal });
+      return ok(res, req.requestId, { stripe: { performed: true, status: response.ok ? "reachable" : "provider_error", httpStatus: response.status, priceExists: response.ok, mode: staticHealth.mode, resourcesModified: false } });
+    } catch (error) { return ok(res, req.requestId, { stripe: { performed: true, status: error?.name === "AbortError" ? "timeout" : "unreachable", priceExists: null, resourcesModified: false } }, 503); }
+    finally { clearTimeout(timer); }
+  }));
 
   app.get(
     "/api/admin/diagnostics/recent",

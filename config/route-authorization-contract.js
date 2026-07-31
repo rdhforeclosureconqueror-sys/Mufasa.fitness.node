@@ -3,6 +3,17 @@
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
   ...[
+    ["GET", "/api/admin/diagnostics/summary"], ["POST", "/api/admin/diagnostics/run"],
+    ["POST", "/api/admin/diagnostics/external-checks"], ["GET", "/api/admin/diagnostics/environment"],
+    ["GET", "/api/admin/diagnostics/capabilities"], ["GET", "/api/admin/diagnostics/member-journey"],
+    ["GET", "/api/admin/diagnostics/gamification"], ["GET", "/api/admin/diagnostics/billing"],
+    ["GET", "/api/admin/diagnostics/builds"], ["GET", "/api/admin/diagnostics/export"]
+  ].map(([method, routePath]) => Object.freeze({
+    method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
+    requiredPermissions: ["ops.read_observability"], membership: "not-required", ownership: "privileged",
+    featureFlag: null, publicOutput: "sensitive-private-redacted", rateLimit: null, compatibility: null, publicWrite: null
+  })),
+  ...[
     ["GET", "/api/me/exercises"],
     ["GET", "/api/me/exercises/preferences"],
     ["DELETE", "/api/me/exercises/recent"],

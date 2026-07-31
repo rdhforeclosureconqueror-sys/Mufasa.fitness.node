@@ -352,3 +352,7 @@ To roll back, use **Deploys**, select the preceding successful deploy, and choos
 Environment values and redeploy. Exact member coordinates exist only in the active
 request. Cache keys round locations to 0.05 degrees, contain no member identity, and
 expire; search coordinates are not persisted or included in community events.
+
+## Launch health diagnostics
+
+Administrators can assess Version 1 deployment, configuration, capabilities, integrations, persistence, and member-state evidence through the existing dashboard Launch Health Console. See [`docs/diagnostics/ARCHITECTURE.md`](docs/diagnostics/ARCHITECTURE.md) and the [`launch runbook`](docs/diagnostics/LAUNCH_HEALTH_RUNBOOK.md). Diagnostics are redacted, permission-protected, deterministic-first, and never deploy or modify provider resources.
