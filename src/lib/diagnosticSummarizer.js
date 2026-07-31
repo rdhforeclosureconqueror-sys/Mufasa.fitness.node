@@ -12,7 +12,8 @@ const SYSTEM_CONTEXT = [
 ].join(" ");
 
 const DEFAULT_FALLBACK = {
-  summary: "OpenAI unavailable.",
+  status: "DEGRADED",
+  summary: "OpenAI unavailable; deterministic diagnostic findings remain authoritative.",
   likelyRootCause: "OpenAI API key missing or summarizer request failed.",
   category: "UNKNOWN",
   confidence: 0,
@@ -46,6 +47,14 @@ function safeParseJson(text) {
   }
 }
 
+function validStructuredSummary(value) {
+  return Boolean(value && typeof value === "object"
+    && typeof value.summary === "string" && value.summary.trim()
+    && typeof value.likelyRootCause === "string"
+    && Number.isFinite(value.confidence) && value.confidence >= 0 && value.confidence <= 1
+    && Array.isArray(value.evidence) && Array.isArray(value.recommendedNextSteps));
+}
+
 async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
   const apiKey = options.apiKey || process.env.OPENAI_API_KEY;
   const endpoint = options.endpoint || OPENAI_DIAGNOSTIC_ENDPOINT;
@@ -53,6 +62,7 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
   if (!apiKey) {
     return {
       status: "unavailable",
+      aiSummaryStatus: "unavailable",
       summary: DEFAULT_FALLBACK,
       errorType: "api_key_missing",
       errorMessage: "OPENAI_API_KEY is missing.",
@@ -84,20 +94,26 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
     text: { format: { type: "json_object" } }
   };
 
-  try {
+  const maxAttempts = Math.max(1, Math.min(2, Number(options.maxAttempts) || 2));
+  let parseFailureCount = 0;
+  const startedAt = Date.now();
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) try {
     console.info("[diagnostic-openai] request:start", {
       apiKeyPresent: true,
       model,
       endpoint
     });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Math.max(1000, Math.min(30000, Number(options.timeoutMs) || 8000)));
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${apiKey}`
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body), signal: controller.signal
     });
+    clearTimeout(timeout);
     const rawText = await res.text();
     const rawPreview = sanitizePreview(rawText);
     console.info("[diagnostic-openai] response", {
@@ -111,6 +127,7 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
       const apiErrorMessage = parsedErr.ok ? parsedErr.value?.error?.message : null;
       return {
         status: "error",
+        aiSummaryStatus: "fallback",
         summary: { ...DEFAULT_FALLBACK, summary: `OpenAI unavailable (${res.status}).` },
         errorType: res.status === 401 ? "auth_error" : res.status === 429 ? "rate_limit" : "http_error",
         errorMessage: apiErrorMessage || `OpenAI request failed with status ${res.status}.`,
@@ -123,41 +140,50 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
     }
     const parsedTopLevel = safeParseJson(rawText);
     if (!parsedTopLevel.ok) {
+      parseFailureCount += 1;
+      if (attempt < maxAttempts) continue;
       return {
         status: "error",
+        aiSummaryStatus: "fallback",
         summary: { ...DEFAULT_FALLBACK, summary: "OpenAI returned non-JSON response." },
         errorType: "json_parse_error",
         errorMessage: "Failed to parse OpenAI response as JSON.",
         httpStatus: res.status,
         model,
         endpoint,
-        rawResponsePreview: rawPreview,
+        rawResponsePreview: null,
+        parseFailureCount,
+        fallbackUsed: true,
+        latencyMs: Date.now() - startedAt,
         apiKeyPresent: true
       };
     }
     const json = parsedTopLevel.value;
     const text = json?.output_text || "";
     const parsed = safeParseJson(text);
-    if (!parsed.ok || !parsed.value) {
+    if (!parsed.ok || !validStructuredSummary(parsed.value)) {
+      parseFailureCount += 1;
+      if (attempt < maxAttempts) continue;
       return {
-        status: "ok",
-        summary: {
-          ...DEFAULT_FALLBACK,
-          summary: text || "OpenAI returned non-JSON summary text.",
-          likelyRootCause: "Diagnostics processed with plain-text AI summary."
-        },
-        errorType: "plain_text_response",
-        errorMessage: "OpenAI output_text was plain text instead of JSON.",
+        status: "error",
+        aiSummaryStatus: "fallback",
+        summary: DEFAULT_FALLBACK,
+        errorType: parsed.ok ? "schema_validation_error" : "plain_text_response",
+        errorMessage: "OpenAI output did not satisfy the diagnostic summary schema.",
         httpStatus: res.status,
         model,
         endpoint,
-        rawResponsePreview: sanitizePreview(text || rawText),
-        apiKeyPresent: true
+        rawResponsePreview: null,
+        apiKeyPresent: true,
+        parseFailureCount,
+        fallbackUsed: true,
+        latencyMs: Date.now() - startedAt
       };
     }
 
     return {
       status: "ok",
+      aiSummaryStatus: "valid",
       summary: parsed.value,
       errorType: null,
       errorMessage: null,
@@ -165,7 +191,10 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
       model,
       endpoint,
       rawResponsePreview: rawPreview,
-      apiKeyPresent: true
+      apiKeyPresent: true,
+      parseFailureCount,
+      fallbackUsed: false,
+      latencyMs: Date.now() - startedAt
     };
   } catch (error) {
     console.error("[diagnostic-openai] request:failed", {
@@ -177,6 +206,7 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
     });
     return {
       status: "error",
+      aiSummaryStatus: "fallback",
       summary: DEFAULT_FALLBACK,
       errorType: error?.name === "AbortError" ? "timeout_error" : "network_error",
       errorMessage: error?.message || "OpenAI request failed.",
@@ -184,7 +214,10 @@ async function summarizeDiagnosticWithOpenAI(input = {}, options = {}) {
       model,
       endpoint,
       rawResponsePreview: null,
-      apiKeyPresent: true
+      apiKeyPresent: true,
+      parseFailureCount,
+      fallbackUsed: true,
+      latencyMs: Date.now() - startedAt
     };
   }
 }
@@ -195,5 +228,6 @@ module.exports = {
   SYSTEM_CONTEXT,
   normalizeModel,
   sanitizePreview,
+  validStructuredSummary,
   OPENAI_DIAGNOSTIC_ENDPOINT
 };

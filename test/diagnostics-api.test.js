@@ -165,7 +165,7 @@ test("OpenAI summarizer handles successful JSON response", async (t) => {
   assert.equal(result.errorType, null);
 });
 
-test("OpenAI summarizer handles successful plain text response", async (t) => {
+test("OpenAI summarizer falls back when provider returns plain text", async (t) => {
   withMockFetch(t, async () => ({
     ok: true,
     status: 200,
@@ -174,9 +174,10 @@ test("OpenAI summarizer handles successful plain text response", async (t) => {
     })
   }));
   const result = await summarizeDiagnosticWithOpenAI({}, { apiKey: "test-key" });
-  assert.equal(result.status, "ok");
+  assert.equal(result.status, "error");
+  assert.equal(result.aiSummaryStatus, "fallback");
   assert.equal(result.errorType, "plain_text_response");
-  assert.match(result.summary.summary, /Avatar runtime is failing/);
+  assert.match(result.summary.summary, /deterministic diagnostic findings/i);
 });
 
 test("diagnostic report endpoint includes OpenAI debug fields", async (t) => {
@@ -247,6 +248,19 @@ test("route checker marks network errors as FAIL", async () => {
   });
   assert.ok(results.failCount > 0);
   assert.ok(results.checks.every((entry) => entry.classification === "FAIL"));
+});
+
+test("launch health endpoints are admin-only and exports contain no secret values", async (t) => {
+  await withServer(t, async ({ baseUrl, adminToken }) => {
+    const denied = await fetch(baseUrl + "/api/admin/diagnostics/summary");
+    assert.equal(denied.status, 401);
+    const allowed = await fetch(baseUrl + "/api/admin/diagnostics/summary", { headers: { authorization: `Bearer ${adminToken}` } });
+    assert.equal(allowed.status, 200);
+    const body = await allowed.text();
+    assert.doesNotMatch(body, /test-auth-secret|pilot-password|sk_live_/i);
+    const parsed = JSON.parse(body);
+    assert.ok(Array.isArray(parsed.data.capabilities));
+  });
 });
 
 test("diagnostics access requires auth + admin email allowlist", async (t) => {
