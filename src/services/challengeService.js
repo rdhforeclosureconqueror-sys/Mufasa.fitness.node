@@ -118,7 +118,25 @@ function createChallengeService({ filePath }) {
     return { leaderboard: rows, count: rows.length };
   }
 
-  return { VARIANTS, savePushupResult, getPushupLeaderboard, _readResults: readResults };
+  function getMemberPushupSummary(userId) {
+    const memberId = cleanString(userId, 128);
+    const ranked = readResults().slice().sort(compareResults);
+    const memberResults = ranked.filter((record) => record.userId === memberId);
+    const best = memberResults[0] || null;
+    return {
+      enrolled: memberResults.length > 0,
+      completedSessions: memberResults.length,
+      bestResult: best ? safeLeaderboardRow(best) : null,
+      leaderboardRank: best ? ranked.findIndex((record) => record.id === best.id) + 1 : null,
+      leaderboardEligible: Boolean(best),
+      rankingMetric: "highest server-persisted score",
+      scope: "all-time",
+      tieBehavior: "valid repetitions, then earliest submission",
+      externalNotifications: false
+    };
+  }
+
+  return { VARIANTS, savePushupResult, getPushupLeaderboard, getMemberPushupSummary, _readResults: readResults };
 }
 
 module.exports = { createChallengeService, compareResults, safeLeaderboardRow };

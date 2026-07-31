@@ -16,7 +16,7 @@ function compactWorkout(item = {}) {
   };
 }
 
-function createCoachContextService({ userStore, memberGamificationService = null, programService = null, clock = () => Date.now() }) {
+function createCoachContextService({ userStore, memberGamificationService = null, programService = null, challengeService = null, clock = () => Date.now() }) {
   function build(userId) {
     // One authoritative member read is intentionally shared by every context section.
     const user = userStore.loadUser(userId);
@@ -32,6 +32,8 @@ function createCoachContextService({ userStore, memberGamificationService = null
     const programView = programService?.view(userId, clock()) || null;
     const program = programView?.available ? programView.assignment.program : user.program || user.generatedWorkoutPlan || null;
     const yogaSessions = (Array.isArray(user.yogaSessions) ? user.yogaSessions : []).slice().sort((a,b)=>b.completedAt-a.completedAt).slice(0,5);
+    const greatness = user.steppingIntoGreatness || null;
+    const greatnessActivities = (greatness?.activities || []).filter((item) => item.status === "completed" && !item.deletedAt);
 
     return {
       schemaVersion: 1,
@@ -79,6 +81,17 @@ function createCoachContextService({ userStore, memberGamificationService = null
         recent: yogaSessions.map((item)=>({sessionId:item.sessionId,completedAt:item.completedAt,summary:item.summary,progression:item.progression,ruleVersion:item.ruleVersion})),
         commonlyDetectedFaults: Object.entries(yogaSessions.flatMap(s=>s.poseResults||[]).flatMap(p=>p.faultIds||[]).reduce((a,id)=>(a[id]=(a[id]||0)+1,a),{})).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([faultId,count])=>({faultId,count})),
         authority: "derived_deterministic_results"
+      },
+      memberExperiences: {
+        steppingIntoGreatness: greatness ? {
+          completedActivities: greatnessActivities.length,
+          lifetimeDistanceMeters: greatnessActivities.reduce((sum, item) => sum + (Number(item.distanceMeters) || 0), 0),
+          latestActivityAt: greatnessActivities.slice().sort((a,b)=>String(b.endedAt).localeCompare(String(a.endedAt)))[0]?.endedAt || null,
+          enrolledChallenges: (greatness.enrollments || []).filter((item) => item.status === "active").length,
+          authority: "member_persistence",
+          decisionPolicy: "explain_only"
+        } : null,
+        pushUpChallenge: challengeService?.getMemberPushupSummary(userId) || null
       }
     };
   }

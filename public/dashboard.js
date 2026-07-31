@@ -41,6 +41,32 @@
     return window.AuthStateRuntime?.getAuthToken?.() || client?.getAuthToken?.() || null;
   }
 
+  async function memberExperience(pathname) {
+    const token = getDashboardAuthToken();
+    if (!token) throw new Error("Sign in to view member progress.");
+    const response = await fetch(backendUrl(pathname), { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.error?.message || "Authoritative progress is unavailable.");
+    return body?.data ?? body;
+  }
+
+  async function renderMemberExperiences() {
+    const greatness = document.getElementById("greatnessSummary");
+    const pushup = document.getElementById("pushupSummary");
+    const showError = (element, error) => { if (element) element.textContent = error.message; };
+    memberExperience("/api/me/greatness/journey").then((journey) => {
+      const activities = journey.activities || [];
+      greatness.textContent = activities.length
+        ? `${activities.length} saved activit${activities.length === 1 ? "y" : "ies"} · ${Math.round((journey.lifetimeDistanceMeters || 0) / 100) / 10} km lifetime distance. Continue your journey.`
+        : "No saved movement yet. Start your first journey activity when you are ready.";
+    }).catch((error) => showError(greatness, error));
+    memberExperience("/api/me/challenges/pushup").then((summary) => {
+      pushup.textContent = summary.completedSessions
+        ? `${summary.completedSessions} saved session${summary.completedSessions === 1 ? "" : "s"} · best score ${summary.bestResult.totalScore} · all-time rank ${summary.leaderboardRank}.`
+        : "Not started. Open the challenge to practice or submit your first consented result.";
+    }).catch((error) => showError(pushup, error));
+  }
+
   function read(key, fallback) {
     return client ? client.readJSON(key, fallback) : fallback;
   }
@@ -396,6 +422,7 @@
   }
 
   runDiagnosticBtn?.addEventListener("click", runDiagnostic);
+  renderMemberExperiences();
 
   window.addEventListener("load", async () => {
     await updateDeploymentStatus();
