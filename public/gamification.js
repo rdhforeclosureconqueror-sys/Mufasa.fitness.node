@@ -135,7 +135,9 @@
         const previous = current;
         current = payload.data;
         render(root, current, { previous });
-        if (celebrate && previous) queue.enqueue(celebrationsBetween(previous, current));
+        const celebrations = previous ? celebrationsBetween(previous, current) : [];
+        if (celebrate && previous) queue.enqueue(celebrations);
+        return { data: current, previous, celebrations };
       } catch (error) {
         root.innerHTML = `<div class="gamification__error" role="alert"><h2>We couldn't load your progress</h2><p class="muted">${escapeHtml(error.message)}</p><button class="btn" type="button" data-game-retry>Try again</button></div>`;
         root.querySelector("[data-game-retry]").addEventListener("click", () => load({ celebrate: false }));
@@ -143,9 +145,10 @@
     }
     win.addEventListener("mufasa:gamification-refresh", () => load());
     load({ celebrate: false });
-    return { load, queue, destroy() { queue.clear(); layer.remove(); } };
+    return { load, queue, getCurrent: () => current, destroy() { queue.clear(); layer.remove(); } };
   }
 
-  if (browser?.document) browser.document.readyState === "loading" ? browser.document.addEventListener("DOMContentLoaded", () => mount(browser), { once: true }) : mount(browser);
+  const start = () => { browser.MufasaProgressionInstance = mount(browser); };
+  if (browser?.document) browser.document.readyState === "loading" ? browser.document.addEventListener("DOMContentLoaded", start, { once: true }) : start();
   return Object.freeze({ MOTION, CelebrationQueue, celebrationsBetween, render, mount });
 });

@@ -560,3 +560,33 @@ Motion primarily uses opacity and transform; only the bounded XP fill width anim
 ## Rollback strategy
 
 Revert the progression sprint commit to restore the prior single-card renderer and stylesheet. No database, API, policy, projection, replay, or persistence rollback is necessary. If only celebrations require mitigation, remove the refresh-event listener and celebration layer while leaving the authoritative dashboard renderer active.
+
+---
+
+# Workout Completion Experience — Launch Sprint
+
+## Architecture and summary components
+
+The canonical `workout:completed` bridge persists the validated workout, refreshes history, dashboard, reward/check-in state, and then refreshes the shared authenticated gamification projection. That single projection refresh drives both the established FIFO celebration queue and the completion experience; the browser performs no XP, level, achievement, badge, streak, record, or recommendation eligibility calculations. The completion renderer only formats server-returned workout tracking, dashboard insight, deterministic recommendation, and public projection fields.
+
+The reusable completion surface includes a premium session header, statistics grid, semantic level progress, workout-scoped reward collection, authoritative insights, personal-record empty state, deterministic next recommendation, and image-friendly/print-ready share card. Calories, volume, records, artwork, and metadata render explicit unavailable or empty states when absent rather than being inferred. Workout-scoped achievements and badges are the additions found between consecutive public projections and use the exact same authoritative delta passed to the celebration queue.
+
+## Accessibility, motion, and responsive behavior
+
+The experience is a semantic page region rather than a dialog, announces its arrival politely, moves focus to a clearly labelled Continue control, supports Escape, preserves visible focus, and exposes native progressbar values and remaining-XP text. The existing non-modal celebrations remain keyboard-dismissible and sequential. Reduced-motion disables the reveal and progress transitions. At tablet widths the statistics remain scannable while insights stack; at narrow phone widths statistics become a single column. The fixed surface scrolls independently and its share section has a print stylesheet.
+
+## Performance and security
+
+Completion reuses the dashboard refresh already required by the retention bridge and makes one shared projection refresh instead of separate reward and celebration requests. Rendering is a bounded string template, artwork uses lightweight fallback initials, and motion is limited to opacity, transform, and one progress width. All requests remain authenticated and self-scoped. Only the public member projection reaches the renderer; replay state, policies, administrative metadata, internal projection details, and cross-user identifiers are excluded. Dynamic content is escaped before insertion.
+
+## Risks and deferred work
+
+- Completion events must include canonical workout and program identifiers or the existing bridge rejects them before persistence.
+- Calories, total volume, estimated effort semantics, record projections, public artwork, descriptions, categories, and rarity remain deferred until their authoritative contracts exist.
+- Save Image and Web Share/social API actions are deferred; the share card currently provides the production layout and print/export boundary.
+- Automated browser screenshot baselines remain deferred until a browser visual-test harness is available; responsive contracts are covered programmatically.
+- Future AI Coach advice is intentionally excluded. Only a deterministic server recommendation is shown when present.
+
+## Rollback
+
+Remove `workout-completion.js` and `workout-completion.css` from the dashboard, remove the completion event dispatch, and restore the progression mount return behavior if necessary. The persistence model, gamification policies, projection/replay architecture, dashboard APIs, and celebration queue require no rollback or migration.
