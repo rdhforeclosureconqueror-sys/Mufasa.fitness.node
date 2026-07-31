@@ -187,7 +187,7 @@
       </div>
 
       <div class="card" style="grid-column:1/-1;">
-        <h2>System Diagnostics (Admin)</h2>
+        <h2>Launch Health Console (Admin)</h2>
         <div class="diagPre muted" style="margin-bottom:8px;">
           Frontend URL: <span id="frontendUrl">unknown</span>
           <br />
@@ -195,18 +195,23 @@
         </div>
         <div id="deploymentStatus" class="diagPre muted" style="margin-bottom:10px;">Checking frontend/backend deployment status…</div>
         <div class="btn-row" style="display:flex; gap:10px; margin-bottom:8px;">
-          <button id="runDiagnosticBtn" class="btn">Run Diagnostic</button>
+          <button id="runDiagnosticBtn" class="btn">Run Full Diagnostic</button>
+          <button id="runExternalChecksBtn" class="btn">Run Safe External Checks</button>
+          <button id="exportDiagnosticBtn" class="btn">Export Redacted Report</button>
+          <button id="copyRepairSummaryBtn" class="btn">Copy Codex Repair Summary</button>
+          <button id="refreshDiagnosticBtn" class="btn">Refresh</button>
         </div>
         <div id="diagnosticStatus" class="diagPre muted">No diagnostic report yet.</div>
+        <div id="launchHealthSections" class="list" aria-live="polite"></div>
         <div id="openAiSummaryCard" class="ai-summary-card" style="display:none;"></div>
-        <h3 style="margin-top:14px;">Pilot Readiness</h3>
-        <div id="pilotReadinessStatus" class="diagPre muted">Run diagnostics to evaluate pilot readiness.</div>
+        <h3 style="margin-top:14px;">Launch Readiness</h3>
+        <div id="pilotReadinessStatus" class="diagPre muted">Run diagnostics to evaluate Version 1 launch readiness.</div>
       </div>
     </div>
   </div>
 
-  <script src="/diagnostics-client.js?v=20260426"></script>
+  <script src="/diagnostics-client.js?v=20260731-launch-health"></script>
   <script src="/backend-read.js"></script>
-  <script src="/dashboard.js?v=20260426b"></script>
+  <script src="/dashboard.js?v=20260731-launch-health"></script>
 </body>
 </html>

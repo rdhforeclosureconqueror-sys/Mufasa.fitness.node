@@ -1,0 +1,3 @@
+# AI Summary Contract
+
+Deterministic findings are authoritative. The optional summary requires an object containing a status/summary, likely root cause, confidence from 0–1, evidence array, and recommended-actions array (legacy field names remain compatible). The provider request asks for structured JSON. Parsing and schema validation are strict, retries are bounded to two, and requests time out. Invalid, plain-text, unavailable, or failed output produces a local deterministic fallback with `aiSummaryStatus`, latency, parse-failure count, and fallback usage. Provider output cannot replace or invalidate health checks, and secrets/member health data must not be sent.

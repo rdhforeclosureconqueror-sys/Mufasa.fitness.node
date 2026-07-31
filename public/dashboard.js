@@ -16,6 +16,11 @@
   const resetBtn = document.getElementById("resetBtn");
   const runDiagnosticBtn = document.getElementById("runDiagnosticBtn");
   const diagnosticStatus = document.getElementById("diagnosticStatus");
+  const launchHealthSections = document.getElementById("launchHealthSections");
+  const runExternalChecksBtn = document.getElementById("runExternalChecksBtn");
+  const exportDiagnosticBtn = document.getElementById("exportDiagnosticBtn");
+  const copyRepairSummaryBtn = document.getElementById("copyRepairSummaryBtn");
+  const refreshDiagnosticBtn = document.getElementById("refreshDiagnosticBtn");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
   const openAiSummaryCard = document.getElementById("openAiSummaryCard");
   const deploymentStatus = document.getElementById("deploymentStatus");
@@ -364,6 +369,8 @@
       }
       const summary = report?.openAiSummary || {};
       const pilot = report?.pilotReadiness || {};
+      const launchHealth = report?.launchHealth || null;
+      window.__lastLaunchHealth = launchHealth;
       const avatarRuntime = payload?.runtime?.avatarRuntimeStatus || null;
       diagnosticStatus.textContent = [
         `Build: ${report?.buildVersion || "unknown"}`,
@@ -413,6 +420,7 @@
         `Summary: ${summary?.summary || "No OpenAI summary available."}`
       ].join("\\n");
       renderOpenAiSummaryCard(report);
+      renderLaunchHealth(launchHealth);
       if (pilotReadinessStatus) {
         const missingEvidence = (pilot?.missingEvidence || []).map((item) => item?.label || item?.field).filter(Boolean);
         pilotReadinessStatus.textContent = [
@@ -433,6 +441,28 @@
       window.__lastDiagnosticReport = payload;
     }
   }
+
+  const healthDomains = ["Deployment", "Environment", "Security", "Authentication", "Storage", "Program", "Workout", "Exercise Intelligence", "Yoga and Movement", "Gamification", "Notifications", "Leaderboards", "AI Coach", "Stripe", "Optional/Excluded Systems", "Member Journey", "Launch Readiness"];
+  function renderLaunchHealth(health) {
+    if (!launchHealthSections || !health) return;
+    launchHealthSections.replaceChildren(...healthDomains.map((domain) => {
+      const section = document.createElement("section"); section.className = "card";
+      const title = document.createElement("h3"); title.textContent = domain;
+      const rows = domain === "Launch Readiness" ? [{ id: "overall", status: health.launchReadiness?.status, explanation: `Blockers: ${(health.launchReadiness?.blockers || []).join(", ") || "none"}`, blocking: (health.launchReadiness?.blockers || []).length > 0, lastCheckedAt: health.generatedAt }] : (health.checks || []).filter(item => item.domain === domain);
+      const body = document.createElement("div"); body.className = "diagPre";
+      body.textContent = rows.length ? rows.map(item => `${item.status || "UNKNOWN"} — ${item.affectedFeature || item.id}\n${item.explanation || ""}\nBlocking: ${item.blocking ? "yes" : "no"}${item.remediation ? `\nRemediation: ${item.remediation}` : ""}\nChecked: ${item.lastCheckedAt || health.generatedAt}`).join("\n\n") : "No applicable Version 1 checks.";
+      section.append(title, body); return section;
+    }));
+  }
+  async function adminDiagnosticFetch(route, options = {}) {
+    const token = getDashboardAuthToken();
+    const response = await fetch(backendUrl(route), { ...options, headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) } });
+    const json = await response.json(); if (!response.ok) throw new Error(json?.error?.message || `Diagnostic request failed (${response.status})`); return json.data;
+  }
+  runExternalChecksBtn?.addEventListener("click", async () => { runExternalChecksBtn.disabled = true; try { const result = await adminDiagnosticFetch("/api/admin/diagnostics/external-checks", { method: "POST", body: JSON.stringify({ stripe: true }) }); alert(`Safe external checks: Stripe ${result?.stripe?.status || "unknown"}. No resources modified.`); } catch (error) { alert(error.message); } finally { runExternalChecksBtn.disabled = false; } });
+  exportDiagnosticBtn?.addEventListener("click", async () => { const report = await adminDiagnosticFetch("/api/admin/diagnostics/export"); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: "application/json" })); link.download = "mufasa-launch-health-redacted.json"; link.click(); URL.revokeObjectURL(link.href); });
+  copyRepairSummaryBtn?.addEventListener("click", async () => { const health = window.__lastLaunchHealth; await navigator.clipboard.writeText(`Launch health: ${health?.launchReadiness?.status || "UNKNOWN"}. Blockers: ${(health?.launchReadiness?.blockers || []).join(", ") || "none"}. Warnings: ${(health?.launchReadiness?.warnings || []).join(", ") || "none"}. This summary is redacted.`); });
+  refreshDiagnosticBtn?.addEventListener("click", async () => { try { const health = await adminDiagnosticFetch("/api/admin/diagnostics/summary"); window.__lastLaunchHealth = health; renderLaunchHealth(health); } catch (error) { diagnosticStatus.textContent = error.message; } });
 
   runDiagnosticBtn?.addEventListener("click", runDiagnostic);
   renderMemberExperiences();
