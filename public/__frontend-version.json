@@ -1,6 +1,6 @@
 {
-  "build": "2026-05-03-frontend-shell-verification",
-  "commit": "fdd4b24",
-  "timestamp": "2026-05-03T23:15:30Z",
+  "build": "2026-07-31-launch-readiness",
+  "commit": "generated-at-deploy",
+  "timestamp": "2026-07-31T00:00:00Z",
   "shell": "public/index.html"
 }

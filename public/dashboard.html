@@ -260,6 +260,8 @@
           Backend URL: <span id="backendUrl">unknown</span>
         </div>
         <div id="deploymentStatus" class="diagPre muted" style="margin-bottom:10px;">Checking frontend/backend deployment status…</div>
+        <h3>Launch Health Console</h3>
+        <div id="launchHealthStatus" class="diagPre muted" style="margin-bottom:10px;">Run diagnostics to inspect authoritative runtime state.</div>
         <div class="btn-row" style="display:flex; gap:10px; margin-bottom:8px;">
           <button id="runDiagnosticBtn" class="btn">Run Diagnostic</button>
         </div>
@@ -280,13 +282,13 @@
   </script>
   <script src="/runtime-state.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260506"></script>
-  <script src="/diagnostics-client.js?v=20260426"></script>
+  <script src="/diagnostics-client.js?v=20260731-launch-readiness"></script>
   <script src="/backend-read.js"></script>
   <script src="/dashboard-runtime.js?v=20260514"></script>
   <script src="/member-home-runtime.js?v=20260719"></script>
   <a id="trainerWorkspaceNav" href="/trainer.html" hidden>Trainer Workspace</a>
   <script src="/trainer-navigation.js?v=20260719"></script>
-  <script src="/dashboard.js?v=20260514"></script>
+  <script src="/dashboard.js?v=20260731-launch-readiness"></script>
   <script src="/gamification.js?v=20260730-2"></script>
 </body>
 </html>
