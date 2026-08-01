@@ -20,6 +20,8 @@ test('guided sequence repeats and can pause without camera setup', () => {
   assert.equal(player.toggle(), false);
 });
 
+test('live preview labels agree with every internal expected phase',()=>{const elements=new Map();const make=(id)=>({id,dataset:{},textContent:'',hidden:false,children:[],attributes:{},setAttribute(k,v){this.attributes[k]=v;},removeAttribute(k){delete this.attributes[k];},addEventListener(){}});for(const id of ['movementPreview','guidedPreviewTitle','sequenceSteps','previewToggle','guidedPreviewNext'])elements.set(id,make(id));elements.get('sequenceSteps').children=[make('a'),make('b'),make('c')];const player=require('../public/guided-exercise-sequence').mount({getElementById:id=>elements.get(id)});for(const [phase,title,next] of [['TOP','Top position','Hold the top'],['LOWERING','Lowering','Continue lowering'],['BOTTOM','Bottom position','Hold the bottom'],['RISING','Rising','Continue pressing'],['TOP_COMPLETE','Top complete','Confirm the top']]){player.setLiveTarget(phase);assert.equal(elements.get('movementPreview').dataset.expectedPhase,phase);assert.equal(elements.get('guidedPreviewTitle').textContent,title);assert.match(elements.get('guidedPreviewNext').textContent,new RegExp(next));}});
+
 test('challenge page exposes the guided preview before camera setup', () => {
   const html = fs.readFileSync(path.join(__dirname, '../public/push-up-challenge.html'), 'utf8');
   assert.ok(html.indexOf('id="movementPreview"') < html.indexOf('id="setupTitle"'));

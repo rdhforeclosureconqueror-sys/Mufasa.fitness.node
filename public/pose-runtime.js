@@ -243,7 +243,9 @@
       try {
         if (global.document?.hidden) { frameId = requestAnimationFrame(frame); return; }
         if (global.__workoutPerformance) global.__workoutPerformance.poseInferenceCalls += 1;
+        const inferenceStartedAt = global.performance?.now?.() ?? Date.now();
         const poses = await detector.estimatePoses(video, { flipHorizontal: true });
+        const inferenceMs = (global.performance?.now?.() ?? Date.now()) - inferenceStartedAt;
         const pose = Array.isArray(poses) && poses.length ? poses[0] : null;
         const posePacket = normalizePosePacket(pose, video);
         state.loopFrameCount += 1;
@@ -256,7 +258,7 @@
         try {
           global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poses } }));
         } catch (_) {}
-        if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poses });
+        if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poses, inferenceMs });
       } catch (err) {
         const message = err?.message || String(err || 'pose_loop_failed');
         state.lastError = message;
