@@ -17,12 +17,13 @@
   const angle=(a,b,c)=>{if(!a||!b||!c)return null;const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y},d=Math.hypot(ab.x,ab.y)*Math.hypot(cb.x,cb.y);return d?Math.acos(Math.max(-1,Math.min(1,(ab.x*cb.x+ab.y*cb.y)/d)))*180/Math.PI:null;};
   function validateDefinition(d) {
     const errors=[];if(!d||typeof d!=='object')return{valid:false,errors:['Definition must be an object.']};
-    if(!d.exerciseId)errors.push('exerciseId is required.');if(!d.sequenceId)errors.push('sequenceId is required.');
-    const ids=new Set((d.phases||[]).map(p=>p.id));if(!ids.size)errors.push('At least one phase is required.');if(!ids.has(d.initialPhase))errors.push('initialPhase must identify a phase.');
+    if(!d.exerciseId)errors.push('exerciseId is required.');if(!d.sequenceId)errors.push('sequenceId is required.');for(const field of ['sequenceVersion','capabilityVersion','templateVersion'])if(d[field]===undefined||d[field]===null||d[field]==='')errors.push(`${field} is required.`);
+    const phaseIds=(d.phases||[]).map(p=>p.id),ids=new Set(phaseIds);if(!ids.size)errors.push('At least one phase is required.');if(ids.size!==phaseIds.length)errors.push('Phase IDs must be unique.');if(!ids.has(d.initialPhase))errors.push('initialPhase must identify a phase.');if(!(d.phases||[]).some(p=>p.completesRepetition))errors.push('A completion phase is required.');
     for(const m of d.measurements||[])if(!MEASUREMENT_TYPES.has(m.type))errors.push(`Unsupported measurement evaluator type: ${m.type}`);
     const visit=c=>{if(!c)return;if(!CONDITION_TYPES.has(c.type))errors.push(`Unsupported condition type: ${c.type}`);for(const x of c.conditions||[])visit(x);};
-    for(const p of d.phases||[]){if(!ids.has(p.nextPhase))errors.push(`Phase ${p.id} has unknown nextPhase ${p.nextPhase}.`);visit(p.condition);}
+    for(const p of d.phases||[]){if(!p.id)errors.push('Every phase requires an id.');if(!ids.has(p.nextPhase))errors.push(`Phase ${p.id} has unknown nextPhase ${p.nextPhase}.`);if(!Number.isInteger(p.persistenceFrames||1)||(p.persistenceFrames||1)<1)errors.push(`Phase ${p.id} has invalid persistenceFrames.`);visit(p.condition);}
     const required=new Set(d.requiredLandmarks||[]);for(const m of d.measurements||[])for(const name of m.landmarks||[])if(!required.has(name))errors.push(`Measurement ${m.id} uses undeclared landmark ${name}.`);
+    const measurementIds=new Set((d.measurements||[]).map(m=>m.id));for(const feature of d.features||[]){if(!measurementIds.has(feature.measurement))errors.push(`Feature ${feature.id} uses unknown measurement ${feature.measurement}.`);if(!Number.isFinite(feature.weight)||feature.weight<0)errors.push(`Feature ${feature.id} has invalid weight.`);}for(const step of d.visualTemplate?.steps||[])if(!ids.has(step.phaseId))errors.push(`Visual template references unknown phase ${step.phaseId}.`);
     return{valid:!errors.length,errors};
   }
   class MeasurementEvaluator {
