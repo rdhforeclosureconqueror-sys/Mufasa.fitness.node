@@ -1,0 +1,232 @@
+{
+  "artifactSchemaVersion": 1,
+  "exerciseId": "push_up",
+  "sequenceId": "push_up_standard_v1",
+  "sequenceVersion": 1,
+  "capabilityVersion": "push_up.sequence.phase.v1-proposed",
+  "templateVersion": 1,
+  "engineVersion": "1.0.0",
+  "templateFingerprint": "sha256:bae79954f6e760f44e246244ca09910aa02bb35f1e09eb0efb1c3cc91a44ff39",
+  "status": "draft",
+  "approval": {
+    "status": "trainer_review_required",
+    "automaticApproval": false
+  },
+  "definition": {
+    "exerciseId": "push_up",
+    "sequenceId": "push_up_standard_v1",
+    "sequenceVersion": 1,
+    "capabilityVersion": "push_up.sequence.phase.v1-proposed",
+    "templateVersion": 1,
+    "status": "draft",
+    "requiredLandmarks": [
+      "shoulder",
+      "elbow",
+      "wrist",
+      "hip",
+      "ankle"
+    ],
+    "confidence": {
+      "minimumLandmark": 0.75
+    },
+    "initialPhase": "top",
+    "repetitionPath": [
+      "top",
+      "lowering",
+      "bottom",
+      "rising",
+      "top_complete"
+    ],
+    "measurements": [
+      {
+        "id": "elbow_angle",
+        "type": "joint_angle",
+        "landmarks": [
+          "shoulder",
+          "elbow",
+          "wrist"
+        ]
+      },
+      {
+        "id": "shoulder_to_hip",
+        "type": "normalized_distance",
+        "landmarks": [
+          "shoulder",
+          "hip"
+        ]
+      },
+      {
+        "id": "shoulder_vertical",
+        "type": "relative_landmark_position",
+        "landmarks": [
+          "shoulder"
+        ],
+        "axis": "y",
+        "normalizeBy": "shoulder_to_hip"
+      },
+      {
+        "id": "elbow_direction",
+        "type": "movement_direction",
+        "measurement": "elbow_angle",
+        "positive": "increasing",
+        "negative": "decreasing",
+        "deadband": 4
+      },
+      {
+        "id": "shoulder_direction",
+        "type": "movement_direction",
+        "measurement": "shoulder_vertical",
+        "positive": "lowering",
+        "negative": "rising",
+        "deadband": 0.008
+      },
+      {
+        "id": "body_alignment",
+        "type": "alignment_deviation",
+        "landmarks": [
+          "shoulder",
+          "hip",
+          "ankle"
+        ]
+      }
+    ],
+    "features": [
+      {
+        "id": "bodyAlignment",
+        "measurement": "body_alignment",
+        "weight": 0.2,
+        "required": false
+      },
+      {
+        "id": "elbowAngle",
+        "measurement": "elbow_angle",
+        "weight": 0.35,
+        "required": true
+      },
+      {
+        "id": "relativePosition",
+        "measurement": "shoulder_vertical",
+        "weight": 0.25,
+        "required": true
+      },
+      {
+        "id": "movementDirection",
+        "measurement": "shoulder_direction",
+        "weight": 0.2,
+        "required": true
+      }
+    ],
+    "phases": [
+      {
+        "id": "top",
+        "label": "Top position",
+        "visual": "top",
+        "nextLabel": "Hold the top",
+        "kind": "position",
+        "persistenceFrames": 3,
+        "nextPhase": "lowering",
+        "condition": {
+          "type": "greater_than",
+          "measurement": "elbow_angle",
+          "value": 145
+        }
+      },
+      {
+        "id": "lowering",
+        "label": "Lowering",
+        "visual": "bottom",
+        "nextLabel": "Continue lowering",
+        "kind": "transition",
+        "persistenceFrames": 2,
+        "nextPhase": "bottom",
+        "condition": {
+          "type": "all_of",
+          "conditions": [
+            {
+              "type": "movement_direction",
+              "measurement": "elbow_direction",
+              "value": "decreasing"
+            },
+            {
+              "type": "movement_direction",
+              "measurement": "shoulder_direction",
+              "value": "lowering"
+            }
+          ]
+        }
+      },
+      {
+        "id": "bottom",
+        "label": "Bottom position",
+        "visual": "bottom",
+        "nextLabel": "Hold the bottom",
+        "kind": "position",
+        "persistenceFrames": 3,
+        "nextPhase": "rising",
+        "condition": {
+          "type": "less_than",
+          "measurement": "elbow_angle",
+          "value": 145
+        }
+      },
+      {
+        "id": "rising",
+        "label": "Rising",
+        "visual": "top",
+        "nextLabel": "Continue pressing up",
+        "kind": "transition",
+        "persistenceFrames": 2,
+        "nextPhase": "top_complete",
+        "condition": {
+          "type": "all_of",
+          "conditions": [
+            {
+              "type": "movement_direction",
+              "measurement": "elbow_direction",
+              "value": "increasing"
+            },
+            {
+              "type": "movement_direction",
+              "measurement": "shoulder_direction",
+              "value": "rising"
+            }
+          ]
+        }
+      },
+      {
+        "id": "top_complete",
+        "label": "Top complete",
+        "visual": "top_complete",
+        "nextLabel": "Confirm the top",
+        "kind": "completion",
+        "persistenceFrames": 3,
+        "nextPhase": "top",
+        "completesRepetition": true,
+        "condition": {
+          "type": "greater_than",
+          "measurement": "elbow_angle",
+          "value": 145
+        }
+      }
+    ],
+    "visualTemplate": {
+      "steps": [
+        {
+          "phaseId": "top",
+          "label": "Top position",
+          "visual": "top"
+        },
+        {
+          "phaseId": "bottom",
+          "label": "Bottom position",
+          "visual": "bottom"
+        },
+        {
+          "phaseId": "top_complete",
+          "label": "Top position",
+          "visual": "top"
+        }
+      ]
+    }
+  }
+}

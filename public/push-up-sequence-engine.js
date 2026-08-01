@@ -8,20 +8,9 @@
 
   const SEQUENCE_LANDMARKS = Object.freeze(['shoulder', 'elbow', 'wrist', 'hip', 'ankle']);
   const FEATURE_WEIGHTS = Object.freeze({ bodyAlignment: .2, elbowAngle: .35, relativePosition: .25, movementDirection: .2 });
-  const PUSH_UP_SEQUENCE_DEFINITION = Object.freeze({
-    sequenceId: 'push_up_standard_v1', exerciseId: 'push_up', sequenceVersion: 1,
-    capabilityVersion: 'push_up.sequence.phase.v1-proposed', templateVersion: 1,
-    templateFingerprint: 'sha256:badc1b814829b0b30ea82bf10f08182904db85ba63038ae9aaa9a8c4a458f66b',
-    reviewState: 'trainer_review_required', featureWeights: FEATURE_WEIGHTS,
-    landmarks: SEQUENCE_LANDMARKS,
-    phases: Object.freeze([
-      Object.freeze({ phaseId: 'top', type: 'position' }),
-      Object.freeze({ phaseId: 'lowering', type: 'transition' }),
-      Object.freeze({ phaseId: 'bottom', type: 'position' }),
-      Object.freeze({ phaseId: 'rising', type: 'transition' }),
-      Object.freeze({ phaseId: 'top_complete', type: 'completion' })
-    ])
-  });
+  const definitionSource = typeof require === 'function' ? require('./exercise-sequence-definitions').pushUp : globalScope.ExerciseSequenceDefinitions.pushUp;
+  const genericApi = typeof require === 'function' ? require('./generic-exercise-sequence-engine') : globalScope.GenericExerciseSequenceEngine;
+  const PUSH_UP_SEQUENCE_DEFINITION = Object.freeze({...definitionSource, phases:Object.freeze(definitionSource.phases.map(phase=>Object.freeze({phaseId:phase.id,type:phase.kind,...phase}))), reviewState:'trainer_review_required', featureWeights:FEATURE_WEIGHTS, landmarks:SEQUENCE_LANDMARKS, templateFingerprint:genericApi.fingerprint(definitionSource)});
 
   const angle = (a, b, c) => {
     if (!a || !b || !c) return null;
@@ -63,82 +52,18 @@
   }
 
   class PushUpSequenceMatcher {
-    constructor({ persistenceFrames = 3, transitionFrames = 2, minimumElbowChangeDegrees = 4, bottomElbowReductionDegrees = 25, minimumShoulderTravel = .08 } = {}) {
-      Object.assign(this, { persistenceFrames, transitionFrames, minimumElbowChangeDegrees, bottomElbowReductionDegrees, minimumShoulderTravel });
-      this.reset();
+    constructor(options = {}) {
+      const GESE = typeof require === 'function' ? require('./generic-exercise-sequence-engine') : globalScope.GenericExerciseSequenceEngine;
+      const definitions = typeof require === 'function' ? require('./exercise-sequence-definitions') : globalScope.ExerciseSequenceDefinitions;
+      const definition = JSON.parse(JSON.stringify(definitions.pushUp));
+      if (options.persistenceFrames) for (const phase of definition.phases) if (phase.kind !== 'transition') phase.persistenceFrames=options.persistenceFrames;
+      if (options.transitionFrames) for (const phase of definition.phases) if (phase.kind === 'transition') phase.persistenceFrames=options.transitionFrames;
+      this.engine=new GESE.ExerciseSequenceEngine(definition);this.definition=definition;this.reset();
     }
-    reset() {
-      this.state = 'TOP'; this.repetitions = 0; this.streak = 0; this.transitionStreak = 0; this.previous = null;
-      this.topReference = null; this.phaseEvents = []; this.transitionEvents = []; this.interruptedTransitions = 0; this.unscorableDurationMs = 0; this.lastTimestamp = null; this.safeFrames = 0; this.needsSafeRecovery = false;
-      this.phaseEvaluations = 0; this.phaseMismatches = 0; this.transitionEvaluations = 0; this.transitionMismatches = 0; this.repetitionExplanations = [];
-    }
-    expected() { return this.state; }
-    pause(frame, reason) {
-      if (this.lastTimestamp != null) this.unscorableDurationMs += Math.max(0, Number(frame.timestamp) - this.lastTimestamp);
-      this.lastTimestamp = Number(frame.timestamp);
-      if (this.transitionStreak) this.interruptedTransitions++;
-      this.transitionStreak = 0; this.streak = 0; this.previous = null; this.safeFrames = 0; this.needsSafeRecovery = true;
-      return { phaseMatched: false, transitionMatched: false, repetitionCompleted: false, similarity: result(this.state.toLowerCase(), false, {}, 0, reason), formFindings: [], formScore: null };
-    }
-    observe(frame) {
-      const tracking = frame?.trackingState;
-      if (tracking !== 'LOCKED' || !frame.analysisUsable || frame.recoveredThisFrame) return this.pause(frame || {}, tracking === 'RECOVERING' || frame?.recoveredThisFrame ? 'tracking_recovering' : 'tracking_not_locked');
-      if (Object.values(frame.sequenceLandmarks || frame.landmarks || {}).some(point => point?.displayOnly || point?.cached)) return this.pause(frame, 'display_only_landmarks');
-      if (this.needsSafeRecovery) {
-        this.safeFrames++;
-        if (this.safeFrames < 2) return { phaseMatched: false, transitionMatched: false, repetitionCompleted: false, similarity: result(this.state.toLowerCase(), false, {}, 0, 'safe_reestablishment_required'), formFindings: [], formScore: null };
-        this.needsSafeRecovery = false;
-      }
-      const pose = normalizeSequencePose(frame.sequenceLandmarks || frame.landmarks);
-      this.lastTimestamp = Number(frame.timestamp);
-      if (!pose.usable) return this.pause(frame, pose.unscorableReason);
-      const previous = this.previous;
-      const elbowDelta = previous ? pose.elbowAngle - previous.elbowAngle : 0;
-      const shoulderDelta = previous ? pose.shoulderVertical - previous.shoulderVertical : 0;
-      const downward = shoulderDelta > .008 && elbowDelta < -this.minimumElbowChangeDegrees;
-      const upward = shoulderDelta < -.008 && elbowDelta > this.minimumElbowChangeDegrees;
-      let matched = false, transitionMatched = false, repetitionCompleted = false;
-      let features = { bodyAlignment: pose.bodyAlignmentDeviation == null ? 0 : Math.max(0, 1 - pose.bodyAlignmentDeviation / 45), elbowAngle: 0, relativePosition: 0, movementDirection: 0 };
-      if (this.state === 'TOP') {
-        this.phaseEvaluations++;
-        const candidate = pose.elbowAngle >= 145; // provisional sequence-only threshold; not form feedback.
-        features.elbowAngle = Math.min(1, pose.elbowAngle / 170); features.relativePosition = 1;
-        this.streak = candidate ? this.streak + 1 : 0; if (!candidate) this.phaseMismatches++;
-        if (this.streak >= this.persistenceFrames) { matched = true; this.topReference = { elbowAngle: pose.elbowAngle, shoulderVertical: pose.shoulderVertical }; this.advance('LOWERING', frame.timestamp, 'top'); }
-      } else if (this.state === 'LOWERING') {
-        this.transitionEvaluations++;
-        features.elbowAngle = elbowDelta < 0 ? 1 : 0; features.relativePosition = shoulderDelta > 0 ? 1 : 0; features.movementDirection = downward ? 1 : 0;
-        this.transitionStreak = downward ? this.transitionStreak + 1 : 0; if (!downward) this.transitionMismatches++;
-        if (this.transitionStreak >= this.transitionFrames) { transitionMatched = true; this.advance('BOTTOM', frame.timestamp, 'lowering', true); }
-      } else if (this.state === 'BOTTOM') {
-        this.phaseEvaluations++;
-        const reduction = this.topReference.elbowAngle - pose.elbowAngle;
-        const travel = pose.shoulderVertical - this.topReference.shoulderVertical;
-        const candidate = reduction >= this.bottomElbowReductionDegrees && travel >= this.minimumShoulderTravel;
-        features.elbowAngle = Math.min(1, Math.max(0, reduction / this.bottomElbowReductionDegrees)); features.relativePosition = Math.min(1, Math.max(0, travel / this.minimumShoulderTravel));
-        this.streak = candidate ? this.streak + 1 : 0; if (!candidate) this.phaseMismatches++;
-        if (this.streak >= this.persistenceFrames) { matched = true; this.advance('RISING', frame.timestamp, 'bottom'); }
-      } else if (this.state === 'RISING') {
-        this.transitionEvaluations++;
-        features.elbowAngle = elbowDelta > 0 ? 1 : 0; features.relativePosition = shoulderDelta < 0 ? 1 : 0; features.movementDirection = upward ? 1 : 0;
-        this.transitionStreak = upward ? this.transitionStreak + 1 : 0; if (!upward) this.transitionMismatches++;
-        if (this.transitionStreak >= this.transitionFrames) { transitionMatched = true; this.advance('TOP_COMPLETE', frame.timestamp, 'rising', true); }
-      } else if (this.state === 'TOP_COMPLETE') {
-        this.phaseEvaluations++;
-        const candidate = pose.elbowAngle >= this.topReference.elbowAngle - 15 && pose.shoulderVertical <= this.topReference.shoulderVertical + this.minimumShoulderTravel;
-        features.elbowAngle = candidate ? 1 : 0; features.relativePosition = candidate ? 1 : 0;
-        this.streak = candidate ? this.streak + 1 : 0; if (!candidate) this.phaseMismatches++;
-        if (this.streak >= this.persistenceFrames) { matched = true; repetitionCompleted = true; this.repetitions++; this.advance('TOP', frame.timestamp, 'top_complete'); this.repetitionExplanations.push({ repetition:this.repetitions, timestamp:Number(frame.timestamp), evidence:['top','lowering','bottom','rising','top_complete'] }); }
-      }
-      this.previous = pose;
-      return { phaseMatched: matched, transitionMatched, repetitionCompleted, similarity: result(this.state.toLowerCase(), matched || transitionMatched, features, pose.confidence), formFindings: [], formScore: null };
-    }
-    advance(next, timestamp, phaseId, transition = false) {
-      const event = { phaseId, timestamp: Number(timestamp), matched: true };
-      (transition ? this.transitionEvents : this.phaseEvents).push(event);
-      this.state = next; this.streak = 0; this.transitionStreak = 0;
-    }
-    diagnostics() { return { sequenceId: PUSH_UP_SEQUENCE_DEFINITION.sequenceId, sequenceVersion: 1, templateFingerprint: PUSH_UP_SEQUENCE_DEFINITION.templateFingerprint, phaseEvents: this.phaseEvents.slice(), transitionEvents: this.transitionEvents.slice(), completedSequenceRepetitions: this.repetitions, interruptedTransitions: this.interruptedTransitions, unscorableDurationMs: this.unscorableDurationMs, phaseEvaluations:this.phaseEvaluations, phaseMismatches:this.phaseMismatches, transitionEvaluations:this.transitionEvaluations, transitionMismatches:this.transitionMismatches, repetitionExplanations:this.repetitionExplanations.slice() }; }
+    reset(){this.engine.reset();this.repetitions=0;this.phaseEvents=[];this.transitionEvents=[];this.repetitionExplanations=[];this.interruptedTransitions=0;this.unscorableDurationMs=0;this.phaseEvaluations=0;this.phaseMismatches=0;this.transitionEvaluations=0;this.transitionMismatches=0;this.lastTimestamp=null;}
+    expected(){return this.engine.expected();}
+    observe(frame){const phase=this.definition.phases.find(p=>p.id===this.engine.phase),out=this.engine.observe(frame);if(phase.kind==='transition'){this.transitionEvaluations++;if(!out.transitionMatched)this.transitionMismatches++;}else{this.phaseEvaluations++;if(!out.phaseMatched)this.phaseMismatches++;}if(out.unscorableReason){if(this.lastTimestamp!=null)this.unscorableDurationMs+=Math.max(0,Number(frame?.timestamp)-this.lastTimestamp);this.interruptedTransitions+=phase.kind==='transition'?1:0;}this.lastTimestamp=Number(frame?.timestamp);this.repetitions=this.engine.repetitions;const d=this.engine.diagnostics();this.phaseEvents=d.phaseEvents.map(({phaseId,timestamp,matched})=>({phaseId,timestamp,matched}));this.transitionEvents=d.transitionEvents.map(({phaseId,timestamp,matched})=>({phaseId,timestamp,matched}));this.repetitionExplanations=d.repetitionExplanations;return out;}
+    diagnostics(){return{sequenceId:this.definition.sequenceId,sequenceVersion:this.definition.sequenceVersion,templateFingerprint:this.engine.templateFingerprint,phaseEvents:this.phaseEvents.slice(),transitionEvents:this.transitionEvents.slice(),completedSequenceRepetitions:this.repetitions,interruptedTransitions:this.interruptedTransitions,unscorableDurationMs:this.unscorableDurationMs,phaseEvaluations:this.phaseEvaluations,phaseMismatches:this.phaseMismatches,transitionEvaluations:this.transitionEvaluations,transitionMismatches:this.transitionMismatches,repetitionExplanations:this.repetitionExplanations.slice(),decisionEvidence:this.engine.decisionEvidence.slice()};}
   }
 
   return Object.freeze({ SEQUENCE_LANDMARKS, FEATURE_WEIGHTS, PUSH_UP_SEQUENCE_DEFINITION, normalizeSequencePose, PushUpSequenceMatcher });
