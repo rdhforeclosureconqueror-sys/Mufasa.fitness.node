@@ -13,6 +13,8 @@ module.exports = Object.freeze({
   "public/exercise-library.js": "Exercise cards encode catalog data; error output is rendered as text.",
   "public/app-hydration-runtime.js": "Only clears an existing container.",
   "public/coach-runtime.js": "Only clears a select before createElement option rendering."
+  ,"public/notifications.js": "Constant structural shell only; all notification fields are rendered with textContent and action URLs are allow-listed."
+  ,"public/leaderboards.js": "Constant structural shell and table header only; every ranking field is rendered with textContent."
   ,"public/workout.html": "Compatibility bootstrap writes a constant local script tag only; no untrusted interpolation."
   ,"public/greatness.js": "Greatness templates render server-controlled activity enums, identifiers, numeric metrics, and fixed application copy; route geometry is drawn to canvas."
   ,"public/map-diagnostics.js": "Temporary diagnostics templates escape every browser, URL, error, and event value; structural markup is fixed."

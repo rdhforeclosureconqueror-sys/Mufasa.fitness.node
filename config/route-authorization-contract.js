@@ -3,11 +3,12 @@
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
   ...[
-    ["GET", "/api/admin/diagnostics/summary"], ["POST", "/api/admin/diagnostics/run"],
+    ["GET", "/api/admin/diagnostics/summary"], ["GET", "/api/admin/launch-health"], ["POST", "/api/admin/diagnostics/run"],
     ["POST", "/api/admin/diagnostics/external-checks"], ["GET", "/api/admin/diagnostics/environment"],
     ["GET", "/api/admin/diagnostics/capabilities"], ["GET", "/api/admin/diagnostics/member-journey"],
     ["GET", "/api/admin/diagnostics/gamification"], ["GET", "/api/admin/diagnostics/billing"],
-    ["GET", "/api/admin/diagnostics/builds"], ["GET", "/api/admin/diagnostics/export"]
+    ["GET", "/api/admin/diagnostics/builds"], ["GET", "/api/admin/diagnostics/export"],
+    ["PUT", "/api/admin/diagnostics/member-journey/designation"]
   ].map(([method, routePath]) => Object.freeze({
     method, path: routePath, authentication: "required", allowedRoles: ["super_admin", "admin", "operator"],
     requiredPermissions: ["ops.read_observability"], membership: "not-required", ownership: "privileged",
@@ -55,6 +56,8 @@ module.exports = Object.freeze([
     publicOutput: "sensitive-private", rateLimit, compatibility: null, publicWrite: null
   })),
   { method: "GET", path: "/api/me/gamification", authentication: "required", allowedRoles: [], requiredPermissions: [], membership: "not-required", ownership: "authenticated-user", featureFlag: "GAMIFICATION_READ_API", publicOutput: "sensitive-private", rateLimit: null, compatibility: null, publicWrite: null },
+  ...[["GET", "/api/me/notifications"], ["GET", "/api/me/notifications/unread-count"], ["POST", "/api/me/notifications/:notificationId/read"], ["POST", "/api/me/notifications/read-all"], ["POST", "/api/me/notifications/:notificationId/dismiss"]].map(([method, routePath]) => Object.freeze({ method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [], membership: "not-required", ownership: "authenticated-user", featureFlag: "GAMIFICATION_NOTIFICATIONS", publicOutput: "sensitive-private", rateLimit: "60/minute/user", compatibility: null, publicWrite: method === "POST" ? "owner-scoped-state-transition" : null })),
+  ...[["GET", "/api/me/leaderboards"], ["GET", "/api/me/leaderboards/:leaderboardId"], ["GET", "/api/me/leaderboards/:leaderboardId/position"], ["PUT", "/api/me/leaderboard-preferences"]].map(([method, routePath]) => Object.freeze({ method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [], membership: "not-required", ownership: "authenticated-user", featureFlag: "GAMIFICATION_LEADERBOARDS", publicOutput: "privacy-filtered", rateLimit: "60/minute/user", compatibility: null, publicWrite: method === "PUT" ? "owner-scoped-preferences" : null })),
   ...[
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
@@ -93,17 +96,18 @@ module.exports = Object.freeze([
   {
     "method": "GET",
     "path": "/__version",
-    "authentication": "required",
+    "authentication": "public",
     "allowedRoles": [],
     "requiredPermissions": [],
     "membership": "not-required",
-    "ownership": "authenticated-user",
+    "ownership": "not-applicable",
     "featureFlag": null,
     "publicOutput": "authenticated-safe",
     "rateLimit": null,
     "compatibility": null,
     "publicWrite": null
   },
+  { "method":"GET", "path":"/__frontend-version.json", "authentication":"public", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"not-applicable", "featureFlag":null, "publicOutput":"public-build-metadata", "rateLimit":null, "compatibility":null, "publicWrite":null },
   {
     "method": "GET",
     "path": "/api/admin/diagnostics/recent",

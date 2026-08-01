@@ -86,6 +86,7 @@
     const pilot = report?.pilotReadiness || {};
     const summary = report?.openAiSummary || {};
     const avatarRuntime = payload?.runtime?.avatarRuntimeStatus || null;
+    const avatarEnabled = report?.launchHealth?.avatar?.enabled === true;
     const warnings = Array.isArray(pilot?.warnings) ? pilot.warnings : [];
     const blockers = Array.isArray(pilot?.blockers) ? pilot.blockers : [];
     const missingEvidence = Array.isArray(pilot?.missingEvidence) ? pilot.missingEvidence : [];
@@ -107,7 +108,7 @@
       `OpenAI likely root cause: ${summary?.likelyRootCause || "n/a"}`,
       `Next action: ${fallbackNextAction}`,
       `Raw route check: pass=${report?.routeCheck?.passCount ?? "n/a"} fail=${report?.routeCheck?.failCount ?? "n/a"}`,
-      `Raw runtime avatar status: ${avatarRuntime ? "present" : "missing"}`,
+      `Avatar capability: ${avatarEnabled ? (avatarRuntime ? "enabled and initialized" : "enabled; not initialized") : "DISABLED_INTENTIONALLY"}`,
       `Three bridge fix active: ${avatarRuntime?.threeBridgeFixActive === true ? "yes" : "no"}`,
       `window.__AVATAR_THREE exists: ${avatarRuntime?.avatarThreeGlobalOk === true ? "yes" : "no"}`,
       `window.__AVATAR_THREE.THREE exists: ${avatarRuntime?.threeImportOk === true ? "yes" : "no"}`,
@@ -151,7 +152,7 @@
       `Avatar fetch status: ${avatarRuntime?.lastAvatarFetchStatus ?? "n/a"}`,
       `Avatar fetch bytes: ${avatarRuntime?.lastAvatarFetchBytes ?? "n/a"}`,
       `Avatar fetch MIME: ${avatarRuntime?.lastAvatarFetchMime || "n/a"}`
-    ].join("\n");
+    ].filter(line => avatarEnabled || !/Three|GLTF|Avatar failure|Avatar glb|Avatar WebGL|Avatar renderer|Avatar canvas|Avatar model|Avatar scene|Avatar overlay|Avatar last|Avatar fetch|Bridge issue|Import map/.test(line)).join("\n");
   }
 
   async function runDiagnostic() {

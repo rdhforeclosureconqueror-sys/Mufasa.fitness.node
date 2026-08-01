@@ -1,13 +1,10 @@
-# Platform Launch Runbook
+# Platform launch runbook
 
-1. Pin the release commit and Node version; install from lockfile; run every required validation command.
-2. Validate required environment without printing values: auth secret, login/identity provider, storage/database paths, public origins, AI key/model, TTS integration, admin allowlists, rate limits, and all feature flags.
-3. Back up durable stores and verify checksums/restoration. Apply migrations in order and validate permissions/generation directories.
-4. Enable only reviewed V1 flags in staging. Keep excluded domains hidden. Validate active XP/catalog/content versions against the build manifest.
-5. Run deterministic fixture journeys and Chromium/Firefox/WebKit desktop/mobile/tablet acceptance; capture accessibility/content/Yoga sign-offs.
-6. Verify health/version endpoints, logs without secrets, alerting, AI cost/rate/circuit limits, completion latency, projection lag, event integrity, and replay parity.
-7. Deploy incrementally, run authenticated smoke tests, monitor 4xx/5xx, latency, event capture, projection/replay, and AI failures.
-8. On failure disable affected flags, stop writes if integrity is uncertain, preserve evidence, and follow `ROLLBACK_PLAN.md`.
+## Preflight
+Configure durable storage, production authentication/authorization, complete gamification flags, notification and leaderboard flags, AI capability-specific provider/model settings, and Stripe settings. Do not modify credentials through diagnostics. Validate exact build endpoints/CORS/cache headers from the deployed browser path.
 
-Operators: release engineer owns deploy/rollback; security owner owns auth/permissions/secrets; data owner owns backup/migrations; product owner owns scope/flags; content and movement reviewers own exercise/Yoga approval; accessibility lead owns sign-off; AI owner owns provider budgets and circuit breaker.
+## Acceptance
+Run the complete automated suite and route contract. Use an approved member fixture for onboarding, program, workout, Yoga, first reward, notification, leaderboard, AI context, Greatness, and Push-Up reads/writes. Exercise keyboard, screen-reader labels, reduced motion, and narrow/mobile layouts. Run provider connectivity only through Safe External Checks and record sanitized status/latency.
 
+## Decision and rollback
+Deterministic/in-app testing may be GO when build, storage, core journey capabilities, notification service, universal leaderboard, separate Push-Up leaderboard, and security checks are ready. Full live testing remains GO WITH LIMITATIONS until deployed cache/browser and requested external checks succeed. Disable affected flags and revert application revision to roll back; preserve authoritative and audit data.

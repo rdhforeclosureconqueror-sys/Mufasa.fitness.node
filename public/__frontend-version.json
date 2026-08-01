@@ -1,6 +1,7 @@
 {
   "build": "2026-07-31-launch-readiness",
-  "commit": "generated-at-deploy",
+  "commit": null,
+  "assetCacheToken": "20260731-launch-readiness",
   "timestamp": "2026-07-31T00:00:00Z",
   "shell": "public/index.html"
 }

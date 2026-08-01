@@ -250,6 +250,9 @@
       const res = await fetch("/__frontend-version.json", { cache: "no-store" });
       if (!res.ok) return "unknown";
       const payload = await res.json();
+      window.FRONTEND_BUILD_VERSION = payload?.build || null;
+      window.FRONTEND_COMMIT = payload?.commit || null;
+      window.FRONTEND_ASSET_CACHE_TOKEN = payload?.assetCacheToken || null;
       return payload?.build || "unknown";
     } catch {
       return "unknown";
@@ -374,9 +377,9 @@
       const avatarRuntime = payload?.runtime?.avatarRuntimeStatus || null;
       diagnosticStatus.textContent = [
         `Build: ${report?.buildVersion || "unknown"}`,
-        `Avatar runtime: ${avatarRuntime ? "present" : "missing"}`,
-        `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "missing"}`,
-        `Camera status: ${payload?.runtime?.cameraStatus || "unknown"}`,
+        `Avatar runtime: ${launchHealth?.avatar?.enabled === false ? "DISABLED_INTENTIONALLY" : (avatarRuntime ? "present" : "not initialized")}`,
+        `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "capability not requested on this page"}`,
+        `Camera status: ${payload?.runtime?.cameraStatus || "capability not requested on this page"}`,
         `Three bridge fix active: ${avatarRuntime?.threeBridgeFixActive === true ? "yes" : "no"}`,
         `window.__AVATAR_THREE exists: ${avatarRuntime?.avatarThreeGlobalOk === true ? "yes" : "no"}`,
         `window.__AVATAR_THREE.THREE exists: ${avatarRuntime?.threeImportOk === true ? "yes" : "no"}`,
@@ -418,7 +421,7 @@
         `Confidence: ${summary?.confidence ?? "n/a"}`,
         `Suggested Codex fix: ${summary?.codexFixMessage || "n/a"}`,
         `Summary: ${summary?.summary || "No OpenAI summary available."}`
-      ].join("\\n");
+      ].filter(line => launchHealth?.avatar?.enabled !== false || !/Three|GLTF|Avatar model|Avatar scene|Avatar canvas|Avatar overlay|Bridge issue|Import map/.test(line)).join("\\n");
       renderOpenAiSummaryCard(report);
       renderLaunchHealth(launchHealth);
       if (pilotReadinessStatus) {

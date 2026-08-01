@@ -560,3 +560,7 @@ Motion primarily uses opacity and transform; only the bounded XP fill width anim
 ## Rollback strategy
 
 Revert the progression sprint commit to restore the prior single-card renderer and stylesheet. No database, API, policy, projection, replay, or persistence rollback is necessary. If only celebrations require mitigation, remove the refresh-event listener and celebration layer while leaving the authoritative dashboard renderer active.
+
+## 2026-07-31 — Launch notifications and universal standings
+
+Added durable in-app projections for existing authoritative workout, Yoga, and program events, plus universal approved-XP standings for lifetime, rolling seven-day, and rolling 30-day periods. No XP values were added or changed. Greatness and Push-Up event names are reserved in the notification contract, but XP is not awarded until their persistence services expose reviewed post-commit adapters. Push-Up score ranking remains separate.

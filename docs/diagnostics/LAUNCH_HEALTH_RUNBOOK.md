@@ -1,11 +1,9 @@
-# Launch Health Runbook
+# Launch Health runbook
 
-1. Open the dashboard with an administrator identity having `ops.read_observability`.
-2. Run **Run Full Diagnostic** and confirm deployment identifiers, environment metadata, storage, catalogs, and capability groups.
-3. Export the redacted report; inspect blockers before sharing it.
-4. Only when provider verification is desired, run **Run Safe External Checks**. Stripe performs a read-only Price lookup with a five-second timeout.
-5. Run production environment and route validation commands from launch documentation.
-6. Redeploy the frontend separately when `frontend_stale`/`build_mismatch` appears, then invalidate static cache and confirm asset revision tokens.
-7. Never paste secrets into reports or change provider resources from diagnostics.
+1. Verify both public version endpoints return schema v1, exact build `2026-07-31-launch-readiness`, `Cache-Control: no-store`, the build header, and token `20260731-launch-readiness`. Inspect the deployed browser/CDN response before claiming cache freshness.
+2. Run deterministic diagnostics as an authorized operator. Confirm storage, policies, notifications, universal leaderboard, separate Push-Up leaderboard, raw-context classification, and route authorization.
+3. Designate an approved existing fixture member and inspect without mutation.
+4. Explicitly select AI Coach, diagnostic summarizer, and Stripe Safe External Checks as required. Never infer reachability from credentials.
+5. Complete notification/leaderboard acceptance from their runbooks. Preserve redacted exports for evidence.
 
-Rollback is one code rollback of the launch-health commit. Existing `/api/admin/diagnostics/report` and `/recent` remain compatible; disabling the new UI does not alter member services. Do not roll back data catalogs or member persistence to undo console presentation.
+Rollback uses feature flags plus application revision. Preserve events, ledgers, notification audit, user preferences, and admin audit. Never expose secrets or Render deployment metadata.

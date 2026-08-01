@@ -83,6 +83,9 @@
     const payload = {
       build: {
         appBuildVersion: globalScope.APP_BUILD_VERSION || null,
+        frontendBuild: globalScope.FRONTEND_BUILD_VERSION || null,
+        frontendCommit: globalScope.FRONTEND_COMMIT || null,
+        assetCacheToken: globalScope.FRONTEND_ASSET_CACHE_TOKEN || null,
         url: globalScope.location?.href || null,
         userAgent,
         deviceType: getDeviceType(),
@@ -174,17 +177,15 @@
 
   async function postDiagnostic(source, reason) {
     const report = collectDiagnosticReport();
+    const token = getDiagnosticsAuthToken();
+    if (!token) {
+      report.source = source; report.reason = reason || null; globalScope.__lastDiagnosticReport = report;
+      const result = { ok: false, skipped: true, reason: "missing_auth_token", report };
+      state.lastReportStatus = result; globalScope.__lastDiagnosticReportStatus = result; return result;
+    }
     report.source = source;
     report.reason = reason || null;
     globalScope.__lastDiagnosticReport = report;
-
-    const token = getDiagnosticsAuthToken();
-    if (!token) {
-      const result = { ok: false, skipped: true, reason: "missing_auth_token", report };
-      state.lastReportStatus = result;
-      globalScope.__lastDiagnosticReportStatus = result;
-      return result;
-    }
 
     try {
       const backendOrigin = globalScope.RuntimeState?.getBackendOrigin?.() || globalScope.location?.origin || "";
