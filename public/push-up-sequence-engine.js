@@ -1,9 +1,9 @@
 (function installPushUpSequenceEngine(globalScope, factory) {
   'use strict';
-  const api = factory();
+  const api = factory(globalScope);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (globalScope) globalScope.PushUpSequenceEngine = api;
-})(typeof window !== 'undefined' ? window : globalThis, function pushUpSequenceEngineFactory() {
+})(typeof window !== 'undefined' ? window : globalThis, function pushUpSequenceEngineFactory(globalScope) {
   'use strict';
 
   const SEQUENCE_LANDMARKS = Object.freeze(['shoulder', 'elbow', 'wrist', 'hip', 'ankle']);
