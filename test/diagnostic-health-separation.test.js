@@ -1,0 +1,5 @@
+"use strict";
+const test = require("node:test"), assert = require("node:assert/strict");
+const { classifyBuilds, aiStatic } = require("../src/diagnostics/launchHealthService");
+test("build compatibility requires exact available identifiers", () => { assert.equal(classifyBuilds({ frontendBuild: "2026-07-31-launch-readiness", backendBuild: "2026-07-31-launch-readiness" }).compatible, true); assert.equal(classifyBuilds({ frontendBuild: "2026-07-31-a", backendBuild: "2026-07-31-b" }).compatible, false); assert.equal(classifyBuilds({ frontendBuild: "", backendBuild: "x" }).compatible, null); });
+test("AI Coach and summarizer readiness are independent and secret-free", () => { const env = { AI_COACH_ENABLED: "true", AI_COACH_MODEL: "coach-model", AI_COACH_PROVIDER: "openai", OPENAI_API_KEY: "secret", DIAGNOSTIC_SUMMARIZER_ENABLED: "true" }; assert.equal(aiStatic(env, "AI_COACH").staticReadiness, "READY"); assert.equal(aiStatic(env, "DIAGNOSTIC_SUMMARIZER").staticReadiness, "CONFIGURATION_MISSING"); assert.doesNotMatch(JSON.stringify(aiStatic(env, "AI_COACH")), /secret/); });

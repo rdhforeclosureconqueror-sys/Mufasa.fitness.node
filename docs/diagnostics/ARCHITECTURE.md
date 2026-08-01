@@ -1,5 +1,7 @@
-# Launch Health Console Architecture
+# Launch Health architecture
 
-The admin-only launch health console extends the existing dashboard diagnostic flow; it does not create a parallel diagnostic product. Deterministic checks in `launchHealthService` are canonical. The capability registry declares Version 1 dependencies once, the environment validator emits metadata only, and AI can only summarize an already-built report. Reports use the status vocabulary `READY`, `READY_WITH_LIMITATION`, `DEGRADED`, `BLOCKED`, `DISABLED_INTENTIONALLY`, `EXCLUDED_FROM_V1`, and `UNKNOWN`.
+Launch Health uses deterministic static checks and read-only persistence evidence. Exact frontend and backend identifiers are required; same-date variants are a mismatch. The frontend manifest and backend `/__version` are no-store evidence, and the static shell uses a cache-busting token. Commit IDs are optional and safely truncated; private Render deployment IDs are not exposed.
 
-All `/api/admin/diagnostics/*` routes require `ops.read_observability`. Static checks make no provider calls. External checks require an explicit POST opt-in. Export is generated at runtime and redacted by construction.
+AI Coach and diagnostic summarizer have separate enablement, provider, model, credential-presence, static-readiness, and external-check results. Provider calls occur only through Safe External Checks. Deterministic diagnostics do not depend on either provider.
+
+Disabled Avatar probes are marked `DISABLED_INTENTIONALLY`; Three.js repair advice is not launch evidence. Camera/form states are `not requested` until their page initializes them, rather than failures.

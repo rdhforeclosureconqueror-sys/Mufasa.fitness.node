@@ -374,9 +374,9 @@
       const avatarRuntime = payload?.runtime?.avatarRuntimeStatus || null;
       diagnosticStatus.textContent = [
         `Build: ${report?.buildVersion || "unknown"}`,
-        `Avatar runtime: ${avatarRuntime ? "present" : "missing"}`,
-        `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "missing"}`,
-        `Camera status: ${payload?.runtime?.cameraStatus || "unknown"}`,
+        `Avatar runtime: ${launchHealth?.avatar?.enabled === false ? "DISABLED_INTENTIONALLY" : (avatarRuntime ? "present" : "not initialized")}`,
+        `Form engine: ${payload?.runtime?.formEngineStatus ? "present" : "capability not requested on this page"}`,
+        `Camera status: ${payload?.runtime?.cameraStatus || "capability not requested on this page"}`,
         `Three bridge fix active: ${avatarRuntime?.threeBridgeFixActive === true ? "yes" : "no"}`,
         `window.__AVATAR_THREE exists: ${avatarRuntime?.avatarThreeGlobalOk === true ? "yes" : "no"}`,
         `window.__AVATAR_THREE.THREE exists: ${avatarRuntime?.threeImportOk === true ? "yes" : "no"}`,
@@ -418,7 +418,7 @@
         `Confidence: ${summary?.confidence ?? "n/a"}`,
         `Suggested Codex fix: ${summary?.codexFixMessage || "n/a"}`,
         `Summary: ${summary?.summary || "No OpenAI summary available."}`
-      ].join("\\n");
+      ].filter(line => launchHealth?.avatar?.enabled !== false || !/Three|GLTF|Avatar model|Avatar scene|Avatar canvas|Avatar overlay|Bridge issue|Import map/.test(line)).join("\\n");
       renderOpenAiSummaryCard(report);
       renderLaunchHealth(launchHealth);
       if (pilotReadinessStatus) {

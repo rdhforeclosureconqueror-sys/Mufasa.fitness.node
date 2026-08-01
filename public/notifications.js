@@ -1,0 +1,16 @@
+(function (win) {
+  "use strict";
+  const token = () => win.AuthStateRuntime?.getAuthToken?.() || win.APP_AUTH?.token || null;
+  async function request(path, options = {}) { const auth = token(); if (!auth) throw new Error("Sign in to view notifications."); const response = await win.fetch(path, { ...options, headers: { "content-type": "application/json", authorization: `Bearer ${auth}` } }); const body = await response.json(); if (!response.ok) throw new Error(body?.error?.message || "Notifications unavailable"); return body.data; }
+  function safeRoute(route) { return ["/dashboard.html", "/workout.html", "/yoga.html", "/greatness.html", "/push-up-challenge.html"].includes(route) ? route : "/dashboard.html"; }
+  async function mount() {
+    const root = win.document.getElementById("notificationExperience"); if (!root) return;
+    root.innerHTML = '<button class="notification-bell" type="button" aria-expanded="false" aria-controls="notificationPanel">Notifications <span data-notification-count aria-live="polite">0</span></button><section id="notificationPanel" hidden><header><h2>Notifications</h2><button type="button" data-read-all>Mark all read</button></header><div data-notification-list role="list"><p>Your notification history is empty.</p></div></section>';
+    const bell = root.querySelector(".notification-bell"), panel = root.querySelector("#notificationPanel"), list = root.querySelector("[data-notification-list]"), count = root.querySelector("[data-notification-count]");
+    async function refresh() { try { const [page, unread] = await Promise.all([request("/api/me/notifications?limit=20"), request("/api/me/notifications/unread-count")]); count.textContent = String(unread.unreadCount); list.replaceChildren(); if (!page.notifications.length) { const p = document.createElement("p"); p.textContent = "You're all caught up. New milestones will appear here."; list.append(p); } for (const item of page.notifications) { const article = document.createElement("article"); article.setAttribute("role", "listitem"); const a = document.createElement("a"); a.href = safeRoute(item.actionRoute); a.textContent = item.title; const p = document.createElement("p"); p.textContent = item.body; const dismiss = document.createElement("button"); dismiss.type = "button"; dismiss.textContent = "Dismiss"; dismiss.addEventListener("click", async () => { await request(`/api/me/notifications/${encodeURIComponent(item.notificationId)}/dismiss`, { method: "POST" }); await refresh(); }); article.append(a, p, dismiss); list.append(article); } } catch (error) { list.textContent = error.message; } }
+    bell.addEventListener("click", async () => { panel.hidden = !panel.hidden; bell.setAttribute("aria-expanded", String(!panel.hidden)); if (!panel.hidden) await refresh(); });
+    root.querySelector("[data-read-all]").addEventListener("click", async () => { await request("/api/me/notifications/read-all", { method: "POST" }); await refresh(); });
+    await refresh();
+  }
+  win.addEventListener("DOMContentLoaded", mount);
+})(window);

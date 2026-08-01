@@ -105,6 +105,9 @@ const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
 const { evaluatePilotReadiness } = require("./src/lib/pilotReadinessEvaluator");
 const { buildLaunchHealth, redactedExport } = require("./src/diagnostics/launchHealthService");
 const { publicCapabilityRegistry } = require("./src/diagnostics/capabilityRegistry");
+const { createNotificationService } = require("./src/notifications/notificationService");
+const { createLeaderboardService } = require("./src/leaderboards/leaderboardService");
+const { createMemberJourneyService } = require("./src/diagnostics/memberJourneyService");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -400,6 +403,7 @@ function createApp(options = {}) {
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
   const gamificationConfig = loadGamificationConfig(options.env || process.env);
   let gamificationEventService = null;
+  let gamificationEventStore = null;
   let achievementService = null;
   let gamificationReadService = null;
   let memberGamificationService = null;
@@ -407,7 +411,7 @@ function createApp(options = {}) {
   let policyManager = null;
   let gamificationPreflightService = null;
   if (gamificationConfig.eventCapture) {
-    const gamificationEventStore = createGamificationEventStore({ filePath: options.gamificationEventPath || GAMIFICATION_EVENT_PATH });
+    gamificationEventStore = createGamificationEventStore({ filePath: options.gamificationEventPath || GAMIFICATION_EVENT_PATH });
     gamificationEventService = createEventService({ eventStore: gamificationEventStore });
     if (gamificationConfig.evaluation) {
       const definitions = validateAchievementDefinitions(require(options.gamificationAchievementPath || path.join(rootDir, "data", "gamification", "achievements.json")).definitions);
@@ -456,6 +460,10 @@ function createApp(options = {}) {
       }
     }
   }
+  const notificationService = gamificationConfig.notifications && gamificationEventStore
+    ? createNotificationService({ filePath: options.notificationPath || path.join(DATA_DIR, "gamification", "notifications.json") }) : null;
+  const leaderboardService = gamificationConfig.leaderboards && gamificationReadService
+    ? createLeaderboardService({ readModelService: gamificationReadService, userStore }) : null;
   const workoutCompletedAdapter = gamificationConfig.eventCapture && gamificationConfig.sources.workoutCompleted
     ? (fact) => {
       const result = gamificationEventService.recordWorkoutCompleted(fact);
@@ -474,6 +482,7 @@ function createApp(options = {}) {
   const nutritionService = createNutritionService({ userStore });
   const programPersistence = createProgramPersistence({ userStore });
   const programService = createProgramService({ persistence: programPersistence, eventAdapter: gamificationEventService ? (fact) => { const result=gamificationEventService.recordProgramEvent(fact); achievementService?.replay(); return result; } : null });
+  const memberJourneyService = createMemberJourneyService({ filePath: path.join(OPS_DIR, "diagnostic-member.json"), userStore, memberGamificationService, programService, steppingService, challengeService });
   const memberExerciseService = createMemberExerciseService({ programService, userStore });
   const exerciseCurationService = createExerciseCurationService({ audit: event => auditLog.appendEvent({ ...event, source: "exercise-curation" }) });
   const coachContextService = createCoachContextService({ userStore, memberGamificationService, programService, challengeService });
@@ -734,6 +743,8 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.json({
       build: APP_BUILD_VERSION,
+      commit: String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "").slice(0, 40) || null,
+      assetCacheToken: INDEX_CACHE_BUST_TOKEN,
       loginDisabledForPilot: disableLoginForPilot,
       loginRemovedForPilot: disableLoginForPilot,
       pilotSuperAdminActive: disableLoginForPilot,
@@ -907,6 +918,21 @@ function createApp(options = {}) {
     });
   }
 
+  if (notificationService) {
+    const projectNotifications = () => { try { notificationService.ingestEvents(gamificationReadService?.events?.() || []); } catch (error) { console.error("Notification projection failed", { errorCode: "NOTIFICATION_PROJECTION_FAILED" }); } };
+    app.get("/api/me/notifications", requireAuth, (req, res) => { projectNotifications(); res.set("Cache-Control", "private, no-store"); return ok(res, req.requestId, notificationService.list(req.auth.userId, req.query)); });
+    app.get("/api/me/notifications/unread-count", requireAuth, (req, res) => { projectNotifications(); res.set("Cache-Control", "private, no-store"); return ok(res, req.requestId, { unreadCount: notificationService.unreadCount(req.auth.userId) }); });
+    app.post("/api/me/notifications/:notificationId/read", requireAuth, (req, res) => { const result = notificationService.markRead(req.auth.userId, req.params.notificationId); if (!result) throw new ApiError("NOTIFICATION_NOT_FOUND", "Notification not found", 404); return ok(res, req.requestId, result); });
+    app.post("/api/me/notifications/read-all", requireAuth, (req, res) => ok(res, req.requestId, notificationService.readAll(req.auth.userId)));
+    app.post("/api/me/notifications/:notificationId/dismiss", requireAuth, (req, res) => { const result = notificationService.dismiss(req.auth.userId, req.params.notificationId); if (!result) throw new ApiError("NOTIFICATION_NOT_FOUND", "Notification not found", 404); return ok(res, req.requestId, result); });
+  }
+  if (leaderboardService) {
+    app.get("/api/me/leaderboards", requireAuth, (req, res) => ok(res, req.requestId, { leaderboards: leaderboardService.definitions(), preferences: leaderboardService.preferences(req.auth.userId) }));
+    app.get("/api/me/leaderboards/:leaderboardId", requireAuth, (req, res) => { const result = leaderboardService.calculate(req.auth.userId, req.params.leaderboardId, req.query); if (!result) throw new ApiError("LEADERBOARD_NOT_FOUND", "Leaderboard not found", 404); res.set("Cache-Control", "private, no-store"); return ok(res, req.requestId, result); });
+    app.get("/api/me/leaderboards/:leaderboardId/position", requireAuth, (req, res) => { const result = leaderboardService.calculate(req.auth.userId, req.params.leaderboardId, { limit: 1 }); if (!result) throw new ApiError("LEADERBOARD_NOT_FOUND", "Leaderboard not found", 404); return ok(res, req.requestId, { leaderboardId: result.leaderboardId, position: result.selfPosition }); });
+    app.put("/api/me/leaderboard-preferences", requireAuth, (req, res) => ok(res, req.requestId, leaderboardService.updatePreferences(req.auth.userId, req.body || {})));
+  }
+
   if (gamificationReadService) {
     const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
     const mutationGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.GAMIFICATION_OPERATIONS_MANAGE, trackAdminOpsAuthorizationDecision);
@@ -1030,30 +1056,45 @@ function createApp(options = {}) {
   );
 
   const diagnosticGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+  const frontendManifest = () => { try { return readJSON(path.join(PUBLIC_DIR, "__frontend-version.json")); } catch { return {}; } };
   const currentHealth = (req = null) => buildLaunchHealth({
     env: process.env, rootDir, dataDir: DATA_DIR,
-    frontendBuild: req?.body?.frontendBuild || req?.query?.frontendBuild || process.env.FRONTEND_BUILD_VERSION,
+    frontendBuild: req?.body?.frontendBuild || req?.query?.frontendBuild || frontendManifest().build,
     backendBuild: APP_BUILD_VERSION,
-    memberEvidence: req?.body?.memberEvidence || null
+    frontendCommit: frontendManifest().commit || null,
+    backendCommit: String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "").slice(0, 40) || null,
+    assetCacheToken: INDEX_CACHE_BUST_TOKEN,
+    memberEvidence: req?.body?.memberEvidence || null,
+    implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health() }
   });
   app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
   app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });
   app.get("/api/admin/diagnostics/environment", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).environment));
   app.get("/api/admin/diagnostics/capabilities", diagnosticGuard, (req, res) => ok(res, req.requestId, { capabilities: publicCapabilityRegistry() }));
-  app.get("/api/admin/diagnostics/member-journey", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).memberJourney));
+  app.get("/api/admin/diagnostics/member-journey", diagnosticGuard, (req, res) => ok(res, req.requestId, memberJourneyService.inspect()));
+  app.put("/api/admin/diagnostics/member-journey/designation", diagnosticGuard, (req, res) => ok(res, req.requestId, memberJourneyService.designate(req.body?.memberId)));
   app.get("/api/admin/diagnostics/gamification", diagnosticGuard, (req, res) => { const health = latestLaunchHealth || currentHealth(req); return ok(res, req.requestId, { ...health.gamification, rewardSimulation: health.rewardSimulation, notifications: health.notifications, leaderboards: health.leaderboards }); });
   app.get("/api/admin/diagnostics/billing", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).stripe));
   app.get("/api/admin/diagnostics/builds", diagnosticGuard, (req, res) => ok(res, req.requestId, currentHealth(req).builds));
   app.get("/api/admin/diagnostics/export", diagnosticGuard, (req, res) => { res.set("Content-Disposition", "attachment; filename=launch-health-redacted.json"); return ok(res, req.requestId, redactedExport(latestLaunchHealth || currentHealth(req))); });
   app.post("/api/admin/diagnostics/external-checks", diagnosticGuard, asyncHandler(async (req, res) => {
     const requested = req.body?.stripe === true;
-    if (!requested) return ok(res, req.requestId, { stripe: { performed: false, status: "opt_in_required" } });
+    const aiRequested = ["aiCoach", "diagnosticSummarizer"].filter(name => req.body?.[name] === true);
+    const aiResults = {};
+    for (const name of aiRequested) {
+      const prefix = name === "aiCoach" ? "AI_COACH" : "DIAGNOSTIC_SUMMARIZER", model = process.env[`${prefix}_MODEL`];
+      if (process.env[`${prefix}_ENABLED`] !== "true" || !model || !process.env.OPENAI_API_KEY) { aiResults[name] = { performed: false, status: "CONFIGURATION_MISSING", latencyMs: null }; continue; }
+      const started = Date.now();
+      try { const response = await (options.fetch || global.fetch)(`https://api.openai.com/v1/models/${encodeURIComponent(model)}`, { headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }); aiResults[name] = { performed: true, status: response.ok ? "READY" : response.status === 401 ? "AUTHENTICATION_FAILED" : response.status === 429 ? "RATE_LIMITED" : response.status === 404 ? "MODEL_UNAVAILABLE" : "PROVIDER_UNREACHABLE", latencyMs: Date.now() - started, checkedAt: new Date().toISOString(), model, provider: "openai" }; }
+      catch { aiResults[name] = { performed: true, status: "PROVIDER_UNREACHABLE", latencyMs: Date.now() - started, checkedAt: new Date().toISOString(), model, provider: "openai" }; }
+    }
+    if (!requested) return ok(res, req.requestId, { ...aiResults, stripe: { performed: false, status: "opt_in_required" } });
     const staticHealth = currentHealth(req).stripe;
     if (staticHealth.status !== "READY") return ok(res, req.requestId, { stripe: { performed: false, status: "static_configuration_invalid" } }, 422);
     const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 5000);
     try {
       const response = await (options.fetch || global.fetch)(`https://api.stripe.com/v1/prices/${encodeURIComponent(process.env.STRIPE_PRICE_ID)}`, { headers: { authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, signal: controller.signal });
-      return ok(res, req.requestId, { stripe: { performed: true, status: response.ok ? "reachable" : "provider_error", httpStatus: response.status, priceExists: response.ok, mode: staticHealth.mode, resourcesModified: false } });
+      return ok(res, req.requestId, { ...aiResults, stripe: { performed: true, status: response.ok ? "reachable" : "provider_error", httpStatus: response.status, priceExists: response.ok, mode: staticHealth.mode, resourcesModified: false } });
     } catch (error) { return ok(res, req.requestId, { stripe: { performed: true, status: error?.name === "AbortError" ? "timeout" : "unreachable", priceExists: null, resourcesModified: false } }, 503); }
     finally { clearTimeout(timer); }
   }));
@@ -1062,13 +1103,14 @@ function createApp(options = {}) {
     "/api/admin/launch-health",
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
     (req, res) => {
-      const frontendManifest = readJSON(path.join(PUBLIC_DIR, "__frontend-version.json"));
+      const manifest = frontendManifest();
       res.set(SHELL_NO_STORE_HEADERS);
       return ok(res, req.requestId, buildLaunchHealth({
         env: options.env || process.env,
         rootDir,
-        buildVersion: APP_BUILD_VERSION,
-        frontendVersion: frontendManifest.build
+        dataDir: DATA_DIR, backendBuild: APP_BUILD_VERSION, frontendBuild: manifest.build,
+        frontendCommit: manifest.commit || null, backendCommit: String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "").slice(0, 40) || null,
+        assetCacheToken: INDEX_CACHE_BUST_TOKEN, implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health() }
       }));
     }
   );

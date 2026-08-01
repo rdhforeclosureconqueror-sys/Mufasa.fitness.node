@@ -1,3 +1,3 @@
-# Member Journey Checks
+# Designated member journey checks
 
-The Version 1 journey is authentication, onboarding/goal, program, today's workout, completion/history, gamification event, XP, first achievement/badge/reward, Progress & Rewards, Exercise Hub, Yoga, and authoritative AI Coach context. Evidence comes from a designated account or fixtures and is non-destructive. An active workout with no completion means history and rewards are correctly not triggered; it is member-state incompleteness, not a backend failure. Weekly check-ins are excluded from the launch gate. Visual scan is excluded when disabled.
+An operator with `ops.read_observability` designates one safe member ID through `PUT /api/admin/diagnostics/member-journey/designation`. Subsequent GET reads inspect only that designation and return a masked reference. The read never saves or repairs member data. Each step is `STEP_COMPLETED`, `MEMBER_HAS_NOT_COMPLETED`, `MEMBER_EVIDENCE_UNAVAILABLE`, or `STEP_OPTIONAL`; capability availability is separate. A new member with no workout is incomplete, not broken. Mutation belongs only in a separately approved acceptance-fixture workflow.

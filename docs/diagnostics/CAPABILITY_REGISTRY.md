@@ -1,3 +1,3 @@
-# Capability Registry
+# Capability registry
 
-`src/diagnostics/capabilityRegistry.js` is the canonical inventory for authentication, onboarding, dashboard, programs, workouts, Exercise Hub, Yoga, gamification, AI Coach, billing, storage, security, and optional systems. Entries declare flags, environment, routes, files, permissions, persistence, importance, UI expectations, degraded modes, and remediation. Health rules must reference this registry rather than copying acceptance criteria into clients.
+The registry declares authenticated in-app notifications, universal XP leaderboards, the separate Push-Up leaderboard, diagnostic summarizer, and designated member journey. Health requires implementation evidence in addition to flags. Notification evidence includes writable persistence, projection, routes, UI, and deduplication. Leaderboard evidence includes server ranking, privacy, deterministic ties, periods, routes, and UI.
