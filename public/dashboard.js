@@ -250,6 +250,9 @@
       const res = await fetch("/__frontend-version.json", { cache: "no-store" });
       if (!res.ok) return "unknown";
       const payload = await res.json();
+      window.FRONTEND_BUILD_VERSION = payload?.build || null;
+      window.FRONTEND_COMMIT = payload?.commit || null;
+      window.FRONTEND_ASSET_CACHE_TOKEN = payload?.assetCacheToken || null;
       return payload?.build || "unknown";
     } catch {
       return "unknown";

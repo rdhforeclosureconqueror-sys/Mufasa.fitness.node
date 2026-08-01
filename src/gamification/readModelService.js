@@ -58,6 +58,18 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
     return value ? { ...value, replayStatus: lastSuccessfulReplay ? "ready" : "not_replayed", lastReplayTimestamp: lastSuccessfulReplay } : null;
   }
   function ledger(userId) { return ledgerStore.all().filter((entry) => entry.subjectUserId === userId); }
+  function notificationFacts(userId) {
+    const facts = events().filter(event => event.subjectUserId === userId).map(event => ({ memberId:userId,type:event.eventType,sourceEventId:event.eventId }));
+    const active = new Map();
+    for (const record of awardStore.all().filter(record => record.subjectUserId === userId)) active.set(record.awardKey, record);
+    for (const record of active.values()) if (["award","reinstatement"].includes(record.kind)) {
+      const sourceEventId=record.sourceEventIds?.[0] || record.reinstatementEventId;
+      if (!sourceEventId) continue;
+      facts.push({memberId:userId,type:"achievement.awarded",sourceEventId,sourceAwardId:record.awardId});
+      if (record.badgeId) facts.push({memberId:userId,type:"badge.awarded",sourceEventId,sourceAwardId:record.awardId});
+    }
+    return facts;
+  }
   function status() { const recent = history.at(-1) || null; return { lastSuccessfulReplay, replayFailures: failures, latest: recent, analytics: analytics() }; }
   function verify() {
     const projections = projectionStore.readAll();
@@ -96,7 +108,7 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
       earnedAchievements, revokedAchievements, finalLevel: levelService.forXp(awardedXp).level };
   }
   function deleteProjection(userId) { if (!validUserId(userId)) throw new TypeError("invalid user id"); return projectionStore.removeUser(userId); }
-  return Object.freeze({ profile, ledger, status, history: () => structuredClone(history), analytics, replay,
+  return Object.freeze({ profile, ledger, notificationFacts, status, history: () => structuredClone(history), analytics, replay,
     rebuild: (userId, replayOptions = {}) => { if (!validUserId(userId)) throw new TypeError("invalid user id"); return replay(`rebuild_user:${userId}`, replayOptions).projections[userId] || null; },
     deleteProjection, verify, simulate, currentPolicy: () => structuredClone(currentPolicies().at(-1) || null), events });
 }

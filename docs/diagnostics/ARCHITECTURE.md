@@ -1,7 +1,9 @@
 # Launch Health architecture
 
-Launch Health uses deterministic static checks and read-only persistence evidence. Exact frontend and backend identifiers are required; same-date variants are a mismatch. The frontend manifest and backend `/__version` are no-store evidence, and the static shell uses a cache-busting token. Commit IDs are optional and safely truncated; private Render deployment IDs are not exposed.
+Launch Health combines deterministic registry checks, implementation health, safe persistence probes, designated-member reads, and explicitly initiated external checks. Environment output contains names, presence, validity, and restart requirements only.
 
-AI Coach and diagnostic summarizer have separate enablement, provider, model, credential-presence, static-readiness, and external-check results. Provider calls occur only through Safe External Checks. Deterministic diagnostics do not depend on either provider.
+Build compatibility requires both full identifiers and exact equality. The frontend `/__frontend-version.json` and backend `/__version` use schema-v1 public-safe contracts, no-store headers, build headers, and an asset cache token. Optional commit values must be hexadecimal commit IDs; Render service/deploy IDs are never returned. Static token alignment is evidence, but deployed browser/CDN freshness remains UNKNOWN until client response evidence is observed.
 
-Disabled Avatar probes are marked `DISABLED_INTENTIONALLY`; Three.js repair advice is not launch evidence. Camera/form states are `not requested` until their page initializes them, rather than failures.
+AI Coach and diagnostic summarizer are independent. Notification health checks append-log writability, projection replay, unread projection integrity, deduplication integrity, route/UI presence, and actual channel scope. Leaderboard health checks ranking service, ledger projection, privacy policy, ties, periods, and replay freshness. Push-Up ranking is reported separately.
+
+When Avatar is disabled, raw Three.js/GLTF probe lines and repair classifications are suppressed and `DISABLED_INTENTIONALLY` is prominent. Form/camera absence on a page that did not request them is `capability not requested`, not failure. Enabled troubleshooting probes remain available.

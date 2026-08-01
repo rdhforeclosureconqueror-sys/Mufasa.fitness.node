@@ -96,17 +96,18 @@ module.exports = Object.freeze([
   {
     "method": "GET",
     "path": "/__version",
-    "authentication": "required",
+    "authentication": "public",
     "allowedRoles": [],
     "requiredPermissions": [],
     "membership": "not-required",
-    "ownership": "authenticated-user",
+    "ownership": "not-applicable",
     "featureFlag": null,
     "publicOutput": "authenticated-safe",
     "rateLimit": null,
     "compatibility": null,
     "publicWrite": null
   },
+  { "method":"GET", "path":"/__frontend-version.json", "authentication":"public", "allowedRoles":[], "requiredPermissions":[], "membership":"not-required", "ownership":"not-applicable", "featureFlag":null, "publicOutput":"public-build-metadata", "rateLimit":null, "compatibility":null, "publicWrite":null },
   {
     "method": "GET",
     "path": "/api/admin/diagnostics/recent",

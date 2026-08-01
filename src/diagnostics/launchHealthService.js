@@ -27,13 +27,13 @@ function classifyBuilds({ frontendBuild, backendBuild }) {
   return { classification: "build_mismatch", frontendClassification: "unknown_same_date_variant", backendClassification: "unknown_same_date_variant", cacheMismatch: true, compatible: false, frontend, backend };
 }
 
-function aiStatic(env, prefix) {
+function aiStatic(env, prefix, externalCheck = null) {
   const enabled = safeBool(env[`${prefix}_ENABLED`]);
   const provider = String(env[`${prefix}_PROVIDER`] || "openai").toLowerCase();
   const model = String(env[`${prefix}_MODEL`] || "");
   const credentialPresent = Boolean(String(env.OPENAI_API_KEY || "").trim());
   const configurationValid = !enabled || (provider === "openai" && Boolean(model) && credentialPresent);
-  return { enabled, provider, model: model || null, credentialPresent, configurationValid, staticReadiness: !enabled ? STATUS.DISABLED_INTENTIONALLY : configurationValid ? STATUS.READY : STATUS.CONFIGURATION_MISSING, liveReachability: "NOT_CHECKED", lastExternalCheck: null, latencyMs: null, failureClassification: null };
+  return { enabled, provider, model: model || null, credentialPresent, configurationValid, staticReadiness: !enabled ? STATUS.DISABLED_INTENTIONALLY : configurationValid ? STATUS.READY : STATUS.CONFIGURATION_MISSING, liveReachability: externalCheck?.status || "NOT_CHECKED", lastExternalCheck: externalCheck?.checkedAt || null, latencyMs: externalCheck?.latencyMs ?? null, failureClassification: externalCheck && externalCheck.status !== STATUS.READY ? externalCheck.status : null };
 }
 
 function writableDirectory(directory) {
@@ -72,9 +72,11 @@ function rewardSimulation(rootDir) {
   } catch (error) { return { status: STATUS.BLOCKED, dryRun: true, mutatedMember: false, stages: [], error: error.code || "CATALOG_UNAVAILABLE" }; }
 }
 
-function buildLaunchHealth({ env = process.env, rootDir = process.cwd(), dataDir, frontendBuild, backendBuild, frontendCommit = null, backendCommit = null, assetCacheToken = null, memberEvidence = null, implementations = {} } = {}) {
+function buildLaunchHealth({ env = process.env, rootDir = process.cwd(), dataDir, frontendBuild, backendBuild, frontendCommit = null, backendCommit = null, assetCacheToken = null, expectedAssetCacheToken = null, memberEvidence = null, implementations = {} } = {}) {
   const environment = validateEnvironment(env, { profile: env.NODE_ENV || "development" });
   const builds = classifyBuilds({ frontendBuild, backendBuild });
+  const cacheTokenAligned = Boolean(assetCacheToken && expectedAssetCacheToken && assetCacheToken === expectedAssetCacheToken);
+  const compatibilityStatus = builds.compatible === false || (assetCacheToken && expectedAssetCacheToken && !cacheTokenAligned) ? STATUS.BLOCKED : builds.compatible === true && cacheTokenAligned ? STATUS.READY : STATUS.UNKNOWN;
   const storagePath = path.resolve(dataDir || env.POCKET_PT_DATA_DIR || path.join(rootDir, "data"));
   const storageReady = writableDirectory(storagePath);
   const avatarEnabled = safeBool(env.ENABLE_AVATAR_FEATURE);
@@ -94,14 +96,17 @@ function buildLaunchHealth({ env = process.env, rootDir = process.cwd(), dataDir
     ? implementations.leaderboards ? { status: STATUS.READY, implemented: true, routesRegistered: true, uiPresent: exists(rootDir, "public/leaderboards.js"), ...implementations.leaderboards }
       : { status: "FLAG_ENABLED_BUT_FEATURE_NOT_IMPLEMENTED", implemented: false, missing: ["gamification leaderboard service", "ranking projection", "privacy/visibility policy", "member read route", "member UI"] }
     : { status: STATUS.DISABLED_INTENTIONALLY, implemented: false };
+  const pushupLeaderboard = { status:exists(rootDir,"src/services/challengeService.js") ? STATUS.READY : STATUS.BLOCKED, rankingService:exists(rootDir,"src/services/challengeService.js"), routeRegistered:true, scope:"pushup_score", separateFromUniversal:true };
+  const restoredEvents = { greatness:{status:gamification.eventCapture && exists(rootDir,"src/services/steppingIntoGreatnessService.js") ? STATUS.READY : STATUS.DISABLED_INTENTIONALLY, xpPolicy:"none_reviewed"}, pushup:{status:gamification.eventCapture && exists(rootDir,"src/services/challengeService.js") ? STATUS.READY : STATUS.DISABLED_INTENTIONALLY, xpPolicy:"none_reviewed"} };
   const stripe = stripeStatic(env);
   const memberJourney = memberEvidence ? {
-    status: memberEvidence.activeWorkout && !memberEvidence.firstWorkoutCompleted ? STATUS.READY_WITH_LIMITATION : STATUS.UNKNOWN,
+    ...memberEvidence,
+    status: memberEvidence.status || (memberEvidence.activeWorkout && !memberEvidence.firstWorkoutCompleted ? STATUS.READY_WITH_LIMITATION : STATUS.UNKNOWN),
     platformFailure: false, activeWorkout: Boolean(memberEvidence.activeWorkout), firstWorkoutCompleted: Boolean(memberEvidence.firstWorkoutCompleted),
     rewardJourneyTriggered: Boolean(memberEvidence.firstWorkoutCompleted), explanation: "Member evidence describes member progress and is not itself a platform failure."
   } : { status: STATUS.UNKNOWN, platformFailure: false, explanation: "No designated diagnostic member evidence was supplied." };
   const checks = [
-    check("build_compatibility", "Deployment", builds.compatible === false ? STATUS.BLOCKED : builds.compatible ? STATUS.READY : STATUS.UNKNOWN, builds.compatible === false ? "Frontend and backend identifiers differ; redeploy the frontend and invalidate static caches." : builds.compatible ? "Exact frontend and backend build identifiers match." : "One or both build identifiers are unavailable; compatibility is not assumed.", { blocking: builds.compatible === false, evidence: [{ ...builds, frontendCommit, backendCommit, assetCacheToken }], remediation: builds.compatible ? null : "Verify both no-store version endpoints and the asset cache token." }),
+    check("build_compatibility", "Deployment", compatibilityStatus, builds.compatible === false ? "Frontend and backend identifiers differ; redeploy the frontend and invalidate static caches." : builds.compatible ? "Exact frontend and backend build identifiers match." : "One or both build identifiers are unavailable; compatibility is not assumed.", { blocking: compatibilityStatus === STATUS.BLOCKED, evidence: [{ ...builds, frontendCommit, backendCommit, assetCacheToken, expectedAssetCacheToken, cacheTokenAligned }], remediation: compatibilityStatus === STATUS.READY ? null : "Verify both no-store version endpoints, exact identifiers, and the asset cache token." }),
     check("environment", "Environment", environment.counts.missing || environment.counts.invalid || environment.counts.placeholder ? STATUS.BLOCKED : STATUS.READY, "Environment values are reported by presence and validity only; values are never returned.", { blocking: Boolean(environment.counts.missing || environment.counts.invalid || environment.counts.placeholder), evidence: [environment.counts] }),
     check("storage", "Storage", storageReady ? STATUS.READY : STATUS.BLOCKED, storageReady ? "Configured data directory is readable and writable." : "Data directory is not writable.", { blocking: !storageReady }),
     check("avatar", "Optional/Excluded Systems", avatarEnabled ? STATUS.UNKNOWN : STATUS.DISABLED_INTENTIONALLY, avatarEnabled ? "Avatar is enabled; browser probes are required." : "Avatar is disabled; Three.js bridge probes were intentionally skipped."),
@@ -113,13 +118,16 @@ function buildLaunchHealth({ env = process.env, rootDir = process.cwd(), dataDir
     check("progress_rewards_ui", "Gamification", exists(rootDir, "public/gamification.js") && exists(rootDir, "public/gamification.css") && exists(rootDir, "public/dashboard.html") ? STATUS.READY : STATUS.BLOCKED, "Progress & Rewards is embedded in the member dashboard and reads the member gamification API.", { blocking: !(exists(rootDir, "public/gamification.js") && exists(rootDir, "public/gamification.css")) }),
     check("notifications", "Notifications", notifications.status, notifications.implemented ? "Notification service is healthy." : "The flag does not have a corresponding production notification implementation.", { blocking: gamification.notificationsFlag }),
     check("leaderboards", "Leaderboards", leaderboards.status, leaderboards.implemented ? "Leaderboard service is healthy." : "The gamification flag does not have a ranking implementation; the separate push-up challenge leaderboard is not a substitute.", { blocking: gamification.leaderboardsFlag }),
-    check("ai_coach", "AI Coach", aiStatic(env, "AI_COACH").staticReadiness === STATUS.READY ? STATUS.READY_WITH_LIMITATION : aiStatic(env, "AI_COACH").staticReadiness, "AI Coach static configuration is independent; reachability requires Safe External Checks."),
-    check("diagnostic_summarizer", "Diagnostics", aiStatic(env, "DIAGNOSTIC_SUMMARIZER").staticReadiness, "The optional diagnostic summarizer has its own enablement, provider, and model configuration."),
+    check("pushup_leaderboard", "Leaderboards", pushupLeaderboard.status, "Push-Up score ranking is implemented and remains separate from universal XP standings."),
+    check("greatness_events", "Gamification", restoredEvents.greatness.status, "Verified Greatness completions emit replay-safe events after persistence; no XP policy is assigned."),
+    check("pushup_events", "Gamification", restoredEvents.pushup.status, "Persisted Push-Up results emit replay-safe events; score ranking and XP standings remain separate."),
+    check("ai_coach", "AI Coach", aiStatic(env, "AI_COACH", implementations.externalChecks?.aiCoach).liveReachability === STATUS.READY ? STATUS.READY : aiStatic(env, "AI_COACH").staticReadiness === STATUS.READY ? STATUS.READY_WITH_LIMITATION : aiStatic(env, "AI_COACH").staticReadiness, "AI Coach static configuration is independent; reachability requires Safe External Checks."),
+    check("diagnostic_summarizer", "Diagnostics", aiStatic(env, "DIAGNOSTIC_SUMMARIZER", implementations.externalChecks?.diagnosticSummarizer).liveReachability === STATUS.READY ? STATUS.READY : aiStatic(env, "DIAGNOSTIC_SUMMARIZER").staticReadiness, "The optional diagnostic summarizer has its own enablement, provider, and model configuration."),
     check("stripe", "Stripe", stripe.status, "Stripe static configuration checked without making an external call.", { blocking: stripe.status === STATUS.BLOCKED }),
     check("member_journey", "Member Journey", memberJourney.status, memberJourney.explanation)
   ];
   const blockers = checks.filter(x => x.blocking && [STATUS.BLOCKED, "FLAG_ENABLED_BUT_FEATURE_NOT_IMPLEMENTED"].includes(x.status));
-  return { schemaVersion: 2, generatedAt: checked(), statuses: STATUS, builds: { ...builds, frontendBuild: builds.frontend, backendBuild: builds.backend, frontendCommit, backendCommit, assetCacheToken, cacheFreshnessProven: builds.compatible === true && Boolean(assetCacheToken) }, environment, storage: { status: storageReady ? STATUS.READY : STATUS.BLOCKED, configured: Boolean(env.POCKET_PT_DATA_DIR), writable: storageReady, durableClaim: Boolean(env.POCKET_PT_DATA_DIR) }, gamification, rewardSimulation: rewardSimulation(rootDir), notifications, leaderboards, aiCoach: aiStatic(env, "AI_COACH"), diagnosticSummarizer: aiStatic(env, "DIAGNOSTIC_SUMMARIZER"), stripe, avatar: { enabled: avatarEnabled, status: avatarEnabled ? STATUS.UNKNOWN : STATUS.DISABLED_INTENTIONALLY, probesSkipped: !avatarEnabled }, memberJourney, capabilities: publicCapabilityRegistry(), checks, launchReadiness: { status: blockers.length ? STATUS.BLOCKED : checks.some(x => x.status === STATUS.READY_WITH_LIMITATION) ? STATUS.READY_WITH_LIMITATION : STATUS.READY, blockers: blockers.map(x => x.id), warnings: checks.filter(x => [STATUS.DEGRADED, STATUS.READY_WITH_LIMITATION, STATUS.UNKNOWN].includes(x.status)).map(x => x.id) } };
+  return { schemaVersion: 2, generatedAt: checked(), statuses: STATUS, builds: { ...builds, compatibilityResult: compatibilityStatus, frontendBuild: builds.frontend, backendBuild: builds.backend, frontendCommit, backendCommit, assetCacheToken, expectedAssetCacheToken, staticCacheTokenAligned: cacheTokenAligned, deployedCacheFreshness: "UNKNOWN_UNTIL_CLIENT_EVIDENCE" }, environment, storage: { status: storageReady ? STATUS.READY : STATUS.BLOCKED, configured: Boolean(env.POCKET_PT_DATA_DIR), writable: storageReady, durableClaim: Boolean(env.POCKET_PT_DATA_DIR) }, gamification, rewardSimulation: rewardSimulation(rootDir), notifications, leaderboards, pushupLeaderboard, restoredEvents, aiCoach: aiStatic(env, "AI_COACH", implementations.externalChecks?.aiCoach), diagnosticSummarizer: aiStatic(env, "DIAGNOSTIC_SUMMARIZER", implementations.externalChecks?.diagnosticSummarizer), stripe, avatar: { enabled: avatarEnabled, status: avatarEnabled ? STATUS.UNKNOWN : STATUS.DISABLED_INTENTIONALLY, probesSkipped: !avatarEnabled }, memberJourney, capabilities: publicCapabilityRegistry(), checks, launchReadiness: { status: blockers.length ? STATUS.BLOCKED : checks.some(x => x.status === STATUS.READY_WITH_LIMITATION) ? STATUS.READY_WITH_LIMITATION : STATUS.READY, blockers: blockers.map(x => x.id), warnings: checks.filter(x => [STATUS.DEGRADED, STATUS.READY_WITH_LIMITATION, STATUS.UNKNOWN].includes(x.status)).map(x => x.id) } };
 }
 
 function redactedExport(report) { return JSON.parse(JSON.stringify(report)); }

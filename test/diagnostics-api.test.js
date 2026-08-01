@@ -196,11 +196,15 @@ test("diagnostic report endpoint includes OpenAI debug fields", async (t) => {
     global.fetch = nativeFetch;
   });
   await withServer(t, async ({ baseUrl, adminToken }) => {
-    const prevKey = process.env.OPENAI_API_KEY;
+    const prevKey = process.env.OPENAI_API_KEY, prevEnabled=process.env.DIAGNOSTIC_SUMMARIZER_ENABLED, prevModel=process.env.DIAGNOSTIC_SUMMARIZER_MODEL;
     process.env.OPENAI_API_KEY = "test-key";
+    process.env.DIAGNOSTIC_SUMMARIZER_ENABLED="true";
+    process.env.DIAGNOSTIC_SUMMARIZER_MODEL="gpt-4o-mini";
     t.after(() => {
       if (prevKey == null) delete process.env.OPENAI_API_KEY;
       else process.env.OPENAI_API_KEY = prevKey;
+      if(prevEnabled==null)delete process.env.DIAGNOSTIC_SUMMARIZER_ENABLED;else process.env.DIAGNOSTIC_SUMMARIZER_ENABLED=prevEnabled;
+      if(prevModel==null)delete process.env.DIAGNOSTIC_SUMMARIZER_MODEL;else process.env.DIAGNOSTIC_SUMMARIZER_MODEL=prevModel;
     });
     const body = {
       build: { appBuildVersion: "diag-openai-fields", url: `${baseUrl}/` },
