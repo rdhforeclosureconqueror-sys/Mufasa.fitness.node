@@ -6,11 +6,9 @@
 })(typeof window !== 'undefined' ? window : globalThis, function guidedExerciseSequenceFactory(globalScope) {
   'use strict';
 
-  const PUSH_UP_SEQUENCE = Object.freeze([
-    Object.freeze({ label: 'Top position', position: 'top' }),
-    Object.freeze({ label: 'Bottom position', position: 'bottom' }),
-    Object.freeze({ label: 'Top position', position: 'top' })
-  ]);
+  const loadedDefinition = globalScope.ExerciseSequenceDefinitions?.pushUp || (typeof require === 'function' ? require('./exercise-sequence-definitions').pushUp : null);
+  const stepsFromDefinition = definition => Object.freeze(definition.visualTemplate.steps.map(step => Object.freeze({ label:step.label, position:step.visual, phaseId:step.phaseId })));
+  const PUSH_UP_SEQUENCE = stepsFromDefinition(loadedDefinition);
 
   class SequencePlayer {
     constructor({ steps = PUSH_UP_SEQUENCE, intervalMs = 1600, onStep = () => {}, setTimer = setInterval, clearTimer = clearInterval } = {}) {
@@ -26,7 +24,7 @@
     start() { if (this.timer) return; this.render(); this.timer = this.setTimer(() => { this.index = (this.index + 1) % this.steps.length; this.render(); }, this.intervalMs); }
     pause() { if (!this.timer) return; this.clearTimer(this.timer); this.timer = null; }
     toggle() { if (this.timer) this.pause(); else this.start(); return Boolean(this.timer); }
-    showPosition(position) { const index = position === 'bottom' ? 1 : position === 'top_complete' ? 2 : 0; this.index=index;this.render(); }
+    showPosition(position) { const index=this.steps.findIndex(step=>step.position===position);this.index=index<0?0:index;this.render(); }
   }
 
   function mount(document) {
@@ -38,7 +36,7 @@
     const items = Array.from(list.children);
     const player = new SequencePlayer({ onStep(step, index) {
       preview.dataset.position = step.position;
-      preview.setAttribute('aria-label', `Push-up demonstration in the ${step.position} position`);
+      preview.setAttribute('aria-label', `${loadedDefinition.exerciseId} demonstration in the ${step.position} position`);
       title.textContent = step.label;
       items.forEach((item, itemIndex) => {
         if (itemIndex === index) item.setAttribute('aria-current', 'step');
@@ -53,14 +51,8 @@
     player.start();
     player.setLiveTarget = (expected, trackingPaused = false) => {
       player.pause();
-      const targets = {
-        TOP: { position: 'top', title: 'Top position', next: 'Next: Hold the top position' },
-        LOWERING: { position: 'bottom', title: 'Lowering', next: 'Next: Continue lowering' },
-        BOTTOM: { position: 'bottom', title: 'Bottom position', next: 'Next: Hold the bottom position' },
-        RISING: { position: 'top', title: 'Rising', next: 'Next: Continue pressing up' },
-        TOP_COMPLETE: { position: 'top_complete', title: 'Top complete', next: 'Next: Confirm the top position' }
-      };
-      const target = targets[expected] || targets.TOP;
+      const targets = Object.fromEntries(loadedDefinition.phases.map(phase => [phase.id.toUpperCase(), { position:phase.visual, title:phase.label, next:`Next: ${phase.nextLabel}${phase.nextLabel.toLowerCase().includes('position') ? '' : phase.id === 'top' || phase.id === 'bottom' || phase.id === 'top_complete' ? ' position' : ''}` }]));
+      const target = targets[expected] || targets[loadedDefinition.initialPhase.toUpperCase()];
       player.showPosition(target.position);
       title.textContent = trackingPaused ? 'Tracking unclear' : target.title;
       const next = document.getElementById('guidedPreviewNext');
@@ -77,5 +69,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => mount(document), { once: true });
     else mount(document);
   }
-  return Object.freeze({ PUSH_UP_SEQUENCE, SequencePlayer, mount });
+  return Object.freeze({ PUSH_UP_SEQUENCE, stepsFromDefinition, SequencePlayer, mount });
 });

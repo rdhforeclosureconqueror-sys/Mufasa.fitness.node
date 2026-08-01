@@ -43,8 +43,9 @@
     "legacy:reconcile": "node scripts/reconcile-legacy-knowledge.js",
     "legacy:validate": "node scripts/validate-reconciliation-register.js",
     "legacy:report": "node scripts/report-reconciliation-coverage.js",
-    "security:validate-routes": "node scripts/validate-route-authorization.js"
-    ,"env:validate": "node scripts/validate-environment.js"
+    "security:validate-routes": "node scripts/validate-route-authorization.js",
+    "env:validate": "node scripts/validate-environment.js",
+    "generate:exercise-sequence-review": "node scripts/generate-exercise-sequence-review.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
