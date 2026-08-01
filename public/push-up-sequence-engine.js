@@ -70,6 +70,7 @@
     reset() {
       this.state = 'TOP'; this.repetitions = 0; this.streak = 0; this.transitionStreak = 0; this.previous = null;
       this.topReference = null; this.phaseEvents = []; this.transitionEvents = []; this.interruptedTransitions = 0; this.unscorableDurationMs = 0; this.lastTimestamp = null; this.safeFrames = 0; this.needsSafeRecovery = false;
+      this.phaseEvaluations = 0; this.phaseMismatches = 0; this.transitionEvaluations = 0; this.transitionMismatches = 0; this.repetitionExplanations = [];
     }
     expected() { return this.state; }
     pause(frame, reason) {
@@ -99,30 +100,35 @@
       let matched = false, transitionMatched = false, repetitionCompleted = false;
       let features = { bodyAlignment: pose.bodyAlignmentDeviation == null ? 0 : Math.max(0, 1 - pose.bodyAlignmentDeviation / 45), elbowAngle: 0, relativePosition: 0, movementDirection: 0 };
       if (this.state === 'TOP') {
+        this.phaseEvaluations++;
         const candidate = pose.elbowAngle >= 145; // provisional sequence-only threshold; not form feedback.
         features.elbowAngle = Math.min(1, pose.elbowAngle / 170); features.relativePosition = 1;
-        this.streak = candidate ? this.streak + 1 : 0;
+        this.streak = candidate ? this.streak + 1 : 0; if (!candidate) this.phaseMismatches++;
         if (this.streak >= this.persistenceFrames) { matched = true; this.topReference = { elbowAngle: pose.elbowAngle, shoulderVertical: pose.shoulderVertical }; this.advance('LOWERING', frame.timestamp, 'top'); }
       } else if (this.state === 'LOWERING') {
+        this.transitionEvaluations++;
         features.elbowAngle = elbowDelta < 0 ? 1 : 0; features.relativePosition = shoulderDelta > 0 ? 1 : 0; features.movementDirection = downward ? 1 : 0;
-        this.transitionStreak = downward ? this.transitionStreak + 1 : 0;
+        this.transitionStreak = downward ? this.transitionStreak + 1 : 0; if (!downward) this.transitionMismatches++;
         if (this.transitionStreak >= this.transitionFrames) { transitionMatched = true; this.advance('BOTTOM', frame.timestamp, 'lowering', true); }
       } else if (this.state === 'BOTTOM') {
+        this.phaseEvaluations++;
         const reduction = this.topReference.elbowAngle - pose.elbowAngle;
         const travel = pose.shoulderVertical - this.topReference.shoulderVertical;
         const candidate = reduction >= this.bottomElbowReductionDegrees && travel >= this.minimumShoulderTravel;
         features.elbowAngle = Math.min(1, Math.max(0, reduction / this.bottomElbowReductionDegrees)); features.relativePosition = Math.min(1, Math.max(0, travel / this.minimumShoulderTravel));
-        this.streak = candidate ? this.streak + 1 : 0;
+        this.streak = candidate ? this.streak + 1 : 0; if (!candidate) this.phaseMismatches++;
         if (this.streak >= this.persistenceFrames) { matched = true; this.advance('RISING', frame.timestamp, 'bottom'); }
       } else if (this.state === 'RISING') {
+        this.transitionEvaluations++;
         features.elbowAngle = elbowDelta > 0 ? 1 : 0; features.relativePosition = shoulderDelta < 0 ? 1 : 0; features.movementDirection = upward ? 1 : 0;
-        this.transitionStreak = upward ? this.transitionStreak + 1 : 0;
+        this.transitionStreak = upward ? this.transitionStreak + 1 : 0; if (!upward) this.transitionMismatches++;
         if (this.transitionStreak >= this.transitionFrames) { transitionMatched = true; this.advance('TOP_COMPLETE', frame.timestamp, 'rising', true); }
       } else if (this.state === 'TOP_COMPLETE') {
+        this.phaseEvaluations++;
         const candidate = pose.elbowAngle >= this.topReference.elbowAngle - 15 && pose.shoulderVertical <= this.topReference.shoulderVertical + this.minimumShoulderTravel;
         features.elbowAngle = candidate ? 1 : 0; features.relativePosition = candidate ? 1 : 0;
-        this.streak = candidate ? this.streak + 1 : 0;
-        if (this.streak >= this.persistenceFrames) { matched = true; repetitionCompleted = true; this.repetitions++; this.advance('TOP', frame.timestamp, 'top_complete'); }
+        this.streak = candidate ? this.streak + 1 : 0; if (!candidate) this.phaseMismatches++;
+        if (this.streak >= this.persistenceFrames) { matched = true; repetitionCompleted = true; this.repetitions++; this.advance('TOP', frame.timestamp, 'top_complete'); this.repetitionExplanations.push({ repetition:this.repetitions, timestamp:Number(frame.timestamp), evidence:['top','lowering','bottom','rising','top_complete'] }); }
       }
       this.previous = pose;
       return { phaseMatched: matched, transitionMatched, repetitionCompleted, similarity: result(this.state.toLowerCase(), matched || transitionMatched, features, pose.confidence), formFindings: [], formScore: null };
@@ -132,7 +138,7 @@
       (transition ? this.transitionEvents : this.phaseEvents).push(event);
       this.state = next; this.streak = 0; this.transitionStreak = 0;
     }
-    diagnostics() { return { sequenceId: PUSH_UP_SEQUENCE_DEFINITION.sequenceId, sequenceVersion: 1, templateFingerprint: PUSH_UP_SEQUENCE_DEFINITION.templateFingerprint, phaseEvents: this.phaseEvents.slice(), transitionEvents: this.transitionEvents.slice(), completedSequenceRepetitions: this.repetitions, interruptedTransitions: this.interruptedTransitions, unscorableDurationMs: this.unscorableDurationMs }; }
+    diagnostics() { return { sequenceId: PUSH_UP_SEQUENCE_DEFINITION.sequenceId, sequenceVersion: 1, templateFingerprint: PUSH_UP_SEQUENCE_DEFINITION.templateFingerprint, phaseEvents: this.phaseEvents.slice(), transitionEvents: this.transitionEvents.slice(), completedSequenceRepetitions: this.repetitions, interruptedTransitions: this.interruptedTransitions, unscorableDurationMs: this.unscorableDurationMs, phaseEvaluations:this.phaseEvaluations, phaseMismatches:this.phaseMismatches, transitionEvaluations:this.transitionEvaluations, transitionMismatches:this.transitionMismatches, repetitionExplanations:this.repetitionExplanations.slice() }; }
   }
 
   return Object.freeze({ SEQUENCE_LANDMARKS, FEATURE_WEIGHTS, PUSH_UP_SEQUENCE_DEFINITION, normalizeSequencePose, PushUpSequenceMatcher });

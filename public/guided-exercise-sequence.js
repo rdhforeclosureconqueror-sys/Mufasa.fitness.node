@@ -1,9 +1,9 @@
 (function installGuidedExerciseSequence(globalScope, factory) {
   'use strict';
-  const api = factory();
+  const api = factory(globalScope);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (globalScope) globalScope.GuidedExerciseSequence = api;
-})(typeof window !== 'undefined' ? window : globalThis, function guidedExerciseSequenceFactory() {
+})(typeof window !== 'undefined' ? window : globalThis, function guidedExerciseSequenceFactory(globalScope) {
   'use strict';
 
   const PUSH_UP_SEQUENCE = Object.freeze([
@@ -53,11 +53,19 @@
     player.start();
     player.setLiveTarget = (expected, trackingPaused = false) => {
       player.pause();
-      const down = expected === 'LOWERING' || expected === 'BOTTOM';
-      player.showPosition(down ? 'bottom' : expected === 'TOP_COMPLETE' ? 'top_complete' : 'top');
-      title.textContent = trackingPaused ? 'Tracking unclear' : down ? 'Down position' : 'Up position';
+      const targets = {
+        TOP: { position: 'top', title: 'Top position', next: 'Next: Hold the top position' },
+        LOWERING: { position: 'bottom', title: 'Lowering', next: 'Next: Continue lowering' },
+        BOTTOM: { position: 'bottom', title: 'Bottom position', next: 'Next: Hold the bottom position' },
+        RISING: { position: 'top', title: 'Rising', next: 'Next: Continue pressing up' },
+        TOP_COMPLETE: { position: 'top_complete', title: 'Top complete', next: 'Next: Confirm the top position' }
+      };
+      const target = targets[expected] || targets.TOP;
+      player.showPosition(target.position);
+      title.textContent = trackingPaused ? 'Tracking unclear' : target.title;
       const next = document.getElementById('guidedPreviewNext');
-      if (next) next.textContent = trackingPaused ? 'Sequence progress is paused.' : down ? 'Next: Push up' : 'Next: Lower down';
+      if (next) next.textContent = trackingPaused ? 'Sequence progress is paused.' : target.next;
+      preview.dataset.expectedPhase = expected || 'TOP';
       toggle.hidden = true;
     };
     player.resumePreview = () => { toggle.hidden=false;player.start(); };
