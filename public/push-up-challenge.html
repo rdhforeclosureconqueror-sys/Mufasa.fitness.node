@@ -8,7 +8,7 @@
   </style>
 </head>
 <body>
-<header><div><p class="muted">Camera-based training · private by default</p><h1>Push-Up Challenge</h1></div><a class="back" href="/dashboard.html">Back to Dashboard</a></header>
+<header><div><p id="challengeEyebrow" class="muted">Camera-based training · private by default</p><h1 id="challengeTitle">Push-Up Challenge</h1></div><a class="back" href="/dashboard.html">Back to Dashboard</a></header>
 <main>
   <section class="card guide" aria-labelledby="guidedPreviewTitle">
     <div id="movementPreview" class="movement-preview" data-position="top" role="img" aria-label="Push-up demonstration in the top position">
@@ -20,9 +20,9 @@
         <g class="arms"><line x1="122" y1="91" x2="82" y2="147"></line><line x1="82" y1="147" x2="66" y2="147"></line></g>
       </svg>
     </div>
-    <div><p class="muted">Guided movement preview</p><h2 id="guidedPreviewTitle" class="sequence-name">Top position</h2><p>Follow one complete push-up: lower with control, then press back to the top. Before a session the preview repeats automatically; during a session it waits for your matched position.</p><p id="guidedPreviewNext" aria-live="polite">Next: Lower down</p><p id="guidedPreviewStatus" class="muted" role="status" aria-live="polite"></p><ol id="sequenceSteps" class="sequence-steps" aria-label="Push-up movement sequence"></ol><button id="previewToggle" type="button" aria-pressed="false">Pause preview</button></div>
+    <div><p class="muted">Guided movement preview</p><h2 id="guidedPreviewTitle" class="sequence-name">Top position</h2><p id="challengeInstructions">Follow one complete push-up: lower with control, then press back to the top. Before a session the preview repeats automatically; during a session it waits for your matched position.</p><p id="guidedPreviewNext" aria-live="polite">Next: Lower down</p><p id="guidedPreviewStatus" class="muted" role="status" aria-live="polite"></p><ol id="sequenceSteps" class="sequence-steps" aria-label="Push-up movement sequence"></ol><button id="previewToggle" type="button" aria-pressed="false">Pause preview</button></div>
   </section>
-  <section class="card" aria-labelledby="setupTitle"><h2 id="setupTitle">Camera setup</h2><p id="cameraGuidance">Loading the validated exercise guidance…</p><ol><li>Put the camera at your side on a stable surface.</li><li>Keep your shoulders, hips, and ankles visible for the full session.</li><li>Use even lighting and avoid landmark occlusion.</li></ol><label for="cameraSelect">Camera</label><select id="cameraSelect" disabled><option value="">Front Camera</option></select><p id="currentCamera" class="muted">No camera active.</p><label><input id="sideConfirmed" type="checkbox"> I have positioned the camera at my side and my full shoulder–hip–ankle line is visible.</label><button id="cameraBtn" class="primary" disabled>Loading pose engine…</button><button id="switchCameraBtn" hidden disabled>Switch Camera</button><button id="retryBtn" hidden>Retry</button><p id="cameraStatus" role="status" class="muted">Loading pose engine…</p></section>
+  <section class="card" aria-labelledby="setupTitle"><h2 id="setupTitle">Camera setup</h2><p id="cameraGuidance">Loading the validated exercise guidance…</p><ol id="cameraInstructions"><li>Put the camera at your side on a stable surface.</li><li>Keep your shoulders, hips, and ankles visible for the full session.</li><li>Use even lighting and avoid landmark occlusion.</li></ol><label for="cameraSelect">Camera</label><select id="cameraSelect" disabled><option value="">Front Camera</option></select><p id="currentCamera" class="muted">No camera active.</p><label><input id="sideConfirmed" type="checkbox"> <span id="sideConfirmationLabel">I have positioned the camera at my side and my full shoulder–hip–ankle line is visible.</span></label><button id="cameraBtn" class="primary" disabled>Loading pose engine…</button><button id="switchCameraBtn" hidden disabled>Switch Camera</button><button id="retryBtn" hidden>Retry</button><p id="cameraStatus" role="status" class="muted">Loading pose engine…</p></section>
   <div class="grid"><div>
     <section class="card"><div class="stage" id="videoStage"><video id="camera" muted playsinline></video><canvas id="liveSkeleton" width="960" height="540" aria-label="Live landmark skeleton"></canvas><canvas id="ghostSkeleton" width="960" height="540" aria-label="Previous session ghost skeleton"></canvas></div><div class="controls"><button id="practiceBtn" disabled>Start Practice</button><button id="challengeBtn" class="primary" disabled>Start Challenge</button><button id="finishBtn" disabled>Finish session</button></div><pre id="poseDebug" hidden></pre></section>
     <section class="card"><h2>Live supported feedback</h2><div class="stats"><div class="stat"><span class="muted">Mode</span><strong id="mode">Idle</strong></div><div class="stat"><span class="muted">Repetitions</span><strong id="reps">0</strong></div><div class="stat"><span class="muted">Confidence</span><strong id="confidence">Waiting</strong></div></div><p id="alignment">Only shoulder–hip–ankle alignment is evaluated.</p></section>
@@ -42,6 +42,7 @@
 <script defer src="/exercise-metadata.js"></script>
 <script defer src="/generic-exercise-sequence-engine.js"></script>
 <script defer src="/exercise-sequence-definitions.js"></script>
+<script defer src="/challenge-controller.js"></script>
 <script defer src="/push-up-sequence-engine.js"></script>
 <script defer src="/push-up-challenge.js"></script>
 <script defer src="/guided-exercise-sequence.js"></script>
