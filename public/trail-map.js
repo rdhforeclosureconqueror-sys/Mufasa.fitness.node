@@ -2,10 +2,11 @@ import { backendUrl } from "./backend-origin.js?v=mobile-map-config-route-202607
 
 let loaderPromise;
 const mapStates=new WeakMap();
+const LOAD_TIMEOUT_MS=12000;
 const routeStrokeStyle=source=>({verified_geometry:{color:"#55aaff",dashed:false},trail_network:{color:"#46d9ff",dashed:false},park_constrained_walking_route:{color:"#3bd5bd",dashed:false},google_walking_route:{color:"#58a6ff",dashed:true},place_only:{color:"#8aa6a0",dashed:false}})[source]||{color:"#55aaff",dashed:false};
 const finiteGeometry=geometry=>Array.isArray(geometry)&&geometry.length>1&&geometry.every(point=>Number.isFinite(Number(point?.latitude))&&Number.isFinite(Number(point?.longitude)));
 const visibleSize=container=>container.getBoundingClientRect?.()||{width:container.clientWidth,height:container.clientHeight};
-async function waitUntilVisible(container){for(let i=0;i<12;i++){const size=visibleSize(container);if(size.width>0&&size.height>0)return size;await new Promise(resolve=>requestAnimationFrame(resolve));}throw mapError("MAP_CONTAINER_HIDDEN","The route map is not visible yet");}
+async function waitUntilVisible(container){if(!container?.isConnected)throw mapError("MAP_CONTAINER_NOT_VISIBLE","The route map is not attached");for(let i=0;i<60;i++){const size=visibleSize(container),style=globalThis.getComputedStyle?.(container);if(size.width>0&&size.height>0&&style?.display!=="none"&&style?.visibility!=="hidden")return size;await new Promise(resolve=>(globalThis.requestAnimationFrame||setTimeout)(resolve));}const size=visibleSize(container);throw mapError(size.width<=0||size.height<=0?"MAP_CONTAINER_ZERO_SIZE":"MAP_CONTAINER_NOT_VISIBLE","The route map is not visible yet");}
 function mapError(code, message, cause) {
   const error = new Error(message);
   error.code = code;
@@ -21,6 +22,19 @@ export function payloadBounds(payload) {
   return { north: Math.max(...points.map(point => point.latitude)), south: Math.min(...points.map(point => point.latitude)), east: Math.max(...points.map(point => point.longitude)), west: Math.min(...points.map(point => point.longitude)) };
 }
 export function markerLabel(number) { return String(number); }
+export function classifyMapError(error) {
+  const code=String(error?.code||""),message=String(error?.message||"").toLowerCase();
+  if(["BROWSER_MAP_KEY_MISSING","MAPS_SCRIPT_BLOCKED","MAPS_AUTHENTICATION_FAILED","MAPS_REFERRER_NOT_ALLOWED","MAPS_API_NOT_ACTIVATED","MAP_CONTAINER_ZERO_SIZE","MAP_CONTAINER_NOT_VISIBLE","MAP_INITIALIZATION_FAILED","ROUTE_COORDINATES_INVALID","MAPS_LIBRARY_UNAVAILABLE"].includes(code))return code;
+  if(code==="BROWSER_KEY_MISSING")return "BROWSER_MAP_KEY_MISSING";
+  if(code==="GOOGLE_MAPS_SCRIPT_ERROR"||code==="GOOGLE_MAPS_SCRIPT_TIMEOUT")return "MAPS_SCRIPT_BLOCKED";
+  if(code==="INVALID_ROUTE_GEOMETRY")return "ROUTE_COORDINATES_INVALID";
+  if(code==="GOOGLE_MAPS_NAMESPACE_MISSING")return "MAPS_LIBRARY_UNAVAILABLE";
+  if(message.includes("referernotallowed")||message.includes("referrer"))return "MAPS_REFERRER_NOT_ALLOWED";
+  if(message.includes("apinotactivated")||message.includes("not activated"))return "MAPS_API_NOT_ACTIVATED";
+  if(message.includes("invalidkey")||message.includes("authentication")||message.includes("billing"))return "MAPS_AUTHENTICATION_FAILED";
+  return "UNKNOWN_MAP_RENDER_FAILURE";
+}
+export function googleMapsScriptUrl(key, callback) { const params=new URLSearchParams({key,loading:"async",callback,libraries:"geometry"});return `https://maps.googleapis.com/maps/api/js?${params.toString()}`; }
 export async function loadGoogleMaps(onDiagnostic = () => {}) {
   if (globalThis.google?.maps?.importLibrary) { onDiagnostic("maps_namespace_ready", { cached: true }); return globalThis.google; }
   if (!loaderPromise) loaderPromise = (async () => {
@@ -36,21 +50,30 @@ export async function loadGoogleMaps(onDiagnostic = () => {}) {
     catch (cause) { throw mapError("BROWSER_CONFIG_INVALID_JSON", "Browser map configuration returned invalid JSON", cause); }
     const keyPresent = typeof body?.data?.googleMapsBrowserApiKey === "string" && body.data.googleMapsBrowserApiKey.length > 0;
     onDiagnostic("browser_config_parsed", { keyPresent, keyNull: body?.data?.googleMapsBrowserApiKey === null });
-    if (!keyPresent) throw mapError("BROWSER_KEY_MISSING", "Interactive map is not configured");
+    if (!keyPresent) throw mapError("BROWSER_MAP_KEY_MISSING", "Interactive map is not configured");
     onDiagnostic("browser_key_present");
     return new Promise((resolve, reject) => {
-    const callback = `initTrailMaps_${Date.now()}`;
+      let settled=false;
+      const callback = `initTrailMaps_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const priorAuthFailure=globalThis.gm_authFailure;
+      let script;
+      const cleanup=()=>{clearTimeout(timeout);delete globalThis[callback];if(priorAuthFailure)globalThis.gm_authFailure=priorAuthFailure;else delete globalThis.gm_authFailure;};
+      const fail=error=>{if(settled)return;settled=true;script?.remove();cleanup();reject(error);};
+      const timeout=setTimeout(()=>fail(mapError("MAPS_SCRIPT_BLOCKED","Google Maps loader timed out")),LOAD_TIMEOUT_MS);
+      globalThis.gm_authFailure=()=>fail(mapError("MAPS_AUTHENTICATION_FAILED","Google Maps authentication failed"));
       globalThis[callback] = () => {
-        delete globalThis[callback];
+        if(settled)return;settled=true;cleanup();
         const available = Boolean(globalThis.google?.maps?.importLibrary);
         onDiagnostic("maps_loader_callback", { googleMapsAvailable: available });
-        if (available) { onDiagnostic("maps_script_loaded"); resolve(globalThis.google); } else { const error = mapError("GOOGLE_MAPS_NAMESPACE_MISSING", "Google Maps loaded without the expected namespace"); onDiagnostic("maps_namespace_failure", { error }); reject(error); }
+        if (available) { onDiagnostic("maps_script_loaded"); resolve(globalThis.google); } else { const error = mapError("GOOGLE_MAPS_NAMESPACE_MISSING", "Google Maps loaded without the expected namespace"); onDiagnostic("maps_namespace_failure", { classification:classifyMapError(error) }); reject(error); }
       };
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(body.data.googleMapsBrowserApiKey)}&loading=async&callback=${callback}`;
+      script = document.createElement("script");
+      script.src = googleMapsScriptUrl(body.data.googleMapsBrowserApiKey,callback);
       script.async = true;
+      script.defer = true;
+      script.referrerPolicy = "strict-origin-when-cross-origin";
       script.dataset.trailMapsLoader = "true";
-      script.onerror = () => { const error = mapError("GOOGLE_MAPS_SCRIPT_ERROR", "Google Maps failed to load"); onDiagnostic("maps_script_failure", { error }); reject(error); };
+      script.onerror = () => { const error = mapError("MAPS_SCRIPT_BLOCKED", "Google Maps failed to load"); onDiagnostic("maps_script_failure", { classification:classifyMapError(error) }); fail(error); };
       onDiagnostic("maps_script_appended", { host: "maps.googleapis.com" });
       document.head.append(script);
     });
@@ -63,10 +86,13 @@ export function clearGoogleMapsCache() {
 }
 function numberedPin(PinElement, number, selected = false) { return new PinElement({ glyph: markerLabel(number), background: selected ? "#f1c963" : "#275d50", borderColor: "#fff", glyphColor: selected ? "#172019" : "#fff", scale: selected ? 1.25 : 1 }); }
 export async function renderTrailMap(container, payload, { onSelect = () => {}, onDiagnostic = () => {}, selectedId = null, geometry = null, turnaroundPoint = null, routeSource = "verified_geometry", routeType = null, loopCount = null } = {}) {
+  if(!container)throw mapError("MAP_CONTAINER_NOT_VISIBLE","The route map container is missing");
+  if(!Number.isFinite(Number(payload?.user?.latitude))||!Number.isFinite(Number(payload?.user?.longitude)))throw mapError("ROUTE_COORDINATES_INVALID","The route start is invalid");
+  if(geometry&&!finiteGeometry(geometry))throw mapError("ROUTE_COORDINATES_INVALID","The route has no usable map geometry");
+  const size=await waitUntilVisible(container);onDiagnostic("map_container_ready",{widthBucket:Math.round(size.width/100)*100,heightBucket:Math.round(size.height/100)*100});
   const google = await loadGoogleMaps(onDiagnostic); onDiagnostic("maps_namespace_ready");
-  onDiagnostic("maps_library_import_started"); const { Map } = await google.maps.importLibrary("maps"); onDiagnostic("maps_library_loaded"); const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker"); onDiagnostic("marker_library_loaded"); onDiagnostic("maps_libraries_ready");
-  if(geometry&&!finiteGeometry(geometry))throw mapError("INVALID_ROUTE_GEOMETRY","The route has no usable map geometry");
-  let state=mapStates.get(container);if(!state){state={map:new Map(container,{mapId:"DEMO_MAP_ID",streetViewControl:false,mapTypeControl:false}),overlays:[]};mapStates.set(container,state);onDiagnostic("map_created");}else{state.overlays.forEach(overlay=>{overlay.map=null;overlay.setMap?.(null);});state.overlays=[];onDiagnostic("map_reused");}const map=state.map,bounds=new google.maps.LatLngBounds(),keep=overlay=>(state.overlays.push(overlay),overlay);
+  let Map,AdvancedMarkerElement,PinElement;try{onDiagnostic("maps_library_import_started");({Map}=await google.maps.importLibrary("maps"));onDiagnostic("maps_library_loaded");({AdvancedMarkerElement,PinElement}=await google.maps.importLibrary("marker"));}catch(cause){throw mapError("MAPS_LIBRARY_UNAVAILABLE","Google Maps libraries are unavailable",cause);}onDiagnostic("marker_library_loaded");onDiagnostic("maps_libraries_ready");
+  let state=mapStates.get(container);if(!state){try{state={map:new Map(container,{mapId:"DEMO_MAP_ID",streetViewControl:false,mapTypeControl:false}),overlays:[]};}catch(cause){throw mapError("MAP_INITIALIZATION_FAILED","The route map could not initialize",cause);}mapStates.set(container,state);onDiagnostic("map_created");}else{state.overlays.forEach(overlay=>{overlay.map=null;overlay.setMap?.(null);});state.overlays=[];onDiagnostic("map_reused");}const map=state.map,bounds=new google.maps.LatLngBounds(),keep=overlay=>(state.overlays.push(overlay),overlay);
   const userPosition = { lat: payload.user.latitude, lng: payload.user.longitude }; bounds.extend(userPosition); if(payload.user.approximate)keep(new AdvancedMarkerElement({ map, position: userPosition, title: "Your approximate location", content: new PinElement({ background: "#4285f4", glyph: "●", glyphColor: "white" }).element }));
   payload.markers.forEach(marker => { const position = { lat: marker.latitude, lng: marker.longitude }; bounds.extend(position); const advancedMarker = new AdvancedMarkerElement({ map, position, title: `${marker.number}. ${marker.name}`, content: numberedPin(PinElement, marker.number, marker.id === selectedId).element }); advancedMarker.addListener("click", () => onSelect(marker.id)); }); onDiagnostic("markers_created", { markerCount: payload.markers.length }); onDiagnostic("markers_added", { markerCount: payload.markers.length });
   if (geometry?.length > 1) {
@@ -81,5 +107,5 @@ export async function renderTrailMap(container, payload, { onSelect = () => {}, 
     if(Number(loopCount)>=2){for(let lap=1;lap<Math.min(4,Math.floor(loopCount));lap++)marker(path[Math.min(path.length-1,Math.round(path.length*lap/loopCount))],String(lap),`Lap ${lap} complete`,"#f1c963");}
     onDiagnostic("trail_route_rendered",{geometryPointCountBucket:Math.ceil(geometry.length/25)*25,routeSegmentCount:segmentCount,overlappingSegmentBucket:isOutBack?"outbound_return":"none_or_self_touching",directionalRenderingMode:mode,routeSource,mapRenderStatus:"rendered",reducedMotion:reduced});
   }
-  const size=await waitUntilVisible(container);onDiagnostic("map_container_ready",{widthBucket:Math.round(size.width/100)*100,heightBucket:Math.round(size.height/100)*100});google.maps.event?.trigger?.(map,"resize");await new Promise(resolve=>requestAnimationFrame(resolve));map.fitBounds(bounds,48);if(geometry?.length>1&&geometry.every(point=>Math.abs(point.latitude-geometry[0].latitude)<1e-7&&Math.abs(point.longitude-geometry[0].longitude)<1e-7))map.setZoom(17);onDiagnostic("fit_bounds_complete",{fitBoundsCompletion:true});onDiagnostic("map_render_complete",{markerCount:payload.markers.length,geometryPointCount:geometry?.length||0});return map;
+  const refresh=()=>{google.maps.event?.trigger?.(map,"resize");map.fitBounds(bounds,48);};refresh();await new Promise(resolve=>(globalThis.requestAnimationFrame||setTimeout)(resolve));refresh();if(!state.resizeBound){state.resizeBound=true;const handler=()=>requestAnimationFrame(()=>refresh());globalThis.addEventListener?.("resize",handler,{passive:true});globalThis.addEventListener?.("orientationchange",handler,{passive:true});}if(geometry?.length>1&&geometry.every(point=>Math.abs(point.latitude-geometry[0].latitude)<1e-7&&Math.abs(point.longitude-geometry[0].longitude)<1e-7))map.setZoom(17);onDiagnostic("fit_bounds_complete",{fitBoundsCompletion:true});onDiagnostic("map_render_complete",{markerCount:payload.markers.length,geometryPointCount:geometry?.length||0});return map;
 }

@@ -104,6 +104,7 @@ const { summarizeDiagnosticWithOpenAI } = require("./src/lib/diagnosticSummarize
 const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
 const { evaluatePilotReadiness } = require("./src/lib/pilotReadinessEvaluator");
 const { buildLaunchHealth, redactedExport } = require("./src/diagnostics/launchHealthService");
+const { createClientEvidenceService } = require("./src/diagnostics/clientEvidenceService");
 const { publicCapabilityRegistry } = require("./src/diagnostics/capabilityRegistry");
 const { createNotificationService } = require("./src/notifications/notificationService");
 const { createLeaderboardService } = require("./src/leaderboards/leaderboardService");
@@ -359,6 +360,7 @@ function createApp(options = {}) {
   const trainerWriteLimit = createRateLimiter({ name: "trainer-writes", max: 30, windowMs: 60_000 });
   const notificationLimit = createRateLimiter({ name:"member-notifications",max:60,windowMs:60_000 });
   const leaderboardLimit = createRateLimiter({ name:"member-leaderboards",max:60,windowMs:60_000 });
+  const clientEvidenceLimit = createRateLimiter({ name:"client-capability-evidence",max:12,windowMs:60_000 });
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -387,6 +389,7 @@ function createApp(options = {}) {
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (avatarFeatureEnabled && !fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
   const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
+  const clientEvidenceService = createClientEvidenceService();
   let latestLaunchHealth = null;
   const latestExternalChecks = { aiCoach:null, diagnosticSummarizer:null, stripe:null };
   const challengeService = createChallengeService({ filePath: PUSHUP_CHALLENGE_PATH });
@@ -945,6 +948,12 @@ function createApp(options = {}) {
     app.get("/api/me/leaderboards/:leaderboardId/position", requireAuth, leaderboardLimit, (req, res) => { const result = leaderboardService.calculate(req.auth.userId, req.params.leaderboardId, { limit: 1 }); if (!result) throw new ApiError("LEADERBOARD_NOT_FOUND", "Leaderboard not found", 404); return ok(res, req.requestId, { leaderboardId: result.leaderboardId, position: result.selfPosition }); });
     app.put("/api/me/leaderboard-preferences", requireAuth, leaderboardLimit, (req, res) => ok(res, req.requestId, leaderboardService.updatePreferences(req.auth.userId, req.body || {})));
   }
+  app.post("/api/me/client-diagnostics", requireAuth, clientEvidenceLimit, (req, res) => {
+    const record = clientEvidenceService.report(req.body || {});
+    if (!record) throw new ApiError("INVALID_CLIENT_DIAGNOSTIC", "Client diagnostic report is invalid", 422);
+    latestLaunchHealth = null;
+    return ok(res, req.requestId, { accepted: true, capability: record.capability }, 202);
+  });
 
   if (gamificationReadService) {
     const internalGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
@@ -1039,7 +1048,7 @@ function createApp(options = {}) {
       openAiSummaryStatus: summaryResult.status,
       openAiSummary: summaryResult.summary
     });
-    latestLaunchHealth = buildLaunchHealth({ env: process.env, rootDir, dataDir: DATA_DIR, frontendBuild: payload?.build?.appBuildVersion || payload?.build?.frontendBuild, backendBuild: APP_BUILD_VERSION, assetCacheToken:payload?.build?.assetCacheToken || null, expectedAssetCacheToken:INDEX_CACHE_BUST_TOKEN, memberEvidence:memberJourneyService.inspect(), implementations:{notifications:notificationService?.health(),leaderboards:leaderboardService?.health(),externalChecks:latestExternalChecks} });
+    latestLaunchHealth = buildLaunchHealth({ env: process.env, rootDir, dataDir: DATA_DIR, frontendBuild: payload?.build?.appBuildVersion || payload?.build?.frontendBuild, backendBuild: APP_BUILD_VERSION, assetCacheToken:payload?.build?.assetCacheToken || null, expectedAssetCacheToken:INDEX_CACHE_BUST_TOKEN, memberEvidence:memberJourneyService.inspect(), implementations:{notifications:notificationService?.health(),leaderboards:leaderboardService?.health(),clientEvidence:clientEvidenceService.latest(),externalChecks:latestExternalChecks} });
 
     const report = diagnosticStore.createReport({
       buildVersion: payload?.build?.appBuildVersion || APP_BUILD_VERSION,
@@ -1079,7 +1088,7 @@ function createApp(options = {}) {
     assetCacheToken: frontendManifest().assetCacheToken || null,
     expectedAssetCacheToken: INDEX_CACHE_BUST_TOKEN,
     memberEvidence: memberJourneyService.inspect(),
-    implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), externalChecks:latestExternalChecks }
+    implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), clientEvidence:clientEvidenceService.latest(), externalChecks:latestExternalChecks }
   });
   app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
   app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });
@@ -1125,7 +1134,7 @@ function createApp(options = {}) {
         rootDir,
         dataDir: DATA_DIR, backendBuild: APP_BUILD_VERSION, frontendBuild: manifest.build,
         frontendCommit: safeCommit(manifest.commit), backendCommit: safeCommit(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT),
-        assetCacheToken: manifest.assetCacheToken || null, expectedAssetCacheToken:INDEX_CACHE_BUST_TOKEN, implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), externalChecks:latestExternalChecks }
+        assetCacheToken: manifest.assetCacheToken || null, expectedAssetCacheToken:INDEX_CACHE_BUST_TOKEN, implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), clientEvidence:clientEvidenceService.latest(), externalChecks:latestExternalChecks }
       }));
     }
   );
