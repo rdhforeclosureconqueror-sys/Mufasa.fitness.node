@@ -464,7 +464,7 @@ function createApp(options = {}) {
       }
     }
   }
-  const notificationService = gamificationConfig.notifications && gamificationEventStore
+  const notificationService = gamificationConfig.notifications && gamificationReadService
     ? createNotificationService({ filePath: options.notificationPath || path.join(DATA_DIR, "gamification", "notifications.json") }) : null;
   const leaderboardService = gamificationConfig.leaderboards && gamificationReadService
     ? createLeaderboardService({ readModelService: gamificationReadService, userStore }) : null;

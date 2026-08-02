@@ -35,7 +35,7 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
   assert.match(html, /src="map-diagnostics\.js\?v=walking-route-phase2-20260729"/);
-  assert.match(html, /src="greatness\.js\?v=walking-route-phase2-20260729"/);
+  assert.match(html, /src="greatness\.js\?v=goal-builder-20260802"/);
   assert.match(runtime, /trail-map\.js\?v=mobile-map-config-route-20260729/);
   assert.match(runtime, /map-diagnostics\.js\?v=mobile-map-config-route-20260729/);
   assert.match(css, /safe-area-inset-bottom/);
