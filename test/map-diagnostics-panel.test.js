@@ -12,7 +12,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
-  assert.match(source, /DIAGNOSTICS_VERSION = "mobile-map-config-route-20260729"/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "map-diagnostics-restored-20260802"/);
   assert.match(source, /Map diagnostics build:/);
   assert.match(source, /Map Debug/);
 });
@@ -34,12 +34,61 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
-  assert.match(html, /src="map-diagnostics\.js\?v=walking-route-phase2-20260729"/);
-  assert.match(html, /src="greatness\.js\?v=proven-backend-map-config-20260802"/);
-  assert.match(runtime, /trail-map\.js\?v=proven-backend-map-config-20260802/);
-  assert.match(runtime, /map-diagnostics\.js\?v=mobile-map-config-route-20260729/);
+  assert.match(html, /href="greatness\.css\?v=map-diagnostics-restored-20260802"/);
+  assert.match(html, /src="map-diagnostics\.js\?v=map-diagnostics-restored-20260802"/);
+  assert.match(html, /src="greatness\.js\?v=map-diagnostics-restored-20260802"/);
+  assert.match(runtime, /trail-map\.js\?v=map-diagnostics-restored-20260802/);
+  assert.match(runtime, /map-diagnostics\.js\?v=map-diagnostics-restored-20260802/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
+});
+
+test("history-proven launcher is dynamically mounted and production debug mode enables it", () => {
+  const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
+  assert.match(html, /<script type="module" src="map-diagnostics\.js\?v=map-diagnostics-restored-20260802"><\/script>/);
+  assert.match(diagnostics, /document\.createElement\("button"\)/);
+  assert.match(diagnostics, /className="map-debug-launcher"/);
+  assert.match(diagnostics, /document\.body\.append\(state\.launcher,state\.panel\)/);
+  assert.match(diagnostics, /const authorized=ADMIN_ROLES\.has\(role\)\|\|config\.debugMapEnabled===true/);
+  assert.doesNotMatch(diagnostics, /userEnabled|diagnosticsEnabled|explicitlyRequested/);
+});
+
+test("launcher and panel retain iPhone-safe viewport placement above the Greatness UI", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
+  assert.match(css, /\.map-debug-launcher\{position:fixed!important/);
+  assert.match(css, /z-index:2147483000!important/);
+  assert.match(css, /right:max\(12px,env\(safe-area-inset-right\)\)/);
+  assert.match(css, /bottom:max\(12px,env\(safe-area-inset-bottom\)\)/);
+  assert.match(css, /display:block!important/);
+  assert.match(css, /min-height:44px/);
+  assert.match(css, /\.map-diagnostics\{position:fixed!important;z-index:2147483001!important/);
+  assert.match(css, /max-height:min\(78vh,720px\);overflow:auto/);
+  assert.doesNotMatch(css, /\.map-debug-launcher\{display:none!important\}/);
+  assert.doesNotMatch(css, /body:has\(\.map-diagnostics\)/);
+});
+
+test("launcher interaction survives map failure and current dynamic route UI lifecycle", () => {
+  const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
+  const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
+  const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
+  assert.match(diagnostics, /state\.launcher\.onclick=.*state\.panel\.hidden=!state\.panel\.hidden/);
+  assert.match(diagnostics, /data-diag="close"/);
+  assert.match(diagnostics, /state\.panel\.hidden=true/);
+  assert.match(runtime, /section\.innerHTML=.*generatedRouteMap/);
+  assert.match(runtime, /mapDiagnostic\("route_render_failed"/);
+  assert.doesNotMatch(runtime, /querySelectorAll\([^\n]*map-debug-launcher|\.map-debug-launcher[^\n]*remove/);
+  assert.match(map, /addEventListener\?\.\("orientationchange",handler/);
+  assert.match(map, /addEventListener\?\.\("resize",handler/);
+});
+
+test("panel reports the complete browser map chain without exposing the browser key", () => {
+  const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
+  const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
+  for (const label of ["Browser Config", "Key present", "Script loaded", "google.maps", "Geometry available", "Container width", "Container height", "Provider error", "Final map status"]) assert.match(diagnostics, new RegExp(label));
+  for (const event of ["browser_config_request_started", "browser_config_http_status", "browser_config_parsed", "maps_script_appended", "maps_loader_callback", "maps_namespace_ready", "map_container_ready", "trail_route_rendered", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
+  assert.match(diagnostics, /browserKeyPresent = details\.keyPresent \? "Yes" : "No"/);
+  assert.doesNotMatch(diagnostics, /googleMapsBrowserApiKey[^\n]*\$\{/);
 });
 
 test("map configuration uses the history-proven backend delivery path", () => {
