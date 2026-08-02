@@ -1,7 +1,7 @@
-import { backendUrl } from "./backend-origin.js?v=mobile-map-config-route-20260729";
+import { backendUrl } from "./backend-origin.js?v=map-diagnostics-restored-20260802";
 
 const ADMIN_ROLES = new Set(["admin", "super_admin"]);
-const DIAGNOSTICS_VERSION = "mobile-map-config-route-20260729";
+const DIAGNOSTICS_VERSION = "map-diagnostics-restored-20260802";
 const SECRET_KEY = /(?:api.?key|authorization|cookie|secret|token|password)/i;
 const FAILURE_EVENT = /(?:failure|error)$/;
 const STEP_EVENTS = [
@@ -44,7 +44,9 @@ function updateDerived(event, details, now) {
   if (event === "maps_library_import_started") state.starts.library = now;
   if (event === "marker_library_loaded") state.timings.libraryImport = duration(state.starts.library, now);
   if (event === "map_created") { state.facts.mapCreated = "Yes"; state.starts.render = now; }
-  if (event === "map_render_complete") { state.timings.mapRender = duration(state.starts.render, now); state.facts.mapStatus = "rendered"; }
+  if (event === "map_container_ready") { state.facts.containerWidth = details.widthBucket; state.facts.containerHeight = details.heightBucket; }
+  if (event === "trail_route_rendered") state.facts.geometryAvailable = Number(details.geometryPointCountBucket || details.geometryPointCount) > 0 ? "Yes" : "No";
+  if (event === "map_render_complete") { state.timings.mapRender = duration(state.starts.render, now); state.facts.mapStatus = "rendered"; state.facts.finalMapStatus = "rendered"; }
   if (event === "backend_http_status") state.facts.nearbyTrailsHttpStatus = details.status;
   if (event === "trail_count_rendered") state.facts.trailsReturned = details.count;
   if (event === "markers_created" || event === "markers_added") state.facts.markersCreated = details.markerCount;
@@ -53,7 +55,7 @@ function updateDerived(event, details, now) {
   state.facts.googleMapsExists = Boolean(globalThis.google?.maps);
   state.facts.importLibraryExists = Boolean(globalThis.google?.maps?.importLibrary);
   state.facts.markerLibraryLoaded ||= event === "marker_library_loaded";
-  if (FAILURE_EVENT.test(event) || details.error) { state.error = safe(details.error || details); state.stopped = true; }
+  if (FAILURE_EVENT.test(event) || details.error || details.classification) { state.error = safe(details.error || details); state.facts.providerError = details.classification || state.error?.code || event; state.facts.finalMapStatus = "failed"; state.stopped = true; }
   if (event === "browser_config_request_started") state.facts.mapStatus = "starting";
 }
 export function mapDiagnostic(event, details = {}) {
@@ -76,7 +78,7 @@ function render() {
   <h3>Browser</h3><dl>${row("User Agent",escape(browserFacts().userAgent))}${row("iOS",browserFacts().iOSVersion)}${row("Safari",browserFacts().safariVersion)}</dl>
   <h3>Host</h3><dl>${row("Origin",escape(location.origin))}${row("Href",escape(location.href))}</dl>
   <h3>Browser Config</h3><dl>${row("HTTP",f.browserConfigHttpStatus)}${row("JSON received",f.jsonReceived?"Yes":"No")}${row("Key present",f.browserKeyPresent)}${row("Key null",f.browserKeyNull)}</dl>
-  <h3>Google Maps</h3><dl>${row("Script loaded",f.scriptLoaded?"Yes":"No")}${row("window.google",f.googleExists?"Yes":"No")}${row("google.maps",f.googleMapsExists?"Yes":"No")}${row("importLibrary",f.importLibraryExists?"Yes":"No")}${row("Marker library",f.markerLibraryLoaded?"Yes":"No")}${row("Map created",f.mapCreated||"No")}</dl>
+  <h3>Google Maps</h3><dl>${row("Script loaded",f.scriptLoaded?"Yes":"No")}${row("window.google",f.googleExists?"Yes":"No")}${row("google.maps",f.googleMapsExists?"Yes":"No")}${row("importLibrary",f.importLibraryExists?"Yes":"No")}${row("Marker library",f.markerLibraryLoaded?"Yes":"No")}${row("Geometry available",f.geometryAvailable||"Not reported")}${row("Container width",f.containerWidth)}${row("Container height",f.containerHeight)}${row("Map created",f.mapCreated||"No")}${row("Provider error",f.providerError||"None reported")}${row("Final map status",f.finalMapStatus||f.mapStatus||"not started")}</dl>
   <h3>Trail Search</h3><dl>${row("Nearby API HTTP",f.nearbyTrailsHttpStatus)}${row("Trails returned",f.trailsReturned)}${row("Markers created",f.markersCreated)}</dl>
   <h3>Desktop vs iPhone Nearby Trails</h3>${comparisonTable(comparison())}
   <h3>Timing</h3><dl>${row("Browser config",t.browserConfig)}${row("Script load",t.scriptLoad)}${row("Library import",t.libraryImport)}${row("Map render",t.mapRender)}</dl>
@@ -99,9 +101,7 @@ export async function initializeMapDiagnostics(token) {
     const [config,account]=await Promise.all([configRequest,authRequest]);
     const role=typeof account.role==="string"?account.role.trim().toLowerCase():"";
     const rolePresent=Boolean(role);
-    const explicitlyRequested=new URLSearchParams(globalThis.location?.search||"").has("mapDiagnostics");
-    const userEnabled=account?.diagnosticsEnabled===true;
-    const authorized=explicitlyRequested||(userEnabled&&(ADMIN_ROLES.has(role)||config.debugMapEnabled===true));
+    const authorized=ADMIN_ROLES.has(role)||config.debugMapEnabled===true;
     console.info("diagnostics_authorization_checked");
     console.info(`diagnostics_authorized: ${authorized}`);
     console.info(`role_present: ${rolePresent}`);
