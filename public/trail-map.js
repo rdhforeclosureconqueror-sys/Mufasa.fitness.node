@@ -24,7 +24,8 @@ export function payloadBounds(payload) {
 export function markerLabel(number) { return String(number); }
 export function classifyMapError(error) {
   const code=String(error?.code||""),message=String(error?.message||"").toLowerCase();
-  if(["BROWSER_MAP_KEY_MISSING","MAPS_SCRIPT_BLOCKED","MAPS_AUTHENTICATION_FAILED","MAPS_REFERRER_NOT_ALLOWED","MAPS_API_NOT_ACTIVATED","MAP_CONTAINER_ZERO_SIZE","MAP_CONTAINER_NOT_VISIBLE","MAP_INITIALIZATION_FAILED","ROUTE_COORDINATES_INVALID","MAPS_LIBRARY_UNAVAILABLE"].includes(code))return code;
+  if(["BROWSER_MAP_KEY_MISSING","BROWSER_CONFIG_UNAVAILABLE","MAPS_SCRIPT_BLOCKED","MAPS_AUTHENTICATION_FAILED","MAPS_REFERRER_NOT_ALLOWED","MAPS_API_NOT_ACTIVATED","MAP_CONTAINER_ZERO_SIZE","MAP_CONTAINER_NOT_VISIBLE","MAP_INITIALIZATION_FAILED","ROUTE_COORDINATES_INVALID","MAPS_LIBRARY_UNAVAILABLE"].includes(code))return code;
+  if(code.startsWith("BROWSER_CONFIG_"))return "BROWSER_CONFIG_UNAVAILABLE";
   if(code==="BROWSER_KEY_MISSING")return "BROWSER_MAP_KEY_MISSING";
   if(code==="GOOGLE_MAPS_SCRIPT_ERROR"||code==="GOOGLE_MAPS_SCRIPT_TIMEOUT")return "MAPS_SCRIPT_BLOCKED";
   if(code==="INVALID_ROUTE_GEOMETRY")return "ROUTE_COORDINATES_INVALID";
@@ -35,23 +36,31 @@ export function classifyMapError(error) {
   return "UNKNOWN_MAP_RENDER_FAILURE";
 }
 export function googleMapsScriptUrl(key, callback) { const params=new URLSearchParams({key,loading:"async",callback,libraries:"geometry"});return `https://maps.googleapis.com/maps/api/js?${params.toString()}`; }
+export function injectedBrowserMapKey(scope=globalThis) {
+  const config=scope.__MAAT_RUNTIME_CONFIG__||scope.__MAAT_RUNTIME_CONFIG||{};
+  for(const value of [config.googleMapsBrowserApiKey,scope.VITE_GOOGLE_MAPS_BROWSER_API_KEY,scope.GOOGLE_MAPS_BROWSER_API_KEY])if(typeof value==="string"&&value.trim())return value.trim();
+  return null;
+}
+async function requestBrowserMapKey(url,onDiagnostic,source) {
+  onDiagnostic("browser_config_request_started",{url,credentialsMode:"omit",source});
+  let response;try{response=await fetch(url,{cache:"no-store",credentials:"omit"});}catch(cause){throw mapError("BROWSER_CONFIG_NETWORK_ERROR","Browser map configuration request failed",cause);}
+  onDiagnostic("browser_config_http_status",{status:response.status,contentType:response.headers.get("content-type")||"",source});
+  if(!response.ok)throw mapError("BROWSER_CONFIG_HTTP_ERROR",`Browser map configuration failed (${response.status})`);
+  let body;try{body=await response.json();}catch(cause){throw mapError("BROWSER_CONFIG_INVALID_JSON","Browser map configuration returned invalid JSON",cause);}
+  const key=typeof body?.data?.googleMapsBrowserApiKey==="string"?body.data.googleMapsBrowserApiKey.trim():"";
+  onDiagnostic("browser_config_parsed",{keyPresent:Boolean(key),keyNull:body?.data?.googleMapsBrowserApiKey===null,source});return key||null;
+}
+export async function resolveBrowserMapKey(onDiagnostic=()=>{}) {
+  const injected=injectedBrowserMapKey();if(injected){onDiagnostic("browser_key_present",{source:"frontend_injected"});return injected;}
+  const frontendUrl=new URL("/api/browser-config",globalThis.location?.href||backendUrl("/")).href;let frontendError;
+  try{const key=await requestBrowserMapKey(frontendUrl,onDiagnostic,"frontend_same_origin");if(key){onDiagnostic("browser_key_present",{source:"frontend_same_origin"});return key;}}catch(error){frontendError=error;}
+  const fallbackUrl=backendUrl("/api/browser-config");if(fallbackUrl!==frontendUrl){onDiagnostic("browser_config_fallback",{source:"backend_runtime"});try{const key=await requestBrowserMapKey(fallbackUrl,onDiagnostic,"backend_runtime");if(key){onDiagnostic("browser_key_present",{source:"backend_runtime"});return key;}}catch(error){if(!frontendError)frontendError=error;}}
+  if(frontendError)throw frontendError;throw mapError("BROWSER_MAP_KEY_MISSING","Interactive map is not configured");
+}
 export async function loadGoogleMaps(onDiagnostic = () => {}) {
   if (globalThis.google?.maps?.importLibrary) { onDiagnostic("maps_namespace_ready", { cached: true }); return globalThis.google; }
   if (!loaderPromise) loaderPromise = (async () => {
-    const browserConfigUrl = backendUrl("/api/browser-config");
-    onDiagnostic("browser_config_request_started", { url: browserConfigUrl, credentialsMode: "omit" });
-    let response;
-    try { response = await fetch(browserConfigUrl, { cache: "no-store", credentials: "omit", redirect: "error" }); }
-    catch (cause) { throw mapError("BROWSER_CONFIG_NETWORK_ERROR", "Browser map configuration request failed", cause); }
-    onDiagnostic("browser_config_http_status", { status: response.status, contentType: response.headers.get("content-type") || "" });
-    if (!response.ok) throw mapError("BROWSER_CONFIG_HTTP_ERROR", `Browser map configuration failed (${response.status})`);
-    let body;
-    try { body = await response.json(); }
-    catch (cause) { throw mapError("BROWSER_CONFIG_INVALID_JSON", "Browser map configuration returned invalid JSON", cause); }
-    const keyPresent = typeof body?.data?.googleMapsBrowserApiKey === "string" && body.data.googleMapsBrowserApiKey.length > 0;
-    onDiagnostic("browser_config_parsed", { keyPresent, keyNull: body?.data?.googleMapsBrowserApiKey === null });
-    if (!keyPresent) throw mapError("BROWSER_MAP_KEY_MISSING", "Interactive map is not configured");
-    onDiagnostic("browser_key_present");
+    const browserKey=await resolveBrowserMapKey(onDiagnostic);
     return new Promise((resolve, reject) => {
       let settled=false;
       const callback = `initTrailMaps_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -68,7 +77,7 @@ export async function loadGoogleMaps(onDiagnostic = () => {}) {
         if (available) { onDiagnostic("maps_script_loaded"); resolve(globalThis.google); } else { const error = mapError("GOOGLE_MAPS_NAMESPACE_MISSING", "Google Maps loaded without the expected namespace"); onDiagnostic("maps_namespace_failure", { classification:classifyMapError(error) }); reject(error); }
       };
       script = document.createElement("script");
-      script.src = googleMapsScriptUrl(body.data.googleMapsBrowserApiKey,callback);
+      script.src = googleMapsScriptUrl(browserKey,callback);
       script.async = true;
       script.defer = true;
       script.referrerPolicy = "strict-origin-when-cross-origin";

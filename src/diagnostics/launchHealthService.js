@@ -99,14 +99,17 @@ function buildLaunchHealth({ env = process.env, rootDir = process.cwd(), dataDir
   const pushupLeaderboard = { status:exists(rootDir,"src/services/challengeService.js") ? STATUS.READY : STATUS.BLOCKED, rankingService:exists(rootDir,"src/services/challengeService.js"), routeRegistered:true, scope:"pushup_score", separateFromUniversal:true };
   const restoredEvents = { greatness:{status:gamification.eventCapture && exists(rootDir,"src/services/steppingIntoGreatnessService.js") ? STATUS.READY : STATUS.DISABLED_INTENTIONALLY, xpPolicy:"none_reviewed"}, pushup:{status:gamification.eventCapture && exists(rootDir,"src/services/challengeService.js") ? STATUS.READY : STATUS.DISABLED_INTENTIONALLY, xpPolicy:"none_reviewed"} };
   const mapEvidence = implementations.clientEvidence?.greatness_browser_map || null;
+  const serverMapKeyPresent=Boolean(String(env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || "").trim());
+  const browserProvedKeyPresent=Boolean(mapEvidence&&!(["BROWSER_MAP_KEY_MISSING","BROWSER_CONFIG_UNAVAILABLE"].includes(mapEvidence.classification)));
+  const browserMapConfiguration=serverMapKeyPresent||browserProvedKeyPresent?STATUS.READY:mapEvidence?.classification==="BROWSER_MAP_KEY_MISSING"?STATUS.CONFIGURATION_MISSING:STATUS.UNKNOWN_UNTIL_CLIENT_EVIDENCE;
   const greatness = {
     persistenceEvents: restoredEvents.greatness.status,
     routeDiscovery: exists(rootDir, "src/services/nearbyTrailService.js") ? STATUS.READY : STATUS.BLOCKED,
     routeGeneration: exists(rootDir, "src/services/walkingRouteService.js") ? STATUS.READY : STATUS.BLOCKED,
-    browserMapConfiguration: String(env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || "").trim() ? STATUS.READY : STATUS.CONFIGURATION_MISSING,
+    browserMapConfiguration,
     browserMapClient: mapEvidence?.status || STATUS.UNKNOWN_UNTIL_CLIENT_EVIDENCE,
     latestClientEvidence: mapEvidence,
-    status: !String(env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || "").trim() ? STATUS.CONFIGURATION_MISSING : mapEvidence?.status || STATUS.UNKNOWN_UNTIL_CLIENT_EVIDENCE
+    status: browserMapConfiguration===STATUS.CONFIGURATION_MISSING?STATUS.CONFIGURATION_MISSING:mapEvidence?.status||STATUS.UNKNOWN_UNTIL_CLIENT_EVIDENCE
   };
   const stripe = stripeStatic(env);
   const memberJourney = memberEvidence ? {
@@ -130,7 +133,7 @@ function buildLaunchHealth({ env = process.env, rootDir = process.cwd(), dataDir
     check("leaderboards", "Leaderboards", leaderboards.status, leaderboards.implemented ? "Server ranking is separate from the latest member browser contract result." : "The gamification flag does not have a ranking implementation; the separate push-up challenge leaderboard is not a substitute.", { blocking: gamification.leaderboardsFlag && [STATUS.BLOCKED,"FLAG_ENABLED_BUT_FEATURE_NOT_IMPLEMENTED"].includes(leaderboards.status), remediation: leaderboards.status === STATUS.CLIENT_RUNTIME_FAILED ? "Inspect the sanitized client classification, correct the member request/render path, then collect fresh browser evidence." : null }),
     check("pushup_leaderboard", "Leaderboards", pushupLeaderboard.status, "Push-Up score ranking is implemented and remains separate from universal XP standings."),
     check("greatness_events", "Gamification", restoredEvents.greatness.status, "Verified Greatness completions emit replay-safe events after persistence; no XP policy is assigned."),
-    check("greatness_browser_map", "Greatness", greatness.status, "Greatness persistence, discovery, generation, browser configuration, and client rendering are evaluated independently.", { remediation: greatness.browserMapConfiguration === STATUS.CONFIGURATION_MISSING ? "Set VITE_GOOGLE_MAPS_BROWSER_API_KEY at server runtime to a separate browser-restricted key with Maps JavaScript API enabled, then restart." : greatness.browserMapClient === STATUS.CLIENT_RUNTIME_FAILED ? "Use the sanitized client classification to verify API activation and production HTTP referrer allow-listing." : "Verify a route in a real supported browser and submit sanitized client evidence." }),
+    check("greatness_browser_map", "Greatness", greatness.status, "Greatness persistence, discovery, generation, browser configuration, and client rendering are evaluated independently.", { remediation: greatness.browserMapConfiguration === STATUS.CONFIGURATION_MISSING ? "Restore VITE_GOOGLE_MAPS_BROWSER_API_KEY through the established frontend delivery path; the backend runtime endpoint remains a fallback." : greatness.browserMapClient === STATUS.CLIENT_RUNTIME_FAILED ? "Use the sanitized client classification to distinguish loader, Google authorization, and container failures." : "Verify a route in a real supported browser and submit sanitized client evidence." }),
     check("pushup_events", "Gamification", restoredEvents.pushup.status, "Persisted Push-Up results emit replay-safe events; score ranking and XP standings remain separate."),
     check("ai_coach", "AI Coach", aiStatic(env, "AI_COACH", implementations.externalChecks?.aiCoach).liveReachability === STATUS.READY ? STATUS.READY : aiStatic(env, "AI_COACH").staticReadiness === STATUS.READY ? STATUS.READY_WITH_LIMITATION : aiStatic(env, "AI_COACH").staticReadiness, "AI Coach static configuration is independent; reachability requires Safe External Checks."),
     check("diagnostic_summarizer", "Diagnostics", aiStatic(env, "DIAGNOSTIC_SUMMARIZER", implementations.externalChecks?.diagnosticSummarizer).liveReachability === STATUS.READY ? STATUS.READY : aiStatic(env, "DIAGNOSTIC_SUMMARIZER").staticReadiness, "The optional diagnostic summarizer has its own enablement, provider, and model configuration."),
