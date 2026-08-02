@@ -52,7 +52,7 @@ test('protects readable interactive glass while keeping maps isolated', () => {
 });
 
 test('fixes the rendering root instead of only changing opacity tokens', () => {
-  assert.match(html, /greatness\.css\?v=map-diagnostics-restored-20260802/);
+  assert.match(html, /greatness\.css\?v=history-contract-restored-20260802/);
   assert.match(css, /main>\.panel,\s*\.panel:not\(#move\)\{background:transparent/);
   assert.match(css, /\.trail-planner \.route-selector,\.trail-planner \.planner-workspace\{background:transparent\}/);
   assert.match(css, /\.cinematic-vignette\{\s*background:[\s\S]*?rgba\(0,0,0,\.28\)/);
