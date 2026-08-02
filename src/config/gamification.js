@@ -20,6 +20,8 @@ function loadGamificationConfig(env = process.env) {
   if (config.evaluation && !config.eventCapture) invalid.push("GAMIFICATION_EVALUATION requires GAMIFICATION_EVENT_CAPTURE");
   if (config.readApi && !config.evaluation) invalid.push("GAMIFICATION_READ_API requires GAMIFICATION_EVALUATION");
   if (config.operations && !config.readApi) invalid.push("GAMIFICATION_OPERATIONS requires GAMIFICATION_READ_API");
+  if (config.notifications && !config.readApi) invalid.push("GAMIFICATION_NOTIFICATIONS requires GAMIFICATION_READ_API");
+  if (config.leaderboards && !config.readApi) invalid.push("GAMIFICATION_LEADERBOARDS requires GAMIFICATION_READ_API");
   if (config.sources.workoutCompleted && !config.eventCapture) invalid.push("GAMIFICATION_SOURCE_WORKOUT_COMPLETED requires GAMIFICATION_EVENT_CAPTURE");
   if (invalid.length) throw new Error(`Invalid gamification feature configuration: ${invalid.join("; ")}`);
   return Object.freeze(config);

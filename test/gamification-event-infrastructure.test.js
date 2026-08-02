@@ -39,6 +39,8 @@ test("gamification feature dependencies fail closed instead of partially initial
   assert.throws(() => loadGamificationConfig({ GAMIFICATION_EVALUATION: "true" }), /requires GAMIFICATION_EVENT_CAPTURE/);
   assert.throws(() => loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true", GAMIFICATION_READ_API: "true" }), /requires GAMIFICATION_EVALUATION/);
   assert.throws(() => loadGamificationConfig({ GAMIFICATION_EVENT_CAPTURE: "true", GAMIFICATION_EVALUATION: "true", GAMIFICATION_OPERATIONS: "true" }), /requires GAMIFICATION_READ_API/);
+  assert.throws(() => loadGamificationConfig({ GAMIFICATION_NOTIFICATIONS: "true" }), /GAMIFICATION_NOTIFICATIONS requires GAMIFICATION_READ_API/);
+  assert.throws(() => loadGamificationConfig({ GAMIFICATION_LEADERBOARDS: "true" }), /GAMIFICATION_LEADERBOARDS requires GAMIFICATION_READ_API/);
 });
 
 test("event validation returns a minimized immutable registered envelope", () => {
