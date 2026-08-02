@@ -1,8 +1,8 @@
 import { BrowserLocationTracker, browserTrackingLimitations } from "./greatness-location-tracker.js";
 import { createRecoveryStore } from "./greatness-recovery-store.js";
-import { backendOrigin } from "./backend-origin.js?v=map-diagnostics-restored-20260802";
-import { classifyMapError, clearGoogleMapsCache, createMapPayload, renderTrailMap } from "./trail-map.js?v=map-diagnostics-restored-20260802";
-import { configureMapDiagnostics, initializeMapDiagnostics, mapDiagnostic, recordTrailRequestSnapshot } from "./map-diagnostics.js?v=map-diagnostics-restored-20260802";
+import { backendOrigin } from "./backend-origin.js?v=history-contract-restored-20260802";
+import { classifyMapError, clearGoogleMapsCache, createMapPayload, renderTrailMap } from "./trail-map.js?v=history-contract-restored-20260802";
+import { configureMapDiagnostics, initializeMapDiagnostics, mapDiagnostic, recordTrailRequestSnapshot } from "./map-diagnostics.js?v=history-contract-restored-20260802";
 import { parseTrailSearchResponse } from "./trail-response.js";
 import { createGoalRouteState } from "./goal-route-state.js";
 import { routeDetailNotice, routeDisplayLabel, routeMatchLabel, routeNotice, routeSourceLabel, routeVerification } from "./route-planning-ui.js";

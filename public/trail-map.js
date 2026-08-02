@@ -1,5 +1,3 @@
-import { backendUrl } from "./backend-origin.js?v=mobile-map-config-route-20260729";
-
 let loaderPromise;
 const mapStates=new WeakMap();
 const LOAD_TIMEOUT_MS=12000;
@@ -37,16 +35,16 @@ export function classifyMapError(error) {
 }
 export function googleMapsScriptUrl(key, callback) { const params=new URLSearchParams({key,loading:"async",callback,libraries:"geometry"});return `https://maps.googleapis.com/maps/api/js?${params.toString()}`; }
 async function requestBrowserMapKey(onDiagnostic) {
-  const url=backendUrl("/api/browser-config");
-  onDiagnostic("browser_config_request_started",{url,credentialsMode:"omit",source:"backend_runtime"});
-  let response;try{response=await fetch(url,{cache:"no-store",credentials:"omit",redirect:"error"});}catch(cause){throw mapError("BROWSER_CONFIG_NETWORK_ERROR","Browser map configuration request failed",cause);}
-  onDiagnostic("browser_config_http_status",{status:response.status,contentType:response.headers.get("content-type")||"",source:"backend_runtime"});
+  const url="/api/browser-config";
+  onDiagnostic("browser_config_request_started",{url:new URL(url,globalThis.location?.href).href,credentialsMode:"same-origin",source:"frontend_same_origin"});
+  let response;try{response=await fetch(url,{cache:"no-store"});}catch(cause){throw mapError("BROWSER_CONFIG_NETWORK_ERROR","Browser map configuration request failed",cause);}
+  onDiagnostic("browser_config_http_status",{status:response.status,contentType:response.headers.get("content-type")||"",source:"frontend_same_origin"});
   if(!response.ok)throw mapError("BROWSER_CONFIG_HTTP_ERROR",`Browser map configuration failed (${response.status})`);
   let body;try{body=await response.json();}catch(cause){throw mapError("BROWSER_CONFIG_INVALID_JSON","Browser map configuration returned invalid JSON",cause);}
   const key=typeof body?.data?.googleMapsBrowserApiKey==="string"?body.data.googleMapsBrowserApiKey.trim():"";
-  onDiagnostic("browser_config_parsed",{keyPresent:Boolean(key),keyNull:body?.data?.googleMapsBrowserApiKey===null,source:"backend_runtime"});
+  onDiagnostic("browser_config_parsed",{keyPresent:Boolean(key),keyNull:body?.data?.googleMapsBrowserApiKey===null,source:"frontend_same_origin"});
   if(!key)throw mapError("BROWSER_MAP_KEY_MISSING","Interactive map is not configured");
-  onDiagnostic("browser_key_present",{source:"backend_runtime"});return key;
+  onDiagnostic("browser_key_present",{source:"frontend_same_origin"});return key;
 }
 export async function loadGoogleMaps(onDiagnostic = () => {}) {
   if (globalThis.google?.maps?.importLibrary) { onDiagnostic("maps_namespace_ready", { cached: true }); return globalThis.google; }

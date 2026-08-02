@@ -12,7 +12,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
-  assert.match(source, /DIAGNOSTICS_VERSION = "map-diagnostics-restored-20260802"/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "history-contract-restored-20260802"/);
   assert.match(source, /Map diagnostics build:/);
   assert.match(source, /Map Debug/);
 });
@@ -26,7 +26,7 @@ test("map instrumentation covers configuration, libraries, markers, failures, an
 
 test("browser config exposes only the debug boolean alongside the browser key", () => {
   const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
-  assert.match(server, /debugMapEnabled: String\(process\.env\.DEBUG_MAP/);
+  assert.match(server, /debugMapEnabled: String\(env\.DEBUG_MAP/);
   assert.match(server, /RENDER_GIT_COMMIT/);
 });
 
@@ -34,11 +34,11 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
-  assert.match(html, /href="greatness\.css\?v=map-diagnostics-restored-20260802"/);
-  assert.match(html, /src="map-diagnostics\.js\?v=map-diagnostics-restored-20260802"/);
-  assert.match(html, /src="greatness\.js\?v=map-diagnostics-restored-20260802"/);
-  assert.match(runtime, /trail-map\.js\?v=map-diagnostics-restored-20260802/);
-  assert.match(runtime, /map-diagnostics\.js\?v=map-diagnostics-restored-20260802/);
+  assert.match(html, /href="greatness\.css\?v=history-contract-restored-20260802"/);
+  assert.match(html, /src="map-diagnostics\.js\?v=history-contract-restored-20260802"/);
+  assert.match(html, /src="greatness\.js\?v=history-contract-restored-20260802"/);
+  assert.match(runtime, /trail-map\.js\?v=history-contract-restored-20260802/);
+  assert.match(runtime, /map-diagnostics\.js\?v=history-contract-restored-20260802/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
 });
@@ -46,7 +46,7 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
 test("history-proven launcher is dynamically mounted and production debug mode enables it", () => {
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
-  assert.match(html, /<script type="module" src="map-diagnostics\.js\?v=map-diagnostics-restored-20260802"><\/script>/);
+  assert.match(html, /<script type="module" src="map-diagnostics\.js\?v=history-contract-restored-20260802"><\/script>/);
   assert.match(diagnostics, /document\.createElement\("button"\)/);
   assert.match(diagnostics, /className="map-debug-launcher"/);
   assert.match(diagnostics, /document\.body\.append\(state\.launcher,state\.panel\)/);
@@ -91,19 +91,14 @@ test("panel reports the complete browser map chain without exposing the browser 
   assert.doesNotMatch(diagnostics, /googleMapsBrowserApiKey[^\n]*\$\{/);
 });
 
-test("map configuration uses the history-proven backend delivery path", () => {
-  const helper = fs.readFileSync(path.join(__dirname, "../public/backend-origin.js"), "utf8");
+test("map configuration uses the history-proven frontend same-origin delivery path", () => {
   const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
-  assert.match(helper, /RuntimeState\?\.getBackendOrigin/);
-  assert.match(helper, /MAAT_BACKEND_ORIGIN/);
-  assert.match(helper, /__MAAT_RUNTIME_CONFIG__/);
-  assert.match(helper, /https:\/\/mufasa-fitness-node\.onrender\.com/);
-  assert.match(map, /backendUrl\("\/api\/browser-config"\)/);
-  assert.match(map, /credentials:"omit",redirect:"error"/);
-  assert.match(map, /backend_runtime/);
-  assert.doesNotMatch(map, /frontend_same_origin|frontend_injected|browser_config_fallback/);
-  assert.match(diagnostics, /backendUrl\("\/api\/browser-config"\)/);
+  assert.match(map, /url="\/api\/browser-config"/);
+  assert.match(map, /fetch\(url,\{cache:"no-store"\}\)/);
+  assert.match(map, /frontend_same_origin/);
+  assert.doesNotMatch(map, /backendUrl\("\/api\/browser-config"\)|frontend_injected|browser_config_fallback|backend_runtime/);
+  assert.match(diagnostics, /fetch\("\/api\/browser-config",\{cache:"no-store"\}\)/);
 });
 
 test("nearby trail comparison captures matching redacted request and response evidence", () => {
