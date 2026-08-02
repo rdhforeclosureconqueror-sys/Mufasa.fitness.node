@@ -1,0 +1,10 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
+const source=fs.readFileSync(path.join(__dirname,"../public/trail-map.js"),"utf8");
+const greatness=fs.readFileSync(path.join(__dirname,"../public/greatness.js"),"utf8");
+
+test("browser map key is runtime-delivered and backend key is never exposed",()=>{assert.match(source,/\/api\/browser-config/);assert.match(source,/googleMapsBrowserApiKey/);assert.doesNotMatch(source,/GOOGLE_MAPS_API_KEY/);assert.match(source,/BROWSER_MAP_KEY_MISSING/);});
+test("loader has encoded URL, one promise, callback, timeout, auth hook and required library",()=>{assert.match(source,/new URLSearchParams/);assert.match(source,/loaderPromise/);assert.match(source,/gm_authFailure/);assert.match(source,/LOAD_TIMEOUT_MS/);assert.match(source,/libraries:"geometry"/);assert.match(source,/script\.async = true/);assert.match(source,/script\.defer = true/);});
+test("map classifications cover configuration, provider, container, library and coordinates",()=>{for(const code of ["BROWSER_MAP_KEY_MISSING","MAPS_SCRIPT_BLOCKED","MAPS_AUTHENTICATION_FAILED","MAPS_REFERRER_NOT_ALLOWED","MAPS_API_NOT_ACTIVATED","MAP_CONTAINER_ZERO_SIZE","MAP_CONTAINER_NOT_VISIBLE","MAP_INITIALIZATION_FAILED","ROUTE_COORDINATES_INVALID","MAPS_LIBRARY_UNAVAILABLE","UNKNOWN_MAP_RENDER_FAILURE"])assert.match(source,new RegExp(code));});
+test("mobile lifecycle waits for reveal, resizes, fits bounds and refreshes carousel routes",()=>{assert.match(source,/await waitUntilVisible\(container\)/);assert.match(source,/orientationchange/);assert.match(source,/trigger\?\.\(map,"resize"\)/);assert.match(source,/map\.fitBounds\(bounds,48\)/);assert.match(greatness,/queueMicrotask\(\(\)=>preview/);assert.match(greatness,/Route options remain available/);});
+test("route validation and client evidence are sanitized classifications only",()=>{assert.match(source,/finiteGeometry/);assert.match(greatness,/classifyMapError/);assert.match(greatness,/ClientCapabilityEvidence/);assert.doesNotMatch(greatness,/ClientCapabilityEvidence[^\n]+polyline/);});
