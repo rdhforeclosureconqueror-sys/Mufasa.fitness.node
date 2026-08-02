@@ -1956,15 +1956,9 @@ function createApp(options = {}) {
     ok(res, req.requestId, nearbyTrailService.health())));
   app.get("/api/browser-config", (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.setHeader("Vary", "Origin");
     const applicationCommit = String(process.env.RENDER_GIT_COMMIT || process.env.APPLICATION_COMMIT || "");
-    const googleMapsBrowserKey = String(process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || "").trim();
     return ok(res, req.requestId, {
-      schemaVersion: "1",
-      googleMapsBrowserKeyConfigured: Boolean(googleMapsBrowserKey),
-      googleMapsBrowserKey: googleMapsBrowserKey || null,
-      // Compatibility during the diagnostic rollout. Both fields contain only the browser key.
-      googleMapsBrowserApiKey: googleMapsBrowserKey || null,
+      googleMapsBrowserApiKey: process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || null,
       debugMapEnabled: String(process.env.DEBUG_MAP || "").toLowerCase() === "true",
       applicationCommit: /^[0-9a-f]{7,64}$/i.test(applicationCommit) ? applicationCommit : "unknown"
     });
