@@ -3,6 +3,10 @@ import { backendUrl } from "./backend-origin.js?v=mobile-map-config-route-202607
 let loaderPromise;
 const mapStates=new WeakMap();
 const LOAD_TIMEOUT_MS=12000;
+const PLACEHOLDER_KEY=/^(?:(?:replace(?:-with)?|changeme|your[_-]|example|test|undefined|null)(?:$|[_\s-])|<[^>]+>$)/i;
+const diagnosticEvidence={frontendInjectedConfigFound:false,frontendSameOriginConfigRequested:false,frontendSameOriginConfigStatus:null,frontendSameOriginConfigContentType:null,frontendSameOriginConfigSchemaValid:false,backendFallbackConfigRequested:false,backendFallbackConfigStatus:null,backendFallbackConfigContentType:null,backendFallbackConfigSchemaValid:false,browserKeyResolved:false,browserKeySource:"none",browserKeyPlaceholderDetected:false,loaderAttempted:false,loaderScriptCount:0,loaderCallbackReached:false,googleMapsGlobalAvailable:false,geometryLibraryAvailable:false,mapContainerVisible:false,mapContainerWidth:0,mapContainerHeight:0,providerFailureClassification:null,finalMapStatus:"not_started",checkedAt:new Date().toISOString()};
+function publishEvidence(changes={}){Object.assign(diagnosticEvidence,changes,{checkedAt:new Date().toISOString()});globalThis.__MAAT_MAP_DIAGNOSTICS__=Object.freeze({...diagnosticEvidence});console.info("[map-configuration-diagnostic]",globalThis.__MAAT_MAP_DIAGNOSTICS__);}
+export function mapDiagnosticEvidence(){return {...diagnosticEvidence};}
 const routeStrokeStyle=source=>({verified_geometry:{color:"#55aaff",dashed:false},trail_network:{color:"#46d9ff",dashed:false},park_constrained_walking_route:{color:"#3bd5bd",dashed:false},google_walking_route:{color:"#58a6ff",dashed:true},place_only:{color:"#8aa6a0",dashed:false}})[source]||{color:"#55aaff",dashed:false};
 const finiteGeometry=geometry=>Array.isArray(geometry)&&geometry.length>1&&geometry.every(point=>Number.isFinite(Number(point?.latitude))&&Number.isFinite(Number(point?.longitude)));
 const visibleSize=container=>container.getBoundingClientRect?.()||{width:container.clientWidth,height:container.clientHeight};
@@ -24,7 +28,7 @@ export function payloadBounds(payload) {
 export function markerLabel(number) { return String(number); }
 export function classifyMapError(error) {
   const code=String(error?.code||""),message=String(error?.message||"").toLowerCase();
-  if(["BROWSER_MAP_KEY_MISSING","BROWSER_CONFIG_UNAVAILABLE","MAPS_SCRIPT_BLOCKED","MAPS_AUTHENTICATION_FAILED","MAPS_REFERRER_NOT_ALLOWED","MAPS_API_NOT_ACTIVATED","MAP_CONTAINER_ZERO_SIZE","MAP_CONTAINER_NOT_VISIBLE","MAP_INITIALIZATION_FAILED","ROUTE_COORDINATES_INVALID","MAPS_LIBRARY_UNAVAILABLE"].includes(code))return code;
+  if(["BROWSER_MAP_KEY_MISSING","BROWSER_CONFIG_UNAVAILABLE","MAPS_SCRIPT_BLOCKED","MAPS_AUTHENTICATION_FAILED","MAPS_REFERRER_NOT_ALLOWED","MAPS_API_NOT_ACTIVATED","MAPS_BILLING_NOT_ENABLED","MAPS_INVALID_KEY","MAPS_EXPIRED_KEY","MAP_CONTAINER_ZERO_SIZE","MAP_CONTAINER_NOT_VISIBLE","MAP_INITIALIZATION_FAILED","ROUTE_COORDINATES_INVALID","MAPS_LIBRARY_UNAVAILABLE"].includes(code))return code;
   if(code.startsWith("BROWSER_CONFIG_"))return "BROWSER_CONFIG_UNAVAILABLE";
   if(code==="BROWSER_KEY_MISSING")return "BROWSER_MAP_KEY_MISSING";
   if(code==="GOOGLE_MAPS_SCRIPT_ERROR"||code==="GOOGLE_MAPS_SCRIPT_TIMEOUT")return "MAPS_SCRIPT_BLOCKED";
@@ -32,7 +36,10 @@ export function classifyMapError(error) {
   if(code==="GOOGLE_MAPS_NAMESPACE_MISSING")return "MAPS_LIBRARY_UNAVAILABLE";
   if(message.includes("referernotallowed")||message.includes("referrer"))return "MAPS_REFERRER_NOT_ALLOWED";
   if(message.includes("apinotactivated")||message.includes("not activated"))return "MAPS_API_NOT_ACTIVATED";
-  if(message.includes("invalidkey")||message.includes("authentication")||message.includes("billing"))return "MAPS_AUTHENTICATION_FAILED";
+  if(message.includes("billingnotenabled")||message.includes("billing not enabled"))return "MAPS_BILLING_NOT_ENABLED";
+  if(message.includes("expiredkey")||message.includes("expired key"))return "MAPS_EXPIRED_KEY";
+  if(message.includes("invalidkey")||message.includes("invalid key"))return "MAPS_INVALID_KEY";
+  if(message.includes("authentication"))return "MAPS_AUTHENTICATION_FAILED";
   return "UNKNOWN_MAP_RENDER_FAILURE";
 }
 export function googleMapsScriptUrl(key, callback) { const params=new URLSearchParams({key,loading:"async",callback,libraries:"geometry"});return `https://maps.googleapis.com/maps/api/js?${params.toString()}`; }
@@ -41,24 +48,31 @@ export function injectedBrowserMapKey(scope=globalThis) {
   for(const value of [config.googleMapsBrowserApiKey,scope.VITE_GOOGLE_MAPS_BROWSER_API_KEY,scope.GOOGLE_MAPS_BROWSER_API_KEY])if(typeof value==="string"&&value.trim())return value.trim();
   return null;
 }
+const configValue=body=>body?.googleMapsBrowserKey??body?.googleMapsBrowserApiKey??body?.data?.googleMapsBrowserKey??body?.data?.googleMapsBrowserApiKey;
+const configSchemaValid=body=>{const data=body?.data||body;return data?.schemaVersion==="1"&&typeof data?.googleMapsBrowserKeyConfigured==="boolean"&&(data.googleMapsBrowserKey==null||typeof data.googleMapsBrowserKey==="string");};
 async function requestBrowserMapKey(url,onDiagnostic,source) {
-  onDiagnostic("browser_config_request_started",{url,credentialsMode:"omit",source});
+  const frontend=source==="frontend_same_origin";publishEvidence(frontend?{frontendSameOriginConfigRequested:true}:{backendFallbackConfigRequested:true});
+  onDiagnostic("browser_config_request_started",{origin:new URL(url).origin,credentialsMode:"omit",source});
   let response;try{response=await fetch(url,{cache:"no-store",credentials:"omit"});}catch(cause){throw mapError("BROWSER_CONFIG_NETWORK_ERROR","Browser map configuration request failed",cause);}
-  onDiagnostic("browser_config_http_status",{status:response.status,contentType:response.headers.get("content-type")||"",source});
+  const contentType=response.headers.get("content-type")||"";publishEvidence(frontend?{frontendSameOriginConfigStatus:response.status,frontendSameOriginConfigContentType:contentType}:{backendFallbackConfigStatus:response.status,backendFallbackConfigContentType:contentType});
+  onDiagnostic("browser_config_http_status",{status:response.status,contentType,source,redirected:response.redirected});
   if(!response.ok)throw mapError("BROWSER_CONFIG_HTTP_ERROR",`Browser map configuration failed (${response.status})`);
   let body;try{body=await response.json();}catch(cause){throw mapError("BROWSER_CONFIG_INVALID_JSON","Browser map configuration returned invalid JSON",cause);}
-  const key=typeof body?.data?.googleMapsBrowserApiKey==="string"?body.data.googleMapsBrowserApiKey.trim():"";
-  onDiagnostic("browser_config_parsed",{keyPresent:Boolean(key),keyNull:body?.data?.googleMapsBrowserApiKey===null,source});return key||null;
+  const schemaValid=configSchemaValid(body);publishEvidence(frontend?{frontendSameOriginConfigSchemaValid:schemaValid}:{backendFallbackConfigSchemaValid:schemaValid});
+  if(!schemaValid)throw mapError("BROWSER_CONFIG_SCHEMA_MISMATCH","Browser map configuration schema is not version 1");
+  const raw=configValue(body),key=typeof raw==="string"?raw.trim():"",placeholder=Boolean(key&&PLACEHOLDER_KEY.test(key));
+  publishEvidence({browserKeyPlaceholderDetected:diagnosticEvidence.browserKeyPlaceholderDetected||placeholder});
+  onDiagnostic("browser_config_parsed",{keyPresent:Boolean(key),keyNull:raw===null,schemaValid,placeholder,source});return placeholder?null:key||null;
 }
 export async function resolveBrowserMapKey(onDiagnostic=()=>{}) {
-  const injected=injectedBrowserMapKey();if(injected){onDiagnostic("browser_key_present",{source:"frontend_injected"});return injected;}
+  const injected=injectedBrowserMapKey(),injectedFound=Boolean(injected);publishEvidence({frontendInjectedConfigFound:injectedFound});if(injected){const placeholder=PLACEHOLDER_KEY.test(injected);publishEvidence({browserKeyPlaceholderDetected:placeholder,browserKeyResolved:!placeholder,browserKeySource:placeholder?"none":"frontend_injected"});if(!placeholder){onDiagnostic("browser_key_present",{source:"frontend_injected"});return injected;}}
   const frontendUrl=new URL("/api/browser-config",globalThis.location?.href||backendUrl("/")).href;let frontendError;
-  try{const key=await requestBrowserMapKey(frontendUrl,onDiagnostic,"frontend_same_origin");if(key){onDiagnostic("browser_key_present",{source:"frontend_same_origin"});return key;}}catch(error){frontendError=error;}
-  const fallbackUrl=backendUrl("/api/browser-config");if(fallbackUrl!==frontendUrl){onDiagnostic("browser_config_fallback",{source:"backend_runtime"});try{const key=await requestBrowserMapKey(fallbackUrl,onDiagnostic,"backend_runtime");if(key){onDiagnostic("browser_key_present",{source:"backend_runtime"});return key;}}catch(error){if(!frontendError)frontendError=error;}}
+  try{const key=await requestBrowserMapKey(frontendUrl,onDiagnostic,"frontend_same_origin");if(key){publishEvidence({browserKeyResolved:true,browserKeySource:"frontend_same_origin"});onDiagnostic("browser_key_present",{source:"frontend_same_origin"});return key;}}catch(error){frontendError=error;}
+  const fallbackUrl=backendUrl("/api/browser-config");if(fallbackUrl!==frontendUrl){onDiagnostic("browser_config_fallback",{source:"backend_fallback"});try{const key=await requestBrowserMapKey(fallbackUrl,onDiagnostic,"backend_fallback");if(key){publishEvidence({browserKeyResolved:true,browserKeySource:"backend_fallback"});onDiagnostic("browser_key_present",{source:"backend_fallback"});return key;}}catch(error){if(!frontendError)frontendError=error;}}
   if(frontendError)throw frontendError;throw mapError("BROWSER_MAP_KEY_MISSING","Interactive map is not configured");
 }
 export async function loadGoogleMaps(onDiagnostic = () => {}) {
-  if (globalThis.google?.maps?.importLibrary) { onDiagnostic("maps_namespace_ready", { cached: true }); return globalThis.google; }
+  if (globalThis.google?.maps?.importLibrary) { publishEvidence({googleMapsGlobalAvailable:true,geometryLibraryAvailable:Boolean(globalThis.google?.maps?.geometry),finalMapStatus:"loader_cached"});onDiagnostic("maps_namespace_ready", { cached: true }); return globalThis.google; }
   if (!loaderPromise) loaderPromise = (async () => {
     const browserKey=await resolveBrowserMapKey(onDiagnostic);
     return new Promise((resolve, reject) => {
@@ -66,14 +80,16 @@ export async function loadGoogleMaps(onDiagnostic = () => {}) {
       const callback = `initTrailMaps_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       const priorAuthFailure=globalThis.gm_authFailure;
       let script;
-      const cleanup=()=>{clearTimeout(timeout);delete globalThis[callback];if(priorAuthFailure)globalThis.gm_authFailure=priorAuthFailure;else delete globalThis.gm_authFailure;};
+      let providerError;
+      const cleanup=()=>{clearTimeout(timeout);delete globalThis[callback];globalThis.removeEventListener?.("error",providerError);if(priorAuthFailure)globalThis.gm_authFailure=priorAuthFailure;else delete globalThis.gm_authFailure;};
       const fail=error=>{if(settled)return;settled=true;script?.remove();cleanup();reject(error);};
       const timeout=setTimeout(()=>fail(mapError("MAPS_SCRIPT_BLOCKED","Google Maps loader timed out")),LOAD_TIMEOUT_MS);
-      globalThis.gm_authFailure=()=>fail(mapError("MAPS_AUTHENTICATION_FAILED","Google Maps authentication failed"));
+      providerError=event=>{const classification=classifyMapError(event?.error||{message:event?.message});if(classification!=="UNKNOWN_MAP_RENDER_FAILURE")publishEvidence({providerFailureClassification:classification,finalMapStatus:"provider_rejected"});};globalThis.addEventListener?.("error",providerError);
+      globalThis.gm_authFailure=()=>fail(mapError(diagnosticEvidence.providerFailureClassification||"MAPS_AUTHENTICATION_FAILED","Google Maps authentication failed"));
       globalThis[callback] = () => {
         if(settled)return;settled=true;cleanup();
         const available = Boolean(globalThis.google?.maps?.importLibrary);
-        onDiagnostic("maps_loader_callback", { googleMapsAvailable: available });
+        publishEvidence({loaderCallbackReached:true,googleMapsGlobalAvailable:available,geometryLibraryAvailable:Boolean(globalThis.google?.maps?.geometry),finalMapStatus:available?"loader_ready":"loader_namespace_missing"});onDiagnostic("maps_loader_callback", { googleMapsAvailable: available });
         if (available) { onDiagnostic("maps_script_loaded"); resolve(globalThis.google); } else { const error = mapError("GOOGLE_MAPS_NAMESPACE_MISSING", "Google Maps loaded without the expected namespace"); onDiagnostic("maps_namespace_failure", { classification:classifyMapError(error) }); reject(error); }
       };
       script = document.createElement("script");
@@ -83,10 +99,10 @@ export async function loadGoogleMaps(onDiagnostic = () => {}) {
       script.referrerPolicy = "strict-origin-when-cross-origin";
       script.dataset.trailMapsLoader = "true";
       script.onerror = () => { const error = mapError("MAPS_SCRIPT_BLOCKED", "Google Maps failed to load"); onDiagnostic("maps_script_failure", { classification:classifyMapError(error) }); fail(error); };
-      onDiagnostic("maps_script_appended", { host: "maps.googleapis.com" });
+      publishEvidence({loaderAttempted:true,loaderScriptCount:document.querySelectorAll('script[data-trail-maps-loader="true"]').length+1,finalMapStatus:"loader_attempted"});onDiagnostic("maps_script_appended", { host: "maps.googleapis.com",geometryLibraryRequested:true });
       document.head.append(script);
     });
-  })().catch(error => { loaderPromise = undefined; throw error; });
+  })().catch(error => { const classification=classifyMapError(error);publishEvidence({providerFailureClassification:diagnosticEvidence.providerFailureClassification||classification,finalMapStatus:"failed"});loaderPromise = undefined; throw error; });
   return loaderPromise;
 }
 export function clearGoogleMapsCache() {
@@ -98,7 +114,7 @@ export async function renderTrailMap(container, payload, { onSelect = () => {}, 
   if(!container)throw mapError("MAP_CONTAINER_NOT_VISIBLE","The route map container is missing");
   if(!Number.isFinite(Number(payload?.user?.latitude))||!Number.isFinite(Number(payload?.user?.longitude)))throw mapError("ROUTE_COORDINATES_INVALID","The route start is invalid");
   if(geometry&&!finiteGeometry(geometry))throw mapError("ROUTE_COORDINATES_INVALID","The route has no usable map geometry");
-  const size=await waitUntilVisible(container);onDiagnostic("map_container_ready",{widthBucket:Math.round(size.width/100)*100,heightBucket:Math.round(size.height/100)*100});
+  const size=await waitUntilVisible(container);publishEvidence({mapContainerVisible:true,mapContainerWidth:Math.round(size.width),mapContainerHeight:Math.round(size.height),finalMapStatus:"container_ready"});onDiagnostic("map_container_ready",{widthBucket:Math.round(size.width/100)*100,heightBucket:Math.round(size.height/100)*100});
   const google = await loadGoogleMaps(onDiagnostic); onDiagnostic("maps_namespace_ready");
   let Map,AdvancedMarkerElement,PinElement;try{onDiagnostic("maps_library_import_started");({Map}=await google.maps.importLibrary("maps"));onDiagnostic("maps_library_loaded");({AdvancedMarkerElement,PinElement}=await google.maps.importLibrary("marker"));}catch(cause){throw mapError("MAPS_LIBRARY_UNAVAILABLE","Google Maps libraries are unavailable",cause);}onDiagnostic("marker_library_loaded");onDiagnostic("maps_libraries_ready");
   let state=mapStates.get(container);if(!state){try{state={map:new Map(container,{mapId:"DEMO_MAP_ID",streetViewControl:false,mapTypeControl:false}),overlays:[]};}catch(cause){throw mapError("MAP_INITIALIZATION_FAILED","The route map could not initialize",cause);}mapStates.set(container,state);onDiagnostic("map_created");}else{state.overlays.forEach(overlay=>{overlay.map=null;overlay.setMap?.(null);});state.overlays=[];onDiagnostic("map_reused");}const map=state.map,bounds=new google.maps.LatLngBounds(),keep=overlay=>(state.overlays.push(overlay),overlay);
@@ -116,5 +132,5 @@ export async function renderTrailMap(container, payload, { onSelect = () => {}, 
     if(Number(loopCount)>=2){for(let lap=1;lap<Math.min(4,Math.floor(loopCount));lap++)marker(path[Math.min(path.length-1,Math.round(path.length*lap/loopCount))],String(lap),`Lap ${lap} complete`,"#f1c963");}
     onDiagnostic("trail_route_rendered",{geometryPointCountBucket:Math.ceil(geometry.length/25)*25,routeSegmentCount:segmentCount,overlappingSegmentBucket:isOutBack?"outbound_return":"none_or_self_touching",directionalRenderingMode:mode,routeSource,mapRenderStatus:"rendered",reducedMotion:reduced});
   }
-  const refresh=()=>{google.maps.event?.trigger?.(map,"resize");map.fitBounds(bounds,48);};refresh();await new Promise(resolve=>(globalThis.requestAnimationFrame||setTimeout)(resolve));refresh();if(!state.resizeBound){state.resizeBound=true;const handler=()=>requestAnimationFrame(()=>refresh());globalThis.addEventListener?.("resize",handler,{passive:true});globalThis.addEventListener?.("orientationchange",handler,{passive:true});}if(geometry?.length>1&&geometry.every(point=>Math.abs(point.latitude-geometry[0].latitude)<1e-7&&Math.abs(point.longitude-geometry[0].longitude)<1e-7))map.setZoom(17);onDiagnostic("fit_bounds_complete",{fitBoundsCompletion:true});onDiagnostic("map_render_complete",{markerCount:payload.markers.length,geometryPointCount:geometry?.length||0});return map;
+  const refresh=()=>{google.maps.event?.trigger?.(map,"resize");map.fitBounds(bounds,48);};refresh();await new Promise(resolve=>(globalThis.requestAnimationFrame||setTimeout)(resolve));refresh();if(!state.resizeBound){state.resizeBound=true;const handler=()=>requestAnimationFrame(()=>refresh());globalThis.addEventListener?.("resize",handler,{passive:true});globalThis.addEventListener?.("orientationchange",handler,{passive:true});}if(geometry?.length>1&&geometry.every(point=>Math.abs(point.latitude-geometry[0].latitude)<1e-7&&Math.abs(point.longitude-geometry[0].longitude)<1e-7))map.setZoom(17);publishEvidence({geometryLibraryAvailable:Boolean(google.maps.geometry),googleMapsGlobalAvailable:true,finalMapStatus:"rendered"});onDiagnostic("fit_bounds_complete",{fitBoundsCompletion:true});onDiagnostic("map_render_complete",{markerCount:payload.markers.length,geometryPointCount:geometry?.length||0});return map;
 }

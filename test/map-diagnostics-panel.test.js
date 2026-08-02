@@ -28,6 +28,9 @@ test("browser config exposes only the debug boolean alongside the browser key", 
   const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
   assert.match(server, /debugMapEnabled: String\(process\.env\.DEBUG_MAP/);
   assert.match(server, /RENDER_GIT_COMMIT/);
+  assert.match(server, /schemaVersion: "1"/);
+  assert.match(server, /googleMapsBrowserKeyConfigured: Boolean\(googleMapsBrowserKey\)/);
+  assert.match(server, /res\.setHeader\("Vary", "Origin"\)/);
 });
 
 test("greatness page loads diagnostics independently with a cache-busting revision", () => {
@@ -35,8 +38,8 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
   assert.match(html, /src="map-diagnostics\.js\?v=walking-route-phase2-20260729"/);
-  assert.match(html, /src="greatness\.js\?v=frontend-map-key-restore-20260802"/);
-  assert.match(runtime, /trail-map\.js\?v=frontend-map-key-restore-20260802/);
+  assert.match(html, /src="greatness\.js\?v=map-config-chain-diagnostics-20260802"/);
+  assert.match(runtime, /trail-map\.js\?v=map-config-chain-diagnostics-20260802/);
   assert.match(runtime, /map-diagnostics\.js\?v=mobile-map-config-route-20260729/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
@@ -54,7 +57,7 @@ test("map configuration restores same-origin frontend delivery before backend fa
   assert.match(map, /new URL\("\/api\/browser-config",globalThis\.location/);
   assert.match(map, /credentials:"omit"/);
   assert.match(map, /frontend_same_origin/);
-  assert.match(map, /backend_runtime/);
+  assert.match(map, /backend_fallback/);
   assert.match(diagnostics, /backendUrl\("\/api\/browser-config"\)/);
 });
 
