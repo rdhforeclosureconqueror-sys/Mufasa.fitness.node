@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Pocket PT Rugby Coaching OS local interactive prototype"
+    />
+    <meta name="theme-color" content="#071f18" />
+    <title>Pocket PT Rugby Coaching OS</title>
+    <link rel="stylesheet" href="./site.css" />
+  
+    <style>
+      .ppt-coach-guide-launch{position:fixed;right:18px;bottom:18px;z-index:9999;display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:999px;background:#d9f26e;color:#071f18;text-decoration:none;font:800 13px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 14px 34px rgba(7,31,24,.25);border:1px solid rgba(7,31,24,.12)}
+      .ppt-coach-guide-launch:hover{transform:translateY(-1px)}
+      .ppt-backs-ready-launch{position:fixed;right:18px;bottom:66px;z-index:9999;display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:999px;background:#071f18;color:#fff;text-decoration:none;font:800 13px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 14px 34px rgba(7,31,24,.25);border:1px solid rgba(217,242,110,.35)}
+      .ppt-activate-launch{position:fixed;right:18px;bottom:114px;z-index:9999;display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:999px;background:#d2a94f;color:#071f18;text-decoration:none;font:800 13px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 14px 34px rgba(7,31,24,.25);border:1px solid rgba(7,31,24,.18)}
+      @media(max-width:640px){.ppt-coach-guide-launch{right:12px;bottom:12px;padding:10px 13px}}
+    </style>
+</head>
+  <body>
+    <noscript>This interactive coaching prototype requires JavaScript.</noscript>
+    <div id="root"></div>
+    <a class="ppt-activate-launch" href="./activate-adult.html" aria-label="Open Adult Activate Engine">A8&nbsp; Activate</a>
+    <a class="ppt-backs-ready-launch" href="./backs-ready.html" aria-label="Open Backs Rugby Ready">BR&nbsp; Backs Ready</a>
+    <a class="ppt-coach-guide-launch" href="./coach-guide.html" aria-label="Open Coach Guide">?&nbsp; Coach Guide</a>
+    <script src="./site.js" defer></script>
+  </body>
+</html>

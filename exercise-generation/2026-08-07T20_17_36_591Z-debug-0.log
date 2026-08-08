@@ -1,0 +1,18 @@
+0 verbose cli /opt/nvm/versions/node/v22.16.0/bin/node /opt/nvm/versions/node/v22.16.0/bin/npm
+1 info using npm@10.9.2
+2 info using node@v22.16.0
+3 silly config load:file:/opt/nvm/versions/node/v22.16.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/mnt/data/rugby_os_review/.npmrc
+5 silly config load:file:/home/oai/.npmrc
+6 silly config load:file:/opt/nvm/versions/node/v22.16.0/etc/npmrc
+7 verbose title npm config get registry
+8 verbose argv "config" "get" "registry"
+9 verbose logfile logs-max:10 dir:/mnt/data/rugby_os_review/.sites-runtime/npm-cache/_logs/2026-08-07T20_17_36_591Z-
+10 verbose logfile /mnt/data/rugby_os_review/.sites-runtime/npm-cache/_logs/2026-08-07T20_17_36_591Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /mnt/data/rugby_os_review
+13 verbose os Linux 6.18.35
+14 verbose node v22.16.0
+15 verbose npm  v10.9.2
+16 verbose exit 0
+17 info ok
