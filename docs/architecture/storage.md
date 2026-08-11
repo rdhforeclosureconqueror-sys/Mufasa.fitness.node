@@ -10,6 +10,7 @@ The MVP deliberately uses local JSON/NDJSON rather than a database.
 | `data/trainer-workspace.json` | Trainer/client assignment history and trainer notes. | `trainerWorkspaceStore`. |
 | `data/ops/enforcement-overrides.json` | Versioned runtime enforcement overrides. | `enforcementStateStore`. |
 | `data/ops/token-denylist.json` | Revoked token JTIs and expiry. | `tokenDenylistStore`. |
+| `data/ops/auth-credentials.json` | Salted password credentials, stable member IDs, and free account access tier. | `authCredentialStore`. |
 | `data/ops/admin-audit*.ndjson` | Rotated, integrity-linked administrative audit events. | `adminAuditLog`. |
 | `data/ops/diagnostic-reports.ndjson` | Browser/route diagnostics. | `diagnosticStore`. |
 | `data/ops/pilot-events.ndjson` | Sanitized pilot telemetry events. | Server append path. |
@@ -19,6 +20,8 @@ The MVP deliberately uses local JSON/NDJSON rather than a database.
 | `public/uploads/avatars/` | Optional avatar binary uploads. | Avatar upload route; feature flag controlled. |
 
 Runtime directories are created at startup. `POCKET_PT_DATA_DIR` relocates the complete `data/` tree, including operational stores, onto durable storage; it is mandatory when the normal production entry point starts. `POCKET_PT_AVATAR_UPLOAD_DIR` similarly relocates avatar binaries and is mandatory in production when that feature is enabled. User IDs are restricted to 1–128 letters, digits, dots, underscores, or hyphens, preventing directory traversal.
+
+Run Club credentials use `<POCKET_PT_DATA_DIR>/ops/auth-credentials.json`. With the documented Render configuration (`POCKET_PT_DATA_DIR=/var/data/pocket-pt/data`), the exact production path is `/var/data/pocket-pt/data/ops/auth-credentials.json`, on the same mounted persistent disk as `users/<safe-user-id>.json` Greatness/member aggregates. A restart or redeploy reattaches that disk and preserves both files; a container-local `POCKET_PT_DATA_DIR` would be ephemeral and is not an acceptable production configuration.
 
 ## Repository responsibilities and file lifecycle
 

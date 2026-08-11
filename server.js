@@ -1685,13 +1685,13 @@ function createApp(options = {}) {
       return res.status(400).json({ ok: false, error: "Password must be at least 8 characters" });
     }
     if (email === AUTH_SEED_USER.email || authCredentialStore.findByEmail(email)) {
-      return res.status(409).json({ ok: false, error: "Account already exists" });
+      return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
     }
 
     const requestedContext = String(req.body?.entryContext || "").trim().toLowerCase();
     const accessTier = requestedContext === "run_club" ? "free_run_club" : "free";
     const record = authCredentialStore.create({ email, name, password, accessTier });
-    if (!record) return res.status(409).json({ ok: false, error: "Account already exists" });
+    if (!record) return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
     const userId = record.id;
     userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier } }));
 
