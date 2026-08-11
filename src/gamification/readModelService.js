@@ -59,14 +59,17 @@ function createReadModelService({ eventStore, projectionStore, ledgerStore, awar
   }
   function ledger(userId) { return ledgerStore.all().filter((entry) => entry.subjectUserId === userId); }
   function notificationFacts(userId) {
-    const facts = events().filter(event => event.subjectUserId === userId).map(event => ({ memberId:userId,type:event.eventType,sourceEventId:event.eventId }));
+    const memberEvents = events().filter(event => event.subjectUserId === userId);
+    const eventsById = new Map(memberEvents.map(event => [event.eventId, event]));
+    const facts = memberEvents.map(event => ({ memberId:userId,type:event.eventType,sourceEventId:event.eventId }));
     const active = new Map();
     for (const record of awardStore.all().filter(record => record.subjectUserId === userId)) active.set(record.awardKey, record);
     for (const record of active.values()) if (["award","reinstatement"].includes(record.kind)) {
       const sourceEventId=record.sourceEventIds?.[0] || record.reinstatementEventId;
       if (!sourceEventId) continue;
-      facts.push({memberId:userId,type:"achievement.awarded",sourceEventId,sourceAwardId:record.awardId});
-      if (record.badgeId) facts.push({memberId:userId,type:"badge.awarded",sourceEventId,sourceAwardId:record.awardId});
+      const actionRoute = eventsById.get(sourceEventId)?.eventType?.startsWith("greatness.") ? "/greatness.html" : undefined;
+      facts.push({memberId:userId,type:"achievement.awarded",sourceEventId,sourceAwardId:record.awardId,actionRoute});
+      if (record.badgeId) facts.push({memberId:userId,type:"badge.awarded",sourceEventId,sourceAwardId:record.awardId,actionRoute});
     }
     return facts;
   }
