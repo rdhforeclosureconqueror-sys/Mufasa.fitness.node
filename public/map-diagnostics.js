@@ -1,7 +1,7 @@
-import { backendUrl } from "./backend-origin.js?v=history-contract-restored-20260802";
+import { backendUrl } from "./backend-origin.js?v=frontend-build-key-20260811";
 
 const ADMIN_ROLES = new Set(["admin", "super_admin"]);
-const DIAGNOSTICS_VERSION = "history-contract-restored-20260802";
+const DIAGNOSTICS_VERSION = "frontend-build-key-20260811";
 const SECRET_KEY = /(?:api.?key|authorization|cookie|secret|token|password)/i;
 const FAILURE_EVENT = /(?:failure|error)$/;
 const STEP_EVENTS = [
@@ -96,9 +96,8 @@ export async function initializeMapDiagnostics(token) {
   if (state.enabled) return true;
   if (state.initializing) return state.initializing;
   state.initializing=(async()=>{
-    const configRequest=fetch("/api/browser-config",{cache:"no-store"}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
     const authRequest=fetch(backendUrl("/api/me"),{credentials:"omit",headers:token?{Authorization:`Bearer ${token}`}:{}}).then(async response=>response.ok?(await response.json())?.data||{}:{}).catch(()=>({}));
-    const [config,account]=await Promise.all([configRequest,authRequest]);
+    const config={},account=await authRequest;
     const role=typeof account.role==="string"?account.role.trim().toLowerCase():"";
     const rolePresent=Boolean(role);
     const authorized=ADMIN_ROLES.has(role)||config.debugMapEnabled===true;

@@ -12,7 +12,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
   assert.match(source, /Copy Diagnostics/);
   assert.match(source, /Retry Map Initialization/);
   assert.match(source, /Clear Map Cache/);
-  assert.match(source, /DIAGNOSTICS_VERSION = "history-contract-restored-20260802"/);
+  assert.match(source, /DIAGNOSTICS_VERSION = "frontend-build-key-20260811"/);
   assert.match(source, /Map diagnostics build:/);
   assert.match(source, /Map Debug/);
 });
@@ -20,7 +20,7 @@ test("map diagnostics is admin/debug gated and redacts credentials", () => {
 test("map instrumentation covers configuration, libraries, markers, failures, and timing", () => {
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
   const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
-  for (const event of ["browser_config_request_started", "browser_config_http_status", "browser_config_parsed", "browser_key_present", "maps_script_appended", "maps_loader_callback", "maps_namespace_ready", "maps_libraries_ready", "map_created", "markers_created", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
+  for (const event of ["browser_config_parsed", "browser_key_present", "browser_key_present", "maps_script_appended", "maps_loader_callback", "maps_namespace_ready", "maps_libraries_ready", "map_created", "markers_created", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
   for (const timing of ["browserConfig", "scriptLoad", "libraryImport", "mapRender"]) assert.match(diagnostics, new RegExp(timing));
 });
 
@@ -34,11 +34,11 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
   const runtime = fs.readFileSync(path.join(__dirname, "../public/greatness.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
-  assert.match(html, /href="greatness\.css\?v=history-contract-restored-20260802"/);
-  assert.match(html, /src="map-diagnostics\.js\?v=history-contract-restored-20260802"/);
-  assert.match(html, /src="greatness\.js\?v=history-contract-restored-20260802"/);
-  assert.match(runtime, /trail-map\.js\?v=history-contract-restored-20260802/);
-  assert.match(runtime, /map-diagnostics\.js\?v=history-contract-restored-20260802/);
+  assert.match(html, /href="greatness\.css\?v=frontend-build-key-20260811"/);
+  assert.match(html, /src="map-diagnostics\.js\?v=frontend-build-key-20260811"/);
+  assert.match(html, /src="greatness\.js\?v=frontend-build-key-20260811"/);
+  assert.match(runtime, /trail-map\.js\?v=frontend-build-key-20260811/);
+  assert.match(runtime, /map-diagnostics\.js\?v=frontend-build-key-20260811/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /z-index:2147483001/);
 });
@@ -46,7 +46,7 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
 test("history-proven launcher is dynamically mounted and production debug mode enables it", () => {
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
   const html = fs.readFileSync(path.join(__dirname, "../public/greatness.html"), "utf8");
-  assert.match(html, /<script type="module" src="map-diagnostics\.js\?v=history-contract-restored-20260802"><\/script>/);
+  assert.match(html, /<script type="module" src="map-diagnostics\.js\?v=frontend-build-key-20260811"><\/script>/);
   assert.match(diagnostics, /document\.createElement\("button"\)/);
   assert.match(diagnostics, /className="map-debug-launcher"/);
   assert.match(diagnostics, /document\.body\.append\(state\.launcher,state\.panel\)/);
@@ -86,19 +86,19 @@ test("panel reports the complete browser map chain without exposing the browser 
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
   const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
   for (const label of ["Browser Config", "Key present", "Script loaded", "google.maps", "Geometry available", "Container width", "Container height", "Provider error", "Final map status"]) assert.match(diagnostics, new RegExp(label));
-  for (const event of ["browser_config_request_started", "browser_config_http_status", "browser_config_parsed", "maps_script_appended", "maps_loader_callback", "maps_namespace_ready", "map_container_ready", "trail_route_rendered", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
+  for (const event of ["browser_config_parsed", "browser_key_present", "maps_script_appended", "maps_loader_callback", "maps_namespace_ready", "map_container_ready", "trail_route_rendered", "map_render_complete"]) assert.match(`${diagnostics}\n${map}`, new RegExp(event));
   assert.match(diagnostics, /browserKeyPresent = details\.keyPresent \? "Yes" : "No"/);
   assert.doesNotMatch(diagnostics, /googleMapsBrowserApiKey[^\n]*\$\{/);
 });
 
-test("map configuration uses the history-proven frontend same-origin delivery path", () => {
+test("map configuration uses the static frontend build delivery path", () => {
   const map = fs.readFileSync(path.join(__dirname, "../public/trail-map.js"), "utf8");
   const diagnostics = fs.readFileSync(path.join(__dirname, "../public/map-diagnostics.js"), "utf8");
-  assert.match(map, /url="\/api\/browser-config"/);
-  assert.match(map, /fetch\(url,\{cache:"no-store"\}\)/);
-  assert.match(map, /frontend_same_origin/);
+  assert.match(map, /source:"frontend_build"/);
+  assert.match(map, /browserMapsApiKey/);
+  assert.doesNotMatch(map, /frontend_same_origin|\/api\/browser-config/);
   assert.doesNotMatch(map, /backendUrl\("\/api\/browser-config"\)|frontend_injected|browser_config_fallback|backend_runtime/);
-  assert.match(diagnostics, /fetch\("\/api\/browser-config",\{cache:"no-store"\}\)/);
+  assert.doesNotMatch(diagnostics, /\/api\/browser-config/);
 });
 
 test("nearby trail comparison captures matching redacted request and response evidence", () => {
