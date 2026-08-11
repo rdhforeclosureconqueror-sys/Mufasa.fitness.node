@@ -12,6 +12,7 @@ const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
+const { createAuthCredentialStore } = require("./src/repositories/authCredentialStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
 const { createSessionService } = require("./src/services/sessionService");
@@ -362,6 +363,7 @@ function createApp(options = {}) {
   const notificationLimit = createRateLimiter({ name:"member-notifications",max:60,windowMs:60_000 });
   const leaderboardLimit = createRateLimiter({ name:"member-leaderboards",max:60,windowMs:60_000 });
   const clientEvidenceLimit = createRateLimiter({ name:"client-capability-evidence",max:12,windowMs:60_000 });
+  const authAttemptLimit = createRateLimiter({ name:"auth-attempts",max:Number(process.env.AUTH_RATE_LIMIT || 20),windowMs:60_000 });
   app.use((req, _res, next) => {
     if (!shouldLogSystemRequest(req.path)) return next();
     console.info("[request]", {
@@ -397,6 +399,7 @@ function createApp(options = {}) {
   const exerciseTemplateService = createExerciseTemplateService({ filePath: EXERCISE_TEMPLATE_PATH });
 
   const userStore = createUserStore({ userDir: USER_DIR });
+  const authCredentialStore = createAuthCredentialStore({ filePath: options.authCredentialPath || path.join(OPS_DIR, "auth-credentials.json") });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
   const memberExperienceCapabilityService = createMemberExperienceCapabilityService({ userStore, challengeService });
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
@@ -1546,8 +1549,6 @@ function createApp(options = {}) {
     };
   }
 
-  const authRegisteredUsers = new Map();
-
   function sanitizeRegisteredName(rawName, fallbackEmail) {
     const trimmed = String(rawName || "").trim();
     if (trimmed) return trimmed.slice(0, 120);
@@ -1555,7 +1556,7 @@ function createApp(options = {}) {
     return emailLeft.slice(0, 120);
   }
 
-  app.post("/api/auth/login", asyncHandler(async (req, res) => {
+  app.post("/api/auth/login", authAttemptLimit, asyncHandler(async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     const requestId = req.requestId || null;
@@ -1571,10 +1572,6 @@ function createApp(options = {}) {
       console.warn("[auth-login] rejected", { reason, emailNormalized, requestId });
       return res.status(status).json({ ok: false, error });
     };
-
-    if (!expectedPassword) {
-      return reject(503, "pilot_login_password_not_configured", "PILOT_LOGIN_PASSWORD is not configured");
-    }
 
     if (!email || !password) {
       return reject(400, "missing_email_or_password");
@@ -1617,9 +1614,9 @@ function createApp(options = {}) {
       });
     }
 
-    const registeredUser = authRegisteredUsers.get(email) || null;
+    const registeredUser = authCredentialStore.findByEmail(email);
     if (registeredUser) {
-      if (password !== registeredUser.password) {
+      if (!authCredentialStore.verify(registeredUser, password)) {
         return reject(401, "registered_password_mismatch");
       }
       const registeredToken = authTokenLib.issueUserToken({
@@ -1640,9 +1637,14 @@ function createApp(options = {}) {
           id: registeredUser.id,
           email: registeredUser.email,
           name: registeredUser.name,
-          role: "user"
+          role: "user",
+          accessTier: membershipService.getMembership(registeredUser.id).hasAccess ? "paid_member" : registeredUser.accessTier
         }
       });
+    }
+
+    if (!expectedPassword) {
+      return reject(503, "pilot_login_password_not_configured", "PILOT_LOGIN_PASSWORD is not configured");
     }
 
     if (email !== AUTH_SEED_USER.email || password !== expectedPassword) {
@@ -1668,7 +1670,7 @@ function createApp(options = {}) {
     });
   }));
 
-  app.post("/api/auth/register", asyncHandler(async (req, res) => {
+  app.post("/api/auth/register", authAttemptLimit, asyncHandler(async (req, res) => {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     const name = sanitizeRegisteredName(req.body?.name, email);
@@ -1682,13 +1684,16 @@ function createApp(options = {}) {
     if (password.length < 8) {
       return res.status(400).json({ ok: false, error: "Password must be at least 8 characters" });
     }
-    if (email === AUTH_SEED_USER.email || authRegisteredUsers.has(email)) {
-      return res.status(409).json({ ok: false, error: "Account already exists" });
+    if (email === AUTH_SEED_USER.email || authCredentialStore.findByEmail(email)) {
+      return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
     }
 
-    const userId = `registered_${Buffer.from(email).toString("base64url").slice(0, 32)}`;
-    const record = { id: userId, email, name, password };
-    authRegisteredUsers.set(email, record);
+    const requestedContext = String(req.body?.entryContext || "").trim().toLowerCase();
+    const accessTier = requestedContext === "run_club" ? "free_run_club" : "free";
+    const record = authCredentialStore.create({ email, name, password, accessTier });
+    if (!record) return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
+    const userId = record.id;
+    userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier } }));
 
     const token = authTokenLib.issueUserToken({
       userId,
@@ -1704,7 +1709,7 @@ function createApp(options = {}) {
       token: token.token,
       jti: token.jti,
       expiresAt: token.expiresAt,
-      user: { id: userId, email, name, role: "user" }
+      user: { id: userId, email, name, role: "user", accessTier }
     });
   }));
 
@@ -1713,6 +1718,7 @@ function createApp(options = {}) {
     const role = req.auth.userId === AUTH_SEED_USER.id
       ? AUTH_SEED_USER.role
       : (req.authz?.role || "user");
+    const registeredIdentity = authCredentialStore.findByEmail(req.auth.email);
     const email = req.auth.email || AUTH_SEED_USER.email;
     const name = String(req.auth?.name || "").trim() || (email.includes("@") ? email.split("@")[0] : AUTH_SEED_USER.name);
     const roles = Array.from(new Set([role, ...(role === "super_admin" ? ["admin", "operator"] : []), ...(role === "admin" ? ["operator"] : [])]));
@@ -1723,7 +1729,10 @@ function createApp(options = {}) {
         email,
         name,
         role,
-        roles
+        roles,
+        accessTier: membershipService.getMembership(req.auth.userId).hasAccess
+          ? "paid_member"
+          : (registeredIdentity?.accessTier || (req.auth.userId === AUTH_SEED_USER.id ? "paid_member" : "free"))
       }
     });
   }));
