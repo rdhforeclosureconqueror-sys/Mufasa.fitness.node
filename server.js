@@ -1948,7 +1948,8 @@ function createApp(options = {}) {
     }
     return ok(res, req.requestId, activity, 201);
   }));
-  app.post("/api/me/greatness/activities/start-with-route", requireAuth, createRateLimiter({ windowMs:60_000,max:20 }), asyncHandler(async(req,res)=>{const source=req.body?.selectedRoute?.routeSource,target=Number(req.body?.goal?.distanceMeters);if(!["verified_geometry","trail_network","park_constrained_walking_route","google_walking_route","place_only"].includes(source)||!Number.isFinite(target))throw new ApiError("INVALID_ACTIVITY_ROUTE","Select a route and distance goal before starting",400);return ok(res,req.requestId,{accepted:true,routeSource:source,targetDistanceMeters:target,persisted:false});}));
+  app.post("/api/me/greatness/activities/start-with-route", requireAuth, createRateLimiter({ windowMs:60_000,max:20 }), asyncHandler(async(req,res)=>
+    ok(res,req.requestId,steppingService.start(req.auth.userId,req.body),201)));
   app.post("/api/me/greatness/nearby-trails/search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
   app.post("/api/me/greatness/trails/text-search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
