@@ -24,6 +24,9 @@ test('production static artifact contains the public Stepping Into Greatness exp
     'new/stepintograteness2.jpg',
     'new/stepintograteness3.jpg',
     'greatness.html',
+    'run-club-login.html',
+    'run-club-login.css',
+    'run-club-login.js',
     'workout.html'
   ];
   required.forEach(file => assert.ok(fs.statSync(path.join(output, file)).isFile(), `${file} missing from static artifact`));
@@ -33,11 +36,25 @@ test('production static artifact contains the public Stepping Into Greatness exp
   const js = fs.readFileSync(path.join(output, 'stepping-into-greatness.js'), 'utf8');
   assert.match(html, /Free digital run club/i);
   assert.match(html, /Start where you are/i);
-  assert.match(html, /href="\/workout\.html\?returnTo=%2Fgreatness\.html"/);
+  assert.match(html, /href="\/run-club-login\.html\?returnTo=%2Fgreatness\.html"/);
   assert.match(html, /data-start-greatness/);
   assert.match(js, /setAttribute\('href', '\/greatness\.html'\)/);
+  assert.doesNotMatch(html, /workout\.html\?returnTo/);
   ['stepintograteness1.jpg', 'stepintograteness2.jpg', 'stepintograteness3.jpg'].forEach(image => assert.match(css + html, new RegExp(image)));
   assert.doesNotMatch(html + css + js, /server\.js|\/stepping-into-greatness(?:["'#?])/);
+});
+
+test('Run Club login is a dedicated minimal static sign-up and safe direct-to-Greatness flow', () => {
+  const html = fs.readFileSync(path.join(root, 'public', 'run-club-login.html'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'public', 'run-club-login.js'), 'utf8');
+  for (const copy of ['Welcome to the Run Club', 'No subscription required', 'Join Free', 'Sign In']) assert.match(html, new RegExp(copy, 'i'));
+  for (const field of ['name', 'email', 'password']) assert.match(html, new RegExp(`name="${field}"`));
+  assert.match(js, /entryContext:"run_club"/);
+  assert.match(js, /destination="\/greatness\.html"/);
+  assert.match(js, /location\.assign\(returnTo\)/);
+  assert.match(js, /value\.startsWith\("\/\/"\)/);
+  assert.match(js, /target\.origin===window\.location\.origin/);
+  assert.doesNotMatch(html + js, /dashboard\.html|checkout/i);
 });
 
 test('free account flow accepts only same-origin return paths', () => {

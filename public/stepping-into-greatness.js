@@ -1,8 +1,10 @@
 (() => {
-  const hasAuthToken = Boolean(localStorage.getItem('maat_auth_token') || localStorage.getItem('authToken'));
-  if (hasAuthToken) {
-    document.querySelectorAll('[data-start-greatness]').forEach(link => link.setAttribute('href', '/greatness.html'));
-  }
+  const links = document.querySelectorAll('[data-start-greatness]');
+  const token = localStorage.getItem('maatAuthToken');
+  links.forEach(link => link.setAttribute('href', '/run-club-login.html?returnTo=%2Fgreatness.html'));
+  if (token) fetch('/api/auth/me', { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' })
+    .then(response => { if (response.ok) links.forEach(link => link.setAttribute('href', '/greatness.html')); })
+    .catch(() => {});
 
   const items = document.querySelectorAll('.reveal');
   if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
