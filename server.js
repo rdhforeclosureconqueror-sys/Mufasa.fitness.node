@@ -1928,7 +1928,7 @@ function createApp(options = {}) {
 
   app.get("/api/me/greatness/journey", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.journey(req.auth.userId))));
-  app.get("/stepping-into-greatness", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "stepping-into-greatness.html")));
+  app.get("/stepping-into-greatness", (_req, res) => res.redirect(308, "/greatness.html"));
   app.get("/greatness", (_req, res) => res.redirect(308, "/greatness.html"));
   app.get("/push-up-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));
   app.get("/pushup-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));

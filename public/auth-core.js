@@ -21,6 +21,13 @@
 
   const getEl = (id) => document.getElementById(id);
 
+  const safeReturnPath = () => {
+    const candidate = new URLSearchParams(window.location.search).get("returnTo");
+    if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) return null;
+    const target = new URL(candidate, window.location.origin);
+    return target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : null;
+  };
+
   const stateUpdate = (patch) => {
     if (typeof window.__setAuthDebugState === "function") window.__setAuthDebugState(patch);
     const el = getEl("authDebugStatus");
@@ -145,6 +152,8 @@
         await runPostLoginHooks(user, token);
         updateAuthStepStatus("app shell shown", "success");
         if (authLoginStatusEl) authLoginStatusEl.textContent = "Signed in.";
+        const returnPath = safeReturnPath();
+        if (returnPath) window.location.assign(returnPath);
         return { ok: true, token, user };
       } catch (error) {
         window.AuthStateRuntime?.clearCanonicalAuthState?.("auth-core:submitAuthRequest_failed");

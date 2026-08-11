@@ -1,4 +1,9 @@
 (() => {
+  const hasAuthToken = Boolean(localStorage.getItem('maat_auth_token') || localStorage.getItem('authToken'));
+  if (hasAuthToken) {
+    document.querySelectorAll('[data-start-greatness]').forEach(link => link.setAttribute('href', '/greatness.html'));
+  }
+
   const items = document.querySelectorAll('.reveal');
   if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     items.forEach(item => item.classList.add('is-visible'));
