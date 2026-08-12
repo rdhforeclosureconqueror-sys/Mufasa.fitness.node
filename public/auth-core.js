@@ -147,7 +147,9 @@
         updateAuthStepStatus("GET /api/auth/me", "user resolved");
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error(mePayload?.error || "session_invalid");
 
-        propagateAuthState({ token, user }, "auth-core:submitAuthRequest");
+        if (!window.AuthStateRuntime?.persistCanonicalAuthState) throw new Error("Authentication persistence is unavailable on this device");
+        const persisted = await window.AuthStateRuntime.persistCanonicalAuthState({ token, user }, { reason: "auth-core:submitAuthRequest" });
+        if (!persisted.ok) throw new Error("Authentication could not be restored on this device: storage verification failed");
         console.log("[AUTH_LOGIN] login success");
         await runPostLoginHooks(user, token);
         updateAuthStepStatus("app shell shown", "success");
