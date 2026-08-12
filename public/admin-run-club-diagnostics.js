@@ -79,6 +79,8 @@
 
   async function initializeAdminAccess() {
     var runtime = window.AuthStateRuntime;
+    if (runtime && typeof runtime.whenReady === "function") await runtime.whenReady();
+    if (runtime && typeof runtime.renderSafeDiagnostics === "function") runtime.renderSafeDiagnostics("authContinuityStatus");
     var token = runtime && typeof runtime.getAuthToken === "function" ? runtime.getAuthToken() : null;
     if (!token || typeof runtime.refreshAuthStatus !== "function") {
       authRequired.hidden = false;

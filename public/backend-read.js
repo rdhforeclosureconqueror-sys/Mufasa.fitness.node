@@ -48,18 +48,8 @@
     }
 
     function getAuthTokenInfo() {
-      const authState = window.AuthStateRuntime?.getCanonicalAuthState?.();
-      const authStateToken = authState?.token ? String(authState.token).trim() : null;
-      if (authStateToken) return { token: authStateToken, source: "AuthStateRuntime.getCanonicalAuthState" };
-
       const runtimeToken = window.AuthStateRuntime?.getAuthToken?.();
       if (runtimeToken && String(runtimeToken).trim()) return { token: String(runtimeToken).trim(), source: "AuthStateRuntime.getAuthToken" };
-
-      const appToken = window.APP_AUTH?.token;
-      if (appToken && String(appToken).trim()) return { token: String(appToken).trim(), source: "window.APP_AUTH.token" };
-
-      const persisted = localStorage.getItem("maatAuthToken");
-      if (persisted && String(persisted).trim()) return { token: String(persisted).trim(), source: "localStorage.maatAuthToken" };
       return { token: null, source: "missing" };
     }
 
@@ -68,13 +58,14 @@
     }
 
     function setAuthToken(token) {
-      if (!token) return null;
-      try { localStorage.setItem("maatAuthToken", String(token).trim()); } catch (_) {}
-      return token;
+      return window.AuthStateRuntime?.setCanonicalAuthState?.({
+        token,
+        user: window.AuthStateRuntime?.getCanonicalAuthState?.().user || null
+      }, { reason: "backend-read:setAuthToken" })?.token || null;
     }
 
     function clearAuthToken() {
-      try { localStorage.removeItem("maatAuthToken"); } catch (_) {}
+      window.AuthStateRuntime?.clearCanonicalAuthState?.("backend-read:clearAuthToken", { clearLastUser: true });
       return null;
     }
 
