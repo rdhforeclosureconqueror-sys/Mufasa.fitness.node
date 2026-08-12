@@ -107,6 +107,8 @@ const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
 const { evaluatePilotReadiness } = require("./src/lib/pilotReadinessEvaluator");
 const { buildLaunchHealth, redactedExport } = require("./src/diagnostics/launchHealthService");
 const { createClientEvidenceService } = require("./src/diagnostics/clientEvidenceService");
+const { createRunClubDiagnosticsService } = require("./src/diagnostics/runClubDiagnosticsService");
+const routeAuthorizationContract = require("./config/route-authorization-contract");
 const { publicCapabilityRegistry } = require("./src/diagnostics/capabilityRegistry");
 const { createNotificationService } = require("./src/notifications/notificationService");
 const { createLeaderboardService } = require("./src/leaderboards/leaderboardService");
@@ -1085,6 +1087,7 @@ function createApp(options = {}) {
   );
 
   const diagnosticGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+  const runClubDiagnosticsService = createRunClubDiagnosticsService({ rootDir, routeContract:routeAuthorizationContract });
   const frontendManifest = () => { try { return readJSON(path.join(PUBLIC_DIR, "__frontend-version.json")); } catch { return {}; } };
   const currentHealth = (req = null) => buildLaunchHealth({
     env: process.env, rootDir, dataDir: DATA_DIR,
@@ -1097,6 +1100,8 @@ function createApp(options = {}) {
     memberEvidence: memberJourneyService.inspect(),
     implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), clientEvidence:clientEvidenceService.latest(), externalChecks:latestExternalChecks }
   });
+  app.get("/admin-run-club-diagnostics.html", diagnosticGuard, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-run-club-diagnostics.html")));
+  app.post("/api/admin/diagnostics/run-club/run", diagnosticGuard, (req,res)=>ok(res,req.requestId,runClubDiagnosticsService.run(),201));
   app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
   app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });
   app.get("/api/admin/diagnostics/environment", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).environment));
