@@ -54,9 +54,9 @@ function harness() {
   return { directory, eventStore, awardStore, ledgerStore, projectionStore, service };
 }
 
-test("catalogue v1 is bounded, published, unique, versioned, and references safe fixed rewards and badges", () => {
-  assert.equal(definitionsDocument.catalogVersion, 1);
-  assert.ok(definitionsDocument.definitions.length >= 20 && definitionsDocument.definitions.length <= 30);
+test("catalogue is bounded, published, unique, versioned, and references safe fixed rewards and badges", () => {
+  assert.equal(definitionsDocument.catalogVersion, 2);
+  assert.ok(definitionsDocument.definitions.length >= 40 && definitionsDocument.definitions.length <= 80);
   assert.equal(new Set(definitionsDocument.definitions.map((item) => item.id)).size, definitionsDocument.definitions.length);
   assert.deepEqual(validateAchievementDefinitions(definitionsDocument.definitions), definitionsDocument.definitions);
   assert.ok(definitionsDocument.definitions.every((item) => item.lifecycleState === "published" && item.definitionVersion === "1.0.0" && Number.isSafeInteger(item.reward.lifetimeXp) && item.badgeId));
@@ -159,8 +159,8 @@ test("replay consumes more than one bounded event-store page and level boundarie
   h.service.replay();
   assert.equal(h.projectionStore.readAll().user_1.achievements.find((item) => item.achievementId === "achievement.workout.100_completed").state, "earned");
   const levels = createLevelService(levelsDocument.levels);
-  assert.equal(levels.forXp(99).level, 1);
-  assert.equal(levels.forXp(100).level, 2);
-  assert.equal(levels.forXp(306250).level, 50);
+  assert.equal(levels.forXp(249).level, 1);
+  assert.equal(levels.forXp(250).level, 2);
+  assert.equal(levels.forXp(20000).level, 10);
   assert.equal(checksum({ b: 2, a: 1 }), checksum({ b: 2, a: 1 }));
 });

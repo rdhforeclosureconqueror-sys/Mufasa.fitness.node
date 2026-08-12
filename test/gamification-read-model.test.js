@@ -51,7 +51,7 @@ test("read projection is disposable, deterministic, versioned, and exposes admin
   const first = h.service.replay();
   const profile = h.service.profile("user_1");
   assert.equal(profile.currentXp, 190);
-  assert.equal(profile.currentLevel, 2);
+  assert.equal(profile.currentLevel, 1);
   assert.equal(profile.projectionVersion, 1);
   assert.equal(profile.xpLedgerSummary.net, 190);
   assert.ok(profile.earnedAchievements.includes("achievement.workout.1_completed"));

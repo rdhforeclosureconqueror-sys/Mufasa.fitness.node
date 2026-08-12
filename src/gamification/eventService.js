@@ -57,9 +57,10 @@ function createEventService({ eventStore, clock = () => new Date(), idFactory = 
   }
   function recordGreatnessActivity({ userId, activity }) {
     const base = { schemaVersion:1, occurredAt:activity.endedAt, recordedAt:clock().toISOString(), actorUserId:userId, subjectUserId:userId, source:"greatness-service", sourceEntity:{type:"greatness_activity",id:activity.activityId,version:activity.schemaVersion||1}, correlationId:`greatness:${activity.activityId}`, causationEventId:null, verification:{status:"verified",method:"authoritative-write",riskFlags:[]} };
-    return record({ ...base, eventId:idFactory(), eventType:"greatness.activity.completed", idempotencyKey:`greatness.activity.completed:${activity.activityId}`, payload:{activityType:activity.activityType,goalCompleted:Boolean(activity.goal?.completed)} });
+    return record({ ...base, eventId:idFactory(), eventType:"greatness.activity.completed", idempotencyKey:`greatness.activity.completed:${activity.activityId}`, payload:{activityType:activity.activityType,goalCompleted:Boolean(activity.goal?.completed),distanceMeters:activity.distanceMeters,trailId:activity.selectedRoute?.routeId||activity.selectedRoute?.routeFingerprint||"none"} });
   }
   function recordGreatnessChallenge({ userId, activity, challengeId }) { return record({ eventId:idFactory(),eventType:"greatness.challenge.completed",schemaVersion:1,occurredAt:activity.endedAt,recordedAt:clock().toISOString(),actorUserId:userId,subjectUserId:userId,source:"greatness-service",sourceEntity:{type:"greatness_challenge",id:`${challengeId}:${activity.activityId}`,version:1},idempotencyKey:`greatness.challenge.completed:${challengeId}:${userId}`,correlationId:`greatness:${activity.activityId}`,causationEventId:null,verification:{status:"verified",method:"authoritative-write",riskFlags:[]},payload:{challengeId} }); }
+  function recordTrailPhotoApproved({userId,contribution}) { return record({eventId:idFactory(),eventType:"greatness.trail_photo.approved",schemaVersion:1,occurredAt:contribution.approvedAt,recordedAt:clock().toISOString(),actorUserId:userId,subjectUserId:userId,source:"greatness-service",sourceEntity:{type:"trail_contribution",id:contribution.contributionId,version:1},idempotencyKey:`greatness.trail_photo.approved:${userId}:${contribution.trailId}`,correlationId:`trail:${contribution.trailId}`,causationEventId:null,verification:{status:"verified",method:"moderator-approved",riskFlags:[]},payload:{trailId:contribution.trailId}}); }
   function recordPushupSession({ userId, result, firstVerifiedSession = false }) {
     const base={schemaVersion:1,occurredAt:result.timestamp,recordedAt:clock().toISOString(),actorUserId:userId,subjectUserId:userId,source:"pushup-challenge-service",sourceEntity:{type:"pushup_result",id:result.id,version:1},correlationId:`pushup:${result.id}`,causationEventId:null,verification:{status:"verified",method:"authoritative-write",riskFlags:[]}};
     const session=record({...base,eventId:idFactory(),eventType:"pushup.session.completed",idempotencyKey:`pushup.session.completed:${result.id}`,payload:{scoreBand:result.score>=10?"ten_or_more":result.score>0?"one_to_nine":"zero",leaderboardEligible:true}});
@@ -67,7 +68,7 @@ function createEventService({ eventStore, clock = () => new Date(), idFactory = 
     return {session,milestone};
   }
   function observe() { return Object.freeze({ ...stats, ...eventStore.metrics() }); }
-  return Object.freeze({ record, recordWorkoutCompleted, recordYogaSessionCompleted, recordProgramEvent, recordGreatnessActivity, recordGreatnessChallenge, recordPushupSession, observe, logger });
+  return Object.freeze({ record, recordWorkoutCompleted, recordYogaSessionCompleted, recordProgramEvent, recordGreatnessActivity, recordGreatnessChallenge, recordTrailPhotoApproved, recordPushupSession, observe, logger });
 }
 
 module.exports = { createEventService, durationBand, exerciseCountBand };

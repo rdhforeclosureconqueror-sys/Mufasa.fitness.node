@@ -117,7 +117,7 @@ test("full replay is deterministic and idempotent across multiple cycles, revers
   projectionStore.remove(); checksums.push(service.replay().checksum);
   assert.equal(new Set(checksums).size, 1);
   assert.equal(projectionStore.readAll().user_1.lifetimeXp, 190);
-  assert.equal(projectionStore.readAll().user_1.level.level, 2);
+  assert.equal(projectionStore.readAll().user_1.level.level, 1);
   const correction = validateEvent({ ...source, eventId: "evt_0000000000000999", eventType: "workout.revoked", occurredAt: "2026-08-02T10:00:00.000Z", recordedAt: "2026-08-02T10:00:01.000Z",
     source: "gamification-system", sourceEntity: { type: "correction", id: "correction_1", version: 1 }, idempotencyKey: "workout.revoked:session_1", causationEventId: source.eventId,
     verification: { status: "verified", method: "derived", riskFlags: [] }, payload: { originalEventId: source.eventId, reasonCode: "source_invalidated" } }, { now: Date.parse("2026-12-01T00:00:00.000Z") });
@@ -134,6 +134,6 @@ test("full replay is deterministic and idempotent across multiple cycles, revers
 
 test("approved level thresholds handle exact boundaries and reject malformed curves", () => {
   const levels = createLevelService(levelsDocument.levels);
-  assert.deepEqual([levels.forXp(0).level, levels.forXp(99).level, levels.forXp(100).level, levels.forXp(306249).level, levels.forXp(306250).level], [1, 1, 2, 49, 50]);
+  assert.deepEqual([levels.forXp(0).level, levels.forXp(249).level, levels.forXp(250).level, levels.forXp(19999).level, levels.forXp(20000).level], [1, 1, 2, 9, 10]);
   assert.throws(() => createLevelService([{ level: 1, minimumXp: 0 }, { level: 2, minimumXp: 0 }]), /strictly increasing/);
 });

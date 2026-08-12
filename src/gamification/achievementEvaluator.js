@@ -7,6 +7,7 @@ function valueAt(event, field) {
 function matches(event, where = {}) {
   return Object.entries(where).every(([field, expected]) => {
     const actual = valueAt(event, field);
+    if (expected && typeof expected === "object" && Number.isFinite(expected.gte)) return Number(actual) >= expected.gte;
     return Array.isArray(expected) ? expected.includes(actual) : actual === expected;
   });
 }

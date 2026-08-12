@@ -1,206 +1,56 @@
 {
   "schemaVersion": 1,
-  "levelCurveVersion": 1,
+  "levelCurveVersion": 2,
   "levels": [
     {
       "level": 1,
+      "name": "First Step",
       "minimumXp": 0
     },
     {
       "level": 2,
-      "minimumXp": 100
+      "name": "Runner",
+      "minimumXp": 250
     },
     {
       "level": 3,
-      "minimumXp": 300
+      "name": "Regular",
+      "minimumXp": 750
     },
     {
       "level": 4,
-      "minimumXp": 600
-    },
-    {
-      "level": 5,
-      "minimumXp": 1000
-    },
-    {
-      "level": 6,
+      "name": "Trailblazer",
       "minimumXp": 1500
     },
     {
+      "level": 5,
+      "name": "Pacemaker",
+      "minimumXp": 3000
+    },
+    {
+      "level": 6,
+      "name": "Crew Leader",
+      "minimumXp": 5000
+    },
+    {
       "level": 7,
-      "minimumXp": 2250
+      "name": "Road Warrior",
+      "minimumXp": 7500
     },
     {
       "level": 8,
-      "minimumXp": 3125
+      "name": "Endurance",
+      "minimumXp": 11000
     },
     {
       "level": 9,
-      "minimumXp": 4125
+      "name": "Legend",
+      "minimumXp": 15000
     },
     {
       "level": 10,
-      "minimumXp": 5250
-    },
-    {
-      "level": 11,
-      "minimumXp": 6500
-    },
-    {
-      "level": 12,
-      "minimumXp": 8150
-    },
-    {
-      "level": 13,
-      "minimumXp": 9950
-    },
-    {
-      "level": 14,
-      "minimumXp": 11900
-    },
-    {
-      "level": 15,
-      "minimumXp": 14000
-    },
-    {
-      "level": 16,
-      "minimumXp": 16250
-    },
-    {
-      "level": 17,
-      "minimumXp": 19050
-    },
-    {
-      "level": 18,
-      "minimumXp": 22025
-    },
-    {
-      "level": 19,
-      "minimumXp": 25175
-    },
-    {
-      "level": 20,
-      "minimumXp": 28500
-    },
-    {
-      "level": 21,
-      "minimumXp": 32000
-    },
-    {
-      "level": 22,
-      "minimumXp": 36200
-    },
-    {
-      "level": 23,
-      "minimumXp": 40600
-    },
-    {
-      "level": 24,
-      "minimumXp": 45200
-    },
-    {
-      "level": 25,
-      "minimumXp": 50000
-    },
-    {
-      "level": 26,
-      "minimumXp": 55000
-    },
-    {
-      "level": 27,
-      "minimumXp": 60850
-    },
-    {
-      "level": 28,
-      "minimumXp": 66925
-    },
-    {
-      "level": 29,
-      "minimumXp": 73225
-    },
-    {
-      "level": 30,
-      "minimumXp": 79750
-    },
-    {
-      "level": 31,
-      "minimumXp": 86500
-    },
-    {
-      "level": 32,
-      "minimumXp": 94250
-    },
-    {
-      "level": 33,
-      "minimumXp": 102250
-    },
-    {
-      "level": 34,
-      "minimumXp": 110500
-    },
-    {
-      "level": 35,
-      "minimumXp": 119000
-    },
-    {
-      "level": 36,
-      "minimumXp": 127750
-    },
-    {
-      "level": 37,
-      "minimumXp": 137650
-    },
-    {
-      "level": 38,
-      "minimumXp": 147825
-    },
-    {
-      "level": 39,
-      "minimumXp": 158275
-    },
-    {
-      "level": 40,
-      "minimumXp": 169000
-    },
-    {
-      "level": 41,
-      "minimumXp": 180000
-    },
-    {
-      "level": 42,
-      "minimumXp": 192300
-    },
-    {
-      "level": 43,
-      "minimumXp": 204900
-    },
-    {
-      "level": 44,
-      "minimumXp": 217800
-    },
-    {
-      "level": 45,
-      "minimumXp": 231000
-    },
-    {
-      "level": 46,
-      "minimumXp": 244500
-    },
-    {
-      "level": 47,
-      "minimumXp": 259450
-    },
-    {
-      "level": 48,
-      "minimumXp": 274725
-    },
-    {
-      "level": 49,
-      "minimumXp": 290325
-    },
-    {
-      "level": 50,
-      "minimumXp": 306250
+      "name": "Greatness",
+      "minimumXp": 20000
     }
   ]
 }

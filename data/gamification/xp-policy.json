@@ -18,6 +18,42 @@
           "category": "yoga",
           "overlapGroup": "completed_activity",
           "overlapIdentity": "sourceEntity.id"
+        },
+        "greatness.activity.completed": {
+          "xp": 50,
+          "category": "greatness_activity"
+        },
+        "greatness.weekly_goal.completed": {
+          "xp": 100,
+          "category": "greatness_consistency"
+        },
+        "greatness.challenge.completed": {
+          "xp": 200,
+          "category": "greatness_challenge"
+        },
+        "greatness.new_trail.completed": {
+          "xp": 40,
+          "category": "greatness_exploration"
+        },
+        "greatness.personal_best.earned": {
+          "xp": 75,
+          "category": "greatness_pb"
+        },
+        "greatness.club_run.completed": {
+          "xp": 50,
+          "category": "greatness_club"
+        },
+        "greatness.trail_photo.approved": {
+          "xp": 20,
+          "category": "greatness_contribution"
+        },
+        "greatness.trail_contribution.helpful_milestone": {
+          "xp": 50,
+          "category": "greatness_contribution"
+        },
+        "greatness.referral.activated": {
+          "xp": 100,
+          "category": "greatness_referral"
         }
       },
       "dailyCaps": {

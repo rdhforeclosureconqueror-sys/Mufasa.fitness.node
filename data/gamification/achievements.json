@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": 1,
+  "catalogVersion": 2,
   "reviewStatus": "production_reviewed",
   "definitions": [
     {
@@ -849,6 +849,975 @@
         "lifetimeXp": 250
       },
       "badgeId": "badge.workout.streak_30"
+    },
+    {
+      "id": "achievement.greatness.first_run",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "First Run",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.first_run"
+    },
+    {
+      "id": "achievement.greatness.three_runs",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Three Runs",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 3
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.three_runs"
+    },
+    {
+      "id": "achievement.greatness.five_runs",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Five Runs",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 5
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.five_runs"
+    },
+    {
+      "id": "achievement.greatness.ten_runs",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Ten Runs",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 10
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.ten_runs"
+    },
+    {
+      "id": "achievement.greatness.twenty_five_runs",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "25 Runs",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 25
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.twenty_five_runs"
+    },
+    {
+      "id": "achievement.greatness.fifty_runs",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "50 Runs",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 50
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.fifty_runs"
+    },
+    {
+      "id": "achievement.greatness.one_hundred_runs",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "100 Runs",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ]
+        },
+        "threshold": 100
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.one_hundred_runs"
+    },
+    {
+      "id": "achievement.greatness.first_mile",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "First Mile",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ],
+          "payload.distanceMeters": {
+            "gte": 1609.344
+          }
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.first_mile"
+    },
+    {
+      "id": "achievement.greatness.first_5k",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "First 5K",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ],
+          "payload.distanceMeters": {
+            "gte": 5000
+          }
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.first_5k"
+    },
+    {
+      "id": "achievement.greatness.first_10k",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "First 10K",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "count",
+        "where": {
+          "payload.activityType": [
+            "run",
+            "jog",
+            "trail_run"
+          ],
+          "payload.distanceMeters": {
+            "gte": 10000
+          }
+        },
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.first_10k"
+    },
+    {
+      "id": "achievement.greatness.lifetime_25_miles",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "25 Lifetime Miles",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "sum",
+        "field": "payload.distanceMeters",
+        "threshold": 40233.6
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.lifetime_25_miles"
+    },
+    {
+      "id": "achievement.greatness.lifetime_50_miles",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "50 Lifetime Miles",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "sum",
+        "field": "payload.distanceMeters",
+        "threshold": 80467.2
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.lifetime_50_miles"
+    },
+    {
+      "id": "achievement.greatness.lifetime_100_miles",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "100 Lifetime Miles",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "sum",
+        "field": "payload.distanceMeters",
+        "threshold": 160934.4
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.lifetime_100_miles"
+    },
+    {
+      "id": "achievement.greatness.lifetime_250_miles",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "250 Lifetime Miles",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "sum",
+        "field": "payload.distanceMeters",
+        "threshold": 402336
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.lifetime_250_miles"
+    },
+    {
+      "id": "achievement.greatness.lifetime_500_miles",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "500 Lifetime Miles",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "sum",
+        "field": "payload.distanceMeters",
+        "threshold": 804672
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.lifetime_500_miles"
+    },
+    {
+      "id": "achievement.greatness.lifetime_1000_miles",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "1000 Lifetime Miles",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "sum",
+        "field": "payload.distanceMeters",
+        "threshold": 1609344
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.lifetime_1000_miles"
+    },
+    {
+      "id": "achievement.greatness.first_trail",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "First Trail",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "where": {
+          "payload.activityType": [
+            "trail_run"
+          ]
+        },
+        "field": "payload.trailId",
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.first_trail"
+    },
+    {
+      "id": "achievement.greatness.explorer_3",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Explorer 3",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "where": {
+          "payload.activityType": [
+            "trail_run"
+          ]
+        },
+        "field": "payload.trailId",
+        "threshold": 3
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.explorer_3"
+    },
+    {
+      "id": "achievement.greatness.explorer_5",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Explorer 5",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "where": {
+          "payload.activityType": [
+            "trail_run"
+          ]
+        },
+        "field": "payload.trailId",
+        "threshold": 5
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.explorer_5"
+    },
+    {
+      "id": "achievement.greatness.explorer_10",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Explorer 10",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "where": {
+          "payload.activityType": [
+            "trail_run"
+          ]
+        },
+        "field": "payload.trailId",
+        "threshold": 10
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.explorer_10"
+    },
+    {
+      "id": "achievement.greatness.explorer_25",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Explorer 25",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.activity.completed",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "authoritative-write"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "where": {
+          "payload.activityType": [
+            "trail_run"
+          ]
+        },
+        "field": "payload.trailId",
+        "threshold": 25
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.explorer_25"
+    },
+    {
+      "id": "achievement.greatness.trail_photographer",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Photographer",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.trail_photo.approved",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "moderator-approved"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "field": "payload.trailId",
+        "threshold": 1
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.trail_photographer"
+    },
+    {
+      "id": "achievement.greatness.trail_contributor_3",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Contributor",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.trail_photo.approved",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "moderator-approved"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "field": "payload.trailId",
+        "threshold": 3
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.trail_contributor_3"
+    },
+    {
+      "id": "achievement.greatness.trail_scout_5",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Scout",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.trail_photo.approved",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "moderator-approved"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "field": "payload.trailId",
+        "threshold": 5
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.trail_scout_5"
+    },
+    {
+      "id": "achievement.greatness.trail_storyteller_10",
+      "definitionVersion": "1.0.0",
+      "contentRevision": 1,
+      "lifecycleState": "published",
+      "catalogVersion": 2,
+      "name": "Trail Storyteller",
+      "visibility": "public",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z",
+      "effectiveTo": null,
+      "repeatability": {
+        "mode": "one_time",
+        "maxAwards": 1
+      },
+      "acceptedEvents": [
+        {
+          "eventType": "greatness.trail_photo.approved",
+          "schemaVersions": [
+            1
+          ]
+        }
+      ],
+      "acceptedVerificationMethods": [
+        "moderator-approved"
+      ],
+      "criteria": {
+        "operator": "distinct_count",
+        "field": "payload.trailId",
+        "threshold": 10
+      },
+      "reward": {
+        "lifetimeXp": 0
+      },
+      "badgeId": "badge.greatness.trail_storyteller_10"
     }
   ]
 }
