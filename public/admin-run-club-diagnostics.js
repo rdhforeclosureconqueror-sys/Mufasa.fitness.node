@@ -13,12 +13,12 @@
   function stagedError(stage, message, cause) { var error = new Error(message); error.stage = stage; error.cause = cause; return error; }
 
   function endpointUrl() {
-    var origin = window.location && window.location.origin;
-    if (!origin || !/^https?:\/\/[^/]+$/i.test(origin)) throw stagedError("URL construction", "The page does not have a valid HTTP(S) origin");
-    var url;
-    try { url = new window.URL(ENDPOINT_PATH, origin); } catch (cause) { throw stagedError("URL construction", "The diagnostics URL could not be constructed", cause); }
-    if (url.origin !== origin || url.pathname !== ENDPOINT_PATH) throw stagedError("URL construction", "Diagnostics endpoint did not resolve to the current origin");
-    return url.href;
+    try {
+      if (window.MaatApiClient?.resolve) return window.MaatApiClient.resolve(ENDPOINT_PATH);
+      var backend = window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || "https://mufasa-fitness-node.onrender.com";
+      if (!backend) throw new Error("canonical API client unavailable");
+      return new window.URL(ENDPOINT_PATH, backend + "/").href;
+    } catch (cause) { throw stagedError("URL construction", "The canonical backend diagnostics URL could not be constructed", cause); }
   }
 
   function canonicalToken() {
@@ -41,7 +41,7 @@
     catch (cause) { throw stagedError("Header construction", "The authentication header could not be constructed", cause); }
   }
   function constructRequest(url, headers) {
-    try { return new window.Request(url, {method: "POST", credentials: "same-origin", cache: "no-store", headers: headers}); }
+    try { return new window.Request(url, {method: "POST", credentials: "omit", cache: "no-store", headers: headers}); }
     catch (cause) { throw stagedError("Request construction", "The diagnostics Request object could not be constructed", cause); }
   }
   function clearResults() { while (results.firstChild) results.removeChild(results.firstChild); }

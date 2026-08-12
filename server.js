@@ -330,7 +330,8 @@ function createApp(options = {}) {
   const authorizationResolver = createAuthorizationResolver(authorizationConfig);
   writeObservability.setAuthorizationState(authorizationResolver.describe());
 
-  const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
+  const PRODUCTION_FRONTEND_ORIGIN = "https://mufasafitsite.onrender.com";
+  const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || (process.env.NODE_ENV === "production" ? PRODUCTION_FRONTEND_ORIGIN : ""))
     .split(",")
     .map(s => s.trim())
     .filter(Boolean);
