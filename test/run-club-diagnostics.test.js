@@ -7,21 +7,70 @@ test("Run Club master diagnostics pass backend checks, label visual checks unava
 test("unsupported Greatness XP producers remain disabled",()=>{const actions=require("../data/gamification/xp-policy.json").policies[0].actions;for(const event of ["greatness.weekly_goal.completed","greatness.personal_best.earned","greatness.club_run.completed","greatness.trail_contribution.helpful_milestone","greatness.referral.activated","greatness.new_trail.completed"])assert.equal(actions[event],undefined,event);});
 test("Run Club diagnostics endpoint and page require admin authorization",async t=>{const prior=process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS;process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS="runclub_admin";t.after(()=>prior==null?delete process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS:process.env.AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS=prior);const dataDir=fs.mkdtempSync(path.join(os.tmpdir(),"runclub-diag-api-")),app=createApp({dataDir}),server=app.listen(0);t.after(()=>server.close());await new Promise(r=>server.once("listening",r));const base=`http://127.0.0.1:${server.address().port}`,auth=createAuthTokenLib({secret:process.env.AUTH_TOKEN_SECRET||"dev-only-secret-change-me"}),member=auth.issueUserToken({userId:"ordinary_member"}).token,admin=auth.issueUserToken({userId:"runclub_admin"}).token;for(const route of ["/admin-run-club-diagnostics.html","/api/admin/diagnostics/run-club/run"]){const method=route.startsWith("/api/")?"POST":"GET";assert.equal((await fetch(base+route,{method})).status,401);assert.equal((await fetch(base+route,{method,headers:{authorization:`Bearer ${member}`}})).status,403);}const response=await fetch(base+"/api/admin/diagnostics/run-club/run",{method:"POST",headers:{authorization:`Bearer ${admin}`}});assert.equal(response.status,201);assert.equal((await response.json()).data.safeMode.cleanup,"automatic");assert.equal((await fetch(base+"/admin-run-club-diagnostics.html",{headers:{authorization:`Bearer ${admin}`}})).status,200);});
 test("admin diagnostics UI has one master button and four phase rendering foundation",()=>{const html=fs.readFileSync(path.join(__dirname,"../public/admin-run-club-diagnostics.html"),"utf8"),js=fs.readFileSync(path.join(__dirname,"../public/admin-run-club-diagnostics.js"),"utf8");assert.match(html,/Run Run Club Diagnostics/);assert.equal((html.match(/id="runDiagnostics"/g)||[]).length,1);assert.match(js,/data\.phases/);assert.match(js,/NOT AVAILABLE|check\.status/);});
-test("Safari pattern failures identify the absolute same-origin request and render all four phases",async()=>{
+function diagnosticsBrowser(options={}) {
+  const token=Object.hasOwn(options,"token")?options.token:"aaa.bbb.ccc",fetchImpl=options.fetchImpl,HeadersImpl=options.HeadersImpl||Headers,RequestImpl=options.RequestImpl||Request;
   class Element{constructor(tag){this.tag=tag;this.children=[];this.textContent="";this.disabled=false;this.listener=null;}appendChild(child){this.children.push(child);return child;}removeChild(child){this.children.splice(this.children.indexOf(child),1);}addEventListener(_name,listener){this.listener=listener;}get firstChild(){return this.children[0]||null;}}
   const elements={runDiagnostics:new Element("button"),status:new Element("p"),results:new Element("div")};
-  let requested;
-  const window={location:{origin:"https://mufasafitsite.onrender.com"},URL,localStorage:{getItem:()=>"bad\ntoken"},fetch:async url=>{requested=url;throw new TypeError("The string did not match the expected pattern.");}};
+  const window={location:{origin:"https://mufasafitsite.onrender.com"},URL,Headers:HeadersImpl,Request:RequestImpl,AuthStateRuntime:{getCanonicalAuthState:()=>({token})},fetch:fetchImpl||(async()=>{throw new TypeError("The string did not match the expected pattern.");})};
   const document={getElementById:id=>elements[id],createElement:tag=>new Element(tag)};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,"../public/admin-run-club-diagnostics.js"),"utf8"),{window,document});
-  await elements.runDiagnostics.listener();
-  assert.equal(requested,"https://mufasafitsite.onrender.com/api/admin/diagnostics/run-club/run");
-  assert.equal(elements.results.children.length,4);
-  assert.deepEqual(elements.results.children.map(section=>section.children[0].textContent),["Phase 1 — FAIL","Phase 2 — FAIL","Phase 3 — FAIL","Phase 4 — FAIL"]);
-  const failedCheck=elements.results.children[0].children[2].children[0];
-  const detail=failedCheck.children[1].textContent;
-  assert.match(failedCheck.children[0].textContent,/Run Club diagnostics API request/);
-  assert.match(detail,/\/api\/admin\/diagnostics\/run-club\/run/);
-  assert.match(detail,/string did not match the expected pattern/);
-  assert.doesNotMatch(detail,/bad|token/i);
+  return {window,elements};
+}
+
+test("diagnostics constructs an exact same-origin authenticated POST Request",async()=>{
+  let request;
+  const browser=diagnosticsBrowser({fetchImpl:async value=>{request=value;return {ok:true,status:201,json:async()=>({data:{overall:"PASS",phases:[]}})}}});
+  await browser.elements.runDiagnostics.listener();
+  assert.equal(request.url,"https://mufasafitsite.onrender.com/api/admin/diagnostics/run-club/run");
+  assert.equal(request.method,"POST");
+  assert.equal(request.credentials,"same-origin");
+  assert.equal(request.headers.get("authorization"),"Bearer aaa.bbb.ccc");
+  assert.equal(request.headers.get("content-type"),null);
+  assert.equal(await request.text(),"");
+});
+
+test("diagnostics rejects missing, undefined, null, and whitespace canonical tokens before Headers construction",async()=>{
+  for(const token of [undefined,null,"","   "]){
+    let dispatched=false;
+    const browser=diagnosticsBrowser({token,fetchImpl:async()=>{dispatched=true;}});
+    await browser.elements.runDiagnostics.listener();
+    assert.equal(dispatched,false,String(token));
+    assert.match(browser.elements.status.textContent,/Auth retrieval — FAIL/);
+    assert.deepEqual(browser.elements.results.children.slice(1).map(x=>x.children[0].textContent),["Phase 1 — NOT RUN","Phase 2 — NOT RUN","Phase 3 — NOT RUN","Phase 4 — NOT RUN"]);
+    assert.match(browser.elements.status.textContent,/Diagnostics backend was not reached/);
+  }
+});
+
+test("diagnostics rejects CR/LF, duplicated Bearer, and malformed authorization values",async()=>{
+  for(const token of ["aaa.\nbbb.ccc","aaa.\rbbb.ccc","Bearer aaa.bbb.ccc","Bearer Bearer aaa.bbb.ccc","not-a-signed-token"]){
+    let dispatched=false;
+    const browser=diagnosticsBrowser({token,fetchImpl:async()=>{dispatched=true;}});
+    await browser.elements.runDiagnostics.listener();
+    assert.equal(dispatched,false,JSON.stringify(token));
+    assert.match(browser.elements.status.textContent,/Authentication header — FAIL/);
+    assert.doesNotMatch(browser.elements.status.textContent,/aaa|bbb|ccc/);
+  }
+});
+
+test("Safari request failure is isolated to dispatch and leaves backend phases NOT RUN",async()=>{
+  let request;
+  const browser=diagnosticsBrowser({fetchImpl:async value=>{request=value;throw new TypeError("The string did not match the expected pattern.");}});
+  await browser.elements.runDiagnostics.listener();
+  assert.equal(request.url,"https://mufasafitsite.onrender.com/api/admin/diagnostics/run-club/run");
+  assert.equal(browser.elements.results.children.length,5);
+  assert.equal(browser.elements.results.children[0].children[0].textContent,"Request/Auth — FAIL");
+  assert.deepEqual(browser.elements.results.children.slice(1).map(x=>x.children[0].textContent),["Phase 1 — NOT RUN","Phase 2 — NOT RUN","Phase 3 — NOT RUN","Phase 4 — NOT RUN"]);
+  assert.match(browser.elements.status.textContent,/Fetch dispatch — FAIL/);
+  assert.match(browser.elements.status.textContent,/Diagnostics backend was not reached/);
+});
+
+test("diagnostics distinguishes Headers and Request construction failures",async()=>{
+  class BadHeaders{set(){throw new TypeError("The string did not match the expected pattern.");}}
+  let browser=diagnosticsBrowser({HeadersImpl:BadHeaders});
+  await browser.elements.runDiagnostics.listener();
+  assert.match(browser.elements.status.textContent,/Header construction — FAIL/);
+  class BadRequest{constructor(){throw new TypeError("invalid Request");}}
+  browser=diagnosticsBrowser({RequestImpl:BadRequest});
+  await browser.elements.runDiagnostics.listener();
+  assert.match(browser.elements.status.textContent,/Request construction — FAIL/);
 });
