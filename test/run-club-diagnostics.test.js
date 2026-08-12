@@ -18,13 +18,13 @@ function diagnosticsBrowser(options={}) {
   return {window,elements};
 }
 
-test("diagnostics constructs an exact same-origin authenticated POST Request",async()=>{
+test("diagnostics constructs an exact canonical-backend authenticated POST Request",async()=>{
   let request;
   const browser=diagnosticsBrowser({fetchImpl:async value=>{request=value;return {ok:true,status:201,json:async()=>({data:{overall:"PASS",phases:[]}})}}});
   await browser.elements.runDiagnostics.listener();
-  assert.equal(request.url,"https://mufasafitsite.onrender.com/api/admin/diagnostics/run-club/run");
+  assert.equal(request.url,"https://mufasa-fitness-node.onrender.com/api/admin/diagnostics/run-club/run");
   assert.equal(request.method,"POST");
-  assert.equal(request.credentials,"same-origin");
+  assert.equal(request.credentials,"omit");
   assert.equal(request.headers.get("authorization"),"Bearer aaa.bbb.ccc");
   assert.equal(request.headers.get("content-type"),null);
   assert.equal(await request.text(),"");
@@ -57,7 +57,7 @@ test("Safari request failure is isolated to dispatch and leaves backend phases N
   let request;
   const browser=diagnosticsBrowser({fetchImpl:async value=>{request=value;throw new TypeError("The string did not match the expected pattern.");}});
   await browser.elements.runDiagnostics.listener();
-  assert.equal(request.url,"https://mufasafitsite.onrender.com/api/admin/diagnostics/run-club/run");
+  assert.equal(request.url,"https://mufasa-fitness-node.onrender.com/api/admin/diagnostics/run-club/run");
   assert.equal(browser.elements.results.children.length,5);
   assert.equal(browser.elements.results.children[0].children[0].textContent,"Request/Auth — FAIL");
   assert.deepEqual(browser.elements.results.children.slice(1).map(x=>x.children[0].textContent),["Phase 1 — NOT RUN","Phase 2 — NOT RUN","Phase 3 — NOT RUN","Phase 4 — NOT RUN"]);
