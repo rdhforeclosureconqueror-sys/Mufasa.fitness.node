@@ -3,6 +3,8 @@
 
   const global = globalScope || window;
   const TOKEN_STORAGE_KEY = "maatAuthToken";
+  const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
+  const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
   let restorePromise = null;
 
@@ -46,6 +48,23 @@
       if (token) global.localStorage?.setItem(TOKEN_STORAGE_KEY, normalizeToken(token));
       else global.localStorage?.removeItem(TOKEN_STORAGE_KEY);
     } catch (_) {}
+  }
+
+  async function persistCanonicalAuthState(input = {}, options = {}) {
+    const state = setCanonicalAuthState(input, options);
+    if (!state.token) return { ok: true, state };
+    let lastError = null;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        global.localStorage?.setItem(ORIGIN_STORAGE_KEY, global.location?.origin || "unknown");
+        if (getStoredToken() === state.token) return { ok: true, state };
+      } catch (error) { lastError = error; }
+      await new Promise((resolve) => global.setTimeout ? global.setTimeout(resolve, 25 * (attempt + 1)) : resolve());
+    }
+    const error = lastError || new Error("canonical_storage_verification_failed");
+    error.code = "AUTH_STORAGE_UNAVAILABLE";
+    ensureDebugState().lastAuthError = "Authentication could not be persisted on this device";
+    return { ok: false, state, error, reason: "storage_verification_failed" };
   }
 
   function normalizeUser(user) {
@@ -129,7 +148,7 @@
     const state = setCanonicalAuthState({ token: null, user: null }, { ...options, reason, clearLastUser: options.clearLastUser === true });
     // Remove retired aliases so logout/invalid-session cleanup is global, not page-specific.
     for (const storage of [global.localStorage, global.sessionStorage]) {
-      try { ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"].forEach((key) => storage?.removeItem(key)); } catch (_) {}
+      try { RETIRED_STORAGE_KEYS.forEach((key) => storage?.removeItem(key)); } catch (_) {}
     }
     return state;
   }
@@ -314,6 +333,12 @@
     global.addEventListener?.("auth:refresh", (event) => {
       refreshAuthStatus({ ...(event?.detail || {}), reason: event?.detail?.reason || "auth:refresh" });
     });
+    global.addEventListener?.("pageshow", (event) => {
+      if (event?.persisted || !getCanonicalAuthState().isAuthenticated) restoreCanonicalAuthState({ force: true, reason: "pageshow-restore" });
+    });
+    global.addEventListener?.("storage", (event) => {
+      if (event?.key === TOKEN_STORAGE_KEY) restoreCanonicalAuthState({ force: true, reason: "storage-event-restore" });
+    });
     return true;
   }
 
@@ -324,6 +349,8 @@
   global.setCanonicalAuthState = setCanonicalAuthState;
   global.AuthStateRuntime = {
     TOKEN_STORAGE_KEY,
+    ORIGIN_STORAGE_KEY,
+    RETIRED_STORAGE_KEYS,
     clearCanonicalAuthState,
     ensureDebugState,
     getAuthToken,
@@ -333,6 +360,7 @@
     installAuthStatusRefreshBridge,
     isAuthUnavailable,
     postAuthenticatedJSON,
+    persistCanonicalAuthState,
     refreshAuthStatus,
     renderSafeDiagnostics,
     restoreCanonicalAuthState,
