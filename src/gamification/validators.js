@@ -30,6 +30,8 @@ function validatePayload(payload, specification) {
     if (rule.type === "boolean" && typeof value !== "boolean") invalid("INVALID_PAYLOAD", `${key} must be boolean`);
     if (rule.type === "enum" && !rule.values.includes(value)) invalid("INVALID_PAYLOAD", `${key} is outside its allowed values`);
     if (rule.type === "event_id" && !EVENT_ID.test(value || "")) invalid("INVALID_PAYLOAD", `${key} must be an event ID`);
+    if (rule.type === "number" && (!Number.isFinite(value) || value < (rule.minimum ?? -Infinity))) invalid("INVALID_PAYLOAD", `${key} must be a valid number`);
+    if (rule.type === "string" && (typeof value !== "string" || !ID.test(value))) invalid("INVALID_PAYLOAD", `${key} must be a safe identifier`);
     clean[key] = value;
   }
   if (Buffer.byteLength(JSON.stringify(clean), "utf8") > 2048) invalid("PAYLOAD_TOO_LARGE", "payload exceeds 2048 bytes");

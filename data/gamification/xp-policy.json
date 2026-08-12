@@ -18,6 +18,18 @@
           "category": "yoga",
           "overlapGroup": "completed_activity",
           "overlapIdentity": "sourceEntity.id"
+        },
+        "greatness.activity.completed": {
+          "xp": 50,
+          "category": "greatness_activity"
+        },
+        "greatness.challenge.completed": {
+          "xp": 200,
+          "category": "greatness_challenge"
+        },
+        "greatness.trail_photo.approved": {
+          "xp": 20,
+          "category": "greatness_contribution"
         }
       },
       "dailyCaps": {

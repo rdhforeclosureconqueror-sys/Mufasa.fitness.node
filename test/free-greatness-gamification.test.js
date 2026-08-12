@@ -45,9 +45,9 @@ test("free Run Club uses existing Greatness gamification while every paid entitl
   assert.equal(events.some(event => ["workout.completed","yoga.session.completed"].includes(event.eventType)), false);
 
   const game = await request(base, "/api/me/gamification", { token });
-  assert.equal(game.response.status, 200); assert.equal(game.payload.data.level.lifetimeXp, 0, "the published policy assigns no Greatness XP; the integration invents none");
-  assert.equal(game.payload.data.achievements.filter(item => item.state === "earned").length, 0);
-  assert.equal(game.payload.data.badges.length, 0);
+  assert.equal(game.response.status, 200); assert.equal(game.payload.data.level.lifetimeXp, 50, "the published Greatness policy awards verified activity XP once");
+  assert.ok(game.payload.data.achievements.some(item => item.id === "achievement.greatness.first_run" && item.state === "earned"));
+  assert.ok(game.payload.data.badges.some(item => item.id === "badge.greatness.first_run"));
   const journey = await request(base, "/api/me/greatness/journey", { token });
   assert.equal(journey.payload.data.activities.length, 1); assert.ok(journey.payload.data.achievements.some(item => item.achievementKey === "first_5k"));
   const challenges = await request(base, "/api/me/greatness/challenges", { token }); assert.equal(challenges.response.status, 200);

@@ -28,8 +28,9 @@ const EVENT_TYPES = Object.freeze({
       reasonCode: Object.freeze({ type: "enum", values: ["source_invalidated", "confirmed_abuse", "rule_defect", "approved_moderation"] })
     })
   }),
-  "greatness.activity.completed": Object.freeze({ schemaVersion: 1, sources: Object.freeze(["greatness-service"]), payload: Object.freeze({ activityType: Object.freeze({ type: "enum", values: ["walk", "jog", "run", "trail_walk", "trail_run"] }), goalCompleted: Object.freeze({ type: "boolean" }) }) }),
+  "greatness.activity.completed": Object.freeze({ schemaVersion: 1, sources: Object.freeze(["greatness-service"]), payload: Object.freeze({ activityType: Object.freeze({ type: "enum", values: ["walk", "jog", "run", "trail_walk", "trail_run"] }), goalCompleted: Object.freeze({ type: "boolean" }), distanceMeters:Object.freeze({type:"number",minimum:0}), trailId:Object.freeze({type:"string"}) }) }),
   "greatness.challenge.completed": Object.freeze({ schemaVersion: 1, sources: Object.freeze(["greatness-service"]), payload: Object.freeze({ challengeId: Object.freeze({ type: "enum", values: ["move_10k", "three_active_days", "community_100k"] }) }) }),
+  "greatness.trail_photo.approved": Object.freeze({schemaVersion:1,sources:Object.freeze(["greatness-service"]),payload:Object.freeze({trailId:Object.freeze({type:"string"})})}),
   "pushup.session.completed": Object.freeze({ schemaVersion: 1, sources: Object.freeze(["pushup-challenge-service"]), payload: Object.freeze({ scoreBand: Object.freeze({ type: "enum", values: ["zero", "one_to_nine", "ten_or_more"] }), leaderboardEligible: Object.freeze({ type: "boolean" }) }) }),
   "pushup.milestone.completed": Object.freeze({ schemaVersion: 1, sources: Object.freeze(["pushup-challenge-service"]), payload: Object.freeze({ milestone: Object.freeze({ type: "enum", values: ["first_verified_session"] }) }) })
 });

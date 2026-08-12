@@ -24,7 +24,7 @@ const CHALLENGES = Object.freeze([
 function ensureDomain(user) {
   user.steppingIntoGreatness ||= { schemaVersion:3, activities:[], achievements:[], personalBests:{}, memberships:[], feedEvents:[], contributions:[], enrollments:[], operationalEvents:[] };
   const d=user.steppingIntoGreatness;
-  for (const key of ["activities","achievements","memberships","feedEvents","contributions","enrollments","operationalEvents"]) d[key] ||= [];
+  for (const key of ["activities","achievements","memberships","feedEvents","contributions","trailContributions","enrollments","operationalEvents"]) d[key] ||= [];
   d.personalBests ||= {};
   return d;
 }

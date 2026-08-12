@@ -52,6 +52,7 @@ const { createAiCoachService } = require("./src/services/aiCoachService");
 const { loadAiCoachConfig } = require("./src/config/aiCoach");
 const { createOpenAiCoachProvider } = require("./src/ai/openAiCoachProvider");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
+const { createTrailContributionService } = require("./src/services/trailContributionService");
 const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
 const { parseGeoJSON, parseGpx } = require("./src/trails/geometry");
@@ -106,6 +107,8 @@ const { runRouteDiagnostics } = require("./src/lib/diagnosticRouteChecker");
 const { evaluatePilotReadiness } = require("./src/lib/pilotReadinessEvaluator");
 const { buildLaunchHealth, redactedExport } = require("./src/diagnostics/launchHealthService");
 const { createClientEvidenceService } = require("./src/diagnostics/clientEvidenceService");
+const { createRunClubDiagnosticsService } = require("./src/diagnostics/runClubDiagnosticsService");
+const routeAuthorizationContract = require("./config/route-authorization-contract");
 const { publicCapabilityRegistry } = require("./src/diagnostics/capabilityRegistry");
 const { createNotificationService } = require("./src/notifications/notificationService");
 const { createLeaderboardService } = require("./src/leaderboards/leaderboardService");
@@ -401,6 +404,7 @@ function createApp(options = {}) {
   const userStore = createUserStore({ userDir: USER_DIR });
   const authCredentialStore = createAuthCredentialStore({ filePath: options.authCredentialPath || path.join(OPS_DIR, "auth-credentials.json") });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
+  let trailContributionService = null;
   const memberExperienceCapabilityService = createMemberExperienceCapabilityService({ userStore, challengeService });
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
   const trailRouteStore = createTrailRouteStore({ filePath: options.trailRouteFilePath || path.join(DATA_DIR, "trail-routes.json") });
@@ -471,6 +475,7 @@ function createApp(options = {}) {
       }
     }
   }
+  trailContributionService = createTrailContributionService({ userStore, uploadDir:path.join(PUBLIC_DIR, "uploads", "trail-contributions"), eventService:gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const notificationService = gamificationConfig.notifications && gamificationReadService
     ? createNotificationService({ filePath: options.notificationPath || path.join(DATA_DIR, "gamification", "notifications.json") }) : null;
   const leaderboardService = gamificationConfig.leaderboards && gamificationReadService
@@ -1082,6 +1087,7 @@ function createApp(options = {}) {
   );
 
   const diagnosticGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+  const runClubDiagnosticsService = createRunClubDiagnosticsService({ rootDir, routeContract:routeAuthorizationContract });
   const frontendManifest = () => { try { return readJSON(path.join(PUBLIC_DIR, "__frontend-version.json")); } catch { return {}; } };
   const currentHealth = (req = null) => buildLaunchHealth({
     env: process.env, rootDir, dataDir: DATA_DIR,
@@ -1094,6 +1100,8 @@ function createApp(options = {}) {
     memberEvidence: memberJourneyService.inspect(),
     implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), clientEvidence:clientEvidenceService.latest(), externalChecks:latestExternalChecks }
   });
+  app.get("/admin-run-club-diagnostics.html", diagnosticGuard, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-run-club-diagnostics.html")));
+  app.post("/api/admin/diagnostics/run-club/run", diagnosticGuard, (req,res)=>ok(res,req.requestId,runClubDiagnosticsService.run(),201));
   app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
   app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });
   app.get("/api/admin/diagnostics/environment", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).environment));
@@ -1980,7 +1988,12 @@ function createApp(options = {}) {
   app.post("/api/me/greatness/trails/:trailId/goal-routes", requireAuth, goalRouteLimit, asyncHandler(async (req, res) => ok(res,req.requestId,await goalRouteResponse(req))));
   app.post("/api/me/greatness/trails/:trailId/goal-routes/alternatives", requireAuth, goalRouteLimit, asyncHandler(async (req,res)=>{req.body={...req.body,routeType:req.body?.routeType||"loop"};return ok(res,req.requestId,await goalRouteResponse(req));}));
   app.post("/api/me/greatness/challenges/:challengeId/route-suggestions", requireAuth, goalRouteLimit, asyncHandler(async(req,res)=>{const discovery=await nearbyTrailService.search(req.auth.userId,req.body),suggestions=[];for(const place of discovery.trails.slice(0,4)){const planned=await walkingRouteService.generate({trailId:place.trailRouteId||place.id,place,startPoint:req.body?.startPoint,targetDistanceMeters:req.body?.targetDistanceMeters,routeType:req.body?.routeType});suggestions.push({...place,routeOption:planned.options[0],routeAttemptCount:planned.attemptCount});}suggestions.sort((a,b)=>(a.routeOption.routeSource==="verified_geometry"?-1:0)-(b.routeOption.routeSource==="verified_geometry"?-1:0)||(a.routeOption.distanceErrorPercent??Infinity)-(b.routeOption.distanceErrorPercent??Infinity)||(a.distanceFromUserMeters??Infinity)-(b.distanceFromUserMeters??Infinity));return ok(res,req.requestId,{challengeId:req.params.challengeId,targetDistanceMeters:Number(req.body?.targetDistanceMeters),suggestions});}));
+  app.post("/api/me/greatness/trails/:trailId/contributions", requireAuth, createRateLimiter({name:"trail-contribution-upload",windowMs:3600000,max:10}), asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.create(req.auth.userId,req.params.trailId,req.body),201)));
+  app.delete("/api/me/greatness/trail-contributions/:contributionId", requireAuth, asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.remove(req.auth.userId,req.params.contributionId))));
+  app.post("/api/me/greatness/trail-contributions/:contributionId/reports", requireAuth, createRateLimiter({name:"trail-contribution-report",windowMs:3600000,max:20}), asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.report(req.auth.userId,req.params.contributionId,req.body?.reason),201)));
+  app.get("/api/greatness/trails/:trailId/gallery", asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.gallery(req.params.trailId,req.query.sort))));
   const requireTrailAdmin = (req, _res, next) => ["super_admin", "admin"].includes(req.authz?.role || req.auth?.role) ? next() : next(new ApiError("FORBIDDEN", "Trail route management requires an admin role", 403));
+  app.patch("/api/admin/trail-contributions/:contributionId/moderation", requireAuth, requireTrailAdmin, asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.moderate(req.auth.userId,req.params.contributionId,req.body?.status))));
   app.get("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => ok(res, req.requestId, { routes: trailRouteStore.list() })));
   app.post("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => { const geometry = req.body?.importFormat === "gpx" ? parseGpx(req.body.importData) : req.body?.importFormat === "geojson" ? parseGeoJSON(req.body.importData) : req.body?.geometry; return ok(res, req.requestId, trailRouteStore.save({ ...req.body, geometry }), 201); }));
   app.patch("/api/admin/trail-routes/:trailId/disable", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => { const route = trailRouteStore.disable(req.params.trailId); if (!route) throw new ApiError("TRAIL_ROUTE_NOT_FOUND", "Trail route not found", 404); return ok(res, req.requestId, route); }));

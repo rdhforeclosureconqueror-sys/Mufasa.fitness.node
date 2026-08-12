@@ -2,8 +2,11 @@
 
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
+  { method:"GET", path:"/api/greatness/trails/:trailId/gallery", authentication:"public", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"public-approved-only", featureFlag:null, publicOutput:"approved-redacted", rateLimit:null, compatibility:null, publicWrite:null },
+  ...[["POST","/api/me/greatness/trails/:trailId/contributions"],["DELETE","/api/me/greatness/trail-contributions/:contributionId"],["POST","/api/me/greatness/trail-contributions/:contributionId/reports"]].map(([method,routePath])=>({method,path:routePath,authentication:"required",allowedRoles:["member"],requiredPermissions:[],membership:"not-required",ownership:"authenticated-member-or-owned-contribution",featureFlag:null,publicOutput:"private-redacted",rateLimit:"route-specific",compatibility:null,publicWrite:null})),
+  { method:"PATCH", path:"/api/admin/trail-contributions/:contributionId/moderation", authentication:"required", allowedRoles:["super_admin","admin"], requiredPermissions:["trail.moderate"], membership:"not-required", ownership:"privileged", featureFlag:null, publicOutput:"private-redacted", rateLimit:null, compatibility:null, publicWrite:null },
   ...[
-    ["GET", "/api/admin/diagnostics/summary"], ["GET", "/api/admin/launch-health"], ["POST", "/api/admin/diagnostics/run"],
+    ["GET", "/admin-run-club-diagnostics.html"], ["POST", "/api/admin/diagnostics/run-club/run"], ["GET", "/api/admin/diagnostics/summary"], ["GET", "/api/admin/launch-health"], ["POST", "/api/admin/diagnostics/run"],
     ["POST", "/api/admin/diagnostics/external-checks"], ["GET", "/api/admin/diagnostics/environment"],
     ["GET", "/api/admin/diagnostics/capabilities"], ["GET", "/api/admin/diagnostics/member-journey"],
     ["GET", "/api/admin/diagnostics/gamification"], ["GET", "/api/admin/diagnostics/billing"],
