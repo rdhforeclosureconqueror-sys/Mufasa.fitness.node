@@ -1100,7 +1100,9 @@ function createApp(options = {}) {
     memberEvidence: memberJourneyService.inspect(),
     implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), clientEvidence:clientEvidenceService.latest(), externalChecks:latestExternalChecks }
   });
-  app.get("/admin-run-club-diagnostics.html", diagnosticGuard, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-run-club-diagnostics.html")));
+  // Serve the authorization-aware shell so direct unauthenticated visits can show a
+  // clean sign-in-required state. The diagnostic operation remains permission guarded.
+  app.get("/admin-run-club-diagnostics.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-run-club-diagnostics.html")));
   app.post("/api/admin/diagnostics/run-club/run", diagnosticGuard, (req,res)=>ok(res,req.requestId,runClubDiagnosticsService.run(),201));
   app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
   app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });

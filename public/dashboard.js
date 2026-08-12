@@ -21,6 +21,7 @@
   const exportDiagnosticBtn = document.getElementById("exportDiagnosticBtn");
   const copyRepairSummaryBtn = document.getElementById("copyRepairSummaryBtn");
   const refreshDiagnosticBtn = document.getElementById("refreshDiagnosticBtn");
+  const runClubDiagnosticsNav = document.getElementById("runClubDiagnosticsNav");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
   const openAiSummaryCard = document.getElementById("openAiSummaryCard");
   const deploymentStatus = document.getElementById("deploymentStatus");
@@ -46,6 +47,20 @@
   function getDashboardAuthToken() {
     return window.AuthStateRuntime?.getAuthToken?.() || client?.getAuthToken?.() || null;
   }
+
+  async function revealRunClubDiagnosticsForAdmin() {
+    if (!runClubDiagnosticsNav) return;
+    const auth = await window.AuthStateRuntime?.refreshAuthStatus?.({
+      reason: "dashboard-admin-navigation",
+      visibleErrors: false
+    });
+    const roles = auth?.user?.roles || (auth?.user?.role ? [auth.user.role] : []);
+    runClubDiagnosticsNav.hidden = !roles.some((role) => role === "admin" || role === "super_admin");
+  }
+
+  revealRunClubDiagnosticsForAdmin().catch(() => {
+    if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = true;
+  });
 
   async function memberExperience(pathname) {
     const token = getDashboardAuthToken();

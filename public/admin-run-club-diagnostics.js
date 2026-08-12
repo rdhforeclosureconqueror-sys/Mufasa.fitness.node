@@ -5,6 +5,8 @@
   var button = document.getElementById("runDiagnostics");
   var status = document.getElementById("status");
   var results = document.getElementById("results");
+  var authRequired = document.getElementById("authRequired");
+  var diagnosticsContent = document.getElementById("diagnosticsContent");
 
   function text(tag, value, className) { var node = document.createElement(tag); node.textContent = value; if (className) node.className = className; return node; }
   function safeReason(error) { var message = error && error.message ? error.message : String(error || "Unknown browser error"); return message.replace(/Bearer\s+\S+/gi, "Bearer [redacted]").slice(0, 240); }
@@ -75,6 +77,31 @@
     } catch (error) { renderRequestFailure(error, endpoint, backendReached); } finally { button.disabled = false; }
   }
 
+  async function initializeAdminAccess() {
+    var runtime = window.AuthStateRuntime;
+    var token = runtime && typeof runtime.getAuthToken === "function" ? runtime.getAuthToken() : null;
+    if (!token || typeof runtime.refreshAuthStatus !== "function") {
+      authRequired.hidden = false;
+      diagnosticsContent.hidden = true;
+      return false;
+    }
+    var refreshed = await runtime.refreshAuthStatus({reason: "run-club-diagnostics-page", visibleErrors: false});
+    var user = refreshed && refreshed.user;
+    var roles = user && Array.isArray(user.roles) ? user.roles : (user && user.role ? [user.role] : []);
+    var allowed = refreshed && refreshed.ok === true && roles.some(function (role) { return role === "admin" || role === "super_admin"; });
+    authRequired.hidden = allowed;
+    diagnosticsContent.hidden = !allowed;
+    button.disabled = !allowed;
+    if (!allowed) status.textContent = "Admin sign-in required";
+    return allowed;
+  }
+
   window.__runClubDiagnosticsRequest = {endpointUrl: endpointUrl, canonicalToken: canonicalToken, constructHeaders: constructHeaders, constructRequest: constructRequest};
   button.addEventListener("click", runDiagnostics);
+  window.__runClubDiagnosticsAccessReady = initializeAdminAccess().catch(function () {
+    authRequired.hidden = false;
+    diagnosticsContent.hidden = true;
+    button.disabled = true;
+    return false;
+  });
 })(window, document);
