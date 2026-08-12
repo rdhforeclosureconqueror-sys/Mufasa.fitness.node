@@ -50,10 +50,7 @@
 
   async function revealRunClubDiagnosticsForAdmin() {
     if (!runClubDiagnosticsNav) return;
-    const auth = await window.AuthStateRuntime?.refreshAuthStatus?.({
-      reason: "dashboard-admin-navigation",
-      visibleErrors: false
-    });
+    const auth = await window.AuthStateRuntime?.whenReady?.();
     const roles = auth?.user?.roles || (auth?.user?.role ? [auth.user.role] : []);
     runClubDiagnosticsNav.hidden = !roles.some((role) => role === "admin" || role === "super_admin");
   }
@@ -72,6 +69,7 @@
   }
 
   async function renderMemberExperiences() {
+    await window.AuthStateRuntime?.whenReady?.();
     const greatness = document.getElementById("greatnessSummary");
     const pushup = document.getElementById("pushupSummary");
     const showError = (element, error) => { if (element) element.textContent = error.message; };
@@ -153,8 +151,9 @@
   }
 
   async function loadData() {
+    await window.AuthStateRuntime?.whenReady?.();
     const active = read(KEY_ACTIVE, null);
-    const token = client?.getAuthToken();
+    const token = getDashboardAuthToken();
 
     if (!client) {
       throw new Error("/api/me/history: backend read client unavailable");
@@ -486,7 +485,10 @@
   renderMemberExperiences();
 
   window.addEventListener("load", async () => {
+    await window.AuthStateRuntime?.whenReady?.();
+    window.AuthStateRuntime?.renderSafeDiagnostics?.("authContinuityStatus");
     await updateDeploymentStatus();
     await render();
   });
+  window.addEventListener("auth:changed", () => window.AuthStateRuntime?.renderSafeDiagnostics?.("authContinuityStatus"));
 })();

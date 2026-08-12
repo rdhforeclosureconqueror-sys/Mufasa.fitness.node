@@ -4,6 +4,27 @@
   const global = globalScope || window;
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
+  let restorePromise = null;
+
+  function normalizeToken(value) {
+    if (typeof value !== "string") return null;
+    const token = value.trim().replace(/^Bearer\s+/i, "");
+    return token || null;
+  }
+
+  function tokenMetadata(value) {
+    const token = normalizeToken(value);
+    const validFormat = Boolean(token && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token));
+    let expiresAt = null;
+    if (validFormat) {
+      try {
+        const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(global.atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
+        if (Number.isFinite(Number(payload.exp))) expiresAt = new Date(Number(payload.exp) * 1000).toISOString();
+      } catch (_) {}
+    }
+    return { validFormat, expiresAt, expiryState: !expiresAt ? "unavailable" : (Date.parse(expiresAt) <= Date.now() ? "expired" : "valid") };
+  }
 
   function ensureDebugState() {
     return global.__authPropagationDebug || (global.__authPropagationDebug = {
@@ -17,12 +38,12 @@
   }
 
   function getStoredToken() {
-    try { return global.localStorage?.getItem(TOKEN_STORAGE_KEY) || null; } catch (_) { return null; }
+    try { return normalizeToken(global.localStorage?.getItem(TOKEN_STORAGE_KEY)); } catch (_) { return null; }
   }
 
   function persistToken(token) {
     try {
-      if (token) global.localStorage?.setItem(TOKEN_STORAGE_KEY, token);
+      if (token) global.localStorage?.setItem(TOKEN_STORAGE_KEY, normalizeToken(token));
       else global.localStorage?.removeItem(TOKEN_STORAGE_KEY);
     } catch (_) {}
   }
@@ -34,7 +55,7 @@
 
   function normalizeState(input) {
     const payload = input && typeof input === "object" ? input : {};
-    const token = payload.token || null;
+    const token = normalizeToken(payload.token);
     const user = normalizeUser(payload.user);
     return {
       isAuthenticated: Boolean(token && user),
@@ -51,7 +72,7 @@
   }
 
   function createAuthEvent(name, detail) {
-    if (typeof global.CustomEvent === "function") return new CustomEvent(name, { detail });
+    if (typeof global.CustomEvent === "function") return new global.CustomEvent(name, { detail });
     const event = global.document?.createEvent?.("CustomEvent");
     if (event?.initCustomEvent) {
       event.initCustomEvent(name, false, false, detail);
@@ -105,7 +126,12 @@
   }
 
   function clearCanonicalAuthState(reason = "clearCanonicalAuthState", options = {}) {
-    return setCanonicalAuthState({ token: null, user: null }, { ...options, reason, clearLastUser: options.clearLastUser === true });
+    const state = setCanonicalAuthState({ token: null, user: null }, { ...options, reason, clearLastUser: options.clearLastUser === true });
+    // Remove retired aliases so logout/invalid-session cleanup is global, not page-specific.
+    for (const storage of [global.localStorage, global.sessionStorage]) {
+      try { ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"].forEach((key) => storage?.removeItem(key)); } catch (_) {}
+    }
+    return state;
   }
 
   async function refreshAuthStatus(options = {}) {
@@ -230,6 +256,58 @@
     return global.APP_AUTH;
   }
 
+  function getSafeDiagnostics() {
+    const state = getCanonicalAuthState();
+    const metadata = tokenMetadata(state.token || getStoredToken());
+    const roles = state.user?.roles || (state.user?.role ? [state.user.role] : []);
+    return {
+      authenticated: state.isAuthenticated === true,
+      credentialPresent: Boolean(state.token || getStoredToken()),
+      source: state.token ? "AuthStateRuntime.memory" : (getStoredToken() ? `localStorage.${TOKEN_STORAGE_KEY}` : "none"),
+      role: roles.includes("admin") || roles.includes("super_admin") ? "admin" : (state.user ? "member" : "none"),
+      tokenFormatValid: metadata.validFormat,
+      expiryState: metadata.expiryState,
+      lastRestoreResult: ensureDebugState().lastRestoreResult || "not_run"
+    };
+  }
+
+  function renderSafeDiagnostics(target) {
+    const element = typeof target === "string" ? global.document?.getElementById?.(target) : target;
+    if (!element) return false;
+    const report = getSafeDiagnostics();
+    element.textContent = [
+      `Authenticated: ${report.authenticated ? "YES" : "NO"}`,
+      `Token/session present: ${report.credentialPresent ? "YES" : "NO"}`,
+      `Canonical auth source: ${report.source}`,
+      `Role resolved: ${report.role}`,
+      `Token format valid: ${report.tokenFormatValid ? "YES" : "NO"}`,
+      `Expiry state: ${report.expiryState}`,
+      `Last auth restore result: ${report.lastRestoreResult}`
+    ].join("\n");
+    return true;
+  }
+
+  function restoreCanonicalAuthState(options = {}) {
+    if (restorePromise && options.force !== true) return restorePromise;
+    const storedToken = getStoredToken();
+    if (!storedToken) {
+      ensureDebugState().lastRestoreResult = "missing_token";
+      return Promise.resolve({ ok: false, reason: "missing_token", auth: getCanonicalAuthState() });
+    }
+    restorePromise = refreshAuthStatus({ ...options, token: storedToken, reason: options.reason || "browser-storage-restore" })
+      .then((result) => {
+        ensureDebugState().lastRestoreResult = result.ok ? "restored" : result.reason;
+        return result;
+      })
+      .finally(() => { restorePromise = null; });
+    return restorePromise;
+  }
+
+  function whenReady() {
+    if (getCanonicalAuthState().isAuthenticated) return Promise.resolve({ ok: true, auth: getCanonicalAuthState(), user: getCanonicalAuthState().user });
+    return restoreCanonicalAuthState();
+  }
+
   function installAuthStatusRefreshBridge() {
     if (global.__authStatusRefreshBridgeInstalled === true) return false;
     global.__authStatusRefreshBridgeInstalled = true;
@@ -250,14 +328,19 @@
     ensureDebugState,
     getAuthToken,
     getCanonicalAuthState,
+    getSafeDiagnostics,
     getStoredToken,
     installAuthStatusRefreshBridge,
     isAuthUnavailable,
     postAuthenticatedJSON,
     refreshAuthStatus,
+    renderSafeDiagnostics,
+    restoreCanonicalAuthState,
     sendToNode,
-    setCanonicalAuthState
+    setCanonicalAuthState,
+    whenReady
   };
 
   console.log(LOG_PREFIX, "loaded");
+  restoreCanonicalAuthState().catch(() => {});
 })(typeof window !== "undefined" ? window : globalThis);

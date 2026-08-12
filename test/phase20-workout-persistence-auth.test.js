@@ -69,8 +69,8 @@ test("Phase 20 APP_AUTH/AuthStateRuntime token wins over stale localStorage toke
   assert.match(indexHtml, /source: "localStorage\.maatAuthToken"/);
   assert.ok(indexHtml.indexOf("AuthStateRuntime?.getCanonicalAuthState") < indexHtml.indexOf("localStorage.getItem(\"maatAuthToken\")"));
 
-  assert.match(backendRead, /function getAuthTokenInfo\(\)[\s\S]*AuthStateRuntime\?\.getCanonicalAuthState/);
-  assert.ok(backendRead.indexOf("AuthStateRuntime?.getCanonicalAuthState") < backendRead.indexOf("localStorage.getItem(\"maatAuthToken\")"));
+  assert.match(backendRead, /function getAuthTokenInfo\(\)[\s\S]*AuthStateRuntime\?\.getAuthToken/);
+  assert.doesNotMatch(backendRead, /localStorage\.getItem\("maatAuthToken"\)/, "backend reads must not bypass the canonical runtime");
 });
 
 test("Phase 20 401 invalid_token shows session expired message and does not expose token value", async (t) => {
