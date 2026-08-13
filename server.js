@@ -4,6 +4,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const os = require("os");
 
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
 const { createTrailResponseDiagnostics, logTrailResponseException } = require("./src/middleware/trailResponseDiagnostics");
@@ -622,15 +623,40 @@ function createApp(options = {}) {
   }
 
   const issuedTokenFingerprints = new Map();
-  const authTrace = details => (options.logger || console).info("[auth-token-trace]", details);
-  function traceIssuance(result, requestId) {
+  const authRuntimeIdentity = Object.freeze({
+    instance: String(process.env.RENDER_INSTANCE_ID || process.env.INSTANCE_ID || os.hostname()),
+    hostname: os.hostname(),
+    pid: process.pid,
+    build: APP_BUILD_VERSION,
+    commit: safeCommit(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT),
+    deployment: String(process.env.RENDER_DEPLOY_ID || process.env.DEPLOYMENT_ID || "NOT_CONFIGURED")
+  });
+  const authTraceConfiguration = Object.freeze({
+    ...authTokenLib.configuration,
+    audience: authTokenLib.configuration.audience || "NOT_CONFIGURED"
+  });
+  const authTrace = details => (options.logger || console).info("[auth-token-trace]", {
+    timestamp: new Date().toISOString(),
+    ...authRuntimeIdentity,
+    uptimeSeconds: Math.floor(process.uptime()),
+    ...details
+  });
+  function traceIssuance(result, requestId, endpoint = "/api/auth/login") {
+    if (issuedTokenFingerprints.size >= 1000) issuedTokenFingerprints.delete(issuedTokenFingerprints.keys().next().value);
     issuedTokenFingerprints.set(result.fingerprint, Date.now());
-    authTrace({ event: "issuance", requestId, loginSucceeded: true, signer: authTokenLib.configuration, subjectClaimPresent: Boolean(result.claims.sub), roleClaimPresent: Boolean(result.claims.role), iatPresent: Number.isFinite(result.claims.iat), expPresent: Number.isFinite(result.claims.exp), expAfterIat: result.claims.exp > result.claims.iat, tokenFingerprint: result.fingerprint, serverTimestamp: new Date().toISOString() });
+    authTrace({ event: "issuance", endpoint, requestId, result: "PASS", httpStatus: 200, reason: null, loginSucceeded: endpoint === "/api/auth/login", authConfiguration: authTraceConfiguration, subjectClaimPresent: Boolean(result.claims.sub), roleClaimPresent: Boolean(result.claims.role), iatPresent: Number.isFinite(result.claims.iat), expPresent: Number.isFinite(result.claims.exp), expAfterIat: result.claims.exp > result.claims.iat, tokenFingerprint: result.fingerprint });
   }
   app.use(authContext(authTokenLib, authorizationResolver, {
     trace(details) {
-      if (details.tokenFingerprint) details.fingerprintMatchesIssuedToken = issuedTokenFingerprints.has(details.tokenFingerprint);
-      authTrace(details);
+      authTrace({
+        endpoint: "/api/auth/me",
+        authConfiguration: authTraceConfiguration,
+        result: details.httpStatus === 200 ? "PASS" : "FAIL",
+        ...details,
+        fingerprintIssuedByThisProcess: details.tokenFingerprint
+          ? (issuedTokenFingerprints.has(details.tokenFingerprint) ? "YES" : "NO")
+          : "NOT_AVAILABLE"
+      });
     },
     pilotBypass: disableLoginForPilot
       ? {
@@ -1730,7 +1756,7 @@ function createApp(options = {}) {
       providerVerified: true,
       identityClass: "provider_verified"
     });
-    traceIssuance(token, req.requestId);
+    traceIssuance(token, req.requestId, "/api/auth/register");
 
     return res.status(200).json({
       ok: true,

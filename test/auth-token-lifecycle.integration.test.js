@@ -37,7 +37,20 @@ test("production-equivalent login token immediately verifies and failures have e
   assert.equal(me.payload.user.id, login.payload.user.id);
   assert.equal(me.payload.user.email, login.payload.user.email);
   assert.equal(traces.find(item => item.event === "issuance").tokenFingerprint, fingerprintToken(token));
-  assert.equal(traces.find(item => item.event === "verification" && item.httpStatus === 200).fingerprintMatchesIssuedToken, true);
+  const issuanceTrace = traces.find(item => item.event === "issuance");
+  const verificationTrace = traces.find(item => item.event === "verification" && item.httpStatus === 200);
+  assert.equal(verificationTrace.fingerprintIssuedByThisProcess, "YES");
+  assert.equal(verificationTrace.tokenFingerprint, issuanceTrace.tokenFingerprint);
+  assert.equal(verificationTrace.authConfiguration.keyFingerprint, issuanceTrace.authConfiguration.keyFingerprint);
+  assert.equal(verificationTrace.instance, issuanceTrace.instance);
+  assert.equal(verificationTrace.build, issuanceTrace.build);
+  for (const trace of [issuanceTrace, verificationTrace]) {
+    assert.match(trace.timestamp, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(trace.endpoint, trace.event === "issuance" ? "/api/auth/login" : "/api/auth/me");
+    assert.equal(typeof trace.pid, "number");
+    assert.equal(typeof trace.uptimeSeconds, "number");
+    assert.ok(trace.hostname);
+  }
 
   const verifierCases = [
     ["malformed_token", "not-a-jwt"],

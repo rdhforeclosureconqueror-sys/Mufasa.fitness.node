@@ -44,7 +44,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
           }
           : authorizationResolver.resolveRole(null);
       }
-      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: headerPresent, bearerParsingSucceeded: false, reason: "missing_bearer", httpStatus: 401, serverTimestamp: new Date().toISOString() });
+      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: headerPresent, bearerParsingSucceeded: false, signature: "NOT_RUN", issuer: "NOT_RUN", audience: "NOT_RUN", expiration: "NOT_RUN", notBefore: "NOT_RUN", subjectLookup: "NOT_RUN", reason: "missing_bearer", httpStatus: 401 });
       return next();
     }
 
@@ -52,7 +52,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     try {
       claims = authTokenLib.verify(token);
     } catch (error) {
-      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), verifier: authTokenLib.configuration, ...(error?.details?.verification || {}), reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401, serverTimestamp: new Date().toISOString() });
+      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), ...(error?.details?.verification || {}), subjectLookup: error?.details?.reason === "subject_missing" ? "FAIL" : "NOT_RUN", reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401 });
       throw error;
     }
     req.auth = {
@@ -71,7 +71,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
       req.authz = authorizationResolver.resolveRole(req.auth);
     }
 
-    if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), verifier: authTokenLib.configuration, signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", reason: null, httpStatus: 200, serverTimestamp: new Date().toISOString() });
+    if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200 });
 
     return next();
   };
