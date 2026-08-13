@@ -170,11 +170,15 @@
       return { ok: false, reason: metadata.expiryState === "expired" ? "expired_token" : "invalid_token", auth: global.APP_AUTH };
     }
     try {
-      const res = await global.fetch(`${baseUrl}/api/auth/me`, {
-        headers: { authorization: `Bearer ${token}` },
-        cache: "no-store"
+      const canonicalClient = global.MaatApiClient;
+      const canonicalResult = canonicalClient?.request
+        ? await canonicalClient.request("/api/auth/me", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
+        : null;
+      if (canonicalResult && canonicalResult.diagnostics.backendReached === null) throw Object.assign(canonicalResult.error || new Error("auth_network_unavailable"), { code: "AUTH_UNAVAILABLE" });
+      const res = canonicalResult?.response || await global.fetch(`${baseUrl}/api/auth/me`, {
+        headers: { authorization: `Bearer ${token}` }, cache: "no-store"
       });
-      const payload = await res.json().catch(() => ({}));
+      const payload = canonicalResult ? (canonicalResult.payload || {}) : await res.json().catch(() => ({}));
       const user = payload?.user || payload?.data?.user;
       if (res.status === 401 || res.status === 403) {
         const error = new Error(payload?.error || "invalid_session");

@@ -9,10 +9,9 @@ import { createRouteCarousel } from "./route-carousel.js";
 const $=id=>document.getElementById(id), ui=Object.fromEntries(["activity","sessionState","syncState","distance","elapsed","moving","paused","currentPace","averagePace","gpsQuality","accepted","rejected","status","weak","start","pause","resume","finish","cancel","summary","recovery","goalProgress","goalLabel","goalCompleted","goalRemaining","goalPercent","goalBar"].map(id=>[id,$(id)]));
 const tracker=new BrowserLocationTracker(), recoveryStore=createRecoveryStore(), KEY=recoveryStore.SESSION_KEY;let session=null,timer=null,watchError=false,finishing=false,transientState="idle",lastQuality="",selectedPlannedRoute=null,lastTrailResults=[],pendingStart=null;
 const authRuntime=window.AuthStateRuntime;
-const authRestore=await authRuntime?.whenReady?.();
-const guardedAuth=authRuntime?.getCanonicalAuthState?.()||{};
-const routeGuardAuthenticated=Boolean(authRestore?.ok&&guardedAuth.isAuthenticated&&guardedAuth.token&&guardedAuth.user?.id);
-if(!routeGuardAuthenticated){location.replace(`/run-club-login.html?returnTo=${encodeURIComponent(location.pathname+location.search+location.hash)}`);throw new Error("Greatness authentication required");}
+const entryAuth=await window.GreatnessEntryAuth.guard();
+if(entryAuth.decision!=="ALLOW")throw new Error(entryAuth.decision==="WAIT"?"Greatness authentication validation unavailable":"Greatness authentication required");
+const routeGuardAuthenticated=true;
 function renderAuthConsistency(meStatus=200){const state=authRuntime.getCanonicalAuthState(),runtimeAuthenticated=state.isAuthenticated===true,tokenPresent=Boolean(state.token),memberResolved=Boolean(state.user?.id),clientAuthenticated=window.MaatApiClient?.isAuthenticated?.()===true,agreement=routeGuardAuthenticated&&runtimeAuthenticated&&tokenPresent&&meStatus===200&&memberResolved&&clientAuthenticated;const target=$("greatnessAuthConsistency");if(target)target.textContent=[`Route guard authenticated: ${routeGuardAuthenticated?"YES":"NO"}`,`AuthStateRuntime authenticated: ${runtimeAuthenticated?"YES":"NO"}`,`Canonical token present: ${tokenPresent?"YES":"NO"}`,`/api/auth/me: ${meStatus}`,`Current member ID resolved: ${memberResolved?"YES":"NO"}`,`Greatness API client authenticated: ${clientAuthenticated?"YES":"NO"}`,`Route guard/API agreement: ${agreement?"PASS":"FAIL"}`].join("\n");}
 queueMicrotask(()=>renderAuthConsistency());
 let goalRouteState;
