@@ -1,8 +1,20 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const source=fs.readFileSync(path.join(__dirname,"../public/api-client.js"),"utf8");
-function client(fetchImpl=async request=>new Response(JSON.stringify({ok:true}),{status:200,headers:{"content-type":"application/json"}})) { const window={location:{origin:"https://mufasafitsite.onrender.com",href:"https://mufasafitsite.onrender.com/dashboard.html"},RuntimeState:{getBackendOrigin:()=>"https://mufasa-fitness-node.onrender.com"},AuthStateRuntime:{getAuthToken:()=>"aaa.bbb.ccc"},fetch:fetchImpl};window.window=window;vm.runInNewContext(source,{window,globalThis:window,URL,Request,AbortController,setTimeout,clearTimeout,Object});return window.MaatApiClient; }
+function client(fetchImpl=async request=>new Response(JSON.stringify({ok:true}),{status:200,headers:{"content-type":"application/json"}})) { const window={location:{origin:"https://mufasafitsite.onrender.com",href:"https://mufasafitsite.onrender.com/dashboard.html"},RuntimeState:{getBackendOrigin:()=>"https://mufasa-fitness-node.onrender.com"},AuthStateRuntime:{getAuthToken:()=>"aaa.bbb.ccc"},fetch:fetchImpl};window.window=window;vm.runInNewContext(source,{window,globalThis:window,URL,Request,Headers,AbortController,setTimeout,clearTimeout,Object});return window.MaatApiClient; }
 test("canonical client resolves production API and sends bearer cross-origin with Safari-compatible omitted credentials",async()=>{let request;const result=await client(async r=>(request=r,new Response("{}",{status:200,headers:{"content-type":"application/json"}}))).request("/api/auth/me");assert.equal(request.url,"https://mufasa-fitness-node.onrender.com/api/auth/me");assert.equal(request.headers.get("authorization"),"Bearer aaa.bbb.ccc");assert.equal(request.credentials,"omit");assert.equal(result.diagnostics.crossOrigin,true);assert.equal(result.diagnostics.preflightRequired,true);assert.equal(result.diagnostics.backendReached,true);});
+for (const [description, headers] of [
+  ["plain object Authorization", { Authorization: "Bearer caller-token", "x-client": "object" }],
+  ["plain object lowercase authorization", { authorization: "Bearer caller-token", "x-client": "lowercase" }],
+  ["Headers instance", new Headers({ Authorization: "Bearer caller-token", "x-client": "headers" })],
+  ["no existing Authorization", { "x-client": "none" }]
+]) test(`canonical auth replaces ${description} and emits exactly one Authorization field`, async () => {
+  let outgoing;
+  await client(async request => (outgoing = request, new Response("{}", { status: 200 }))).request("/api/auth/me", { headers });
+  assert.equal(outgoing.headers.get("authorization"), "Bearer aaa.bbb.ccc");
+  assert.equal([...outgoing.headers.keys()].filter(name => name.toLowerCase() === "authorization").length, 1);
+  assert.equal(outgoing.headers.get("authorization").split(/,\s*Bearer\s+/i).length, 1);
+});
 test("history and admin diagnostics share canonical routing and distinguish HTTP auth",async()=>{const c=client(async()=>new Response(JSON.stringify({error:"denied"}),{status:403,headers:{"content-type":"application/json"}}));for(const route of ["/api/me/history","/api/admin/diagnostics/run-club/run"]){const result=await c.request(route,{method:route.includes("run-club")?"POST":"GET"});assert.equal(result.diagnostics.apiOrigin,"https://mufasa-fitness-node.onrender.com");assert.equal(result.diagnostics.failureClass,"authentication HTTP response");}});
 test("opaque Safari fetch rejection is safely classified without claiming backend or CORS knowledge",async()=>{const result=await client(async()=>{throw new TypeError("Load failed")}).request("/api/auth/me");assert.equal(result.diagnostics.dispatched,true);assert.equal(result.diagnostics.backendReached,null);assert.equal(result.diagnostics.failureClass,"unknown network");});
 const os=require("node:os");

@@ -52,6 +52,9 @@ test("production-equivalent login token immediately verifies and failures have e
   assert.equal(me.payload.authTrace.signingInputFingerprintsIdentical, true);
   assert.equal(me.payload.authTrace.algorithmConsistent, true);
   assert.equal(me.payload.authTrace.compactToken.algorithm, "HS256");
+  assert.equal(me.payload.authTrace.tokenHandoff.compactLength, token.length);
+  assert.equal(me.payload.authTrace.tokenHandoff.signatureLength, token.split(".")[2].length);
+  assert.equal(me.payload.authTrace.tokenHandoff.signatureSegmentSha256Prefix, login.payload.authTrace.issuedCompactToken.signatureFingerprint);
   assert.equal(me.payload.authTrace.compactToken.signingInputFingerprint.length, 12);
   assert.equal(me.payload.authTrace.rootCause, null);
   assert.equal(traces.find(item => item.event === "issuance").tokenFingerprint, fingerprintToken(token));
@@ -95,4 +98,11 @@ test("production-equivalent login token immediately verifies and failures have e
   assert.equal(mutated.payload.error.details.authTrace.fingerprintsIdentical, false);
   assert.equal(mutated.payload.error.details.authTrace.signingInputFingerprintsIdentical, true);
   assert.equal(mutated.payload.error.details.authTrace.failureStage, "signature_validation");
+
+  const multiple = await fetch(base + "/api/auth/me", { headers: { authorization: `Bearer ${token}, Bearer ${token}` } });
+  const multiplePayload = await multiple.json();
+  assert.equal(multiple.status, 401);
+  assert.equal(multiplePayload.error.details.reason, "multiple_bearer_credentials");
+  assert.equal(multiplePayload.error.details.authTrace.reason, "multiple_bearer_credentials");
+  assert.equal(multiplePayload.error.details.authTrace.signature, "NOT_RUN");
 });
