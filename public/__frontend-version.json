@@ -1,7 +1,7 @@
 {
-  "build": "2026-08-13-auth-debugger-v1",
+  "build": "2026-08-13-token-handoff-trace-v1",
   "commit": null,
-  "assetCacheToken": "20260813-auth-debugger-v1",
+  "assetCacheToken": "20260813-token-handoff-trace-v1",
   "timestamp": "2026-08-13T00:00:00Z",
   "shell": "public/index.html"
 }
