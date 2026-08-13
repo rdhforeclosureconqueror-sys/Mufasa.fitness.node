@@ -11,7 +11,9 @@ function readBearerToken(req) {
 
 function authContext(authTokenLib, authorizationResolver = null, options = {}) {
   const pilotBypass = options?.pilotBypass || null;
+  const trace = typeof options?.trace === "function" ? options.trace : null;
   return function attachAuthContext(req, _res, next) {
+    const headerPresent = Boolean(req.get("authorization"));
     const token = readBearerToken(req);
     if (!token) {
       if (pilotBypass?.enabled && pilotBypass?.runtimeAllowed === true) {
@@ -42,10 +44,17 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
           }
           : authorizationResolver.resolveRole(null);
       }
+      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: headerPresent, bearerParsingSucceeded: false, reason: "missing_bearer", httpStatus: 401, serverTimestamp: new Date().toISOString() });
       return next();
     }
 
-    const claims = authTokenLib.verify(token);
+    let claims;
+    try {
+      claims = authTokenLib.verify(token);
+    } catch (error) {
+      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), verifier: authTokenLib.configuration, ...(error?.details?.verification || {}), reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401, serverTimestamp: new Date().toISOString() });
+      throw error;
+    }
     req.auth = {
       userId: claims.sub,
       email: claims.email || null,
@@ -61,6 +70,8 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     if (authorizationResolver) {
       req.authz = authorizationResolver.resolveRole(req.auth);
     }
+
+    if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), verifier: authTokenLib.configuration, signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", reason: null, httpStatus: 200, serverTimestamp: new Date().toISOString() });
 
     return next();
   };

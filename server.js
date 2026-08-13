@@ -549,6 +549,9 @@ function createApp(options = {}) {
   const trustPolicy = summarizeTrustPolicy(trustPolicyConfig);
   const authTokenLib = createAuthTokenLib({
     secret: process.env.AUTH_TOKEN_SECRET || "dev-only-secret-change-me",
+    secretSource: process.env.AUTH_TOKEN_SECRET ? "AUTH_TOKEN_SECRET" : "development_fallback",
+    issuer: process.env.AUTH_TOKEN_ISSUER || "mufasa-fitness-node",
+    audience: process.env.AUTH_TOKEN_AUDIENCE || null,
     isRevokedJti: (jti) => tokenDenylist.isRevoked(jti),
     minSecretLength: Number(process.env.AUTH_TOKEN_MIN_SECRET_LENGTH || 16),
     maxTtlMs: Number(process.env.AUTH_TOKEN_MAX_TTL_MS || 1000 * 60 * 60 * 24 * 14),
@@ -618,7 +621,17 @@ function createApp(options = {}) {
     throw strictError;
   }
 
+  const issuedTokenFingerprints = new Map();
+  const authTrace = details => (options.logger || console).info("[auth-token-trace]", details);
+  function traceIssuance(result, requestId) {
+    issuedTokenFingerprints.set(result.fingerprint, Date.now());
+    authTrace({ event: "issuance", requestId, loginSucceeded: true, signer: authTokenLib.configuration, subjectClaimPresent: Boolean(result.claims.sub), roleClaimPresent: Boolean(result.claims.role), iatPresent: Number.isFinite(result.claims.iat), expPresent: Number.isFinite(result.claims.exp), expAfterIat: result.claims.exp > result.claims.iat, tokenFingerprint: result.fingerprint, serverTimestamp: new Date().toISOString() });
+  }
   app.use(authContext(authTokenLib, authorizationResolver, {
+    trace(details) {
+      if (details.tokenFingerprint) details.fingerprintMatchesIssuedToken = issuedTokenFingerprints.has(details.tokenFingerprint);
+      authTrace(details);
+    },
     pilotBypass: disableLoginForPilot
       ? {
         enabled: true,
@@ -1609,6 +1622,7 @@ function createApp(options = {}) {
         providerVerified: true,
         identityClass: "provider_verified"
       });
+      traceIssuance(token, requestId);
 
       console.info("[auth-login] success", { userId, emailNormalized: email || AUTH_SEED_USER.email, requestId });
       return res.status(200).json({
@@ -1638,6 +1652,7 @@ function createApp(options = {}) {
         providerVerified: true,
         identityClass: "provider_verified"
       });
+      traceIssuance(registeredToken, requestId);
       console.info("[auth-login] success", { userId: registeredUser.id, emailNormalized: registeredUser.email, requestId });
       return res.status(200).json({
         ok: true,
@@ -1670,6 +1685,7 @@ function createApp(options = {}) {
       providerVerified: true,
       identityClass: "provider_verified"
     });
+    traceIssuance(token, requestId);
 
     console.info("[auth-login] success", { userId: AUTH_SEED_USER.id, emailNormalized: AUTH_SEED_USER.email, requestId });
     return res.status(200).json({
@@ -1714,6 +1730,7 @@ function createApp(options = {}) {
       providerVerified: true,
       identityClass: "provider_verified"
     });
+    traceIssuance(token, req.requestId);
 
     return res.status(200).json({
       ok: true,
@@ -1730,6 +1747,8 @@ function createApp(options = {}) {
       ? AUTH_SEED_USER.role
       : (req.authz?.role || "user");
     const registeredIdentity = authCredentialStore.findByEmail(req.auth.email);
+    const memberFound = Boolean(req.auth.userId);
+    authTrace({ event: "member_lookup", requestId: req.requestId, tokenFingerprint: authTokenLib.fingerprintToken(req.get("authorization").replace(/^Bearer\s+/i, "")), subjectPresent: memberFound, memberLookup: memberFound ? "PASS" : "FAIL", memberDisabled: false, reason: memberFound ? null : "subject_missing", httpStatus: memberFound ? 200 : 401, serverTimestamp: new Date().toISOString() });
     const email = req.auth.email || AUTH_SEED_USER.email;
     const name = String(req.auth?.name || "").trim() || (email.includes("@") ? email.split("@")[0] : AUTH_SEED_USER.name);
     const roles = Array.from(new Set([role, ...(role === "super_admin" ? ["admin", "operator"] : []), ...(role === "admin" ? ["operator"] : [])]));
