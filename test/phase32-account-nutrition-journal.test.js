@@ -127,6 +127,7 @@ test("Phase 32 serving calculations and natural-language drafts require confirma
 test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves auth-wall behavior", async () => {
   const authStateJs = fs.readFileSync(path.join(__dirname, "..", "public", "auth-state-runtime.js"), "utf8");
   const nutritionJs = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition-runtime.js"), "utf8");
+  const validToken = (label) => `${Buffer.from("{}").toString("base64url")}.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, label })).toString("base64url")}.signature`;
 
   async function runNutritionRuntime({ stored = {}, appAuth = null, authMeOk = true, authMeStatus = null, authMeThrows = false } = {}) {
     const listeners = {};
@@ -200,42 +201,43 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
     return { requests, elements, stored, context };
   }
 
-  const canonical = await runNutritionRuntime({ stored: { maatAuthToken: "canonical-token" } });
+  const canonicalToken = validToken("canonical");
+  const canonical = await runNutritionRuntime({ stored: { maatAuthToken: canonicalToken } });
   assert.equal(canonical.requests[0].path, "https://mufasa-fitness-node.onrender.com/api/auth/me");
-  assert.equal(canonical.requests[0].options.headers.authorization, "Bearer canonical-token");
+  assert.equal(canonical.requests[0].options.headers.authorization, `Bearer ${canonicalToken}`);
   assert.equal(canonical.elements.get("journalShell").hidden, false);
   assert.equal(canonical.elements.get("authWall").hidden, true);
 
-  const legacyAuthToken = await runNutritionRuntime({ stored: { authToken: "legacy-auth-token" } });
-  assert.equal(legacyAuthToken.requests[0].options.headers.authorization, "Bearer legacy-auth-token");
-  assert.equal(legacyAuthToken.elements.get("journalShell").hidden, false);
-
-  const legacyPocketToken = await runNutritionRuntime({ stored: { pocket_pt_auth_token: "legacy-pocket-token" } });
-  assert.equal(legacyPocketToken.requests[0].options.headers.authorization, "Bearer legacy-pocket-token");
-  assert.equal(legacyPocketToken.elements.get("journalShell").hidden, false);
+  const retired = await runNutritionRuntime({ stored: { authToken: validToken("retired"), pocket_pt_auth_token: validToken("retired-pocket") } });
+  assert.equal(retired.requests.length, 0);
+  assert.equal(retired.elements.get("authWall").hidden, false);
 
   const missing = await runNutritionRuntime();
   assert.equal(missing.requests.length, 0);
   assert.equal(missing.elements.get("authWall").hidden, false);
   assert.equal(missing.elements.get("journalShell").hidden, true);
 
-  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: "invalid-token" }, authMeOk: false, authMeStatus: 401 });
-  assert.equal(invalid.requests[0].options.headers.authorization, "Bearer invalid-token");
+  const invalidToken = validToken("invalid-backend");
+  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: invalidToken }, authMeOk: false, authMeStatus: 401 });
+  assert.equal(invalid.requests[0].options.headers.authorization, `Bearer ${invalidToken}`);
   assert.equal(invalid.elements.get("authWall").hidden, false);
   assert.equal(invalid.elements.get("journalShell").hidden, true);
   assert.equal(invalid.stored.maatAuthToken, undefined);
 
-  const unavailable = await runNutritionRuntime({ stored: { maatAuthToken: "server-error-token" }, authMeOk: false, authMeStatus: 503 });
+  const unavailableToken = validToken("unavailable");
+  const unavailable = await runNutritionRuntime({ stored: { maatAuthToken: unavailableToken }, authMeOk: false, authMeStatus: 503 });
   assert.equal(unavailable.elements.get("authWall").hidden, true);
   assert.equal(unavailable.elements.get("journalShell").hidden, true);
   assert.equal(unavailable.elements.get("sessionStatus").hidden, false);
-  assert.equal(unavailable.stored.maatAuthToken, "server-error-token");
+  assert.equal(unavailable.stored.maatAuthToken, unavailableToken);
 
-  const networkError = await runNutritionRuntime({ stored: { maatAuthToken: "network-token" }, authMeThrows: true });
+  const networkToken = validToken("network");
+  const networkError = await runNutritionRuntime({ stored: { maatAuthToken: networkToken }, authMeThrows: true });
   assert.equal(networkError.elements.get("sessionStatus").hidden, false);
-  assert.equal(networkError.stored.maatAuthToken, "network-token");
+  assert.equal(networkError.stored.maatAuthToken, networkToken);
 
-  const logout = await runNutritionRuntime({ stored: { maatAuthToken: "logout-token" }, appAuth: { token: "logout-token", user: { userId: "nutrition_user" }, isAuthenticated: true } });
+  const logoutToken = validToken("logout");
+  const logout = await runNutritionRuntime({ stored: { maatAuthToken: logoutToken }, appAuth: { token: logoutToken, user: { userId: "nutrition_user" }, isAuthenticated: true } });
   logout.context.AuthStateRuntime.clearCanonicalAuthState("test_logout", { clearLastUser: true });
   assert.equal(logout.stored.maatAuthToken, undefined);
   assert.equal(logout.context.APP_AUTH.token, null);

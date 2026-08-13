@@ -40,6 +40,29 @@ test("invalid auth is cleared everywhere and logout removes canonical and retire
   assert.equal(invalid.sessionStorage.has("authToken"), false);
 });
 
+test("route readiness validates memory state with auth me and canonical logout clears identity", async () => {
+  const active = browser();
+  active.window.AuthStateRuntime.setCanonicalAuthState({ token, user: { id: "member-1", role: "member" } }, { reason: "login" });
+  const ready = await active.window.AuthStateRuntime.whenReady();
+  assert.equal(ready.ok, true);
+  assert.equal(active.window.AuthStateRuntime.getCanonicalAuthState().user.id, "admin-1");
+  await active.window.AuthStateRuntime.logout();
+  assert.equal(active.window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated, false);
+  assert.equal(active.localStorage.getItem("maatAuthToken"), null);
+});
+
+test("malformed and expired stored sessions are rejected without calling auth me", async () => {
+  let calls = 0;
+  const malformed = browser({ persisted: { maatAuthToken: "not-a-token" } });
+  malformed.window.fetch = async () => { calls += 1; throw new Error("must not fetch"); };
+  assert.equal((await malformed.window.AuthStateRuntime.whenReady()).reason, "invalid_token");
+  const expiredToken = `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from('{"exp":1}').toString('base64url')}.signature`;
+  const expired = browser({ persisted: { maatAuthToken: expiredToken } });
+  expired.window.fetch = async () => { calls += 1; throw new Error("must not fetch"); };
+  assert.equal((await expired.window.AuthStateRuntime.whenReady()).reason, "expired_token");
+  assert.equal(calls, 0);
+});
+
 test("dashboard and both diagnostics surfaces wait for canonical restoration and never use URL tokens", () => {
   const dashboard = fs.readFileSync(path.join(__dirname, "../public/dashboard.js"), "utf8");
   const health = fs.readFileSync(path.join(__dirname, "../public/dashboard.html"), "utf8");

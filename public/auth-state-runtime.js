@@ -7,6 +7,7 @@
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
   let restorePromise = null;
+  let backendValidatedToken = null;
 
   function normalizeToken(value) {
     if (typeof value !== "string") return null;
@@ -145,6 +146,7 @@
   }
 
   function clearCanonicalAuthState(reason = "clearCanonicalAuthState", options = {}) {
+    backendValidatedToken = null;
     const state = setCanonicalAuthState({ token: null, user: null }, { ...options, reason, clearLastUser: options.clearLastUser === true });
     // Remove retired aliases so logout/invalid-session cleanup is global, not page-specific.
     for (const storage of [global.localStorage, global.sessionStorage]) {
@@ -160,6 +162,12 @@
     if (!token) {
       clearCanonicalAuthState(`${reason}:missing_token`, { forceDispatch: options.forceDispatch === true });
       return { ok: false, reason: "missing_token", auth: global.APP_AUTH };
+    }
+    const metadata = tokenMetadata(token);
+    if (!metadata.validFormat || metadata.expiryState === "expired") {
+      ensureDebugState().lastRejectedTokenMetadata = metadata;
+      clearCanonicalAuthState(`${reason}:invalid_token`, { forceDispatch: options.forceDispatch === true, clearLastUser: true });
+      return { ok: false, reason: metadata.expiryState === "expired" ? "expired_token" : "invalid_token", auth: global.APP_AUTH };
     }
     try {
       const res = await global.fetch(`${baseUrl}/api/auth/me`, {
@@ -185,6 +193,7 @@
         throw error;
       }
       const auth = setCanonicalAuthState({ token, user }, { reason });
+      backendValidatedToken = normalizeToken(token);
       return { ok: true, token, user, auth };
     } catch (error) {
       const debug = ensureDebugState();
@@ -277,7 +286,8 @@
 
   function getSafeDiagnostics() {
     const state = getCanonicalAuthState();
-    const metadata = tokenMetadata(state.token || getStoredToken());
+    const currentToken = state.token || getStoredToken();
+    const metadata = currentToken ? tokenMetadata(currentToken) : (ensureDebugState().lastRejectedTokenMetadata || tokenMetadata(null));
     const roles = state.user?.roles || (state.user?.role ? [state.user.role] : []);
     return {
       authenticated: state.isAuthenticated === true,
@@ -323,8 +333,24 @@
   }
 
   function whenReady() {
-    if (getCanonicalAuthState().isAuthenticated) return Promise.resolve({ ok: true, auth: getCanonicalAuthState(), user: getCanonicalAuthState().user });
+    const state = getCanonicalAuthState();
+    if (state.isAuthenticated && state.token === backendValidatedToken) return Promise.resolve({ ok: true, auth: state, user: state.user });
     return restoreCanonicalAuthState();
+  }
+
+  async function logout(options = {}) {
+    const token = getCanonicalAuthState().token;
+    const baseUrl = options.baseUrl || global.RuntimeState?.getEndpoints?.().nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.MAAT_BACKEND_ORIGIN || global.MAAT_NODE_BASE_URL || global.location?.origin;
+    try {
+      if (token) await global.fetch(`${baseUrl}/api/auth/logout`, { method: "POST", headers: { authorization: `Bearer ${token}` }, cache: "no-store" });
+    } catch (_) {
+      // Local logout must complete even when the network is unavailable.
+    } finally {
+      clearCanonicalAuthState("logout", { forceDispatch: true, clearLastUser: true });
+      for (const key of ["APP_MEMBER", "APP_MEMBERSHIP", "APP_ROLES", "__MEMBER_READ_MODEL", "__AUTHENTICATED_READ_MODELS"]) global[key] = null;
+    }
+    if (options.redirectTo) global.location?.assign?.(options.redirectTo);
+    return { ok: true };
   }
 
   function installAuthStatusRefreshBridge() {
@@ -359,6 +385,7 @@
     getStoredToken,
     installAuthStatusRefreshBridge,
     isAuthUnavailable,
+    logout,
     postAuthenticatedJSON,
     persistCanonicalAuthState,
     refreshAuthStatus,
