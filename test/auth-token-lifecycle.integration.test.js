@@ -35,10 +35,25 @@ test("production-equivalent login token immediately verifies and failures have e
   assert.equal(login.payload.authTrace.tokenFingerprint, fingerprintToken(token));
   assert.equal(login.payload.authTrace.keyFingerprint.length, 12);
   assert.equal(login.payload.authTrace.requestId, login.response.headers.get("x-request-id"));
+  assert.equal(login.payload.authTrace.immediateSelfVerification, "PASS");
+  assert.equal(login.payload.authTrace.issuedTokenFingerprint, fingerprintToken(token));
+  assert.equal(login.payload.authTrace.selfVerifiedTokenFingerprint, fingerprintToken(token));
+  assert.equal(login.payload.authTrace.signerKeyMaterial.fingerprint, login.payload.authTrace.verifierKeyMaterial.fingerprint);
+  assert.equal(login.payload.authTrace.signerKeyMaterial.byteLength, Buffer.byteLength(SECRET));
+  assert.equal(login.payload.authTrace.signerKeyMaterial.effectiveType, "Buffer");
+  assert.equal(login.payload.authTrace.signerKeyMaterial.source, "AUTH_TOKEN_SECRET");
+  assert.equal(login.payload.authTrace.signerKeyMaterial.decodingOccurred, false);
   const me = await jsonRequest(base, "/api/auth/me", { token });
   assert.equal(me.response.status, 200);
   assert.equal(me.payload.user.id, login.payload.user.id);
   assert.equal(me.payload.user.email, login.payload.user.email);
+  assert.equal(me.payload.authTrace.receivedTokenFingerprint, fingerprintToken(token));
+  assert.equal(me.payload.authTrace.fingerprintsIdentical, true);
+  assert.equal(me.payload.authTrace.signingInputFingerprintsIdentical, true);
+  assert.equal(me.payload.authTrace.algorithmConsistent, true);
+  assert.equal(me.payload.authTrace.compactToken.algorithm, "HS256");
+  assert.equal(me.payload.authTrace.compactToken.signingInputFingerprint.length, 12);
+  assert.equal(me.payload.authTrace.rootCause, null);
   assert.equal(traces.find(item => item.event === "issuance").tokenFingerprint, fingerprintToken(token));
   const issuanceTrace = traces.find(item => item.event === "issuance");
   const verificationTrace = traces.find(item => item.event === "verification" && item.httpStatus === 200);
@@ -71,4 +86,13 @@ test("production-equivalent login token immediately verifies and failures have e
     assert.equal(result.payload.error.details.authTrace.requestId, result.response.headers.get("x-request-id"));
     assert.equal(result.payload.error.details.authTrace.keyFingerprint.length, 12);
   }
+
+  const parts = token.split(".");
+  parts[2] = `${parts[2].slice(0, -1)}${parts[2].endsWith("A") ? "B" : "A"}`;
+  const mutated = await jsonRequest(base, "/api/auth/me", { token: parts.join(".") });
+  assert.equal(mutated.response.status, 401);
+  assert.equal(mutated.payload.error.details.authTrace.rootCause, "TOKEN_MUTATED_BETWEEN_LOGIN_AND_VERIFICATION");
+  assert.equal(mutated.payload.error.details.authTrace.fingerprintsIdentical, false);
+  assert.equal(mutated.payload.error.details.authTrace.signingInputFingerprintsIdentical, true);
+  assert.equal(mutated.payload.error.details.authTrace.failureStage, "signature_validation");
 });

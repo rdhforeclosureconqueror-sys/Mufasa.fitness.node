@@ -7,7 +7,7 @@ const safeReturnTo = value => {
   return target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : destination;
 };
 const returnTo = safeReturnTo(new URLSearchParams(location.search).get("returnTo"));
-const FRONTEND_BUILD = "2026-08-13-auth-debugger-v1";
+const FRONTEND_BUILD = "2026-08-13-jwt-self-verification-v2";
 const ids = ["joinTab", "signInTab", "form-title", "form-copy", "runClubAuthForm", "nameField", "name", "email", "password", "submitButton", "status", "authDebugger", "authDebugTrace", "copyAuthTrace", "copyAuthStatus"];
 const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 let mode = "register";
@@ -124,6 +124,22 @@ el.runClubAuthForm.onsubmit = async event => {
         "issuer expected vs received": `${value(meTrace.issuerExpected)} vs ${value(meTrace.issuerReceived || claims.iss)}`,
         "audience expected vs received": `${value(meTrace.audienceExpected)} vs ${value(meTrace.audienceReceived || claims.aud)}`,
         "signature validation result": meTrace.signature, "expiry validation result": meTrace.expiration,
+        "immediate post-issuance self-verification": loginTrace.immediateSelfVerification,
+        "issued compact-token fingerprint": loginTrace.issuedTokenFingerprint,
+        "/api/auth/me received compact-token fingerprint": meTrace.receivedTokenFingerprint,
+        "all compact-token fingerprints identical": yesNo(meTrace.fingerprintsIdentical),
+        "signing-input fingerprints identical": yesNo(meTrace.signingInputFingerprintsIdentical),
+        "JWT algorithm issuance / verification / consistent": `${value(loginTrace.issuedCompactToken?.algorithm)} / ${value(meTrace.compactToken?.algorithm)} / ${yesNo(meTrace.algorithmConsistent)}`,
+        "encoded header/payload/signature SHA-256 prefixes": `${value(meTrace.compactToken?.encodedHeaderFingerprint)} / ${value(meTrace.compactToken?.encodedPayloadFingerprint)} / ${value(meTrace.compactToken?.signatureFingerprint)}`,
+        "signing-input SHA-256 prefix": meTrace.compactToken?.signingInputFingerprint,
+        "exact effective signer key fingerprint / bytes / type": `${value(meTrace.signerKeyMaterial?.fingerprint)} / ${value(meTrace.signerKeyMaterial?.byteLength)} / ${value(meTrace.signerKeyMaterial?.effectiveType)}`,
+        "exact effective verifier key fingerprint / bytes / type": `${value(meTrace.verifierKeyMaterial?.fingerprint)} / ${value(meTrace.verifierKeyMaterial?.byteLength)} / ${value(meTrace.verifierKeyMaterial?.effectiveType)}`,
+        "signer key transformations / source": `trim=${yesNo(meTrace.signerKeyMaterial?.trimmingOccurred)} decode=${yesNo(meTrace.signerKeyMaterial?.decodingOccurred)} base64=${yesNo(meTrace.signerKeyMaterial?.base64ConversionOccurred)} source=${value(meTrace.signerKeyMaterial?.source)} input=${value(meTrace.signerKeyMaterial?.inputType)}`,
+        "verifier key transformations / source": `trim=${yesNo(meTrace.verifierKeyMaterial?.trimmingOccurred)} decode=${yesNo(meTrace.verifierKeyMaterial?.decodingOccurred)} base64=${yesNo(meTrace.verifierKeyMaterial?.base64ConversionOccurred)} source=${value(meTrace.verifierKeyMaterial?.source)} input=${value(meTrace.verifierKeyMaterial?.inputType)}`,
+        "signer/verifier JWT library": `${value(meTrace.signerLibrary)} / ${value(meTrace.verifierLibrary)}`,
+        "issuer/audience rules identical": `${yesNo(meTrace.issuerRulesIdentical)} / ${yesNo(meTrace.audienceRulesIdentical)}`,
+        "exact internal failure stage": meTrace.failureStage,
+        "proven root cause": meTrace.rootCause,
         "subject/member lookup result": meTrace.subjectLookup, "login request/correlation ID": loginRequestId,
         "/api/auth/me request/correlation ID": diagnostics.requestId || meTrace.requestId,
         "same backend instance/build": yesNo(sameBackend), "signer/verifier fingerprints match": yesNo(keysMatch),
