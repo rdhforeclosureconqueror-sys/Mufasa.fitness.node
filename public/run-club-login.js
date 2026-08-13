@@ -7,7 +7,7 @@ const safeReturnTo = value => {
   return target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : destination;
 };
 const returnTo = safeReturnTo(new URLSearchParams(location.search).get("returnTo"));
-const FRONTEND_BUILD = "2026-08-13-token-mutation-checkpoints-v2";
+const FRONTEND_BUILD = "2026-08-13-authorization-header-canonicalization-v1";
 const ids = ["joinTab", "signInTab", "form-title", "form-copy", "runClubAuthForm", "nameField", "name", "email", "password", "submitButton", "status", "authDebugger", "authDebugTrace", "copyAuthTrace", "copyAuthStatus"];
 const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 let mode = "register";

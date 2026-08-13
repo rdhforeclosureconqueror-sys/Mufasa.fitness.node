@@ -1,7 +1,7 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const source=fs.readFileSync(path.join(__dirname,"../public/greatness-entry-auth.js"),"utf8");
-const VERSION="20260813-token-mutation-checkpoints-v2";
+const VERSION="20260813-authorization-header-canonicalization-v1";
 function harness({result={ok:true,diagnostics:{url:"https://api.example/api/auth/me",dispatched:true,backendReached:true,status:200}},auth={isAuthenticated:true,token:"redacted",user:{id:"member-1"}},versions=true}={}){
  const redirects=[],store=new Map(),nodes={greatnessEntryAuthDiagnostics:{textContent:""},greatnessSessionRestore:{hidden:false,querySelector:()=>({textContent:""})}};
  const diagnostics=()=>({credentialPresent:Boolean(auth.token),tokenFormatValid:Boolean(auth.token),expiryState:auth.token?"valid":"unavailable"});

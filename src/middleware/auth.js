@@ -28,6 +28,11 @@ function readBearerToken(req) {
   return token.trim();
 }
 
+function hasMultipleBearerCredentials(value) {
+  const authorization = typeof value === "string" ? value : "";
+  return authorization.includes(",") || (authorization.match(/\bbearer\s+/ig) || []).length > 1;
+}
+
 function authContext(authTokenLib, authorizationResolver = null, options = {}) {
   const pilotBypass = options?.pilotBypass || null;
   const trace = typeof options?.trace === "function" ? options.trace : null;
@@ -37,6 +42,12 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     const bearerAfterPrefixRemoval = authorization.replace(/^Bearer /i, "");
     const backendTokenHandoff = headerPresent && req.path === "/api/auth/me" ? tokenHandoffDiagnostics(bearerAfterPrefixRemoval) : null;
     if (backendTokenHandoff) trace?.({ event: "token_handoff", requestId: req.requestId, tokenHandoff: backendTokenHandoff });
+    if (hasMultipleBearerCredentials(authorization)) {
+      const reason = "multiple_bearer_credentials";
+      const authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: false, tokenHandoff: backendTokenHandoff, signature: "NOT_RUN", issuer: "NOT_RUN", audience: "NOT_RUN", expiration: "NOT_RUN", notBefore: "NOT_RUN", subjectLookup: "NOT_RUN", reason, httpStatus: 401 };
+      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, ...authTrace });
+      throw new ApiError("UNAUTHENTICATED", "Authentication required", 401, { reason, ...(req.path === "/api/auth/me" ? { authTrace: options.publicTrace?.(authTrace, req) || authTrace } : {}) });
+    }
     const token = readBearerToken(req);
     if (!token) {
       if (pilotBypass?.enabled && pilotBypass?.runtimeAllowed === true) {
@@ -102,7 +113,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     }
 
     if (req.path === "/api/auth/me") {
-      req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), receivedCompact: authTokenLib.compactDiagnostics(token), verifierKeyMaterial: authTokenLib.configuration.keyMaterial, verifierLibrary: authTokenLib.configuration.library, failureStage: null, signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200, issuerExpected: authTokenLib.configuration.issuer, issuerReceived: claims.iss ?? null, audienceExpected: authTokenLib.configuration.audience, audienceReceived: claims.aud ?? null };
+      req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenHandoff: backendTokenHandoff, tokenFingerprint: authTokenLib.fingerprintToken(token), receivedCompact: authTokenLib.compactDiagnostics(token), verifierKeyMaterial: authTokenLib.configuration.keyMaterial, verifierLibrary: authTokenLib.configuration.library, failureStage: null, signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200, issuerExpected: authTokenLib.configuration.issuer, issuerReceived: claims.iss ?? null, audienceExpected: authTokenLib.configuration.audience, audienceReceived: claims.aud ?? null };
       trace?.({ event: "verification", requestId: req.requestId, ...req.authTrace });
     }
 
