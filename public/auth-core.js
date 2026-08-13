@@ -158,7 +158,7 @@
         if (returnPath) window.location.assign(returnPath);
         return { ok: true, token, user };
       } catch (error) {
-        window.AuthStateRuntime?.clearCanonicalAuthState?.("auth-core:submitAuthRequest_failed");
+        // A failed request is not evidence that an existing canonical session is invalid.
         updateAuthStepStatus("failed", error?.message || "unknown_error");
         authDebugState.lastAuthError = error?.message || String(error || "unknown_error");
         console.error("[AUTH_SUBMIT] failed", error);

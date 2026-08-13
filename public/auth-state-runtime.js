@@ -2,10 +2,11 @@
   "use strict";
 
   const global = globalScope || window;
-  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-redirect-trace-v1" });
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-token-lifecycle-v1" });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
+  const LIFECYCLE_KEY = "maat.loginToGreatnessTokenLifecycle.v1";
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
   let restorePromise = null;
   let backendValidatedToken = null;
@@ -28,6 +29,24 @@
       } catch (_) {}
     }
     return { validFormat, expiresAt, expiryState: !expiresAt ? "unavailable" : (Date.parse(expiresAt) <= Date.now() ? "expired" : "valid") };
+  }
+
+  function readLifecycle() {
+    try { return JSON.parse(global.sessionStorage?.getItem(LIFECYCLE_KEY) || "{}"); } catch (_) { return {}; }
+  }
+
+  function recordLifecycle(values = {}) {
+    const lifecycle = { ...readLifecycle(), ...values, updatedAt: new Date().toISOString() };
+    try { global.sessionStorage?.setItem(LIFECYCLE_KEY, JSON.stringify(lifecycle)); } catch (_) {}
+    return lifecycle;
+  }
+
+  function recordCheckpoint(name, values = {}) {
+    const lifecycle = readLifecycle();
+    lifecycle.checkpoints = { ...(lifecycle.checkpoints || {}), [name]: { timestamp: new Date().toISOString(), pathname: global.location?.pathname || "unknown", frontendOrigin: global.location?.origin || "unknown", ...values } };
+    lifecycle.updatedAt = new Date().toISOString();
+    try { global.sessionStorage?.setItem(LIFECYCLE_KEY, JSON.stringify(lifecycle)); } catch (_) {}
+    return lifecycle.checkpoints[name];
   }
 
   function ensureDebugState() {
@@ -147,6 +166,10 @@
   }
 
   function clearCanonicalAuthState(reason = "clearCanonicalAuthState", options = {}) {
+    const tokenWasPresent = Boolean(global.APP_AUTH?.token || getStoredToken());
+    const lastStatus = options.httpStatus ?? ensureDebugState().lastMeDiagnostics?.status ?? null;
+    const deletion = { timestamp: new Date().toISOString(), file: options.file || "public/auth-state-runtime.js", function: options.function || "clearCanonicalAuthState", reasonCode: reason, pathname: global.location?.pathname || "unknown", relativeToAuthMe: lastStatus === null ? "before_or_without_auth_me" : "after_auth_me", triggeringHttpStatus: lastStatus, tokenWasPresent };
+    if (tokenWasPresent) recordLifecycle({ tokenClearedBy: `${deletion.file}/${deletion.function}/${deletion.reasonCode}`, lastTokenDeletion: deletion });
     backendValidatedToken = null;
     const state = setCanonicalAuthState({ token: null, user: null }, { ...options, reason, clearLastUser: options.clearLastUser === true });
     // Remove retired aliases so logout/invalid-session cleanup is global, not page-specific.
@@ -167,10 +190,15 @@
     const metadata = tokenMetadata(token);
     if (!metadata.validFormat || metadata.expiryState === "expired") {
       ensureDebugState().lastRejectedTokenMetadata = metadata;
-      clearCanonicalAuthState(`${reason}:invalid_token`, { forceDispatch: options.forceDispatch === true, clearLastUser: true });
+      clearCanonicalAuthState(`${reason}:invalid_token`, { forceDispatch: options.forceDispatch === true, clearLastUser: true, file: "public/auth-state-runtime.js", function: "refreshAuthStatus" });
       return { ok: false, reason: metadata.expiryState === "expired" ? "expired_token" : "invalid_token", auth: global.APP_AUTH };
     }
     try {
+      const onGreatness = global.location?.pathname === "/greatness.html";
+      if (onGreatness) {
+        recordCheckpoint("GREATNESS_CHECKPOINT_2", { canonicalTokenPresent: Boolean(token), authenticatedState: getCanonicalAuthState().isAuthenticated === true, authorizationHeaderAttached: Boolean(token), bearerPrefixCorrect: Boolean(token), tokenFormatValid: metadata.validFormat, requestUrl: global.MaatApiClient?.resolve?.("/api/auth/me") || `${baseUrl}/api/auth/me` });
+        recordLifecycle({ greatnessRequestAuthorizationAttached: Boolean(token) });
+      }
       const canonicalClient = global.MaatApiClient;
       const canonicalResult = canonicalClient?.request
         ? await canonicalClient.request("/api/auth/me", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
@@ -205,6 +233,10 @@
       }
       const auth = setCanonicalAuthState({ token, user }, { reason });
       backendValidatedToken = normalizeToken(token);
+      if (onGreatness) {
+        recordCheckpoint("GREATNESS_CHECKPOINT_3", { httpStatus: res.status, tokenPresentBeforeCleanup: true, tokenPresentAfterCleanup: Boolean(getStoredToken()), cleanupReason: "NONE" });
+        recordLifecycle({ greatnessMeStatus: res.status });
+      }
       return { ok: true, token, user, auth, diagnostics: authDiagnostics };
     } catch (error) {
       const debug = ensureDebugState();
@@ -212,11 +244,20 @@
       const status = Number(error?.status || 0);
       const invalidSession = status === 401;
       if (invalidSession) {
-        clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true });
+        const beforeCleanup = Boolean(getStoredToken());
+        clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true, httpStatus: 401, file: "public/auth-state-runtime.js", function: "refreshAuthStatus" });
+        if (global.location?.pathname === "/greatness.html") {
+          recordCheckpoint("GREATNESS_CHECKPOINT_3", { httpStatus: 401, tokenPresentBeforeCleanup: beforeCleanup, tokenPresentAfterCleanup: Boolean(getStoredToken()), cleanupReason: `${reason}:invalid_session` });
+          recordLifecycle({ greatnessMeStatus: 401 });
+        }
         if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh failed", error);
         return { ok: false, reason: "invalid_session", error, auth: global.APP_AUTH };
       }
       if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh unavailable", error);
+      if (global.location?.pathname === "/greatness.html") {
+        recordCheckpoint("GREATNESS_CHECKPOINT_3", { httpStatus: status || null, tokenPresentBeforeCleanup: Boolean(getStoredToken()), tokenPresentAfterCleanup: Boolean(getStoredToken()), cleanupReason: "NONE" });
+        recordLifecycle({ greatnessMeStatus: status || null });
+      }
       return { ok: false, reason: "auth_unavailable", error, auth: global.APP_AUTH, diagnostics: error?.authDiagnostics || null };
     }
   }
@@ -387,6 +428,7 @@
   global.AuthStateRuntime = {
     TOKEN_STORAGE_KEY,
     ORIGIN_STORAGE_KEY,
+    LIFECYCLE_KEY,
     RETIRED_STORAGE_KEYS,
     clearCanonicalAuthState,
     ensureDebugState,
@@ -394,6 +436,11 @@
     getCanonicalAuthState,
     getSafeDiagnostics,
     getStoredToken,
+    normalizeToken,
+    tokenMetadata,
+    readLifecycle,
+    recordLifecycle,
+    recordCheckpoint,
     installAuthStatusRefreshBridge,
     isAuthUnavailable,
     logout,
