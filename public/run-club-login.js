@@ -7,9 +7,36 @@ const safeReturnTo = value => {
   return target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : destination;
 };
 const returnTo = safeReturnTo(new URLSearchParams(location.search).get("returnTo"));
-const ids = ["joinTab", "signInTab", "form-title", "form-copy", "runClubAuthForm", "nameField", "name", "email", "password", "submitButton", "status"];
+const FRONTEND_BUILD = "2026-08-13-auth-debugger-v1";
+const ids = ["joinTab", "signInTab", "form-title", "form-copy", "runClubAuthForm", "nameField", "name", "email", "password", "submitButton", "status", "authDebugger", "authDebugTrace", "copyAuthTrace", "copyAuthStatus"];
 const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 let mode = "register";
+let redactedTraceText = "";
+
+const yesNo = value => value === true ? "YES" : value === false ? "NO" : "UNKNOWN";
+const value = input => input === null || input === undefined || input === "" ? "NOT_AVAILABLE" : String(input);
+async function fingerprint(token) {
+  if (!token || !globalThis.crypto?.subtle) return null;
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 12);
+}
+function safeClaims(token) {
+  try {
+    const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const claims = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
+    return { iss: claims.iss ?? null, aud: claims.aud ?? null, iat: Number.isFinite(Number(claims.iat)) ? Number(claims.iat) : null, exp: Number.isFinite(Number(claims.exp)) ? Number(claims.exp) : null };
+  } catch (_) { return { iss: null, aud: null, iat: null, exp: null }; }
+}
+function renderAuthTrace(trace) {
+  const lines = Object.entries(trace).map(([label, entry]) => `${label}: ${value(entry)}`);
+  redactedTraceText = ["REDACTED LOGIN AUTH TRACE", ...lines, "Safety: JWT/password/Authorization/account identity omitted"].join("\n");
+  el.authDebugTrace.textContent = redactedTraceText;
+  el.authDebugger.hidden = false;
+}
+el.copyAuthTrace.onclick = async () => {
+  try { await navigator.clipboard.writeText(redactedTraceText); el.copyAuthStatus.textContent = "Redacted auth trace copied."; }
+  catch (_) { el.authDebugTrace.focus(); el.copyAuthStatus.textContent = "Press and hold the trace, then choose Copy."; }
+};
 
 function checkpoint(name, values) { window.AuthStateRuntime?.recordCheckpoint?.(name, values); }
 function lifecycle(values) { window.AuthStateRuntime?.recordLifecycle?.(values); }
@@ -48,6 +75,7 @@ el.runClubAuthForm.onsubmit = async event => {
     if (mode === "register") Object.assign(body, { name: el.name.value.trim(), entryContext: "run_club" });
     const response = await fetch(`${backendOrigin()}/api/auth/${mode === "register" ? "register" : "login"}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const payload = await response.json().catch(() => ({}));
+    const loginRequestId = response.headers.get("x-request-id") || payload?.authTrace?.requestId || null;
     const returnedToken = payload?.token;
     const normalizedToken = runtime.normalizeToken(returnedToken);
     const metadata = runtime.tokenMetadata(normalizedToken);
@@ -65,13 +93,47 @@ el.runClubAuthForm.onsubmit = async event => {
     checkpoint("LOGIN_CHECKPOINT_2", { tokenPersisted: Boolean(persisted.ok), persistenceReadBack: persistence, persistedTokenLength: readBack?.length || 0 });
     if (!readBackMatches) throw new Error("Authentication could not be restored on this device: storage verification failed");
 
-    const validation = await runtime.refreshAuthStatus({ token: normalizedToken, reason: "run-club-auth:login-page-validation" });
+    const validation = await runtime.refreshAuthStatus({ token: normalizedToken, reason: "run-club-auth:login-page-validation", preserveTokenOn401: true });
     const diagnostics = validation.diagnostics || validation.error?.authDiagnostics || runtime.ensureDebugState().lastMeDiagnostics || {};
     const status = diagnostics.status ?? null;
     const identityResolved = Boolean(validation.ok && validation.user?.id);
     lifecycle({ loginPageMeDispatched: diagnostics.dispatched === true, loginPageMeStatus: status, loginPageAuthorizationAttached: true, loginPageBearerPrefixCorrect: true, loginPageTokenFormatValid: metadata.validFormat, identityResolved, beforeNavigationTokenPresent: Boolean(runtime.getStoredToken()), navigationAllowed: identityResolved && status === 200 });
     checkpoint("LOGIN_CHECKPOINT_3", { httpStatus: status, requestDispatched: diagnostics.dispatched === true, authorizationHeaderAttached: true, bearerPrefixCorrect: true, tokenFormatValid: metadata.validFormat, identityResolved });
-    if (!identityResolved || status !== 200) throw new Error(status === 401 ? "The issued session was rejected. Please sign in again." : "Your session could not be verified. Please try again.");
+    if (!identityResolved || status !== 200) {
+      const beforeCleanup = Boolean(runtime.getStoredToken());
+      const claims = safeClaims(normalizedToken);
+      const loginTrace = payload?.authTrace || {};
+      const meTrace = diagnostics.authTrace || validation.error?.details?.authTrace || {};
+      const browserTime = new Date();
+      const serverTime = Date.parse(meTrace.serverTimestamp || loginTrace.serverTimestamp || "");
+      const tokenFingerprint = await fingerprint(normalizedToken);
+      const sameBackend = loginTrace.instance && meTrace.instance ? loginTrace.instance === meTrace.instance && loginTrace.build === meTrace.build : null;
+      const keysMatch = loginTrace.keyFingerprint && meTrace.keyFingerprint ? loginTrace.keyFingerprint === meTrace.keyFingerprint : null;
+      const capturedTrace = {
+        "frontend build/version": FRONTEND_BUILD, "backend resolved URL": backendOrigin(),
+        "login HTTP status": response.status, "login response token present": yesNo(Boolean(returnedToken)),
+        "token structural format valid": yesNo(metadata.validFormat), "token fingerprint SHA-256 prefix": tokenFingerprint,
+        "token iss": claims.iss, "token aud": claims.aud, "token iat timestamp": claims.iat ? new Date(claims.iat).toISOString() : null,
+        "token exp timestamp": claims.exp ? new Date(claims.exp).toISOString() : null, "browser time": browserTime.toISOString(),
+        "calculated clock difference ms (browser - backend)": Number.isFinite(serverTime) ? browserTime.getTime() - serverTime : null,
+        "persistence write result": persisted.ok ? "PASS" : "FAIL", "persistence read-back result": persistence,
+        "token present immediately before /api/auth/me": yesNo(true), "Authorization header attached": yesNo(meTrace.authorizationHeaderPresent ?? (diagnostics.dispatched === true)),
+        "/api/auth/me HTTP status": status, "backend authentication reason code": meTrace.reason || validation.reason,
+        "backend instance identifier": meTrace.instance, "backend build/deployment identifier": `${value(meTrace.build)} / ${value(meTrace.deployment)}`,
+        "verifier key fingerprint SHA-256 prefix": meTrace.keyFingerprint, "signer key fingerprint SHA-256 prefix": loginTrace.keyFingerprint,
+        "issuer expected vs received": `${value(meTrace.issuerExpected)} vs ${value(meTrace.issuerReceived || claims.iss)}`,
+        "audience expected vs received": `${value(meTrace.audienceExpected)} vs ${value(meTrace.audienceReceived || claims.aud)}`,
+        "signature validation result": meTrace.signature, "expiry validation result": meTrace.expiration,
+        "subject/member lookup result": meTrace.subjectLookup, "login request/correlation ID": loginRequestId,
+        "/api/auth/me request/correlation ID": diagnostics.requestId || meTrace.requestId,
+        "same backend instance/build": yesNo(sameBackend), "signer/verifier fingerprints match": yesNo(keysMatch),
+        "token state immediately before cleanup": yesNo(beforeCleanup)
+      };
+      runtime.clearCanonicalAuthState("run-club-auth:debugger-captured-rejection", { httpStatus: status, clearLastUser: true });
+      capturedTrace["token state immediately after cleanup"] = yesNo(Boolean(runtime.getStoredToken()));
+      renderAuthTrace(capturedTrace);
+      throw new Error(status === 401 ? "The issued session was rejected. Please sign in again." : "Your session could not be verified. Please try again.");
+    }
     checkpoint("LOGIN_CHECKPOINT_4", { canonicalTokenPresent: Boolean(runtime.getStoredToken()), navigationAllowed: true });
     location.assign(returnTo);
   } catch (error) {

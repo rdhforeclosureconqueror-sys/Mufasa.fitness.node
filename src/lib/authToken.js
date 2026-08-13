@@ -44,7 +44,7 @@ function createAuthTokenLib({
   }
 
   function verify(token) {
-    const stages = { signature: "FAIL", issuer: "FAIL", audience: "FAIL", expiration: "FAIL", notBefore: "FAIL" };
+    const stages = { signature: "FAIL", issuer: "FAIL", audience: "FAIL", expiration: "FAIL", notBefore: "FAIL", issuerExpected: issuer, issuerReceived: null, audienceExpected: audience, audienceReceived: null };
     const parts = String(token || "").split(".");
     if (parts.length !== 3 || parts.some(part => !part)) authFailure("malformed_token", "Invalid auth token", stages);
     const [encodedHeader, encodedPayload, signature] = parts;
@@ -53,6 +53,8 @@ function createAuthTokenLib({
     try {
       header = JSON.parse(decode(encodedHeader));
       payload = JSON.parse(decode(encodedPayload));
+      stages.issuerReceived = payload?.iss ?? null;
+      stages.audienceReceived = payload?.aud ?? null;
     } catch {
       authFailure("malformed_token", "Invalid auth token payload", stages);
     }

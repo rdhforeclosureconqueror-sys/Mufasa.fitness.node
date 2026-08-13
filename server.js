@@ -122,7 +122,7 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-07-31-launch-readiness";
+const APP_BUILD_VERSION = "2026-08-13-auth-debugger-v1";
 const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const safeCommit = value => /^[a-f0-9]{7,40}$/i.test(String(value || "")) ? String(value) : null;
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
@@ -646,7 +646,25 @@ function createApp(options = {}) {
     issuedTokenFingerprints.set(result.fingerprint, Date.now());
     authTrace({ event: "issuance", endpoint, requestId, result: "PASS", httpStatus: 200, reason: null, loginSucceeded: endpoint === "/api/auth/login", authConfiguration: authTraceConfiguration, subjectClaimPresent: Boolean(result.claims.sub), roleClaimPresent: Boolean(result.claims.role), iatPresent: Number.isFinite(result.claims.iat), expPresent: Number.isFinite(result.claims.exp), expAfterIat: result.claims.exp > result.claims.iat, tokenFingerprint: result.fingerprint });
   }
+  function publicAuthTrace(details = {}, requestId = null) {
+    return {
+      instance: authRuntimeIdentity.instance, build: authRuntimeIdentity.build,
+      deployment: authRuntimeIdentity.deployment, requestId,
+      serverTimestamp: new Date().toISOString(),
+      keyFingerprint: authTraceConfiguration.keyFingerprint,
+      issuerExpected: details.issuerExpected ?? authTraceConfiguration.issuer,
+      issuerReceived: details.issuerReceived ?? null,
+      audienceExpected: details.audienceExpected ?? authTokenLib.configuration.audience,
+      audienceReceived: details.audienceReceived ?? null,
+      tokenFingerprint: details.tokenFingerprint ?? null,
+      authorizationHeaderPresent: details.authorizationHeaderPresent ?? null,
+      signature: details.signature ?? "NOT_RUN", issuer: details.issuer ?? "NOT_RUN",
+      audience: details.audience ?? "NOT_RUN", expiration: details.expiration ?? "NOT_RUN",
+      subjectLookup: details.subjectLookup ?? "NOT_RUN", reason: details.reason ?? null
+    };
+  }
   app.use(authContext(authTokenLib, authorizationResolver, {
+    publicTrace: (details, req) => publicAuthTrace(details, req.requestId),
     trace(details) {
       authTrace({
         endpoint: "/api/auth/me",
@@ -1654,6 +1672,7 @@ function createApp(options = {}) {
       return res.status(200).json({
         ok: true,
         token: token.token,
+        authTrace: publicAuthTrace({ tokenFingerprint: token.fingerprint, issuerReceived: token.claims.iss, audienceReceived: token.claims.aud ?? null, signature: "PASS" }, requestId),
         jti: token.jti,
         expiresAt: token.expiresAt,
         user: {
@@ -1683,6 +1702,7 @@ function createApp(options = {}) {
       return res.status(200).json({
         ok: true,
         token: registeredToken.token,
+        authTrace: publicAuthTrace({ tokenFingerprint: registeredToken.fingerprint, issuerReceived: registeredToken.claims.iss, audienceReceived: registeredToken.claims.aud ?? null, signature: "PASS" }, requestId),
         jti: registeredToken.jti,
         expiresAt: registeredToken.expiresAt,
         user: {
@@ -1717,6 +1737,7 @@ function createApp(options = {}) {
     return res.status(200).json({
       ok: true,
       token: token.token,
+      authTrace: publicAuthTrace({ tokenFingerprint: token.fingerprint, issuerReceived: token.claims.iss, audienceReceived: token.claims.aud ?? null, signature: "PASS" }, requestId),
       jti: token.jti,
       expiresAt: token.expiresAt,
       user: authUserContract()
@@ -1761,6 +1782,7 @@ function createApp(options = {}) {
     return res.status(200).json({
       ok: true,
       token: token.token,
+      authTrace: publicAuthTrace({ tokenFingerprint: token.fingerprint, issuerReceived: token.claims.iss, audienceReceived: token.claims.aud ?? null, signature: "PASS" }, req.requestId),
       jti: token.jti,
       expiresAt: token.expiresAt,
       user: { id: userId, email, name, role: "user", accessTier }
@@ -1780,6 +1802,7 @@ function createApp(options = {}) {
     const roles = Array.from(new Set([role, ...(role === "super_admin" ? ["admin", "operator"] : []), ...(role === "admin" ? ["operator"] : [])]));
     return res.status(200).json({
       ok: true,
+      authTrace: publicAuthTrace({ ...req.authTrace, subjectLookup: memberFound ? "PASS" : "FAIL" }, req.requestId),
       user: {
         id: req.auth.userId,
         email,
