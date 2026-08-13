@@ -44,7 +44,10 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
           }
           : authorizationResolver.resolveRole(null);
       }
-      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: headerPresent, bearerParsingSucceeded: false, signature: "NOT_RUN", issuer: "NOT_RUN", audience: "NOT_RUN", expiration: "NOT_RUN", notBefore: "NOT_RUN", subjectLookup: "NOT_RUN", reason: "missing_bearer", httpStatus: 401 });
+      if (req.path === "/api/auth/me") {
+        req.authTrace = { authorizationHeaderPresent: headerPresent, bearerParsingSucceeded: false, signature: "NOT_RUN", issuer: "NOT_RUN", audience: "NOT_RUN", expiration: "NOT_RUN", notBefore: "NOT_RUN", subjectLookup: "NOT_RUN", reason: "missing_bearer", httpStatus: 401 };
+        trace?.({ event: "verification", requestId: req.requestId, ...req.authTrace });
+      }
       return next();
     }
 
@@ -52,7 +55,11 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     try {
       claims = authTokenLib.verify(token);
     } catch (error) {
-      if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), ...(error?.details?.verification || {}), subjectLookup: error?.details?.reason === "subject_missing" ? "FAIL" : "NOT_RUN", reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401 });
+      if (req.path === "/api/auth/me") {
+        req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), ...(error?.details?.verification || {}), subjectLookup: error?.details?.reason === "subject_missing" ? "FAIL" : "NOT_RUN", reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401 };
+        error.details = { ...(error.details || {}), authTrace: options.publicTrace?.(req.authTrace, req) || req.authTrace };
+        trace?.({ event: "verification", requestId: req.requestId, ...req.authTrace });
+      }
       throw error;
     }
     req.auth = {
@@ -71,7 +78,10 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
       req.authz = authorizationResolver.resolveRole(req.auth);
     }
 
-    if (req.path === "/api/auth/me") trace?.({ event: "verification", requestId: req.requestId, authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200 });
+    if (req.path === "/api/auth/me") {
+      req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200, issuerExpected: authTokenLib.configuration.issuer, issuerReceived: claims.iss ?? null, audienceExpected: authTokenLib.configuration.audience, audienceReceived: claims.aud ?? null };
+      trace?.({ event: "verification", requestId: req.requestId, ...req.authTrace });
+    }
 
     return next();
   };

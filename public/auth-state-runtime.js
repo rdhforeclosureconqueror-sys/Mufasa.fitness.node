@@ -2,7 +2,7 @@
   "use strict";
 
   const global = globalScope || window;
-  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-token-lifecycle-v1" });
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-auth-debugger-v1" });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
@@ -211,6 +211,8 @@
       const authDiagnostics = canonicalResult?.diagnostics || { url: `${baseUrl}/api/auth/me`, dispatched: true, status: res.status, backendReached: true };
       ensureDebugState().lastMeDiagnostics = authDiagnostics;
       const payload = canonicalResult ? (canonicalResult.payload || {}) : await res.json().catch(() => ({}));
+      authDiagnostics.authTrace = payload?.authTrace || payload?.error?.details?.authTrace || null;
+      authDiagnostics.requestId = res.headers?.get?.("x-request-id") || payload?.requestId || authDiagnostics.authTrace?.requestId || null;
       const user = payload?.user || payload?.data?.user;
       if (res.status === 401) {
         const error = new Error(payload?.error || "invalid_session");
@@ -245,13 +247,13 @@
       const invalidSession = status === 401;
       if (invalidSession) {
         const beforeCleanup = Boolean(getStoredToken());
-        clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true, httpStatus: 401, file: "public/auth-state-runtime.js", function: "refreshAuthStatus" });
+        if (options.preserveTokenOn401 !== true) clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true, httpStatus: 401, file: "public/auth-state-runtime.js", function: "refreshAuthStatus" });
         if (global.location?.pathname === "/greatness.html") {
           recordCheckpoint("GREATNESS_CHECKPOINT_3", { httpStatus: 401, tokenPresentBeforeCleanup: beforeCleanup, tokenPresentAfterCleanup: Boolean(getStoredToken()), cleanupReason: `${reason}:invalid_session` });
           recordLifecycle({ greatnessMeStatus: 401 });
         }
         if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh failed", error);
-        return { ok: false, reason: "invalid_session", error, auth: global.APP_AUTH };
+        return { ok: false, reason: "invalid_session", error, auth: global.APP_AUTH, diagnostics: error?.authDiagnostics || null, tokenPreserved: options.preserveTokenOn401 === true };
       }
       if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh unavailable", error);
       if (global.location?.pathname === "/greatness.html") {

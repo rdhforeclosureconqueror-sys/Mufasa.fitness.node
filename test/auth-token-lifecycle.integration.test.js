@@ -32,6 +32,9 @@ test("production-equivalent login token immediately verifies and failures have e
   const login = await jsonRequest(base, "/api/auth/login", { method: "POST", body: { email: "member@example.test", password: "valid-password" } });
   assert.equal(login.response.status, 200);
   const token = login.payload.token;
+  assert.equal(login.payload.authTrace.tokenFingerprint, fingerprintToken(token));
+  assert.equal(login.payload.authTrace.keyFingerprint.length, 12);
+  assert.equal(login.payload.authTrace.requestId, login.response.headers.get("x-request-id"));
   const me = await jsonRequest(base, "/api/auth/me", { token });
   assert.equal(me.response.status, 200);
   assert.equal(me.payload.user.id, login.payload.user.id);
@@ -64,5 +67,8 @@ test("production-equivalent login token immediately verifies and failures have e
     const result = await jsonRequest(base, "/api/auth/me", { token: invalidToken });
     assert.equal(result.response.status, 401, reason);
     assert.equal(result.payload.error.details.reason, reason);
+    assert.equal(result.payload.error.details.authTrace.reason, reason);
+    assert.equal(result.payload.error.details.authTrace.requestId, result.response.headers.get("x-request-id"));
+    assert.equal(result.payload.error.details.authTrace.keyFingerprint.length, 12);
   }
 });
