@@ -36,7 +36,7 @@ test("greatness page loads diagnostics independently with a cache-busting revisi
   const css = fs.readFileSync(path.join(__dirname, "../public/greatness.css"), "utf8");
   assert.match(html, /href="greatness\.css\?v=frontend-build-key-20260811"/);
   assert.match(html, /src="map-diagnostics\.js\?v=frontend-build-key-20260811"/);
-  assert.match(html, /src="greatness\.js\?v=20260813-token-lifecycle-v1"/);
+  assert.match(html, /src="greatness\.js\?v=20260813-token-handoff-trace-v1"/);
   assert.match(runtime, /trail-map\.js\?v=frontend-build-key-20260811/);
   assert.match(runtime, /map-diagnostics\.js\?v=frontend-build-key-20260811/);
   assert.match(css, /safe-area-inset-bottom/);

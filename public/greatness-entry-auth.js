@@ -2,7 +2,7 @@
   "use strict";
 
   const TRACE_KEY = "maat.lastGreatnessEntryTrace.v1";
-  const BUILD_VERSION = "20260813-token-lifecycle-v1";
+  const BUILD_VERSION = "20260813-token-handoff-trace-v1";
   const OWNER = "public/greatness-entry-auth.js/GreatnessEntryAuth.guard";
   const ASSETS = ["auth-state-runtime.js", "api-client.js", "greatness-entry-auth.js", "greatness.js"];
   const definitiveFailures = new Set(["missing_token", "invalid_token", "expired_token", "invalid_session"]);

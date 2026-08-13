@@ -2,7 +2,7 @@
   "use strict";
 
   const global = globalScope || window;
-  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-auth-debugger-v1" });
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-token-handoff-trace-v1" });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
@@ -10,6 +10,49 @@
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
   let restorePromise = null;
   let backendValidatedToken = null;
+  const TOKEN_HANDOFF_KEY = "maat.tokenHandoffTrace.v1";
+
+  async function shaPrefix(value) {
+    if (typeof value !== "string" || !global.crypto?.subtle || typeof global.TextEncoder !== "function") return null;
+    const digest = await global.crypto.subtle.digest("SHA-256", new global.TextEncoder().encode(value));
+    return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 12);
+  }
+
+  function readTokenHandoffTrace() {
+    try { return JSON.parse(global.sessionStorage?.getItem(TOKEN_HANDOFF_KEY) || "{}"); } catch (_) { return {}; }
+  }
+
+  async function traceTokenHandoff(checkpoint, value, transformations = {}, source = {}) {
+    const text = typeof value === "string" ? value : "";
+    const [header = "", payload = "", signature = ""] = text.split(".");
+    const entry = {
+      checkpoint,
+      compactTokenSha256Prefix: await shaPrefix(text),
+      headerSegmentSha256Prefix: await shaPrefix(header),
+      payloadSegmentSha256Prefix: await shaPrefix(payload),
+      signatureSegmentSha256Prefix: await shaPrefix(signature),
+      totalStringLength: text.length,
+      segmentLengths: [header.length, payload.length, signature.length],
+      leadingTrailingWhitespacePresent: /^\s|\s$/.test(text) ? "YES" : "NO",
+      quoteWrapped: /^(?:"[\s\S]*"|'[\s\S]*')$/.test(text) ? "YES" : "NO",
+      uriEncodedCharactersPresent: /%[0-9a-f]{2}/i.test(text) ? "YES" : "NO",
+      base64OrBase64UrlTransformationAttempted: transformations.base64 === true ? "YES" : "NO",
+      jsonStringifyOrParseTransformationApplied: transformations.json === true ? "YES" : "NO",
+      source: `${source.file || "public/auth-state-runtime.js"}/${source.function || "traceTokenHandoff"}`
+    };
+    const trace = transformations.reset === true ? {} : readTokenHandoffTrace();
+    const baseline = trace.loginResponseSignatureFingerprint || entry.signatureSegmentSha256Prefix || null;
+    const firstMutation = trace.firstMutationCheckpoint === "NONE" ? null : trace.firstMutationCheckpoint;
+    const observed = firstMutation || (baseline && entry.signatureSegmentSha256Prefix !== baseline ? checkpoint : null);
+    trace.loginResponseSignatureFingerprint = baseline;
+    trace.firstMutationCheckpoint = observed || "NONE";
+    trace.signatureMutationFirstObservedAt = observed || "NONE";
+    trace.checkpoints = { ...(trace.checkpoints || {}), [checkpoint]: entry };
+    trace.updatedAt = new Date().toISOString();
+    try { global.sessionStorage?.setItem(TOKEN_HANDOFF_KEY, JSON.stringify(trace)); } catch (_) {}
+    console.info("[TOKEN_HANDOFF_TRACE]", { ...entry, firstMutationCheckpoint: trace.firstMutationCheckpoint, signatureMutationFirstObservedAt: trace.signatureMutationFirstObservedAt });
+    return entry;
+  }
 
   function normalizeToken(value) {
     if (typeof value !== "string") return null;
@@ -61,7 +104,11 @@
   }
 
   function getStoredToken() {
-    try { return normalizeToken(global.localStorage?.getItem(TOKEN_STORAGE_KEY)); } catch (_) { return null; }
+    try {
+      const stored = global.localStorage?.getItem(TOKEN_STORAGE_KEY);
+      void traceTokenHandoff("localStorage read-back value", stored, {}, { function: "getStoredToken" });
+      return normalizeToken(stored);
+    } catch (_) { return null; }
   }
 
   function persistToken(token) {
@@ -145,6 +192,7 @@
     const changed = !sameAuthState(previousState, nextState);
 
     global.APP_AUTH = nextState;
+    if (nextState.token) void traceTokenHandoff("token placed into APP_AUTH", nextState.token, {}, { function: "setCanonicalAuthState" });
     if (nextState.user) global.__LAST_AUTH_USER = nextState.user;
     else if (options.clearLastUser === true) global.__LAST_AUTH_USER = null;
     global.__AUTH_READY = nextState.isAuthenticated === true;
@@ -265,7 +313,9 @@
   }
 
   function getAuthToken() {
-    return global.APP_AUTH?.token || getStoredToken() || null;
+    const token = global.APP_AUTH?.token || getStoredToken() || null;
+    if (token) void traceTokenHandoff("token returned by AuthStateRuntime", token, {}, { function: "getAuthToken" });
+    return token;
   }
 
   async function postAuthenticatedJSON(url, { method = "POST", body } = {}) {
@@ -441,6 +491,7 @@
     normalizeToken,
     tokenMetadata,
     readLifecycle,
+    readTokenHandoffTrace,
     recordLifecycle,
     recordCheckpoint,
     installAuthStatusRefreshBridge,
@@ -453,6 +504,7 @@
     restoreCanonicalAuthState,
     sendToNode,
     setCanonicalAuthState,
+    traceTokenHandoff,
     whenReady
   };
 

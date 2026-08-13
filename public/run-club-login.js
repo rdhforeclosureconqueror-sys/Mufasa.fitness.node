@@ -7,7 +7,7 @@ const safeReturnTo = value => {
   return target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : destination;
 };
 const returnTo = safeReturnTo(new URLSearchParams(location.search).get("returnTo"));
-const FRONTEND_BUILD = "2026-08-13-jwt-self-verification-v2";
+const FRONTEND_BUILD = "2026-08-13-token-handoff-trace-v1";
 const ids = ["joinTab", "signInTab", "form-title", "form-copy", "runClubAuthForm", "nameField", "name", "email", "password", "submitButton", "status", "authDebugger", "authDebugTrace", "copyAuthTrace", "copyAuthStatus"];
 const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 let mode = "register";
@@ -77,7 +77,9 @@ el.runClubAuthForm.onsubmit = async event => {
     const payload = await response.json().catch(() => ({}));
     const loginRequestId = response.headers.get("x-request-id") || payload?.authTrace?.requestId || null;
     const returnedToken = payload?.token;
+    await runtime.traceTokenHandoff("raw token received from login response", returnedToken, { json: true, reset: true }, { file: "public/run-club-login.js", function: "onsubmit" });
     const normalizedToken = runtime.normalizeToken(returnedToken);
+    await runtime.traceTokenHandoff("normalized token before persistence", normalizedToken, {}, { file: "public/run-club-login.js", function: "onsubmit" });
     const metadata = runtime.tokenMetadata(normalizedToken);
     const common = { loginHttpStatus: response.status, loginTokenReturned: Boolean(returnedToken), tokenNormalized: Boolean(normalizedToken), tokenFormatValid: metadata.validFormat };
     lifecycle({ ...common, persistence: "NOT_RUN", loginPageMeDispatched: false, navigationAllowed: false, tokenClearedBy: "NONE" });
@@ -86,7 +88,9 @@ el.runClubAuthForm.onsubmit = async event => {
     if (!metadata.validFormat || metadata.expiryState === "expired") throw new Error(metadata.expiryState === "expired" ? "The issued session has expired" : "The issued session format is invalid");
 
     const persisted = await runtime.persistCanonicalAuthState({ token: normalizedToken, user: payload.user }, { reason: "run-club-auth:persist" });
+    await runtime.traceTokenHandoff("exact token written to localStorage.maatAuthToken", localStorage.getItem("maatAuthToken"), {}, { file: "public/run-club-login.js", function: "onsubmit" });
     const readBack = runtime.getStoredToken();
+    await runtime.traceTokenHandoff("exact token read back from localStorage", localStorage.getItem("maatAuthToken"), {}, { file: "public/run-club-login.js", function: "onsubmit" });
     const readBackMatches = Boolean(persisted.ok && readBack === normalizedToken);
     const persistence = readBackMatches ? "PASS" : "FAIL";
     lifecycle({ persistence, tokenPersisted: Boolean(persisted.ok), persistenceReadBack: persistence, persistedTokenLength: readBack?.length || 0 });

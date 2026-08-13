@@ -1,6 +1,24 @@
 "use strict";
 
+const crypto = require("crypto");
 const { ApiError } = require("../lib/apiResponse");
+
+function tokenHandoffDiagnostics(value) {
+  const text = typeof value === "string" ? value : "";
+  const [header = "", payload = "", signature = ""] = text.split(".");
+  const fingerprint = (part) => crypto.createHash("sha256").update(part, "utf8").digest("hex").slice(0, 12);
+  return {
+    checkpoint: "backend bearer value after Bearer prefix removal",
+    compactTokenSha256Prefix: fingerprint(text), headerSegmentSha256Prefix: fingerprint(header),
+    payloadSegmentSha256Prefix: fingerprint(payload), signatureSegmentSha256Prefix: fingerprint(signature),
+    totalStringLength: text.length, segmentLengths: [header.length, payload.length, signature.length],
+    leadingTrailingWhitespacePresent: /^\s|\s$/.test(text) ? "YES" : "NO",
+    quoteWrapped: /^(?:"[\s\S]*"|'[\s\S]*')$/.test(text) ? "YES" : "NO",
+    uriEncodedCharactersPresent: /%[0-9a-f]{2}/i.test(text) ? "YES" : "NO",
+    base64OrBase64UrlTransformationAttempted: "NO", jsonStringifyOrParseTransformationApplied: "NO",
+    source: "src/middleware/auth.js/authContext"
+  };
+}
 
 function readBearerToken(req) {
   const authHeader = req.get("authorization") || "";
@@ -13,7 +31,10 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
   const pilotBypass = options?.pilotBypass || null;
   const trace = typeof options?.trace === "function" ? options.trace : null;
   return function attachAuthContext(req, _res, next) {
-    const headerPresent = Boolean(req.get("authorization"));
+    const authorization = req.get("authorization") || "";
+    const headerPresent = Boolean(authorization);
+    const bearerAfterPrefixRemoval = authorization.replace(/^Bearer /i, "");
+    if (headerPresent && req.path === "/api/auth/me") trace?.({ event: "token_handoff", requestId: req.requestId, tokenHandoff: tokenHandoffDiagnostics(bearerAfterPrefixRemoval) });
     const token = readBearerToken(req);
     if (!token) {
       if (pilotBypass?.enabled && pilotBypass?.runtimeAllowed === true) {
