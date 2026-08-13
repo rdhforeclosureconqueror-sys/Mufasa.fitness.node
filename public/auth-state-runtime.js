@@ -2,6 +2,7 @@
   "use strict";
 
   const global = globalScope || window;
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-redirect-trace-v1" });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
@@ -174,43 +175,49 @@
       const canonicalResult = canonicalClient?.request
         ? await canonicalClient.request("/api/auth/me", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
         : null;
+      if (canonicalResult?.diagnostics) ensureDebugState().lastMeDiagnostics = canonicalResult.diagnostics;
       if (canonicalResult && canonicalResult.diagnostics.backendReached === null) throw Object.assign(canonicalResult.error || new Error("auth_network_unavailable"), { code: "AUTH_UNAVAILABLE" });
       const res = canonicalResult?.response || await global.fetch(`${baseUrl}/api/auth/me`, {
         headers: { authorization: `Bearer ${token}` }, cache: "no-store"
       });
+      const authDiagnostics = canonicalResult?.diagnostics || { url: `${baseUrl}/api/auth/me`, dispatched: true, status: res.status, backendReached: true };
+      ensureDebugState().lastMeDiagnostics = authDiagnostics;
       const payload = canonicalResult ? (canonicalResult.payload || {}) : await res.json().catch(() => ({}));
       const user = payload?.user || payload?.data?.user;
-      if (res.status === 401 || res.status === 403) {
+      if (res.status === 401) {
         const error = new Error(payload?.error || "invalid_session");
         error.status = res.status;
+        error.authDiagnostics = authDiagnostics;
         throw error;
       }
       if (!res.ok || payload?.ok === false) {
         const error = new Error(payload?.error?.message || payload?.error || `auth_unavailable_${res.status}`);
         error.status = res.status;
-        error.code = res.status >= 500 ? "AUTH_UNAVAILABLE" : "INVALID_SESSION";
+        error.code = "AUTH_UNAVAILABLE";
+        error.authDiagnostics = authDiagnostics;
         throw error;
       }
       if (!user) {
         const error = new Error("invalid_session");
         error.code = "INVALID_SESSION";
+        error.authDiagnostics = authDiagnostics;
         throw error;
       }
       const auth = setCanonicalAuthState({ token, user }, { reason });
       backendValidatedToken = normalizeToken(token);
-      return { ok: true, token, user, auth };
+      return { ok: true, token, user, auth, diagnostics: authDiagnostics };
     } catch (error) {
       const debug = ensureDebugState();
       debug.lastAuthError = error?.message || String(error || "unknown_auth_refresh_error");
       const status = Number(error?.status || 0);
-      const invalidSession = status === 401 || status === 403 || error?.code === "INVALID_SESSION";
+      const invalidSession = status === 401;
       if (invalidSession) {
         clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true });
         if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh failed", error);
         return { ok: false, reason: "invalid_session", error, auth: global.APP_AUTH };
       }
       if (options.visibleErrors === true) console.error(LOG_PREFIX, "refresh unavailable", error);
-      return { ok: false, reason: "auth_unavailable", error, auth: global.APP_AUTH };
+      return { ok: false, reason: "auth_unavailable", error, auth: global.APP_AUTH, diagnostics: error?.authDiagnostics || null };
     }
   }
 
