@@ -8,14 +8,15 @@ function tokenHandoffDiagnostics(value) {
   const [header = "", payload = "", signature = ""] = text.split(".");
   const fingerprint = (part) => crypto.createHash("sha256").update(part, "utf8").digest("hex").slice(0, 12);
   return {
-    checkpoint: "backend bearer value after Bearer prefix removal",
+    checkpoint: "token extracted by backend middleware immediately after removing Bearer",
     compactTokenSha256Prefix: fingerprint(text), headerSegmentSha256Prefix: fingerprint(header),
     payloadSegmentSha256Prefix: fingerprint(payload), signatureSegmentSha256Prefix: fingerprint(signature),
-    totalStringLength: text.length, segmentLengths: [header.length, payload.length, signature.length],
+    compactLength: text.length, headerLength: header.length, payloadLength: payload.length, signatureLength: signature.length,
     leadingTrailingWhitespacePresent: /^\s|\s$/.test(text) ? "YES" : "NO",
-    quoteWrapped: /^(?:"[\s\S]*"|'[\s\S]*')$/.test(text) ? "YES" : "NO",
-    uriEncodedCharactersPresent: /%[0-9a-f]{2}/i.test(text) ? "YES" : "NO",
-    base64OrBase64UrlTransformationAttempted: "NO", jsonStringifyOrParseTransformationApplied: "NO",
+    quoteCharactersPresent: /["']/.test(text) ? "YES" : "NO",
+    percentEncodingIndicatorsPresent: /%[0-9a-f]{2}/i.test(text) ? "YES" : "NO",
+    signatureCharacterFlags: Object.fromEntries(["+", "/", "=", "-", "_"].map(character => [character, signature.includes(character) ? "YES" : "NO"])),
+    transformationSincePreviousCheckpoint: "Bearer prefix removed",
     source: "src/middleware/auth.js/authContext"
   };
 }
@@ -34,7 +35,8 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     const authorization = req.get("authorization") || "";
     const headerPresent = Boolean(authorization);
     const bearerAfterPrefixRemoval = authorization.replace(/^Bearer /i, "");
-    if (headerPresent && req.path === "/api/auth/me") trace?.({ event: "token_handoff", requestId: req.requestId, tokenHandoff: tokenHandoffDiagnostics(bearerAfterPrefixRemoval) });
+    const backendTokenHandoff = headerPresent && req.path === "/api/auth/me" ? tokenHandoffDiagnostics(bearerAfterPrefixRemoval) : null;
+    if (backendTokenHandoff) trace?.({ event: "token_handoff", requestId: req.requestId, tokenHandoff: backendTokenHandoff });
     const token = readBearerToken(req);
     if (!token) {
       if (pilotBypass?.enabled && pilotBypass?.runtimeAllowed === true) {
@@ -77,7 +79,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
       claims = authTokenLib.verify(token);
     } catch (error) {
       if (req.path === "/api/auth/me") {
-        req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), ...(error?.details?.verification || {}), subjectLookup: error?.details?.reason === "subject_missing" ? "FAIL" : "NOT_RUN", reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401 };
+        req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenHandoff: backendTokenHandoff, tokenFingerprint: authTokenLib.fingerprintToken(token), ...(error?.details?.verification || {}), subjectLookup: error?.details?.reason === "subject_missing" ? "FAIL" : "NOT_RUN", reason: error?.details?.reason || "unknown_verification_failure", httpStatus: error?.status || 401 };
         error.details = { ...(error.details || {}), authTrace: options.publicTrace?.(req.authTrace, req) || req.authTrace };
         trace?.({ event: "verification", requestId: req.requestId, ...req.authTrace });
       }

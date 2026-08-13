@@ -2,7 +2,7 @@
   "use strict";
 
   const global = globalScope || window;
-  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-token-handoff-trace-v1" });
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-token-mutation-checkpoints-v2" });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
@@ -11,6 +11,8 @@
   let restorePromise = null;
   let backendValidatedToken = null;
   const TOKEN_HANDOFF_KEY = "maat.tokenHandoffTrace.v1";
+  let tokenHandoffSequence = 0;
+  let tokenHandoffQueue = Promise.resolve();
 
   async function shaPrefix(value) {
     if (typeof value !== "string" || !global.crypto?.subtle || typeof global.TextEncoder !== "function") return null;
@@ -22,7 +24,9 @@
     try { return JSON.parse(global.sessionStorage?.getItem(TOKEN_HANDOFF_KEY) || "{}"); } catch (_) { return {}; }
   }
 
-  async function traceTokenHandoff(checkpoint, value, transformations = {}, source = {}) {
+  function traceTokenHandoff(checkpoint, value, transformations = {}, source = {}) {
+    const sequence = ++tokenHandoffSequence;
+    const operation = tokenHandoffQueue.then(async () => {
     const text = typeof value === "string" ? value : "";
     const [header = "", payload = "", signature = ""] = text.split(".");
     const entry = {
@@ -31,27 +35,44 @@
       headerSegmentSha256Prefix: await shaPrefix(header),
       payloadSegmentSha256Prefix: await shaPrefix(payload),
       signatureSegmentSha256Prefix: await shaPrefix(signature),
-      totalStringLength: text.length,
-      segmentLengths: [header.length, payload.length, signature.length],
+      compactLength: text.length,
+      headerLength: header.length,
+      payloadLength: payload.length,
+      signatureLength: signature.length,
       leadingTrailingWhitespacePresent: /^\s|\s$/.test(text) ? "YES" : "NO",
-      quoteWrapped: /^(?:"[\s\S]*"|'[\s\S]*')$/.test(text) ? "YES" : "NO",
-      uriEncodedCharactersPresent: /%[0-9a-f]{2}/i.test(text) ? "YES" : "NO",
-      base64OrBase64UrlTransformationAttempted: transformations.base64 === true ? "YES" : "NO",
-      jsonStringifyOrParseTransformationApplied: transformations.json === true ? "YES" : "NO",
-      source: `${source.file || "public/auth-state-runtime.js"}/${source.function || "traceTokenHandoff"}`
+      quoteCharactersPresent: /["']/.test(text) ? "YES" : "NO",
+      percentEncodingIndicatorsPresent: /%[0-9a-f]{2}/i.test(text) ? "YES" : "NO",
+      signatureCharacterFlags: Object.fromEntries(["+", "/", "=", "-", "_"].map((character) => [character, signature.includes(character) ? "YES" : "NO"])),
+      transformationSincePreviousCheckpoint: transformations.description || (transformations.json === true ? "login response JSON property access only" : "NONE"),
+      source: `${source.file || "public/auth-state-runtime.js"}/${source.function || "traceTokenHandoff"}`,
+      sequence
     };
     const trace = transformations.reset === true ? {} : readTokenHandoffTrace();
-    const baseline = trace.loginResponseSignatureFingerprint || entry.signatureSegmentSha256Prefix || null;
+    const ordered = Object.values(trace.checkpoints || {}).sort((a, b) => a.sequence - b.sequence);
+    const previous = ordered.at(-1) || null;
+    const baselineEntry = trace.loginResponseBaseline || entry;
+    const mutatedSegments = ["header", "payload", "signature"].filter((segment) => entry[`${segment}SegmentSha256Prefix`] !== baselineEntry[`${segment}SegmentSha256Prefix`]);
     const firstMutation = trace.firstMutationCheckpoint === "NONE" ? null : trace.firstMutationCheckpoint;
-    const observed = firstMutation || (baseline && entry.signatureSegmentSha256Prefix !== baseline ? checkpoint : null);
-    trace.loginResponseSignatureFingerprint = baseline;
+    const observed = firstMutation || (mutatedSegments.length ? checkpoint : null);
+    trace.loginResponseBaseline = baselineEntry;
     trace.firstMutationCheckpoint = observed || "NONE";
-    trace.signatureMutationFirstObservedAt = observed || "NONE";
+    trace.firstMutatedSegment = trace.firstMutatedSegment === "NONE" || !trace.firstMutatedSegment ? (mutatedSegments[0] || "NONE") : trace.firstMutatedSegment;
+    trace.signatureMutationFirstObservedAt = trace.signatureMutationFirstObservedAt !== "NONE" && trace.signatureMutationFirstObservedAt
+      ? trace.signatureMutationFirstObservedAt
+      : (mutatedSegments.includes("signature") ? checkpoint : "NONE");
+    if (observed === checkpoint) {
+      trace.previousCheckpointSignatureFingerprint = previous?.signatureSegmentSha256Prefix || "NONE";
+      trace.currentCheckpointSignatureFingerprint = entry.signatureSegmentSha256Prefix || "NONE";
+      trace.mutationTransitionSource = entry.source;
+    }
     trace.checkpoints = { ...(trace.checkpoints || {}), [checkpoint]: entry };
     trace.updatedAt = new Date().toISOString();
     try { global.sessionStorage?.setItem(TOKEN_HANDOFF_KEY, JSON.stringify(trace)); } catch (_) {}
     console.info("[TOKEN_HANDOFF_TRACE]", { ...entry, firstMutationCheckpoint: trace.firstMutationCheckpoint, signatureMutationFirstObservedAt: trace.signatureMutationFirstObservedAt });
     return entry;
+    });
+    tokenHandoffQueue = operation.catch(() => undefined);
+    return operation;
   }
 
   function normalizeToken(value) {
@@ -119,6 +140,7 @@
   }
 
   async function persistCanonicalAuthState(input = {}, options = {}) {
+    if (input?.token) void traceTokenHandoff("token passed into canonical persistence", input.token, {}, { function: "persistCanonicalAuthState" });
     const state = setCanonicalAuthState(input, options);
     if (!state.token) return { ok: true, state };
     let lastError = null;
@@ -192,7 +214,7 @@
     const changed = !sameAuthState(previousState, nextState);
 
     global.APP_AUTH = nextState;
-    if (nextState.token) void traceTokenHandoff("token placed into APP_AUTH", nextState.token, {}, { function: "setCanonicalAuthState" });
+    if (nextState.token) void traceTokenHandoff("token assigned to APP_AUTH", nextState.token, {}, { function: "setCanonicalAuthState" });
     if (nextState.user) global.__LAST_AUTH_USER = nextState.user;
     else if (options.clearLastUser === true) global.__LAST_AUTH_USER = null;
     global.__AUTH_READY = nextState.isAuthenticated === true;
