@@ -6,6 +6,7 @@ import { parseTrailSearchResponse } from "./trail-response.js";
 import { createGoalRouteState } from "./goal-route-state.js";
 import { routeDetailNotice, routeDisplayLabel, routeMatchLabel, routeNotice, routeSourceLabel, routeVerification } from "./route-planning-ui.js";
 import { createRouteCarousel } from "./route-carousel.js";
+window.__MAAT_ASSET_VERSIONS__ = Object.assign(window.__MAAT_ASSET_VERSIONS__ || {}, { "greatness.js": "20260813-redirect-trace-v1" });
 const $=id=>document.getElementById(id), ui=Object.fromEntries(["activity","sessionState","syncState","distance","elapsed","moving","paused","currentPace","averagePace","gpsQuality","accepted","rejected","status","weak","start","pause","resume","finish","cancel","summary","recovery","goalProgress","goalLabel","goalCompleted","goalRemaining","goalPercent","goalBar"].map(id=>[id,$(id)]));
 const tracker=new BrowserLocationTracker(), recoveryStore=createRecoveryStore(), KEY=recoveryStore.SESSION_KEY;let session=null,timer=null,watchError=false,finishing=false,transientState="idle",lastQuality="",selectedPlannedRoute=null,lastTrailResults=[],pendingStart=null;
 const authRuntime=window.AuthStateRuntime;

@@ -1,5 +1,6 @@
 (function initCanonicalApiClient(global) {
   "use strict";
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "api-client.js": "20260813-redirect-trace-v1" });
   var PRODUCTION_FRONTEND_ORIGIN = "https://mufasafitsite.onrender.com";
   var PRODUCTION_BACKEND_ORIGIN = "https://mufasa-fitness-node.onrender.com";
   function origin() { var configured = global.RuntimeState?.getBackendOrigin?.() || global.MAAT_BACKEND_ORIGIN || global.__MAAT_RUNTIME_CONFIG__?.backendOrigin || PRODUCTION_BACKEND_ORIGIN; return new URL(configured, global.location?.href || PRODUCTION_BACKEND_ORIGIN).origin; }
