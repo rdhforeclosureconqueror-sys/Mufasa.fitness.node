@@ -109,8 +109,9 @@ test("nearby trail comparison captures matching redacted request and response ev
   assert.match(diagnostics, /Desktop vs Android differences/);
   assert.match(diagnostics, /nearbyTrailsComparison/);
   assert.match(runtime, /\[REDACTED\]/);
-  assert.match(runtime, /requestHeaders:Object\.fromEntries/);
-  assert.match(runtime, /headers\["X-Request-ID"\]=clientRequestId/);
-  assert.match(runtime, /new URL\("\/api\/me\/greatness\/nearby-trails\/search",backendOrigin\(\)\)\.href/);
+  assert.match(runtime, /requestHeaders:\{"X-Request-ID":clientRequestId,Authorization:"\[REDACTED\]"\}/);
+  assert.match(runtime, /const clientRequestId=headers\["X-Request-ID"\]/);
+  assert.match(runtime, /const path="\/api\/me\/greatness\/nearby-trails\/search"/);
+  assert.match(runtime, /canonicalRequest\(path/);
   assert.match(fs.readFileSync(path.join(__dirname, "../public/backend-origin.js"), "utf8"), /https:\/\/mufasa-fitness-node\.onrender\.com/);
 });
