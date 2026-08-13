@@ -52,7 +52,7 @@ test("mobile initialization, same-origin reporting, API checks, and redirect per
   const runClub = fs.readFileSync(path.join(__dirname, "../public/run-club-login.js"), "utf8");
   const dashboard = fs.readFileSync(path.join(__dirname, "../public/dashboard.html"), "utf8");
   assert.match(authCore, /await window\.AuthStateRuntime\.persistCanonicalAuthState[\s\S]+location\.assign/);
-  assert.match(runClub, /await window\.AuthStateRuntime\.persistCanonicalAuthState[\s\S]+location\.assign/);
+  assert.match(runClub, /await runtime\.persistCanonicalAuthState[\s\S]+await runtime\.refreshAuthStatus[\s\S]+location\.assign/);
   assert.match(runtimeSource, /pageshow-restore/);
   assert.match(runtimeSource, /storage-event-restore/);
   assert.match(dashboard, /mobile-auth-diagnostics\.js\?v=20260812-mobile-auth/);

@@ -2,7 +2,7 @@
   "use strict";
 
   const TRACE_KEY = "maat.lastGreatnessEntryTrace.v1";
-  const BUILD_VERSION = "20260813-redirect-trace-v1";
+  const BUILD_VERSION = "20260813-token-lifecycle-v1";
   const OWNER = "public/greatness-entry-auth.js/GreatnessEntryAuth.guard";
   const ASSETS = ["auth-state-runtime.js", "api-client.js", "greatness-entry-auth.js", "greatness.js"];
   const definitiveFailures = new Set(["missing_token", "invalid_token", "expired_token", "invalid_session"]);
@@ -61,10 +61,25 @@
       `asset versions match deployment: ${trace.assetVersionMatch ? "PASS" : "FAIL"}`
     ].join("\n");
   }
+  function lifecycle() { try { return JSON.parse(global.sessionStorage?.getItem("maat.loginToGreatnessTokenLifecycle.v1") || "{}"); } catch (_) { return {}; } }
+  function formatLifecycle(value = lifecycle()) {
+    return [
+      `Login response token: ${yes(value.loginTokenReturned)}`,
+      `Persistence: ${value.persistence || "NOT_RUN"}`,
+      `Login-page /api/auth/me: ${value.loginPageMeStatus ?? "not run"}`,
+      `Before-navigation token: ${yes(value.beforeNavigationTokenPresent)}`,
+      `Greatness initial token: ${yes(value.greatnessInitialTokenPresent)}`,
+      `Greatness request Authorization attached: ${yes(value.greatnessRequestAuthorizationAttached)}`,
+      `Greatness /api/auth/me: ${value.greatnessMeStatus ?? "not run"}`,
+      `Token-cleared-by: ${value.tokenClearedBy || "NONE"}`
+    ].join("\n");
+  }
   async function guard() {
     const trace = initial();
     const runtime = global.AuthStateRuntime;
     const safe = runtime?.getSafeDiagnostics?.() || {};
+    const firstCheckpoint = lifecycle().checkpoints?.GREATNESS_CHECKPOINT_1;
+    if (firstCheckpoint) runtime?.recordLifecycle?.({ greatnessInitialTokenPresent: firstCheckpoint.maatAuthTokenPresent === true });
     Object.assign(trace, { tokenPresent: safe.credentialPresent === true, tokenValidFormat: safe.tokenFormatValid === true, tokenExpired: safe.expiryState === "expired" ? "YES" : safe.expiryState === "valid" ? "NO" : "UNKNOWN" });
     render(trace);
     if (!runtime?.whenReady || !global.MaatApiClient?.request) {
@@ -91,5 +106,5 @@
     Object.assign(trace, { decision: "REDIRECT", redirectReason: result.reason, redirectTarget: target });
     render(trace); global.location.replace(target); return trace;
   }
-  global.GreatnessEntryAuth = Object.freeze({ BUILD_VERSION, OWNER, TRACE_KEY, format, guard });
+  global.GreatnessEntryAuth = Object.freeze({ BUILD_VERSION, OWNER, TRACE_KEY, format, formatLifecycle, guard });
 })(typeof window !== "undefined" ? window : globalThis);

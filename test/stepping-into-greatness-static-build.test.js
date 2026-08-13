@@ -49,11 +49,11 @@ test('Run Club login is a dedicated minimal static sign-up and safe direct-to-Gr
   const js = fs.readFileSync(path.join(root, 'public', 'run-club-login.js'), 'utf8');
   for (const copy of ['Welcome to the Run Club', 'No subscription required', 'Join Free', 'Sign In']) assert.match(html, new RegExp(copy, 'i'));
   for (const field of ['name', 'email', 'password']) assert.match(html, new RegExp(`name="${field}"`));
-  assert.match(js, /entryContext:"run_club"/);
-  assert.match(js, /destination="\/greatness\.html"/);
+  assert.match(js, /entryContext:\s*"run_club"/);
+  assert.match(js, /destination\s*=\s*"\/greatness\.html"/);
   assert.match(js, /location\.assign\(returnTo\)/);
   assert.match(js, /value\.startsWith\("\/\/"\)/);
-  assert.match(js, /target\.origin===window\.location\.origin/);
+  assert.match(js, /target\.origin\s*===\s*window\.location\.origin/);
   assert.doesNotMatch(html + js, /dashboard\.html|checkout/i);
 });
 
