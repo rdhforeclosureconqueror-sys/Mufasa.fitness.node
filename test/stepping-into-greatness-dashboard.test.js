@@ -33,7 +33,9 @@ test("existing dashboard actions remain available beside Stepping Into Greatness
 test("member navigation retains the shared authentication runtime and protected API flow", () => {
   assert.match(greatnessPage, /<script src="auth-state-runtime\.js\?v=20260812-mobile-auth"><\/script>/);
   assert.match(greatnessRuntime, /AuthStateRuntime\?\.getAuthToken/);
-  assert.match(greatnessRuntime, /headers\.Authorization=`Bearer \$\{t\}`/);
+  assert.match(greatnessPage, /<script src="api-client\.js\?v=20260813-greatness-trails"><\/script>/);
+  assert.match(greatnessRuntime, /await runtime\.whenReady\(\)/);
+  assert.match(greatnessRuntime, /client\.request\(path/);
   assert.doesNotMatch(link("steppingIntoGreatnessLink").href, /login|sign-?in/i);
 });
 

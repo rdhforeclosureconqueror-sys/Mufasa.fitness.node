@@ -20,7 +20,8 @@ test("iPhone trail search has privacy-safe staged diagnostics and fresh-request 
   for(const stage of ["search_button_pressed","secure_context_detected","navigator_geolocation_available","geolocation_request_started","geolocation_success","geolocation_error","backend_request_started","backend_http_status","backend_stable_error_code","response_parsing_success","response_parsing_failure","trail_count_rendered"])assert.match(js,new RegExp(stage));
   assert.match(js,/getCurrentPosition\(async position/);
   assert.match(js,/timeout:30000/);
-  assert.match(js,/credentials:"same-origin"/);
+  assert.match(js,/credentialsMode:"omit"/);
+  assert.doesNotMatch(js,/\bfetch\s*\(/);
   assert.match(js,/const sequence=\+\+trailSearchSequence/);
   assert.match(js,/trailController=new AbortController\(\)/);
   assert.match(js,/event\.persisted&&trailSearchLoading/);
