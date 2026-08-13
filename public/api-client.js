@@ -5,6 +5,7 @@
   function origin() { var configured = global.RuntimeState?.getBackendOrigin?.() || global.MAAT_BACKEND_ORIGIN || global.__MAAT_RUNTIME_CONFIG__?.backendOrigin || PRODUCTION_BACKEND_ORIGIN; return new URL(configured, global.location?.href || PRODUCTION_BACKEND_ORIGIN).origin; }
   function resolve(path) { return new URL(path, origin() + "/").href; }
   function token() { return global.AuthStateRuntime?.getAuthToken?.() || null; }
+  function isAuthenticated() { var state = global.AuthStateRuntime?.getCanonicalAuthState?.(); return state?.isAuthenticated === true && Boolean(state.token); }
   function needsPreflight(method, headers, crossOrigin) { if (!crossOrigin) return false; if (!/^(GET|HEAD|POST)$/i.test(method)) return true; return Object.keys(headers).some(function (name) { return !["accept", "accept-language", "content-language", "content-type"].includes(name.toLowerCase()) || (name.toLowerCase() === "content-type" && !/^(application\/x-www-form-urlencoded|multipart\/form-data|text\/plain)(;|$)/i.test(headers[name])); }); }
   function classify(error) { if (error?.name === "AbortError") return "timeout"; if (error?.name === "TypeError") return "unknown network"; return "request construction"; }
   async function request(path, options) {
@@ -17,5 +18,5 @@
     } catch (error) { return { ok: false, error: error, diagnostics: { url: url || null, apiOrigin: url ? new URL(url).origin : origin(), crossOrigin: url ? new URL(url).origin !== global.location?.origin : true, dispatched: dispatched, preflightRequired: request ? needsPreflight(request.method, Object.fromEntries(request.headers.entries()), true) : null, backendReached: null, status: null, failureClass: classify(error) } }; }
     finally { clearTimeout(timeout); }
   }
-  global.MaatApiClient = Object.freeze({ origin: origin, resolve: resolve, request: request, productionFrontendOrigin: PRODUCTION_FRONTEND_ORIGIN });
+  global.MaatApiClient = Object.freeze({ origin: origin, resolve: resolve, request: request, isAuthenticated: isAuthenticated, productionFrontendOrigin: PRODUCTION_FRONTEND_ORIGIN });
 })(typeof window !== "undefined" ? window : globalThis);

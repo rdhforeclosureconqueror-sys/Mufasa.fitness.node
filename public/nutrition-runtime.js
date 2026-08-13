@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const state = { weekly: { plan: null, groceryItems: [], pantry: [], missions: [], options: [], categories: [] }, token: null, entries: [], selectedEntryIds: new Set(), stream: null, scanTimer: null, lastBarcode: null, lastScanAt: 0, zxingReader: null };
   function today() { return new Date().toISOString().slice(0, 10); }
-  function authToken() { return window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || localStorage.getItem("authToken") || localStorage.getItem("pocket_pt_auth_token") || null; }
+  function authToken() { return window.AuthStateRuntime?.getAuthToken?.() || null; }
   function backendUrl(path) {
     const baseUrl = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || window.MAAT_NODE_BASE_URL || window.location.origin).replace(/\/$/, "");
     return `${baseUrl}${path}`;
