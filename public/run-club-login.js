@@ -7,7 +7,7 @@ const safeReturnTo = value => {
   return target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : destination;
 };
 const returnTo = safeReturnTo(new URLSearchParams(location.search).get("returnTo"));
-const FRONTEND_BUILD = "2026-08-13-token-handoff-trace-v1";
+const FRONTEND_BUILD = "2026-08-13-token-mutation-checkpoints-v2";
 const ids = ["joinTab", "signInTab", "form-title", "form-copy", "runClubAuthForm", "nameField", "name", "email", "password", "submitButton", "status", "authDebugger", "authDebugTrace", "copyAuthTrace", "copyAuthStatus"];
 const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 let mode = "register";
@@ -32,6 +32,54 @@ function renderAuthTrace(trace) {
   redactedTraceText = ["REDACTED LOGIN AUTH TRACE", ...lines, "Safety: JWT/password/Authorization/account identity omitted"].join("\n");
   el.authDebugTrace.textContent = redactedTraceText;
   el.authDebugger.hidden = false;
+}
+const TOKEN_HANDOFF_CHECKPOINTS = [
+  "login response token",
+  "token immediately after login normalization",
+  "token passed into canonical persistence",
+  "exact token read back from localStorage.maatAuthToken",
+  "token assigned to APP_AUTH",
+  "token returned by AuthStateRuntime",
+  "token received by canonical API client",
+  "token immediately before Authorization header construction",
+  "token extracted by backend middleware immediately after removing Bearer"
+];
+function tokenHandoffOutput(browserTrace, backendCheckpoint) {
+  const browserRows = Object.values(browserTrace?.checkpoints || {});
+  const rows = [...browserRows, ...(backendCheckpoint ? [backendCheckpoint] : [])]
+    .filter(row => TOKEN_HANDOFF_CHECKPOINTS.includes(row.checkpoint))
+    .sort((a, b) => TOKEN_HANDOFF_CHECKPOINTS.indexOf(a.checkpoint) - TOKEN_HANDOFF_CHECKPOINTS.indexOf(b.checkpoint));
+  const baseline = rows[0] || {};
+  let firstMutation = null;
+  for (const row of rows.slice(1)) {
+    const segment = ["header", "payload", "signature"].find(name => row[`${name}SegmentSha256Prefix`] !== baseline[`${name}SegmentSha256Prefix`]);
+    if (segment) { firstMutation = { row, segment, previous: rows[rows.indexOf(row) - 1] }; break; }
+  }
+  const signatureMutation = rows.slice(1).find(row => row.signatureSegmentSha256Prefix !== baseline.signatureSegmentSha256Prefix);
+  const responsibleSource = firstMutation?.row?.checkpoint === "token immediately after login normalization"
+    ? firstMutation.row.source
+    : "NOT_DETERMINISTICALLY_KNOWN";
+  const lines = rows.map((row, index) => [
+    `checkpoint ${index + 1}: ${row.checkpoint}`,
+    `source file/function=${value(row.source)}`,
+    `compact/header/payload/signature SHA-256 prefixes=${value(row.compactTokenSha256Prefix)}/${value(row.headerSegmentSha256Prefix)}/${value(row.payloadSegmentSha256Prefix)}/${value(row.signatureSegmentSha256Prefix)}`,
+    `compact/header/payload/signature lengths=${value(row.compactLength)}/${value(row.headerLength)}/${value(row.payloadLength)}/${value(row.signatureLength)}`,
+    `leading/trailing whitespace=${value(row.leadingTrailingWhitespacePresent)} quote characters=${value(row.quoteCharactersPresent)} percent-encoding indicators=${value(row.percentEncodingIndicatorsPresent)}`,
+    `signature character flags: +=${value(row.signatureCharacterFlags?.["+"])} /=${value(row.signatureCharacterFlags?.["/"])} ==${value(row.signatureCharacterFlags?.["="])} -=${value(row.signatureCharacterFlags?.["-"])} _=${value(row.signatureCharacterFlags?.["_"])}`,
+    `transformation since previous checkpoint=${value(row.transformationSincePreviousCheckpoint)}`,
+    `comparison to login-response baseline=${row.compactTokenSha256Prefix === baseline.compactTokenSha256Prefix ? "IDENTICAL" : "MUTATED"}`
+  ].join(" | "));
+  return [
+    `checkpoint trace surfaced in copied debugger output: YES`,
+    `all 9 checkpoints present: ${rows.length === TOKEN_HANDOFF_CHECKPOINTS.length ? "YES" : "NO"}`,
+    ...lines,
+    `firstMutationCheckpoint: ${value(firstMutation?.row?.checkpoint || browserTrace?.firstMutationCheckpoint || "NONE")}`,
+    `firstMutatedSegment: ${value(firstMutation?.segment || browserTrace?.firstMutatedSegment || "NONE")}`,
+    `signatureMutationFirstObservedAt: ${value(signatureMutation?.checkpoint || browserTrace?.signatureMutationFirstObservedAt || "NONE")}`,
+    `previous checkpoint signature fingerprint: ${value(firstMutation?.previous?.signatureSegmentSha256Prefix || browserTrace?.previousCheckpointSignatureFingerprint || "NONE")}`,
+    `current checkpoint signature fingerprint: ${value(firstMutation?.row?.signatureSegmentSha256Prefix || browserTrace?.currentCheckpointSignatureFingerprint || "NONE")}`,
+    `exact source file/function responsible for transition: ${value(responsibleSource)}`
+  ].join("\n");
 }
 el.copyAuthTrace.onclick = async () => {
   try { await navigator.clipboard.writeText(redactedTraceText); el.copyAuthStatus.textContent = "Redacted auth trace copied."; }
@@ -77,9 +125,9 @@ el.runClubAuthForm.onsubmit = async event => {
     const payload = await response.json().catch(() => ({}));
     const loginRequestId = response.headers.get("x-request-id") || payload?.authTrace?.requestId || null;
     const returnedToken = payload?.token;
-    await runtime.traceTokenHandoff("raw token received from login response", returnedToken, { json: true, reset: true }, { file: "public/run-club-login.js", function: "onsubmit" });
+    await runtime.traceTokenHandoff("login response token", returnedToken, { json: true, reset: true }, { file: "public/run-club-login.js", function: "onsubmit" });
     const normalizedToken = runtime.normalizeToken(returnedToken);
-    await runtime.traceTokenHandoff("normalized token before persistence", normalizedToken, {}, { file: "public/run-club-login.js", function: "onsubmit" });
+    await runtime.traceTokenHandoff("token immediately after login normalization", normalizedToken, { description: "normalizeToken: trim and Bearer-prefix removal (if present)" }, { file: "public/auth-state-runtime.js", function: "normalizeToken" });
     const metadata = runtime.tokenMetadata(normalizedToken);
     const common = { loginHttpStatus: response.status, loginTokenReturned: Boolean(returnedToken), tokenNormalized: Boolean(normalizedToken), tokenFormatValid: metadata.validFormat };
     lifecycle({ ...common, persistence: "NOT_RUN", loginPageMeDispatched: false, navigationAllowed: false, tokenClearedBy: "NONE" });
@@ -88,9 +136,8 @@ el.runClubAuthForm.onsubmit = async event => {
     if (!metadata.validFormat || metadata.expiryState === "expired") throw new Error(metadata.expiryState === "expired" ? "The issued session has expired" : "The issued session format is invalid");
 
     const persisted = await runtime.persistCanonicalAuthState({ token: normalizedToken, user: payload.user }, { reason: "run-club-auth:persist" });
-    await runtime.traceTokenHandoff("exact token written to localStorage.maatAuthToken", localStorage.getItem("maatAuthToken"), {}, { file: "public/run-club-login.js", function: "onsubmit" });
     const readBack = runtime.getStoredToken();
-    await runtime.traceTokenHandoff("exact token read back from localStorage", localStorage.getItem("maatAuthToken"), {}, { file: "public/run-club-login.js", function: "onsubmit" });
+    await runtime.traceTokenHandoff("exact token read back from localStorage.maatAuthToken", localStorage.getItem("maatAuthToken"), { description: "localStorage.getItem (no transformation)" }, { file: "public/run-club-login.js", function: "onsubmit" });
     const readBackMatches = Boolean(persisted.ok && readBack === normalizedToken);
     const persistence = readBackMatches ? "PASS" : "FAIL";
     lifecycle({ persistence, tokenPersisted: Boolean(persisted.ok), persistenceReadBack: persistence, persistedTokenLength: readBack?.length || 0 });
@@ -108,6 +155,7 @@ el.runClubAuthForm.onsubmit = async event => {
       const claims = safeClaims(normalizedToken);
       const loginTrace = payload?.authTrace || {};
       const meTrace = diagnostics.authTrace || validation.error?.details?.authTrace || {};
+      const handoffOutput = tokenHandoffOutput(runtime.readTokenHandoffTrace(), meTrace.tokenHandoff);
       const browserTime = new Date();
       const serverTime = Date.parse(meTrace.serverTimestamp || loginTrace.serverTimestamp || "");
       const tokenFingerprint = await fingerprint(normalizedToken);
@@ -115,6 +163,7 @@ el.runClubAuthForm.onsubmit = async event => {
       const keysMatch = loginTrace.keyFingerprint && meTrace.keyFingerprint ? loginTrace.keyFingerprint === meTrace.keyFingerprint : null;
       const capturedTrace = {
         "frontend build/version": FRONTEND_BUILD, "backend resolved URL": backendOrigin(),
+        "TOKEN HANDOFF MUTATION CHECKPOINTS": `\n${handoffOutput}`,
         "login HTTP status": response.status, "login response token present": yesNo(Boolean(returnedToken)),
         "token structural format valid": yesNo(metadata.validFormat), "token fingerprint SHA-256 prefix": tokenFingerprint,
         "token iss": claims.iss, "token aud": claims.aud, "token iat timestamp": claims.iat ? new Date(claims.iat).toISOString() : null,

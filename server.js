@@ -122,7 +122,7 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-08-13-token-handoff-trace-v1";
+const APP_BUILD_VERSION = "2026-08-13-token-mutation-checkpoints-v2";
 const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const safeCommit = value => /^[a-f0-9]{7,40}$/i.test(String(value || "")) ? String(value) : null;
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
@@ -687,6 +687,7 @@ function createApp(options = {}) {
       audienceExpected: details.audienceExpected ?? authTokenLib.configuration.audience,
       audienceReceived: details.audienceReceived ?? null,
       tokenFingerprint: details.tokenFingerprint ?? null,
+      tokenHandoff: details.tokenHandoff ?? null,
       authorizationHeaderPresent: details.authorizationHeaderPresent ?? null,
       signature: details.signature ?? "NOT_RUN", issuer: details.issuer ?? "NOT_RUN",
       audience: details.audience ?? "NOT_RUN", expiration: details.expiration ?? "NOT_RUN",
