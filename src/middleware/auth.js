@@ -79,7 +79,7 @@ function authContext(authTokenLib, authorizationResolver = null, options = {}) {
     }
 
     if (req.path === "/api/auth/me") {
-      req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200, issuerExpected: authTokenLib.configuration.issuer, issuerReceived: claims.iss ?? null, audienceExpected: authTokenLib.configuration.audience, audienceReceived: claims.aud ?? null };
+      req.authTrace = { authorizationHeaderPresent: true, bearerParsingSucceeded: true, tokenFingerprint: authTokenLib.fingerprintToken(token), receivedCompact: authTokenLib.compactDiagnostics(token), verifierKeyMaterial: authTokenLib.configuration.keyMaterial, verifierLibrary: authTokenLib.configuration.library, failureStage: null, signature: "PASS", issuer: "PASS", audience: authTokenLib.configuration.audience == null ? "NOT_ENFORCED" : "PASS", expiration: "PASS", notBefore: "PASS", subjectLookup: "PASS", reason: null, httpStatus: 200, issuerExpected: authTokenLib.configuration.issuer, issuerReceived: claims.iss ?? null, audienceExpected: authTokenLib.configuration.audience, audienceReceived: claims.aud ?? null };
       trace?.({ event: "verification", requestId: req.requestId, ...req.authTrace });
     }
 

@@ -122,7 +122,7 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-08-13-auth-debugger-v1";
+const APP_BUILD_VERSION = "2026-08-13-jwt-self-verification-v2";
 const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const safeCommit = value => /^[a-f0-9]{7,40}$/i.test(String(value || "")) ? String(value) : null;
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
@@ -623,6 +623,7 @@ function createApp(options = {}) {
   }
 
   const issuedTokenFingerprints = new Map();
+  const issuedTokenIdentifiers = new Map();
   const authRuntimeIdentity = Object.freeze({
     instance: String(process.env.RENDER_INSTANCE_ID || process.env.INSTANCE_ID || os.hostname()),
     hostname: os.hostname(),
@@ -642,11 +643,40 @@ function createApp(options = {}) {
     ...details
   });
   function traceIssuance(result, requestId, endpoint = "/api/auth/login") {
+    let verifiedClaims;
+    try {
+      verifiedClaims = authTokenLib.verify(result.token);
+    } catch (error) {
+      const verification = error?.details?.verification || {};
+      authTrace({ event: "post_issuance_self_verification", endpoint, requestId, result: "FAIL", httpStatus: 500, reason: error?.details?.reason || "unknown_verification_failure", failureStage: verification.failureStage || "self_verification", issuedTokenFingerprint: result.fingerprint, selfVerifiedTokenFingerprint: verification.tokenFingerprint || result.fingerprint, compactToken: result.compact, signerKeyMaterial: authTokenLib.configuration.keyMaterial, verifierKeyMaterial: verification.verifierKeyMaterial || authTokenLib.configuration.keyMaterial });
+      const internal = new Error(`JWT post-issuance self-verification failed at ${verification.failureStage || "self_verification"}`);
+      internal.code = "JWT_SELF_VERIFICATION_FAILED";
+      throw internal;
+    }
+    const selfVerifiedTokenFingerprint = authTokenLib.fingerprintToken(result.token);
+    result.selfVerification = Object.freeze({
+      result: "PASS", failureStage: null,
+      issuedTokenFingerprint: result.fingerprint, selfVerifiedTokenFingerprint,
+      fingerprintsIdentical: result.fingerprint === selfVerifiedTokenFingerprint,
+      signingInputFingerprintsIdentical: true,
+      issuedAlgorithm: result.compact.algorithm, verifiedAlgorithm: authTokenLib.configuration.algorithm,
+      compactToken: result.compact,
+      signerKeyMaterial: authTokenLib.configuration.keyMaterial,
+      verifierKeyMaterial: authTokenLib.configuration.keyMaterial,
+      signerLibrary: authTokenLib.configuration.library,
+      verifierLibrary: authTokenLib.configuration.library,
+      issuerRulesIdentical: verifiedClaims.iss === result.claims.iss && authTokenLib.configuration.issuer === result.claims.iss,
+      audienceRulesIdentical: authTokenLib.configuration.audience == null ? result.claims.aud == null : authTokenLib.configuration.audience === result.claims.aud
+    });
     if (issuedTokenFingerprints.size >= 1000) issuedTokenFingerprints.delete(issuedTokenFingerprints.keys().next().value);
-    issuedTokenFingerprints.set(result.fingerprint, Date.now());
-    authTrace({ event: "issuance", endpoint, requestId, result: "PASS", httpStatus: 200, reason: null, loginSucceeded: endpoint === "/api/auth/login", authConfiguration: authTraceConfiguration, subjectClaimPresent: Boolean(result.claims.sub), roleClaimPresent: Boolean(result.claims.role), iatPresent: Number.isFinite(result.claims.iat), expPresent: Number.isFinite(result.claims.exp), expAfterIat: result.claims.exp > result.claims.iat, tokenFingerprint: result.fingerprint });
+    if (issuedTokenIdentifiers.size >= 1000) issuedTokenIdentifiers.delete(issuedTokenIdentifiers.keys().next().value);
+    issuedTokenFingerprints.set(result.fingerprint, result.selfVerification);
+    issuedTokenIdentifiers.set(result.jti, result.selfVerification);
+    authTrace({ event: "issuance", endpoint, requestId, result: "PASS", httpStatus: 200, reason: null, loginSucceeded: endpoint === "/api/auth/login", authConfiguration: authTraceConfiguration, subjectClaimPresent: Boolean(result.claims.sub), roleClaimPresent: Boolean(result.claims.role), iatPresent: Number.isFinite(result.claims.iat), expPresent: Number.isFinite(result.claims.exp), expAfterIat: result.claims.exp > result.claims.iat, tokenFingerprint: result.fingerprint, selfVerification: result.selfVerification });
   }
   function publicAuthTrace(details = {}, requestId = null) {
+    const issuance = details.tokenFingerprint ? (issuedTokenFingerprints.get(details.tokenFingerprint) || (details.tokenIdentifier ? issuedTokenIdentifiers.get(details.tokenIdentifier) : null)) : null;
+    const receivedCompact = details.tokenFingerprint && details.receivedCompact ? details.receivedCompact : null;
     return {
       instance: authRuntimeIdentity.instance, build: authRuntimeIdentity.build,
       deployment: authRuntimeIdentity.deployment, requestId,
@@ -660,11 +690,33 @@ function createApp(options = {}) {
       authorizationHeaderPresent: details.authorizationHeaderPresent ?? null,
       signature: details.signature ?? "NOT_RUN", issuer: details.issuer ?? "NOT_RUN",
       audience: details.audience ?? "NOT_RUN", expiration: details.expiration ?? "NOT_RUN",
-      subjectLookup: details.subjectLookup ?? "NOT_RUN", reason: details.reason ?? null
+      subjectLookup: details.subjectLookup ?? "NOT_RUN", reason: details.reason ?? null,
+      failureStage: details.failureStage ?? null,
+      immediateSelfVerification: details.immediateSelfVerification ?? issuance?.result ?? null,
+      issuedTokenFingerprint: issuance?.issuedTokenFingerprint ?? details.issuedTokenFingerprint ?? details.tokenFingerprint ?? null,
+      selfVerifiedTokenFingerprint: issuance?.selfVerifiedTokenFingerprint ?? details.selfVerifiedTokenFingerprint ?? null,
+      receivedTokenFingerprint: details.tokenFingerprint ?? null,
+      fingerprintsIdentical: issuance && details.tokenFingerprint ? issuance.issuedTokenFingerprint === details.tokenFingerprint : null,
+      signingInputFingerprintsIdentical: issuance && receivedCompact ? issuance.compactToken.signingInputFingerprint === receivedCompact.signingInputFingerprint : null,
+      compactToken: receivedCompact || issuance?.compactToken || details.compactToken || null,
+      issuedCompactToken: issuance?.compactToken || details.compactToken || null,
+      signerKeyMaterial: issuance?.signerKeyMaterial || authTokenLib.configuration.keyMaterial,
+      verifierKeyMaterial: details.verifierKeyMaterial || authTokenLib.configuration.keyMaterial,
+      signerLibrary: issuance?.signerLibrary || authTokenLib.configuration.library,
+      verifierLibrary: details.verifierLibrary || authTokenLib.configuration.library,
+      algorithmConsistent: issuance && receivedCompact ? issuance.issuedAlgorithm === receivedCompact.algorithm && receivedCompact.algorithm === authTokenLib.configuration.algorithm : null,
+      issuerRulesIdentical: issuance?.issuerRulesIdentical ?? null,
+      audienceRulesIdentical: issuance?.audienceRulesIdentical ?? null,
+      rootCause: issuance && details.tokenFingerprint !== issuance.issuedTokenFingerprint ? "TOKEN_MUTATED_BETWEEN_LOGIN_AND_VERIFICATION" : null
     };
   }
   app.use(authContext(authTokenLib, authorizationResolver, {
-    publicTrace: (details, req) => publicAuthTrace(details, req.requestId),
+    publicTrace: (details, req) => {
+      const receivedToken = details.tokenFingerprint ? req.get("authorization").replace(/^Bearer\s+/i, "") : null;
+      let tokenIdentifier = null;
+      try { tokenIdentifier = receivedToken ? JSON.parse(Buffer.from(receivedToken.split(".")[1], "base64url").toString("utf8"))?.jti ?? null : null; } catch (_) {}
+      return publicAuthTrace({ ...details, tokenIdentifier, receivedCompact: receivedToken ? authTokenLib.compactDiagnostics(receivedToken) : null }, req.requestId);
+    },
     trace(details) {
       authTrace({
         endpoint: "/api/auth/me",
