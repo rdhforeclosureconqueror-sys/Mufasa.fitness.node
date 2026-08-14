@@ -2126,6 +2126,10 @@ function createApp(options = {}) {
     ok(res, req.requestId, steppingService.recordOperationalEvent(req.auth.userId, req.body?.eventName), 202)));
   app.get("/api/me/greatness/activities/:activityId", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.activity(req.auth.userId, req.params.activityId))));
+  app.get("/api/me/greatness/activities/:activityId/verification-diagnostic", requireAuth, asyncHandler(async (req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, req.requestId, steppingService.diagnostic(req.auth.userId, req.params.activityId));
+  }));
   app.get("/api/me/greatness/activities/:activityId/route", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, steppingService.route(req.auth.userId, req.params.activityId))));
   app.delete("/api/me/greatness/activities/:activityId", requireAuth, createRateLimiter({ windowMs: 60_000, max: 20 }), asyncHandler(async (req, res) =>

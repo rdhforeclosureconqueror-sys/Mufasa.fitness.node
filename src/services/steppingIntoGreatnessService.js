@@ -51,6 +51,59 @@ function validateCompletion(input) {
   return {state,reasons,challengeEligible:verification.challengeEligible,personalBestEligible:verification.personalRecordEligible,rankingEligible:verification.rankingEligible};
 }
 
+function verificationDiagnostic(activity) {
+  const accepted=Number(activity?.gpsQuality?.acceptedSamples??activity?.route?.acceptedPointCount??0);
+  const rejected=Number(activity?.gpsQuality?.rejectedSamples??activity?.route?.rejectedPointCount??0);
+  const total=Math.max(0,accepted)+Math.max(0,rejected);
+  const trailId=activity?.selectedRoute?.routeId||activity?.selectedRoute?.routeFingerprint||null;
+  const reasons=Array.isArray(activity?.validation?.reasons)?activity.validation.reasons:[];
+  const authoritative=Boolean(activity?.activityId&&activity?.userId&&activity?.createdAt&&activity?.updatedAt);
+  const verified=authoritative&&activity?.status==="completed"&&activity?.validation?.state==="valid"&&ELIGIBLE_VERIFICATION_LEVELS.includes(activity?.verificationLevel);
+  const rule=(id,category,passed,reasonCode,evidence,enforced=true)=>({id,category,enforced,result:passed?"PASS":"FAIL",reasonCodes:passed?[]:[reasonCode],evidence});
+  const rules=[
+    rule("accepted_points_minimum","gps_quality",accepted>=2,"insufficient_accepted_points",{acceptedSamples:accepted,minimumAcceptedSamples:2}),
+    rule("suspicious_movement_absent","gps_quality",!activity?.gpsQuality?.suspiciousMovementDetected,"suspicious_movement",{suspiciousMovementDetected:Boolean(activity?.gpsQuality?.suspiciousMovementDetected)}),
+    rule("gps_rating_usable","gps_quality",!["poor","unavailable"].includes(activity?.gpsQuality?.rating),"poor_gps_quality",{rating:activity?.gpsQuality?.rating||"unavailable",rejectedRatings:["poor","unavailable"]}),
+    rule("distance_nonnegative","minimum_distance",Number.isFinite(activity?.distanceMeters)&&activity.distanceMeters>=0,"invalid_distance",{distanceMeters:activity?.distanceMeters,minimumDistanceMeters:0}),
+    rule("accepted_sample_ratio","accepted_rejected_sample_ratio",true,"accepted_sample_ratio_below_minimum",{acceptedSamples:accepted,rejectedSamples:rejected,acceptedRatio:total?accepted/total:null,minimumRatio:null,note:"No accepted-sample ratio threshold is configured."},false),
+    rule("route_or_trail_association","route_trail_association",true,"route_association_required",{trailIdentity:trailId,routeSource:activity?.selectedRoute?.routeSource||null,note:"Route association is not a completion-verification rule."},false),
+    rule("goal_completion","goal_completion",true,"goal_not_completed",{goalConfigured:activity?.goal?.distanceMeters!=null,goalCompleted:Boolean(activity?.goal?.completed),note:"Goal completion is recorded but is not a verification rule."},false),
+    rule("elapsed_moving_time_sanity","elapsed_moving_time_sanity",true,"time_sanity_failed",{elapsedTimeMs:activity?.elapsedTimeMs,movingTimeMs:activity?.movingTimeMs,pausedTimeMs:activity?.pausedTimeMs,note:"No time-sanity threshold is configured."},false),
+    rule("browser_suspension_resume","browser_suspension_resume",true,"browser_suspension_detected",{evaluatedFromPersistedActivity:false,note:"Suspension/resume telemetry is operational only and is not a verification rule."},false),
+    rule("speed_pace_plausibility","speed_pace_plausibility",true,"implausible_speed_or_pace",{averagePaceSecondsPerKilometer:activity?.averagePaceSecondsPerKilometer??null,note:"Only client-reported suspicious movement is currently enforced; no separate pace threshold is configured."},false),
+    rule("duplicate_replay","duplicate_replay_detection",true,"duplicate_or_replayed_activity",{clientSessionIdPresent:Boolean(activity?.clientSessionId),note:"Completion writes are idempotent by clientSessionId; no separate replay-verification rule is configured."},false),
+    rule("authoritative_activity_persistence","authoritative_persistence",authoritative,"missing_authoritative_activity_persistence",{persisted:authoritative,activityId:activity?.activityId||null}),
+    rule("trail_identity_present","missing_trail_identity",Boolean(trailId),"missing_trail_identity",{trailIdentity:trailId,note:"Required for trail-specific outcomes, not base activity verification."},false)
+  ];
+  const failingReasonCodes=[...new Set(rules.filter(item=>item.enforced&&item.result==="FAIL").flatMap(item=>item.reasonCodes))];
+  const trailEligible=verified&&Boolean(trailId);
+  return {
+    diagnosticVersion:"greatness-verification-trace-2026.08.14.1",
+    activityId:activity?.activityId||null,
+    activityTimestamp:activity?.endedAt||null,
+    completedDistanceMeters:Number.isFinite(activity?.distanceMeters)?activity.distanceMeters:null,
+    decision:verified?"VERIFIED":"NOT_VERIFIED",
+    verificationLevel:activity?.verificationLevel||"unverified",
+    validationState:activity?.validation?.state||"unknown",
+    persistedVerificationReasonCodes:reasons,
+    failingReasonCodes:[...new Set([...reasons,...failingReasonCodes])],
+    gpsQuality:{acceptedSamples:accepted,rejectedSamples:rejected,rating:activity?.gpsQuality?.rating||"unavailable",suspiciousMovementDetected:Boolean(activity?.gpsQuality?.suspiciousMovementDetected)},
+    rules,
+    authoritativePersistence:{persisted:authoritative,source:"steppingIntoGreatness.activities"},
+    qualifications:{
+      "greatness.activity.completed":verified,
+      xp:verified,
+      achievements:verified,
+      records:verified,
+      runCountAchievements:verified&&["run","jog","trail_run"].includes(activity?.activityType),
+      distanceAchievements:verified,
+      trailExploration:trailEligible,
+      verifiedTrailVisit:trailEligible,
+      trailPhotoContributionEligibility:trailEligible
+    }
+  };
+}
+
 function recordCandidates(activity) {
   const values={
     [`longest_${activity.activityType}`]:{value:activity.distanceMeters,unit:"meters"},
@@ -153,11 +206,12 @@ function createSteppingIntoGreatnessService({userStore,clock=()=>Date.now()}) {
   function setEligibility(userId,activityId,{validationState,verificationLevel,reason="activity_ineligible"}){let result;userStore.updateUser(userId,user=>{const d=ensureDomain(user),a=d.activities.find(x=>x.activityId===activityId&&!x.deletedAt);if(!a)throw new ApiError("ACTIVITY_NOT_FOUND","Activity not found",404);if(validationState)a.validation={...a.validation,state:validationState,challengeEligible:validationState==="valid",personalBestEligible:validationState==="valid",rankingEligible:validationState==="valid"};if(verificationLevel){if(!VERIFICATION_LEVELS.includes(verificationLevel))throw new ApiError("INVALID_VERIFICATION_LEVEL","Invalid verification level",400);a.verificationLevel=verificationLevel;}const eligible=a.validation.state==="valid"&&ELIGIBLE_VERIFICATION_LEVELS.includes(a.verificationLevel);a.challengeEligibility=a.personalRecordEligibility=a.rankingEligibility=eligible;if(!eligible)revokeActivityContributions(d,activityId,reason);recalculateDomain(d,userId);result=a;return user;});return result;}
   function journey(userId){const d=ensureDomain(userStore.loadUser(userId)),eligible=eligibleActivities(d),activities=d.activities.filter(a=>!a.deletedAt).map(a=>({...a,route:{...a.route,points:undefined}}));return{activities,personalBests:d.personalBests,achievements:d.achievements,lifetimeDistanceMeters:eligible.reduce((s,a)=>s+a.distanceMeters,0),activeDayTotal:new Set(eligible.map(a=>a.endedAt.slice(0,10))).size,longestStreakDays:streakFor(eligible),membership:activeMembership(d)};}
   function activity(userId,activityId){const a=ensureDomain(userStore.loadUser(userId)).activities.find(x=>x.activityId===activityId&&!x.deletedAt);if(!a)throw new ApiError("ACTIVITY_NOT_FOUND","Activity not found",404);return{...a,route:{...a.route,points:undefined}};}
+  function diagnostic(userId,activityId){return verificationDiagnostic(activity(userId,activityId));}
   function route(userId,activityId){const a=ensureDomain(userStore.loadUser(userId)).activities.find(x=>x.activityId===activityId&&!x.deletedAt);if(!a)throw new ApiError("ACTIVITY_NOT_FOUND","Activity not found",404);return a.route;}
   function feed(userId){if(!membership(userId))throw new ApiError("COMMUNITY_MEMBERSHIP_REQUIRED","Join The Greatness Movement to view the Movement Feed",403);return userStore.listUsers().flatMap(u=>{const d=ensureDomain(u),m=activeMembership(d);if(!m||!m.visibilityPreferences.showActivities)return[];return d.feedEvents.filter(e=>{const a=d.activities.find(x=>x.activityId===e.activityId);return a&&!a.deletedAt&&a.privacy?.activityVisibleToCommunity;}).map(e=>{const a=d.activities.find(x=>x.activityId===e.activityId),summary={...e.summaryData};if(!m.visibilityPreferences.showPace||!a.privacy?.paceVisible)delete summary.averagePaceSecondsPerKilometer;if(!m.visibilityPreferences.showExactStartTime||!a.privacy?.exactStartTimeVisible)delete summary.startedAt;return{...e,summaryData:summary};});}).filter(e=>e.visibility==="community").sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,50);}
   function weeklySummary(userId){if(!membership(userId))throw new ApiError("COMMUNITY_MEMBERSHIP_REQUIRED","Join The Greatness Movement to view the weekly summary",403);const end=clock(),start=end-7*86400000,activities=userStore.listUsers().flatMap(u=>{const d=ensureDomain(u);return activeMembership(d)?eligibleActivities(d).filter(a=>a.privacy?.activityVisibleToCommunity):[];}).filter(a=>Date.parse(a.endedAt)>=start&&Date.parse(a.endedAt)<=end);return{timezone:"UTC",weekBoundaryRule:"Rolling seven-day window ending at request time; activity days use UTC",periodStartsAt:iso(start),periodEndsAt:iso(end),verifiedActivities:activities.length,verifiedCommunityDistanceMeters:activities.reduce((s,a)=>s+a.distanceMeters,0),activeParticipatingMembers:new Set(activities.map(a=>a.userId)).size,personalRecordsEarned:activities.reduce((s,a)=>s+(a.personalRecordsEarned?.length||0),0),greatnessMarksEarned:activities.reduce((s,a)=>s+(a.achievementIds?.length||0),0)};}
   function recordOperationalEvent(userId,eventName){if(!CLIENT_OPERATIONAL_EVENTS.has(eventName))throw new ApiError("INVALID_OPERATIONAL_EVENT","Unsupported operational event",400);userStore.updateUser(userId,user=>{audit(ensureDomain(user),eventName);return user;});return{recorded:true};}
-  return{join,leave,updateSettings,membership,enroll,challengeList,start,complete,remove,setEligibility,recalculateDomain,revokeActivityContributions,journey,activity,feed,weeklySummary,route,recordOperationalEvent,validateCompletion};
+  return{join,leave,updateSettings,membership,enroll,challengeList,start,complete,remove,setEligibility,recalculateDomain,revokeActivityContributions,journey,activity,diagnostic,feed,weeklySummary,route,recordOperationalEvent,validateCompletion};
 }
 
-module.exports={createSteppingIntoGreatnessService,validateCompletion,verificationFor,ensureDomain,CHALLENGES,VERIFICATION_LEVELS,CLIENT_OPERATIONAL_EVENTS};
+module.exports={createSteppingIntoGreatnessService,validateCompletion,verificationDiagnostic,verificationFor,ensureDomain,CHALLENGES,VERIFICATION_LEVELS,CLIENT_OPERATIONAL_EVENTS};

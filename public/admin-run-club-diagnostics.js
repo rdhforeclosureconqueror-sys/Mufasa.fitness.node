@@ -7,6 +7,11 @@
   var results = document.getElementById("results");
   var authRequired = document.getElementById("authRequired");
   var diagnosticsContent = document.getElementById("diagnosticsContent");
+  var inspectTraceButton = document.getElementById("inspectVerificationTrace");
+  var copyTraceButton = document.getElementById("copyVerificationTrace");
+  var traceStatus = document.getElementById("verificationTraceStatus");
+  var traceOutput = document.getElementById("verificationTrace");
+  var redactedTrace = null;
 
   function text(tag, value, className) { var node = document.createElement(tag); node.textContent = value; if (className) node.className = className; return node; }
   function safeReason(error) { var message = error && error.message ? error.message : String(error || "Unknown browser error"); return message.replace(/Bearer\s+\S+/gi, "Bearer [redacted]").slice(0, 240); }
@@ -44,6 +49,29 @@
     try { return new window.Request(url, {method: "POST", credentials: "omit", cache: "no-store", headers: headers}); }
     catch (cause) { throw stagedError("Request construction", "The diagnostics Request object could not be constructed", cause); }
   }
+  async function ownerGet(path) {
+    var url = window.MaatApiClient?.resolve ? window.MaatApiClient.resolve(path) : new window.URL(path, (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || "https://mufasa-fitness-node.onrender.com") + "/").href;
+    var headers = constructHeaders(canonicalToken());
+    var response = await window.fetch(new window.Request(url, {method:"GET",credentials:"omit",cache:"no-store",headers:headers}));
+    var payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error?.message || "Verification trace request failed (" + response.status + ")");
+    return payload.data;
+  }
+  function traceAllowlist(activity, diagnostic) {
+    var q=diagnostic.qualifications||{}, gps=diagnostic.gpsQuality||{};
+    return {diagnosticVersion:diagnostic.diagnosticVersion||"unknown",activityTimestamp:diagnostic.activityTimestamp||activity.endedAt||null,completedDistanceMeters:diagnostic.completedDistanceMeters??activity.distanceMeters??null,decision:diagnostic.decision||"UNKNOWN",persistedVerificationReasonCodes:Array.isArray(diagnostic.persistedVerificationReasonCodes)?diagnostic.persistedVerificationReasonCodes:[],acceptedGpsSamples:gps.acceptedSamples??null,rejectedGpsSamples:gps.rejectedSamples??null,finalGpsQuality:gps.rating||"unavailable",suspiciousMovementDetected:Boolean(gps.suspiciousMovementDetected),authoritativePersistence:Boolean(diagnostic.authoritativePersistence?.persisted),eligibility:{"greatness.activity.completed":Boolean(q["greatness.activity.completed"]),xp:Boolean(q.xp),achievements:Boolean(q.achievements),records:Boolean(q.records),trailExploration:Boolean(q.trailExploration),verifiedTrailVisit:Boolean(q.verifiedTrailVisit),trailPhotoContribution:Boolean(q.trailPhotoContributionEligibility)}};
+  }
+  function renderTrace(trace) {
+    while(traceOutput.firstChild)traceOutput.removeChild(traceOutput.firstChild);
+    var rows=[["Activity timestamp",trace.activityTimestamp||"Unavailable"],["Completed distance",trace.completedDistanceMeters==null?"Unavailable":Number(trace.completedDistanceMeters).toFixed(1)+" m"],["Verification decision",trace.decision],["Persisted reason codes",trace.persistedVerificationReasonCodes.join(", ")||"None"],["Accepted GPS samples",trace.acceptedGpsSamples],["Rejected GPS samples",trace.rejectedGpsSamples],["Final GPS quality",trace.finalGpsQuality],["Suspicious movement",trace.suspiciousMovementDetected?"YES":"NO"],["Authoritatively persisted",trace.authoritativePersistence?"YES":"NO"]];
+    Object.entries(trace.eligibility).forEach(function(entry){rows.push(["Eligible: "+entry[0],entry[1]?"YES":"NO"]);});
+    rows.forEach(function(row){traceOutput.appendChild(text("dt",row[0]));traceOutput.appendChild(text("dd",String(row[1])));}); traceOutput.hidden=false;
+  }
+  async function inspectVerificationTrace() {
+    inspectTraceButton.disabled=true;copyTraceButton.disabled=true;traceStatus.textContent="Loading most recent completed activity…";
+    try {var journey=await ownerGet("/api/me/greatness/journey"), recent=(journey.activities||[]).filter(function(a){return a.status==="completed";}).sort(function(a,b){return String(b.endedAt||"").localeCompare(String(a.endedAt||""));})[0];if(!recent)throw new Error("No completed Greatness activity is available for this authenticated administrator.");var diagnostic=await ownerGet("/api/me/greatness/activities/"+encodeURIComponent(recent.activityId)+"/verification-diagnostic");redactedTrace=traceAllowlist(recent,diagnostic);renderTrace(redactedTrace);copyTraceButton.disabled=false;traceStatus.textContent="Redacted verification trace loaded.";}catch(error){redactedTrace=null;traceOutput.hidden=true;traceStatus.textContent=safeReason(error);}finally{inspectTraceButton.disabled=false;}
+  }
+  async function copyVerificationTrace(){if(!redactedTrace)return;try{await window.navigator.clipboard.writeText(JSON.stringify(redactedTrace,null,2));traceStatus.textContent="Redacted verification trace copied.";}catch(error){traceStatus.textContent="Copy failed: "+safeReason(error);}}
   function clearResults() { while (results.firstChild) results.removeChild(results.firstChild); }
   function renderGroup(group) {
     var section = text("section", ""); section.appendChild(text("h2", group.label)); section.appendChild(text("strong", group.status, group.status));
@@ -94,12 +122,15 @@
     authRequired.hidden = allowed;
     diagnosticsContent.hidden = !allowed;
     button.disabled = !allowed;
+    if(inspectTraceButton)inspectTraceButton.disabled=!allowed;
     if (!allowed) status.textContent = "Admin sign-in required";
     return allowed;
   }
 
   window.__runClubDiagnosticsRequest = {endpointUrl: endpointUrl, canonicalToken: canonicalToken, constructHeaders: constructHeaders, constructRequest: constructRequest};
   button.addEventListener("click", runDiagnostics);
+  inspectTraceButton?.addEventListener("click",inspectVerificationTrace);
+  copyTraceButton?.addEventListener("click",copyVerificationTrace);
   window.__runClubDiagnosticsAccessReady = initializeAdminAccess().catch(function () {
     authRequired.hidden = false;
     diagnosticsContent.hidden = true;
