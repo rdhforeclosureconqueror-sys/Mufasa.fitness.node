@@ -24,11 +24,11 @@ struct GreatnessWebContainer: UIViewRepresentable {
             guard enabled == "yes" || enabled == "true" else { return }
             guard message.name == "healthKit",
                   let request = message.body as? [String: Any],
-                  request["action"] as? String == "recentWorkouts" else { return }
+                  request["action"] as? String == "diagnostic" else { return }
             Task {
-                let response = await healthKit.recentWorkouts(days: min(max(request["days"] as? Int ?? 7, 1), 30))
+                let response = await healthKit.diagnostic(days: min(max(request["days"] as? Int ?? 7, 1), 30))
                 let data = try? JSONEncoder().encode(response)
-                let json = data.flatMap { String(data: $0, encoding: .utf8) } ?? "{\"status\":\"bridge_failed\",\"workouts\":[]}"
+                let json = data.flatMap { String(data: $0, encoding: .utf8) } ?? "{\"status\":\"BRIDGE_FAILURE\",\"healthKitAvailable\":true,\"authorizationRequested\":true,\"authorizationResult\":\"FAILED\",\"recentWorkoutCount\":0,\"mostRecentWorkoutStartTime\":null,\"durationSeconds\":null,\"distanceMeters\":null,\"routeAvailable\":false}"
                 await MainActor.run {
                     self.webView?.evaluateJavaScript("window.dispatchEvent(new CustomEvent('greatness:healthkit-response',{detail:\(json)}))")
                 }
