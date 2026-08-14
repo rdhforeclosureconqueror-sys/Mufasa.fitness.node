@@ -10,6 +10,20 @@ User JSON writes use same-directory temporary files and atomic rename. Synchrono
 
 Splits use accepted point cumulative distance and unrounded metre boundaries. The final incomplete split remains visible but is not record-eligible. Elevation is estimated only with at least three usable altitude samples, rejects altitude accuracy above 20 metres and changes above 50 metres, and requires a 3-metre vertical threshold.
 
+## Suspicious-movement verification policy (deployment `2026.08.14-suspicious-movement-policy-v2`)
+
+The old rule failed verification whenever the browser's `suspiciousMovementDetected` boolean was true. Because the GPS filter sets that boolean after the first rejected `gps_jump` or `impossible_speed` sample, one outlier invalidated the entire activity.
+
+The server now derives and persists movement evidence from the submitted sample sequence. Accepted-point filtering is unchanged: rejected points remain excluded from distance, route, split, elevation, and pace calculations. A completion receives `suspicious_movement` only when at least one deterministic pattern is present:
+
+* movement-related rejections are at least 50% of at least 20 total samples;
+* at least 3 movement-related rejections are consecutive;
+* at least 3 `impossible_speed` rejections are consecutive (sustained impossible speed);
+* at least 3 `gps_jump` rejections occur (repeated large jumps); or
+* adjacent raw coordinates show an extreme teleport of at least 1,000 metres.
+
+Paused samples do not break a movement sequence, but poor-accuracy, stale, or other non-movement rejections do. The existing minimum of 2 accepted samples and the existing `poor`/`unavailable` GPS-rating, invalid-distance, authentication, idempotency, and eligibility rules remain enforced. Isolated ordinary spikes and the observed 1,239 accepted / 228 rejected ratio therefore do not independently make a good-quality activity suspicious. The admin diagnostic trace remains active and now records the evaluated patterns, evidence, and thresholds.
+
 Streaks use UTC calendar days. A valid verified GPS activity makes its UTC completion day active; multiple activities on one day count once. A streak begins on the first active day and breaks after a missing UTC day. Existing activity timestamps are not reinterpreted if the member changes timezone. Four-Week Momentum remains disabled until a product rule is approved. Step achievements and verified step challenges remain disabled pending a trusted provider.
 
 Weekly community summaries use a rolling seven-day UTC window and aggregate verified metrics only. Feed results are limited to 50 newest events. Provider connections remain unavailable.

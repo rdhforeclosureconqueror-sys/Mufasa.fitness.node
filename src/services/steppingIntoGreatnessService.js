@@ -5,6 +5,7 @@ const { ApiError } = require("../lib/apiResponse");
 const { ACTIVITY_TYPES, DEFAULT_PRIVACY, BADGES } = require("../stepping/domain");
 const { acceptedPoints, activityMetrics } = require("../stepping/activityMetrics");
 const { normalizeGoal } = require("../stepping/distanceGoals");
+const { SUSPICIOUS_MOVEMENT_THRESHOLDS, evaluateSuspiciousMovement } = require("../stepping/suspiciousMovementPolicy");
 
 const id = (prefix) => `${prefix}_${crypto.randomUUID()}`;
 const iso = (value = Date.now()) => new Date(value).toISOString();
@@ -42,13 +43,14 @@ function verificationFor(sourceType, provider, state) {
 
 function validateCompletion(input) {
   const reasons=[];
-  if((input.gpsQuality?.acceptedSamples||0)<2) reasons.push("insufficient_accepted_points");
-  if(input.gpsQuality?.suspiciousMovementDetected) reasons.push("suspicious_movement");
+  const movement=evaluateSuspiciousMovement({samples:input.samples,acceptedSamples:input.gpsQuality?.acceptedSamples,rejectedSamples:input.gpsQuality?.rejectedSamples});
+  if((input.gpsQuality?.acceptedSamples||0)<SUSPICIOUS_MOVEMENT_THRESHOLDS.minimumAcceptedSamples) reasons.push("insufficient_accepted_points");
+  if(movement.suspicious) reasons.push("suspicious_movement");
   if(["poor","unavailable"].includes(input.gpsQuality?.rating)) reasons.push("poor_gps_quality");
   if(!Number.isFinite(input.distanceMeters)||input.distanceMeters<0) reasons.push("invalid_distance");
   const state=reasons.includes("invalid_distance")||reasons.includes("insufficient_accepted_points")?"invalid":reasons.length?"questionable":"valid";
   const verification=verificationFor(input.sourceType||"browser_gps",input.sourceProvider,state);
-  return {state,reasons,challengeEligible:verification.challengeEligible,personalBestEligible:verification.personalRecordEligible,rankingEligible:verification.rankingEligible};
+  return {state,reasons,movementEvidence:movement,challengeEligible:verification.challengeEligible,personalBestEligible:verification.personalRecordEligible,rankingEligible:verification.rankingEligible};
 }
 
 function verificationDiagnostic(activity) {
@@ -61,8 +63,8 @@ function verificationDiagnostic(activity) {
   const verified=authoritative&&activity?.status==="completed"&&activity?.validation?.state==="valid"&&ELIGIBLE_VERIFICATION_LEVELS.includes(activity?.verificationLevel);
   const rule=(id,category,passed,reasonCode,evidence,enforced=true)=>({id,category,enforced,result:passed?"PASS":"FAIL",reasonCodes:passed?[]:[reasonCode],evidence});
   const rules=[
-    rule("accepted_points_minimum","gps_quality",accepted>=2,"insufficient_accepted_points",{acceptedSamples:accepted,minimumAcceptedSamples:2}),
-    rule("suspicious_movement_absent","gps_quality",!activity?.gpsQuality?.suspiciousMovementDetected,"suspicious_movement",{suspiciousMovementDetected:Boolean(activity?.gpsQuality?.suspiciousMovementDetected)}),
+    rule("accepted_points_minimum","gps_quality",accepted>=SUSPICIOUS_MOVEMENT_THRESHOLDS.minimumAcceptedSamples,"insufficient_accepted_points",{acceptedSamples:accepted,minimumAcceptedSamples:SUSPICIOUS_MOVEMENT_THRESHOLDS.minimumAcceptedSamples}),
+    rule("suspicious_movement_pattern_absent","gps_quality",!activity?.validation?.movementEvidence?.suspicious,"suspicious_movement",activity?.validation?.movementEvidence||{note:"No persisted deterministic suspicious-movement pattern."}),
     rule("gps_rating_usable","gps_quality",!["poor","unavailable"].includes(activity?.gpsQuality?.rating),"poor_gps_quality",{rating:activity?.gpsQuality?.rating||"unavailable",rejectedRatings:["poor","unavailable"]}),
     rule("distance_nonnegative","minimum_distance",Number.isFinite(activity?.distanceMeters)&&activity.distanceMeters>=0,"invalid_distance",{distanceMeters:activity?.distanceMeters,minimumDistanceMeters:0}),
     rule("accepted_sample_ratio","accepted_rejected_sample_ratio",true,"accepted_sample_ratio_below_minimum",{acceptedSamples:accepted,rejectedSamples:rejected,acceptedRatio:total?accepted/total:null,minimumRatio:null,note:"No accepted-sample ratio threshold is configured."},false),
@@ -78,7 +80,7 @@ function verificationDiagnostic(activity) {
   const failingReasonCodes=[...new Set(rules.filter(item=>item.enforced&&item.result==="FAIL").flatMap(item=>item.reasonCodes))];
   const trailEligible=verified&&Boolean(trailId);
   return {
-    diagnosticVersion:"greatness-verification-trace-2026.08.14.1",
+    diagnosticVersion:"greatness-verification-trace-2026.08.14.3",
     activityId:activity?.activityId||null,
     activityTimestamp:activity?.endedAt||null,
     completedDistanceMeters:Number.isFinite(activity?.distanceMeters)?activity.distanceMeters:null,
@@ -106,7 +108,7 @@ function verificationDiagnostic(activity) {
 
 function redactedVerificationTrace(activity) {
   const diagnostic=verificationDiagnostic(activity),q=diagnostic.qualifications,gps=diagnostic.gpsQuality;
-  return {diagnosticVersion:"greatness-verification-trace-2026.08.14.2",activityTimestamp:diagnostic.activityTimestamp,completedDistanceMeters:diagnostic.completedDistanceMeters,decision:diagnostic.decision,persistedVerificationReasonCodes:diagnostic.persistedVerificationReasonCodes,acceptedGpsSamples:gps.acceptedSamples,rejectedGpsSamples:gps.rejectedSamples,finalGpsQuality:gps.rating,suspiciousMovementDetected:gps.suspiciousMovementDetected,authoritativePersistence:diagnostic.authoritativePersistence.persisted,eligibility:{"greatness.activity.completed":q["greatness.activity.completed"],xp:q.xp,achievements:q.achievements,records:q.records,trailExploration:q.trailExploration,verifiedTrailVisit:q.verifiedTrailVisit,trailPhotoContribution:q.trailPhotoContributionEligibility}};
+  return {diagnosticVersion:"greatness-verification-trace-2026.08.14.3",activityTimestamp:diagnostic.activityTimestamp,completedDistanceMeters:diagnostic.completedDistanceMeters,decision:diagnostic.decision,persistedVerificationReasonCodes:diagnostic.persistedVerificationReasonCodes,acceptedGpsSamples:gps.acceptedSamples,rejectedGpsSamples:gps.rejectedSamples,finalGpsQuality:gps.rating,suspiciousMovementDetected:gps.suspiciousMovementDetected,authoritativePersistence:diagnostic.authoritativePersistence.persisted,eligibility:{"greatness.activity.completed":q["greatness.activity.completed"],xp:q.xp,achievements:q.achievements,records:q.records,trailExploration:q.trailExploration,verifiedTrailVisit:q.verifiedTrailVisit,trailPhotoContribution:q.trailPhotoContributionEligibility}};
 }
 
 function recordCandidates(activity) {
@@ -204,7 +206,8 @@ function createSteppingIntoGreatnessService({userStore,clock=()=>Date.now()}) {
       const now=iso(clock()),validation=validateCompletion({...input,sourceType:"browser_gps"}),verification=verificationFor("browser_gps","browser_geolocation",validation.state),privacy={...DEFAULT_PRIVACY,...input.privacy},points=acceptedPoints(input.samples),computed=activityMetrics(points);
       const goalCompleted=goal.distanceMeters!=null&&Number(input.distanceMeters)>=goal.distanceMeters;
       const selected=input.selectedRoute?selectedRouteForPersistence(input.selectedRoute):(existing?.selectedRoute||null);
-      const activity={activityId:existing?.activityId||id("activity"),clientSessionId:input.clientSessionId||null,userId,activityType:input.activityType,status:validation.state==="invalid"?"invalid":"completed",...verification,startedAt:iso(input.startedAt),endedAt:iso(input.endedAt),elapsedTimeMs:Math.max(0,Number(input.elapsedTimeMs)||0),movingTimeMs:Math.max(0,Number(input.movingTimeMs)||0),pausedTimeMs:Math.max(0,Number(input.pausedTimeMs)||0),distanceMeters:Math.max(0,Number(input.distanceMeters)||0),goal:{...goal,completed:goalCompleted,completedAt:goalCompleted?(input.goal?.completedAt||iso(input.endedAt)):null},selectedRoute:selected,elevationGainMeters:computed.elevation?.meters,elevationEstimated:Boolean(computed.elevation),averagePaceSecondsPerKilometer:input.distanceMeters>0?(Number(input.movingTimeMs)/1000)/(input.distanceMeters/1000):undefined,splits:{miles:computed.mileSplits,kilometers:computed.kilometerSplits},route:{points,acceptedPointCount:input.gpsQuality?.acceptedSamples||points.length,rejectedPointCount:input.gpsQuality?.rejectedSamples||0,visibility:"private",simplification:"uniform_limit_2000"},gpsQuality:input.gpsQuality||{rating:"unavailable",acceptedSamples:0,rejectedSamples:0},validation,privacy,challengeContributionIds:[],achievementIds:[],personalRecordsEarned:[],schemaVersion:5,createdAt:existing?.createdAt||now,updatedAt:now};
+      const gpsQuality={...(input.gpsQuality||{rating:"unavailable",acceptedSamples:0,rejectedSamples:0}),suspiciousMovementDetected:validation.movementEvidence.suspicious};
+      const activity={activityId:existing?.activityId||id("activity"),clientSessionId:input.clientSessionId||null,userId,activityType:input.activityType,status:validation.state==="invalid"?"invalid":"completed",...verification,startedAt:iso(input.startedAt),endedAt:iso(input.endedAt),elapsedTimeMs:Math.max(0,Number(input.elapsedTimeMs)||0),movingTimeMs:Math.max(0,Number(input.movingTimeMs)||0),pausedTimeMs:Math.max(0,Number(input.pausedTimeMs)||0),distanceMeters:Math.max(0,Number(input.distanceMeters)||0),goal:{...goal,completed:goalCompleted,completedAt:goalCompleted?(input.goal?.completedAt||iso(input.endedAt)):null},selectedRoute:selected,elevationGainMeters:computed.elevation?.meters,elevationEstimated:Boolean(computed.elevation),averagePaceSecondsPerKilometer:input.distanceMeters>0?(Number(input.movingTimeMs)/1000)/(input.distanceMeters/1000):undefined,splits:{miles:computed.mileSplits,kilometers:computed.kilometerSplits},route:{points,acceptedPointCount:input.gpsQuality?.acceptedSamples||points.length,rejectedPointCount:input.gpsQuality?.rejectedSamples||0,visibility:"private",simplification:"uniform_limit_2000"},gpsQuality,validation,privacy,challengeContributionIds:[],achievementIds:[],personalRecordsEarned:[],schemaVersion:5,createdAt:existing?.createdAt||now,updatedAt:now};
       if(existing)d.activities[d.activities.indexOf(existing)]=activity;else d.activities.push(activity);recalculateDomain(d,userId);const member=activeMembership(d);if(member&&privacy.activityVisibleToCommunity&&member.visibilityPreferences.showActivities){d.feedEvents.push({eventId:id("event"),communityId:"greatness_movement",userId,activityId:activity.activityId,eventType:"activity_completed",summaryData:{activityType:activity.activityType,distanceMeters:activity.distanceMeters,durationMs:activity.movingTimeMs,goalLabel:goalCompleted?goal.label:undefined,averagePaceSecondsPerKilometer:activity.averagePaceSecondsPerKilometer,startedAt:activity.startedAt},visibility:"community",createdAt:now});audit(d,"community_event_created",{activityId:activity.activityId});}audit(d,"save_succeeded",{activityId:activity.activityId,validationState:validation.state});result=activity;return user;});return result;
   }
   function remove(userId,activityId){let result;userStore.updateUser(userId,user=>{const d=ensureDomain(user),a=d.activities.find(x=>x.activityId===activityId);if(!a)throw new ApiError("ACTIVITY_NOT_FOUND","Activity not found",404);if(a.deletedAt){result={activityId,deleted:true,duplicateDeletion:true};return user;}a.deletedAt=iso(clock());a.deletedReason="owner_deleted";a.status="deleted";a.route={visibility:"private",points:[],detachedAt:a.deletedAt};d.feedEvents=d.feedEvents.filter(e=>e.activityId!==activityId);revokeActivityContributions(d,activityId,"activity_deleted");recalculateDomain(d,userId);audit(d,"activity_deleted",{activityId});result={activityId,deleted:true,duplicateDeletion:false};return user;});return result;}
