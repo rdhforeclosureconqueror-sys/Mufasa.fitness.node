@@ -2117,6 +2117,10 @@ function createApp(options = {}) {
   app.post("/api/me/greatness/trail-contributions/:contributionId/reports", requireAuth, createRateLimiter({name:"trail-contribution-report",windowMs:3600000,max:20}), asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.report(req.auth.userId,req.params.contributionId,req.body?.reason),201)));
   app.get("/api/greatness/trails/:trailId/gallery", asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.gallery(req.params.trailId,req.query.sort))));
   const requireTrailAdmin = (req, _res, next) => ["super_admin", "admin"].includes(req.authz?.role || req.auth?.role) ? next() : next(new ApiError("FORBIDDEN", "Trail route management requires an admin role", 403));
+  app.get("/api/admin/diagnostics/greatness/most-recent-completed", requireAuth, requireTrailAdmin, asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,steppingService.mostRecentCompletedDiagnostic());
+  }));
   app.patch("/api/admin/trail-contributions/:contributionId/moderation", requireAuth, requireTrailAdmin, asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.moderate(req.auth.userId,req.params.contributionId,req.body?.status))));
   app.get("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => ok(res, req.requestId, { routes: trailRouteStore.list() })));
   app.post("/api/admin/trail-routes", requireAuth, requireTrailAdmin, asyncHandler(async (req, res) => { const geometry = req.body?.importFormat === "gpx" ? parseGpx(req.body.importData) : req.body?.importFormat === "geojson" ? parseGeoJSON(req.body.importData) : req.body?.geometry; return ok(res, req.requestId, trailRouteStore.save({ ...req.body, geometry }), 201); }));
