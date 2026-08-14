@@ -67,6 +67,8 @@ module.exports = Object.freeze([
     ["GET", "/api/me/greatness/journey", "sensitive-private"],
     ["POST", "/api/me/greatness/activities", "sensitive-private"],
     ["POST", "/api/me/greatness/activities/start-with-route", "sensitive-private"],
+    ["POST", "/api/me/greatness/healthkit/evidence", "owner-scoped-private-evidence"],
+    ["GET", "/api/me/greatness/healthkit/diagnostic", "owner-scoped-redacted-diagnostic"],
     ["POST", "/api/me/greatness/challenges/:challengeId/route-suggestions", "generated-route-options"],
     ["POST", "/api/me/greatness/nearby-trails/search", "privacy-safe-provider-results"],
     ["GET", "/api/me/greatness/nearby-trails/provider-health", "privacy-safe-provider-health"],
@@ -81,7 +83,7 @@ module.exports = Object.freeze([
     ["GET", "/api/me/greatness/movement-feed", "privacy-filtered-community"]
   ].map(([method, routePath, publicOutput]) => Object.freeze({
     method, path: routePath, authentication: "required", allowedRoles: [], requiredPermissions: [],
-    membership: "not-required", ownership: "authenticated-user", featureFlag: null, publicOutput,
+    membership: "not-required", ownership: "authenticated-user", featureFlag: routePath.includes("/healthkit/") ? "HEALTHKIT_ENABLED + HEALTHKIT_EVIDENCE_INGESTION_ENABLED" : null, publicOutput,
     rateLimit: method === "POST" && routePath.endsWith("operational-events") ? "120/minute/user" : (routePath.includes("goal-routes") || routePath.endsWith("route-suggestions") ? "6/minute/user" : (method === "GET" ? null : "20/minute/user")),
     compatibility: null, publicWrite: null
   })),

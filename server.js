@@ -53,6 +53,8 @@ const { createAiCoachService } = require("./src/services/aiCoachService");
 const { loadAiCoachConfig } = require("./src/config/aiCoach");
 const { createOpenAiCoachProvider } = require("./src/ai/openAiCoachProvider");
 const { createSteppingIntoGreatnessService } = require("./src/services/steppingIntoGreatnessService");
+const { loadHealthKitConfig } = require("./src/config/healthKit");
+const { createHealthKitEvidenceService } = require("./src/services/healthKitEvidenceService");
 const { createTrailContributionService } = require("./src/services/trailContributionService");
 const { createNearbyTrailService, createConfiguredTrailProvider } = require("./src/services/nearbyTrailService");
 const { createTrailRouteStore } = require("./src/repositories/trailRouteStore");
@@ -406,6 +408,8 @@ function createApp(options = {}) {
   const userStore = createUserStore({ userDir: USER_DIR });
   const authCredentialStore = createAuthCredentialStore({ filePath: options.authCredentialPath || path.join(OPS_DIR, "auth-credentials.json") });
   const steppingService = createSteppingIntoGreatnessService({ userStore });
+  const healthKitConfig = loadHealthKitConfig(options.env || process.env);
+  const healthKitEvidenceService = createHealthKitEvidenceService({ userStore, config:healthKitConfig, hashSecret:(options.env || process.env).HEALTHKIT_EVIDENCE_HASH_SECRET });
   let trailContributionService = null;
   const memberExperienceCapabilityService = createMemberExperienceCapabilityService({ userStore, challengeService });
   const trailProvider = options.nearbyTrailProvider || createConfiguredTrailProvider({ env: process.env, fetchImpl: options.fetch || global.fetch });
@@ -2091,6 +2095,15 @@ function createApp(options = {}) {
   }));
   app.post("/api/me/greatness/activities/start-with-route", requireAuth, createRateLimiter({ windowMs:60_000,max:20 }), asyncHandler(async(req,res)=>
     ok(res,req.requestId,steppingService.start(req.auth.userId,req.body),201)));
+  // Private, additive evidence only: this route never creates an activity or emits rewards.
+  app.post("/api/me/greatness/healthkit/evidence", requireAuth, createRateLimiter({ name:"healthkit-evidence",windowMs:60_000,max:30 }), asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,healthKitEvidenceService.ingest(req.auth.userId,req.body),202);
+  }));
+  app.get("/api/me/greatness/healthkit/diagnostic", requireAuth, asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,healthKitEvidenceService.diagnostic(req.auth.userId));
+  }));
   app.post("/api/me/greatness/nearby-trails/search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
     ok(res, req.requestId, await nearbyTrailService.search(req.auth.userId, req.body))));
   app.post("/api/me/greatness/trails/text-search", requireAuth, createRateLimiter({ windowMs: 60_000, max: 10 }), asyncHandler(async (req, res) =>
