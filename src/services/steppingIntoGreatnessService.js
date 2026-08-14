@@ -78,15 +78,23 @@ function verificationDiagnostic(activity) {
   const failingReasonCodes=[...new Set(rules.filter(item=>item.enforced&&item.result==="FAIL").flatMap(item=>item.reasonCodes))];
   const trailEligible=verified&&Boolean(trailId);
   return {
+    diagnosticVersion:"greatness-verification-trace-2026.08.14.1",
     activityId:activity?.activityId||null,
+    activityTimestamp:activity?.endedAt||null,
+    completedDistanceMeters:Number.isFinite(activity?.distanceMeters)?activity.distanceMeters:null,
     decision:verified?"VERIFIED":"NOT_VERIFIED",
     verificationLevel:activity?.verificationLevel||"unverified",
     validationState:activity?.validation?.state||"unknown",
+    persistedVerificationReasonCodes:reasons,
     failingReasonCodes:[...new Set([...reasons,...failingReasonCodes])],
+    gpsQuality:{acceptedSamples:accepted,rejectedSamples:rejected,rating:activity?.gpsQuality?.rating||"unavailable",suspiciousMovementDetected:Boolean(activity?.gpsQuality?.suspiciousMovementDetected)},
     rules,
     authoritativePersistence:{persisted:authoritative,source:"steppingIntoGreatness.activities"},
     qualifications:{
       "greatness.activity.completed":verified,
+      xp:verified,
+      achievements:verified,
+      records:verified,
       runCountAchievements:verified&&["run","jog","trail_run"].includes(activity?.activityType),
       distanceAchievements:verified,
       trailExploration:trailEligible,
