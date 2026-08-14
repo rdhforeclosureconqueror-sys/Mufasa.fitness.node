@@ -18,6 +18,8 @@ test("iOS diagnostic is redacted and the target remains read-only", () => {
   assert.doesNotMatch(bridge, /toShare:\s*\[[^\]]+\]/);
   assert.match(entitlements, /com\.apple\.developer\.healthkit/);
   assert.doesNotMatch(entitlements, /access|healthkit\.background-delivery/);
+  const project = fs.readFileSync(path.join(root, "..", "project.yml"), "utf8");
+  assert.doesNotMatch(project, /HEALTHKIT_FEATURE_ENABLED/);
 });
 
 function fixture(enabled = true, evidenceIngestionEnabled = enabled) {

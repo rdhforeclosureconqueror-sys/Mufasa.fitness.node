@@ -13,6 +13,9 @@
   var traceStatus = document.getElementById("verificationTraceStatus");
   var traceOutput = document.getElementById("verificationTrace");
   var redactedTrace = null;
+  var healthKitButton = document.getElementById("runHealthKitDiagnostic");
+  var healthKitStatus = document.getElementById("healthKitStatus");
+  var healthKitResults = document.getElementById("healthKitResults");
 
   function text(tag, value, className) { var node = document.createElement(tag); node.textContent = value; if (className) node.className = className; return node; }
   function safeReason(error) { var message = error && error.message ? error.message : String(error || "Unknown browser error"); return message.replace(/Bearer\s+\S+/gi, "Bearer [redacted]").slice(0, 240); }
@@ -87,6 +90,52 @@
     status.textContent = "Overall: FAIL. " + stage + " — FAIL. " + (backendReached ? "No backend phase results were returned." : "Diagnostics backend was not reached.");
   }
 
+  function renderHealthKitDiagnostic(detail) {
+    if (!healthKitResults || !healthKitStatus) return;
+    while (healthKitResults.firstChild) healthKitResults.removeChild(healthKitResults.firstChild);
+    if (!detail || detail.status === "ADMIN_AUTHORIZATION_REQUIRED" || detail.status === "ADMIN_AUTHORIZATION_FAILED") {
+      healthKitResults.hidden = true;
+      healthKitStatus.textContent = "Authoritative admin authorization failed. HealthKit was not accessed.";
+      return;
+    }
+    var rows = [
+      ["HealthKit available", detail.healthKitAvailable ? "YES" : "NO"],
+      ["Authorization request completed", detail.authorizationRequestCompleted ? "YES" : "NO"],
+      ["Recent walking/running workout count", String(Number(detail.recentWorkoutCount) || 0)],
+      ["Most recent workout timestamp", detail.mostRecentWorkoutStartTime || "—"],
+      ["Duration", detail.durationSeconds == null ? "—" : Number(detail.durationSeconds).toFixed(1) + " seconds"],
+      ["Distance", detail.distanceMeters == null ? "—" : Number(detail.distanceMeters).toFixed(1) + " metres"],
+      ["Workout-route present", detail.routeAvailable ? "YES" : "NO"]
+    ];
+    rows.forEach(function (row) { healthKitResults.appendChild(text("dt", row[0])); healthKitResults.appendChild(text("dd", row[1])); });
+    healthKitResults.hidden = false;
+    healthKitStatus.textContent = detail.status === "READY" ? "Local read-only HealthKit diagnostic complete." :
+      detail.status === "NO_WORKOUTS_FOUND" ? "No recent walking or running workouts were returned." :
+      detail.status === "HEALTHKIT_UNAVAILABLE" ? "HealthKit is unavailable on this device." :
+      detail.status === "PERMISSION_DENIED" ? "HealthKit permission was denied or restricted." : "The native HealthKit bridge failed.";
+  }
+
+  async function runHealthKitDiagnostic() {
+    healthKitButton.disabled = true;
+    healthKitStatus.textContent = "Verifying authoritative admin authorization…";
+    try {
+      var token = canonicalToken();
+      var authorization = await window.fetch(new window.Request(
+        window.MaatApiClient?.resolve ? window.MaatApiClient.resolve("/api/admin/diagnostics/healthkit/authorize") : new window.URL("/api/admin/diagnostics/healthkit/authorize", window.MAAT_BACKEND_ORIGIN + "/").href,
+        {method:"GET", credentials:"omit", cache:"no-store", headers:constructHeaders(token)}
+      ));
+      if (!authorization.ok) throw new Error("Admin authorization was denied (" + authorization.status + ")");
+      var handler = window.webkit?.messageHandlers?.healthKit;
+      if (!handler || typeof handler.postMessage !== "function") throw new Error("Open this page inside the Greatness iOS app to use HealthKit Test");
+      handler.postMessage({action:"diagnostic", days:7, token:token});
+      healthKitStatus.textContent = "Admin authorized. Waiting for the native HealthKit permission result…";
+    } catch (error) {
+      healthKitResults.hidden = true;
+      healthKitStatus.textContent = safeReason(error);
+      healthKitButton.disabled = false;
+    }
+  }
+
   async function runDiagnostics() {
     button.disabled = true; status.textContent = "Running isolated diagnostics…"; clearResults(); var endpoint = ENDPOINT_PATH; var backendReached = false;
     try {
@@ -126,6 +175,7 @@
     button.disabled = !allowed;
     if(inspectTraceButton)inspectTraceButton.disabled=!allowed;
     if(inspectProductionTraceButton)inspectProductionTraceButton.disabled=!allowed;
+    if(healthKitButton)healthKitButton.disabled=!allowed;
     if (!allowed) status.textContent = "Admin sign-in required";
     return allowed;
   }
@@ -135,10 +185,13 @@
   inspectTraceButton?.addEventListener("click",inspectVerificationTrace);
   inspectProductionTraceButton?.addEventListener("click",inspectProductionVerificationTrace);
   copyTraceButton?.addEventListener("click",copyVerificationTrace);
+  healthKitButton?.addEventListener("click",runHealthKitDiagnostic);
+  window.addEventListener?.("greatness:healthkit-response",function(event){renderHealthKitDiagnostic(event.detail);if(healthKitButton)healthKitButton.disabled=false;});
   window.__runClubDiagnosticsAccessReady = initializeAdminAccess().catch(function () {
     authRequired.hidden = false;
     diagnosticsContent.hidden = true;
     button.disabled = true;
+    if(healthKitButton)healthKitButton.disabled=true;
     return false;
   });
 })(window, document);

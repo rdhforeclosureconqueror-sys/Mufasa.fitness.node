@@ -19,9 +19,8 @@ It has no HealthKit write entitlement and requests no share types.
 
 ## Values needed for the phone test
 
-* App build flag: set `HEALTHKIT_FEATURE_ENABLED` to `YES` for the test configuration.
-  It defaults to `NO`; when off, the native test button and message-handler response
-  are unavailable.
+* App build flags: none. The local diagnostic is continuously compiled into the iOS
+  target and is entered from the authenticated Admin / Run Club Diagnostics page.
 * Info.plist read description, exactly:
   `Greatness reads walking and running workouts so you can privately compare them with activities you already recorded.`
 * No `NSHealthUpdateUsageDescription` is required because the app does not write.
@@ -35,9 +34,18 @@ It has no HealthKit write entitlement and requests no share types.
   `openssl rand -hex 32`; never place it in Xcode or the app.
 
 The current Render backend can serve the unchanged web page during this test with no
-production-behavior change. Keeping the two server flags false closes both private
-HealthKit endpoints. The native diagnostic reads HealthKit locally and does not
-depend on those endpoints.
+production-behavior change. Keeping the two server HealthKit flags false closes the private
+evidence routes. The only backend call made by the local diagnostic is the existing
+JWT/authorization-role protected, read-only
+`GET /api/admin/diagnostics/healthkit/authorize` gate; it stores nothing.
+
+The browser performs that authorization check before posting to the native bridge,
+and the native bridge independently calls the same endpoint with the canonical bearer
+token before touching `HKHealthStore`. The endpoint uses the existing
+`ops.read_observability` permission resolved only for authoritative `admin` and
+`super_admin` roles. A hidden button is not the security boundary: missing tokens are
+401, ordinary members are 403, and HealthKit is not accessed unless the native check
+receives 200.
 
 ## Signing and installation
 
@@ -60,8 +68,7 @@ Exact Xcode steps:
 4. Select the blue project, select target **GreatnessHealthKitApp**, then open
    **Signing & Capabilities**. Check **Automatically manage signing**, choose the paid
    **Team**, and confirm the bundle identifier and HealthKit capability have no errors.
-5. In **Build Settings**, search for `HEALTHKIT_FEATURE_ENABLED`, select the Run/Debug
-   value, and change it from `NO` to `YES`. Do not change the Release value.
+5. Do not add or change any HealthKit application or Render feature flag.
 6. In the scheme/device picker, select the connected iPhone (not “Any iOS Device”),
    choose **Product > Run**, and accept the developer certificate on the phone if iOS
    requests it.
@@ -70,18 +77,20 @@ Exact Xcode steps:
 
 1. Before installing, create or retain at least one walking/running workout in Apple
    Fitness/Health; a route is optional. Keep Render's two HealthKit flags false.
-2. Run the app from Xcode and confirm the existing sign-in and browser-recorded
-   activity path still behaves normally. Do not submit HealthKit evidence.
-3. Tap the small native **HealthKit Test** button, then **Request Permission & Check**.
+2. Run the app from Xcode, sign in as an account authoritatively assigned `admin` or
+   `super_admin`, and open **Admin / Run Club Diagnostics**. Confirm the existing
+   browser-recorded activity path still behaves normally. Do not submit evidence.
+3. Tap **Open HealthKit Test**. The page and native bridge each verify the session
+   against the protected backend authorization endpoint before HealthKit is touched.
 4. At the iOS Health prompt, allow Workouts and Workout Routes. The private sheet must
-   show availability, whether authorization was requested, the authorization result,
+   show availability, whether the authorization request completed,
    count, newest start time, duration, distance, and route availability only. It must
    show no coordinates.
 5. Repeat after removing Health access in **Settings > Privacy & Security > Health >
    Greatness**, and repeat with no recent walking/running workout. Apple deliberately
    does not disclose read denial to apps; an empty query therefore displays
-   `NO_WORKOUTS_FOUND` with `REQUEST_COMPLETED_READ_STATUS_PRIVATE`, while an explicit
-   HealthKit authorization error displays `PERMISSION_DENIED`.
+   `NO_WORKOUTS_FOUND`, while an explicit HealthKit authorization error displays
+   `PERMISSION_DENIED`.
 6. Confirm controlled messages for unavailable HealthKit, permission error, no
    workouts, or bridge failure. The backend returns distinct closed errors
    `HEALTHKIT_CAPABILITY_DISABLED` and `HEALTHKIT_INGESTION_DISABLED` when those
@@ -89,6 +98,6 @@ Exact Xcode steps:
 7. Close the sheet and reconfirm the browser activity, GPS verification, XP,
    achievements, entitlement/free-paid, and upgrade-continuity behavior is unchanged.
 
-For an optional bridge-only check, invoke
-`window.webkit.messageHandlers.healthKit.postMessage({action:'diagnostic',days:7})`.
-The `greatness:healthkit-response` event contains the same redacted diagnostic fields.
+A normal member cannot bypass the page by invoking the message handler: the bridge
+requires a canonical token and independently obtains a 200 admin authorization
+response. A member token receives 403 and produces no HealthKit request.

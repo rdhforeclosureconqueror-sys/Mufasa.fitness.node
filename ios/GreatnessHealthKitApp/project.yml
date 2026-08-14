@@ -18,4 +18,3 @@ targets:
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: Sources/GreatnessHealthKitApp.entitlements
-        HEALTHKIT_FEATURE_ENABLED: "NO"

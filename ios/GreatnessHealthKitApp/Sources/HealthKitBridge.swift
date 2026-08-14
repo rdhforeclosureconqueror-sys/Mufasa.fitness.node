@@ -6,16 +6,13 @@ enum HealthKitDiagnosticStatus: String, Codable {
     case healthKitUnavailable = "HEALTHKIT_UNAVAILABLE"
     case permissionDenied = "PERMISSION_DENIED"
     case noWorkoutsFound = "NO_WORKOUTS_FOUND"
-    case backendFeatureDisabled = "BACKEND_FEATURE_DISABLED"
-    case ingestionDisabled = "INGESTION_DISABLED"
     case bridgeFailure = "BRIDGE_FAILURE"
 }
 
 struct HealthKitDiagnosticResponse: Codable {
     let status: HealthKitDiagnosticStatus
     let healthKitAvailable: Bool
-    let authorizationRequested: Bool
-    let authorizationResult: String
+    let authorizationRequestCompleted: Bool
     let recentWorkoutCount: Int
     let mostRecentWorkoutStartTime: Date?
     let durationSeconds: Double?
@@ -28,7 +25,7 @@ final class HealthKitBridge {
 
     func diagnostic(days: Int) async -> HealthKitDiagnosticResponse {
         guard HKHealthStore.isHealthDataAvailable() else {
-            return response(.healthKitUnavailable, available: false, requested: false, authorization: "NOT_REQUESTED")
+            return response(.healthKitUnavailable, available: false, requestCompleted: false)
         }
 
         let workoutType = HKObjectType.workoutType()
@@ -47,13 +44,12 @@ final class HealthKitBridge {
             guard let mostRecent = workouts.first else {
                 // HealthKit intentionally does not disclose whether read access was denied;
                 // an empty query is therefore reported without making a false grant claim.
-                return response(.noWorkoutsFound, available: true, requested: true, authorization: "REQUEST_COMPLETED_READ_STATUS_PRIVATE")
+                return response(.noWorkoutsFound, available: true, requestCompleted: true)
             }
             return HealthKitDiagnosticResponse(
                 status: .ready,
                 healthKitAvailable: true,
-                authorizationRequested: true,
-                authorizationResult: "REQUEST_COMPLETED_READ_STATUS_PRIVATE",
+                authorizationRequestCompleted: true,
                 recentWorkoutCount: workouts.count,
                 mostRecentWorkoutStartTime: mostRecent.startDate,
                 durationSeconds: mostRecent.duration,
@@ -61,9 +57,9 @@ final class HealthKitBridge {
                 routeAvailable: try await hasRoute(for: mostRecent)
             )
         } catch let error as HKError where error.code == .errorAuthorizationDenied {
-            return response(.permissionDenied, available: true, requested: true, authorization: "DENIED")
+            return response(.permissionDenied, available: true, requestCompleted: true)
         } catch {
-            return response(.bridgeFailure, available: true, requested: true, authorization: "FAILED")
+            return response(.bridgeFailure, available: true, requestCompleted: true)
         }
     }
 
@@ -80,14 +76,12 @@ final class HealthKitBridge {
     private func response(
         _ status: HealthKitDiagnosticStatus,
         available: Bool,
-        requested: Bool,
-        authorization: String
+        requestCompleted: Bool
     ) -> HealthKitDiagnosticResponse {
         HealthKitDiagnosticResponse(
             status: status,
             healthKitAvailable: available,
-            authorizationRequested: requested,
-            authorizationResult: authorization,
+            authorizationRequestCompleted: requestCompleted,
             recentWorkoutCount: 0,
             mostRecentWorkoutStartTime: nil,
             durationSeconds: nil,

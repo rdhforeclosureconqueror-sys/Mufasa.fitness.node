@@ -7,5 +7,4 @@
 <key>CFBundleShortVersionString</key><string>1.0</string>
 <key>UILaunchScreen</key><dict/>
 <key>NSHealthShareUsageDescription</key><string>Greatness reads walking and running workouts so you can privately compare them with activities you already recorded.</string>
-<key>HealthKitFeatureEnabled</key><string>$(HEALTHKIT_FEATURE_ENABLED)</string>
 </dict></plist>
