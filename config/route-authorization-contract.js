@@ -5,6 +5,7 @@ module.exports = Object.freeze([
   { method:"GET", path:"/api/greatness/trails/:trailId/gallery", authentication:"public", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"public-approved-only", featureFlag:null, publicOutput:"approved-redacted", rateLimit:null, compatibility:null, publicWrite:null },
   ...[["POST","/api/me/greatness/trails/:trailId/contributions"],["DELETE","/api/me/greatness/trail-contributions/:contributionId"],["POST","/api/me/greatness/trail-contributions/:contributionId/reports"]].map(([method,routePath])=>({method,path:routePath,authentication:"required",allowedRoles:["member"],requiredPermissions:[],membership:"not-required",ownership:"authenticated-member-or-owned-contribution",featureFlag:null,publicOutput:"private-redacted",rateLimit:"route-specific",compatibility:null,publicWrite:null})),
   { method:"PATCH", path:"/api/admin/trail-contributions/:contributionId/moderation", authentication:"required", allowedRoles:["super_admin","admin"], requiredPermissions:["trail.moderate"], membership:"not-required", ownership:"privileged", featureFlag:null, publicOutput:"private-redacted", rateLimit:null, compatibility:null, publicWrite:null },
+  { method:"GET", path:"/api/admin/diagnostics/greatness/most-recent-completed", authentication:"required", allowedRoles:["super_admin","admin"], requiredPermissions:[], membership:"not-required", ownership:"privileged-cross-member", featureFlag:null, publicOutput:"strict-verification-trace-allowlist", rateLimit:null, compatibility:null, publicWrite:null },
   ...[
     ["GET", "/admin-run-club-diagnostics.html"], ["POST", "/api/admin/diagnostics/run-club/run"], ["GET", "/api/admin/diagnostics/summary"], ["GET", "/api/admin/launch-health"], ["POST", "/api/admin/diagnostics/run"],
     ["POST", "/api/admin/diagnostics/external-checks"], ["GET", "/api/admin/diagnostics/environment"],
@@ -69,6 +70,7 @@ module.exports = Object.freeze([
     ["POST", "/api/me/greatness/challenges/:challengeId/route-suggestions", "generated-route-options"],
     ["POST", "/api/me/greatness/nearby-trails/search", "privacy-safe-provider-results"],
     ["GET", "/api/me/greatness/nearby-trails/provider-health", "privacy-safe-provider-health"],
+    ["GET", "/api/me/greatness/activities/:activityId/verification-diagnostic", "owner-scoped-redacted-diagnostic"],
     ["POST", "/api/me/greatness/operational-events", "owner-scoped-analytics-acknowledgement"],
     ["POST", "/api/me/greatness/trails/:trailId/goal-routes/alternatives", "generated-route-options"],
     ["DELETE", "/api/me/greatness/activities/:activityId", "owner-scoped"],

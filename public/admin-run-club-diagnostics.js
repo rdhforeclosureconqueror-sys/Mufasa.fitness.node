@@ -8,6 +8,7 @@
   var authRequired = document.getElementById("authRequired");
   var diagnosticsContent = document.getElementById("diagnosticsContent");
   var inspectTraceButton = document.getElementById("inspectVerificationTrace");
+  var inspectProductionTraceButton = document.getElementById("inspectProductionVerificationTrace");
   var copyTraceButton = document.getElementById("copyVerificationTrace");
   var traceStatus = document.getElementById("verificationTraceStatus");
   var traceOutput = document.getElementById("verificationTrace");
@@ -72,6 +73,7 @@
     try {var journey=await ownerGet("/api/me/greatness/journey"), recent=(journey.activities||[]).filter(function(a){return a.status==="completed";}).sort(function(a,b){return String(b.endedAt||"").localeCompare(String(a.endedAt||""));})[0];if(!recent)throw new Error("No completed Greatness activity is available for this authenticated administrator.");var diagnostic=await ownerGet("/api/me/greatness/activities/"+encodeURIComponent(recent.activityId)+"/verification-diagnostic");redactedTrace=traceAllowlist(recent,diagnostic);renderTrace(redactedTrace);copyTraceButton.disabled=false;traceStatus.textContent="Redacted verification trace loaded.";}catch(error){redactedTrace=null;traceOutput.hidden=true;traceStatus.textContent=safeReason(error);}finally{inspectTraceButton.disabled=false;}
   }
   async function copyVerificationTrace(){if(!redactedTrace)return;try{await window.navigator.clipboard.writeText(JSON.stringify(redactedTrace,null,2));traceStatus.textContent="Redacted verification trace copied.";}catch(error){traceStatus.textContent="Copy failed: "+safeReason(error);}}
+  async function inspectProductionVerificationTrace(){inspectProductionTraceButton.disabled=true;copyTraceButton.disabled=true;traceStatus.textContent="Loading most recent completed production activity…";try{redactedTrace=await ownerGet("/api/admin/diagnostics/greatness/most-recent-completed");renderTrace(redactedTrace);copyTraceButton.disabled=false;traceStatus.textContent="Redacted production verification trace loaded.";}catch(error){redactedTrace=null;traceOutput.hidden=true;traceStatus.textContent=safeReason(error);}finally{inspectProductionTraceButton.disabled=false;}}
   function clearResults() { while (results.firstChild) results.removeChild(results.firstChild); }
   function renderGroup(group) {
     var section = text("section", ""); section.appendChild(text("h2", group.label)); section.appendChild(text("strong", group.status, group.status));
@@ -123,6 +125,7 @@
     diagnosticsContent.hidden = !allowed;
     button.disabled = !allowed;
     if(inspectTraceButton)inspectTraceButton.disabled=!allowed;
+    if(inspectProductionTraceButton)inspectProductionTraceButton.disabled=!allowed;
     if (!allowed) status.textContent = "Admin sign-in required";
     return allowed;
   }
@@ -130,6 +133,7 @@
   window.__runClubDiagnosticsRequest = {endpointUrl: endpointUrl, canonicalToken: canonicalToken, constructHeaders: constructHeaders, constructRequest: constructRequest};
   button.addEventListener("click", runDiagnostics);
   inspectTraceButton?.addEventListener("click",inspectVerificationTrace);
+  inspectProductionTraceButton?.addEventListener("click",inspectProductionVerificationTrace);
   copyTraceButton?.addEventListener("click",copyVerificationTrace);
   window.__runClubDiagnosticsAccessReady = initializeAdminAccess().catch(function () {
     authRequired.hidden = false;

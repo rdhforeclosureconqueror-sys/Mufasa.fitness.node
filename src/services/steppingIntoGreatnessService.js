@@ -104,6 +104,11 @@ function verificationDiagnostic(activity) {
   };
 }
 
+function redactedVerificationTrace(activity) {
+  const diagnostic=verificationDiagnostic(activity),q=diagnostic.qualifications,gps=diagnostic.gpsQuality;
+  return {diagnosticVersion:"greatness-verification-trace-2026.08.14.2",activityTimestamp:diagnostic.activityTimestamp,completedDistanceMeters:diagnostic.completedDistanceMeters,decision:diagnostic.decision,persistedVerificationReasonCodes:diagnostic.persistedVerificationReasonCodes,acceptedGpsSamples:gps.acceptedSamples,rejectedGpsSamples:gps.rejectedSamples,finalGpsQuality:gps.rating,suspiciousMovementDetected:gps.suspiciousMovementDetected,authoritativePersistence:diagnostic.authoritativePersistence.persisted,eligibility:{"greatness.activity.completed":q["greatness.activity.completed"],xp:q.xp,achievements:q.achievements,records:q.records,trailExploration:q.trailExploration,verifiedTrailVisit:q.verifiedTrailVisit,trailPhotoContribution:q.trailPhotoContributionEligibility}};
+}
+
 function recordCandidates(activity) {
   const values={
     [`longest_${activity.activityType}`]:{value:activity.distanceMeters,unit:"meters"},
@@ -207,11 +212,16 @@ function createSteppingIntoGreatnessService({userStore,clock=()=>Date.now()}) {
   function journey(userId){const d=ensureDomain(userStore.loadUser(userId)),eligible=eligibleActivities(d),activities=d.activities.filter(a=>!a.deletedAt).map(a=>({...a,route:{...a.route,points:undefined}}));return{activities,personalBests:d.personalBests,achievements:d.achievements,lifetimeDistanceMeters:eligible.reduce((s,a)=>s+a.distanceMeters,0),activeDayTotal:new Set(eligible.map(a=>a.endedAt.slice(0,10))).size,longestStreakDays:streakFor(eligible),membership:activeMembership(d)};}
   function activity(userId,activityId){const a=ensureDomain(userStore.loadUser(userId)).activities.find(x=>x.activityId===activityId&&!x.deletedAt);if(!a)throw new ApiError("ACTIVITY_NOT_FOUND","Activity not found",404);return{...a,route:{...a.route,points:undefined}};}
   function diagnostic(userId,activityId){return verificationDiagnostic(activity(userId,activityId));}
+  function mostRecentCompletedDiagnostic(){
+    const recent=userStore.listUsers().flatMap(user=>(user.steppingIntoGreatness?.activities||[])).filter(item=>item&&!item.deletedAt&&item.status==="completed"&&Number.isFinite(Date.parse(item.endedAt))).sort((left,right)=>Date.parse(right.endedAt)-Date.parse(left.endedAt))[0];
+    if(!recent)throw new ApiError("ACTIVITY_NOT_FOUND","No completed Greatness activity is available in production records",404);
+    return redactedVerificationTrace(recent);
+  }
   function route(userId,activityId){const a=ensureDomain(userStore.loadUser(userId)).activities.find(x=>x.activityId===activityId&&!x.deletedAt);if(!a)throw new ApiError("ACTIVITY_NOT_FOUND","Activity not found",404);return a.route;}
   function feed(userId){if(!membership(userId))throw new ApiError("COMMUNITY_MEMBERSHIP_REQUIRED","Join The Greatness Movement to view the Movement Feed",403);return userStore.listUsers().flatMap(u=>{const d=ensureDomain(u),m=activeMembership(d);if(!m||!m.visibilityPreferences.showActivities)return[];return d.feedEvents.filter(e=>{const a=d.activities.find(x=>x.activityId===e.activityId);return a&&!a.deletedAt&&a.privacy?.activityVisibleToCommunity;}).map(e=>{const a=d.activities.find(x=>x.activityId===e.activityId),summary={...e.summaryData};if(!m.visibilityPreferences.showPace||!a.privacy?.paceVisible)delete summary.averagePaceSecondsPerKilometer;if(!m.visibilityPreferences.showExactStartTime||!a.privacy?.exactStartTimeVisible)delete summary.startedAt;return{...e,summaryData:summary};});}).filter(e=>e.visibility==="community").sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,50);}
   function weeklySummary(userId){if(!membership(userId))throw new ApiError("COMMUNITY_MEMBERSHIP_REQUIRED","Join The Greatness Movement to view the weekly summary",403);const end=clock(),start=end-7*86400000,activities=userStore.listUsers().flatMap(u=>{const d=ensureDomain(u);return activeMembership(d)?eligibleActivities(d).filter(a=>a.privacy?.activityVisibleToCommunity):[];}).filter(a=>Date.parse(a.endedAt)>=start&&Date.parse(a.endedAt)<=end);return{timezone:"UTC",weekBoundaryRule:"Rolling seven-day window ending at request time; activity days use UTC",periodStartsAt:iso(start),periodEndsAt:iso(end),verifiedActivities:activities.length,verifiedCommunityDistanceMeters:activities.reduce((s,a)=>s+a.distanceMeters,0),activeParticipatingMembers:new Set(activities.map(a=>a.userId)).size,personalRecordsEarned:activities.reduce((s,a)=>s+(a.personalRecordsEarned?.length||0),0),greatnessMarksEarned:activities.reduce((s,a)=>s+(a.achievementIds?.length||0),0)};}
   function recordOperationalEvent(userId,eventName){if(!CLIENT_OPERATIONAL_EVENTS.has(eventName))throw new ApiError("INVALID_OPERATIONAL_EVENT","Unsupported operational event",400);userStore.updateUser(userId,user=>{audit(ensureDomain(user),eventName);return user;});return{recorded:true};}
-  return{join,leave,updateSettings,membership,enroll,challengeList,start,complete,remove,setEligibility,recalculateDomain,revokeActivityContributions,journey,activity,diagnostic,feed,weeklySummary,route,recordOperationalEvent,validateCompletion};
+  return{join,leave,updateSettings,membership,enroll,challengeList,start,complete,remove,setEligibility,recalculateDomain,revokeActivityContributions,journey,activity,diagnostic,mostRecentCompletedDiagnostic,feed,weeklySummary,route,recordOperationalEvent,validateCompletion};
 }
 
-module.exports={createSteppingIntoGreatnessService,validateCompletion,verificationDiagnostic,verificationFor,ensureDomain,CHALLENGES,VERIFICATION_LEVELS,CLIENT_OPERATIONAL_EVENTS};
+module.exports={createSteppingIntoGreatnessService,validateCompletion,verificationDiagnostic,redactedVerificationTrace,verificationFor,ensureDomain,CHALLENGES,VERIFICATION_LEVELS,CLIENT_OPERATIONAL_EVENTS};
