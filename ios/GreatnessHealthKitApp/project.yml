@@ -1,0 +1,21 @@
+name: GreatnessHealthKitApp
+options:
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.mufasafitness.greatness
+    SWIFT_VERSION: 5.9
+targets:
+  GreatnessHealthKitApp:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    info:
+      path: Sources/Info.plist
+    entitlements:
+      path: Sources/GreatnessHealthKitApp.entitlements
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: Sources/GreatnessHealthKitApp.entitlements
+        HEALTHKIT_FEATURE_ENABLED: "NO"
