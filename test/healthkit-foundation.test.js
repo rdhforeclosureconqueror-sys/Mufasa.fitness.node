@@ -8,16 +8,34 @@ const path = require("node:path");
 const { createUserStore } = require("../src/repositories/userStore");
 const { createHealthKitEvidenceService } = require("../src/services/healthKitEvidenceService");
 
-function fixture(enabled = true) {
+test("iOS diagnostic is redacted and the target remains read-only", () => {
+  const root = path.join(__dirname, "..", "ios", "GreatnessHealthKitApp", "Sources");
+  const bridge = fs.readFileSync(path.join(root, "HealthKitBridge.swift"), "utf8");
+  const entitlements = fs.readFileSync(path.join(root, "GreatnessHealthKitApp.entitlements"), "utf8");
+  assert.doesNotMatch(bridge, /latitude|longitude|HKWorkoutRouteQuery/);
+  assert.match(bridge, /recentWorkoutCount/);
+  assert.match(bridge, /routeAvailable/);
+  assert.doesNotMatch(bridge, /toShare:\s*\[[^\]]+\]/);
+  assert.match(entitlements, /com\.apple\.developer\.healthkit/);
+  assert.doesNotMatch(entitlements, /access|healthkit\.background-delivery/);
+  const project = fs.readFileSync(path.join(root, "..", "project.yml"), "utf8");
+  assert.doesNotMatch(project, /HEALTHKIT_FEATURE_ENABLED/);
+});
+
+function fixture(enabled = true, evidenceIngestionEnabled = enabled) {
   const userStore = createUserStore({ userDir:fs.mkdtempSync(path.join(os.tmpdir(), "healthkit-")) });
   userStore.ensureDirs();
-  const service = createHealthKitEvidenceService({ userStore, config:{ enabled, evidenceIngestionEnabled:enabled, reconciliationVersion:"healthkit-browser-v1" }, clock:() => new Date("2026-08-14T13:00:00Z"), hashSecret:"test-secret" });
+  const service = createHealthKitEvidenceService({ userStore, config:{ enabled, evidenceIngestionEnabled, reconciliationVersion:"healthkit-browser-v1" }, clock:() => new Date("2026-08-14T13:00:00Z"), hashSecret:"test-secret" });
   return { userStore, service };
 }
 const evidence = { sourceRecordId:"apple-workout-1",workoutType:"running",startedAt:"2026-08-14T12:00:00Z",endedAt:"2026-08-14T12:30:00Z",durationSeconds:1800,distanceMeters:5000,routeAvailable:false };
 
 test("disabled HealthKit capability is a closed optional layer", () => {
   assert.throws(() => fixture(false).service.ingest("member", evidence), error => error.code === "HEALTHKIT_CAPABILITY_DISABLED" && error.status === 404);
+});
+
+test("disabled HealthKit ingestion is distinguishable from the disabled capability", () => {
+  assert.throws(() => fixture(true, false).service.ingest("member", evidence), error => error.code === "HEALTHKIT_INGESTION_DISABLED" && error.status === 404);
 });
 
 test("evidence reconciles to an existing browser activity without creating or mutating it", () => {

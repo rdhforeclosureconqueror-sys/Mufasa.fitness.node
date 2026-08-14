@@ -30,7 +30,8 @@ function normalize(input) {
 
 function createHealthKitEvidenceService({ userStore, config, clock = () => new Date(), hashSecret = "healthkit-local-evidence" }) {
   function requireEnabled() {
-    if (!config.enabled || !config.evidenceIngestionEnabled) throw new ApiError("HEALTHKIT_CAPABILITY_DISABLED", "HealthKit evidence ingestion is disabled", 404);
+    if (!config.enabled) throw new ApiError("HEALTHKIT_CAPABILITY_DISABLED", "HealthKit capability is disabled", 404);
+    if (!config.evidenceIngestionEnabled) throw new ApiError("HEALTHKIT_INGESTION_DISABLED", "HealthKit evidence ingestion is disabled", 404);
   }
   const sourceHash = sourceRecordId => crypto.createHmac("sha256", hashSecret).update(sourceRecordId).digest("hex");
   function candidates(workout, activities) {

@@ -1219,6 +1219,11 @@ function createApp(options = {}) {
   // clean sign-in-required state. The diagnostic operation remains permission guarded.
   app.get("/admin-run-club-diagnostics.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-run-club-diagnostics.html")));
   app.post("/api/admin/diagnostics/run-club/run", diagnosticGuard, (req,res)=>ok(res,req.requestId,runClubDiagnosticsService.run(),201));
+  // Authoritative, non-mutating gate used by the native bridge before any HealthKit read.
+  app.get("/api/admin/diagnostics/healthkit/authorize", diagnosticGuard, (req,res)=>{
+    res.set("Cache-Control", "private, no-store");
+    return ok(res,req.requestId,{ authorized:true });
+  });
   app.get("/api/admin/diagnostics/summary", diagnosticGuard, (req, res) => ok(res, req.requestId, latestLaunchHealth || currentHealth(req)));
   app.post("/api/admin/diagnostics/run", diagnosticGuard, (req, res) => { latestLaunchHealth = currentHealth(req); return ok(res, req.requestId, latestLaunchHealth, 201); });
   app.get("/api/admin/diagnostics/environment", diagnosticGuard, (req, res) => ok(res, req.requestId, (latestLaunchHealth || currentHealth(req)).environment));
