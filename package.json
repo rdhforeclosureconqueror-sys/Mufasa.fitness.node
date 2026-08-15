@@ -1,6 +1,6 @@
 {
   "name": "mufasa-fitness-brain",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Mufasa Node fitness brain (fitness domain, exercise DB + command bus)",
   "main": "server.js",
   "type": "commonjs",
