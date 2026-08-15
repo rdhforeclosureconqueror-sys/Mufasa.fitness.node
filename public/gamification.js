@@ -85,6 +85,17 @@
     });
   }
 
+  function createCelebrationQueue(document) {
+    let host = document.querySelector(".celebration-layer");
+    if (!host) {
+      host = document.createElement("div");
+      host.className = "celebration-layer";
+      host.setAttribute("aria-label", "Progress celebrations");
+      document.body.appendChild(host);
+    }
+    return new CelebrationQueue({ present: createPresenter(document, host), reducedMotion: document.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches || false });
+  }
+
   function achievementCard(item) {
     const earned = item.state === "earned";
     return `<article class="achievement achievement--${escapeHtml(item.state)}" tabindex="0" aria-label="${escapeHtml(item.name)}, ${escapeHtml(item.state)}">${iconFor(item.name)}<div><p class="achievement__category">${escapeHtml(item.category || "Milestone")}</p><h3>${escapeHtml(item.name)}</h3><p>${earned ? `${earnedAt(item.earnedAt)} · +${number(item.rewardXp)} XP` : `${number(item.progress?.value)} of ${number(item.progress?.target)}`}</p></div></article>`;
@@ -147,5 +158,5 @@
   }
 
   if (browser?.document) browser.document.readyState === "loading" ? browser.document.addEventListener("DOMContentLoaded", () => mount(browser), { once: true }) : mount(browser);
-  return Object.freeze({ MOTION, CelebrationQueue, celebrationsBetween, render, mount });
+  return Object.freeze({ MOTION, CelebrationQueue, celebrationsBetween, createCelebrationQueue, render, mount });
 });

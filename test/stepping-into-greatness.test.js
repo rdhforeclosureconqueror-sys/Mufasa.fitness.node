@@ -21,6 +21,15 @@ test("haversine and GPS quality count normal movement but not stationary drift",
   assert.ok(gps.summary().distanceMeters > 7 && gps.summary().distanceMeters < 10);
 });
 
+test("frequent accepted sub-threshold fixes accumulate instead of being discarded", () => {
+  const gps=createGpsProcessor("walk");
+  for(let index=0;index<=10;index++)gps.add(sample(0,index*.00001,1000+index*1000),{nowMs:1000+index*1000});
+  const result=gps.summary();
+  assert.ok(result.distanceMeters>9&&result.distanceMeters<13);
+  assert.equal(result.diagnostics.rawSampleCount,11);
+  assert.equal(result.diagnostics.accumulatedAcceptedSegmentMeters,result.distanceMeters);
+});
+
 test("GPS rejects inaccurate, duplicate, stale, impossible, jump, and paused samples", () => {
   const gps = createGpsProcessor("walk", { staleAfterMs: 1000 });
   assert.equal(gps.add(sample(40,-74,1000,{accuracyMeters: 100}), { nowMs: 1000 }).rejectionReason, "poor_accuracy");
@@ -53,6 +62,14 @@ const valid = (overrides = {}) => ({ clientSessionId: "client-1", activityType: 
 test("valid completion awards records, badges and verified contributions idempotently", () => {
   const { service } = fixture(); service.join("maya"); const activity = service.complete("maya", valid()); assert.equal(service.complete("maya", valid()).activityId, activity.activityId);
   const journey = service.journey("maya"); assert.equal(journey.activities.length, 1); assert.equal(journey.lifetimeDistanceMeters, 5000); assert.equal(journey.personalBests.longest_walk.valueMeters, 5000); assert.ok(journey.achievements.some((a) => a.achievementKey === "first_5k")); assert.equal(service.feed("maya")[0].summaryData.distanceMeters, 5000);
+});
+
+test("short activities cannot earn kilometer or mile records even when route samples span a boundary",()=>{
+  const {service}=fixture();
+  const samples=Array.from({length:20},(_,index)=>sample(0,index*.0006,1000+index*10000));
+  const activity=service.complete("maya",valid({distanceMeters:999,samples,gpsQuality:{rating:"excellent",acceptedSamples:20,rejectedSamples:0}}));
+  assert.equal(activity.personalRecordsEarned.includes("fastest_kilometer"),false);
+  assert.equal(activity.personalRecordsEarned.includes("fastest_mile"),false);
 });
 
 test("privacy suppresses feed pace and private activity; leaving preserves journey", () => {
