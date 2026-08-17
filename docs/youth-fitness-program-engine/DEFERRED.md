@@ -6,8 +6,8 @@ This log preserves intentionally postponed work. An item may move into scope onl
 | --- | --- | --- | --- |
 | YF-D-001 | Full canonical master specification checked into the repository | Phase 1 | Preserve the supplied master handoff as normative documentation; Phase 0 records boundaries only. |
 | YF-D-002 | Versioned rule and evidence-source persistence, validation, seed sources, and review lifecycle | Phase 1 | Source claims must be reviewed; do not invent citations. |
-| YF-D-003 | Conservative approved youth exercise seed library | Phase 2 | Audit shared exercise metadata and add youth eligibility/approval/stop metadata. |
-| YF-D-004 | Administrator-approved movement-game registry and seed games | Phase 2 | Needs multiplayer/equipment/age/level/safety fields and approval workflow. |
+| YF-D-003 | Production-backed expansion of the conservative approved youth exercise seed library | After Phase 2 | Phase 2 added validated immutable seeds; future expansion must preserve youth eligibility, approval, evidence, and stop metadata. |
+| YF-D-004 | Production movement-game administration workflow | After Phase 2 | Phase 2 added first-class validated game fixtures; editing requires authorization, immutable audit, versioning, and rollback. |
 | YF-D-005 | Opaque participant-reference resolver and canonical youth fitness profile | Phase 3 | Decide guardian/consent, privacy, age verification, and durable persistence policy first. |
 | YF-D-006 | Foundation multi-week program planner | Phase 4 | Requires Phase 1 rules, Phase 2 registries, and Phase 3 profile. |
 | YF-D-007 | Program-bound adaptive session planner | Phase 5 | No orphan workout endpoint. |

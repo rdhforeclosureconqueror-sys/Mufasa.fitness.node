@@ -88,3 +88,15 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 
 - **Status:** Accepted (Phase 1)
 - **Decision:** Phase 1 builds documentation, models, provenance, seed references, and validation only. It does not build or expose program, workout, or session generation.
+
+### YF-ADR-017 — Unified validated activity graph, separate projections
+
+- **Status:** Accepted (Phase 2)
+- **Decision:** Exercises and games share one validated relationship graph and metadata contract, while consumers receive distinct exercise and game projections. A game must explicitly carry the `MOVEMENT_GAME` family.
+- **Reason:** Shared validation prevents divergent safety metadata, while first-class projections prevent games from becoming arbitrary workout text.
+
+### YF-ADR-018 — Approval lookup fails closed
+
+- **Status:** Accepted (Phase 2)
+- **Decision:** Future youth consumers must use the approved lookup boundary, not raw catalog membership. Missing, draft, retired, invalid, or unknown activities are unavailable.
+- **Persistence boundary:** Phase 2 uses immutable fixtures. A production admin editor remains deferred pending authorization, audit, versioning, and rollback design.
