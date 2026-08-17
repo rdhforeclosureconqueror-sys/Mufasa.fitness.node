@@ -172,3 +172,15 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 - **Status:** Accepted in Phase 6
 - **Decision:** Pain remains non-diagnostic and requires supervising-adult/coach review under current policy. Recent stress/impact checks are conservative workload management, not injury prediction. Prohibited prescriptions and unsafe medical, outcome, weight-loss, punishment, or shaming claims block; readiness mismatch may warn or require review.
 - **Boundary:** Phase 6 adds no UI, persistence/migrations, adaptation engine, AI call, or Leader Within integration and never mutates validator inputs.
+
+### YF-ADR-033 — Stable roadmap, conservative execution adaptation
+
+- **Status:** Accepted in Phase 7
+- **Decision:** Adaptation changes next-session execution, not the full program roadmap by default. Progression requires at least two qualifying successful sessions and changes exactly one primary variable. Regression is a normal, non-shaming response.
+- **Safety:** Pain prevents automatic progression and requires adult/coach routing. Every adjusted future blueprint must pass Phase 6 before delivery.
+
+### YF-ADR-034 — Neutral absence and constrained activity relations
+
+- **Status:** Accepted in Phase 7
+- **Decision:** Skipped sessions neither qualify nor trigger regression, shame, punishment, or make-up workouts. Activity progression/regression uses only approved, available, equipment- and level-eligible Phase 2 relations; missing relations are never invented.
+- **Boundary:** Phase 7 is deterministic and read-only. It makes no AI calls and adds no Pocket PT UI or Leader Within integration.

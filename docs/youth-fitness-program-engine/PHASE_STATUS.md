@@ -4,15 +4,15 @@
 
 | Field | Value |
 | --- | --- |
-| CURRENT PHASE | Phase 6 — Final Safety Validator |
-| STATUS | `AUTOMATED_VERIFIED` / `PHASE_6_COMPLETE` |
-| COMMIT | Phase 6 implementation commit (the commit containing this ledger; resolve with `git log -1 --format=%H`) |
-| TESTS | Phase 6 safety tests; Phase 1–5 youth fitness continuity tests; full Pocket PT repository tests; lint; `git diff --check` |
+| CURRENT PHASE | Phase 7 — Progression, Regression & Adaptation |
+| STATUS | `AUTOMATED_VERIFIED` / `PHASE_7_COMPLETE` |
+| COMMIT | Phase 7 implementation commit (the commit containing this ledger; resolve with `git log -1 --format=%H`) |
+| TESTS | Phase 7 adaptation tests; Phase 1–6 youth fitness continuity tests; full Pocket PT repository tests; lint; `git diff --check` |
 | AUTOMATED VERIFIED | Yes |
-| STAGING VERIFIED | No — not performed; Phase 6 has no runtime integration |
-| LIVE USER VERIFIED | No — not performed; Phase 6 has no participant-facing behavior |
-| BLOCKERS | None for Phase 6 code-level exit. Production identity resolution, consent/privacy policy, persistence, delivery integration, and UI remain deferred. |
-| NEXT PHASE | Phase 7 — Progression, Regression & Adaptation |
+| STAGING VERIFIED | No — not performed; Phase 7 has no runtime integration |
+| LIVE USER VERIFIED | No — not performed; Phase 7 has no participant-facing behavior |
+| BLOCKERS | None for Phase 7 code-level exit. Production identity resolution, consent/privacy policy, persistence, delivery integration, and UI remain deferred. |
+| NEXT PHASE | Phase 8 — Pocket PT Youth Program UI |
 
 ## Phase 1 exit criteria
 
@@ -103,6 +103,8 @@ Phase 0 remains recorded in `ARCHITECTURE_AUDIT.md` and commit `b800151`. Phase 
 
 ## Phase 6 exit criteria
 
+**Historical checkpoint:** Phase 6 — Final Safety Validator (`PHASE_6_COMPLETE`).
+
 - [x] The final validator reconciles profile, program, slot, and session identity.
 - [x] Canonical decision and rule-result models exist; hard failure prevents `ALLOW`.
 - [x] Registry, equipment, level, instructions, prescription, prohibited content, readiness, pain, impact, and claims fail closed.
@@ -115,3 +117,18 @@ Phase 0 remains recorded in `ARCHITECTURE_AUDIT.md` and commit `b800151`. Phase 
 ## Phase 6 GO / NO-GO
 
 **GO for Phase 7 review.** Phase 6 is automated verified at the code/reference level. Staging and live-user verification were not performed and are not claimed. Phase 7 — Progression, Regression & Adaptation must be a separate reviewed change.
+
+## Phase 7 exit criteria
+
+- [x] Canonical completion status, quality, result, decision, and next-adjustment models exist and validate fail closed.
+- [x] Deterministic maintain, qualifying-success, one-variable progression, regression, skipped, pain, readiness, fatigue, and recent-impact policies exist.
+- [x] Approved relations are equipment/level checked; absent paths are never invented.
+- [x] Pain and regression messaging is non-diagnostic, non-shaming, and non-punitive.
+- [x] Every adjustment requires Phase 6 validation before future delivery.
+- [x] Rule traces identify Phase 1 rules and conservative program policy.
+- [x] Inputs are read-only and no AI, UI, persistence, gamification, or Leader Within integration was added.
+- [x] Focused, continuity, full repository, lint, and hygiene checks pass.
+
+## Phase 7 GO / NO-GO
+
+**GO for Phase 8 review.** Phase 7 is automated verified at the code/reference level. Staging and live-user verification were not performed and are not claimed. Next is Phase 8 — Pocket PT Youth Program UI in a separate reviewed change.

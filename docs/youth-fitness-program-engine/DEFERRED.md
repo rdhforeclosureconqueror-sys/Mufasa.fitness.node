@@ -57,3 +57,13 @@ This log preserves intentionally postponed work. An item may move into scope onl
 - Youth gamification and reward policy.
 - Coach/admin override UI and audited override workflow.
 - Staging and live-user verification; Phase 6 has no runtime participant-facing integration.
+
+## Deferred by Phase 7
+
+- Pocket PT youth program UI and live session-completion collection UI (Phase 8).
+- Production persistence/migrations and durable adaptation-event history.
+- Coach/admin override and roadmap-editing UI.
+- Full longitudinal training memory and long-term analytics dashboard beyond the bounded recent-result input.
+- Baseline assessment and reassessment execution (Phases 9 and 13).
+- Leader Within bridge, youth-safe gamification, and notifications (later phases).
+- Staging and live-user verification; Phase 7 has no runtime participant-facing integration.
