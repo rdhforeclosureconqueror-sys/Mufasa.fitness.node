@@ -100,3 +100,28 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 - **Status:** Accepted (Phase 2)
 - **Decision:** Future youth consumers must use the approved lookup boundary, not raw catalog membership. Missing, draft, retired, invalid, or unknown activities are unavailable.
 - **Persistence boundary:** Phase 2 uses immutable fixtures. A production admin editor remains deferred pending authorization, audit, versioning, and rollback design.
+
+### YF-ADR-019 — Canonical planner input and identity boundary
+
+- **Status:** Accepted (Phase 3)
+- **Decision:** A successfully resolved Youth Fitness Profile is the canonical input to the future Program Planner; raw browser profile fields are not. The server must resolve the authenticated Pocket PT participant to an opaque `participant_ref`, and Phase 3 creates no duplicate identity or persistence schema.
+
+### YF-ADR-020 — Presentation age is not competency
+
+- **Status:** Accepted (Phase 3)
+- **Decision:** Age determines presentation band only. Without supporting competency evidence, all participants remain `FOUNDATION`; in particular, an inexperienced 17-year-old remains Foundation. A requested over-level is conservatively downgraded with a warning rather than inferred from age.
+
+### YF-ADR-021 — Controlled, balanced profile semantics
+
+- **Status:** Accepted (Phase 3)
+- **Decision:** Controlled goals may influence future emphasis but cannot override balanced safety. Movement needs are development/training categories, never diagnoses. Readiness is a non-diagnostic training snapshot, not medical screening; reported pain triggers a safety flag and coach review without interpretation.
+
+### YF-ADR-022 — Neutral exclusion-aware consistency
+
+- **Status:** Accepted (Phase 3)
+- **Decision:** Consistency uses eligible completed divided by eligible scheduled, keeps exclusions separate, returns no percentage for a zero denominator, and applies no failure, shame, or moralizing label.
+
+### YF-ADR-023 — Phase 3 is profile state only
+
+- **Status:** Accepted (Phase 3)
+- **Decision:** Phase 3 provides enums, placeholders, deterministic normalization, warnings, statuses, and structured fail-closed validation. It creates no program, workout, session, UI, production persistence, AI call, or Leader Within integration.
