@@ -29,3 +29,10 @@ This log preserves intentionally postponed work. An item may move into scope onl
 | YF-D-023 | Full admin evidence editor | Before production evidence administration | Requires authorization, immutable audit, source retirement, versioning, and reviewer workflow. |
 | YF-D-024 | Fitness assessments and reassessment scheduling | Phases 9 and 13 | Requires protocol identity, non-diagnostic output, and stable comparisons. |
 | YF-D-025 | Advanced gamification | Phase 12 or post-V1 | Requires youth privacy, anti-overexercise, and neutral consistency policy. |
+| YF-D-026 | Production Youth Fitness Profile persistence and opaque participant-reference resolver | Before production profile writes | Phase 3 is code-level state only; requires authenticated Pocket PT resolution, guardian/coach authorization, consent, retention, migration, and rollback policy. |
+| YF-D-027 | Pocket PT youth profile UI and admin profile editor | Phase 8 or later | Requires persistence, authorization, accessibility, audit, and safe validation presentation. |
+| YF-D-028 | Baseline assessment engine | Phase 9 | Phase 3 includes only a partial-data placeholder; protocols and non-diagnostic interpretation remain separate. |
+| YF-D-029 | Full recent-training memory | Phase 7 | Phase 3 stores only validated summary state and controlled stress tags. |
+| YF-D-030 | Advanced consistency reporting | Phase 10 | Phase 3 provides only neutral, exclusion-aware arithmetic with a safe zero-denominator state. |
+| YF-D-031 | Phase 3 successors: Program Planner, Session Planner, and safety validator | Phases 4–6 | Planners must consume the canonical profile and approved registries; the final validator remains an independent fail-closed veto. |
+| YF-D-032 | Leader Within bridge, youth gamification, and sport-specific programming | Phase 11, Phase 12, and post-V1 | Phase 3 context labels create no integration, reward behavior, or sport-specific prescription. |
