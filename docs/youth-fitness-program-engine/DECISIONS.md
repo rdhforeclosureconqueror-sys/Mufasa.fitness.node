@@ -2,6 +2,17 @@
 
 Decisions in this file are architectural constraints. Reversal requires an explicit dated decision entry explaining the migration and safety impact; it must not happen silently.
 
+### YF-ADR-030 — Subject-scoped Phase 8 delivery (2026-08-17)
+
+- **Status:** Accepted.
+- **Decision:** Phase 8 derives an opaque participant reference from the authenticated JWT subject, persists versioned youth program/session documents in an additive atomic store, and exposes participant operations only under `/api/me/youth-fitness/*`.
+- **Safety:** Phase 5 is the only blueprint source, Phase 6 is the delivery veto before adjusted and future delivery, and Phase 7 is the adaptation authority. Browser ownership, level, activity invention, and safety approval are ignored or rejected.
+
+### YF-ADR-031 — Youth mutation CSRF contract (2026-08-17)
+
+- **Status:** Accepted.
+- **Decision:** Every Phase 8 mutation requires bearer authentication and one HMAC subject-bound double-submit token using `pocketpt_youth_csrf` and `x-pocketpt-csrf`.
+
 ## Accepted decisions
 
 ### YF-ADR-001 — Program-first domain

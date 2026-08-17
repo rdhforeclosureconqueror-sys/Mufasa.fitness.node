@@ -2,6 +2,18 @@
 
 // Machine-readable Phase 12A authorization and output policy inventory.
 module.exports = Object.freeze([
+  { method:"GET", path:"/pocketpt/my-program", authentication:"public-shell", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"api-enforced", featureFlag:null, publicOutput:"static-participant-shell", rateLimit:null, compatibility:null, publicWrite:null },
+  ...[
+    ["GET", "/api/me/youth-fitness/csrf"],
+    ["POST", "/api/me/youth-fitness/program/enroll"],
+    ["GET", "/api/me/youth-fitness/program"],
+    ["POST", "/api/me/youth-fitness/sessions/:sessionRef/start"],
+    ["GET", "/api/me/youth-fitness/sessions/:sessionRef"],
+    ["PUT", "/api/me/youth-fitness/sessions/:sessionRef/readiness"],
+    ["PUT", "/api/me/youth-fitness/sessions/:sessionRef/activities/:activityId"],
+    ["POST", "/api/me/youth-fitness/sessions/:sessionRef/activities/:activityId/stop"],
+    ["POST", "/api/me/youth-fitness/sessions/:sessionRef/finish"]
+  ].map(([method, routePath]) => ({ method, path:routePath, authentication:"required", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"authenticated-user-self", featureFlag:null, publicOutput:"owner-scoped-youth-fitness", rateLimit:null, compatibility:null, publicWrite:null })),
   { method:"GET", path:"/api/greatness/trails/:trailId/gallery", authentication:"public", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"public-approved-only", featureFlag:null, publicOutput:"approved-redacted", rateLimit:null, compatibility:null, publicWrite:null },
   ...[["POST","/api/me/greatness/trails/:trailId/contributions"],["DELETE","/api/me/greatness/trail-contributions/:contributionId"],["POST","/api/me/greatness/trail-contributions/:contributionId/reports"]].map(([method,routePath])=>({method,path:routePath,authentication:"required",allowedRoles:["member"],requiredPermissions:[],membership:"not-required",ownership:"authenticated-member-or-owned-contribution",featureFlag:null,publicOutput:"private-redacted",rateLimit:"route-specific",compatibility:null,publicWrite:null})),
   { method:"PATCH", path:"/api/admin/trail-contributions/:contributionId/moderation", authentication:"required", allowedRoles:["super_admin","admin"], requiredPermissions:["trail.moderate"], membership:"not-required", ownership:"privileged", featureFlag:null, publicOutput:"private-redacted", rateLimit:null, compatibility:null, publicWrite:null },

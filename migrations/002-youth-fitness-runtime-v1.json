@@ -1,0 +1,10 @@
+{
+  "id": "002-youth-fitness-runtime-v1",
+  "type": "additive-json-store",
+  "path": "data/youth-fitness/runtime-v1.json",
+  "schema_version": 1,
+  "tables": ["programs", "sessions"],
+  "idempotent": true,
+  "destructive": false,
+  "notes": "Repository initialization creates the store only when absent; existing records are retained. Session documents contain readiness, activity results, stop events, canonical result, adaptation, and safety-validation references."
+}
