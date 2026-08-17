@@ -1,0 +1,10 @@
+{
+  "id": "003-leader-within-pocketpt-bridge-v1",
+  "type": "additive-json-store",
+  "path": "data/youth-fitness/leader-within-pocketpt-bridge-v1.json",
+  "schema_version": 1,
+  "tables": ["mappings", "assignments", "credits", "audit_events"],
+  "idempotent": true,
+  "destructive": false,
+  "notes": "Adds organization-scoped identity mappings, explicit mission-to-session assignments, idempotent completion credits, and metadata-only audit events. Existing local movement records are not migrated or reset."
+}
