@@ -41,3 +41,8 @@ This log preserves intentionally postponed work. An item may move into scope onl
 | YF-D-035 | Program persistence, migrations, Pocket PT UI, and coach/admin editor | Phase 8 or before production writes | Requires authorization, consent/privacy, durable storage, audit, accessibility, deployment, and rollback decisions. |
 | YF-D-036 | Baseline assessment and reassessment execution | Phases 9 and 13 | Phase 4 schedules metadata only; protocols, stable comparison identity, execution, and non-diagnostic interpretation remain separate. |
 | YF-D-037 | Leader Within bridge, youth-safe gamification, and live/staging verification | Phases 11–12 / integration release | Phase 4 has no integration or participant-facing runtime to verify; these claims remain explicitly unmade. |
+| YF-D-038 | Independent final prescription Safety Validator | Phase 6 | Phase 5 has local blueprint validation only; the independent final safety veto remains next. |
+| YF-D-039 | Full adaptation engine and longitudinal training memory | Phase 7 | Phase 5 only filters avoidable impact from its normalized recent-stress snapshot. |
+| YF-D-040 | Session persistence, migrations, Pocket PT UI, and coach/admin session editor | Phase 8 or before production writes | Requires identity authorization, consent/privacy, storage/audit/rollback, accessibility, and integration decisions. |
+| YF-D-041 | Baseline assessment and reassessment execution | Phases 9 and 13 | Session planning neither chooses nor executes assessment protocols. |
+| YF-D-042 | Leader Within bridge, youth-safe gamification, and Phase 5 staging/live verification | Phases 11–12 / integration release | No Phase 5 runtime, participant UI, or external integration exists to verify. |

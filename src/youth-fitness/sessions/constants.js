@@ -1,0 +1,11 @@
+'use strict';
+
+function enumValues(values) {
+  return Object.freeze(Object.fromEntries(values.map((value) => [value, value])));
+}
+
+const SESSION_BLOCK_TYPES = enumValues(['READINESS', 'DYNAMIC_WARMUP', 'SKILL_MOVEMENT_LEARNING', 'STRENGTH_ENDURANCE', 'CONDITIONING_GAME', 'MOBILITY_ACTIVE_RECOVERY', 'BREATHING_RECOVERY', 'REFLECTION_TRACKING']);
+const SESSION_BLUEPRINT_STATUSES = enumValues(['PLANNED', 'COACH_REVIEW_REQUIRED']);
+const LEVEL_RANK = Object.freeze({ FOUNDATION: 0, DEVELOPMENT: 1, PROGRESSION: 2 });
+
+module.exports = { SESSION_BLOCK_TYPES, SESSION_BLUEPRINT_STATUSES, LEVEL_RANK };
