@@ -1,4 +1,4 @@
 'use strict';
 
-// Phase 1 intentionally exports reference architecture only. It does not plan programs or sessions.
-module.exports = { evidence: require('./evidence') };
+// Reference registries only: this namespace does not plan programs, workouts, or sessions.
+module.exports = { evidence: require('./evidence'), activities: require('./activities') };
