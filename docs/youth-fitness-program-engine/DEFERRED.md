@@ -24,4 +24,8 @@ This log preserves intentionally postponed work. An item may move into scope onl
 | YF-D-018 | Reconcile duplicate legacy fitness domain implementations | Maintenance phase | `domains/fitness.js` and `src/domains/fitness.js` overlap; avoid expanding either for youth work. |
 | YF-D-019 | Remove browser-local random “today workout” generation from youth paths | Before Phase 8 launch | `public/fitness.js` is not authoritative and must never power youth delivery. |
 | YF-D-020 | External Ma’at program API disposition | Before youth planner rollout | Treat external generation as untrusted/non-youth until a constrained, versioned adapter and safety validation exist. |
-
+| YF-D-021 | Production program planner | Phase 4 | Requires evidence rules, approved registries, and canonical youth profile. |
+| YF-D-022 | Session/workout planner | Phase 5 | Must remain program-bound; no orphan youth workout generation. |
+| YF-D-023 | Full admin evidence editor | Before production evidence administration | Requires authorization, immutable audit, source retirement, versioning, and reviewer workflow. |
+| YF-D-024 | Fitness assessments and reassessment scheduling | Phases 9 and 13 | Requires protocol identity, non-diagnostic output, and stable comparisons. |
+| YF-D-025 | Advanced gamification | Phase 12 or post-V1 | Requires youth privacy, anti-overexercise, and neutral consistency policy. |
