@@ -1,4 +1,4 @@
 'use strict';
 
-// Reference registries only: this namespace does not plan programs, workouts, or sessions.
-module.exports = { evidence: require('./evidence'), activities: require('./activities'), profiles: require('./profiles') };
+// The planning namespace creates roadmaps and session slots, never workouts or activity selections.
+module.exports = { evidence: require('./evidence'), activities: require('./activities'), profiles: require('./profiles'), planning: require('./planning') };

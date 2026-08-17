@@ -125,3 +125,18 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 
 - **Status:** Accepted (Phase 3)
 - **Decision:** Phase 3 provides enums, placeholders, deterministic normalization, warnings, statuses, and structured fail-closed validation. It creates no program, workout, session, UI, production persistence, AI call, or Leader Within integration.
+
+### YF-ADR-024 — Roadmap before activity selection
+
+- **Status:** Accepted (Phase 4)
+- **Decision:** Phase 4 creates deterministic phase, week, and session-slot architecture before detailed sessions. These records are objectives and constraints, not workouts. They contain movement-family and activity-type targets only; Phase 5 must select specific approved exercises and games through the Phase 2 authority.
+
+### YF-ADR-025 — Balanced emphasis and presentation
+
+- **Status:** Accepted (Phase 4)
+- **Decision:** Controlled goals influence program emphasis but never remove balanced development, movement competency, or recovery. Age changes language/presentation only and never upgrades training level. Consistency expectations use exclusion-aware, non-shaming language.
+
+### YF-ADR-026 — Draft, metadata-only deterministic planning
+
+- **Status:** Accepted (Phase 4)
+- **Decision:** Planned programs default to `DRAFT`; baseline and reassessment schedules are metadata and do not execute assessments or start sessions. Profile safety flags remain visible. Phase 4 makes no AI calls, and output validation fails closed on structural gaps, unknown targets, workouts, or specific activity identifiers.
