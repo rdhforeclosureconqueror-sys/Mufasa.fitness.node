@@ -877,6 +877,10 @@ function createApp(options = {}) {
     try { return handler(req, res); }
     catch (error) { throw new ApiError(error.message === "program_not_found" ? "YOUTH_PROGRAM_NOT_FOUND" : "YOUTH_PROGRAM_REQUEST_INVALID", error.message, error.status || 422, error.details); }
   });
+  const youthOwned = (value) => {
+    if (!value) throw Object.assign(new Error("session_not_found"), { status: 404 });
+    return value;
+  };
   app.get("/api/me/youth-fitness/csrf", requireAuth, (req, res) => {
     const token = youthCsrf.issue(req.auth.userId);
     res.setHeader("Set-Cookie", `${youthCsrf.COOKIE}=${encodeURIComponent(token)}; Path=/api/me/youth-fitness; SameSite=Strict; Secure; Max-Age=1800`);
@@ -884,12 +888,12 @@ function createApp(options = {}) {
   });
   app.post("/api/me/youth-fitness/program/enroll", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthProgramService.enrollment(req.auth.userId, req.body || {}), 201)));
   app.get("/api/me/youth-fitness/program", requireAuth, youthHandler((req, res) => youthResult(res, req, youthProgramService.dashboard(req.auth.userId))));
-  app.post("/api/me/youth-fitness/sessions/:sessionRef/start", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => { const value = youthProgramService.start(req.auth.userId, req.params.sessionRef); if (!value) throw Object.assign(new Error("session_not_found"), { status: 404 }); return youthResult(res, req, value, 201); }));
-  app.get("/api/me/youth-fitness/sessions/:sessionRef", requireAuth, youthHandler((req, res) => { const value = youthProgramService.view(req.auth.userId, req.params.sessionRef); if (!value) throw Object.assign(new Error("session_not_found"), { status: 404 }); return youthResult(res, req, value); }));
-  app.put("/api/me/youth-fitness/sessions/:sessionRef/readiness", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthProgramService.readiness(req.auth.userId, req.params.sessionRef, req.body || {}))));
-  app.put("/api/me/youth-fitness/sessions/:sessionRef/activities/:activityId", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthProgramService.recordActivity(req.auth.userId, req.params.sessionRef, req.params.activityId, req.body || {}))));
-  app.post("/api/me/youth-fitness/sessions/:sessionRef/activities/:activityId/stop", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthProgramService.stopActivity(req.auth.userId, req.params.sessionRef, req.params.activityId, req.body || {}))));
-  app.post("/api/me/youth-fitness/sessions/:sessionRef/finish", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthProgramService.finish(req.auth.userId, req.params.sessionRef, req.body || {}))));
+  app.post("/api/me/youth-fitness/sessions/:sessionRef/start", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthOwned(youthProgramService.start(req.auth.userId, req.params.sessionRef)), 201)));
+  app.get("/api/me/youth-fitness/sessions/:sessionRef", requireAuth, youthHandler((req, res) => youthResult(res, req, youthOwned(youthProgramService.view(req.auth.userId, req.params.sessionRef)))));
+  app.put("/api/me/youth-fitness/sessions/:sessionRef/readiness", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthOwned(youthProgramService.readiness(req.auth.userId, req.params.sessionRef, req.body || {})))));
+  app.put("/api/me/youth-fitness/sessions/:sessionRef/activities/:activityId", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthOwned(youthProgramService.recordActivity(req.auth.userId, req.params.sessionRef, req.params.activityId, req.body || {})))));
+  app.post("/api/me/youth-fitness/sessions/:sessionRef/activities/:activityId/stop", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthOwned(youthProgramService.stopActivity(req.auth.userId, req.params.sessionRef, req.params.activityId, req.body || {})))));
+  app.post("/api/me/youth-fitness/sessions/:sessionRef/finish", requireAuth, youthCsrf.requireToken, youthHandler((req, res) => youthResult(res, req, youthOwned(youthProgramService.finish(req.auth.userId, req.params.sessionRef, req.body || {})))));
   app.get("/avatar-runtime.js", (req, res, next) => {
     if (avatarFeatureEnabled) return next();
     console.info("[avatar-runtime] disabled", { requestId: req.requestId || null });

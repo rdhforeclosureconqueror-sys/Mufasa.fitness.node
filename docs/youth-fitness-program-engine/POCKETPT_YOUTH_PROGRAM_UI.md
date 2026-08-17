@@ -29,6 +29,8 @@ The hierarchy is program → journey → current phase → week → target → t
 
 Readiness collects energy 1–5, soreness, sleep, and pain. It is processed server-side. Low energy/poor sleep reduces sets; significant soreness routes conservatively; every adjusted blueprint is revalidated. Pain withholds the blueprint, sets coach review, asks the youth to tell a coach/supervising adult, and provides no diagnosis or treatment.
 
+Participant session responses use a single delivery projection: executable blueprint content is returned only while the owner-scoped session is `IN_PROGRESS`, readiness exists, no pain flag is active, and Phase 6 returned `ALLOW` or `ALLOW_WITH_WARNINGS`. Start, blocked readiness, pain-stop, completed, foreign, and otherwise non-deliverable states cannot expose the stored executable blueprint.
+
 Session blocks are visually separated. Approved cards show name/type, prescription, rest, registry instructions, cues, and stop conditions. Approved `GAME` records retain game identity; no game is invented. Evidence metadata is not rendered. Actual set/duration values are explicit and may differ from prescription. Stops preserve valid quality reps and neutral reasons (`TECHNIQUE`, `PAIN`, `TOO_TIRED`, `COACH_STOPPED`, `OTHER_SAFE_REASON`).
 
 Finish records effort and optional accomplishment, creates one Phase 7 result, displays a factual adaptation message, and prepares a Phase-6-validated future state. Consistency is `eligible_completed / eligible_scheduled`, with `null` for zero denominator. Current progress is self-only (sessions, level, and baseline availability); there is no global score, ranking, or public leaderboard. One claim-reviewed Phase 4 education message is shown.
@@ -52,3 +54,7 @@ No Garvey/Leader Within route, cohort, curriculum, facilitator workflow, reflect
 ## Manual checklist
 
 The requested 28 steps remain prepared (synthetic sign-in through cross-participant and mobile Safari checks) but were **not executed** in staging or on a real device. Staging verified: **NO**. Live user verified: **NO**.
+
+## Release verification (2026-08-17)
+
+The final post-correction repository state passed `npm test`: 1,076 passed, 0 failed, 0 skipped. The focused security/Phase 8 command passed 18 tests, and the Phase 1–7 command passed 74 tests. The release audit additionally corrected the response projection so a stored blueprint cannot be returned before readiness or after pain/coach-review routing; focused tests cover start withholding, pain-readiness withholding, pain-stop withholding, browser authority rejection, ownership, CSRF, and repository initialization idempotency. Staging, Mobile Safari, and live-user verification remain separate unperformed deployment gates.
