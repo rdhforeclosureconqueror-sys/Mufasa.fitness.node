@@ -2,6 +2,15 @@
 
 This log preserves intentionally postponed work. An item may move into scope only when the phase ledger reaches its owning phase and prerequisites are satisfied.
 
+## Deferred from Phase 8 (2026-08-17)
+
+- Full baseline assessment protocols/UI; guardian consent, age assurance, privacy/retention/deletion, and adult escalation/release operations.
+- Coach-review and administrator exclusion/cancellation interfaces, including medically excused and outage exclusions.
+- Normalized multi-process production persistence, backup/restore, and migration beyond the additive atomic runtime repository.
+- Approved demonstration media, richer timed/game controls, assessment trends, and protocol-valid personal bests.
+- Staging credentials, mobile Safari, assistive-technology, instrumented contrast, and live-user verification.
+- Pocket PT ↔ Garvey / Leader Within bridge remains Phase 9; Phase 8 introduced none.
+
 | ID | Deferred item | Earliest phase | Prerequisite / note |
 | --- | --- | --- | --- |
 | YF-D-001 | Full canonical master specification checked into the repository | Phase 1 | Preserve the supplied master handoff as normative documentation; Phase 0 records boundaries only. |

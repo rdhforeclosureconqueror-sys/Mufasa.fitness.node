@@ -20,4 +20,5 @@ module.exports = Object.freeze({
   ,"public/map-diagnostics.js": "Temporary diagnostics templates escape every browser, URL, error, and event value; structural markup is fixed."
   ,"public/admin-trail-routes.js": "Admin route templates encode every persisted value before rendering; structural markup is fixed."
   ,"public/yoga.js": "Yoga session templates encode every catalog string with esc(); structural empty, error, and completion templates are fixed."
+  ,"public/pocketpt-youth-program.js": "Youth program templates encode all server and participant strings with esc(); numeric values are canonical projections and inline actions are fixed same-origin reloads."
 });

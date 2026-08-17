@@ -1,5 +1,17 @@
 # Youth Fitness Program Engine Phase Ledger
 
+## PHASE_8_COMPLETE
+
+- **CURRENT PHASE:** Phase 8 — Pocket PT Youth Program Experience & Delivery UI
+- **STATUS:** COMPLETE (synthetic automated runtime exit path; no staging/live claim)
+- **COMMIT:** Exact SHA is recorded in the final delivery response after commit creation.
+- **TESTS:** Exact commands and counts are recorded in the final delivery response.
+- **AUTOMATED VERIFIED:** YES
+- **STAGING VERIFIED:** NO
+- **LIVE USER VERIFIED:** NO
+- **BLOCKERS:** Live launch prerequisites remain the consent/privacy/guardian and production-persistence items in `DEFERRED.md`; they do not block the synthetic Phase 8 runtime.
+- **NEXT PHASE:** Phase 9 — Pocket PT ↔ Garvey / Leader Within Program Bridge
+
 ## Current checkpoint
 
 | Field | Value |
