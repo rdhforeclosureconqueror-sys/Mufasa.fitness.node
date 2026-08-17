@@ -140,3 +140,23 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 
 - **Status:** Accepted (Phase 4)
 - **Decision:** Planned programs default to `DRAFT`; baseline and reassessment schedules are metadata and do not execute assessments or start sessions. Profile safety flags remain visible. Phase 4 makes no AI calls, and output validation fails closed on structural gaps, unknown targets, workouts, or specific activity identifiers.
+
+### YF-ADR-027 — Program-bound approved activity blueprints
+
+- **Status:** Accepted (Phase 5)
+- **Decision:** The Session Planner consumes an exact Program Planner session slot and produces an executable blueprint inside that program hierarchy, never an orphan workout. It may select only available, admin-approved Phase 2 records and can never invent an exercise or game.
+
+### YF-ADR-028 — Local integrity now, independent safety veto next
+
+- **Status:** Accepted (Phase 5)
+- **Decision:** Phase 5 validates identity, structure, duration, registry provenance, level, equipment, required coaching/safety metadata, prescription bounds, prohibited language, and claims. This fail-closed integrity check does not replace the independent Phase 6 final safety veto.
+
+### YF-ADR-029 — Non-diagnostic readiness and conservative stress hooks
+
+- **Status:** Accepted (Phase 5)
+- **Decision:** Reported pain creates a safety flag, supervising-adult review note, and `COACH_REVIEW_REQUIRED` status without diagnosis. Recent high impact removes avoidable moderate/high-impact candidates. This is an early conservative hook, not full adaptation or training memory.
+
+### YF-ADR-030 — Deterministic sessions without AI
+
+- **Status:** Accepted (Phase 5)
+- **Decision:** Session selection, prescriptions, duration allocation, presentation, and warnings are deterministic. Phase 5 makes no OpenAI, coach-AI, LLM, generated-workout, or free-text exercise calls.

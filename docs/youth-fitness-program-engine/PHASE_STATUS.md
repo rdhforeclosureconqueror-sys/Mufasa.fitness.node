@@ -4,15 +4,15 @@
 
 | Field | Value |
 | --- | --- |
-| CURRENT PHASE | Phase 4 — Program Planner |
-| STATUS | `AUTOMATED_VERIFIED` / `PHASE_4_COMPLETE` |
-| COMMIT | Phase 4 implementation commit (the commit containing this ledger; resolve with `git log -1 --format=%H`) |
-| TESTS | Phase 4 planner tests; Phase 1 evidence tests; Phase 2 activity tests; Phase 3 profile tests; Pocket PT compatibility tests; full repository tests; lint; `git diff --check` |
+| CURRENT PHASE | Phase 5 — Session Planner |
+| STATUS | `AUTOMATED_VERIFIED` / `PHASE_5_COMPLETE` |
+| COMMIT | Phase 5 implementation commit (the commit containing this ledger; resolve with `git log -1 --format=%H`) |
+| TESTS | Phase 5 session tests; Phase 1 evidence tests; Phase 2 activity tests; Phase 3 profile tests; Phase 4 planner tests; Pocket PT compatibility/full repository tests; lint; `git diff --check` |
 | AUTOMATED VERIFIED | Yes |
-| STAGING VERIFIED | No — not performed; Phase 4 has no runtime integration |
-| LIVE USER VERIFIED | No — not performed; Phase 4 has no participant-facing behavior |
-| BLOCKERS | None for Phase 4 code-level exit. Production identity resolution, consent/privacy policy, persistence, final session safety validation, and UI remain deferred. |
-| NEXT PHASE | Phase 5 — Session Planner |
+| STAGING VERIFIED | No — not performed; Phase 5 has no runtime integration |
+| LIVE USER VERIFIED | No — not performed; Phase 5 has no participant-facing behavior |
+| BLOCKERS | None for Phase 5 code-level exit. Production identity resolution, consent/privacy policy, persistence, final safety veto, and UI remain deferred. |
+| NEXT PHASE | Phase 6 — Final Safety Validator |
 
 ## Phase 1 exit criteria
 
@@ -69,6 +69,8 @@ Phase 0 remains recorded in `ARCHITECTURE_AUDIT.md` and commit `b800151`. Phase 
 
 ## Phase 4 exit criteria
 
+**Historical checkpoint:** Phase 4 — Program Planner (`PHASE_4_COMPLETE`).
+
 - [x] Canonical program states and deterministic planner exist for 8, 12, and 32 weeks.
 - [x] Program phases cover all contiguous weeks without overlap; every week contains schedule-matched session slots.
 - [x] Goals influence balanced emphasis, training level remains profile-controlled, and age changes presentation only.
@@ -81,3 +83,17 @@ Phase 0 remains recorded in `ARCHITECTURE_AUDIT.md` and commit `b800151`. Phase 
 ## Phase 4 GO / NO-GO
 
 **GO for Phase 5 review.** Phase 4 is automated verified and complete at the code/reference level. Staging and live-user verification were not performed and are not claimed. Phase 5 — Session Planner must be a separate reviewed change.
+
+## Phase 5 exit criteria
+
+- [x] A program-bound deterministic Session Planner and canonical versioned blueprint/block models exist.
+- [x] Specific activities resolve only from the approved Phase 2 registry with equipment, level, type, family, instruction, cue, stop, and provenance checks.
+- [x] Readiness, warm-up, skill, strength, game/conditioning, mobility, breathing/recovery, and reflection structures exist with conservative duration and prescription metadata.
+- [x] Age affects presentation only; pain requires non-diagnostic coach review; recent impact activates a conservative filter.
+- [x] Missing coverage produces transparent warnings without invented activity; invalid output fails closed.
+- [x] No AI, UI, persistence, assessment execution, adaptation engine, Leader Within integration, or Phase 6 final safety veto was added.
+- [x] Focused, continuity, full repository, lint, and repository hygiene checks pass.
+
+## Phase 5 GO / NO-GO
+
+**GO for Phase 6 review.** Phase 5 is automated verified and complete at the code/reference level. Staging and live-user verification were not performed and are not claimed. Next is Phase 6 — Final Safety Validator in a separate reviewed change.
