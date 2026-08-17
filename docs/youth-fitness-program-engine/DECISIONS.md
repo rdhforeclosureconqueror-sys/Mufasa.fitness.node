@@ -195,3 +195,15 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 - **Status:** Accepted in Phase 7
 - **Decision:** Skipped sessions neither qualify nor trigger regression, shame, punishment, or make-up workouts. Activity progression/regression uses only approved, available, equipment- and level-eligible Phase 2 relations; missing relations are never invented.
 - **Boundary:** Phase 7 is deterministic and read-only. It makes no AI calls and adds no Pocket PT UI or Leader Within integration.
+
+### YF-ADR-035 — Minimal allowlisted Leader Within bridge
+
+- **Status:** Accepted in Phase 9
+- **Decision:** Leader Within remains an external bounded context. A versioned bridge maps an organization-scoped enrollment to a Pocket PT subject, links one leadership mission to one program-bound fitness session, and returns only an allowlisted status/launch/completion projection. It never returns a raw profile, program, session, readiness record, safety rationale, or executable blueprint.
+- **Authorization:** Mapping creation requires an integration administrator in the same organization; assignment requires explicit facilitator read and movement-assignment permissions; participant reads require the mapped authenticated Pocket PT subject. Cross-organization requests fail closed.
+- **Completion:** Only the explicitly linked Pocket PT `COMPLETED` session result creates an idempotent Leader Within credit. Launch, arbitrary same-day activity, and repeated polling never fabricate or duplicate credit.
+
+### YF-ADR-036 — Program-first resolution and safety-hold precedence
+
+- **Status:** Accepted in Phase 9
+- **Decision:** Assignment resolves an existing Pocket PT program and its independently current session slot. It neither aligns leadership/fitness week numbers nor creates a missing program. Phase 6 remains the delivery veto; pain or an unsafe stored session is projected only as `SAFETY_HOLD`, with launch disabled and MOVE incomplete.

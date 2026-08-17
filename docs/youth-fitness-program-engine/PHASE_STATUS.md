@@ -1,5 +1,45 @@
 # Youth Fitness Program Engine Phase Ledger
 
+## PHASE_9_COMPLETE
+
+- **CURRENT PHASE:** Phase 9 — Pocket PT ↔ Garvey / Leader Within Integration Bridge
+- **IMPLEMENTATION:** COMPLETE at the repository contract level
+- **AUTOMATED VERIFICATION:** COMPLETE
+- **FULL REPOSITORY REGRESSION:** PASS — 1,090 passed, 0 failed, 0 skipped (`npm test`, 2026-08-17)
+- **FOCUSED PHASE 8 + 9:** PASS — 26 passed, 0 failed, 0 skipped
+- **LINT / HYGIENE:** PASS
+- **STAGING / LIVE LEADER WITHIN:** NOT VERIFIED — the owning Leader Within application and production service authentication are not in this repository
+- **DATA:** Additive schema-v1 bridge store; no existing Pocket PT or local movement records are rewritten
+- **NEXT:** Phase 10+ work is recorded in `DEFERRED.md`; production cross-application wiring requires a separately reviewed deployment change
+
+| Phase | Status |
+| --- | --- |
+| Phase 1 — Evidence / Provenance | COMPLETE |
+| Phase 2 — Approved Activity Registry | COMPLETE |
+| Phase 3 — Youth Fitness Profile | COMPLETE |
+| Phase 4 — Program Planner | COMPLETE |
+| Phase 5 — Session Planner | COMPLETE |
+| Phase 6 — Final Safety Validator | COMPLETE |
+| Phase 7 — Progression / Regression / Adaptation | COMPLETE |
+| Phase 8 — Pocket PT Youth Program Runtime / UI | COMPLETE — automated repository verification passed |
+| Phase 9 — Pocket PT ↔ Garvey / Leader Within Integration Bridge | COMPLETE — automated repository verification passed |
+
+### Phase 9 exit evidence
+
+- [x] Repository audit and external bounded-context gaps documented.
+- [x] Organization-scoped durable identity mapping and explicit mission-to-session assignment exist.
+- [x] Versioned, allowlisted minimum-data contract exists; raw sessions/readiness/blueprints never cross it.
+- [x] LOCAL movement projection remains unchanged; POCKETPT is an explicit source.
+- [x] Existing-program/current-slot resolution works without random or silent program creation.
+- [x] Fixed credential-free Pocket PT launch does not equal completion.
+- [x] Exact Pocket PT completion creates one idempotent mission credit; unrelated completion does not.
+- [x] Canonical five-step progress changes from 3/5 (60%) to 4/5 (80%).
+- [x] Safety hold disables launch, leaves MOVE incomplete, and preserves the Phase 8 blueprint boundary.
+- [x] Participant, organization, and facilitator-permission tests fail closed.
+- [x] Temporary Pocket PT failure cannot create completion.
+- [x] Synthetic happy and safety paths, persistence reopen, focused regression, lint, hygiene, and full regression pass.
+- [ ] Live Leader Within UI/SSO, staging, and live-user verification — unavailable here and explicitly deferred.
+
 ## PHASE_8_COMPLETE
 
 - **CURRENT PHASE:** Phase 8 — Pocket PT Youth Program Experience & Delivery UI

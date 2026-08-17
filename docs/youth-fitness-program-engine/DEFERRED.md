@@ -2,6 +2,13 @@
 
 This log preserves intentionally postponed work. An item may move into scope only when the phase ledger reaches its owning phase and prerequisites are satisfied.
 
+## Deferred from Phase 9 (2026-08-17)
+
+- Live Leader Within/Garvey application wiring, production service authentication/SSO, tenant-registry validation, and facilitator/youth UI rendering (the owning application is not present in this repository).
+- Production database/event-bus delivery, webhook retry transport, mapping administration UI, revocation/deactivation synchronization, and multi-process transaction locking.
+- Live staging, real-browser cross-application launch, mobile/assistive-technology checks, and live-user verification.
+- Safe accomplishment extensions beyond the v1 `COMPLETED` signal, gamification, notifications, parent portals, and fitness dashboards for Leader Within facilitators.
+
 ## Deferred from Phase 8 (2026-08-17)
 
 - Full baseline assessment protocols/UI; guardian consent, age assurance, privacy/retention/deletion, and adult escalation/release operations.
@@ -25,7 +32,7 @@ This log preserves intentionally postponed work. An item may move into scope onl
 | YF-D-010 | Pocket PT youth journey UI and accessibility/user testing | Phase 8 | Requires stable read projection; screenshot and real-device verification required. |
 | YF-D-011 | Conservative baseline assessment protocols and movement-observation categories | Phase 9 | Existing OHSA output requires non-diagnostic review before youth reuse. |
 | YF-D-012 | Exclusion-aware consistency and personal progress reporting | Phase 10 | Replace generic streak assumptions with eligible scheduled-session denominator. |
-| YF-D-013 | Minimal Leader Within assignment/completion bridge | Phase 11 | No integration exists in this repository; agree authentication, idempotency, event schema, and data minimization with owning system. |
+| YF-D-013 | Minimal Leader Within assignment/completion bridge | Phase 9 — code-level contract complete | Production transport and owning Leader Within application wiring remain deferred; Phase 9 established authorization, idempotency, event metadata, and data minimization. |
 | YF-D-014 | Youth-safe gamification | Phase 12 | Existing XP/streak/leaderboard system is reusable only behind minor privacy and anti-overexercise policy. |
 | YF-D-015 | Reassessment and next-cycle generation | Phase 13 | Assessment protocol identity must remain stable across comparisons. |
 | YF-D-016 | Advanced resistance, sport specialization, maturation modeling, agility analytics, computer vision, ML injury prediction, global score, and extensive coach analytics | Post-V1 | Explicitly outside Version 1. |
