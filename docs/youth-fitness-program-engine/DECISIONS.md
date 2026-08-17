@@ -69,3 +69,22 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 - **Status:** Accepted
 - **Decision:** Phase 0 is documentation and audit only. Evidence models begin in Phase 1; registries begin in Phase 2; profile and planning code follow the phase ledger.
 
+### YF-ADR-013 — Mandatory dual-axis evidence labeling
+
+- **Status:** Accepted (Phase 1)
+- **Decision:** Important youth fitness rules require an evidence class and a separate claim strength. Conservative program policy is always labeled `PROGRAM_POLICY` and must not be presented as scientific certainty.
+
+### YF-ADR-014 — Bidirectional source claim boundaries
+
+- **Status:** Accepted (Phase 1)
+- **Decision:** Every evidence source must state both what it `supports` and what it `does_not_establish`. A rule link cannot erase the negative boundary or imply causal, diagnostic, universal-threshold, or guaranteed-result support.
+
+### YF-ADR-015 — Reference fixtures before production schema
+
+- **Status:** Accepted (Phase 1)
+- **Decision:** Phase 1 uses validated, immutable code fixtures for rules and evidence. This is safer than selecting a production schema before the repository's persistence, audit, retention, and rollback strategy is decided. A later migration must preserve IDs, versions, links, and review metadata.
+
+### YF-ADR-016 — Phase 1 has no planning authority
+
+- **Status:** Accepted (Phase 1)
+- **Decision:** Phase 1 builds documentation, models, provenance, seed references, and validation only. It does not build or expose program, workout, or session generation.
