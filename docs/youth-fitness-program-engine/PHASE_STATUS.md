@@ -4,15 +4,15 @@
 
 | Field | Value |
 | --- | --- |
-| CURRENT PHASE | Phase 5 — Session Planner |
-| STATUS | `AUTOMATED_VERIFIED` / `PHASE_5_COMPLETE` |
-| COMMIT | Phase 5 implementation commit (the commit containing this ledger; resolve with `git log -1 --format=%H`) |
-| TESTS | Phase 5 session tests; Phase 1 evidence tests; Phase 2 activity tests; Phase 3 profile tests; Phase 4 planner tests; Pocket PT compatibility/full repository tests; lint; `git diff --check` |
+| CURRENT PHASE | Phase 6 — Final Safety Validator |
+| STATUS | `AUTOMATED_VERIFIED` / `PHASE_6_COMPLETE` |
+| COMMIT | Phase 6 implementation commit (the commit containing this ledger; resolve with `git log -1 --format=%H`) |
+| TESTS | Phase 6 safety tests; Phase 1–5 youth fitness continuity tests; full Pocket PT repository tests; lint; `git diff --check` |
 | AUTOMATED VERIFIED | Yes |
-| STAGING VERIFIED | No — not performed; Phase 5 has no runtime integration |
-| LIVE USER VERIFIED | No — not performed; Phase 5 has no participant-facing behavior |
-| BLOCKERS | None for Phase 5 code-level exit. Production identity resolution, consent/privacy policy, persistence, final safety veto, and UI remain deferred. |
-| NEXT PHASE | Phase 6 — Final Safety Validator |
+| STAGING VERIFIED | No — not performed; Phase 6 has no runtime integration |
+| LIVE USER VERIFIED | No — not performed; Phase 6 has no participant-facing behavior |
+| BLOCKERS | None for Phase 6 code-level exit. Production identity resolution, consent/privacy policy, persistence, delivery integration, and UI remain deferred. |
+| NEXT PHASE | Phase 7 — Progression, Regression & Adaptation |
 
 ## Phase 1 exit criteria
 
@@ -86,6 +86,8 @@ Phase 0 remains recorded in `ARCHITECTURE_AUDIT.md` and commit `b800151`. Phase 
 
 ## Phase 5 exit criteria
 
+**Historical checkpoint:** Phase 5 — Session Planner (`PHASE_5_COMPLETE`).
+
 - [x] A program-bound deterministic Session Planner and canonical versioned blueprint/block models exist.
 - [x] Specific activities resolve only from the approved Phase 2 registry with equipment, level, type, family, instruction, cue, stop, and provenance checks.
 - [x] Readiness, warm-up, skill, strength, game/conditioning, mobility, breathing/recovery, and reflection structures exist with conservative duration and prescription metadata.
@@ -97,3 +99,19 @@ Phase 0 remains recorded in `ARCHITECTURE_AUDIT.md` and commit `b800151`. Phase 
 ## Phase 5 GO / NO-GO
 
 **GO for Phase 6 review.** Phase 5 is automated verified and complete at the code/reference level. Staging and live-user verification were not performed and are not claimed. Next is Phase 6 — Final Safety Validator in a separate reviewed change.
+
+
+## Phase 6 exit criteria
+
+- [x] The final validator reconciles profile, program, slot, and session identity.
+- [x] Canonical decision and rule-result models exist; hard failure prevents `ALLOW`.
+- [x] Registry, equipment, level, instructions, prescription, prohibited content, readiness, pain, impact, and claims fail closed.
+- [x] Pain is non-diagnostic; impact checks are conservative workload management.
+- [x] Unknown/free-text/AI-marked activities are rejected and no AI is called.
+- [x] Validation is read-only and returns structured safe outcomes.
+- [x] Focused, continuity, full repository, lint, and hygiene checks pass.
+- [x] No UI, persistence, adaptation, gamification, or Leader Within integration was added.
+
+## Phase 6 GO / NO-GO
+
+**GO for Phase 7 review.** Phase 6 is automated verified at the code/reference level. Staging and live-user verification were not performed and are not claimed. Phase 7 — Progression, Regression & Adaptation must be a separate reviewed change.

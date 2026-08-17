@@ -46,3 +46,14 @@ This log preserves intentionally postponed work. An item may move into scope onl
 | YF-D-040 | Session persistence, migrations, Pocket PT UI, and coach/admin session editor | Phase 8 or before production writes | Requires identity authorization, consent/privacy, storage/audit/rollback, accessibility, and integration decisions. |
 | YF-D-041 | Baseline assessment and reassessment execution | Phases 9 and 13 | Session planning neither chooses nor executes assessment protocols. |
 | YF-D-042 | Leader Within bridge, youth-safe gamification, and Phase 5 staging/live verification | Phases 11–12 / integration release | No Phase 5 runtime, participant UI, or external integration exists to verify. |
+
+## Deferred by Phase 6
+
+- Full progression/regression/adaptation engine and long-term training-memory decisions (Phase 7 or later).
+- Pocket PT participant UI and production session delivery/API integration.
+- Production persistence or migrations; Phase 6 is pure validation.
+- Leader Within bridge and all leadership-context mutation.
+- Baseline assessment and reassessment execution.
+- Youth gamification and reward policy.
+- Coach/admin override UI and audited override workflow.
+- Staging and live-user verification; Phase 6 has no runtime participant-facing integration.

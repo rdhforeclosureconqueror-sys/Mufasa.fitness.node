@@ -160,3 +160,15 @@ Decisions in this file are architectural constraints. Reversal requires an expli
 
 - **Status:** Accepted (Phase 5)
 - **Decision:** Session selection, prescriptions, duration allocation, presentation, and warnings are deterministic. Phase 5 makes no OpenAI, coach-AI, LLM, generated-workout, or free-text exercise calls.
+
+### YF-ADR-031 — Final safety veto and fail-closed uncertainty
+
+- **Status:** Accepted in Phase 6
+- **Decision:** The independently callable Phase 6 validator is the last gate before future delivery. A hard failure always prevents `ALLOW`; missing, malformed, unknown, or incoherent safety state blocks or requires regeneration/regression.
+- **Registry consequence:** Every activity must be available, administrator approved, equipment/level eligible, metadata intact, instructed, conservatively prescribed, and provenance-backed.
+
+### YF-ADR-032 — Conservative review and language policy
+
+- **Status:** Accepted in Phase 6
+- **Decision:** Pain remains non-diagnostic and requires supervising-adult/coach review under current policy. Recent stress/impact checks are conservative workload management, not injury prediction. Prohibited prescriptions and unsafe medical, outcome, weight-loss, punishment, or shaming claims block; readiness mismatch may warn or require review.
+- **Boundary:** Phase 6 adds no UI, persistence/migrations, adaptation engine, AI call, or Leader Within integration and never mutates validator inputs.
