@@ -11,7 +11,7 @@
   function browserLoader({ attempt }) {
     return new Promise((resolve, reject) => {
       const script = globalScope.document.createElement("script");
-      script.src = `/motion/fake-motion-viewer.js?attempt=${attempt}`;
+      script.src = `/motion/motion-viewer.js?attempt=${attempt}`;
       script.async = true;
       script.onload = () => globalScope.PocketPTMotionViewer ? resolve(globalScope.PocketPTMotionViewer) : reject(new Error("Viewer export missing"));
       script.onerror = () => reject(new Error("Viewer import failed"));
