@@ -30,6 +30,8 @@
 
   let exercises = [];
   let hiddenDueToBrokenImage = 0;
+  let motionEnabled = false;
+  const motionBoundaries = new Set();
 
   function normalize(v) {
     return String(v || "").toLowerCase().trim();
@@ -144,6 +146,8 @@
   }
 
   function render() {
+    for (const boundary of motionBoundaries) boundary.unmount();
+    motionBoundaries.clear();
     const query = searchInputEl.value;
     const category = categorySelectEl.value;
 
@@ -200,6 +204,14 @@
       selectBtn.addEventListener("click", () => selectExerciseForWorkout(ex));
       content.appendChild(selectBtn);
 
+      if (motionEnabled && window.MotionViewerBoundary) {
+        const motionRoot = document.createElement("div");
+        content.appendChild(motionRoot);
+        const boundary = window.MotionViewerBoundary.create({ root: motionRoot, descriptor: { exerciseId: String(ex.id || ex.slug || ex.name) }, enabled: true });
+        boundary.mount();
+        motionBoundaries.add(boundary);
+      }
+
       card.appendChild(img);
       card.appendChild(content);
       cardsEl.appendChild(card);
@@ -240,6 +252,14 @@
       }
 
       render();
+      fetch("/api/browser-config", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : null)
+        .then((payload) => {
+          if (payload?.data?.motion3dProduction !== true) return;
+          motionEnabled = true;
+          render();
+        })
+        .catch(() => {});
     } catch (err) {
       cardsEl.innerHTML = `<p class="warn">Could not load exercise index: ${String(err.message || err)}</p>`;
       visibleError(`Could not load exercise index: ${String(err.message || err)}`);

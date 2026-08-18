@@ -2154,6 +2154,7 @@ function createApp(options = {}) {
     return ok(res, req.requestId, {
       googleMapsBrowserApiKey: env.VITE_GOOGLE_MAPS_BROWSER_API_KEY || null,
       debugMapEnabled: String(env.DEBUG_MAP || "").toLowerCase() === "true",
+      motion3dProduction: String(env.MOTION_3D_PRODUCTION || "").toLowerCase() === "true",
       applicationCommit: /^[0-9a-f]{7,64}$/i.test(applicationCommit) ? applicationCommit : "unknown"
     });
   });

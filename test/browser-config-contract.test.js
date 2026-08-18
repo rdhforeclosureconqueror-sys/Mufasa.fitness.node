@@ -30,5 +30,11 @@ test("injected environment is authoritative with no global or wrong-variable fal
   const {body}=await browserConfig({GOOGLE_MAPS_API_KEY:"injected-places-key"});
   assert.equal(body.data.googleMapsBrowserApiKey,null);
   assert.equal(JSON.stringify(body).includes("places-key"),false);
-  assert.deepEqual(Object.keys(body.data).sort(),["applicationCommit","debugMapEnabled","googleMapsBrowserApiKey"]);
+  assert.equal(body.data.motion3dProduction,false);
+  assert.deepEqual(Object.keys(body.data).sort(),["applicationCommit","debugMapEnabled","googleMapsBrowserApiKey","motion3dProduction"]);
+});
+
+test("motion capability is a server-enforced default-off kill switch",async()=>{
+  assert.equal((await browserConfig({MOTION_3D_PRODUCTION:"true"})).body.data.motion3dProduction,true);
+  assert.equal((await browserConfig({MOTION_3D_PRODUCTION:"false"})).body.data.motion3dProduction,false);
 });
