@@ -291,6 +291,9 @@ function createApp(options = {}) {
   app.use(createTrailResponseDiagnostics({ logger: options.logger || console }));
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
   const avatarFeatureEnabled = isAvatarFeatureEnabled(process.env);
+  // Motion Lab is an independent, fail-closed diagnostic capability. It does
+  // not enable (and is not enabled by) the member-facing avatar flag.
+  const motionLabEnabled = String(env.ENABLE_MOTION_LAB || "").toLowerCase() === "true";
   const pilotBypassRuntimeAllowed = process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development";
   const disableLoginForPilot = pilotBypassRuntimeAllowed && process.env.DISABLE_LOGIN_FOR_PILOT === "true";
 
@@ -1235,6 +1238,18 @@ function createApp(options = {}) {
   );
 
   const diagnosticGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+  const motionLabGate = (req, res, next) => {
+    if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
+    return diagnosticGuard(req, res, next);
+  };
+  const sendMotionLabFile = filename => (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    res.sendFile(path.join(rootDir, "motion-lab", filename));
+  };
+  app.get("/dev/motion-lab", motionLabGate, sendMotionLabFile("index.html"));
+  app.get("/dev/motion-lab.css", motionLabGate, sendMotionLabFile("motion-lab.css"));
+  app.get("/dev/motion-lab-bootstrap.js", motionLabGate, sendMotionLabFile("motion-lab-bootstrap.js"));
+  app.get("/dev/motion-lab-runtime.js", motionLabGate, sendMotionLabFile("motion-lab-runtime.js"));
   const runClubDiagnosticsService = createRunClubDiagnosticsService({ rootDir, routeContract:routeAuthorizationContract });
   const frontendManifest = () => { try { return readJSON(path.join(PUBLIC_DIR, "__frontend-version.json")); } catch { return {}; } };
   const currentHealth = (req = null) => buildLaunchHealth({
