@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>腰臀(後鏈)3D</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="viewer3d.css">
+  <link rel="stylesheet" href="mobile3d.css">
+</head>
+<body>
+  <header style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h1>腰臀(後鏈)3D 🍑</h1>
+      <p>拖曳旋轉 · 點肌肉看動作 · 選動作看肌群(豎脊肌/腹斜肌/腹直肌/臀,可選脊椎骨盆)</p>
+    </div>
+    <nav class="nav3d">
+      <a href="index.html">2D</a>
+      <a href="fullbody3d.html">全身</a>
+      <a href="shoulder3d.html">肩</a>
+      <a href="chest3d.html">胸</a>
+      <a href="back3d.html">背</a>
+      <a href="arm3d.html">手臂</a>
+      <a href="waist3d.html">腰部</a>
+      <a href="waistglute3d.html" class="active">腰臀</a>
+      <a href="thigh3d.html">大腿</a>
+      <a href="calf3d.html">小腿</a>
+    </nav>
+  </header>
+
+  <div class="layout3d">
+    <div id="canvas-wrap">
+      <div class="view-opts">
+        <label class="view-opt"><input type="checkbox" id="layer-toggle"> 深層肌(剝除外層)</label>
+        <label class="view-opt"><input type="checkbox" id="bone-toggle"> 顯示脊椎/骨盆</label>
+      </div>
+      <div class="legend3d">
+        <span><i class="dot primary"></i>主動</span>
+        <span><i class="dot synergist"></i>協同</span>
+        <span><i class="dot stabilizer"></i>穩定</span>
+      </div>
+      <div class="hud">
+        <div><kbd>拖曳</kbd> 旋轉 · <kbd>滾輪</kbd> 縮放 · <kbd>右鍵拖</kbd> 平移</div>
+        <div style="margin-top:4px;opacity:.7">3D 模型:<a href="https://github.com/LluisV/Z-Anatomy" target="_blank" style="color:inherit">Z-Anatomy</a> · CC BY-SA 4.0</div>
+      </div>
+    </div>
+    <aside class="panel-wrap">
+      <div class="ex-strip" id="ex-strip"></div>
+      <div id="panel"></div>
+    </aside>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="waistglute3d.js"></script>
+</body>
+</html>

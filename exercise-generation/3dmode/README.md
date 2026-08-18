@@ -1,197 +1,77 @@
-# 🏋️‍♂️ Gym MVP - Interactive 3D Body Model
+# 重訓肌群解剖圖 · gym-muscle 💪
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+一個網頁工具,用解剖學的方式呈現**每個重訓動作牽涉到哪些肌群**——選一個動作,人體圖上把主動肌、協同肌、穩定肌用三色標出;或反過來點某塊肌肉,查出所有練到它的動作。提供 **2D 示意圖** 與 **3D 解剖模型** 兩種檢視。
 
-## 📝 Overview
+### 🔗 線上 Demo:[sesgigikimo.github.io/gym-muscle](https://sesgigikimo.github.io/gym-muscle/)
 
-Gym MVP is an interactive web application that allows users to explore different exercise routines by interacting with a 3D human body model. Users can select specific body zones (like chest, back, arms, etc.), but you need to click a button to view recommended exercises with details about sets, repetitions, and visual guides like videos or images.
+- 2D 雙向查詢:<https://sesgigikimo.github.io/gym-muscle/>
+- 全身 3D：<https://sesgigikimo.github.io/gym-muscle/fullbody3d.html>
 
-- Chest example with a pop-up to view exercises with sets and reps.
-![alt text](assets/image.png)
-![alt text](assets/image-1.png)
+> 純前端、零建置(no build step):HTML + CSS + ES modules + Three.js。
 
-- Back example with a pop-up to view exercises with sets and reps.
-![alt text](assets/image-2.png)
-![alt text](assets/image-3.png)
+## ✨ 功能
 
-## ✨ Features
+- **雙向查詢**:動作 → 肌群,或 肌群 → 動作。
+- **三色語意**:🔴 主動肌 / 🟠 協同肌 / 🟡 穩定肌。
+- **2D 視圖**:前 / 後視圖 SVG 人體,點擊上色、滑鼠懸停顯示中英文名。
+- **3D 視圖**(Three.js + 真實解剖模型):
+  - **全身**總覽(15 大肌群,Draco 壓縮約 1.6MB)。
+  - **區域放大**:大腿、腰部、腰臀(後鏈)——可旋轉、縮放、點擊高亮。
+  - **可選骨架**:大腿可疊股骨、腰部可疊脊椎/骨盆,即時切換。
+- 共用同一份資料層(`data.js`),2D / 3D / 各區域頁完全一致。
 
-- **Interactive 3D Body Model** - Rotate and zoom to explore different angles
-- **Zone Selection System** - Click on numbered buttons to select body parts
-- **Exercise Library** - Comprehensive exercise database for each body zone
-- **Visual Exercise Guides** - Images and embedded YouTube videos
-- **Responsive Design** - Works on desktop and mobile devices
+## 🚀 快速開始
 
-## 🛠️ Tech Stack
-
-- **[Next.js](https://nextjs.org/)** - React framework for server-rendered applications
-- **[React](https://reactjs.org/)** - UI component library
-- **[Three.js](https://threejs.org/)** - JavaScript 3D library
-- **[React Three Fiber](https://docs.pmnd.rs/react-three-fiber)** - React renderer for Three.js
-- **[Drei](https://github.com/pmndrs/drei)** - Helper components for React Three Fiber
-- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
-- **[TypeScript](https://www.typescriptlang.org/)** - Static type checking
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 16.8+ installed
-- npm or yarn package manager
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/AnderssonProgramming/gym-mvp.git
-cd gym-mvp
-```
-
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Run the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
-
-## 🏗️ Project Structure
-
-```
-gym-mvp/
-├── public/                 # Static assets
-│   └── models/             # 3D model files
-│       ├── male/           # Male body model
-│       └── female/         # Female body model
-├── src/
-│   ├── app/                # Next.js App Router
-│   │   └── page.tsx        # Home page
-│   ├── components/         # React components
-│   │   ├── BodyCanvas.tsx  # 3D model canvas component
-│   │   └── ExerciseList.tsx # Exercise display component
-│   └── styles/             # CSS styles
-└── package.json            # Project dependencies
-```
-
-## 🧩 Core Components
-
-### BodyCanvas Component
-
-The heart of the application is the `BodyCanvas` component which:
-
-- Renders the 3D body model using React Three Fiber
-- Handles camera controls and lighting
-- Manages the interactive numbered buttons for zone selection
-- Coordinates the display of exercise popups
-
-```tsx
-<BodyCanvas
-  modelPath="/models/male/scene.gltf"
-  onSelectZone={handleZoneSelect}
-/>
-```
-
-### ExerciseList Component
-
-Displays exercise details for a selected body zone:
-
-- Exercise names, sets, and repetitions
-- Embeds YouTube videos when available
-- Displays reference images
-- Optimized for both mobile and desktop viewing
-
-## 🔄 Data Flow
-
-1. **User Interaction**: User selects a body zone by clicking on a numbered button
-2. **State Management**: Application updates state to track selected zone
-3. **Data Retrieval**: Exercise data for the selected zone is fetched (from mock data in current MVP)
-4. **Rendering**: Popup appears showing relevant exercises with details
-
-## 💻 Code Examples
-
-### Setting up the 3D Scene
-
-```tsx
-<Canvas shadows camera={{ position: [0, 1.5, 3], fov: 50 }}>
-  <ambientLight intensity={0.6} />
-  <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
-  <directionalLight position={[-5, 5, -5]} intensity={0.5} />
-  <Model modelPath={modelPath} />
-  <CameraControls />
-</Canvas>
-```
-
-### Exercise Data Structure
-
-```tsx
-interface Exercise {
-  name: string
-  sets: number
-  reps: number
-  videoUrl?: string
-  imageUrl?: string
-}
-
-const mockExercises: Record<string, Exercise[]> = {
-  chest: [
-    { name: "Press de Banca", sets: 4, reps: 12, videoUrl: "https://www.youtube.com/watch?v=..." },
-    { name: "Aperturas con Mancuernas", sets: 3, reps: 15, imageUrl: "https://..." }
-  ],
-  // Other body zones...
-}
-```
-
-## 🧪 Testing
-
-To run tests:
+因為用到 ES modules 與 `fetch`,需要透過本地伺服器開啟(直接以 `file://` 開會被瀏覽器 CORS 擋下):
 
 ```bash
-npm test
-# or
-yarn test
+git clone https://github.com/sesgigikimo/gym-muscle.git
+cd gym-muscle
+python3 -m http.server 8000
+# 瀏覽器開 http://localhost:8000
 ```
 
-### Manual Testing
+- 2D 版:`http://localhost:8000/`
+- 全身 3D:`http://localhost:8000/fullbody3d.html`
 
-1. **3D Model Interaction**: Verify rotation, zoom, and camera controls
-2. **Button Functionality**: Test clicking on each zone button
-3. **Exercise Display**: Confirm correct exercises appear for each zone
-4. **Media Playback**: Test YouTube video embedding and image display
-5. **Responsive Design**: Check appearance on different screen sizes
+## 🗂️ 專案結構
 
-## 📦 Building for Production
+```
+data.js            # 資料層:16 動作 × 15 肌群對照(角色:主動/協同/穩定)。2D/3D 共用
+index.html         # 2D 版主頁
+app.js  body.js  style.css   # 2D 版邏輯 / SVG 人體 / 樣式
 
-```bash
-npm run build
-npm start
-# or
-yarn build
-yarn start
+viewer3d.js        # 通用 3D 檢視器:initViewer(config) —— 旋轉 + 點擊高亮 + 接資料
+fullbody3d.*       # 全身(15 肌群)
+shoulder3d.*       # 肩（三角肌/斜方肌,可選肩胛・鎖骨・肱骨)
+back3d.*           # 背（背闊肌/斜方肌/豎脊肌,可選脊椎)
+arm3d.*            # 手臂（二頭/三頭/前臂,可選肱骨・橈尺骨)
+waist3d.*          # 腰部（可選脊椎/骨盆）
+waistglute3d.*     # 腰臀後鏈（可選脊椎/骨盆）
+thigh3d.*          # 大腿 + 臀（可選股骨）
+calf3d.*           # 小腿（腓腸肌/比目魚肌,可選脛・腓骨)
+*.glb              # 3D 模型(由 Z-Anatomy 離線轉檔篩出,見下;皆 Draco 壓縮)
 ```
 
-The build process will generate optimized static files in the .next directory, so you can look for the deployment project in Vercel in this link [gym-mvp-deploy](gym-mvp-six.vercel.app).
+新增一個部位只需:篩出該部位的 `*.glb` + 複製一份約 10 行的設定檔(`*3d.js` / `*3d.html`)。
 
-## 🔮 Future Enhancements
+## 🧩 3D 模型轉檔管線(Blender-free)
 
-- User accounts and progress tracking
-- Custom workout routine creation
-- Exercise difficulty levels
-- Animation of proper exercise form
-- Integration with fitness tracking APIs
+3D 肌肉/骨骼來自 [Z-Anatomy](https://github.com/LluisV/Z-Anatomy),全程用命令列處理、不需 Blender:
 
-## 🙏 Acknowledgements
+1. 取得 Z-Anatomy 的 `MuscularSystem100.fbx` / `SkeletalSystem100.fbx`。
+2. `assimp` 轉檔:FBX → glb。
+3. [`@gltf-transform`](https://gltf-transform.dev/) 腳本:依 mesh 名字篩出目標肌肉、為每個 mesh 寫入 `extras.muscle = <肌群id>`、`prune/dedup/weld`,並以 **Draco** 壓縮。
+4. Three.js `GLTFLoader` 載入,透過 `object.userData.muscle` 接回 `data.js`。
 
-- 3D Models by [BitHack](https://sketchfab.com/bithack) under CC-BY-4.0 license
-- Exercise data compiled from various fitness resources
+## 📜 資料來源與授權
 
----
+- **3D 模型**:[Z-Anatomy](https://github.com/LluisV/Z-Anatomy) — © Lluís Vinent,**CC BY-SA 4.0**。
+- **2D SVG 人體**:[react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter) — © ELABBASSI Hicham,**MIT**。
+- **3D 函式庫**:[Three.js](https://threejs.org/) — MIT。
 
-Made with ❤️ for fitness enthusiasts and developers alike.
+由於本專案內含並改作了 Z-Anatomy 的模型,依其 ShareAlike 條款,**本專案整體以 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 授權**。詳見 [`LICENSE`](LICENSE)。
+
+## ⚠️ 注意
+
+動作與肌群的對照為一般訓練常識整理,**僅供學習參考**,非醫療或專業教練建議。
