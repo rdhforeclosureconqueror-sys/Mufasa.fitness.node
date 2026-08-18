@@ -110,10 +110,10 @@ test("core boot paths cannot acquire static dependencies on motion implementatio
   const protectedPaths = ["server.js", "public/boot-core.js", "public/auth-core.js", "public/dashboard-runtime.js", "public/workout-runtime.js", "public/app-runtime.js"];
   for (const relative of protectedPaths) {
     const source = fs.readFileSync(path.join(root, relative), "utf8");
-    assert.doesNotMatch(source, /(?:require\s*\(|from\s+|<script[^>]+src=)[^\n]*(?:fake-motion-viewer|avatar-runtime|motion-engine)/i, `${relative} must not import a viewer implementation`);
+    assert.doesNotMatch(source, /(?:require\s*\(|from\s+|<script[^>]+src=)[^\n]*(?:motion-viewer(?:\.js)?|shared3d-loader|disposable-motion-session|avatar-runtime|motion-engine|three)/i, `${relative} must not import a viewer implementation`);
   }
   const libraryHtml = fs.readFileSync(path.join(root, "exercise-library.html"), "utf8");
-  assert.doesNotMatch(libraryHtml, /<script[^>]+fake-motion-viewer/i, "optional implementation must not be eager-loaded");
+  assert.doesNotMatch(libraryHtml, /<script[^>]+(?:motion-viewer\.js|shared3d-loader|disposable-motion-session|three)/i, "optional implementation must not be eager-loaded");
 });
 
 test("exercise library keeps images, instructions, workout navigation, and local motion fallback ownership", () => {
