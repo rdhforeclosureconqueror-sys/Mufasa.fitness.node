@@ -1,5 +1,18 @@
 # Youth Fitness Program Engine Phase Ledger
 
+## G7 staging Attempt 2 — 2026-08-19
+
+- **G7_ATTEMPT_2:** PocketPT production launch route reached successfully.
+- **PREVIOUS_FAILURE:** RESOLVED — route no longer returns `Cannot GET`.
+- **CURRENT_FAILURE_BOUNDARY:** Garvey launch authority validation.
+- **OBSERVED_RESPONSE:** `GARVEY_LAUNCH_AUTHORITY_INVALID`
+- **SECRET_A_VERIFIED:** YES — this response is reachable only after the HS256 signature computed with PocketPT's configured `GARVEY_LAUNCH_VERIFICATION_SECRET` matches.
+- **SECRET_B_VERIFIED:** NOT YET.
+- **G7_STATUS:** IN_PROGRESS
+- **STAGING_VERIFIED:** NO
+- **ROOT CAUSE:** PocketPT's Attempt 1 runtime verifier diverged from the reconciled G4.5 V1 claim names and canonical binding values. In particular, its authority branch read `issuer`/`audience` instead of JWT `iss`/`aud`; the remaining aliases and lowercase normalized bindings were also noncanonical and have been repaired together.
+- **NEXT REQUIRED LIVE CHECK:** Deploy this PocketPT verifier repair and repeat the real Garvey → PocketPT browser launch without changing either secret.
+
 ## G7 staging repair — 2026-08-18
 
 - **G7_ATTEMPT_1:** Garvey generated signed PocketPT launch successfully.

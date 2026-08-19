@@ -4,7 +4,8 @@ const crypto = require('node:crypto');
 
 const CONTRACT = 'leader_within_pocketpt_bridge_v1';
 const VERSION = 1;
-const OPAQUE_REF = /^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$/;
+const SUBJECT_REF = /^LWIS-[A-Z0-9]{16,64}$/;
+const ASSIGNMENT_REF = /^LWFA-[A-Z0-9]{16,64}$/;
 
 class GarveyLaunchError extends Error {
   constructor(code, status = 401) {
@@ -36,22 +37,22 @@ function verifyGarveyLaunchContext(context, { secret, returnUrlAllowlist, now = 
   if (parts.length !== 3 || parts.some((part) => !/^[A-Za-z0-9_-]+$/.test(part))) throw new GarveyLaunchError('GARVEY_LAUNCH_CONTEXT_INVALID');
   const [encodedHeader, encodedPayload, encodedSignature] = parts;
   const header = decodeJson(encodedHeader);
-  if (header.alg !== 'HS256' || (header.typ != null && header.typ !== 'JWT')) throw new GarveyLaunchError('GARVEY_LAUNCH_CONTEXT_INVALID');
+  if (header.alg !== 'HS256' || (header.typ != null && header.typ !== 'JWT') || header.kid != null) throw new GarveyLaunchError('GARVEY_LAUNCH_CONTEXT_INVALID');
   const expected = crypto.createHmac('sha256', secret).update(`${encodedHeader}.${encodedPayload}`).digest();
   const supplied = Buffer.from(encodedSignature, 'base64url');
   if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) throw new GarveyLaunchError('GARVEY_LAUNCH_CONTEXT_INVALID');
 
   const payload = decodeJson(encodedPayload);
   const currentSeconds = Math.floor(now() / 1000);
-  if (payload.contract !== CONTRACT || payload.contract_version !== VERSION) throw new GarveyLaunchError('GARVEY_LAUNCH_CONTRACT_INVALID');
-  if (payload.issuer !== 'garvey' || payload.audience !== 'pocketpt') throw new GarveyLaunchError('GARVEY_LAUNCH_AUTHORITY_INVALID');
-  if (!Number.isInteger(payload.issued_at) || !Number.isInteger(payload.expires_at)
-    || payload.issued_at > currentSeconds + 30 || payload.expires_at <= currentSeconds
-    || payload.expires_at <= payload.issued_at || payload.expires_at - payload.issued_at > maxLifetimeSeconds) {
+  if (payload.contract_name !== CONTRACT || payload.contract_version !== VERSION) throw new GarveyLaunchError('GARVEY_LAUNCH_CONTRACT_INVALID');
+  if (payload.iss !== 'garvey' || payload.aud !== 'pocketpt') throw new GarveyLaunchError('GARVEY_LAUNCH_AUTHORITY_INVALID');
+  if (!Number.isInteger(payload.iat) || !Number.isInteger(payload.exp)
+    || payload.iat > currentSeconds + 30 || payload.exp <= currentSeconds
+    || payload.exp <= payload.iat || payload.exp - payload.iat > maxLifetimeSeconds) {
     throw new GarveyLaunchError('GARVEY_LAUNCH_LIFETIME_INVALID');
   }
-  if (!OPAQUE_REF.test(payload.subject_ref || '') || !OPAQUE_REF.test(payload.assignment_ref || '')) throw new GarveyLaunchError('GARVEY_LAUNCH_REFERENCE_INVALID');
-  if (payload.provider !== 'pocketpt' || payload.source !== 'garvey' || payload.requirement !== 'movement') throw new GarveyLaunchError('GARVEY_LAUNCH_BINDING_INVALID');
+  if (!SUBJECT_REF.test(payload.subject_ref || '') || !ASSIGNMENT_REF.test(payload.assignment_ref || '')) throw new GarveyLaunchError('GARVEY_LAUNCH_REFERENCE_INVALID');
+  if (payload.provider !== 'POCKETPT' || payload.source_application !== 'GARVEY' || payload.requirement_type !== 'MOVE') throw new GarveyLaunchError('GARVEY_LAUNCH_BINDING_INVALID');
   let canonicalReturnUrl;
   try { canonicalReturnUrl = new URL(payload.return_url).href; } catch { throw new GarveyLaunchError('GARVEY_LAUNCH_RETURN_URL_INVALID'); }
   if (!returnUrlAllowlist.includes(canonicalReturnUrl)) throw new GarveyLaunchError('GARVEY_LAUNCH_RETURN_URL_INVALID');
