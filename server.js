@@ -119,6 +119,7 @@ const { createMemberJourneyService } = require("./src/diagnostics/memberJourneyS
 const { createYouthProgramRepository } = require("./src/youth-fitness/runtime/repository");
 const { createYouthProgramService } = require("./src/youth-fitness/runtime/service");
 const { createYouthCsrf } = require("./src/youth-fitness/runtime/csrf");
+const { createGarveyLaunchHandler } = require("./src/youth-fitness/integration/garveyLaunch");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -874,6 +875,7 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "pocketpt-my-program.html"));
   });
+  app.get("/integrations/garvey/launch", createGarveyLaunchHandler({ env, now: options.garveyLaunchNow }));
 
   const youthResult = (res, req, data, status = 200) => res.status(status).json({ ok: true, requestId: req.requestId, data });
   const youthHandler = (handler) => asyncHandler(async (req, res) => {

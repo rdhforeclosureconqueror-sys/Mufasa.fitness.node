@@ -1,5 +1,17 @@
 # Youth Fitness Program Engine Phase Ledger
 
+## G7 staging repair — 2026-08-18
+
+- **G7_ATTEMPT_1:** Garvey generated signed PocketPT launch successfully.
+- **FAILURE_BOUNDARY:** PocketPT HTTP routing.
+- **OBSERVED_RESPONSE:** `Cannot GET /integrations/garvey/launch`
+- **ROOT CAUSE:** Commit `667a461257a285b12350d668c622d7bbbc63ac57` implemented only the in-process bridge/reference architecture and explicitly deferred network delivery; no Garvey launch handler was registered in the production Express application at any path or method.
+- **SECRET_A_VERIFIED:** NOT YET — the staging request did not reach a verified launch handler.
+- **SECRET_B_VERIFIED:** NOT YET — completion/event return path has not been reached. SECRET B was not changed by this repair.
+- **G7_STATUS:** IN_PROGRESS
+- **STAGING_VERIFIED:** NO
+- **NEXT REQUIRED LIVE CHECK:** Deploy corrected PocketPT route and repeat Garvey → PocketPT launch.
+
 ## PHASE_9_COMPLETE
 
 - **CURRENT PHASE:** Phase 9 — Pocket PT ↔ Garvey / Leader Within Integration Bridge
