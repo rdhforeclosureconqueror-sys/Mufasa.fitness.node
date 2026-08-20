@@ -1291,6 +1291,11 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.sendFile(path.join(PUBLIC_DIR, "motion", "assets", "phase-e", req.params.filename));
   });
+  app.get("/dev/motion-lab-avatar-assets/:filename", motionLabGate, (req, res, next) => {
+    if (req.params.filename !== "avaturn-push-up-source.glb") return next();
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.sendFile(path.join(rootDir, "exercise-generation", "source-assets", "avaturn", req.params.filename));
+  });
   app.post("/api/dev/motion-lab/session", (req, res, next) => {
     if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
     return diagnosticGuard(req, res, next);
