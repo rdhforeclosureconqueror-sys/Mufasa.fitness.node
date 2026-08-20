@@ -13,7 +13,13 @@ function harness() {
   class Disposable { dispose() { this.disposed = true; } }
   class Object3D { constructor() { this.children = []; } add(value) { this.children.push(value); } remove(value) { this.children=this.children.filter(child=>child!==value); } traverse(fn) { fn(this); this.children.forEach(child=>child.traverse?child.traverse(fn):fn(child)); } }
   class Scene extends Object3D {}
-  class PerspectiveCamera { constructor() { this.position = {}; } updateProjectionMatrix() {} }
+  class Vector3 { constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;} set(x,y,z){this.x=x;this.y=y;this.z=z;} }
+  class PerspectiveCamera { constructor(fov,aspect,near,far) { this.fov=fov;this.aspect=aspect;this.near=near;this.far=far;this.position = new Vector3(); } updateProjectionMatrix() {} lookAt(x,y,z){this.target={x,y,z};} }
+  class Color { constructor(value){this.value=value;} }
+  class Light extends Object3D { constructor(color,intensity){super();this.color=color;this.intensity=intensity;this.position=new Vector3();} }
+  class HemisphereLight extends Light { constructor(sky,ground,intensity){super(sky,intensity);this.ground=ground;} }
+  class DirectionalLight extends Light {}
+  class Box3 { setFromObject(root){this.root=root;return this;} getSize(out){return Object.assign(out,this.root.testSize||{x:1,y:2,z:.5});} getCenter(out){return Object.assign(out,this.root.testCenter||{x:0,y:1,z:0});} }
   class BoxGeometry extends Disposable {}
   class MeshBasicMaterial extends Disposable { constructor() { super(); } }
   class Mesh { constructor(geometry, material) { this.geometry = geometry; this.material = material; this.rotation = { y: 0 }; this.visible=true; } }
@@ -21,7 +27,7 @@ function harness() {
   class AnimationMixer { constructor(root){this.root=root;} clipAction(clip){const action={clip,paused:false,play(){this.played=true;return this;},stop(){this.stopped=true;},reset(){this.resetCalled=true;return this;},setLoop(mode,count){this.loop=[mode,count];}};return action;} update(delta){this.delta=delta;} stopAllAction(){this.stopped=true;} }
   const renderers = [];
   class WebGLRenderer extends Disposable { constructor() { super(); this.domElement = target(); this.renderLists = new Disposable(); renderers.push(this); } setPixelRatio(v) { this.dpr = v; } setSize(w, h) { this.size = [w, h]; } render() {} forceContextLoss() { this.lost = true; } }
-  const THREE = { Scene, PerspectiveCamera, BoxGeometry, MeshBasicMaterial, Mesh, WebGLRenderer, AnimationMixer, Clock, LoopRepeat:"repeat", LoopOnce:"once" };
+  const THREE = { Scene, PerspectiveCamera, Color, HemisphereLight, DirectionalLight, Box3, Vector3, BoxGeometry, MeshBasicMaterial, Mesh, WebGLRenderer, AnimationMixer, Clock, LoopRepeat:"repeat", LoopOnce:"once" };
   const loader = { probeCapability: () => ({ supported: true, webgl: true }), loadThree: async ({ signal }) => { if (signal.aborted) throw Object.assign(new Error(), { code: "session_aborted" }); return THREE; } };
   return { env, container, loader, renderers, rafs, THREE };
 }
@@ -63,3 +69,10 @@ test("40 complete start/dispose cycles leave no owned resources", async () => {
 test("canonical avatar and independent clip are mixer-owned and bounded",async()=>{const h=harness(),bone={name:"mixamorig:Hips",isBone:true},skin={name:"Body",isSkinnedMesh:true},avatar=new h.THREE.Scene();avatar.add(bone);avatar.add(skin);const clip={name:"fixture",duration:2,tracks:[{name:"mixamorig:Hips.quaternion"}]};let requested=[];class GLTFLoader{async loadAsync(url){requested.push(url);return url.includes("avatar")?{scene:avatar,animations:[]}:{scene:new h.THREE.Scene(),animations:[clip]};}}h.loader.loadGLTFLoader=async()=>GLTFLoader;const session=runtime.createMotionSession({environment:h.env,loader:h.loader});await session.start(h.container);const loaded=await session.loadAvatar("avatar.glb");assert.deepEqual(loaded.diagnostics.boneNames,["mixamorig:Hips"]);const animation=await session.loadAnimation("fixture.glb");assert.equal(animation.diagnostics.unboundTrackCount,0);assert.equal(session.play().status,"playing");assert.equal(session.pause().status,"paused");assert.equal(session.resume().status,"playing");assert.equal(session.setLoop(false).loop,false);session.stop();assert.equal(session.restart().status,"playing");session.dispose();assert.deepEqual(requested,["avatar.glb","fixture.glb"]);assert.deepEqual(runtime.diagnostics(),{activeSessions:0,activeRafs:0,listeners:0,timers:0,canvases:0});});
 
 test("missing optional GLB is a contained asset_missing result",async()=>{const h=harness();class GLTFLoader{async loadAsync(){throw{target:{status:404}};}}h.loader.loadGLTFLoader=async()=>GLTFLoader;const session=runtime.createMotionSession({environment:h.env,loader:h.loader});await session.start(h.container);assert.equal((await session.loadAvatar("missing.glb")).code,"asset_missing");assert.equal(session.state,"running");session.dispose();});
+
+test("camera fit centers a complete avatar with padding and honors narrow viewports",()=>{
+  const landscape=runtime.calculateCameraFit({x:1,y:2,z:.5},{x:.2,y:1,z:-.1},2,50,1.2);
+  const portrait=runtime.calculateCameraFit({x:1,y:2,z:.5},{x:.2,y:1,z:-.1},.25,50,1.2);
+  assert.deepEqual(landscape.center,{x:.2,y:1,z:-.1}); assert.ok(landscape.distance>2.5); assert.ok(portrait.distance>landscape.distance);
+  assert.ok(landscape.near>0); assert.ok(landscape.far>landscape.distance);
+});

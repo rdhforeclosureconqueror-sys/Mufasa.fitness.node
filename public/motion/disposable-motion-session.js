@@ -8,6 +8,15 @@
   const STATES = Object.freeze(["created", "initializing", "running", "failed", "disposing", "disposed"]);
   const counters = { activeSessions: 0, activeRafs: 0, listeners: 0, timers: 0, canvases: 0 };
   const snapshot = () => Object.freeze({ ...counters });
+  function calculateCameraFit(size, center, aspect, verticalFovDegrees, padding = 1.2) {
+    const safeAspect = Math.max(Number(aspect) || 1, 0.01);
+    const halfVerticalFov = Math.max(1, Number(verticalFovDegrees) || 50) * Math.PI / 360;
+    const verticalDistance = (Math.max(Number(size?.y) || 0, 0.01) / 2) / Math.tan(halfVerticalFov);
+    const horizontalDistance = (Math.max(Number(size?.x) || 0, 0.01) / 2) / (Math.tan(halfVerticalFov) * safeAspect);
+    const distance = Math.max(verticalDistance, horizontalDistance) * Math.max(Number(padding) || 1, 1);
+    const depth = Math.max(Number(size?.z) || 0, 0.01);
+    return Object.freeze({ center: Object.freeze({ x: Number(center?.x) || 0, y: Number(center?.y) || 0, z: Number(center?.z) || 0 }), distance, near: Math.max(0.01, distance - depth * 2), far: Math.max(distance + depth * 2, distance * 4, 10) });
+  }
 
   class DisposableMotionSession {
     constructor(options = {}) {
@@ -31,7 +40,10 @@
         if (this.options.injectFailure === "renderer_init") throw Object.assign(new Error("Injected renderer failure"), { code: "renderer_init_failed" });
         this.renderer = (this.options.createRenderer || (opts => new THREE.WebGLRenderer(opts)))({ antialias: false, alpha: true });
         this.canvas = this.renderer.domElement; container.appendChild(this.canvas); counters.canvases++;
-        this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 10); this.camera.position.z = 2.5;
+        this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x07110e); this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 10); this.camera.position.z = 2.5;
+        this.scene.add(new THREE.HemisphereLight(0xf4f7f5, 0x26352f, 1.15));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.65); keyLight.position.set(3, 5, 4); this.scene.add(keyLight);
+        const fillLight = new THREE.DirectionalLight(0xb9d8ff, 0.55); fillLight.position.set(-4, 2, 3); this.scene.add(fillLight);
         const geometry = new THREE.BoxGeometry(1, 1, 1), material = new THREE.MeshBasicMaterial({ color: 0x35c98b });
         this.mesh = new THREE.Mesh(geometry, material); this.scene.add(this.mesh);
         this.onResize = () => this.resize(container); this.onVisibility = () => this.env.document.hidden ? this.stopRenderLoop() : this.startRenderLoop();
@@ -87,13 +99,21 @@
       root?.traverse?.(object => { if (object.isBone) bones.push(object.name || "(unnamed)"); if (object.isSkinnedMesh) skinnedMeshes.push(object.name || "(unnamed)"); });
       return Object.freeze({ boneCount: bones.length, boneNames: Object.freeze(bones), skinnedMeshCount: skinnedMeshes.length, skinnedMeshes: Object.freeze(skinnedMeshes) });
     }
+    frameAvatar(root) {
+      root?.updateMatrixWorld?.(true);
+      const bounds = new this.THREE.Box3().setFromObject(root), size = bounds.getSize(new this.THREE.Vector3()), center = bounds.getCenter(new this.THREE.Vector3());
+      if (![size.x, size.y, size.z, center.x, center.y, center.z].every(Number.isFinite) || size.y <= 0) return null;
+      const fit = calculateCameraFit(size, center, this.camera.aspect, this.camera.fov, 1.2);
+      this.camera.position.set(fit.center.x, fit.center.y, fit.center.z + fit.distance); this.camera.near = fit.near; this.camera.far = fit.far;
+      this.camera.lookAt(fit.center.x, fit.center.y, fit.center.z); this.camera.updateProjectionMatrix(); return fit;
+    }
     async loadAvatar(path) {
       this.unloadAvatar(); const asset = await this.loadAsset(path); if (asset?.status === "failed") return asset;
       const diagnostics = this.inspectAvatar(asset.scene);
       if (!diagnostics.boneCount || !diagnostics.skinnedMeshCount) return this.failure("avatar_invalid");
-      this.avatar = asset.scene; this.scene.add(this.avatar); this.mesh.visible = false;
+      this.avatar = asset.scene; this.scene.add(this.avatar); this.mesh.visible = false; const cameraFit = this.frameAvatar(this.avatar);
       this.mixer = new this.THREE.AnimationMixer(this.avatar); this.clock = new this.THREE.Clock();
-      return Object.freeze({ status: "ready", diagnostics });
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...diagnostics, cameraFit }) });
     }
     async loadAnimation(path) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
@@ -126,5 +146,5 @@
     }
   }
   function createMotionSession(options) { return new DisposableMotionSession(options); }
-  return Object.freeze({ STATES, DisposableMotionSession, createMotionSession, diagnostics: snapshot });
+  return Object.freeze({ STATES, DisposableMotionSession, createMotionSession, calculateCameraFit, diagnostics: snapshot });
 });
