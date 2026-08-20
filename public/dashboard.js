@@ -62,6 +62,24 @@
     if (motionLabNav) motionLabNav.hidden = true;
   });
 
+  async function launchMotionLab(event) {
+    event.preventDefault();
+    const token = getDashboardAuthToken();
+    if (!token) return;
+    motionLabNav.setAttribute("aria-disabled", "true");
+    try {
+      const response = await fetch(backendUrl("/api/dev/motion-lab/session"), { method: "POST", headers: { Authorization: `Bearer ${token}` }, credentials: "include", cache: "no-store" });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || body?.data?.navigateTo !== "/dev/motion-lab") throw new Error("Motion Lab launch was not authorized.");
+      window.location.assign(backendUrl(body.data.navigateTo));
+    } catch (error) {
+      if (diagnosticStatus) diagnosticStatus.textContent = error.message;
+    } finally {
+      motionLabNav.removeAttribute("aria-disabled");
+    }
+  }
+  motionLabNav?.addEventListener("click", launchMotionLab);
+
   async function memberExperience(pathname) {
     const token = getDashboardAuthToken();
     if (!token) throw new Error("Sign in to view member progress.");
