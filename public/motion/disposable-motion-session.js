@@ -23,7 +23,7 @@
       this.options = options; this.env = options.environment || globalScope; this.loader = options.loader || defaultLoader;
       this.state = "created"; this.controller = new AbortController(); this.listeners = []; this.timers = new Set();
       this.renderer = null; this.scene = null; this.camera = null; this.mesh = null; this.canvas = null; this.raf = null; this.THREE = null;
-      this.avatar = null; this.animationFixture = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
+      this.avatar = null; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
       this.counted = true; counters.activeSessions++;
     }
     addListener(target, type, handler, options) { target?.addEventListener?.(type, handler, options); this.listeners.push([target, type, handler, options]); counters.listeners++; }
@@ -75,6 +75,7 @@
           if (this.options.injectFailure === "runtime") throw new Error("Injected runtime failure");
           if (this.avatar) this.mixer?.update?.(Math.min(0.1, this.clock?.getDelta?.() || 0));
           else this.mesh.rotation.y += 0.01;
+          this.options.onFrame?.(this);
           this.renderer.render(this.scene, this.camera); this.raf = this.env.requestAnimationFrame(frame);
         } catch (error) { this.fail("runtime_failed", error); }
       };
@@ -119,12 +120,20 @@
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
       const asset = await this.loadAsset(path); if (asset?.status === "failed") return asset;
       const clip = asset.animations?.[0]; if (!clip) return this.failure("animation_missing");
-      this.mixer.stopAllAction(); this.action = null; this.animationFixture = asset; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
+      this.unloadMotion(); this.animationFixture = asset; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
       const bones = new Set(this.inspectAvatar(this.avatar).boneNames);
       const tracks = clip.tracks || [], unboundTracks = tracks.map(track => track.name.split(".")[0]).filter(name => !bones.has(name));
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ clipName: clip.name || "(unnamed)", duration: clip.duration, trackCount: tracks.length, unboundTrackCount: unboundTracks.length, unboundTracks: Object.freeze(unboundTracks) }) });
     }
-    unloadAvatar() { this.stop(); this.action = null; if (this.avatar) this.scene?.remove?.(this.avatar); this.avatar = this.animationFixture = this.mixer = this.clock = null; if (this.mesh) this.mesh.visible = true; }
+    loadMotionSpec(spec, compiler) {
+      if (!this.avatar || !this.mixer) return this.failure("avatar_required");
+      const built = compiler?.compile?.(this.THREE, spec, this.avatar); if (!built || built.status !== "ready") return built || this.failure("motion_compile_failed");
+      this.unloadMotion(); this.motionSpec = spec; this.motionDiagnostics = built.diagnostics; this.action = this.mixer.clipAction(built.clip, this.avatar); this.setLoop(this.loop);
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...built.diagnostics, clipName: built.clip.name, clipDuration: built.clip.duration }) });
+    }
+    unloadMotion() { this.stop(); this.action = null; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; return { status: "ready" }; }
+    currentMotionPhase() { if (!this.motionSpec || !this.action) return null; const duration = this.motionSpec.durationSeconds, normalized = duration > 0 ? Math.max(0, Math.min(1, Number(this.action.time || 0) / duration)) : 0; return this.motionSpec.phases.slice().reverse().find(phase => normalized >= phase.normalizedTime)?.id || this.motionSpec.phases[0]?.id || null; }
+    unloadAvatar() { this.unloadMotion(); if (this.avatar) this.scene?.remove?.(this.avatar); this.avatar = this.mixer = this.clock = null; if (this.mesh) this.mesh.visible = true; }
     play() { if (!this.action) return this.failure("animation_required"); this.action.paused = false; this.action.play(); return { status: "playing" }; }
     pause() { if (!this.action) return this.failure("animation_required"); this.action.paused = true; return { status: "paused" }; }
     resume() { return this.play(); }
