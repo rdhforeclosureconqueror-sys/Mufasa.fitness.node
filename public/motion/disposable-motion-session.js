@@ -23,7 +23,7 @@
       this.options = options; this.env = options.environment || globalScope; this.loader = options.loader || defaultLoader;
       this.state = "created"; this.controller = new AbortController(); this.listeners = []; this.timers = new Set();
       this.renderer = null; this.scene = null; this.camera = null; this.mesh = null; this.canvas = null; this.raf = null; this.THREE = null;
-      this.avatar = null; this.avatarAsset = null; this.avatarProfile = null; this.avatarLoadVersion = 0; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
+      this.avatar = null; this.avatarAsset = null; this.avatarProfile = null; this.avatarLoadVersion = 0; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
       this.counted = true; counters.activeSessions++;
     }
     addListener(target, type, handler, options) { target?.addEventListener?.(type, handler, options); this.listeners.push([target, type, handler, options]); counters.listeners++; }
@@ -138,20 +138,64 @@
     }
     async loadAnimation(path) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
+      if (this.avatarProfile?.avatarId === "avaturn-personalized-candidate") return this.failure("incompatible_avatar_profile");
       const asset = await this.loadAsset(path); if (asset?.status === "failed") return asset;
       const clip = asset.animations?.[0]; if (!clip) return this.failure("animation_missing");
-      this.unloadMotion(); this.animationFixture = asset; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
+      this.unloadMotion(); this.animationFixture = asset; this.sessionClip = clip; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
       const bones = new Set(this.inspectAvatar({ scene: this.avatar, animations: [] }, this.avatarProfile).boneNames);
       const tracks = clip.tracks || [], unboundTracks = tracks.map(track => track.name.split(".")[0]).filter(name => !bones.has(name));
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ clipName: clip.name || "(unnamed)", duration: clip.duration, trackCount: tracks.length, unboundTrackCount: unboundTracks.length, unboundTracks: Object.freeze(unboundTracks) }) });
     }
+    inspectClipBindings(clip) {
+      const tracks = clip?.tracks || [], unboundTracks = [];
+      for (const track of tracks) {
+        let target = null, propertyName = null, parsedAvailable = false;
+        try {
+          const parsed = this.THREE.PropertyBinding?.parseTrackName?.(track.name);
+          parsedAvailable = Boolean(parsed);
+          propertyName = parsed?.propertyName || null;
+          target = parsed && this.THREE.PropertyBinding.findNode(this.avatar, parsed.nodeName);
+          if (target && propertyName && !(propertyName in target)) target = null;
+        } catch (_) { target = null; }
+        if (!target && !parsedAvailable) {
+          const nodeName = track.name.slice(0, track.name.lastIndexOf("."));
+          this.avatar?.traverse?.(object => { if (!target && object.name === nodeName) target = object; });
+        }
+        if (!target) unboundTracks.push(track.name);
+      }
+      return Object.freeze({ boundTrackCount: tracks.length - unboundTracks.length, unboundTrackCount: unboundTracks.length, unboundTracks: Object.freeze(unboundTracks) });
+    }
+    loadNativeAnimation(mode = "full") {
+      if (!this.avatar || !this.mixer || !this.avatarAsset) return this.failure("avatar_required");
+      if (this.avatarProfile?.avatarId !== "avaturn-personalized-candidate") return this.failure("native_animation_incompatible_profile");
+      const sourceClip = this.avatarAsset.animations?.find(clip => clip.name === "avaturn_animation") || this.avatarAsset.animations?.[0];
+      if (!sourceClip) return this.failure("animation_missing");
+      if (mode !== "full" && mode !== "body-window") return this.failure("playback_mode_invalid");
+      this.unloadMotion();
+      this.nativeSourceClip = sourceClip;
+      this.sessionClip = sourceClip;
+      if (mode === "body-window") {
+        this.sessionClip = sourceClip.clone();
+        this.sessionClip.duration = 1.533333;
+        this.sessionClip.trim();
+        this.sessionClip.name = sourceClip.name + " [body-motion-window]";
+      }
+      const binding = this.inspectClipBindings(this.sessionClip), tracks = this.sessionClip.tracks || [];
+      const morphTrackCount = tracks.filter(track => /morphTargetInfluences/.test(track.name)).length;
+      this.action = this.mixer.clipAction(this.sessionClip, this.avatar); this.setLoop(this.loop);
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({
+        avatarProfileId: this.avatarProfile.avatarId, animationSource: "native-embedded-avaturn", bindingMode: "NATIVE",
+        clipName: sourceClip.name || "(unnamed)", sourceDuration: sourceClip.duration, activePlaybackRange: mode === "full" ? Object.freeze({ start: 0, end: sourceClip.duration, mode: "FULL SOURCE CLIP" }) : Object.freeze({ start: 0, end: 1.533333, mode: "BODY-MOTION WINDOW" }),
+        trackCount: tracks.length, skeletalTrackCount: tracks.length - morphTrackCount, morphTrackCount, ...binding
+      }) });
+    }
     loadMotionSpec(spec, compiler) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
       const built = compiler?.compile?.(this.THREE, spec, this.avatar); if (!built || built.status !== "ready") return built || this.failure("motion_compile_failed");
-      this.unloadMotion(); this.motionSpec = spec; this.motionDiagnostics = built.diagnostics; this.action = this.mixer.clipAction(built.clip, this.avatar); this.setLoop(this.loop);
+      this.unloadMotion(); this.motionSpec = spec; this.motionDiagnostics = built.diagnostics; this.sessionClip = built.clip; this.action = this.mixer.clipAction(built.clip, this.avatar); this.setLoop(this.loop);
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...built.diagnostics, clipName: built.clip.name, clipDuration: built.clip.duration }) });
     }
-    unloadMotion() { this.stop(); this.action = null; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; return { status: "ready" }; }
+    unloadMotion() { this.stop(); if (this.action && this.mixer && this.sessionClip) this.mixer.uncacheAction?.(this.sessionClip, this.avatar); this.action = null; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; return { status: "ready" }; }
     currentMotionPhase() { if (!this.motionSpec || !this.action) return null; const duration = this.motionSpec.durationSeconds, normalized = duration > 0 ? Math.max(0, Math.min(1, Number(this.action.time || 0) / duration)) : 0; return this.motionSpec.phases.slice().reverse().find(phase => normalized >= phase.normalizedTime)?.id || this.motionSpec.phases[0]?.id || null; }
     unloadAvatar() { this.avatarLoadVersion++; this.unloadMotion(); if (this.avatar) { this.scene?.remove?.(this.avatar); this.disposeObjectResources(this.avatar); } this.avatar = this.avatarAsset = this.avatarProfile = this.mixer = this.clock = null; if (this.mesh) this.mesh.visible = true; return { status: "ready" }; }
     play() { if (!this.action) return this.failure("animation_required"); this.action.paused = false; this.action.play(); return { status: "playing" }; }
@@ -160,6 +204,8 @@
     stop() { this.action?.stop?.(); this.mixer?.stopAllAction?.(); return { status: "stopped" }; }
     restart() { if (!this.action) return this.failure("animation_required"); this.action.reset(); return this.play(); }
     setLoop(enabled) { this.loop = Boolean(enabled); if (this.action) this.action.setLoop(this.loop ? this.THREE.LoopRepeat : this.THREE.LoopOnce, this.loop ? Infinity : 1); return { status: "ready", loop: this.loop }; }
+    playbackDiagnostics() { return Object.freeze({ state: !this.action ? "unloaded" : this.action.paused ? "paused" : this.action.isRunning?.() ? "playing" : "ready", loop: this.loop, currentTime: Number(this.action?.time || 0) }); }
+    ownershipDiagnostics() { return Object.freeze({ actions: this.action ? 1 : 0, mixers: this.mixer ? 1 : 0, avatarRoots: this.avatar ? 1 : 0, gltfAssetReferences: (this.avatarAsset ? 1 : 0) + (this.animationFixture ? 1 : 0), clipsOwnedBySession: this.sessionClip && this.sessionClip !== this.nativeSourceClip ? 1 : 0, sceneAvatarObjects: this.avatar && this.scene?.children?.includes?.(this.avatar) ? 1 : 0, pendingRequests: this.state === "initializing" ? 1 : 0 }); }
     fail(code, cause) { if (this.state !== "disposed" && this.state !== "disposing") { this.state = "failed"; this.options.onError?.(Object.assign(new Error(code), { code, cause })); this.dispose(); } return this.failure(code, cause); }
     dispose() {
       if (this.state === "disposed" || this.state === "disposing") return;
