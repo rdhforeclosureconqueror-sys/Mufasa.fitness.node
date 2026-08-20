@@ -6,11 +6,12 @@
   <section class="controls"><h2>Runtime controls</h2>
     <button id="initializeRuntime">Initialize Runtime</button><button id="disposeRuntime" disabled>Dispose Runtime</button><button id="startSession" disabled>Start Session</button><button id="stopSession" disabled>Stop Session</button><button id="resetLab">Reset Lab</button><button id="stressTest" disabled>Run Lifecycle Stress Test (50)</button><button id="copySummary">Copy Diagnostic Summary</button>
   </section>
-  <section><h2>Canonical avatar fixture</h2><div class="controls">
-    <button id="loadAvatar" disabled>Load Canonical Avatar</button><button id="loadAnimation" disabled>Load Animation Fixture</button><button id="loadPushUp" disabled>Load Push-Up Motion</button>
+  <section><h2>Development avatar profiles</h2><div class="controls">
+    <button id="loadAvatar" disabled>Load Reference Avatar</button><button id="loadPersonalizedAvatar" disabled>Load Personalized Avaturn Avatar</button><button id="unloadAvatar" disabled>Unload Avatar</button><button id="loadAnimation" disabled>Load Animation Fixture</button><button id="loadPushUp" disabled>Load Push-Up Motion</button>
     <button id="playAnimation" disabled>Play</button><button id="pauseAnimation" disabled>Pause</button><button id="resumeAnimation" disabled>Resume</button><button id="stopAnimation" disabled>Stop</button><button id="restartAnimation" disabled>Restart</button>
     <label><input id="loopAnimation" type="checkbox" checked disabled> Loop</label>
   </div><p class="measurement">Missing optional fixtures are contained as <code>asset_missing</code>. Load the avatar before the independent animation fixture.</p></section>
+  <section><h2>Loaded avatar</h2><dl id="avatarDiagnostics"><dt>Avatar</dt><dd>none</dd></dl><p class="measurement">The personalized asset's embedded animation is inventoried only and is never played automatically.</p></section>
   <section><h2>Loaded motion</h2><dl id="motionDiagnostics"><dt>Motion</dt><dd>none</dd></dl><p class="measurement">Push-up values are a manually authored engineering reference, not medically or biomechanically authoritative.</p></section>
   <section><h2>Failure injection</h2><div id="failures" class="controls">
     <button data-failure="dependency" disabled>Simulate Dependency Failure</button><button data-failure="webgl" disabled>Simulate WebGL Unsupported</button><button data-failure="renderer_init" disabled>Simulate Renderer Init Failure</button><button data-failure="runtime" disabled>Simulate Runtime Throw</button><button data-failure="context_loss" disabled>Simulate Context Loss</button><button data-failure="timeout" disabled>Simulate Load Timeout</button><button data-failure="abort" disabled>Simulate Abort During Init</button>

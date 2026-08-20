@@ -23,7 +23,7 @@
       this.options = options; this.env = options.environment || globalScope; this.loader = options.loader || defaultLoader;
       this.state = "created"; this.controller = new AbortController(); this.listeners = []; this.timers = new Set();
       this.renderer = null; this.scene = null; this.camera = null; this.mesh = null; this.canvas = null; this.raf = null; this.THREE = null;
-      this.avatar = null; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
+      this.avatar = null; this.avatarAsset = null; this.avatarProfile = null; this.avatarLoadVersion = 0; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
       this.counted = true; counters.activeSessions++;
     }
     addListener(target, type, handler, options) { target?.addEventListener?.(type, handler, options); this.listeners.push([target, type, handler, options]); counters.listeners++; }
@@ -95,10 +95,20 @@
         return this.failure(status === 404 || error?.code === "asset_missing" ? "asset_missing" : error?.code || "asset_load_failed", error);
       }
     }
-    inspectAvatar(root) {
-      const bones = [], skinnedMeshes = [];
-      root?.traverse?.(object => { if (object.isBone) bones.push(object.name || "(unnamed)"); if (object.isSkinnedMesh) skinnedMeshes.push(object.name || "(unnamed)"); });
-      return Object.freeze({ boneCount: bones.length, boneNames: Object.freeze(bones), skinnedMeshCount: skinnedMeshes.length, skinnedMeshes: Object.freeze(skinnedMeshes) });
+    inspectAvatar(asset, profile) {
+      const bones = [], meshes = [], skinnedMeshes = [], materials = new Set(), textures = new Set(); let nodeCount = 0;
+      asset.scene?.traverse?.(object => {
+        nodeCount++; if (object.isBone) bones.push(object.name || "(unnamed)");
+        if (object.isMesh) meshes.push(object.name || "(unnamed)");
+        if (object.isSkinnedMesh) skinnedMeshes.push(object.name || "(unnamed)");
+        const ownedMaterials = Array.isArray(object.material) ? object.material : [object.material];
+        ownedMaterials.forEach(material => { if (!material) return; materials.add(material); Object.values(material).forEach(value => { if (value?.isTexture) textures.add(value); }); });
+      });
+      const animations = (asset.animations || []).map(clip => { const tracks = clip.tracks || [], morphTrackCount = tracks.filter(track => /morphTargetInfluences/.test(track.name)).length; return Object.freeze({ name: clip.name || "(unnamed)", duration: clip.duration, trackCount: tracks.length, skeletalTrackCount: tracks.length - morphTrackCount, morphTrackCount }); });
+      const rawNames = (asset.parser?.json?.nodes || []).map(node => node.name).filter(Boolean), loadedNames = new Set(); asset.scene?.traverse?.(object => { if (object.name) loadedNames.add(object.name); });
+      const sanitizedNameCount = rawNames.filter(name => !loadedNames.has(name)).length;
+      const skeletonRoot = bones.find(name => { let found; asset.scene?.traverse?.(object => { if (object.name === name) found = object; }); return found && !found.parent?.isBone; }) || bones[0] || null;
+      return Object.freeze({ avatarProfileId: profile?.avatarId || null, sourceAsset: profile?.source || null, assetUrl: profile?.assetUrl || null, rootName: asset.scene?.name || "(unnamed)", skeletonRoot, nodeCount, meshCount: meshes.length, meshes: Object.freeze(meshes), boneCount: bones.length, jointCount: bones.length, boneNames: Object.freeze(bones), boneNameSample: Object.freeze(bones.slice(0, 12)), skinnedMeshCount: skinnedMeshes.length, skinnedMeshes: Object.freeze(skinnedMeshes), skinCount: asset.parser?.json?.skins?.length ?? (skinnedMeshes.length ? 1 : 0), materialCount: materials.size, textureCount: textures.size, animationCount: animations.length, animations: Object.freeze(animations), nameNormalization: Object.freeze({ rawNameCount: rawNames.length, sanitizedNameCount, rule: "Three.js PropertyBinding removes reserved [] . : / characters and replaces whitespace with underscores" }) });
     }
     frameAvatar(root) {
       root?.updateMatrixWorld?.(true);
@@ -108,20 +118,30 @@
       this.camera.position.set(fit.center.x, fit.center.y, fit.center.z + fit.distance); this.camera.near = fit.near; this.camera.far = fit.far;
       this.camera.lookAt(fit.center.x, fit.center.y, fit.center.z); this.camera.updateProjectionMatrix(); return fit;
     }
-    async loadAvatar(path) {
-      this.unloadAvatar(); const asset = await this.loadAsset(path); if (asset?.status === "failed") return asset;
-      const diagnostics = this.inspectAvatar(asset.scene);
-      if (!diagnostics.boneCount || !diagnostics.skinnedMeshCount) return this.failure("avatar_invalid");
-      this.avatar = asset.scene; this.scene.add(this.avatar); this.mesh.visible = false; const cameraFit = this.frameAvatar(this.avatar);
+    disposeObjectResources(root) {
+      const geometries = new Set(), materials = new Set(), textures = new Set();
+      root?.traverse?.(object => { if (object.geometry) geometries.add(object.geometry); const values = Array.isArray(object.material) ? object.material : [object.material]; values.forEach(material => { if (!material) return; materials.add(material); Object.values(material).forEach(value => { if (value?.isTexture) textures.add(value); }); }); });
+      textures.forEach(texture => texture.dispose?.()); materials.forEach(material => material.dispose?.()); geometries.forEach(geometry => geometry.dispose?.());
+      return Object.freeze({ geometries: geometries.size, materials: materials.size, textures: textures.size });
+    }
+    async loadAvatar(profileOrPath) {
+      this.unloadAvatar(); const version = this.avatarLoadVersion, profile = typeof profileOrPath === "string" ? Object.freeze({ avatarId: "legacy-path", source: profileOrPath, assetUrl: profileOrPath }) : profileOrPath;
+      if (!profile?.assetUrl || profile.developmentOnly === false) return this.failure("avatar_profile_invalid");
+      const asset = await this.loadAsset(profile.assetUrl); if (asset?.status === "failed") return asset;
+      if (version !== this.avatarLoadVersion) { this.disposeObjectResources(asset.scene); return this.failure("avatar_load_superseded"); }
+      const diagnostics = this.inspectAvatar(asset, profile);
+      if (!diagnostics.boneCount || !diagnostics.skinnedMeshCount) { this.disposeObjectResources(asset.scene); return this.failure("avatar_invalid"); }
+      this.avatarAsset = asset; this.avatarProfile = profile; this.avatar = asset.scene; this.scene.add(this.avatar); this.mesh.visible = false; const cameraFit = this.frameAvatar(this.avatar);
       this.mixer = new this.THREE.AnimationMixer(this.avatar); this.clock = new this.THREE.Clock();
-      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...diagnostics, cameraFit }) });
+      const box = cameraFit ? Object.freeze({ center: cameraFit.center, dimensions: Object.freeze({ ...new this.THREE.Box3().setFromObject(this.avatar).getSize(new this.THREE.Vector3()) }) }) : null;
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...diagnostics, boundingBox: box, cameraFit }) });
     }
     async loadAnimation(path) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
       const asset = await this.loadAsset(path); if (asset?.status === "failed") return asset;
       const clip = asset.animations?.[0]; if (!clip) return this.failure("animation_missing");
       this.unloadMotion(); this.animationFixture = asset; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
-      const bones = new Set(this.inspectAvatar(this.avatar).boneNames);
+      const bones = new Set(this.inspectAvatar({ scene: this.avatar, animations: [] }, this.avatarProfile).boneNames);
       const tracks = clip.tracks || [], unboundTracks = tracks.map(track => track.name.split(".")[0]).filter(name => !bones.has(name));
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ clipName: clip.name || "(unnamed)", duration: clip.duration, trackCount: tracks.length, unboundTrackCount: unboundTracks.length, unboundTracks: Object.freeze(unboundTracks) }) });
     }
@@ -133,7 +153,7 @@
     }
     unloadMotion() { this.stop(); this.action = null; this.animationFixture = null; this.motionSpec = null; this.motionDiagnostics = null; return { status: "ready" }; }
     currentMotionPhase() { if (!this.motionSpec || !this.action) return null; const duration = this.motionSpec.durationSeconds, normalized = duration > 0 ? Math.max(0, Math.min(1, Number(this.action.time || 0) / duration)) : 0; return this.motionSpec.phases.slice().reverse().find(phase => normalized >= phase.normalizedTime)?.id || this.motionSpec.phases[0]?.id || null; }
-    unloadAvatar() { this.unloadMotion(); if (this.avatar) this.scene?.remove?.(this.avatar); this.avatar = this.mixer = this.clock = null; if (this.mesh) this.mesh.visible = true; }
+    unloadAvatar() { this.avatarLoadVersion++; this.unloadMotion(); if (this.avatar) { this.scene?.remove?.(this.avatar); this.disposeObjectResources(this.avatar); } this.avatar = this.avatarAsset = this.avatarProfile = this.mixer = this.clock = null; if (this.mesh) this.mesh.visible = true; return { status: "ready" }; }
     play() { if (!this.action) return this.failure("animation_required"); this.action.paused = false; this.action.play(); return { status: "playing" }; }
     pause() { if (!this.action) return this.failure("animation_required"); this.action.paused = true; return { status: "paused" }; }
     resume() { return this.play(); }
