@@ -1272,6 +1272,16 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(rootDir, "motion-lab", filename));
   };
+  app.get("/dev/motion-lab-launch", (req, res) => {
+    if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.sendFile(path.join(rootDir, "motion-lab", "motion-lab-launch.html"));
+  });
+  app.get("/dev/motion-lab-launch.js", (req, res) => {
+    if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.sendFile(path.join(rootDir, "motion-lab", "motion-lab-launch.js"));
+  });
   app.get("/dev/motion-lab", motionLabGate, sendMotionLabFile("index.html"));
   app.get("/dev/motion-lab.css", motionLabGate, sendMotionLabFile("motion-lab.css"));
   app.get("/dev/motion-lab-bootstrap.js", motionLabGate, sendMotionLabFile("motion-lab-bootstrap.js"));

@@ -65,15 +65,43 @@
   async function launchMotionLab(event) {
     event.preventDefault();
     const token = getDashboardAuthToken();
-    if (!token) return;
+    if (!token) {
+      if (diagnosticStatus) diagnosticStatus.textContent = "motion_lab_session_unavailable";
+      return;
+    }
     motionLabNav.setAttribute("aria-disabled", "true");
+    const backendOrigin = new URL(dashboardApiBaseUrl).origin;
+    // WebKit rejects cookies written by a cross-site fetch before the backend
+    // has first-party storage access. Open the backend during the user gesture;
+    // its handoff page performs the authenticated POST in a first-party context.
+    const launchWindow = window.open(backendUrl("/dev/motion-lab-launch"), "_blank");
+    if (!launchWindow) {
+      if (diagnosticStatus) diagnosticStatus.textContent = "motion_lab_session_unavailable";
+      motionLabNav.removeAttribute("aria-disabled");
+      return;
+    }
     try {
-      const response = await fetch(backendUrl("/api/dev/motion-lab/session"), { method: "POST", headers: { Authorization: `Bearer ${token}` }, credentials: "include", cache: "no-store" });
-      const body = await response.json().catch(() => null);
-      if (!response.ok || body?.data?.navigateTo !== "/dev/motion-lab") throw new Error("Motion Lab launch was not authorized.");
-      window.location.assign(backendUrl(body.data.navigateTo));
+      await new Promise((resolve, reject) => {
+        const cleanup = () => { window.clearTimeout(timeout); window.removeEventListener("message", onMessage); };
+        const timeout = window.setTimeout(() => { cleanup(); reject(new Error("motion_lab_launch_timeout")); }, 10000);
+        function onMessage(message) {
+          if (message.origin !== backendOrigin || message.source !== launchWindow) return;
+          if (message.data?.type === "pocketpt:motion-lab-ready") {
+            launchWindow.postMessage({ type: "pocketpt:motion-lab-auth", token }, backendOrigin);
+            return;
+          }
+          if (message.data?.type === "pocketpt:motion-lab-launched") {
+            cleanup(); resolve();
+          } else if (message.data?.type === "pocketpt:motion-lab-error") {
+            cleanup();
+            reject(new Error(["motion_lab_session_unavailable", "motion_lab_session_cookie_rejected"].includes(message.data.code) ? message.data.code : "motion_lab_session_unavailable"));
+          }
+        }
+        window.addEventListener("message", onMessage);
+      });
     } catch (error) {
-      if (diagnosticStatus) diagnosticStatus.textContent = error.message;
+      if (diagnosticStatus) diagnosticStatus.textContent = error.message || "motion_lab_session_unavailable";
+      try { launchWindow.close(); } catch (_) {}
     } finally {
       motionLabNav.removeAttribute("aria-disabled");
     }
