@@ -6,6 +6,7 @@
   "use strict";
 
   const THREE_MODULE_URL = "/vendor/three/build/three.module.js";
+  const GLTF_LOADER_MODULE_URL = "/vendor/three/examples/jsm/loaders/GLTFLoader.js";
 
   function probeCapability(environment = globalScope) {
     if (!environment?.document?.createElement || typeof environment.AbortController !== "function" || typeof environment.requestAnimationFrame !== "function") {
@@ -34,5 +35,18 @@
     }
   }
 
-  return Object.freeze({ THREE_MODULE_URL, probeCapability, loadThree });
+  async function loadGLTFLoader(options = {}) {
+    if (options.signal?.aborted) throw Object.assign(new Error("Motion session aborted"), { code: "session_aborted" });
+    try {
+      const imported = await (options.importModule || (url => import(url)))(options.moduleUrl || GLTF_LOADER_MODULE_URL);
+      if (options.signal?.aborted) throw Object.assign(new Error("Motion session aborted"), { code: "session_aborted" });
+      if (typeof imported?.GLTFLoader !== "function") throw new Error("GLTFLoader export unavailable");
+      return imported.GLTFLoader;
+    } catch (error) {
+      if (error?.code === "session_aborted") throw error;
+      throw Object.assign(new Error("Local GLTF loader could not be loaded"), { code: "gltf_loader_failed", cause: error });
+    }
+  }
+
+  return Object.freeze({ THREE_MODULE_URL, GLTF_LOADER_MODULE_URL, probeCapability, loadThree, loadGLTFLoader });
 });

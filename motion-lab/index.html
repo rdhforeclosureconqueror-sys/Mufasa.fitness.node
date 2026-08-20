@@ -2,10 +2,15 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PocketPT Motion Lab</title><link rel="stylesheet" href="/dev/motion-lab.css"></head>
 <body><main>
-  <header><p class="eyebrow">INTERNAL DIAGNOSTIC</p><h1>POCKETPT MOTION LAB</h1><p>Phase D disposable-runtime laboratory. No exercise or anatomy assets are loaded.</p></header>
+  <header><p class="eyebrow">INTERNAL DIAGNOSTIC</p><h1>POCKETPT MOTION LAB</h1><p>Phase E canonical-avatar and independently packaged animation laboratory. Development/test assets only; no anatomy data.</p></header>
   <section class="controls"><h2>Runtime controls</h2>
     <button id="initializeRuntime">Initialize Runtime</button><button id="disposeRuntime" disabled>Dispose Runtime</button><button id="startSession" disabled>Start Session</button><button id="stopSession" disabled>Stop Session</button><button id="resetLab">Reset Lab</button><button id="stressTest" disabled>Run Lifecycle Stress Test (50)</button><button id="copySummary">Copy Diagnostic Summary</button>
   </section>
+  <section><h2>Canonical avatar fixture</h2><div class="controls">
+    <button id="loadAvatar" disabled>Load Canonical Avatar</button><button id="loadAnimation" disabled>Load Animation Fixture</button>
+    <button id="playAnimation" disabled>Play</button><button id="pauseAnimation" disabled>Pause</button><button id="resumeAnimation" disabled>Resume</button><button id="stopAnimation" disabled>Stop</button><button id="restartAnimation" disabled>Restart</button>
+    <label><input id="loopAnimation" type="checkbox" checked disabled> Loop</label>
+  </div><p class="measurement">Missing optional fixtures are contained as <code>asset_missing</code>. Load the avatar before the independent animation fixture.</p></section>
   <section><h2>Failure injection</h2><div id="failures" class="controls">
     <button data-failure="dependency" disabled>Simulate Dependency Failure</button><button data-failure="webgl" disabled>Simulate WebGL Unsupported</button><button data-failure="renderer_init" disabled>Simulate Renderer Init Failure</button><button data-failure="runtime" disabled>Simulate Runtime Throw</button><button data-failure="context_loss" disabled>Simulate Context Loss</button><button data-failure="timeout" disabled>Simulate Load Timeout</button><button data-failure="abort" disabled>Simulate Abort During Init</button>
   </div></section>

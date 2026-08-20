@@ -1,0 +1,11 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
+const assets=require("../public/motion/phase-e-assets"),loader=require("../public/motion/shared3d-loader");
+
+test("manifest is the single stable optional asset contract",()=>{assert.equal(assets.paths.avatar,"/motion/assets/phase-e/canonical-avatar.glb");assert.equal(assets.paths.animation,"/motion/assets/phase-e/animation-fixture.glb");assert.equal(assets.manifest.canonicalAvatar.requires.animations,0);assert.equal(assets.manifest.animationFixture.requires.mesh,false);assert.equal(assets.manifest.licenseStatus,"development-test-only");});
+
+test("GLTF loader uses the local vendored module and normalizes failures",async()=>{let url;class GLTFLoader{};assert.equal(await loader.loadGLTFLoader({importModule:async value=>(url=value,{GLTFLoader})}),GLTFLoader);assert.equal(url,"/vendor/three/examples/jsm/loaders/GLTFLoader.js");await assert.rejects(loader.loadGLTFLoader({importModule:async()=>{throw new Error("no")}}),error=>error.code==="gltf_loader_failed");});
+
+test("E1 remains binary optional and core/member dependency isolated",()=>{const root=path.resolve(__dirname,"..");for(const binary of ["canonical-avatar.glb","animation-fixture.glb"])assert.equal(fs.existsSync(path.join(root,"public/motion/assets/phase-e",binary)),false);for(const relative of ["server.js","public/app-runtime.js","public/boot-core.js","public/auth-core.js","public/dashboard-runtime.js","public/workout-runtime.js","public/exercise-library.js"]){const source=fs.readFileSync(path.join(root,relative),"utf8");assert.doesNotMatch(source,/phase-e-assets|canonical-avatar\.glb|animation-fixture\.glb|GLTFLoader|AnimationMixer/,relative);}});
+
+test("conversion and validation contracts prohibit duplicate fixture meshes",()=>{const converter=fs.readFileSync(path.resolve(__dirname,"../scripts/motion/convert-phase-e.py"),"utf8"),validator=fs.readFileSync(path.resolve(__dirname,"../scripts/motion/validate-phase-e-glb.js"),"utf8");assert.match(converter,/obj\.type not in \{'ARMATURE','EMPTY'\}/);assert.match(validator,/animation fixture must not duplicate mesh/);assert.match(validator,/canonical avatar must contain no clips/);});
