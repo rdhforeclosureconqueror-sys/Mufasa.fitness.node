@@ -468,7 +468,7 @@
     const token = getCanonicalAuthState().token;
     const baseUrl = options.baseUrl || global.RuntimeState?.getEndpoints?.().nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.MAAT_BACKEND_ORIGIN || global.MAAT_NODE_BASE_URL || global.location?.origin;
     try {
-      if (token) await global.fetch(`${baseUrl}/api/auth/logout`, { method: "POST", headers: { authorization: `Bearer ${token}` }, cache: "no-store" });
+      if (token) await global.fetch(`${baseUrl}/api/auth/logout`, { method: "POST", headers: { authorization: `Bearer ${token}` }, credentials: "include", cache: "no-store" });
     } catch (_) {
       // Local logout must complete even when the network is unavailable.
     } finally {

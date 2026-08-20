@@ -295,6 +295,9 @@ function createApp(options = {}) {
   // Motion Lab is an independent, fail-closed diagnostic capability. It does
   // not enable (and is not enabled by) the member-facing avatar flag.
   const motionLabEnabled = String(env.ENABLE_MOTION_LAB || "").toLowerCase() === "true";
+  const motionLabSessions = new Map();
+  const motionLabSessionTtlMs = options.motionLabSessionTtlMs || 10 * 60 * 1000;
+  const motionLabCookieName = "PocketPTMotionLabSession";
   const pilotBypassRuntimeAllowed = process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development";
   const disableLoginForPilot = pilotBypassRuntimeAllowed && process.env.DISABLE_LOGIN_FOR_PILOT === "true";
 
@@ -352,7 +355,7 @@ function createApp(options = {}) {
       if (ALLOWED_ORIGINS.length === 0) return cb(null, true);
       return cb(null, ALLOWED_ORIGINS.includes(origin));
     },
-    credentials: false,
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Request-ID"],
     exposedHeaders: ["X-Request-ID", "X-App-Build-Version", "X-Asset-Cache-Token", "Content-Length", "Content-Type", "Cache-Control", "Content-Encoding"],
@@ -1240,8 +1243,26 @@ function createApp(options = {}) {
   );
 
   const diagnosticGuard = requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision);
+  function motionLabCookieOptions() {
+    // Phase E retains its stable /motion asset contract, so / is the narrowest
+    // cookie path that covers both the /dev shell and those protected files.
+    return { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "lax", path: "/" };
+  }
+  function readMotionLabSession(req) {
+    const pair = String(req.get("cookie") || "").split(";").map(value => value.trim()).find(value => value.startsWith(`${motionLabCookieName}=`));
+    const sessionId = pair?.slice(motionLabCookieName.length + 1);
+    if (!sessionId || !/^[A-Za-z0-9_-]{32,}$/.test(sessionId)) return null;
+    const session = motionLabSessions.get(sessionId);
+    if (!session || session.expiresAt <= Date.now()) {
+      motionLabSessions.delete(sessionId);
+      return null;
+    }
+    return { ...session, sessionId };
+  }
   const motionLabGate = (req, res, next) => {
     if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
+    const session = readMotionLabSession(req);
+    if (session) { req.motionLabSession = session; return next(); }
     return diagnosticGuard(req, res, next);
   };
   const sendMotionLabFile = filename => (_req, res) => {
@@ -1252,6 +1273,31 @@ function createApp(options = {}) {
   app.get("/dev/motion-lab.css", motionLabGate, sendMotionLabFile("motion-lab.css"));
   app.get("/dev/motion-lab-bootstrap.js", motionLabGate, sendMotionLabFile("motion-lab-bootstrap.js"));
   app.get("/dev/motion-lab-runtime.js", motionLabGate, sendMotionLabFile("motion-lab-runtime.js"));
+  app.get("/dev/motion-lab-assets/:filename", motionLabGate, (req, res, next) => {
+    if (!/^[a-z0-9-]+\.js$/.test(req.params.filename)) return next();
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.sendFile(path.join(PUBLIC_DIR, "motion", req.params.filename));
+  });
+  app.get("/dev/motion-lab-assets/phase-e/:filename", motionLabGate, (req, res, next) => {
+    if (!/^[a-z0-9-]+\.glb$/.test(req.params.filename)) return next();
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.sendFile(path.join(PUBLIC_DIR, "motion", "assets", "phase-e", req.params.filename));
+  });
+  app.get("/motion/assets/phase-e/:filename", motionLabGate, (req, res, next) => {
+    if (!/^[a-z0-9-]+\.glb$/.test(req.params.filename)) return next();
+    res.set(SHELL_NO_STORE_HEADERS);
+    return res.sendFile(path.join(PUBLIC_DIR, "motion", "assets", "phase-e", req.params.filename));
+  });
+  app.post("/api/dev/motion-lab/session", (req, res, next) => {
+    if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
+    return diagnosticGuard(req, res, next);
+  }, (req, res) => {
+    const sessionId = crypto.randomBytes(32).toString("base64url");
+    motionLabSessions.set(sessionId, { userId: req.auth.userId, tokenId: req.auth.jti || null, expiresAt: Date.now() + motionLabSessionTtlMs });
+    res.cookie(motionLabCookieName, sessionId, { ...motionLabCookieOptions(), maxAge: motionLabSessionTtlMs });
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, req.requestId, { navigateTo: "/dev/motion-lab", expiresInSeconds: Math.floor(motionLabSessionTtlMs / 1000) }, 201);
+  });
   const runClubDiagnosticsService = createRunClubDiagnosticsService({ rootDir, routeContract:routeAuthorizationContract });
   const frontendManifest = () => { try { return readJSON(path.join(PUBLIC_DIR, "__frontend-version.json")); } catch { return {}; } };
   const currentHealth = (req = null) => buildLaunchHealth({
@@ -1928,7 +1974,11 @@ function createApp(options = {}) {
     });
   }));
 
-  app.post("/api/auth/logout", asyncHandler(async (_req, res) => {
+  app.post("/api/auth/logout", asyncHandler(async (req, res) => {
+    if (req.auth?.userId) for (const [sessionId, session] of motionLabSessions) if (session.userId === req.auth.userId) motionLabSessions.delete(sessionId);
+    const browserSession = readMotionLabSession(req);
+    if (browserSession) motionLabSessions.delete(browserSession.sessionId);
+    res.clearCookie(motionLabCookieName, motionLabCookieOptions());
     return res.status(200).json({ ok: true });
   }));
 

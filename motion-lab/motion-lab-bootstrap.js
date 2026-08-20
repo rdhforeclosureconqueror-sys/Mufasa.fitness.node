@@ -5,8 +5,8 @@
     if (loaded) return window.MotionLabRuntime?.initialize();
     document.getElementById("initializeRuntime").disabled=true;
     try {
-      await script("/motion/motion-viewer-contract.js"); await script("/motion/motion-viewer-boundary.js");
-      await script("/motion/shared3d-loader.js"); await script("/motion/phase-e-assets.js"); await script("/motion/disposable-motion-session.js"); await script("/dev/motion-lab-runtime.js");
+      await script("/dev/motion-lab-assets/motion-viewer-contract.js"); await script("/dev/motion-lab-assets/motion-viewer-boundary.js");
+      await script("/dev/motion-lab-assets/shared3d-loader.js"); await script("/dev/motion-lab-assets/phase-e-assets.js"); await script("/dev/motion-lab-assets/disposable-motion-session.js"); await script("/dev/motion-lab-runtime.js");
       boundary=window.MotionViewerBoundary.create({enabled:true,descriptor:{exerciseId:"motion-lab-primitive"},root:document.getElementById("viewer"),
         view:{show:function(){},viewerRoot:function(){return document.getElementById("viewer");}},
         loadViewer:async function(){return {createSession:function(){return {mount:async function(root){window.MotionLabRuntime.mount(root);return {status:"ready"};},dispose:function(){window.MotionLabRuntime.dispose();}};}};}});
