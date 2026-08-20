@@ -22,6 +22,7 @@
   const copyRepairSummaryBtn = document.getElementById("copyRepairSummaryBtn");
   const refreshDiagnosticBtn = document.getElementById("refreshDiagnosticBtn");
   const runClubDiagnosticsNav = document.getElementById("runClubDiagnosticsNav");
+  const motionLabNav = document.getElementById("motionLabNav");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
   const openAiSummaryCard = document.getElementById("openAiSummaryCard");
   const deploymentStatus = document.getElementById("deploymentStatus");
@@ -48,15 +49,17 @@
     return window.AuthStateRuntime?.getAuthToken?.() || client?.getAuthToken?.() || null;
   }
 
-  async function revealRunClubDiagnosticsForAdmin() {
-    if (!runClubDiagnosticsNav) return;
+  async function revealObservabilityNavigationForAdmin() {
     const auth = await window.AuthStateRuntime?.whenReady?.();
     const roles = auth?.user?.roles || (auth?.user?.role ? [auth.user.role] : []);
-    runClubDiagnosticsNav.hidden = !roles.some((role) => role === "admin" || role === "super_admin");
+    const hasObservabilityAccess = roles.some((role) => role === "admin" || role === "super_admin");
+    if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = !hasObservabilityAccess;
+    if (motionLabNav) motionLabNav.hidden = !hasObservabilityAccess;
   }
 
-  revealRunClubDiagnosticsForAdmin().catch(() => {
+  revealObservabilityNavigationForAdmin().catch(() => {
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = true;
+    if (motionLabNav) motionLabNav.hidden = true;
   });
 
   async function memberExperience(pathname) {
