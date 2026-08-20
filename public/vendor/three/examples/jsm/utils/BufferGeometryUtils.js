@@ -3,7 +3,7 @@ import {
 	TrianglesDrawMode,
 	TriangleFanDrawMode,
 	TriangleStripDrawMode
-} from 'three';
+} from '/vendor/three/build/three.module.js';
 
 function toTrianglesDrawMode( geometry, drawMode ) {
 
