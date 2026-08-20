@@ -1,0 +1,8 @@
+{
+  "migrationId": "004-reusable-challenge-engine-v1",
+  "schemaVersion": 1,
+  "storage": "data/challenges/runtime-v1.json",
+  "collections": ["userChallenges", "dayLogs", "activityLogs", "personalRecords", "assessments"],
+  "definitionSource": "data/challenges/seeds.js",
+  "notes": "Challenge definitions remain separate from user-owned progress. Runtime storage is created atomically on first write; no production data is modified by this manifest."
+}

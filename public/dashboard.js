@@ -100,6 +100,15 @@
         ? `${activities.length} saved activit${activities.length === 1 ? "y" : "ies"} · ${Math.round((journey.lifetimeDistanceMeters || 0) / 100) / 10} km lifetime distance. Continue your journey.`
         : "No saved movement yet. Start your first journey activity when you are ready.";
     }).catch((error) => showError(greatness, error));
+    const activeChallengeSummary = document.getElementById("activeChallengeSummary");
+    const activeChallengeLink = document.getElementById("activeChallengeLink");
+    memberExperience("/api/me/challenges/active/current").then((active) => {
+      if (!active) { activeChallengeSummary.textContent = "No active challenge. Choose a mission from the challenge library."; return; }
+      const participation = active.participation;
+      activeChallengeSummary.textContent = `${active.challenge.name} · Week ${participation.currentWeek} of ${active.challenge.durationWeeks} · ${participation.completionPercent}% complete · 🔥 ${participation.currentStreak} workout streak.`;
+      activeChallengeLink.href = `/challenges/${encodeURIComponent(active.challenge.slug)}`;
+      activeChallengeLink.textContent = "Continue today's mission";
+    }).catch((error) => showError(activeChallengeSummary, error));
     memberExperience("/api/me/challenges/pushup").then((summary) => {
       pushup.textContent = summary.completedSessions
         ? `${summary.completedSessions} saved session${summary.completedSessions === 1 ? "" : "s"} · best score ${summary.bestResult.totalScore} · all-time rank ${summary.leaderboardRank}.`
