@@ -46,7 +46,9 @@
     "legacy:report": "node scripts/report-reconciliation-coverage.js",
     "security:validate-routes": "node scripts/validate-route-authorization.js",
     "env:validate": "node scripts/validate-environment.js",
-    "generate:exercise-sequence-review": "node scripts/generate-exercise-sequence-review.js"
+    "generate:exercise-sequence-review": "node scripts/generate-exercise-sequence-review.js",
+    "motion:inventory-phase-e": "node scripts/motion/inventory-phase-e-assets.js",
+    "motion:validate-phase-e": "node scripts/motion/validate-phase-e-glb.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
