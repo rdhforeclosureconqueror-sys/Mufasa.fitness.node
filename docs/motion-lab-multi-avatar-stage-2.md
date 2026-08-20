@@ -55,30 +55,69 @@ authentication was weakened. Repository inspection provides no evidence that
 the dashboard-launched path itself fails on iPhone Safari; such a real-device
 failure, if reproduced, is a separate bounded defect.
 
-## Human visual verification (required)
+## Human visual acceptance
 
-Automated binding and lifecycle checks cannot classify the visible motion.
-Status remains **PENDING HUMAN VERIFICATION** until a human performs all steps:
+**STAGE 2 HUMAN VISUAL STATUS: PASS WITH MINOR VISUAL DEFECT.**
 
-1. Launch authenticated Motion Lab from the admin dashboard.
-2. Select **Initialize Runtime**.
-3. Select **Start Session**.
-4. Select **Load Personalized Avaturn Avatar**.
-5. Confirm the personalized avatar appears normally in its rest pose.
-6. Select **Native Avaturn Animation**.
-7. Select **BODY-MOTION WINDOW (0–1.533333 s)**.
-8. Select **Play** and observe the complete motion.
-9. Determine whether the motion is visibly a push-up.
-10. Confirm a push-up/plank configuration, coherent elbow flexion/extension and
-    shoulder motion, a relatively stable torso and legs, and lowering/rising.
-11. Confirm there are no detached limbs, skeletal explosion, unexpected
-    inversion, uncontrolled translation, or duplicate avatar.
-12. Select **Pause**, then **Resume**, **Stop**, and **Restart**.
-13. Turn **Loop OFF** and confirm one cycle.
-14. Turn **Loop ON** and confirm repeated cycles.
-15. Select **Unload Selected Animation**, **Unload Avatar**, then **Dispose Runtime**.
-16. Confirm sessions, RAFs, listeners, timers, and canvases all return to zero.
+The human operator completed verification in the deployed, authenticated Motion
+Lab on a real iPhone Safari session. The evidence supports exactly these
+observations:
+
+- personalized avatar visible;
+- native clip visible;
+- motion visibly identified as push-up;
+- elbows flex;
+- body lowers and rises;
+- shoulders coherent;
+- torso coherent;
+- legs comparatively stable;
+- no detached limbs;
+- no skeleton explosion;
+- no inversion;
+- no uncontrolled drift; and
+- no duplicate avatar.
+
+The Motion Lab bounded event history also reported `animation_clip` as `PASS`.
+This closes the former pending-human-verification blocker and proves native
+push-up playback on the personalized avatar's own native skeleton. It does not
+make any claim about retargeting or extracted animation assets.
+
+## Bounded visual defect
+
+**Identifier:** `avaturn_head_face_transparency_during_pushup`
+
+During the lower push-up position, the avatar's head/face becomes partially
+transparent or visually open. The head does not appear detached, the avatar
+remains otherwise coherent, animation continues normally, and the torso and
+limbs remain stable. This is categorized only as a rendering/material/mesh
+defect; the exact root cause is **NOT YET VERIFIED**. It does not block proof of
+native push-up playback and requires a separate bounded follow-up. No source
+GLB, material, mesh, texture, normal, morph track, or animation data was changed
+as part of recording acceptance.
+
+The follow-up task title is **AVATURN HEAD/FACE TRANSPARENCY FORENSIC**. It must
+determine with evidence whether the cause is back-face culling, material
+sidedness, mesh normals, facial-mesh overlap, morph targets,
+clipping/interpenetration, or another rendering cause; it must not presume one.
+
+## Stage 2 disposition and handoff
+
+The defect is a **NON-BLOCKING VISUAL DEFECT — REQUIRES SEPARATE FOLLOW-UP**.
+Available evidence does not show compromised skeleton integrity, source-asset
+corruption, broken cleanup, invalid rendering state, or a severe compatibility
+or safety failure. Subject to the documented automated validation remaining
+green, the Stage 2 disposition is **SAFE TO MERGE: YES**.
+
+The exact next phase is **STAGE 3 — NATIVE AVATURN PUSH-UP EXTRACTION /
+PACKAGING**. Preserve
+`exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb` as
+immutable source truth and produce a separate development-only animation asset
+for the confirmed push-up at
+`public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb`. Extract
+only the required body-motion animation and remove duplicate avatar
+mesh/material/texture content. Stage 3 must initially remain native Avaturn
+only; it must not retarget to Phase E.
 
 Stage 3 and Phase F are intentionally not started. No extracted push-up GLB,
-canonical retarget, M1 repair, anatomy data, or skeleton-profile retargeter is
-part of this stage.
+canonical retarget, M1 repair, anatomy data, legacy-runtime reconnection, or
+skeleton-profile retargeter is part of this acceptance closure.
