@@ -129,7 +129,7 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-08-13-authorization-header-canonicalization-v1";
+const APP_BUILD_VERSION = "2026-08-20-motion-lab-ios-trace-v2";
 const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const safeCommit = value => /^[a-f0-9]{7,40}$/i.test(String(value || "")) ? String(value) : null;
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
@@ -1315,6 +1315,12 @@ function createApp(options = {}) {
     res.cookie(motionLabCookieName, sessionId, { ...motionLabCookieOptions(), maxAge: motionLabSessionTtlMs });
     res.set("Cache-Control", "private, no-store");
     return ok(res, req.requestId, { navigateTo: "/dev/motion-lab", expiresInSeconds: Math.floor(motionLabSessionTtlMs / 1000) }, 201);
+  });
+  app.get("/api/dev/motion-lab/readiness", (req, res) => {
+    if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
+    if (!readMotionLabSession(req)) return fail(res, req.requestId, { code: "UNAUTHENTICATED", message: "Authentication required", details: null }, 401);
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, req.requestId, { ready: true });
   });
   const runClubDiagnosticsService = createRunClubDiagnosticsService({ rootDir, routeContract:routeAuthorizationContract });
   const frontendManifest = () => { try { return readJSON(path.join(PUBLIC_DIR, "__frontend-version.json")); } catch { return {}; } };

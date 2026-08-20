@@ -23,6 +23,7 @@
   const refreshDiagnosticBtn = document.getElementById("refreshDiagnosticBtn");
   const runClubDiagnosticsNav = document.getElementById("runClubDiagnosticsNav");
   const motionLabNav = document.getElementById("motionLabNav");
+  const motionLabLaunchStatus = document.getElementById("motionLabLaunchStatus");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
   const openAiSummaryCard = document.getElementById("openAiSummaryCard");
   const deploymentStatus = document.getElementById("deploymentStatus");
@@ -62,45 +63,60 @@
     if (motionLabNav) motionLabNav.hidden = true;
   });
 
+  const MOTION_LAB_LAUNCH_BUILD = "2026-08-20-ios-trace-v2";
+  const MOTION_LAB_STATES = new Set(["handoff_window_opened", "handoff_document_loaded", "handoff_message_sent", "handoff_message_received", "handoff_origin_valid", "session_post_started", "session_post_200", "session_cookie_expected", "readiness_check_started", "readiness_check_pass", "navigation_started"]);
+  function showMotionLabState(state, detail) {
+    if (!motionLabLaunchStatus) return;
+    const safeState = MOTION_LAB_STATES.has(state) || /^failure_[a-z0-9_]+$/.test(state) ? state : "failure_unknown";
+    motionLabLaunchStatus.textContent = `Motion Lab launcher ${MOTION_LAB_LAUNCH_BUILD}\n${safeState}${detail ? `\n${detail}` : ""}`;
+  }
+
   async function launchMotionLab(event) {
     event.preventDefault();
-    const token = getDashboardAuthToken();
-    if (!token) {
-      if (diagnosticStatus) diagnosticStatus.textContent = "motion_lab_session_unavailable";
-      return;
-    }
-    motionLabNav.setAttribute("aria-disabled", "true");
     const backendOrigin = new URL(dashboardApiBaseUrl).origin;
     // WebKit rejects cookies written by a cross-site fetch before the backend
     // has first-party storage access. Open the backend during the user gesture;
     // its handoff page performs the authenticated POST in a first-party context.
     const launchWindow = window.open(backendUrl("/dev/motion-lab-launch"), "_blank");
     if (!launchWindow) {
-      if (diagnosticStatus) diagnosticStatus.textContent = "motion_lab_session_unavailable";
-      motionLabNav.removeAttribute("aria-disabled");
+      showMotionLabState("failure_handoff_window_blocked", `auth_token_present: ${Boolean(getDashboardAuthToken())}`);
       return;
     }
+    showMotionLabState("handoff_window_opened");
+    const token = getDashboardAuthToken();
+    if (!token) {
+      showMotionLabState("failure_auth_token_missing", "auth_token_present: false");
+      try { launchWindow.close(); } catch (_) {}
+      return;
+    }
+    motionLabNav.setAttribute("aria-disabled", "true");
     try {
       await new Promise((resolve, reject) => {
         const cleanup = () => { window.clearTimeout(timeout); window.removeEventListener("message", onMessage); };
         const timeout = window.setTimeout(() => { cleanup(); reject(new Error("motion_lab_launch_timeout")); }, 10000);
         function onMessage(message) {
           if (message.origin !== backendOrigin || message.source !== launchWindow) return;
+          if (message.data?.type === "pocketpt:motion-lab-diagnostic") {
+            showMotionLabState(message.data.state, `auth_token_present: true\nhandoff build: ${message.data.build || "unknown"}`);
+            return;
+          }
           if (message.data?.type === "pocketpt:motion-lab-ready") {
+            showMotionLabState("handoff_origin_valid", `auth_token_present: true\nhandoff build: ${message.data.build || "unknown"}`);
             launchWindow.postMessage({ type: "pocketpt:motion-lab-auth", token }, backendOrigin);
+            showMotionLabState("handoff_message_sent", "auth_token_present: true");
             return;
           }
           if (message.data?.type === "pocketpt:motion-lab-launched") {
             cleanup(); resolve();
           } else if (message.data?.type === "pocketpt:motion-lab-error") {
             cleanup();
-            reject(new Error(["motion_lab_session_unavailable", "motion_lab_session_cookie_rejected"].includes(message.data.code) ? message.data.code : "motion_lab_session_unavailable"));
+            reject(new Error(/^failure_[a-z0-9_]+$/.test(message.data.code) ? message.data.code.replace(/^failure_/, "") : "unknown"));
           }
         }
         window.addEventListener("message", onMessage);
       });
     } catch (error) {
-      if (diagnosticStatus) diagnosticStatus.textContent = error.message || "motion_lab_session_unavailable";
+      showMotionLabState(`failure_${error.message || "motion_lab_session_unavailable"}`, "auth_token_present: true");
       try { launchWindow.close(); } catch (_) {}
     } finally {
       motionLabNav.removeAttribute("aria-disabled");
