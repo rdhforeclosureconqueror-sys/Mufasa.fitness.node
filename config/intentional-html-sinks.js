@@ -1,6 +1,8 @@
 "use strict";
 // Temporary, reviewed template-rendering sinks. Every entry requires escaping of interpolated untrusted values.
 module.exports = Object.freeze({
+  "public/challenges.js": "Challenge library templates escape every definition-derived string with safe(); structural URLs use encodeURIComponent().",
+  "public/challenge-page.js": "Challenge detail and mission templates escape every definition and progress string with safe(); structural identifiers are server-generated and URL components are encoded.",
   "public/gamification.js": "Member progression templates encode every projection-derived string with esc(); numeric and state values are validated server projections.",
   "public/generated-workout-runtime.js": "Member workout templates use the local esc() encoder for all persisted display values.",
   "public/retention-journey-wizard.js": "Journey review templates encode persisted answers with esc().",

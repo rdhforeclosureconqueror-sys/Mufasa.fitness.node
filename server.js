@@ -41,6 +41,7 @@ const { createTrainingAdaptationService } = require("./src/services/trainingAdap
 const { createPersonalizationService } = require("./src/services/personalizationService");
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
+const { createChallengeEngineService } = require("./src/services/challengeEngineService");
 const { createMemberExperienceCapabilityService } = require("./src/services/memberExperienceCapabilityService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
@@ -414,6 +415,7 @@ function createApp(options = {}) {
   const latestExternalChecks = { aiCoach:null, diagnosticSummarizer:null, stripe:null };
   const challengeService = createChallengeService({ filePath: PUSHUP_CHALLENGE_PATH });
   const exerciseTemplateService = createExerciseTemplateService({ filePath: EXERCISE_TEMPLATE_PATH });
+  let challengeEngineService = null;
 
   const userStore = createUserStore({ userDir: USER_DIR });
   const youthProgramRepository = createYouthProgramRepository({ filePath: path.join(DATA_DIR, "youth-fitness", "runtime-v1.json") });
@@ -506,6 +508,7 @@ function createApp(options = {}) {
       return result;
     }
     : null;
+  challengeEngineService = createChallengeEngineService({ filePath: options.challengeEnginePath || path.join(DATA_DIR, "challenges", "runtime-v1.json"), onWorkoutCompleted: workoutCompletedAdapter });
   const sessionService = createSessionService({ userStore, workoutCompletedAdapter });
   const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const userDataService = createUserDataService({ userStore });
@@ -2184,6 +2187,18 @@ function createApp(options = {}) {
   app.get("/pushup-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));
   app.get("/api/me/challenges/pushup", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, challengeService.getMemberPushupSummary(req.auth.userId))));
+
+  // Reusable, server-authoritative challenge engine.
+  app.get("/challenges", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "challenges.html")));
+  app.get("/challenges/:slug", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "challenge.html")));
+  app.get("/api/challenges", asyncHandler(async (req, res) => ok(res, req.requestId, { challenges: challengeEngineService.library({ category:req.query.category }) })));
+  app.get("/api/challenges/:slug", asyncHandler(async (req, res) => ok(res, req.requestId, challengeEngineService.detail(req.params.slug))));
+  app.post("/api/me/challenges/:slug/join", requireAuth, challengeLimit, asyncHandler(async (req, res) => { const result=challengeEngineService.joinChallenge(req.auth.userId,req.params.slug); return ok(res,req.requestId,result,result.created?201:200); }));
+  app.get("/api/me/challenges/active/current", requireAuth, asyncHandler(async (req,res)=>{res.set("Cache-Control","private, no-store");return ok(res,req.requestId,challengeEngineService.active(req.auth.userId));}));
+  app.put("/api/me/challenges/:userChallengeId/activities/:activityId", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.logActivity(req.auth.userId,req.params.userChallengeId,req.params.activityId,req.body||{}))));
+  app.post("/api/me/challenges/:userChallengeId/days/:dayId/complete", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.completeDay(req.auth.userId,req.params.userChallengeId,req.params.dayId,req.body||{}))));
+  app.patch("/api/me/challenges/:userChallengeId/status", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.setStatus(req.auth.userId,req.params.userChallengeId,req.body?.status))));
+
   app.get("/api/me/experience-capabilities", requireAuth, asyncHandler(async (req, res) =>
     ok(res, req.requestId, memberExperienceCapabilityService.get(req.auth.userId))));
   app.post("/api/me/greatness/activities", requireAuth, createRateLimiter({ windowMs: 60_000, max: 20 }), asyncHandler(async (req, res) => {
