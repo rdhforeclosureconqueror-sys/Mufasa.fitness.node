@@ -150,7 +150,7 @@
       if (!active) { activeChallengeSummary.textContent = "No active challenge. Choose a mission from the challenge library."; return; }
       const participation = active.participation;
       activeChallengeSummary.textContent = `${active.challenge.name} · Week ${participation.currentWeek} of ${active.challenge.durationWeeks} · ${participation.completionPercent}% complete · 🔥 ${participation.currentStreak} workout streak.`;
-      activeChallengeLink.href = `/challenges/${encodeURIComponent(active.challenge.slug)}`;
+      activeChallengeLink.href = window.ChallengeRouteContract.challengePageUrl(active.challenge.slug);
       activeChallengeLink.textContent = "Continue today's mission";
     }).catch((error) => showError(activeChallengeSummary, error));
     memberExperience("/api/me/challenges/pushup").then((summary) => {
