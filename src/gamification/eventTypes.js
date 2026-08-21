@@ -20,6 +20,7 @@ const EVENT_TYPES = Object.freeze({
       generated: Object.freeze({ type: "boolean" })
     })
   }),
+  "commitment.comeback.completed": Object.freeze({ schemaVersion:1, sources:Object.freeze(["challenge-commitment-service"]), payload:Object.freeze({ weekNumber:Object.freeze({type:"number",minimum:1}) }) }),
   "workout.revoked": Object.freeze({
     schemaVersion: 1,
     sources: Object.freeze(["gamification-system"]),

@@ -509,7 +509,11 @@ function createApp(options = {}) {
     }
     : null;
   challengeEngineService = createChallengeEngineService({ filePath: options.challengeEnginePath || path.join(DATA_DIR, "challenges", "runtime-v1.json"), onWorkoutCompleted: workoutCompletedAdapter });
-  const sessionService = createSessionService({ userStore, workoutCompletedAdapter });
+  const sessionService = createSessionService({ userStore, workoutCompletedAdapter, onSessionCompleted: fact => {
+    const completion=challengeEngineService.completeCommitmentWorkout(fact);
+    if(completion?.comeback&&gamificationEventService)gamificationEventService.recordComebackCompleted({userId:fact.userId,session:completion.session});
+    return completion;
+  } });
   const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
@@ -2217,6 +2221,7 @@ function createApp(options = {}) {
   app.post("/api/me/challenges/:slug/join", requireAuth, challengeLimit, asyncHandler(async (req, res) => { const result=challengeEngineService.joinChallenge(req.auth.userId,req.params.slug,req.body||{}); return ok(res,req.requestId,result,result.created?201:200); }));
   app.get("/api/me/challenges/active/current", requireAuth, asyncHandler(async (req,res)=>{res.set("Cache-Control","private, no-store");return ok(res,req.requestId,challengeEngineService.active(req.auth.userId));}));
   app.patch("/api/me/challenges/:userChallengeId/commitment-sessions/:sessionId/reschedule", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.rescheduleCommitment(req.auth.userId,req.params.userChallengeId,req.params.sessionId,req.body||{}))));
+  app.post("/api/me/challenges/:userChallengeId/commitment-sessions/:sessionId/start-workout", requireAuth, challengeLimit, asyncHandler(async(req,res)=>{const resolved=challengeEngineService.resolveCommitmentWorkout(req.auth.userId,req.params.userChallengeId,req.params.sessionId);const workoutSessionId=`kb_${resolved.joined.id}_${resolved.session.scheduleSessionId}`;sessionService.startSession({userId:req.auth.userId,sessionId:workoutSessionId,programId:resolved.challenge.id,exerciseId:resolved.canonical.activities[0]?.exerciseId,payload:{sourceMetadata:resolved.source,canonicalWorkout:resolved.canonical}});challengeEngineService.markCommitmentStarted(req.auth.userId,req.params.userChallengeId,req.params.sessionId,workoutSessionId);return ok(res,req.requestId,{workoutSessionId,workout:resolved.canonical,source:resolved.source,runtimeUrl:`/workout.html?sessionId=${encodeURIComponent(workoutSessionId)}`},201);}));
   app.put("/api/me/challenges/:userChallengeId/activities/:activityId", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.logActivity(req.auth.userId,req.params.userChallengeId,req.params.activityId,req.body||{}))));
   app.post("/api/me/challenges/:userChallengeId/days/:dayId/complete", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.completeDay(req.auth.userId,req.params.userChallengeId,req.params.dayId,req.body||{}))));
   app.patch("/api/me/challenges/:userChallengeId/status", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.setStatus(req.auth.userId,req.params.userChallengeId,req.body?.status))));

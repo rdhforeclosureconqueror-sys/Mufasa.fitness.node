@@ -13,6 +13,7 @@
           "overlapGroup": "completed_activity",
           "overlapIdentity": "sourceEntity.id"
         },
+        "commitment.comeback.completed": { "xp": 25, "category": "commitment_comeback" },
         "yoga.session.completed": {
           "xp": 75,
           "category": "yoga",
