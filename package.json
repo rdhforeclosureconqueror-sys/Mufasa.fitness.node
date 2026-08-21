@@ -48,7 +48,8 @@
     "env:validate": "node scripts/validate-environment.js",
     "generate:exercise-sequence-review": "node scripts/generate-exercise-sequence-review.js",
     "motion:inventory-phase-e": "node scripts/motion/inventory-phase-e-assets.js",
-    "motion:validate-phase-e": "node scripts/motion/validate-phase-e-glb.js"
+    "motion:validate-phase-e": "node scripts/motion/validate-phase-e-glb.js",
+    "test:e2e:mobile": "npx --yes playwright@1.55.0 test --config=playwright.config.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

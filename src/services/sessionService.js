@@ -7,9 +7,9 @@ function pushEvent(user, command, payload) {
   user.events.push({ command, ts: Date.now(), payload });
 }
 
-function createSessionService({ userStore, workoutCompletedAdapter = null, logger = console }) {
+function createSessionService({ userStore, workoutCompletedAdapter = null, onSessionCompleted = null, logger = console, clock = () => Date.now() }) {
   function startSession({ userId, sessionId, programId = null, exerciseId = null, payload = {} }) {
-    const now = Date.now();
+    const now = clock();
     const sid = sessionId || `sess_${now}`;
     let sessionData = null;
 
@@ -26,7 +26,9 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, logge
         exerciseId,
         startedAt: now,
         endedAt: null,
-        repUpdates: []
+        repUpdates: [],
+        sourceMetadata: payload.sourceMetadata || null,
+        canonicalWorkout: payload.canonicalWorkout || null
       };
 
       user.sessions[sid] = sessionData;
@@ -56,7 +58,7 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, logge
       }
 
       repUpdate = {
-        ts: Date.now(),
+        ts: clock(),
         exerciseId,
         repsThisSet,
         totalReps,
@@ -83,6 +85,7 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, logge
   function completeSession({ userId, sessionId, repsCompleted = 0, exerciseId = null, payload = {}, correlationId = null }) {
     let endedAt = null;
     let summary = null;
+    let duplicate = false;
 
     userStore.updateUser(userId, (user) => {
       user.sessions = user.sessions || {};
@@ -92,11 +95,14 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, logge
         throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
       }
 
+      if (session.endedAt && session.sourceMetadata?.type === "challenge_commitment") {
+        endedAt=session.endedAt;summary=session.summary;duplicate=true;return user;
+      }
       if (session.endedAt) {
         throw new ApiError("SESSION_ALREADY_COMPLETED", `Session ${sessionId} is already completed`, 409);
       }
 
-      session.endedAt = Date.now();
+      session.endedAt = clock();
       session.summary = {
         repsCompleted,
         exerciseId
@@ -111,11 +117,13 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, logge
     const result = {
       sessionId,
       endedAt,
-      summary
+      summary,
+      duplicate
     };
+    if(onSessionCompleted){const committed=userStore.loadUser(userId).sessions[sessionId];result.sourceCompletion=onSessionCompleted({userId,session:committed,correlationId});}
     // The user store update above is authoritative. Shadow capture is deliberately
     // isolated so an unavailable event pipeline cannot change domain success.
-    if (workoutCompletedAdapter) {
+    if (workoutCompletedAdapter && !duplicate) {
       try {
         const committed = userStore.loadUser(userId).sessions[sessionId];
         workoutCompletedAdapter({ userId, session: committed, correlationId });
