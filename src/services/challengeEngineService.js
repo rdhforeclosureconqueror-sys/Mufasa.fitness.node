@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { ApiError } = require("../lib/apiResponse");
 const { challengeDefinitions } = require("../../data/challenges/seeds");
 const { buildCommitmentSchedule, refreshCommitmentStates, rescheduleCommitmentSession, completeCommitmentSession, commitmentSummary } = require("../program-engine/challengeCommitmentScheduler");
+const { resolveCanonicalSession } = require("../../data/challenges/kettlebellCanonicalProgram");
 
 const DAY_STATUSES = new Set(["pending", "completed", "skipped", "completed_late", "rescheduled"]);
 const USER_STATUSES = new Set(["not_started", "active", "paused", "completed", "abandoned"]);
@@ -76,7 +77,8 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
     if(["completed","comeback_completed","missed"].includes(session.state))throw new ApiError("COMMITMENT_SESSION_NOT_STARTABLE","This commitment session cannot be started",409);
     const challenge=challengeDefinitions.find(item=>item.id===joined.challengeId);
     const ordinal=joined.commitmentSchedule.filter(item=>item.type==="workout"&&item.weekNumber===session.weekNumber).sort((a,b)=>a.originalPlannedDate.localeCompare(b.originalPlannedDate)).findIndex(item=>item.scheduleSessionId===sessionId);
-    const canonical=challenge.days.filter(day=>day.weekNumber===session.weekNumber&&!day.isRestDay).sort((a,b)=>a.dayNumber-b.dayNumber)[ordinal];
+    const allocated=resolveCanonicalSession(session.weekNumber,joined.commitment.workoutsPerWeek,ordinal);
+    const canonical=allocated?{...allocated,name:`${allocated.phaseName||challenge.name} · ${allocated.label}`,type:"workout",isRestDay:false,estimatedMinutes:allocated.technique?15:35,xpReward:100,activities:allocated.exercises.map((exercise,index)=>({id:`${allocated.id}_activity_${index+1}`,order:index+1,activityType:exercise.workSeconds?"timer":"exercise",...exercise}))}:null;
     if(!canonical)throw new ApiError("PROGRAMMING_ALLOCATION_UNAVAILABLE","Approved canonical programming is not available for this weekly session; no prescription was invented.",409);
     return {joined,session,challenge,canonical,source:{type:"challenge_commitment",challengeId:challenge.id,challengeSlug:challenge.slug,challengeName:challenge.name,enrollmentId:joined.id,weekNumber:session.weekNumber,commitmentSessionId:session.scheduleSessionId,originalPlannedDate:session.originalPlannedDate,plannedDate:session.plannedDate,sourceSessionId:canonical.id,programmingPhaseId:canonical.phaseId}};
   }

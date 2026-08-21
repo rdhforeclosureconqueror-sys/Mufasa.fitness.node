@@ -1,6 +1,7 @@
 "use strict";
 
 const { dateKey } = require("./scheduleEngine");
+const { resolveCanonicalSession } = require("../../data/challenges/kettlebellCanonicalProgram");
 
 const DAY_MS = 86_400_000;
 const WEEKDAYS = Object.freeze(["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]);
@@ -62,6 +63,7 @@ function buildCommitmentSchedule(input, options = {}) {
     if (workout) weeklyOrdinal.set(weekNumber, ordinal);
     schedule.push(workout ? {
       scheduleSessionId: `commitment_w${weekNumber}_s${ordinal}`,
+      canonicalSessionId: resolveCanonicalSession(weekNumber, enrollment.workoutsPerWeek, ordinal - 1).id,
       weekNumber,
       weekday,
       type: "workout",
