@@ -53,7 +53,18 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
   function detail(slug) { const challenge=challengeBySlug(slug); if (!challenge || challenge.status !== "published") throw new ApiError("CHALLENGE_NOT_FOUND", "Challenge not found", 404); return challenge; }
   function participation(userId, challengeId, state = read()) { return state.userChallenges.find((item) => item.userId === userId && item.challengeId === challengeId && !["abandoned", "completed"].includes(item.status)); }
   function joinChallenge(userId, slug, enrollmentInput = null) {
-    const challenge=detail(slug), state=read(), existing=participation(userId, challenge.id, state); if (existing) return { participation: existing, created: false };
+    const challenge=detail(slug), state=read(), existing=participation(userId, challenge.id, state);
+    // Older kettlebell participations were persisted before commitment schedules
+    // existed. Upgrade the same owned record rather than deleting progress or
+    // creating a second participation. Replays are deliberately no-ops.
+    if(existing){
+      if(challenge.id==="challenge_kettlebell_8_week"&&!existing.commitment){
+        let recovered;try{recovered=buildCommitmentSchedule(enrollmentInput||{},{durationWeeks:challenge.durationWeeks});}catch(error){throw new ApiError("VALIDATION_ERROR",error.message,400,{field:error.field||"enrollment"});}
+        const now=clock().toISOString();existing.commitment={...recovered.enrollment,confirmedAt:now};existing.commitmentSchedule=recovered.schedule;existing.updatedAt=now;write(state);
+        return {participation:existing,created:false,recovered:true};
+      }
+      return { participation: existing, created: false, recovered:false };
+    }
     let commitment=null;
     if(challenge.id==="challenge_kettlebell_8_week")try{commitment=buildCommitmentSchedule(enrollmentInput||{},{durationWeeks:challenge.durationWeeks});}catch(error){throw new ApiError("VALIDATION_ERROR",error.message,400,{field:error.field||"enrollment"});}
     const now=clock().toISOString(); const joined={ id:`uc_${crypto.randomUUID()}`,userId,challengeId:challenge.id,status:"active",startedAt:now,completedAt:null,currentDay:1,currentWeek:1,completionPercent:0,currentStreak:0,longestStreak:0,totalXpEarned:25,challengeScore:null,...(commitment?{commitment:{...commitment.enrollment,confirmedAt:now},commitmentSchedule:commitment.schedule}:{}),createdAt:now,updatedAt:now };
@@ -64,6 +75,7 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
     if(joined.commitmentSchedule){const refreshed=refreshCommitmentStates(joined.commitmentSchedule,clock());if(JSON.stringify(refreshed)!==JSON.stringify(joined.commitmentSchedule)){joined.commitmentSchedule=refreshed;joined.updatedAt=clock().toISOString();write(state);}}
     const challenge=challengeDefinitions.find((item)=>item.id===joined.challengeId), logs=state.dayLogs.filter((item)=>item.userChallengeId===joined.id); return project(challenge, joined, logs, state);
   }
+  function current(userId,slug){const challenge=detail(slug),state=read(),joined=participation(userId,challenge.id,state);if(!joined)return null;if(joined.commitmentSchedule){const refreshed=refreshCommitmentStates(joined.commitmentSchedule,clock());if(JSON.stringify(refreshed)!==JSON.stringify(joined.commitmentSchedule)){joined.commitmentSchedule=refreshed;joined.updatedAt=clock().toISOString();write(state);}}return project(challenge,joined,state.dayLogs.filter(item=>item.userChallengeId===joined.id),state);}
   function project(challenge, joined, logs, state) {
     const day=challenge.days.find((item)=>item.dayNumber===joined.currentDay) || challenge.days.at(-1); const phase=challenge.phases.find((item)=>day.dayNumber>=item.startDay&&day.dayNumber<=item.endDay);
     return { challenge, participation:joined, todaysMission:day, currentPhase:phase, adherence:calculateChallengeAdherence(challenge,logs,joined.currentDay), adherenceTier:getAdherenceTier(calculateChallengeAdherence(challenge,logs,joined.currentDay)), ...(joined.commitment?{commitmentSummary:commitmentSummary(joined.commitmentSchedule,joined.commitment)}:{}), logs, personalRecords:state.personalRecords.filter((item)=>item.userId===joined.userId&&item.challengeId===challenge.id) };
@@ -104,6 +116,6 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
     return {log,participation:joined,duplicate:false,xpAwarded:xp,progress,adherence:calculateChallengeAdherence(challenge,logs,day.dayNumber),streak};
   }
   function setStatus(userId,id,status){if(!USER_STATUSES.has(status))throw new ApiError("VALIDATION_ERROR","Invalid challenge status",400);const state=read(),joined=state.userChallenges.find((item)=>item.id===id&&item.userId===userId);if(!joined)throw new ApiError("CHALLENGE_NOT_FOUND","Challenge not found",404);joined.status=status;joined.updatedAt=clock().toISOString();write(state);return joined;}
-  return { library,detail,joinChallenge,active,rescheduleCommitment,resolveCommitmentWorkout,markCommitmentStarted,completeCommitmentWorkout,logActivity,completeDay,setStatus,calculateChallengeProgress,calculateChallengeAdherence,calculateStreak,calculateChallengeScore,getAdherenceTier,_read:read };
+  return { library,detail,joinChallenge,active,current,rescheduleCommitment,resolveCommitmentWorkout,markCommitmentStarted,completeCommitmentWorkout,logActivity,completeDay,setStatus,calculateChallengeProgress,calculateChallengeAdherence,calculateStreak,calculateChallengeScore,getAdherenceTier,_read:read };
 }
 module.exports={createChallengeEngineService,calculateChallengeProgress,calculateChallengeAdherence,calculateStreak,calculateChallengeScore,getAdherenceTier,trainingVolume};
