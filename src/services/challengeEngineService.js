@@ -5,6 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { ApiError } = require("../lib/apiResponse");
 const { challengeDefinitions } = require("../../data/challenges/seeds");
+const { buildCommitmentSchedule, refreshCommitmentStates, rescheduleCommitmentSession, commitmentSummary } = require("../program-engine/challengeCommitmentScheduler");
 
 const DAY_STATUSES = new Set(["pending", "completed", "skipped", "completed_late", "rescheduled"]);
 const USER_STATUSES = new Set(["not_started", "active", "paused", "completed", "abandoned"]);
@@ -50,19 +51,23 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
   function library({ category, status = "published" } = {}) { return challengeDefinitions.filter((item) => (!status || item.status === status) && (!category || item.category === category)).map(({ days, phases, ...item }) => ({ ...item, phaseCount: phases.length, requiredDays: requiredDays({ days }).length })); }
   function detail(slug) { const challenge=challengeBySlug(slug); if (!challenge || challenge.status !== "published") throw new ApiError("CHALLENGE_NOT_FOUND", "Challenge not found", 404); return challenge; }
   function participation(userId, challengeId, state = read()) { return state.userChallenges.find((item) => item.userId === userId && item.challengeId === challengeId && !["abandoned", "completed"].includes(item.status)); }
-  function joinChallenge(userId, slug) {
+  function joinChallenge(userId, slug, enrollmentInput = null) {
     const challenge=detail(slug), state=read(), existing=participation(userId, challenge.id, state); if (existing) return { participation: existing, created: false };
-    const now=clock().toISOString(); const joined={ id:`uc_${crypto.randomUUID()}`,userId,challengeId:challenge.id,status:"active",startedAt:now,completedAt:null,currentDay:1,currentWeek:1,completionPercent:0,currentStreak:0,longestStreak:0,totalXpEarned:25,challengeScore:null,createdAt:now,updatedAt:now };
+    let commitment=null;
+    if(challenge.id==="challenge_kettlebell_8_week")try{commitment=buildCommitmentSchedule(enrollmentInput||{},{durationWeeks:challenge.durationWeeks});}catch(error){throw new ApiError("VALIDATION_ERROR",error.message,400,{field:error.field||"enrollment"});}
+    const now=clock().toISOString(); const joined={ id:`uc_${crypto.randomUUID()}`,userId,challengeId:challenge.id,status:"active",startedAt:now,completedAt:null,currentDay:1,currentWeek:1,completionPercent:0,currentStreak:0,longestStreak:0,totalXpEarned:25,challengeScore:null,...(commitment?{commitment:{...commitment.enrollment,confirmedAt:now},commitmentSchedule:commitment.schedule}:{}),createdAt:now,updatedAt:now };
     state.userChallenges.push(joined); write(state); return { participation: joined, created: true };
   }
   function active(userId) {
     const state=read(), joined=state.userChallenges.find((item) => item.userId===userId && item.status==="active") || state.userChallenges.filter((item)=>item.userId===userId&&item.status==="completed").sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)))[0]; if (!joined) return null;
+    if(joined.commitmentSchedule){const refreshed=refreshCommitmentStates(joined.commitmentSchedule,clock());if(JSON.stringify(refreshed)!==JSON.stringify(joined.commitmentSchedule)){joined.commitmentSchedule=refreshed;joined.updatedAt=clock().toISOString();write(state);}}
     const challenge=challengeDefinitions.find((item)=>item.id===joined.challengeId), logs=state.dayLogs.filter((item)=>item.userChallengeId===joined.id); return project(challenge, joined, logs, state);
   }
   function project(challenge, joined, logs, state) {
     const day=challenge.days.find((item)=>item.dayNumber===joined.currentDay) || challenge.days.at(-1); const phase=challenge.phases.find((item)=>day.dayNumber>=item.startDay&&day.dayNumber<=item.endDay);
-    return { challenge, participation:joined, todaysMission:day, currentPhase:phase, adherence:calculateChallengeAdherence(challenge,logs,joined.currentDay), adherenceTier:getAdherenceTier(calculateChallengeAdherence(challenge,logs,joined.currentDay)), logs, personalRecords:state.personalRecords.filter((item)=>item.userId===joined.userId&&item.challengeId===challenge.id) };
+    return { challenge, participation:joined, todaysMission:day, currentPhase:phase, adherence:calculateChallengeAdherence(challenge,logs,joined.currentDay), adherenceTier:getAdherenceTier(calculateChallengeAdherence(challenge,logs,joined.currentDay)), ...(joined.commitment?{commitmentSummary:commitmentSummary(joined.commitmentSchedule,joined.commitment)}:{}), logs, personalRecords:state.personalRecords.filter((item)=>item.userId===joined.userId&&item.challengeId===challenge.id) };
   }
+  function rescheduleCommitment(userId,userChallengeId,sessionId,input={}){const state=read(),joined=state.userChallenges.find(item=>item.id===userChallengeId&&item.userId===userId&&item.status==="active");if(!joined?.commitmentSchedule)throw new ApiError("CHALLENGE_NOT_FOUND","Active commitment challenge not found",404);try{joined.commitmentSchedule=rescheduleCommitmentSession(joined.commitmentSchedule,sessionId,input.targetDate,clock());}catch(error){throw new ApiError("VALIDATION_ERROR",error.message,400,{field:error.field||"targetDate"});}joined.updatedAt=clock().toISOString();write(state);return{participation:joined,commitmentSummary:commitmentSummary(joined.commitmentSchedule,joined.commitment)};}
   function validateActivityInput(input) { for (const key of ["setsCompleted","repsCompleted","secondsCompleted","distanceCompleted","stepsCompleted","weightUsed","leftSideReps","rightSideReps"]) if (input[key] != null && (!Number.isFinite(Number(input[key])) || Number(input[key]) < 0)) throw new ApiError("VALIDATION_ERROR", `${key} must be a non-negative number`, 400,{field:key}); if (input.rpe != null && (!Number.isFinite(Number(input.rpe)) || input.rpe<1 || input.rpe>10)) throw new ApiError("VALIDATION_ERROR","rpe must be from 1 to 10",400,{field:"rpe"}); }
   function logActivity(userId, userChallengeId, activityId, input={}) {
     validateActivityInput(input); const state=read(), joined=state.userChallenges.find((item)=>item.id===userChallengeId&&item.userId===userId); if (!joined) throw new ApiError("CHALLENGE_NOT_FOUND","Active challenge not found",404);
@@ -83,6 +88,6 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
     return {log,participation:joined,duplicate:false,xpAwarded:xp,progress,adherence:calculateChallengeAdherence(challenge,logs,day.dayNumber),streak};
   }
   function setStatus(userId,id,status){if(!USER_STATUSES.has(status))throw new ApiError("VALIDATION_ERROR","Invalid challenge status",400);const state=read(),joined=state.userChallenges.find((item)=>item.id===id&&item.userId===userId);if(!joined)throw new ApiError("CHALLENGE_NOT_FOUND","Challenge not found",404);joined.status=status;joined.updatedAt=clock().toISOString();write(state);return joined;}
-  return { library,detail,joinChallenge,active,logActivity,completeDay,setStatus,calculateChallengeProgress,calculateChallengeAdherence,calculateStreak,calculateChallengeScore,getAdherenceTier,_read:read };
+  return { library,detail,joinChallenge,active,rescheduleCommitment,logActivity,completeDay,setStatus,calculateChallengeProgress,calculateChallengeAdherence,calculateStreak,calculateChallengeScore,getAdherenceTier,_read:read };
 }
 module.exports={createChallengeEngineService,calculateChallengeProgress,calculateChallengeAdherence,calculateStreak,calculateChallengeScore,getAdherenceTier,trainingVolume};
