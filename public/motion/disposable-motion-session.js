@@ -165,6 +165,19 @@
       }
       return Object.freeze({ boundTrackCount: tracks.length - unboundTracks.length, unboundTrackCount: unboundTracks.length, unboundTracks: Object.freeze(unboundTracks) });
     }
+    async loadExtractedAnimation(fixture) {
+      if (!this.avatar || !this.mixer) return this.failure("avatar_required");
+      if (!fixture?.developmentOnly || this.avatarProfile?.avatarId !== fixture.compatibleAvatarProfile || this.avatarProfile?.skeletonProfile !== fixture.skeletonProfile) return this.failure("retarget_required");
+      const asset = await this.loadAsset(fixture.assetUrl); if (asset?.status === "failed") return asset;
+      const clip = asset.animations?.find(candidate => candidate.name === fixture.clipName);
+      if (!clip) return this.failure("animation_missing");
+      const binding = this.inspectClipBindings(clip), tracks = clip.tracks || [];
+      if (!tracks.length || binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return this.failure("animation_binding_failed", binding.unboundTracks.join(", ")); }
+      this.unloadMotion(); this.animationFixture = asset; this.sessionClip = clip; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ motionId: fixture.motionId, fixtureId: fixture.fixtureId,
+        skeletonProfile: fixture.skeletonProfile, avatarProfileId: this.avatarProfile.avatarId, animationSource: "extracted-independent-push-up-fixture", bindingMode: "NATIVE",
+        clipName: clip.name, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: tracks.length, ...binding, playbackState: "ready" }) });
+    }
     loadNativeAnimation(mode = "full") {
       if (!this.avatar || !this.mixer || !this.avatarAsset) return this.failure("avatar_required");
       if (this.avatarProfile?.avatarId !== "avaturn-personalized-candidate") return this.failure("native_animation_incompatible_profile");
