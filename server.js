@@ -1308,9 +1308,12 @@ function createApp(options = {}) {
     return res.sendFile(path.join(PUBLIC_DIR, "motion", "assets", "phase-e", req.params.filename));
   });
   app.get("/dev/motion-lab-avatar-assets/:filename", motionLabGate, (req, res, next) => {
-    if (req.params.filename !== "avaturn-push-up-source.glb") return next();
+    if (!new Set(["avaturn-push-up-source.glb", "avaturn-push-up-animation.glb"]).has(req.params.filename)) return next();
     res.set(SHELL_NO_STORE_HEADERS);
-    return res.sendFile(path.join(rootDir, "exercise-generation", "source-assets", "avaturn", req.params.filename));
+    const file = req.params.filename === "avaturn-push-up-source.glb"
+      ? path.join(rootDir, "exercise-generation", "source-assets", "avaturn", req.params.filename)
+      : path.join(PUBLIC_DIR, "motion", "assets", "exercises", "push-up", req.params.filename);
+    return res.sendFile(file);
   });
   app.post("/api/dev/motion-lab/session", (req, res, next) => {
     if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
