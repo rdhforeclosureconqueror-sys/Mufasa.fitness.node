@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "avaturn-push-up-animation",
+  "motionId": "push_up/avaturn_native_v1",
+  "skeletonProfile": "avaturn-native-v1",
+  "compatibleAvatarProfile": "avaturn-personalized-candidate",
+  "incompatibleAvatarProfiles": [
+    "phase-e-reference"
+  ],
+  "incompatibleResult": "RETARGET REQUIRED",
+  "source": "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb",
+  "sourceSha256": "ec21fb1b5ba8499f2e410b49272e2b7f30e09257cd737c9efe25c0cd3d21adb6",
+  "sourceClip": "avaturn_animation",
+  "extractedIntervalSeconds": {
+    "start": 0,
+    "end": 1.5333333015441895
+  },
+  "outputClip": "avaturn_push_up_native_v1",
+  "policy": {
+    "skeletalTracks": "retain-all-including-static",
+    "morphWeightTracks": "remove",
+    "renderingContent": "exclude"
+  },
+  "humanVisualStatus": "PENDING HUMAN VERIFICATION",
+  "knownDefectNotAddressed": "avaturn_head_face_transparency_during_pushup"
+}
