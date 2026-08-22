@@ -172,11 +172,12 @@
       const clip = asset.animations?.find(candidate => candidate.name === fixture.clipName);
       if (!clip) return this.failure("animation_missing");
       const binding = this.inspectClipBindings(clip), tracks = clip.tracks || [];
-      if (!tracks.length || binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return this.failure("animation_binding_failed", binding.unboundTracks.join(", ")); }
+      if (!Number.isInteger(fixture.expectedTrackCount) || tracks.length !== fixture.expectedTrackCount) { this.disposeObjectResources(asset.scene); return this.failure("animation_track_count_invalid", `expected ${fixture.expectedTrackCount}, found ${tracks.length}`); }
+      if (binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return this.failure("animation_binding_failed", binding.unboundTracks.join(", ")); }
       this.unloadMotion(); this.animationFixture = asset; this.sessionClip = clip; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ motionId: fixture.motionId, fixtureId: fixture.fixtureId,
         skeletonProfile: fixture.skeletonProfile, avatarProfileId: this.avatarProfile.avatarId, animationSource: "extracted-independent-push-up-fixture", bindingMode: "NATIVE",
-        clipName: clip.name, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: tracks.length, ...binding, playbackState: "ready" }) });
+        clipName: clip.name, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: fixture.expectedTrackCount, ...binding, playbackState: "ready" }) });
     }
     loadNativeAnimation(mode = "full") {
       if (!this.avatar || !this.mixer || !this.avatarAsset) return this.failure("avatar_required");
