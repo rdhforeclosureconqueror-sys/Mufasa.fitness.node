@@ -1483,6 +1483,34 @@ module.exports = Object.freeze([
     "publicWrite": null
   },
   {
+    "method": "GET",
+    "path": "/api/sessions/:id",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [],
+    "membership": "not-required",
+    "ownership": "authenticated-user",
+    "featureFlag": null,
+    "publicOutput": "owner-scoped-authoritative-session",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/sessions/:id/runtime-progress",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [],
+    "membership": "not-required",
+    "ownership": "authenticated-user",
+    "featureFlag": null,
+    "publicOutput": "owner-scoped-authoritative-session-progress",
+    "rateLimit": "membership-api",
+    "compatibility": null,
+    "publicWrite": "server-validated-canonical-progress"
+  },
+  {
     "method": "POST",
     "path": "/api/sessions/:id/reps",
     "authentication": "required",
