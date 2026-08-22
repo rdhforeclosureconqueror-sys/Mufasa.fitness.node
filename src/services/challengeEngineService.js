@@ -7,6 +7,7 @@ const { ApiError } = require("../lib/apiResponse");
 const { challengeDefinitions } = require("../../data/challenges/seeds");
 const { buildCommitmentSchedule, refreshCommitmentStates, rescheduleCommitmentSession, completeCommitmentSession, commitmentSummary } = require("../program-engine/challengeCommitmentScheduler");
 const { resolveCanonicalSession } = require("../../data/challenges/kettlebellCanonicalProgram");
+const { getEducation } = require("../../data/challenges/kettlebellExerciseEducation");
 
 const DAY_STATUSES = new Set(["pending", "completed", "skipped", "completed_late", "rescheduled"]);
 const USER_STATUSES = new Set(["not_started", "active", "paused", "completed", "abandoned"]);
@@ -76,9 +77,21 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
     const challenge=challengeDefinitions.find((item)=>item.id===joined.challengeId), logs=state.dayLogs.filter((item)=>item.userChallengeId===joined.id); return project(challenge, joined, logs, state);
   }
   function current(userId,slug){const challenge=detail(slug),state=read(),joined=participation(userId,challenge.id,state);if(!joined)return null;if(joined.commitmentSchedule){const refreshed=refreshCommitmentStates(joined.commitmentSchedule,clock());if(JSON.stringify(refreshed)!==JSON.stringify(joined.commitmentSchedule)){joined.commitmentSchedule=refreshed;joined.updatedAt=clock().toISOString();write(state);}}return project(challenge,joined,state.dayLogs.filter(item=>item.userChallengeId===joined.id),state);}
+  function canonicalProjection(challenge,joined,session){
+    if(!session||session.type!=="workout")return null;
+    const ordinal=joined.commitmentSchedule.filter(item=>item.type==="workout"&&item.weekNumber===session.weekNumber).sort((a,b)=>a.originalPlannedDate.localeCompare(b.originalPlannedDate)).findIndex(item=>item.scheduleSessionId===session.scheduleSessionId);
+    const allocated=resolveCanonicalSession(session.weekNumber,joined.commitment.workoutsPerWeek,ordinal);
+    if(!allocated)return null;
+    const activities=allocated.exercises.map((exercise,index)=>({id:`${allocated.id}_activity_${index+1}`,order:index+1,activityType:exercise.workSeconds?"timer":"exercise",...exercise,education:getEducation(exercise)}));
+    return {...allocated,name:`${allocated.phaseName||challenge.name} · ${allocated.label}`,type:"workout",isRestDay:false,estimatedMinutes:allocated.technique?15:35,xpReward:100,activities};
+  }
+  function selectCurrentSession(joined){
+    const sessions=joined.commitmentSchedule?.filter(item=>item.type==="workout")||[], today=clock().toISOString().slice(0,10);
+    return sessions.find(item=>item.state==="started")||sessions.find(item=>item.plannedDate===today&&!['completed','comeback_completed','missed'].includes(item.state))||sessions.find(item=>item.state==="makeup_available")||sessions.find(item=>item.plannedDate>today&&!['completed','comeback_completed','missed'].includes(item.state))||sessions.find(item=>!['completed','comeback_completed','missed'].includes(item.state))||sessions.at(-1)||null;
+  }
   function project(challenge, joined, logs, state) {
-    const day=challenge.days.find((item)=>item.dayNumber===joined.currentDay) || challenge.days.at(-1); const phase=challenge.phases.find((item)=>day.dayNumber>=item.startDay&&day.dayNumber<=item.endDay);
-    return { challenge, participation:joined, todaysMission:day, currentPhase:phase, adherence:calculateChallengeAdherence(challenge,logs,joined.currentDay), adherenceTier:getAdherenceTier(calculateChallengeAdherence(challenge,logs,joined.currentDay)), ...(joined.commitment?{commitmentSummary:commitmentSummary(joined.commitmentSchedule,joined.commitment)}:{}), logs, personalRecords:state.personalRecords.filter((item)=>item.userId===joined.userId&&item.challengeId===challenge.id) };
+    const day=challenge.days.find((item)=>item.dayNumber===joined.currentDay) || challenge.days.at(-1); const phase=challenge.phases.find((item)=>day.dayNumber>=item.startDay&&day.dayNumber<=item.endDay), selected=joined.commitment?selectCurrentSession(joined):null, canonical=selected?canonicalProjection(challenge,joined,selected):null;
+    return { challenge, participation:joined, todaysMission:day, currentPhase:phase, ...(selected?{currentSession:{schedule:selected,workout:canonical}}:{}), adherence:calculateChallengeAdherence(challenge,logs,joined.currentDay), adherenceTier:getAdherenceTier(calculateChallengeAdherence(challenge,logs,joined.currentDay)), ...(joined.commitment?{commitmentSummary:commitmentSummary(joined.commitmentSchedule,joined.commitment)}:{}), logs, personalRecords:state.personalRecords.filter((item)=>item.userId===joined.userId&&item.challengeId===challenge.id) };
   }
   function rescheduleCommitment(userId,userChallengeId,sessionId,input={}){const state=read(),joined=state.userChallenges.find(item=>item.id===userChallengeId&&item.userId===userId&&item.status==="active");if(!joined?.commitmentSchedule)throw new ApiError("CHALLENGE_NOT_FOUND","Active commitment challenge not found",404);try{joined.commitmentSchedule=rescheduleCommitmentSession(joined.commitmentSchedule,sessionId,input.targetDate,clock());}catch(error){throw new ApiError("VALIDATION_ERROR",error.message,400,{field:error.field||"targetDate"});}joined.updatedAt=clock().toISOString();write(state);return{participation:joined,commitmentSummary:commitmentSummary(joined.commitmentSchedule,joined.commitment)};}
   function resolveCommitmentWorkout(userId,userChallengeId,sessionId){
@@ -88,9 +101,7 @@ function createChallengeEngineService({ filePath, clock = () => new Date(), onWo
     if(!session)throw new ApiError("COMMITMENT_SESSION_NOT_FOUND","Commitment session not found",404);
     if(["completed","comeback_completed","missed"].includes(session.state))throw new ApiError("COMMITMENT_SESSION_NOT_STARTABLE","This commitment session cannot be started",409);
     const challenge=challengeDefinitions.find(item=>item.id===joined.challengeId);
-    const ordinal=joined.commitmentSchedule.filter(item=>item.type==="workout"&&item.weekNumber===session.weekNumber).sort((a,b)=>a.originalPlannedDate.localeCompare(b.originalPlannedDate)).findIndex(item=>item.scheduleSessionId===sessionId);
-    const allocated=resolveCanonicalSession(session.weekNumber,joined.commitment.workoutsPerWeek,ordinal);
-    const canonical=allocated?{...allocated,name:`${allocated.phaseName||challenge.name} · ${allocated.label}`,type:"workout",isRestDay:false,estimatedMinutes:allocated.technique?15:35,xpReward:100,activities:allocated.exercises.map((exercise,index)=>({id:`${allocated.id}_activity_${index+1}`,order:index+1,activityType:exercise.workSeconds?"timer":"exercise",...exercise}))}:null;
+    const canonical=canonicalProjection(challenge,joined,session);
     if(!canonical)throw new ApiError("PROGRAMMING_ALLOCATION_UNAVAILABLE","Approved canonical programming is not available for this weekly session; no prescription was invented.",409);
     return {joined,session,challenge,canonical,source:{type:"challenge_commitment",challengeId:challenge.id,challengeSlug:challenge.slug,challengeName:challenge.name,enrollmentId:joined.id,weekNumber:session.weekNumber,commitmentSessionId:session.scheduleSessionId,originalPlannedDate:session.originalPlannedDate,plannedDate:session.plannedDate,sourceSessionId:canonical.id,programmingPhaseId:canonical.phaseId}};
   }
