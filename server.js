@@ -2229,7 +2229,7 @@ function createApp(options = {}) {
   app.get("/api/me/challenges/active/current", requireAuth, asyncHandler(async (req,res)=>{res.set("Cache-Control","private, no-store");return ok(res,req.requestId,challengeEngineService.active(req.auth.userId));}));
   app.get("/api/me/challenges/:slug/current", requireAuth, asyncHandler(async (req,res)=>{res.set("Cache-Control","private, no-store");return ok(res,req.requestId,challengeEngineService.current(req.auth.userId,req.params.slug));}));
   app.patch("/api/me/challenges/:userChallengeId/commitment-sessions/:sessionId/reschedule", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.rescheduleCommitment(req.auth.userId,req.params.userChallengeId,req.params.sessionId,req.body||{}))));
-  app.post("/api/me/challenges/:userChallengeId/commitment-sessions/:sessionId/start-workout", requireAuth, challengeLimit, asyncHandler(async(req,res)=>{const resolved=challengeEngineService.resolveCommitmentWorkout(req.auth.userId,req.params.userChallengeId,req.params.sessionId);const workoutSessionId=`kb_${resolved.joined.id}_${resolved.session.scheduleSessionId}`;sessionService.startSession({userId:req.auth.userId,sessionId:workoutSessionId,programId:resolved.challenge.id,exerciseId:resolved.canonical.activities[0]?.exerciseId,payload:{sourceMetadata:resolved.source,canonicalWorkout:resolved.canonical}});challengeEngineService.markCommitmentStarted(req.auth.userId,req.params.userChallengeId,req.params.sessionId,workoutSessionId);return ok(res,req.requestId,{workoutSessionId,workout:resolved.canonical,source:resolved.source,runtimeUrl:`/workout.html?sessionId=${encodeURIComponent(workoutSessionId)}`},201);}));
+  app.post("/api/me/challenges/:userChallengeId/commitment-sessions/:sessionId/start-workout", requireAuth, challengeLimit, asyncHandler(async(req,res)=>{const resolved=challengeEngineService.resolveCommitmentWorkout(req.auth.userId,req.params.userChallengeId,req.params.sessionId);const workoutSessionId=`kb_${resolved.joined.id}_${resolved.session.scheduleSessionId}`;let runtime,resumed=false;try{runtime=sessionService.getSession({userId:req.auth.userId,sessionId:workoutSessionId});if(runtime.endedAt)throw new ApiError("SESSION_ALREADY_COMPLETED","Completed workouts cannot be resumed",409);resumed=true;}catch(error){if(error.code!=="SESSION_NOT_FOUND")throw error;runtime=sessionService.startSession({userId:req.auth.userId,sessionId:workoutSessionId,programId:resolved.challenge.id,exerciseId:resolved.canonical.activities[0]?.exerciseId,payload:{sourceMetadata:resolved.source,canonicalWorkout:resolved.canonical}}).session;}challengeEngineService.markCommitmentStarted(req.auth.userId,req.params.userChallengeId,req.params.sessionId,workoutSessionId);return ok(res,req.requestId,{workoutSessionId,workout:runtime.canonicalWorkout,source:runtime.sourceMetadata,runtimeUrl:`/workout.html?sessionId=${encodeURIComponent(workoutSessionId)}`,resumed},resumed?200:201);}));
   app.put("/api/me/challenges/:userChallengeId/activities/:activityId", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.logActivity(req.auth.userId,req.params.userChallengeId,req.params.activityId,req.body||{}))));
   app.post("/api/me/challenges/:userChallengeId/days/:dayId/complete", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.completeDay(req.auth.userId,req.params.userChallengeId,req.params.dayId,req.body||{}))));
   app.patch("/api/me/challenges/:userChallengeId/status", requireAuth, challengeLimit, asyncHandler(async(req,res)=>ok(res,req.requestId,challengeEngineService.setStatus(req.auth.userId,req.params.userChallengeId,req.body?.status))));
@@ -2646,6 +2646,14 @@ function createApp(options = {}) {
     });
     const result = sessionService.startSession(parsed);
     return ok(res, req.requestId, result, 201);
+  }));
+
+  app.get("/api/sessions/:id", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, sessionService.getSession({ userId: req.auth.userId, sessionId: req.params.id }), 200)));
+
+  app.patch("/api/sessions/:id/runtime-progress", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    ensureUserScopedAccess(req, req.body?.userId);
+    return ok(res, req.requestId, sessionService.updateRuntimeProgress({ userId: req.auth.userId, sessionId: req.params.id, ...(req.body || {}) }), 200);
   }));
 
   app.post("/api/sessions/:id/reps", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {

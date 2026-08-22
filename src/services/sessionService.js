@@ -42,6 +42,31 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, onSes
     };
   }
 
+  function getSession({ userId, sessionId }) {
+    const session = userStore.loadUser(userId)?.sessions?.[sessionId];
+    if (!session) throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
+    return structuredClone(session);
+  }
+
+  function updateRuntimeProgress({ userId, sessionId, exerciseIndex, unitIndex, phase }) {
+    let sessionData;
+    userStore.updateUser(userId, (user) => {
+      const session = user.sessions?.[sessionId];
+      if (!session) throw new ApiError("SESSION_NOT_FOUND", `Session ${sessionId} does not exist for user`, 404);
+      if (session.endedAt) throw new ApiError("SESSION_ALREADY_COMPLETED", `Session ${sessionId} is already completed`, 409);
+      const activities = session.canonicalWorkout?.activities;
+      if (!Array.isArray(activities)) throw new ApiError("INVALID_SESSION", "Session has no canonical workout", 409);
+      if (!Number.isInteger(exerciseIndex) || exerciseIndex < 0 || exerciseIndex >= activities.length) throw new ApiError("VALIDATION_ERROR", "exerciseIndex is outside the canonical workout", 400);
+      const maxUnits = activities[exerciseIndex].sets || activities[exerciseIndex].rounds || 1;
+      if (!Number.isInteger(unitIndex) || unitIndex < 1 || unitIndex > maxUnits) throw new ApiError("VALIDATION_ERROR", "unitIndex is outside the canonical prescription", 400);
+      if (!["ready", "working", "rest", "paused"].includes(phase)) throw new ApiError("VALIDATION_ERROR", "invalid runtime phase", 400);
+      session.runtimeProgress = { exerciseIndex, unitIndex, phase, updatedAt: clock() };
+      sessionData = structuredClone(session);
+      return user;
+    });
+    return sessionData;
+  }
+
   function appendRepUpdate({ userId, sessionId, exerciseId = null, repsThisSet = null, totalReps = null, depthScore = null, goodForm = null, payload = {} }) {
     let repUpdate = null;
     let repUpdatesCount = 0;
@@ -136,6 +161,8 @@ function createSessionService({ userStore, workoutCompletedAdapter = null, onSes
 
   return {
     startSession,
+    getSession,
+    updateRuntimeProgress,
     appendRepUpdate,
     completeSession
   };
