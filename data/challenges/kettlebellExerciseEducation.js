@@ -1,10 +1,22 @@
 "use strict";
 
 const MEDIA = Object.freeze({
+  exercise_kettlebell_deadlift:{sourcePath:"exercise-generation/kettlebellchallenge/Kettlebell Deadlift.jpg",url:"/exercise-media/kettlebell/exercise_kettlebell_deadlift",alt:"Kettlebell deadlift movement instruction guide"},
   exercise_goblet_squat:{sourcePath:"exercise-generation/kettlebellchallenge/gobletsquat.jpg",url:"/exercise-media/kettlebell/exercise_goblet_squat",alt:"Goblet squat movement education guide"},
   exercise_kettlebell_halo:{sourcePath:"exercise-generation/kettlebellchallenge/kettelbellhalo.jpg",url:"/exercise-media/kettlebell/exercise_kettlebell_halo",alt:"Kettlebell halo movement education guide"},
   exercise_bent_over_row:{sourcePath:"exercise-generation/kettlebellchallenge/bentoverrow.jpg",url:"/exercise-media/kettlebell/exercise_bent_over_row",alt:"Bent-over row movement education guide"},
-  exercise_suitcase_carry:{sourcePath:"exercise-generation/kettlebellchallenge/suitcasecarry.jpg",url:"/exercise-media/kettlebell/exercise_suitcase_carry",alt:"Suitcase carry movement education guide"}
+  exercise_suitcase_carry:{sourcePath:"exercise-generation/kettlebellchallenge/suitcasecarry.jpg",url:"/exercise-media/kettlebell/exercise_suitcase_carry",alt:"Suitcase carry movement education guide"},
+  exercise_reverse_lunge:{sourcePath:"exercise-generation/kettlebellchallenge/ReverseLunge.jpg",url:"/exercise-media/kettlebell/exercise_reverse_lunge",alt:"Reverse lunge movement instruction guide"},
+  exercise_kettlebell_floor_press:{sourcePath:"exercise-generation/kettlebellchallenge/Kettlebell Floor Press.jpg",url:"/exercise-media/kettlebell/exercise_kettlebell_floor_press",alt:"Kettlebell floor press movement instruction guide"},
+  exercise_two_hand_kettlebell_swing:{sourcePath:"exercise-generation/kettlebellchallenge/Two-HandKettlebellSwing.jpg",url:"/exercise-media/kettlebell/exercise_two_hand_kettlebell_swing",alt:"Two-hand kettlebell swing movement instruction guide"},
+  exercise_overhead_press:{sourcePath:"exercise-generation/kettlebellchallenge/Overhead Press.jpg",url:"/exercise-media/kettlebell/exercise_overhead_press",alt:"Overhead press movement instruction guide"},
+  exercise_farmer_carry:{sourcePath:"exercise-generation/kettlebellchallenge/Farmer Carry.jpg",url:"/exercise-media/kettlebell/exercise_farmer_carry",alt:"Farmer carry movement instruction guide"},
+  exercise_kettlebell_clean:{sourcePath:"exercise-generation/kettlebellchallenge/KettlebellClean.jpg",url:"/exercise-media/kettlebell/exercise_kettlebell_clean",alt:"Kettlebell clean movement instruction guide"},
+  exercise_push_press:{sourcePath:"exercise-generation/kettlebellchallenge/PushPress.jpg",url:"/exercise-media/kettlebell/exercise_push_press",alt:"Kettlebell push press movement instruction guide"},
+  exercise_high_pull:{sourcePath:"exercise-generation/kettlebellchallenge/Kettlebell Clean.jpg",url:"/exercise-media/kettlebell/exercise_high_pull",alt:"Kettlebell high pull movement instruction guide"},
+  exercise_front_rack_carry:{sourcePath:"exercise-generation/kettlebellchallenge/Front-Rack Carry.jpg",url:"/exercise-media/kettlebell/exercise_front_rack_carry",alt:"Front-rack carry movement instruction guide"},
+  exercise_clean_to_press:{sourcePath:"exercise-generation/kettlebellchallenge/Clean to Press.jpg",url:"/exercise-media/kettlebell/exercise_clean_to_press",alt:"Kettlebell clean to press movement instruction guide"},
+  exercise_kettlebell_snatch:{sourcePath:"exercise-generation/kettlebellchallenge/Kettlebell Snatch.jpg",url:"/exercise-media/kettlebell/exercise_kettlebell_snatch",alt:"Kettlebell snatch movement instruction guide"}
 });
 const DETAILS={
   exercise_goblet_squat:{classification:"Squat pattern",muscles:["Quadriceps","Glutes","Core"],description:"A front-loaded squat that develops controlled lower-body strength and trunk position.",stages:["START — Hold the bell at chest height and brace.","ECCENTRIC — Sit down between the hips with the whole foot grounded.","PAUSE — Own the bottom position without relaxing.","CONCENTRIC — Drive the floor away and stand tall.","FINISH — Re-brace before the next repetition."],cues:["Keep the bell close","Track knees with toes","Keep the whole foot grounded"],mistakes:["Heels lifting","Knees collapsing inward","Losing the brace"],modifications:["Reduce depth","Use a lighter bell","Squat to a box"]},
