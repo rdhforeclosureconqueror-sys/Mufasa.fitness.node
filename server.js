@@ -42,6 +42,8 @@ const { createPersonalizationService } = require("./src/services/personalization
 const { createMembershipService } = require("./src/services/membershipService");
 const { createChallengeService } = require("./src/services/challengeService");
 const { createChallengeEngineService } = require("./src/services/challengeEngineService");
+const { EXERCISES } = require("./data/challenges/kettlebellCanonicalProgram");
+const { MEDIA: kettlebellMedia, getEducation: getKettlebellEducation } = require("./data/challenges/kettlebellExerciseEducation");
 const { createMemberExperienceCapabilityService } = require("./src/services/memberExperienceCapabilityService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
@@ -2218,6 +2220,8 @@ function createApp(options = {}) {
   app.get("/challenges/:slug", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "challenge.html")));
   app.get("/api/challenges", asyncHandler(async (req, res) => ok(res, req.requestId, { challenges: challengeEngineService.library({ category:req.query.category }) })));
   app.get("/api/challenges/:slug", asyncHandler(async (req, res) => ok(res, req.requestId, challengeEngineService.detail(req.params.slug))));
+  app.get("/api/challenge-exercises/:exerciseId", asyncHandler(async(req,res)=>{const exercise=Object.values(EXERCISES).find(item=>item.id===req.params.exerciseId);if(!exercise)throw new ApiError("EXERCISE_NOT_FOUND","Challenge exercise not found",404);return ok(res,req.requestId,getKettlebellEducation({exerciseId:exercise.id,name:exercise.name,exerciseType:exercise.type}));}));
+  app.get("/exercise-media/kettlebell/:exerciseId",(req,res)=>{const media=kettlebellMedia[req.params.exerciseId];if(!media)return res.status(404).end();const source=path.resolve(__dirname,media.sourcePath),root=path.resolve(__dirname,"exercise-generation/kettlebellchallenge");if(path.dirname(source)!==root)return res.status(404).end();res.set({"Content-Type":"image/jpeg","Cache-Control":"public, max-age=86400, immutable","X-Content-Type-Options":"nosniff"});return res.sendFile(source);});
   app.post("/api/me/challenges/:slug/join", requireAuth, challengeLimit, asyncHandler(async (req, res) => { const result=challengeEngineService.joinChallenge(req.auth.userId,req.params.slug,req.body||{}); return ok(res,req.requestId,result,result.created?201:200); }));
   app.get("/api/me/challenges/active/current", requireAuth, asyncHandler(async (req,res)=>{res.set("Cache-Control","private, no-store");return ok(res,req.requestId,challengeEngineService.active(req.auth.userId));}));
   app.get("/api/me/challenges/:slug/current", requireAuth, asyncHandler(async (req,res)=>{res.set("Cache-Control","private, no-store");return ok(res,req.requestId,challengeEngineService.current(req.auth.userId,req.params.slug));}));
