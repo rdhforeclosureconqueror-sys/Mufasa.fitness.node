@@ -55,7 +55,11 @@ function createAuthCredentialStore({ filePath }) {
     return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
   }
 
-  return { create, findByEmail, verify };
+  function listIdentities() {
+    return readAll().accounts.map(({ id, email, name, accessTier, createdAt }) => ({ id, email, name, accessTier, createdAt }));
+  }
+
+  return { create, findByEmail, listIdentities, verify };
 }
 
 module.exports = { createAuthCredentialStore };

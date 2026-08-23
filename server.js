@@ -16,6 +16,8 @@ const { createUserStore } = require("./src/repositories/userStore");
 const { createAuthCredentialStore } = require("./src/repositories/authCredentialStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
+const { createClientMessagingStore } = require("./src/repositories/clientMessagingStore");
+const { createClientCrmService } = require("./src/services/clientCrmService");
 const { createSessionService } = require("./src/services/sessionService");
 const { createYogaService } = require("./src/services/yogaService");
 const { loadGamificationConfig } = require("./src/config/gamification");
@@ -439,6 +441,7 @@ function createApp(options = {}) {
   userStore.ensureDirs();
   const trainerWorkspaceStore = createTrainerWorkspaceStore({ filePath: path.join(DATA_DIR, "trainer-workspace.json") });
   const trainerWorkspaceService = createTrainerWorkspaceService({ store: trainerWorkspaceStore, userStore, authorizationResolver });
+  const clientMessagingStore = createClientMessagingStore({ filePath: options.clientMessagingPath || path.join(DATA_DIR, "client-messaging.json") });
   const gamificationConfig = loadGamificationConfig(options.env || process.env);
   let gamificationEventService = null;
   let gamificationEventStore = null;
@@ -542,6 +545,7 @@ function createApp(options = {}) {
     userStore,
     stripeClient: options.stripeClient
   });
+  const clientCrmService = createClientCrmService({ userStore, authCredentialStore, membershipService, trainerWorkspaceStore, messagingStore: clientMessagingStore, authorizationResolver });
 
   function hasOperatorBillingBypass(req) {
     const role = String(req.authz?.role || req.auth?.role || "").toLowerCase();
@@ -2351,6 +2355,18 @@ function createApp(options = {}) {
     ok(res, req.requestId, memberHomeService.read(req.auth.userId), 200)));
 
   const permission = (name) => requirePermission(authorizationResolver, name);
+  const crmActor = req => ({ userId:req.auth.userId, role:req.authz.role });
+  app.get("/admin/members.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-members.html")));
+  app.get("/admin/client.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-client.html")));
+  app.get("/inbox.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"inbox.html")));
+  app.get("/api/admin/members", requireAuth, permission(authorizationResolver.PERMISSIONS.CLIENT_CRM_READ), asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.directory(crmActor(req),req.query))));
+  app.get("/api/admin/clients/:clientUserId/overview", requireAuth, permission(authorizationResolver.PERMISSIONS.CLIENT_CRM_READ), asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.overview(crmActor(req),req.params.clientUserId))));
+  app.get("/api/admin/clients/:clientUserId/intake", requireAuth, permission(authorizationResolver.PERMISSIONS.CLIENT_CRM_READ), asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.intake(crmActor(req),req.params.clientUserId))));
+  app.get("/api/admin/clients/:clientUserId/assessments", requireAuth, permission(authorizationResolver.PERMISSIONS.CLIENT_CRM_READ), asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.assessments(crmActor(req),req.params.clientUserId))));
+  app.post("/api/admin/clients/:clientUserId/conversation", trainerWriteLimit, requireAuth, permission(authorizationResolver.PERMISSIONS.CLIENT_MESSAGES_WRITE), asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.conversation(crmActor(req),req.params.clientUserId,true),201)));
+  app.get("/api/me/conversations", requireAuth, asyncHandler(async(req,res)=>ok(res,req.requestId,{conversations:clientMessagingStore.listForUser(req.auth.userId)})));
+  app.get("/api/me/conversations/:conversationId/messages", requireAuth, asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.viewMessages(crmActor(req),req.params.conversationId))));
+  app.post("/api/me/conversations/:conversationId/messages", trainerWriteLimit, requireAuth, asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.send(crmActor(req),req.params.conversationId,req.body?.body),201)));
   const trainerClientGuard = (name) => [requireAuth, permission(name)];
   app.get("/api/trainer/workspace", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_WORKSPACE_READ), asyncHandler(async (req, res) =>
     ok(res, req.requestId, { trainer: { userId: req.auth.userId }, clientCount: trainerWorkspaceService.listClients(req.auth.userId).length, memberExperienceUrl: "/dashboard.html" })));

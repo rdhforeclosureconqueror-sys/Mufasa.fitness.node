@@ -24,4 +24,7 @@ module.exports = Object.freeze({
   ,"public/admin-trail-routes.js": "Admin route templates encode every persisted value before rendering; structural markup is fixed."
   ,"public/yoga.js": "Yoga session templates encode every catalog string with esc(); structural empty, error, and completion templates are fixed."
   ,"public/pocketpt-youth-program.js": "Youth program templates encode all server and participant strings with esc(); numeric values are canonical projections and inline actions are fixed same-origin reloads."
+  ,"public/admin-members.js": "CRM summary templates encode every API-derived string with esc(); action identifiers are URL-encoded."
+  ,"public/admin-client.js": "Client profile and message templates encode every API-derived value with esc(); structural routes use encoded identifiers."
+  ,"public/inbox.js": "Member message templates encode every body and timestamp with esc(); conversation identifiers originate server-side."
 });
