@@ -588,6 +588,9 @@ function createApp(options = {}) {
     maxTtlMs: Number(process.env.AUTH_TOKEN_MAX_TTL_MS || 1000 * 60 * 60 * 24 * 14),
     clockSkewMs: Number(process.env.AUTH_TOKEN_CLOCK_SKEW_MS || 5000)
   });
+  const authTokenMaxTtlMs = Number(process.env.AUTH_TOKEN_MAX_TTL_MS || 1000 * 60 * 60 * 24 * 14);
+  const authSessionTtlMs = Math.min(Number(process.env.AUTH_TOKEN_SESSION_TTL_MS || 1000 * 60 * 60 * 8), authTokenMaxTtlMs);
+  const authPersistentTtlMs = Math.min(Number(process.env.AUTH_TOKEN_PERSISTENT_TTL_MS || authTokenMaxTtlMs), authTokenMaxTtlMs);
 
   const startupWarnings = [];
   const strictStartupIssues = [];
@@ -1829,6 +1832,8 @@ function createApp(options = {}) {
     const fixtureEnabled = String(process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED || "").trim().toLowerCase() === "true";
     const isTestEnv = String(process.env.NODE_ENV || "").trim().toLowerCase() === "test";
     const hasFixtureFields = req.body?.testUserId != null || req.body?.testRole != null;
+    const rememberMe = req.body?.rememberMe === true;
+    const loginTtlMs = rememberMe ? authPersistentTtlMs : authSessionTtlMs;
     console.info("[auth-login] request received", { emailNormalized, hasPassword, requestId });
 
     const reject = (status, reason, error = "Invalid email or password") => {
@@ -1859,7 +1864,8 @@ function createApp(options = {}) {
         provider: "password",
         providerSubject: email || AUTH_SEED_USER.email,
         providerVerified: true,
-        identityClass: "provider_verified"
+        identityClass: "provider_verified",
+        ttlMs: loginTtlMs
       });
       traceIssuance(token, requestId);
 
@@ -1890,7 +1896,8 @@ function createApp(options = {}) {
         provider: "password",
         providerSubject: registeredUser.email,
         providerVerified: true,
-        identityClass: "provider_verified"
+        identityClass: "provider_verified",
+        ttlMs: loginTtlMs
       });
       traceIssuance(registeredToken, requestId);
       console.info("[auth-login] success", { userId: registeredUser.id, emailNormalized: registeredUser.email, requestId });
@@ -1924,7 +1931,8 @@ function createApp(options = {}) {
       provider: "password",
       providerSubject: AUTH_SEED_USER.email,
       providerVerified: true,
-      identityClass: "provider_verified"
+      identityClass: "provider_verified",
+      ttlMs: loginTtlMs
     });
     traceIssuance(token, requestId);
 
@@ -1970,7 +1978,8 @@ function createApp(options = {}) {
       provider: "password",
       providerSubject: email,
       providerVerified: true,
-      identityClass: "provider_verified"
+      identityClass: "provider_verified",
+      ttlMs: authSessionTtlMs
     });
     traceIssuance(token, req.requestId, "/api/auth/register");
 
@@ -2011,7 +2020,8 @@ function createApp(options = {}) {
     });
   }));
 
-  app.post("/api/auth/logout", asyncHandler(async (req, res) => {
+  app.post("/api/auth/logout", requireAuth, asyncHandler(async (req, res) => {
+    if (req.auth?.jti && Number.isFinite(req.auth?.expiresAt)) tokenDenylist.revoke({ jti: req.auth.jti, expiresAt: req.auth.expiresAt, reason: "user_logout" });
     if (req.auth?.userId) for (const [sessionId, session] of motionLabSessions) if (session.userId === req.auth.userId) motionLabSessions.delete(sessionId);
     const browserSession = readMotionLabSession(req);
     if (browserSession) motionLabSessions.delete(browserSession.sessionId);

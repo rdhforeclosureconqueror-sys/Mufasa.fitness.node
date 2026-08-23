@@ -135,9 +135,9 @@ el.runClubAuthForm.onsubmit = async event => {
     if (!response.ok || !returnedToken) throw new Error(payload.error?.message || payload.error || "Unable to continue");
     if (!metadata.validFormat || metadata.expiryState === "expired") throw new Error(metadata.expiryState === "expired" ? "The issued session has expired" : "The issued session format is invalid");
 
-    const persisted = await runtime.persistCanonicalAuthState({ token: normalizedToken, user: payload.user }, { reason: "run-club-auth:persist" });
+    const persisted = await runtime.persistCanonicalAuthState({ token: normalizedToken, user: payload.user }, { reason: "run-club-auth:persist", rememberMe: false });
     const readBack = runtime.getStoredToken();
-    await runtime.traceTokenHandoff("exact token read back from localStorage.maatAuthToken", localStorage.getItem("maatAuthToken"), { description: "localStorage.getItem (no transformation)" }, { file: "public/run-club-login.js", function: "onsubmit" });
+    await runtime.traceTokenHandoff("exact token read back from localStorage.maatAuthToken", sessionStorage.getItem("maatAuthToken"), { description: "sessionStorage.getItem (non-persistent session; no transformation)" }, { file: "public/run-club-login.js", function: "onsubmit" });
     const readBackMatches = Boolean(persisted.ok && readBack === normalizedToken);
     const persistence = readBackMatches ? "PASS" : "FAIL";
     lifecycle({ persistence, tokenPersisted: Boolean(persisted.ok), persistenceReadBack: persistence, persistedTokenLength: readBack?.length || 0 });

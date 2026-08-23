@@ -80,6 +80,7 @@
 
   const renderAuthMode = () => {
     const isRegisterMode = authMode === "register";
+    const rememberMe = !isRegisterMode && getEl("authRememberMe")?.checked === true;
     const nameWrapEl = getEl("authNameWrap");
     const nameEl = getEl("authName");
     const passwordEl = getEl("authPassword");
@@ -119,7 +120,7 @@
     const isRegisterMode = authMode === "register";
     const authLoginStatusEl = getEl("authLoginStatus");
     const authUrl = isRegisterMode ? AUTH_REGISTER_URL : AUTH_LOGIN_URL;
-    const body = isRegisterMode ? { name, email, password } : { email, password };
+    const body = isRegisterMode ? { name, email, password } : { email, password, rememberMe };
 
     submitInFlight = (async () => {
       try {
@@ -148,7 +149,7 @@
         if (!meRes.ok || !mePayload?.ok || !user) throw new Error(mePayload?.error || "session_invalid");
 
         if (!window.AuthStateRuntime?.persistCanonicalAuthState) throw new Error("Authentication persistence is unavailable on this device");
-        const persisted = await window.AuthStateRuntime.persistCanonicalAuthState({ token, user }, { reason: "auth-core:submitAuthRequest" });
+        const persisted = await window.AuthStateRuntime.persistCanonicalAuthState({ token, user }, { reason: "auth-core:submitAuthRequest", rememberMe });
         if (!persisted.ok) throw new Error("Authentication could not be restored on this device: storage verification failed");
         console.log("[AUTH_LOGIN] login success");
         await runPostLoginHooks(user, token);
