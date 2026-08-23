@@ -27,4 +27,5 @@ module.exports = Object.freeze({
   ,"public/admin-members.js": "CRM summary templates encode every API-derived string with esc(); action identifiers are URL-encoded."
   ,"public/admin-client.js": "Client profile and message templates encode every API-derived value with esc(); structural routes use encoded identifiers."
   ,"public/inbox.js": "Member message templates encode every body and timestamp with esc(); conversation identifiers originate server-side."
+  ,"public/global-nav.js": "Navigation templates use only fixed local definitions, document.title text, and the backend-authenticated user's display fields; destinations are fixed same-origin routes."
 });

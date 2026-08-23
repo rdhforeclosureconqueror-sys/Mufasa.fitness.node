@@ -200,16 +200,16 @@ module.exports = Object.freeze([
   {
     "method": "POST",
     "path": "/api/auth/logout",
-    "authentication": "public",
+    "authentication": "required",
     "allowedRoles": [],
     "requiredPermissions": [],
     "membership": "not-required",
-    "ownership": "not-applicable",
+    "ownership": "authenticated-user-self",
     "featureFlag": null,
-    "publicOutput": "public-safe",
+    "publicOutput": "authenticated-safe",
     "rateLimit": null,
     "compatibility": null,
-    "publicWrite": "strictly-validated-auth-boundary"
+    "publicWrite": null
   },
   {
     "method": "GET",

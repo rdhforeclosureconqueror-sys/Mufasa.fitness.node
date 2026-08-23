@@ -4,6 +4,7 @@
   const global = globalScope || window;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-authorization-header-canonicalization-v1" });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
+  const PERSISTENCE_STORAGE_KEY = "maatAuthPersistence";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
   const RETIRED_STORAGE_KEYS = ["maat_auth_token", "mufasa_auth_token", "authToken", "pocket_pt_auth_token"];
   const LIFECYCLE_KEY = "maat.loginToGreatnessTokenLifecycle.v1";
@@ -126,16 +127,30 @@
 
   function getStoredToken() {
     try {
-      const stored = global.localStorage?.getItem(TOKEN_STORAGE_KEY);
+      const sessionToken = global.sessionStorage?.getItem(TOKEN_STORAGE_KEY);
+      const stored = sessionToken || global.localStorage?.getItem(TOKEN_STORAGE_KEY);
       void traceTokenHandoff("localStorage read-back value", stored, {}, { function: "getStoredToken" });
       return normalizeToken(stored);
     } catch (_) { return null; }
   }
 
-  function persistToken(token) {
+  function persistToken(token, rememberMe = null) {
     try {
-      if (token) global.localStorage?.setItem(TOKEN_STORAGE_KEY, normalizeToken(token));
-      else global.localStorage?.removeItem(TOKEN_STORAGE_KEY);
+      if (!token) {
+        global.localStorage?.removeItem(TOKEN_STORAGE_KEY);
+        global.sessionStorage?.removeItem(TOKEN_STORAGE_KEY);
+        global.localStorage?.removeItem(PERSISTENCE_STORAGE_KEY);
+        return;
+      }
+      // Legacy programmatic callers omitted a persistence choice; retain their
+      // established behavior while every user-facing login passes an explicit boolean.
+      const persistent = rememberMe === true || rememberMe === null;
+      const destination = persistent ? global.localStorage : global.sessionStorage;
+      const alternate = persistent ? global.sessionStorage : global.localStorage;
+      destination?.setItem(TOKEN_STORAGE_KEY, normalizeToken(token));
+      alternate?.removeItem(TOKEN_STORAGE_KEY);
+      if (persistent) global.localStorage?.setItem(PERSISTENCE_STORAGE_KEY, "persistent");
+      else global.localStorage?.removeItem(PERSISTENCE_STORAGE_KEY);
     } catch (_) {}
   }
 
@@ -146,7 +161,7 @@
     let lastError = null;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
-        global.localStorage?.setItem(ORIGIN_STORAGE_KEY, global.location?.origin || "unknown");
+        (options.rememberMe === false ? global.sessionStorage : global.localStorage)?.setItem(ORIGIN_STORAGE_KEY, global.location?.origin || "unknown");
         if (getStoredToken() === state.token) return { ok: true, state };
       } catch (error) { lastError = error; }
       await new Promise((resolve) => global.setTimeout ? global.setTimeout(resolve, 25 * (attempt + 1)) : resolve());
@@ -218,7 +233,7 @@
     if (nextState.user) global.__LAST_AUTH_USER = nextState.user;
     else if (options.clearLastUser === true) global.__LAST_AUTH_USER = null;
     global.__AUTH_READY = nextState.isAuthenticated === true;
-    persistToken(nextState.token);
+    persistToken(nextState.token, options.rememberMe ?? null);
 
     console.log(LOG_PREFIX, {
       reason,
@@ -244,7 +259,7 @@
     const state = setCanonicalAuthState({ token: null, user: null }, { ...options, reason, clearLastUser: options.clearLastUser === true });
     // Remove retired aliases so logout/invalid-session cleanup is global, not page-specific.
     for (const storage of [global.localStorage, global.sessionStorage]) {
-      try { RETIRED_STORAGE_KEYS.forEach((key) => storage?.removeItem(key)); } catch (_) {}
+      try { [TOKEN_STORAGE_KEY, ORIGIN_STORAGE_KEY, PERSISTENCE_STORAGE_KEY, ...RETIRED_STORAGE_KEYS].forEach((key) => storage?.removeItem(key)); } catch (_) {}
     }
     return state;
   }
@@ -473,10 +488,22 @@
       // Local logout must complete even when the network is unavailable.
     } finally {
       clearCanonicalAuthState("logout", { forceDispatch: true, clearLastUser: true });
+      clearAccountScopedBrowserState();
       for (const key of ["APP_MEMBER", "APP_MEMBERSHIP", "APP_ROLES", "__MEMBER_READ_MODEL", "__AUTHENTICATED_READ_MODELS"]) global[key] = null;
     }
     if (options.redirectTo) global.location?.assign?.(options.redirectTo);
     return { ok: true };
+  }
+
+  function clearAccountScopedBrowserState() {
+    const exactKeys = new Set(["maat.activeWorkoutSelection.v1", "maat.activeWorkoutCompletion.v1", "maat.workoutProgression.v1", "maat.lastGreatnessEntryTrace.v1"]);
+    const prefixes = ["maat.profile", "maat.challenge", "maat.membership", "maat.billing", "maat.messages", "maat.assessment", "maat.program", "maat.admin", "mufasa.push-up.sessions"];
+    for (const storage of [global.localStorage, global.sessionStorage]) {
+      try {
+        const keys = Array.from({ length: storage?.length || 0 }, (_, index) => storage.key(index));
+        keys.filter((key) => exactKeys.has(key) || prefixes.some((prefix) => key?.startsWith(prefix))).forEach((key) => storage.removeItem(key));
+      } catch (_) {}
+    }
   }
 
   function installAuthStatusRefreshBridge() {
@@ -501,10 +528,12 @@
   global.setCanonicalAuthState = setCanonicalAuthState;
   global.AuthStateRuntime = {
     TOKEN_STORAGE_KEY,
+    PERSISTENCE_STORAGE_KEY,
     ORIGIN_STORAGE_KEY,
     LIFECYCLE_KEY,
     RETIRED_STORAGE_KEYS,
     clearCanonicalAuthState,
+    clearAccountScopedBrowserState,
     ensureDebugState,
     getAuthToken,
     getCanonicalAuthState,
