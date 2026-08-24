@@ -115,7 +115,7 @@
 
           const token = resolveToken();
           const backendOrigin = resolveOrigin();
-          const avatarUrl = new URL(AVATAR_PATH, backendOrigin + "/").href;
+          const avatarUrl = backendOrigin.replace(/\/+$/, "") + AVATAR_PATH;
 
           const headers = {};
           if (token) headers["authorization"] = "Bearer " + token;

@@ -633,9 +633,8 @@ test("avatar fetch failure falls back safely to failed status without throwing",
 
 test("successful avatar fetch proceeds to GLTF parse and emits avatar_fetch_pass and avatar_parse_pass", async () => {
   const diagnostics = [];
-  const { preview } = makeAuthHarness();
   const statuses = [];
-  // Re-create with onDiagnostic hooked — makeAuthHarness doesn't pass it, so build manually.
+  // Build harness manually to wire onDiagnostic and authenticated fetch seams together.
   const h = makeHarness();
   const OriginalGLTFLoader = h.loader.loadGLTFLoader;
   h.loader.loadGLTFLoader = async (opts) => {
