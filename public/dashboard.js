@@ -22,6 +22,7 @@
   const copyRepairSummaryBtn = document.getElementById("copyRepairSummaryBtn");
   const refreshDiagnosticBtn = document.getElementById("refreshDiagnosticBtn");
   const runClubDiagnosticsNav = document.getElementById("runClubDiagnosticsNav");
+  const clientManagementCard = document.getElementById("clientManagementCard");
   const motionLabNav = document.getElementById("motionLabNav");
   const motionLabLaunchStatus = document.getElementById("motionLabLaunchStatus");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
@@ -56,11 +57,13 @@
     const hasObservabilityAccess = roles.some((role) => role === "admin" || role === "super_admin");
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = !hasObservabilityAccess;
     if (motionLabNav) motionLabNav.hidden = !hasObservabilityAccess;
+    if (clientManagementCard) clientManagementCard.hidden = !hasObservabilityAccess;
   }
 
   revealObservabilityNavigationForAdmin().catch(() => {
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = true;
     if (motionLabNav) motionLabNav.hidden = true;
+    if (clientManagementCard) clientManagementCard.hidden = true;
   });
 
   const MOTION_LAB_LAUNCH_BUILD = "2026-08-20-ios-trace-v2";

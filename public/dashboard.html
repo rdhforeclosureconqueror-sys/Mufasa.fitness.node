@@ -164,7 +164,7 @@
     .experience-card .btn{align-self:flex-start;text-decoration:none}
     @media(max-width:600px){header{align-items:flex-start;flex-direction:column}.dashboard-actions{width:100%;grid-template-columns:1fr}.wrap{padding:10px}.row{flex-direction:column}}
   </style>
-<link rel="stylesheet" href="/global-nav.css?v=20260824-auth-unified-drawer-v2">
+<link rel="stylesheet" href="/global-nav.css?v=20260824-global-nav-production-repair-v3">
 </head>
 <body>
   <a class="skip-link" href="#memberHome">Skip to member home</a>
@@ -260,6 +260,12 @@
         <div class="list" id="historyList"></div>
       </div>
 
+      <div id="clientManagementCard" class="card" style="grid-column:1/-1;" hidden>
+        <h2>Client Management</h2>
+        <p class="muted">View every registered account, authoritative access status, member journey, and secure messages.</p>
+        <a class="btn" href="/admin/members.html">Open Client Management</a>
+      </div>
+
       <div class="card" style="grid-column:1/-1;">
         <h2>Launch Health Console (Admin)</h2>
         <pre id="authContinuityStatus" class="diagPre">Checking canonical authentication…</pre>
@@ -301,7 +307,7 @@
     window.MAAT_BACKEND_ORIGIN = window.__MAAT_RUNTIME_CONFIG__.backendOrigin;
   </script>
   <script src="/runtime-state.js?v=20260506"></script>
-  <script src="/auth-state-runtime.js?v=20260824-auth-unified-drawer-v2"></script>
+  <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/api-client.js?v=20260812-api-network"></script>
   <script src="/mobile-auth-diagnostics.js?v=20260812-mobile-auth"></script>
   <script src="/diagnostics-client.js?v=20260731-launch-health"></script>
@@ -316,6 +322,6 @@
   <script src="/notifications.js?v=20260731-launch-readiness"></script>
   <script src="/client-capability-evidence.js?v=20260802-client-contract"></script>
   <script src="/leaderboards.js?v=20260802-safari-contract"></script>
-<script src="/global-nav.js?v=20260824-auth-unified-drawer-v2"></script>
+<script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body>
 </html>
