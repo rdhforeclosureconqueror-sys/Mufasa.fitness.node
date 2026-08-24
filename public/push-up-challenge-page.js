@@ -24,5 +24,29 @@ onReady(function boot(){
  practiceBtn.onclick=()=>start('practice');challengeBtn.onclick=()=>start('challenge');sideConfirmed.onchange=controls;retryBtn.onclick=initializePoseEngine;retryBtn.addEventListener('click',()=>{if(engineReady)activate(cameraSelect.value||'',!cameraActive);});
  finishBtn.onclick=()=>{const result=challenge.finish(),s=result.summary;$('summary').textContent=`${s.valid?'Valid':'Not comparable'} session\n${s.validRepetitions} ${challenge.configuration.completion.repetitionLabel} · ${(s.completionTimeMs/1000).toFixed(1)} seconds\n${s.usableFramePercentage.toFixed(0)}% usable frames · ${(s.overallConfidence*100).toFixed(0)}% confidence\n${(s.totalTrackingLossDurationMs/1000).toFixed(1)}s tracking loss · ${(s.longestContinuousDropoutMs/1000).toFixed(1)}s longest dropout · ${s.recoveryEvents} recoveries${result.invalidationReason?`\nReason: ${result.invalidationReason}`:''}`;if(result.mode==='challenge'&&s.valid)storage.save(result);const versus=previous&&comparison.compare(result,previous);$('comparison').textContent=versus?.compatible?`${versus.repetitionDelta>=0?'+':''}${versus.repetitionDelta} repetitions; ${(versus.completionTimeDeltaMs/1000).toFixed(1)}s completion-time difference.`:'No compatible previous valid session for this result.';controls();};
  video.addEventListener('loadedmetadata',layout);for(const event of ['resize','orientationchange','fullscreenchange'])global.addEventListener(event,layout);resizeObserver=global.ResizeObserver?new global.ResizeObserver(layout):null;resizeObserver?.observe(stage);global.addEventListener('pagehide',()=>{capture?.stop();camera.stop();resizeObserver?.disconnect();});global.__pushUpChallengeBootstrap={initializePoseEngine,updateStarts:controls,cameraController:camera,recalculateOverlay:layout};initializePoseEngine();
+
+ /* ── 3D motion preview ─────────────────────────────────────────────────────
+    Mounted as a sibling to the camera path. Success or failure here MUST NOT
+    affect camera readiness, repetition counting, or Practice/Challenge gating.
+ ─────────────────────────────────────────────────────────────────────────── */
+ (function mountMotionPreview(){
+   try{
+     const container=$('motionPreviewContainer'),fallbackSvg=$('motionFallbackSvg');
+     if(!container||typeof global.ProductMotionPreview?.create!=='function')return;
+     const preview=global.ProductMotionPreview.create({
+       container,
+       avatarProfileId:'avaturn-personalized-candidate',
+       motionId:'push_up/avaturn_native_v1',
+       fixtureId:'avaturn-push-up-animation',
+       autoplay:true,loop:true,cameraPreset:'exercise-side',
+       expectedBindings:{intended:40,bound:40,unbound:0},
+       onStatus(s){if(s==='playing'||s==='ready')fallbackSvg&&(fallbackSvg.style.display='none');},
+       onError(){if(fallbackSvg)fallbackSvg.style.display='';}
+     });
+     global.addEventListener('pagehide',()=>preview.dispose(),{once:true});
+     global.__pushUpMotionPreview=preview;
+     preview.mount().catch(()=>{});
+   }catch(_){}
+ })();
 });
 })(window);
