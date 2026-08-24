@@ -1,0 +1,124 @@
+name: Generate Native Avaturn Push-Up Animation Fixture
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-avaturn-push-up:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: stage3-native-avaturn-push-up
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify immutable source file exists
+        run: |
+          if [ ! -f "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb" ]; then
+            echo "ERROR: Source GLB file not found"
+            exit 1
+          fi
+          echo "✓ Source file exists"
+
+      - name: Verify source SHA-256
+        run: |
+          SOURCE_SHA=$(sha256sum exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb | awk '{print $1}')
+          EXPECTED_SHA="ec21fb1b5ba8499f2e410b49272e2b7f30e09257cd737c9efe25c0cd3d21adb6"
+          
+          echo "Source file SHA-256: $SOURCE_SHA"
+          echo "Expected SHA-256:    $EXPECTED_SHA"
+          
+          if [ "$SOURCE_SHA" != "$EXPECTED_SHA" ]; then
+            echo "ERROR: Source SHA-256 mismatch"
+            exit 1
+          fi
+          echo "✓ Source SHA-256 verified"
+
+      - name: Extract Avaturn push-up animation
+        run: npm run motion:extract-avaturn-push-up
+
+      - name: Verify generated GLB file
+        run: |
+          if [ ! -f "public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb" ]; then
+            echo "ERROR: Generated GLB file not found"
+            exit 1
+          fi
+          echo "✓ Generated GLB file exists"
+
+      - name: Verify provenance JSON
+        run: |
+          if [ ! -f "public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json" ]; then
+            echo "ERROR: Provenance JSON not found"
+            exit 1
+          fi
+          echo "✓ Provenance JSON exists"
+
+      - name: Run motion extraction validation
+        run: npm run motion:validate-avaturn-push-up
+
+      - name: Run Phase E validation
+        run: npm run motion:validate-phase-e
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Validate routes security
+        run: npm run security:validate-routes
+
+      - name: Check for trailing whitespace and line endings
+        run: git diff --check
+
+      - name: Generate and report metrics
+        run: |
+          GENERATED_GLB="public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb"
+          PROVENANCE_JSON="public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json"
+          
+          echo "=== GENERATION REPORT ===" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "$GENERATED_GLB" ]; then
+            GLB_SIZE=$(stat -f%z "$GENERATED_GLB" 2>/dev/null || stat -c%s "$GENERATED_GLB" 2>/dev/null)
+            GLB_SHA=$(sha256sum "$GENERATED_GLB" | awk '{print $1}')
+            echo "Generated GLB File Size: $GLB_SIZE bytes" >> $GITHUB_STEP_SUMMARY
+            echo "Generated GLB SHA-256: $GLB_SHA" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          SOURCE_SHA=$(sha256sum exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb | awk '{print $1}')
+          echo "Source SHA-256 (verified): $SOURCE_SHA" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "$PROVENANCE_JSON" ]; then
+            echo "Provenance JSON: ✓ exists" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Stage generated files for commit
+        run: |
+          git add public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb
+          git add public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json
+
+      - name: Commit generated artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Generate native Avaturn push-up animation fixture"
+
+      - name: Push commit back to branch
+        run: |
+          git push origin stage3-native-avaturn-push-up
