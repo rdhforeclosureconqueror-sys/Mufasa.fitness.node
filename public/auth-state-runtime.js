@@ -2,7 +2,7 @@
   "use strict";
 
   const global = globalScope || window;
-  const FRONTEND_BUILD = "20260824-auth-mobile-followup-v1";
+  const FRONTEND_BUILD = "20260824-auth-unified-drawer-v2";
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": FRONTEND_BUILD });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const PERSISTENCE_STORAGE_KEY = "maatAuthPersistence";

@@ -102,7 +102,7 @@
     if (!definitiveFailures.has(result.reason)) {
       Object.assign(trace, { decision: "WAIT", redirectReason: result.reason || "validation_pending" }); render(trace); return trace;
     }
-    const target = `/run-club-login.html?returnTo=${encodeURIComponent(global.location.pathname + global.location.search + global.location.hash)}`;
+    const target = `/login.html?returnTo=${encodeURIComponent(global.location.pathname + global.location.search + global.location.hash)}`;
     Object.assign(trace, { decision: "REDIRECT", redirectReason: result.reason, redirectTarget: target });
     render(trace); global.location.replace(target); return trace;
   }

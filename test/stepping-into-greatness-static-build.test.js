@@ -36,7 +36,7 @@ test('production static artifact contains the public Stepping Into Greatness exp
   const js = fs.readFileSync(path.join(output, 'stepping-into-greatness.js'), 'utf8');
   assert.match(html, /Free digital run club/i);
   assert.match(html, /Start where you are/i);
-  assert.match(html, /href="\/run-club-login\.html\?returnTo=%2Fgreatness\.html"/);
+  assert.match(html, /href="\/login\.html\?returnTo=%2Fgreatness\.html"/);
   assert.match(html, /data-start-greatness/);
   assert.match(js, /setAttribute\('href', '\/greatness\.html'\)/);
   assert.doesNotMatch(html, /workout\.html\?returnTo/);
@@ -44,17 +44,11 @@ test('production static artifact contains the public Stepping Into Greatness exp
   assert.doesNotMatch(html + css + js, /server\.js|\/stepping-into-greatness(?:["'#?])/);
 });
 
-test('Run Club login is a dedicated minimal static sign-up and safe direct-to-Greatness flow', () => {
+test('Run Club legacy login is a redirect-only alias of the canonical auth surface', () => {
   const html = fs.readFileSync(path.join(root, 'public', 'run-club-login.html'), 'utf8');
-  const js = fs.readFileSync(path.join(root, 'public', 'run-club-login.js'), 'utf8');
-  for (const copy of ['Welcome to the Run Club', 'No subscription required', 'Join Free', 'Sign In']) assert.match(html, new RegExp(copy, 'i'));
-  for (const field of ['name', 'email', 'password']) assert.match(html, new RegExp(`name="${field}"`));
-  assert.match(js, /entryContext:\s*"run_club"/);
-  assert.match(js, /destination\s*=\s*"\/greatness\.html"/);
-  assert.match(js, /location\.assign\(returnTo\)/);
-  assert.match(js, /value\.startsWith\("\/\/"\)/);
-  assert.match(js, /target\.origin\s*===\s*window\.location\.origin/);
-  assert.doesNotMatch(html + js, /dashboard\.html|checkout/i);
+  assert.match(html, /location\.replace/);
+  assert.match(html, /\/login\.html/);
+  assert.doesNotMatch(html, /<form|type="password"/);
 });
 
 test('free account flow accepts only same-origin return paths', () => {

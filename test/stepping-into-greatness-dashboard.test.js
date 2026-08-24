@@ -31,7 +31,7 @@ test("existing dashboard actions remain available beside Stepping Into Greatness
 });
 
 test("member navigation retains the shared authentication runtime and protected API flow", () => {
-  assert.match(greatnessPage, /<script src="auth-state-runtime\.js\?v=20260824-auth-mobile-followup-v1"><\/script>/);
+  assert.match(greatnessPage, /<script src="auth-state-runtime\.js\?v=20260824-auth-unified-drawer-v2"><\/script>/);
   assert.match(greatnessRuntime, /AuthStateRuntime\?\.getAuthToken/);
   assert.match(greatnessPage, /<script src="api-client\.js\?v=20260813-authorization-header-canonicalization-v1"><\/script>/);
   assert.match(greatnessRuntime, /await runtime\.whenReady\(\)/);

@@ -1,7 +1,7 @@
 (() => {
   const links = document.querySelectorAll('[data-start-greatness]');
   const token = localStorage.getItem('maatAuthToken');
-  links.forEach(link => link.setAttribute('href', '/run-club-login.html?returnTo=%2Fgreatness.html'));
+  links.forEach(link => link.setAttribute('href', '/login.html?returnTo=%2Fgreatness.html'));
   if (token) fetch('/api/auth/me', { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' })
     .then(response => { if (response.ok) links.forEach(link => link.setAttribute('href', '/greatness.html')); })
     .catch(() => {});

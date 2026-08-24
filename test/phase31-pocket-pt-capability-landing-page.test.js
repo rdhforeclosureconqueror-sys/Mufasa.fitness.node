@@ -36,7 +36,7 @@ test("Phase 31 hero CTA hierarchy preserves public pathways and Phase 30 route s
 
   assert.match(html, /id="landingWorkoutCta"[^>]*href="\/workout\.html"[^>]*>Start With Pocket PT<\/a>/);
   assert.match(html, /id="landingChallengeCta"[^>]*href="\/workout\.html#pushupChallengePanel"[^>]*>Try the Push-Up Challenge<\/a>/);
-  assert.match(html, /id="landingLoginCta"[^>]*href="\/workout\.html"[^>]*>Member Login<\/a>/);
+  assert.match(html, /id="landingLoginCta"[^>]*href="\/login\.html"[^>]*>Member Login<\/a>/);
   assert.match(html, /id="landingDashboardCta"[^>]*href="\/dashboard\.html"[^>]*>Open My Dashboard<\/a>/);
   assert.match(html, /New user/);
   assert.match(html, /Returning user/);
