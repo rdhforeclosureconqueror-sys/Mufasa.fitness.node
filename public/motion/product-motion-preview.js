@@ -39,6 +39,88 @@
   // Product states exposed to the page. Internal Motion Lab vocabulary is not leaked.
   const PRODUCT_STATES = Object.freeze(["idle", "loading", "ready", "playing", "paused", "failed", "disposed"]);
 
+  // ---------------------------------------------------------------------------
+  // Product avatar URL resolution
+  // Resolves the avatar path against the canonical backend origin using the
+  // established MaatApiClient helper (api-client.js).  Falls back to the
+  // runtime config or the hard-coded production backend so it always produces
+  // an absolute URL regardless of which frontend host serves the page.
+  // ---------------------------------------------------------------------------
+  function resolveProductAvatarUrl(scope) {
+    const avatarPath = PRODUCT_AVATAR_RECORD.assetUrl;
+    if (typeof scope.MaatApiClient?.resolve === "function") {
+      return scope.MaatApiClient.resolve(avatarPath);
+    }
+    const backend = scope.MAAT_BACKEND_ORIGIN
+      || scope.__MAAT_RUNTIME_CONFIG__?.backendOrigin
+      || "https://mufasa-fitness-node.onrender.com";
+    return new URL(avatarPath, backend + "/").href;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Authenticated product loader
+  // Wraps a base loader so that the member-gated avatar GLB is retrieved with
+  // an Authorization: ****** (using AuthStateRuntime — the established
+  // frontend→backend auth mechanism) and then parsed from the ArrayBuffer.
+  // The animation fixture and all other assets continue through the base loader
+  // unchanged: the fixture is served from the public static route and requires
+  // no authentication.
+  // SECURITY: the bearer token is never written to any diagnostic event.
+  // ---------------------------------------------------------------------------
+  function buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, tokenFn, diagnosticFn, fetchFn) {
+    return {
+      probeCapability: baseLoader.probeCapability,
+      loadThree: (opts) => baseLoader.loadThree(opts),
+      loadGLTFLoader: async (opts) => {
+        const BaseLoader = await baseLoader.loadGLTFLoader(opts);
+        return class ProductGLTFLoader extends BaseLoader {
+          async loadAsync(url, onProgress) {
+            if (url !== avatarAbsoluteUrl) {
+              return super.loadAsync(url, onProgress);
+            }
+            // Authenticated fetch for the gated avatar asset.
+            const token = tokenFn();
+            const headers = {};
+            if (token) headers["Authorization"] = "Bearer " + token;
+            let response;
+            try {
+              response = await fetchFn(url, { method: "GET", headers, credentials: "omit", cache: "no-store" });
+            } catch (networkError) {
+              diagnosticFn("avatar_fetch_failed", { code: "network_error" });
+              throw networkError;
+            }
+            if (!response.ok) {
+              diagnosticFn("avatar_fetch_failed", { code: "http_" + response.status, httpStatus: response.status });
+              throw Object.assign(
+                new Error("Avatar asset fetch failed: " + response.status),
+                { target: { status: response.status }, status: response.status }
+              );
+            }
+            diagnosticFn("avatar_fetch_pass", {});
+            let buffer;
+            try {
+              buffer = await response.arrayBuffer();
+            } catch (bufferError) {
+              diagnosticFn("avatar_fetch_failed", { code: "buffer_error" });
+              throw bufferError;
+            }
+            // Parse the GLB from the ArrayBuffer; use parseAsync when available.
+            let result;
+            if (typeof this.parseAsync === "function") {
+              result = await this.parseAsync(buffer, "");
+            } else {
+              result = await new Promise((resolve, reject) => {
+                this.parse(buffer, "", resolve, reject);
+              });
+            }
+            diagnosticFn("avatar_parse_pass", {});
+            return result;
+          }
+        };
+      }
+    };
+  }
+
   // Side-view camera preset for exercise previews (applied after avatar is framed).
   function applySideViewCamera(session, preset) {
     if (!session.camera || !session.avatar) return;
@@ -163,12 +245,32 @@
 
         // 3. Create exactly one DisposableMotionSession.
         const env = options.environment || globalScope;
+
+        // In production (no test loader override), resolve the avatar to an
+        // absolute backend URL and wrap the loader so it carries the auth header.
+        // In test mode options.loader is provided and used as-is; runtimeAvatarRecord
+        // keeps the relative URL that test harnesses expect.
+        let sessionLoader = options.loader;
+        let runtimeAvatarRecord = avatarRecord;
+        if (!options.loader) {
+          const avatarAbsoluteUrl = resolveProductAvatarUrl(env);
+          runtimeAvatarRecord = Object.freeze({ ...avatarRecord, assetUrl: avatarAbsoluteUrl });
+          const baseLoader = env.PocketPTShared3DLoader;
+          if (baseLoader) {
+            const tokenFn = () => (env.AuthStateRuntime?.getAuthToken?.() || null);
+            const fetchFn = env.fetch || (typeof fetch !== "undefined" ? fetch : null);
+            if (fetchFn) {
+              sessionLoader = buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, tokenFn, diagnostic, fetchFn);
+            }
+          }
+        }
+
         session = DisposableMotionSession.createMotionSession({
           environment: env,
           importModule: options.importModule,
           probeCapability: options.probeCapability,
           createRenderer: options.createRenderer,
-          loader: options.loader,
+          loader: sessionLoader,
           injectFailure: options.injectFailure,
           onDiagnostic: diagnostic
         });
@@ -186,7 +288,7 @@
         }
 
         // 5. Load avatar.
-        const avatarResult = await session.loadAvatar(avatarRecord);
+        const avatarResult = await session.loadAvatar(runtimeAvatarRecord);
         if (generation !== mountGeneration || disposed) {
           session.dispose();
           session = null;
@@ -288,6 +390,8 @@
     create,
     _productAvatarRecord: PRODUCT_AVATAR_RECORD,
     _productFixtureRecord: PRODUCT_FIXTURE_RECORD,
-    _productStates: PRODUCT_STATES
+    _productStates: PRODUCT_STATES,
+    _resolveProductAvatarUrl: resolveProductAvatarUrl,
+    _buildAuthenticatedProductLoader: buildAuthenticatedProductLoader
   });
 });

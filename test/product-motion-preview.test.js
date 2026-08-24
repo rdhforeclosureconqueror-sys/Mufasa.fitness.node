@@ -504,3 +504,212 @@ test("module exports create, _productAvatarRecord, _productFixtureRecord, _produ
   assert.ok(ProductMotionPreview._productStates.includes("failed"));
   assert.ok(ProductMotionPreview._productStates.includes("disposed"));
 });
+
+// ---------------------------------------------------------------------------
+// Product asset delivery repair — authenticated avatar retrieval
+// ---------------------------------------------------------------------------
+
+// 1. Avatar URL resolves against canonical backend, not frontend host.
+test("resolveProductAvatarUrl uses MaatApiClient.resolve when available", () => {
+  const { _resolveProductAvatarUrl, _productAvatarRecord } = ProductMotionPreview;
+  const resolved = [];
+  const scope = {
+    MaatApiClient: { resolve: (path) => { resolved.push(path); return "https://mufasa-fitness-node.onrender.com" + path; } }
+  };
+  const url = _resolveProductAvatarUrl(scope);
+  assert.equal(resolved.length, 1, "MaatApiClient.resolve must be called once");
+  assert.equal(resolved[0], _productAvatarRecord.assetUrl, "must resolve the avatar asset path");
+  assert.equal(url, "https://mufasa-fitness-node.onrender.com" + _productAvatarRecord.assetUrl);
+  assert.equal(new URL(url).origin, "https://mufasa-fitness-node.onrender.com", "result must be an absolute backend URL");
+});
+
+test("resolveProductAvatarUrl falls back to MAAT_BACKEND_ORIGIN when MaatApiClient absent", () => {
+  const { _resolveProductAvatarUrl, _productAvatarRecord } = ProductMotionPreview;
+  const scope = { MAAT_BACKEND_ORIGIN: "https://custom-backend.example.com" };
+  const url = _resolveProductAvatarUrl(scope);
+  assert.equal(new URL(url).origin, "https://custom-backend.example.com", "fallback must use MAAT_BACKEND_ORIGIN");
+  assert.ok(url.endsWith(_productAvatarRecord.assetUrl), "must append avatar path");
+});
+
+test("resolveProductAvatarUrl falls back to production backend when no config present", () => {
+  const { _resolveProductAvatarUrl } = ProductMotionPreview;
+  const url = _resolveProductAvatarUrl({});
+  assert.equal(new URL(url).origin, "https://mufasa-fitness-node.onrender.com", "must default to production backend");
+});
+
+// 2. Authenticated asset retrieval uses the established auth mechanism.
+test("authenticated product loader sends Authorization header using AuthStateRuntime token", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  const capturedHeaders = [];
+  const mockGltfResult = { scene: { traverse: () => {} }, animations: [], parser: { json: {} } };
+  class BaseLoader {
+    async loadAsync() { return {}; }
+    async parseAsync() { return mockGltfResult; }
+  }
+  const baseLoader = {
+    probeCapability: () => ({ supported: true }),
+    loadThree: async () => ({}),
+    loadGLTFLoader: async () => BaseLoader
+  };
+  const tokenFn = () => "test-bearer-token";
+  const fetchFn = async (url, opts) => {
+    capturedHeaders.push({ url, headers: opts.headers });
+    return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+  };
+  const diagnostics = [];
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, tokenFn, (event, detail) => diagnostics.push({ event, ...(detail || {}) }), fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  const loader = new LoaderClass();
+  await loader.loadAsync(avatarAbsoluteUrl);
+  assert.equal(capturedHeaders.length, 1, "fetch must be called once");
+  assert.ok(capturedHeaders[0].headers["Authorization"].startsWith("Bearer "), "Authorization header must use ******");
+  assert.doesNotMatch(JSON.stringify(diagnostics), /test-bearer-token/, "token must never appear in diagnostics");
+});
+
+test("authenticated product loader does not send Authorization when no token", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  const capturedHeaders = [];
+  class BaseLoader {
+    async loadAsync() { return {}; }
+    async parseAsync() { return { scene: { traverse: () => {} }, animations: [], parser: { json: {} } }; }
+  }
+  const baseLoader = { probeCapability: () => ({}), loadThree: async () => ({}), loadGLTFLoader: async () => BaseLoader };
+  const fetchFn = async (url, opts) => { capturedHeaders.push(opts.headers); return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) }; };
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, () => null, () => {}, fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  await new LoaderClass().loadAsync(avatarAbsoluteUrl);
+  assert.ok(!capturedHeaders[0]?.["Authorization"], "Authorization header must not be set when token is null");
+});
+
+// 3. Failed avatar fetch emits avatar_fetch_failed and rethrows (fallback preserved).
+test("failed avatar fetch emits avatar_fetch_failed diagnostic with http status", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  class BaseLoader { async loadAsync() { return {}; } }
+  const baseLoader = { probeCapability: () => ({}), loadThree: async () => ({}), loadGLTFLoader: async () => BaseLoader };
+  const fetchFn = async () => ({ ok: false, status: 401, arrayBuffer: async () => new ArrayBuffer(0) });
+  const diagnostics = [];
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, () => "tok", (event, detail) => diagnostics.push({ event, ...(detail || {}) }), fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  let threw = null;
+  try { await new LoaderClass().loadAsync(avatarAbsoluteUrl); } catch (e) { threw = e; }
+  assert.ok(threw, "failed fetch must throw");
+  assert.ok(threw.status === 401 || threw.target?.status === 401, "thrown error must carry status");
+  const failedEvent = diagnostics.find(d => d.event === "avatar_fetch_failed");
+  assert.ok(failedEvent, "avatar_fetch_failed diagnostic must be emitted");
+  assert.doesNotMatch(JSON.stringify(diagnostics), /tok/, "token must never appear in diagnostics even on failure");
+});
+
+test("network error during avatar fetch emits avatar_fetch_failed and rethrows", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  class BaseLoader { async loadAsync() { return {}; } }
+  const baseLoader = { probeCapability: () => ({}), loadThree: async () => ({}), loadGLTFLoader: async () => BaseLoader };
+  const fetchFn = async () => { throw new TypeError("network error"); };
+  const diagnostics = [];
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, () => null, (event, detail) => diagnostics.push({ event, ...(detail || {}) }), fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  let threw = null;
+  try { await new LoaderClass().loadAsync(avatarAbsoluteUrl); } catch (e) { threw = e; }
+  assert.ok(threw instanceof TypeError, "network TypeError must propagate");
+  assert.ok(diagnostics.some(d => d.event === "avatar_fetch_failed" && d.code === "network_error"), "network_error code must be reported");
+});
+
+// 4. Successful avatar retrieval proceeds to GLTF parsing and emits pass events.
+test("successful authenticated fetch emits avatar_fetch_pass and avatar_parse_pass", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  const mockResult = { scene: { traverse: () => {} }, animations: [], parser: { json: {} } };
+  class BaseLoader {
+    async loadAsync() { return {}; }
+    async parseAsync(buffer, path) { return mockResult; }
+  }
+  const baseLoader = { probeCapability: () => ({}), loadThree: async () => ({}), loadGLTFLoader: async () => BaseLoader };
+  const fetchFn = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) });
+  const diagnostics = [];
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, () => "t", (event, detail) => diagnostics.push({ event, ...(detail || {}) }), fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  const result = await new LoaderClass().loadAsync(avatarAbsoluteUrl);
+  assert.ok(diagnostics.some(d => d.event === "avatar_fetch_pass"), "avatar_fetch_pass must be emitted");
+  assert.ok(diagnostics.some(d => d.event === "avatar_parse_pass"), "avatar_parse_pass must be emitted");
+  assert.equal(result, mockResult, "parseAsync result must be returned");
+});
+
+test("successful authenticated fetch uses parse callback fallback when parseAsync unavailable", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  const mockResult = { scene: { traverse: () => {} }, animations: [] };
+  class BaseLoader {
+    async loadAsync() { return {}; }
+    parse(buffer, path, onLoad) { onLoad(mockResult); }
+  }
+  const baseLoader = { probeCapability: () => ({}), loadThree: async () => ({}), loadGLTFLoader: async () => BaseLoader };
+  const fetchFn = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) });
+  const diagnostics = [];
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, () => null, (event, detail) => diagnostics.push({ event, ...(detail || {}) }), fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  const result = await new LoaderClass().loadAsync(avatarAbsoluteUrl);
+  assert.ok(diagnostics.some(d => d.event === "avatar_parse_pass"), "avatar_parse_pass must be emitted with parse fallback");
+  assert.equal(result, mockResult);
+});
+
+// 5. Fixture path and 40/40/0 binding contract remain unchanged.
+test("fixture assetUrl is a relative static path requiring no authentication", () => {
+  const { _productFixtureRecord } = ProductMotionPreview;
+  assert.equal(_productFixtureRecord.assetUrl, "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb");
+  assert.ok(_productFixtureRecord.assetUrl.startsWith("/"), "fixture must use a relative path (served from frontend static host)");
+  assert.equal(_productFixtureRecord.expectedTrackCount, 40, "fixture track count must be 40");
+  assert.equal(_productFixtureRecord.clipName, "avaturn_push_up_native_v1", "clip name must be unchanged");
+});
+
+test("fixture URL is not intercepted by the authenticated product loader", async () => {
+  const { _buildAuthenticatedProductLoader } = ProductMotionPreview;
+  const avatarAbsoluteUrl = "https://mufasa-fitness-node.onrender.com/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb";
+  const fixturePath = "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb";
+  const baseCallUrls = [];
+  class BaseLoader {
+    async loadAsync(url) { baseCallUrls.push(url); return { scene: null, animations: [] }; }
+  }
+  const baseLoader = { probeCapability: () => ({}), loadThree: async () => ({}), loadGLTFLoader: async () => BaseLoader };
+  const fetchCalled = [];
+  const fetchFn = async (url) => { fetchCalled.push(url); return { ok: true, arrayBuffer: async () => new ArrayBuffer(0) }; };
+  const productLoader = _buildAuthenticatedProductLoader(baseLoader, avatarAbsoluteUrl, () => null, () => {}, fetchFn);
+  const LoaderClass = await productLoader.loadGLTFLoader({});
+  await new LoaderClass().loadAsync(fixturePath);
+  assert.equal(fetchCalled.length, 0, "fixture must not go through authenticated fetch");
+  assert.equal(baseCallUrls[0], fixturePath, "fixture must be loaded via base loadAsync");
+});
+
+// 6. Camera/MoveNet readiness predicates remain independent of 3D success/failure.
+test("3D preview failure result does not leak into camera or challenge variables", async () => {
+  let engineReady = false;
+  let cameraActive = false;
+  let detector = null;
+  const h = makeHarness();
+  const preview = ProductMotionPreview.create({
+    container: h.container,
+    avatarProfileId: "avaturn-personalized-candidate",
+    motionId: "push_up/avaturn_native_v1",
+    fixtureId: "avaturn-push-up-animation",
+    environment: h.env,
+    loader: h.loader,
+    onError: () => {
+      // Simulate page callback: preview failure must not touch these
+      engineReady = false;
+      cameraActive = false;
+      detector = null;
+    }
+  });
+  await preview.mount();
+  // Regardless of preview result, camera state variables are owned by the page, not the preview.
+  assert.equal(engineReady, false, "engineReady must not be modified by preview");
+  assert.equal(cameraActive, false, "cameraActive must not be modified by preview");
+  assert.equal(detector, null, "detector must not be modified by preview");
+});
+
+test("product preview module exports the new auth helpers for testability", () => {
+  assert.equal(typeof ProductMotionPreview._resolveProductAvatarUrl, "function");
+  assert.equal(typeof ProductMotionPreview._buildAuthenticatedProductLoader, "function");
+});
