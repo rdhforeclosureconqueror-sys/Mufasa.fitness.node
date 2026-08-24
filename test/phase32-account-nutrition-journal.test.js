@@ -261,7 +261,7 @@ test("Phase 32 frontend exposes authenticated nutrition flow and scanner compati
   assert.match(js, /manualBarcode/);
   assert.match(js, /api\/auth\/me/);
   assert.match(html, /runtime-state\.js\?v=20260506/);
-  assert.match(html, /auth-state-runtime\.js\?v=20260824-auth-unified-drawer-v2/);
+  assert.match(html, /auth-state-runtime\.js\?v=20260824-global-nav-production-repair-v3/);
   assert.match(html, /nutrition-runtime\.js\?v=20260718/);
   assert.match(html, /backendOrigin: "https:\/\/mufasa-fitness-node\.onrender\.com"/);
   assert.match(js, /backendUrl\(path\)/);

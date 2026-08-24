@@ -33,9 +33,9 @@ test("role-aware menu matrix hides privileged tools from ordinary memberships",(
   const labels=user=>window.MaatNavigation.getVisibleItems(user?{isAuthenticated:true,user}:{isAuthenticated:false,user:null}).map(item=>item.label);
   const signedOut=labels(),free=labels({role:"user",roles:["user"],accessTier:"free"}),trial=labels({role:"user",roles:["user"],accessTier:"trial_member"}),paid=labels({role:"user",roles:["user"],accessTier:"paid_member"}),trainer=labels({role:"trainer",roles:["trainer"],accessTier:"paid_member"}),admin=labels({role:"admin",roles:["admin","operator"],accessTier:"paid_member"});
   assert.equal(JSON.stringify(signedOut),JSON.stringify(["Home","Exercise Library","Run Club"]));
-  for(const member of [free,trial,paid]){assert.ok(member.includes("Dashboard"));assert.ok(member.includes("Yoga"));assert.ok(!member.includes("Trainer / Coach"));assert.ok(!member.includes("Member CRM"));}
-  assert.ok(trainer.includes("Trainer / Coach"));assert.ok(!trainer.includes("Member CRM"));
-  assert.ok(admin.includes("Trainer / Coach"));assert.ok(admin.includes("Admin Dashboard"));assert.ok(admin.includes("Member CRM"));
+  for(const member of [free,trial,paid]){assert.ok(member.includes("Dashboard"));assert.ok(member.includes("Yoga"));assert.ok(!member.includes("Trainer / Coach"));assert.ok(!member.includes("Client Management"));}
+  assert.ok(trainer.includes("Trainer / Coach"));assert.ok(!trainer.includes("Client Management"));
+  assert.ok(admin.includes("Trainer / Coach"));assert.ok(admin.includes("Admin Dashboard"));assert.ok(admin.includes("Client Management"));
 });
 
 test("global navigation follows auth runtime exactly once and after it on every page",()=>{
@@ -46,7 +46,7 @@ test("global navigation follows auth runtime exactly once and after it on every 
 test("mobile navigation contract is bounded, scrollable, safe-area aware and keyboard operable",()=>{
   const css=fs.readFileSync(path.join(__dirname,"..","public","global-nav.css"),"utf8"),js=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
   assert.match(css,/@media\(max-width:849px\).*\.maat-nav-panel\{position:fixed/);assert.match(css,/width:min\(86vw,360px\)/);assert.match(css,/overflow-y:auto/);assert.match(css,/safe-area-inset-top/);assert.match(css,/safe-area-inset-bottom/);assert.match(css,/\.maat-nav-open\{overflow:hidden;overflow-x:hidden\}/);assert.match(css,/overflow-wrap:anywhere/);
-  assert.match(css,/\.maat-nav-backdrop:not\(\[hidden\]\).*position:fixed/);assert.match(css,/z-index:10002/);assert.match(css,/min-height:4[68]px/);assert.match(js,/aria-expanded/);assert.match(js,/event\.key==="Escape"/);assert.match(js,/backdrop\.onclick/);assert.match(js,/else toggle\.focus\(\)/);
+  assert.match(css,/\.maat-nav-backdrop:not\(\[hidden\]\).*position:fixed/);assert.match(css,/z-index:10002/);assert.match(css,/min-height:4[68]px/);assert.match(js,/aria-expanded/);assert.match(js,/event\.key==="Escape"/);assert.match(js,/document\.addEventListener\("click",onClick\)/);assert.match(js,/else if\(restoreFocus\) toggle\.focus\(\)/);assert.match(js,/__MAAT_GLOBAL_NAV_DIAGNOSTICS__/);assert.match(js,/initializationCount/);
 });
 
 test("auth restoration requires recorded Remember Me consent and reports a redacted source",async()=>{
@@ -60,7 +60,7 @@ test("auth restoration requires recorded Remember Me consent and reports a redac
 });
 
 test("all HTML surfaces pin the production auth and navigation bundle",()=>{
-  const version="20260824-auth-unified-drawer-v2",root=path.join(__dirname,"..","public");
+  const version="20260824-global-nav-production-repair-v3",root=path.join(__dirname,"..","public");
   for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")){const html=fs.readFileSync(path.join(root,file),"utf8");assert.match(html,new RegExp(`auth-state-runtime\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.css\\?v=${version}`),file);}
 });
 
@@ -101,3 +101,12 @@ test("workout mobile drawer remains an overlay at production phone widths",()=>{
 });
 
 test("canonical login resolves the configured API origin and emits no credential diagnostics",()=>{const js=fs.readFileSync(path.join(__dirname,"..","public","login.js"),"utf8");assert.match(js,/MaatApiClient\?\.resolve/);assert.match(js,/MAAT_BACKEND_ORIGIN/);assert.match(js,/__MAAT_LOGIN_DIAGNOSTIC__/);assert.doesNotMatch(js,/report=\{[^}]*password|report=\{[^}]*token/)});
+
+test("admin dashboard and CRM surfaces use the one authoritative destination and canonical auth runtime",()=>{
+ const dashboard=fs.readFileSync(path.join(__dirname,"..","public","dashboard.html"),"utf8"),dashboardJs=fs.readFileSync(path.join(__dirname,"..","public","dashboard.js"),"utf8"),members=fs.readFileSync(path.join(__dirname,"..","public","admin-members.js"),"utf8"),client=fs.readFileSync(path.join(__dirname,"..","public","admin-client.js"),"utf8");
+ assert.match(dashboard,/id="clientManagementCard"[\s\S]*href="\/admin\/members\.html"/);assert.match(dashboardJs,/clientManagementCard\.hidden = !hasObservabilityAccess/);
+ for(const source of [members,client]){assert.match(source,/AuthStateRuntime\?\.getAuthToken/);assert.doesNotMatch(source,/getItem\("authToken"\)/)}
+ assert.match(client,/\/api\/admin\/clients\/\$\{encodeURIComponent\(id\)\}\/conversation/);assert.match(client,/\/api\/me\/conversations\/\$\{c\.id\}\/messages/);
+});
+
+test("navigation repair owns one delegated listener and preserves open state across auth render",()=>{const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");assert.match(source,/if\(initialized\)return/);assert.match(source,/document\.addEventListener\("click",onClick\)/);assert.match(source,/const wasOpen=diagnostics\.state==="open"/);assert.match(source,/if\(wasOpen\)setOpen\(true/);assert.match(source,/menuButtonFound/);assert.match(source,/clickListenerAttached/);});
