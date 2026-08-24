@@ -26,16 +26,19 @@
       this.avatar = null; this.avatarAsset = null; this.avatarProfile = null; this.avatarLoadVersion = 0; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
       this.counted = true; counters.activeSessions++;
     }
+    diagnostic(event, detail = {}) { try { this.options.onDiagnostic?.(Object.freeze({ event, ...detail })); } catch (_) {} }
     addListener(target, type, handler, options) { target?.addEventListener?.(type, handler, options); this.listeners.push([target, type, handler, options]); counters.listeners++; }
     failure(code, cause) { return Object.freeze({ status: "failed", code, cause: cause ? String(cause.message || cause) : null }); }
     async start(container) {
       if (this.state !== "created") return this.failure(this.state === "disposed" ? "session_aborted" : "runtime_failed");
       this.state = "initializing";
       const capability = (this.options.probeCapability || this.loader.probeCapability)(this.env);
-      if (!capability.supported) return this.fail(capability.reason === "webgl_unavailable" ? "unsupported" : capability.reason);
+      if (!capability.supported) { this.diagnostic("preview_capability_failed", { code: capability.reason || "unsupported" }); return this.fail(capability.reason === "webgl_unavailable" ? "unsupported" : capability.reason); }
+      this.diagnostic("capability_pass");
       try {
         const THREE = await this.loader.loadThree({ signal: this.controller.signal, importModule: this.options.importModule });
         this.THREE = THREE;
+        this.diagnostic("three_loaded");
         if (this.controller.signal.aborted || this.state !== "initializing") return this.failure("session_aborted");
         if (this.options.injectFailure === "renderer_init") throw Object.assign(new Error("Injected renderer failure"), { code: "renderer_init_failed" });
         this.renderer = (this.options.createRenderer || (opts => new THREE.WebGLRenderer(opts)))({ antialias: false, alpha: true });
@@ -53,6 +56,7 @@
         this.addListener(this.env, "pagehide", this.onPageHide); this.addListener(this.canvas, "webglcontextlost", this.onContextLost);
         this.addListener(this.canvas, "webglcontextrestored", this.onContextRestored);
         this.resize(container); this.state = "running"; this.startRenderLoop();
+        this.diagnostic("session_started");
         return Object.freeze({ status: "ready", capability });
       } catch (error) {
         if (this.controller.signal.aborted) return this.failure("session_aborted");
@@ -82,17 +86,19 @@
       this.raf = this.env.requestAnimationFrame(frame);
     }
     stopRenderLoop() { if (this.raf !== null) { this.env.cancelAnimationFrame(this.raf); this.raf = null; counters.activeRafs--; } }
-    async loadAsset(path) {
+    async loadAsset(path, kind = "asset") {
       if (this.state !== "running") return this.failure("runtime_failed");
       try {
+        this.diagnostic(kind === "avatar" ? "avatar_fetch_started" : "fixture_fetch_started");
         const Loader = await this.loader.loadGLTFLoader({ signal: this.controller.signal, importModule: this.options.importModule });
+        this.diagnostic("gltf_loader_loaded", { asset: kind });
         const asset = await new Loader().loadAsync(path);
         if (this.controller.signal.aborted) return this.failure("session_aborted");
         return asset;
       } catch (error) {
         if (this.controller.signal.aborted || error?.code === "session_aborted") return this.failure("session_aborted");
         const status = Number(error?.target?.status || error?.status);
-        return this.failure(status === 404 || error?.code === "asset_missing" ? "asset_missing" : error?.code || "asset_load_failed", error);
+        return this.failure(status === 404 || error?.code === "asset_missing" ? "asset_missing" : status >= 400 ? "asset_route_failed" : error?.code || "asset_load_failed", error);
       }
     }
     inspectAvatar(asset, profile) {
@@ -127,12 +133,13 @@
     async loadAvatar(profileOrPath) {
       this.unloadAvatar(); const version = this.avatarLoadVersion, profile = typeof profileOrPath === "string" ? Object.freeze({ avatarId: "legacy-path", source: profileOrPath, assetUrl: profileOrPath }) : profileOrPath;
       if (!profile?.assetUrl || profile.developmentOnly === false) return this.failure("avatar_profile_invalid");
-      const asset = await this.loadAsset(profile.assetUrl); if (asset?.status === "failed") return asset;
+      const asset = await this.loadAsset(profile.assetUrl, "avatar"); if (asset?.status === "failed") return asset;
       if (version !== this.avatarLoadVersion) { this.disposeObjectResources(asset.scene); return this.failure("avatar_load_superseded"); }
       const diagnostics = this.inspectAvatar(asset, profile);
       if (!diagnostics.boneCount || !diagnostics.skinnedMeshCount) { this.disposeObjectResources(asset.scene); return this.failure("avatar_invalid"); }
       this.avatarAsset = asset; this.avatarProfile = profile; this.avatar = asset.scene; this.scene.add(this.avatar); this.mesh.visible = false; const cameraFit = this.frameAvatar(this.avatar);
       this.mixer = new this.THREE.AnimationMixer(this.avatar); this.clock = new this.THREE.Clock();
+      this.diagnostic("avatar_loaded");
       const box = cameraFit ? Object.freeze({ center: cameraFit.center, dimensions: Object.freeze({ ...new this.THREE.Box3().setFromObject(this.avatar).getSize(new this.THREE.Vector3()) }) }) : null;
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...diagnostics, boundingBox: box, cameraFit }) });
     }
@@ -168,13 +175,14 @@
     async loadExtractedAnimation(fixture) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
       if (!fixture?.developmentOnly || this.avatarProfile?.avatarId !== fixture.compatibleAvatarProfile || this.avatarProfile?.skeletonProfile !== fixture.skeletonProfile) return this.failure("retarget_required");
-      const asset = await this.loadAsset(fixture.assetUrl); if (asset?.status === "failed") return asset;
+      const asset = await this.loadAsset(fixture.assetUrl, "fixture"); if (asset?.status === "failed") return asset;
       const clip = asset.animations?.find(candidate => candidate.name === fixture.clipName);
       if (!clip) return this.failure("animation_missing");
       const binding = this.inspectClipBindings(clip), tracks = clip.tracks || [];
       if (!Number.isInteger(fixture.expectedTrackCount) || tracks.length !== fixture.expectedTrackCount) { this.disposeObjectResources(asset.scene); return this.failure("animation_track_count_invalid", `expected ${fixture.expectedTrackCount}, found ${tracks.length}`); }
       if (binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return this.failure("animation_binding_failed", binding.unboundTracks.join(", ")); }
       this.unloadMotion(); this.animationFixture = asset; this.sessionClip = clip; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
+      this.diagnostic("fixture_loaded");
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ motionId: fixture.motionId, fixtureId: fixture.fixtureId,
         skeletonProfile: fixture.skeletonProfile, avatarProfileId: this.avatarProfile.avatarId, animationSource: "extracted-independent-push-up-fixture", bindingMode: "NATIVE",
         clipName: clip.name, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: fixture.expectedTrackCount, ...binding, playbackState: "ready" }) });

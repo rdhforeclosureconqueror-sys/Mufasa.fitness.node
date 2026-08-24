@@ -88,6 +88,7 @@
     const expectedBindings = options.expectedBindings || { intended: 40, bound: 40, unbound: 0 };
     const onStatus = typeof options.onStatus === "function" ? options.onStatus : () => {};
     const onError = typeof options.onError === "function" ? options.onError : () => {};
+    const onDiagnostic = typeof options.onDiagnostic === "function" ? options.onDiagnostic : () => {};
 
     // No rendering, no network side-effects at create time.
     let status = "idle";
@@ -100,6 +101,20 @@
       status = next;
       try { onStatus(next); } catch (_) {}
     }
+    function diagnostic(event, detail = {}) { const entry = typeof event === "object" && event ? event : { event, ...detail }; try { onDiagnostic(Object.freeze(entry)); } catch (_) {} }
+    function failureEvent(code) {
+      if (code === "unsupported" || code === "webgl_unavailable" || code === "required_api_unavailable") return "preview_capability_failed";
+      if (code === "dependency_load_failed" || code === "gltf_loader_failed" || code === "renderer_init_failed") return "preview_dependency_failed";
+      if (code === "asset_missing" || code === "asset_route_failed") return session?.avatar ? "preview_fixture_route_failed" : "preview_avatar_route_failed";
+      if (code === "avatar_invalid" || code === "avatar_load_failed") return "preview_avatar_load_failed";
+      if (code === "animation_missing" || code === "fixture_load_failed") return "preview_fixture_load_failed";
+      if (code === "incompatible_pairing" || code === "retarget_required") return "preview_compatibility_failed";
+      if (code === "animation_track_count_invalid") return "preview_track_count_failed";
+      if (code === "animation_binding_failed" || code === "binding_contract_failed") return "preview_binding_failed";
+      if (code === "runtime_failed" || code === "context_lost") return "preview_render_failed";
+      return "preview_unknown_failed";
+    }
+    diagnostic("preview_created");
 
     function resolveAvatarRecord(profileId) {
       if (profileId === PRODUCT_AVATAR_RECORD.avatarId) return PRODUCT_AVATAR_RECORD;
@@ -112,6 +127,7 @@
     }
 
     async function mount() {
+      diagnostic("preview_mount_started");
       if (disposed) { emitStatus("disposed"); return { ok: false, reason: "disposed" }; }
       if (mounted) return { ok: false, reason: "already_mounted" };
       mounted = true;
@@ -126,11 +142,13 @@
         if (!avatarRecord) {
           throw Object.assign(new Error("Unknown avatar profile: " + avatarProfileId), { code: "unknown_avatar_profile" });
         }
+        diagnostic("avatar_record_resolved");
 
         const fixtureRecord = resolveFixtureRecord(fixtureId, motionId);
         if (!fixtureRecord) {
           throw Object.assign(new Error("Unknown fixture or motion ID: " + fixtureId + " / " + motionId), { code: "unknown_fixture" });
         }
+        diagnostic("fixture_record_resolved");
 
         // 2. Validate compatibility before any network request.
         if (
@@ -151,7 +169,8 @@
           probeCapability: options.probeCapability,
           createRenderer: options.createRenderer,
           loader: options.loader,
-          injectFailure: options.injectFailure
+          injectFailure: options.injectFailure,
+          onDiagnostic: diagnostic
         });
 
         // 4. Start session (attaches canvas, scene, renderer, RAF).
@@ -205,19 +224,23 @@
             { code: "binding_contract_failed" }
           );
         }
+        diagnostic("bindings_valid");
 
         // 8. Apply product-safe side-view camera framing.
         if (cameraPreset === "exercise-side") {
           applySideViewCamera(session, cameraPreset);
+          diagnostic("framing_applied");
         }
 
         // 9. Enable loop and autoplay.
         session.setLoop(loop);
         if (autoplay) {
           session.play();
+          diagnostic("autoplay_started");
         }
 
         emitStatus(autoplay ? "playing" : "ready");
+        diagnostic("preview_ready");
         return { ok: true };
 
       } catch (error) {
@@ -225,6 +248,7 @@
         if (session) { try { session.dispose(); } catch (_) {} session = null; }
         mounted = false;
         emitStatus("failed");
+        diagnostic(failureEvent(error?.code), { code: error?.code || "mount_failed" });
         try { onError(error); } catch (_) {}
         return { ok: false, reason: error?.code || "mount_failed", error };
       }

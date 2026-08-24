@@ -147,6 +147,33 @@ test("create() has no rendering or network side effects", () => {
   assert.equal(preview.getStatus(), "idle");
 });
 
+test("diagnostic trace identifies each successful product preview boundary without asset URLs", async () => {
+  const diagnostics = [];
+  const { preview } = makePreview({}, { onDiagnostic: entry => diagnostics.push(entry) });
+  assert.deepEqual(diagnostics.map(entry => entry.event), ["preview_created"]);
+  assert.equal((await preview.mount()).ok, true);
+  for (const event of ["preview_mount_started", "avatar_record_resolved", "fixture_record_resolved", "capability_pass", "three_loaded", "session_started", "avatar_fetch_started", "avatar_loaded", "fixture_fetch_started", "fixture_loaded", "bindings_valid", "framing_applied", "autoplay_started", "preview_ready"])
+    assert.ok(diagnostics.some(entry => entry.event === event), event);
+  assert.doesNotMatch(JSON.stringify(diagnostics), /\.glb|cookie|token|sessionId/i);
+});
+
+test("diagnostic trace classifies a missing avatar route safely", async () => {
+  const diagnostics = [], h = makeHarness();
+  h.loader.loadGLTFLoader = async () => class { async loadAsync() { throw Object.assign(new Error("404 secret response"), { status: 404 }); } };
+  const preview = ProductMotionPreview.create({ container: h.container, environment: h.env, loader: h.loader, onDiagnostic: entry => diagnostics.push(entry) });
+  assert.equal((await preview.mount()).reason, "asset_missing");
+  assert.deepEqual(diagnostics.at(-1), { event: "preview_avatar_route_failed", code: "asset_missing" });
+  assert.doesNotMatch(JSON.stringify(diagnostics), /secret response/);
+});
+
+test("diagnostic trace classifies an unauthorized avatar response as a route failure", async () => {
+  const diagnostics = [], h = makeHarness();
+  h.loader.loadGLTFLoader = async () => class { async loadAsync() { throw Object.assign(new Error("unauthorized"), { status: 401 }); } };
+  const preview = ProductMotionPreview.create({ container: h.container, environment: h.env, loader: h.loader, onDiagnostic: entry => diagnostics.push(entry) });
+  assert.equal((await preview.mount()).reason, "asset_route_failed");
+  assert.deepEqual(diagnostics.at(-1), { event: "preview_avatar_route_failed", code: "asset_route_failed" });
+});
+
 // ---------------------------------------------------------------------------
 // 2. mount() initializes successfully
 // ---------------------------------------------------------------------------
