@@ -1338,7 +1338,7 @@ function createApp(options = {}) {
   // Product-safe member-gated route: serves the push-up avatar for authenticated members.
   // The push-up challenge page is public, but the 3D avatar preview requires auth.
   // Unauthenticated users fall back to the stick-figure instructional preview.
-  app.get("/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb", requireAuth, (req, res) => {
+  app.get("/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb", requireAuth, createRateLimiter({ name: "push-up-avatar-asset", max: 30, windowMs: 60_000 }), (req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.sendFile(path.join(rootDir, "exercise-generation", "source-assets", "avaturn", "avaturn-push-up-source.glb"));
   });
