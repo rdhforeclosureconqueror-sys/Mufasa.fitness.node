@@ -47,8 +47,11 @@
         this.scene.add(new THREE.HemisphereLight(0xf4f7f5, 0x26352f, 1.15));
         const keyLight = new THREE.DirectionalLight(0xffffff, 1.65); keyLight.position.set(3, 5, 4); this.scene.add(keyLight);
         const fillLight = new THREE.DirectionalLight(0xb9d8ff, 0.55); fillLight.position.set(-4, 2, 3); this.scene.add(fillLight);
-        const geometry = new THREE.BoxGeometry(1, 1, 1), material = new THREE.MeshBasicMaterial({ color: 0x35c98b });
-        this.mesh = new THREE.Mesh(geometry, material); this.scene.add(this.mesh);
+        // Diagnostic sessions may retain the legacy probe; product previews opt out.
+        if (this.options.showProbe !== false) {
+          const geometry = new THREE.BoxGeometry(1, 1, 1), material = new THREE.MeshBasicMaterial({ color: 0x35c98b });
+          this.mesh = new THREE.Mesh(geometry, material); this.scene.add(this.mesh);
+        }
         this.onResize = () => this.resize(container); this.onVisibility = () => this.env.document.hidden ? this.stopRenderLoop() : this.startRenderLoop();
         this.onPageHide = () => this.dispose(); this.onContextLost = event => { event?.preventDefault?.(); this.fail("context_lost"); };
         this.onContextRestored = () => {}; // Context loss is terminal in Phase C; a new session is the safe recovery path.
@@ -78,7 +81,7 @@
         try {
           if (this.options.injectFailure === "runtime") throw new Error("Injected runtime failure");
           if (this.avatar) this.mixer?.update?.(Math.min(0.1, this.clock?.getDelta?.() || 0));
-          else this.mesh.rotation.y += 0.01;
+          else if (this.mesh) this.mesh.rotation.y += 0.01;
           this.options.onFrame?.(this);
           this.renderer.render(this.scene, this.camera); this.raf = this.env.requestAnimationFrame(frame);
         } catch (error) { this.fail("runtime_failed", error); }
@@ -137,7 +140,7 @@
       if (version !== this.avatarLoadVersion) { this.disposeObjectResources(asset.scene); return this.failure("avatar_load_superseded"); }
       const diagnostics = this.inspectAvatar(asset, profile);
       if (!diagnostics.boneCount || !diagnostics.skinnedMeshCount) { this.disposeObjectResources(asset.scene); return this.failure("avatar_invalid"); }
-      this.avatarAsset = asset; this.avatarProfile = profile; this.avatar = asset.scene; this.scene.add(this.avatar); this.mesh.visible = false; const cameraFit = this.frameAvatar(this.avatar);
+      this.avatarAsset = asset; this.avatarProfile = profile; this.avatar = asset.scene; this.scene.add(this.avatar); if (this.mesh) this.mesh.visible = false; const cameraFit = this.frameAvatar(this.avatar);
       this.mixer = new this.THREE.AnimationMixer(this.avatar); this.clock = new this.THREE.Clock();
       this.diagnostic("avatar_loaded");
       const box = cameraFit ? Object.freeze({ center: cameraFit.center, dimensions: Object.freeze({ ...new this.THREE.Box3().setFromObject(this.avatar).getSize(new this.THREE.Vector3()) }) }) : null;

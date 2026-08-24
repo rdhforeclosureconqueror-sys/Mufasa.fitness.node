@@ -1,9 +1,10 @@
 (function (root, factory) {
   const session = typeof module === "object" && module.exports ? require("./disposable-motion-session") : root.PocketPTDisposableMotionSession;
-  const api = factory(session, root);
+  const camera = typeof module === "object" && module.exports ? require("./product-motion-camera") : root.ProductMotionCamera;
+  const api = factory(session, camera, root);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.ProductMotionPreview = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, globalScope) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, ProductMotionCamera, globalScope) {
   "use strict";
 
   // ---------------------------------------------------------------------------
@@ -121,38 +122,6 @@
     };
   }
 
-  // Side-view camera preset for exercise previews (applied after avatar is framed).
-  function applySideViewCamera(session, preset) {
-    if (!session.camera || !session.avatar) return;
-    try {
-      const THREE = session.THREE;
-      if (!THREE) return;
-      // Re-derive bounding box and place camera at the right side, slightly elevated.
-      const bounds = new THREE.Box3().setFromObject(session.avatar);
-      const size = bounds.getSize(new THREE.Vector3());
-      const center = bounds.getCenter(new THREE.Vector3());
-      if (!Number.isFinite(size.y) || size.y <= 0) return;
-      const fovRad = (session.camera.fov || 50) * Math.PI / 180;
-      const aspect = session.camera.aspect || 1;
-      const vertDist = (size.y / 2) / Math.tan(fovRad / 2);
-      const horizDist = (size.x / 2) / (Math.tan(fovRad / 2) * aspect);
-      const distance = Math.max(vertDist, horizDist) * 1.3;
-      // Position camera at right side, slightly elevated.
-      const elevationRatio = 0.15;
-      session.camera.position.set(
-        center.x + distance,
-        center.y + size.y * elevationRatio,
-        center.z
-      );
-      session.camera.near = Math.max(0.01, distance * 0.1);
-      session.camera.far = Math.max(distance * 4, 10);
-      session.camera.lookAt(center.x, center.y, center.z);
-      session.camera.updateProjectionMatrix();
-    } catch (_) {
-      // Non-fatal: avatar will remain visible with default framing.
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // ProductMotionPreview
   // ---------------------------------------------------------------------------
@@ -175,6 +144,7 @@
     // No rendering, no network side-effects at create time.
     let status = "idle";
     let session = null;
+    let viewController = null;
     let mountGeneration = 0;
     let mounted = false;
     let disposed = false;
@@ -271,6 +241,7 @@
           probeCapability: options.probeCapability,
           createRenderer: options.createRenderer,
           loader: sessionLoader,
+          showProbe: false,
           injectFailure: options.injectFailure,
           onDiagnostic: diagnostic
         });
@@ -328,11 +299,11 @@
         }
         diagnostic("bindings_valid");
 
-        // 8. Apply product-safe side-view camera framing.
-        if (cameraPreset === "exercise-side") {
-          applySideViewCamera(session, cameraPreset);
-          diagnostic("framing_applied");
-        }
+        // 8. Sample the complete clip once and orbit around its world-space envelope.
+        const animatedBounds = ProductMotionCamera.sampleAnimatedBounds(session, { samples: options.boundsSamples || 17 });
+        viewController = ProductMotionCamera.createViewController({ session, bounds: animatedBounds, initialPreset: cameraPreset === "exercise-side" ? "side" : cameraPreset, environment: env });
+        diagnostic("animated_bounds_sampled", { sampleCount: animatedBounds.sampleCount });
+        diagnostic("framing_applied");
 
         // 9. Enable loop and autoplay.
         session.setLoop(loop);
@@ -347,6 +318,7 @@
 
       } catch (error) {
         if (generation !== mountGeneration || disposed) return { ok: false, reason: "superseded" };
+        if (viewController) { try { viewController.dispose(); } catch (_) {} viewController = null; }
         if (session) { try { session.dispose(); } catch (_) {} session = null; }
         mounted = false;
         emitStatus("failed");
@@ -371,18 +343,22 @@
       try { session.play(); emitStatus("playing"); } catch (_) {}
     }
 
+    function setView(preset) { return !disposed && viewController ? viewController.setPreset(preset) : false; }
+    function resetView() { return !disposed && viewController ? viewController.reset() : false; }
+
     function dispose() {
       if (disposed) return;
       disposed = true;
       mounted = false;
       mountGeneration++;
+      if (viewController) { try { viewController.dispose(); } catch (_) {} viewController = null; }
       if (session) { try { session.dispose(); } catch (_) {} session = null; }
       emitStatus("disposed");
     }
 
     function getStatus() { return status; }
 
-    return Object.freeze({ mount, play, pause, resume, dispose, getStatus });
+    return Object.freeze({ mount, play, pause, resume, setView, resetView, dispose, getStatus });
   }
 
   // Expose internals for testing only.
