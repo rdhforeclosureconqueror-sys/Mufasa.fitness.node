@@ -27,6 +27,8 @@ test('PoseCaptureEngine reuses a bootstrapped detector rather than creating a se
 
 test('browser bootstrap waits for dependencies and detector before enabling camera',async()=>{const source=fs.readFileSync(path.join(ROOT,'public/push-up-challenge-page.js'),'utf8');assert.match(source,/await global\.__ensurePoseRuntime\(\)[\s\S]+await global\.tf\.ready\(\)[\s\S]+global\.poseDetection[\s\S]+await global\.PoseRuntime\.initMoveNetDetector/);assert.match(source,/if\(!engineReady\|\|!detector\|\|!cameraActive\|\|!sideConfirmed\.checked\)/);assert.match(source,/NotAllowedError[\s\S]+NotFoundError[\s\S]+does not support camera capture/);assert.match(source,/INSECURE_CONTEXT/);assert.match(source,/retryBtn\.onclick=initializePoseEngine/)});
 
+test('product preview and camera expose bounded safe diagnostic milestones',()=>{const source=fs.readFileSync(path.join(ROOT,'public/push-up-challenge-page.js'),'utf8');for(const event of ['camera_request_started','camera_permission_granted','camera_stream_ready','pose_runtime_started','pose_model_ready','camera_frame_loop_started','camera_failed_'])assert.match(source,new RegExp(event));assert.match(source,/trace\.length>100/);assert.doesNotMatch(source,/diagnostic\([^\n]+auth|diagnostic\([^\n]+cookie|diagnostic\([^\n]+token/i)});
+
 test('shared dependency loader clears failed promises so Retry can load again',()=>{const source=fs.readFileSync(path.join(ROOT,'public/runtime-state.js'),'utf8');assert.match(source,/task\.catch\(\(\) => lazyScriptCache\.delete\(src\)\)/);assert.match(source,/poseRuntimePromise = null;[\s\S]+throw error/)});
 
 test('camera controller prefers saved exact camera, enumerates, mirrors front, and stops old tracks on switch',async()=>{
