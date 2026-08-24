@@ -1,6 +1,9 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
 const ProductMotionPreview = require("../public/motion/product-motion-preview");
 
 // ---------------------------------------------------------------------------
@@ -108,6 +111,21 @@ function makePreview(harnessOpts = {}, previewOpts = {}) {
   return { h, container, preview, statuses, errors };
 }
 
+function loadBrowserMotionRuntime() {
+  const files = [
+    "../public/motion/shared3d-loader.js",
+    "../public/motion/disposable-motion-session.js",
+    "../public/motion/product-motion-preview.js"
+  ];
+  const window = {};
+  const context = vm.createContext({ window, globalThis: window, self: window, console, AbortController, setTimeout, clearTimeout });
+  for (const file of files) {
+    const source = fs.readFileSync(path.join(__dirname, file), "utf8");
+    vm.runInContext(source, context, { filename: file });
+  }
+  return window;
+}
+
 // ---------------------------------------------------------------------------
 // 1. create() has no network/render side effects
 // ---------------------------------------------------------------------------
@@ -136,6 +154,36 @@ test("mount() initializes and reaches playing status", async () => {
   const { preview, statuses } = makePreview();
   const result = await preview.mount();
   assert.equal(result.ok, true);
+  assert.equal(statuses.at(-1), "playing");
+});
+
+test("browser globals initialize in dependency order", () => {
+  const browser = loadBrowserMotionRuntime();
+  assert.equal(typeof browser.PocketPTShared3DLoader?.loadThree, "function");
+  assert.equal(typeof browser.PocketPTDisposableMotionSession?.createMotionSession, "function");
+  assert.equal(typeof browser.ProductMotionPreview?.create, "function");
+});
+
+test("browser global ProductMotionPreview mounts when runtime dependencies are already loaded", async () => {
+  const browser = loadBrowserMotionRuntime();
+  const { h, statuses, errors } = makePreview();
+  const preview = browser.ProductMotionPreview.create({
+    container: h.container,
+    avatarProfileId: "avaturn-personalized-candidate",
+    motionId: "push_up/avaturn_native_v1",
+    fixtureId: "avaturn-push-up-animation",
+    autoplay: true,
+    loop: true,
+    cameraPreset: "exercise-side",
+    expectedBindings: { intended: 40, bound: 40, unbound: 0 },
+    environment: h.env,
+    loader: h.loader,
+    onStatus: s => statuses.push(s),
+    onError: e => errors.push(e)
+  });
+  const result = await preview.mount();
+  assert.equal(result.ok, true);
+  assert.equal(errors.length, 0);
   assert.equal(statuses.at(-1), "playing");
 });
 
