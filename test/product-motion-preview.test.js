@@ -157,11 +157,15 @@ test("mount() initializes and reaches playing status", async () => {
   assert.equal(statuses.at(-1), "playing");
 });
 
-test("browser globals initialize in dependency order and the browser preview mount succeeds", async () => {
+test("browser globals initialize in dependency order", () => {
   const browser = loadBrowserMotionRuntime();
   assert.equal(typeof browser.PocketPTShared3DLoader?.loadThree, "function");
   assert.equal(typeof browser.PocketPTDisposableMotionSession?.createMotionSession, "function");
   assert.equal(typeof browser.ProductMotionPreview?.create, "function");
+});
+
+test("browser global ProductMotionPreview mounts when runtime dependencies are already loaded", async () => {
+  const browser = loadBrowserMotionRuntime();
   const { h, statuses, errors } = makePreview();
   const preview = browser.ProductMotionPreview.create({
     container: h.container,
