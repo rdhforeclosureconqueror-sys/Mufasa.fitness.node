@@ -20,12 +20,12 @@ function makeTHREE() {
   class Light extends Object3D { constructor(){super();this.position=new Vector3();} }
   class HemisphereLight extends Light {}
   class DirectionalLight extends Light {}
-  class Box3 { setFromObject(root){this.root=root;return this;} getSize(out){return Object.assign(out,{x:1.5,y:1.0,z:0.5});} getCenter(out){return Object.assign(out,{x:0,y:0.5,z:0});} }
+  class Box3 { constructor(){this.min={x:-.75,y:0,z:-.25};this.max={x:.75,y:1,z:.25};} setFromObject(root){this.root=root;return this;} getSize(out){return Object.assign(out,{x:1.5,y:1.0,z:0.5});} getCenter(out){return Object.assign(out,{x:0,y:0.5,z:0});} }
   class BoxGeometry extends Disposable {}
   class MeshBasicMaterial extends Disposable {}
   class Mesh { constructor(g,m){this.geometry=g;this.material=m;this.rotation={y:0};this.visible=true;} }
   class Clock { getDelta(){return 0.016;} }
-  class AnimationMixer { constructor(root){this.root=root;} clipAction(clip){const a={clip,paused:false,loopMode:null,loopCount:null,play(){this.playing=true;return this;},stop(){},reset(){return this;},setLoop(mode,count){this.loopMode=mode;this.loopCount=count;},isRunning(){return this.playing&&!this.paused;}};return a;} update(){} stopAllAction(){} }
+  class AnimationMixer { constructor(root){this.root=root;} clipAction(clip){const a={clip,time:0,paused:false,loopMode:null,loopCount:null,play(){this.playing=true;return this;},stop(){},reset(){this.time=0;return this;},setLoop(mode,count){this.loopMode=mode;this.loopCount=count;},isRunning(){return this.playing&&!this.paused;}};this.action=a;return a;} setTime(time){if(this.action)this.action.time=time;} update(){} stopAllAction(){} }
   class WebGLRenderer extends Disposable { constructor(){super();this.domElement=Object.assign(new Object3D(),{addEventListener(){},removeEventListener(){}});} setPixelRatio(){} setSize(){} render(){} forceContextLoss(){} }
   const PropertyBinding = { parseTrackName(name){const dot=name.lastIndexOf(".");return{nodeName:name.slice(0,dot),propertyName:name.slice(dot+1)};}, findNode(root,name){let found=null;root?.traverse?.(o=>{if(o.name===name)found=o;});return found;}, sanitizeNodeName(n){return n;} };
   return { Scene, Object3D, PerspectiveCamera, Color, HemisphereLight, DirectionalLight, Box3, Vector3, BoxGeometry, MeshBasicMaterial, Mesh, WebGLRenderer, AnimationMixer, Clock, LoopRepeat:"repeat", LoopOnce:"once", PropertyBinding };
@@ -115,6 +115,7 @@ function loadBrowserMotionRuntime() {
   const files = [
     "../public/motion/shared3d-loader.js",
     "../public/motion/disposable-motion-session.js",
+    "../public/motion/product-motion-camera.js",
     "../public/motion/product-motion-preview.js"
   ];
   const window = {};
@@ -474,11 +475,11 @@ test("preview failure does not modify any camera/challenge-related variables", a
 // ---------------------------------------------------------------------------
 // 16. Practice/Challenge readiness logic unchanged (structural test)
 // ---------------------------------------------------------------------------
-test("getStatus() is the only status surface exposed; no camera or challenge fields leaked", () => {
+test("public preview surface exposes only playback and product view controls", () => {
   const h = makeHarness();
   const preview = ProductMotionPreview.create({ container: h.container, environment: h.env, loader: h.loader });
   const keys = Object.keys(preview);
-  assert.deepEqual(keys.sort(), ["dispose", "getStatus", "mount", "pause", "play", "resume"].sort());
+  assert.deepEqual(keys.sort(), ["dispose", "getStatus", "mount", "pause", "play", "resetView", "resume", "setView"].sort());
 });
 
 // ---------------------------------------------------------------------------
