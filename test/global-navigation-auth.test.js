@@ -45,8 +45,23 @@ test("global navigation follows auth runtime exactly once and after it on every 
 
 test("mobile navigation contract is bounded, scrollable, safe-area aware and keyboard operable",()=>{
   const css=fs.readFileSync(path.join(__dirname,"..","public","global-nav.css"),"utf8"),js=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
-  assert.match(css,/max-width:100%/);assert.match(css,/max-height:min\(76vh/);assert.match(css,/overflow-y:auto/);assert.match(css,/safe-area-inset-top/);assert.match(css,/safe-area-inset-bottom/);assert.match(css,/\.maat-nav-open\{overflow:hidden\}/);assert.match(css,/overflow-wrap:anywhere/);
-  assert.match(css,/min-height:4[68]px/);assert.match(js,/aria-expanded/);assert.match(js,/event\.key==="Escape"/);assert.match(js,/\.focus\(\)/);
+  assert.match(css,/@media\(max-width:849px\).*\.maat-nav-panel\{position:fixed/);assert.match(css,/width:min\(86vw,360px\)/);assert.match(css,/overflow-y:auto/);assert.match(css,/safe-area-inset-top/);assert.match(css,/safe-area-inset-bottom/);assert.match(css,/\.maat-nav-open\{overflow:hidden;overflow-x:hidden\}/);assert.match(css,/overflow-wrap:anywhere/);
+  assert.match(css,/\.maat-nav-backdrop:not\(\[hidden\]\).*position:fixed/);assert.match(css,/z-index:10002/);assert.match(css,/min-height:4[68]px/);assert.match(js,/aria-expanded/);assert.match(js,/event\.key==="Escape"/);assert.match(js,/backdrop\.onclick/);assert.match(js,/else toggle\.focus\(\)/);
+});
+
+test("auth restoration requires recorded Remember Me consent and reports a redacted source",async()=>{
+  const vm=require("node:vm"),localMap=new Map(),makeStorage=map=>({get length(){return map.size},key:index=>[...map.keys()][index]??null,getItem:key=>map.get(key)??null,setItem:(key,value)=>map.set(key,String(value)),removeItem:key=>map.delete(key)});
+  const token=`${Buffer.from("{}").toString("base64url")}.${Buffer.from(JSON.stringify({exp:Math.floor(Date.now()/1000)+3600})).toString("base64url")}.signature`;
+  const boot=(sessionMap=new Map())=>{const window={localStorage:makeStorage(localMap),sessionStorage:makeStorage(sessionMap),location:{origin:"https://example.test",pathname:"/workout.html",assign(){}},setTimeout,atob:value=>Buffer.from(value,"base64").toString("binary"),CustomEvent:class{constructor(type,{detail}={}){this.type=type;this.detail=detail}},dispatchEvent(){},addEventListener(){},fetch:async()=>({ok:true,status:200,headers:{get(){return null}},json:async()=>({ok:true,user:{id:"member",email:"member@example.test"}})})};window.window=window;vm.runInNewContext(fs.readFileSync(path.join(__dirname,"..","public","auth-state-runtime.js"),"utf8"),{window,globalThis:window,console,Date,JSON,Promise,Buffer});return window};
+  let session=new Map(),window=boot(session);await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:false});assert.equal(window.AuthStateRuntime.storageInspection().source,"sessionStorage");
+  window=boot(new Map());await new Promise(resolve=>setTimeout(resolve,0));assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,false);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"none");
+  await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:true});window=boot(new Map());await window.AuthStateRuntime.whenReady();assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"localStorage");assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rememberMeConsent,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.bundle,"20260824-auth-mobile-followup-v1");
+  localMap.set("maatAuthToken",token);localMap.delete("maatAuthPersistence");window=boot(new Map());await new Promise(resolve=>setTimeout(resolve,0));assert.equal(window.AuthStateRuntime.getStoredToken(),null);assert.equal(localMap.has("maatAuthToken"),false);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rejectedUnconsentedLocalToken,true);
+});
+
+test("all HTML surfaces pin the production auth and navigation bundle",()=>{
+  const version="20260824-auth-mobile-followup-v1",root=path.join(__dirname,"..","public");
+  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html"))){const html=fs.readFileSync(path.join(root,file),"utf8");assert.match(html,new RegExp(`auth-state-runtime\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.css\\?v=${version}`),file);}
 });
 
 test("Account A can logout, Account B remains isolated, and Account A can return",async t=>{

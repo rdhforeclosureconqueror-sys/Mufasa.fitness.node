@@ -29,7 +29,7 @@ function browser({ status = 200, localBehavior, pathname = "/greatness.html" } =
 
 test("valid token persists, validates on auth me 200, and remains for Greatness", async () => {
   const page = browser();
-  const persisted = await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } }, { reason: "test-login" });
+  const persisted = await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } }, { reason: "test-login", rememberMe: true });
   assert.equal(persisted.ok, true);
   const validation = await page.window.AuthStateRuntime.refreshAuthStatus({ token, reason: "login-page" });
   assert.equal(validation.ok, true);
@@ -38,7 +38,7 @@ test("valid token persists, validates on auth me 200, and remains for Greatness"
 
 test("login-issued token rejected by auth me 401 is cleared and attributed", async () => {
   const page = browser({ status: 401, pathname: "/run-club-login.html" });
-  await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } });
+  await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } }, { rememberMe: true });
   assert.equal((await page.window.AuthStateRuntime.refreshAuthStatus({ token, reason: "login-page" })).reason, "invalid_session");
   assert.equal(page.localStorage.getItem("maatAuthToken"), null);
   assert.match(page.window.AuthStateRuntime.readLifecycle().tokenClearedBy, /refreshAuthStatus\/login-page:invalid_session/);
@@ -46,7 +46,7 @@ test("login-issued token rejected by auth me 401 is cleared and attributed", asy
 
 test("token cleared during navigation records the responsible file, function, and reason", async () => {
   const page = browser();
-  await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } });
+  await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } }, { rememberMe: true });
   page.window.AuthStateRuntime.clearCanonicalAuthState("navigation-test", { file: "public/navigation-test.js", function: "bootstrap" });
   const trace = page.window.AuthStateRuntime.readLifecycle();
   assert.equal(page.localStorage.getItem("maatAuthToken"), null);
@@ -55,12 +55,12 @@ test("token cleared during navigation records the responsible file, function, an
 });
 
 for (const [name, behavior] of [["persistence write failure", { writeFailure: true }], ["persistence read-back mismatch", { readMismatch: true }]]) {
-  test(name, async () => assert.equal((await browser({ localBehavior: behavior }).window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } })).ok, false));
+  test(name, async () => assert.equal((await browser({ localBehavior: behavior }).window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } }, { rememberMe: true })).ok, false));
 }
 
 test("Safari pageshow restores while a same-value storage event does not clear auth", async () => {
   const page = browser({ pathname: "/greatness.html" });
-  await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } });
+  await page.window.AuthStateRuntime.persistCanonicalAuthState({ token, user: { id: "member-1" } }, { rememberMe: true });
   page.listeners.pageshow({ persisted: true });
   page.listeners.storage({ key: "maatAuthToken", oldValue: token, newValue: token });
   await new Promise(resolve => setTimeout(resolve, 0));

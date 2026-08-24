@@ -1,5 +1,7 @@
 (function installGlobalNavigation(global) {
   "use strict";
+  const FRONTEND_BUILD="20260824-auth-mobile-followup-v1";
+  global.__MAAT_ASSET_VERSIONS__=Object.assign(global.__MAAT_ASSET_VERSIONS__||{}, {"global-nav.js":FRONTEND_BUILD});
   const NAV_ITEMS = Object.freeze([
     {id:"home",label:"Home",href:"/index.html",section:"Main",auth:"public"},
     {id:"dashboard",label:"Dashboard",href:"/dashboard.html",section:"Main",auth:"member"},
@@ -34,11 +36,12 @@
     const links=[...grouped].map(([section,items])=>`<section class="maat-nav-section"><h2>${section}</h2><div class="maat-nav-links">${items.map(item=>`<a class="maat-nav-link" href="${item.href}"${current===item.href.split("#")[0]?" aria-current=\"page\"":""}>${item.label}${item.premium&&state.user?.accessTier==="free"?'<span class="maat-nav-lock">Upgrade</span>':""}</a>`).join("")}</div></section>`).join("");
     const identity=state.isAuthenticated?`<div class="maat-nav-identity"><strong>${escapeHtml(state.user?.name||state.user?.email||"Signed in")}</strong><br><small>${escapeHtml(state.user?.email||"")}${state.user?.role?` · ${escapeHtml(state.user.role)}`:""}</small></div>`:"";
     const account=state.isAuthenticated?'<button class="maat-nav-signout" type="button" data-maat-signout>Sign Out</button>':'<a class="maat-nav-link" href="/login.html">Sign In</a><a class="maat-nav-link" href="/login.html?mode=register">Create Account</a>';
-    header.innerHTML=`<div class="maat-nav-bar"><a class="maat-nav-brand" href="/index.html">Pocket PT</a><span class="maat-nav-context">${escapeHtml(document.title.split("·")[0].split("|")[0].trim())}</span><button class="maat-nav-toggle" type="button" aria-expanded="false" aria-controls="maatNavPanel" aria-label="Open navigation menu">Menu</button></div><nav id="maatNavPanel" class="maat-nav-panel" aria-label="Global navigation" hidden>${identity}${links}<section class="maat-nav-section"><h2>Account</h2><div class="maat-nav-links">${account}</div></section><p class="maat-nav-status" role="status" aria-live="polite"></p></nav>`;
-    const toggle=header.querySelector(".maat-nav-toggle"),panel=header.querySelector(".maat-nav-panel");
-    const setOpen=open=>{panel.hidden=!open;document.body.classList.toggle("maat-nav-open",open);toggle.setAttribute("aria-expanded",String(open));toggle.setAttribute("aria-label",open?"Close navigation menu":"Open navigation menu");if(open)panel.querySelector("a,button")?.focus()};
+    header.innerHTML=`<div class="maat-nav-bar"><a class="maat-nav-brand" href="/index.html">Pocket PT</a><span class="maat-nav-context">${escapeHtml(document.title.split("·")[0].split("|")[0].trim())}</span><button class="maat-nav-toggle" type="button" aria-expanded="false" aria-controls="maatNavPanel" aria-label="Open navigation menu">Menu</button></div><button class="maat-nav-backdrop" type="button" aria-label="Close navigation menu" hidden></button><nav id="maatNavPanel" class="maat-nav-panel" aria-label="Global navigation" data-frontend-build="${FRONTEND_BUILD}" hidden>${identity}${links}<section class="maat-nav-section"><h2>Account</h2><div class="maat-nav-links">${account}</div></section><p class="maat-nav-status" role="status" aria-live="polite"></p></nav>`;
+    const toggle=header.querySelector(".maat-nav-toggle"),panel=header.querySelector(".maat-nav-panel"),backdrop=header.querySelector(".maat-nav-backdrop");
+    const setOpen=open=>{panel.hidden=!open;backdrop.hidden=!open;document.body.classList.toggle("maat-nav-open",open);toggle.setAttribute("aria-expanded",String(open));toggle.setAttribute("aria-label",open?"Close navigation menu":"Open navigation menu");if(open)panel.querySelector("a,button")?.focus();else toggle.focus()};
     toggle.onclick=()=>setOpen(panel.hidden);
-    header.onkeydown=event=>{if(event.key==="Escape"&&!panel.hidden){setOpen(false);toggle.focus()}};
+    backdrop.onclick=()=>setOpen(false);
+    header.onkeydown=event=>{if(event.key==="Escape"&&!panel.hidden)setOpen(false)};
     header.querySelector("[data-maat-signout]")?.addEventListener("click",async event=>{event.currentTarget.disabled=true;header.querySelector(".maat-nav-status").textContent="Signing out…";await runtime.logout({redirectTo:"/login.html?signedOut=1"})});
   }
   async function boot(){render();if(global.AuthStateRuntime?.whenReady)await global.AuthStateRuntime.whenReady().catch(()=>{});render()}
