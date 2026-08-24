@@ -213,7 +213,9 @@
           );
         }
 
-        // 3. Create exactly one DisposableMotionSession.
+        // 3. Create exactly one DisposableMotionSession with an authenticated loader.
+        // The product loader intercepts the member-gated avatar URL and fetches it
+        // using the bearer token from AuthStateRuntime before parsing via GLTFLoader.
         const env = options.environment || globalScope;
 
         // In production (no test loader override), resolve the avatar to an
