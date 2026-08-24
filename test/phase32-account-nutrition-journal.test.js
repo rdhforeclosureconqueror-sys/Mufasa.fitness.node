@@ -202,7 +202,7 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
   }
 
   const canonicalToken = validToken("canonical");
-  const canonical = await runNutritionRuntime({ stored: { maatAuthToken: canonicalToken } });
+  const canonical = await runNutritionRuntime({ stored: { maatAuthToken: canonicalToken, maatAuthPersistence: "persistent" } });
   assert.equal(canonical.requests[0].path, "https://mufasa-fitness-node.onrender.com/api/auth/me");
   assert.equal(canonical.requests[0].options.headers.authorization, `Bearer ${canonicalToken}`);
   assert.equal(canonical.elements.get("journalShell").hidden, false);
@@ -218,26 +218,26 @@ test("Phase 32 nutrition runtime restores canonical maatAuthToken and preserves 
   assert.equal(missing.elements.get("journalShell").hidden, true);
 
   const invalidToken = validToken("invalid-backend");
-  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: invalidToken }, authMeOk: false, authMeStatus: 401 });
+  const invalid = await runNutritionRuntime({ stored: { maatAuthToken: invalidToken, maatAuthPersistence: "persistent" }, authMeOk: false, authMeStatus: 401 });
   assert.equal(invalid.requests[0].options.headers.authorization, `Bearer ${invalidToken}`);
   assert.equal(invalid.elements.get("authWall").hidden, false);
   assert.equal(invalid.elements.get("journalShell").hidden, true);
   assert.equal(invalid.stored.maatAuthToken, undefined);
 
   const unavailableToken = validToken("unavailable");
-  const unavailable = await runNutritionRuntime({ stored: { maatAuthToken: unavailableToken }, authMeOk: false, authMeStatus: 503 });
+  const unavailable = await runNutritionRuntime({ stored: { maatAuthToken: unavailableToken, maatAuthPersistence: "persistent" }, authMeOk: false, authMeStatus: 503 });
   assert.equal(unavailable.elements.get("authWall").hidden, true);
   assert.equal(unavailable.elements.get("journalShell").hidden, true);
   assert.equal(unavailable.elements.get("sessionStatus").hidden, false);
   assert.equal(unavailable.stored.maatAuthToken, unavailableToken);
 
   const networkToken = validToken("network");
-  const networkError = await runNutritionRuntime({ stored: { maatAuthToken: networkToken }, authMeThrows: true });
+  const networkError = await runNutritionRuntime({ stored: { maatAuthToken: networkToken, maatAuthPersistence: "persistent" }, authMeThrows: true });
   assert.equal(networkError.elements.get("sessionStatus").hidden, false);
   assert.equal(networkError.stored.maatAuthToken, networkToken);
 
   const logoutToken = validToken("logout");
-  const logout = await runNutritionRuntime({ stored: { maatAuthToken: logoutToken }, appAuth: { token: logoutToken, user: { userId: "nutrition_user" }, isAuthenticated: true } });
+  const logout = await runNutritionRuntime({ stored: { maatAuthToken: logoutToken, maatAuthPersistence: "persistent" }, appAuth: { token: logoutToken, user: { userId: "nutrition_user" }, isAuthenticated: true } });
   logout.context.AuthStateRuntime.clearCanonicalAuthState("test_logout", { clearLastUser: true });
   assert.equal(logout.stored.maatAuthToken, undefined);
   assert.equal(logout.context.APP_AUTH.token, null);
@@ -261,7 +261,7 @@ test("Phase 32 frontend exposes authenticated nutrition flow and scanner compati
   assert.match(js, /manualBarcode/);
   assert.match(js, /api\/auth\/me/);
   assert.match(html, /runtime-state\.js\?v=20260506/);
-  assert.match(html, /auth-state-runtime\.js\?v=20260812-mobile-auth/);
+  assert.match(html, /auth-state-runtime\.js\?v=20260824-auth-mobile-followup-v1/);
   assert.match(html, /nutrition-runtime\.js\?v=20260718/);
   assert.match(html, /backendOrigin: "https:\/\/mufasa-fitness-node\.onrender\.com"/);
   assert.match(js, /backendUrl\(path\)/);

@@ -21,17 +21,17 @@ const token = `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.
 
 test("login persistence and a Safari-style page reload restore the one canonical admin identity", async () => {
   const first = browser();
-  first.window.AuthStateRuntime.setCanonicalAuthState({ token: ` Bearer ${token} `, user: { id: "admin-1", roles: ["admin"] } }, { reason: "login" });
+  first.window.AuthStateRuntime.setCanonicalAuthState({ token: ` Bearer ${token} `, user: { id: "admin-1", roles: ["admin"] } }, { reason: "login", rememberMe: true });
   assert.equal(first.localStorage.getItem("maatAuthToken"), token);
-  const reloaded = browser({ persisted: { maatAuthToken: first.localStorage.getItem("maatAuthToken") } });
+  const reloaded = browser({ persisted: { maatAuthToken: first.localStorage.getItem("maatAuthToken"), maatAuthPersistence: "persistent" } });
   const restored = await reloaded.window.AuthStateRuntime.whenReady();
   assert.equal(restored.ok, true);
   assert.equal(reloaded.window.AuthStateRuntime.getCanonicalAuthState().user.roles[0], "admin");
-  assert.deepEqual(JSON.parse(JSON.stringify(reloaded.window.AuthStateRuntime.getSafeDiagnostics())), { authenticated: true, credentialPresent: true, source: "AuthStateRuntime.memory", role: "admin", tokenFormatValid: true, expiryState: "valid", lastRestoreResult: "restored" });
+  assert.deepEqual(JSON.parse(JSON.stringify(reloaded.window.AuthStateRuntime.getSafeDiagnostics())), { authenticated: true, credentialPresent: true, source: "AuthStateRuntime.memory", storageSource: "localStorage", rememberMeConsent: true, frontendBundle: "20260824-auth-mobile-followup-v1", role: "admin", tokenFormatValid: true, expiryState: "valid", lastRestoreResult: "restored" });
 });
 
 test("invalid auth is cleared everywhere and logout removes canonical and retired aliases", async () => {
-  const invalid = browser({ persisted: { maatAuthToken: token }, status: 401, me: { ok: false, error: "expired" } });
+  const invalid = browser({ persisted: { maatAuthToken: token, maatAuthPersistence: "persistent" }, status: 401, me: { ok: false, error: "expired" } });
   assert.equal((await invalid.window.AuthStateRuntime.whenReady()).reason, "invalid_session");
   assert.equal(invalid.localStorage.getItem("maatAuthToken"), null);
   invalid.localStorage.setItem("authToken", "retired");
@@ -53,11 +53,11 @@ test("route readiness validates memory state with auth me and canonical logout c
 
 test("malformed and expired stored sessions are rejected without calling auth me", async () => {
   let calls = 0;
-  const malformed = browser({ persisted: { maatAuthToken: "not-a-token" } });
+  const malformed = browser({ persisted: { maatAuthToken: "not-a-token", maatAuthPersistence: "persistent" } });
   malformed.window.fetch = async () => { calls += 1; throw new Error("must not fetch"); };
   assert.equal((await malformed.window.AuthStateRuntime.whenReady()).reason, "invalid_token");
   const expiredToken = `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from('{"exp":1}').toString('base64url')}.signature`;
-  const expired = browser({ persisted: { maatAuthToken: expiredToken } });
+  const expired = browser({ persisted: { maatAuthToken: expiredToken, maatAuthPersistence: "persistent" } });
   expired.window.fetch = async () => { calls += 1; throw new Error("must not fetch"); };
   assert.equal((await expired.window.AuthStateRuntime.whenReady()).reason, "expired_token");
   assert.equal(calls, 0);

@@ -2,7 +2,8 @@
   "use strict";
 
   const global = globalScope || window;
-  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": "20260813-authorization-header-canonicalization-v1" });
+  const FRONTEND_BUILD = "20260824-auth-mobile-followup-v1";
+  global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": FRONTEND_BUILD });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const PERSISTENCE_STORAGE_KEY = "maatAuthPersistence";
   const ORIGIN_STORAGE_KEY = "maatAuthOrigin";
@@ -14,6 +15,37 @@
   const TOKEN_HANDOFF_KEY = "maat.tokenHandoffTrace.v1";
   let tokenHandoffSequence = 0;
   let tokenHandoffQueue = Promise.resolve();
+
+  function storageInspection() {
+    let sessionToken = null;
+    let localToken = null;
+    let consent = null;
+    try {
+      sessionToken = normalizeToken(global.sessionStorage?.getItem(TOKEN_STORAGE_KEY));
+      localToken = normalizeToken(global.localStorage?.getItem(TOKEN_STORAGE_KEY));
+      consent = global.localStorage?.getItem(PERSISTENCE_STORAGE_KEY);
+    } catch (_) {}
+    const persistentConsent = consent === "persistent";
+    const source = sessionToken ? "sessionStorage" : (localToken && persistentConsent ? "localStorage" : "none");
+    return { token: sessionToken || (persistentConsent ? localToken : null), source, persistentConsent, rejectedUnconsentedLocalToken: Boolean(localToken && !persistentConsent) };
+  }
+
+  function publishRestoreDiagnostics(values = {}) {
+    const inspection = storageInspection();
+    const report = {
+      bundle: FRONTEND_BUILD,
+      tokenSource: values.tokenSource || inspection.source,
+      rememberMeConsent: inspection.persistentConsent,
+      legacyAliasRestored: false,
+      ...values,
+      rejectedUnconsentedLocalToken: values.rejectedUnconsentedLocalToken === true || inspection.rejectedUnconsentedLocalToken || global.__MAAT_AUTH_RESTORE_DIAGNOSTICS__?.rejectedUnconsentedLocalToken === true,
+      updatedAt: new Date().toISOString()
+    };
+    global.__MAAT_AUTH_RESTORE_DIAGNOSTICS__ = report;
+    ensureDebugState().restoreDiagnostics = report;
+    console.info("[AUTH_RESTORE_DIAGNOSTICS]", report);
+    return report;
+  }
 
   async function shaPrefix(value) {
     if (typeof value !== "string" || !global.crypto?.subtle || typeof global.TextEncoder !== "function") return null;
@@ -127,10 +159,11 @@
 
   function getStoredToken() {
     try {
-      const sessionToken = global.sessionStorage?.getItem(TOKEN_STORAGE_KEY);
-      const stored = sessionToken || global.localStorage?.getItem(TOKEN_STORAGE_KEY);
-      void traceTokenHandoff("localStorage read-back value", stored, {}, { function: "getStoredToken" });
-      return normalizeToken(stored);
+      const inspection = storageInspection();
+      if (inspection.rejectedUnconsentedLocalToken) global.localStorage?.removeItem(TOKEN_STORAGE_KEY);
+      publishRestoreDiagnostics({ tokenSource: inspection.source, rejectedUnconsentedLocalToken: inspection.rejectedUnconsentedLocalToken });
+      void traceTokenHandoff(`${inspection.source} read-back value`, inspection.token, {}, { function: "getStoredToken" });
+      return inspection.token;
     } catch (_) { return null; }
   }
 
@@ -142,9 +175,8 @@
         global.localStorage?.removeItem(PERSISTENCE_STORAGE_KEY);
         return;
       }
-      // Legacy programmatic callers omitted a persistence choice; retain their
-      // established behavior while every user-facing login passes an explicit boolean.
-      const persistent = rememberMe === true || rememberMe === null;
+      // Persistence requires an explicit user choice. Omitted choices are session-only.
+      const persistent = rememberMe === true;
       const destination = persistent ? global.localStorage : global.sessionStorage;
       const alternate = persistent ? global.sessionStorage : global.localStorage;
       destination?.setItem(TOKEN_STORAGE_KEY, normalizeToken(token));
@@ -318,7 +350,9 @@
         error.authDiagnostics = authDiagnostics;
         throw error;
       }
-      const auth = setCanonicalAuthState({ token, user }, { reason });
+      const inspection = storageInspection();
+      const rememberMe = typeof options.rememberMe === "boolean" ? options.rememberMe : inspection.source === "localStorage" && inspection.persistentConsent;
+      const auth = setCanonicalAuthState({ token, user }, { reason, rememberMe });
       backendValidatedToken = normalizeToken(token);
       if (onGreatness) {
         recordCheckpoint("GREATNESS_CHECKPOINT_3", { httpStatus: res.status, tokenPresentBeforeCleanup: true, tokenPresentAfterCleanup: Boolean(getStoredToken()), cleanupReason: "NONE" });
@@ -433,7 +467,10 @@
     return {
       authenticated: state.isAuthenticated === true,
       credentialPresent: Boolean(state.token || getStoredToken()),
-      source: state.token ? "AuthStateRuntime.memory" : (getStoredToken() ? `localStorage.${TOKEN_STORAGE_KEY}` : "none"),
+      source: state.token ? "AuthStateRuntime.memory" : storageInspection().source,
+      storageSource: storageInspection().source,
+      rememberMeConsent: storageInspection().persistentConsent,
+      frontendBundle: FRONTEND_BUILD,
       role: roles.includes("admin") || roles.includes("super_admin") ? "admin" : (state.user ? "member" : "none"),
       tokenFormatValid: metadata.validFormat,
       expiryState: metadata.expiryState,
@@ -449,6 +486,9 @@
       `Authenticated: ${report.authenticated ? "YES" : "NO"}`,
       `Token/session present: ${report.credentialPresent ? "YES" : "NO"}`,
       `Canonical auth source: ${report.source}`,
+      `Storage restore source: ${report.storageSource}`,
+      `Remember Me consent: ${report.rememberMeConsent ? "YES" : "NO"}`,
+      `Frontend bundle: ${report.frontendBundle}`,
       `Role resolved: ${report.role}`,
       `Token format valid: ${report.tokenFormatValid ? "YES" : "NO"}`,
       `Expiry state: ${report.expiryState}`,
@@ -462,11 +502,13 @@
     const storedToken = getStoredToken();
     if (!storedToken) {
       ensureDebugState().lastRestoreResult = "missing_token";
+      publishRestoreDiagnostics({ tokenSource: "none", result: "missing_token" });
       return Promise.resolve({ ok: false, reason: "missing_token", auth: getCanonicalAuthState() });
     }
     restorePromise = refreshAuthStatus({ ...options, token: storedToken, reason: options.reason || "browser-storage-restore" })
       .then((result) => {
         ensureDebugState().lastRestoreResult = result.ok ? "restored" : result.reason;
+        publishRestoreDiagnostics({ result: ensureDebugState().lastRestoreResult });
         return result;
       })
       .finally(() => { restorePromise = null; });
@@ -532,6 +574,7 @@
     ORIGIN_STORAGE_KEY,
     LIFECYCLE_KEY,
     RETIRED_STORAGE_KEYS,
+    FRONTEND_BUILD,
     clearCanonicalAuthState,
     clearAccountScopedBrowserState,
     ensureDebugState,
@@ -539,6 +582,7 @@
     getCanonicalAuthState,
     getSafeDiagnostics,
     getStoredToken,
+    storageInspection,
     normalizeToken,
     tokenMetadata,
     readLifecycle,

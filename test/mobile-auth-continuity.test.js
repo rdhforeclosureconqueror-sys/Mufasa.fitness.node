@@ -23,7 +23,7 @@ function harness({ initial = {}, delayed = false, unavailable = false } = {}) {
 
 test("delayed Safari storage is verified before login navigation may continue", async () => {
   const { window, values } = harness({ delayed: true });
-  const result = await window.AuthStateRuntime.persistCanonicalAuthState({ token: token(), user: { roles: ["admin"] } }, { reason: "login" });
+  const result = await window.AuthStateRuntime.persistCanonicalAuthState({ token: token(), user: { roles: ["admin"] } }, { reason: "login", rememberMe: true });
   assert.equal(result.ok, true);
   assert.equal(values.get("maatAuthToken"), result.state.token);
   assert.equal(values.get("maatAuthOrigin"), "https://mufasafitsite.onrender.com");
@@ -31,16 +31,16 @@ test("delayed Safari storage is verified before login navigation may continue", 
 
 test("unavailable localStorage returns useful persistence failure", async () => {
   const { window } = harness({ unavailable: true });
-  const result = await window.AuthStateRuntime.persistCanonicalAuthState({ token: token(), user: { roles: ["admin"] } });
+  const result = await window.AuthStateRuntime.persistCanonicalAuthState({ token: token(), user: { roles: ["admin"] } }, { rememberMe: true });
   assert.equal(result.ok, false);
   assert.equal(result.reason, "storage_verification_failed");
   assert.match(window.AuthStateRuntime.ensureDebugState().lastAuthError, /could not be persisted/);
 });
 
 test("malformed, expired, and alternate tokens are diagnosed without exposing credentials", () => {
-  const malformed = harness({ initial: { maatAuthToken: "not-a-jwt", authToken: "retired-secret" } }).window.AuthStateRuntime.getSafeDiagnostics();
+  const malformed = harness({ initial: { maatAuthToken: "not-a-jwt", maatAuthPersistence: "persistent", authToken: "retired-secret" } }).window.AuthStateRuntime.getSafeDiagnostics();
   assert.equal(malformed.tokenFormatValid, false);
-  const expired = harness({ initial: { maatAuthToken: token(1) } }).window.AuthStateRuntime.getSafeDiagnostics();
+  const expired = harness({ initial: { maatAuthToken: token(1), maatAuthPersistence: "persistent" } }).window.AuthStateRuntime.getSafeDiagnostics();
   assert.equal(expired.expiryState, "expired");
   const source = fs.readFileSync(path.join(__dirname, "../public/mobile-auth-diagnostics.js"), "utf8");
   assert.match(source, /retired\/alternate auth keys present/);
