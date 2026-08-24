@@ -1,10 +1,11 @@
 (function (root, factory) {
   const session = typeof module === "object" && module.exports ? require("./disposable-motion-session") : root.PocketPTDisposableMotionSession;
   const sharedLoader = typeof module === "object" && module.exports ? require("./shared3d-loader") : root.PocketPTShared3DLoader;
-  const api = factory(session, sharedLoader, root);
+  const cameraModule = typeof module === "object" && module.exports ? require("./product-motion-camera") : root.ProductMotionCamera;
+  const api = factory(session, sharedLoader, cameraModule, root);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.ProductMotionPreview = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, defaultSharedLoader, globalScope) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, defaultSharedLoader, ProductMotionCameraModule, globalScope) {
   "use strict";
 
   // ---------------------------------------------------------------------------
@@ -303,6 +304,7 @@
           createRenderer: options.createRenderer,
           loader: productLoader,
           injectFailure: options.injectFailure,
+          showProbe: false,
           onDiagnostic: diagnostic
         });
 
@@ -359,11 +361,32 @@
         }
         diagnostic("bindings_valid");
 
-        // 8. Apply product-safe side-view camera framing.
-        if (cameraPreset === "exercise-side") {
-          applySideViewCamera(session, cameraPreset);
-          diagnostic("framing_applied");
+        // 8. Apply animated-bounds camera framing via ProductMotionCamera.
+        let motionCamera = null;
+        try {
+          if (session.camera && session.avatar && session.THREE && ProductMotionCameraModule) {
+            motionCamera = ProductMotionCameraModule.create({
+              camera: session.camera,
+              avatar: session.avatar,
+              mixer: session.mixer,
+              clip: session.sessionClip,
+              renderer: session.renderer,
+              THREE: session.THREE,
+              sampleCount: 17,
+              padding: 1.25
+            });
+            // Default to side preset.
+            motionCamera.setSide();
+            // Expose on session for page-level view controls (non-enumerable, no leak risk).
+            session._motionCamera = motionCamera;
+          } else if (cameraPreset === "exercise-side") {
+            applySideViewCamera(session, cameraPreset);
+          }
+        } catch (_) {
+          // Camera framing is non-fatal; fall back to static framing.
+          try { if (cameraPreset === "exercise-side") applySideViewCamera(session, cameraPreset); } catch (__) {}
         }
+        diagnostic("framing_applied");
 
         // 9. Enable loop and autoplay.
         session.setLoop(loop);
@@ -413,7 +436,9 @@
 
     function getStatus() { return status; }
 
-    return Object.freeze({ mount, play, pause, resume, dispose, getStatus });
+    function getMotionCamera() { return (session && session._motionCamera) || null; }
+
+    return Object.freeze({ mount, play, pause, resume, dispose, getStatus, getMotionCamera });
   }
 
   // Expose internals for testing only.

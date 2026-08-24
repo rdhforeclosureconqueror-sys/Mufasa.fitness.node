@@ -48,7 +48,9 @@
         const keyLight = new THREE.DirectionalLight(0xffffff, 1.65); keyLight.position.set(3, 5, 4); this.scene.add(keyLight);
         const fillLight = new THREE.DirectionalLight(0xb9d8ff, 0.55); fillLight.position.set(-4, 2, 3); this.scene.add(fillLight);
         const geometry = new THREE.BoxGeometry(1, 1, 1), material = new THREE.MeshBasicMaterial({ color: 0x35c98b });
-        this.mesh = new THREE.Mesh(geometry, material); this.scene.add(this.mesh);
+        this.mesh = new THREE.Mesh(geometry, material);
+        // showProbe defaults to true for Motion Lab/dev; product paths pass showProbe: false.
+        if (this.options.showProbe !== false) { this.scene.add(this.mesh); } else { this.mesh.visible = false; }
         this.onResize = () => this.resize(container); this.onVisibility = () => this.env.document.hidden ? this.stopRenderLoop() : this.startRenderLoop();
         this.onPageHide = () => this.dispose(); this.onContextLost = event => { event?.preventDefault?.(); this.fail("context_lost"); };
         this.onContextRestored = () => {}; // Context loss is terminal in Phase C; a new session is the safe recovery path.
@@ -228,6 +230,31 @@
     setLoop(enabled) { this.loop = Boolean(enabled); if (this.action) this.action.setLoop(this.loop ? this.THREE.LoopRepeat : this.THREE.LoopOnce, this.loop ? Infinity : 1); return { status: "ready", loop: this.loop }; }
     playbackDiagnostics() { return Object.freeze({ state: !this.action ? "unloaded" : this.action.paused ? "paused" : this.action.isRunning?.() ? "playing" : "ready", loop: this.loop, currentTime: Number(this.action?.time || 0) }); }
     ownershipDiagnostics() { return Object.freeze({ actions: this.action ? 1 : 0, mixers: this.mixer ? 1 : 0, avatarRoots: this.avatar ? 1 : 0, gltfAssetReferences: (this.avatarAsset ? 1 : 0) + (this.animationFixture ? 1 : 0), clipsOwnedBySession: this.sessionClip && this.sessionClip !== this.nativeSourceClip ? 1 : 0, sceneAvatarObjects: this.avatar && this.scene?.children?.includes?.(this.avatar) ? 1 : 0, pendingRequests: this.state === "initializing" ? 1 : 0 }); }
+    sampleAnimatedBounds(count) {
+      if (!this.avatar || !this.THREE) return null;
+      try {
+        const THREE = this.THREE, mixer = this.mixer, clip = this.sessionClip;
+        count = Math.min(Math.max(count || 17, 1), 25);
+        const duration = (clip && clip.duration > 0) ? clip.duration : 0;
+        const priorTime = mixer ? mixer.time : 0;
+        let box = new THREE.Box3();
+        if (mixer && duration > 0) {
+          let expanded = false;
+          for (let i = 0; i < count; i++) {
+            const t = (i / (count - 1)) * duration;
+            try { mixer.setTime(t); } catch (_) {}
+            this.avatar.updateMatrixWorld(true);
+            const sample = new THREE.Box3().setFromObject(this.avatar);
+            if (!expanded) { box.copy(sample); expanded = true; } else box.union(sample);
+          }
+          try { mixer.setTime(priorTime); } catch (_) {}
+        } else {
+          this.avatar.updateMatrixWorld(true);
+          box.setFromObject(this.avatar);
+        }
+        return box;
+      } catch (_) { return null; }
+    }
     fail(code, cause) { if (this.state !== "disposed" && this.state !== "disposing") { this.state = "failed"; this.options.onError?.(Object.assign(new Error(code), { code, cause })); this.dispose(); } return this.failure(code, cause); }
     dispose() {
       if (this.state === "disposed" || this.state === "disposing") return;

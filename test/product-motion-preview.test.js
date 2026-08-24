@@ -478,7 +478,7 @@ test("getStatus() is the only status surface exposed; no camera or challenge fie
   const h = makeHarness();
   const preview = ProductMotionPreview.create({ container: h.container, environment: h.env, loader: h.loader });
   const keys = Object.keys(preview);
-  assert.deepEqual(keys.sort(), ["dispose", "getStatus", "mount", "pause", "play", "resume"].sort());
+  assert.deepEqual(keys.sort(), ["dispose", "getMotionCamera", "getStatus", "mount", "pause", "play", "resume"].sort());
 });
 
 // ---------------------------------------------------------------------------

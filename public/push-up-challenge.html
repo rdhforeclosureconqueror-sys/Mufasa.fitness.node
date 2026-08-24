@@ -14,6 +14,12 @@
   <section class="card guide" aria-labelledby="guidedPreviewTitle">
     <div id="movementPreview" class="movement-preview" data-position="top" role="img" aria-label="Push-up demonstration in the top position">
       <div id="motionPreviewContainer" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;border-radius:13px;overflow:hidden;"></div>
+      <div id="motionViewControls" style="display:none;position:absolute;bottom:8px;left:0;right:0;z-index:2;justify-content:center;gap:6px;padding:0 8px;">
+        <button id="motionViewSide"  type="button" style="font-size:.75rem;padding:5px 10px;min-height:30px;">Side</button>
+        <button id="motionViewFront" type="button" style="font-size:.75rem;padding:5px 10px;min-height:30px;">Front</button>
+        <button id="motionView3Q"    type="button" style="font-size:.75rem;padding:5px 10px;min-height:30px;">3/4</button>
+        <button id="motionViewReset" type="button" style="font-size:.75rem;padding:5px 10px;min-height:30px;">Reset View</button>
+      </div>
       <svg class="athlete" viewBox="0 0 420 220" aria-hidden="true" id="motionFallbackSvg">
         <g class="torso"><line x1="118" y1="88" x2="286" y2="104"></line></g>
         <g class="head"><circle cx="95" cy="82" r="17"></circle></g>
@@ -50,6 +56,7 @@
 <script defer src="/guided-exercise-sequence.js"></script>
 <script defer src="/motion/shared3d-loader.js"></script>
 <script defer src="/motion/disposable-motion-session.js"></script>
+<script defer src="/motion/product-motion-camera.js"></script>
 <script defer src="/motion/product-motion-preview.js"></script>
 <script defer src="/push-up-challenge-page.js"></script>
 <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script><script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>

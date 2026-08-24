@@ -43,9 +43,15 @@ onReady(function boot(){
        autoplay:true,loop:true,cameraPreset:'exercise-side',
        expectedBindings:{intended:40,bound:40,unbound:0},
        onDiagnostic(entry){diagnostic(entry.event,entry.code?{code:entry.code}:{});},
-       onStatus(s){if(s==='playing'||s==='ready')fallbackSvg&&(fallbackSvg.style.display='none');},
-       onError(){if(fallbackSvg)fallbackSvg.style.display='';}
+       onStatus(s){if(s==='playing'||s==='ready'){if(fallbackSvg)fallbackSvg.style.display='none';const controls=$('motionViewControls');if(controls)controls.style.display='flex';}},
+       onError(){if(fallbackSvg)fallbackSvg.style.display='';const controls=$('motionViewControls');if(controls)controls.style.display='none';}
      });
+     // Wire view-control buttons (safe: each button may not exist in older HTML).
+     const viewSide=$('motionViewSide'),viewFront=$('motionViewFront'),view3Q=$('motionView3Q'),viewReset=$('motionViewReset');
+     if(viewSide)viewSide.onclick=function(){try{preview.getMotionCamera()?.setSide();}catch(_){}};
+     if(viewFront)viewFront.onclick=function(){try{preview.getMotionCamera()?.setFront();}catch(_){}};
+     if(view3Q)view3Q.onclick=function(){try{preview.getMotionCamera()?.setThreeQuarter();}catch(_){}};
+     if(viewReset)viewReset.onclick=function(){try{preview.getMotionCamera()?.resetView();}catch(_){}};
      global.addEventListener('pagehide',()=>preview.dispose(),{once:true});
      global.__pushUpMotionPreview=preview;
      preview.mount().catch(()=>{});
