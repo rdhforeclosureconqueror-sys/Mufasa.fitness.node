@@ -13,7 +13,8 @@
 <main>
   <section class="card guide" aria-labelledby="guidedPreviewTitle">
     <div id="movementPreview" class="movement-preview" data-position="top" role="img" aria-label="Push-up demonstration in the top position">
-      <svg class="athlete" viewBox="0 0 420 220" aria-hidden="true">
+      <div id="motionPreviewContainer" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;border-radius:13px;overflow:hidden;"></div>
+      <svg class="athlete" viewBox="0 0 420 220" aria-hidden="true" id="motionFallbackSvg">
         <g class="torso"><line x1="118" y1="88" x2="286" y2="104"></line></g>
         <g class="head"><circle cx="95" cy="82" r="17"></circle></g>
         <g class="hips"><circle cx="286" cy="104" r="6"></circle></g>
@@ -47,6 +48,7 @@
 <script defer src="/push-up-sequence-engine.js"></script>
 <script defer src="/push-up-challenge.js"></script>
 <script defer src="/guided-exercise-sequence.js"></script>
+<script defer src="/motion/product-motion-preview.js"></script>
 <script defer src="/push-up-challenge-page.js"></script>
 <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script><script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body></html>

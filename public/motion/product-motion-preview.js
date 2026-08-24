@@ -1,0 +1,269 @@
+(function (root, factory) {
+  const session = typeof module === "object" && module.exports ? require("./disposable-motion-session") : root.PocketPTDisposableMotionSession;
+  const api = factory(session, root);
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.ProductMotionPreview = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, globalScope) {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // Product-safe asset registry records
+  // The avatar is served via a member-gated route added for this product path.
+  // The fixture is served via the standard public static route.
+  // Both records satisfy DisposableMotionSession validation invariants:
+  //   loadAvatar:           rejects developmentOnly === false
+  //   loadExtractedAnimation: requires developmentOnly truthy
+  // ---------------------------------------------------------------------------
+
+  const PRODUCT_AVATAR_RECORD = Object.freeze({
+    avatarId: "avaturn-personalized-candidate",
+    displayName: "Push-Up Challenge Avatar",
+    source: "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb",
+    assetUrl: "/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb",
+    skeletonProfile: "avaturn-native-v1",
+    status: "product-preview",
+    developmentOnly: true // required by DisposableMotionSession.loadExtractedAnimation
+  });
+
+  const PRODUCT_FIXTURE_RECORD = Object.freeze({
+    fixtureId: "avaturn-push-up-animation",
+    motionId: "push_up/avaturn_native_v1",
+    assetUrl: "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb",
+    clipName: "avaturn_push_up_native_v1",
+    skeletonProfile: "avaturn-native-v1",
+    compatibleAvatarProfile: "avaturn-personalized-candidate",
+    expectedTrackCount: 40,
+    developmentOnly: true // required by DisposableMotionSession.loadExtractedAnimation
+  });
+
+  // Product states exposed to the page. Internal Motion Lab vocabulary is not leaked.
+  const PRODUCT_STATES = Object.freeze(["idle", "loading", "ready", "playing", "paused", "failed", "disposed"]);
+
+  // Side-view camera preset for exercise previews (applied after avatar is framed).
+  function applySideViewCamera(session, preset) {
+    if (!session.camera || !session.avatar) return;
+    try {
+      const THREE = session.THREE;
+      if (!THREE) return;
+      // Re-derive bounding box and place camera at the right side, slightly elevated.
+      const bounds = new THREE.Box3().setFromObject(session.avatar);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      if (!Number.isFinite(size.y) || size.y <= 0) return;
+      const fovRad = (session.camera.fov || 50) * Math.PI / 180;
+      const aspect = session.camera.aspect || 1;
+      const vertDist = (size.y / 2) / Math.tan(fovRad / 2);
+      const horizDist = (size.x / 2) / (Math.tan(fovRad / 2) * aspect);
+      const distance = Math.max(vertDist, horizDist) * 1.3;
+      // Position camera at right side, slightly elevated.
+      const elevationRatio = 0.15;
+      session.camera.position.set(
+        center.x + distance,
+        center.y + size.y * elevationRatio,
+        center.z
+      );
+      session.camera.near = Math.max(0.01, distance * 0.1);
+      session.camera.far = Math.max(distance * 4, 10);
+      session.camera.lookAt(center.x, center.y, center.z);
+      session.camera.updateProjectionMatrix();
+    } catch (_) {
+      // Non-fatal: avatar will remain visible with default framing.
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ProductMotionPreview
+  // ---------------------------------------------------------------------------
+
+  function create(options) {
+    if (!options || !options.container) throw new TypeError("ProductMotionPreview.create: container is required");
+
+    const container = options.container;
+    const avatarProfileId = options.avatarProfileId || "avaturn-personalized-candidate";
+    const motionId = options.motionId || "push_up/avaturn_native_v1";
+    const fixtureId = options.fixtureId || "avaturn-push-up-animation";
+    const autoplay = options.autoplay !== false;
+    const loop = options.loop !== false;
+    const cameraPreset = options.cameraPreset || "exercise-side";
+    const expectedBindings = options.expectedBindings || { intended: 40, bound: 40, unbound: 0 };
+    const onStatus = typeof options.onStatus === "function" ? options.onStatus : () => {};
+    const onError = typeof options.onError === "function" ? options.onError : () => {};
+
+    // No rendering, no network side-effects at create time.
+    let status = "idle";
+    let session = null;
+    let mountGeneration = 0;
+    let mounted = false;
+    let disposed = false;
+
+    function emitStatus(next) {
+      status = next;
+      try { onStatus(next); } catch (_) {}
+    }
+
+    function resolveAvatarRecord(profileId) {
+      if (profileId === PRODUCT_AVATAR_RECORD.avatarId) return PRODUCT_AVATAR_RECORD;
+      return null;
+    }
+
+    function resolveFixtureRecord(fId, mId) {
+      if (fId === PRODUCT_FIXTURE_RECORD.fixtureId && mId === PRODUCT_FIXTURE_RECORD.motionId) return PRODUCT_FIXTURE_RECORD;
+      return null;
+    }
+
+    async function mount() {
+      if (disposed) { emitStatus("disposed"); return { ok: false, reason: "disposed" }; }
+      if (mounted) return { ok: false, reason: "already_mounted" };
+      mounted = true;
+      mountGeneration++;
+      const generation = mountGeneration;
+
+      emitStatus("loading");
+
+      try {
+        // 1. Resolve registry records.
+        const avatarRecord = resolveAvatarRecord(avatarProfileId);
+        if (!avatarRecord) {
+          throw Object.assign(new Error("Unknown avatar profile: " + avatarProfileId), { code: "unknown_avatar_profile" });
+        }
+
+        const fixtureRecord = resolveFixtureRecord(fixtureId, motionId);
+        if (!fixtureRecord) {
+          throw Object.assign(new Error("Unknown fixture or motion ID: " + fixtureId + " / " + motionId), { code: "unknown_fixture" });
+        }
+
+        // 2. Validate compatibility before any network request.
+        if (
+          avatarRecord.skeletonProfile !== fixtureRecord.skeletonProfile ||
+          avatarRecord.avatarId !== fixtureRecord.compatibleAvatarProfile
+        ) {
+          throw Object.assign(
+            new Error("Avatar profile and fixture are not compatible"),
+            { code: "incompatible_pairing" }
+          );
+        }
+
+        // 3. Create exactly one DisposableMotionSession.
+        const env = options.environment || globalScope;
+        session = DisposableMotionSession.createMotionSession({
+          environment: env,
+          importModule: options.importModule,
+          probeCapability: options.probeCapability,
+          createRenderer: options.createRenderer,
+          loader: options.loader,
+          injectFailure: options.injectFailure
+        });
+
+        // 4. Start session (attaches canvas, scene, renderer, RAF).
+        const startResult = await session.start(container);
+        if (generation !== mountGeneration || disposed) {
+          session.dispose();
+          session = null;
+          return { ok: false, reason: "superseded" };
+        }
+        if (startResult?.status !== "ready") {
+          const code = startResult?.code || "session_start_failed";
+          throw Object.assign(new Error("Motion session failed to start: " + code), { code });
+        }
+
+        // 5. Load avatar.
+        const avatarResult = await session.loadAvatar(avatarRecord);
+        if (generation !== mountGeneration || disposed) {
+          session.dispose();
+          session = null;
+          return { ok: false, reason: "superseded" };
+        }
+        if (avatarResult?.status !== "ready") {
+          const code = avatarResult?.code || "avatar_load_failed";
+          throw Object.assign(new Error("Avatar load failed: " + code), { code });
+        }
+
+        // 6. Load extracted animation fixture.
+        const fixtureResult = await session.loadExtractedAnimation(fixtureRecord);
+        if (generation !== mountGeneration || disposed) {
+          session.dispose();
+          session = null;
+          return { ok: false, reason: "superseded" };
+        }
+        if (fixtureResult?.status !== "ready") {
+          const code = fixtureResult?.code || "fixture_load_failed";
+          throw Object.assign(new Error("Fixture load failed: " + code), { code });
+        }
+
+        // 7. Verify binding contract.
+        const diag = fixtureResult.diagnostics || {};
+        const intendedOk = diag.intendedTrackCount === expectedBindings.intended;
+        const boundOk = diag.boundTrackCount === expectedBindings.bound;
+        const unboundOk = diag.unboundTrackCount === expectedBindings.unbound;
+        if (!intendedOk || !boundOk || !unboundOk) {
+          throw Object.assign(
+            new Error(
+              "Binding contract not met: expected " +
+              expectedBindings.intended + "/" + expectedBindings.bound + "/0, got " +
+              diag.intendedTrackCount + "/" + diag.boundTrackCount + "/" + diag.unboundTrackCount
+            ),
+            { code: "binding_contract_failed" }
+          );
+        }
+
+        // 8. Apply product-safe side-view camera framing.
+        if (cameraPreset === "exercise-side") {
+          applySideViewCamera(session, cameraPreset);
+        }
+
+        // 9. Enable loop and autoplay.
+        session.setLoop(loop);
+        if (autoplay) {
+          session.play();
+        }
+
+        emitStatus(autoplay ? "playing" : "ready");
+        return { ok: true };
+
+      } catch (error) {
+        if (generation !== mountGeneration || disposed) return { ok: false, reason: "superseded" };
+        if (session) { try { session.dispose(); } catch (_) {} session = null; }
+        mounted = false;
+        emitStatus("failed");
+        try { onError(error); } catch (_) {}
+        return { ok: false, reason: error?.code || "mount_failed", error };
+      }
+    }
+
+    function play() {
+      if (disposed || !session) return;
+      try { session.play(); emitStatus("playing"); } catch (_) {}
+    }
+
+    function pause() {
+      if (disposed || !session) return;
+      try { session.pause(); emitStatus("paused"); } catch (_) {}
+    }
+
+    function resume() {
+      if (disposed || !session) return;
+      try { session.play(); emitStatus("playing"); } catch (_) {}
+    }
+
+    function dispose() {
+      if (disposed) return;
+      disposed = true;
+      mounted = false;
+      mountGeneration++;
+      if (session) { try { session.dispose(); } catch (_) {} session = null; }
+      emitStatus("disposed");
+    }
+
+    function getStatus() { return status; }
+
+    return Object.freeze({ mount, play, pause, resume, dispose, getStatus });
+  }
+
+  // Expose internals for testing only.
+  return Object.freeze({
+    create,
+    _productAvatarRecord: PRODUCT_AVATAR_RECORD,
+    _productFixtureRecord: PRODUCT_FIXTURE_RECORD,
+    _productStates: PRODUCT_STATES
+  });
+});
