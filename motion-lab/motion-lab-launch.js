@@ -15,7 +15,11 @@
     "failure_readiness_401",
     "failure_readiness_4xx",
     "failure_readiness_5xx",
-    "failure_readiness_other"
+    "failure_readiness_other",
+    "cookie_missing",
+    "cookie_malformed",
+    "session_not_found",
+    "session_expired"
   ]);
 
   function report(state) {
@@ -100,17 +104,7 @@
       // Map server diagnostic codes to client failures
       if (status === 401) {
         const serverCode = readinessBody?.error?.code;
-        if (serverCode === "cookie_missing") {
-          report("readiness_401_cookie_missing");
-        } else if (serverCode === "cookie_malformed") {
-          report("readiness_401_cookie_malformed");
-        } else if (serverCode === "session_not_found") {
-          report("readiness_401_session_not_found");
-        } else if (serverCode === "session_expired") {
-          report("readiness_401_session_expired");
-        } else {
-          report("readiness_401_unauthenticated");
-        }
+        if (safeFailures.has(serverCode)) return fail(serverCode);
         return fail("failure_readiness_401");
       } else if (status >= 400 && status < 500) {
         console.error("[motion-lab-handoff] Readiness 4xx:", status);
