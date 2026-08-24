@@ -46,9 +46,14 @@ onReady(function boot(){
        onStatus(s){if(s==='playing'||s==='ready')fallbackSvg&&(fallbackSvg.style.display='none');},
        onError(){if(fallbackSvg)fallbackSvg.style.display='';}
      });
-     global.addEventListener('pagehide',()=>preview.dispose(),{once:true});
+     global.addEventListener('pagehide',()=>{const controls=$('motionViewControls');if(controls){controls.onclick=null;controls.hidden=true;}preview.dispose();},{once:true});
      global.__pushUpMotionPreview=preview;
-     preview.mount().catch(()=>{});
+     preview.mount().then(result=>{
+       const controls=$('motionViewControls');
+       if(!result?.ok||!controls)return;
+       controls.hidden=false;
+       controls.onclick=event=>{const view=event.target?.dataset?.motionView;if(!view)return;if(view==='reset')preview.resetView();else preview.setView(view);};
+     }).catch(()=>{});
    }catch(_){}
  })();
 });
