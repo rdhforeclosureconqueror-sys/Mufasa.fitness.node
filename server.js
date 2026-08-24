@@ -1264,16 +1264,37 @@ function createApp(options = {}) {
     // cookie path that covers both the /dev shell and those protected files.
     return { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "lax", path: "/" };
   }
+  const motionLabDiagnosticLog = details => (options.logger || console).info("[motion-lab-auth]", details);
+  function diagnoseMotionLabSession(req) {
+    const cookieHeader = String(req.get("cookie") || "");
+    const pair = cookieHeader.split(";").map(value => value.trim()).find(value => value.startsWith(`${motionLabCookieName}=`));
+    const sessionId = pair?.slice(motionLabCookieName.length + 1) || "";
+    const idFormatValid = /^[A-Za-z0-9_-]{32,}$/.test(sessionId);
+    const session = idFormatValid ? motionLabSessions.get(sessionId) : null;
+    let state = "valid_session";
+    if (!cookieHeader) state = "cookie_missing";
+    else if (!pair) state = "cookie_missing";
+    else if (!idFormatValid) state = "cookie_malformed";
+    else if (!session) state = "session_not_found";
+    else if (session.expiresAt <= Date.now()) state = "session_expired";
+    if (state === "session_expired") motionLabSessions.delete(sessionId);
+    return {
+      state,
+      session: state === "valid_session" ? { ...session, sessionId } : null,
+      diagnostic: {
+        requestId: req.requestId,
+        cookieHeaderExists: Boolean(cookieHeader),
+        cookieNamePresent: Boolean(pair),
+        sessionIdPrefix: sessionId ? sessionId.slice(0, 8) : null,
+        idFormatValid,
+        sessionFound: Boolean(session),
+        expired: Boolean(session && session.expiresAt <= Date.now()),
+        state
+      }
+    };
+  }
   function readMotionLabSession(req) {
-    const pair = String(req.get("cookie") || "").split(";").map(value => value.trim()).find(value => value.startsWith(`${motionLabCookieName}=`));
-    const sessionId = pair?.slice(motionLabCookieName.length + 1);
-    if (!sessionId || !/^[A-Za-z0-9_-]{32,}$/.test(sessionId)) return null;
-    const session = motionLabSessions.get(sessionId);
-    if (!session || session.expiresAt <= Date.now()) {
-      motionLabSessions.delete(sessionId);
-      return null;
-    }
-    return { ...session, sessionId };
+    return diagnoseMotionLabSession(req).session;
   }
   const motionLabGate = (req, res, next) => {
     if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
@@ -1328,13 +1349,23 @@ function createApp(options = {}) {
   }, (req, res) => {
     const sessionId = crypto.randomBytes(32).toString("base64url");
     motionLabSessions.set(sessionId, { userId: req.auth.userId, tokenId: req.auth.jti || null, expiresAt: Date.now() + motionLabSessionTtlMs });
-    res.cookie(motionLabCookieName, sessionId, { ...motionLabCookieOptions(), maxAge: motionLabSessionTtlMs });
+    const cookieOptions = motionLabCookieOptions();
+    res.cookie(motionLabCookieName, sessionId, { ...cookieOptions, maxAge: motionLabSessionTtlMs });
+    motionLabDiagnosticLog({
+      event: "session_created", requestId: req.requestId, userId: req.auth.userId,
+      sessionCreated: motionLabSessions.has(sessionId), sessionIdPrefix: sessionId.slice(0, 8),
+      cookieName: motionLabCookieName, secure: cookieOptions.secure, sameSite: cookieOptions.sameSite,
+      path: cookieOptions.path, nodeEnv: env.NODE_ENV || null,
+      expirationSeconds: Math.floor(motionLabSessionTtlMs / 1000)
+    });
     res.set("Cache-Control", "private, no-store");
     return ok(res, req.requestId, { navigateTo: "/dev/motion-lab", expiresInSeconds: Math.floor(motionLabSessionTtlMs / 1000) }, 201);
   });
   app.get("/api/dev/motion-lab/readiness", (req, res) => {
     if (!motionLabEnabled) return res.status(404).type("text").send("Not Found");
-    if (!readMotionLabSession(req)) return fail(res, req.requestId, { code: "UNAUTHENTICATED", message: "Authentication required", details: null }, 401);
+    const result = diagnoseMotionLabSession(req);
+    motionLabDiagnosticLog({ event: "readiness_checked", ...result.diagnostic });
+    if (!result.session) return fail(res, req.requestId, { code: result.state, message: "Motion Lab session is not ready", details: null }, 401);
     res.set("Cache-Control", "private, no-store");
     return ok(res, req.requestId, { ready: true });
   });
