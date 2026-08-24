@@ -5,7 +5,7 @@ const {createApp}=require("../server");
 test("global navigation is centralized and installed on every public HTML surface",()=>{
   const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
   assert.match(source,/const NAV_ITEMS/);assert.match(source,/data-maat-signout/);assert.match(source,/roles:\["admin","super_admin"\]/);
-  for(const file of fs.readdirSync(path.join(__dirname,"..","public")).filter(name=>name.endsWith(".html"))) assert.match(fs.readFileSync(path.join(__dirname,"..","public",file),"utf8"),/global-nav\.(?:js|css)/,file);
+  for(const file of fs.readdirSync(path.join(__dirname,"..","public")).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")) assert.match(fs.readFileSync(path.join(__dirname,"..","public",file),"utf8"),/global-nav\.(?:js|css)/,file);
 });
 
 test("login UI makes remember me explicit and unchecked",()=>{
@@ -40,7 +40,7 @@ test("role-aware menu matrix hides privileged tools from ordinary memberships",(
 
 test("global navigation follows auth runtime exactly once and after it on every page",()=>{
   const root=path.join(__dirname,"..","public");
-  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html"))){const html=fs.readFileSync(path.join(root,file),"utf8"),navScripts=html.match(/<script[^>]+global-nav\.js[^>]*>/g)||[],navStyles=html.match(/<link[^>]+global-nav\.css[^>]*>/g)||[];assert.equal(navScripts.length,1,`${file} nav script`);assert.equal(navStyles.length,1,`${file} nav style`);assert.ok(html.indexOf("auth-state-runtime.js")<html.indexOf("global-nav.js"),`${file} auth before nav`);}
+  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")){const html=fs.readFileSync(path.join(root,file),"utf8"),navScripts=html.match(/<script[^>]+global-nav\.js[^>]*>/g)||[],navStyles=html.match(/<link[^>]+global-nav\.css[^>]*>/g)||[];assert.equal(navScripts.length,1,`${file} nav script`);assert.equal(navStyles.length,1,`${file} nav style`);assert.ok(html.indexOf("auth-state-runtime.js")<html.indexOf("global-nav.js"),`${file} auth before nav`);}
 });
 
 test("mobile navigation contract is bounded, scrollable, safe-area aware and keyboard operable",()=>{
@@ -55,13 +55,13 @@ test("auth restoration requires recorded Remember Me consent and reports a redac
   const boot=(sessionMap=new Map())=>{const window={localStorage:makeStorage(localMap),sessionStorage:makeStorage(sessionMap),location:{origin:"https://example.test",pathname:"/workout.html",assign(){}},setTimeout,atob:value=>Buffer.from(value,"base64").toString("binary"),CustomEvent:class{constructor(type,{detail}={}){this.type=type;this.detail=detail}},dispatchEvent(){},addEventListener(){},fetch:async()=>({ok:true,status:200,headers:{get(){return null}},json:async()=>({ok:true,user:{id:"member",email:"member@example.test"}})})};window.window=window;vm.runInNewContext(fs.readFileSync(path.join(__dirname,"..","public","auth-state-runtime.js"),"utf8"),{window,globalThis:window,console,Date,JSON,Promise,Buffer});return window};
   let session=new Map(),window=boot(session);await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:false});assert.equal(window.AuthStateRuntime.storageInspection().source,"sessionStorage");
   window=boot(new Map());await new Promise(resolve=>setTimeout(resolve,0));assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,false);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"none");
-  await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:true});window=boot(new Map());await window.AuthStateRuntime.whenReady();assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"localStorage");assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rememberMeConsent,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.bundle,"20260824-auth-mobile-followup-v1");
+  await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:true});window=boot(new Map());await window.AuthStateRuntime.whenReady();assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"localStorage");assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rememberMeConsent,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.bundle,"20260824-auth-unified-drawer-v2");
   localMap.set("maatAuthToken",token);localMap.delete("maatAuthPersistence");window=boot(new Map());await new Promise(resolve=>setTimeout(resolve,0));assert.equal(window.AuthStateRuntime.getStoredToken(),null);assert.equal(localMap.has("maatAuthToken"),false);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rejectedUnconsentedLocalToken,true);
 });
 
 test("all HTML surfaces pin the production auth and navigation bundle",()=>{
-  const version="20260824-auth-mobile-followup-v1",root=path.join(__dirname,"..","public");
-  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html"))){const html=fs.readFileSync(path.join(root,file),"utf8");assert.match(html,new RegExp(`auth-state-runtime\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.css\\?v=${version}`),file);}
+  const version="20260824-auth-unified-drawer-v2",root=path.join(__dirname,"..","public");
+  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")){const html=fs.readFileSync(path.join(root,file),"utf8");assert.match(html,new RegExp(`auth-state-runtime\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.css\\?v=${version}`),file);}
 });
 
 test("Account A can logout, Account B remains isolated, and Account A can return",async t=>{
@@ -84,3 +84,20 @@ test("explicit persistence choice creates one canonical token copy and logout cl
   const remembered=token();assert.equal((await window.AuthStateRuntime.persistCanonicalAuthState({token:remembered,user:{id:"member"}},{rememberMe:true})).ok,true);assert.equal(values.local.get("maatAuthToken"),remembered);assert.equal(values.session.has("maatAuthToken"),false);
   await window.AuthStateRuntime.logout();assert.equal(values.local.has("maatAuthToken"),false);assert.equal(values.session.has("maatAuthToken"),false);assert.equal(values.local.has("maatAuthPersistence"),false);
 });
+
+test("all authentication entry and exit links use the canonical login surface",()=>{
+ const root=path.join(__dirname,"..","public"),legacy=[];
+ for(const file of fs.readdirSync(root).filter(name=>/\.(?:html|js)$/.test(name))){const text=fs.readFileSync(path.join(root,file),"utf8");if(file!=="run-club-login.html"&&file!=="run-club-login.js"&&text.includes("/run-club-login.html"))legacy.push(file)}
+ assert.deepEqual(legacy,[]);assert.match(fs.readFileSync(path.join(root,"global-nav.js"),"utf8"),/redirectTo:"\/login\.html\?signedOut=1"/);
+ const redirect=fs.readFileSync(path.join(root,"run-club-login.html"),"utf8");assert.match(redirect,/location\.replace/);assert.doesNotMatch(redirect,/<form/);
+});
+
+test("workout mobile drawer remains an overlay at production phone widths",()=>{
+ const html=fs.readFileSync(path.join(__dirname,"..","public","workout.html"),"utf8"),css=fs.readFileSync(path.join(__dirname,"..","public","global-nav.css"),"utf8");
+ for(const width of [320,375,390,430])assert.ok(width<850);
+ assert.match(html,/display: flex;\s*flex-direction: column;/);assert.match(html,/\.app \{[\s\S]*?width: 100%;[\s\S]*?margin: 0 auto;/);
+ assert.match(css,/body>\.maat-global-header>\.maat-nav-panel\{position:fixed!important/);assert.match(css,/body>\.maat-global-header>\.maat-nav-backdrop:not\(\[hidden\]\)\{position:fixed!important/);
+ assert.match(css,/body\.maat-nav-open>main\{width:100%!important/);assert.doesNotMatch(css,/maat-nav-open[^}]*?(margin-left:(?!0)|translateX\((?!0)|grid-template-columns)/);
+});
+
+test("canonical login resolves the configured API origin and emits no credential diagnostics",()=>{const js=fs.readFileSync(path.join(__dirname,"..","public","login.js"),"utf8");assert.match(js,/MaatApiClient\?\.resolve/);assert.match(js,/MAAT_BACKEND_ORIGIN/);assert.match(js,/__MAAT_LOGIN_DIAGNOSTIC__/);assert.doesNotMatch(js,/report=\{[^}]*password|report=\{[^}]*token/)});

@@ -1,6 +1,6 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD="20260824-auth-mobile-followup-v1";
+  const FRONTEND_BUILD="20260824-auth-unified-drawer-v2";
   global.__MAAT_ASSET_VERSIONS__=Object.assign(global.__MAAT_ASSET_VERSIONS__||{}, {"global-nav.js":FRONTEND_BUILD});
   const NAV_ITEMS = Object.freeze([
     {id:"home",label:"Home",href:"/index.html",section:"Main",auth:"public"},

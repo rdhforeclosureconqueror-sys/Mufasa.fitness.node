@@ -27,7 +27,7 @@
   <script src="/runtime-events.js?v=20260506"></script>
   <script src="/runtime-state.js?v=20260506"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
-  <script src="/auth-state-runtime.js?v=20260824-auth-mobile-followup-v1"></script>
+  <script src="/auth-state-runtime.js?v=20260824-auth-unified-drawer-v2"></script>
   <!-- The canonical client must exist before any deferred workout-source adapter. -->
   <script src="/api-client.js?v=20260823-workout-hub"></script>
   <script src="/kettlebell-checkpoints.js?v=20260823-checkpoint-contract"></script>
@@ -71,7 +71,8 @@
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-start;
       align-items: stretch;
       padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
     }
@@ -79,6 +80,7 @@
     .app {
       width: 100%;
       max-width: 1100px;
+      margin: 0 auto;
       background: radial-gradient(circle at top left, #020617, #000000);
       border-radius: 16px;
       border: 2px solid #facc15;
@@ -865,7 +867,7 @@
     #appShell[data-workout-focus="active"] .video-shell { min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px); height:auto; aspect-ratio:auto; }
     #appShell[data-workout-focus="active"] .workout-hud { display:grid!important; }
   </style>
-<link rel="stylesheet" href="/global-nav.css?v=20260824-auth-mobile-followup-v1">
+<link rel="stylesheet" href="/global-nav.css?v=20260824-auth-unified-drawer-v2">
 </head>
 
 <body>
@@ -4831,6 +4833,6 @@ skeletonOverlayActive: no</pre>
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
   <script src="/fitness.js?v=20260425"></script>
-<script src="/global-nav.js?v=20260824-auth-mobile-followup-v1"></script>
+<script src="/global-nav.js?v=20260824-auth-unified-drawer-v2"></script>
 </body>
 </html>
