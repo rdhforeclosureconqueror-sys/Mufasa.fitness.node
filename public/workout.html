@@ -9,7 +9,9 @@
   <meta http-equiv="Expires" content="0" />
   <script>
     window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
-    window.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__" === "true" || window.ENABLE_AVATAR_FEATURE === true;
+    // The bounded live-avatar pilot is available from deployed code. Upload APIs
+    // remain independently server-gated and authenticated.
+    window.ENABLE_AVATAR_FEATURE = true;
     if (!window.ENABLE_AVATAR_FEATURE) document.documentElement.classList.add("avatar-feature-disabled");
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     console.log("[AVATAR_FEATURE]", window.ENABLE_AVATAR_FEATURE ? "enabled" : "disabled");
@@ -478,28 +480,6 @@
     .log-line.coach { color: #a5b4fc; }
     .log-line.system { color: #6b7280; font-style: italic; }
 
-    .challenge-card {
-      border: 1px solid rgba(34, 197, 94, 0.75);
-      border-radius: 12px;
-      padding: 10px;
-      background: rgba(6, 78, 59, 0.18);
-      display: grid;
-      gap: 8px;
-    }
-    .challenge-card label { display: grid; gap: 4px; font-size: 0.82rem; color: #d1fae5; }
-    .challenge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .challenge-consent { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; gap: 8px; }
-    .challenge-consent input { margin-top: 3px; }
-    .challenge-score-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .challenge-score-row .chip { border-color: #22c55e; color: #bbf7d0; }
-    .challenge-table-wrap { overflow-x: auto; border: 1px solid rgba(55,65,81,.9); border-radius: 10px; }
-    .challenge-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    .challenge-table th, .challenge-table td { padding: 6px 8px; border-bottom: 1px solid rgba(55,65,81,.75); text-align: left; white-space: nowrap; }
-    .challenge-table th { color: #fde68a; background: rgba(2,6,23,.7); }
-    .challenge-note { color: #bfdbfe; font-size: 0.78rem; }
-    @media (max-width: 800px) { .challenge-grid { grid-template-columns: 1fr; } }
-
-
     /* ---- Calendar ---- */
     #calendarView {
       margin-top: 4px;
@@ -791,14 +771,9 @@
     .btn-row { gap:10px; }
     button { box-shadow:none; }
     button.secondary { border-color: rgba(148,163,184,.24); color:#e2e8f0; background:rgba(2,6,23,.72); }
-    #pushupChallengeEntryBtn, #challengeStartBtn { background:linear-gradient(135deg,#facc15,#f59e0b); color:#1c1201; }
+    #pushupChallengeEntryBtn { background:linear-gradient(135deg,#facc15,#f59e0b); color:#1c1201; }
     #connectBtn, #startBtn:not(:disabled) { background:linear-gradient(135deg,#22c55e,#16a34a); color:#031307; }
     #runSystemDiagnosticBtn { border-color:rgba(56,189,248,.42); color:#bae6fd; }
-    .challenge-card {
-      border-color:rgba(250,204,21,.38);
-      background:linear-gradient(135deg, rgba(6,78,59,.22), rgba(15,23,42,.66));
-      box-shadow: 0 18px 60px rgba(0,0,0,.26);
-    }
     .workout-hud {
       border-color: rgba(34,197,94,.42);
       background: rgba(2,6,23,.72);
@@ -832,7 +807,7 @@
     }
     body.workout-focus .video-shell { aspect-ratio: 16 / 9; }
     body.workout-focus .workout-stage-pane > .status-line:not(:has(#brainStatus)):not(:has(#poseStatus)):not(:has(#exerciseLabel)):not(:has(#repCount)) { display:none; }
-    body.workout-focus .btn-row > :not(#startBtn):not(#fullscreenCameraBtn):not(#listenBtn):not(#muteBtn):not(#challengeStopBtn):not(#diagnosticsToggleBtn) { display:none; }
+    body.workout-focus .btn-row > :not(#startBtn):not(#fullscreenCameraBtn):not(#listenBtn):not(#muteBtn):not(#diagnosticsToggleBtn) { display:none; }
     body.workout-focus .workout-hud { display:grid; }
     body.camera-fullscreen .workout-support-pane { display:none; }
     body.camera-fullscreen .workout-app-shell { grid-template-columns:1fr; }
@@ -1018,7 +993,7 @@
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" type="button">Request New Exercise</button>
         <button id="exerciseTemplateDraftBtn" class="secondary" type="button" hidden>Create Exercise Template Draft</button>
-        <button id="pushupChallengeEntryBtn" type="button">Push-Up Challenge</button>
+        <a id="pushupChallengeEntryBtn" class="button-link" href="/push-up-challenge.html">Push-Up Challenge</a>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
@@ -1114,57 +1089,6 @@ keypoint confidence: waiting
 rep quality: waiting</pre>
       </div>
 
-      <div id="pushupChallengePanel" class="challenge-card" style="margin-top:10px;" aria-live="polite">
-        <h2 style="margin:0;">Push-Up Challenge</h2>
-        <p class="subtitle" style="margin:0;">Quick rugby-game pilot. No intake, program assignment, OHSA, payment, or full profile required.</p>
-        <div class="challenge-grid">
-          <label>Display name *<input id="challengeDisplayName" type="text" maxlength="80" placeholder="Leaderboard name" /></label>
-          <label>Team<input id="challengeTeam" type="text" maxlength="80" placeholder="Optional team" /></label>
-          <label>Email<input id="challengeEmail" type="email" maxlength="160" placeholder="Optional; hidden from leaderboard" /></label>
-          <label>Phone<input id="challengePhone" type="tel" maxlength="40" placeholder="Optional; hidden from leaderboard" /></label>
-        </div>
-        <p id="challengeVariantNote" class="challenge-note">Do any valid push-up variation. Two-hand reps count 1 point. One-hand reps count 2 points.</p>
-        <label class="challenge-consent"><input id="challengeConsent" type="checkbox" /> <span>I agree this is a fitness challenge and my display name, team, and score may appear on the leaderboard.</span></label>
-        <div class="challenge-note">Stop if you feel pain or dizziness. This is not medical advice. Ask staff before participating if you have an injury.</div>
-        <div class="btn-row">
-          <button id="challengeConnectCameraBtn" type="button" class="secondary">Connect Camera</button>
-          <button id="challengeStartBtn" type="button">Start 60s Challenge</button>
-          <button id="challengeStopBtn" type="button" class="secondary" disabled>Stop Challenge</button>
-          <button id="challengeLeaderboardBtn" type="button" class="secondary">View Leaderboard</button>
-        </div>
-        <div class="challenge-score-row">
-          <span class="chip">Countdown/Time: <span id="challengeTimer">Ready</span></span>
-          <span class="chip">Valid reps: <span id="challengeValidReps">0</span></span>
-          <span class="chip">Score: <span id="challengeScore">0</span></span>
-          <span class="chip">Save: <span id="challengeSaveStatus">Not saved</span></span>
-        </div>
-        <div class="status-line"><strong>Rejected rep reason:</strong> <span id="challengeRejectedReason">None</span></div>
-        <pre id="challengeDiagnosticsStatus" data-diagnostic-panel class="diagPre muted" style="white-space:pre-wrap;">challengeModeActive: no
-calibrationStatus: not_calibrated
-bottomElbowAngle: n/a
-topElbowAngle: n/a
-calibratedRange: n/a
-requiredRange: n/a
-pushupStanceDetected: no
-bodyAlignmentStatus: unknown
-armDepthStatus: unknown
-lockoutStatus: unknown
-lastRepVariant: none
-lastRepPoints: 0
-validRepCount: 0
-twoHandRepCount: 0
-oneHandRepCount: 0
-totalScore: 0
-rejectedRepReason: none
-leaderboardSaveStatus: not_saved</pre>
-        <div class="challenge-table-wrap">
-          <table class="challenge-table" aria-label="Push-Up Challenge leaderboard">
-            <thead><tr><th>Rank</th><th>Name</th><th>Team</th><th>Total score</th><th>Valid reps</th><th>Two-hand reps</th><th>One-hand reps</th><th>Timestamp</th></tr></thead>
-            <tbody id="challengeLeaderboardBody"><tr><td colspan="8">No results loaded yet.</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
       <div id="poseDiagnosticsPanel" data-diagnostic-panel class="small-card" style="margin-top:10px;">
         <strong>Pose diagnostics</strong>
         <pre id="poseDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">poseKeypointsReceived: no
@@ -1236,7 +1160,7 @@ skeletonOverlayActive: no</pre>
       <div class="small-card" style="margin-top:10px;">
         <strong>Event Leaderboard</strong>
         <p class="subtitle" style="margin:4px 0 8px 0;">View quick Push-Up Challenge results without starting intake or a program.</p>
-        <button id="dashboardChallengeLeaderboardBtn" type="button" class="secondary">View Push-Up Challenge Leaderboard</button>
+        <a id="dashboardChallengeLeaderboardBtn" class="button-link secondary" href="/push-up-challenge.html">Open Push-Up Challenge</a>
       </div>
 
       <h2 style="margin-top:12px;">Workout Calendar</h2>
@@ -1284,6 +1208,9 @@ skeletonOverlayActive: no</pre>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
+  <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
+  <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
+  <script src="/motion/live-avatar-mirror.js?v=20260825-phase1c"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
@@ -1861,6 +1788,9 @@ skeletonOverlayActive: no</pre>
     let activeAvatarAsset = null;
     let avatarThreeRuntime = null;
     let avatarThreeRuntimeDepsPromise = null;
+    let liveAvatarMirror = null;
+    let liveAvatarMirrorAvatar = null;
+    let liveAvatarMirrorLastFrameAt = null;
     let avatarFacingDeg = 0;
     let faceDetector = null;
     let handDetector = null;
@@ -2113,11 +2043,14 @@ skeletonOverlayActive: no</pre>
       runtime.renderLoopActive = true;
       updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: true });
       runtime.lastRenderLoopLogAt = 0;
-      const loop = () => {
+      const loop = (frameAt) => {
         if (!runtime.renderLoopActive) {
           updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: false });
           return;
         }
+        const deltaSeconds = liveAvatarMirrorLastFrameAt == null ? 0 : Math.max(0, (frameAt - liveAvatarMirrorLastFrameAt) / 1000);
+        liveAvatarMirrorLastFrameAt = frameAt;
+        liveAvatarMirror?.update(deltaSeconds, Date.now());
         runtime.renderer.render(runtime.scene, runtime.camera);
         const now = Date.now();
         if (!runtime.lastRenderLoopLogAt || (now - runtime.lastRenderLoopLogAt) >= 2000) {
@@ -2436,6 +2369,7 @@ skeletonOverlayActive: no</pre>
       if (!isAvatarFeatureEnabled() && (nextMode === "avatar_overlay" || nextMode === "avatar_only")) {
         updateRenderModeStatus("Camera (avatar disabled for pilot)", true);
         AVATAR_FLAGS.AVATAR_MODE = "camera";
+        applyLiveAvatarRenderPresentation("camera");
         if (renderModeSelectEl.value !== "camera") renderModeSelectEl.value = "camera";
         if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== "camera") renderModeMobileSelectEl.value = "camera";
         return AVATAR_FLAGS.AVATAR_MODE;
@@ -2444,13 +2378,17 @@ skeletonOverlayActive: no</pre>
         queueMicrotask(() => {
           initializeAvatarRuntimeBootstrap("render_mode_selection").then((ok) => {
             if (!ok) return;
-            return loadAvatarAssetForCurrentUser("render_mode_selection");
+            return loadAvatarAssetForCurrentUser("render_mode_selection").then((loaded) => {
+              if (loaded) applyRenderModeSelection(nextMode, { persist, source: `${source}_avatar_ready` });
+              return loaded;
+            });
           }).catch((error) => {
             console.warn("[avatar-load] failed while enabling avatar mode", error);
           });
         });
         updateRenderModeStatus("Camera (fallback: no saved avatar)", true);
         AVATAR_FLAGS.AVATAR_MODE = "camera";
+        applyLiveAvatarRenderPresentation("camera");
         updateAvatarOverlayDiagnostics({
           lastRenderModeApplied: "camera",
           avatarOverlayRenderError: "avatar_asset_not_loaded"
@@ -2463,6 +2401,8 @@ skeletonOverlayActive: no</pre>
         return "camera";
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
+      applyLiveAvatarRenderPresentation(nextMode);
+      syncLiveAvatarMirrorOwnership(nextMode);
       updateAvatarOverlayDiagnostics({
         lastRenderModeApplied: nextMode,
         avatarOverlayRenderError: null
@@ -2480,6 +2420,80 @@ skeletonOverlayActive: no</pre>
       }
       return nextMode;
     }
+
+    function applyLiveAvatarRenderPresentation(mode) {
+      const avatarVisible = mode === "avatar_overlay" || mode === "avatar_only";
+      setAvatar3dCanvasVisibility(avatarVisible);
+      setPersonLayerSuppressed(mode === "avatar_only");
+      if (canvasEl) canvasEl.style.visibility = mode === "avatar_only" ? "hidden" : "visible";
+    }
+
+    function disposeLiveAvatarMirror() {
+      liveAvatarMirror?.dispose();
+      liveAvatarMirror = null;
+      liveAvatarMirrorAvatar = null;
+      liveAvatarMirrorLastFrameAt = null;
+      if (!running && animId?.stop) {
+        animId.stop();
+        animId = null;
+      }
+    }
+
+    function activateLiveAvatarMirror() {
+      const runtime = avatarThreeRuntime;
+      const avatar = runtime?.modelRoot;
+      if (!avatar || !runtime?.renderer || !getThreeGlobal() || !window.PocketPTLiveAvatarMirror?.LiveAvatarMirror) return false;
+      if (liveAvatarMirror && liveAvatarMirrorAvatar === avatar) return true;
+      disposeLiveAvatarMirror();
+      const avatarControl = {
+        avatar,
+        THREE: getThreeGlobal(),
+        unloadMotion: () => {
+          runtime.avatarMixer?.stopAllAction?.();
+          runtime.avatarMixer = null;
+        }
+      };
+      liveAvatarMirror = new window.PocketPTLiveAvatarMirror.LiveAvatarMirror({
+        eventTarget: window,
+        session: avatarControl,
+        cameraState: () => ({
+          facingMode: videoEl?.srcObject?.getVideoTracks?.()[0]?.getSettings?.().facingMode || "unknown",
+          previewMirrored: true,
+          isMirrored: true
+        })
+      });
+      liveAvatarMirrorAvatar = avatar;
+      liveAvatarMirrorLastFrameAt = null;
+      return true;
+    }
+
+    function syncLiveAvatarMirrorOwnership(mode = getRenderMode()) {
+      const liveMode = mode === "avatar_overlay" || mode === "avatar_only";
+      if (!liveMode) {
+        disposeLiveAvatarMirror();
+        return false;
+      }
+      const activated = activateLiveAvatarMirror();
+      if (activated && videoEl?.srcObject) ensureLiveAvatarMirrorPoseLoop().catch((error) => {
+        console.warn("[live-avatar-mirror] existing pose loop unavailable", error);
+      });
+      return activated;
+    }
+
+    async function ensureLiveAvatarMirrorPoseLoop() {
+      if (!videoEl?.srcObject || getRenderMode() === "camera") return false;
+      if (!detector) await initDetector();
+      if (!animId) runPoseLoop();
+      return Boolean(animId);
+    }
+
+    window.__liveAvatarMirrorDiagnostics = () => ({
+      active: Boolean(liveAvatarMirror),
+      avatarOwned: Boolean(liveAvatarMirrorAvatar),
+      mode: getRenderMode(),
+      rendererOwners: avatarThreeRuntime?.renderer ? 1 : 0,
+      rafOwners: avatarThreeRuntime?.renderLoopActive ? 1 : 0
+    });
 
     function fallbackRenderModeToCamera(reason, err) {
       if (AVATAR_FLAGS.AVATAR_DEBUG && err) console.warn(reason, err);
@@ -2821,8 +2835,9 @@ skeletonOverlayActive: no</pre>
       runtime.fixedStageAnchor = { x: 0, y: 0, z: 0, rotationY: 0, rotationZ: 0, scale: 1.05 };
       applyAvatarStageMode(avatarStageMode, { persist: false });
       resizeAvatarThreeRuntime();
-      setAvatar3dCanvasVisibility(true);
+      applyLiveAvatarRenderPresentation(getRenderMode());
       ensureAvatarRenderLoop(runtime);
+      syncLiveAvatarMirrorOwnership(getRenderMode());
       return {
         hasSkeleton: Boolean(runtime.skeleton),
         mappedBones: Object.entries(runtime.boneMap || {}).filter(([, bone]) => !!bone).map(([k]) => k)
@@ -3721,6 +3736,7 @@ skeletonOverlayActive: no</pre>
       getLastBodyVisibility: () => window.__lastBodyVisibility,
       getAvatarStageMode: () => avatarStageMode,
       getAvatarFacingDeg: () => avatarFacingDeg,
+      isLiveAvatarMirrorActive: () => Boolean(liveAvatarMirror),
       updateOverlayDiagnostics: updateAvatarOverlayDiagnostics,
       updateDebugOverlay: updateAvatarDebugOverlay,
       setRuntimeStatus: setAvatarRuntimeStatus
@@ -4015,6 +4031,7 @@ skeletonOverlayActive: no</pre>
     function runPoseLoop() {
       console.log("[POSE_RUNTIME] runPoseLoop bridge invoked");
       try {
+      if (animId?.stop) return animId;
       if (!window.PoseRuntime?.startPoseLoop) {
         const message = "Pose runtime module missing; cannot start pose loop.";
         poseStatusEl.textContent = message;
@@ -4024,7 +4041,7 @@ skeletonOverlayActive: no</pre>
       const loop = window.PoseRuntime.startPoseLoop({
         detector,
         video: videoEl,
-        isRunning: () => running === true,
+        isRunning: () => running === true || Boolean(liveAvatarMirror),
         onPoseFrame: ({ pose, posePacket }) => {
           window.__liveWorkoutBreakpoints?.markPass?.("first-pose-frame", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
           window.__liveWorkoutBreakpoints?.markPass?.("firstPoseFrameReceived", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
@@ -4366,14 +4383,15 @@ skeletonOverlayActive: no</pre>
         const videoHeight = videoEl.videoHeight || videoEl.clientHeight || 480;
         canvasEl.width = videoWidth; canvasEl.height = videoHeight;
         avatar3dCanvasEl.width = videoWidth; avatar3dCanvasEl.height = videoHeight;
-        setAvatar3dCanvasVisibility(false); resizeAvatarThreeRuntime();
-        const poseEnabled = new URLSearchParams(window.location.search).get('enablePoseProcessing') === '1';
+        resizeAvatarThreeRuntime();
+        const poseEnabled = new URLSearchParams(window.location.search).get('enablePoseProcessing') === '1' || getRenderMode() !== "camera";
         if (poseEnabled) { poseStatusEl.textContent = "Camera connected. Loading movement tracker…"; await initDetector(); await initOptionalTrackers(); updateTrackingMode(currentTrackingMode, performance.now()); }
+        if (poseEnabled && getRenderMode() !== "camera") await ensureLiveAvatarMirrorPoseLoop();
         poseStatusEl.textContent = poseEnabled ? "Camera and optional movement tracking ready." : "Camera ready for self-view. Optional movement tracking is off."; poseStatusEl.classList.add("status-ok");
         window.__cameraStatus = "connected"; window.__cameraConnectSuccess = true; window.__cameraLastConnectedAt = new Date().toISOString();
         trackPilotEvent("camera_connect_success", { detectorReady: Boolean(detector) });
         markPerfMetric("cameraBootMs", Math.round(performance.now() - cameraBootStartedAt));
-        setPersonLayerSuppressed(false); lastRenderMode = "camera"; startBtn.disabled = false; fullscreenCameraBtn.disabled = false; refreshCameraUiState(); ohsaBtn.disabled = false; defineExerciseBtn.disabled = false;
+        applyLiveAvatarRenderPresentation(getRenderMode()); lastRenderMode = getRenderMode(); startBtn.disabled = false; fullscreenCameraBtn.disabled = false; refreshCameraUiState(); ohsaBtn.disabled = false; defineExerciseBtn.disabled = false;
         [startBtn, fullscreenCameraBtn, ohsaBtn, defineExerciseBtn].filter(Boolean).forEach((el) => { el.removeAttribute("disabled"); el.setAttribute("aria-disabled", "false"); el.style.pointerEvents = "auto"; el.classList.remove("disabled", "is-disabled", "btn-disabled"); });
         window.dispatchEvent(new CustomEvent("camera:connected", { detail: { source: "afterConnectCamera" } }));
       },
@@ -4588,6 +4606,7 @@ skeletonOverlayActive: no</pre>
     renderModeSelectEl.onchange = () => {
       applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
     };
+    window.addEventListener("pagehide", disposeLiveAvatarMirror, { once: true });
     if (renderModeMobileSelectEl) {
       renderModeMobileSelectEl.onchange = () => {
         applyRenderModeSelection(renderModeMobileSelectEl.value, { persist: true, source: "mobile" });

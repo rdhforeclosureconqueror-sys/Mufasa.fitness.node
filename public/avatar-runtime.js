@@ -289,6 +289,10 @@
     bindPoseFrameRenderer((posePacket) => {
       const mode = renderEngineBindings.getRenderMode?.();
       if (mode !== 'avatar_overlay' && mode !== 'avatar_only') return false;
+      // Phase 1C gives the bounded solver exclusive pose-to-bone ownership.
+      // This runtime still owns the existing renderer/canvas, but must not run
+      // its legacy full-rig writer against the same avatar.
+      if (renderEngineBindings.isLiveAvatarMirrorActive?.()) return false;
       return renderAvatar3d(posePacket);
     });
     console.log('[AVATAR_RUNTIME] avatar render engine owns pose retarget/render path');
