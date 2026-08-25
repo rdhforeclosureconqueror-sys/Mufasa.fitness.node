@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PocketPT Live Avatar Mirror — Right Arm Lab</title><link rel="stylesheet" href="/dev/live-avatar-mirror.css"></head>
+<body><main><header><p>DEVELOPMENT ONLY · PHASE 1B</p><h1>Live Avatar Mirror — Right Upper Arm</h1></header>
+<section class="stages"><article><h2>Camera + MoveNet landmarks</h2><div id="cameraStage" class="stage"><video id="camera" muted playsinline></video><canvas id="landmarks"></canvas></div></article><article><h2>Avaturn avatar</h2><div id="avatarStage" class="stage"></div></article></section>
+<section class="controls"><button id="start" type="button">Start camera and mirror</button><button id="stop" type="button" disabled>Stop and restore arm</button></section>
+<section class="status" aria-live="polite"><h2>Scientific status</h2><dl>
+<div><dt>MoveNet</dt><dd id="moveNetState">WAITING</dd></div><div><dt>Body detected</dt><dd id="bodyState">NO</dd></div>
+<div><dt>Right shoulder confidence</dt><dd id="shoulderConfidence">0%</dd></div><div><dt>Right elbow confidence</dt><dd id="elbowConfidence">0%</dd></div>
+<div><dt>Avatar</dt><dd id="avatarState">WAITING</dd></div><div><dt>Avatar profile</dt><dd>avaturn-personalized-candidate</dd></div>
+<div><dt>Skeleton profile</dt><dd>avaturn-native-v1</dd></div><div><dt>Mirror state</dt><dd id="mirrorState">WAITING</dd></div>
+<div><dt>Upper-arm direction</dt><dd id="direction">—</dd></div><div><dt>Runtime ownership</dt><dd id="ownership">0 sessions · 0 RAF · 0 canvas</dd></div>
+</dl><p id="error" role="alert"></p></section></main>
+<script src="/runtime-state.js"></script><script>window.RuntimeState?.initHeadRuntime?.();</script>
+<script src="/pose-runtime.js"></script><script src="/exercise-metadata.js"></script><script src="/push-up-challenge.js"></script>
+<script src="/motion/shared3d-loader.js"></script><script src="/motion/disposable-motion-session.js"></script><script src="/motion/avatar-profiles.js"></script>
+<script src="/motion/normalized-pose.js"></script><script src="/motion/avaturn-live-pose-solver.js"></script><script src="/motion/live-avatar-mirror.js"></script>
+<script src="/dev/live-avatar-mirror.js"></script></body></html>

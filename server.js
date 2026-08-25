@@ -1320,6 +1320,9 @@ function createApp(options = {}) {
   app.get("/dev/motion-lab.css", motionLabGate, sendMotionLabFile("motion-lab.css"));
   app.get("/dev/motion-lab-bootstrap.js", motionLabGate, sendMotionLabFile("motion-lab-bootstrap.js"));
   app.get("/dev/motion-lab-runtime.js", motionLabGate, sendMotionLabFile("motion-lab-runtime.js"));
+  app.get("/dev/live-avatar-mirror", motionLabGate, sendMotionLabFile("live-avatar-mirror.html"));
+  app.get("/dev/live-avatar-mirror.css", motionLabGate, sendMotionLabFile("live-avatar-mirror.css"));
+  app.get("/dev/live-avatar-mirror.js", motionLabGate, sendMotionLabFile("live-avatar-mirror.js"));
   app.get("/dev/motion-lab-assets/:filename", motionLabGate, (req, res, next) => {
     if (!/^[a-z0-9-]+\.js$/.test(req.params.filename)) return next();
     res.set(SHELL_NO_STORE_HEADERS);
