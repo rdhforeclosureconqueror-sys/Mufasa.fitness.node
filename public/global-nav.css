@@ -3,7 +3,7 @@
 /* Production overlay invariant: injected navigation can never become a flex/grid column. */
 body>.maat-global-header{width:100%;min-width:0;max-width:none;flex:0 0 auto;align-self:stretch;transform:none}
 @media(max-width:849px){
-  body>.maat-global-header{contain:layout style;width:100%;margin-left:0;margin-right:0}
+  body>.maat-global-header{contain:style;width:100%;margin-left:0;margin-right:0}
   body>.maat-global-header>.maat-nav-panel{position:fixed!important;inset:0 auto 0 0!important;float:none!important;flex:none!important;width:min(86vw,360px)!important;min-width:0!important;max-width:calc(100vw - 44px)!important;margin:0!important;transform:none!important}
   body>.maat-global-header>.maat-nav-backdrop:not([hidden]){position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;margin:0!important;transform:none!important}
   body.maat-nav-open>main{width:100%!important;min-width:0!important;max-width:none;margin-left:0!important;padding-left:inherit;transform:none!important}
