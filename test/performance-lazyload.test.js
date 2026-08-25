@@ -128,9 +128,10 @@ test("coach backend tracing omits speech text and provider validation bodies", (
 });
 
 test("avatar create button binding is clickable and reports missing DOM", () => {
+  const controls = read("public/workout-control-activation.js");
   const runtime = read("public/avatar-runtime.js");
-  assert.match(runtime, /refs\.avatarCreateBtn\.onclick = openModal/, "avatar create button should bind directly to openModal");
-  assert.match(runtime, /refs\.avatarCreateBtn\.style\.pointerEvents = 'auto'/, "avatar create button should be made clickable during binding");
-  assert.match(runtime, /avatar_create_button_missing/, "missing avatar create button should have an explicit error reason");
-  assert.match(runtime, /Avatar create button missing\. Refresh the page and retry\./, "missing avatar create button should produce a visible error");
+  assert.match(controls, /button\.onclick = function openAvatarSetupImmediately/, "early control owner should bind Create Avatar directly");
+  assert.match(controls, /if \(!modal\).*Avatar setup is currently unavailable/, "missing modal should produce a visible error");
+  assert.doesNotMatch(runtime.slice(runtime.indexOf("function bindControls"), runtime.indexOf("function handlePosePacket")), /\.onclick\s*=/, "optional rendering runtime must not overwrite modal controls");
+  assert.match(runtime, /avatar_create_button_missing/, "runtime configuration should still diagnose a missing create button reference");
 });

@@ -42,6 +42,11 @@
     visibleMessage(state.refs.avatarCreationStatusEl, message, isError);
   }
 
+  function diagnostic(id, value) {
+    const target = global.document?.getElementById?.(id);
+    if (target) target.textContent = value;
+  }
+
   function setAvatarAssetStatus(message, isError = false) {
     if (typeof state.deps.setAvatarAssetStatus === "function") {
       state.deps.setAvatarAssetStatus(message, isError);
@@ -342,6 +347,7 @@
     }
 
     visibleAvatarMessage("Uploading avatar file…");
+    diagnostic("avatarDiagUpload", "UPLOADING");
     setAvatarAssetStatus("Uploading avatar asset to server…");
     const authToken = getAuthToken();
     if (!authToken) {
@@ -375,6 +381,7 @@
         if (timeoutHandle) clearTimeout(timeoutHandle);
       }
       const payload = await response.json().catch(() => null);
+      diagnostic("avatarDiagUpload", "VALIDATING");
       log(AVATAR_TAG, "response", { status: response.status, ok: response.ok, payload });
       if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
         throw makeError(payload?.error?.message || `upload_failed_${response.status}`, "AVATAR_UPLOAD_FAILED", { status: response.status, payload });
@@ -384,6 +391,8 @@
       if (state.refs.avatarModelUrlInput) state.refs.avatarModelUrlInput.value = avatarModelUrl;
       setAvatarAssetStatus(`Upload success. Asset stored at ${avatarModelUrl}.`);
       visibleAvatarMessage("Upload complete. Saving avatar metadata…");
+      diagnostic("avatarDiagUpload", "SUCCESS");
+      diagnostic("avatarDiagProfile", "SAVING");
       const nextAvatar = normalizeAvatarProfile({
         avatarProvider: state.deps.avatarProviderDefault || DEFAULT_PROVIDER,
         avatarModelUrl,
@@ -391,15 +400,22 @@
         avatarUpdatedAt: Date.now()
       });
       setProfileAvatar(nextAvatar);
-      await refreshAvatarAsset("uploaded_file");
       state.deps.persistUser?.();
       const syncResult = await saveProfileToNode({ source: "avatar-upload", allowLegacyFallback: false, visible: true });
       visibleAvatarMessage("Upload success. Avatar saved and synced to profile.");
+      diagnostic("avatarDiagProfile", "SUCCESS");
       state.deps.trackPilotEvent?.("avatar_upload_success", { size: file?.size || 0 });
       emitProfileSync(getProfile(), "avatar-upload", syncResult.mode);
+      refreshAvatarAsset("uploaded_file").catch((error) => {
+        diagnostic("avatarDiagRuntime", "FAILED");
+        diagnostic("avatarDiagError", `Avatar saved; optional rendering failed: ${String(error?.message || error || "unknown")}`);
+      });
       return { ok: true, avatar: nextAvatar, mode: syncResult.mode };
     } catch (err) {
       recordError("avatar-upload", err);
+      diagnostic("avatarDiagUpload", "FAILED");
+      if (state.refs.avatarModelUrlInput?.value) diagnostic("avatarDiagProfile", "FAILED");
+      diagnostic("avatarDiagError", String(err?.message || err || "Upload failed."));
       warn(AVATAR_TAG, "avatar upload failed", err);
       setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
       const msg = String(err?.message || "");
