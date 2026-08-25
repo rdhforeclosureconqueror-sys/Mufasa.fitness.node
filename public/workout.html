@@ -9,7 +9,9 @@
   <meta http-equiv="Expires" content="0" />
   <script>
     window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
-    window.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__" === "true" || window.ENABLE_AVATAR_FEATURE === true;
+    // The bounded live-avatar pilot is available from deployed code. Upload APIs
+    // remain independently server-gated and authenticated.
+    window.ENABLE_AVATAR_FEATURE = true;
     if (!window.ENABLE_AVATAR_FEATURE) document.documentElement.classList.add("avatar-feature-disabled");
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     console.log("[AVATAR_FEATURE]", window.ENABLE_AVATAR_FEATURE ? "enabled" : "disabled");
@@ -478,28 +480,6 @@
     .log-line.coach { color: #a5b4fc; }
     .log-line.system { color: #6b7280; font-style: italic; }
 
-    .challenge-card {
-      border: 1px solid rgba(34, 197, 94, 0.75);
-      border-radius: 12px;
-      padding: 10px;
-      background: rgba(6, 78, 59, 0.18);
-      display: grid;
-      gap: 8px;
-    }
-    .challenge-card label { display: grid; gap: 4px; font-size: 0.82rem; color: #d1fae5; }
-    .challenge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .challenge-consent { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; gap: 8px; }
-    .challenge-consent input { margin-top: 3px; }
-    .challenge-score-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .challenge-score-row .chip { border-color: #22c55e; color: #bbf7d0; }
-    .challenge-table-wrap { overflow-x: auto; border: 1px solid rgba(55,65,81,.9); border-radius: 10px; }
-    .challenge-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    .challenge-table th, .challenge-table td { padding: 6px 8px; border-bottom: 1px solid rgba(55,65,81,.75); text-align: left; white-space: nowrap; }
-    .challenge-table th { color: #fde68a; background: rgba(2,6,23,.7); }
-    .challenge-note { color: #bfdbfe; font-size: 0.78rem; }
-    @media (max-width: 800px) { .challenge-grid { grid-template-columns: 1fr; } }
-
-
     /* ---- Calendar ---- */
     #calendarView {
       margin-top: 4px;
@@ -791,14 +771,9 @@
     .btn-row { gap:10px; }
     button { box-shadow:none; }
     button.secondary { border-color: rgba(148,163,184,.24); color:#e2e8f0; background:rgba(2,6,23,.72); }
-    #pushupChallengeEntryBtn, #challengeStartBtn { background:linear-gradient(135deg,#facc15,#f59e0b); color:#1c1201; }
+    #pushupChallengeEntryBtn { background:linear-gradient(135deg,#facc15,#f59e0b); color:#1c1201; }
     #connectBtn, #startBtn:not(:disabled) { background:linear-gradient(135deg,#22c55e,#16a34a); color:#031307; }
     #runSystemDiagnosticBtn { border-color:rgba(56,189,248,.42); color:#bae6fd; }
-    .challenge-card {
-      border-color:rgba(250,204,21,.38);
-      background:linear-gradient(135deg, rgba(6,78,59,.22), rgba(15,23,42,.66));
-      box-shadow: 0 18px 60px rgba(0,0,0,.26);
-    }
     .workout-hud {
       border-color: rgba(34,197,94,.42);
       background: rgba(2,6,23,.72);
@@ -832,7 +807,7 @@
     }
     body.workout-focus .video-shell { aspect-ratio: 16 / 9; }
     body.workout-focus .workout-stage-pane > .status-line:not(:has(#brainStatus)):not(:has(#poseStatus)):not(:has(#exerciseLabel)):not(:has(#repCount)) { display:none; }
-    body.workout-focus .btn-row > :not(#startBtn):not(#fullscreenCameraBtn):not(#listenBtn):not(#muteBtn):not(#challengeStopBtn):not(#diagnosticsToggleBtn) { display:none; }
+    body.workout-focus .btn-row > :not(#startBtn):not(#fullscreenCameraBtn):not(#listenBtn):not(#muteBtn):not(#diagnosticsToggleBtn) { display:none; }
     body.workout-focus .workout-hud { display:grid; }
     body.camera-fullscreen .workout-support-pane { display:none; }
     body.camera-fullscreen .workout-app-shell { grid-template-columns:1fr; }
@@ -1018,7 +993,7 @@
         <button id="ohsaBtn" class="secondary" disabled>Overhead Squat Assessment</button>
         <button id="defineExerciseBtn" class="secondary" type="button">Request New Exercise</button>
         <button id="exerciseTemplateDraftBtn" class="secondary" type="button" hidden>Create Exercise Template Draft</button>
-        <button id="pushupChallengeEntryBtn" type="button">Push-Up Challenge</button>
+        <a id="pushupChallengeEntryBtn" class="button-link" href="/push-up-challenge.html">Push-Up Challenge</a>
         <button id="listenBtn" class="secondary">🎙️ Voice On</button>
         <button id="muteBtn" class="secondary">🔊 Mute</button>
         <button id="dashboardBtn" class="secondary" disabled>📊 My Dashboard</button>
@@ -1114,57 +1089,6 @@ keypoint confidence: waiting
 rep quality: waiting</pre>
       </div>
 
-      <div id="pushupChallengePanel" class="challenge-card" style="margin-top:10px;" aria-live="polite">
-        <h2 style="margin:0;">Push-Up Challenge</h2>
-        <p class="subtitle" style="margin:0;">Quick rugby-game pilot. No intake, program assignment, OHSA, payment, or full profile required.</p>
-        <div class="challenge-grid">
-          <label>Display name *<input id="challengeDisplayName" type="text" maxlength="80" placeholder="Leaderboard name" /></label>
-          <label>Team<input id="challengeTeam" type="text" maxlength="80" placeholder="Optional team" /></label>
-          <label>Email<input id="challengeEmail" type="email" maxlength="160" placeholder="Optional; hidden from leaderboard" /></label>
-          <label>Phone<input id="challengePhone" type="tel" maxlength="40" placeholder="Optional; hidden from leaderboard" /></label>
-        </div>
-        <p id="challengeVariantNote" class="challenge-note">Do any valid push-up variation. Two-hand reps count 1 point. One-hand reps count 2 points.</p>
-        <label class="challenge-consent"><input id="challengeConsent" type="checkbox" /> <span>I agree this is a fitness challenge and my display name, team, and score may appear on the leaderboard.</span></label>
-        <div class="challenge-note">Stop if you feel pain or dizziness. This is not medical advice. Ask staff before participating if you have an injury.</div>
-        <div class="btn-row">
-          <button id="challengeConnectCameraBtn" type="button" class="secondary">Connect Camera</button>
-          <button id="challengeStartBtn" type="button">Start 60s Challenge</button>
-          <button id="challengeStopBtn" type="button" class="secondary" disabled>Stop Challenge</button>
-          <button id="challengeLeaderboardBtn" type="button" class="secondary">View Leaderboard</button>
-        </div>
-        <div class="challenge-score-row">
-          <span class="chip">Countdown/Time: <span id="challengeTimer">Ready</span></span>
-          <span class="chip">Valid reps: <span id="challengeValidReps">0</span></span>
-          <span class="chip">Score: <span id="challengeScore">0</span></span>
-          <span class="chip">Save: <span id="challengeSaveStatus">Not saved</span></span>
-        </div>
-        <div class="status-line"><strong>Rejected rep reason:</strong> <span id="challengeRejectedReason">None</span></div>
-        <pre id="challengeDiagnosticsStatus" data-diagnostic-panel class="diagPre muted" style="white-space:pre-wrap;">challengeModeActive: no
-calibrationStatus: not_calibrated
-bottomElbowAngle: n/a
-topElbowAngle: n/a
-calibratedRange: n/a
-requiredRange: n/a
-pushupStanceDetected: no
-bodyAlignmentStatus: unknown
-armDepthStatus: unknown
-lockoutStatus: unknown
-lastRepVariant: none
-lastRepPoints: 0
-validRepCount: 0
-twoHandRepCount: 0
-oneHandRepCount: 0
-totalScore: 0
-rejectedRepReason: none
-leaderboardSaveStatus: not_saved</pre>
-        <div class="challenge-table-wrap">
-          <table class="challenge-table" aria-label="Push-Up Challenge leaderboard">
-            <thead><tr><th>Rank</th><th>Name</th><th>Team</th><th>Total score</th><th>Valid reps</th><th>Two-hand reps</th><th>One-hand reps</th><th>Timestamp</th></tr></thead>
-            <tbody id="challengeLeaderboardBody"><tr><td colspan="8">No results loaded yet.</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
       <div id="poseDiagnosticsPanel" data-diagnostic-panel class="small-card" style="margin-top:10px;">
         <strong>Pose diagnostics</strong>
         <pre id="poseDiagnosticsStatus" class="diagPre muted" style="white-space:pre-wrap;">poseKeypointsReceived: no
@@ -1236,7 +1160,7 @@ skeletonOverlayActive: no</pre>
       <div class="small-card" style="margin-top:10px;">
         <strong>Event Leaderboard</strong>
         <p class="subtitle" style="margin:4px 0 8px 0;">View quick Push-Up Challenge results without starting intake or a program.</p>
-        <button id="dashboardChallengeLeaderboardBtn" type="button" class="secondary">View Push-Up Challenge Leaderboard</button>
+        <a id="dashboardChallengeLeaderboardBtn" class="button-link secondary" href="/push-up-challenge.html">Open Push-Up Challenge</a>
       </div>
 
       <h2 style="margin-top:12px;">Workout Calendar</h2>

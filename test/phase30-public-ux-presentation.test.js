@@ -12,7 +12,7 @@ test("Phase 30 landing page renders polished public entry with required CTAs and
   const html = read("public/index.html");
   assert.match(html, /id="landingHeadline"/);
   assert.match(html, /Training That Learns Your Routine/);
-  assert.match(html, /id="landingChallengeCta"[^>]*href="\/workout\.html#pushupChallengePanel"/);
+  assert.match(html, /id="landingChallengeCta"[^>]*href="\/push-up-challenge\.html"/);
   assert.match(html, /id="landingWorkoutCta"[^>]*href="\/workout\.html"/);
   assert.match(html, /id="landingLoginCta"[^>]*>Member Login<\/a>/);
   assert.match(html, /id="landingDashboardCta"[^>]*href="\/dashboard\.html"/);
@@ -52,23 +52,23 @@ test("Phase 30 focus mode keeps essential controls and collapses nonessential pa
   const html = read("public/workout.html");
   const runtime = read("public/workout-runtime.js");
   assert.match(html, /body\.workout-focus \.workout-support-pane/);
-  assert.match(html, /body\.workout-focus \.btn-row > :not\(#startBtn\):not\(#fullscreenCameraBtn\):not\(#listenBtn\):not\(#muteBtn\):not\(#challengeStopBtn\):not\(#diagnosticsToggleBtn\)/);
+  assert.match(html, /body\.workout-focus \.btn-row > :not\(#startBtn\):not\(#fullscreenCameraBtn\):not\(#listenBtn\):not\(#muteBtn\):not\(#diagnosticsToggleBtn\)/);
   assert.match(html, /id="hudChallengeScore"/);
   assert.match(html, /id="hudFormStatus"/);
   assert.match(runtime, /function setWorkoutFocusMode/);
   assert.match(runtime, /setWorkoutFocusMode\(true, 'workout-started'\)/);
-  assert.match(runtime, /setWorkoutFocusMode\(true, 'challenge-running'\)/);
+  assert.doesNotMatch(runtime, /challenge-running/);
   assert.match(runtime, /setWorkoutFocusMode\(false, 'workout-stopped'\)/);
 });
 
 test("Phase 30 preserves challenge, request exercise, and coach builder role-gated entry", () => {
   const html = read("public/workout.html");
-  assert.match(html, /id="pushupChallengeEntryBtn"[^>]*>Push-Up Challenge<\/button>/);
-  assert.match(html, /id="pushupChallengePanel"/);
-  assert.match(html, /id="challengeDisplayName"/);
-  assert.match(html, /id="challengeConsent"/);
-  assert.match(html, /id="challengeStartBtn"/);
-  assert.match(html, /id="challengeLeaderboardBody"/);
+  assert.match(html, /id="pushupChallengeEntryBtn"[^>]*href="\/push-up-challenge\.html"[^>]*>Push-Up Challenge<\/a>/);
+  assert.doesNotMatch(html, /id="pushupChallengePanel"/);
+  assert.doesNotMatch(html, /id="challengeDisplayName"/);
+  assert.doesNotMatch(html, /id="challengeConsent"/);
+  assert.doesNotMatch(html, /id="challengeStartBtn"/);
+  assert.doesNotMatch(html, /id="challengeLeaderboardBody"/);
   assert.match(html, /id="defineExerciseBtn"[^>]*>Request New Exercise<\/button>/);
   assert.match(html, /id="exerciseTemplateDraftBtn"[^>]*hidden/);
   assert.match(html, /id="exerciseTemplateBuilderPanel"[^>]*hidden/);

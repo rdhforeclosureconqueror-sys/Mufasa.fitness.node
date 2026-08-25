@@ -35,7 +35,7 @@ test("Phase 31 hero CTA hierarchy preserves public pathways and Phase 30 route s
   const server = read("server.js");
 
   assert.match(html, /id="landingWorkoutCta"[^>]*href="\/workout\.html"[^>]*>Start With Pocket PT<\/a>/);
-  assert.match(html, /id="landingChallengeCta"[^>]*href="\/workout\.html#pushupChallengePanel"[^>]*>Try the Push-Up Challenge<\/a>/);
+  assert.match(html, /id="landingChallengeCta"[^>]*href="\/push-up-challenge\.html"[^>]*>Try the Push-Up Challenge<\/a>/);
   assert.match(html, /id="landingLoginCta"[^>]*href="\/login\.html"[^>]*>Member Login<\/a>/);
   assert.match(html, /id="landingDashboardCta"[^>]*href="\/dashboard\.html"[^>]*>Open My Dashboard<\/a>/);
   assert.match(html, /New user/);
@@ -103,8 +103,8 @@ test("Phase 31 workout app, dashboard, challenge, diagnostics gating, and traine
   const dashboard = read("public/dashboard.html");
 
   assert.match(workout, /id="appShell" class="app workout-app-shell"/);
-  assert.match(workout, /id="pushupChallengePanel"/);
-  assert.match(workout, /id="challengeLeaderboardBody"/);
+  assert.doesNotMatch(workout, /id="pushupChallengePanel"/);
+  assert.match(workout, /id="pushupChallengeEntryBtn"[^>]*href="\/push-up-challenge\.html"/);
   assert.match(workout, /id="dashboardBtn"/);
   assert.match(workout, /id="exerciseLibraryBtn"/);
   assert.match(workout, /id="defineExerciseBtn"[^>]*>Request New Exercise<\/button>/);
