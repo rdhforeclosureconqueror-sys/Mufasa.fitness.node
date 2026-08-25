@@ -79,6 +79,7 @@ const {
   validateOhsaSubmission,
   validateAuthBridge
 } = require("./src/validation/meValidators");
+const { validateAvatarGlb } = require("./src/validation/avatarGlbValidator");
 const {
   validateCheckoutConfig,
   validatePortalConfig,
@@ -137,18 +138,18 @@ const APP_BUILD_VERSION = "2026-08-20-motion-lab-ios-trace-v2";
 const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const safeCommit = value => /^[a-f0-9]{7,40}$/i.test(String(value || "")) ? String(value) : null;
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";
+const MEMBER_AVATAR_PILOT_ENABLED = true;
 
-function isAvatarFeatureEnabled(env = process.env) {
-  return env.ENABLE_AVATAR_FEATURE === "true";
+function isAvatarFeatureEnabled(_env = process.env) {
+  // The bounded member-avatar pilot is code-enabled. Authentication, ownership,
+  // compatibility validation, and Motion Lab authorization remain independent.
+  return MEMBER_AVATAR_PILOT_ENABLED;
 }
 
 function assertProductionPersistenceConfig({ env = process.env, rootDirWasExplicit = false, dataDirWasExplicit = false } = {}) {
   if (env.NODE_ENV !== "production" || rootDirWasExplicit || dataDirWasExplicit) return;
   if (!String(env.POCKET_PT_DATA_DIR || "").trim()) {
     throw new Error("POCKET_PT_DATA_DIR is required in production and must point to an attached persistent volume");
-  }
-  if (env.ENABLE_AVATAR_FEATURE === "true" && !String(env.POCKET_PT_AVATAR_UPLOAD_DIR || "").trim()) {
-    throw new Error("POCKET_PT_AVATAR_UPLOAD_DIR is required in production when avatar uploads are enabled");
   }
 }
 
@@ -296,7 +297,7 @@ function createApp(options = {}) {
   app.use(requestContext);
   app.use(createTrailResponseDiagnostics({ logger: options.logger || console }));
   const visualProgressScanEnabled = process.env.ENABLE_VISUAL_PROGRESS_SCAN === "true";
-  const avatarFeatureEnabled = isAvatarFeatureEnabled(process.env);
+  const avatarFeatureEnabled = isAvatarFeatureEnabled(env);
   // Motion Lab is an independent, fail-closed diagnostic capability. It does
   // not enable (and is not enabled by) the member-facing avatar flag.
   const motionLabEnabled = String(env.ENABLE_MOTION_LAB || "").toLowerCase() === "true";
@@ -1041,6 +1042,27 @@ function createApp(options = {}) {
     }
     const fileBuffer = bodyBuffer.slice(fileStart, fileEnd);
     return { fileBuffer, originalName };
+  }
+
+  function avatarAssetId(value) {
+    const id = String(value || "").replace(/\.glb$/i, "");
+    if (!/^[a-f0-9-]{16,64}$/i.test(id)) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
+    return id;
+  }
+  function avatarAssetPaths(value) { const id = avatarAssetId(value); return { id, glb: path.join(AVATAR_UPLOAD_DIR, `${id}.glb`), metadata: path.join(AVATAR_UPLOAD_DIR, `${id}.json`) }; }
+  function profileOwnsLegacyAvatar(userId, fileName) {
+    const modelUrl = userStore.loadUser(userId)?.profile?.avatar?.avatarModelUrl; if (!modelUrl) return false;
+    try { const pathname = new URL(String(modelUrl), "https://pocketpt.invalid").pathname; return pathname === `/uploads/avatars/${fileName}` || pathname === `/api/me/avatar/assets/${fileName.replace(/\.glb$/i, "")}`; }
+    catch (_) { return false; }
+  }
+  function requireOwnedAvatarAsset(req) {
+    const paths = avatarAssetPaths(req.params.assetId || req.params.fileName);
+    if (!fs.existsSync(paths.glb)) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
+    let owned = false;
+    if (fs.existsSync(paths.metadata)) { try { owned = readJSON(paths.metadata)?.ownerUserId === req.auth.userId; } catch (_) { owned = false; } }
+    else { owned = profileOwnsLegacyAvatar(req.auth.userId, `${paths.id}.glb`); if (owned) writeJSON(paths.metadata, { assetId: paths.id, ownerUserId: req.auth.userId, migratedAt: new Date().toISOString() }); }
+    if (!owned) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
+    return paths;
   }
 
   function loadExerciseIndex() {
@@ -3105,6 +3127,14 @@ function createApp(options = {}) {
     return ok(res, req.requestId, result, 201);
   }));
 
+  app.get("/api/me/avatar/assets/:assetId", requireAuth, asyncHandler(async (req, res) => {
+    if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
+    const asset = requireOwnedAvatarAsset(req); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
+  }));
+  app.get("/uploads/avatars/:fileName", requireAuth, asyncHandler(async (req, res) => {
+    if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
+    const asset = requireOwnedAvatarAsset(req); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
+  }));
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) {
       throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
@@ -3141,25 +3171,16 @@ function createApp(options = {}) {
       console.warn("[avatar-upload] rejected", { requestId: req.requestId, userId: req.auth?.userId || null, reason: "invalid_glb_header" });
       throw new ApiError("VALIDATION_ERROR", "Invalid .glb file header", 400);
     }
+    const compatibility = validateAvatarGlb(fileBuffer);
     const unique = typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const fileName = `${unique}.glb`;
     const destinationPath = path.join(AVATAR_UPLOAD_DIR, fileName);
     fs.writeFileSync(destinationPath, fileBuffer);
-    const avatarModelPath = `/uploads/avatars/${fileName}`;
-    const configuredAssetOrigin = String(
-      process.env.AVATAR_ASSET_ORIGIN ||
-      process.env.ASSET_ORIGIN ||
-      process.env.PUBLIC_BASE_URL ||
-      ""
-    ).trim().replace(/\/+$/g, "");
-    const requestOrigin = resolveRequestOrigin(req);
-    const assetOrigin = configuredAssetOrigin || requestOrigin || "";
-    const avatarModelUrl = assetOrigin
-      ? `${assetOrigin}${avatarModelPath}`
-      : avatarModelPath;
-    return ok(res, req.requestId, { avatarModelUrl }, 201);
+    writeJSON(path.join(AVATAR_UPLOAD_DIR, `${unique}.json`), { assetId: unique, ownerUserId: req.auth.userId, originalName: path.basename(originalName), sizeBytes: fileBuffer.length, compatibility, createdAt: new Date().toISOString() });
+    const avatarModelUrl = `/api/me/avatar/assets/${unique}`;
+    return ok(res, req.requestId, { assetId: unique, avatarModelUrl, compatibility }, 201);
   }));
 
   // ---- COMMAND endpoint (legacy compatibility adapter for session lifecycle) ----

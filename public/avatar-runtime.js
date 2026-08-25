@@ -678,7 +678,7 @@
         throw runtimeStatus?.loadError || new Error('avatar_runtime_probe_failed');
       }
       b.setRuntimeStatus?.('GLB detected. Booting Three.js runtime…');
-      const mountInfo = await b.mountAvatarGlbModel?.(nextAvatar.avatarModelUrl);
+      const mountInfo = await b.mountAvatarGlbModel?.(nextAvatar.avatarModelUrl, runtimeStatus.arrayBuffer);
       runtimeStatus.renderSucceeded = true;
       runtimeStatus.motionRetargeted = false;
       runtimeStatus.mappedBones = mountInfo?.mappedBones || [];
@@ -714,6 +714,7 @@
   };
 
   globalScope.AvatarRuntime = {
+    openModal,
     getStatus: status,
     updateStatus: update,
     setFailure,

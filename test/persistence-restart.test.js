@@ -23,6 +23,9 @@ test("production refuses container-local transactional storage", () => {
   assert.doesNotThrow(() => assertProductionPersistenceConfig({
     env: { NODE_ENV: "production", POCKET_PT_DATA_DIR: "/var/data/pocket-pt" }
   }));
+  assert.doesNotThrow(() => assertProductionPersistenceConfig({
+    env: { NODE_ENV: "production", POCKET_PT_DATA_DIR: "/var/data/pocket-pt", ENABLE_AVATAR_FEATURE: "true" }
+  }), "avatar pilot falls back to its existing local upload directory when a dedicated volume is unavailable");
 });
 
 test("workouts, assessments, Journey, leaderboard and admin read model survive restart and image replacement", () => {

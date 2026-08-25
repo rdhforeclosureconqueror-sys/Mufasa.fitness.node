@@ -9,8 +9,8 @@
   <meta http-equiv="Expires" content="0" />
   <script>
     window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
-    // The bounded live-avatar pilot is available from deployed code. Upload APIs
-    // remain independently server-gated and authenticated.
+    // The bounded live-avatar pilot is code-enabled on both client and server.
+    // Upload and delivery remain independently authenticated and owner-scoped.
     window.ENABLE_AVATAR_FEATURE = true;
     if (!window.ENABLE_AVATAR_FEATURE) document.documentElement.classList.add("avatar-feature-disabled");
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
@@ -1232,6 +1232,7 @@ skeletonOverlayActive: no</pre>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
+  <script src="/workout-control-activation.js?v=20260825-avatar-camera-recovery"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
@@ -2638,10 +2639,12 @@ skeletonOverlayActive: no</pre>
         loadError: null
       };
       try {
-        const response = await fetch(avatarModelUrl, { cache: "no-store" });
+        const authToken = getAuthToken();
+        const response = await fetch(avatarModelUrl, { cache: "no-store", headers: authToken ? { authorization: `Bearer ${authToken}` } : {} });
         if (!response.ok) throw new Error(`avatar_http_${response.status}`);
         status.assetFound = true;
         const buffer = await response.arrayBuffer();
+        status.arrayBuffer = buffer;
         runtimeStatusRef.lastAvatarFetchStatus = response.status;
         runtimeStatusRef.lastAvatarFetchBytes = Number(buffer?.byteLength || 0);
         runtimeStatusRef.lastAvatarFetchMime = response.headers?.get("content-type") || null;
@@ -2666,7 +2669,7 @@ skeletonOverlayActive: no</pre>
       }
     }
 
-    async function mountAvatarGlbModel(avatarModelUrl) {
+    async function mountAvatarGlbModel(avatarModelUrl, avatarArrayBuffer = null) {
       const status = getAvatarRuntimeStatusRef();
       status.lastAvatarUrl = avatarModelUrl || null;
       status.glbLoadAttempted = true;
@@ -2694,7 +2697,8 @@ skeletonOverlayActive: no</pre>
         });
         throw new Error("avatar_three_runtime_unavailable");
       }
-      if (!/\.glb(\?|$)/i.test(avatarModelUrl)) {
+      const protectedMemberAvatar = /\/api\/me\/avatar\/assets\/[a-f0-9-]+(?:\?|$)/i.test(avatarModelUrl);
+      if (!protectedMemberAvatar && !/\.glb(\?|$)/i.test(avatarModelUrl)) {
         status.lastGlbLoadStatus = "unsupported_format";
         setAvatarRuntimeFailure("avatar_glb_required_in_phase_a", { avatarModelUrl });
         throw new Error("avatar_glb_required_in_phase_a");
@@ -2705,15 +2709,16 @@ skeletonOverlayActive: no</pre>
       let gltf = null;
       const glbLoadStartedAt = Date.now();
       try {
+        const buffer = avatarArrayBuffer || await fetch(avatarModelUrl, { cache: "no-store", headers: getAuthToken() ? { authorization: `Bearer ${getAuthToken()}` } : {} }).then(response => { if (!response.ok) throw new Error(`avatar_http_${response.status}`); return response.arrayBuffer(); });
         gltf = await new Promise((resolve, reject) => {
           const timeoutId = setTimeout(() => reject(new Error("avatar_glb_load_timeout_20000ms")), 20000);
-          loader.load(
-            avatarModelUrl,
+          loader.parse(
+            buffer,
+            new URL(".", new URL(avatarModelUrl, window.location.href)).href,
             (loaded) => {
               clearTimeout(timeoutId);
               resolve(loaded);
             },
-            undefined,
             (err) => {
               clearTimeout(timeoutId);
               reject(err || new Error("avatar_gltf_load_failed"));
@@ -4637,15 +4642,7 @@ skeletonOverlayActive: no</pre>
         uploadFile: () => window.ProfileWriteRuntime?.uploadAvatarFile?.(),
         clearAvatar: () => window.ProfileWriteRuntime?.clearAvatarMetadata?.()
       },
-      messageHandler: (event) => {
-        const payload = event?.data;
-        if (!payload || payload.type !== "mufasa-avatar-created") return;
-        if (typeof payload.avatarModelUrl !== "string") return;
-        avatarModelUrlInput.value = payload.avatarModelUrl;
-        avatarThumbUrlInput.value = payload.avatarThumbnailUrl || "";
-        avatarCreationStatusEl.textContent = "Avatar export captured from creator. Save to apply.";
-        openAvatarModal();
-      }
+      // Avaturn handoff is an explicit external create/export/import workflow.
     });
     } else {
       [avatarCreateBtn, launchAvaturnBtn, avatarFileInput, uploadAvatarBtn, saveAvatarBtn, clearAvatarBtn, avatarModelUrlInput, avatarThumbUrlInput, avatarFacingSelectEl, avatarRotate90Btn, avatarStageMobileSelectEl].filter(Boolean).forEach((el) => {
@@ -4662,7 +4659,7 @@ skeletonOverlayActive: no</pre>
       if (!popup) {
         avatarCreationStatusEl.textContent = "Popup blocked. Allow popups, then retry.";
       } else {
-        avatarCreationStatusEl.textContent = "Creator opened. Paste exported URL and save.";
+        avatarCreationStatusEl.textContent = "Creator opened. Export your .glb, return here, choose it, and press Upload Avatar.";
       }
     };
 

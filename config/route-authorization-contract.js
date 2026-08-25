@@ -10,7 +10,9 @@ module.exports = Object.freeze([
   { method:"GET", path:"/api/dev/motion-lab/readiness", authentication:"motion-lab-session", allowedRoles:["super_admin","admin","operator"], requiredPermissions:["ops.read_observability"], membership:"not-required", ownership:"privileged", featureFlag:"ENABLE_MOTION_LAB", publicOutput:"readiness-acknowledgement", rateLimit:null, compatibility:null, publicWrite:null },
   ...["/dev/motion-lab-launch", "/dev/motion-lab-launch.js"].map((routePath) => ({ method:"GET", path:routePath, authentication:"public-handoff-shell", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"no-protected-data", featureFlag:"ENABLE_MOTION_LAB", publicOutput:"static-session-handoff-code-only", rateLimit:null, compatibility:null, publicWrite:null })),
   ...["/dev/motion-lab", "/dev/motion-lab-bootstrap.js", "/dev/motion-lab-runtime.js", "/dev/motion-lab.css", "/dev/motion-lab-assets/:filename", "/dev/motion-lab-assets/phase-e/:filename", "/dev/motion-lab-avatar-assets/:filename", "/motion/assets/phase-e/:filename"].map((routePath) => ({ method:"GET", path:routePath, authentication:"motion-lab-session-or-ops-read-observability", allowedRoles:["super_admin","admin","operator"], requiredPermissions:["ops.read_observability"], membership:"not-required", ownership:"privileged", featureFlag:"ENABLE_MOTION_LAB", publicOutput:"private-static-diagnostic-asset", rateLimit:null, compatibility:null, publicWrite:null })),
+  ...["/dev/live-avatar-mirror", "/dev/live-avatar-mirror.css", "/dev/live-avatar-mirror.js"].map((routePath) => ({ method:"GET", path:routePath, authentication:"motion-lab-session-or-ops-read-observability", allowedRoles:["super_admin","admin","operator"], requiredPermissions:["ops.read_observability"], membership:"not-required", ownership:"privileged", featureFlag:"ENABLE_MOTION_LAB", publicOutput:"private-live-avatar-diagnostic", rateLimit:null, compatibility:null, publicWrite:null })),
   { method:"GET", path:"/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb", authentication:"required", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"authenticated-user-self", featureFlag:null, publicOutput:"product-3d-avatar-asset", rateLimit:"30/minute", compatibility:null, publicWrite:null },
+  ...["/api/me/avatar/assets/:assetId", "/uploads/avatars/:fileName"].map((routePath) => ({ method:"GET", path:routePath, authentication:"required", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"authenticated-user-self", featureFlag:null, publicOutput:"owner-scoped-avatar-glb", rateLimit:null, compatibility:routePath.startsWith("/uploads") ? "legacy-profile-url" : null, publicWrite:null })),
   { method:"GET", path:"/pocketpt/my-program", authentication:"public-shell", allowedRoles:[], requiredPermissions:[], membership:"not-required", ownership:"api-enforced", featureFlag:null, publicOutput:"static-participant-shell", rateLimit:null, compatibility:null, publicWrite:null },
   ...[
     ["GET", "/api/me/youth-fitness/csrf"],
@@ -248,7 +250,7 @@ module.exports = Object.freeze([
     "requiredPermissions": [],
     "membership": "not-required",
     "ownership": "authenticated-user",
-    "featureFlag": "ENABLE_AVATAR_FEATURE",
+    "featureFlag": null,
     "publicOutput": "authenticated-safe",
     "rateLimit": null,
     "compatibility": null,
