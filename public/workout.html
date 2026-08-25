@@ -1187,7 +1187,7 @@ skeletonOverlayActive: no</pre>
       <p class="subtitle">Launch Avaturn creator or upload an exported .glb avatar file from your device.</p>
       <div class="btn-row">
         <button id="launchAvaturnBtn">Open Avaturn Creator</button>
-        <input id="avatarFileInput" type="file" />
+        <input id="avatarFileInput" type="file" accept=".glb,model/gltf-binary" />
         <button id="uploadAvatarBtn" class="secondary">Upload Avatar (.glb)</button>
         <button id="closeAvatarModalBtn" class="secondary">Close</button>
       </div>
@@ -1195,11 +1195,22 @@ skeletonOverlayActive: no</pre>
       <input id="avatarModelUrlInput" type="text" placeholder="Avatar model URL (required, e.g. .glb/.gltf/.vrm)" />
       <input id="avatarThumbUrlInput" type="text" placeholder="Avatar thumbnail URL (optional)" />
       <div class="btn-row">
-        <button id="saveAvatarBtn">Save Avatar</button>
+        <button id="saveAvatarBtn">Save Manual Avatar URL</button>
         <button id="clearAvatarBtn" class="secondary">Remove Saved Avatar</button>
       </div>
       <div class="status-line"><strong>Creator status:</strong> <span id="avatarCreationStatus">Idle.</span></div>
       <div class="status-line"><strong>Avatar runtime:</strong> <span id="avatarRuntimeStatus">Not attempted.</span></div>
+      <div id="avatarModalDiagnostics" class="status-line" aria-live="polite" style="margin-top:10px; padding:10px; border:1px solid #667; border-radius:8px;">
+        <strong>Phone diagnostics</strong><br>
+        Modal controls: <span id="avatarDiagControls">READY</span><br>
+        Avaturn launch: <span id="avatarDiagLaunch">IDLE</span><br>
+        Selected file: <span id="avatarDiagFile">NONE</span><br>
+        Upload: <span id="avatarDiagUpload">IDLE</span><br>
+        Profile save: <span id="avatarDiagProfile">IDLE</span><br>
+        Avatar runtime: <span id="avatarDiagRuntime">NOT ATTEMPTED</span><br>
+        Last error: <span id="avatarDiagError">NONE</span>
+      </div>
+      <p class="subtitle">A successful GLB upload automatically saves its protected URL to your profile. “Save Manual Avatar URL” is only for the compatibility URL fields above.</p>
     </div>
   </div>
 
@@ -1232,7 +1243,7 @@ skeletonOverlayActive: no</pre>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260825-avatar-camera-recovery"></script>
+  <script src="/workout-control-activation.js?v=20260825-avatar-modal-controls"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
@@ -4652,17 +4663,6 @@ skeletonOverlayActive: no</pre>
       if (avatarModalEl) avatarModalEl.classList.add("hidden");
       setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
     }
-    launchAvaturnBtn.onclick = () => {
-      if (!isAvatarFeatureEnabled()) return false;
-      avatarCreationStatusEl.textContent = "Opening Avaturn creator popup…";
-      const popup = window.open(AVATAR_CREATOR_URL, "avaturn_creator", "popup=true,width=1100,height=800");
-      if (!popup) {
-        avatarCreationStatusEl.textContent = "Popup blocked. Allow popups, then retry.";
-      } else {
-        avatarCreationStatusEl.textContent = "Creator opened. Export your .glb, return here, choose it, and press Upload Avatar.";
-      }
-    };
-
     muteBtn.onclick = () => {
       requireCoachRuntime().toggleMuted();
     };
