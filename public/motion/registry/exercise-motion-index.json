@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    { "exerciseId": "push-up", "preferredMotionId": "push_up/avaturn_native_v1", "avatarProfileId": "avaturn-personalized-candidate", "cameraPreset": "exercise-side", "loop": true, "status": "active", "audience": "product" },
+    { "exerciseId": "phase-e-dance-development", "preferredMotionId": "phase_e/dance_fixture_v1", "avatarProfileId": "phase-e-reference", "cameraPreset": "three-quarter", "loop": true, "status": "development", "audience": "development" }
+  ]
+}

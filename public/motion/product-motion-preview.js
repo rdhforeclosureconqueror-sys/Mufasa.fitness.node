@@ -1,41 +1,12 @@
 (function (root, factory) {
   const session = typeof module === "object" && module.exports ? require("./disposable-motion-session") : root.PocketPTDisposableMotionSession;
   const camera = typeof module === "object" && module.exports ? require("./product-motion-camera") : root.ProductMotionCamera;
-  const api = factory(session, camera, root);
+  const registry = typeof module === "object" && module.exports ? require("./registry/motion-registry") : root.PocketPTMotionRegistry;
+  const api = factory(session, camera, registry, root);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.ProductMotionPreview = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, ProductMotionCamera, globalScope) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (DisposableMotionSession, ProductMotionCamera, MotionRegistry, globalScope) {
   "use strict";
-
-  // ---------------------------------------------------------------------------
-  // Product-safe asset registry records
-  // The avatar is served via a member-gated route added for this product path.
-  // The fixture is served via the standard public static route.
-  // Both records satisfy DisposableMotionSession validation invariants:
-  //   loadAvatar:           rejects developmentOnly === false
-  //   loadExtractedAnimation: requires developmentOnly truthy
-  // ---------------------------------------------------------------------------
-
-  const PRODUCT_AVATAR_RECORD = Object.freeze({
-    avatarId: "avaturn-personalized-candidate",
-    displayName: "Push-Up Challenge Avatar",
-    source: "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb",
-    assetUrl: "/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb",
-    skeletonProfile: "avaturn-native-v1",
-    status: "product-preview",
-    developmentOnly: true // required by DisposableMotionSession.loadExtractedAnimation
-  });
-
-  const PRODUCT_FIXTURE_RECORD = Object.freeze({
-    fixtureId: "avaturn-push-up-animation",
-    motionId: "push_up/avaturn_native_v1",
-    assetUrl: "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb",
-    clipName: "avaturn_push_up_native_v1",
-    skeletonProfile: "avaturn-native-v1",
-    compatibleAvatarProfile: "avaturn-personalized-candidate",
-    expectedTrackCount: 40,
-    developmentOnly: true // required by DisposableMotionSession.loadExtractedAnimation
-  });
 
   // Product states exposed to the page. Internal Motion Lab vocabulary is not leaked.
   const PRODUCT_STATES = Object.freeze(["idle", "loading", "ready", "playing", "paused", "failed", "disposed"]);
@@ -47,8 +18,8 @@
   // runtime config or the hard-coded production backend so it always produces
   // an absolute URL regardless of which frontend host serves the page.
   // ---------------------------------------------------------------------------
-  function resolveProductAvatarUrl(scope) {
-    const avatarPath = PRODUCT_AVATAR_RECORD.assetUrl;
+  function resolveProductAvatarUrl(scope, avatarRecord) {
+    const avatarPath = avatarRecord.assetUrl;
     if (typeof scope.MaatApiClient?.resolve === "function") {
       return scope.MaatApiClient.resolve(avatarPath);
     }
@@ -130,13 +101,10 @@
     if (!options || !options.container) throw new TypeError("ProductMotionPreview.create: container is required");
 
     const container = options.container;
-    const avatarProfileId = options.avatarProfileId || "avaturn-personalized-candidate";
-    const motionId = options.motionId || "push_up/avaturn_native_v1";
-    const fixtureId = options.fixtureId || "avaturn-push-up-animation";
+    const defaultExercise = MotionRegistry.resolveDefaultExercise();
+    const exerciseId = options.exerciseId || defaultExercise.exerciseId;
+    const avatarProfileId = options.avatarProfileId || defaultExercise.avatarProfileId;
     const autoplay = options.autoplay !== false;
-    const loop = options.loop !== false;
-    const cameraPreset = options.cameraPreset || "exercise-side";
-    const expectedBindings = options.expectedBindings || { intended: 40, bound: 40, unbound: 0 };
     const onStatus = typeof options.onStatus === "function" ? options.onStatus : () => {};
     const onError = typeof options.onError === "function" ? options.onError : () => {};
     const onDiagnostic = typeof options.onDiagnostic === "function" ? options.onDiagnostic : () => {};
@@ -168,16 +136,6 @@
     }
     diagnostic("preview_created");
 
-    function resolveAvatarRecord(profileId) {
-      if (profileId === PRODUCT_AVATAR_RECORD.avatarId) return PRODUCT_AVATAR_RECORD;
-      return null;
-    }
-
-    function resolveFixtureRecord(fId, mId) {
-      if (fId === PRODUCT_FIXTURE_RECORD.fixtureId && mId === PRODUCT_FIXTURE_RECORD.motionId) return PRODUCT_FIXTURE_RECORD;
-      return null;
-    }
-
     async function mount() {
       diagnostic("preview_mount_started");
       if (disposed) { emitStatus("disposed"); return { ok: false, reason: "disposed" }; }
@@ -190,28 +148,15 @@
 
       try {
         // 1. Resolve registry records.
-        const avatarRecord = resolveAvatarRecord(avatarProfileId);
-        if (!avatarRecord) {
-          throw Object.assign(new Error("Unknown avatar profile: " + avatarProfileId), { code: "unknown_avatar_profile" });
-        }
+        const resolved = MotionRegistry.resolveExerciseMotion(exerciseId, avatarProfileId);
+        if (options.motionId && options.motionId !== resolved.motion.motionId) throw Object.assign(new Error("Requested motion does not match exercise registry"), { code: "unknown_motion" });
+        if (options.fixtureId && options.fixtureId !== resolved.fixture.fixtureId) throw Object.assign(new Error("Requested fixture does not match motion registry"), { code: "unknown_fixture" });
+        const { avatar: avatarRecord, fixture: fixtureRecord, exercise } = resolved;
+        const loop = options.loop === undefined ? exercise.loop : options.loop !== false;
+        const cameraPreset = options.cameraPreset || exercise.cameraPreset;
+        const expectedBindings = Object.freeze({ intended: fixtureRecord.expectedTrackCount, bound: fixtureRecord.expectedBoundTrackCount, unbound: fixtureRecord.expectedUnboundTrackCount });
         diagnostic("avatar_record_resolved");
-
-        const fixtureRecord = resolveFixtureRecord(fixtureId, motionId);
-        if (!fixtureRecord) {
-          throw Object.assign(new Error("Unknown fixture or motion ID: " + fixtureId + " / " + motionId), { code: "unknown_fixture" });
-        }
         diagnostic("fixture_record_resolved");
-
-        // 2. Validate compatibility before any network request.
-        if (
-          avatarRecord.skeletonProfile !== fixtureRecord.skeletonProfile ||
-          avatarRecord.avatarId !== fixtureRecord.compatibleAvatarProfile
-        ) {
-          throw Object.assign(
-            new Error("Avatar profile and fixture are not compatible"),
-            { code: "incompatible_pairing" }
-          );
-        }
 
         // 3. Create exactly one DisposableMotionSession with an authenticated loader.
         // The product loader intercepts the member-gated avatar URL and fetches it
@@ -225,7 +170,7 @@
         let sessionLoader = options.loader;
         let runtimeAvatarRecord = avatarRecord;
         if (!options.loader) {
-          const avatarAbsoluteUrl = resolveProductAvatarUrl(env);
+          const avatarAbsoluteUrl = resolveProductAvatarUrl(env, avatarRecord);
           runtimeAvatarRecord = Object.freeze({ ...avatarRecord, assetUrl: avatarAbsoluteUrl });
           const baseLoader = env.PocketPTShared3DLoader;
           if (baseLoader) {
@@ -366,8 +311,7 @@
   // Expose internals for testing only.
   return Object.freeze({
     create,
-    _productAvatarRecord: PRODUCT_AVATAR_RECORD,
-    _productFixtureRecord: PRODUCT_FIXTURE_RECORD,
+    _registry: MotionRegistry,
     _productStates: PRODUCT_STATES,
     _resolveProductAvatarUrl: resolveProductAvatarUrl,
     _buildAuthenticatedProductLoader: buildAuthenticatedProductLoader

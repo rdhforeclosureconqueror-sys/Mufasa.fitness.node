@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$id": "https://pocketpt.local/schemas/motion/avatar-profile.schema.json",
+  "required": [
+    "schemaVersion",
+    "records"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "avatarProfileId",
+          "displayName",
+          "skeletonProfileId",
+          "assetUrl",
+          "assetResolver",
+          "sourceAssetReference",
+          "runtimeAudience",
+          "productEligible",
+          "status",
+          "licenseStatus",
+          "licenseReference",
+          "expectedSkeletonRoot",
+          "expectedJointCount",
+          "developmentOnly"
+        ],
+        "properties": {
+          "avatarProfileId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*$"
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "skeletonProfileId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*$"
+          },
+          "assetUrl": {
+            "type": "string",
+            "pattern": "^/motion/assets/.+\\.glb$"
+          },
+          "assetResolver": {
+            "enum": [
+              "authenticated-product-backend",
+              "public-static"
+            ]
+          },
+          "sourceAssetReference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "runtimeAudience": {
+            "enum": [
+              "product",
+              "development"
+            ]
+          },
+          "productEligible": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "development"
+            ]
+          },
+          "licenseStatus": {
+            "enum": [
+              "not-cleared",
+              "development-test-only",
+              "cleared"
+            ]
+          },
+          "licenseReference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedSkeletonRoot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedJointCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "developmentOnly": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

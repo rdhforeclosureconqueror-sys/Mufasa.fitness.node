@@ -39,11 +39,8 @@ onReady(function boot(){
      setUsable(false);
      const preview=global.ProductMotionPreview.create({
        container,
-       avatarProfileId:'avaturn-personalized-candidate',
-       motionId:'push_up/avaturn_native_v1',
-       fixtureId:'avaturn-push-up-animation',
-       autoplay:true,loop:true,cameraPreset:'exercise-side',
-       expectedBindings:{intended:40,bound:40,unbound:0},
+       exerciseId:'push-up',
+       autoplay:true,
        onDiagnostic(entry){diagnostic(entry.event,entry.code?{code:entry.code}:{});},
        onStatus(){},
        onError(){setUsable(false);}

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    { "motionId": "push_up/avaturn_native_v1", "exerciseId": "push-up", "displayName": "Push-Up", "version": 1, "provenanceReference": "/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json", "loopPolicy": "loop", "trimPolicy": "source-interval-0-to-1.5333333015441895", "rootMotionPolicy": "preserve", "reductionPolicy": "none", "compressionPolicy": "source", "fixtureIdsBySkeletonProfile": { "avaturn-native-v1": "avaturn-push-up-animation" }, "status": "active", "audience": "product" },
+    { "motionId": "phase_e/dance_fixture_v1", "exerciseId": "phase-e-dance-development", "displayName": "Phase E Dance Fixture", "version": 1, "provenanceReference": "/motion/phase-e-assets.js", "loopPolicy": "loop", "trimPolicy": "none", "rootMotionPolicy": "preserve", "reductionPolicy": "none", "compressionPolicy": "source", "fixtureIdsBySkeletonProfile": { "mixamo-phase-e": "phase-e-animation-fixture" }, "status": "development", "audience": "development" }
+  ]
+}

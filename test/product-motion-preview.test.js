@@ -116,6 +116,7 @@ function loadBrowserMotionRuntime() {
     "../public/motion/shared3d-loader.js",
     "../public/motion/disposable-motion-session.js",
     "../public/motion/product-motion-camera.js",
+    "../public/motion/registry/motion-registry.js",
     "../public/motion/product-motion-preview.js"
   ];
   const window = {};
@@ -219,7 +220,7 @@ test("browser global ProductMotionPreview mounts when runtime dependencies are a
 // 3. Avatar profile resolves correctly
 // ---------------------------------------------------------------------------
 test("product avatar record resolves avaturn-personalized-candidate", () => {
-  const record = ProductMotionPreview._productAvatarRecord;
+  const record = ProductMotionPreview._registry.resolveAvatarProfile("avaturn-personalized-candidate");
   assert.equal(record.avatarId, "avaturn-personalized-candidate");
   assert.equal(record.skeletonProfile, "avaturn-native-v1");
   assert.equal(record.assetUrl, "/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb");
@@ -230,7 +231,7 @@ test("product avatar record resolves avaturn-personalized-candidate", () => {
 // 4. push_up/avaturn_native_v1 motion resolves correctly
 // ---------------------------------------------------------------------------
 test("product fixture record resolves push_up/avaturn_native_v1", () => {
-  const record = ProductMotionPreview._productFixtureRecord;
+  const record = ProductMotionPreview._registry.resolveExerciseMotion("push-up").fixture;
   assert.equal(record.motionId, "push_up/avaturn_native_v1");
   assert.equal(record.clipName, "avaturn_push_up_native_v1");
   assert.equal(record.skeletonProfile, "avaturn-native-v1");
@@ -242,7 +243,7 @@ test("product fixture record resolves push_up/avaturn_native_v1", () => {
 // 5. Fixture ID resolves correctly
 // ---------------------------------------------------------------------------
 test("product fixture record resolves avaturn-push-up-animation fixture ID", () => {
-  const record = ProductMotionPreview._productFixtureRecord;
+  const record = ProductMotionPreview._registry.resolveExerciseMotion("push-up").fixture;
   assert.equal(record.fixtureId, "avaturn-push-up-animation");
   assert.equal(record.assetUrl, "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb");
 });
@@ -495,10 +496,9 @@ test("create() with no container throws a TypeError immediately", () => {
 // ---------------------------------------------------------------------------
 // Module registry exports
 // ---------------------------------------------------------------------------
-test("module exports create, _productAvatarRecord, _productFixtureRecord, _productStates", () => {
+test("module exports create, registry, and product states", () => {
   assert.equal(typeof ProductMotionPreview.create, "function");
-  assert.ok(ProductMotionPreview._productAvatarRecord);
-  assert.ok(ProductMotionPreview._productFixtureRecord);
+  assert.equal(typeof ProductMotionPreview._registry.resolveExerciseMotion, "function");
   assert.ok(Array.isArray(ProductMotionPreview._productStates));
   assert.ok(ProductMotionPreview._productStates.includes("idle"));
   assert.ok(ProductMotionPreview._productStates.includes("playing"));
@@ -512,29 +512,31 @@ test("module exports create, _productAvatarRecord, _productFixtureRecord, _produ
 
 // 1. Avatar URL resolves against canonical backend, not frontend host.
 test("resolveProductAvatarUrl uses MaatApiClient.resolve when available", () => {
-  const { _resolveProductAvatarUrl, _productAvatarRecord } = ProductMotionPreview;
+  const { _resolveProductAvatarUrl, _registry } = ProductMotionPreview;
+  const avatarRecord = _registry.resolveAvatarProfile("avaturn-personalized-candidate");
   const resolved = [];
   const scope = {
     MaatApiClient: { resolve: (path) => { resolved.push(path); return "https://mufasa-fitness-node.onrender.com" + path; } }
   };
-  const url = _resolveProductAvatarUrl(scope);
+  const url = _resolveProductAvatarUrl(scope, avatarRecord);
   assert.equal(resolved.length, 1, "MaatApiClient.resolve must be called once");
-  assert.equal(resolved[0], _productAvatarRecord.assetUrl, "must resolve the avatar asset path");
-  assert.equal(url, "https://mufasa-fitness-node.onrender.com" + _productAvatarRecord.assetUrl);
+  assert.equal(resolved[0], avatarRecord.assetUrl, "must resolve the avatar asset path");
+  assert.equal(url, "https://mufasa-fitness-node.onrender.com" + avatarRecord.assetUrl);
   assert.equal(new URL(url).origin, "https://mufasa-fitness-node.onrender.com", "result must be an absolute backend URL");
 });
 
 test("resolveProductAvatarUrl falls back to MAAT_BACKEND_ORIGIN when MaatApiClient absent", () => {
-  const { _resolveProductAvatarUrl, _productAvatarRecord } = ProductMotionPreview;
+  const { _resolveProductAvatarUrl, _registry } = ProductMotionPreview;
+  const avatarRecord = _registry.resolveAvatarProfile("avaturn-personalized-candidate");
   const scope = { MAAT_BACKEND_ORIGIN: "https://custom-backend.example.com" };
-  const url = _resolveProductAvatarUrl(scope);
+  const url = _resolveProductAvatarUrl(scope, avatarRecord);
   assert.equal(new URL(url).origin, "https://custom-backend.example.com", "fallback must use MAAT_BACKEND_ORIGIN");
-  assert.ok(url.endsWith(_productAvatarRecord.assetUrl), "must append avatar path");
+  assert.ok(url.endsWith(avatarRecord.assetUrl), "must append avatar path");
 });
 
 test("resolveProductAvatarUrl falls back to production backend when no config present", () => {
-  const { _resolveProductAvatarUrl } = ProductMotionPreview;
-  const url = _resolveProductAvatarUrl({});
+  const { _resolveProductAvatarUrl, _registry } = ProductMotionPreview;
+  const url = _resolveProductAvatarUrl({}, _registry.resolveAvatarProfile("avaturn-personalized-candidate"));
   assert.equal(new URL(url).origin, "https://mufasa-fitness-node.onrender.com", "must default to production backend");
 });
 
@@ -658,11 +660,11 @@ test("successful authenticated fetch uses parse callback fallback when parseAsyn
 
 // 5. Fixture path and 40/40/0 binding contract remain unchanged.
 test("fixture assetUrl is a relative static path requiring no authentication", () => {
-  const { _productFixtureRecord } = ProductMotionPreview;
-  assert.equal(_productFixtureRecord.assetUrl, "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb");
-  assert.ok(_productFixtureRecord.assetUrl.startsWith("/"), "fixture must use a relative path (served from frontend static host)");
-  assert.equal(_productFixtureRecord.expectedTrackCount, 40, "fixture track count must be 40");
-  assert.equal(_productFixtureRecord.clipName, "avaturn_push_up_native_v1", "clip name must be unchanged");
+  const fixture = ProductMotionPreview._registry.resolveExerciseMotion("push-up").fixture;
+  assert.equal(fixture.assetUrl, "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb");
+  assert.ok(fixture.assetUrl.startsWith("/"), "fixture must use a relative path (served from frontend static host)");
+  assert.equal(fixture.expectedTrackCount, 40, "fixture track count must be 40");
+  assert.equal(fixture.clipName, "avaturn_push_up_native_v1", "clip name must be unchanged");
 });
 
 test("fixture URL is not intercepted by the authenticated product loader", async () => {

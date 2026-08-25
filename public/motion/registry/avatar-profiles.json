@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    { "avatarProfileId": "avaturn-personalized-candidate", "displayName": "Push-Up Challenge Avatar", "skeletonProfileId": "avaturn-native-v1", "assetUrl": "/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb", "assetResolver": "authenticated-product-backend", "sourceAssetReference": "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb", "sourceSha256": "ec21fb1b5ba8499f2e410b49272e2b7f30e09257cd737c9efe25c0cd3d21adb6", "runtimeAudience": "product", "productEligible": true, "status": "active", "licenseStatus": "not-cleared", "licenseReference": "not-present-in-repository", "expectedSkeletonRoot": "Hips", "expectedJointCount": 54, "developmentOnly": true },
+    { "avatarProfileId": "phase-e-reference", "displayName": "Phase E Reference Avatar", "skeletonProfileId": "mixamo-phase-e", "assetUrl": "/motion/assets/phase-e/canonical-avatar.glb", "assetResolver": "public-static", "sourceAssetReference": "public/motion/assets/phase-e/canonical-avatar.glb", "runtimeAudience": "development", "productEligible": false, "status": "development", "licenseStatus": "development-test-only", "licenseReference": "/motion/phase-e-assets.js", "expectedSkeletonRoot": "mixamorigHips", "expectedJointCount": 65, "developmentOnly": true }
+  ]
+}
