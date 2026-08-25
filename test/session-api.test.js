@@ -697,7 +697,7 @@ test("OHSA submission and me history endpoint are auth protected and persisted",
   });
 });
 
-test("/api/avatar/upload is disabled by default for pilot quarantine", async (t) => {
+test("/api/avatar/upload is code-enabled without an environment flag", async (t) => {
   setAvatarFeatureFlag(t, null);
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
@@ -711,14 +711,14 @@ test("/api/avatar/upload is disabled by default for pilot quarantine", async (t)
       body: form
     });
     const json = await res.json();
-    assert.equal(res.status, 404);
+    assert.equal(res.status, 400);
     assert.equal(json.ok, false);
-    assert.equal(json.error.code, "FEATURE_DISABLED");
-    assert.match(json.error.message, /Avatar feature is disabled/);
+    assert.equal(json.error.code, "VALIDATION_ERROR");
+    assert.match(json.error.message, /Invalid \.glb file header/);
   });
 });
 
-test("profile save works while avatar is disabled by default", async (t) => {
+test("profile save works while the avatar pilot is code-enabled", async (t) => {
   setAvatarFeatureFlag(t, null);
   await withServer(t, async ({ baseUrl }) => {
     enableTestLoginFixture(t);
@@ -759,7 +759,9 @@ test("/api/avatar/upload rejects fake glb headers and accepts valid glb magic he
     assert.equal(badJson.ok, false);
     assert.equal(badJson.error.code, "VALIDATION_ERROR");
 
-    const validGlbBytes = Buffer.from([0x67, 0x6c, 0x54, 0x46, 0x02, 0x00, 0x00, 0x00]);
+    const nodes = [{ name: "Hips", children: [1] }, { name: "RightShoulder", children: [2] }, { name: "RightArm", children: [3] }, { name: "RightForeArm", children: [4] }, { name: "RightHand" }];
+    let jsonChunk = Buffer.from(JSON.stringify({ asset: { version: "2.0" }, nodes })); jsonChunk = Buffer.concat([jsonChunk, Buffer.alloc((4-jsonChunk.length%4)%4, 0x20)]);
+    const validGlbBytes = Buffer.alloc(20+jsonChunk.length); validGlbBytes.write("glTF"); validGlbBytes.writeUInt32LE(2,4); validGlbBytes.writeUInt32LE(validGlbBytes.length,8); validGlbBytes.writeUInt32LE(jsonChunk.length,12); validGlbBytes.write("JSON",16); jsonChunk.copy(validGlbBytes,20);
     const goodForm = new FormData();
     goodForm.append("avatar", new Blob([validGlbBytes]), "avatar.glb");
     const goodRes = await fetch(baseUrl + "/api/avatar/upload", {
@@ -770,7 +772,8 @@ test("/api/avatar/upload rejects fake glb headers and accepts valid glb magic he
     const goodJson = await goodRes.json();
     assert.equal(goodRes.status, 201);
     assert.equal(goodJson.ok, true);
-    assert.match(goodJson.data.avatarModelUrl, /\/uploads\/avatars\/.+\.glb$/);
+    assert.match(goodJson.data.avatarModelUrl, /\/api\/me\/avatar\/assets\/[a-f0-9-]+$/);
+    assert.equal(goodJson.data.compatibility.profileId, "avaturn-native-v1");
   });
 });
 

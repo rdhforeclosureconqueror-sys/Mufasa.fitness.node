@@ -178,15 +178,16 @@ test("Phase 29 draft and testing templates are not used for public rep counting"
   assert.equal(analysis.formWarning, "Tracking unavailable for this exercise in pilot.");
 });
 
-test("Phase 29 built-in Squat, Push-Up, Lunge, and Push-Up Challenge remain intact", () => {
+test("Phase 29 built-ins remain intact and Push-Up Challenge stays dedicated", () => {
   const engine = loadEngine();
   assert.equal(engine.mapExerciseToMovementPattern({ name: "Bodyweight Squat" }), "squat");
   assert.equal(engine.mapExerciseToMovementPattern({ name: "Push-Up" }), "pushup");
   assert.equal(engine.mapExerciseToMovementPattern({ name: "Lunge" }), "lunge");
   assert.equal(typeof globalThis.PushupChallengeRuntime === "undefined", true);
-  const challengeSource = fs.readFileSync(path.join(__dirname, "..", "public", "workout-runtime.js"), "utf8");
-  assert.match(challengeSource, /PushupChallengeRuntime/);
-  assert.match(challengeSource, /startChallenge/);
+  const workoutSource = fs.readFileSync(path.join(__dirname, "..", "public", "workout-runtime.js"), "utf8");
+  const challengeSource = fs.readFileSync(path.join(__dirname, "..", "public", "push-up-challenge.js"), "utf8");
+  assert.doesNotMatch(workoutSource, /PushupChallengeRuntime|startChallenge/);
+  assert.match(challengeSource, /ExerciseSessionEngine/);
 });
 
 test("Phase 29 Request New Exercise pilot-safe message remains visible", () => {

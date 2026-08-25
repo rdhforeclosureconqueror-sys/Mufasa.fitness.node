@@ -8,8 +8,11 @@ const read = file => fs.readFileSync(path.join(root, file), "utf8");
 
 test("workout avatar modes are code-enabled without the Render pilot environment key", () => {
   const html = read("public/workout.html");
+  const server = read("server.js");
   assert.match(html, /window\.ENABLE_AVATAR_FEATURE = true;/);
   assert.doesNotMatch(html, /window\.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__"/);
+  assert.match(server, /const MEMBER_AVATAR_PILOT_ENABLED = true;/);
+  assert.match(server, /return MEMBER_AVATAR_PILOT_ENABLED;/);
   assert.match(html, /<option value="camera">Camera<\/option>/);
   assert.match(html, /<option value="avatar_overlay" data-avatar-feature>Avatar Overlay<\/option>/);
   assert.match(html, /<option value="avatar_only" data-avatar-feature>Avatar Only<\/option>/);

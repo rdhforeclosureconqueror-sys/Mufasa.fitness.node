@@ -9,6 +9,7 @@
   const state = { running: false, sessionId: null, cameraStream: null, cameraActive: false, fullscreen: false };
   let deps = {};
   let actionPending = false;
+  let cameraConnectPending = null;
   const focusDebug = (()=>{try{return new URLSearchParams(global.location?.search||'').get('debugWorkoutFocus')==='1';}catch(_){return false;}})();
   function focusDiagnostic(event){if(focusDebug)console.info('[WORKOUT_FOCUS]',event);}
 
@@ -132,14 +133,31 @@
   }
 
   async function connectCamera(){
+    if (state.cameraActive && state.cameraStream) return state.cameraStream;
+    if (cameraConnectPending) return cameraConnectPending;
+    cameraConnectPending = connectCameraOnce();
+    try { return await cameraConnectPending; } finally { cameraConnectPending = null; }
+  }
+  function cameraErrorMessage(error) {
+    if (global.isSecureContext === false) return 'Camera access requires HTTPS.';
+    if (!global.navigator?.mediaDevices?.getUserMedia) return 'This browser does not support camera access.';
+    if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') return 'Camera permission was denied. Allow camera access in browser settings and retry.';
+    if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') return 'No camera was found on this device.';
+    if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') return 'The camera is already in use or could not be read. Close other camera apps and retry.';
+    if (error?.code === 'VIDEO_PLAYBACK_FAILED') return 'Camera video playback failed. Tap Connect Camera to retry.';
+    return `Camera could not start${error?.message ? `: ${error.message}` : '.'}`;
+  }
+  async function connectCameraOnce(){
     console.log('[WORKOUT_LIFECYCLE] connectCamera enter');
     markLiveBreakpoint('camera-clicked', 'pass', { source: 'WorkoutRuntime.connectCamera' });
     let videoPlayingMarked = false;
     try {
       ensureRequiredDom(['connectBtn', 'startBtn', 'fullscreenCameraBtn', 'video', 'poseStatus', 'workoutHud', 'brainStatus']);
       getFn('beforeConnectCamera')?.();
-      markCameraDiagnostics({ buttonClicked: true, getUserMediaCalled: true, lastCameraError: null });
-      if (!global.navigator?.mediaDevices?.getUserMedia) throw new Error('mediaDevices.getUserMedia unavailable');
+      markCameraDiagnostics({ buttonClicked: true, getUserMediaCalled: false, lastCameraError: null });
+      if (global.isSecureContext === false) throw Object.assign(new Error('insecure_context'), { code: 'INSECURE_CONTEXT' });
+      if (!global.navigator?.mediaDevices?.getUserMedia) throw Object.assign(new Error('mediaDevices.getUserMedia unavailable'), { name: 'NotSupportedError' });
+      markCameraDiagnostics({ getUserMediaCalled: true });
       const stream = await global.navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       markCameraDiagnostics({ streamReceived: true });
       markLiveBreakpoint('camera-stream-received', 'pass', { tracks: typeof stream?.getTracks === 'function' ? stream.getTracks().length : null });
@@ -154,11 +172,12 @@
       video.srcObject = stream;
       video.style.display = 'block';
       video.style.visibility = 'visible';
-      await video.play();
+      try { await video.play(); } catch (error) { error.code = 'VIDEO_PLAYBACK_FAILED'; throw error; }
       markCameraDiagnostics({ videoElementReady: true, videoPlaying: true });
       markLiveBreakpoint('video-playing', 'pass', { readyState: video.readyState || null, videoWidth: video.videoWidth || null, videoHeight: video.videoHeight || null });
       videoPlayingMarked = true;
-      await getFn('afterConnectCamera')?.(stream);
+      try { await getFn('afterConnectCamera')?.(stream); }
+      catch (optionalError) { console.warn('[WORKOUT_LIFECYCLE] optional pose/avatar initialization failed; camera self-view preserved', optionalError); setPoseStatus(`Camera ready. Movement tracking unavailable: ${optionalError?.message || optionalError}`); getFn('onOptionalTrackingError')?.(optionalError); }
       state.cameraActive = true;
       setEnabled('startBtn', true);
       setEnabled('fullscreenCameraBtn', true);
@@ -174,9 +193,10 @@
         const cameraFailName = state.cameraStream ? 'video-playing' : 'camera-stream-received';
         markLiveBreakpoint(cameraFailName, 'fail', { source: 'WorkoutRuntime.connectCamera' }, err);
       }
+      if (!videoPlayingMarked && state.cameraStream) { state.cameraStream.getTracks?.().forEach(track => track.stop()); state.cameraStream = null; state.cameraActive = false; const video = getVideoElement(); if (video) video.srcObject = null; }
       getFn('onCameraError')?.(err);
       console.error('[WORKOUT_LIFECYCLE] camera error', err);
-      setVisibleError(`Camera error: ${err?.message || err}`);
+      setVisibleError(cameraErrorMessage(err));
       updateRuntimeState();
       throw err;
     }
@@ -734,7 +754,7 @@
   installPilotFormRuleEngine();
   installPilotRepAnalysisAdapter();
 
-  global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, setWorkoutFocusMode, getState: () => ({ ...state }) };
+  global.WorkoutRuntime = { configureWorkoutRuntime, createSessionCallbackGlue, startWorkout, connectCamera, stopCamera, setCameraFullscreen, setWorkoutFocusMode, cameraErrorMessage, getState: () => ({ ...state }) };
   global.startWorkout = (...args) => global.WorkoutRuntime.startWorkout(...args);
   global.connectCamera = (...args) => global.WorkoutRuntime.connectCamera(...args);
 })(typeof window !== 'undefined' ? window : globalThis);
