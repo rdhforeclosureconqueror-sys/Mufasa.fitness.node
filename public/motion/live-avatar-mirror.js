@@ -1,0 +1,26 @@
+(function (root, factory) {
+  const normalized = typeof module === "object" && module.exports ? require("./normalized-pose") : root.PocketPTNormalizedPose;
+  const solverApi = typeof module === "object" && module.exports ? require("./avaturn-live-pose-solver") : root.PocketPTAvaturnLivePoseSolver;
+  const api = factory(normalized, solverApi);
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.PocketPTLiveAvatarMirror = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function (normalized, solverApi) {
+  "use strict";
+  class LiveAvatarMirror {
+    constructor({ eventTarget, session, cameraState = () => ({}), now = () => Date.now(), solverOptions = {}, onPose = () => {} } = {}) {
+      if (!eventTarget || !session?.avatar || !session?.THREE) throw new TypeError("eventTarget and a loaded motion session are required");
+      this.eventTarget = eventTarget; this.session = session; this.cameraState = cameraState; this.onPose = onPose; this.disposed = false;
+      session.unloadMotion?.();
+      this.solver = new solverApi.AvaturnLivePoseSolver({ THREE: session.THREE, avatar: session.avatar, now, ...solverOptions });
+      this.onFrame = event => {
+        const camera = this.cameraState() || {};
+        const frame = normalized.fromMoveNetPosePacket(event?.detail?.posePacket, { cameraFacing: camera.facingMode, previewMirrored: camera.isMirrored });
+        this.solver.observe(frame); this.onPose(frame, this.solver.diagnostics());
+      };
+      eventTarget.addEventListener("pose-runtime:frame", this.onFrame);
+    }
+    update(deltaSeconds, at) { return this.solver.update(deltaSeconds, at); }
+    dispose() { if (this.disposed) return; this.eventTarget.removeEventListener("pose-runtime:frame", this.onFrame); this.solver.dispose(); this.disposed = true; }
+  }
+  return Object.freeze({ LiveAvatarMirror });
+});
