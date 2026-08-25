@@ -28,12 +28,12 @@
   <script src="/runtime-state.js?v=20260506"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
+  <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
   <!-- The canonical client must exist before any deferred workout-source adapter. -->
   <script src="/api-client.js?v=20260823-workout-hub"></script>
   <script src="/kettlebell-checkpoints.js?v=20260823-checkpoint-contract"></script>
   <script src="/qualified-rep-runtime.js?v=20260823-qualified-rep"></script>
   <script src="/boot-core.js?v=20260505a" defer></script>
-  <script src="/auth-core.js" defer></script>
   <script>
     window.RuntimeState?.initHeadRuntime?.();
     console.log(window.ENABLE_AVATAR_FEATURE ? "[AVATAR_RUNTIME] delegated to /avatar-runtime.js" : "[AVATAR_RUNTIME] disabled by ENABLE_AVATAR_FEATURE flag");
@@ -880,29 +880,7 @@
   </div>
 
   <div id="clickDiagBanner" aria-live="polite"></div>
-  <div id="authOverlay" class="auth-screen" role="dialog" aria-modal="true" aria-labelledby="authLoginTitle" style="position:fixed;inset:0;z-index:3000;background:rgba(2,6,23,.92);display:flex;align-items:center;justify-content:center;padding:16px;">
-    <form id="authLoginForm" action="javascript:void(0)" method="post" style="width:min(420px,100%);background:#0f172a;border:1px solid rgba(56,189,248,.45);border-radius:12px;padding:16px;display:grid;gap:10px;">
-      <h2 id="authLoginTitle" style="margin:0;">Sign in</h2>
-      <label id="authNameWrap" style="display:none;">Name<input id="authName" name="name" type="text" autocomplete="name"></label>
-      <label>Email<input id="authEmail" name="email" type="email" autocomplete="email" required></label>
-      <label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
-      <button id="authLoginSubmit" type="submit">Login</button>
-      <button id="authCreateAccountBtn" type="button" class="secondary">Create account</button>
-      <div id="authLoginStatus" class="muted" aria-live="polite"></div>
-      <div id="authLoginStepStatus" class="muted" aria-live="polite"></div>
-      <div id="authLoginBindingError" role="alert" style="display:none;color:#fecaca;background:#7f1d1d;padding:8px;border-radius:8px;"></div>
-      <pre id="authDebugStatus" data-diagnostic-panel style="margin:0;background:#020617;border:1px solid #334155;border-radius:8px;padding:8px;color:#93c5fd;font-size:12px;line-height:1.35;white-space:pre-wrap;">AUTH SCRIPT LOADED: no
-FORM FOUND: no
-LOGIN BUTTON FOUND: no
-CREATE BUTTON FOUND: no
-LOGIN CLICKED: no
-CREATE CLICKED: no</pre>
-    </form>
-  </div>
-
-  <script>
-    window.RuntimeBridges?.installAuthDebugBridge?.();
-  </script>
+  <p id="authRestoreStatus" class="muted" role="status" aria-live="polite">Restoring your session…</p>
 
   <!-- USER INFO BAR -->
   <div id="userInfo">
@@ -1369,25 +1347,10 @@ skeletonOverlayActive: no</pre>
     const userInfoBar = document.getElementById("userInfo");
     const appShellEl = document.getElementById("appShell");
     const appBootStatusEl = document.getElementById("appBootStatus");
-    const authOverlayEl = document.getElementById("authOverlay");
     // [INLINE_REMAINING] auth/profile shell — DOM refs, local mirrors, and post-login shell visibility glue remain inline until auth/profile runtime contracts stop requiring page-local state.
     console.log("[INLINE_SECTION] auth refs");
-    const authLoginFormEl = document.getElementById("authLoginForm");
-    const authEmailEl = document.getElementById("authEmail");
-    const authNameEl = document.getElementById("authName");
-    const authPasswordEl = document.getElementById("authPassword");
-    const authLoginSubmitEl = document.getElementById("authLoginSubmit");
-    const authCreateAccountToggleEl = document.getElementById("authCreateAccountBtn");
-    const authNameWrapEl = document.getElementById("authNameWrap");
-    const authLoginTitleEl = document.getElementById("authLoginTitle");
-    const authLoginBindingErrorEl = document.getElementById("authLoginBindingError");
-    const authLoginStatusEl = document.getElementById("authLoginStatus");
-    const authLoginStepStatusEl = document.getElementById("authLoginStepStatus");
     const appBootSteps = [];
-    let authMode = "login";
 
-    console.log("[AUTH_LOGIN] login script loaded");
-    window.__setAuthDebugState?.({ authScriptLoaded: true });
 
     function updateAppBootStatus(step, detail = "") {
       const label = detail ? `${step}: ${detail}` : step;
@@ -1407,16 +1370,7 @@ skeletonOverlayActive: no</pre>
     const userPicEl = document.getElementById("userPic");
     const userNameEl = document.getElementById("userName");
     const signOutBtn = document.getElementById("signOutBtn");
-    const PILOT_BYPASS_USER = Object.freeze({
-      id: "pilot_admin",
-      name: "Rashad Harbour",
-      email: "RDHForeclosureConquer@gmail.com",
-      role: "super_admin",
-      roles: ["super_admin", "admin", "operator", "trainer", "client"],
-      authProvider: "pilot_bypass"
-    });
     const BUILDER_MODE_FULL_ACCESS = false;
-    let DISABLE_LOGIN_FOR_PILOT = false;
     window.AuthStateRuntime?.getCanonicalAuthState?.();
     window.AuthStateRuntime?.ensureDebugState?.();
     window.pilotSuperAdminActive = false;
@@ -3021,11 +2975,6 @@ skeletonOverlayActive: no</pre>
       const runtimeToken = window.AuthStateRuntime?.getAuthToken?.();
       if (runtimeToken && String(runtimeToken).trim()) return { token: String(runtimeToken).trim(), source: "AuthStateRuntime.getAuthToken" };
 
-      const appAuthToken = window.APP_AUTH?.token ? String(window.APP_AUTH.token).trim() : null;
-      if (appAuthToken) return { token: appAuthToken, source: "window.APP_AUTH.token" };
-
-      const storedToken = localStorage.getItem("maatAuthToken");
-      if (storedToken && String(storedToken).trim()) return { token: String(storedToken).trim(), source: "localStorage.maatAuthToken" };
       return { token: null, source: "missing" };
     }
 
@@ -3115,14 +3064,7 @@ skeletonOverlayActive: no</pre>
 
 
     function applyAuthenticatedShellVisibility() {
-      const authOverlay = document.getElementById("authOverlay");
       const appShell = document.getElementById("appShell");
-      console.log("[AUTH_LOGIN] hiding auth overlay");
-      if (authOverlay) {
-        authOverlay.hidden = true;
-        authOverlay.style.display = "none";
-        authOverlay.style.pointerEvents = "none";
-      }
       if (appShell) {
         appShell.hidden = false;
         appShell.style.display = "";
@@ -3154,7 +3096,6 @@ skeletonOverlayActive: no</pre>
       const overlaySelectors = [
         "#avatarModal",
         "#loadingOverlay",
-        "#authOverlay",
         ".modal-backdrop",
         ".overlay",
         ".backdrop"
@@ -3169,47 +3110,22 @@ skeletonOverlayActive: no</pre>
       return "none";
     }
 
-    function setPilotBypassAuthState() {
-      return;
-    }
-
-    function activatePilotBypassImmediate() {
-      setPilotBypassAuthState();
-      renderAuthShell();
-      window.pilotSuperAdminActive = false;
-      const appShellVisible = !appShellEl?.classList.contains("app-shell-hidden");
-      if (!appShellVisible) return "app shell missing";
-      return "";
-    }
-
     async function initializeAuth() {
-      const token = window.AuthStateRuntime?.getAuthToken?.() || window.APP_AUTH?.token || window.AuthStateRuntime?.getStoredToken?.() || localStorage.getItem("maatAuthToken");
-      if (!token) {
-        window.AuthStateRuntime?.clearCanonicalAuthState?.("initializeAuth:missing_token");
-        if (authOverlayEl) authOverlayEl.style.display = "flex";
+      const result = await window.AuthNavigation.requireUser({
+        returnTo: window.location.pathname + window.location.search + window.location.hash
+      });
+      if (!result.ok) {
+        const status = document.getElementById("authRestoreStatus");
+        if (status && result.retryable) status.textContent = "We could not verify your session. Check your connection, then retry.";
         return false;
       }
-      try {
-        const refresh = await window.AuthStateRuntime.refreshAuthStatus({ reason: "initializeAuth", token, visibleErrors: true });
-        const user = refresh?.user;
-        if (!refresh?.ok || !user) throw new Error("invalid_session");
-        console.log("[AUTH_LOGIN] /api/auth/me user resolved");
-        console.log("[AUTH_LOGIN] login success");
-        await onLogin({
-          userId: user.userId || user.id,
-          email: user.email,
-          name: user.name,
-          authProvider: user.provider || "password"
-        });
-        bootStatus.authRestoredValidated = true;
-        applyAuthenticatedShellVisibility();
-        window.bindPrimaryButtonsAfterLogin?.("initializeAuth");
-        return true;
-      } catch (_error) {
-        window.AuthStateRuntime?.clearCanonicalAuthState?.("initializeAuth:invalid_session");
-        if (authOverlayEl) authOverlayEl.style.display = "flex";
-        return false;
-      }
+      const user = result.user;
+      await onLogin({ userId: user.userId || user.id, email: user.email, name: user.name, authProvider: user.provider || "password" });
+      bootStatus.authRestoredValidated = true;
+      document.getElementById("authRestoreStatus")?.remove();
+      applyAuthenticatedShellVisibility();
+      window.bindPrimaryButtonsAfterLogin?.("initializeAuth");
+      return true;
     }
 
 
@@ -3228,8 +3144,7 @@ skeletonOverlayActive: no</pre>
     }
 
     async function handleLogout() {
-      window.AuthStateRuntime?.clearCanonicalAuthState?.("logout", { forceDispatch: true, clearLastUser: true });
-      window.location.reload();
+      return window.AuthStateRuntime.logout({ redirectTo: "/login.html?signedOut=1" });
     }
 
     signOutBtn.onclick = () => {
@@ -4557,7 +4472,6 @@ skeletonOverlayActive: no</pre>
         isBootContractReady,
         bootStatus,
         appShellEl,
-        authOverlayEl
       }
     });
 

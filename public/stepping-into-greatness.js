@@ -1,10 +1,10 @@
 (() => {
   const links = document.querySelectorAll('[data-start-greatness]');
-  const token = localStorage.getItem('maatAuthToken');
-  links.forEach(link => link.setAttribute('href', '/login.html?returnTo=%2Fgreatness.html'));
-  if (token) fetch('/api/auth/me', { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' })
-    .then(response => { if (response.ok) links.forEach(link => link.setAttribute('href', '/greatness.html')); })
-    .catch(() => {});
+  links.forEach(link => link.setAttribute('href', '/greatness.html'));
+  window.AuthNavigation.requireUser({ returnTo: '/greatness.html', redirect: false }).then(result => {
+    if (result.ok || result.retryable) return;
+    links.forEach(link => link.setAttribute('href', result.target));
+  });
 
   const items = document.querySelectorAll('.reveal');
   if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
