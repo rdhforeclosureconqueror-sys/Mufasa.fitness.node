@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    { "fixtureId": "avaturn-push-up-animation", "motionId": "push_up/avaturn_native_v1", "skeletonProfileId": "avaturn-native-v1", "compatibleAvatarProfileIds": ["avaturn-personalized-candidate"], "assetUrl": "/motion/assets/exercises/push-up/avaturn-push-up-animation.glb", "clipName": "avaturn_push_up_native_v1", "duration": 1.5333333015441895, "expectedTrackCount": 40, "expectedBoundTrackCount": 40, "expectedUnboundTrackCount": 0, "structuralExpectations": { "nodes": 40, "meshes": 0, "skins": 0, "animations": 1 }, "provenanceReference": "/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json", "sha256": "046034dd86350c4962ede767c2483e6c68d87b8115ccda5a9e26d4483615205f", "fileSizeBytes": 52232, "status": "active", "audience": "product", "developmentOnly": true },
+    { "fixtureId": "phase-e-animation-fixture", "motionId": "phase_e/dance_fixture_v1", "skeletonProfileId": "mixamo-phase-e", "compatibleAvatarProfileIds": ["phase-e-reference"], "assetUrl": "/motion/assets/phase-e/animation-fixture.glb", "clipName": "Armature|mixamo.com|Layer0", "expectedTrackCount": 195, "expectedBoundTrackCount": 195, "expectedUnboundTrackCount": 0, "structuralExpectations": { "nodes": 66, "meshes": 0, "skins": 1, "animations": 1 }, "provenanceReference": "/motion/phase-e-assets.js", "sha256": "f090478822f71cdbc850ce0cf88c3c778a35ac670c928ac90418667a6ab8dc06", "fileSizeBytes": 186532, "status": "development", "audience": "development", "developmentOnly": true }
+  ]
+}

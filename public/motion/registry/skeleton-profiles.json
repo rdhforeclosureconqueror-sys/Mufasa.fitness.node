@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    { "skeletonProfileId": "avaturn-native-v1", "rootJoint": "Hips", "jointCount": 54, "requiredAnimationTargets": ["Hips","LeftUpLeg","LeftLeg","LeftFoot","Spine","Spine1","Spine2","LeftShoulder","LeftArm","LeftForeArm","LeftHand","LeftHandRing1","LeftHandRing2","LeftHandThumb1","LeftHandThumb2","LeftHandPinky1","LeftHandPinky2","LeftHandMiddle1","LeftHandMiddle2","LeftHandIndex1","LeftHandIndex2","Neck","RightShoulder","RightArm","RightForeArm","RightHand","RightHandThumb1","RightHandThumb2","RightHandMiddle1","RightHandMiddle2","RightHandRing1","RightHandRing2","RightHandIndex1","RightHandIndex2","RightHandPinky1","RightHandPinky2","RightUpLeg","RightLeg","RightFoot"], "units": "meters", "upAxis": "+Y", "forwardAxis": "unknown", "compatibilityStatus": "native-validated", "status": "active", "audience": "product" },
+    { "skeletonProfileId": "mixamo-phase-e", "rootJoint": "mixamorigHips", "jointCount": 65, "requiredAnimationTargets": [], "units": "unknown", "upAxis": "unknown", "forwardAxis": "unknown", "compatibilityStatus": "development-fixture-only", "status": "development", "audience": "development" }
+  ]
+}
