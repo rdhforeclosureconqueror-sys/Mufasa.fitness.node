@@ -13,7 +13,7 @@ const activeFrontendFiles = [
   "public/session-write.js",
   "public/app-runtime.js",
   "public/dashboard-runtime.js",
-  "public/auth-core.js",
+  "public/auth-navigation.js",
   "public/auth-state-runtime.js",
   "public/boot-core.js",
   "public/landing-diagnostics.js",
@@ -34,13 +34,13 @@ test("static frontend config sets backend origin before runtime auth scripts loa
   const source = fs.readFileSync(path.join(repoRoot, "public/workout.html"), "utf8");
   const configIndex = source.indexOf('backendOrigin: "https://mufasa-fitness-node.onrender.com"');
   const runtimeStateIndex = source.indexOf('<script src="/runtime-state.js');
-  const authCoreIndex = source.indexOf('<script src="/auth-core.js"');
+  const authNavigationIndex = source.indexOf('<script src="/auth-navigation.js');
 
   assert.notEqual(configIndex, -1, "public/workout.html must configure the split-deployment backend origin");
   assert.notEqual(runtimeStateIndex, -1, "public/workout.html must load runtime-state.js");
-  assert.notEqual(authCoreIndex, -1, "public/workout.html must load auth-core.js");
+  assert.notEqual(authNavigationIndex, -1, "public/workout.html must load auth-navigation.js");
   assert.ok(configIndex < runtimeStateIndex, "backend origin config must run before runtime-state.js");
-  assert.ok(configIndex < authCoreIndex, "backend origin config must run before auth-core.js");
+  assert.ok(configIndex < authNavigationIndex, "backend origin config must run before auth-navigation.js");
 });
 
 test("runtime-state exposes a same-origin default backend resolver", () => {

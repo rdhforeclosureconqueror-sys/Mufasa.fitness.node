@@ -65,9 +65,9 @@ test("Phase 20 APP_AUTH/AuthStateRuntime token wins over stale localStorage toke
   assert.match(indexHtml, /function getAuthTokenInfo\(\)[\s\S]*AuthStateRuntime\?\.getCanonicalAuthState/);
   assert.match(indexHtml, /source: "AuthStateRuntime\.getCanonicalAuthState"/);
   assert.match(indexHtml, /source: "AuthStateRuntime\.getAuthToken"/);
-  assert.match(indexHtml, /source: "window\.APP_AUTH\.token"/);
-  assert.match(indexHtml, /source: "localStorage\.maatAuthToken"/);
-  assert.ok(indexHtml.indexOf("AuthStateRuntime?.getCanonicalAuthState") < indexHtml.indexOf("localStorage.getItem(\"maatAuthToken\")"));
+  assert.doesNotMatch(indexHtml, /source: "window\.APP_AUTH\.token"/);
+  assert.doesNotMatch(indexHtml, /source: "localStorage\.maatAuthToken"/);
+  assert.doesNotMatch(indexHtml, /localStorage\.getItem\("maatAuthToken"\)/);
 
   assert.match(backendRead, /function getAuthTokenInfo\(\)[\s\S]*AuthStateRuntime\?\.getAuthToken/);
   assert.doesNotMatch(backendRead, /localStorage\.getItem\("maatAuthToken"\)/, "backend reads must not bypass the canonical runtime");

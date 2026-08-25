@@ -5,7 +5,6 @@
   const BUILD_VERSION = "20260813-authorization-header-canonicalization-v1";
   const OWNER = "public/greatness-entry-auth.js/GreatnessEntryAuth.guard";
   const ASSETS = ["auth-state-runtime.js", "api-client.js", "greatness-entry-auth.js", "greatness.js"];
-  const definitiveFailures = new Set(["missing_token", "invalid_token", "expired_token", "invalid_session"]);
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "greatness-entry-auth.js": BUILD_VERSION });
 
   function yes(value) { return value ? "YES" : "NO"; }
@@ -82,29 +81,27 @@
     if (firstCheckpoint) runtime?.recordLifecycle?.({ greatnessInitialTokenPresent: firstCheckpoint.maatAuthTokenPresent === true });
     Object.assign(trace, { tokenPresent: safe.credentialPresent === true, tokenValidFormat: safe.tokenFormatValid === true, tokenExpired: safe.expiryState === "expired" ? "YES" : safe.expiryState === "valid" ? "NO" : "UNKNOWN" });
     render(trace);
-    if (!runtime?.whenReady || !global.MaatApiClient?.request) {
-      trace.redirectReason = "auth_runtime_unavailable"; render(trace); return trace;
-    }
-    const result = await runtime.whenReady();
-    const auth = runtime.getCanonicalAuthState();
-    const diagnostics = result.diagnostics || result.error?.authDiagnostics || runtime.ensureDebugState?.().lastMeDiagnostics || null;
+    const result = await global.AuthNavigation.requireUser({
+      returnTo: global.location.pathname + global.location.search + global.location.hash,
+      redirect: false
+    });
+    const auth = runtime?.getCanonicalAuthState?.() || {};
+    const diagnostics = runtime?.ensureDebugState?.().lastMeDiagnostics || null;
     Object.assign(trace, {
-      whenReadyResolved: true, tokenPresent: Boolean(auth.token || runtime.getAuthToken?.()), authenticated: auth.isAuthenticated === true,
+      whenReadyResolved: true, tokenPresent: Boolean(auth.token), authenticated: auth.isAuthenticated === true,
       meUrl: diagnostics?.url || trace.meUrl, meDispatched: diagnostics?.dispatched === true,
       meResponseClass: responseClass(diagnostics), meHttpStatus: diagnostics?.status ?? null, identityResolved: Boolean(auth.user?.id)
     });
-    const after = runtime.getSafeDiagnostics?.() || {};
-    trace.tokenValidFormat = after.tokenFormatValid === true;
-    trace.tokenExpired = after.expiryState === "expired" ? "YES" : after.expiryState === "valid" ? "NO" : "UNKNOWN";
-    if (result.ok && auth.isAuthenticated && auth.token && auth.user?.id) {
-      Object.assign(trace, { decision: "ALLOW", redirectReason: "authenticated_identity_confirmed", redirectTarget: "none" }); render(trace); return trace;
+    if (result.ok) {
+      Object.assign(trace, { decision: "ALLOW", redirectReason: "authenticated_identity_confirmed", redirectTarget: "none" });
+      render(trace); return trace;
     }
-    if (!definitiveFailures.has(result.reason)) {
-      Object.assign(trace, { decision: "WAIT", redirectReason: result.reason || "validation_pending" }); render(trace); return trace;
+    if (result.retryable) {
+      Object.assign(trace, { decision: "WAIT", redirectReason: result.reason || "auth_unavailable" });
+      render(trace); return trace;
     }
-    const target = `/login.html?returnTo=${encodeURIComponent(global.location.pathname + global.location.search + global.location.hash)}`;
-    Object.assign(trace, { decision: "REDIRECT", redirectReason: result.reason, redirectTarget: target });
-    render(trace); global.location.replace(target); return trace;
+    Object.assign(trace, { decision: "REDIRECT", redirectReason: result.reason, redirectTarget: result.target });
+    render(trace); global.location.replace(result.target); return trace;
   }
   global.GreatnessEntryAuth = Object.freeze({ BUILD_VERSION, OWNER, TRACE_KEY, format, formatLifecycle, guard });
 })(typeof window !== "undefined" ? window : globalThis);

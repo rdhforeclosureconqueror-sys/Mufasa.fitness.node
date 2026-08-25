@@ -38,6 +38,49 @@ test("role-aware menu matrix hides privileged tools from ordinary memberships",(
   assert.ok(admin.includes("Trainer / Coach"));assert.ok(admin.includes("Admin Dashboard"));assert.ok(admin.includes("Client Management"));
 });
 
+function loadNavigationContract(){
+  const vm=require("node:vm"),source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
+  const window={addEventListener(){},document:{readyState:"loading",addEventListener(){}}};window.window=window;
+  vm.runInNewContext(source,{window,document:window.document,console,Set,URL});
+  return window.MaatNavigation;
+}
+
+test("global nav starts in a neutral restoring state rather than signed out",()=>{
+  const navigation=loadNavigationContract();
+  assert.equal(navigation.getAuthPresentation().phase,"restoring");
+  const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
+  assert.match(source,/Restoring session…/);assert.doesNotMatch(source,/authPresentation\s*=\s*\{\s*phase:\s*"unauthenticated"/);
+});
+
+test("global nav classifies successful restoration as authenticated without reload",()=>{
+  const navigation=loadNavigationContract(),state={isAuthenticated:true,token:"redacted",user:{id:"member",name:"Member"}};
+  assert.equal(navigation.presentationFromReadiness({ok:true},state).phase,"authenticated");
+  const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
+  assert.match(source,/addEventListener\("auth:changed",applyAuthEvent\)/);assert.match(source,/applyAuthEvent[\s\S]*render\(\)/);
+});
+
+test("global nav renders signed-out state only for definitive auth failures",()=>{
+  const navigation=loadNavigationContract();
+  for(const reason of ["missing_token","invalid_token","expired_token","invalid_session"]) assert.equal(navigation.presentationFromReadiness({ok:false,reason},null).phase,"unauthenticated");
+});
+
+test("temporary auth verification unavailability preserves restoring navigation",()=>{
+  const navigation=loadNavigationContract();
+  assert.equal(navigation.presentationFromReadiness({ok:false,reason:"auth_unavailable"},null).phase,"restoring");
+  assert.equal(navigation.presentationFromReadiness(null,null).phase,"restoring");
+});
+
+test("protected-surface startup cannot flash login while canonical restoration is pending",()=>{
+  const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
+  assert.ok(source.indexOf('authPresentation = { phase: "restoring"')<source.indexOf("function initialize()"));
+  assert.match(source,/render\(\);inspect\(\);[\s\S]*whenReady/);assert.match(source,/restoring\?'<p class="maat-nav-auth-restoring"/);
+});
+
+test("mobile and desktop navigation share the same auth-readiness presentation",()=>{
+  const js=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
+  assert.doesNotMatch(js,/matchMedia|innerWidth|userAgent/);assert.match(js,/const account=restoring\?/);assert.match(js,/class="maat-nav-panel"/);
+});
+
 test("global navigation follows auth runtime exactly once and after it on every page",()=>{
   const root=path.join(__dirname,"..","public");
   for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")){const html=fs.readFileSync(path.join(root,file),"utf8"),navScripts=html.match(/<script[^>]+global-nav\.js[^>]*>/g)||[],navStyles=html.match(/<link[^>]+global-nav\.css[^>]*>/g)||[];assert.equal(navScripts.length,1,`${file} nav script`);assert.equal(navStyles.length,1,`${file} nav style`);assert.ok(html.indexOf("auth-state-runtime.js")<html.indexOf("global-nav.js"),`${file} auth before nav`);}

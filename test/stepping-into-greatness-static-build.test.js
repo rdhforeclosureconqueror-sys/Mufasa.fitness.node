@@ -52,9 +52,9 @@ test('Run Club legacy login is a redirect-only alias of the canonical auth surfa
 });
 
 test('free account flow accepts only same-origin return paths', () => {
-  const auth = fs.readFileSync(path.join(root, 'public', 'auth-core.js'), 'utf8');
+  const auth = fs.readFileSync(path.join(root, 'public', 'auth-navigation.js'), 'utf8');
   assert.match(auth, /candidate\.startsWith\("\/"\)/);
   assert.match(auth, /candidate\.startsWith\("\/\/"\)/);
-  assert.match(auth, /target\.origin === window\.location\.origin/);
-  assert.match(auth, /window\.location\.assign\(returnPath\)/);
+  assert.match(auth, /target\.origin !== global\.location\.origin/);
+  assert.match(auth, /global\.location\.replace/);
 });

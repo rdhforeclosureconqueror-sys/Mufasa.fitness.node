@@ -2,7 +2,7 @@
 const FRONTEND_BUILD="20260824-auth-unified-drawer-v2",q=new URLSearchParams(location.search),form=document.querySelector("#form"),status=document.querySelector("#status"),modeLink=document.querySelector("#mode");
 window.__MAAT_ASSET_VERSIONS__=Object.assign(window.__MAAT_ASSET_VERSIONS__||{}, {"login.js":FRONTEND_BUILD});
 let register=q.get("mode")==="register";
-const safeReturn=()=>{const value=q.get("returnTo");return value?.startsWith("/")&&!value.startsWith("//")?value:"/dashboard.html"};
+const safeReturn=()=>window.AuthNavigation.normalizeReturnTo(q.get("returnTo"));
 const endpoint=path=>window.MaatApiClient?.resolve?.(path)||`${window.MAAT_BACKEND_ORIGIN||window.MAAT_NODE_BASE_URL||location.origin}${path}`;
 const diagnostic=(values={})=>{const report={bundle:FRONTEND_BUILD,operation:register?"register":"login",endpoint:new URL(endpoint(`/api/auth/${register?"register":"login"}`)).origin,httpStatus:values.httpStatus??null,requestId:values.requestId||null,failureCode:values.failureCode||null,stage:values.stage||"request",timestamp:new Date().toISOString()};window.__MAAT_LOGIN_DIAGNOSTIC__=report;console.warn("[AUTH_LOGIN_DIAGNOSTIC]",report)};
 const userMessage=(response,payload)=>{if(response.status===401)return"The email or password was not accepted. Please check your details and try again.";if(response.status===429)return"Too many sign-in attempts. Please wait and try again.";if(response.status>=500)return"Sign in is temporarily unavailable. Please try again shortly.";return typeof payload.error==="string"&&payload.error.length<160?payload.error:"Unable to sign in. Please try again."};

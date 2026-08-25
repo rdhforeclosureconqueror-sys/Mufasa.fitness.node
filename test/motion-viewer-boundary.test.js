@@ -107,7 +107,7 @@ test("retry starts a fresh load attempt rather than reusing a rejected promise",
 
 test("core boot paths cannot acquire static dependencies on motion implementation", () => {
   const root = path.resolve(__dirname, "..");
-  const protectedPaths = ["server.js", "public/boot-core.js", "public/auth-core.js", "public/dashboard-runtime.js", "public/workout-runtime.js", "public/app-runtime.js"];
+  const protectedPaths = ["server.js", "public/boot-core.js", "public/auth-navigation.js", "public/dashboard-runtime.js", "public/workout-runtime.js", "public/app-runtime.js"];
   for (const relative of protectedPaths) {
     const source = fs.readFileSync(path.join(root, relative), "utf8");
     assert.doesNotMatch(source, /(?:require\s*\(|from\s+|<script[^>]+src=)[^\n]*(?:motion-viewer(?:\.js)?|shared3d-loader|disposable-motion-session|avatar-runtime|motion-engine|three)/i, `${relative} must not import a viewer implementation`);

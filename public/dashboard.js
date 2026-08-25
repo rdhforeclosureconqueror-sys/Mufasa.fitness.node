@@ -1,8 +1,11 @@
 /* =========================================================
    dashboard.js — backend-authoritative dashboard renderer
 ========================================================= */
-(function () {
+(async function () {
   "use strict";
+
+  const protectedEntry = await window.AuthNavigation.requireUser({ returnTo: window.location.pathname + window.location.search + window.location.hash });
+  if (!protectedEntry.ok) return;
 
   const KEY_HISTORY = "WORKOUT_HISTORY_V1";
   const KEY_ACTIVE  = "ACTIVE_WORKOUT_V1";
