@@ -33,8 +33,10 @@ onReady(function boot(){
  ─────────────────────────────────────────────────────────────────────────── */
  (function mountMotionPreview(){
    try{
-     const container=$('motionPreviewContainer'),fallbackSvg=$('motionFallbackSvg');
+     const container=$('motionPreviewContainer'),fallbackSvg=$('motionFallbackSvg'),viewControls=$('motionViewControls');
      if(!container||typeof global.ProductMotionPreview?.create!=='function')return;
+     function setUsable(usable){container.style.visibility=usable?'visible':'hidden';container.style.pointerEvents=usable?'auto':'none';container.setAttribute('aria-hidden',String(!usable));if(fallbackSvg)fallbackSvg.style.display=usable?'none':'';if(viewControls){viewControls.hidden=!usable;if(!usable)viewControls.onclick=null;}}
+     setUsable(false);
      const preview=global.ProductMotionPreview.create({
        container,
        avatarProfileId:'avaturn-personalized-candidate',
@@ -43,17 +45,18 @@ onReady(function boot(){
        autoplay:true,loop:true,cameraPreset:'exercise-side',
        expectedBindings:{intended:40,bound:40,unbound:0},
        onDiagnostic(entry){diagnostic(entry.event,entry.code?{code:entry.code}:{});},
-       onStatus(s){if(s==='playing'||s==='ready')fallbackSvg&&(fallbackSvg.style.display='none');},
-       onError(){if(fallbackSvg)fallbackSvg.style.display='';}
+       onStatus(){},
+       onError(){setUsable(false);}
      });
      global.addEventListener('pagehide',()=>{const controls=$('motionViewControls');if(controls){controls.onclick=null;controls.hidden=true;}preview.dispose();},{once:true});
      global.__pushUpMotionPreview=preview;
      preview.mount().then(result=>{
-       const controls=$('motionViewControls');
-       if(!result?.ok||!controls)return;
-       controls.hidden=false;
+       const controls=$('motionViewControls'),status=preview.getStatus?.();
+       const usable=Boolean(result?.ok&&controls&&(status==='playing'||status==='ready')&&preview.resetView?.());
+       setUsable(usable);
+       if(!usable)return;
        controls.onclick=event=>{const view=event.target?.dataset?.motionView;if(!view)return;if(view==='reset')preview.resetView();else preview.setView(view);};
-     }).catch(()=>{});
+     }).catch(()=>setUsable(false));
    }catch(_){}
  })();
 });

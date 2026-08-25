@@ -13,7 +13,7 @@
 <main>
   <section class="card guide" aria-labelledby="guidedPreviewTitle">
     <div id="movementPreview" class="movement-preview" data-position="top" role="img" aria-label="Push-up demonstration in the top position">
-      <div id="motionPreviewContainer" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;border-radius:13px;overflow:hidden;"></div>
+      <div id="motionPreviewContainer" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;border-radius:13px;overflow:hidden;visibility:hidden;pointer-events:none;" aria-hidden="true"></div>
       <div id="motionViewControls" class="motion-view-controls" aria-label="3D view controls" hidden><button type="button" data-motion-view="side">Side</button><button type="button" data-motion-view="front">Front</button><button type="button" data-motion-view="three-quarter">3/4</button><button type="button" data-motion-view="reset">Reset View</button></div>
       <svg class="athlete" viewBox="0 0 420 220" aria-hidden="true" id="motionFallbackSvg">
         <g class="torso"><line x1="118" y1="88" x2="286" y2="104"></line></g>
@@ -49,10 +49,10 @@
 <script defer src="/push-up-sequence-engine.js"></script>
 <script defer src="/push-up-challenge.js"></script>
 <script defer src="/guided-exercise-sequence.js"></script>
-<script defer src="/motion/shared3d-loader.js"></script>
-<script defer src="/motion/disposable-motion-session.js"></script>
-<script defer src="/motion/product-motion-camera.js"></script>
-<script defer src="/motion/product-motion-preview.js"></script>
-<script defer src="/push-up-challenge-page.js"></script>
+<script defer src="/motion/shared3d-loader.js?v=20260825-push-up-viewer-atomic-ready-v1"></script>
+<script defer src="/motion/disposable-motion-session.js?v=20260825-push-up-viewer-atomic-ready-v1"></script>
+<script defer src="/motion/product-motion-camera.js?v=20260825-push-up-viewer-atomic-ready-v1"></script>
+<script defer src="/motion/product-motion-preview.js?v=20260825-push-up-viewer-atomic-ready-v1"></script>
+<script defer src="/push-up-challenge-page.js?v=20260825-push-up-viewer-atomic-ready-v1"></script>
 <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script><script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body></html>
