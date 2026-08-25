@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "avaturn-push-up-source",
+    "path": "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb",
+    "sha256": "ec21fb1b5ba8499f2e410b49272e2b7f30e09257cd737c9efe25c0cd3d21adb6",
+    "format": "glb",
+    "provider": "Avaturn",
+    "licenseStatus": "not-cleared",
+    "licenseReference": "not-present-in-repository",
+    "audience": "product",
+    "status": "active"
+  },
+  "animationSelection": { "sourceClipName": "avaturn_animation" },
+  "output": {
+    "fixtureId": "avaturn-push-up-animation",
+    "motionId": "push_up/avaturn_native_v1",
+    "skeletonProfileId": "avaturn-native-v1",
+    "compatibleAvatarProfileIds": ["avaturn-personalized-candidate"],
+    "outputPath": "public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb",
+    "provenancePath": "public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json",
+    "outputClipName": "avaturn_push_up_native_v1",
+    "sha256": "046034dd86350c4962ede767c2483e6c68d87b8115ccda5a9e26d4483615205f",
+    "bytes": 52232,
+    "generator": "PocketPT deterministic native Avaturn animation extractor",
+    "sceneName": "avaturn_push_up_animation_fixture"
+  },
+  "clipPolicy": { "start": 0, "end": 1.5333333015441895, "mode": "preserve-existing-complete-clip" },
+  "channelPolicy": {
+    "include": "skeletal-transform-tracks",
+    "exclude": ["weights"],
+    "preserveStaticSkeletalTracks": true
+  },
+  "rootMotionPolicy": { "mode": "preserve" },
+  "reductionPolicy": { "mode": "none" },
+  "compressionPolicy": { "mode": "none" },
+  "structuralExpectations": {
+    "animationCount": 1,
+    "trackCount": 40,
+    "targetCount": 39,
+    "nodeCount": 40,
+    "meshCount": 0,
+    "skinCount": 0,
+    "materialCount": 0,
+    "textureCount": 0,
+    "imageCount": 0,
+    "morphTrackCount": 0,
+    "duration": 1.5333333015441895
+  },
+  "provenance": {
+    "humanVisualStatus": "PENDING HUMAN VERIFICATION",
+    "knownDefectNotAddressed": "avaturn_head_face_transparency_during_pushup"
+  }
+}

@@ -50,7 +50,11 @@
     "motion:inventory-phase-e": "node scripts/motion/inventory-phase-e-assets.js",
     "motion:validate-phase-e": "node scripts/motion/validate-phase-e-glb.js",
     "motion:extract-avaturn-push-up": "node scripts/motion/extract-avaturn-push-up.js",
-    "motion:validate-avaturn-push-up": "node scripts/motion/validate-avaturn-push-up.js"
+    "motion:validate-avaturn-push-up": "node scripts/motion/validate-avaturn-push-up.js",
+    "motion:build": "node scripts/motion/build-motion-fixture.js",
+    "motion:validate": "node scripts/motion/validate-motion-fixture.js",
+    "motion:build:push-up": "node scripts/motion/build-motion-fixture.js motion-sources/avaturn-push-up.source.json",
+    "motion:validate:push-up": "node scripts/motion/validate-motion-fixture.js motion-sources/avaturn-push-up.source.json public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb"
   },
   "dependencies": {
     "cors": "^2.8.5",

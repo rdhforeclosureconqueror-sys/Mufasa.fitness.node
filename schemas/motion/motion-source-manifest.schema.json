@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pocketpt.local/schemas/motion/motion-source-manifest.schema.json",
+  "title": "PocketPT motion source/build manifest",
+  "type": "object",
+  "required": ["schemaVersion", "source", "animationSelection", "output", "clipPolicy", "channelPolicy", "rootMotionPolicy", "reductionPolicy", "compressionPolicy", "structuralExpectations"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "source": { "type": "object", "required": ["sourceId", "path", "sha256", "format", "licenseStatus", "licenseReference", "audience", "status"] },
+    "animationSelection": { "type": "object", "required": ["sourceClipName"] },
+    "output": { "type": "object", "required": ["fixtureId", "motionId", "skeletonProfileId", "compatibleAvatarProfileIds", "outputPath", "provenancePath", "outputClipName", "sha256", "bytes", "generator", "sceneName"] },
+    "clipPolicy": { "type": "object", "required": ["start", "end", "mode"] },
+    "channelPolicy": { "type": "object", "required": ["include", "exclude", "preserveStaticSkeletalTracks"] },
+    "rootMotionPolicy": { "type": "object", "required": ["mode"] },
+    "reductionPolicy": { "type": "object", "required": ["mode"] },
+    "compressionPolicy": { "type": "object", "required": ["mode"] },
+    "structuralExpectations": { "type": "object", "required": ["animationCount", "trackCount", "targetCount", "nodeCount", "meshCount", "skinCount", "materialCount", "textureCount", "imageCount", "morphTrackCount", "duration"] }
+  },
+  "additionalProperties": true
+}
