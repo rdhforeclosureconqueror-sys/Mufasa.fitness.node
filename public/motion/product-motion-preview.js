@@ -303,7 +303,7 @@
 
         // 8. Sample the complete clip once and orbit around its world-space envelope.
         const animatedBounds = ProductMotionCamera.sampleAnimatedBounds(session, { samples: options.boundsSamples || 17 });
-        viewController = ProductMotionCamera.createViewController({ session, bounds: animatedBounds, initialPreset: cameraPreset === "exercise-side" ? "side" : cameraPreset, environment: env });
+        viewController = ProductMotionCamera.createViewController({ session, bounds: animatedBounds, container, initialPreset: cameraPreset === "exercise-side" ? "side" : cameraPreset, environment: env, onDiagnostic: diagnostic });
         diagnostic("animated_bounds_sampled", { sampleCount: animatedBounds.sampleCount });
         diagnostic("framing_applied");
 
