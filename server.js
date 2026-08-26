@@ -521,7 +521,7 @@ function createApp(options = {}) {
     if(completion?.comeback&&gamificationEventService)gamificationEventService.recordComebackCompleted({userId:fact.userId,session:completion.session});
     return completion;
   } });
-  const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
+  const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, movementDefinitions: [require("./data/movements/warrior-ii.v1.json")], eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });

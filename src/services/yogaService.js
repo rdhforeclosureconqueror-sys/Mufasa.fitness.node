@@ -2,9 +2,9 @@
 const crypto=require("crypto");
 const { ApiError }=require("../lib/apiResponse");
 function boundedText(v,n=128){return typeof v==="string"&&v.length>0&&v.length<=n;}
-function createYogaService({userStore,poses,sessions,eventService=null,onCommitted=null,clock=Date.now}){
+function createYogaService({userStore,poses,sessions,movementDefinitions=[],eventService=null,onCommitted=null,clock=Date.now}){
  const poseMap=new Map(poses.map(p=>[p.id,p])),sessionMap=new Map(sessions.map(s=>[s.id,s]));
- function catalogue(){return {poses:poses.map(({expectedAngles,commonFaults,...publicPose})=>publicPose),sessions};}
+ function catalogue(){return {poses:poses.map(({expectedAngles,commonFaults,...publicPose})=>publicPose),sessions,movementDefinitions};}
  function sessionDetail(sessionId){
   const session=sessionMap.get(sessionId);
   if(!session)throw new ApiError("YOGA_SESSION_NOT_FOUND","Yoga session not found",404);

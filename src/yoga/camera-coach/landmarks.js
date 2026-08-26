@@ -1,5 +1,7 @@
 'use strict';
 
+const BodyIntelligence = require('../../../public/body-intelligence');
+
 const SIDES = ['left', 'right'];
 
 function canonicalName(name, mirrored = false) {
@@ -13,21 +15,7 @@ function canonicalName(name, mirrored = false) {
 function normalizeLandmarks(input, options = {}) {
   const { width = 1, height = 1, mirrored = false } = options;
   if (!(width > 0) || !(height > 0)) throw new TypeError('width and height must be positive');
-  const entries = Array.isArray(input)
-    ? input.map((point) => [point.name, point])
-    : Object.entries(input || {});
-  const landmarks = {};
-  for (const [rawName, point] of entries) {
-    if (!rawName || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
-    const name = canonicalName(rawName, mirrored);
-    landmarks[name] = {
-      x: point.x / width,
-      y: point.y / height,
-      z: Number.isFinite(point.z) ? point.z / width : 0,
-      confidence: Number.isFinite(point.confidence) ? point.confidence : 1,
-    };
-  }
-  return landmarks;
+  return BodyIntelligence.normalizeLandmarks(input, { width, height, mirrored }).landmarks;
 }
 
 function resolveLandmark(name, landmarks, side) {

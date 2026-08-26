@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "id": "warrior-ii",
+  "name": "Warrior II",
+  "domain": "yoga",
+  "movementType": "static_hold",
+  "orientation": "front",
+  "minimumConfidence": 0.5,
+  "requiredLandmarks": [
+    "left_shoulder",
+    "right_shoulder",
+    "left_elbow",
+    "right_elbow",
+    "left_wrist",
+    "right_wrist",
+    "left_hip",
+    "right_hip",
+    "left_knee",
+    "right_knee",
+    "left_ankle",
+    "right_ankle"
+  ],
+  "hold": {
+    "targetMs": 20000,
+    "graceMs": 500,
+    "majorFaultResetMs": 1500
+  },
+  "phases": [
+    {
+      "id": "hold",
+      "targetBodyFrame": {
+        "coordinateSpace": "body_normalized",
+        "landmarks": {
+          "left_shoulder": [
+            0.4,
+            0.28
+          ],
+          "right_shoulder": [
+            0.6,
+            0.28
+          ],
+          "left_elbow": [
+            0.27,
+            0.28
+          ],
+          "right_elbow": [
+            0.73,
+            0.28
+          ],
+          "left_wrist": [
+            0.14,
+            0.28
+          ],
+          "right_wrist": [
+            0.86,
+            0.28
+          ],
+          "left_hip": [
+            0.45,
+            0.69
+          ],
+          "right_hip": [
+            0.55,
+            0.52
+          ],
+          "left_knee": [
+            0.3,
+            0.69
+          ],
+          "right_knee": [
+            0.7,
+            0.64
+          ],
+          "left_ankle": [
+            0.3,
+            0.91
+          ],
+          "right_ankle": [
+            0.86,
+            0.91
+          ]
+        }
+      },
+      "rules": [
+        {
+          "id": "front-knee-angle",
+          "type": "angle_range",
+          "points": [
+            "left_hip",
+            "left_knee",
+            "left_ankle"
+          ],
+          "range": [
+            80,
+            110
+          ],
+          "severity": 3,
+          "safetyImportance": 3,
+          "cueLow": "Ease the front knee back toward a comfortable bend.",
+          "cueHigh": "Bend your front knee a little more."
+        },
+        {
+          "id": "arms-level",
+          "type": "alignment",
+          "points": [
+            "left_wrist",
+            "left_shoulder",
+            "right_shoulder",
+            "right_wrist"
+          ],
+          "axis": "y",
+          "tolerance": 0.07,
+          "severity": 2,
+          "safetyImportance": 1,
+          "cue": "Keep your arms level with your shoulders."
+        },
+        {
+          "id": "left-arm-long",
+          "type": "angle_range",
+          "points": [
+            "left_shoulder",
+            "left_elbow",
+            "left_wrist"
+          ],
+          "range": [
+            160,
+            180
+          ],
+          "severity": 1,
+          "safetyImportance": 1,
+          "cueLow": "Reach through your left arm without locking the elbow.",
+          "cueHigh": "Soften your left elbow."
+        },
+        {
+          "id": "right-arm-long",
+          "type": "angle_range",
+          "points": [
+            "right_shoulder",
+            "right_elbow",
+            "right_wrist"
+          ],
+          "range": [
+            160,
+            180
+          ],
+          "severity": 1,
+          "safetyImportance": 1,
+          "cueLow": "Reach through your right arm without locking the elbow.",
+          "cueHigh": "Soften your right elbow."
+        },
+        {
+          "id": "torso-upright",
+          "type": "orientation",
+          "points": [
+            "left_shoulder",
+            "right_shoulder",
+            "left_hip",
+            "right_hip"
+          ],
+          "axis": "vertical",
+          "toleranceDegrees": 12,
+          "severity": 2,
+          "safetyImportance": 2,
+          "cue": "Bring your torso upright over your hips."
+        }
+      ]
+    }
+  ],
+  "avatar": {
+    "strategy": "target_landmark_rig",
+    "phaseId": "hold",
+    "fallback": "skeleton"
+  },
+  "feedback": {
+    "maximumCorrections": 2
+  }
+}
