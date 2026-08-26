@@ -64,10 +64,24 @@ test("global nav renders signed-out state only for definitive auth failures",()=
   for(const reason of ["missing_token","invalid_token","expired_token","invalid_session"]) assert.equal(navigation.presentationFromReadiness({ok:false,reason},null).phase,"unauthenticated");
 });
 
-test("temporary auth verification unavailability preserves restoring navigation",()=>{
+test("temporary auth verification unavailability resolves to a retryable error",()=>{
   const navigation=loadNavigationContract();
-  assert.equal(navigation.presentationFromReadiness({ok:false,reason:"auth_unavailable"},null).phase,"restoring");
+  assert.equal(navigation.presentationFromReadiness({ok:false,reason:"auth_unavailable"},null).phase,"error");
   assert.equal(navigation.presentationFromReadiness(null,null).phase,"restoring");
+  const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");
+  assert.match(source,/Session verification failed/);assert.match(source,/data-maat-auth-retry/);
+});
+
+test("global restoration is bounded and canonical API requests wait for readiness",()=>{
+  const auth=fs.readFileSync(path.join(__dirname,"..","public","auth-state-runtime.js"),"utf8"),api=fs.readFileSync(path.join(__dirname,"..","public","api-client.js"),"utf8");
+  assert.match(auth,/RESTORE_TIMEOUT_MS = 12000/);assert.match(auth,/fetchWithTimeout/);assert.match(auth,/restoreCompletedAt/);
+  assert.match(api,/AuthStateRuntime\?\.whenReady/);assert.match(api,/options\.auth !== false/);
+});
+
+test("shared protected features use canonical readiness and API origin",()=>{
+  const root=path.join(__dirname,"..","public");
+  for(const file of ["exercise-library.js","yoga.js","ai-coach.js"]){const source=fs.readFileSync(path.join(root,file),"utf8");assert.match(source,/AuthStateRuntime\.whenReady\(\)/,file);assert.match(source,/MaatApiClient\.request/,file);assert.doesNotMatch(source,/maat_auth_token|mufasa_auth_token|localStorage\.getItem\("authToken"\)/,file)}
+  for(const file of ["exercise-library.html","yoga.html","coach.html"]){const html=fs.readFileSync(path.join(root,file),"utf8");assert.ok(html.indexOf("api-client.js")<html.indexOf("auth-state-runtime.js"),`${file} API before auth`);}
 });
 
 test("protected-surface startup cannot flash login while canonical restoration is pending",()=>{

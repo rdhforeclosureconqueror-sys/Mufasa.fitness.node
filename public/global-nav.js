@@ -33,7 +33,7 @@
   function presentationFromReadiness(result, state) {
     if (result?.ok === true && state?.isAuthenticated === true && state?.token && state?.user) return { phase: "authenticated", state };
     if (DEFINITIVE_SIGNED_OUT_REASONS.has(result?.reason)) return { phase: "unauthenticated", state: { isAuthenticated: false, user: null } };
-    return { phase: "restoring", state: null };
+    return result?.reason === "auth_unavailable" ? { phase: "error", state: { isAuthenticated:false,user:null } } : { phase: "restoring", state: null };
   }
   function applyReadiness(result) {
     const state=global.AuthStateRuntime?.getCanonicalAuthState?.();
@@ -72,14 +72,15 @@
     NAV_ITEMS.filter(item=>allowed(item,state)).forEach(item=>{if(!grouped.has(item.section))grouped.set(item.section,[]);grouped.get(item.section).push(item)});
     const links=[...grouped].map(([section,items])=>`<section class="maat-nav-section"><h2>${section}</h2><div class="maat-nav-links">${items.map(item=>`<a class="maat-nav-link" href="${item.href}"${current===item.href.split("#")[0]?" aria-current=\"page\"":""}>${item.label}${item.premium&&state.user?.accessTier==="free"?'<span class="maat-nav-lock">Upgrade</span>':""}</a>`).join("")}</div></section>`).join("");
     const identity=state.isAuthenticated?`<div class="maat-nav-identity"><strong>${escapeHtml(state.user?.name||state.user?.email||"Signed in")}</strong><br><small>${escapeHtml(state.user?.email||"")}${state.user?.role?` · ${escapeHtml(state.user.role)}`:""}</small></div>`:"";
-    const account=restoring?'<p class="maat-nav-auth-restoring" role="status">Restoring session…</p>':state.isAuthenticated?'<button class="maat-nav-signout" type="button" data-maat-signout>Sign Out</button>':'<a class="maat-nav-link" href="/login.html">Sign In</a><a class="maat-nav-link" href="/login.html?mode=register">Create Account</a>';
+    const account=restoring?'<p class="maat-nav-auth-restoring" role="status">Restoring session…</p>':authPresentation.phase==="error"?'<p class="maat-nav-auth-error" role="alert">Session verification failed. Check your connection and retry.</p><button type="button" data-maat-auth-retry>Retry</button>':state.isAuthenticated?'<button class="maat-nav-signout" type="button" data-maat-signout>Sign Out</button>':'<a class="maat-nav-link" href="/login.html">Sign In</a><a class="maat-nav-link" href="/login.html?mode=register">Create Account</a>';
     header.innerHTML=`<div class="maat-nav-bar"><a class="maat-nav-brand" href="/index.html">Pocket PT</a><span class="maat-nav-context">${escapeHtml(document.title.split("·")[0].split("|")[0].trim())}</span><button class="maat-nav-toggle" type="button" aria-expanded="false" aria-controls="maatNavPanel" aria-label="Open navigation menu">Menu</button></div><button class="maat-nav-backdrop" type="button" aria-label="Close navigation menu" hidden></button><nav id="maatNavPanel" class="maat-nav-panel" aria-label="Global navigation" data-frontend-build="${FRONTEND_BUILD}" hidden>${identity}${links}<section class="maat-nav-section"><h2>Account</h2><div class="maat-nav-links">${account}</div></section><p class="maat-nav-status" role="status" aria-live="polite"></p></nav>`;
     if(wasOpen)setOpen(true,{restoreFocus:false});else inspect();
   }
   async function onClick(event) {
-    const toggle=event.target.closest?.(".maat-nav-toggle"),backdrop=event.target.closest?.(".maat-nav-backdrop"),signout=event.target.closest?.("[data-maat-signout]");
+    const toggle=event.target.closest?.(".maat-nav-toggle"),backdrop=event.target.closest?.(".maat-nav-backdrop"),signout=event.target.closest?.("[data-maat-signout]"),retry=event.target.closest?.("[data-maat-auth-retry]");
     if(toggle){event.preventDefault();setOpen(toggle.getAttribute("aria-expanded")!=="true");return}
     if(backdrop){event.preventDefault();setOpen(false);return}
+    if(retry){event.preventDefault();authPresentation={phase:"restoring",state:null};render();applyReadiness(await global.AuthStateRuntime?.restoreCanonicalAuthState?.({force:true,reason:"navigation-retry"}));return}
     if(signout){signout.disabled=true;document.querySelector(".maat-nav-status").textContent="Signing out…";await global.AuthStateRuntime?.logout({redirectTo:"/login.html?signedOut=1"})}
   }
   function initialize() {
