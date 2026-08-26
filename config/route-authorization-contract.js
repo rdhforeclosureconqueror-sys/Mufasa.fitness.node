@@ -1603,6 +1603,20 @@ module.exports = Object.freeze([
   },
   {
     "method": "GET",
+    "path": "/api/yoga/sessions/:sessionId",
+    "authentication": "required",
+    "allowedRoles": [],
+    "requiredPermissions": [],
+    "membership": "required",
+    "ownership": "authenticated-user",
+    "featureFlag": null,
+    "publicOutput": "authenticated-safe",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
+    "method": "GET",
     "path": "/api/yoga/history",
     "authentication": "required",
     "allowedRoles": [],
