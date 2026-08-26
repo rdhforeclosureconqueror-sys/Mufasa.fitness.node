@@ -674,6 +674,17 @@
       runtimeStatus.motionRetargeted = false;
       runtimeStatus.mappedBones = mountInfo?.mappedBones || [];
       b.setActiveAvatarAsset?.({ ...nextAvatar, runtimeStatus });
+      // Mounting a model is not activation from the member's perspective. A
+      // canonical saved avatar must also select an avatar presentation mode;
+      // otherwise both mobile (which boots in camera mode) and a fresh desktop
+      // browser can successfully load the GLB while continuing to show only the
+      // camera. Keep this callback inside the awaited asset transaction so the
+      // upload flow cannot report ACTIVE before the public workout UI agrees.
+      const presentationMode = await b.activatePresentation?.({ source, avatar: nextAvatar });
+      if (presentationMode !== 'avatar_overlay' && presentationMode !== 'avatar_only') {
+        throw new Error('avatar_presentation_not_activated');
+      }
+      runtimeStatus.presentationMode = presentationMode;
       b.setAssetStatus?.(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
       b.setRuntimeStatus?.(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${(mountInfo?.mappedBones || []).join(', ') || 'none'}).`);
       b.setCreateButtonLabel?.('🧍 Change Avatar');

@@ -26,6 +26,23 @@ test("direct workout shell receives the enabled avatar flag and exposes provisio
   assert.equal(chooser[0], '<input id="avatarFileInput" type="file" />');
 });
 
+test("canonical saved avatar activation reaches the visible workout presentation on every device", () => {
+  const shell = read("public/workout.html");
+  const runtime = read("public/avatar-runtime.js");
+
+  assert.match(shell, /function activateSavedAvatarPresentation/);
+  assert.match(shell, /targetMode = currentMode === "avatar_only" \? "avatar_only" : "avatar_overlay"/);
+  assert.match(shell, /activatePresentation: activateSavedAvatarPresentation/);
+  assert.match(runtime, /await b\.activatePresentation\?\.\(\{ source, avatar: nextAvatar \}\)/);
+  assert.match(runtime, /avatar_presentation_not_activated/);
+
+  const mounted = runtime.indexOf("b.setActiveAvatarAsset?.({ ...nextAvatar, runtimeStatus })");
+  const presented = runtime.indexOf("await b.activatePresentation?.({ source, avatar: nextAvatar })");
+  const success = runtime.indexOf("b.setAssetStatus?.(`Avatar asset found");
+  assert.ok(mounted < presented, "the asset must mount before presentation is selected");
+  assert.ok(presented < success, "the runtime must not report success before the public UI is selected");
+});
+
 test("auth completion does not misreport a valid signed-out state as propagation failure", () => {
   const orchestrator = read("public/runtime-orchestrator.js");
   assert.doesNotMatch(orchestrator, /CRITICAL: AUTH NOT PROPAGATED/);
