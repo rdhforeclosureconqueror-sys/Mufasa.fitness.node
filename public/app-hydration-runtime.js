@@ -174,7 +174,12 @@
     const backendReadClient = deps.backendReadClient || global.BACKEND_READ_CLIENT;
     if (!backendReadClient) return false;
 
-    if (global.APP_AUTH?.isAuthenticated !== true) {
+    // APP_AUTH is a presentation snapshot and can lag behind the canonical token
+    // on mobile Safari. The avatar upload has already authenticated with the token
+    // owned by backendReadClient, so do not reject its immediate profile reload
+    // solely because that snapshot has not caught up yet.
+    const hasCanonicalToken = Boolean(backendReadClient.getAuthToken?.());
+    if (global.APP_AUTH?.isAuthenticated !== true && !hasCanonicalToken) {
       global.PROFILE_RUNTIME?.setProfileSummary?.('Not signed in yet.');
       return false;
     }
