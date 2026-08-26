@@ -16,7 +16,7 @@ test("direct workout shell receives the enabled avatar flag and exposes provisio
   const response = await fetch(`http://127.0.0.1:${server.address().port}/workout.html`);
   const html = await response.text();
   assert.equal(response.status, 200);
-  assert.match(html, /window\.ENABLE_AVATAR_FEATURE = "true" === "true"/);
+  assert.match(html, /window\.ENABLE_AVATAR_FEATURE = true/);
   assert.doesNotMatch(html, /__ENABLE_AVATAR_FEATURE__/);
   assert.match(html, /id="avatarCreateBtn"[^>]*>[^<]*Create Avatar/);
   assert.match(html, /value="avatar_overlay"[^>]*>Avatar Overlay/);

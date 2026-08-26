@@ -8,11 +8,12 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <script>
-    window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
-    // The bounded live-avatar pilot is code-enabled on both client and server.
-    // Upload and delivery remain independently authenticated and owner-scoped.
-    window.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__" === "true";
-    if (!window.ENABLE_AVATAR_FEATURE) document.documentElement.classList.add("avatar-feature-disabled");
+    window.APP_BUILD_VERSION = "__FRONTEND_BUILD_VERSION__";
+    window.FRONTEND_COMMIT = "__FRONTEND_COMMIT__";
+    // Public avatar presentation is owned by this frontend and is intentionally
+    // available without a second frontend-only environment gate. Upload and
+    // delivery remain authenticated, validated, and owner-scoped by the backend.
+    window.ENABLE_AVATAR_FEATURE = true;
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     console.log("[AVATAR_FEATURE]", window.ENABLE_AVATAR_FEATURE ? "enabled" : "disabled");
   </script>
@@ -52,7 +53,6 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html.avatar-feature-disabled [data-avatar-feature] { display: none !important; }
     :root {
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
@@ -1187,7 +1187,8 @@ skeletonOverlayActive: no</pre>
       <p class="subtitle">Launch Avaturn creator or upload an exported .glb avatar file from your device.</p>
       <div class="btn-row">
         <button id="launchAvaturnBtn">Open Avaturn Creator</button>
-        <input id="avatarFileInput" type="file" />
+        <label for="avatarFileInput">Choose File</label>
+        <input id="avatarFileInput" type="file" accept=".glb,model/gltf-binary" />
         <button id="uploadAvatarBtn" class="secondary">Upload Avatar (.glb)</button>
         <button id="closeAvatarModalBtn" class="secondary">Close</button>
       </div>
@@ -2217,7 +2218,7 @@ skeletonOverlayActive: no</pre>
         status.featureEnabled = false;
         status.featureDisabled = true;
         status.disabledReason = "ENABLE_AVATAR_FEATURE_FALSE";
-        setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+        setAvatarRuntimeStatus("Avatar presentation is unavailable.", true);
         return false;
       }
       try {
@@ -2384,7 +2385,7 @@ skeletonOverlayActive: no</pre>
       const nextMode = sanitizeRenderMode(mode);
       updateAvatarOverlayDiagnostics({ lastRenderModeRequested: nextMode });
       if (!isAvatarFeatureEnabled() && (nextMode === "avatar_overlay" || nextMode === "avatar_only")) {
-        updateRenderModeStatus("Camera (avatar disabled for pilot)", true);
+        updateRenderModeStatus("Camera (avatar presentation unavailable)", true);
         AVATAR_FLAGS.AVATAR_MODE = "camera";
         applyLiveAvatarRenderPresentation("camera");
         if (renderModeSelectEl.value !== "camera") renderModeSelectEl.value = "camera";
@@ -2912,7 +2913,7 @@ skeletonOverlayActive: no</pre>
 
     function openAvatarModal() {
       if (!isAvatarFeatureEnabled()) {
-        setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+        setAvatarRuntimeStatus("Avatar presentation is unavailable.", true);
         return false;
       }
       avatarModelUrlInput.value = USER_PROFILE?.avatar?.avatarModelUrl || "";
@@ -4666,7 +4667,7 @@ skeletonOverlayActive: no</pre>
         el.setAttribute?.("aria-disabled", "true");
       });
       if (avatarModalEl) avatarModalEl.classList.add("hidden");
-      setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+      setAvatarRuntimeStatus("Avatar presentation is unavailable.", true);
     }
     muteBtn.onclick = () => {
       requireCoachRuntime().toggleMuted();
