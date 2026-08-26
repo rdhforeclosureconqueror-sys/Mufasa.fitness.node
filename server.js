@@ -1015,7 +1015,7 @@ function createApp(options = {}) {
     const nameMarker = 'name="avatar"';
     const fieldIndex = body.indexOf(nameMarker);
     if (fieldIndex === -1) {
-      throw new ApiError("VALIDATION_ERROR", "Missing avatar file upload", 400);
+      throw new ApiError("AVATAR_FILE_MISSING", "Missing avatar file upload", 400);
     }
 
     const headerStart = body.lastIndexOf(boundary, fieldIndex);
@@ -3180,7 +3180,7 @@ function createApp(options = {}) {
     fs.writeFileSync(destinationPath, fileBuffer);
     writeJSON(path.join(AVATAR_UPLOAD_DIR, `${unique}.json`), { assetId: unique, ownerUserId: req.auth.userId, originalName: path.basename(originalName), sizeBytes: fileBuffer.length, compatibility, createdAt: new Date().toISOString() });
     const avatarModelUrl = `/api/me/avatar/assets/${unique}`;
-    return ok(res, req.requestId, { assetId: unique, avatarModelUrl, compatibility }, 201);
+    return ok(res, req.requestId, { assetId: unique, avatarModelUrl, compatibility, uploadStages: ["SERVER_RECEIVED_FILE", "VALIDATING_GLB", "PERSISTING_ASSET"] }, 201);
   }));
 
   // ---- COMMAND endpoint (legacy compatibility adapter for session lifecycle) ----
