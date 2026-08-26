@@ -880,6 +880,14 @@ function createApp(options = {}) {
         .replace(/__ENABLE_AVATAR_FEATURE__/g, avatarFeatureEnabled ? "true" : "false")
     );
   });
+  app.get("/workout.html", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    res.set("X-App-Build-Version", APP_BUILD_VERSION);
+    res.type("html").send(
+      fs.readFileSync(path.join(PUBLIC_DIR, "workout.html"), "utf8")
+        .replace(/__ENABLE_AVATAR_FEATURE__/g, avatarFeatureEnabled ? "true" : "false")
+    );
+  });
   app.get("/dashboard.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "dashboard.html"));
