@@ -11,7 +11,7 @@
     window.APP_BUILD_VERSION = "2026-05-06T00:00:00Z-avatar-runtime-extracted";
     // The bounded live-avatar pilot is code-enabled on both client and server.
     // Upload and delivery remain independently authenticated and owner-scoped.
-    window.ENABLE_AVATAR_FEATURE = true;
+    window.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__" === "true";
     if (!window.ENABLE_AVATAR_FEATURE) document.documentElement.classList.add("avatar-feature-disabled");
     console.log("[BUILD_VERSION]", window.APP_BUILD_VERSION);
     console.log("[AVATAR_FEATURE]", window.ENABLE_AVATAR_FEATURE ? "enabled" : "disabled");
@@ -1187,7 +1187,7 @@ skeletonOverlayActive: no</pre>
       <p class="subtitle">Launch Avaturn creator or upload an exported .glb avatar file from your device.</p>
       <div class="btn-row">
         <button id="launchAvaturnBtn">Open Avaturn Creator</button>
-        <input id="avatarFileInput" type="file" accept=".glb,model/gltf-binary" />
+        <input id="avatarFileInput" type="file" />
         <button id="uploadAvatarBtn" class="secondary">Upload Avatar (.glb)</button>
         <button id="closeAvatarModalBtn" class="secondary">Close</button>
       </div>
@@ -1206,7 +1206,11 @@ skeletonOverlayActive: no</pre>
         Avaturn launch: <span id="avatarDiagLaunch">IDLE</span><br>
         Selected file: <span id="avatarDiagFile">NONE</span><br>
         Upload: <span id="avatarDiagUpload">IDLE</span><br>
+        HTTP status: <span id="avatarDiagHttp">NOT APPLICABLE</span><br>
+        Server error code: <span id="avatarDiagServerCode">NONE</span><br>
+        Compatibility: <span id="avatarDiagCompatibility">NOT CHECKED</span><br>
         Profile save: <span id="avatarDiagProfile">IDLE</span><br>
+        Profile reload: <span id="avatarDiagReload">IDLE</span><br>
         Avatar runtime: <span id="avatarDiagRuntime">NOT ATTEMPTED</span><br>
         Last error: <span id="avatarDiagError">NONE</span>
       </div>
@@ -1237,7 +1241,8 @@ skeletonOverlayActive: no</pre>
       document.write('<script src="/avatar-runtime.js?v=20260506a"><\/script>');
     }
   </script>
-  <script src="/profile-write-runtime.js?v=20260826-avatar-transport"></script>
+  <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
+  <script src="/profile-write-runtime.js?v=20260826-avatar-contract"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>

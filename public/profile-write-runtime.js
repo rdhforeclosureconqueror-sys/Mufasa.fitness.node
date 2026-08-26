@@ -363,13 +363,15 @@
       return { ok: false, reason: "missing_auth_token" };
     }
 
+    const contract = global.PocketPTAvatarUploadContract;
+    if (!contract) throw makeError("avatar_upload_contract_unavailable", "UPLOAD_CONTRACT_MISSING");
     const form = new FormData();
-    form.append("avatar", file);
-    if (form.get("avatar") !== file) {
+    form.append(contract.field, file);
+    if (form.get(contract.field) !== file) {
       diagnostic("avatarDiagError", "UPLOAD_FORMDATA_FILE_MISSING");
       return { ok: false, reason: "UPLOAD_FORMDATA_FILE_MISSING" };
     }
-    const uploadUrl = `${state.endpoints.nodeBaseUrl}/api/avatar/upload`;
+    const uploadUrl = `${String(state.endpoints.nodeBaseUrl).replace(/\/$/, "")}${contract.path}`;
     const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timeoutHandle = abortController
       ? setTimeout(() => abortController.abort("avatar_upload_timeout"), Number(state.deps.uploadTimeoutMs || DEFAULT_UPLOAD_TIMEOUT_MS))
@@ -381,7 +383,7 @@
       let response;
       try {
         response = await fetch(uploadUrl, {
-          method: "POST",
+          method: contract.method,
           headers: { authorization: `Bearer ${authToken}` },
           body: form,
           ...(abortController ? { signal: abortController.signal } : {})
@@ -390,6 +392,8 @@
         if (timeoutHandle) clearTimeout(timeoutHandle);
       }
       const payload = await response.json().catch(() => null);
+      diagnostic("avatarDiagHttp", `HTTP ${response.status}`);
+      diagnostic("avatarDiagServerCode", payload?.error?.code || "NONE");
       log(AVATAR_TAG, "response", { status: response.status, ok: response.ok, payload });
       if (!response.ok || !payload?.ok || !payload?.data?.avatarModelUrl) {
         const serverCode = payload?.error?.code;
@@ -401,15 +405,15 @@
         throw makeError(payload?.error?.message || `upload_failed_${response.status}`, code, { status: response.status, payload });
       }
 
-      for (const stage of payload.data.uploadStages || ["SERVER_RECEIVED_FILE", "VALIDATING_GLB", "PERSISTING_ASSET"]) diagnostic("avatarDiagUpload", stage);
+      for (const stage of payload.data.uploadStages || []) diagnostic("avatarDiagUpload", stage);
+      diagnostic("avatarDiagCompatibility", "COMPATIBLE");
 
       const avatarModelUrl = payload.data.avatarModelUrl;
       if (state.refs.avatarModelUrlInput) state.refs.avatarModelUrlInput.value = avatarModelUrl;
       setAvatarAssetStatus(`Upload success. Asset stored at ${avatarModelUrl}.`);
       visibleAvatarMessage("Upload complete. Saving avatar metadata…");
       diagnostic("avatarDiagUpload", "SUCCESS");
-      diagnostic("avatarDiagProfile", "SAVING");
-      diagnostic("avatarDiagUpload", "SAVING_PROFILE");
+      diagnostic("avatarDiagProfile", "SAVED");
       const nextAvatar = normalizeAvatarProfile({
         avatarProvider: state.deps.avatarProviderDefault || DEFAULT_PROVIDER,
         avatarModelUrl,
@@ -418,20 +422,25 @@
       });
       setProfileAvatar(nextAvatar);
       state.deps.persistUser?.();
-      const syncResult = await saveProfileToNode({ source: "avatar-upload", allowLegacyFallback: false, visible: true });
+      diagnostic("avatarDiagReload", "RELOADING");
+      if (typeof state.deps.reloadProfile === "function") await state.deps.reloadProfile();
+      diagnostic("avatarDiagReload", "RELOADED");
       visibleAvatarMessage("Upload success. Avatar saved and synced to profile.");
-      diagnostic("avatarDiagProfile", "SUCCESS");
+      diagnostic("avatarDiagProfile", "SAVED");
       diagnostic("avatarDiagUpload", "COMPLETE");
       state.deps.trackPilotEvent?.("avatar_upload_success", { size: file?.size || 0 });
-      emitProfileSync(getProfile(), "avatar-upload", syncResult.mode);
+      emitProfileSync(getProfile(), "avatar-upload", "authenticated_api");
       refreshAvatarAsset("uploaded_file").catch((error) => {
         diagnostic("avatarDiagRuntime", "FAILED");
         diagnostic("avatarDiagError", `Avatar saved; optional rendering failed: ${String(error?.message || error || "unknown")}`);
       });
-      return { ok: true, avatar: nextAvatar, mode: syncResult.mode };
+      return { ok: true, avatar: nextAvatar, mode: "authenticated_api" };
     } catch (err) {
       recordError("avatar-upload", err);
       diagnostic("avatarDiagUpload", "FAILED");
+      if (err?.status) diagnostic("avatarDiagHttp", `HTTP ${err.status}`);
+      if (err?.payload?.error?.code) diagnostic("avatarDiagServerCode", err.payload.error.code);
+      if (err?.status === 422) diagnostic("avatarDiagCompatibility", "INCOMPATIBLE");
       if (state.refs.avatarModelUrlInput?.value) diagnostic("avatarDiagProfile", "FAILED");
       diagnostic("avatarDiagError", String(err?.code || err?.message || err || "UPLOAD_FAILED"));
       warn(AVATAR_TAG, "avatar upload failed", err);
