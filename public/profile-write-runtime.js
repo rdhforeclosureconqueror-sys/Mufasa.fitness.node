@@ -400,6 +400,10 @@
     // on the later inline runtime configuration having retained the same input.
     const file = selectedFile || selectedAvatarFile();
     let uploadTransportSucceeded = false;
+    let profileReloadSucceeded = false;
+    // Each attempt owns the visible diagnostic result. Do not let an error from
+    // a previous attempt survive a later successful upload and activation.
+    diagnostic("avatarDiagError", "NONE");
     try {
       validateAvatarFile(file);
     } catch (err) {
@@ -514,10 +518,12 @@
       diagnostic("avatarDiagReload", "RELOADED");
       diagnostic("avatarDiagReloadHttp", "HTTP 200");
       diagnostic("avatarDiagReloadCode", "NONE");
+      profileReloadSucceeded = true;
       diagnostic("avatarDiagRuntime", "ACTIVATING");
       const avatarMounted = await refreshAvatarAsset("uploaded_file");
       if (avatarMounted === false) throw makeError("avatar_mount_failed", "AVATAR_MOUNT_FAILED");
       diagnostic("avatarDiagRuntime", "ACTIVE");
+      diagnostic("avatarDiagError", "NONE");
       visibleAvatarMessage("Upload success. Avatar saved, reloaded, and mounted.");
       diagnostic("avatarDiagProfile", "SAVED");
       diagnostic("avatarDiagUpload", "COMPLETE");
@@ -530,7 +536,8 @@
       // mandatory profile reload or later activation fails.
       diagnostic("avatarDiagUpload", uploadTransportSucceeded ? "SUCCESS" : "FAILED");
       if (uploadTransportSucceeded && !err.uploadTransportSucceeded) err.uploadTransportSucceeded = true;
-      if (uploadTransportSucceeded && String(err?.code || "").includes("RELOAD")) diagnostic("avatarDiagRuntime", "NOT ACTIVATED");
+      if (uploadTransportSucceeded && !profileReloadSucceeded) diagnostic("avatarDiagRuntime", "NOT ACTIVATED");
+      if (profileReloadSucceeded) diagnostic("avatarDiagRuntime", "FAILED");
       if (err?.status) diagnostic("avatarDiagHttp", `HTTP ${err.status}`);
       if (err?.payload?.error?.code) diagnostic("avatarDiagServerCode", err.payload.error.code);
       if (err?.status === 422) diagnostic("avatarDiagCompatibility", "INCOMPATIBLE");
