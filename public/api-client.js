@@ -18,6 +18,12 @@
   async function request(path, options) {
     options = options || {}; var url, request, dispatched = false, controller = new AbortController(); var timeout = setTimeout(function () { controller.abort(); }, options.timeoutMs || 15000);
     try {
+      if (options.auth !== false && global.AuthStateRuntime?.whenReady) {
+        var readiness = await global.AuthStateRuntime.whenReady();
+        if (!readiness.ok) {
+          var authError = new Error(readiness.reason || "authentication_unavailable"); authError.code = "AUTH_NOT_READY"; throw authError;
+        }
+      }
       url = resolve(path); var authToken = options.auth === false ? null : token();
       if (authToken) await global.AuthStateRuntime?.traceTokenHandoff?.("token received by canonical API client", authToken, {}, { file: "public/api-client.js", function: "request" });
       if (authToken) await global.AuthStateRuntime?.traceTokenHandoff?.("token immediately before Authorization header construction", authToken, {}, { file: "public/api-client.js", function: "request" });

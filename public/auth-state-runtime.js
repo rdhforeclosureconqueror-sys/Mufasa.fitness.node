@@ -12,6 +12,8 @@
   const LOG_PREFIX = "[AUTH_STATE_RUNTIME]";
   let restorePromise = null;
   let backendValidatedToken = null;
+  let authPhase = "restoring";
+  const RESTORE_TIMEOUT_MS = 12000;
   const TOKEN_HANDOFF_KEY = "maat.tokenHandoffTrace.v1";
   let tokenHandoffSequence = 0;
   let tokenHandoffQueue = Promise.resolve();
@@ -36,6 +38,12 @@
       bundle: FRONTEND_BUILD,
       tokenSource: values.tokenSource || inspection.source,
       rememberMeConsent: inspection.persistentConsent,
+      operation: "session_restore",
+      route: global.location?.pathname || "unknown",
+      authState: authPhase,
+      userId: global.APP_AUTH?.user?.id || null,
+      hasAccessToken: Boolean(global.APP_AUTH?.token || inspection.token),
+      apiOrigin: global.MaatApiClient?.origin?.() || global.MAAT_BACKEND_ORIGIN || null,
       legacyAliasRestored: false,
       ...values,
       rejectedUnconsentedLocalToken: values.rejectedUnconsentedLocalToken === true || inspection.rejectedUnconsentedLocalToken || global.__MAAT_AUTH_RESTORE_DIAGNOSTICS__?.rejectedUnconsentedLocalToken === true,
@@ -318,13 +326,13 @@
       }
       const canonicalClient = global.MaatApiClient;
       const canonicalResult = canonicalClient?.request
-        ? await canonicalClient.request("/api/auth/me", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
+        ? await canonicalClient.request("/api/auth/me", { auth: false, headers: { authorization: `Bearer ${token}` }, cache: "no-store", timeoutMs: options.timeoutMs || RESTORE_TIMEOUT_MS })
         : null;
       if (canonicalResult?.diagnostics) ensureDebugState().lastMeDiagnostics = canonicalResult.diagnostics;
       if (canonicalResult && canonicalResult.diagnostics.backendReached === null) throw Object.assign(canonicalResult.error || new Error("auth_network_unavailable"), { code: "AUTH_UNAVAILABLE" });
-      const res = canonicalResult?.response || await global.fetch(`${baseUrl}/api/auth/me`, {
+      const res = canonicalResult?.response || await fetchWithTimeout(`${baseUrl}/api/auth/me`, {
         headers: { authorization: `Bearer ${token}` }, cache: "no-store"
-      });
+      }, options.timeoutMs || RESTORE_TIMEOUT_MS);
       const authDiagnostics = canonicalResult?.diagnostics || { url: `${baseUrl}/api/auth/me`, dispatched: true, status: res.status, backendReached: true };
       ensureDebugState().lastMeDiagnostics = authDiagnostics;
       const payload = canonicalResult ? (canonicalResult.payload || {}) : await res.json().catch(() => ({}));
@@ -501,14 +509,19 @@
     if (restorePromise && options.force !== true) return restorePromise;
     const storedToken = getStoredToken();
     if (!storedToken) {
+      authPhase = "unauthenticated";
       ensureDebugState().lastRestoreResult = "missing_token";
       publishRestoreDiagnostics({ tokenSource: "none", result: "missing_token" });
       return Promise.resolve({ ok: false, reason: "missing_token", auth: getCanonicalAuthState() });
     }
-    restorePromise = refreshAuthStatus({ ...options, token: storedToken, reason: options.reason || "browser-storage-restore" })
+    authPhase = "restoring";
+    const restoreStartedAt = new Date().toISOString();
+    publishRestoreDiagnostics({ result: "restoring", restoreStartedAt });
+    restorePromise = refreshAuthStatus({ ...options, timeoutMs: options.timeoutMs || RESTORE_TIMEOUT_MS, token: storedToken, reason: options.reason || "browser-storage-restore" })
       .then((result) => {
+        authPhase = result.ok ? "authenticated" : (result.reason === "auth_unavailable" ? "error" : "unauthenticated");
         ensureDebugState().lastRestoreResult = result.ok ? "restored" : result.reason;
-        publishRestoreDiagnostics({ result: ensureDebugState().lastRestoreResult });
+        publishRestoreDiagnostics({ result: ensureDebugState().lastRestoreResult, restoreStartedAt, restoreCompletedAt: new Date().toISOString(), failureClass: result.diagnostics?.failureClass || (result.ok ? null : result.reason), httpStatus: result.diagnostics?.status || null });
         return result;
       })
       .finally(() => { restorePromise = null; });
@@ -519,6 +532,16 @@
     const state = getCanonicalAuthState();
     if (state.isAuthenticated && state.token === backendValidatedToken) return Promise.resolve({ ok: true, auth: state, user: state.user });
     return restoreCanonicalAuthState();
+  }
+
+  async function fetchWithTimeout(url, options = {}, timeoutMs = RESTORE_TIMEOUT_MS) {
+    const controller = typeof global.AbortController === "function" ? new global.AbortController() : null;
+    const timer = global.setTimeout?.(() => controller?.abort(), timeoutMs);
+    try {
+      return await global.fetch(url, { ...options, signal: options.signal || controller?.signal });
+    } finally {
+      if (timer != null) global.clearTimeout?.(timer);
+    }
   }
 
   async function logout(options = {}) {
@@ -575,6 +598,7 @@
     LIFECYCLE_KEY,
     RETIRED_STORAGE_KEYS,
     FRONTEND_BUILD,
+    RESTORE_TIMEOUT_MS,
     clearCanonicalAuthState,
     clearAccountScopedBrowserState,
     ensureDebugState,
