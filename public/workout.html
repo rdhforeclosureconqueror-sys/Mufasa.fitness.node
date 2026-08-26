@@ -1147,6 +1147,23 @@ skeletonOverlayActive: no</pre>
       <div id="workoutPlanView">
         Your workout plan will appear here after profile bootstrap and program selection.
       </div>
+      <section id="yogaExecutionPanel" class="small-card" aria-labelledby="yogaExecutionTitle" hidden style="margin-top:10px;">
+        <p class="eyebrow">Yoga · shared Train execution</p>
+        <h2 id="yogaExecutionTitle" style="margin:4px 0;"></h2>
+        <p><strong id="yogaPosePosition"></strong> · <span id="yogaPoseName"></span></p>
+        <p id="yogaPoseInstructions"></p>
+        <dl><div><dt>Hold</dt><dd id="yogaHoldDuration"></dd></div><div><dt>Rest</dt><dd id="yogaRestDuration"></dd></div></dl>
+        <p><strong>Transition:</strong> <span id="yogaTransition"></span></p>
+        <div id="yogaAvatarTarget" role="img" aria-label="Avatar target pose"></div>
+        <p><strong>Form:</strong> <span id="yogaFormStatus">Camera optional</span></p>
+        <p id="yogaPrimaryCue" role="status" aria-live="polite">Continue without camera, or use Connect Camera for alignment coaching.</p>
+        <p id="yogaSecondaryCue"></p>
+        <p><strong>Keypoint confidence:</strong> <span id="yogaConfidence">Waiting for camera</span></p>
+        <div id="yogaWarningJoints" aria-label="Joints needing attention"></div>
+        <label for="yogaHoldProgress">Hold progress <span id="yogaHoldText">0 / 0 sec</span></label>
+        <progress id="yogaHoldProgress" value="0" max="1" style="width:100%"></progress>
+        <div class="btn-row"><button id="yogaPauseBtn" type="button" class="secondary">Pause hold</button><button id="yogaNextBtn" type="button">Next pose</button><button id="yogaCompleteBtn" type="button" hidden>Complete Session</button></div>
+      </section>
       <section id="generatedWorkoutPlan" class="generated-plan" aria-labelledby="generatedWorkoutPlanTitle">
         <h2 id="generatedWorkoutPlanTitle">Recommended weekly plan</h2>
         <p id="generatedWorkoutPlanStatus" role="status" aria-live="polite">Sign in to load your recommendation.</p>
@@ -4797,6 +4814,8 @@ skeletonOverlayActive: no</pre>
 
   <!-- Keep your existing external script include (optional—ONLY if it’s still needed) -->
   <script src="/fitness.js?v=20260425"></script>
+<script src="/body-intelligence.js?v=20260826-yoga-train"></script>
+<script src="/yoga-workout-runtime.js?v=20260826-yoga-train"></script>
 <script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body>
 </html>
