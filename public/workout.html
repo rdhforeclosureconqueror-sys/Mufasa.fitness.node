@@ -1229,7 +1229,7 @@ skeletonOverlayActive: no</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260425"></script>
+  <script src="/backend-read.js?v=20260826-avatar-reload-token"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
@@ -1252,7 +1252,7 @@ skeletonOverlayActive: no</pre>
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260826-profile-reload-repair"></script>
+  <script src="/profile-write-runtime.js?v=20260826-profile-reload-token"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
@@ -1262,7 +1262,7 @@ skeletonOverlayActive: no</pre>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260826-avatar-reload-auth"></script>
+  <script src="/app-hydration-runtime.js?v=20260826-avatar-reload-token"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -4568,7 +4568,7 @@ skeletonOverlayActive: no</pre>
         updateSyncStatus,
         persistUser,
         trackPilotEvent,
-        reloadProfile: () => window.AppHydrationRuntime?.hydrateProfileFromBackend?.(),
+        reloadProfile: (options) => window.AppHydrationRuntime?.hydrateProfileFromBackend?.(options),
         loadAvatarAssetForCurrentUser,
         setAvatarAssetStatus,
         setAvatarRuntimeStatus,

@@ -495,7 +495,9 @@
       if (!reloadProfile) {
         throw makeError("profile_reload_unavailable", "PROFILE_RELOAD_UNAVAILABLE");
       }
-      const profileReloaded = await reloadProfile();
+      // Reuse the credential that the server accepted for this upload instead
+      // of asking a potentially lagging mobile auth snapshot for it again.
+      const profileReloaded = await reloadProfile({ authToken });
       if (profileReloaded === false) throw makeError("profile_reload_failed", "PROFILE_RELOAD_FAILED");
       diagnostic("avatarDiagReload", "RELOADED");
       diagnostic("avatarDiagRuntime", "MOUNTING");

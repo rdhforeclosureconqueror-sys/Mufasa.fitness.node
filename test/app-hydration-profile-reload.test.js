@@ -12,9 +12,10 @@ function loadRuntime({ appAuth, token }) {
     avatar: { avatarProvider: "avaturn", avatarModelUrl: "/api/me/avatar/assets/uploaded" }
   };
   let fetches = 0;
+  let fetchOptions = null;
   const backendReadClient = {
     getAuthToken: () => token,
-    fetchProfile: async () => { fetches += 1; return { profile: fetchedProfile }; },
+    fetchProfile: async (options) => { fetches += 1; fetchOptions = options; return { profile: fetchedProfile }; },
     normalizeProfile: (profile, fallback) => ({ ...fallback, ...profile })
   };
   const window = {
@@ -38,7 +39,7 @@ function loadRuntime({ appAuth, token }) {
     setProfile: next => { profile = next; },
     persistUser() {}
   });
-  return { window, getFetches: () => fetches, getProfile: () => profile };
+  return { window, getFetches: () => fetches, getFetchOptions: () => fetchOptions, getProfile: () => profile };
 }
 
 test("profile reload uses the canonical token when the APP_AUTH snapshot is stale", async () => {
@@ -47,6 +48,14 @@ test("profile reload uses the canonical token when the APP_AUTH snapshot is stal
   assert.equal(await runtime.window.AppHydrationRuntime.hydrateProfileFromBackend(), true);
   assert.equal(runtime.getFetches(), 1);
   assert.equal(runtime.getProfile().avatar.avatarModelUrl, "/api/me/avatar/assets/uploaded");
+});
+
+test("profile reload reuses the token accepted by the avatar upload", async () => {
+  const runtime = loadRuntime({ appAuth: { isAuthenticated: false }, token: null });
+
+  assert.equal(await runtime.window.AppHydrationRuntime.hydrateProfileFromBackend({ authToken: "accepted-upload-token" }), true);
+  assert.equal(runtime.getFetches(), 1);
+  assert.equal(runtime.getFetchOptions().authToken, "accepted-upload-token");
 });
 
 test("profile reload still stops before the backend when neither auth signal exists", async () => {

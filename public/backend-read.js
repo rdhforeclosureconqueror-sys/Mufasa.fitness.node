@@ -69,10 +69,10 @@
       return null;
     }
 
-    async function fetchJSON(path, { method = "GET", body = undefined, auth = false } = {}) {
+    async function fetchJSON(path, { method = "GET", body = undefined, auth = false, authToken = null, cache = undefined } = {}) {
       const headers = { "content-type": "application/json" };
       if (auth) {
-        const token = getAuthToken();
+        const token = String(authToken || getAuthToken() || "").trim();
         if (!token) {
           const err = new Error("missing_auth_token");
           err.code = "MISSING_TOKEN";
@@ -84,7 +84,8 @@
       const res = await fetch(`${apiBase}${path}`, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
+        ...(cache ? { cache } : {})
       });
 
       let payload = null;
@@ -141,8 +142,8 @@
       };
     }
 
-    async function fetchProfile() {
-      return fetchJSON("/api/me/profile", { auth: true });
+    async function fetchProfile({ authToken = null } = {}) {
+      return fetchJSON("/api/me/profile", { auth: true, authToken, cache: "no-store" });
     }
 
     async function fetchHistory(limit = 25) {
