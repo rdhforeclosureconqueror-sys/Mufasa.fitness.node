@@ -718,6 +718,33 @@ test("/api/avatar/upload is code-enabled without an environment flag", async (t)
   });
 });
 
+test("avatar upload discovery advertises the deployed browser/server contract", async (t) => {
+  setAvatarFeatureFlag(t, null);
+  await withServer(t, async ({ baseUrl }) => {
+    const res = await fetch(baseUrl + "/api/avatar/upload-contract");
+    const json = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(json.ok, true);
+    assert.deepEqual({
+      version: json.data.version,
+      discoveryPath: json.data.discoveryPath,
+      path: json.data.path,
+      method: json.data.method,
+      field: json.data.field,
+      enabled: json.data.enabled
+    }, {
+      version: 1,
+      discoveryPath: "/api/avatar/upload-contract",
+      path: "/api/avatar/upload",
+      method: "POST",
+      field: "avatar",
+      enabled: true
+    });
+    assert.equal(json.data.maxBytes, 15 * 1024 * 1024);
+    assert.equal(typeof json.data.backendBuild, "string");
+  });
+});
+
 test("profile save works while the avatar pilot is code-enabled", async (t) => {
   setAvatarFeatureFlag(t, null);
   await withServer(t, async ({ baseUrl }) => {
