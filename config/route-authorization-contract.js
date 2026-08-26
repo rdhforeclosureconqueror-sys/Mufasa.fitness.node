@@ -258,6 +258,20 @@ module.exports = Object.freeze([
     "publicWrite": null
   },
   {
+    "method": "GET",
+    "path": "/api/avatar/upload-contract",
+    "authentication": "public",
+    "allowedRoles": [],
+    "requiredPermissions": [],
+    "membership": "not-required",
+    "ownership": "not-applicable",
+    "featureFlag": null,
+    "publicOutput": "public-safe",
+    "rateLimit": null,
+    "compatibility": null,
+    "publicWrite": null
+  },
+  {
     "method": "POST",
     "path": "/api/billing/checkout-session",
     "authentication": "required",

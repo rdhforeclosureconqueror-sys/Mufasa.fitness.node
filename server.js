@@ -3148,11 +3148,17 @@ function createApp(options = {}) {
   // Keep the literal registration visible to the repository's authorization inventory;
   // the assertion below makes drift from the browser contract a boot-time failure.
   if (avatarUploadContract.method !== "POST" || avatarUploadContract.path !== "/api/avatar/upload") throw new Error("Avatar upload contract drift");
+  app.get("/api/avatar/upload-contract", (_req, res) => ok(res, _req.requestId, {
+    ...avatarUploadContract,
+    enabled: avatarFeatureEnabled,
+    maxBytes: Number(env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024),
+    backendBuild: APP_BUILD_VERSION
+  }));
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) {
       throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
     }
-    const maxBytes = Number(process.env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024);
+    const maxBytes = Number(env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024);
     let upload;
     try {
       upload = await parseAvatarMultipartUpload(req, maxBytes);

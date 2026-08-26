@@ -170,6 +170,25 @@
     return err;
   }
 
+  async function verifyUploadContract(contract, nodeBaseUrl) {
+    const discoveryUrl = `${nodeBaseUrl}${contract.discoveryPath}`;
+    const response = await fetch(discoveryUrl, { method: "GET", cache: "no-store" });
+    const contentType = response.headers?.get?.("content-type") || "";
+    const payload = contentType.includes("application/json") ? await response.json().catch(() => null) : null;
+    const advertised = payload?.data;
+    if (!response.ok || !payload?.ok || advertised?.version !== contract.version
+      || advertised?.path !== contract.path || advertised?.method !== contract.method
+      || advertised?.field !== contract.field || advertised?.enabled !== true) {
+      throw makeError("The deployed backend does not advertise the required avatar upload contract.", "UPLOAD_CONTRACT_UNAVAILABLE", {
+        status: response.status,
+        payload,
+        discoveryUrl,
+        responseContentType: contentType || null
+      });
+    }
+    return advertised;
+  }
+
   function isAuthUnavailable(err) {
     if (typeof state.deps.isAuthUnavailable === "function") return state.deps.isAuthUnavailable(err);
     return err?.code === "MISSING_AUTH_TOKEN" || err?.code === "UNAUTHORIZED" || err?.status === 401 || err?.status === 403;
@@ -371,7 +390,16 @@
       diagnostic("avatarDiagError", "UPLOAD_FORMDATA_FILE_MISSING");
       return { ok: false, reason: "UPLOAD_FORMDATA_FILE_MISSING" };
     }
-    const uploadUrl = `${String(state.endpoints.nodeBaseUrl).replace(/\/$/, "")}${contract.path}`;
+    const nodeBaseUrl = String(state.endpoints.nodeBaseUrl).replace(/\/$/, "");
+    let advertisedContract;
+    try {
+      advertisedContract = await verifyUploadContract(contract, nodeBaseUrl);
+    } catch (err) {
+      diagnostic("avatarDiagHttp", err?.status ? `HTTP ${err.status}` : "NOT SENT");
+      diagnostic("avatarDiagServerCode", err?.payload?.error?.code || err?.code || "NONE");
+      throw err;
+    }
+    const uploadUrl = `${nodeBaseUrl}${advertisedContract.path}`;
     const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timeoutHandle = abortController
       ? setTimeout(() => abortController.abort("avatar_upload_timeout"), Number(state.deps.uploadTimeoutMs || DEFAULT_UPLOAD_TIMEOUT_MS))

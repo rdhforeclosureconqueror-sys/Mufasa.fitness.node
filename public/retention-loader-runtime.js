@@ -201,7 +201,17 @@
         const elapsedMs = Math.round((global.performance?.now?.() || Date.now()) - startedAt);
         global.__markPerfMetric?.("progressScanBootMs", elapsedMs);
         log(LOADER_TAG, "load:complete", { source: reason, elapsedMs });
-        return markReady(reason);
+        markReady(reason);
+        // A lazily inserted script commonly arrives after both window.load and
+        // auth:ready have fired. Refresh it explicitly rather than waiting for
+        // an event that cannot be replayed.
+        if ((global.APP_AUTH?.isAuthenticated === true || global.APP_AUTH?.token)
+          && typeof global.__retentionFlowRefresh === "function") {
+          const refreshed = await global.__retentionFlowRefresh(`loader:${reason}`);
+          state.lastRefresh = { reason: `loader:${reason}`, ok: refreshed !== false, at: nowIso() };
+          stamp();
+        }
+        return true;
       } catch (error) {
         bootPromise = null;
         clearCachedScript();
