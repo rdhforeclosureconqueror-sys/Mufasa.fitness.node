@@ -148,8 +148,9 @@ test("canonical login resolves the configured API origin and emits no credential
 test("admin dashboard and CRM surfaces use the one authoritative destination and canonical auth runtime",()=>{
  const dashboard=fs.readFileSync(path.join(__dirname,"..","public","dashboard.html"),"utf8"),dashboardJs=fs.readFileSync(path.join(__dirname,"..","public","dashboard.js"),"utf8"),members=fs.readFileSync(path.join(__dirname,"..","public","admin-members.js"),"utf8"),client=fs.readFileSync(path.join(__dirname,"..","public","admin-client.js"),"utf8");
  assert.match(dashboard,/id="clientManagementCard"[\s\S]*href="\/admin\/members\.html"/);assert.match(dashboardJs,/clientManagementCard\.hidden = !hasObservabilityAccess/);
- for(const source of [members,client]){assert.match(source,/AuthStateRuntime\?\.getAuthToken/);assert.doesNotMatch(source,/getItem\("authToken"\)/)}
- assert.match(client,/\/api\/admin\/clients\/\$\{encodeURIComponent\(id\)\}\/conversation/);assert.match(client,/\/api\/me\/conversations\/\$\{c\.id\}\/messages/);
+ assert.match(members,/AuthStateRuntime\?\.getAuthToken/);assert.doesNotMatch(members,/getItem\("authToken"\)/);
+ assert.match(client,/AuthStateRuntime\.whenReady\(\)/);assert.match(client,/MaatApiClient\.request/);assert.doesNotMatch(client,/getItem\("authToken"\)/);
+ assert.match(client,/\/api\/admin\/clients\/\$\{routeId\(clientId\)\}\/conversation/);assert.match(client,/\/api\/me\/conversations\/\$\{routeId\(conversationId\)\}\/messages/);
 });
 
 test("navigation repair owns one delegated listener and preserves open state across auth render",()=>{const source=fs.readFileSync(path.join(__dirname,"..","public","global-nav.js"),"utf8");assert.match(source,/if\(initialized\)return/);assert.match(source,/document\.addEventListener\("click",onClick\)/);assert.match(source,/const wasOpen=diagnostics\.state==="open"/);assert.match(source,/if\(wasOpen\)setOpen\(true/);assert.match(source,/menuButtonFound/);assert.match(source,/clickListenerAttached/);});
