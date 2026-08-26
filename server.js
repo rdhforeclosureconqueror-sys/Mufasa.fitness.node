@@ -13,6 +13,7 @@ const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
+const avatarUploadContract = require("./public/avatar-upload-contract");
 const { createAuthCredentialStore } = require("./src/repositories/authCredentialStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
@@ -1012,7 +1013,7 @@ function createApp(options = {}) {
 
     const bodyBuffer = Buffer.concat(chunks);
     const body = bodyBuffer.toString("binary");
-    const nameMarker = 'name="avatar"';
+    const nameMarker = `name="${avatarUploadContract.field}"`;
     const fieldIndex = body.indexOf(nameMarker);
     if (fieldIndex === -1) {
       throw new ApiError("AVATAR_FILE_MISSING", "Missing avatar file upload", 400);
@@ -3135,6 +3136,9 @@ function createApp(options = {}) {
     if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
     const asset = requireOwnedAvatarAsset(req); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
   }));
+  // Keep the literal registration visible to the repository's authorization inventory;
+  // the assertion below makes drift from the browser contract a boot-time failure.
+  if (avatarUploadContract.method !== "POST" || avatarUploadContract.path !== "/api/avatar/upload") throw new Error("Avatar upload contract drift");
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) {
       throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
@@ -3180,7 +3184,17 @@ function createApp(options = {}) {
     fs.writeFileSync(destinationPath, fileBuffer);
     writeJSON(path.join(AVATAR_UPLOAD_DIR, `${unique}.json`), { assetId: unique, ownerUserId: req.auth.userId, originalName: path.basename(originalName), sizeBytes: fileBuffer.length, compatibility, createdAt: new Date().toISOString() });
     const avatarModelUrl = `/api/me/avatar/assets/${unique}`;
-    return ok(res, req.requestId, { assetId: unique, avatarModelUrl, compatibility, uploadStages: ["SERVER_RECEIVED_FILE", "VALIDATING_GLB", "PERSISTING_ASSET"] }, 201);
+    try {
+      userStore.updateUser(req.auth.userId, user => {
+        user.profile = user.profile || {};
+        user.profile.avatar = { avatarProvider: "avaturn", avatarModelUrl, avatarThumbnailUrl: null, avatarUpdatedAt: Date.now() };
+        return user;
+      });
+    } catch (error) {
+      for (const candidate of [destinationPath, path.join(AVATAR_UPLOAD_DIR, `${unique}.json`)]) try { fs.unlinkSync(candidate); } catch (_) {}
+      throw error;
+    }
+    return ok(res, req.requestId, { assetId: unique, avatarModelUrl, compatibility, profileSaved: true, uploadStages: ["SERVER_RECEIVED_FILE", "VALIDATING_GLB", "PERSISTING_ASSET", "SAVING_PROFILE"] }, 201);
   }));
 
   // ---- COMMAND endpoint (legacy compatibility adapter for session lifecycle) ----
