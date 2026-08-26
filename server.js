@@ -3152,7 +3152,8 @@ function createApp(options = {}) {
     ...avatarUploadContract,
     enabled: avatarFeatureEnabled,
     maxBytes: Number(env.AVATAR_UPLOAD_MAX_BYTES || 15 * 1024 * 1024),
-    backendBuild: APP_BUILD_VERSION
+    backendBuild: APP_BUILD_VERSION,
+    backendCommit: String(env.RENDER_GIT_COMMIT || env.GIT_COMMIT || "unknown")
   }));
   app.post("/api/avatar/upload", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) {
