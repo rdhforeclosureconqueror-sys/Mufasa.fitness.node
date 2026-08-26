@@ -208,6 +208,8 @@
       global.MAAT_BACKEND_ORIGIN,
       global.MAAT_NODE_BASE_URL,
       global.__MAAT_BACKEND_ORIGIN,
+      global.__MAAT_RUNTIME_CONFIG__?.backendOrigin,
+      global.__MAAT_RUNTIME_CONFIG__?.nodeBaseUrl,
       global.__MAAT_RUNTIME_CONFIG?.backendOrigin,
       global.__MAAT_RUNTIME_CONFIG?.nodeBaseUrl
     ].map(normalizeBackendOrigin).find(Boolean);

@@ -170,8 +170,20 @@
     return err;
   }
 
-  async function verifyUploadContract(contract, nodeBaseUrl) {
-    const discoveryUrl = `${nodeBaseUrl}${contract.discoveryPath}`;
+  function resolveCanonicalApiUrl(path) {
+    if (typeof global.MaatApiClient?.resolve === "function") return global.MaatApiClient.resolve(path);
+    const configuredOrigin = state.endpoints.nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.();
+    if (!configuredOrigin) throw makeError("canonical_api_origin_unavailable", "API_ORIGIN_UNAVAILABLE");
+    return new URL(path, `${String(configuredOrigin).replace(/\/$/, "")}/`).href;
+  }
+
+  function resolveCanonicalApiOrigin() {
+    if (typeof global.MaatApiClient?.origin === "function") return global.MaatApiClient.origin();
+    return new URL(resolveCanonicalApiUrl("/")).origin;
+  }
+
+  async function verifyUploadContract(contract) {
+    const discoveryUrl = resolveCanonicalApiUrl(contract.discoveryPath);
     diagnostic("avatarDiagApiOrigin", new URL(discoveryUrl).origin);
     diagnostic("avatarDiagContractUrl", discoveryUrl);
     diagnostic("avatarDiagContractVersion", String(contract.version));
@@ -411,16 +423,15 @@
       diagnostic("avatarDiagError", "UPLOAD_FORMDATA_FILE_MISSING");
       return { ok: false, reason: "UPLOAD_FORMDATA_FILE_MISSING" };
     }
-    const nodeBaseUrl = String(state.endpoints.nodeBaseUrl).replace(/\/$/, "");
     let advertisedContract;
     try {
-      advertisedContract = await verifyUploadContract(contract, nodeBaseUrl);
+      advertisedContract = await verifyUploadContract(contract);
     } catch (err) {
       diagnostic("avatarDiagHttp", err?.status ? `HTTP ${err.status}` : "NOT SENT");
       diagnostic("avatarDiagServerCode", err?.payload?.error?.code || err?.code || "NONE");
       throw err;
     }
-    const uploadUrl = `${nodeBaseUrl}${advertisedContract.path}`;
+    const uploadUrl = resolveCanonicalApiUrl(advertisedContract.path);
     const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timeoutHandle = abortController
       ? setTimeout(() => abortController.abort("avatar_upload_timeout"), Number(state.deps.uploadTimeoutMs || DEFAULT_UPLOAD_TIMEOUT_MS))
@@ -534,15 +545,15 @@
     state.refs = { ...(config.refs || {}) };
     state.deps = { ...(config.deps || {}) };
     const runtimeEndpoints = global.RuntimeState?.getEndpoints?.() || {};
-    const nodeBaseUrl = config.endpoints?.nodeBaseUrl || state.deps.nodeBaseUrl || runtimeEndpoints.nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.location?.origin;
+    const nodeBaseUrl = global.MaatApiClient?.origin?.() || config.endpoints?.nodeBaseUrl || state.deps.nodeBaseUrl || runtimeEndpoints.nodeBaseUrl || global.RuntimeState?.getBackendOrigin?.() || global.location?.origin;
     state.endpoints = {
       nodeBaseUrl,
       nodeProfileUrl: config.endpoints?.nodeProfileUrl || state.deps.nodeProfileUrl || runtimeEndpoints.nodeProfileUrl || `${nodeBaseUrl}/api/me/profile`
     };
     state.configured = true;
     const contract = global.PocketPTAvatarUploadContract;
-    const discoveryUrl = contract ? `${String(nodeBaseUrl).replace(/\/$/, "")}${contract.discoveryPath}` : null;
-    diagnostic("avatarDiagApiOrigin", discoveryUrl ? new URL(discoveryUrl).origin : "unavailable");
+    const discoveryUrl = contract ? resolveCanonicalApiUrl(contract.discoveryPath) : null;
+    diagnostic("avatarDiagApiOrigin", discoveryUrl ? resolveCanonicalApiOrigin() : "unavailable");
     diagnostic("avatarDiagContractUrl", discoveryUrl || "unavailable");
     diagnostic("avatarDiagContractVersion", contract ? String(contract.version) : "unavailable");
     global.__profileWriteRuntimeState = snapshot();
