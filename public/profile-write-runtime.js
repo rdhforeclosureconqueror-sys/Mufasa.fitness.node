@@ -423,17 +423,21 @@
       setProfileAvatar(nextAvatar);
       state.deps.persistUser?.();
       diagnostic("avatarDiagReload", "RELOADING");
-      if (typeof state.deps.reloadProfile === "function") await state.deps.reloadProfile();
+      if (typeof state.deps.reloadProfile !== "function") {
+        throw makeError("profile_reload_unavailable", "PROFILE_RELOAD_UNAVAILABLE");
+      }
+      const profileReloaded = await state.deps.reloadProfile();
+      if (profileReloaded === false) throw makeError("profile_reload_failed", "PROFILE_RELOAD_FAILED");
       diagnostic("avatarDiagReload", "RELOADED");
-      visibleAvatarMessage("Upload success. Avatar saved and synced to profile.");
+      diagnostic("avatarDiagRuntime", "MOUNTING");
+      const avatarMounted = await refreshAvatarAsset("uploaded_file");
+      if (avatarMounted === false) throw makeError("avatar_mount_failed", "AVATAR_MOUNT_FAILED");
+      diagnostic("avatarDiagRuntime", "MOUNTED");
+      visibleAvatarMessage("Upload success. Avatar saved, reloaded, and mounted.");
       diagnostic("avatarDiagProfile", "SAVED");
       diagnostic("avatarDiagUpload", "COMPLETE");
       state.deps.trackPilotEvent?.("avatar_upload_success", { size: file?.size || 0 });
       emitProfileSync(getProfile(), "avatar-upload", "authenticated_api");
-      refreshAvatarAsset("uploaded_file").catch((error) => {
-        diagnostic("avatarDiagRuntime", "FAILED");
-        diagnostic("avatarDiagError", `Avatar saved; optional rendering failed: ${String(error?.message || error || "unknown")}`);
-      });
       return { ok: true, avatar: nextAvatar, mode: "authenticated_api" };
     } catch (err) {
       recordError("avatar-upload", err);
