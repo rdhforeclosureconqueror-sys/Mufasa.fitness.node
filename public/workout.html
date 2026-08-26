@@ -28,7 +28,7 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=20260826-canonical-origin-repair"></script>
+  <script src="/runtime-state.js?v=20260826-avatar-reload-production-wiring-v6"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1223,7 +1223,8 @@ skeletonOverlayActive: no</pre>
         Profile reload: <span id="avatarDiagReload">IDLE</span><br>
         Profile reload HTTP: <span id="avatarDiagReloadHttp">NOT ATTEMPTED</span><br>
         Profile reload error code: <span id="avatarDiagReloadCode">NONE</span><br>
-        Avatar runtime: <span id="avatarDiagRuntime">NOT ATTEMPTED</span><br>
+        Avatar runtime component: <span id="avatarDiagComponent">NOT CHECKED</span><br>
+        Avatar activation: <span id="avatarDiagRuntime">NOT ATTEMPTED</span><br>
         Last error: <span id="avatarDiagError">NONE</span>
       </div>
       <p class="subtitle">A successful GLB upload automatically saves its protected URL to your profile. “Save Manual Avatar URL” is only for the compatibility URL fields above.</p>
@@ -1231,7 +1232,7 @@ skeletonOverlayActive: no</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260826-avatar-reload-evidence-v5"></script>
+  <script src="/backend-read.js?v=20260826-avatar-reload-production-wiring-v6"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
@@ -1254,17 +1255,17 @@ skeletonOverlayActive: no</pre>
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260826-profile-reload-evidence-v5"></script>
+  <script src="/profile-write-runtime.js?v=20260826-avatar-reload-production-wiring-v6"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260826-avatar-transport"></script>
+  <script src="/workout-control-activation.js?v=20260826-avatar-reload-production-wiring-v6"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260826-avatar-reload-evidence-v5"></script>
+  <script src="/app-hydration-runtime.js?v=20260826-avatar-reload-production-wiring-v6"></script>
 
   <script>
     console.log("[BOOT] main inline script started");

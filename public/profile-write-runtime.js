@@ -399,6 +399,7 @@
     // Capture the modal's File at click time so upload transport does not depend
     // on the later inline runtime configuration having retained the same input.
     const file = selectedFile || selectedAvatarFile();
+    let uploadTransportSucceeded = false;
     try {
       validateAvatarFile(file);
     } catch (err) {
@@ -473,6 +474,8 @@
         throw makeError(payload?.error?.message || `upload_failed_${response.status}`, code, { status: response.status, payload });
       }
 
+      uploadTransportSucceeded = true;
+
       for (const stage of payload.data.uploadStages || []) diagnostic("avatarDiagUpload", stage);
       diagnostic("avatarDiagCompatibility", "COMPATIBLE");
 
@@ -511,10 +514,10 @@
       diagnostic("avatarDiagReload", "RELOADED");
       diagnostic("avatarDiagReloadHttp", "HTTP 200");
       diagnostic("avatarDiagReloadCode", "NONE");
-      diagnostic("avatarDiagRuntime", "MOUNTING");
+      diagnostic("avatarDiagRuntime", "ACTIVATING");
       const avatarMounted = await refreshAvatarAsset("uploaded_file");
       if (avatarMounted === false) throw makeError("avatar_mount_failed", "AVATAR_MOUNT_FAILED");
-      diagnostic("avatarDiagRuntime", "MOUNTED");
+      diagnostic("avatarDiagRuntime", "ACTIVE");
       visibleAvatarMessage("Upload success. Avatar saved, reloaded, and mounted.");
       diagnostic("avatarDiagProfile", "SAVED");
       diagnostic("avatarDiagUpload", "COMPLETE");
@@ -523,7 +526,11 @@
       return { ok: true, avatar: nextAvatar, mode: "authenticated_api" };
     } catch (err) {
       recordError("avatar-upload", err);
-      diagnostic("avatarDiagUpload", "FAILED");
+      // A confirmed 2xx upload remains a transport success even when the
+      // mandatory profile reload or later activation fails.
+      diagnostic("avatarDiagUpload", uploadTransportSucceeded ? "SUCCESS" : "FAILED");
+      if (uploadTransportSucceeded && !err.uploadTransportSucceeded) err.uploadTransportSucceeded = true;
+      if (uploadTransportSucceeded && String(err?.code || "").includes("RELOAD")) diagnostic("avatarDiagRuntime", "NOT ACTIVATED");
       if (err?.status) diagnostic("avatarDiagHttp", `HTTP ${err.status}`);
       if (err?.payload?.error?.code) diagnostic("avatarDiagServerCode", err.payload.error.code);
       if (err?.status === 422) diagnostic("avatarDiagCompatibility", "INCOMPATIBLE");

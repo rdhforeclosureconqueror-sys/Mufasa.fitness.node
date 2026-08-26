@@ -172,7 +172,7 @@
   }
 
   async function hydrateProfileFromBackend({ authToken = null } = {}) {
-    const backendReadClient = deps.backendReadClient || global.BACKEND_READ_CLIENT;
+    const backendReadClient = deps.backendReadClient || global.BACKEND_READ_CLIENT || global.MufasaBackendRead?.getDefaultClient?.();
     if (!backendReadClient) {
       state.lastProfileReload = { ok: false, code: 'BACKEND_READ_CLIENT_UNAVAILABLE', status: null, message: 'backend_read_client_unavailable' };
       stamp();

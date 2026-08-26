@@ -241,7 +241,7 @@
   }
 
   function createBackendReadClient(){
-    return global.MufasaBackendRead?.createClient({ baseUrl: getBackendOrigin(), storagePrefix: "maat" });
+    return global.BACKEND_READ_CLIENT || global.MufasaBackendRead?.getDefaultClient?.() || null;
   }
 
   function getHeadPerfStart(){ return headPerfStart; }

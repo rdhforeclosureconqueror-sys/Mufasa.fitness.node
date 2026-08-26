@@ -163,9 +163,20 @@
     };
   }
 
+  let defaultClient = null;
+  function getDefaultClient() {
+    if (!defaultClient) defaultClient = createClient();
+    return defaultClient;
+  }
+
   window.MufasaBackendRead = {
     createClient,
+    getDefaultClient,
     readJSON,
     writeJSON
   };
+  // Browser runtimes share one canonical read client. This is deliberately
+  // created by the real backend-read implementation rather than by page-local
+  // injection, so hydration cannot lose the client when RuntimeState is stale.
+  window.BACKEND_READ_CLIENT = getDefaultClient();
 })();
