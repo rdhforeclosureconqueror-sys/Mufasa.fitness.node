@@ -172,13 +172,16 @@
 
   async function verifyUploadContract(contract, nodeBaseUrl) {
     const discoveryUrl = `${nodeBaseUrl}${contract.discoveryPath}`;
+    diagnostic("avatarDiagApiOrigin", new URL(discoveryUrl).origin);
+    diagnostic("avatarDiagContractUrl", discoveryUrl);
+    diagnostic("avatarDiagContractVersion", String(contract.version));
+    diagnostic("avatarDiagContractStatus", "REQUESTING");
     const response = await fetch(discoveryUrl, { method: "GET", cache: "no-store" });
     const contentType = response.headers?.get?.("content-type") || "";
     const payload = contentType.includes("application/json") ? await response.json().catch(() => null) : null;
     const advertised = payload?.data;
-    if (!response.ok || !payload?.ok || advertised?.version !== contract.version
-      || advertised?.path !== contract.path || advertised?.method !== contract.method
-      || advertised?.field !== contract.field || advertised?.enabled !== true) {
+    if (!response.ok || !payload?.ok || !advertised) {
+      diagnostic("avatarDiagContractStatus", `FAILED (HTTP ${response.status})`);
       throw makeError("The deployed backend does not advertise the required avatar upload contract.", "UPLOAD_CONTRACT_UNAVAILABLE", {
         status: response.status,
         payload,
@@ -186,6 +189,24 @@
         responseContentType: contentType || null
       });
     }
+    diagnostic("avatarDiagBackendBuild", advertised.backendBuild || "unavailable");
+    diagnostic("avatarDiagUploadRoute", advertised.path || "unavailable");
+    diagnostic("avatarDiagUploadMethod", advertised.method || "unavailable");
+    diagnostic("avatarDiagMultipartField", advertised.field || "unavailable");
+    diagnostic("avatarDiagMaxUpload", Number.isFinite(advertised.maxBytes) ? `${advertised.maxBytes} bytes` : "unavailable");
+    if (advertised.version !== contract.version) {
+      diagnostic("avatarDiagContractStatus", "FAILED (VERSION MISMATCH)");
+      throw makeError("The deployed backend advertises an incompatible avatar upload contract version.", "UPLOAD_CONTRACT_VERSION_MISMATCH", { status: response.status, payload, discoveryUrl, responseContentType: contentType || null });
+    }
+    if (advertised.enabled !== true) {
+      diagnostic("avatarDiagContractStatus", "FAILED (UPLOAD DISABLED)");
+      throw makeError("The deployed backend has avatar upload disabled.", "AVATAR_UPLOAD_DISABLED", { status: response.status, payload, discoveryUrl, responseContentType: contentType || null });
+    }
+    if (advertised.path !== contract.path || advertised.method !== contract.method || advertised.field !== contract.field) {
+      diagnostic("avatarDiagContractStatus", "FAILED (CONTRACT MISMATCH)");
+      throw makeError("The deployed backend advertises incompatible avatar upload request fields.", "UPLOAD_CONTRACT_MISMATCH", { status: response.status, payload, discoveryUrl, responseContentType: contentType || null });
+    }
+    diagnostic("avatarDiagContractStatus", "VERIFIED");
     return advertised;
   }
 
@@ -519,6 +540,11 @@
       nodeProfileUrl: config.endpoints?.nodeProfileUrl || state.deps.nodeProfileUrl || runtimeEndpoints.nodeProfileUrl || `${nodeBaseUrl}/api/me/profile`
     };
     state.configured = true;
+    const contract = global.PocketPTAvatarUploadContract;
+    const discoveryUrl = contract ? `${String(nodeBaseUrl).replace(/\/$/, "")}${contract.discoveryPath}` : null;
+    diagnostic("avatarDiagApiOrigin", discoveryUrl ? new URL(discoveryUrl).origin : "unavailable");
+    diagnostic("avatarDiagContractUrl", discoveryUrl || "unavailable");
+    diagnostic("avatarDiagContractVersion", contract ? String(contract.version) : "unavailable");
     global.__profileWriteRuntimeState = snapshot();
     log(PROFILE_TAG, "runtime configured", { hasProfileUrl: Boolean(state.endpoints.nodeProfileUrl), hasAvatarRefs: Boolean(Object.keys(state.refs).length), avatarFeatureEnabled: isAvatarFeatureEnabled() });
     return true;

@@ -742,6 +742,7 @@ test("avatar upload discovery advertises the deployed browser/server contract", 
     });
     assert.equal(json.data.maxBytes, 15 * 1024 * 1024);
     assert.equal(typeof json.data.backendBuild, "string");
+    assert.equal(typeof json.data.backendCommit, "string");
   });
 });
 

@@ -1,6 +1,7 @@
 services:
   - type: web
     name: mufasafitsite
+    branch: main
     runtime: static
     buildCommand: npm ci && npm run build:frontend
     staticPublishPath: ./dist
@@ -9,6 +10,7 @@ services:
         sync: false
   - type: web
     name: mufasa-fitness-node
+    branch: main
     runtime: node
     buildCommand: npm ci
     startCommand: npm start
