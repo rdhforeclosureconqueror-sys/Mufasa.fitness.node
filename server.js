@@ -2735,6 +2735,7 @@ function createApp(options = {}) {
 
   // ---- Structured Session API (pilot hardening) ----
   app.get("/api/yoga/catalogue", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>ok(res,req.requestId,yogaService.catalogue(),200)));
+  app.get("/api/yoga/sessions/:sessionId", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>ok(res,req.requestId,yogaService.sessionDetail(req.params.sessionId),200)));
   app.get("/api/yoga/history", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>ok(res,req.requestId,{sessions:yogaService.history(req.auth.userId)},200)));
   app.post("/api/yoga/sessions/complete", requireAuth, requireMembershipEntitlement, asyncHandler(async (req,res)=>{ensureUserScopedAccess(req,req.body?.userId);return ok(res,req.requestId,yogaService.complete(req.auth.userId,req.body),201);}));
   app.post("/api/sessions", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
