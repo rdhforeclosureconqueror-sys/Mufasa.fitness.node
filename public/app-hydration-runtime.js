@@ -170,7 +170,7 @@
     return true;
   }
 
-  async function hydrateProfileFromBackend() {
+  async function hydrateProfileFromBackend({ authToken = null } = {}) {
     const backendReadClient = deps.backendReadClient || global.BACKEND_READ_CLIENT;
     if (!backendReadClient) return false;
 
@@ -178,7 +178,8 @@
     // on mobile Safari. The avatar upload has already authenticated with the token
     // owned by backendReadClient, so do not reject its immediate profile reload
     // solely because that snapshot has not caught up yet.
-    const hasCanonicalToken = Boolean(backendReadClient.getAuthToken?.());
+    const reloadToken = String(authToken || backendReadClient.getAuthToken?.() || '').trim();
+    const hasCanonicalToken = Boolean(reloadToken);
     if (global.APP_AUTH?.isAuthenticated !== true && !hasCanonicalToken) {
       global.PROFILE_RUNTIME?.setProfileSummary?.('Not signed in yet.');
       return false;
@@ -186,7 +187,10 @@
 
     global.PROFILE_RUNTIME?.setProfileSummary?.('Loading profile...');
     try {
-      const result = await backendReadClient.fetchProfile();
+      // The caller may provide the exact credential that just received the
+      // successful upload response. This avoids a mobile auth-snapshot race
+      // between two otherwise consecutive authenticated requests.
+      const result = await backendReadClient.fetchProfile({ authToken: reloadToken || null });
       if (!result?.profile) {
         const fallbackUser = global.APP_AUTH?.user || {};
         renderProfileShell({
