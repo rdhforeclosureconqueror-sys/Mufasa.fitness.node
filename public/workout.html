@@ -4559,6 +4559,7 @@ skeletonOverlayActive: no</pre>
         updateSyncStatus,
         persistUser,
         trackPilotEvent,
+        reloadProfile: () => window.AppHydrationRuntime?.hydrateProfileFromBackend?.(),
         loadAvatarAssetForCurrentUser,
         setAvatarAssetStatus,
         setAvatarRuntimeStatus,
