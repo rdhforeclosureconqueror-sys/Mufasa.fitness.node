@@ -114,7 +114,7 @@
     const message = "Avatar feature is disabled for this pilot.";
     visibleAvatarMessage(message, true);
     setAvatarAssetStatus(message, true);
-    setAvatarRuntimeStatus("Avatar disabled for pilot.", true);
+    setAvatarRuntimeStatus("Avatar presentation is unavailable.", true);
     state.deps.trackPilotEvent?.("avatar_disabled", { action });
     return { ok: false, disabled: true, reason: "avatar_feature_disabled" };
   }

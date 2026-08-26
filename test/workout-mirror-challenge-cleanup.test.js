@@ -6,10 +6,11 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const read = file => fs.readFileSync(path.join(root, file), "utf8");
 
-test("workout avatar modes follow the server-rendered production feature flag", () => {
+test("workout avatar modes are frontend-available while the backend capability remains enabled", () => {
   const html = read("public/workout.html");
   const server = read("server.js");
-  assert.match(html, /window\.ENABLE_AVATAR_FEATURE = "__ENABLE_AVATAR_FEATURE__" === "true"/);
+  assert.match(html, /window\.ENABLE_AVATAR_FEATURE = true/);
+  assert.doesNotMatch(html, /__ENABLE_AVATAR_FEATURE__/);
   assert.match(server, /const MEMBER_AVATAR_PILOT_ENABLED = true;/);
   assert.match(server, /return MEMBER_AVATAR_PILOT_ENABLED;/);
   assert.match(html, /<option value="camera">Camera<\/option>/);
