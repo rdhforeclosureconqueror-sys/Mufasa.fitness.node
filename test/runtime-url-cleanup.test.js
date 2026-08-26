@@ -50,6 +50,11 @@ test("runtime-state exposes a same-origin default backend resolver", () => {
   assert.match(source, /nodeBaseUrl = configuredOrigin \|\| locationOrigin/, "configured origins may override the same-origin default");
 });
 
+test("runtime-state recognizes the canonical runtime config object used by workout", () => {
+  const source = fs.readFileSync(path.join(repoRoot, "public/runtime-state.js"), "utf8");
+  assert.match(source, /global\.__MAAT_RUNTIME_CONFIG__\?\.backendOrigin/, "runtime-state must read the same runtime config key that workout.html publishes");
+});
+
 
 test("dashboard page receives split-deployment backend runtime config before dashboard scripts", () => {
   const source = fs.readFileSync(path.join(repoRoot, "public/dashboard.html"), "utf8");
