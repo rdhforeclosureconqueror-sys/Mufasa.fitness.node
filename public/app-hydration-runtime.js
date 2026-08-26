@@ -21,6 +21,7 @@
     pendingPolicyInstalled: false,
     pendingTimeoutMs: DEFAULT_PENDING_TIMEOUT_MS,
     inFlightHydration: null,
+    lastProfileReload: null,
     updatedAt: new Date().toISOString()
   };
 
@@ -172,7 +173,11 @@
 
   async function hydrateProfileFromBackend({ authToken = null } = {}) {
     const backendReadClient = deps.backendReadClient || global.BACKEND_READ_CLIENT;
-    if (!backendReadClient) return false;
+    if (!backendReadClient) {
+      state.lastProfileReload = { ok: false, code: 'BACKEND_READ_CLIENT_UNAVAILABLE', status: null, message: 'backend_read_client_unavailable' };
+      stamp();
+      return false;
+    }
 
     // APP_AUTH is a presentation snapshot and can lag behind the canonical token
     // on mobile Safari. The avatar upload has already authenticated with the token
@@ -181,6 +186,8 @@
     const reloadToken = String(authToken || backendReadClient.getAuthToken?.() || '').trim();
     const hasCanonicalToken = Boolean(reloadToken);
     if (global.APP_AUTH?.isAuthenticated !== true && !hasCanonicalToken) {
+      state.lastProfileReload = { ok: false, code: 'MISSING_AUTH_TOKEN', status: null, message: 'missing_auth_token' };
+      stamp();
       global.PROFILE_RUNTIME?.setProfileSummary?.('Not signed in yet.');
       return false;
     }
@@ -219,8 +226,17 @@
       callDep('addLog', 'system', 'Profile synced from backend.');
       callDep('updateAuthDebug', { lastProfileStatus: '200' });
       callDep('updateSyncStatus');
+      state.lastProfileReload = { ok: true, code: null, status: 200, message: 'profile_reloaded' };
+      stamp();
       return true;
     } catch (e) {
+      state.lastProfileReload = {
+        ok: false,
+        code: e?.payload?.error?.code || e?.code || 'PROFILE_RELOAD_REQUEST_FAILED',
+        status: e?.status || null,
+        message: e?.payload?.error?.message || e?.message || 'profile_reload_failed'
+      };
+      stamp();
       const message = e?.status ? `Profile fetch failed (${e.status}).` : `Profile fetch failed: ${e?.message || 'Unknown error'}`;
       global.PROFILE_RUNTIME?.setProfileSummary?.(message);
       if (e?.code === 'UNAUTHORIZED') {
@@ -511,6 +527,7 @@
       reason: state.reason,
       gates: { ...state.gates },
       hydration: { ...state.hydration },
+      lastProfileReload: state.lastProfileReload ? { ...state.lastProfileReload } : null,
       errors: [...state.errors],
       pendingPolicyInstalled: state.pendingPolicyInstalled,
       pendingTimeoutMs: state.pendingTimeoutMs,

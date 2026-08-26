@@ -185,7 +185,7 @@
   function resolveProfileReload() {
     if (typeof state.deps.reloadProfile === "function") return state.deps.reloadProfile;
     if (typeof global.AppHydrationRuntime?.hydrateProfileFromBackend === "function") {
-      return () => global.AppHydrationRuntime.hydrateProfileFromBackend();
+      return (options) => global.AppHydrationRuntime.hydrateProfileFromBackend(options);
     }
     return null;
   }
@@ -491,6 +491,8 @@
       setProfileAvatar(nextAvatar);
       state.deps.persistUser?.();
       diagnostic("avatarDiagReload", "RELOADING");
+      diagnostic("avatarDiagReloadHttp", "REQUESTING");
+      diagnostic("avatarDiagReloadCode", "NONE");
       const reloadProfile = resolveProfileReload();
       if (!reloadProfile) {
         throw makeError("profile_reload_unavailable", "PROFILE_RELOAD_UNAVAILABLE");
@@ -498,8 +500,17 @@
       // Reuse the credential that the server accepted for this upload instead
       // of asking a potentially lagging mobile auth snapshot for it again.
       const profileReloaded = await reloadProfile({ authToken });
-      if (profileReloaded === false) throw makeError("profile_reload_failed", "PROFILE_RELOAD_FAILED");
+      if (profileReloaded === false) {
+        const failure = global.AppHydrationRuntime?.getState?.().lastProfileReload || {};
+        const code = failure.code || "PROFILE_RELOAD_FAILED";
+        diagnostic("avatarDiagReload", failure.status ? `FAILED (HTTP ${failure.status})` : "FAILED");
+        diagnostic("avatarDiagReloadHttp", failure.status ? `HTTP ${failure.status}` : "NOT AVAILABLE");
+        diagnostic("avatarDiagReloadCode", code);
+        throw makeError(failure.message || "profile_reload_failed", code, { reloadStatus: failure.status || null });
+      }
       diagnostic("avatarDiagReload", "RELOADED");
+      diagnostic("avatarDiagReloadHttp", "HTTP 200");
+      diagnostic("avatarDiagReloadCode", "NONE");
       diagnostic("avatarDiagRuntime", "MOUNTING");
       const avatarMounted = await refreshAvatarAsset("uploaded_file");
       if (avatarMounted === false) throw makeError("avatar_mount_failed", "AVATAR_MOUNT_FAILED");

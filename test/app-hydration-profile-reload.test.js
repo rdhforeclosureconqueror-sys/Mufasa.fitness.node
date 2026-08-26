@@ -63,4 +63,34 @@ test("profile reload still stops before the backend when neither auth signal exi
 
   assert.equal(await runtime.window.AppHydrationRuntime.hydrateProfileFromBackend(), false);
   assert.equal(runtime.getFetches(), 0);
+  assert.equal(runtime.window.AppHydrationRuntime.getState().lastProfileReload.code, "MISSING_AUTH_TOKEN");
+});
+
+test("backend read profile request uses a caller-provided accepted token instead of stale storage", async () => {
+  const requests = [];
+  const localStorage = {
+    getItem: key => key === "maatAuthToken" ? "stale-storage-token" : null,
+    setItem() {},
+    removeItem() {}
+  };
+  const window = { localStorage };
+  window.window = window;
+  vm.runInNewContext(
+    fs.readFileSync(path.join(__dirname, "../backend-read.js"), "utf8"),
+    {
+      window,
+      localStorage,
+      console: { log() {}, info() {} },
+      fetch: async (url, options) => {
+        requests.push({ url, options });
+        return { ok: true, status: 200, json: async () => ({ ok: true, data: { profile: { age: 30 } } }) };
+      }
+    }
+  );
+
+  const client = window.MufasaBackendRead.createClient({ baseUrl: "https://api.example" });
+  await client.fetchProfile({ authToken: "accepted-upload-token" });
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].options.headers.authorization, "Bearer accepted-upload-token");
 });
