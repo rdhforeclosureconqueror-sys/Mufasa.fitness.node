@@ -23,6 +23,7 @@ module.exports = Object.freeze({
   ,"public/map-diagnostics.js": "Temporary diagnostics templates escape every browser, URL, error, and event value; structural markup is fixed."
   ,"public/admin-trail-routes.js": "Admin route templates encode every persisted value before rendering; structural markup is fixed."
   ,"public/yoga.js": "Yoga session templates encode every catalog string with esc(); structural empty, error, and completion templates are fixed."
+  ,"public/yoga-workout-runtime.js": "Yoga target SVG is derived from numeric canonical BodyFrame coordinates; completion markup uses only the already rendered canonical session name via text outside the structural template."
   ,"public/pocketpt-youth-program.js": "Youth program templates encode all server and participant strings with esc(); numeric values are canonical projections and inline actions are fixed same-origin reloads."
   ,"public/admin-members.js": "CRM summary templates encode every API-derived string with esc(); action identifiers are URL-encoded."
   ,"public/admin-client.js": "Client profile and message templates encode every API-derived value with esc(); structural routes use encoded identifiers."
