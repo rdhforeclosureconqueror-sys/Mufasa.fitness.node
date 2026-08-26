@@ -182,6 +182,14 @@
     return new URL(resolveCanonicalApiUrl("/")).origin;
   }
 
+  function resolveProfileReload() {
+    if (typeof state.deps.reloadProfile === "function") return state.deps.reloadProfile;
+    if (typeof global.AppHydrationRuntime?.hydrateProfileFromBackend === "function") {
+      return () => global.AppHydrationRuntime.hydrateProfileFromBackend();
+    }
+    return null;
+  }
+
   async function verifyUploadContract(contract) {
     const discoveryUrl = resolveCanonicalApiUrl(contract.discoveryPath);
     diagnostic("avatarDiagApiOrigin", new URL(discoveryUrl).origin);
@@ -483,10 +491,11 @@
       setProfileAvatar(nextAvatar);
       state.deps.persistUser?.();
       diagnostic("avatarDiagReload", "RELOADING");
-      if (typeof state.deps.reloadProfile !== "function") {
+      const reloadProfile = resolveProfileReload();
+      if (!reloadProfile) {
         throw makeError("profile_reload_unavailable", "PROFILE_RELOAD_UNAVAILABLE");
       }
-      const profileReloaded = await state.deps.reloadProfile();
+      const profileReloaded = await reloadProfile();
       if (profileReloaded === false) throw makeError("profile_reload_failed", "PROFILE_RELOAD_FAILED");
       diagnostic("avatarDiagReload", "RELOADED");
       diagnostic("avatarDiagRuntime", "MOUNTING");
