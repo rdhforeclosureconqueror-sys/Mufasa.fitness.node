@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pocket PT Yoga Pose Rules",
+  "type": "object",
+  "required": ["schemaVersion", "status", "poses"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "status": { "type": "string" },
+    "thresholdPolicy": { "type": "string" },
+    "poses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["poseId", "rules"],
+        "properties": {
+          "poseId": { "type": "string" },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "type", "landmarks", "side", "target", "feedbackLow", "feedbackHigh"],
+              "properties": {
+                "id": { "type": "string" },
+                "type": { "enum": ["joint_angle"] },
+                "landmarks": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "string" } },
+                "side": { "enum": ["left", "right", "either", "front"] },
+                "target": {
+                  "type": "object", "required": ["min", "max"],
+                  "properties": { "min": { "type": "number" }, "max": { "type": "number" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

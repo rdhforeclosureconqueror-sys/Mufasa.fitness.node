@@ -2,3 +2,15 @@ node_modules
 .env
 dist/
 data/youth-fitness/
+
+# Local Python and notebook artifacts (never production inputs)
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Disposable analysis/runtime output. Curated generated/ content remains tracked.
+tmp/
+temp/
+*.cache

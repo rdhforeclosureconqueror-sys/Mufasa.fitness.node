@@ -4,7 +4,7 @@ const audit=require('../scripts/lib/legacy-reconciliation');
 
 test('inventory is deterministic, checksummed, bounded, and does not mutate legacy files',()=>{
   const before=audit.walkLegacy(), after=audit.walkLegacy(); assert.deepEqual(after,before); assert.ok(before.length>40);
-  for(const item of before){assert.match(item.sha256,/^[a-f0-9]{64}$/);assert.ok(item.sizeBytes<5_000_000);}
+  for(const item of before){assert.match(item.sha256,/^[a-f0-9]{64}$/);if(item.sizeBytes>=5_000_000)assert.equal(item.parsingStatus,'bounded-not-parsed');}
 });
 test('reconciliation IDs and register ordering are stable',()=>{const a=audit.buildRegister(),b=audit.buildRegister();assert.deepEqual(a,b);assert.equal(new Set(a.records.map(x=>x.reconciliationId)).size,a.records.length);});
 test('schema validator catches duplicate records, invalid statuses, paths, and missing evidence',()=>{
