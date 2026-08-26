@@ -4,6 +4,8 @@
   const BUILD = "2026-08-20-ios-trace-v2";
   const status = document.getElementById("status");
   let accepted = false;
+  let readyAttempts = 0;
+  let readyTimer = null;
   const safeFailures = new Set([
     "failure_opener_missing",
     "failure_message_origin_invalid",
@@ -48,6 +50,7 @@
     if (typeof event.data.token !== "string" || !event.data.token) return fail("failure_auth_token_missing");
 
     accepted = true;
+    if (readyTimer) window.clearInterval(readyTimer);
     report("session_post_started");
 
     let response;
@@ -125,5 +128,15 @@
   });
 
   if (!window.opener) return fail("failure_opener_missing");
-  window.opener.postMessage({ type: "pocketpt:motion-lab-ready", build: BUILD }, FRONTEND_ORIGIN);
+  // The new tab can finish loading before dashboard.js has installed its
+  // message listener. Repeat this credential-free readiness signal for a
+  // bounded interval; the authenticated message still requires the exact
+  // opener window and configured frontend origin above.
+  function announceReady() {
+    readyAttempts += 1;
+    window.opener?.postMessage({ type: "pocketpt:motion-lab-ready", build: BUILD }, FRONTEND_ORIGIN);
+    if (readyAttempts >= 20 && readyTimer) window.clearInterval(readyTimer);
+  }
+  announceReady();
+  readyTimer = window.setInterval(announceReady, 250);
 }());

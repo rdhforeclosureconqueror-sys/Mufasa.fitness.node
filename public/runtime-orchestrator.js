@@ -167,9 +167,10 @@
         dbg.lastAuthEventAt = new Date().toISOString();
         updateAuthPropagationStatus?.("auth:ready");
         updateActivationStatusPanel?.("auth:ready");
-        if (global.APP_AUTH?.isAuthenticated !== true) {
-          alert("CRITICAL: AUTH NOT PROPAGATED");
-        }
+        // auth:ready is also the canonical completion signal for signed-out,
+        // expired, and explicitly logged-out states. Keep that state visible to
+        // diagnostics without presenting a false propagation failure alert.
+        dbg.authenticatedAtReady = global.APP_AUTH?.isAuthenticated === true;
         markReady("auth:ready", { authenticated: global.APP_AUTH?.isAuthenticated === true });
       });
       global.addEventListener("load", () => {
