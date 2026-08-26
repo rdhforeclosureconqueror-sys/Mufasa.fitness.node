@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
-const LEGACY_ROOT = path.join(ROOT, 'public/new');
+const LEGACY_ROOT = path.join(ROOT, '_reference/aligned-yoga/imported');
 const SCHEMA_VERSION = '1.0.0';
 const STATUSES = Object.freeze([
   'Fully Integrated', 'Integrated After Transformation', 'Partially Integrated',
@@ -117,7 +117,7 @@ function makeRecord(item) {
     reconciliationId: stableId(item.path), legacyAssetPath: item.path, legacyAssetType: item.type || 'file',
     domain: item.domain, title: path.basename(item.path), briefDescription: item.likelyPurpose,
     detectedFormat: item.detectedFormat, contentFingerprint: item.sha256 ? `sha256:${item.sha256}` : null,
-    lastKnownSourceContext: 'Immutable legacy source library public/new; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md',
+    lastKnownSourceContext: 'Quarantined legacy source library _reference/aligned-yoga/imported; prior planning registry docs/legacy-integration/01_LEGACY_ASSET_REGISTRY.md',
     primaryReconciliationStatus: status, currentDestination: destination, canonicalIdsAffected: canonicalIds(item.path),
     currentModulesAffected: destination === 'None' ? [] : destination.split(';').map((x) => x.trim()),
     transferredConcepts: transferred, omittedConcepts: omitted,
@@ -149,7 +149,7 @@ function ownerFor(d,s) { if (d === 'gamification') return 'Product economy owner
 function releaseFor(s) { return ['Reject','Archive Only','Superseded'].includes(s) ? 'archive-governance' : ['Requires Expert Review','Requires Technical Validation'].includes(s) ? 'not scheduled—gated review' : 'post-launch reconciliation package'; }
 
 function buildRegister(inventory = walkLegacy()) {
-  return { schemaVersion: SCHEMA_VERSION, registerVersion: '1', generatedBy: 'scripts/reconcile-legacy-knowledge.js', legacyRoot: 'public/new', records: inventory.map(makeRecord).sort((a,b)=>a.legacyAssetPath.localeCompare(b.legacyAssetPath)) };
+  return { schemaVersion: SCHEMA_VERSION, registerVersion: '1', generatedBy: 'scripts/reconcile-legacy-knowledge.js', legacyRoot: '_reference/aligned-yoga/imported', records: inventory.map(makeRecord).sort((a,b)=>a.legacyAssetPath.localeCompare(b.legacyAssetPath)) };
 }
 function validateRegister(register) {
   const errors=[]; if (register.schemaVersion !== SCHEMA_VERSION) errors.push('Unsupported schemaVersion.');
@@ -157,7 +157,7 @@ function validateRegister(register) {
   for (const [i,r] of (register.records || []).entries()) {
     for (const key of ['reconciliationId','legacyAssetPath','primaryReconciliationStatus','validationEvidence','recommendedAction','reconciliationSchemaVersion']) if (r[key] == null || r[key] === '' || (Array.isArray(r[key]) && !r[key].length)) errors.push(`Record ${i} missing ${key}.`);
     if (!STATUSES.includes(r.primaryReconciliationStatus)) errors.push(`Record ${i} has invalid status.`);
-    if (!r.legacyAssetPath.startsWith('public/new/') || r.legacyAssetPath.includes('..') || path.isAbsolute(r.legacyAssetPath)) errors.push(`Record ${i} has invalid path.`);
+    if (!r.legacyAssetPath.startsWith('_reference/aligned-yoga/imported/') || r.legacyAssetPath.includes('..') || path.isAbsolute(r.legacyAssetPath)) errors.push(`Record ${i} has invalid path.`);
     if (ids.has(r.reconciliationId)) errors.push(`Duplicate reconciliation ID ${r.reconciliationId}.`); ids.add(r.reconciliationId);
     if (paths.has(r.legacyAssetPath)) errors.push(`Duplicate asset path ${r.legacyAssetPath}.`); paths.add(r.legacyAssetPath);
   }

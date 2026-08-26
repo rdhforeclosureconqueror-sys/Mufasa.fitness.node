@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "status": "proof_of_concept_non_clinical",
+  "thresholdPolicy": "Provisional engineering ranges; review with approved Pocket PT content before user-facing release.",
+  "poses": [
+    {
+      "poseId": "chair",
+      "rules": [
+        {
+          "id": "knee-flexion",
+          "type": "joint_angle",
+          "landmarks": ["{side}_hip", "{side}_knee", "{side}_ankle"],
+          "side": "either",
+          "target": { "min": 75, "max": 125 },
+          "severity": "guidance",
+          "feedbackLow": "Ease out of the knee bend slightly.",
+          "feedbackHigh": "If comfortable, sit the hips back a little farther."
+        }
+      ]
+    },
+    {
+      "poseId": "warrior-ii",
+      "rules": [
+        {
+          "id": "front-knee-angle",
+          "type": "joint_angle",
+          "landmarks": ["{side}_hip", "{side}_knee", "{side}_ankle"],
+          "side": "front",
+          "target": { "min": 80, "max": 110 },
+          "severity": "guidance",
+          "feedbackLow": "Ease the front knee back toward a comfortable bend.",
+          "feedbackHigh": "If comfortable, deepen the front knee bend while keeping it supported."
+        },
+        {
+          "id": "left-elbow-extension",
+          "type": "joint_angle",
+          "landmarks": ["left_shoulder", "left_elbow", "left_wrist"],
+          "side": "left",
+          "target": { "min": 160, "max": 180 },
+          "severity": "guidance",
+          "feedbackLow": "Reach through the left arm without locking the elbow.",
+          "feedbackHigh": "Soften the left elbow."
+        },
+        {
+          "id": "right-elbow-extension",
+          "type": "joint_angle",
+          "landmarks": ["right_shoulder", "right_elbow", "right_wrist"],
+          "side": "right",
+          "target": { "min": 160, "max": 180 },
+          "severity": "guidance",
+          "feedbackLow": "Reach through the right arm without locking the elbow.",
+          "feedbackHigh": "Soften the right elbow."
+        }
+      ]
+    }
+  ]
+}

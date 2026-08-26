@@ -1,0 +1,13 @@
+{
+  "status": "reference_only",
+  "mappings": [
+    { "importedName": "chair", "canonicalPoseId": "chair", "confidence": "high" },
+    { "importedName": "Utkata Konasana", "canonicalPoseId": "chair", "confidence": "high" },
+    { "importedName": "warrior", "canonicalPoseId": "warrior-ii", "confidence": "medium" },
+    { "importedName": "Veerabhadrasana", "canonicalPoseId": "warrior-ii", "confidence": "medium" },
+    { "importedName": "plank", "canonicalPoseId": "plank", "confidence": "high" },
+    { "importedName": "Triangle", "canonicalPoseId": "triangle", "confidence": "high" },
+    { "importedName": "Downward Dog", "canonicalPoseId": "downward-dog", "confidence": "high" },
+    { "importedName": "Vrukshasana", "canonicalPoseId": "tree", "confidence": "high" }
+  ]
+}
