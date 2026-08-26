@@ -21,6 +21,9 @@ test("direct workout shell receives the enabled avatar flag and exposes provisio
   assert.match(html, /id="avatarCreateBtn"[^>]*>[^<]*Create Avatar/);
   assert.match(html, /value="avatar_overlay"[^>]*>Avatar Overlay/);
   assert.match(html, /value="avatar_only"[^>]*>Avatar Only/);
+  const chooser = html.match(/<input\b[^>]*\bid="avatarFileInput"[^>]*>/g) || [];
+  assert.equal(chooser.length, 1);
+  assert.equal(chooser[0], '<input id="avatarFileInput" type="file" />');
 });
 
 test("auth completion does not misreport a valid signed-out state as propagation failure", () => {

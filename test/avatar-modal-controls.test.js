@@ -34,3 +34,15 @@ test("Render frontend and backend deployments are pinned to the same branch",()=
 test("profile reload and avatar mounting are awaited only after server-confirmed profile save",()=>{ const source=fs.readFileSync(path.join(__dirname,"../public/profile-write-runtime.js"),"utf8"),flow=source.slice(source.indexOf("async function uploadAvatarFile"),source.indexOf("async function clearAvatarMetadata")),saved=flow.indexOf("payload.data.avatarModelUrl"),reload=flow.indexOf("await state.deps.reloadProfile()"),mount=flow.indexOf('await refreshAvatarAsset("uploaded_file")'); assert.ok(saved < reload); assert.ok(reload < mount); assert.match(flow,/diagnostic\("avatarDiagRuntime", "MOUNTED"\)/); });
 
 test("workout wires canonical profile reload into avatar transport",()=>{ const workout=fs.readFileSync(path.join(__dirname,"../public/workout.html"),"utf8"); assert.match(workout,/reloadProfile: \(\) => window\.AppHydrationRuntime\?\.hydrateProfileFromBackend\?\.\(\)/); assert.match(workout,/await window\.AuthNavigation\.requireUser/); });
+
+test("production avatar chooser leaves native browsing permissive and validates after selection",()=>{
+  const workout=fs.readFileSync(path.join(__dirname,"../public/workout.html"),"utf8");
+  const input=workout.match(/<input\b[^>]*\bid="avatarFileInput"[^>]*>/g)||[];
+  assert.equal(input.length,1,"one authoritative production avatar file input");
+  assert.match(input[0],/\btype="file"/);
+  assert.doesNotMatch(input[0],/\b(?:accept|capture|multiple|webkitdirectory|hidden|disabled|name|form)\b/i);
+  for(const source of [workout,fs.readFileSync(path.join(__dirname,"../public/workout-control-activation.js"),"utf8")]) {
+    assert.doesNotMatch(source,/(?:\.accept\s*=|setAttribute\(["']accept|removeAttribute\(["']accept)/);
+  }
+  assert.match(fs.readFileSync(path.join(__dirname,"../public/workout-control-activation.js"),"utf8"),/\/\\\.glb\$\/i\.test\(selected\.name/);
+});
