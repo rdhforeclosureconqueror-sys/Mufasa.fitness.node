@@ -536,7 +536,10 @@
       diagnostic("avatarDiagRuntime", "ACTIVATING");
       const avatarMounted = await refreshAvatarAsset("uploaded_file");
       if (avatarMounted === false) throw makeError("avatar_mount_failed", "AVATAR_MOUNT_FAILED");
-      diagnostic("avatarDiagRuntime", "ACTIVE");
+      const presentation = global.AvatarRuntime?.refreshRuntimeProof?.() || {};
+      const presentationActive = presentation.presentationState === "ACTIVE" && presentation.rendererAvailable && presentation.sceneAvailable &&
+        presentation.cameraAvailable && presentation.renderLoopInitialized;
+      diagnostic("avatarDiagRuntime", presentationActive ? "ACTIVE" : "MOUNTED, NOT ACTIVE");
       diagnostic("avatarDiagError", "NONE");
       visibleAvatarMessage("Upload success. Avatar saved, reloaded, and mounted.");
       diagnostic("avatarDiagProfile", "SAVED");

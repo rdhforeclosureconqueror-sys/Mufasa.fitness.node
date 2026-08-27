@@ -16,7 +16,10 @@
       if (modal) modal.classList.remove("hidden");
       if (status) status.textContent = "Idle.";
       diagnostic("avatarDiagComponent", "LOADING");
-      Promise.resolve().then(() => global.AvatarRuntime?.ensureThreeModules?.()).then((runtime) => diagnostic("avatarDiagComponent", runtime ? "READY" : "NOT AVAILABLE")).catch((error) => { diagnostic("avatarDiagComponent", "FAILED"); fail(error, "Optional avatar runtime failed; modal controls still work."); });
+      Promise.resolve().then(() => global.AvatarRuntime?.ensureThreeModules?.()).then((runtime) => {
+        const proof = global.AvatarRuntime?.refreshRuntimeProof?.() || {};
+        diagnostic("avatarDiagComponent", runtime && proof.rendererAvailable && proof.sceneAvailable && proof.cameraAvailable && proof.renderLoopInitialized ? "READY" : "NOT READY");
+      }).catch((error) => { diagnostic("avatarDiagComponent", "FAILED"); fail(error, "Optional avatar runtime failed; modal controls still work."); });
       return true;
     }; return true;
   }
