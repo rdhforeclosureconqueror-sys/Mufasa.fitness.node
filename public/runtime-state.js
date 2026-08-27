@@ -33,6 +33,26 @@
   let poseRuntimePromise = null;
   let headPerfStart = null;
 
+  const bootstrap = global.__POSE_BOOTSTRAP_TRACE = global.__POSE_BOOTSTRAP_TRACE || {
+    connectClickReceived: false, connectHandlerEntryCount: 0,
+    getUserMediaRequested: false, getUserMediaResolved: false, getUserMediaRejected: false,
+    dependencyAttempts: [], tfLoaderRequested: false, tfLoadResolved: false, tfLoadFailed: false,
+    tfReadyEntered: false, tfReadyResolved: false, tfReadyRejected: false,
+    detectorCreateEntered: false, detectorCreateResolved: false, detectorCreateRejected: false,
+    inferenceLoopStartEntered: false, estimatePosesEnteredCount: 0, estimatePosesResolvedCount: 0, estimatePosesRejectedCount: 0,
+    firstFailingBoundary: 'NONE'
+  };
+
+  function recordBootstrapFailure(boundary, error, extra = {}) {
+    if (bootstrap.firstFailingBoundary === 'NONE') bootstrap.firstFailingBoundary = boundary;
+    bootstrap.lastErrorName = error?.name || 'Error';
+    bootstrap.lastErrorMessage = error?.message || String(error || boundary);
+    bootstrap.lastErrorStack = error?.stack || '';
+    bootstrap.lastErrorTimestamp = new Date().toISOString();
+    Object.assign(bootstrap, extra);
+  }
+  global.__recordPoseBootstrapFailure = recordBootstrapFailure;
+
   function log(tag, payload){ console.log(`[RUNTIME_STATE] ${tag}`, payload || ""); }
 
   function initStartupResourceAudit(initialScripts){
@@ -67,8 +87,11 @@
         script.async = async;
         script.defer = defer;
         script.crossOrigin = "anonymous";
-        script.onload = () => resolve(true);
-        script.onerror = () => reject(new Error(`script_load_failed:${src}`));
+        const attempt = { url: src, requestedAt: new Date().toISOString(), status: 'REQUESTED' };
+        bootstrap.dependencyAttempts.push(attempt);
+        if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoaderRequested = true;
+        script.onload = () => { attempt.status = 'RESOLVED'; attempt.completedAt = new Date().toISOString(); if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoadResolved = true; resolve(true); };
+        script.onerror = (event) => { const error = new Error(`script_load_failed:${src}`); error.name = 'ScriptLoadError'; error.scriptSrc = src; error.loadEvent = event?.type || 'error'; attempt.status = 'FAILED'; attempt.loadEvent = error.loadEvent; attempt.completedAt = new Date().toISOString(); if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoadFailed = true; recordBootstrapFailure(/@tensorflow\/tfjs/.test(src) ? 'TF_SCRIPT_LOAD_FAILED' : 'POSE_DETECTION_SCRIPT_LOAD_FAILED', error, { failingUrl: src }); reject(error); };
         document.head.appendChild(script);
       });
       task.catch(() => lazyScriptCache.delete(src));
@@ -131,6 +154,9 @@
           if (!knownDependency) await global.__loadExternalScript(src, { async: false, defer: false });
         }
         for (const dep of requiredDeps) await loadRuntimeDependency(dep, { required: true });
+        bootstrap.windowTfPresent = Boolean(global.tf);
+        bootstrap.tfVersion = global.tf?.version?.tfjs || global.tf?.version_core || '';
+        bootstrap.poseDetectionPresent = Boolean(global.poseDetection);
         for (const dep of optionalDeps) {
           try {
             await loadRuntimeDependency(dep, { required: false });

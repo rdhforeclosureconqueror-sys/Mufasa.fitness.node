@@ -37,7 +37,7 @@
     sourceDimensions: '0x0',
     framingState: 'NO_PERSON',
     framingReason: 'MoveNet has not returned a person.',
-    firstFailingBoundary: 'TF_NOT_LOADED'
+    firstFailingBoundary: 'NONE'
   };
 
   const KEYPOINT_THRESHOLD = 0.3;
@@ -79,6 +79,10 @@
   }
 
   function failureBoundary() {
+    const trace = global.__POSE_BOOTSTRAP_TRACE || {};
+    if (trace.firstFailingBoundary && trace.firstFailingBoundary !== 'NONE') return trace.firstFailingBoundary;
+    if (!trace.connectClickReceived) return 'NONE';
+    if (!state.cameraStreamActive) return 'CAMERA_NOT_ACTIVE';
     if (!global.tf) return 'TF_NOT_LOADED';
     if (!state.tfReady) return 'TF_BACKEND_NOT_READY';
     if (!state.detectorReady) return 'MODEL_NOT_CREATED';
@@ -87,11 +91,8 @@
     if (state.sourceDimensions === '0x0') return 'SOURCE_ZERO_SIZE';
     if (!state.loopRunning) return 'INFERENCE_LOOP_NOT_STARTED';
     if (state.lastError) return 'INFERENCE_EXCEPTION';
-    if (!state.latestPose) return 'NO_POSE_RETURNED';
-    if (state.framingState === 'LOW_CONFIDENCE' || state.framingState === 'TOO_CLOSE' || state.framingState === 'TOO_FAR') return 'LOW_CONFIDENCE';
-    if (!state.poseEventDispatchCount) return 'POSE_EVENT_NOT_EMITTED';
-    if (!state.poseEventReceivedCount) return 'POSE_EVENT_NOT_RECEIVED';
-    return 'READY';
+    if (!state.framesAttempted) return 'ESTIMATE_POSES_NOT_ENTERED';
+    return 'NONE';
   }
 
   function framingMessage(value) {
@@ -121,6 +122,22 @@
       `Last pose error: ${state.lastError || state.detectorError || 'NONE'}`, `First failing boundary: ${state.firstFailingBoundary}`
     ];
     const panel = global.document?.getElementById?.('poseTrackingProofValues'); if (panel) panel.textContent = lines.join('\n');
+    const trace = global.__POSE_BOOTSTRAP_TRACE || {};
+    const yn = (value) => value ? 'YES' : 'NO';
+    const traceLines = [
+      `Connect Camera click received: ${yn(trace.connectClickReceived)}`, `Connect Camera handler entry count: ${trace.connectHandlerEntryCount || 0}`, '',
+      `getUserMedia requested: ${yn(trace.getUserMediaRequested)}`, `getUserMedia resolved: ${yn(trace.getUserMediaResolved)}`, `getUserMedia rejected: ${yn(trace.getUserMediaRejected)}`, `getUserMedia error name: ${trace.getUserMediaErrorName || 'NONE'}`, `getUserMedia error message: ${trace.getUserMediaErrorMessage || 'NONE'}`, '',
+      `Media stream ID: ${trace.mediaStreamId || 'none'}`, `Video track count: ${trace.videoTrackCount || 0}`, `Video track readyState: ${trace.videoTrackReadyState || 'none'}`, `Video track enabled: ${trace.videoTrackEnabled == null ? 'unknown' : yn(trace.videoTrackEnabled)}`, `Video track muted: ${trace.videoTrackMuted == null ? 'unknown' : yn(trace.videoTrackMuted)}`, '',
+      `Production video element found: ${yn(trace.productionVideoFound)}`, `Production video element ID: ${trace.productionVideoElementId || 'none'}`, `Production video DOM connected: ${yn(trace.productionVideoDomConnected)}`, `srcObject assigned: ${yn(trace.srcObjectAssigned)}`, `srcObject === active stream: ${yn(trace.srcObjectMatchesStream)}`, `video.readyState: ${trace.videoReadyState ?? 0}`, `videoWidth: ${trace.videoWidth || 0}`, `videoHeight: ${trace.videoHeight || 0}`, `loadedmetadata received: ${yn(trace.loadedmetadataReceived)}`, `loadeddata received: ${yn(trace.loadeddataReceived)}`, `canplay received: ${yn(trace.canplayReceived)}`, `playing received: ${yn(trace.playingReceived)}`, '',
+      `video.play() requested: ${yn(trace.videoPlayRequested)}`, `video.play() resolved: ${yn(trace.videoPlayResolved)}`, `video.play() rejected: ${yn(trace.videoPlayRejected)}`, `video.play() error: ${trace.videoPlayError || 'NONE'}`, '',
+      `TensorFlow loader requested: ${yn(trace.tfLoaderRequested)}`, `TensorFlow script/module URL: ${(trace.dependencyAttempts || []).map((item) => `${item.url} [${item.status}]`).join(', ') || 'none'}`, `TensorFlow load resolved: ${yn(trace.tfLoadResolved)}`, `TensorFlow load failed: ${yn(trace.tfLoadFailed)}`, `window.tf present: ${yn(trace.windowTfPresent)}`, `TensorFlow version: ${trace.tfVersion || 'unavailable'}`, '',
+      `tf.ready entered: ${yn(trace.tfReadyEntered)}`, `tf.ready resolved: ${yn(trace.tfReadyResolved)}`, `tf.ready rejected: ${yn(trace.tfReadyRejected)}`, '',
+      `Backend requested: ${trace.backendRequested || 'none'}`, `Backend set result: ${trace.backendSetResult == null ? 'none' : String(trace.backendSetResult)}`, `Backend active: ${trace.backendActive || 'unavailable'}`, '',
+      `Pose detection library present: ${yn(trace.poseDetectionPresent)}`, `MoveNet detector create entered: ${yn(trace.detectorCreateEntered)}`, `MoveNet detector create resolved: ${yn(trace.detectorCreateResolved)}`, `MoveNet detector create rejected: ${yn(trace.detectorCreateRejected)}`, `MoveNet model/config: ${trace.detectorModelConfig || 'none'}`, '',
+      `Inference loop start entered: ${yn(trace.inferenceLoopStartEntered)}`, `Inference loop running: ${yn(state.loopRunning)}`, `estimatePoses entered count: ${trace.estimatePosesEnteredCount || 0}`, `estimatePoses resolved count: ${trace.estimatePosesResolvedCount || 0}`, `estimatePoses rejected count: ${trace.estimatePosesRejectedCount || 0}`, '',
+      `First failing boundary: ${trace.firstFailingBoundary || 'NONE'}`, `Last bootstrap error name: ${trace.lastErrorName || 'NONE'}`, `Last bootstrap error message: ${trace.lastErrorMessage || 'NONE'}`, `Last bootstrap error timestamp: ${trace.lastErrorTimestamp || 'NONE'}`
+    ];
+    const tracePanel = global.document?.getElementById?.('poseBootstrapTraceValues'); if (tracePanel) tracePanel.textContent = traceLines.join('\n');
     const overlay = global.document?.getElementById?.('poseFramingFeedback'); if (overlay) overlay.textContent = framingMessage(state.framingState);
   }
 
@@ -171,6 +188,7 @@
     state.detectorReady = false;
     const startedAt = global.performance?.now?.() || Date.now();
     log('detector init requested');
+    const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
 
     try {
       if (typeof ensurePoseRuntime === 'function') await ensurePoseRuntime();
@@ -181,19 +199,25 @@
         throw new Error(`missing detector dependency: ${missingDependencies.join(', ')}`);
       }
 
+      trace.windowTfPresent = Boolean(tfRuntime); trace.tfVersion = tfRuntime?.version?.tfjs || tfRuntime?.version_core || '';
+      trace.poseDetectionPresent = Boolean(poseRuntime); trace.backendRequested = mobileDevice ? 'cpu' : 'webgl';
       try {
-        await tfRuntime.setBackend(mobileDevice ? 'cpu' : 'webgl');
+        trace.backendSetResult = await tfRuntime.setBackend(trace.backendRequested);
       } catch (err) {
         console.warn('[POSE_RUNTIME] preferred backend unavailable, attempting cpu backend', err);
-        await tfRuntime.setBackend('cpu');
+        trace.backendRequested = 'cpu'; trace.backendSetResult = await tfRuntime.setBackend('cpu');
       }
-      await tfRuntime.ready();
+      trace.tfReadyEntered = true;
+      try { await tfRuntime.ready(); trace.tfReadyResolved = true; } catch (error) { trace.tfReadyRejected = true; global.__recordPoseBootstrapFailure?.('TF_READY_REJECTED', error); throw error; }
       state.tfReady = true;
+      trace.backendActive = tfRuntime.getBackend?.() || 'unknown';
 
+      trace.detectorCreateEntered = true; trace.detectorModelConfig = 'MoveNet SinglePose Lightning';
       const detector = await poseRuntime.createDetector(
         poseRuntime.SupportedModels.MoveNet,
         { modelType: poseRuntime.movenet.modelType.SINGLEPOSE_LIGHTNING }
       );
+      trace.detectorCreateResolved = true;
 
       state.detectorReady = true;
       state.detectorBackend = tfRuntime.getBackend?.() || 'unknown';
@@ -212,6 +236,8 @@
       log('MoveNet detector ready', { detectorInitMs: state.detectorInitMs, backend: state.detectorBackend });
       return detector;
     } catch (err) {
+      if (trace.detectorCreateEntered && !trace.detectorCreateResolved) { trace.detectorCreateRejected = true; global.__recordPoseBootstrapFailure?.('MOVENET_DETECTOR_CREATE_FAILED', err); }
+      else if (!global.tf) global.__recordPoseBootstrapFailure?.('TF_NOT_LOADED', err);
       const message = err?.message || String(err || 'pose_detector_init_failed');
       state.detectorError = message;
       state.detectorReady = false;
@@ -231,11 +257,6 @@
       trackingCapabilities,
       logTrackerCapabilities
     } = options || {};
-
-    state.sourceVideo = video || null;
-    state.sourceElementId = video?.id || null;
-    state.sourceConnected = Boolean(video?.isConnected);
-    state.sourceDimensions = `${video?.videoWidth || video?.clientWidth || 0}x${video?.videoHeight || video?.clientHeight || 0}`;
 
     const result = { faceDetector: null, handDetector: null };
     state.optionalTrackers = { face: false, hand: false };
@@ -333,6 +354,12 @@
       throw err;
     }
 
+    const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
+    trace.inferenceLoopStartEntered = true;
+    state.sourceVideo = video;
+    state.sourceElementId = video.id || null;
+    state.sourceConnected = Boolean(video.isConnected);
+    state.sourceDimensions = `${video.videoWidth || 0}x${video.videoHeight || 0}`;
     state.loopRunning = true;
     state.loopStartedAt = new Date().toISOString();
     state.loopFrameCount = 0;
@@ -357,7 +384,10 @@
         state.inferenceGeneration += 1;
         if (global.__workoutPerformance) global.__workoutPerformance.poseInferenceCalls += 1;
         const inferenceStartedAt = global.performance?.now?.() ?? Date.now();
-        const poses = await detector.estimatePoses(video, { flipHorizontal: true });
+        trace.estimatePosesEnteredCount = (trace.estimatePosesEnteredCount || 0) + 1;
+        let poses;
+        try { poses = await detector.estimatePoses(video, { flipHorizontal: true }); trace.estimatePosesResolvedCount = (trace.estimatePosesResolvedCount || 0) + 1; }
+        catch (error) { trace.estimatePosesRejectedCount = (trace.estimatePosesRejectedCount || 0) + 1; global.__recordPoseBootstrapFailure?.('ESTIMATE_POSES_REJECTED', error); throw error; }
         const inferenceMs = (global.performance?.now?.() ?? Date.now()) - inferenceStartedAt;
         const pose = Array.isArray(poses) && poses.length ? poses[0] : null;
         const posePacket = normalizePosePacket(pose, video);
