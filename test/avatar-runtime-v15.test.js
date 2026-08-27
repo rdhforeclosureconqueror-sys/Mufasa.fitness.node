@@ -40,10 +40,10 @@ test("v15 fails closed and keeps orientation above the model skeleton", () => {
   assert.match(workout, /runtime\.scene\.add\(avatarOrientationRoot\)/);
   assert.match(workout, /runtime\.avatarOrientationRoot = avatarOrientationRoot/);
   assert.match(runtime, /quaternionBefore/);
-  assert.match(workout, /2026-08-27-avatar-manual-control-proof-v16/);
+  assert.match(workout, /2026-08-27-avatar-manual-control-proof-v17/);
 });
 
-test("v16 manual facing writes the rendered orientation owner and proves retention after rendering", () => {
+test("v17 manual facing binds the deployed controls early and traces the authoritative owner", () => {
   const workout = read("public/workout.html");
   assert.match(workout, /const orientationRoot = runtime\?\.avatarOrientationRoot/);
   assert.match(workout, /if \(orientationRoot\) orientationRoot\.rotation\.y = facingRad/);
@@ -52,5 +52,8 @@ test("v16 manual facing writes the rendered orientation owner and proves retenti
   assert.match(workout, /Orientation root parent === active scene/);
   assert.match(workout, /Rendered avatar descendant of orientation root/);
   assert.match(workout, /Manual rotation generation/);
-  assert.match(workout, /2026-08-27-avatar-manual-control-proof-v16/);
+  assert.match(workout, /bindAvatarManualControls\(\)/);
+  assert.match(workout, /Manual Control Event Trace/);
+  assert.match(workout, /window\.__avatarThreeOwner = avatarThreeRuntime/);
+  assert.match(workout, /2026-08-27-avatar-manual-control-proof-v17/);
 });

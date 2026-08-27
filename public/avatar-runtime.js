@@ -5,6 +5,10 @@
   const GLTF_LOADER_MODULE_PATH = '/vendor/three/examples/jsm/loaders/GLTFLoader.js';
 
   const defaultStatus = {
+    runtimeInstanceId: null,
+    manualControlRuntimeInstanceId: null,
+    threeOwnerInstanceId: null,
+    presentationRuntimeInstanceId: null,
     threeBridgeFixActive: true,
     avatarThreeGlobalOk: true,
     threeImportStarted: false,
@@ -363,8 +367,8 @@
   }
 
   function refreshEnvironmentTrace() {
-    const runtime = renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
-    const canvas = renderEngineBindings?.getCanvas?.() || null;
+    const runtime = globalScope.__avatarThreeOwner || renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
+    const canvas = runtime?.renderer?.domElement || renderEngineBindings?.getCanvas?.() || null;
     const ready = Boolean(runtime?.scene && runtime?.camera && runtime?.renderer && canvas);
     return update({
       avatarEnvironmentConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
@@ -372,6 +376,10 @@
       rendererAvailable: Boolean(runtime?.renderer), avatarCanvasElementFound: Boolean(canvas),
       avatarCanvasConnected: Boolean(canvas?.isConnected), renderLoopInitialized: Boolean(runtime?.renderLoopActive),
       avatarRuntimeConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
+      runtimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      manualControlRuntimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      threeOwnerInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      presentationRuntimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
       environmentState: ready ? 'READY' : (renderEngineBindings && assetPipelineBindings ? 'FAILED' : 'NOT_CONFIGURED'),
       avatarLifecycleStage: runtime?.avatarRoot ? 'MOUNTED' : (canonicalLoadPromise ? 'LOADING' : (renderEngineBindings && assetPipelineBindings ? 'INITIALIZED BUT NOT LOADING' : 'NOT INITIALIZED'))
     });
@@ -768,7 +776,7 @@
 
   function refreshRuntimeProof() {
     const previousPresentation = status().presentationState;
-    const runtime = renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
+    const runtime = globalScope.__avatarThreeOwner || renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
     const canvas = renderEngineBindings?.getCanvas?.() || runtime?.renderer?.domElement || null;
     const rect = canvas?.getBoundingClientRect?.() || {};
     const root = runtime?.avatarRoot;
@@ -783,13 +791,24 @@
     runtime?.scene?.traverse?.(node => { if (node?.isLight) lights.push(node.type); });
     const lastRenderAgeMs = runtime?.lastRenderAt ? Date.now() - runtime.lastRenderAt : null;
     const trackingEnabled = ['avatar_overlay', 'avatar_only'].includes(renderEngineBindings?.getRenderMode?.());
-    const identityOk = Boolean(root && root.parent === runtime?.scene);
+    const identityOk = Boolean(root && runtime?.avatarOrientationRoot?.parent === runtime?.scene && (() => {
+      for (let current = root; current; current = current.parent) if (current === runtime.avatarOrientationRoot) return true;
+      return false;
+    })());
     const renderRunning = Boolean(runtime?.renderLoopActive && lastRenderAgeMs != null && lastRenderAgeMs < 1000);
     const retargetRunning = Number(runtime?.retargetFramesExecuted || status().retargetFramesExecuted || 0) > 0;
     const poseRunning = Number(status().posePacketsReceived || 0) > 0 && status().poseLoopState === 'RUNNING';
     const boneProof = Number(runtime?.bonesChangedLastFrame || status().bonesChangedLastFrame || 0) > 0;
     const presentation = identityOk && renderRunning && (!trackingEnabled || (poseRunning && retargetRunning && boneProof)) ? 'ACTIVE' : (root ? 'REQUESTED' : 'NONE');
-    const proof = update({ sceneUuid: runtime?.scene?.uuid || 'none', avatarRootUuid: root?.uuid || 'none', avatarParentIsActiveScene: identityOk,
+    const proof = update({ runtimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      manualControlRuntimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      threeOwnerInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      presentationRuntimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
+      avatarRuntimeConfigured: Boolean(renderEngineBindings && assetPipelineBindings), avatarEnvironmentConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
+      sceneAvailable: Boolean(runtime?.scene), cameraAvailable: Boolean(runtime?.camera), rendererAvailable: Boolean(runtime?.renderer),
+      avatarCanvasElementFound: Boolean(canvas), renderLoopInitialized: Boolean(runtime?.renderLoopActive),
+      avatarLifecycleStage: root ? 'MOUNTED' : (runtime ? 'INITIALIZED BUT NOT LOADING' : 'NOT INITIALIZED'),
+      sceneUuid: runtime?.scene?.uuid || 'none', orientationRootUuid: runtime?.avatarOrientationRoot?.uuid || 'none', avatarRootUuid: root?.uuid || 'none', avatarParentIsActiveScene: identityOk,
       rendererType: runtime?.renderer?.constructor?.name || 'none', cameraUuid: runtime?.camera?.uuid || 'none', cameraType: runtime?.camera?.type || 'none',
       cameraFov: runtime?.camera?.fov ?? null, cameraNear: runtime?.camera?.near ?? null, cameraFar: runtime?.camera?.far ?? null,
       canvasDomId: canvas?.id || 'none', canvasCssSize: `${Math.round(rect.width || 0)}x${Math.round(rect.height || 0)}`,
