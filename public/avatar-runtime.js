@@ -673,7 +673,7 @@
     const runtime = renderEngineBindings?.ensureRuntime?.() || renderEngineBindings?.getRuntime?.() || null;
     const THREE = getThreeRefFromRuntime(runtime);
     if (!runtime?.avatarRoot || !THREE?.MathUtils) throw new Error('avatar_runtime_not_initialized');
-    const mountedInScene = Boolean(runtime?.scene && runtime.avatarRoot && runtime.scene.children.includes(runtime.avatarRoot));
+    const mountedInScene = Boolean(runtime?.scene && runtime.avatarOrientationRoot && runtime.scene.children.includes(runtime.avatarOrientationRoot));
     if (!mountedInScene) throw new Error('avatar_model_not_mounted_to_scene');
     if (runtime.avatarRoot.visible === false) throw new Error('avatar_model_hidden');
     const canvas = renderEngineBindings?.getCanvas?.() || null;
@@ -860,10 +860,12 @@
     const clearMountedRuntime = () => {
       b.setActiveAvatarAsset?.(null);
       const runtime = b.ensureRuntime?.() || b.getRuntime?.() || null;
-      if (runtime?.avatarRoot) runtime.scene?.remove?.(runtime.avatarRoot);
+      if (runtime?.avatarOrientationRoot) runtime.scene?.remove?.(runtime.avatarOrientationRoot);
+      else if (runtime?.avatarRoot) runtime.scene?.remove?.(runtime.avatarRoot);
       if (runtime) {
         runtime.avatarRoot = null;
         runtime.avatarModelGroup = null;
+        runtime.avatarOrientationRoot = null;
         runtime.modelRoot = null;
         runtime.active = false;
       }

@@ -35,8 +35,22 @@ test("v15 fails closed and keeps orientation above the model skeleton", () => {
   const workout = read("public/workout.html");
   assert.match(runtime, /poseRunning && retargetRunning && boneProof/);
   assert.match(runtime, /renderedRootEqualsRetargetedRoot/);
-  assert.match(workout, /avatarOrientationRoot\.add\(root\)/);
+  assert.match(workout, /avatarOrientationRoot\.add\(avatarRoot\)/);
+  assert.match(workout, /avatarRoot\.add\(root\)/);
+  assert.match(workout, /runtime\.scene\.add\(avatarOrientationRoot\)/);
   assert.match(workout, /runtime\.avatarOrientationRoot = avatarOrientationRoot/);
   assert.match(runtime, /quaternionBefore/);
-  assert.match(workout, /2026-08-27-avatar-movenet-retarget-runtime-v15/);
+  assert.match(workout, /2026-08-27-avatar-manual-control-proof-v16/);
+});
+
+test("v16 manual facing writes the rendered orientation owner and proves retention after rendering", () => {
+  const workout = read("public/workout.html");
+  assert.match(workout, /const orientationRoot = runtime\?\.avatarOrientationRoot/);
+  assert.match(workout, /if \(orientationRoot\) orientationRoot\.rotation\.y = facingRad/);
+  assert.match(workout, /requestAnimationFrame\(\(\) => inspectManualRotation\(generation, false\)\)/);
+  assert.match(workout, /setTimeout\(\(\) => inspectManualRotation\(generation, true\), 250\)/);
+  assert.match(workout, /Orientation root parent === active scene/);
+  assert.match(workout, /Rendered avatar descendant of orientation root/);
+  assert.match(workout, /Manual rotation generation/);
+  assert.match(workout, /2026-08-27-avatar-manual-control-proof-v16/);
 });
