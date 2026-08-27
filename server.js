@@ -135,7 +135,7 @@ const ENFORCEABLE_ACTIONS = Object.freeze([
   "ohsa",
   "rep_update"
 ]);
-const APP_BUILD_VERSION = "2026-08-27-avatar-canonical-post-save-v11";
+const APP_BUILD_VERSION = "2026-08-27-avatar-presentation-runtime-v12";
 const INDEX_CACHE_BUST_TOKEN = "20260731-launch-readiness";
 const safeCommit = value => /^[a-f0-9]{7,40}$/i.test(String(value || "")) ? String(value) : null;
 const AVATAR_FEATURE_DISABLED_MESSAGE = "Avatar feature is disabled for this pilot.";

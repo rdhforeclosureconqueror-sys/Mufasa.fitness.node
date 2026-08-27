@@ -41,6 +41,11 @@
     presentationRequested: false,
     presentationApplied: false,
     presentationUpdatedAt: null,
+    avatarAssetState: 'NONE',
+    avatarAssetGeneration: 0,
+    avatarPresentationState: 'NONE',
+    presentationRequestedMode: 'camera',
+    presentationAppliedMode: 'camera',
     posePacketsReceived: 0,
     lastPosePacketAt: null,
     lastPosePacketSource: null
@@ -640,9 +645,13 @@
     const nextAvatar = b.normalizeAvatarProfile?.(profile?.avatar) || null;
     const traceState = (savedAvatarState, details = {}) => {
       const generation = Number(statusRef.presentationGeneration || 0) + 1;
+      const assetState = details.avatarAssetState || ({ none: 'NONE', profile_ready: 'LOADING', mounted: 'MOUNTED', active: 'MOUNTED', failed: 'FAILED' }[savedAvatarState] || statusRef.avatarAssetState);
+      const presentationState = details.avatarPresentationState || ({ active: 'ACTIVE', failed: 'FAILED', mounted: 'REQUESTED', profile_ready: 'NONE', none: 'NONE' }[savedAvatarState] || 'NONE');
       const trace = { savedAvatarState, savedAvatarSource: source, presentationGeneration: generation,
         presentationRequested: ['profile_ready', 'mounted', 'active'].includes(savedAvatarState),
-        presentationApplied: savedAvatarState === 'active', presentationUpdatedAt: new Date().toISOString(), ...details };
+        presentationApplied: savedAvatarState === 'active', presentationUpdatedAt: new Date().toISOString(),
+        avatarAssetState: assetState, avatarAssetGeneration: Number(statusRef.avatarAssetGeneration || 0) + (assetState !== statusRef.avatarAssetState ? 1 : 0),
+        avatarPresentationState: presentationState, ...details };
       Object.assign(statusRef, trace);
       b.setPresentationState?.(savedAvatarState, { source, mode: trace.presentationMode || b.getRenderMode?.() || 'camera' });
       globalScope.dispatchEvent?.(new CustomEvent('avatar-runtime:presentation-state', { detail: trace }));
@@ -709,15 +718,30 @@
         throw new Error('avatar_presentation_not_activated');
       }
       runtimeStatus.presentationMode = presentationMode;
-      traceState('active', { presentationMode });
+      const environment = b.inspectPresentationEnvironment?.() || {};
+      if (presentationMode === 'camera') {
+        // A deliberate camera preference keeps the asset mounted, but it is not
+        // an active avatar presentation.
+        traceState('mounted', { presentationMode, presentationRequestedMode: 'camera', presentationAppliedMode: 'camera', avatarPresentationState: 'NONE', ...environment });
+      } else {
+        const accepted = environment.avatarRootMounted !== false && environment.avatarRootInActiveScene !== false &&
+          environment.avatarRootVisible !== false && environment.avatarCanvasConnected !== false &&
+          environment.avatarCanvasVisible !== false && environment.rendererDimensionsValid !== false;
+        if (!accepted) throw new Error('avatar_presentation_environment_not_visible');
+        traceState('active', { presentationMode, presentationRequestedMode: presentationMode, presentationAppliedMode: presentationMode, ...environment });
+      }
       b.setAssetStatus?.(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
       b.setRuntimeStatus?.(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${(mountInfo?.mappedBones || []).join(', ') || 'none'}).`);
       b.setCreateButtonLabel?.('🧍 Change Avatar');
       return true;
     } catch (err) {
-      traceState('failed', { presentationMode: 'camera', presentationError: String(err?.message || err || 'avatar_load_failed') });
+      const failedAfterMount = statusRef.avatarAssetState === 'MOUNTED';
+      traceState('failed', { presentationMode: 'camera', presentationAppliedMode: 'camera',
+        avatarAssetState: failedAfterMount ? 'MOUNTED' : 'FAILED', avatarPresentationState: 'FAILED',
+        presentationError: String(err?.message || err || 'avatar_load_failed') });
       console.warn('avatar load failed', err);
-      clearMountedRuntime();
+      if (failedAfterMount) b.setCanvasVisibility?.(false);
+      else clearMountedRuntime();
       b.setThumbnail?.(null);
       b.updateOverlayDiagnostics?.({ avatarModelLoaded: false, avatarModelMounted: false, avatarModelVisible: false, avatarOverlayRenderOk: false, avatarOverlayRenderError: String(err?.message || err || 'avatar_load_failed') });
       b.ensureAssetProbeFailedStatus?.();
@@ -773,6 +797,21 @@
         presentationGeneration: current.presentationGeneration,
         presentationRequested: current.presentationRequested,
         presentationApplied: current.presentationApplied,
+        avatarAssetState: current.avatarAssetState,
+        avatarAssetGeneration: current.avatarAssetGeneration,
+        avatarPresentationState: current.avatarPresentationState,
+        presentationRequestedMode: current.presentationRequestedMode,
+        presentationAppliedMode: current.presentationAppliedMode,
+        avatarRootMounted: current.avatarRootMounted,
+        avatarRootInActiveScene: current.avatarRootInActiveScene,
+        avatarRootVisible: current.avatarRootVisible,
+        avatarCanvasConnected: current.avatarCanvasConnected,
+        avatarCanvasVisible: current.avatarCanvasVisible,
+        rendererDimensions: current.rendererDimensions,
+        rendererPresent: current.rendererPresent,
+        cameraPresent: current.cameraPresent,
+        scenePresent: current.scenePresent,
+        renderLoopRunning: current.renderLoopRunning,
         presentationUpdatedAt: current.presentationUpdatedAt
       };
     },

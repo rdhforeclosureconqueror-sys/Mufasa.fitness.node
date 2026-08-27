@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=20260827-avatar-canonical-post-save-v11"></script>
-  <script src="/workout-presentation-state.js?v=20260827-avatar-canonical-post-save-v11"></script>
+  <script src="/runtime-state.js?v=20260827-avatar-presentation-runtime-v12"></script>
+  <script src="/workout-presentation-state.js?v=20260827-avatar-presentation-runtime-v12"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1262,6 +1262,23 @@ skeletonOverlayActive: no</pre>
         <br>Avatar runtime owner: <span id="avatarDiagRuntimeOwner">AvatarRuntime</span>
         <br>Avatar runtime status generation: <span id="avatarDiagRuntimeGeneration">0</span>
         <br>Avatar presentation generation: <span id="avatarDiagPresentationGeneration">0</span>
+        <br>Avatar asset state: <span id="avatarDiagAssetState">NONE</span>
+        <br>Avatar asset generation: <span id="avatarDiagAssetGeneration">0</span>
+        <br>Avatar root mounted: <span id="avatarDiagRootMounted">NO</span>
+        <br>Avatar root in active scene: <span id="avatarDiagRootScene">NO</span>
+        <br>Avatar root visible: <span id="avatarDiagRootVisible">NO</span>
+        <br>Presentation requested mode: <span id="avatarDiagRequestedMode">camera</span>
+        <br>Presentation applied mode: <span id="avatarDiagPresentationAppliedMode">camera</span>
+        <br>Render owner current mode: <span id="avatarDiagRenderOwnerMode">camera</span>
+        <br>Desktop selector value: <span id="avatarDiagDesktopSelector">camera</span>
+        <br>Mobile selector value: <span id="avatarDiagMobileSelector">camera</span>
+        <br>Explicit render preference source: <span id="avatarDiagPreferenceSource">default</span>
+        <br>Default-vs-explicit camera flag: <span id="avatarDiagCameraExplicit">DEFAULT</span>
+        <br>Avatar canvas connected: <span id="avatarDiagCanvasConnected">NO</span>
+        <br>Avatar canvas visible: <span id="avatarDiagCanvasVisible">NO</span>
+        <br>Renderer dimensions: <span id="avatarDiagRendererDimensions">0x0</span>
+        <br>Workout avatar label state: <span id="avatarDiagWorkoutAvatarState">none</span>
+        <br>Workout render status state: <span id="avatarDiagWorkoutRenderState">camera</span>
         <br>Post-save reload owner: <span id="avatarDiagPostSaveOwner">none</span>
         <br>Post-save reload profile received: <span id="avatarDiagPostSaveReceived">NO</span>
         <br>Post-save reload profile normalized: <span id="avatarDiagPostSaveNormalized">NO</span>
@@ -1277,7 +1294,7 @@ skeletonOverlayActive: no</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260827-avatar-canonical-post-save-v11"></script>
+  <script src="/backend-read.js?v=20260827-avatar-presentation-runtime-v12"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
@@ -1296,21 +1313,21 @@ skeletonOverlayActive: no</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-canonical-post-save-v11"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-presentation-runtime-v12"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260827-avatar-canonical-post-save-v11"></script>
+  <script src="/profile-write-runtime.js?v=20260827-avatar-presentation-runtime-v12"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260827-avatar-canonical-post-save-v11"></script>
+  <script src="/workout-control-activation.js?v=20260827-avatar-presentation-runtime-v12"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260827-avatar-canonical-post-save-v11"></script>
+  <script src="/app-hydration-runtime.js?v=20260827-avatar-presentation-runtime-v12"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -1862,6 +1879,7 @@ skeletonOverlayActive: no</pre>
       AVATAR_DEBUG: false
     };
     let renderModePreferenceExplicit = false;
+    let renderModePreferenceSource = "default";
     let lastRenderMode = "camera";
     let activeAvatarAsset = null;
     let avatarThreeRuntime = null;
@@ -2443,7 +2461,10 @@ skeletonOverlayActive: no</pre>
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
       const previousMode = AVATAR_FLAGS.AVATAR_MODE;
       const nextMode = sanitizeRenderMode(mode);
-      if (source === "user" || source === "mobile") renderModePreferenceExplicit = true;
+      if (source === "user" || source === "mobile") {
+        renderModePreferenceExplicit = true;
+        renderModePreferenceSource = source;
+      }
       updateAvatarOverlayDiagnostics({ lastRenderModeRequested: nextMode });
       if (!isAvatarFeatureEnabled() && (nextMode === "avatar_overlay" || nextMode === "avatar_only")) {
         updateRenderModeStatus("Camera (avatar presentation unavailable)", true);
@@ -2631,10 +2652,10 @@ skeletonOverlayActive: no</pre>
       try {
         queryMode = new URLSearchParams(window.location.search).get("renderMode");
       } catch (_) {}
-      if (queryMode) { renderModePreferenceExplicit = true; return sanitizeRenderMode(queryMode); }
+      if (queryMode) { renderModePreferenceExplicit = true; renderModePreferenceSource = "query"; return sanitizeRenderMode(queryMode); }
       try {
         const stored = localStorage.getItem(AVATAR_MODE_STORAGE_KEY);
-        if (stored) { renderModePreferenceExplicit = true; return sanitizeRenderMode(stored); }
+        if (stored) { renderModePreferenceExplicit = true; renderModePreferenceSource = "storage"; return sanitizeRenderMode(stored); }
         return "camera";
       } catch (_) {
         return "camera";
@@ -3003,6 +3024,22 @@ skeletonOverlayActive: no</pre>
       probeAvatarModelRuntime,
       mountAvatarGlbModel,
       activatePresentation: activateSavedAvatarPresentation,
+      inspectPresentationEnvironment: () => {
+        const runtime = avatarThreeRuntime;
+        const width = Number(runtime?.renderer?.domElement?.width || avatar3dCanvasEl?.width || 0);
+        const height = Number(runtime?.renderer?.domElement?.height || avatar3dCanvasEl?.height || 0);
+        return {
+          avatarRootMounted: Boolean(runtime?.avatarRoot),
+          avatarRootInActiveScene: Boolean(runtime?.avatarRoot && runtime.avatarRoot.parent === runtime.scene && runtime.scene?.children?.includes?.(runtime.avatarRoot)),
+          avatarRootVisible: runtime?.avatarRoot?.visible !== false,
+          avatarCanvasConnected: Boolean(avatar3dCanvasEl?.isConnected),
+          avatarCanvasVisible: Boolean(avatar3dCanvasEl?.isConnected && avatar3dCanvasEl.style.display !== "none" && avatar3dCanvasEl.style.visibility !== "hidden"),
+          rendererDimensionsValid: width > 0 && height > 0,
+          rendererDimensions: `${width}x${height}`,
+          rendererPresent: Boolean(runtime?.renderer), cameraPresent: Boolean(runtime?.camera), scenePresent: Boolean(runtime?.scene),
+          renderLoopRunning: Boolean(runtime?.renderLoopActive)
+        };
+      },
       setPresentationState: setSavedAvatarPresentationState,
       clearProfileAvatar: () => { if (USER_PROFILE) USER_PROFILE.avatar = null; },
       clearModelUrlInput: () => { avatarModelUrlInput.value = ""; },
@@ -4720,6 +4757,13 @@ skeletonOverlayActive: no</pre>
       getAvatarRuntimeState: () => window.__avatarRuntimeStatus,
       getRenderMode,
       applyRenderMode: applyRenderModeSelection,
+      getRenderDiagnostics: () => ({
+        currentMode: getRenderMode(),
+        desktopSelectorValue: renderModeSelectEl?.value,
+        mobileSelectorValue: renderModeMobileSelectEl?.value,
+        preferenceSource: renderModePreferenceSource,
+        cameraExplicit: getRenderMode() === "camera" && renderModePreferenceExplicit
+      }),
       setAvatarLabel: setAvatarAssetStatus
     });
     window.RuntimeOrchestrator.configureDashboardRuntime({ refreshOnAuthReady: false });

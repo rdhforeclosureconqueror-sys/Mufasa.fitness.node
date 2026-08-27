@@ -130,3 +130,74 @@ test("avatar presentation subscription replays activation that happened before l
   assert.equal(received.presentationMode, "avatar_only");
   assert.equal(received.presentationGeneration, 4);
 });
+
+async function runAssetPresentation({ initialMode = "camera", activatedMode = "avatar_overlay", environment = {} } = {}) {
+  const f = browserFixture();
+  vm.runInNewContext(asset("avatar-runtime.js"), f.context, { filename: "avatar-runtime.js" });
+  let mode = initialMode;
+  let activeAsset = null;
+  const root = {};
+  const runtime = { avatarRoot: root, scene: { children: [root], remove() {} } };
+  f.window.AvatarRuntime.configureAssetPipeline({
+    getProfile: () => ({ avatar: { avatarProvider: "custom", avatarModelUrl: "/api/me/avatar/assets/saved-glb" } }),
+    getRenderMode: () => mode,
+    normalizeAvatarProfile: avatar => avatar,
+    probeAvatarModelRuntime: async () => ({ assetFound: true, runtimeLoaded: true, arrayBuffer: new ArrayBuffer(8) }),
+    mountAvatarGlbModel: async () => ({ mappedBones: [] }),
+    activatePresentation: () => { mode = activatedMode; return mode; },
+    inspectPresentationEnvironment: () => ({
+      avatarRootMounted: true, avatarRootInActiveScene: true, avatarRootVisible: true,
+      avatarCanvasConnected: true, avatarCanvasVisible: true, rendererDimensionsValid: true,
+      rendererDimensions: "390x844", ...environment
+    }),
+    getRuntime: () => runtime, ensureRuntime: () => runtime,
+    setActiveAvatarAsset(value) { activeAsset = value; }, setCanvasVisibility() {}, setThumbnail() {},
+    updateOverlayDiagnostics() {}, setAssetStatus() {}, setRuntimeStatus() {}, setCreateButtonLabel() {},
+    fallbackRenderModeToCamera() { mode = "camera"; }
+  });
+  const loaded = await f.window.AvatarRuntime.loadAvatarAssetForCurrentUser("test");
+  return { loaded, mode, activeAsset, state: f.window.AvatarRuntime.getCurrentPresentationState() };
+}
+
+test("mounted canonical avatar promotes default camera and only becomes ACTIVE after environment acceptance", async () => {
+  const result = await runAssetPresentation();
+  assert.equal(result.loaded, true);
+  assert.equal(result.mode, "avatar_overlay");
+  assert.equal(result.state.avatarAssetState, "MOUNTED");
+  assert.equal(result.state.avatarPresentationState, "ACTIVE");
+  assert.equal(result.state.presentationAppliedMode, "avatar_overlay");
+  assert.equal(result.state.avatarRootInActiveScene, true);
+  assert.ok(result.activeAsset);
+});
+
+test("explicit avatar_only remains authoritative", async () => {
+  const result = await runAssetPresentation({ initialMode: "avatar_only", activatedMode: "avatar_only" });
+  assert.equal(result.loaded, true);
+  assert.equal(result.state.presentationAppliedMode, "avatar_only");
+  assert.equal(result.state.avatarPresentationState, "ACTIVE");
+});
+
+test("explicit camera keeps the saved asset mounted without falsely reporting visible presentation", async () => {
+  const result = await runAssetPresentation({ activatedMode: "camera" });
+  assert.equal(result.loaded, true);
+  assert.equal(result.state.avatarAssetState, "MOUNTED");
+  assert.equal(result.state.avatarPresentationState, "NONE");
+  assert.equal(result.state.presentationApplied, false);
+});
+
+test("mounted GLB with rejected presentation falls back and cannot report ACTIVE", async () => {
+  const result = await runAssetPresentation({ environment: { avatarCanvasVisible: false } });
+  assert.equal(result.loaded, false);
+  assert.equal(result.mode, "camera");
+  assert.equal(result.state.avatarAssetState, "MOUNTED");
+  assert.equal(result.state.avatarPresentationState, "FAILED");
+  assert.equal(result.state.presentationApplied, false);
+});
+
+test("selectors delegate to the render owner and a DOM value alone is not activation", () => {
+  const html = asset("workout.html");
+  assert.match(html, /renderModeSelectEl\.onchange\s*=\s*\(\)\s*=>\s*\{\s*applyRenderModeSelection\(renderModeSelectEl\.value/);
+  assert.match(html, /renderModeMobileSelectEl\.onchange\s*=\s*\(\)\s*=>\s*\{\s*applyRenderModeSelection\(renderModeMobileSelectEl\.value/);
+  assert.match(html, /AVATAR_FLAGS\.AVATAR_MODE = nextMode;\s*applyLiveAvatarRenderPresentation\(nextMode\)/);
+  assert.doesNotMatch(html, /onchange\s*=\s*[^;]*\.value\s*=\s*["']avatar_only["']/);
+});
