@@ -34,6 +34,8 @@
   }
 
   function publish() {
+    const runtime = global.AvatarRuntime?.getCurrentPresentationState?.() || global.__avatarRuntimeStatus || {};
+    const render = deps.getRenderDiagnostics?.() || {};
     global.__workoutPresentationDiagnostics = snapshot();
     const fields = {
       avatarDiagCanonicalUrl: state.canonicalAvatarPresent ? 'YES' : 'NO',
@@ -52,6 +54,23 @@
       avatarDiagRuntimeOwner: state.avatarRuntimeOwner,
       avatarDiagRuntimeGeneration: state.avatarRuntimeStatusGeneration,
       avatarDiagPresentationGeneration: state.avatarPresentationGeneration,
+      avatarDiagAssetState: runtime.avatarAssetState || 'NONE',
+      avatarDiagAssetGeneration: runtime.avatarAssetGeneration || 0,
+      avatarDiagRootMounted: runtime.avatarRootMounted ? 'YES' : 'NO',
+      avatarDiagRootScene: runtime.avatarRootInActiveScene ? 'YES' : 'NO',
+      avatarDiagRootVisible: runtime.avatarRootVisible ? 'YES' : 'NO',
+      avatarDiagRequestedMode: runtime.presentationRequestedMode || 'camera',
+      avatarDiagPresentationAppliedMode: runtime.presentationAppliedMode || state.appliedRenderMode,
+      avatarDiagRenderOwnerMode: render.currentMode || deps.getRenderMode?.() || state.appliedRenderMode,
+      avatarDiagDesktopSelector: render.desktopSelectorValue || 'unavailable',
+      avatarDiagMobileSelector: render.mobileSelectorValue || 'unavailable',
+      avatarDiagPreferenceSource: render.preferenceSource || 'default',
+      avatarDiagCameraExplicit: render.cameraExplicit ? 'EXPLICIT' : 'DEFAULT',
+      avatarDiagCanvasConnected: runtime.avatarCanvasConnected ? 'YES' : 'NO',
+      avatarDiagCanvasVisible: runtime.avatarCanvasVisible ? 'YES' : 'NO',
+      avatarDiagRendererDimensions: runtime.rendererDimensions || '0x0',
+      avatarDiagWorkoutAvatarState: state.visibleAvatarLabelState,
+      avatarDiagWorkoutRenderState: state.appliedRenderMode,
       avatarDiagHydrationResponse: global.AppHydrationRuntime?.getState?.().profileResponseReceived ? 'YES' : 'NO',
       avatarDiagNormalization: global.AppHydrationRuntime?.getState?.().profileNormalizationComplete ? 'YES' : 'NO'
     };
@@ -101,13 +120,13 @@
   }
 
   function consumePresentation(detail = {}) {
-    const next = String(detail.savedAvatarState || 'none');
+    const next = String(detail.avatarPresentationState || detail.savedAvatarState || 'none').toLowerCase();
     state.presentationEventLastReceived = next;
     state.presentationState = next;
     state.avatarPresentationGeneration = Number(detail.presentationGeneration || state.avatarPresentationGeneration || 0);
     state.avatarRuntimeStatusGeneration = Number(detail.runtimeStatusGeneration || global.__avatarRuntimeStatus?.runtimeStatusGeneration || 0);
-    if (next === 'profile_ready' || next === 'mounted' || next === 'active') state.canonicalAvatarPresent = true;
-    if (next === 'none') state.canonicalAvatarPresent = false;
+    if (detail.avatarAssetState === 'MOUNTED' || next === 'profile_ready' || next === 'requested' || next === 'mounted' || next === 'active') state.canonicalAvatarPresent = true;
+    if (next === 'none' && detail.avatarAssetState !== 'MOUNTED') state.canonicalAvatarPresent = false;
     if (next === 'active' && (detail.presentationMode === 'avatar_overlay' || detail.presentationMode === 'avatar_only')) {
       state.appliedRenderMode = deps.applyRenderMode?.(detail.presentationMode, {
         persist: true,
@@ -149,8 +168,7 @@
     if (profile) setCanonicalProfile(profile, 'ready', global.AppHydrationRuntime?.getState?.() || {});
     const runtime = global.AvatarRuntime?.getCurrentPresentationState?.() || deps.getAvatarRuntimeState?.() || global.__avatarRuntimeStatus;
     if (runtime?.savedAvatarState) consumePresentation({
-      savedAvatarState: runtime.savedAvatarState,
-      presentationMode: runtime.presentationMode
+      ...runtime
     });
     return publish();
   }
