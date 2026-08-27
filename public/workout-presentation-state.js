@@ -93,6 +93,22 @@
       avatarDiagCanvasConnected: runtime.avatarCanvasConnected ? 'YES' : 'NO',
       avatarDiagCanvasVisible: runtime.avatarCanvasVisible ? 'YES' : 'NO',
       avatarDiagRendererDimensions: runtime.rendererDimensions || '0x0',
+      avatarDiagRootUuid: runtime.avatarRootUuid || 'none',
+      avatarDiagSceneUuid: runtime.sceneUuid || 'none',
+      avatarDiagRootIdentity: runtime.avatarParentIsActiveScene ? 'YES' : 'NO',
+      avatarDiagRigCounts: `${runtime.skinnedMeshCount || 0} / ${runtime.skeletonBoneCount || 0}`,
+      avatarDiagMappedBones: runtime.mappedBoneCount || 0,
+      avatarDiagPoseFrames: runtime.posePacketsReceived || 0,
+      avatarDiagRetargetFrames: runtime.retargetFramesExecuted || 0,
+      avatarDiagBonesChanged: runtime.bonesChangedLastFrame || 0,
+      avatarDiagRenderProof: `${runtime.renderFrames || 0} / ${runtime.lastRenderAgeMs == null ? 'unavailable' : `${runtime.lastRenderAgeMs}ms`}`,
+      avatarDiagCanvasProof: `${runtime.canvasCssSize || '0x0'} / ${runtime.canvasBufferSize || '0x0'}`,
+      avatarDiagRendererProof: `${runtime.rendererType || 'none'} / ${runtime.rendererDpr || 0}`,
+      avatarDiagCameraProof: `${runtime.cameraType || 'none'}${runtime.cameraFov == null ? '' : ` fov=${runtime.cameraFov}`}`,
+      avatarDiagLights: runtime.activeLights?.join(', ') || 'none',
+      avatarDiagMaterials: `${runtime.materialCount || 0} / ${runtime.textureCount || 0}`,
+      avatarDiagTerminalStates: `${runtime.avatarAssetState || 'NONE'} / ${runtime.environmentState || 'NOT_CONFIGURED'} / ${runtime.retargetState || 'NOT_STARTED'} / ${runtime.renderLoopState || 'STOPPED'}`,
+      avatarDiagRuntimePresentation: runtime.presentationState || 'NONE',
       avatarDiagWorkoutAvatarState: state.visibleAvatarLabelState,
       avatarDiagWorkoutRenderState: state.appliedRenderMode,
       avatarDiagHydrationResponse: global.AppHydrationRuntime?.getState?.().profileResponseReceived ? 'YES' : 'NO',
@@ -144,7 +160,8 @@
   }
 
   function consumePresentation(detail = {}) {
-    const next = String(detail.avatarPresentationState || detail.savedAvatarState || 'none').toLowerCase();
+    const rawPresentation = String(detail.avatarPresentationState || '').toUpperCase();
+    const next = String(rawPresentation && rawPresentation !== 'NONE' ? rawPresentation : (detail.savedAvatarState || 'none')).toLowerCase();
     state.presentationEventLastReceived = next;
     state.presentationState = next;
     state.avatarPresentationGeneration = Number(detail.presentationGeneration || state.avatarPresentationGeneration || 0);
@@ -176,6 +193,7 @@
       if (global.AvatarRuntime?.subscribePresentation) global.AvatarRuntime.subscribePresentation(consumePresentation, { replay: true });
       else global.addEventListener?.('avatar-runtime:presentation-state', (event) => consumePresentation(event.detail || {}));
       global.addEventListener?.('app:canonical-profile', (event) => setCanonicalProfile(event.detail?.profile, 'ready', event.detail || {}));
+      global.addEventListener?.('avatar-runtime:proof', publish);
       global.addEventListener?.('app:hydration-state', (event) => {
         const status = event.detail?.status;
         if (status === 'error') {

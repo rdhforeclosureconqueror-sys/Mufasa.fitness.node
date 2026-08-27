@@ -41,7 +41,8 @@ test("canonical saved avatar activation reaches the visible workout presentation
   assert.match(runtime, /avatar_presentation_not_activated/);
   assert.match(runtime, /traceState\('profile_ready'/);
   assert.match(runtime, /traceState\('mounted'/);
-  assert.match(runtime, /traceState\('active'/);
+  assert.match(runtime, /retargetState: 'ARMED'/);
+  assert.match(runtime, /presentation === 'ACTIVE'/);
   assert.match(runtime, /avatar-runtime:presentation-state/);
 
   const mounted = runtime.indexOf("b.setActiveAvatarAsset?.({ ...nextAvatar, runtimeStatus })");

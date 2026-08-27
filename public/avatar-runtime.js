@@ -65,6 +65,14 @@
     rendererAvailable: false,
     avatarCanvasElementFound: false,
     renderLoopInitialized: false,
+    environmentState: 'NOT_CONFIGURED',
+    retargetState: 'NOT_STARTED',
+    renderLoopState: 'STOPPED',
+    presentationState: 'NONE',
+    retargetFramesExecuted: 0,
+    bonesChangedLastFrame: 0,
+    lastRetargetAt: null,
+    lastAnimationFrameId: null,
     avatarLifecycleStage: 'NOT INITIALIZED'
   };
 
@@ -319,12 +327,14 @@
   function refreshEnvironmentTrace() {
     const runtime = renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
     const canvas = renderEngineBindings?.getCanvas?.() || null;
+    const ready = Boolean(runtime?.scene && runtime?.camera && runtime?.renderer && canvas);
     return update({
       avatarEnvironmentConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
       sceneAvailable: Boolean(runtime?.scene), cameraAvailable: Boolean(runtime?.camera),
       rendererAvailable: Boolean(runtime?.renderer), avatarCanvasElementFound: Boolean(canvas),
       avatarCanvasConnected: Boolean(canvas?.isConnected), renderLoopInitialized: Boolean(runtime?.renderLoopActive),
       avatarRuntimeConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
+      environmentState: ready ? 'READY' : (renderEngineBindings && assetPipelineBindings ? 'FAILED' : 'NOT_CONFIGURED'),
       avatarLifecycleStage: runtime?.avatarRoot ? 'MOUNTED' : (canonicalLoadPromise ? 'LOADING' : (renderEngineBindings && assetPipelineBindings ? 'INITIALIZED BUT NOT LOADING' : 'NOT INITIALIZED'))
     });
   }
@@ -612,6 +622,7 @@
       console.log('[avatar-puppet] applied limbs:', applied);
       console.log('[avatar-puppet] skipped limbs:', skipped);
     }
+    runtime.lastBonesApplied = applied.slice();
     return applied.length > 0;
   }
 
@@ -681,7 +692,19 @@
       runtime.avatarRoot.scale.setScalar(THREE.MathUtils.lerp(runtime.avatarRoot.scale.x, fixed.scale || 1.05, C.ROOT_SMOOTHING));
     }
     setLowerBodyVisibility(runtime, fullBodyReady);
+    const watched = ['hips', 'leftUpperArm', 'rightUpperArm', 'head'];
+    const before = Object.fromEntries(watched.map(key => [key, runtime.boneMap?.[key]?.quaternion?.toArray?.() || null]));
     const retargetActive = applyPoseToAvatarRig(posePacket, { disableLowerBody: !fullBodyReady, visibilityState });
+    const after = Object.fromEntries(watched.map(key => [key, runtime.boneMap?.[key]?.quaternion?.toArray?.() || null]));
+    const changed = watched.filter(key => before[key] && after[key] && before[key].some((value, index) => Math.abs(value - after[key][index]) > 1e-7));
+    runtime.retargetFramesExecuted = Number(runtime.retargetFramesExecuted || 0) + 1;
+    runtime.lastRetargetAt = now;
+    runtime.bonesChangedLastFrame = Math.max(changed.length, runtime.lastBonesApplied?.length || 0);
+    update({ retargetState: 'RUNNING', retargetFramesExecuted: runtime.retargetFramesExecuted,
+      lastRetargetAt: new Date(now).toISOString(), bonesChangedLastFrame: runtime.bonesChangedLastFrame,
+      hipsBefore: before.hips, hipsAfter: after.hips, leftUpperArmBefore: before.leftUpperArm,
+      leftUpperArmAfter: after.leftUpperArm, rightUpperArmBefore: before.rightUpperArm,
+      rightUpperArmAfter: after.rightUpperArm, headBefore: before.head, headAfter: after.head });
     if (asset.runtimeStatus) asset.runtimeStatus.motionRetargeted = retargetActive;
     runtime.renderer.render(runtime.scene, runtime.camera);
     setCanvasVisibility(true);
@@ -699,7 +722,65 @@
     const holdingPose = !trackingGood && (now - runtime.lastUpperBodyGoodAt) <= C.LOST_HOLD_MS;
     runtime.lastAlignmentTrace = { skeletonBasis: 'MoveNet image-space (pixels, mirrored in detector with flipHorizontal=true) to Three camera world (AvatarRuntime.toWorldAtAvatarPlane)', rootAnchor: anchor?.level || anchor?.mode || 'lost', rootPosition: { x: Number((runtime.avatarRoot?.position?.x || 0).toFixed(4)), y: Number((runtime.avatarRoot?.position?.y || 0).toFixed(4)), z: Number((runtime.avatarRoot?.position?.z || 0).toFixed(4)) }, scale: Number((runtime.avatarRoot?.scale?.x || 1).toFixed(4)), facingDegrees: Number(renderEngineBindings?.getAvatarFacingDeg?.() || 0), limbsApplied: retargetActive ? 'yes' : 'no', limbsSkippedReason: holdingPose ? 'holding_last_pose' : 'none', offscreenReason: (!anchor?.trackingReliable || !anchor?.position) ? 'anchor_not_reliable' : (stageMode !== 'follow_pose' ? `stage_mode_${stageMode}` : 'follow_pose_active') };
     renderEngineBindings?.updateDebugOverlay?.({ tracking: { mode: tracker?.mode || renderEngineBindings?.getCurrentTrackingMode?.(), state: trackingState, visibleLandmarks: tracker?.visibleLandmarks || [], confidenceScore: tracker?.confidenceScore ?? 0 }, avatarMode: renderEngineBindings?.getRenderMode?.(), avatarBodyMode, calibration: { status: calibration?.status || 'not_started' }, form: globalScope.__lastFormResult || null });
+    refreshRuntimeProof();
     return retargetActive || holdingPose;
+  }
+
+  function refreshRuntimeProof() {
+    const previousPresentation = status().presentationState;
+    const runtime = renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
+    const canvas = renderEngineBindings?.getCanvas?.() || runtime?.renderer?.domElement || null;
+    const rect = canvas?.getBoundingClientRect?.() || {};
+    const root = runtime?.avatarRoot;
+    let bones = 0, skinnedMeshes = 0, materials = 0, textures = 0, lights = [];
+    root?.traverse?.(node => {
+      if (node?.isBone) bones += 1;
+      if (node?.isSkinnedMesh) skinnedMeshes += 1;
+      if (node?.isMesh) for (const material of (Array.isArray(node.material) ? node.material : [node.material]).filter(Boolean)) {
+        materials += 1; for (const value of Object.values(material)) if (value?.isTexture) textures += 1;
+      }
+    });
+    runtime?.scene?.traverse?.(node => { if (node?.isLight) lights.push(node.type); });
+    const lastRenderAgeMs = runtime?.lastRenderAt ? Date.now() - runtime.lastRenderAt : null;
+    const trackingEnabled = ['avatar_overlay', 'avatar_only'].includes(renderEngineBindings?.getRenderMode?.());
+    const identityOk = Boolean(root && root.parent === runtime?.scene);
+    const renderRunning = Boolean(runtime?.renderLoopActive && lastRenderAgeMs != null && lastRenderAgeMs < 1000);
+    const retargetRunning = Number(runtime?.retargetFramesExecuted || status().retargetFramesExecuted || 0) > 0;
+    const presentation = identityOk && renderRunning && (!trackingEnabled || retargetRunning) ? 'ACTIVE' : (root ? 'NONE' : 'NONE');
+    const proof = update({ sceneUuid: runtime?.scene?.uuid || 'none', avatarRootUuid: root?.uuid || 'none', avatarParentIsActiveScene: identityOk,
+      rendererType: runtime?.renderer?.constructor?.name || 'none', cameraUuid: runtime?.camera?.uuid || 'none', cameraType: runtime?.camera?.type || 'none',
+      cameraFov: runtime?.camera?.fov ?? null, cameraNear: runtime?.camera?.near ?? null, cameraFar: runtime?.camera?.far ?? null,
+      canvasDomId: canvas?.id || 'none', canvasCssSize: `${Math.round(rect.width || 0)}x${Math.round(rect.height || 0)}`,
+      canvasBufferSize: `${canvas?.width || 0}x${canvas?.height || 0}`, rendererDpr: runtime?.renderer?.getPixelRatio?.() || 0,
+      renderFrames: Number(runtime?.renderFrameCount || 0), lastRenderAt: runtime?.lastRenderAt || null, lastRenderAgeMs,
+      avatarWorldPosition: root?.getWorldPosition ? root.getWorldPosition({ setFromMatrixPosition(m){ this.x=m.elements[12];this.y=m.elements[13];this.z=m.elements[14];return this; } }) : null,
+      avatarRotation: root ? { x: root.rotation.x, y: root.rotation.y, z: root.rotation.z } : null,
+      avatarScale: root ? { x: root.scale.x, y: root.scale.y, z: root.scale.z } : null, skeletonBoneCount: bones, skinnedMeshCount: skinnedMeshes,
+      mappedBoneCount: Object.values(runtime?.boneMap || {}).filter(Boolean).length, materialCount: materials, textureCount: textures,
+      activeLights: lights, outputColorSpace: runtime?.renderer?.outputColorSpace || 'unknown', toneMapping: runtime?.renderer?.toneMapping ?? 'unknown',
+      shadowState: Boolean(runtime?.renderer?.shadowMap?.enabled), renderLoopState: renderRunning ? 'RUNNING' : (runtime?.renderLoopActive ? 'STALLED' : 'STOPPED'),
+      presentationState: presentation, avatarPresentationState: presentation,
+      retargetState: retargetRunning ? 'RUNNING' : (trackingEnabled && root ? 'ARMED' : 'NOT_STARTED') });
+    if (!runtime?.lastProofPublishedAt || Date.now() - runtime.lastProofPublishedAt >= 500) {
+      if (runtime) runtime.lastProofPublishedAt = Date.now();
+      globalScope.dispatchEvent?.(new CustomEvent('avatar-runtime:proof', { detail: proof }));
+    }
+    if (presentation !== previousPresentation) globalScope.dispatchEvent?.(new CustomEvent('avatar-runtime:presentation-state', {
+      detail: { ...proof, savedAvatarState: presentation === 'ACTIVE' ? 'active' : 'mounted',
+        avatarPresentationState: presentation, presentationMode: renderEngineBindings?.getRenderMode?.(), presentationUpdatedAt: new Date().toISOString() }
+    }));
+    return proof;
+  }
+
+  function runManualRuntimeTest(kind = 'bone', durationMs = 1500) {
+    const runtime = renderEngineBindings?.getRuntime?.();
+    const target = kind === 'depth' ? runtime?.avatarRoot : runtime?.boneMap?.leftUpperArm;
+    if (!target?.rotation) throw new Error(kind === 'depth' ? 'avatar_root_missing' : 'left_upper_arm_missing');
+    const axis = kind === 'depth' ? 'y' : 'z', original = target.rotation[axis];
+    target.rotation[axis] = original + Math.PI / 4; target.updateMatrixWorld?.(true);
+    refreshRuntimeProof();
+    globalScope.setTimeout?.(() => { target.rotation[axis] = original; target.updateMatrixWorld?.(true); }, durationMs);
+    return { kind, renderedRootUuid: runtime.avatarRoot?.uuid, mutatedRootUuid: runtime.avatarRoot?.uuid, axis, radians: Math.PI / 4 };
   }
 
   async function loadAvatarAssetForCurrentUser(source = 'saved_profile') {
@@ -800,7 +881,8 @@
           environment.avatarRootVisible !== false && environment.avatarCanvasConnected !== false &&
           environment.avatarCanvasVisible !== false && environment.rendererDimensionsValid !== false;
         if (!accepted) throw new Error('avatar_presentation_environment_not_visible');
-        traceState('active', { presentationMode, presentationRequestedMode: presentationMode, presentationAppliedMode: presentationMode, ...environment });
+        traceState('mounted', { presentationMode, presentationRequestedMode: presentationMode, presentationAppliedMode: presentationMode,
+          avatarPresentationState: 'NONE', retargetState: 'ARMED', ...environment });
       }
       b.setAssetStatus?.(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
       b.setRuntimeStatus?.(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${(mountInfo?.mappedBones || []).join(', ') || 'none'}).`);
@@ -857,6 +939,8 @@
     resizeCanvasRuntime,
     configureRenderEngine,
     renderAvatar3d,
+    refreshRuntimeProof,
+    runManualRuntimeTest,
     applyPoseToAvatarRig,
     configureAssetPipeline,
     loadAvatarAssetForCurrentUser,
