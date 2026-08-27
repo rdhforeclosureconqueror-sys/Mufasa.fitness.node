@@ -55,6 +55,18 @@
       avatarDiagHydrationResponse: global.AppHydrationRuntime?.getState?.().profileResponseReceived ? 'YES' : 'NO',
       avatarDiagNormalization: global.AppHydrationRuntime?.getState?.().profileNormalizationComplete ? 'YES' : 'NO'
     };
+    const handoff = global.AppHydrationRuntime?.getState?.().postSaveReload || {};
+    Object.assign(fields, {
+      avatarDiagPostSaveOwner: handoff.owner || 'none',
+      avatarDiagPostSaveReceived: handoff.profileReceived ? 'YES' : 'NO',
+      avatarDiagPostSaveNormalized: handoff.profileNormalized ? 'YES' : 'NO',
+      avatarDiagPostSaveAdoption: handoff.canonicalAdoptionAttempted ? 'YES' : 'NO',
+      avatarDiagPostSaveGenerationBefore: handoff.generationBefore || 0,
+      avatarDiagPostSaveGenerationAfter: handoff.generationAfter || 0,
+      avatarDiagPostSaveIdentity: handoff.profileMatchesCanonical ? 'YES' : 'NO',
+      avatarDiagPostSaveEventDispatched: handoff.canonicalProfileEventDispatched ? 'YES' : 'NO',
+      avatarDiagPostSaveEventPresentation: handoff.eventConsumers?.includes('WorkoutPresentationState') ? 'YES' : 'NO'
+    });
     Object.entries(fields).forEach(([id, value]) => {
       const el = global.document?.getElementById?.(id);
       if (el) el.textContent = String(value);
@@ -78,6 +90,7 @@
     state.uiProfileMatchesHydration = deps.getProfile?.() === profile;
     state.presentationProfileMatchesHydration = global.AppHydrationRuntime?.getCanonicalProfile?.() === profile;
     state.profileLastUpdatedAt = metadata.updatedAt || global.AppHydrationRuntime?.getState?.().profileLastUpdatedAt || null;
+    global.AppHydrationRuntime?.acknowledgeCanonicalProfileEvent?.(state.hydrationProfileGeneration, 'WorkoutPresentationState');
     if (!state.canonicalAvatarPresent) {
       state.presentationState = 'none';
       state.appliedRenderMode = 'camera';

@@ -86,6 +86,40 @@ test("production asset order projects backend hydration through avatar runtime i
   assert.equal(presentation.visibleAvatarLabelState, "saved");
 });
 
+test("post-save reload proves the HTTP 200 object reached the canonical owner and presentation consumer", async () => {
+  const f = browserFixture();
+  for (const name of ["backend-read.js", "app-hydration-runtime.js", "workout-presentation-state.js"]) {
+    vm.runInNewContext(asset(name), f.context, { filename: name });
+  }
+  let uiProfile = null;
+  f.window.WorkoutPresentationState.configure({
+    getProfile: () => uiProfile, getRenderMode: () => "camera",
+    applyRenderMode: mode => mode, setAvatarLabel() {}
+  });
+  f.window.AppHydrationRuntime.configure({
+    getProfile: () => uiProfile, setProfile: profile => { uiProfile = profile; }, persistUser() {}
+  });
+
+  const result = await f.window.AppHydrationRuntime.reloadCanonicalProfileAfterSave({ authToken: "upload-token" });
+  const hydration = f.window.AppHydrationRuntime.getState();
+  const presentation = f.window.WorkoutPresentationState.getState();
+
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 200);
+  assert.equal(result.profileReceived, true);
+  assert.equal(result.profileNormalized, true);
+  assert.equal(result.canonicalAdoptionAttempted, true);
+  assert.ok(result.generationAfter > result.generationBefore);
+  assert.strictEqual(result.profile, f.window.AppHydrationRuntime.getCanonicalProfile());
+  assert.strictEqual(uiProfile, result.profile);
+  assert.equal(hydration.postSaveReload.profileMatchesCanonical, true);
+  assert.equal(hydration.postSaveReload.canonicalProfileEventDispatched, true);
+  assert.ok(hydration.postSaveReload.eventConsumers.includes("WorkoutPresentationState"));
+  assert.equal(presentation.hydrationProfileGeneration, result.generationAfter);
+  assert.equal(presentation.canonicalAvatarPresent, true);
+  assert.equal(presentation.profilePanelState, "ready");
+});
+
 test("avatar presentation subscription replays activation that happened before listener registration", () => {
   const f = browserFixture();
   vm.runInNewContext(asset("avatar-runtime.js"), f.context, { filename: "avatar-runtime.js" });

@@ -28,6 +28,7 @@
     profileGeneration: 0,
     profileAvatarFieldName: null,
     profileLastUpdatedAt: null,
+    postSaveReload: null,
     updatedAt: new Date().toISOString()
   };
 
@@ -49,12 +50,22 @@
     callDep('setProfile', profile);
     global.USER_PROFILE = profile;
     stamp();
+    let eventDispatched = false;
     try {
       global.dispatchEvent?.(new CustomEvent('app:canonical-profile', { detail: {
         profile, generation: state.profileGeneration, source, updatedAt: state.profileLastUpdatedAt
       } }));
+      eventDispatched = true;
     } catch (_) {}
+    if (state.postSaveReload) state.postSaveReload.canonicalProfileEventDispatched = eventDispatched;
     return profile;
+  }
+
+  function acknowledgeCanonicalProfileEvent(generation, consumer) {
+    if (state.postSaveReload && Number(generation) === state.profileGeneration) {
+      state.postSaveReload.eventConsumers = [...new Set([...(state.postSaveReload.eventConsumers || []), consumer])];
+      stamp();
+    }
   }
 
   function stamp() {
@@ -286,6 +297,35 @@
       callDep('updateSyncStatus');
       return false;
     }
+  }
+
+  async function reloadCanonicalProfileAfterSave({ authToken = null } = {}) {
+    const generationBefore = state.profileGeneration;
+    state.postSaveReload = {
+      owner: 'AppHydrationRuntime', profileReceived: false, profileNormalized: false,
+      canonicalAdoptionAttempted: false, generationBefore, generationAfter: generationBefore,
+      profileMatchesCanonical: false, canonicalProfileEventDispatched: false, eventConsumers: []
+    };
+    const ok = await hydrateProfileFromBackend({ authToken });
+    const reload = state.lastProfileReload || {};
+    Object.assign(state.postSaveReload, {
+      profileReceived: state.profileResponseReceived,
+      profileNormalized: state.profileNormalizationComplete,
+      canonicalAdoptionAttempted: state.profileGeneration > generationBefore,
+      generationAfter: state.profileGeneration,
+      profile: ok ? state.canonicalProfile : null,
+      profileMatchesCanonical: Boolean(ok && state.canonicalProfile),
+      status: reload.status || null,
+      code: reload.code || null
+    });
+    state.postSaveReload.ok = Boolean(ok && state.postSaveReload.canonicalAdoptionAttempted && state.postSaveReload.profileMatchesCanonical);
+    stamp();
+    if (state.postSaveReload.ok) {
+      global.WorkoutPresentationState?.setCanonicalProfile?.(state.canonicalProfile, 'ready', {
+        generation: state.profileGeneration, updatedAt: state.profileLastUpdatedAt, source: 'post-save-replay'
+      });
+    }
+    return { ...state.postSaveReload };
   }
 
   function buildCalendarFromMeta() {
@@ -567,6 +607,7 @@
       canonicalAvatarUrlPresent: Boolean(state.profileAvatarFieldName),
       profileLastUpdatedAt: state.profileLastUpdatedAt,
       lastProfileReload: state.lastProfileReload ? { ...state.lastProfileReload } : null,
+      postSaveReload: state.postSaveReload ? { ...state.postSaveReload, profile: undefined } : null,
       errors: [...state.errors],
       pendingPolicyInstalled: state.pendingPolicyInstalled,
       pendingTimeoutMs: state.pendingTimeoutMs,
@@ -581,7 +622,9 @@
     renderProfileShell,
     buildCalendarFromMeta,
     hydrateProfileFromBackend,
+    reloadCanonicalProfileAfterSave,
     adoptCanonicalProfile,
+    acknowledgeCanonicalProfileEvent,
     getCanonicalProfile: () => state.canonicalProfile,
     handleLoginProfile,
     runBootGates,

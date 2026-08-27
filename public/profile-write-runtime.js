@@ -190,6 +190,13 @@
     return null;
   }
 
+  function resolveCanonicalPostSaveReload() {
+    if (typeof global.AppHydrationRuntime?.reloadCanonicalProfileAfterSave === "function") {
+      return (options) => global.AppHydrationRuntime.reloadCanonicalProfileAfterSave(options);
+    }
+    return resolveProfileReload();
+  }
+
   async function verifyUploadContract(contract) {
     const discoveryUrl = resolveCanonicalApiUrl(contract.discoveryPath);
     diagnostic("avatarDiagApiOrigin", new URL(discoveryUrl).origin);
@@ -500,20 +507,27 @@
       diagnostic("avatarDiagReload", "RELOADING");
       diagnostic("avatarDiagReloadHttp", "REQUESTING");
       diagnostic("avatarDiagReloadCode", "NONE");
-      const reloadProfile = resolveProfileReload();
+      const reloadProfile = resolveCanonicalPostSaveReload();
       if (!reloadProfile) {
         throw makeError("profile_reload_unavailable", "PROFILE_RELOAD_UNAVAILABLE");
       }
       // Reuse the credential that the server accepted for this upload instead
       // of asking a potentially lagging mobile auth snapshot for it again.
-      const profileReloaded = await reloadProfile({ authToken });
-      if (profileReloaded === false) {
+      const reloadResult = await reloadProfile({ authToken });
+      const profileReloaded = reloadResult === true || reloadResult?.ok === true;
+      if (!profileReloaded) {
         const failure = global.AppHydrationRuntime?.getState?.().lastProfileReload || {};
         const code = failure.code || "PROFILE_RELOAD_FAILED";
         diagnostic("avatarDiagReload", failure.status ? `FAILED (HTTP ${failure.status})` : "FAILED");
         diagnostic("avatarDiagReloadHttp", failure.status ? `HTTP ${failure.status}` : "NOT AVAILABLE");
         diagnostic("avatarDiagReloadCode", code);
         throw makeError(failure.message || "profile_reload_failed", code, { reloadStatus: failure.status || null });
+      }
+      const canonical = global.AppHydrationRuntime?.getCanonicalProfile?.();
+      const canonicalState = global.AppHydrationRuntime?.getState?.() || {};
+      if (!canonical || canonicalState.profileGeneration < 1 || !canonicalState.canonicalAvatarUrlPresent
+          || (reloadResult?.profile && reloadResult.profile !== canonical)) {
+        throw makeError("profile_reload_bypassed_canonical_owner", "CANONICAL_PROFILE_ADOPTION_REQUIRED");
       }
       diagnostic("avatarDiagReload", "RELOADED");
       diagnostic("avatarDiagReloadHttp", "HTTP 200");
