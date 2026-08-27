@@ -32,6 +32,9 @@
     glbLoadSuccess: false,
     glbLoadError: null,
     lastGlbLoadStatus: 'idle',
+    savedAvatarState: 'none',
+    savedAvatarSource: null,
+    presentationMode: 'camera',
     posePacketsReceived: 0,
     lastPosePacketAt: null,
     lastPosePacketSource: null
@@ -626,6 +629,12 @@
     console.log(`[avatar-load] render mode at avatar load time: ${statusRef.renderMode}`);
     const profile = b.getProfile?.() || null;
     const nextAvatar = b.normalizeAvatarProfile?.(profile?.avatar) || null;
+    const traceState = (savedAvatarState, details = {}) => {
+      const trace = { savedAvatarState, savedAvatarSource: source, ...details };
+      Object.assign(statusRef, trace);
+      b.setPresentationState?.(savedAvatarState, { source, mode: trace.presentationMode || b.getRenderMode?.() || 'camera' });
+      globalScope.dispatchEvent?.(new CustomEvent('avatar-runtime:presentation-state', { detail: trace }));
+    };
     const clearMountedRuntime = () => {
       b.setActiveAvatarAsset?.(null);
       const runtime = b.ensureRuntime?.() || b.getRuntime?.() || null;
@@ -639,6 +648,7 @@
       b.setCanvasVisibility?.(false);
     };
     if (!nextAvatar) {
+      traceState('none', { presentationMode: 'camera' });
       clearMountedRuntime();
       b.setThumbnail?.(null);
       statusRef.lastAvatarUrl = null;
@@ -650,6 +660,7 @@
       return false;
     }
     try {
+      traceState('profile_ready', { presentationMode: b.getRenderMode?.() || 'camera' });
       b.setAssetStatus?.(`Avatar metadata saved (${nextAvatar.avatarProvider}, ${source}).`);
       b.setRuntimeStatus?.('Metadata accepted. Probing GLB runtime availability…');
       if (nextAvatar.avatarThumbnailUrl) await b.setThumbnail?.(nextAvatar.avatarThumbnailUrl);
@@ -670,6 +681,7 @@
       }
       b.setRuntimeStatus?.('GLB detected. Booting Three.js runtime…');
       const mountInfo = await b.mountAvatarGlbModel?.(nextAvatar.avatarModelUrl, runtimeStatus.arrayBuffer);
+      traceState('mounted', { presentationMode: b.getRenderMode?.() || 'camera' });
       runtimeStatus.renderSucceeded = true;
       runtimeStatus.motionRetargeted = false;
       runtimeStatus.mappedBones = mountInfo?.mappedBones || [];
@@ -685,11 +697,13 @@
         throw new Error('avatar_presentation_not_activated');
       }
       runtimeStatus.presentationMode = presentationMode;
+      traceState('active', { presentationMode });
       b.setAssetStatus?.(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
       b.setRuntimeStatus?.(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${(mountInfo?.mappedBones || []).join(', ') || 'none'}).`);
       b.setCreateButtonLabel?.('🧍 Change Avatar');
       return true;
     } catch (err) {
+      traceState('failed', { presentationMode: 'camera', presentationError: String(err?.message || err || 'avatar_load_failed') });
       console.warn('avatar load failed', err);
       clearMountedRuntime();
       b.setThumbnail?.(null);
