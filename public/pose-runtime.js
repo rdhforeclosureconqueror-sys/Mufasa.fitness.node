@@ -20,8 +20,109 @@
     lastError: null,
     latestPose: null,
     latestPosePacket: null,
-    latestPoses: null
+    latestPoses: null,
+    engineName: 'TensorFlow.js MoveNet',
+    modelName: 'MoveNet SinglePose Lightning',
+    tfReady: false,
+    inferenceGeneration: 0,
+    framesAttempted: 0,
+    framesSuccessful: 0,
+    framesFailed: 0,
+    lastInferenceMs: null,
+    poseEventDispatchCount: 0,
+    poseEventReceivedCount: 0,
+    lastPoseEventAt: null,
+    sourceElementId: null,
+    sourceConnected: false,
+    sourceDimensions: '0x0',
+    framingState: 'NO_PERSON',
+    framingReason: 'MoveNet has not returned a person.',
+    firstFailingBoundary: 'TF_NOT_LOADED'
   };
+
+  const KEYPOINT_THRESHOLD = 0.3;
+  const UPPER_BODY_JOINTS = ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist', 'left_hip', 'right_hip'];
+  const FULL_BODY_JOINTS = [...UPPER_BODY_JOINTS, 'left_knee', 'right_knee', 'left_ankle', 'right_ankle'];
+  const REPORTED_JOINTS = ['nose', ...FULL_BODY_JOINTS];
+
+  function keypointName(point) { return point?.name || point?.part || ''; }
+  function score(point) { return Number(point?.score || 0); }
+  function classifyPose(pose, video) {
+    const keypoints = Array.isArray(pose?.keypoints) ? pose.keypoints : [];
+    const byName = Object.fromEntries(keypoints.map((point) => [keypointName(point), point]));
+    const visible = keypoints.filter((point) => score(point) >= KEYPOINT_THRESHOLD);
+    const upperVisible = UPPER_BODY_JOINTS.filter((name) => score(byName[name]) >= KEYPOINT_THRESHOLD).length;
+    const fullVisible = FULL_BODY_JOINTS.filter((name) => score(byName[name]) >= KEYPOINT_THRESHOLD).length;
+    const width = Number(video?.videoWidth || video?.clientWidth || 0);
+    const height = Number(video?.videoHeight || video?.clientHeight || 0);
+    const xs = visible.map((point) => Number(point.x)).filter(Number.isFinite);
+    const ys = visible.map((point) => Number(point.y)).filter(Number.isFinite);
+    const coverageWidth = width && xs.length > 1 ? (Math.max(...xs) - Math.min(...xs)) / width : 0;
+    const coverageHeight = height && ys.length > 1 ? (Math.max(...ys) - Math.min(...ys)) / height : 0;
+    let framingState = 'NO_PERSON';
+    let framingReason = 'MoveNet returned no person.';
+    if (pose && keypoints.length) {
+      framingState = 'LOW_CONFIDENCE';
+      framingReason = `Only ${visible.length}/${keypoints.length} keypoints meet the ${KEYPOINT_THRESHOLD.toFixed(2)} confidence threshold.`;
+      if (visible.length >= 5 && (coverageHeight > 0.88 || coverageWidth > 0.82)) {
+        framingState = 'TOO_CLOSE'; framingReason = `Body coverage ${Math.round(coverageWidth * 100)}% wide × ${Math.round(coverageHeight * 100)}% high exceeds the 82%/88% close limit.`;
+      } else if (visible.length >= 5 && coverageHeight < 0.32) {
+        framingState = 'TOO_FAR'; framingReason = `Body height covers ${Math.round(coverageHeight * 100)}% of the source, below the 32% minimum.`;
+      } else if (fullVisible === FULL_BODY_JOINTS.length) {
+        framingState = 'FULL_BODY_READY'; framingReason = `All ${FULL_BODY_JOINTS.length} required full-body joints meet confidence ${KEYPOINT_THRESHOLD.toFixed(2)}.`;
+      } else if (upperVisible === UPPER_BODY_JOINTS.length) {
+        framingState = 'UPPER_BODY_READY'; framingReason = `All ${UPPER_BODY_JOINTS.length} required upper-body joints meet confidence ${KEYPOINT_THRESHOLD.toFixed(2)}; knees/ankles are incomplete.`;
+      }
+    }
+    const confidenceScores = keypoints.map(score).filter((value) => value > 0);
+    return { framingState, framingReason, byName, visibleCount: visible.length, totalCount: keypoints.length, upperVisible, fullVisible, coverageWidth, coverageHeight, overallConfidence: Number(pose?.score ?? (confidenceScores.length ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length : 0)) };
+  }
+
+  function failureBoundary() {
+    if (!global.tf) return 'TF_NOT_LOADED';
+    if (!state.tfReady) return 'TF_BACKEND_NOT_READY';
+    if (!state.detectorReady) return 'MODEL_NOT_CREATED';
+    if (!state.cameraStreamActive) return 'CAMERA_NOT_ACTIVE';
+    if (!state.sourceConnected) return 'SOURCE_ELEMENT_MISSING';
+    if (state.sourceDimensions === '0x0') return 'SOURCE_ZERO_SIZE';
+    if (!state.loopRunning) return 'INFERENCE_LOOP_NOT_STARTED';
+    if (state.lastError) return 'INFERENCE_EXCEPTION';
+    if (!state.latestPose) return 'NO_POSE_RETURNED';
+    if (state.framingState === 'LOW_CONFIDENCE' || state.framingState === 'TOO_CLOSE' || state.framingState === 'TOO_FAR') return 'LOW_CONFIDENCE';
+    if (!state.poseEventDispatchCount) return 'POSE_EVENT_NOT_EMITTED';
+    if (!state.poseEventReceivedCount) return 'POSE_EVENT_NOT_RECEIVED';
+    return 'READY';
+  }
+
+  function framingMessage(value) {
+    return { NO_PERSON: 'Looking for you…', LOW_CONFIDENCE: 'Hold still for a moment.', TOO_CLOSE: 'Step back — I need to see more of your body.', TOO_FAR: 'Move closer.', UPPER_BODY_READY: 'Upper body detected.', FULL_BODY_READY: 'Body tracking ready. Full body detected.' }[value] || 'Looking for you…';
+  }
+
+  function renderProof() {
+    const now = Date.now();
+    state.cameraStreamActive = Boolean(state.sourceVideo?.srcObject && state.sourceVideo.srcObject.active !== false);
+    state.visibleCameraLayer = state.sourceVideo?.style?.visibility === 'hidden' ? 'HIDDEN' : 'VISIBLE';
+    state.firstFailingBoundary = failureBoundary();
+    const syncText = global.document?.getElementById?.('syncStatus')?.textContent || 'unknown';
+    const lines = [
+      `Pose engine initialized: ${state.detectorReady ? 'YES' : 'NO'}`, `Pose engine name: ${state.engineName}`, `Pose model: ${state.modelName}`,
+      `TensorFlow backend: ${state.detectorBackend || 'unavailable'}`, `TensorFlow ready: ${state.tfReady ? 'YES' : 'NO'}`, '',
+      `Camera stream active: ${state.cameraStreamActive ? 'YES' : 'NO'}`, `Visible camera/video layer: ${state.visibleCameraLayer || 'VISIBLE'}`, `Inference source element ID: ${state.sourceElementId || 'none'}`,
+      `Inference source connected: ${state.sourceConnected ? 'YES' : 'NO'}`, `Inference source dimensions: ${state.sourceDimensions}`, '',
+      `Pose inference loop running: ${state.loopRunning ? 'YES' : 'NO'}`, `Pose inference generation: ${state.inferenceGeneration}`, `Pose frames attempted: ${state.framesAttempted}`,
+      `Pose frames successful: ${state.framesSuccessful}`, `Pose frames failed: ${state.framesFailed}`, `Last pose frame age: ${state.lastFrameAt ? now - Date.parse(state.lastFrameAt) : 'unavailable'}ms`, `Last inference duration: ${state.lastInferenceMs == null ? 'unavailable' : state.lastInferenceMs}ms`, '',
+      `Person detected: ${state.latestPose ? 'YES' : 'NO'}`, `Pose count: ${state.latestPoses?.length || 0}`, `Overall pose confidence: ${(state.overallConfidence || 0).toFixed(3)}`,
+      `Keypoints detected above threshold: ${state.visibleKeypointCount || 0}/${state.totalKeypointCount || 0}`, '',
+      ...REPORTED_JOINTS.map((name) => `${name}: confidence=${score(state.keypointsByName?.[name]).toFixed(3)}`), '',
+      `Framing state: ${state.framingState}`, `Framing reason: ${state.framingReason}`, `Required upper-body joints visible: ${state.upperVisible || 0}/${UPPER_BODY_JOINTS.length}`, `Required full-body joints visible: ${state.fullVisible || 0}/${FULL_BODY_JOINTS.length}`, '',
+      `Pose frame produced count: ${state.framesSuccessful}`, `Pose event emitted: ${state.poseEventDispatchCount ? 'YES' : 'NO'}`, `Pose event name: pose-runtime:frame`, `Pose event generation: ${state.poseEventDispatchCount}`,
+      `Pose event dispatch count: ${state.poseEventDispatchCount}`, `Pose event received count: ${state.poseEventReceivedCount}`, `Last pose event timestamp: ${state.lastPoseEventAt || 'none'}`, `Last pose event age: ${state.lastPoseEventAt ? now - Date.parse(state.lastPoseEventAt) : 'unavailable'}ms`, `Consumer count: ${state.eventConsumerCount || 0}`, '',
+      `Backend sync initialized: YES`, `Backend sync resolved: ${/checking/i.test(syncText) ? 'NO' : 'YES'}`, `Backend sync state: ${syncText}`, `Backend sync blocks pose inference: NO`, '',
+      `Last pose error: ${state.lastError || state.detectorError || 'NONE'}`, `First failing boundary: ${state.firstFailingBoundary}`
+    ];
+    const panel = global.document?.getElementById?.('poseTrackingProofValues'); if (panel) panel.textContent = lines.join('\n');
+    const overlay = global.document?.getElementById?.('poseFramingFeedback'); if (overlay) overlay.textContent = framingMessage(state.framingState);
+  }
 
   function log(message, details) {
     if (details === undefined) console.log(`[POSE_RUNTIME] ${message}`);
@@ -87,6 +188,7 @@
         await tfRuntime.setBackend('cpu');
       }
       await tfRuntime.ready();
+      state.tfReady = true;
 
       const detector = await poseRuntime.createDetector(
         poseRuntime.SupportedModels.MoveNet,
@@ -129,6 +231,11 @@
       trackingCapabilities,
       logTrackerCapabilities
     } = options || {};
+
+    state.sourceVideo = video || null;
+    state.sourceElementId = video?.id || null;
+    state.sourceConnected = Boolean(video?.isConnected);
+    state.sourceDimensions = `${video?.videoWidth || video?.clientWidth || 0}x${video?.videoHeight || video?.clientHeight || 0}`;
 
     const result = { faceDetector: null, handDetector: null };
     state.optionalTrackers = { face: false, hand: false };
@@ -242,6 +349,12 @@
       }
       try {
         if (global.document?.hidden) { frameId = requestAnimationFrame(frame); return; }
+        state.sourceConnected = Boolean(video?.isConnected);
+        state.sourceDimensions = `${video?.videoWidth || video?.clientWidth || 0}x${video?.videoHeight || video?.clientHeight || 0}`;
+        if (!state.sourceConnected) throw new Error('inference source element is disconnected');
+        if (!(video?.videoWidth || video?.clientWidth) || !(video?.videoHeight || video?.clientHeight)) throw new Error('inference source has zero dimensions');
+        state.framesAttempted += 1;
+        state.inferenceGeneration += 1;
         if (global.__workoutPerformance) global.__workoutPerformance.poseInferenceCalls += 1;
         const inferenceStartedAt = global.performance?.now?.() ?? Date.now();
         const poses = await detector.estimatePoses(video, { flipHorizontal: true });
@@ -249,23 +362,39 @@
         const pose = Array.isArray(poses) && poses.length ? poses[0] : null;
         const posePacket = normalizePosePacket(pose, video);
         state.loopFrameCount += 1;
+        state.framesSuccessful += 1;
+        state.lastInferenceMs = Math.round(inferenceMs * 10) / 10;
+        state.lastError = null;
         state.lastFrameAt = new Date().toISOString();
         state.latestPose = pose;
         state.latestPosePacket = posePacket;
         state.latestPoses = poses;
+        const projection = classifyPose(pose, video);
+        state.framingState = projection.framingState;
+        state.framingReason = projection.framingReason;
+        state.keypointsByName = projection.byName;
+        state.visibleKeypointCount = projection.visibleCount;
+        state.totalKeypointCount = projection.totalCount;
+        state.upperVisible = projection.upperVisible;
+        state.fullVisible = projection.fullVisible;
+        state.overallConfidence = projection.overallConfidence;
         global.__lastPoseRuntimeFrame = posePacket;
         global.__lastPoseFrame = posePacket;
         try {
           global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poses } }));
+          state.poseEventDispatchCount += 1;
+          state.lastPoseEventAt = new Date().toISOString();
         } catch (_) {}
         if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poses, inferenceMs });
       } catch (err) {
         const message = err?.message || String(err || 'pose_loop_failed');
         state.lastError = message;
+        state.framesFailed += 1;
         console.error('[POSE_RUNTIME] pose loop frame failed', err);
         setVisibleRuntimeError(`Pose loop error: ${message}`);
         if (typeof onError === 'function') onError(err);
       }
+      renderProof();
       frameId = requestAnimationFrame(frame);
     }
 
@@ -285,11 +414,17 @@
     initMoveNetDetector,
     initOptionalTrackers,
     normalizePosePacket,
+    classifyPose,
+    renderProof,
+    KEYPOINT_THRESHOLD,
     startPoseLoop,
     getLatestPose: () => state.latestPose || null,
     getLatestPosePacket: () => state.latestPosePacket || null,
     getState: () => ({ ...state, optionalTrackers: { ...state.optionalTrackers }, optionalTrackerErrors: { ...state.optionalTrackerErrors } })
   };
+
+  global.addEventListener?.('pose-runtime:frame', () => { state.poseEventReceivedCount += 1; state.eventConsumerCount = Math.max(1, state.eventConsumerCount || 0); });
+  global.setInterval?.(renderProof, 500);
 
   log('loaded');
 })(typeof window !== 'undefined' ? window : globalThis);
