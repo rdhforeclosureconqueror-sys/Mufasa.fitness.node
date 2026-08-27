@@ -79,7 +79,7 @@ test("production asset order projects backend hydration through avatar runtime i
   assert.equal(hydration.profileNormalizationComplete, true);
   assert.equal(hydration.canonicalAvatarUrlPresent, true);
   assert.equal(presentation.canonicalProfileState, "ready");
-  assert.equal(presentation.presentationState, "active");
+  assert.equal(presentation.presentationState, "mounted");
   assert.equal(presentation.appliedRenderMode, "avatar_overlay");
   assert.equal(presentation.uiProfileMatchesHydration, true);
   assert.notEqual(label, "No avatar saved.");
@@ -159,12 +159,13 @@ async function runAssetPresentation({ initialMode = "camera", activatedMode = "a
   return { loaded, mode, activeAsset, state: f.window.AvatarRuntime.getCurrentPresentationState() };
 }
 
-test("mounted canonical avatar promotes default camera and only becomes ACTIVE after environment acceptance", async () => {
+test("mounted canonical avatar remains armed until a pose is retargeted and rendered", async () => {
   const result = await runAssetPresentation();
   assert.equal(result.loaded, true);
   assert.equal(result.mode, "avatar_overlay");
   assert.equal(result.state.avatarAssetState, "MOUNTED");
-  assert.equal(result.state.avatarPresentationState, "ACTIVE");
+  assert.equal(result.state.avatarPresentationState, "NONE");
+  assert.equal(result.state.retargetState, "ARMED");
   assert.equal(result.state.presentationAppliedMode, "avatar_overlay");
   assert.equal(result.state.avatarRootInActiveScene, true);
   assert.ok(result.activeAsset);
@@ -174,7 +175,7 @@ test("explicit avatar_only remains authoritative", async () => {
   const result = await runAssetPresentation({ initialMode: "avatar_only", activatedMode: "avatar_only" });
   assert.equal(result.loaded, true);
   assert.equal(result.state.presentationAppliedMode, "avatar_only");
-  assert.equal(result.state.avatarPresentationState, "ACTIVE");
+  assert.equal(result.state.avatarPresentationState, "NONE");
 });
 
 test("explicit camera keeps the saved asset mounted without falsely reporting visible presentation", async () => {

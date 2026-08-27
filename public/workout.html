@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=20260827-avatar-runtime-load-entry-v13"></script>
-  <script src="/workout-presentation-state.js?v=20260827-avatar-runtime-load-entry-v13"></script>
+  <script src="/runtime-state.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/workout-presentation-state.js?v=20260827-live-three-runtime-v14"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1301,6 +1301,25 @@ skeletonOverlayActive: no</pre>
         <br>Avatar canvas connected: <span id="avatarDiagCanvasConnected">NO</span>
         <br>Avatar canvas visible: <span id="avatarDiagCanvasVisible">NO</span>
         <br>Renderer dimensions: <span id="avatarDiagRendererDimensions">0x0</span>
+        <hr><strong>3D runtime proof (v14)</strong>
+        <br>Avatar root UUID: <span id="avatarDiagRootUuid">none</span>
+        <br>Scene UUID: <span id="avatarDiagSceneUuid">none</span>
+        <br>Avatar parent === active scene: <span id="avatarDiagRootIdentity">NO</span>
+        <br>Skinned meshes / skeleton bones: <span id="avatarDiagRigCounts">0 / 0</span>
+        <br>Mapped bones: <span id="avatarDiagMappedBones">0</span>
+        <br>Pose frames received: <span id="avatarDiagPoseFrames">0</span>
+        <br>Retarget frames executed: <span id="avatarDiagRetargetFrames">0</span>
+        <br>Bones changed last frame: <span id="avatarDiagBonesChanged">0</span>
+        <br>Render frames / last render age: <span id="avatarDiagRenderProof">0 / unavailable</span>
+        <br>Canvas CSS / buffer: <span id="avatarDiagCanvasProof">0x0 / 0x0</span>
+        <br>Renderer / DPR: <span id="avatarDiagRendererProof">none / 0</span>
+        <br>Camera: <span id="avatarDiagCameraProof">none</span>
+        <br>Active lights: <span id="avatarDiagLights">none</span>
+        <br>Materials / textures: <span id="avatarDiagMaterials">0 / 0</span>
+        <br>Asset / Environment / Retarget / Render loop: <span id="avatarDiagTerminalStates">NONE / NOT_CONFIGURED / NOT_STARTED / STOPPED</span>
+        <br>Presentation: <span id="avatarDiagRuntimePresentation">NONE</span>
+        <br><button type="button" onclick="AvatarRuntime.runManualRuntimeTest('bone')">Test left arm (1.5s)</button>
+        <button type="button" onclick="AvatarRuntime.runManualRuntimeTest('depth')">Test 45° depth (1.5s)</button>
         <br>Workout avatar label state: <span id="avatarDiagWorkoutAvatarState">none</span>
         <br>Workout render status state: <span id="avatarDiagWorkoutRenderState">camera</span>
         <br>Post-save reload owner: <span id="avatarDiagPostSaveOwner">none</span>
@@ -1318,13 +1337,13 @@ skeletonOverlayActive: no</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260827-avatar-runtime-load-entry-v13"></script>
+  <script src="/backend-read.js?v=20260827-live-three-runtime-v14"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
   <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
   <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
-  <script src="/motion/live-avatar-mirror.js?v=20260825-phase1c"></script>
+  <script src="/motion/live-avatar-mirror.js?v=20260827-live-three-runtime-v14"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
@@ -1337,26 +1356,26 @@ skeletonOverlayActive: no</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-runtime-load-entry-v13"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=20260827-live-three-runtime-v14"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260827-avatar-runtime-load-entry-v13"></script>
+  <script src="/profile-write-runtime.js?v=20260827-live-three-runtime-v14"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260827-avatar-runtime-load-entry-v13"></script>
+  <script src="/workout-control-activation.js?v=20260827-live-three-runtime-v14"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260827-avatar-runtime-load-entry-v13"></script>
+  <script src="/app-hydration-runtime.js?v=20260827-live-three-runtime-v14"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
-    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-04-25T00:00:00Z-avatar-runtime-bootstrap1";
+    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27T00:00:00Z-live-three-runtime-v14";
     const ENABLE_AVATAR_FEATURE = window.ENABLE_AVATAR_FEATURE === true;
     const isAvatarFeatureEnabled = () => ENABLE_AVATAR_FEATURE;
     // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.
@@ -2164,7 +2183,7 @@ skeletonOverlayActive: no</pre>
       });
     }
 
-    function ensureAvatarRenderLoop(runtime) {
+      function ensureAvatarRenderLoop(runtime) {
       if (!runtime || runtime.renderLoopActive) return;
       runtime.renderLoopActive = true;
       updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: true });
@@ -2178,6 +2197,10 @@ skeletonOverlayActive: no</pre>
         liveAvatarMirrorLastFrameAt = frameAt;
         liveAvatarMirror?.update(deltaSeconds, Date.now());
         runtime.renderer.render(runtime.scene, runtime.camera);
+        runtime.renderFrameCount = Number(runtime.renderFrameCount || 0) + 1;
+        runtime.lastRenderAt = Date.now();
+        runtime.lastAnimationFrameId = runtime.renderLoopId;
+        window.AvatarRuntime?.refreshRuntimeProof?.();
         const now = Date.now();
         if (!runtime.lastRenderLoopLogAt || (now - runtime.lastRenderLoopLogAt) >= 2000) {
           runtime.lastRenderLoopLogAt = now;
@@ -2250,6 +2273,9 @@ skeletonOverlayActive: no</pre>
       }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setClearColor(0x000000, 0);
+      renderer.outputColorSpace = threeRef.SRGBColorSpace;
+      renderer.toneMapping = threeRef.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
       avatar3dCanvasEl.dataset.avatarRendererOwned = "true";
       status.canvasOk = true;
       status.rendererCreated = true;
@@ -2261,10 +2287,12 @@ skeletonOverlayActive: no</pre>
       const camera = new threeRef.PerspectiveCamera(40, 4 / 3, 0.01, 100);
       status.cameraCreated = true;
       camera.position.set(0, 1.45, 2.25);
-      const hemi = new threeRef.HemisphereLight(0xffffff, 0x223344, 1.0);
-      const key = new threeRef.DirectionalLight(0xffffff, 0.85);
+      const hemi = new threeRef.HemisphereLight(0xffffff, 0x334455, 1.35);
+      const key = new threeRef.DirectionalLight(0xffffff, 1.4);
       key.position.set(0.4, 1.2, 0.8);
-      scene.add(hemi, key);
+      const fill = new threeRef.DirectionalLight(0xbfd7ff, 0.55);
+      fill.position.set(-1, 0.8, 0.4);
+      scene.add(hemi, key, fill);
       avatarThreeRuntime = {
         renderer,
         scene,
@@ -2642,8 +2670,12 @@ skeletonOverlayActive: no</pre>
         disposeLiveAvatarMirror();
         return false;
       }
-      const activated = activateLiveAvatarMirror();
-      if (activated && videoEl?.srcObject) ensureLiveAvatarMirrorPoseLoop().catch((error) => {
+      // The legacy mirror only writes RightArm on modelRoot. Using it made the
+      // full-rig AvatarRuntime subscriber stand down, so a loaded Avaturn model
+      // looked static. AvatarRuntime now exclusively retargets the rendered root.
+      disposeLiveAvatarMirror();
+      const activated = false;
+      if (videoEl?.srcObject) ensureLiveAvatarMirrorPoseLoop().catch((error) => {
         console.warn("[live-avatar-mirror] existing pose loop unavailable", error);
       });
       return activated;
@@ -4234,7 +4266,7 @@ skeletonOverlayActive: no</pre>
       const loop = window.PoseRuntime.startPoseLoop({
         detector,
         video: videoEl,
-        isRunning: () => running === true || Boolean(liveAvatarMirror),
+        isRunning: () => running === true || getRenderMode() === "avatar_overlay" || getRenderMode() === "avatar_only",
         onPoseFrame: ({ pose, posePacket }) => {
           window.__liveWorkoutBreakpoints?.markPass?.("first-pose-frame", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
           window.__liveWorkoutBreakpoints?.markPass?.("firstPoseFrameReceived", { keypoints: posePacket?.keypoints?.length || pose?.keypoints?.length || 0 });
