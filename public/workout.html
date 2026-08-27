@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=20260827-avatar-presentation-runtime-v12"></script>
-  <script src="/workout-presentation-state.js?v=20260827-avatar-presentation-runtime-v12"></script>
+  <script src="/runtime-state.js?v=20260827-avatar-runtime-load-entry-v13"></script>
+  <script src="/workout-presentation-state.js?v=20260827-avatar-runtime-load-entry-v13"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1261,6 +1261,23 @@ skeletonOverlayActive: no</pre>
         <br>Profile last updated timestamp: <span id="avatarDiagProfileUpdated">none</span>
         <br>Avatar runtime owner: <span id="avatarDiagRuntimeOwner">AvatarRuntime</span>
         <br>Avatar runtime status generation: <span id="avatarDiagRuntimeGeneration">0</span>
+        <br>Avatar runtime initialized: <span id="avatarDiagRuntimeInitialized">NO</span>
+        <br>Avatar runtime configured: <span id="avatarDiagRuntimeConfigured">NO</span>
+        <br>Canonical avatar observed by AvatarRuntime: <span id="avatarDiagCanonicalObserved">NO</span>
+        <br>Avatar load requested: <span id="avatarDiagLoadRequested">NO</span>
+        <br>Avatar load request source: <span id="avatarDiagLoadRequestSource">none</span>
+        <br>Avatar load request generation: <span id="avatarDiagLoadRequestGeneration">0</span>
+        <br>Avatar load skipped reason: <span id="avatarDiagLoadSkippedReason">asset_pipeline_not_configured</span>
+        <br>Avatar load function entered: <span id="avatarDiagLoadEntered">NO</span>
+        <br>Avatar load URL present: <span id="avatarDiagLoadUrlPresent">NO</span>
+        <br>Avatar load URL identity matches canonical: <span id="avatarDiagLoadUrlCanonical">NO</span>
+        <br>Avatar environment configured: <span id="avatarDiagEnvironmentConfigured">NO</span>
+        <br>Scene available: <span id="avatarDiagSceneAvailable">NO</span>
+        <br>Camera available: <span id="avatarDiagCameraAvailable">NO</span>
+        <br>Renderer available: <span id="avatarDiagRendererAvailable">NO</span>
+        <br>Avatar canvas element found: <span id="avatarDiagCanvasFound">NO</span>
+        <br>Render loop initialized: <span id="avatarDiagRenderLoopInitialized">NO</span>
+        <br>Avatar lifecycle stage: <span id="avatarDiagLifecycleStage">NOT INITIALIZED</span>
         <br>Avatar presentation generation: <span id="avatarDiagPresentationGeneration">0</span>
         <br>Avatar asset state: <span id="avatarDiagAssetState">NONE</span>
         <br>Avatar asset generation: <span id="avatarDiagAssetGeneration">0</span>
@@ -1274,6 +1291,13 @@ skeletonOverlayActive: no</pre>
         <br>Mobile selector value: <span id="avatarDiagMobileSelector">camera</span>
         <br>Explicit render preference source: <span id="avatarDiagPreferenceSource">default</span>
         <br>Default-vs-explicit camera flag: <span id="avatarDiagCameraExplicit">DEFAULT</span>
+        <br>Visible selector element ID: <span id="avatarDiagVisibleSelectorId">unavailable</span>
+        <br>Visible selector current value: <span id="avatarDiagVisibleSelectorValue">unavailable</span>
+        <br>Authoritative selector element ID: <span id="avatarDiagAuthoritativeSelectorId">unavailable</span>
+        <br>Authoritative selector current value: <span id="avatarDiagAuthoritativeSelectorValue">unavailable</span>
+        <br>Selector === authoritative selector: <span id="avatarDiagSelectorIdentity">NO</span>
+        <br>Selector change last received: <span id="avatarDiagSelectorChangeReceived">none</span>
+        <br>Selector change source: <span id="avatarDiagSelectorChangeSource">none</span>
         <br>Avatar canvas connected: <span id="avatarDiagCanvasConnected">NO</span>
         <br>Avatar canvas visible: <span id="avatarDiagCanvasVisible">NO</span>
         <br>Renderer dimensions: <span id="avatarDiagRendererDimensions">0x0</span>
@@ -1294,7 +1318,7 @@ skeletonOverlayActive: no</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260827-avatar-presentation-runtime-v12"></script>
+  <script src="/backend-read.js?v=20260827-avatar-runtime-load-entry-v13"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
@@ -1313,21 +1337,21 @@ skeletonOverlayActive: no</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-presentation-runtime-v12"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-runtime-load-entry-v13"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260827-avatar-presentation-runtime-v12"></script>
+  <script src="/profile-write-runtime.js?v=20260827-avatar-runtime-load-entry-v13"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260827-avatar-presentation-runtime-v12"></script>
+  <script src="/workout-control-activation.js?v=20260827-avatar-runtime-load-entry-v13"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260827-avatar-presentation-runtime-v12"></script>
+  <script src="/app-hydration-runtime.js?v=20260827-avatar-runtime-load-entry-v13"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -1455,6 +1479,12 @@ skeletonOverlayActive: no</pre>
     const stopWorkoutFsBtn = document.getElementById("stopWorkoutFsBtn");
     const workoutToggleMobileBtn = document.getElementById("workoutToggleMobileBtn");
     const renderModeMobileSelectEl = document.getElementById("renderModeMobileSelect");
+    let renderSelectorChangeLastReceived = "none";
+    let renderSelectorChangeSource = "none";
+    function getAuthoritativeRenderSelector() {
+      const visible = [renderModeMobileSelectEl, renderModeSelectEl].find((el) => el && el.getClientRects?.().length > 0);
+      return visible || renderModeSelectEl || renderModeMobileSelectEl || null;
+    }
     const avatarStageMobileSelectEl = document.getElementById("avatarStageMobileSelect");
     const trackingModeMobileStatusEl = document.getElementById("trackingModeMobileStatus");
     const ohsaBtn = document.getElementById("ohsaBtn");
@@ -4762,7 +4792,14 @@ skeletonOverlayActive: no</pre>
         desktopSelectorValue: renderModeSelectEl?.value,
         mobileSelectorValue: renderModeMobileSelectEl?.value,
         preferenceSource: renderModePreferenceSource,
-        cameraExplicit: getRenderMode() === "camera" && renderModePreferenceExplicit
+        cameraExplicit: getRenderMode() === "camera" && renderModePreferenceExplicit,
+        visibleSelectorId: getAuthoritativeRenderSelector()?.id,
+        visibleSelectorValue: getAuthoritativeRenderSelector()?.value,
+        authoritativeSelectorId: getAuthoritativeRenderSelector()?.id,
+        authoritativeSelectorValue: getAuthoritativeRenderSelector()?.value,
+        selectorIsAuthoritative: Boolean(getAuthoritativeRenderSelector()),
+        selectorChangeLastReceived: renderSelectorChangeLastReceived,
+        selectorChangeSource: renderSelectorChangeSource
       }),
       setAvatarLabel: setAvatarAssetStatus
     });
@@ -4787,11 +4824,15 @@ skeletonOverlayActive: no</pre>
       }
     });
     renderModeSelectEl.onchange = () => {
+      renderSelectorChangeLastReceived = renderModeSelectEl.value;
+      renderSelectorChangeSource = renderModeSelectEl.id;
       applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
     };
     window.addEventListener("pagehide", disposeLiveAvatarMirror, { once: true });
     if (renderModeMobileSelectEl) {
       renderModeMobileSelectEl.onchange = () => {
+        renderSelectorChangeLastReceived = renderModeMobileSelectEl.value;
+        renderSelectorChangeSource = renderModeMobileSelectEl.id;
         applyRenderModeSelection(renderModeMobileSelectEl.value, { persist: true, source: "mobile" });
       };
     }

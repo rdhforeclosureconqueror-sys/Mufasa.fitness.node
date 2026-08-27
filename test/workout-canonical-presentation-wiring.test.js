@@ -196,8 +196,50 @@ test("mounted GLB with rejected presentation falls back and cannot report ACTIVE
 
 test("selectors delegate to the render owner and a DOM value alone is not activation", () => {
   const html = asset("workout.html");
-  assert.match(html, /renderModeSelectEl\.onchange\s*=\s*\(\)\s*=>\s*\{\s*applyRenderModeSelection\(renderModeSelectEl\.value/);
-  assert.match(html, /renderModeMobileSelectEl\.onchange\s*=\s*\(\)\s*=>\s*\{\s*applyRenderModeSelection\(renderModeMobileSelectEl\.value/);
+  assert.match(html, /renderModeSelectEl\.onchange[\s\S]*applyRenderModeSelection\(renderModeSelectEl\.value/);
+  assert.match(html, /renderModeMobileSelectEl\.onchange[\s\S]*applyRenderModeSelection\(renderModeMobileSelectEl\.value/);
   assert.match(html, /AVATAR_FLAGS\.AVATAR_MODE = nextMode;\s*applyLiveAvatarRenderPresentation\(nextMode\)/);
+  assert.match(html, /getAuthoritativeRenderSelector\(\)\?\.id/);
   assert.doesNotMatch(html, /onchange\s*=\s*[^;]*\.value\s*=\s*["']avatar_only["']/);
+});
+
+test("canonical adoption after AvatarRuntime initialization enters loading even while render defaults to camera", async () => {
+  const f = browserFixture();
+  for (const name of ["avatar-runtime.js", "app-hydration-runtime.js"]) vm.runInNewContext(asset(name), f.context, { filename: name });
+  let profile = null;
+  f.window.AppHydrationRuntime.configure({ getProfile: () => profile, setProfile: value => { profile = value; } });
+  let entered = 0;
+  f.window.AvatarRuntime.configureAssetPipeline({
+    getProfile: () => f.window.AppHydrationRuntime.getCanonicalProfile(), getRenderMode: () => "camera",
+    normalizeAvatarProfile: avatar => avatar,
+    probeAvatarModelRuntime: async () => { entered += 1; return { assetFound: true, runtimeLoaded: true, arrayBuffer: new ArrayBuffer(1) }; },
+    mountAvatarGlbModel: async () => ({}), activatePresentation: () => "camera",
+    getRuntime: () => ({ scene: { remove() {} } }), setActiveAvatarAsset() {}, setCanvasVisibility() {},
+    setThumbnail() {}, updateOverlayDiagnostics() {}, setAssetStatus() {}, setRuntimeStatus() {}, setCreateButtonLabel() {}
+  });
+  f.window.AppHydrationRuntime.adoptCanonicalProfile({ avatar: { avatarModelUrl: "/api/me/avatar/assets/late" } }, "test_late_adoption");
+  await new Promise(resolve => setImmediate(resolve));
+  const state = f.window.AvatarRuntime.getCurrentPresentationState();
+  assert.equal(entered, 1);
+  assert.equal(state.avatarLoadFunctionEntered, true);
+  assert.ok(state.avatarAssetGeneration > 0);
+  assert.equal(state.avatarAssetState, "MOUNTED");
+  assert.equal(state.presentationAppliedMode, "camera");
+});
+
+test("late AvatarRuntime pipeline configuration replays the canonical owner", async () => {
+  const f = browserFixture();
+  for (const name of ["avatar-runtime.js", "app-hydration-runtime.js"]) vm.runInNewContext(asset(name), f.context, { filename: name });
+  f.window.AppHydrationRuntime.configure({});
+  f.window.AppHydrationRuntime.adoptCanonicalProfile({ avatar: { avatarModelUrl: "/api/me/avatar/assets/replay" } }, "before_pipeline");
+  let entered = 0;
+  f.window.AvatarRuntime.configureAssetPipeline({
+    getProfile: () => f.window.AppHydrationRuntime.getCanonicalProfile(), getRenderMode: () => "camera", normalizeAvatarProfile: avatar => avatar,
+    probeAvatarModelRuntime: async () => { entered += 1; return { assetFound: true, runtimeLoaded: true }; }, mountAvatarGlbModel: async () => ({}),
+    activatePresentation: () => "camera", getRuntime: () => ({ scene: { remove() {} } }), setActiveAvatarAsset() {}, setCanvasVisibility() {},
+    setThumbnail() {}, updateOverlayDiagnostics() {}, setAssetStatus() {}, setRuntimeStatus() {}, setCreateButtonLabel() {}
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(entered, 1);
+  assert.equal(f.window.AvatarRuntime.getCurrentPresentationState().avatarLoadRequestSource, "canonical_profile_replay");
 });
