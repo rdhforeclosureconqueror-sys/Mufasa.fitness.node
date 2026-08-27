@@ -7,7 +7,7 @@ const layoutProof = fs.readFileSync(require.resolve('../public/mobile-layout-con
 const workoutRuntime = fs.readFileSync(require.resolve('../public/workout-runtime.js'), 'utf8');
 const poseRuntime = fs.readFileSync(require.resolve('../public/pose-runtime.js'), 'utf8');
 
-const build = '2026-08-27-mobile-camera-layout-containment-v21';
+const build = '2026-08-27-movenet-visible-audible-v22';
 
 test('mobile diagnostics and grid children use shrink-safe containment', () => {
   assert.match(html, /\.app > \*, \.pane > \* \{ min-width: 0; \}/);
