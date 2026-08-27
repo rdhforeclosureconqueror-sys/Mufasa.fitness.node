@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=20260827-live-three-runtime-v14"></script>
-  <script src="/workout-presentation-state.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/runtime-state.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
+  <script src="/workout-presentation-state.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1337,13 +1337,13 @@ skeletonOverlayActive: no</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/backend-read.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
   <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
   <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
-  <script src="/motion/live-avatar-mirror.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/motion/live-avatar-mirror.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
@@ -1356,26 +1356,26 @@ skeletonOverlayActive: no</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=20260827-live-three-runtime-v14"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-movenet-retarget-runtime-v15"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/profile-write-runtime.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/workout-control-activation.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260827-live-three-runtime-v14"></script>
+  <script src="/app-hydration-runtime.js?v=20260827-avatar-movenet-retarget-runtime-v15"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
-    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27T00:00:00Z-live-three-runtime-v14";
+    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-avatar-movenet-retarget-runtime-v15";
     const ENABLE_AVATAR_FEATURE = window.ENABLE_AVATAR_FEATURE === true;
     const isAvatarFeatureEnabled = () => ENABLE_AVATAR_FEATURE;
     // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.
@@ -2586,6 +2586,14 @@ skeletonOverlayActive: no</pre>
       setAvatar3dCanvasVisibility(avatarVisible);
       setPersonLayerSuppressed(mode === "avatar_only");
       if (canvasEl) canvasEl.style.visibility = mode === "avatar_only" ? "hidden" : "visible";
+      const videoCaptureActive = Boolean(videoEl?.srcObject && videoEl.srcObject.active !== false);
+      Object.assign(getAvatarRuntimeStatusRef(), {
+        cameraCaptureActive: videoCaptureActive,
+        poseSourceVideoActive: videoCaptureActive && videoEl.readyState >= 2,
+        userVisibleVideoLayer: mode === "avatar_only" ? "HIDDEN" : "VISIBLE",
+        avatarCanvasVisible: avatarVisible,
+        renderModeOwner: mode
+      });
     }
 
     function activateSavedAvatarPresentation({ source = "saved_profile" } = {}) {
@@ -2979,10 +2987,12 @@ skeletonOverlayActive: no</pre>
       root.position.z -= normalizedCenter.z;
 
       const avatarRoot = new threeRef.Group();
-      const avatarModelGroup = new threeRef.Group();
-      avatarModelGroup.rotation.y = threeRef.MathUtils.degToRad(avatarFacingDeg);
-      avatarModelGroup.add(root);
-      avatarRoot.add(avatarModelGroup);
+      const avatarOrientationRoot = new threeRef.Group();
+      avatarOrientationRoot.name = "avatarOrientationRoot";
+      avatarOrientationRoot.rotation.y = threeRef.MathUtils.degToRad(avatarFacingDeg);
+      avatarOrientationRoot.add(root);
+      const avatarModelGroup = avatarOrientationRoot;
+      avatarRoot.add(avatarOrientationRoot);
 
       runtime.scene.add(avatarRoot);
       console.log("[avatar-3d] model added to scene");
@@ -2993,6 +3003,7 @@ skeletonOverlayActive: no</pre>
       });
       runtime.avatarRoot = avatarRoot;
       runtime.avatarModelGroup = avatarModelGroup;
+      runtime.avatarOrientationRoot = avatarOrientationRoot;
       runtime.modelRoot = root;
       applyAvatarFacingCalibration(avatarFacingDeg, { persist: false, source: "mount_avatar" });
       runtime.lastFacingLogAt = 0;

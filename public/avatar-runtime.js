@@ -47,6 +47,23 @@
     presentationRequestedMode: 'camera',
     presentationAppliedMode: 'camera',
     posePacketsReceived: 0,
+    poseEngine: 'MoveNet',
+    poseLoopState: 'STOPPED',
+    personDetected: false,
+    framingState: 'NO_PERSON',
+    poseConfidenceMinimum: 0,
+    cameraCaptureActive: false,
+    poseSourceVideoActive: false,
+    userVisibleVideoLayer: 'HIDDEN',
+    avatarCanvasVisible: false,
+    renderModeOwner: 'camera',
+    savedAvatarRestoreRequested: false,
+    savedAvatarRestoreSource: null,
+    savedAvatarRestoreUrlPresent: false,
+    savedAvatarRestoreLoadEntered: false,
+    savedAvatarRestoreCompleted: false,
+    savedAvatarRestoreFailure: 'NONE',
+    bootRestoreGeneration: 0,
     lastPosePacketAt: null,
     lastPosePacketSource: null,
     avatarRuntimeInitialized: true,
@@ -241,7 +258,28 @@
   }
 
   function handlePosePacket(posePacket, source = 'pose-runtime') {
-    update({ posePacketsReceived: Number(status().posePacketsReceived || 0) + 1, lastPosePacketAt: new Date().toISOString(), lastPosePacketSource: source });
+    const keypoints = posePacket?.keypoints || [];
+    const score = index => Number(keypoints[index]?.score || 0);
+    const confidence = {
+      leftShoulder: score(5), rightShoulder: score(6), leftElbow: score(7), rightElbow: score(8),
+      leftWrist: score(9), rightWrist: score(10), leftHip: score(11), rightHip: score(12),
+      leftKnee: score(13), rightKnee: score(14), leftAnkle: score(15), rightAnkle: score(16)
+    };
+    const requiredUpper = ['leftShoulder','rightShoulder','leftElbow','rightElbow','leftWrist','rightWrist','leftHip','rightHip'];
+    const requiredFull = [...requiredUpper, 'leftKnee','rightKnee','leftAnkle','rightAnkle'];
+    const threshold = 0.35;
+    const personDetected = keypoints.some(point => Number(point?.score || 0) >= threshold);
+    const upperReady = requiredUpper.every(name => confidence[name] >= threshold);
+    const fullReady = requiredFull.every(name => confidence[name] >= threshold);
+    const shoulderWidth = Math.abs(Number(keypoints[5]?.x || 0) - Number(keypoints[6]?.x || 0));
+    const videoWidth = Number(renderEngineBindings?.getVideo?.()?.videoWidth || 0);
+    let framingState = !personDetected ? 'NO_PERSON' : fullReady ? 'FULL_BODY_READY' : upperReady ? 'UPPER_BODY_READY' : 'LOW_CONFIDENCE';
+    if (personDetected && videoWidth && shoulderWidth / videoWidth > 0.58) framingState = 'TOO_CLOSE';
+    if (personDetected && videoWidth && shoulderWidth > 0 && shoulderWidth / videoWidth < 0.1) framingState = 'TOO_FAR';
+    const now = new Date().toISOString();
+    update({ posePacketsReceived: Number(status().posePacketsReceived || 0) + 1, lastPosePacketAt: now, lastPosePacketSource: source,
+      poseLoopState: 'RUNNING', personDetected, framingState, poseConfidenceMinimum: Math.min(...requiredUpper.map(name => confidence[name])),
+      keypointConfidence: confidence });
     if ((status().posePacketsReceived % 120) === 1) console.log('[AVATAR_POSE] pose packet received', { source });
     try {
       if (typeof poseFrameRenderer === 'function') poseFrameRenderer(posePacket);
@@ -342,7 +380,9 @@
   function requestCanonicalAvatarLoad(profile, source, generation = 0) {
     const url = canonicalAvatarUrl(profile);
     update({ canonicalAvatarObserved: Boolean(url), avatarLoadUrlPresent: Boolean(url),
-      avatarLoadRequestSource: source, avatarLoadRequestGeneration: Number(generation || 0) });
+      avatarLoadRequestSource: source, avatarLoadRequestGeneration: Number(generation || 0),
+      savedAvatarRestoreRequested: Boolean(url), savedAvatarRestoreSource: /post_save/.test(source) ? 'post_save' : (/event/.test(source) ? 'profile_event' : 'profile_boot'),
+      savedAvatarRestoreUrlPresent: Boolean(url), bootRestoreGeneration: Number(generation || 0), savedAvatarRestoreFailure: 'NONE' });
     if (!url) return update({ avatarLoadSkippedReason: 'canonical_avatar_url_missing' });
     if (!assetPipelineBindings) return update({ avatarLoadSkippedReason: 'asset_pipeline_not_configured' });
     if (canonicalLoadPromise) return update({ avatarLoadSkippedReason: 'load_already_in_flight' });
@@ -746,7 +786,9 @@
     const identityOk = Boolean(root && root.parent === runtime?.scene);
     const renderRunning = Boolean(runtime?.renderLoopActive && lastRenderAgeMs != null && lastRenderAgeMs < 1000);
     const retargetRunning = Number(runtime?.retargetFramesExecuted || status().retargetFramesExecuted || 0) > 0;
-    const presentation = identityOk && renderRunning && (!trackingEnabled || retargetRunning) ? 'ACTIVE' : (root ? 'NONE' : 'NONE');
+    const poseRunning = Number(status().posePacketsReceived || 0) > 0 && status().poseLoopState === 'RUNNING';
+    const boneProof = Number(runtime?.bonesChangedLastFrame || status().bonesChangedLastFrame || 0) > 0;
+    const presentation = identityOk && renderRunning && (!trackingEnabled || (poseRunning && retargetRunning && boneProof)) ? 'ACTIVE' : (root ? 'REQUESTED' : 'NONE');
     const proof = update({ sceneUuid: runtime?.scene?.uuid || 'none', avatarRootUuid: root?.uuid || 'none', avatarParentIsActiveScene: identityOk,
       rendererType: runtime?.renderer?.constructor?.name || 'none', cameraUuid: runtime?.camera?.uuid || 'none', cameraType: runtime?.camera?.type || 'none',
       cameraFov: runtime?.camera?.fov ?? null, cameraNear: runtime?.camera?.near ?? null, cameraFar: runtime?.camera?.far ?? null,
@@ -759,6 +801,7 @@
       mappedBoneCount: Object.values(runtime?.boneMap || {}).filter(Boolean).length, materialCount: materials, textureCount: textures,
       activeLights: lights, outputColorSpace: runtime?.renderer?.outputColorSpace || 'unknown', toneMapping: runtime?.renderer?.toneMapping ?? 'unknown',
       shadowState: Boolean(runtime?.renderer?.shadowMap?.enabled), renderLoopState: renderRunning ? 'RUNNING' : (runtime?.renderLoopActive ? 'STALLED' : 'STOPPED'),
+      renderedRootEqualsRetargetedRoot: Boolean(root && runtime?.avatarRoot === root), poseLoopState: poseRunning ? 'RUNNING' : 'STOPPED',
       presentationState: presentation, avatarPresentationState: presentation,
       retargetState: retargetRunning ? 'RUNNING' : (trackingEnabled && root ? 'ARMED' : 'NOT_STARTED') });
     if (!runtime?.lastProofPublishedAt || Date.now() - runtime.lastProofPublishedAt >= 500) {
@@ -777,10 +820,15 @@
     const target = kind === 'depth' ? runtime?.avatarRoot : runtime?.boneMap?.leftUpperArm;
     if (!target?.rotation) throw new Error(kind === 'depth' ? 'avatar_root_missing' : 'left_upper_arm_missing');
     const axis = kind === 'depth' ? 'y' : 'z', original = target.rotation[axis];
+    const quaternionBefore = target.quaternion?.toArray?.() || null;
     target.rotation[axis] = original + Math.PI / 4; target.updateMatrixWorld?.(true);
+    const quaternionAfter = target.quaternion?.toArray?.() || null;
+    const renderFrameBefore = Number(runtime.renderFrameCount || 0);
     refreshRuntimeProof();
     globalScope.setTimeout?.(() => { target.rotation[axis] = original; target.updateMatrixWorld?.(true); }, durationMs);
-    return { kind, renderedRootUuid: runtime.avatarRoot?.uuid, mutatedRootUuid: runtime.avatarRoot?.uuid, axis, radians: Math.PI / 4 };
+    return { kind, renderedRootUuid: runtime.avatarRoot?.uuid, mutatedRootUuid: runtime.avatarRoot?.uuid,
+      targetBone: kind === 'depth' ? 'avatarOrientationRoot' : 'leftUpperArm', quaternionBefore, quaternionAfter,
+      renderFrameBefore, renderFrameAdvanced: () => Number(runtime.renderFrameCount || 0) > renderFrameBefore, axis, radians: Math.PI / 4 };
   }
 
   async function loadAvatarAssetForCurrentUser(source = 'saved_profile') {
@@ -792,7 +840,7 @@
     const nextAvatar = b.normalizeAvatarProfile?.(profile?.avatar) || null;
     const loadUrl = nextAvatar?.avatarModelUrl || null;
     const canonicalUrl = canonicalAvatarUrl(globalScope.AppHydrationRuntime?.getCanonicalProfile?.());
-    update({ avatarLoadFunctionEntered: true, avatarLoadRequested: true, avatarLoadRequestSource: source,
+    update({ avatarLoadFunctionEntered: true, avatarLoadRequested: true, avatarLoadRequestSource: source, savedAvatarRestoreLoadEntered: true,
       avatarLoadUrlPresent: Boolean(loadUrl), avatarLoadUrlMatchesCanonical: Boolean(loadUrl && canonicalUrl && loadUrl === canonicalUrl),
       canonicalAvatarObserved: Boolean(canonicalUrl || loadUrl), avatarLoadSkippedReason: loadUrl ? null : 'normalized_avatar_missing',
       avatarLifecycleStage: loadUrl ? 'LOADING' : 'INITIALIZED BUT NOT LOADING' });
@@ -886,9 +934,11 @@
       }
       b.setAssetStatus?.(`Avatar asset found (${nextAvatar.avatarProvider}, ${source}).`);
       b.setRuntimeStatus?.(`3D avatar loaded. Rig-puppet retargeting armed (mapped bones: ${(mountInfo?.mappedBones || []).join(', ') || 'none'}).`);
+      update({ savedAvatarRestoreCompleted: true, savedAvatarRestoreFailure: 'NONE' });
       b.setCreateButtonLabel?.('🧍 Change Avatar');
       return true;
     } catch (err) {
+      update({ savedAvatarRestoreCompleted: false, savedAvatarRestoreFailure: String(err?.message || err || 'avatar_load_failed') });
       const failedAfterMount = statusRef.avatarAssetState === 'MOUNTED';
       traceState('failed', { presentationMode: 'camera', presentationAppliedMode: 'camera',
         avatarAssetState: failedAfterMount ? 'MOUNTED' : 'FAILED', avatarPresentationState: 'FAILED',
