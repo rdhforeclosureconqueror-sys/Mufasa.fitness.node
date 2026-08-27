@@ -35,6 +35,12 @@
     savedAvatarState: 'none',
     savedAvatarSource: null,
     presentationMode: 'camera',
+    runtimeOwner: 'AvatarRuntime',
+    runtimeStatusGeneration: 0,
+    presentationGeneration: 0,
+    presentationRequested: false,
+    presentationApplied: false,
+    presentationUpdatedAt: null,
     posePacketsReceived: 0,
     lastPosePacketAt: null,
     lastPosePacketSource: null
@@ -51,9 +57,12 @@
   let canvasController = null;
 
   function status() {
-    const current = globalScope.__avatarRuntimeStatus || {};
-    globalScope.__avatarRuntimeStatus = { ...defaultStatus, ...current, avatarThreeGlobalOk: Boolean(globalScope.__AVATAR_THREE) };
-    return globalScope.__avatarRuntimeStatus;
+    const current = globalScope.__avatarRuntimeStatus || (globalScope.__avatarRuntimeStatus = {});
+    for (const [key, value] of Object.entries(defaultStatus)) {
+      if (!(key in current)) current[key] = value;
+    }
+    current.avatarThreeGlobalOk = Boolean(globalScope.__AVATAR_THREE);
+    return current;
   }
 
   function update(partial = {}) {
@@ -630,7 +639,10 @@
     const profile = b.getProfile?.() || null;
     const nextAvatar = b.normalizeAvatarProfile?.(profile?.avatar) || null;
     const traceState = (savedAvatarState, details = {}) => {
-      const trace = { savedAvatarState, savedAvatarSource: source, ...details };
+      const generation = Number(statusRef.presentationGeneration || 0) + 1;
+      const trace = { savedAvatarState, savedAvatarSource: source, presentationGeneration: generation,
+        presentationRequested: ['profile_ready', 'mounted', 'active'].includes(savedAvatarState),
+        presentationApplied: savedAvatarState === 'active', presentationUpdatedAt: new Date().toISOString(), ...details };
       Object.assign(statusRef, trace);
       b.setPresentationState?.(savedAvatarState, { source, mode: trace.presentationMode || b.getRenderMode?.() || 'camera' });
       globalScope.dispatchEvent?.(new CustomEvent('avatar-runtime:presentation-state', { detail: trace }));
@@ -693,7 +705,7 @@
       // camera. Keep this callback inside the awaited asset transaction so the
       // upload flow cannot report ACTIVE before the public workout UI agrees.
       const presentationMode = await b.activatePresentation?.({ source, avatar: nextAvatar });
-      if (presentationMode !== 'avatar_overlay' && presentationMode !== 'avatar_only') {
+      if (presentationMode !== 'camera' && presentationMode !== 'avatar_overlay' && presentationMode !== 'avatar_only') {
         throw new Error('avatar_presentation_not_activated');
       }
       runtimeStatus.presentationMode = presentationMode;
@@ -751,7 +763,26 @@
     renderAvatar3d,
     applyPoseToAvatarRig,
     configureAssetPipeline,
-    loadAvatarAssetForCurrentUser
+    loadAvatarAssetForCurrentUser,
+    getCurrentPresentationState: () => {
+      const current = status();
+      return {
+        savedAvatarState: current.savedAvatarState,
+        savedAvatarSource: current.savedAvatarSource,
+        presentationMode: current.presentationMode,
+        presentationGeneration: current.presentationGeneration,
+        presentationRequested: current.presentationRequested,
+        presentationApplied: current.presentationApplied,
+        presentationUpdatedAt: current.presentationUpdatedAt
+      };
+    },
+    subscribePresentation(listener, { replay = true } = {}) {
+      if (typeof listener !== 'function') return () => {};
+      const handler = event => listener(event.detail || {});
+      globalScope.addEventListener?.('avatar-runtime:presentation-state', handler);
+      if (replay) listener(this.getCurrentPresentationState());
+      return () => globalScope.removeEventListener?.('avatar-runtime:presentation-state', handler);
+    }
   };
 
   subscribeToPoseRuntime();
