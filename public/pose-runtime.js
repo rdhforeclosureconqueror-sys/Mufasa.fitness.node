@@ -44,6 +44,7 @@
   const UPPER_BODY_JOINTS = ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist', 'left_hip', 'right_hip'];
   const FULL_BODY_JOINTS = [...UPPER_BODY_JOINTS, 'left_knee', 'right_knee', 'left_ankle', 'right_ankle'];
   const REPORTED_JOINTS = ['nose', ...FULL_BODY_JOINTS];
+  const cameraBootstraps = new Map();
 
   function keypointName(point) { return point?.name || point?.part || ''; }
   function score(point) { return Number(point?.score || 0); }
@@ -82,7 +83,8 @@
     const trace = global.__POSE_BOOTSTRAP_TRACE || {};
     if (trace.firstFailingBoundary && trace.firstFailingBoundary !== 'NONE') return trace.firstFailingBoundary;
     if (!trace.connectClickReceived) return 'NONE';
-    if (!state.cameraStreamActive) return 'CAMERA_NOT_ACTIVE';
+    if (!trace.poseBootstrapRequested) return trace.poseBootstrapSkippedReason && trace.poseBootstrapSkippedReason !== 'NONE' ? `POSE_BOOTSTRAP_SKIPPED:${trace.poseBootstrapSkippedReason}` : 'POSE_BOOTSTRAP_NOT_REQUESTED';
+    if (!trace.cameraActivePredicate) return 'CAMERA_NOT_ACTIVE';
     if (!global.tf) return 'TF_NOT_LOADED';
     if (!state.tfReady) return 'TF_BACKEND_NOT_READY';
     if (!state.detectorReady) return 'MODEL_NOT_CREATED';
@@ -101,7 +103,14 @@
 
   function renderProof() {
     const now = Date.now();
-    state.cameraStreamActive = Boolean(state.sourceVideo?.srcObject && state.sourceVideo.srcObject.active !== false);
+    const trace = global.__POSE_BOOTSTRAP_TRACE || {};
+    const authoritativeVideo = global.document?.getElementById?.(trace.authoritativeVideoElementId || 'video');
+    const authoritativeStream = authoritativeVideo?.srcObject;
+    const authoritativeTrack = authoritativeStream?.getVideoTracks?.().find((track) => track.readyState === 'live' && track.enabled !== false);
+    state.cameraStreamActive = Boolean(authoritativeVideo?.isConnected && trace.authoritativeVideoStreamMatchesActiveStream && authoritativeTrack && authoritativeVideo.readyState >= 1 && authoritativeVideo.videoWidth > 0 && authoritativeVideo.videoHeight > 0);
+    if (!state.sourceVideo && state.cameraStreamActive) {
+      state.sourceVideo = authoritativeVideo; state.sourceElementId = authoritativeVideo.id || null; state.sourceConnected = Boolean(authoritativeVideo.isConnected); state.sourceDimensions = `${authoritativeVideo.videoWidth}x${authoritativeVideo.videoHeight}`;
+    }
     state.visibleCameraLayer = state.sourceVideo?.style?.visibility === 'hidden' ? 'HIDDEN' : 'VISIBLE';
     state.firstFailingBoundary = failureBoundary();
     const syncText = global.document?.getElementById?.('syncStatus')?.textContent || 'unknown';
@@ -122,7 +131,6 @@
       `Last pose error: ${state.lastError || state.detectorError || 'NONE'}`, `First failing boundary: ${state.firstFailingBoundary}`
     ];
     const panel = global.document?.getElementById?.('poseTrackingProofValues'); if (panel) panel.textContent = lines.join('\n');
-    const trace = global.__POSE_BOOTSTRAP_TRACE || {};
     const yn = (value) => value ? 'YES' : 'NO';
     const traceLines = [
       `Connect Camera click received: ${yn(trace.connectClickReceived)}`, `Connect Camera handler entry count: ${trace.connectHandlerEntryCount || 0}`, '',
@@ -130,6 +138,7 @@
       `Media stream ID: ${trace.mediaStreamId || 'none'}`, `Video track count: ${trace.videoTrackCount || 0}`, `Video track readyState: ${trace.videoTrackReadyState || 'none'}`, `Video track enabled: ${trace.videoTrackEnabled == null ? 'unknown' : yn(trace.videoTrackEnabled)}`, `Video track muted: ${trace.videoTrackMuted == null ? 'unknown' : yn(trace.videoTrackMuted)}`, '',
       `Production video element found: ${yn(trace.productionVideoFound)}`, `Production video element ID: ${trace.productionVideoElementId || 'none'}`, `Production video DOM connected: ${yn(trace.productionVideoDomConnected)}`, `srcObject assigned: ${yn(trace.srcObjectAssigned)}`, `srcObject === active stream: ${yn(trace.srcObjectMatchesStream)}`, `video.readyState: ${trace.videoReadyState ?? 0}`, `videoWidth: ${trace.videoWidth || 0}`, `videoHeight: ${trace.videoHeight || 0}`, `loadedmetadata received: ${yn(trace.loadedmetadataReceived)}`, `loadeddata received: ${yn(trace.loadeddataReceived)}`, `canplay received: ${yn(trace.canplayReceived)}`, `playing received: ${yn(trace.playingReceived)}`, '',
       `video.play() requested: ${yn(trace.videoPlayRequested)}`, `video.play() resolved: ${yn(trace.videoPlayResolved)}`, `video.play() rejected: ${yn(trace.videoPlayRejected)}`, `video.play() error: ${trace.videoPlayError || 'NONE'}`, '',
+      `Pose bootstrap requested: ${yn(trace.poseBootstrapRequested)}`, `Pose bootstrap request generation: ${trace.poseBootstrapRequestGeneration || 0}`, `Pose bootstrap request source: ${trace.poseBootstrapRequestSource || 'none'}`, `Pose bootstrap skipped reason: ${trace.poseBootstrapSkippedReason || 'NONE'}`, `Authoritative camera runtime ID: ${trace.authoritativeCameraRuntimeId || 'none'}`, `Authoritative MediaStream ID: ${trace.authoritativeMediaStreamId || 'none'}`, `Authoritative video element ID: ${trace.authoritativeVideoElementId || 'none'}`, `Authoritative video srcObject stream ID: ${trace.authoritativeVideoSrcObjectStreamId || 'none'}`, `Authoritative video stream matches active stream: ${yn(trace.authoritativeVideoStreamMatchesActiveStream)}`, `Camera active predicate inputs: ${trace.cameraActivePredicateInputs || 'none'}`, `Camera active predicate: ${yn(trace.cameraActivePredicate)}`, `TensorFlow bootstrap function entered: ${yn(trace.tfBootstrapFunctionEntered)}`, `TensorFlow bootstrap entry count: ${trace.tfBootstrapEntryCount || 0}`, '',
       `TensorFlow loader requested: ${yn(trace.tfLoaderRequested)}`, `TensorFlow script/module URL: ${(trace.dependencyAttempts || []).map((item) => `${item.url} [${item.status}]`).join(', ') || 'none'}`, `TensorFlow load resolved: ${yn(trace.tfLoadResolved)}`, `TensorFlow load failed: ${yn(trace.tfLoadFailed)}`, `window.tf present: ${yn(trace.windowTfPresent)}`, `TensorFlow version: ${trace.tfVersion || 'unavailable'}`, '',
       `tf.ready entered: ${yn(trace.tfReadyEntered)}`, `tf.ready resolved: ${yn(trace.tfReadyResolved)}`, `tf.ready rejected: ${yn(trace.tfReadyRejected)}`, '',
       `Backend requested: ${trace.backendRequested || 'none'}`, `Backend set result: ${trace.backendSetResult == null ? 'none' : String(trace.backendSetResult)}`, `Backend active: ${trace.backendActive || 'unavailable'}`, '',
@@ -306,6 +315,24 @@
     return result;
   }
 
+  function bootstrapCamera({ video, generation, source } = {}) {
+    const key = Number(generation || 0);
+    if (cameraBootstraps.has(key)) return cameraBootstraps.get(key);
+    const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
+    trace.poseBootstrapRequested = true;
+    trace.poseBootstrapRequestGeneration = key;
+    trace.poseBootstrapRequestSource = source || 'PoseRuntime.bootstrapCamera';
+    trace.poseBootstrapSkippedReason = 'NONE';
+    const task = (async () => {
+      const detector = await initMoveNetDetector({ ensurePoseRuntime: global.__ensurePoseRuntime, mobileDevice: true });
+      const loop = startPoseLoop({ detector, video, isRunning: () => Boolean(trace.cameraActivePredicate) });
+      return { detector, loop, generation: key };
+    })();
+    cameraBootstraps.set(key, task);
+    task.catch(() => cameraBootstraps.delete(key));
+    return task;
+  }
+
   function normalizePosePacket(pose, video) {
     const keypoints = Array.isArray(pose?.keypoints) ? pose.keypoints : [];
     return {
@@ -442,6 +469,7 @@
 
   global.PoseRuntime = {
     initMoveNetDetector,
+    bootstrapCamera,
     initOptionalTrackers,
     normalizePosePacket,
     classifyPose,

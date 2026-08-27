@@ -10,6 +10,8 @@
   let deps = {};
   let actionPending = false;
   let cameraConnectPending = null;
+  let cameraGeneration = 0;
+  const cameraRuntimeId = `workout-camera-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const focusDebug = (()=>{try{return new URLSearchParams(global.location?.search||'').get('debugWorkoutFocus')==='1';}catch(_){return false;}})();
   function focusDiagnostic(event){if(focusDebug)console.info('[WORKOUT_FOCUS]',event);}
 
@@ -195,10 +197,39 @@
         await new Promise((resolve, reject) => { const timeout = global.setTimeout(() => reject(new Error('video metadata did not provide non-zero dimensions')), 5000); const ready = () => { if (video.videoWidth && video.videoHeight) { global.clearTimeout(timeout); resolve(); } }; video.addEventListener?.('loadedmetadata', ready, { once: true }); video.addEventListener?.('loadeddata', ready, { once: true }); ready(); }).catch((error) => { global.__recordPoseBootstrapFailure?.('VIDEO_METADATA_NOT_READY', error); throw error; });
       }
       trace.videoReadyState = video.readyState; trace.videoWidth = video.videoWidth; trace.videoHeight = video.videoHeight;
+      const liveVideoTrack = videoTracks.find((track) => track.readyState === 'live' && track.enabled !== false);
+      const cameraActive = Boolean(video.isConnected && video.srcObject === stream && liveVideoTrack && video.readyState >= 1 && video.videoWidth > 0 && video.videoHeight > 0);
+      cameraGeneration += 1;
+      Object.assign(trace, {
+        authoritativeCameraRuntimeId: cameraRuntimeId,
+        authoritativeMediaStreamId: stream.id || '',
+        authoritativeVideoElementId: video.id || '',
+        authoritativeVideoSrcObjectStreamId: video.srcObject?.id || '',
+        authoritativeVideoStreamMatchesActiveStream: video.srcObject === stream,
+        cameraActivePredicateInputs: `connected=${Boolean(video.isConnected)},streamMatch=${video.srcObject === stream},liveTrack=${Boolean(liveVideoTrack)},readyState=${video.readyState},dimensions=${video.videoWidth}x${video.videoHeight}`,
+        cameraActivePredicate: cameraActive,
+        poseBootstrapRequested: cameraActive,
+        poseBootstrapRequestGeneration: cameraGeneration,
+        poseBootstrapRequestSource: 'WorkoutRuntime.connectCamera:production-video-ready',
+        poseBootstrapSkippedReason: cameraActive ? 'NONE' : 'CAMERA_PREDICATE_FALSE'
+      });
+      if (!cameraActive) {
+        global.__recordPoseBootstrapFailure?.('POSE_BOOTSTRAP_SKIPPED:CAMERA_PREDICATE_FALSE', new Error(trace.cameraActivePredicateInputs));
+        throw new Error(`production video failed camera-active predicate: ${trace.cameraActivePredicateInputs}`);
+      }
       markCameraDiagnostics({ videoElementReady: true, videoPlaying: true });
       markLiveBreakpoint('video-playing', 'pass', { readyState: video.readyState || null, videoWidth: video.videoWidth || null, videoHeight: video.videoHeight || null });
       videoPlayingMarked = true;
-      try { await getFn('afterConnectCamera')?.(stream); }
+      let poseBootstrapResult = null;
+      try {
+        if (typeof global.PoseRuntime?.bootstrapCamera !== 'function') {
+          trace.poseBootstrapSkippedReason = 'POSE_RUNTIME_BOOTSTRAP_UNAVAILABLE';
+          global.__recordPoseBootstrapFailure?.('POSE_BOOTSTRAP_SKIPPED:POSE_RUNTIME_BOOTSTRAP_UNAVAILABLE', new Error('PoseRuntime.bootstrapCamera missing'));
+          throw new Error('PoseRuntime.bootstrapCamera missing');
+        }
+        poseBootstrapResult = await global.PoseRuntime.bootstrapCamera({ video, generation: cameraGeneration, source: trace.poseBootstrapRequestSource });
+        await getFn('afterConnectCamera')?.(stream, poseBootstrapResult);
+      }
       catch (optionalError) { console.warn('[WORKOUT_LIFECYCLE] optional pose/avatar initialization failed; camera self-view preserved', optionalError); setPoseStatus(`Camera ready. Movement tracking unavailable: ${optionalError?.message || optionalError}`); getFn('onOptionalTrackingError')?.(optionalError); }
       state.cameraActive = true;
       setEnabled('startBtn', true);

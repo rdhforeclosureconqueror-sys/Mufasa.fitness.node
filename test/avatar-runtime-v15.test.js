@@ -40,7 +40,7 @@ test("v15 fails closed and keeps orientation above the model skeleton", () => {
   assert.match(workout, /runtime\.scene\.add\(avatarOrientationRoot\)/);
   assert.match(workout, /runtime\.avatarOrientationRoot = avatarOrientationRoot/);
   assert.match(runtime, /quaternionBefore/);
-  assert.match(workout, /2026-08-27-movenet-pose-proof-v18/);
+  assert.match(workout, /2026-08-27-authoritative-pose-bootstrap-v20/);
 });
 
 test("v17 manual facing binds the deployed controls early and traces the authoritative owner", () => {
@@ -55,5 +55,5 @@ test("v17 manual facing binds the deployed controls early and traces the authori
   assert.match(workout, /bindAvatarManualControls\(\)/);
   assert.match(workout, /Manual Control Event Trace/);
   assert.match(workout, /window\.__avatarThreeOwner = avatarThreeRuntime/);
-  assert.match(workout, /2026-08-27-movenet-pose-proof-v18/);
+  assert.match(workout, /2026-08-27-authoritative-pose-bootstrap-v20/);
 });

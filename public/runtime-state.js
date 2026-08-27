@@ -146,6 +146,8 @@
     const configuredScripts = Array.isArray(poseScripts) && poseScripts.length ? poseScripts : DEFAULT_POSE_SCRIPTS;
     const { requiredDeps, optionalDeps } = normalizeConfiguredPoseScripts(poseScripts);
     global.__ensurePoseRuntime = async function ensurePoseRuntime() {
+      bootstrap.tfBootstrapFunctionEntered = true;
+      bootstrap.tfBootstrapEntryCount = (bootstrap.tfBootstrapEntryCount || 0) + 1;
       if (poseRuntimePromise) return poseRuntimePromise;
       const startedAt = performance.now();
       poseRuntimePromise = (async () => {
