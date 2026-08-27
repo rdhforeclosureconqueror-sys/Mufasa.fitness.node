@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
-  <script src="/workout-presentation-state.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/runtime-state.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
+  <script src="/workout-presentation-state.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -64,7 +64,6 @@
     html, body {
       width: 100%;
       min-height: 100%;
-      overflow-x: hidden;
     }
 
     body {
@@ -92,7 +91,10 @@
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
       gap: 20px;
+      min-width: 0;
     }
+
+    .app > *, .pane > * { min-width: 0; }
 
     @media (max-width: 800px) {
       .app { grid-template-columns: 1fr; }
@@ -110,6 +112,8 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .video-shell {
@@ -120,6 +124,9 @@
       overflow: hidden;
       background: #000;
       border: 1px solid #22c55e;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .camera-fs-actions {
       position: absolute;
@@ -198,6 +205,8 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      max-width: 100%;
+      display: block;
     }
     #video { z-index: 0; }
     #overlay {
@@ -258,7 +267,10 @@
       align-items: center;
       width: 100%;
       overflow: visible;
+      min-width: 0;
+      max-width: 100%;
     }
+    .btn-row > * { min-width: 0; max-width: 100%; }
     .btn-row #connectBtn,
     .btn-row #startBtn,
     .btn-row #fullscreenCameraBtn {
@@ -546,6 +558,23 @@
       background: #020617;
       padding: 6px 8px;
       font-size: 0.8rem;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    /* Diagnostic text may contain unbroken URLs, UUIDs, and runtime tokens. */
+    .diagPre,
+    .small-card pre,
+    .small-card code {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     #pilotModeBanner {
@@ -1108,6 +1137,10 @@ rep quality: waiting</pre>
 visibleKeypointCount: 0
 skeletonOverlayActive: no</pre>
       </div>
+      <details id="mobileLayoutContainmentProof" class="small-card" style="margin-top:10px;" open>
+        <summary><strong>Mobile Layout Containment Proof</strong></summary>
+        <pre id="mobileLayoutContainmentProofValues" class="diagPre muted">Layout measurement pending…</pre>
+      </details>
       <details id="poseTrackingProof" class="small-card" style="margin-top:10px;" open>
         <summary><strong>Pose Tracking Proof</strong></summary>
         <pre id="poseTrackingProofValues" class="diagPre muted" style="white-space:pre-wrap;max-height:520px;overflow:auto;">Pose engine initialized: NO
@@ -1363,18 +1396,18 @@ First failing boundary: NONE</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/backend-read.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/session-write.js?v=20260425"></script>
-  <script src="/workout-performance-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
-  <script src="/pose-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/workout-performance-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
+  <script src="/pose-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
   <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
   <script>window.__PHASE2_POSE_PROOF_ONLY__ = true;</script>
-  <script src="/motion/live-avatar-mirror.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/motion/live-avatar-mirror.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
-  <script src="/hud-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/hud-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/exercise-metadata.js?v=20260725-em1"></script>
   <script src="/workout-coach-runtime.js?v=20260725-em-wc1"></script>
   <script src="/workout-form-runtime.js?v=20260725-em-fr1"></script>
@@ -1383,26 +1416,27 @@ First failing boundary: NONE</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/profile-write-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
-  <script src="/button-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/button-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
-  <script src="/workout-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
-  <script src="/workout-control-activation.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
-  <script src="/generated-workout-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
-  <script src="/runtime-orchestrator.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/workout-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
+  <script src="/mobile-layout-containment.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
+  <script src="/workout-control-activation.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
+  <script src="/generated-workout-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
+  <script src="/runtime-orchestrator.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=2026-08-27-authoritative-pose-bootstrap-v20"></script>
+  <script src="/app-hydration-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
-    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-authoritative-pose-bootstrap-v20";
+    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-mobile-camera-layout-containment-v21";
     const ENABLE_AVATAR_FEATURE = window.ENABLE_AVATAR_FEATURE === true;
     const isAvatarFeatureEnabled = () => ENABLE_AVATAR_FEATURE;
     // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.
