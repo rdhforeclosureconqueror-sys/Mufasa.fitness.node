@@ -1028,6 +1028,12 @@
         </label>
         <button id="avatarRotate90Btn" class="secondary" type="button" data-avatar-feature>Rotate Avatar 90°</button>
 
+        <details id="avatarManualControlProof" data-avatar-feature style="width:min(100%,760px);font-size:0.78rem;">
+          <summary><strong>Avatar Manual Control Proof</strong></summary>
+          <pre id="avatarManualControlProofValues" style="white-space:pre-wrap;margin:8px 0 0;padding:10px;border:1px solid rgba(148,163,184,.35);border-radius:8px;background:rgba(15,23,42,.72);">Control received: NO
+Last manual rotation result: FAILED</pre>
+        </details>
+
         <span class="chip">
           <span class="chip-dot"></span>
           <span id="brainChipText">Ma’at 2.0: ready</span>
@@ -1356,7 +1362,7 @@ skeletonOverlayActive: no</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-movenet-retarget-runtime-v15"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-manual-control-proof-v16"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
@@ -1375,7 +1381,7 @@ skeletonOverlayActive: no</pre>
   <script>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
-    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-avatar-movenet-retarget-runtime-v15";
+    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-avatar-manual-control-proof-v16";
     const ENABLE_AVATAR_FEATURE = window.ENABLE_AVATAR_FEATURE === true;
     const isAvatarFeatureEnabled = () => ENABLE_AVATAR_FEATURE;
     // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.
@@ -1444,6 +1450,7 @@ skeletonOverlayActive: no</pre>
     const avatarFacingSelectEl = document.getElementById("avatarFacingSelect");
     console.log("[INLINE_SECTION] avatar refs");
     const avatarRotate90Btn = document.getElementById("avatarRotate90Btn");
+    const avatarManualControlProofValuesEl = document.getElementById("avatarManualControlProofValues");
     const avatarCreateBtn = document.getElementById("avatarCreateBtn");
     const avatarThumbEl = document.getElementById("avatarThumb");
     const avatarAssetStatusEl = document.getElementById("avatarAssetStatus");
@@ -2737,6 +2744,75 @@ skeletonOverlayActive: no</pre>
       return ALLOWED_AVATAR_FACING_DEG.has(numeric) ? numeric : 0;
     }
 
+    const avatarManualControlProof = {
+      controlReceived: false, sourceElementId: "none", requestedFacing: 0,
+      rotationBeforeY: null, rotationRequestedY: 0, rotationAfterY: null,
+      quaternionBefore: "unavailable", quaternionAfter: "unavailable", transformChanged: false,
+      renderFrameAtRequest: 0, renderLoopAdvancing: false, result: "FAILED", reset: false,
+      generation: 0
+    };
+
+    function isDescendantOf(object, ancestor) {
+      for (let current = object; current; current = current.parent) if (current === ancestor) return true;
+      return false;
+    }
+
+    function formatAvatarQuaternion(object) {
+      return object?.quaternion?.toArray?.().map(value => Number(value.toFixed(5))).join(", ") || "unavailable";
+    }
+
+    function renderAvatarManualControlProof() {
+      if (!avatarManualControlProofValuesEl) return;
+      const runtime = avatarThreeRuntime;
+      const orientationRoot = runtime?.avatarOrientationRoot;
+      const scene = runtime?.scene;
+      const visibleRoot = runtime?.modelRoot;
+      const age = runtime?.lastRenderAt ? Math.max(0, Date.now() - runtime.lastRenderAt) : null;
+      const value = number => Number.isFinite(number) ? Number(number.toFixed(5)) : "unavailable";
+      avatarManualControlProofValuesEl.textContent = [
+        `Control received: ${avatarManualControlProof.controlReceived ? "YES" : "NO"}`,
+        `Control source element ID: ${avatarManualControlProof.sourceElementId}`,
+        `Requested facing: ${avatarManualControlProof.requestedFacing}`,
+        `Orientation owner: ${orientationRoot?.name || "unavailable"}`,
+        `Active scene UUID: ${scene?.uuid || "unavailable"}`,
+        `Visible avatar root UUID: ${visibleRoot?.uuid || "unavailable"}`,
+        `Orientation root UUID: ${orientationRoot?.uuid || "unavailable"}`,
+        `Orientation root parent === active scene: ${orientationRoot?.parent === scene ? "YES" : "NO"}`,
+        `Rendered avatar descendant of orientation root: ${isDescendantOf(visibleRoot, orientationRoot) ? "YES" : "NO"}`,
+        `Rotation before Y: ${value(avatarManualControlProof.rotationBeforeY)}`,
+        `Rotation requested Y: ${value(avatarManualControlProof.rotationRequestedY)}`,
+        `Rotation after Y: ${value(avatarManualControlProof.rotationAfterY)}`,
+        `Quaternion before: ${avatarManualControlProof.quaternionBefore}`,
+        `Quaternion after: ${avatarManualControlProof.quaternionAfter}`,
+        `Transform changed: ${avatarManualControlProof.transformChanged ? "YES" : "NO"}`,
+        `Render loop advancing: ${avatarManualControlProof.renderLoopAdvancing ? "YES" : "NO"}`,
+        `Last render age: ${age == null ? "unavailable" : age} ms`,
+        `Rotation reset by later runtime update: ${avatarManualControlProof.reset ? "YES" : "NO"}`,
+        `Last manual rotation result: ${avatarManualControlProof.result}`,
+        `Manual rotation generation: ${avatarManualControlProof.generation}`
+      ].join("\n");
+    }
+
+    function inspectManualRotation(generation, finalInspection = false) {
+      if (generation !== avatarManualControlProof.generation) return;
+      const runtime = avatarThreeRuntime;
+      const owner = runtime?.avatarOrientationRoot;
+      const scene = runtime?.scene;
+      const rendered = runtime?.modelRoot;
+      const requested = avatarManualControlProof.rotationRequestedY;
+      avatarManualControlProof.rotationAfterY = owner?.rotation?.y ?? null;
+      avatarManualControlProof.quaternionAfter = formatAvatarQuaternion(owner);
+      avatarManualControlProof.renderLoopAdvancing = Number(runtime?.renderFrameCount || 0) > avatarManualControlProof.renderFrameAtRequest;
+      const hierarchyOk = owner?.parent === scene && isDescendantOf(rendered, owner);
+      const retained = Number.isFinite(owner?.rotation?.y) && Math.abs(owner.rotation.y - requested) < 1e-6;
+      avatarManualControlProof.reset = Boolean(owner && !retained);
+      if (!owner || !hierarchyOk) avatarManualControlProof.result = "WRONG_ROOT";
+      else if (!retained) avatarManualControlProof.result = "RESET";
+      else if (finalInspection && !avatarManualControlProof.renderLoopAdvancing) avatarManualControlProof.result = "NO_RENDER";
+      else avatarManualControlProof.result = "APPLIED";
+      renderAvatarManualControlProof();
+    }
+
     function applyAvatarFacingCalibration(nextDeg, { persist = true, source = "ui" } = {}) {
       avatarFacingDeg = sanitizeAvatarFacingDeg(nextDeg);
       const threeRef = getThreeGlobal();
@@ -2745,8 +2821,32 @@ skeletonOverlayActive: no</pre>
         avatarFacingSelectEl.value = String(avatarFacingDeg);
       }
       const runtime = ensureAvatarThreeRuntime();
-      if (runtime?.avatarModelGroup) {
-        runtime.avatarModelGroup.rotation.y = facingRad;
+      const orientationRoot = runtime?.avatarOrientationRoot;
+      const isManualRequest = source === "facing_select" || source === "facing_rotate_90";
+      if (isManualRequest) {
+        avatarManualControlProof.controlReceived = true;
+        avatarManualControlProof.sourceElementId = source === "facing_select" ? avatarFacingSelectEl?.id || "none" : avatarRotate90Btn?.id || "none";
+        avatarManualControlProof.requestedFacing = avatarFacingDeg;
+        avatarManualControlProof.rotationBeforeY = orientationRoot?.rotation?.y ?? null;
+        avatarManualControlProof.quaternionBefore = formatAvatarQuaternion(orientationRoot);
+        avatarManualControlProof.rotationRequestedY = facingRad;
+        avatarManualControlProof.renderFrameAtRequest = Number(runtime?.renderFrameCount || 0);
+        avatarManualControlProof.renderLoopAdvancing = false;
+        avatarManualControlProof.reset = false;
+        avatarManualControlProof.generation += 1;
+      }
+      if (orientationRoot) orientationRoot.rotation.y = facingRad;
+      if (isManualRequest) {
+        avatarManualControlProof.rotationAfterY = orientationRoot?.rotation?.y ?? null;
+        avatarManualControlProof.quaternionAfter = formatAvatarQuaternion(orientationRoot);
+        avatarManualControlProof.transformChanged = Boolean(orientationRoot && (
+          Math.abs((avatarManualControlProof.rotationBeforeY ?? facingRad) - facingRad) > 1e-6 ||
+          avatarManualControlProof.quaternionBefore !== avatarManualControlProof.quaternionAfter
+        ));
+        avatarManualControlProof.result = orientationRoot ? "APPLIED" : "WRONG_ROOT";
+        const generation = avatarManualControlProof.generation;
+        requestAnimationFrame(() => inspectManualRotation(generation, false));
+        setTimeout(() => inspectManualRotation(generation, true), 250);
       }
       if (runtime) runtime.avatarFacingDeg = avatarFacingDeg;
       if (persist) {
@@ -2754,6 +2854,7 @@ skeletonOverlayActive: no</pre>
       }
       console.log(`[avatar-facing] selected degrees: ${avatarFacingDeg}`);
       console.log(`[avatar-facing] applied radians: ${Number(facingRad.toFixed(4))}`);
+      renderAvatarManualControlProof();
       return avatarFacingDeg;
     }
 
@@ -2953,9 +3054,8 @@ skeletonOverlayActive: no</pre>
         console.error("[avatar-load] glb load failure:", err);
         throw err;
       }
-      if (runtime.avatarRoot) {
-        runtime.scene.remove(runtime.avatarRoot);
-      }
+      if (runtime.avatarOrientationRoot) runtime.scene.remove(runtime.avatarOrientationRoot);
+      else if (runtime.avatarRoot) runtime.scene.remove(runtime.avatarRoot);
       const root = gltf.scene || gltf.scenes?.[0];
       if (!root) {
         status.lastGlbLoadStatus = "failed:avatar_gltf_scene_missing";
@@ -2990,14 +3090,14 @@ skeletonOverlayActive: no</pre>
       const avatarOrientationRoot = new threeRef.Group();
       avatarOrientationRoot.name = "avatarOrientationRoot";
       avatarOrientationRoot.rotation.y = threeRef.MathUtils.degToRad(avatarFacingDeg);
-      avatarOrientationRoot.add(root);
+      avatarRoot.add(root);
+      avatarOrientationRoot.add(avatarRoot);
       const avatarModelGroup = avatarOrientationRoot;
-      avatarRoot.add(avatarOrientationRoot);
 
-      runtime.scene.add(avatarRoot);
+      runtime.scene.add(avatarOrientationRoot);
       console.log("[avatar-3d] model added to scene");
       updateAvatarOverlayDiagnostics({
-        avatarModelMounted: runtime.scene.children.includes(avatarRoot),
+        avatarModelMounted: runtime.scene.children.includes(avatarOrientationRoot),
         avatarModelVisible: avatarRoot.visible !== false,
         avatarSceneChildrenCount: runtime.scene.children.length
       });
