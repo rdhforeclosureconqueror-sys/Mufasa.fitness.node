@@ -9,7 +9,17 @@
     visibleAvatarLabelState: 'none',
     profilePanelState: 'loading',
     syncState: 'checking',
-    presentationEventLastReceived: 'none'
+    presentationEventLastReceived: 'none',
+    canonicalProfileOwner: 'AppHydrationRuntime',
+    hydrationProfileGeneration: 0,
+    uiProfileGeneration: 0,
+    presentationProfileGeneration: 0,
+    uiProfileMatchesHydration: false,
+    presentationProfileMatchesHydration: false,
+    profileLastUpdatedAt: null,
+    avatarRuntimeOwner: 'AvatarRuntime',
+    avatarRuntimeStatusGeneration: 0,
+    avatarPresentationGeneration: 0
   };
   let deps = {};
   let subscribed = false;
@@ -33,7 +43,17 @@
       avatarDiagVisibleLabel: state.visibleAvatarLabelState,
       avatarDiagProfilePanel: state.profilePanelState,
       avatarDiagSyncState: state.syncState,
-      avatarDiagPresentationEvent: state.presentationEventLastReceived
+      avatarDiagPresentationEvent: state.presentationEventLastReceived,
+      avatarDiagProfileOwner: state.canonicalProfileOwner,
+      avatarDiagProfileGeneration: state.hydrationProfileGeneration,
+      avatarDiagUiIdentity: state.uiProfileMatchesHydration ? 'YES' : 'NO',
+      avatarDiagPresentationIdentity: state.presentationProfileMatchesHydration ? 'YES' : 'NO',
+      avatarDiagProfileUpdated: state.profileLastUpdatedAt || 'none',
+      avatarDiagRuntimeOwner: state.avatarRuntimeOwner,
+      avatarDiagRuntimeGeneration: state.avatarRuntimeStatusGeneration,
+      avatarDiagPresentationGeneration: state.avatarPresentationGeneration,
+      avatarDiagHydrationResponse: global.AppHydrationRuntime?.getState?.().profileResponseReceived ? 'YES' : 'NO',
+      avatarDiagNormalization: global.AppHydrationRuntime?.getState?.().profileNormalizationComplete ? 'YES' : 'NO'
     };
     Object.entries(fields).forEach(([id, value]) => {
       const el = global.document?.getElementById?.(id);
@@ -48,10 +68,16 @@
     deps.setAvatarLabel?.(saved ? 'Avatar saved.' : 'No avatar saved.', !saved);
   }
 
-  function setCanonicalProfile(profile, status = 'ready') {
+  function setCanonicalProfile(profile, status = 'ready', metadata = {}) {
     state.canonicalProfileState = status;
     state.profilePanelState = status;
     state.canonicalAvatarPresent = Boolean(avatarFrom(profile));
+    state.hydrationProfileGeneration = Number(metadata.generation || global.AppHydrationRuntime?.getState?.().profileGeneration || 0);
+    state.presentationProfileGeneration = state.hydrationProfileGeneration;
+    state.uiProfileGeneration = deps.getProfile?.() === profile ? state.hydrationProfileGeneration : 0;
+    state.uiProfileMatchesHydration = deps.getProfile?.() === profile;
+    state.presentationProfileMatchesHydration = global.AppHydrationRuntime?.getCanonicalProfile?.() === profile;
+    state.profileLastUpdatedAt = metadata.updatedAt || global.AppHydrationRuntime?.getState?.().profileLastUpdatedAt || null;
     if (!state.canonicalAvatarPresent) {
       state.presentationState = 'none';
       state.appliedRenderMode = 'camera';
@@ -65,6 +91,8 @@
     const next = String(detail.savedAvatarState || 'none');
     state.presentationEventLastReceived = next;
     state.presentationState = next;
+    state.avatarPresentationGeneration = Number(detail.presentationGeneration || state.avatarPresentationGeneration || 0);
+    state.avatarRuntimeStatusGeneration = Number(detail.runtimeStatusGeneration || global.__avatarRuntimeStatus?.runtimeStatusGeneration || 0);
     if (next === 'profile_ready' || next === 'mounted' || next === 'active') state.canonicalAvatarPresent = true;
     if (next === 'none') state.canonicalAvatarPresent = false;
     if (next === 'active' && (detail.presentationMode === 'avatar_overlay' || detail.presentationMode === 'avatar_only')) {
@@ -89,7 +117,9 @@
   function configure(options = {}) {
     deps = { ...deps, ...options };
     if (!subscribed) {
-      global.addEventListener?.('avatar-runtime:presentation-state', (event) => consumePresentation(event.detail || {}));
+      if (global.AvatarRuntime?.subscribePresentation) global.AvatarRuntime.subscribePresentation(consumePresentation, { replay: true });
+      else global.addEventListener?.('avatar-runtime:presentation-state', (event) => consumePresentation(event.detail || {}));
+      global.addEventListener?.('app:canonical-profile', (event) => setCanonicalProfile(event.detail?.profile, 'ready', event.detail || {}));
       global.addEventListener?.('app:hydration-state', (event) => {
         const status = event.detail?.status;
         if (status === 'error') {
@@ -102,9 +132,9 @@
     }
     // Events are not replayable. Always read both canonical stores immediately,
     // then subscribe for future transitions.
-    const profile = deps.getProfile?.();
-    if (profile) setCanonicalProfile(profile, 'ready');
-    const runtime = deps.getAvatarRuntimeState?.() || global.__avatarRuntimeStatus;
+    const profile = global.AppHydrationRuntime?.getCanonicalProfile?.() || deps.getProfile?.();
+    if (profile) setCanonicalProfile(profile, 'ready', global.AppHydrationRuntime?.getState?.() || {});
+    const runtime = global.AvatarRuntime?.getCurrentPresentationState?.() || deps.getAvatarRuntimeState?.() || global.__avatarRuntimeStatus;
     if (runtime?.savedAvatarState) consumePresentation({
       savedAvatarState: runtime.savedAvatarState,
       presentationMode: runtime.presentationMode

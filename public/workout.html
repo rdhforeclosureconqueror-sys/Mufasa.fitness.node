@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=20260826-avatar-public-presentation-v8"></script>
-  <script src="/workout-presentation-state.js?v=20260827-avatar-public-presentation-v9"></script>
+  <script src="/runtime-state.js?v=20260827-avatar-canonical-presentation-v10"></script>
+  <script src="/workout-presentation-state.js?v=20260827-avatar-canonical-presentation-v10"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1252,13 +1252,23 @@ skeletonOverlayActive: no</pre>
         Profile panel state: <span id="avatarDiagProfilePanel">loading</span><br>
         Sync state: <span id="avatarDiagSyncState">checking</span><br>
         Presentation event last received: <span id="avatarDiagPresentationEvent">none</span>
+        <br>Canonical profile owner: <span id="avatarDiagProfileOwner">AppHydrationRuntime</span>
+        <br>Profile hydration response received: <span id="avatarDiagHydrationResponse">NO</span>
+        <br>Profile normalization complete: <span id="avatarDiagNormalization">NO</span>
+        <br>Canonical profile generation: <span id="avatarDiagProfileGeneration">0</span>
+        <br>UI profile object === hydration profile object: <span id="avatarDiagUiIdentity">NO</span>
+        <br>Presentation profile object === hydration profile object: <span id="avatarDiagPresentationIdentity">NO</span>
+        <br>Profile last updated timestamp: <span id="avatarDiagProfileUpdated">none</span>
+        <br>Avatar runtime owner: <span id="avatarDiagRuntimeOwner">AvatarRuntime</span>
+        <br>Avatar runtime status generation: <span id="avatarDiagRuntimeGeneration">0</span>
+        <br>Avatar presentation generation: <span id="avatarDiagPresentationGeneration">0</span>
       </div>
       <p class="subtitle">A successful GLB upload automatically saves its protected URL to your profile. “Save Manual Avatar URL” is only for the compatibility URL fields above.</p>
     </div>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=20260826-avatar-public-presentation-v8"></script>
+  <script src="/backend-read.js?v=20260827-avatar-canonical-presentation-v10"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=20260724-focus2"></script>
   <script src="/pose-runtime.js?v=20260724-focus2"></script>
@@ -1277,21 +1287,21 @@ skeletonOverlayActive: no</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=20260506a"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=20260827-avatar-canonical-presentation-v10"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=20260826-avatar-public-presentation-v8"></script>
+  <script src="/profile-write-runtime.js?v=20260827-avatar-canonical-presentation-v10"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
   <script src="/button-runtime.js?v=20260724-focus2"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
   <script src="/workout-runtime.js?v=20260724-focus2"></script>
-  <script src="/workout-control-activation.js?v=20260826-avatar-public-presentation-v8"></script>
+  <script src="/workout-control-activation.js?v=20260827-avatar-canonical-presentation-v10"></script>
   <script src="/generated-workout-runtime.js?v=20260724-focus2"></script>
   <script src="/runtime-orchestrator.js?v=20260724-focus2"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=20260826-avatar-public-presentation-v8"></script>
+  <script src="/app-hydration-runtime.js?v=20260827-avatar-canonical-presentation-v10"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
@@ -1516,7 +1526,7 @@ skeletonOverlayActive: no</pre>
     }
 
     function getAvatarRuntimeStatusRef() {
-      const current = window.__avatarRuntimeStatus || {};
+      const current = window.__avatarRuntimeStatus || (window.__avatarRuntimeStatus = {});
       const normalized = {
         ...current,
         threeImportStarted: Boolean(current.threeImportStarted),
@@ -1564,8 +1574,10 @@ skeletonOverlayActive: no</pre>
         trackingState: current.trackingState || null,
         calibrationStatus: current.calibrationStatus || null
       };
-      window.__avatarRuntimeStatus = normalized;
-      return normalized;
+      Object.assign(current, normalized);
+      current.runtimeOwner = "AvatarRuntime";
+      current.runtimeStatusGeneration = Number(current.runtimeStatusGeneration || 1);
+      return current;
     }
 
     function updateAvatarOverlayDiagnostics(partial = {}) {
@@ -1840,6 +1852,7 @@ skeletonOverlayActive: no</pre>
       AVATAR_MODE: "camera", // "camera" | "avatar_overlay" | "avatar_only"
       AVATAR_DEBUG: false
     };
+    let renderModePreferenceExplicit = false;
     let lastRenderMode = "camera";
     let activeAvatarAsset = null;
     let avatarThreeRuntime = null;
@@ -2421,6 +2434,7 @@ skeletonOverlayActive: no</pre>
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
       const previousMode = AVATAR_FLAGS.AVATAR_MODE;
       const nextMode = sanitizeRenderMode(mode);
+      if (source === "user" || source === "mobile") renderModePreferenceExplicit = true;
       updateAvatarOverlayDiagnostics({ lastRenderModeRequested: nextMode });
       if (!isAvatarFeatureEnabled() && (nextMode === "avatar_overlay" || nextMode === "avatar_only")) {
         updateRenderModeStatus("Camera (avatar presentation unavailable)", true);
@@ -2493,6 +2507,7 @@ skeletonOverlayActive: no</pre>
       // chooses camera for a stable boot, then backend hydration promotes the
       // successfully mounted saved avatar into the visible workout surface.
       const currentMode = getRenderMode();
+      if (currentMode === "camera" && renderModePreferenceExplicit) return "camera";
       const targetMode = currentMode === "avatar_only" ? "avatar_only" : "avatar_overlay";
       const appliedMode = applyRenderModeSelection(targetMode, {
         persist: true,
@@ -2603,14 +2618,15 @@ skeletonOverlayActive: no</pre>
     }
 
     function resolveInitialRenderMode() {
-      if (mobileDevice) return "camera";
       let queryMode = null;
       try {
         queryMode = new URLSearchParams(window.location.search).get("renderMode");
       } catch (_) {}
-      if (queryMode) return sanitizeRenderMode(queryMode);
+      if (queryMode) { renderModePreferenceExplicit = true; return sanitizeRenderMode(queryMode); }
       try {
-        return sanitizeRenderMode(localStorage.getItem(AVATAR_MODE_STORAGE_KEY));
+        const stored = localStorage.getItem(AVATAR_MODE_STORAGE_KEY);
+        if (stored) { renderModePreferenceExplicit = true; return sanitizeRenderMode(stored); }
+        return "camera";
       } catch (_) {
         return "camera";
       }
@@ -2950,7 +2966,7 @@ skeletonOverlayActive: no</pre>
     if (isAvatarFeatureEnabled()) window.AvatarRuntime?.configureAssetPipeline?.({
       getStatusRef: getAvatarRuntimeStatusRef,
       getRenderMode,
-      getProfile: () => USER_PROFILE,
+      getProfile: () => window.AppHydrationRuntime?.getCanonicalProfile?.() || USER_PROFILE,
       setActiveAvatarAsset: (asset) => { activeAvatarAsset = asset; return activeAvatarAsset; },
       getRuntime: () => avatarThreeRuntime,
       ensureRuntime: ensureAvatarThreeRuntime,
@@ -4624,7 +4640,7 @@ skeletonOverlayActive: no</pre>
       endpoints: { nodeBaseUrl: NODE_BASE_URL, nodeProfileUrl: NODE_PROFILE_URL },
       deps: {
         getProfile: () => USER_PROFILE,
-        setProfile: (profile) => { USER_PROFILE = profile; return USER_PROFILE; },
+        setProfile: (profile) => window.AppHydrationRuntime?.adoptCanonicalProfile?.(profile, "profile-write") || (USER_PROFILE = profile),
         getUserId: () => USER_ID,
         getAuthToken: () => getAuthToken(),
         postAuthenticatedJSON: (url, options) => {
@@ -4654,7 +4670,7 @@ skeletonOverlayActive: no</pre>
       sendProfileToNode: (options) => window.ProfileWriteRuntime?.saveProfileToNode?.({ source: "app-hydration", ...(options || {}) }),
       calendarViewEl,
       backendReadClient: BACKEND_READ_CLIENT,
-      getProfile: () => USER_PROFILE,
+      getProfile: () => window.AppHydrationRuntime?.getCanonicalProfile?.() || USER_PROFILE,
       setProfile: (profile) => {
         USER_PROFILE = profile;
         window.USER_PROFILE = profile;
@@ -4691,7 +4707,7 @@ skeletonOverlayActive: no</pre>
       })
     });
     window.WorkoutPresentationState?.configure({
-      getProfile: () => USER_PROFILE,
+      getProfile: () => window.AppHydrationRuntime?.getCanonicalProfile?.() || USER_PROFILE,
       getAvatarRuntimeState: () => window.__avatarRuntimeStatus,
       getRenderMode,
       applyRenderMode: applyRenderModeSelection,

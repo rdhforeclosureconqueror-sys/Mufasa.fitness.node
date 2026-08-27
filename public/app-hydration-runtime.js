@@ -22,10 +22,40 @@
     pendingTimeoutMs: DEFAULT_PENDING_TIMEOUT_MS,
     inFlightHydration: null,
     lastProfileReload: null,
+    profileResponseReceived: false,
+    profileNormalizationComplete: false,
+    canonicalProfile: null,
+    profileGeneration: 0,
+    profileAvatarFieldName: null,
+    profileLastUpdatedAt: null,
     updatedAt: new Date().toISOString()
   };
 
   let deps = {};
+
+  function avatarFieldName(profile) {
+    if (profile?.avatar?.avatarModelUrl) return 'avatar.avatarModelUrl';
+    if (profile?.avatar?.modelUrl) return 'avatar.modelUrl';
+    return null;
+  }
+
+  function adoptCanonicalProfile(profile, source = 'unknown') {
+    if (!profile || typeof profile !== 'object') return null;
+    state.canonicalProfile = profile;
+    state.profileGeneration += 1;
+    state.profileAvatarFieldName = avatarFieldName(profile);
+    state.profileLastUpdatedAt = new Date().toISOString();
+    state.canonicalProfileSource = source;
+    callDep('setProfile', profile);
+    global.USER_PROFILE = profile;
+    stamp();
+    try {
+      global.dispatchEvent?.(new CustomEvent('app:canonical-profile', { detail: {
+        profile, generation: state.profileGeneration, source, updatedAt: state.profileLastUpdatedAt
+      } }));
+    } catch (_) {}
+    return profile;
+  }
 
   function stamp() {
     state.updatedAt = new Date().toISOString();
@@ -198,6 +228,7 @@
       // successful upload response. This avoids a mobile auth-snapshot race
       // between two otherwise consecutive authenticated requests.
       const result = await backendReadClient.fetchProfile({ authToken: reloadToken || null });
+      state.profileResponseReceived = Boolean(result);
       if (!result?.profile) {
         const fallbackUser = global.APP_AUTH?.user || {};
         renderProfileShell({
@@ -209,8 +240,9 @@
       }
 
       const normalized = backendReadClient.normalizeProfile(result.profile, callDep('getProfile') || {});
+      state.profileNormalizationComplete = true;
       normalized.name = normalized.name || 'Athlete';
-      callDep('setProfile', normalized);
+      adoptCanonicalProfile(normalized, 'GET /api/me/profile');
       renderProfileShell(normalized);
       callDep('markBootRuntimeStarted');
       const loadAvatar = deps.loadAvatarAssetForCurrentUser;
@@ -527,6 +559,13 @@
       reason: state.reason,
       gates: { ...state.gates },
       hydration: { ...state.hydration },
+      profileResponseReceived: state.profileResponseReceived,
+      profileNormalizationComplete: state.profileNormalizationComplete,
+      canonicalProfileOwner: 'AppHydrationRuntime',
+      profileGeneration: state.profileGeneration,
+      profileAvatarFieldName: state.profileAvatarFieldName,
+      canonicalAvatarUrlPresent: Boolean(state.profileAvatarFieldName),
+      profileLastUpdatedAt: state.profileLastUpdatedAt,
       lastProfileReload: state.lastProfileReload ? { ...state.lastProfileReload } : null,
       errors: [...state.errors],
       pendingPolicyInstalled: state.pendingPolicyInstalled,
@@ -542,6 +581,8 @@
     renderProfileShell,
     buildCalendarFromMeta,
     hydrateProfileFromBackend,
+    adoptCanonicalProfile,
+    getCanonicalProfile: () => state.canonicalProfile,
     handleLoginProfile,
     runBootGates,
     runPostAuthHydration,
