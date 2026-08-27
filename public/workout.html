@@ -29,6 +29,7 @@
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
   <script src="/runtime-state.js?v=20260826-avatar-public-presentation-v8"></script>
+  <script src="/workout-presentation-state.js?v=20260827-avatar-public-presentation-v9"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1242,7 +1243,15 @@ skeletonOverlayActive: no</pre>
         Profile reload error code: <span id="avatarDiagReloadCode">NONE</span><br>
         Avatar runtime component: <span id="avatarDiagComponent">NOT CHECKED</span><br>
         Avatar activation: <span id="avatarDiagRuntime">NOT ATTEMPTED</span><br>
-        Last error: <span id="avatarDiagError">NONE</span>
+        Last error: <span id="avatarDiagError">NONE</span><br>
+        Canonical avatar URL present: <span id="avatarDiagCanonicalUrl">NO</span><br>
+        Canonical profile state: <span id="avatarDiagCanonicalProfile">LOADING</span><br>
+        Presentation state: <span id="avatarDiagPresentation">none</span><br>
+        Applied render mode: <span id="avatarDiagAppliedMode">camera</span><br>
+        Visible avatar label state: <span id="avatarDiagVisibleLabel">none</span><br>
+        Profile panel state: <span id="avatarDiagProfilePanel">loading</span><br>
+        Sync state: <span id="avatarDiagSyncState">checking</span><br>
+        Presentation event last received: <span id="avatarDiagPresentationEvent">none</span>
       </div>
       <p class="subtitle">A successful GLB upload automatically saves its protected URL to your profile. “Save Manual Avatar URL” is only for the compatibility URL fields above.</p>
     </div>
@@ -3162,6 +3171,7 @@ skeletonOverlayActive: no</pre>
       const hasDegradedTruth = writeState.mode !== "explicit_api" || bridgeSegments.length > 0;
       if (hasDegradedTruth) syncStatusEl.classList.add("status-bad");
       else syncStatusEl.classList.add("status-ok");
+      window.WorkoutPresentationState?.setSyncState(hasDegradedTruth ? "failed" : "synced");
     }
 
     async function sendProfileToNode(options = {}) {
@@ -4645,7 +4655,12 @@ skeletonOverlayActive: no</pre>
       calendarViewEl,
       backendReadClient: BACKEND_READ_CLIENT,
       getProfile: () => USER_PROFILE,
-      setProfile: (profile) => { USER_PROFILE = profile; window.USER_PROFILE = profile; return USER_PROFILE; },
+      setProfile: (profile) => {
+        USER_PROFILE = profile;
+        window.USER_PROFILE = profile;
+        window.WorkoutPresentationState?.setCanonicalProfile(profile, "ready");
+        return USER_PROFILE;
+      },
       getUserId: () => USER_ID,
       setUserId: (userId) => { USER_ID = userId; window.USER_ID = userId; return USER_ID; },
       getCalendarMeta: () => calendarMeta,
@@ -4674,6 +4689,13 @@ skeletonOverlayActive: no</pre>
         calendar: typeof calendarApplyBtn?.onclick === "function",
         retention: typeof ensureRetentionFlowLoaded === "function"
       })
+    });
+    window.WorkoutPresentationState?.configure({
+      getProfile: () => USER_PROFILE,
+      getAvatarRuntimeState: () => window.__avatarRuntimeStatus,
+      getRenderMode,
+      applyRenderMode: applyRenderModeSelection,
+      setAvatarLabel: setAvatarAssetStatus
     });
     window.RuntimeOrchestrator.configureDashboardRuntime({ refreshOnAuthReady: false });
     window.RuntimeOrchestrator.configureButtonRuntime({
