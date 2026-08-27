@@ -35,6 +35,37 @@ test('projects NO_PERSON, LOW_CONFIDENCE, UPPER_BODY_READY and FULL_BODY_READY f
   assert.equal(api.KEYPOINT_THRESHOLD, 0.3);
 });
 
+test('recognizes close-range head and shoulders without weakening workout readiness', () => {
+  const { api } = runtime();
+  const result = api.classifyPose(pose(['nose', 'left_shoulder', 'right_shoulder']), video);
+  assert.equal(result.headShouldersVisible, true);
+  assert.equal(result.partialUpperBodyVisible, true);
+  assert.equal(result.framingState, 'LOW_CONFIDENCE');
+});
+
+test('object-fit cover transform inverts inference flip and includes centered crop', () => {
+  const { api } = runtime();
+  const transform = api.createSourceToDisplayTransform(480, 640, 400, 300, true);
+  assert.equal(transform.scale, 400 / 480);
+  assert.equal(transform.offsetX, 0);
+  assert.ok(transform.offsetY < 0);
+  const projected = transform.project({ x: 480, y: 320 });
+  assert.equal(projected.x, 0); assert.equal(projected.y, 150);
+});
+
+test('overlay progressively draws only confident points and valid segments', () => {
+  const { api } = runtime();
+  const calls = { arcs: 0, lines: 0 };
+  const ctx = { setTransform(){}, clearRect(){}, beginPath(){}, moveTo(){}, lineTo(){ calls.lines++; }, stroke(){}, arc(){ calls.arcs++; }, fill(){} };
+  const canvas = { isConnected: true, width: 0, height: 0, getContext: () => ctx };
+  const source = { videoWidth: 480, videoHeight: 640, getBoundingClientRect: () => ({ width: 400, height: 300, left: 0, top: 0 }) };
+  const closeup = { keypoints: Array.from({ length: 17 }, (_, i) => kp(['nose','left_eye','right_eye','left_ear','right_ear','left_shoulder','right_shoulder'][i] || `p${i}`, [0,5,6].includes(i) ? .9 : .1, 100 + i, 100 + i)) };
+  assert.equal(api.renderPoseOverlay(closeup, source, canvas), true);
+  assert.equal(calls.arcs, 3);
+  assert.equal(calls.lines, 1);
+  assert.equal(api.getState().overlayFirstFailingBoundary, 'APPLIED');
+});
+
 test('projects TOO_CLOSE and TOO_FAR from normalized body coverage', () => {
   const { api } = runtime();
   const close = pose(upper); close.keypoints.forEach((p, i) => { p.y = i ? 470 : 1; });
