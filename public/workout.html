@@ -28,8 +28,8 @@
   <!-- Core form engine only (heavy vision/3D runtimes are lazy-loaded) -->
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
-  <script src="/runtime-state.js?v=2026-08-27-movenet-pose-proof-v18"></script>
-  <script src="/workout-presentation-state.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/runtime-state.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
+  <script src="/workout-presentation-state.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -1111,7 +1111,12 @@ skeletonOverlayActive: no</pre>
       <details id="poseTrackingProof" class="small-card" style="margin-top:10px;" open>
         <summary><strong>Pose Tracking Proof</strong></summary>
         <pre id="poseTrackingProofValues" class="diagPre muted" style="white-space:pre-wrap;max-height:520px;overflow:auto;">Pose engine initialized: NO
-First failing boundary: TF_NOT_LOADED</pre>
+First failing boundary: NONE</pre>
+      </details>
+      <details id="poseBootstrapTrace" class="small-card" style="margin-top:10px;" open>
+        <summary><strong>Pose Bootstrap Trace</strong></summary>
+        <pre id="poseBootstrapTraceValues" class="diagPre muted" style="white-space:pre-wrap;max-height:520px;overflow:auto;">Connect Camera click received: NO
+First failing boundary: NONE</pre>
       </details>
       <div id="voiceSupportStatus"></div>
       <div id="authPropagationPanel" data-diagnostic-panel class="small-card" style="margin-top:10px;">
@@ -1358,18 +1363,18 @@ First failing boundary: TF_NOT_LOADED</pre>
   </div>
 
   <script src="/diagnostics-client.js?v=20260426b"></script>
-  <script src="/backend-read.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/backend-read.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/session-write.js?v=20260425"></script>
-  <script src="/workout-performance-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
-  <script src="/pose-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/workout-performance-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
+  <script src="/pose-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
   <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
   <script>window.__PHASE2_POSE_PROOF_ONLY__ = true;</script>
-  <script src="/motion/live-avatar-mirror.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/motion/live-avatar-mirror.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
-  <script src="/hud-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/hud-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/exercise-metadata.js?v=20260725-em1"></script>
   <script src="/workout-coach-runtime.js?v=20260725-em-wc1"></script>
   <script src="/workout-form-runtime.js?v=20260725-em-fr1"></script>
@@ -1378,26 +1383,26 @@ First failing boundary: TF_NOT_LOADED</pre>
   <script src="/coach-runtime.js?v=20260724-guided-cr1"></script>
   <script>
     if (window.ENABLE_AVATAR_FEATURE) {
-      document.write('<script src="/avatar-runtime.js?v=2026-08-27-movenet-pose-proof-v18"><\/script>');
+      document.write('<script src="/avatar-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"><\/script>');
     }
   </script>
   <script src="/avatar-upload-contract.js?v=20260826-contract"></script>
-  <script src="/profile-write-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/profile-write-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/landing-diagnostics.js?v=20260426"></script>
-  <script src="/button-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/button-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
-  <script src="/workout-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
-  <script src="/workout-control-activation.js?v=2026-08-27-movenet-pose-proof-v18"></script>
-  <script src="/generated-workout-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
-  <script src="/runtime-orchestrator.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/workout-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
+  <script src="/workout-control-activation.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
+  <script src="/generated-workout-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
+  <script src="/runtime-orchestrator.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
   <script src="/retention-loader-runtime.js?v=20260720b"></script>
-  <script src="/app-hydration-runtime.js?v=2026-08-27-movenet-pose-proof-v18"></script>
+  <script src="/app-hydration-runtime.js?v=2026-08-27-pose-bootstrap-trace-v19"></script>
 
   <script>
     console.log("[BOOT] main inline script started");
     window.RuntimeEvents?.installBootErrorListeners?.();
-    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-movenet-pose-proof-v18";
+    const APP_BUILD_VERSION = window.APP_BUILD_VERSION || "2026-08-27-pose-bootstrap-trace-v19";
     const ENABLE_AVATAR_FEATURE = window.ENABLE_AVATAR_FEATURE === true;
     const isAvatarFeatureEnabled = () => ENABLE_AVATAR_FEATURE;
     // [INLINE_REMAINING] boot diagnostics — keep boot probes visible in the shell while extraction breakpoints are audited.

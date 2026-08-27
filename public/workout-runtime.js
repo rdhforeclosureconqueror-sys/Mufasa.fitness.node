@@ -133,6 +133,9 @@
   }
 
   async function connectCamera(){
+    const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
+    trace.connectClickReceived = true;
+    trace.connectHandlerEntryCount = (trace.connectHandlerEntryCount || 0) + 1;
     if (state.cameraActive && state.cameraStream) return state.cameraStream;
     if (cameraConnectPending) return cameraConnectPending;
     cameraConnectPending = connectCameraOnce();
@@ -158,7 +161,18 @@
       if (global.isSecureContext === false) throw Object.assign(new Error('insecure_context'), { code: 'INSECURE_CONTEXT' });
       if (!global.navigator?.mediaDevices?.getUserMedia) throw Object.assign(new Error('mediaDevices.getUserMedia unavailable'), { name: 'NotSupportedError' });
       markCameraDiagnostics({ getUserMediaCalled: true });
-      const stream = await global.navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const trace = global.__POSE_BOOTSTRAP_TRACE || {};
+      trace.getUserMediaRequested = true;
+      let stream;
+      try {
+        stream = await global.navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        trace.getUserMediaResolved = true;
+      } catch (error) {
+        trace.getUserMediaRejected = true; trace.getUserMediaErrorName = error?.name || 'Error'; trace.getUserMediaErrorMessage = error?.message || String(error);
+        const boundary = /NotAllowed|Security/i.test(error?.name || '') ? 'CAMERA_PERMISSION_DENIED' : 'GET_USER_MEDIA_REJECTED';
+        global.__recordPoseBootstrapFailure?.(boundary, error);
+        throw error;
+      }
       markCameraDiagnostics({ streamReceived: true });
       markLiveBreakpoint('camera-stream-received', 'pass', { tracks: typeof stream?.getTracks === 'function' ? stream.getTracks().length : null });
       state.cameraStream = stream;
@@ -170,9 +184,17 @@
       video.playsInline = true;
       video.muted = true;
       video.srcObject = stream;
+      const videoTracks = stream.getVideoTracks?.() || [];
+      Object.assign(trace, { mediaStreamId: stream.id || '', videoTrackCount: videoTracks.length, videoTrackReadyState: videoTracks[0]?.readyState || '', videoTrackEnabled: videoTracks[0]?.enabled, videoTrackMuted: videoTracks[0]?.muted, productionVideoFound: true, productionVideoElementId: video.id || '', productionVideoDomConnected: Boolean(video.isConnected), srcObjectAssigned: true, srcObjectMatchesStream: video.srcObject === stream });
+      for (const [eventName, field] of [['loadedmetadata','loadedmetadataReceived'],['loadeddata','loadeddataReceived'],['canplay','canplayReceived'],['playing','playingReceived']]) video.addEventListener?.(eventName, () => { trace[field] = true; }, { once: true });
       video.style.display = 'block';
       video.style.visibility = 'visible';
-      try { await video.play(); } catch (error) { error.code = 'VIDEO_PLAYBACK_FAILED'; throw error; }
+      trace.videoPlayRequested = true;
+      try { await video.play(); trace.videoPlayResolved = true; } catch (error) { trace.videoPlayRejected = true; trace.videoPlayError = error?.message || String(error); global.__recordPoseBootstrapFailure?.('VIDEO_PLAY_REJECTED', error); error.code = 'VIDEO_PLAYBACK_FAILED'; throw error; }
+      if (!video.videoWidth || !video.videoHeight) {
+        await new Promise((resolve, reject) => { const timeout = global.setTimeout(() => reject(new Error('video metadata did not provide non-zero dimensions')), 5000); const ready = () => { if (video.videoWidth && video.videoHeight) { global.clearTimeout(timeout); resolve(); } }; video.addEventListener?.('loadedmetadata', ready, { once: true }); video.addEventListener?.('loadeddata', ready, { once: true }); ready(); }).catch((error) => { global.__recordPoseBootstrapFailure?.('VIDEO_METADATA_NOT_READY', error); throw error; });
+      }
+      trace.videoReadyState = video.readyState; trace.videoWidth = video.videoWidth; trace.videoHeight = video.videoHeight;
       markCameraDiagnostics({ videoElementReady: true, videoPlaying: true });
       markLiveBreakpoint('video-playing', 'pass', { readyState: video.readyState || null, videoWidth: video.videoWidth || null, videoHeight: video.videoHeight || null });
       videoPlayingMarked = true;
