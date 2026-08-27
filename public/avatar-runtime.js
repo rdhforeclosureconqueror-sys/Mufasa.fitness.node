@@ -48,7 +48,24 @@
     presentationAppliedMode: 'camera',
     posePacketsReceived: 0,
     lastPosePacketAt: null,
-    lastPosePacketSource: null
+    lastPosePacketSource: null,
+    avatarRuntimeInitialized: true,
+    avatarRuntimeConfigured: false,
+    canonicalAvatarObserved: false,
+    avatarLoadRequested: false,
+    avatarLoadRequestSource: null,
+    avatarLoadRequestGeneration: 0,
+    avatarLoadSkippedReason: 'asset_pipeline_not_configured',
+    avatarLoadFunctionEntered: false,
+    avatarLoadUrlPresent: false,
+    avatarLoadUrlMatchesCanonical: false,
+    avatarEnvironmentConfigured: false,
+    sceneAvailable: false,
+    cameraAvailable: false,
+    rendererAvailable: false,
+    avatarCanvasElementFound: false,
+    renderLoopInitialized: false,
+    avatarLifecycleStage: 'NOT INITIALIZED'
   };
 
   globalScope.__THREE_BRIDGE_FIX_ACTIVE = true;
@@ -291,6 +308,43 @@
 
   let renderEngineBindings = null;
   let assetPipelineBindings = null;
+  let canonicalProfileSubscribed = false;
+  let canonicalLoadPromise = null;
+
+  function canonicalAvatarUrl(profile) {
+    const value = profile?.avatar?.avatarModelUrl || profile?.avatar?.modelUrl;
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  function refreshEnvironmentTrace() {
+    const runtime = renderEngineBindings?.getRuntime?.() || assetPipelineBindings?.getRuntime?.() || null;
+    const canvas = renderEngineBindings?.getCanvas?.() || null;
+    return update({
+      avatarEnvironmentConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
+      sceneAvailable: Boolean(runtime?.scene), cameraAvailable: Boolean(runtime?.camera),
+      rendererAvailable: Boolean(runtime?.renderer), avatarCanvasElementFound: Boolean(canvas),
+      avatarCanvasConnected: Boolean(canvas?.isConnected), renderLoopInitialized: Boolean(runtime?.renderLoopActive),
+      avatarRuntimeConfigured: Boolean(renderEngineBindings && assetPipelineBindings),
+      avatarLifecycleStage: runtime?.avatarRoot ? 'MOUNTED' : (canonicalLoadPromise ? 'LOADING' : (renderEngineBindings && assetPipelineBindings ? 'INITIALIZED BUT NOT LOADING' : 'NOT INITIALIZED'))
+    });
+  }
+
+  function requestCanonicalAvatarLoad(profile, source, generation = 0) {
+    const url = canonicalAvatarUrl(profile);
+    update({ canonicalAvatarObserved: Boolean(url), avatarLoadUrlPresent: Boolean(url),
+      avatarLoadRequestSource: source, avatarLoadRequestGeneration: Number(generation || 0) });
+    if (!url) return update({ avatarLoadSkippedReason: 'canonical_avatar_url_missing' });
+    if (!assetPipelineBindings) return update({ avatarLoadSkippedReason: 'asset_pipeline_not_configured' });
+    if (canonicalLoadPromise) return update({ avatarLoadSkippedReason: 'load_already_in_flight' });
+    const current = status();
+    if (current.avatarAssetState === 'MOUNTED' && current.lastAvatarUrl === url) return update({ avatarLoadSkippedReason: 'canonical_avatar_already_mounted' });
+    update({ avatarLoadRequested: true, avatarLoadSkippedReason: null, avatarLifecycleStage: 'LOADING' });
+    canonicalLoadPromise = Promise.resolve().then(() => loadAvatarAssetForCurrentUser(source)).finally(() => {
+      canonicalLoadPromise = null;
+      refreshEnvironmentTrace();
+    });
+    return canonicalLoadPromise;
+  }
 
   function configureRenderEngine(bindings = {}) {
     renderEngineBindings = bindings || {};
@@ -304,10 +358,22 @@
       return renderAvatar3d(posePacket);
     });
     console.log('[AVATAR_RUNTIME] avatar render engine owns pose retarget/render path');
+    refreshEnvironmentTrace();
   }
 
   function configureAssetPipeline(bindings = {}) {
     assetPipelineBindings = bindings || {};
+    refreshEnvironmentTrace();
+    if (!canonicalProfileSubscribed) {
+      globalScope.addEventListener?.('app:canonical-profile', (event) => {
+        requestCanonicalAvatarLoad(event.detail?.profile, `canonical_profile_event:${event.detail?.source || 'unknown'}`, event.detail?.generation);
+      });
+      canonicalProfileSubscribed = true;
+    }
+    // Canonical events are not replayable. Read the owner directly so late
+    // workout/runtime initialization cannot leave a saved avatar at NONE.
+    const profile = globalScope.AppHydrationRuntime?.getCanonicalProfile?.();
+    if (profile) requestCanonicalAvatarLoad(profile, 'canonical_profile_replay', globalScope.AppHydrationRuntime?.getState?.().profileGeneration);
     console.log('[AVATAR_RUNTIME] avatar asset/profile pipeline delegated to runtime');
   }
 
@@ -643,6 +709,12 @@
     console.log(`[avatar-load] render mode at avatar load time: ${statusRef.renderMode}`);
     const profile = b.getProfile?.() || null;
     const nextAvatar = b.normalizeAvatarProfile?.(profile?.avatar) || null;
+    const loadUrl = nextAvatar?.avatarModelUrl || null;
+    const canonicalUrl = canonicalAvatarUrl(globalScope.AppHydrationRuntime?.getCanonicalProfile?.());
+    update({ avatarLoadFunctionEntered: true, avatarLoadRequested: true, avatarLoadRequestSource: source,
+      avatarLoadUrlPresent: Boolean(loadUrl), avatarLoadUrlMatchesCanonical: Boolean(loadUrl && canonicalUrl && loadUrl === canonicalUrl),
+      canonicalAvatarObserved: Boolean(canonicalUrl || loadUrl), avatarLoadSkippedReason: loadUrl ? null : 'normalized_avatar_missing',
+      avatarLifecycleStage: loadUrl ? 'LOADING' : 'INITIALIZED BUT NOT LOADING' });
     const traceState = (savedAvatarState, details = {}) => {
       const generation = Number(statusRef.presentationGeneration || 0) + 1;
       const assetState = details.avatarAssetState || ({ none: 'NONE', profile_ready: 'LOADING', mounted: 'MOUNTED', active: 'MOUNTED', failed: 'FAILED' }[savedAvatarState] || statusRef.avatarAssetState);
@@ -791,6 +863,7 @@
     getCurrentPresentationState: () => {
       const current = status();
       return {
+        ...current,
         savedAvatarState: current.savedAvatarState,
         savedAvatarSource: current.savedAvatarSource,
         presentationMode: current.presentationMode,
