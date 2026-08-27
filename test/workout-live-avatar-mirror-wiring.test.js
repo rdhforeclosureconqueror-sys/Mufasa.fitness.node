@@ -51,7 +51,7 @@ test("camera and both avatar modes have bounded, repeatable ownership transition
 test("production mirror reuses the existing camera, detector, PoseRuntime stream, renderer and RAF", () => {
   assert.match(workout, /if \(!detector\) await initDetector\(\);/);
   assert.match(workout, /if \(!animId\) runPoseLoop\(\);/);
-  assert.match(workout, /isRunning: \(\) => running === true \|\| getRenderMode\(\) === "avatar_overlay" \|\| getRenderMode\(\) === "avatar_only"/);
+  assert.match(workout, /isRunning: \(\) => Boolean\(videoEl\?\.srcObject/);
   assert.doesNotMatch(workout, /new\s+CameraController/);
   assert.doesNotMatch(workout, /new\s+AvaturnLivePoseSolver/);
   assert.equal((workout.match(/new threeRef\.WebGLRenderer/g) || []).length, 1);

@@ -25,7 +25,7 @@ test("production workout continuously renders the retargeted root with a valid P
   assert.match(workout, /renderer\.toneMapping = threeRef\.ACESFilmicToneMapping/);
   assert.match(workout, /new threeRef\.PerspectiveCamera\(40, 4 \/ 3, 0\.01, 100\)/);
   assert.match(read("public/avatar-runtime.js"), /canvasBufferSize/);
-  assert.match(workout, /avatar-movenet-retarget-runtime-v15/);
+  assert.match(workout, /2026-08-27-movenet-pose-proof-v18/);
   assert.match(workout, /id="avatarDiagRuntimePresentation"/);
   assert.doesNotMatch(workout, /const activated = activateLiveAvatarMirror\(\)/);
 });
