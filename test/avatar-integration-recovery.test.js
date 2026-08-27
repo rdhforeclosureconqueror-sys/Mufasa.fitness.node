@@ -33,8 +33,16 @@ test("canonical saved avatar activation reaches the visible workout presentation
   assert.match(shell, /function activateSavedAvatarPresentation/);
   assert.match(shell, /targetMode = currentMode === "avatar_only" \? "avatar_only" : "avatar_overlay"/);
   assert.match(shell, /activatePresentation: activateSavedAvatarPresentation/);
+  assert.match(shell, /id="workoutPresentation"[^>]+data-avatar-state="none"[^>]+data-avatar-presentation="camera"/);
+  assert.match(shell, /setPresentationState: setSavedAvatarPresentationState/);
+  assert.match(shell, /mounted = Boolean\(runtime\?\.avatarRoot/);
+  assert.match(shell, /presentation\.dataset\.avatarState = "active"/);
   assert.match(runtime, /await b\.activatePresentation\?\.\(\{ source, avatar: nextAvatar \}\)/);
   assert.match(runtime, /avatar_presentation_not_activated/);
+  assert.match(runtime, /traceState\('profile_ready'/);
+  assert.match(runtime, /traceState\('mounted'/);
+  assert.match(runtime, /traceState\('active'/);
+  assert.match(runtime, /avatar-runtime:presentation-state/);
 
   const mounted = runtime.indexOf("b.setActiveAvatarAsset?.({ ...nextAvatar, runtimeStatus })");
   const presented = runtime.indexOf("await b.activatePresentation?.({ source, avatar: nextAvatar })");

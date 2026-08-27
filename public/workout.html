@@ -918,7 +918,7 @@
         <span>Progress can be saved</span>
       </div>
 
-      <div class="video-shell">
+      <div id="workoutPresentation" class="video-shell" data-avatar-state="none" data-avatar-presentation="camera">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
         <canvas id="avatar3d"></canvas>
@@ -2449,6 +2449,8 @@ skeletonOverlayActive: no</pre>
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
       applyLiveAvatarRenderPresentation(nextMode);
+      const presentation = document.getElementById("workoutPresentation");
+      if (presentation) presentation.dataset.avatarPresentation = nextMode;
       syncLiveAvatarMirrorOwnership(nextMode);
       updateAvatarOverlayDiagnostics({
         lastRenderModeApplied: nextMode,
@@ -2483,10 +2485,32 @@ skeletonOverlayActive: no</pre>
       // successfully mounted saved avatar into the visible workout surface.
       const currentMode = getRenderMode();
       const targetMode = currentMode === "avatar_only" ? "avatar_only" : "avatar_overlay";
-      return applyRenderModeSelection(targetMode, {
+      const appliedMode = applyRenderModeSelection(targetMode, {
         persist: true,
         source: `${source}_canonical_profile`
       });
+      const presentation = document.getElementById("workoutPresentation");
+      const runtime = avatarThreeRuntime;
+      const mounted = Boolean(runtime?.avatarRoot && runtime?.scene?.children?.includes?.(runtime.avatarRoot));
+      const canvasVisible = Boolean(avatar3dCanvasEl && avatar3dCanvasEl.style.display !== "none" && avatar3dCanvasEl.style.visibility !== "hidden");
+      if (!mounted || !canvasVisible || (appliedMode !== "avatar_overlay" && appliedMode !== "avatar_only")) {
+        if (presentation) presentation.dataset.avatarState = "presentation_failed";
+        return "camera";
+      }
+      if (presentation) {
+        presentation.dataset.avatarState = "active";
+        presentation.dataset.avatarSource = source;
+        presentation.dataset.avatarPresentation = appliedMode;
+      }
+      return appliedMode;
+    }
+
+    function setSavedAvatarPresentationState(state, { source = "unknown", mode = getRenderMode() } = {}) {
+      const presentation = document.getElementById("workoutPresentation");
+      if (!presentation) return;
+      presentation.dataset.avatarState = String(state || "unknown");
+      presentation.dataset.avatarSource = String(source || "unknown");
+      presentation.dataset.avatarPresentation = String(mode || "camera");
     }
 
     function disposeLiveAvatarMirror() {
@@ -2945,6 +2969,7 @@ skeletonOverlayActive: no</pre>
       probeAvatarModelRuntime,
       mountAvatarGlbModel,
       activatePresentation: activateSavedAvatarPresentation,
+      setPresentationState: setSavedAvatarPresentationState,
       clearProfileAvatar: () => { if (USER_PROFILE) USER_PROFILE.avatar = null; },
       clearModelUrlInput: () => { avatarModelUrlInput.value = ""; },
       ensureAssetProbeFailedStatus: () => {
