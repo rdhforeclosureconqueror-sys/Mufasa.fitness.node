@@ -22,33 +22,34 @@
     });
   }
 
+  const JOINT_NAMES = Object.freeze(["nose", "left_eye", "right_eye", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]);
+  const SEGMENTS = Object.freeze({
+    leftUpperArm: ["left_shoulder", "left_elbow"], rightUpperArm: ["right_shoulder", "right_elbow"],
+    leftForearm: ["left_elbow", "left_wrist"], rightForearm: ["right_elbow", "right_wrist"],
+    leftThigh: ["left_hip", "left_knee"], rightThigh: ["right_hip", "right_knee"],
+    leftLowerLeg: ["left_knee", "left_ankle"], rightLowerLeg: ["right_knee", "right_ankle"]
+  });
+  function segmentDirection(a, b, width, height) {
+    if (!a || !b) return null;
+    const x = (b.x - a.x) * width, y = (a.y - b.y) * height;
+    const length = Math.hypot(x, y);
+    return length >= MIN_SEGMENT_LENGTH ? Object.freeze({ x: x / length, y: y / length, z: 0 }) : null;
+  }
   function fromMoveNetPosePacket(posePacket, options = {}) {
     const width = Number(posePacket?.video?.width || options.width || 0);
     const height = Number(posePacket?.video?.height || options.height || 0);
-    const rightShoulder = normalizedPoint(pointByName(posePacket, "right_shoulder"), width, height);
-    const rightElbow = normalizedPoint(pointByName(posePacket, "right_elbow"), width, height);
-    let rightUpperArmDirection = null;
-    if (rightShoulder && rightElbow) {
-      // MoveNet is asked for horizontally flipped output, matching the mirrored selfie
-      // presentation. Anatomical labels remain authoritative; only image Y is inverted.
-      // Derive direction from source pixels so a non-square video does not distort
-      // the segment angle after independently normalizing X and Y to [0, 1].
-      const x = (rightElbow.x - rightShoulder.x) * width;
-      const y = (rightShoulder.y - rightElbow.y) * height;
-      const length = Math.hypot(x, y);
-      if (length >= MIN_SEGMENT_LENGTH) rightUpperArmDirection = Object.freeze({ x: x / length, y: y / length, z: 0 });
-    }
-    const jointScores = [rightShoulder?.confidence, rightElbow?.confidence].filter(Number.isFinite);
-    const overall = Number.isFinite(posePacket?.pose?.score)
-      ? Math.max(0, Math.min(1, Number(posePacket.pose.score)))
-      : jointScores.length ? Math.min(...jointScores) : 0;
+    const joints = Object.fromEntries(JOINT_NAMES.map(name => [name, normalizedPoint(pointByName(posePacket, name), width, height)]));
+    const directions = Object.fromEntries(Object.entries(SEGMENTS).map(([name, [a, b]]) => [name, segmentDirection(joints[a], joints[b], width, height)]));
+    const shoulderLine = segmentDirection(joints.left_shoulder, joints.right_shoulder, width, height);
+    const hipLine = segmentDirection(joints.left_hip, joints.right_hip, width, height);
+    const confidences = Object.values(joints).filter(Boolean).map(joint => joint.confidence);
+    const overall = Number.isFinite(posePacket?.pose?.score) ? Math.max(0, Math.min(1, Number(posePacket.pose.score))) : confidences.length ? Math.min(...confidences) : 0;
     return Object.freeze({
-      schemaVersion: SCHEMA_VERSION,
-      timestamp: Number(posePacket?.at || options.timestamp || Date.now()),
-      confidence: Object.freeze({ overall, bodyDetected: Boolean(rightShoulder && rightElbow && Math.min(rightShoulder.confidence, rightElbow.confidence) >= 0.3) }),
-      rightShoulder,
-      rightElbow,
-      rightUpperArmDirection,
+      schemaVersion: SCHEMA_VERSION, timestamp: Number(posePacket?.at || options.timestamp || Date.now()),
+      confidence: Object.freeze({ overall, bodyDetected: confidences.some(value => value >= 0.3) }),
+      joints: Object.freeze(joints), directions: Object.freeze({ ...directions, shoulderLine, hipLine }),
+      // Compatibility aliases for the original one-arm proof consumers.
+      rightShoulder: joints.right_shoulder, rightElbow: joints.right_elbow, rightUpperArmDirection: directions.rightUpperArm,
       coordinates: Object.freeze({ space: "mirrored-image-normalized", origin: "top-left", xAxis: "image-right", yAxis: "anatomical-up", zAxis: "unsupported", depth: "2d-only" }),
       source: Object.freeze({ detector: "MoveNet.SinglePose.Lightning", packageVersion: "2.1.3", flipHorizontal: true, cameraFacing: options.cameraFacing || "unknown", previewMirrored: Boolean(options.previewMirrored) })
     });

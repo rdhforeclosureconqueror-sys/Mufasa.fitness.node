@@ -6,3 +6,20 @@ test("subscribes once, consumes existing pose events, and restores/unsubscribes 
   const keypoints=[{name:"right_shoulder",x:10,y:50,score:.9},{name:"right_elbow",x:40,y:20,score:.9}],posePacket={at:1000,video:{width:100,height:100},pose:{keypoints},keypoints};e.emit({posePacket});mirror.update(.1,1000);assert.notDeepEqual(r.bones[1].quaternion.toArray(),original.toArray());mirror.dispose();assert.equal(e.listeners.size,0);assert.ok(r.bones[1].quaternion.equals(original));});
 test("live modules create no detector, camera, renderer, or requestAnimationFrame owner",()=>{for(const file of ["public/motion/normalized-pose.js","public/motion/avaturn-live-pose-solver.js","public/motion/live-avatar-mirror.js"]){const source=fs.readFileSync(path.join(__dirname,"..",file),"utf8");assert.doesNotMatch(source,/createDetector|getUserMedia|new\s+WebGLRenderer|requestAnimationFrame\s*\(/);}});
 test("dev-only route is gated by the existing motionLabGate",()=>{const server=fs.readFileSync(path.join(__dirname,"../server.js"),"utf8"),html=fs.readFileSync(path.join(__dirname,"../motion-lab/live-avatar-mirror.html"),"utf8");assert.match(server,/app\.get\("\/dev\/live-avatar-mirror", motionLabGate/);assert.match(html,/id="landmarks"/);assert.match(html,/id="avatarStage"/);assert.match(html,/avaturn-native-v1/);});
+
+test("sequential MoveNet frames drive the full bilateral rendered hierarchy and recover safely",()=>{
+  const avatar=new THREE.Group(), bones=new Map();
+  const add=(name,parent,position=[0,.2,0])=>{const bone=Object.assign(new THREE.Bone(),{name});bone.position.set(...position);parent.add(bone);bones.set(name,bone);return bone;};
+  const hips=add("Hips",avatar,[0,0,0]),spine=add("Spine",hips),chest=add("Spine1",spine),leftShoulder=add("LeftShoulder",chest,[-.1,.1,0]),rightShoulder=add("RightShoulder",chest,[.1,.1,0]);
+  const la=add("LeftArm",leftShoulder),lf=add("LeftForeArm",la),lh=add("LeftHand",lf),ra=add("RightArm",rightShoulder),rf=add("RightForeArm",ra),rh=add("RightHand",rf);
+  const lu=add("LeftUpLeg",hips),ll=add("LeftLeg",lu),lfoot=add("LeftFoot",ll),ru=add("RightUpLeg",hips),rl=add("RightLeg",ru),rfoot=add("RightFoot",rl);avatar.updateMatrixWorld(true);
+  const e=new Events(),session={THREE,avatar,unloadMotion(){}},mirror=new LiveAvatarMirror({eventTarget:e,session,solverOptions:{smoothingLambda:1000,holdMs:50}});
+  const names=["nose","left_eye","right_eye","left_ear","right_ear","left_shoulder","right_shoulder","left_elbow","right_elbow","left_wrist","right_wrist","left_hip","right_hip","left_knee","right_knee","left_ankle","right_ankle"];
+  const coords=[[50,10],[47,9],[53,9],[44,10],[56,10],[35,25],[65,25],[20,40],[80,35],[10,55],[90,45],[40,55],[60,55],[30,75],[70,72],[20,95],[80,92]];
+  const packet=(score=.95,at=1000)=>{const keypoints=names.map((name,i)=>({name,x:coords[i][0],y:coords[i][1],score}));return{at,video:{width:100,height:100},pose:{keypoints},keypoints};};
+  const before=new Map([...bones].map(([name,bone])=>[name,bone.quaternion.clone()]));e.emit({posePacket:packet()});mirror.update(.1,1000);
+  const proof=mirror.diagnostics();for(const name of ["LeftArm","RightArm","LeftForeArm","RightForeArm","LeftUpLeg","RightUpLeg","LeftLeg","RightLeg"])assert.ok(!bones.get(name).quaternion.equals(before.get(name)),`${name} changed`);
+  assert.equal(proof.poseFramesReceived,1);assert.equal(proof.retargetFramesExecuted,1);assert.equal(proof.avatarRoot,avatar);assert.ok(proof.changedBones.length>=8);for(const bone of bones.values())assert.ok(bone===avatar.getObjectByName(bone.name));
+  e.emit({posePacket:packet(.05,1100)});mirror.update(.1,1100);assert.equal(mirror.solver.state,"LOST");e.emit({posePacket:packet(.95,1200)});mirror.update(.1,1200);assert.equal(mirror.solver.state,"TRACKING");
+  mirror.dispose();assert.equal(e.listeners.size,0);
+});

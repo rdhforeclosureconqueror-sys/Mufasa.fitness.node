@@ -1411,10 +1411,10 @@ First failing boundary: NONE</pre>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=2026-08-27-movenet-visible-audible-v22"></script>
   <script src="/pose-runtime.js?v=2026-08-28-movenet-temporal-display-proof-v25"></script>
-  <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
-  <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
-  <script>window.__PHASE2_POSE_PROOF_ONLY__ = true;</script>
-  <script src="/motion/live-avatar-mirror.js?v=2026-08-27-movenet-visible-audible-v22"></script>
+  <script src="/motion/normalized-pose.js?v=2026-08-28-full-rig-live-mirror-v1"></script>
+  <script src="/motion/avaturn-live-pose-solver.js?v=2026-08-28-full-rig-live-mirror-v1"></script>
+  <script>window.__PHASE2_POSE_PROOF_ONLY__ = false;</script>
+  <script src="/motion/live-avatar-mirror.js?v=2026-08-28-full-rig-live-mirror-v1"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
@@ -2270,6 +2270,15 @@ First failing boundary: NONE</pre>
         const deltaSeconds = liveAvatarMirrorLastFrameAt == null ? 0 : Math.max(0, (frameAt - liveAvatarMirrorLastFrameAt) / 1000);
         liveAvatarMirrorLastFrameAt = frameAt;
         liveAvatarMirror?.update(deltaSeconds, Date.now());
+        if (liveAvatarMirror) {
+          const mirrorProof = liveAvatarMirror.diagnostics();
+          runtime.retargetFramesExecuted = mirrorProof.retargetFramesExecuted;
+          runtime.bonesChangedLastFrame = mirrorProof.changedBones.length;
+          runtime.lastBonesApplied = mirrorProof.changedBones;
+          runtime.lastRetargetAt = mirrorProof.lastRetargetAt;
+          runtime.fullRigMapped = mirrorProof.fullRigMapped;
+          window.AvatarRuntime?.updateStatus?.({ normalizedPoseFrames: mirrorProof.poseFramesReceived, retargetFramesExecuted: mirrorProof.retargetFramesExecuted, bonesChangedLastFrame: mirrorProof.changedBones.length, changedBoneNames: mirrorProof.changedBones, expectedSegmentCount: mirrorProof.expectedSegmentCount, mappedSegmentCount: mirrorProof.mappedSegmentCount, mappedSegments: mirrorProof.mappedSegments, missingSegments: mirrorProof.missingSegments, expectedTorsoCount: mirrorProof.expectedTorsoCount, mappedTorsoCount: mirrorProof.mappedTorsoCount, mappedTorso: mirrorProof.mappedTorso, missingTorso: mirrorProof.missingTorso, fullRigMapped: mirrorProof.fullRigMapped, lastRetargetAt: mirrorProof.lastRetargetAt ? new Date(mirrorProof.lastRetargetAt).toISOString() : null });
+        }
         runtime.renderer.render(runtime.scene, runtime.camera);
         runtime.renderFrameCount = Number(runtime.renderFrameCount || 0) + 1;
         runtime.lastRenderAt = Date.now();
@@ -2758,11 +2767,10 @@ First failing boundary: NONE</pre>
         disposeLiveAvatarMirror();
         return false;
       }
-      // The legacy mirror only writes RightArm on modelRoot. Using it made the
-      // full-rig AvatarRuntime subscriber stand down, so a loaded Avaturn model
-      // looked static. AvatarRuntime now exclusively retargets the rendered root.
-      disposeLiveAvatarMirror();
-      const activated = false;
+      // The normalized-pose mirror is the sole bone writer. AvatarRuntime still
+      // owns asset/presentation diagnostics and deliberately stands down while
+      // this mirror targets modelRoot inside its authoritative avatarRoot.
+      const activated = activateLiveAvatarMirror();
       if (videoEl?.srcObject) ensureLiveAvatarMirrorPoseLoop().catch((error) => {
         console.warn("[live-avatar-mirror] existing pose loop unavailable", error);
       });
@@ -2776,13 +2784,22 @@ First failing boundary: NONE</pre>
       return Boolean(animId);
     }
 
-    window.__liveAvatarMirrorDiagnostics = () => ({
-      active: Boolean(liveAvatarMirror),
-      avatarOwned: Boolean(liveAvatarMirrorAvatar),
-      mode: getRenderMode(),
-      rendererOwners: avatarThreeRuntime?.renderer ? 1 : 0,
-      rafOwners: avatarThreeRuntime?.renderLoopActive ? 1 : 0
-    });
+    window.__liveAvatarMirrorDiagnostics = () => {
+      const proof = liveAvatarMirror?.diagnostics?.() || {};
+      return {
+        ...proof,
+        avatarRoot: undefined,
+        actualAvatarRootUuid: proof.avatarRoot?.uuid || liveAvatarMirrorAvatar?.uuid || "none",
+        authoritativeModelRootUuid: avatarThreeRuntime?.modelRoot?.uuid || "none",
+        diagnosticsMatchLoadedAvatar: Boolean(proof.avatarRoot && proof.avatarRoot === avatarThreeRuntime?.modelRoot),
+        active: Boolean(liveAvatarMirror),
+        avatarOwned: Boolean(liveAvatarMirrorAvatar),
+        mode: getRenderMode(),
+        poseListenerOwners: liveAvatarMirror ? 1 : 0,
+        rendererOwners: avatarThreeRuntime?.renderer ? 1 : 0,
+        rafOwners: avatarThreeRuntime?.renderLoopActive ? 1 : 0
+      };
+    };
 
     function fallbackRenderModeToCamera(reason, err) {
       if (AVATAR_FLAGS.AVATAR_DEBUG && err) console.warn(reason, err);

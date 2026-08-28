@@ -11,6 +11,15 @@ function rig() {
   return { avatar, shoulder, arm, forearm, hand };
 }
 function frame(timestamp, direction={x:1,y:0,z:0}, confidence=.9){return{timestamp,rightShoulder:{confidence},rightElbow:{confidence},rightUpperArmDirection:direction};}
+function fullRig() {
+  const avatar=new THREE.Group(),nodes=new Map();
+  const add=(name,parent,position=[0,.2,0])=>{const bone=new THREE.Bone();bone.name=name;bone.position.set(...position);parent.add(bone);nodes.set(name,bone);return bone;};
+  const hips=add("Hips",avatar,[0,0,0]),spine=add("Spine",hips),chest=add("Spine1",spine),leftShoulder=add("LeftShoulder",chest),rightShoulder=add("RightShoulder",chest);
+  const leftArm=add("LeftArm",leftShoulder),leftForeArm=add("LeftForeArm",leftArm),rightArm=add("RightArm",rightShoulder),rightForeArm=add("RightForeArm",rightArm);
+  add("LeftHand",leftForeArm);add("RightHand",rightForeArm);
+  const leftUpLeg=add("LeftUpLeg",hips),leftLeg=add("LeftLeg",leftUpLeg),rightUpLeg=add("RightUpLeg",hips),rightLeg=add("RightLeg",rightUpLeg);
+  add("LeftFoot",leftLeg);add("RightFoot",rightLeg);avatar.updateMatrixWorld(true);return{avatar,nodes};
+}
 function aligned(solver, targetWorld) {
   solver.avatar.updateMatrixWorld(true);const start=solver.rest.childLocalDirection.clone();
   const worldQ=new THREE.Quaternion();solver.rightArm.getWorldQuaternion(worldQ);return start.applyQuaternion(worldQ).normalize().dot(targetWorld.clone().normalize());
@@ -45,4 +54,19 @@ test("time-based exponential slerp progresses and disposal restores exact local 
   const r=rig(),solver=new AvaturnLivePoseSolver({THREE,avatar:r.avatar}),q=solver.rest.quaternion.clone(),p=solver.rest.position.clone(),s=solver.rest.scale.clone();solver.observe(frame(1000));
   solver.update(1/60,1000);const short=r.arm.quaternion.angleTo(q);solver.restore();solver.observe(frame(1000));solver.update(1/30,1000);const long=r.arm.quaternion.angleTo(q);assert.ok(long>short);
   solver.dispose();assert.ok(r.arm.quaternion.equals(q));assert.ok(r.arm.position.equals(p));assert.ok(r.arm.scale.equals(s));
+});
+
+test("complete loaded hierarchy reports every expected limb and torso binding",()=>{
+  const loaded=fullRig(),diagnostics=new AvaturnLivePoseSolver({THREE,avatar:loaded.avatar}).diagnostics();
+  assert.equal(diagnostics.expectedSegmentCount,8);assert.equal(diagnostics.mappedSegmentCount,8);
+  assert.deepEqual(diagnostics.missingSegments,[]);assert.equal(diagnostics.expectedTorsoCount,3);assert.equal(diagnostics.mappedTorsoCount,3);
+  assert.deepEqual(diagnostics.missingTorso,[]);assert.equal(diagnostics.fullRigMapped,"YES");
+  for(const name of ["LeftArm","RightArm","LeftForeArm","RightForeArm","LeftUpLeg","RightUpLeg","LeftLeg","RightLeg"])assert.ok(loaded.avatar.getObjectByName(name)===loaded.nodes.get(name));
+});
+
+test("partial loaded hierarchy explicitly reports missing bindings and cannot claim full rig",()=>{
+  const partial=rig(),diagnostics=new AvaturnLivePoseSolver({THREE,avatar:partial.avatar}).diagnostics();
+  assert.equal(diagnostics.mappedSegmentCount,2);assert.deepEqual(diagnostics.mappedSegments,["rightUpperArm","rightForearm"]);
+  assert.deepEqual(diagnostics.missingSegments,["leftUpperArm","leftForearm","leftThigh","rightThigh","leftLowerLeg","rightLowerLeg"]);
+  assert.equal(diagnostics.mappedTorsoCount,0);assert.deepEqual(diagnostics.missingTorso,["hips","spine","chest"]);assert.equal(diagnostics.fullRigMapped,"NO");
 });

@@ -6,8 +6,10 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const workout = fs.readFileSync(path.join(root, "public/workout.html"), "utf8");
 const avatarRuntime = fs.readFileSync(path.join(root, "public/avatar-runtime.js"), "utf8");
+const motionLab = fs.readFileSync(path.join(root, "motion-lab/live-avatar-mirror.html"), "utf8");
 
 test("production workout loads the existing Phase 1B module graph in dependency order", () => {
+  const build = "2026-08-28-full-rig-live-mirror-v1";
   const modules = [
     "/motion/normalized-pose.js",
     "/motion/avaturn-live-pose-solver.js",
@@ -16,6 +18,10 @@ test("production workout loads the existing Phase 1B module graph in dependency 
   const positions = modules.map(module => workout.indexOf(`src="${module}`));
   assert.ok(positions.every(position => position > 0));
   assert.ok(positions[0] < positions[1] && positions[1] < positions[2]);
+  for (const module of modules) assert.match(workout, new RegExp(`${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=${build}`));
+  assert.equal((workout.match(new RegExp(build, "g")) || []).length, modules.length);
+  for (const module of modules) assert.match(motionLab, new RegExp(`${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=${build}`));
+  assert.equal((motionLab.match(new RegExp(build, "g")) || []).length, modules.length);
 });
 
 test("one mirror owns the actual mounted Avaturn root and existing render RAF update seam", () => {
@@ -28,7 +34,7 @@ test("one mirror owns the actual mounted Avaturn root and existing render RAF up
   assert.doesNotMatch(workout, /PocketPTDisposableMotionSession\.createMotionSession/);
 });
 
-test("legacy full-rig writer is suspended while Phase 1B has exclusive bone ownership", () => {
+test("AvatarRuntime writer is suspended while normalized full-rig mirror has exclusive bone ownership", () => {
   const guard = avatarRuntime.indexOf("isLiveAvatarMirrorActive?.()");
   const legacyWriter = avatarRuntime.indexOf("return renderAvatar3d(posePacket)", guard);
   assert.ok(guard > 0 && legacyWriter > guard);
@@ -56,14 +62,16 @@ test("production mirror reuses the existing camera, detector, PoseRuntime stream
   assert.doesNotMatch(workout, /new\s+AvaturnLivePoseSolver/);
   assert.equal((workout.match(/new threeRef\.WebGLRenderer/g) || []).length, 1);
   assert.equal((workout.match(/function ensureAvatarRenderLoop/g) || []).length, 1);
+  assert.match(workout, /poseListenerOwners: liveAvatarMirror \? 1 : 0/);
+  assert.match(workout, /diagnosticsMatchLoadedAvatar: Boolean\(proof\.avatarRoot && proof\.avatarRoot === avatarThreeRuntime\?\.modelRoot\)/);
 });
 
-test("Phase 1B remains the sole right-upper-arm implementation", () => {
+test("normalized mirror maps the full bilateral rig", () => {
   const solver = fs.readFileSync(path.join(root, "public/motion/avaturn-live-pose-solver.js"), "utf8");
   const mirror = fs.readFileSync(path.join(root, "public/motion/live-avatar-mirror.js"), "utf8");
   assert.match(mirror, /addEventListener\("pose-runtime:frame"/);
   assert.match(mirror, /normalized\.fromMoveNetPosePacket/);
   assert.match(mirror, /new solverApi\.AvaturnLivePoseSolver/);
-  assert.match(solver, /this\.rightArm\.quaternion\.copy\(this\.currentQuaternion\)/);
-  assert.doesNotMatch(solver, /leftArm\.quaternion|rightForeArm\.quaternion\.copy|rightHand\.quaternion\.copy/);
+  assert.match(solver, /b\.bone\.quaternion\.copy\(b\.currentQuaternion\)/);
+  for (const segment of ["leftUpperArm", "rightUpperArm", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftLowerLeg", "rightLowerLeg"]) assert.match(solver, new RegExp(segment));
 });

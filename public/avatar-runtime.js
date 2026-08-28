@@ -92,6 +92,7 @@
     presentationState: 'NONE',
     retargetFramesExecuted: 0,
     bonesChangedLastFrame: 0,
+    fullRigMapped: 'NO',
     lastRetargetAt: null,
     lastAnimationFrameId: null,
     avatarLifecycleStage: 'NOT INITIALIZED'
@@ -799,7 +800,8 @@
     const retargetRunning = Number(runtime?.retargetFramesExecuted || status().retargetFramesExecuted || 0) > 0;
     const poseRunning = Number(status().posePacketsReceived || 0) > 0 && status().poseLoopState === 'RUNNING';
     const boneProof = Number(runtime?.bonesChangedLastFrame || status().bonesChangedLastFrame || 0) > 0;
-    const presentation = identityOk && renderRunning && (!trackingEnabled || (poseRunning && retargetRunning && boneProof)) ? 'ACTIVE' : (root ? 'REQUESTED' : 'NONE');
+    const fullRigProof = runtime?.fullRigMapped === 'YES' || status().fullRigMapped === 'YES';
+    const presentation = identityOk && renderRunning && (!trackingEnabled || (poseRunning && retargetRunning && boneProof && fullRigProof)) ? 'ACTIVE' : (root ? 'REQUESTED' : 'NONE');
     const proof = update({ runtimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
       manualControlRuntimeInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
       threeOwnerInstanceId: runtime?.instanceId || globalScope.__avatarRuntimeInstanceId || null,
@@ -821,6 +823,8 @@
       activeLights: lights, outputColorSpace: runtime?.renderer?.outputColorSpace || 'unknown', toneMapping: runtime?.renderer?.toneMapping ?? 'unknown',
       shadowState: Boolean(runtime?.renderer?.shadowMap?.enabled), renderLoopState: renderRunning ? 'RUNNING' : (runtime?.renderLoopActive ? 'STALLED' : 'STOPPED'),
       renderedRootEqualsRetargetedRoot: Boolean(root && runtime?.avatarRoot === root), poseLoopState: poseRunning ? 'RUNNING' : 'STOPPED',
+      fullRigMapped: trackingEnabled ? (fullRigProof ? 'YES' : 'NO') : status().fullRigMapped,
+      firstFailureBoundary: trackingEnabled && !fullRigProof ? 'AVATAR_SKELETON_FULL_RIG_MAPPING' : 'NONE',
       presentationState: presentation, avatarPresentationState: presentation,
       retargetState: retargetRunning ? 'RUNNING' : (trackingEnabled && root ? 'ARMED' : 'NOT_STARTED') });
     if (!runtime?.lastProofPublishedAt || Date.now() - runtime.lastProofPublishedAt >= 500) {
