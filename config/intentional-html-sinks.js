@@ -29,4 +29,6 @@ module.exports = Object.freeze({
   ,"public/admin-client.js": "Client profile and message templates encode every API-derived value with esc(); structural routes use encoded identifiers."
   ,"public/inbox.js": "Member message templates encode every body and timestamp with esc(); conversation identifiers originate server-side."
   ,"public/global-nav.js": "Navigation templates use only fixed local definitions, document.title text, and the backend-authenticated user's display fields; destinations are fixed same-origin routes."
+  ,"public/guided-experience.js": "Tour structure and tour identifiers are fixed internal definitions; user-facing step text is assigned with textContent."
+  ,"public/admin-launch-readiness.js": "Administrative board templates encode every durable/API-derived display string with esc(); status values and identifiers are server-validated enums/slugs."
 });

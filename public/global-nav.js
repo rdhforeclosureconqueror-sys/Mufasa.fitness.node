@@ -17,6 +17,7 @@
     {id:"greatness",label:"Stepping Into Greatness",href:"/greatness.html",section:"Wellness",auth:"member"},
     {id:"inbox",label:"Messages / Inbox",href:"/inbox.html",section:"Communication",auth:"member"},
     {id:"membership",label:"Membership / Access",href:"/membership.html",section:"Account",auth:"member"},
+    {id:"guided-tours",label:"Help / Guided Tours",href:"#guided-tours",section:"Account",auth:"member"},
     {id:"admin",label:"Admin Dashboard",href:"/dashboard.html#admin",section:"Administration",auth:"member",roles:["admin","super_admin"]},
     {id:"crm",label:"Client Management",href:"/admin/members.html",section:"Administration",auth:"member",roles:["admin","super_admin"]}
   ]);
@@ -39,6 +40,7 @@
     const state=global.AuthStateRuntime?.getCanonicalAuthState?.();
     authPresentation=presentationFromReadiness(result,state);
     render();
+    if(authPresentation.phase==="authenticated")setTimeout(()=>global.PocketPTGuide?.start("introduction"),250);
     return authPresentation;
   }
   function applyAuthEvent(event) {
@@ -77,6 +79,8 @@
     if(wasOpen)setOpen(true,{restoreFocus:false});else inspect();
   }
   async function onClick(event) {
+    const guides=event.target.closest?.('a[href="#guided-tours"]');
+    if(guides){event.preventDefault();setOpen(false);global.PocketPTGuide?.openHelp();return}
     const toggle=event.target.closest?.(".maat-nav-toggle"),backdrop=event.target.closest?.(".maat-nav-backdrop"),signout=event.target.closest?.("[data-maat-signout]"),retry=event.target.closest?.("[data-maat-auth-retry]");
     if(toggle){event.preventDefault();setOpen(toggle.getAttribute("aria-expanded")!=="true");return}
     if(backdrop){event.preventDefault();setOpen(false);return}
@@ -88,6 +92,8 @@
     document.addEventListener("click",onClick);diagnostics.clickListenerAttached="YES";
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&diagnostics.state==="open")setOpen(false)});
     global.addEventListener("auth:changed",applyAuthEvent);render();inspect();
+    if(!document.querySelector('link[href^="/guided-experience.css"]')){const style=document.createElement("link");style.rel="stylesheet";style.href="/guided-experience.css?v=1";document.head.append(style)}
+    if(!document.querySelector('script[src^="/guided-experience.js"]')){const script=document.createElement("script");script.src="/guided-experience.js?v=1";script.defer=true;document.head.append(script)}
     const readiness=global.AuthStateRuntime?.whenReady?.();
     if(readiness?.then)readiness.then(applyReadiness).catch(()=>applyReadiness({reason:"auth_unavailable"}));
   }

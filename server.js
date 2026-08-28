@@ -127,6 +127,8 @@ const { createYouthProgramRepository } = require("./src/youth-fitness/runtime/re
 const { createYouthProgramService } = require("./src/youth-fitness/runtime/service");
 const { createYouthCsrf } = require("./src/youth-fitness/runtime/csrf");
 const { createGarveyLaunchHandler } = require("./src/youth-fitness/integration/garveyLaunch");
+const { createGuidedExperienceService } = require("./src/services/guidedExperienceService");
+const { createLaunchReadinessService } = require("./src/services/launchReadinessService");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -524,6 +526,8 @@ function createApp(options = {}) {
   const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, movementDefinitions: [require("./data/movements/warrior-ii.v1.json")], eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
+  const guidedExperienceService = createGuidedExperienceService({ userStore });
+  const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json") });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
@@ -899,6 +903,10 @@ function createApp(options = {}) {
   app.get("/nutrition.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "nutrition.html"));
+  });
+  app.get("/admin/launch-readiness.html", requireAuth, requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY), (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    res.sendFile(path.join(PUBLIC_DIR, "admin-launch-readiness.html"));
   });
   app.get("/pocketpt/my-program", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
@@ -2438,6 +2446,10 @@ function createApp(options = {}) {
     ok(res, req.requestId, memberHomeService.read(req.auth.userId), 200)));
 
   const permission = (name) => requirePermission(authorizationResolver, name);
+  app.get("/api/me/guided-experience", requireAuth, (req,res)=>ok(res,req.requestId,guidedExperienceService.get(req.auth.userId)));
+  app.patch("/api/me/guided-experience", requireAuth, (req,res)=>ok(res,req.requestId,guidedExperienceService.update(req.auth.userId,req.body||{})));
+  app.get("/api/admin/launch-readiness", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY), (req,res)=>ok(res,req.requestId,launchReadinessService.snapshot()));
+  app.patch("/api/admin/launch-readiness/:board/:cardId", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT), (req,res)=>ok(res,req.requestId,launchReadinessService.update(req.params.board,req.params.cardId,req.body||{})));
   const crmActor = req => ({ userId:req.auth.userId, role:req.authz.role });
   app.get("/admin/members.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-members.html")));
   app.get("/admin/client.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-client.html")));
