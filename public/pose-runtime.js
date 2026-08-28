@@ -29,6 +29,11 @@
     framesSuccessful: 0,
     framesFailed: 0,
     lastInferenceMs: null,
+    inferenceDurations: [],
+    inferenceCompletionIntervals: [],
+    overlayRenderIntervals: [],
+    displayTrackerGeneration: 0,
+    movenetSmoothingConfigured: false,
     poseEventDispatchCount: 0,
     poseEventReceivedCount: 0,
     lastPoseEventAt: null,
@@ -60,7 +65,83 @@
   const REPORTED_JOINTS = ['nose', ...FULL_BODY_JOINTS];
   const FACE_JOINTS = ['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'];
   const SKELETON_EDGES = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
+  const TRACKING = Object.freeze({ ALPHA_MIN: 0.35, ALPHA_MAX: 0.80, MAX_COAST_MS: 300, REACQUIRE_MS: 160, VELOCITY_ALPHA: 0.25, COAST_DECAY_PER_MS: 0.006, MAX_SPEED_SOURCE_FRACTION_PER_MS: 0.003 });
+  const TRACK_MODES = Object.freeze({ TRACKED: 'TRACKED', COASTING: 'COASTING', REACQUIRING: 'REACQUIRING', LOST: 'LOST' });
   const cameraBootstraps = new Map();
+
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  function percentile(values, fraction) {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * fraction))];
+  }
+  function recordSample(list, value, limit = 120) { if (Number.isFinite(value)) { list.push(value); if (list.length > limit) list.splice(0, list.length - limit); } }
+
+  function createTemporalPoseTracker(config = {}) {
+    const settings = { ...TRACKING, ...config };
+    const joints = new Map();
+    let generation = 0;
+    let sourceWidth = 1; let sourceHeight = 1;
+    function empty(name) { return { name, measuredX: null, measuredY: null, filteredX: null, filteredY: null, velocityX: 0, velocityY: 0, rawScore: 0, lastReliableX: null, lastReliableY: null, lastReliableTimestamp: null, lastUpdateTimestamp: null, mode: TRACK_MODES.LOST, reacquireFromX: null, reacquireFromY: null, reacquireStartedAt: null }; }
+    function predictedAt(item, timestamp) {
+      const age = Math.max(0, timestamp - item.lastReliableTimestamp);
+      const travel = (1 - Math.exp(-settings.COAST_DECAY_PER_MS * age)) / settings.COAST_DECAY_PER_MS;
+      return { x: item.lastReliableX + item.velocityX * travel, y: item.lastReliableY + item.velocityY * travel, age };
+    }
+    function update(rawPose, timestamp, dimensions = {}) {
+      sourceWidth = Number(dimensions.width) || sourceWidth; sourceHeight = Number(dimensions.height) || sourceHeight;
+      const points = Array.isArray(rawPose?.keypoints) ? rawPose.keypoints : [];
+      points.forEach((point, index) => {
+        const name = keypointName(point) || `keypoint_${index}`; const item = joints.get(name) || empty(name);
+        const rawScore = score(point); const x = Number(point?.x); const y = Number(point?.y);
+        item.measuredX = Number.isFinite(x) ? x : null; item.measuredY = Number.isFinite(y) ? y : null; item.rawScore = rawScore;
+        if (rawScore >= KEYPOINT_THRESHOLD && Number.isFinite(x) && Number.isFinite(y)) {
+          const wasCoasting = item.mode === TRACK_MODES.COASTING;
+          const previousX = item.filteredX; const previousY = item.filteredY;
+          const dt = item.lastUpdateTimestamp == null ? 0 : Math.max(1, timestamp - item.lastUpdateTimestamp);
+          if (wasCoasting) {
+            const prediction = predictedAt(item, timestamp); const dx = prediction.x - x; const dy = prediction.y - y;
+            const distance = Math.hypot(dx, dy); const maxBlendDistance = Math.max(sourceWidth, sourceHeight) * 0.35;
+            const scale = distance > maxBlendDistance ? maxBlendDistance / distance : 1;
+            item.reacquireFromX = x + dx * scale; item.reacquireFromY = y + dy * scale; item.reacquireStartedAt = timestamp; item.mode = TRACK_MODES.REACQUIRING;
+          }
+          const confidence = clamp((rawScore - KEYPOINT_THRESHOLD) / (1 - KEYPOINT_THRESHOLD), 0, 1);
+          const alpha = settings.ALPHA_MIN + confidence * (settings.ALPHA_MAX - settings.ALPHA_MIN);
+          const baseX = wasCoasting ? item.reacquireFromX : previousX; const baseY = wasCoasting ? item.reacquireFromY : previousY;
+          item.filteredX = baseX == null ? x : baseX * (1 - alpha) + x * alpha;
+          item.filteredY = baseY == null ? y : baseY * (1 - alpha) + y * alpha;
+          if (dt && previousX != null) {
+            const maxSpeed = Math.max(sourceWidth, sourceHeight) * settings.MAX_SPEED_SOURCE_FRACTION_PER_MS;
+            const observedVX = clamp((item.filteredX - previousX) / dt, -maxSpeed, maxSpeed); const observedVY = clamp((item.filteredY - previousY) / dt, -maxSpeed, maxSpeed);
+            item.velocityX = item.velocityX * (1 - settings.VELOCITY_ALPHA) + observedVX * settings.VELOCITY_ALPHA;
+            item.velocityY = item.velocityY * (1 - settings.VELOCITY_ALPHA) + observedVY * settings.VELOCITY_ALPHA;
+          }
+          item.lastReliableX = item.filteredX; item.lastReliableY = item.filteredY; item.lastReliableTimestamp = timestamp;
+          if (!wasCoasting && item.mode !== TRACK_MODES.REACQUIRING) item.mode = TRACK_MODES.TRACKED;
+        } else if (item.lastReliableTimestamp != null && timestamp - item.lastReliableTimestamp <= settings.MAX_COAST_MS) item.mode = TRACK_MODES.COASTING;
+        else item.mode = TRACK_MODES.LOST;
+        item.lastUpdateTimestamp = timestamp; joints.set(name, item);
+      });
+      // Missing keypoints are dropouts too; do not retain them indefinitely.
+      const names = new Set(points.map((point, index) => keypointName(point) || `keypoint_${index}`));
+      joints.forEach((item, name) => { if (!names.has(name)) { item.rawScore = 0; item.measuredX = null; item.measuredY = null; item.mode = item.lastReliableTimestamp != null && timestamp - item.lastReliableTimestamp <= settings.MAX_COAST_MS ? TRACK_MODES.COASTING : TRACK_MODES.LOST; item.lastUpdateTimestamp = timestamp; } });
+      generation += 1; return sample(timestamp);
+    }
+    function sample(timestamp) {
+      const keypoints = [];
+      joints.forEach((item) => {
+        let x = item.filteredX; let y = item.filteredY; let predictionAge = 0;
+        if (item.mode === TRACK_MODES.COASTING) { const prediction = predictedAt(item, timestamp); predictionAge = prediction.age; if (predictionAge > settings.MAX_COAST_MS) item.mode = TRACK_MODES.LOST; else { x = prediction.x; y = prediction.y; } }
+        if (item.mode === TRACK_MODES.REACQUIRING) { const progress = clamp((timestamp - item.reacquireStartedAt) / settings.REACQUIRE_MS, 0, 1); x = item.reacquireFromX + (item.filteredX - item.reacquireFromX) * progress; y = item.reacquireFromY + (item.filteredY - item.reacquireFromY) * progress; if (progress >= 1) item.mode = TRACK_MODES.TRACKED; }
+        const opacity = item.mode === TRACK_MODES.COASTING ? Math.max(0, 1 - predictionAge / settings.MAX_COAST_MS) * 0.65 : item.mode === TRACK_MODES.REACQUIRING ? 0.82 : item.mode === TRACK_MODES.TRACKED ? 1 : 0;
+        keypoints.push({ name: item.name, x, y, score: item.rawScore, rawScore: item.rawScore, mode: item.mode, displayOnly: item.mode !== TRACK_MODES.TRACKED, authoritative: false, opacity, predictionAge });
+      });
+      return { keypoints, generation };
+    }
+    function reset() { joints.clear(); generation = 0; }
+    return { update, sample, reset, get generation() { return generation; }, get joints() { return joints; }, settings };
+  }
+  const displayTracker = createTemporalPoseTracker();
 
   function keypointName(point) { return point?.name || point?.part || ''; }
   function score(point) { return Number(point?.score || 0); }
@@ -119,6 +200,7 @@
   }
 
   function renderPoseOverlay(pose, video, canvas = global.document?.getElementById?.('overlay')) {
+    const drawingStartedAt = global.performance?.now?.() ?? Date.now();
     state.overlayCanvasFound = Boolean(canvas);
     state.overlayCanvasConnected = Boolean(canvas?.isConnected);
     if (!canvas) { state.overlayFirstFailingBoundary = 'OVERLAY_CANVAS_NOT_FOUND'; return false; }
@@ -138,12 +220,14 @@
     try {
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, rect.width, rect.height);
       if (!pose?.keypoints?.length) { state.overlayPointsDrawn = 0; state.overlaySegmentsDrawn = 0; state.overlayFirstFailingBoundary = 'POSE_NOT_RECEIVED'; return false; }
-      const projected = pose.keypoints.map((point) => score(point) >= KEYPOINT_THRESHOLD ? transform.project(point) : null);
+      const projected = pose.keypoints.map((point) => point?.mode && point.mode !== TRACK_MODES.LOST ? transform.project(point) : score(point) >= KEYPOINT_THRESHOLD ? transform.project(point) : null);
       ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, rect.width * 0.006); ctx.strokeStyle = 'rgba(250,204,21,.96)'; ctx.fillStyle = 'rgba(34,211,238,.98)';
       let segments = 0; let points = 0;
-      SKELETON_EDGES.forEach(([a,b]) => { if (!projected[a] || !projected[b]) return; ctx.beginPath(); ctx.moveTo(projected[a].x, projected[a].y); ctx.lineTo(projected[b].x, projected[b].y); ctx.stroke(); segments += 1; });
-      projected.forEach((point) => { if (!point) return; ctx.beginPath(); ctx.arc(point.x, point.y, Math.max(4, rect.width * .009), 0, Math.PI * 2); ctx.fill(); points += 1; });
+      SKELETON_EDGES.forEach(([a,b]) => { if (!projected[a] || !projected[b]) return; ctx.globalAlpha = Math.min(pose.keypoints[a]?.opacity ?? 1, pose.keypoints[b]?.opacity ?? 1); ctx.beginPath(); ctx.moveTo(projected[a].x, projected[a].y); ctx.lineTo(projected[b].x, projected[b].y); ctx.stroke(); segments += 1; });
+      projected.forEach((point, index) => { if (!point) return; ctx.globalAlpha = pose.keypoints[index]?.opacity ?? 1; ctx.beginPath(); ctx.arc(point.x, point.y, Math.max(4, rect.width * .009), 0, Math.PI * 2); ctx.fill(); points += 1; });
+      ctx.globalAlpha = 1;
       state.overlayPointsDrawn = points; state.overlaySegmentsDrawn = segments; state.overlayRenderGeneration += 1;
+      state.lastDrawingMs = Math.round(((global.performance?.now?.() ?? Date.now()) - drawingStartedAt) * 10) / 10;
       state.overlayFirstFailingBoundary = points ? 'APPLIED' : 'NO_CONFIDENT_KEYPOINTS'; state.lastOverlayError = null;
       return points > 0;
     } catch (error) { state.lastOverlayError = error?.message || String(error); state.overlayFirstFailingBoundary = 'DRAW_EXCEPTION'; return false; }
@@ -228,6 +312,14 @@
     }
     state.visibleCameraLayer = state.sourceVideo?.style?.visibility === 'hidden' ? 'HIDDEN' : 'VISIBLE';
     state.firstFailingBoundary = failureBoundary();
+    const displayPoints = state.latestDisplayPose?.keypoints || [];
+    const modeCount = (mode) => displayPoints.filter((point) => point.mode === mode).length;
+    state.trackedJointCount = modeCount(TRACK_MODES.TRACKED); state.coastingJointCount = modeCount(TRACK_MODES.COASTING); state.reacquiringJointCount = modeCount(TRACK_MODES.REACQUIRING); state.lostJointCount = modeCount(TRACK_MODES.LOST);
+    state.oldestPredictionAge = Math.round(Math.max(0, ...displayPoints.filter((point) => point.mode === TRACK_MODES.COASTING).map((point) => point.predictionAge || 0)));
+    const inferenceAverage = state.inferenceDurations.length ? state.inferenceDurations.reduce((sum, value) => sum + value, 0) / state.inferenceDurations.length : null;
+    const completionAverage = state.inferenceCompletionIntervals.length ? state.inferenceCompletionIntervals.reduce((sum, value) => sum + value, 0) / state.inferenceCompletionIntervals.length : null;
+    const overlayAverage = state.overlayRenderIntervals.length ? state.overlayRenderIntervals.reduce((sum, value) => sum + value, 0) / state.overlayRenderIntervals.length : null;
+    state.performanceFirstFailingBoundary = !state.detectorReady ? 'MODEL_NOT_CREATED' : !state.framesAttempted ? 'ESTIMATE_POSES_NOT_ENTERED' : state.lastError ? 'INFERENCE_EXCEPTION' : !state.overlayRenderGeneration ? 'OVERLAY_NOT_RENDERED' : 'NONE';
     const syncText = global.document?.getElementById?.('syncStatus')?.textContent || 'unknown';
     const lines = [
       `Pose engine initialized: ${state.detectorReady ? 'YES' : 'NO'}`, `Pose engine name: ${state.engineName}`, `Pose model: ${state.modelName}`,
@@ -247,6 +339,16 @@
       `Last pose error: ${state.lastError || state.detectorError || 'NONE'}`, `First failing boundary: ${state.firstFailingBoundary}`
     ];
     const panel = global.document?.getElementById?.('poseTrackingProofValues'); if (panel) panel.textContent = lines.join('\n');
+    const performancePanel = global.document?.getElementById?.('posePerformanceProofValues');
+    if (performancePanel) performancePanel.textContent = [
+      `Current backend: ${state.detectorBackend || 'unavailable'}`, `MoveNet enableSmoothing configured: ${state.movenetSmoothingConfigured ? 'YES' : 'NO'}`, '',
+      `estimatePoses wall duration last: ${state.lastInferenceMs ?? 'unavailable'}ms`, `Inference duration rolling average: ${inferenceAverage == null ? 'unavailable' : inferenceAverage.toFixed(1)}ms`, `Inference duration p50 approximation: ${percentile(state.inferenceDurations, .50)?.toFixed?.(1) ?? 'unavailable'}ms`, `Inference duration p95 approximation: ${percentile(state.inferenceDurations, .95)?.toFixed?.(1) ?? 'unavailable'}ms`,
+      `Time between completed inference generations: ${completionAverage == null ? 'unavailable' : completionAverage.toFixed(1)}ms`, `Inferred inference FPS: ${completionAverage ? (1000 / completionAverage).toFixed(2) : 'unavailable'}`, `Overlay render FPS: ${overlayAverage ? (1000 / overlayAverage).toFixed(1) : 'unavailable'}`, '',
+      `Raw pose generation: ${state.inferenceGeneration}`, `Display tracker generation: ${state.displayTrackerGeneration}`, `Overlay render generation: ${state.overlayRenderGeneration}`, `Inference generation != overlay render generation: YES`, '',
+      `Currently tracked joints: ${state.trackedJointCount}`, `Currently coasting joints: ${state.coastingJointCount}`, `Currently reacquiring joints: ${state.reacquiringJointCount}`, `Currently lost joints: ${state.lostJointCount}`, `Oldest prediction age: ${state.oldestPredictionAge}ms`,
+      `Max coast configured: ${TRACKING.MAX_COAST_MS}ms`, `Reacquire duration configured: ${TRACKING.REACQUIRE_MS}ms`, '',
+      `Tracker processing duration last: ${state.lastTrackerProcessingMs ?? 'unavailable'}ms`, `Event dispatch duration last: ${state.lastEventDispatchMs ?? 'unavailable'}ms`, `Drawing duration last: ${state.lastDrawingMs ?? 'unavailable'}ms`, `Performance first failing boundary: ${state.performanceFirstFailingBoundary}`
+    ].join('\n');
     const overlayProof = global.document?.getElementById?.('poseOverlayProofValues');
     if (overlayProof) overlayProof.textContent = [
       `Overlay canvas found: ${state.overlayCanvasFound ? 'YES' : 'NO'}`, `Overlay canvas connected: ${state.overlayCanvasConnected ? 'YES' : 'NO'}`, `Overlay CSS width/height: ${state.overlayCssSize || '0x0'}`, `Overlay buffer width/height: ${state.overlayBufferSize || '0x0'}`, '',
@@ -320,6 +422,7 @@
     state.detectorInitStartedAt = new Date().toISOString();
     state.detectorError = null;
     state.detectorReady = false;
+    displayTracker.reset();
     const startedAt = global.performance?.now?.() || Date.now();
     log('detector init requested');
     const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
@@ -346,12 +449,14 @@
       state.tfReady = true;
       trace.backendActive = tfRuntime.getBackend?.() || 'unknown';
 
-      trace.detectorCreateEntered = true; trace.detectorModelConfig = 'MoveNet SinglePose Lightning';
+      const detectorConfig = { modelType: poseRuntime.movenet.modelType.SINGLEPOSE_LIGHTNING, enableSmoothing: true };
+      trace.detectorCreateEntered = true; trace.detectorModelConfig = 'MoveNet SinglePose Lightning; enableSmoothing=true';
       const detector = await poseRuntime.createDetector(
         poseRuntime.SupportedModels.MoveNet,
-        { modelType: poseRuntime.movenet.modelType.SINGLEPOSE_LIGHTNING }
+        detectorConfig
       );
       trace.detectorCreateResolved = true;
+      state.movenetSmoothingConfigured = detectorConfig.enableSmoothing === true;
 
       state.detectorReady = true;
       state.detectorBackend = tfRuntime.getBackend?.() || 'unknown';
@@ -443,6 +548,8 @@
   function bootstrapCamera({ video, generation, source } = {}) {
     const key = Number(generation || 0);
     if (cameraBootstraps.has(key)) return cameraBootstraps.get(key);
+    if (state.cameraGeneration !== key || state.sourceVideo !== video) displayTracker.reset();
+    state.cameraGeneration = key;
     const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
     trace.poseBootstrapRequested = true;
     trace.poseBootstrapRequestGeneration = key;
@@ -508,6 +615,7 @@
 
     const trace = global.__POSE_BOOTSTRAP_TRACE || (global.__POSE_BOOTSTRAP_TRACE = {});
     trace.inferenceLoopStartEntered = true;
+    if (state.sourceVideo && state.sourceVideo !== video) displayTracker.reset();
     state.sourceVideo = video;
     state.sourceElementId = video.id || null;
     state.sourceConnected = Boolean(video.isConnected);
@@ -518,11 +626,28 @@
     log('pose loop started');
 
     let frameId = null;
+    let overlayFrameId = null;
     let stopped = false;
+
+    // Presentation refresh is independent from inference cadence. This loop only
+    // samples the display tracker and draws; it never calls estimatePoses().
+    const overlayRequestAnimationFrame = global.requestAnimationFrame?.bind(global);
+    function overlayFrame(timestamp) {
+      if (stopped || !state.loopRunning) return;
+      const previous = state.lastOverlayRenderAt;
+      if (previous != null) recordSample(state.overlayRenderIntervals, timestamp - previous);
+      state.lastOverlayRenderAt = timestamp;
+      const displayPose = displayTracker.sample(timestamp);
+      state.latestDisplayPose = displayPose;
+      state.displayTrackerGeneration = displayPose.generation;
+      if (!global.document?.hidden) renderPoseOverlay(displayPose, video);
+      overlayFrameId = overlayRequestAnimationFrame(overlayFrame);
+    }
 
     async function frame() {
       if (stopped || !isRunning()) {
         state.loopRunning = false;
+        displayTracker.reset(); state.latestDisplayPose = null; state.displayTrackerGeneration = 0;
         log('pose loop stopped');
         return;
       }
@@ -541,11 +666,15 @@
         try { poses = await detector.estimatePoses(video, { flipHorizontal: true }); trace.estimatePosesResolvedCount = (trace.estimatePosesResolvedCount || 0) + 1; }
         catch (error) { trace.estimatePosesRejectedCount = (trace.estimatePosesRejectedCount || 0) + 1; global.__recordPoseBootstrapFailure?.('ESTIMATE_POSES_REJECTED', error); throw error; }
         const inferenceMs = (global.performance?.now?.() ?? Date.now()) - inferenceStartedAt;
+        const inferenceCompletedAt = global.performance?.now?.() ?? Date.now();
         const pose = Array.isArray(poses) && poses.length ? poses[0] : null;
         const posePacket = normalizePosePacket(pose, video);
         state.loopFrameCount += 1;
         state.framesSuccessful += 1;
         state.lastInferenceMs = Math.round(inferenceMs * 10) / 10;
+        recordSample(state.inferenceDurations, inferenceMs);
+        if (state.lastInferenceCompletedAt != null) recordSample(state.inferenceCompletionIntervals, inferenceCompletedAt - state.lastInferenceCompletedAt);
+        state.lastInferenceCompletedAt = inferenceCompletedAt;
         state.lastError = null;
         state.lastFrameAt = new Date().toISOString();
         state.latestPose = pose;
@@ -564,18 +693,24 @@
         state.headShouldersVisible = projection.headShouldersVisible;
         state.partialUpperBodyVisible = projection.partialUpperBodyVisible;
         state.overallConfidence = projection.overallConfidence;
-        renderPoseOverlay(pose, video);
+        const trackerStartedAt = global.performance?.now?.() ?? Date.now();
+        const displayPose = displayTracker.update(pose, inferenceCompletedAt, posePacket.video);
+        state.latestDisplayPose = displayPose; state.displayTrackerGeneration = displayPose.generation;
+        state.lastTrackerProcessingMs = Math.round(((global.performance?.now?.() ?? Date.now()) - trackerStartedAt) * 10) / 10;
         updateVoiceFeedback();
         global.__lastPoseRuntimeFrame = posePacket;
         global.__lastPoseFrame = posePacket;
+        const dispatchStartedAt = global.performance?.now?.() ?? Date.now();
         try {
           global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poses } }));
           state.poseEventDispatchCount += 1;
           state.lastPoseEventAt = new Date().toISOString();
         } catch (_) {}
+        state.lastEventDispatchMs = Math.round(((global.performance?.now?.() ?? Date.now()) - dispatchStartedAt) * 10) / 10;
         if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poses, inferenceMs });
       } catch (err) {
         const message = err?.message || String(err || 'pose_loop_failed');
+        if (/disconnected|source element|camera/i.test(message)) { displayTracker.reset(); state.latestDisplayPose = null; state.displayTrackerGeneration = 0; }
         state.lastError = message;
         state.framesFailed += 1;
         console.error('[POSE_RUNTIME] pose loop frame failed', err);
@@ -587,11 +722,14 @@
     }
 
     frameId = requestAnimationFrame(frame);
+    if (typeof overlayRequestAnimationFrame === 'function') overlayFrameId = overlayRequestAnimationFrame(overlayFrame);
     state.activeLoop = {
       stop() {
         stopped = true;
         state.loopRunning = false;
         if (frameId != null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frameId);
+        if (overlayFrameId != null && typeof global.cancelAnimationFrame === 'function') global.cancelAnimationFrame(overlayFrameId);
+        displayTracker.reset(); state.latestDisplayPose = null; state.displayTrackerGeneration = 0;
         log('pose loop stop requested');
       }
     };
@@ -606,6 +744,10 @@
     classifyPose,
     createSourceToDisplayTransform,
     renderPoseOverlay,
+    createTemporalPoseTracker,
+    resetDisplayTracker: () => { displayTracker.reset(); state.latestDisplayPose = null; state.displayTrackerGeneration = 0; },
+    TRACKING,
+    TRACK_MODES,
     updateVoiceFeedback,
     renderProof,
     KEYPOINT_THRESHOLD,
