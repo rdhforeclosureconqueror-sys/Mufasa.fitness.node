@@ -43,6 +43,51 @@ test('recognizes close-range head and shoulders without weakening workout readin
   assert.equal(result.framingState, 'LOW_CONFIDENCE');
 });
 
+test('face-only observation is FACE_VISIBLE and not partial upper body', () => {
+  const { api } = runtime();
+  const result = api.classifyPose(pose(['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear']), video);
+  assert.equal(result.faceVisible, true);
+  assert.equal(result.headShouldersVisible, false);
+  assert.equal(result.partialUpperBodyVisible, false);
+  assert.equal(result.framingState, 'LOW_CONFIDENCE');
+});
+
+test('nose and both shoulders at threshold are HEAD_SHOULDERS_VISIBLE', () => {
+  const { api } = runtime();
+  const result = api.classifyPose(pose(['nose', 'left_shoulder', 'right_shoulder'], .6, .3), video);
+  assert.equal(result.headShouldersVisible, true);
+  assert.equal(result.framingState, 'LOW_CONFIDENCE');
+});
+
+test('a torso or limb joint is partial upper body without changing readiness thresholds', () => {
+  const { api } = runtime();
+  const result = api.classifyPose(pose(['left_elbow']), video);
+  assert.equal(result.partialUpperBodyVisible, true);
+  assert.equal(result.headShouldersVisible, false);
+  assert.equal(result.framingState, 'LOW_CONFIDENCE');
+  assert.equal(api.classifyPose(pose(upper), video).framingState, 'UPPER_BODY_READY');
+  assert.equal(api.classifyPose(pose([...upper, ...lower]), video).framingState, 'FULL_BODY_READY');
+});
+
+test('enabled CoachRuntime receives pose speech only on semantic transitions', async () => {
+  const { api, context } = runtime(); let callback; const spoken = [];
+  context.CoachRuntime = {
+    getState: () => ({ muted: false, audioUnlocked: true }),
+    stopAllSpeech() {},
+    speak: async (message, source) => { spoken.push({ message, source }); return { ok: true }; }
+  };
+  const source = { id: 'video', isConnected: true, videoWidth: 640, videoHeight: 480, getBoundingClientRect: () => ({ width: 640, height: 480 }) };
+  api.startPoseLoop({ detector: { estimatePoses: async () => [pose(['nose', 'left_eye'])] }, video: source, requestAnimationFrame: fn => { callback = fn; return 1; }, cancelAnimationFrame() {} });
+  await callback();
+  assert.equal(api.getState().voiceFeedbackEnabled, true);
+  assert.equal(api.getState().speechCount, 1);
+  assert.equal(api.getState().speechSuppressedReason, 'NONE');
+  assert.deepEqual(spoken.map(({ message }) => message), ['I can see your face.']);
+  await callback();
+  assert.equal(api.getState().speechCount, 1);
+  assert.equal(api.getState().speechSuppressedReason, 'STATE_UNCHANGED');
+});
+
 test('object-fit cover transform inverts inference flip and includes centered crop', () => {
   const { api } = runtime();
   const transform = api.createSourceToDisplayTransform(480, 640, 400, 300, true);
