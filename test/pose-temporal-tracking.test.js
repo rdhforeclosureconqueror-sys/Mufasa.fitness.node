@@ -66,6 +66,40 @@ test('overlay display loop is distinct and cannot create another estimatePoses c
   assert.ok(api.getState().displayTrackerGeneration >= 1);
 });
 
+test('display generations and measured cadence advance repeatedly during one sparse inference', async () => {
+  const { api, context } = load(); let inferFrame; const displayFrames = []; let resolveInference; let calls = 0;
+  context.requestAnimationFrame = (fn) => { displayFrames.push(fn); return displayFrames.length; };
+  context.cancelAnimationFrame = () => {};
+  const pendingInference = new Promise((resolve) => { resolveInference = resolve; });
+  api.startPoseLoop({
+    detector: { estimatePoses: async () => { calls += 1; await pendingInference; return [raw(.9, 10, 10)]; } },
+    video: { id:'video', isConnected:true, videoWidth:100, videoHeight:100 },
+    requestAnimationFrame(fn) { inferFrame = fn; return 1; }, cancelAnimationFrame() {}
+  });
+  const inference = inferFrame();
+  for (const at of [0, 16, 32, 48, 64, 80]) displayFrames.shift()(at);
+  let proof = api.getState();
+  assert.equal(calls, 1); assert.equal(proof.inferenceGeneration, 1);
+  assert.equal(proof.displayRenderGeneration, 6); assert.equal(proof.animationFrameCount, 6);
+  assert.equal(proof.framesRenderedSinceLastInference, 6); assert.equal(proof.lastAnimationFrameInterval, 16);
+  resolveInference(); await inference;
+  proof = api.getState();
+  assert.equal(proof.framesRenderedDuringPreviousInferenceInterval, 6);
+  assert.equal(proof.framesRenderedSinceLastInference, 0);
+});
+
+test('inter-frame coasting is display-only and extrapolates without changing tracker truth', () => {
+  const { api } = load(); const tracker = api.createTemporalPoseTracker();
+  tracker.update(raw(.9, 10, 10), 0, { width:100, height:100 });
+  tracker.update(raw(.9, 20, 10), 100, { width:100, height:100 });
+  const authoritativeMode = tracker.joints.get('nose').mode;
+  const display = tracker.sample(200, { betweenInferences:true }).keypoints[0];
+  assert.equal(authoritativeMode, api.TRACK_MODES.TRACKED);
+  assert.equal(tracker.joints.get('nose').mode, api.TRACK_MODES.TRACKED);
+  assert.equal(display.mode, api.TRACK_MODES.COASTING); assert.equal(display.displayOnly, true);
+  assert.ok(display.x > tracker.joints.get('nose').lastReliableX);
+});
+
 test('tracker resets on stop and detector configuration explicitly enables MoveNet smoothing', async () => {
   const { api } = load(); let callback; let config;
   const loop = api.startPoseLoop({ detector: { estimatePoses: async () => [raw(.9, 1, 1)] }, video: { id:'video', isConnected:true, videoWidth:100, videoHeight:100 }, requestAnimationFrame(fn) { callback = fn; return 1; }, cancelAnimationFrame() {} });
