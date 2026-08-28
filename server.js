@@ -526,8 +526,7 @@ function createApp(options = {}) {
   const yogaService = createYogaService({ userStore, poses: require("./data/yoga/poses.v1.json").poses, sessions: require("./data/yoga/sessions.v1.json").sessions, movementDefinitions: [require("./data/movements/warrior-ii.v1.json")], eventService: gamificationEventService, onCommitted:()=>achievementService?.replay() });
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
-  const guidedExperienceService = createGuidedExperienceService({ userStore });
-  const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json") });
+  const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json"), canonicalMatrixPath: path.join(__dirname, "data", "launch", "feature-readiness-matrix.v1.json") });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
@@ -543,6 +542,7 @@ function createApp(options = {}) {
   const aiCoachProvider = options.aiCoachProvider || (aiCoachConfig.enabled ? createOpenAiCoachProvider({ config: aiCoachConfig, fetchImpl: options.fetch || global.fetch }) : null);
   const aiCoachService = createAiCoachService({ userStore, contextService: coachContextService, responder: options.aiCoachResponder, provider: aiCoachProvider, config: aiCoachConfig });
   const memberHomeService = createMemberHomeService({ journeyIntakeService, personalizationService, generatedWorkoutService, generatedWorkoutProgressionService, trainingAdaptationService, nutritionService, userDataService });
+  const guidedExperienceService = createGuidedExperienceService({ userStore, memberStateReader: userId => memberHomeService.read(userId) });
   const nutritionProviderClient = createProviderClient({
     fetchImpl: options.fetch || global.fetch,
     env: process.env
