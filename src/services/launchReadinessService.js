@@ -5,18 +5,16 @@ const STATUSES = Object.freeze(["BACKLOG", "IN_PROGRESS", "BLOCKED", "HUMAN_TEST
 const slug = value => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const AVATAR_GROUPS = Object.freeze({
-  "FOUNDATION": ["Personalized avatar load", "Skeleton profile resolution", "Programmatic manipulation", "Reset / disposal"],
-  "MOVENET / CAMERA": ["Physical iPhone camera", "MoveNet initialization", "Continuous live frames", "Full-body framing", "Lost tracking"],
-  "NORMALIZATION": ["Normalized pose contract", "Left / right mapping", "Confidence thresholds", "Smoothing", "Recovery behavior"],
-  "LIVE MIRROR BODY SEGMENTS": ["Torso / root", "Left upper arm", "Right upper arm", "Left forearm", "Right forearm", "Left thigh", "Right thigh", "Left lower leg", "Right lower leg"],
-  "VERTICAL SLICE": ["Real human → phone camera → MoveNet → normalized pose → solver → personalized avatar → visible motion"],
-  "RUNTIME SAFETY": ["Start", "Stop", "Restart", "No duplicate listeners", "No duplicate render / inference loops", "Camera cleanup", "Renderer / resource cleanup", "Neutral / rest recovery", "No workout regression"],
-  "PAUSE": ["Physical acceptance", "Documentation", "Explicitly deferred fidelity list"]
+  "RUNTIME FOUNDATION": ["Avatar asset/runtime foundation", "Avaturn skeleton profile verification", "Runtime bone-name verification"],
+  "POSE PIPELINE": ["MoveNet pose event/payload audit", "Normalized pose mapping", "Rest-pose/calibration handling"],
+  "LIVE MIRROR": ["One-arm live-mirror proof", "Full live avatar mirror", "Smoothing/stability"],
+  "MOTION RECORDING": ["Motion recorder", "Saved motion data format", "Motion source manifest"],
+  "FIXTURES / REGISTRY": ["Phase 4 fixture builder", "Fixture validation", "Registry integration", "Recorded motion playback"],
+  "ACCEPTANCE": ["Mobile/browser QA", "Physical-device acceptance", "Privacy/camera handling verification", "Final avatar/motion launch gate"]
 });
 const HUMAN_AVATAR = new Set([
-  "Physical iPhone camera", "Continuous live frames", "Full-body framing", "Lost tracking",
-  "Real human → phone camera → MoveNet → normalized pose → solver → personalized avatar → visible motion",
-  "Physical acceptance"
+  "One-arm live-mirror proof", "Full live avatar mirror", "Mobile/browser QA", "Physical-device acceptance",
+  "Privacy/camera handling verification", "Final avatar/motion launch gate"
 ]);
 
 function mapCanonicalStatus(feature) {
@@ -43,7 +41,8 @@ function canonicalCard(feature) {
 }
 function avatarCard(title, category) {
   const humanRequired = HUMAN_AVATAR.has(title);
-  return { id: slug(`avatar-${category}-${title}`), title, category, canonical: false, canonicalStatus: "Avatar phased-pause acceptance", status: humanRequired ? "HUMAN_TEST_REQUIRED" : "BACKLOG", definitionOfDone: `Verify ${title.toLowerCase()} through the actual MoveNet → normalized pose → personalized avatar architecture.`, implementationState: "Evidence not recorded", automated: "NOT_RUN", browserQa: "NOT_RECORDED", physicalDeviceQa: humanRequired ? "REQUIRED" : "NOT_APPLICABLE", accessibility: "NOT_RECORDED", productionStatus: "NOT_RECORDED", humanRequired, humanVerified: false, evidence: "", blocker: "", implementationRef: "public/avatar-runtime.js; public/pose-runtime.js; public/normalized-pose.js" };
+  const implemented = !["Motion recorder", "Saved motion data format", "Motion source manifest", "Full live avatar mirror", "Recorded motion playback"].includes(title);
+  return { id: slug(`avatar-${category}-${title}`), title, category, canonical: true, canonicalStatus: implemented ? "Repository evidence present; acceptance pending" : "Implementation not evidenced", status: humanRequired ? "HUMAN_TEST_REQUIRED" : (implemented ? "IN_PROGRESS" : "BACKLOG"), definitionOfDone: `Verify ${title.toLowerCase()} through the actual MoveNet → normalized pose → personalized avatar architecture.`, implementationState: implemented ? "Technical implementation or verification tooling exists; acceptance is not complete" : "Implementation evidence not found", automated: "NOT_RUN", browserQa: "NOT_RECORDED", physicalDeviceQa: humanRequired ? "REQUIRED" : "NOT_APPLICABLE", accessibility: "NOT_RECORDED", productionStatus: "NOT_RECORDED", humanRequired, humanVerified: false, evidence: [], blocker: "", implementationRef: "public/avatar-runtime.js; public/pose-runtime.js; public/normalized-pose.js; scripts/motion" };
 }
 function seed(matrix = { features: [] }) {
   return { version: 3, canonicalSchemaVersion: matrix.schemaVersion || null, updatedAt: null, boards: { launch: matrix.features.map(canonicalCard), avatar: Object.entries(AVATAR_GROUPS).flatMap(([group, titles]) => titles.map(title => avatarCard(title, group))) } };
