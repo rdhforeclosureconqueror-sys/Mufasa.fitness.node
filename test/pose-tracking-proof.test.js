@@ -4,15 +4,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function runtime() {
+function runtime(options = {}) {
   const listeners = {};
   const context = {
     console, URLSearchParams, Date, CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init.detail; } },
     performance: { now: () => 10 }, location: { search: '' },
-    document: { hidden: false, getElementById: () => null },
+    document: options.document || { hidden: false, getElementById: () => null },
     addEventListener(type, fn) { (listeners[type] ||= []).push(fn); },
     dispatchEvent(event) { (listeners[event.type] || []).forEach(fn => fn(event)); },
-    setInterval() {},
+    setInterval() {}, Date: options.Date || Date,
   };
   context.globalThis = context;
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../public/pose-runtime.js'), 'utf8'), context);
@@ -145,4 +145,29 @@ test('production wiring keeps capture inference active in Avatar Only and blocks
   assert.match(html, /__PHASE2_POSE_PROOF_ONLY__/);
   assert.match(html, /if \(window\.__PHASE2_POSE_PROOF_ONLY__\) \{ disposeLiveAvatarMirror\(\); return false; \}/);
   assert.match(fs.readFileSync(path.join(__dirname, '../public/pose-runtime.js'), 'utf8'), /Backend sync blocks pose inference: NO/);
+});
+
+test('live performance mode throttles proof DOM only, preserves internal events, and restores normal rendering', () => {
+  let now = 1000;
+  class ClockDate extends Date { static now() { return now; } }
+  const writes = { tracking: 0, performance: 0 };
+  const panel = name => ({ set textContent(_value) { writes[name]++; }, get textContent() { return ''; } });
+  const panels = { poseTrackingProofValues: panel('tracking'), posePerformanceProofValues: panel('performance') };
+  const document = { hidden: false, getElementById: id => panels[id] || null };
+  const { api, context } = runtime({ document, Date: ClockDate });
+  api.setLivePerformanceMode(true);
+  writes.tracking = writes.performance = 0;
+  now += 100; api.renderProof(); api.renderProof();
+  assert.deepEqual(writes, { tracking: 0, performance: 0 });
+  context.dispatchEvent(new context.CustomEvent('pose-runtime:frame', { detail: {} }));
+  assert.equal(api.getState().poseEventReceivedCount, 1, 'internal event state advances while UI is throttled');
+  now += 400; api.renderProof();
+  assert.deepEqual(writes, { tracking: 1, performance: 1 }, 'visible proof renders at the 2 Hz boundary');
+  const active = api.getState();
+  assert.deepEqual([...active.pausedSubsystems], ['guided-experience overlay']);
+  assert.deepEqual([...active.throttledSubsystems], ['pose proof diagnostic DOM']);
+  assert.deepEqual([...active.completedSubsystems], ['mobile-layout-containment proof']);
+  now += 1; api.setLivePerformanceMode(false);
+  assert.deepEqual(writes, { tracking: 2, performance: 2 }, 'inactive mode restores immediate proof rendering');
+  assert.equal(api.getState().livePerformanceMode, 'INACTIVE');
 });

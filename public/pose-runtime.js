@@ -64,7 +64,7 @@
     speechSuppressedReason: 'VOICE_NOT_ENABLED',
     speechQueueActive: false,
     livePerformanceMode: 'INACTIVE', diagnosticUiHz: 2, lastDiagnosticUiAt: 0,
-    pausedSubsystems: [], throttledSubsystems: [], inferenceInputWidth: 0, inferenceInputHeight: 0, inferenceResolutionMode: 'SOURCE_NATIVE'
+    pausedSubsystems: [], throttledSubsystems: [], completedSubsystems: [], inferenceInputWidth: 0, inferenceInputHeight: 0, inferenceResolutionMode: 'SOURCE_NATIVE'
   };
 
   const KEYPOINT_THRESHOLD = 0.3;
@@ -362,7 +362,7 @@
     const performancePanel = global.document?.getElementById?.('posePerformanceProofValues');
     if (performancePanel) performancePanel.textContent = [
       `Current backend: ${state.detectorBackend || 'unavailable'}`, `MoveNet enableSmoothing configured: ${state.movenetSmoothingConfigured ? 'YES' : 'NO'}`, '',
-      `Inference input: ${state.inferenceInputWidth || 'unavailable'}x${state.inferenceInputHeight || 'unavailable'} (${state.inferenceResolutionMode})`, `Performance mode: ${state.livePerformanceMode}`, `Paused subsystems: ${state.pausedSubsystems.join(', ') || 'none'}`, `Throttled subsystems: ${state.throttledSubsystems.join(', ') || 'none'}`, `Diagnostic UI Hz: ${state.diagnosticUiHz}`, '',
+      `Inference input: ${state.inferenceInputWidth || 'unavailable'}x${state.inferenceInputHeight || 'unavailable'} (${state.inferenceResolutionMode})`, `Performance mode: ${state.livePerformanceMode}`, `Paused subsystems: ${state.pausedSubsystems.join(', ') || 'none'}`, `Throttled subsystems: ${state.throttledSubsystems.join(', ') || 'none'}`, `Completed subsystems: ${state.completedSubsystems.join(', ') || 'none'}`, `Diagnostic UI Hz: ${state.diagnosticUiHz}`, '',
       `estimatePoses wall duration last: ${state.lastInferenceMs ?? 'unavailable'}ms`, `Inference duration rolling average: ${inferenceAverage == null ? 'unavailable' : inferenceAverage.toFixed(1)}ms`, `Inference duration p50 approximation: ${percentile(state.inferenceDurations, .50)?.toFixed?.(1) ?? 'unavailable'}ms`, `Inference duration p95 approximation: ${percentile(state.inferenceDurations, .95)?.toFixed?.(1) ?? 'unavailable'}ms`,
       `Time between completed inference generations: ${completionAverage == null ? 'unavailable' : completionAverage.toFixed(1)}ms`, `Inferred inference FPS: ${completionAverage ? (1000 / completionAverage).toFixed(2) : 'unavailable'}`, `Measured display FPS: ${overlayAverage ? (1000 / overlayAverage).toFixed(1) : 'unavailable'}`, `Last animation-frame interval: ${state.lastAnimationFrameInterval == null ? 'unavailable' : state.lastAnimationFrameInterval.toFixed(1)}ms`, '',
       `Raw pose generation: ${state.inferenceGeneration}`, `Display tracker generation: ${state.displayTrackerGeneration}`, `Display render generation: ${state.displayRenderGeneration}`, `Animation frame count: ${state.animationFrameCount}`, `Display loop running independently: ${state.displayLoopRunning ? 'YES' : 'NO'}`,
@@ -790,7 +790,7 @@
     startPoseLoop,
     getLatestPose: () => state.latestPose || null,
     getLatestPosePacket: () => state.latestPosePacket || null,
-    setLivePerformanceMode(active) {state.livePerformanceMode=active?'ACTIVE':'INACTIVE';state.diagnosticUiHz=active?2:2;state.pausedSubsystems=active?['guided-experience animations','mobile-layout-containment remeasurement']:[];state.throttledSubsystems=active?['pose diagnostic DOM','proof text rendering']:[];global.dispatchEvent?.(new CustomEvent('pocketpt:live-performance-mode',{detail:{active:Boolean(active)}}));renderProof();return state.livePerformanceMode;},
+    setLivePerformanceMode(active) {state.livePerformanceMode=active?'ACTIVE':'INACTIVE';state.diagnosticUiHz=2;state.pausedSubsystems=active?['guided-experience overlay']:[];state.throttledSubsystems=active?['pose proof diagnostic DOM']:[];state.completedSubsystems=active?['mobile-layout-containment proof']:[];global.dispatchEvent?.(new CustomEvent('pocketpt:live-performance-mode',{detail:{active:Boolean(active)}}));renderProof();return state.livePerformanceMode;},
     getState: () => ({ ...state, optionalTrackers: { ...state.optionalTrackers }, optionalTrackerErrors: { ...state.optionalTrackerErrors } })
   };
 

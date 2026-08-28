@@ -7,7 +7,8 @@ const layoutProof = fs.readFileSync(require.resolve('../public/mobile-layout-con
 const workoutRuntime = fs.readFileSync(require.resolve('../public/workout-runtime.js'), 'utf8');
 const poseRuntime = fs.readFileSync(require.resolve('../public/pose-runtime.js'), 'utf8');
 
-const build = '2026-08-27-movenet-visible-audible-v22';
+const layoutAssetBuild = '2026-08-27-movenet-visible-audible-v22';
+const shellBuild = '2026-08-27-mobile-camera-layout-containment-v21';
 
 test('mobile diagnostics and grid children use shrink-safe containment', () => {
   assert.match(html, /\.app > \*, \.pane > \* \{ min-width: 0; \}/);
@@ -31,10 +32,18 @@ test('production-visible proof measures all four stages and reports offenders', 
   assert.match(layoutProof, /querySelectorAll\('\*'\)/);
 });
 
+test('layout containment proof is finite one-shot work rather than a pausable background subsystem', () => {
+  assert.equal((layoutProof.match(/setTimeout\(/g) || []).length, 2);
+  assert.equal((layoutProof.match(/requestAnimationFrame\?\.\(/g) || []).length, 1);
+  assert.doesNotMatch(layoutProof, /setInterval|pocketpt:live-performance-mode/);
+  assert.match(poseRuntime, /completedSubsystems=active\?\['mobile-layout-containment proof'\]/);
+  assert.doesNotMatch(poseRuntime, /pausedSubsystems=active\?\[[^\]]*mobile-layout-containment/);
+});
+
 test('layout phase uses the new cache identifier without editing inference behavior', () => {
-  assert.match(html, new RegExp(build));
-  assert.match(fs.readFileSync(require.resolve('../server.js'), 'utf8'), new RegExp(build));
-  assert.match(fs.readFileSync(require.resolve('../public/__frontend-version.json'), 'utf8'), new RegExp(build));
+  assert.match(html, new RegExp(`/mobile-layout-containment\\.js\\?v=${layoutAssetBuild}`));
+  assert.match(fs.readFileSync(require.resolve('../server.js'), 'utf8'), new RegExp(shellBuild));
+  assert.match(fs.readFileSync(require.resolve('../public/__frontend-version.json'), 'utf8'), new RegExp(shellBuild));
   assert.match(poseRuntime, /estimatePosesEnteredCount/);
   assert.match(poseRuntime, /estimatePosesResolvedCount/);
   assert.match(poseRuntime, /estimatePosesRejectedCount/);
