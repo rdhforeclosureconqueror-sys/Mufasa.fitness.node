@@ -38,6 +38,7 @@
     framingState: 'NO_PERSON',
     framingReason: 'MoveNet has not returned a person.',
     firstFailingBoundary: 'NONE',
+    faceVisible: false,
     headShouldersVisible: false,
     partialUpperBodyVisible: false,
     overlayRenderGeneration: 0,
@@ -57,7 +58,7 @@
   const UPPER_BODY_JOINTS = ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist', 'left_hip', 'right_hip'];
   const FULL_BODY_JOINTS = [...UPPER_BODY_JOINTS, 'left_knee', 'right_knee', 'left_ankle', 'right_ankle'];
   const REPORTED_JOINTS = ['nose', ...FULL_BODY_JOINTS];
-  const UPPER_OBSERVATION_JOINTS = ['nose', 'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist', 'left_hip', 'right_hip'];
+  const FACE_JOINTS = ['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'];
   const SKELETON_EDGES = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
   const cameraBootstraps = new Map();
 
@@ -91,9 +92,12 @@
       }
     }
     const confidenceScores = keypoints.map(score).filter((value) => value > 0);
+    const faceVisible = FACE_JOINTS.some((name) => score(byName[name]) >= KEYPOINT_THRESHOLD);
     const headShouldersVisible = ['nose', 'left_shoulder', 'right_shoulder'].every((name) => score(byName[name]) >= KEYPOINT_THRESHOLD);
-    const partialUpperBodyVisible = UPPER_OBSERVATION_JOINTS.some((name) => score(byName[name]) >= KEYPOINT_THRESHOLD) && upperVisible < UPPER_BODY_JOINTS.length;
-    return { framingState, framingReason, byName, visible, visibleNames: visible.map(keypointName).filter(Boolean), visibleCount: visible.length, totalCount: keypoints.length, upperVisible, fullVisible, headShouldersVisible, partialUpperBodyVisible, coverageWidth, coverageHeight, overallConfidence: Number(pose?.score ?? (confidenceScores.length ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length : 0)) };
+    // Face landmarks are observational only; partial upper body requires a
+    // confident torso/limb joint and does not relax workout readiness.
+    const partialUpperBodyVisible = upperVisible > 0 && upperVisible < UPPER_BODY_JOINTS.length;
+    return { framingState, framingReason, byName, visible, visibleNames: visible.map(keypointName).filter(Boolean), visibleCount: visible.length, totalCount: keypoints.length, upperVisible, fullVisible, faceVisible, headShouldersVisible, partialUpperBodyVisible, coverageWidth, coverageHeight, overallConfidence: Number(pose?.score ?? (confidenceScores.length ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length : 0)) };
   }
 
   // MoveNet returns horizontally-flipped source coordinates. Invert that flip,
@@ -176,7 +180,7 @@
 
   const SPEECH_MESSAGES = {
     CAMERA_READY: 'Camera ready. Looking for you.',
-    PERSON_FOUND: 'I found you.', HEAD_SHOULDERS_VISIBLE: 'I can see your head and shoulders.',
+    PERSON_FOUND: 'I found you.', FACE_VISIBLE: 'I can see your face.', HEAD_SHOULDERS_VISIBLE: 'I can see your head and shoulders.',
     PARTIAL_UPPER_BODY_VISIBLE: 'I can see part of your upper body.', UPPER_BODY_READY: 'I can see your upper body.',
     FULL_BODY_READY: 'I can see your full body.', TOO_CLOSE: "You're a little too close. Move the phone back.",
     TOO_FAR: "You're too far away. Move a little closer.", NO_PERSON: 'I lost you. Move back into the camera.'
@@ -188,6 +192,7 @@
     if (state.framingState === 'TOO_CLOSE' || state.framingState === 'TOO_FAR' || state.framingState === 'FULL_BODY_READY' || state.framingState === 'UPPER_BODY_READY') return state.framingState;
     if (state.headShouldersVisible) return 'HEAD_SHOULDERS_VISIBLE';
     if (state.partialUpperBodyVisible) return 'PARTIAL_UPPER_BODY_VISIBLE';
+    if (state.faceVisible) return 'FACE_VISIBLE';
     return 'PERSON_FOUND';
   }
 
@@ -235,7 +240,7 @@
       `Keypoints detected above threshold: ${state.visibleKeypointCount || 0}/${state.totalKeypointCount || 0}`, '',
       ...REPORTED_JOINTS.map((name) => `${name}: confidence=${score(state.keypointsByName?.[name]).toFixed(3)}`), '',
       `Framing state: ${state.framingState}`, `Framing reason: ${state.framingReason}`, `Required upper-body joints visible: ${state.upperVisible || 0}/${UPPER_BODY_JOINTS.length}`, `Required full-body joints visible: ${state.fullVisible || 0}/${FULL_BODY_JOINTS.length}`, '',
-      `Head/shoulders visible: ${state.headShouldersVisible ? 'YES' : 'NO'}`, `Partial upper body visible: ${state.partialUpperBodyVisible ? 'YES' : 'NO'}`, '',
+      `Face visible: ${state.faceVisible ? 'YES' : 'NO'}`, `Head/shoulders visible: ${state.headShouldersVisible ? 'YES' : 'NO'}`, `Partial upper body visible: ${state.partialUpperBodyVisible ? 'YES' : 'NO'}`, '',
       `Pose frame produced count: ${state.framesSuccessful}`, `Pose event emitted: ${state.poseEventDispatchCount ? 'YES' : 'NO'}`, `Pose event name: pose-runtime:frame`, `Pose event generation: ${state.poseEventDispatchCount}`,
       `Pose event dispatch count: ${state.poseEventDispatchCount}`, `Pose event received count: ${state.poseEventReceivedCount}`, `Last pose event timestamp: ${state.lastPoseEventAt || 'none'}`, `Last pose event age: ${state.lastPoseEventAt ? now - Date.parse(state.lastPoseEventAt) : 'unavailable'}ms`, `Consumer count: ${state.eventConsumerCount || 0}`, '',
       `Backend sync initialized: YES`, `Backend sync resolved: ${/checking/i.test(syncText) ? 'NO' : 'YES'}`, `Backend sync state: ${syncText}`, `Backend sync blocks pose inference: NO`, '',
@@ -247,7 +252,7 @@
       `Overlay canvas found: ${state.overlayCanvasFound ? 'YES' : 'NO'}`, `Overlay canvas connected: ${state.overlayCanvasConnected ? 'YES' : 'NO'}`, `Overlay CSS width/height: ${state.overlayCssSize || '0x0'}`, `Overlay buffer width/height: ${state.overlayBufferSize || '0x0'}`, '',
       `Video source width/height: ${state.videoSourceSize || state.sourceDimensions}`, `Displayed video rect: ${state.displayedVideoRect || '0x0'}`, `Object-fit mode: cover`, `Horizontal flip applied: YES (inverse inference flip)`, '',
       `Pose received: ${state.latestPose ? 'YES' : 'NO'}`, `Pose generation: ${state.inferenceGeneration}`, `Person detected: ${state.latestPose ? 'YES' : 'NO'}`, `Visible keypoint count: ${state.visibleKeypointCount || 0}`, `Visible keypoint names: ${(state.visibleKeypointNames || []).join(', ') || 'none'}`, '',
-      `Head/shoulders visible: ${state.headShouldersVisible ? 'YES' : 'NO'}`, `Partial upper body visible: ${state.partialUpperBodyVisible ? 'YES' : 'NO'}`, `Upper body ready: ${state.framingState === 'UPPER_BODY_READY' || state.framingState === 'FULL_BODY_READY' ? 'YES' : 'NO'}`, `Full body ready: ${state.framingState === 'FULL_BODY_READY' ? 'YES' : 'NO'}`, '',
+      `Face visible: ${state.faceVisible ? 'YES' : 'NO'}`, `Head/shoulders visible: ${state.headShouldersVisible ? 'YES' : 'NO'}`, `Partial upper body visible: ${state.partialUpperBodyVisible ? 'YES' : 'NO'}`, `Upper body ready: ${state.framingState === 'UPPER_BODY_READY' || state.framingState === 'FULL_BODY_READY' ? 'YES' : 'NO'}`, `Full body ready: ${state.framingState === 'FULL_BODY_READY' ? 'YES' : 'NO'}`, '',
       `Points drawn last frame: ${state.overlayPointsDrawn || 0}`, `Segments drawn last frame: ${state.overlaySegmentsDrawn || 0}`, `Overlay render generation: ${state.overlayRenderGeneration || 0}`, `Last overlay error: ${state.lastOverlayError || 'NONE'}`, `Overlay first failing boundary: ${state.overlayFirstFailingBoundary}`, '',
       `Voice feedback enabled: ${state.voiceFeedbackEnabled ? 'YES' : 'NO'}`, `Speech API available: ${state.speechApiAvailable ? 'YES' : 'NO'}`, `Last spoken state: ${state.lastSpokenState || 'none'}`, `Last spoken message: ${state.lastSpokenMessage || 'none'}`, `Last spoken timestamp: ${state.lastSpokenTimestamp || 'none'}`, `Speech count: ${state.speechCount || 0}`, `Speech suppressed reason: ${state.speechSuppressedReason || 'NONE'}`, `Speech queue active: ${state.speechQueueActive ? 'YES' : 'NO'}`
     ].join('\n');
@@ -555,6 +560,7 @@
         state.visibleKeypointNames = projection.visibleNames;
         state.upperVisible = projection.upperVisible;
         state.fullVisible = projection.fullVisible;
+        state.faceVisible = projection.faceVisible;
         state.headShouldersVisible = projection.headShouldersVisible;
         state.partialUpperBodyVisible = projection.partialUpperBodyVisible;
         state.overallConfidence = projection.overallConfidence;
