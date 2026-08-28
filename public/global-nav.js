@@ -19,6 +19,8 @@
     {id:"membership",label:"Membership / Access",href:"/membership.html",section:"Account",auth:"member"},
     {id:"guided-tours",label:"Help / Guided Tours",href:"#guided-tours",section:"Account",auth:"member"},
     {id:"admin",label:"Admin Dashboard",href:"/dashboard.html#admin",section:"Administration",auth:"member",roles:["admin","super_admin"]},
+    {id:"launch-readiness",label:"Launch Readiness",href:"/admin-launch-readiness.html",section:"Administration",auth:"member",roles:["admin","super_admin"]},
+    {id:"avatar-development",label:"Avatar Development Board",href:"/admin-avatar-development.html",section:"Administration",auth:"member",roles:["admin","super_admin"]},
     {id:"crm",label:"Client Management",href:"/admin/members.html",section:"Administration",auth:"member",roles:["admin","super_admin"]}
   ]);
   const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);

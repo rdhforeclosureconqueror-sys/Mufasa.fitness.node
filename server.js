@@ -908,6 +908,10 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "admin-launch-readiness.html"));
   });
+  app.get("/admin-avatar-development.html", (_req, res) => {
+    res.set(SHELL_NO_STORE_HEADERS);
+    res.sendFile(path.join(PUBLIC_DIR, "admin-avatar-development.html"));
+  });
   app.get("/pocketpt/my-program", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "pocketpt-my-program.html"));

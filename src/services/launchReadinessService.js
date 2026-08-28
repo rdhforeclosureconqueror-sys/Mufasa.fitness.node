@@ -5,19 +5,30 @@ const STATUSES = Object.freeze(["BACKLOG", "IN_PROGRESS", "BLOCKED", "HUMAN_TEST
 const slug = value => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const AVATAR_GROUPS = Object.freeze({
-  "FOUNDATION": ["Personalized avatar load", "Skeleton profile resolution", "Programmatic manipulation", "Reset / disposal"],
-  "MOVENET / CAMERA": ["Physical iPhone camera", "MoveNet initialization", "Continuous live frames", "Full-body framing", "Lost tracking"],
-  "NORMALIZATION": ["Normalized pose contract", "Left / right mapping", "Confidence thresholds", "Smoothing", "Recovery behavior"],
-  "LIVE MIRROR BODY SEGMENTS": ["Torso / root", "Left upper arm", "Right upper arm", "Left forearm", "Right forearm", "Left thigh", "Right thigh", "Left lower leg", "Right lower leg"],
-  "VERTICAL SLICE": ["Real human → phone camera → MoveNet → normalized pose → solver → personalized avatar → visible motion"],
-  "RUNTIME SAFETY": ["Start", "Stop", "Restart", "No duplicate listeners", "No duplicate render / inference loops", "Camera cleanup", "Renderer / resource cleanup", "Neutral / rest recovery", "No workout regression"],
-  "PAUSE": ["Physical acceptance", "Documentation", "Explicitly deferred fidelity list"]
+  "RUNTIME FOUNDATION": ["Avatar asset/runtime foundation", "Avaturn skeleton profile verification", "Runtime bone-name verification"],
+  "POSE PIPELINE": ["MoveNet pose event/payload audit", "Normalized pose mapping", "Rest-pose/calibration handling"],
+  "LIVE MIRROR": ["One-arm live-mirror proof", "Full live avatar mirror", "Smoothing/stability"],
+  "MOTION RECORDING": ["Motion recorder", "Saved motion data format", "Motion source manifest"],
+  "FIXTURES / REGISTRY": ["Phase 4 fixture builder", "Fixture validation", "Registry integration", "Recorded motion playback"],
+  "ACCEPTANCE": ["Mobile/browser QA", "Physical-device acceptance", "Privacy/camera handling verification", "Final avatar/motion launch gate"]
 });
 const HUMAN_AVATAR = new Set([
-  "Physical iPhone camera", "Continuous live frames", "Full-body framing", "Lost tracking",
-  "Real human → phone camera → MoveNet → normalized pose → solver → personalized avatar → visible motion",
-  "Physical acceptance"
+  "One-arm live-mirror proof", "Full live avatar mirror", "Mobile/browser QA", "Physical-device acceptance",
+  "Privacy/camera handling verification", "Final avatar/motion launch gate"
 ]);
+const BROWSER_QA_AVATAR = new Set(["Full live avatar mirror", "Mobile/browser QA", "Privacy/camera handling verification", "Final avatar/motion launch gate"]);
+const PHYSICAL_QA_AVATAR = new Set(["One-arm live-mirror proof", "Full live avatar mirror", "Physical-device acceptance", "Privacy/camera handling verification", "Final avatar/motion launch gate"]);
+// Version 3 used the phased-pause taxonomy below. Every retired ID has one
+// explicit, semantically related destination; no fuzzy title matching is used.
+const AVATAR_V3_ID_MIGRATION = Object.freeze(Object.fromEntries([
+  ["FOUNDATION", [["Personalized avatar load","Avatar asset/runtime foundation"],["Skeleton profile resolution","Avaturn skeleton profile verification"],["Programmatic manipulation","Runtime bone-name verification"],["Reset / disposal","Rest-pose/calibration handling"]]],
+  ["MOVENET / CAMERA", [["Physical iPhone camera","Mobile/browser QA"],["MoveNet initialization","MoveNet pose event/payload audit"],["Continuous live frames","MoveNet pose event/payload audit"],["Full-body framing","Normalized pose mapping"],["Lost tracking","Smoothing/stability"]]],
+  ["NORMALIZATION", [["Normalized pose contract","Normalized pose mapping"],["Left / right mapping","Normalized pose mapping"],["Confidence thresholds","MoveNet pose event/payload audit"],["Smoothing","Smoothing/stability"],["Recovery behavior","Rest-pose/calibration handling"]]],
+  ["LIVE MIRROR BODY SEGMENTS", [["Torso / root","Full live avatar mirror"],["Left upper arm","One-arm live-mirror proof"],["Right upper arm","One-arm live-mirror proof"],["Left forearm","Full live avatar mirror"],["Right forearm","Full live avatar mirror"],["Left thigh","Full live avatar mirror"],["Right thigh","Full live avatar mirror"],["Left lower leg","Full live avatar mirror"],["Right lower leg","Full live avatar mirror"]]],
+  ["VERTICAL SLICE", [["Real human → phone camera → MoveNet → normalized pose → solver → personalized avatar → visible motion","Full live avatar mirror"]]],
+  ["RUNTIME SAFETY", [["Start","Avatar asset/runtime foundation"],["Stop","Avatar asset/runtime foundation"],["Restart","Avatar asset/runtime foundation"],["No duplicate listeners","MoveNet pose event/payload audit"],["No duplicate render / inference loops","MoveNet pose event/payload audit"],["Camera cleanup","Privacy/camera handling verification"],["Renderer / resource cleanup","Avatar asset/runtime foundation"],["Neutral / rest recovery","Rest-pose/calibration handling"],["No workout regression","Mobile/browser QA"]]],
+  ["PAUSE", [["Physical acceptance","Physical-device acceptance"],["Documentation","Final avatar/motion launch gate"],["Explicitly deferred fidelity list","Final avatar/motion launch gate"]]]
+].flatMap(([category, pairs]) => pairs.map(([oldTitle, newTitle]) => [slug(`avatar-${category}-${oldTitle}`), slug(`avatar-${Object.entries(AVATAR_GROUPS).find(([, titles]) => titles.includes(newTitle))[0]}-${newTitle}`)]))));
 
 function mapCanonicalStatus(feature) {
   if (feature.launchStatus === "Excluded from Version 1") return "POST_LAUNCH";
@@ -43,15 +54,34 @@ function canonicalCard(feature) {
 }
 function avatarCard(title, category) {
   const humanRequired = HUMAN_AVATAR.has(title);
-  return { id: slug(`avatar-${category}-${title}`), title, category, canonical: false, canonicalStatus: "Avatar phased-pause acceptance", status: humanRequired ? "HUMAN_TEST_REQUIRED" : "BACKLOG", definitionOfDone: `Verify ${title.toLowerCase()} through the actual MoveNet → normalized pose → personalized avatar architecture.`, implementationState: "Evidence not recorded", automated: "NOT_RUN", browserQa: "NOT_RECORDED", physicalDeviceQa: humanRequired ? "REQUIRED" : "NOT_APPLICABLE", accessibility: "NOT_RECORDED", productionStatus: "NOT_RECORDED", humanRequired, humanVerified: false, evidence: "", blocker: "", implementationRef: "public/avatar-runtime.js; public/pose-runtime.js; public/normalized-pose.js" };
+  const implemented = !["Motion recorder", "Saved motion data format", "Motion source manifest", "Full live avatar mirror", "Recorded motion playback"].includes(title);
+  return { id: slug(`avatar-${category}-${title}`), title, category, canonical: true, canonicalStatus: implemented ? "Technical prerequisites present; verification pending" : "Implementation not evidenced", status: humanRequired ? "HUMAN_TEST_REQUIRED" : (implemented ? "IN_PROGRESS" : "BACKLOG"), technicalReady: implemented, browserQaRequired: BROWSER_QA_AVATAR.has(title), physicalDeviceQaRequired: PHYSICAL_QA_AVATAR.has(title), definitionOfDone: `Verify ${title.toLowerCase()} through the actual MoveNet → normalized pose → personalized avatar architecture.`, implementationState: implemented ? "Technical implementation or verification tooling exists; acceptance is not complete" : "Implementation evidence not found", automated: "NOT_RUN", browserQa: "NOT_RECORDED", physicalDeviceQa: humanRequired ? "REQUIRED" : "NOT_APPLICABLE", accessibility: "NOT_RECORDED", productionStatus: "NOT_RECORDED", humanRequired, humanVerified: false, evidence: [], blocker: "", notes: "", implementationRef: "public/avatar-runtime.js; public/pose-runtime.js; public/normalized-pose.js; scripts/motion" };
 }
 function seed(matrix = { features: [] }) {
-  return { version: 3, canonicalSchemaVersion: matrix.schemaVersion || null, updatedAt: null, boards: { launch: matrix.features.map(canonicalCard), avatar: Object.entries(AVATAR_GROUPS).flatMap(([group, titles]) => titles.map(title => avatarCard(title, group))) } };
+  return { version: 4, canonicalSchemaVersion: matrix.schemaVersion || null, updatedAt: null, boards: { launch: matrix.features.map(canonicalCard), avatar: Object.entries(AVATAR_GROUPS).flatMap(([group, titles]) => titles.map(title => avatarCard(title, group))) } };
 }
-const EVIDENCE_FIELDS = Object.freeze(["status", "evidence", "automated", "browserQa", "physicalDeviceQa", "accessibility", "productionStatus", "humanVerified", "blocker", "implementationRef", "tester", "verifiedAt"]);
+const EVIDENCE_FIELDS = Object.freeze(["status", "evidence", "automated", "browserQa", "physicalDeviceQa", "accessibility", "productionStatus", "humanVerified", "blocker", "notes", "priorStatus", "implementationRef", "tester", "verifiedAt"]);
+const recorded = value => Array.isArray(value) ? value.length > 0 : Boolean(String(value || "").trim());
+const passed = value => /^(pass|passed|verified|complete|completed|accepted)$/i.test(String(value || "").trim());
+function projectAvatarStatus(card) {
+  if (!card.technicalReady) return "BACKLOG";
+  if (!passed(card.automated)) return card.humanRequired ? "HUMAN_TEST_REQUIRED" : "IN_PROGRESS";
+  if (!card.humanRequired) return "DONE";
+  if (!recorded(card.evidence) || !card.humanVerified) return "HUMAN_TEST_REQUIRED";
+  if (card.browserQaRequired && !passed(card.browserQa)) return "HUMAN_TEST_REQUIRED";
+  if (card.physicalDeviceQaRequired && !passed(card.physicalDeviceQa)) return "HUMAN_TEST_REQUIRED";
+  return "DONE";
+}
+function combineOldCards(cards) {
+  if (!cards.length) return {};
+  const joined = key => [...new Set(cards.flatMap(card => Array.isArray(card[key]) ? card[key] : [card[key]]).filter(recorded).map(String))].join("\n");
+  const qa = key => { const values=[...new Set(cards.map(card=>card[key]).filter(recorded).map(String))]; return values.length === 1 ? values[0] : values.join(" | "); };
+  return { priorStatus: qa("status"), evidence: joined("evidence"), blocker: joined("blocker"), notes: joined("notes"), implementationRef: joined("implementationRef"), tester: joined("tester"), verifiedAt: cards.map(card=>card.verifiedAt).filter(recorded).sort().at(-1), automated: qa("automated"), browserQa: qa("browserQa"), physicalDeviceQa: qa("physicalDeviceQa"), accessibility: qa("accessibility"), productionStatus: qa("productionStatus"), humanVerified: cards.every(card=>card.humanVerified === true) };
+}
 function legacyMatch(card, cards, board, storedVersion) {
   const exact = cards.find(old => old.id === card.id);
   if (exact) return exact;
+  if (board === "avatar" && Number(storedVersion || 0) === 3) return combineOldCards(cards.filter(old => AVATAR_V3_ID_MIGRATION[old.id] === card.id));
   if (Number(storedVersion || 0) >= 3) return null;
   const aliases = board === "launch"
     ? new Set([card.id.replace(/^canonical-/, ""), slug(card.title), slug(`${card.category}-${card.title}`)])
@@ -81,7 +111,9 @@ function createLaunchReadinessService({ filePath, canonicalMatrixPath = path.joi
         const mutable = Object.fromEntries(EVIDENCE_FIELDS.map(key => [key, old[key]]).filter(([, value]) => value !== undefined));
         // Canonical launch workflow status is always freshly projected, never overwritten.
         if (card.canonical) delete mutable.status;
-        return { ...card, ...mutable, humanRequired: card.humanRequired };
+        const merged = { ...card, ...mutable, humanRequired: card.humanRequired };
+        if (board === "avatar") { merged.status = projectAvatarStatus(merged); merged.canonicalStatus = merged.status === "DONE" ? "Definition of done satisfied" : card.canonicalStatus; }
+        return merged;
       });
     }
     base.updatedAt = stored.updatedAt || null;
@@ -95,11 +127,11 @@ function createLaunchReadinessService({ filePath, canonicalMatrixPath = path.joi
     if (!target) throw Object.assign(new Error("unknown_card"), { status: 404 });
     if (patch.humanRequired !== undefined && Boolean(patch.humanRequired) !== target.humanRequired) throw Object.assign(new Error("human_requirement_immutable"), { status: 422 });
     if (patch.status && (!STATUSES.includes(patch.status) || (target.canonical && patch.status !== target.status))) throw Object.assign(new Error(target.canonical ? "canonical_status_immutable" : "invalid_status"), { status: 422 });
-    const mutable = ["status", "evidence", "automated", "browserQa", "physicalDeviceQa", "accessibility", "productionStatus", "humanVerified", "blocker", "implementationRef", "tester", "verifiedAt"];
+    const mutable = ["status", "evidence", "automated", "browserQa", "physicalDeviceQa", "accessibility", "productionStatus", "humanVerified", "blocker", "notes", "priorStatus", "implementationRef", "tester", "verifiedAt"];
     Object.assign(target, Object.fromEntries(Object.entries(patch).filter(([key]) => mutable.includes(key))));
     if (target.humanRequired && target.humanVerified && !String(target.evidence || "").trim()) throw Object.assign(new Error("human_evidence_required"), { status: 422 });
     return write(value);
   };
   return { snapshot, update, effectiveStatus, summary };
 }
-module.exports = { createLaunchReadinessService, effectiveStatus, summary, seed, mapCanonicalStatus, AVATAR_GROUPS, STATUSES };
+module.exports = { createLaunchReadinessService, effectiveStatus, summary, seed, mapCanonicalStatus, projectAvatarStatus, AVATAR_GROUPS, AVATAR_V3_ID_MIGRATION, STATUSES };

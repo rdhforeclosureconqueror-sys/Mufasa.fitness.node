@@ -61,12 +61,14 @@
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = !hasObservabilityAccess;
     if (motionLabNav) motionLabNav.hidden = !hasObservabilityAccess;
     if (clientManagementCard) clientManagementCard.hidden = !hasObservabilityAccess;
+    if (developmentLaunchCard) developmentLaunchCard.hidden = !hasObservabilityAccess;
   }
 
   revealObservabilityNavigationForAdmin().catch(() => {
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = true;
     if (motionLabNav) motionLabNav.hidden = true;
     if (clientManagementCard) clientManagementCard.hidden = true;
+    if (developmentLaunchCard) developmentLaunchCard.hidden = true;
   });
 
   const MOTION_LAB_LAUNCH_BUILD = "2026-08-20-ios-trace-v2";
