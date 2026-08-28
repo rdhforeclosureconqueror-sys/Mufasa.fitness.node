@@ -7,7 +7,7 @@ const read = file => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 
 test("runtime proof ties retarget identity, pose frames, render frames and activation together", () => {
   const runtime = read("public/avatar-runtime.js");
-  assert.match(runtime, /root\.parent === runtime\?\.scene/);
+  assert.match(runtime, /runtime\?\.avatarOrientationRoot\?\.parent === runtime\?\.scene/);
   assert.match(runtime, /runtime\.retargetFramesExecuted = Number/);
   assert.match(runtime, /runtime\?\.renderLoopActive && lastRenderAgeMs != null && lastRenderAgeMs < 1000/);
   assert.match(runtime, /identityOk && renderRunning && \(!trackingEnabled \|\| \(poseRunning && retargetRunning && boneProof\)\) \? 'ACTIVE'/);
@@ -27,5 +27,5 @@ test("production workout continuously renders the retargeted root with a valid P
   assert.match(read("public/avatar-runtime.js"), /canvasBufferSize/);
   assert.match(workout, /2026-08-27-movenet-visible-audible-v22/);
   assert.match(workout, /id="avatarDiagRuntimePresentation"/);
-  assert.doesNotMatch(workout, /const activated = activateLiveAvatarMirror\(\)/);
+  assert.match(workout, /const activated = activateLiveAvatarMirror\(\)/);
 });

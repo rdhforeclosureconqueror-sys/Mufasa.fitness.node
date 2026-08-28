@@ -28,7 +28,7 @@ test("one mirror owns the actual mounted Avaturn root and existing render RAF up
   assert.doesNotMatch(workout, /PocketPTDisposableMotionSession\.createMotionSession/);
 });
 
-test("legacy full-rig writer is suspended while Phase 1B has exclusive bone ownership", () => {
+test("AvatarRuntime writer is suspended while normalized full-rig mirror has exclusive bone ownership", () => {
   const guard = avatarRuntime.indexOf("isLiveAvatarMirrorActive?.()");
   const legacyWriter = avatarRuntime.indexOf("return renderAvatar3d(posePacket)", guard);
   assert.ok(guard > 0 && legacyWriter > guard);
@@ -58,12 +58,12 @@ test("production mirror reuses the existing camera, detector, PoseRuntime stream
   assert.equal((workout.match(/function ensureAvatarRenderLoop/g) || []).length, 1);
 });
 
-test("Phase 1B remains the sole right-upper-arm implementation", () => {
+test("normalized mirror maps the full bilateral rig", () => {
   const solver = fs.readFileSync(path.join(root, "public/motion/avaturn-live-pose-solver.js"), "utf8");
   const mirror = fs.readFileSync(path.join(root, "public/motion/live-avatar-mirror.js"), "utf8");
   assert.match(mirror, /addEventListener\("pose-runtime:frame"/);
   assert.match(mirror, /normalized\.fromMoveNetPosePacket/);
   assert.match(mirror, /new solverApi\.AvaturnLivePoseSolver/);
-  assert.match(solver, /this\.rightArm\.quaternion\.copy\(this\.currentQuaternion\)/);
-  assert.doesNotMatch(solver, /leftArm\.quaternion|rightForeArm\.quaternion\.copy|rightHand\.quaternion\.copy/);
+  assert.match(solver, /b\.bone\.quaternion\.copy\(b\.currentQuaternion\)/);
+  for (const segment of ["leftUpperArm", "rightUpperArm", "leftForearm", "rightForearm", "leftThigh", "rightThigh", "leftLowerLeg", "rightLowerLeg"]) assert.match(solver, new RegExp(segment));
 });
