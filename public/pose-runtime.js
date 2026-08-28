@@ -62,7 +62,9 @@
     lastSpokenTimestamp: null,
     speechCount: 0,
     speechSuppressedReason: 'VOICE_NOT_ENABLED',
-    speechQueueActive: false
+    speechQueueActive: false,
+    livePerformanceMode: 'INACTIVE', diagnosticUiHz: 2, lastDiagnosticUiAt: 0,
+    pausedSubsystems: [], throttledSubsystems: [], inferenceInputWidth: 0, inferenceInputHeight: 0, inferenceResolutionMode: 'SOURCE_NATIVE'
   };
 
   const KEYPOINT_THRESHOLD = 0.3;
@@ -316,6 +318,9 @@
 
   function renderProof() {
     const now = Date.now();
+    const minimumUiInterval = state.livePerformanceMode === 'ACTIVE' ? 1000 / state.diagnosticUiHz : 0;
+    if (minimumUiInterval && now - state.lastDiagnosticUiAt < minimumUiInterval) return;
+    state.lastDiagnosticUiAt = now;
     const trace = global.__POSE_BOOTSTRAP_TRACE || {};
     const authoritativeVideo = global.document?.getElementById?.(trace.authoritativeVideoElementId || 'video');
     const authoritativeStream = authoritativeVideo?.srcObject;
@@ -357,13 +362,15 @@
     const performancePanel = global.document?.getElementById?.('posePerformanceProofValues');
     if (performancePanel) performancePanel.textContent = [
       `Current backend: ${state.detectorBackend || 'unavailable'}`, `MoveNet enableSmoothing configured: ${state.movenetSmoothingConfigured ? 'YES' : 'NO'}`, '',
+      `Inference input: ${state.inferenceInputWidth || 'unavailable'}x${state.inferenceInputHeight || 'unavailable'} (${state.inferenceResolutionMode})`, `Performance mode: ${state.livePerformanceMode}`, `Paused subsystems: ${state.pausedSubsystems.join(', ') || 'none'}`, `Throttled subsystems: ${state.throttledSubsystems.join(', ') || 'none'}`, `Diagnostic UI Hz: ${state.diagnosticUiHz}`, '',
       `estimatePoses wall duration last: ${state.lastInferenceMs ?? 'unavailable'}ms`, `Inference duration rolling average: ${inferenceAverage == null ? 'unavailable' : inferenceAverage.toFixed(1)}ms`, `Inference duration p50 approximation: ${percentile(state.inferenceDurations, .50)?.toFixed?.(1) ?? 'unavailable'}ms`, `Inference duration p95 approximation: ${percentile(state.inferenceDurations, .95)?.toFixed?.(1) ?? 'unavailable'}ms`,
       `Time between completed inference generations: ${completionAverage == null ? 'unavailable' : completionAverage.toFixed(1)}ms`, `Inferred inference FPS: ${completionAverage ? (1000 / completionAverage).toFixed(2) : 'unavailable'}`, `Measured display FPS: ${overlayAverage ? (1000 / overlayAverage).toFixed(1) : 'unavailable'}`, `Last animation-frame interval: ${state.lastAnimationFrameInterval == null ? 'unavailable' : state.lastAnimationFrameInterval.toFixed(1)}ms`, '',
       `Raw pose generation: ${state.inferenceGeneration}`, `Display tracker generation: ${state.displayTrackerGeneration}`, `Display render generation: ${state.displayRenderGeneration}`, `Animation frame count: ${state.animationFrameCount}`, `Display loop running independently: ${state.displayLoopRunning ? 'YES' : 'NO'}`,
       `Latest inference age: ${latestInferenceAge == null ? 'unavailable' : latestInferenceAge.toFixed(1)}ms`, `Frames rendered since last inference: ${state.framesRenderedSinceLastInference}`, `Frames rendered during previous inference interval: ${state.framesRenderedDuringPreviousInferenceInterval}`, `Maximum frames rendered between inferences: ${state.maxFramesRenderedBetweenInferences}`, `Display generation > inference generation: ${state.displayRenderGeneration > state.inferenceGeneration ? 'YES' : 'NOT YET'}`, '',
       `Currently tracked joints: ${state.trackedJointCount}`, `Currently coasting joints: ${state.coastingJointCount}`, `Currently reacquiring joints: ${state.reacquiringJointCount}`, `Currently lost joints: ${state.lostJointCount}`, `Oldest prediction age: ${state.oldestPredictionAge}ms`,
       `Max coast configured: ${TRACKING.MAX_COAST_MS}ms`, `Reacquire duration configured: ${TRACKING.REACQUIRE_MS}ms`, '',
-      `Tracker processing duration last: ${state.lastTrackerProcessingMs ?? 'unavailable'}ms`, `Event dispatch duration last: ${state.lastEventDispatchMs ?? 'unavailable'}ms`, `Drawing duration last: ${state.lastDrawingMs ?? 'unavailable'}ms`, `Performance first failing boundary: ${state.performanceFirstFailingBoundary}`
+      `Tracker processing duration last: ${state.lastTrackerProcessingMs ?? 'unavailable'}ms`, `Event dispatch duration last: ${state.lastEventDispatchMs ?? 'unavailable'}ms`, `Drawing duration last: ${state.lastDrawingMs ?? 'unavailable'}ms`, `Performance first failing boundary: ${state.performanceFirstFailingBoundary}`, '',
+      ...(()=>{const avatar=global.__liveAvatarMirrorDiagnostics?.()||{};return [`Avatar render FPS: ${avatar.avatarRenderFps?.toFixed?.(1)??'unavailable'}`,`Retarget FPS: ${avatar.retargetFps?.toFixed?.(1)??'unavailable'}`,`Avatar presentation FPS: ${avatar.avatarPresentationFps?.toFixed?.(1)??'unavailable'}`,`Interpolated avatar frames: ${avatar.interpolatedAvatarFrames||0}`,`Coasted avatar frames: ${avatar.coastedAvatarFrames||0}`,`Avatar pose age: ${avatar.avatarPoseAgeMs??'unavailable'}ms`,`Presentation latency: ${avatar.avatarPresentationLatencyMs??'unavailable'}ms`,`Full rig mapped: ${avatar.fullRigMapped||'NO'}`,`Torso calibration: ${avatar.torsoCalibrationState||'WAITING'}`];})()
     ].join('\n');
     const overlayProof = global.document?.getElementById?.('poseOverlayProofValues');
     if (overlayProof) overlayProof.textContent = [
@@ -679,6 +686,7 @@
         if (global.document?.hidden) { frameId = requestAnimationFrame(frame); return; }
         state.sourceConnected = Boolean(video?.isConnected);
         state.sourceDimensions = `${video?.videoWidth || video?.clientWidth || 0}x${video?.videoHeight || video?.clientHeight || 0}`;
+        state.inferenceInputWidth=Number(video?.videoWidth||video?.clientWidth||0);state.inferenceInputHeight=Number(video?.videoHeight||video?.clientHeight||0);
         if (!state.sourceConnected) throw new Error('inference source element is disconnected');
         if (!(video?.videoWidth || video?.clientWidth) || !(video?.videoHeight || video?.clientHeight)) throw new Error('inference source has zero dimensions');
         state.framesAttempted += 1;
@@ -782,6 +790,7 @@
     startPoseLoop,
     getLatestPose: () => state.latestPose || null,
     getLatestPosePacket: () => state.latestPosePacket || null,
+    setLivePerformanceMode(active) {state.livePerformanceMode=active?'ACTIVE':'INACTIVE';state.diagnosticUiHz=active?2:2;state.pausedSubsystems=active?['guided-experience animations','mobile-layout-containment remeasurement']:[];state.throttledSubsystems=active?['pose diagnostic DOM','proof text rendering']:[];global.dispatchEvent?.(new CustomEvent('pocketpt:live-performance-mode',{detail:{active:Boolean(active)}}));renderProof();return state.livePerformanceMode;},
     getState: () => ({ ...state, optionalTrackers: { ...state.optionalTrackers }, optionalTrackerErrors: { ...state.optionalTrackerErrors } })
   };
 

@@ -2262,11 +2262,15 @@ First failing boundary: NONE</pre>
       runtime.renderLoopActive = true;
       updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: true });
       runtime.lastRenderLoopLogAt = 0;
+      runtime.renderLoopStartedAt = Date.now();
+      runtime.renderTimes = [];
       const loop = (frameAt) => {
         if (!runtime.renderLoopActive) {
           updateAvatarOverlayDiagnostics({ overlayRenderLoopRunning: false });
           return;
         }
+        if (liveAvatarMirror && runtime.lastScheduledRenderAt != null && frameAt - runtime.lastScheduledRenderAt < (1000 / 30)) { runtime.renderLoopId = requestAnimationFrame(loop); return; }
+        runtime.lastScheduledRenderAt = frameAt;
         const deltaSeconds = liveAvatarMirrorLastFrameAt == null ? 0 : Math.max(0, (frameAt - liveAvatarMirrorLastFrameAt) / 1000);
         liveAvatarMirrorLastFrameAt = frameAt;
         liveAvatarMirror?.update(deltaSeconds, Date.now());
@@ -2281,6 +2285,7 @@ First failing boundary: NONE</pre>
         }
         runtime.renderer.render(runtime.scene, runtime.camera);
         runtime.renderFrameCount = Number(runtime.renderFrameCount || 0) + 1;
+        runtime.renderTimes.push(frameAt); if (runtime.renderTimes.length > 60) runtime.renderTimes.shift();
         runtime.lastRenderAt = Date.now();
         runtime.lastAnimationFrameId = runtime.renderLoopId;
         window.AvatarRuntime?.refreshRuntimeProof?.();
@@ -2725,6 +2730,7 @@ First failing boundary: NONE</pre>
       liveAvatarMirror = null;
       liveAvatarMirrorAvatar = null;
       liveAvatarMirrorLastFrameAt = null;
+      window.PoseRuntime?.setLivePerformanceMode?.(false);
       if (!running && animId?.stop) {
         animId.stop();
         animId = null;
@@ -2756,6 +2762,7 @@ First failing boundary: NONE</pre>
       });
       liveAvatarMirrorAvatar = avatar;
       liveAvatarMirrorLastFrameAt = null;
+      window.PoseRuntime?.setLivePerformanceMode?.(Boolean(videoEl?.srcObject));
       return true;
     }
 
@@ -2786,8 +2793,13 @@ First failing boundary: NONE</pre>
 
     window.__liveAvatarMirrorDiagnostics = () => {
       const proof = liveAvatarMirror?.diagnostics?.() || {};
+      const renderTimes = avatarThreeRuntime?.renderTimes || [];
+      const renderElapsed = renderTimes.length > 1 ? renderTimes.at(-1) - renderTimes[0] : 0;
+      const retargetElapsed = avatarThreeRuntime?.renderLoopStartedAt ? Date.now() - avatarThreeRuntime.renderLoopStartedAt : 0;
       return {
         ...proof,
+        avatarRenderFps: renderElapsed > 0 ? (renderTimes.length - 1) * 1000 / renderElapsed : 0,
+        retargetFps: retargetElapsed > 0 ? Number(proof.retargetFramesExecuted || 0) * 1000 / retargetElapsed : 0,
         avatarRoot: undefined,
         actualAvatarRootUuid: proof.avatarRoot?.uuid || liveAvatarMirrorAvatar?.uuid || "none",
         authoritativeModelRootUuid: avatarThreeRuntime?.modelRoot?.uuid || "none",
