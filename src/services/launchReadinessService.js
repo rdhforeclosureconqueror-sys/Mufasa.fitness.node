@@ -46,7 +46,18 @@ function avatarCard(title, category) {
   return { id: slug(`avatar-${category}-${title}`), title, category, canonical: false, canonicalStatus: "Avatar phased-pause acceptance", status: humanRequired ? "HUMAN_TEST_REQUIRED" : "BACKLOG", definitionOfDone: `Verify ${title.toLowerCase()} through the actual MoveNet → normalized pose → personalized avatar architecture.`, implementationState: "Evidence not recorded", automated: "NOT_RUN", browserQa: "NOT_RECORDED", physicalDeviceQa: humanRequired ? "REQUIRED" : "NOT_APPLICABLE", accessibility: "NOT_RECORDED", productionStatus: "NOT_RECORDED", humanRequired, humanVerified: false, evidence: "", blocker: "", implementationRef: "public/avatar-runtime.js; public/pose-runtime.js; public/normalized-pose.js" };
 }
 function seed(matrix = { features: [] }) {
-  return { version: 2, canonicalSchemaVersion: matrix.schemaVersion || null, updatedAt: null, boards: { launch: matrix.features.map(canonicalCard), avatar: Object.entries(AVATAR_GROUPS).flatMap(([group, titles]) => titles.map(title => avatarCard(title, group))) } };
+  return { version: 3, canonicalSchemaVersion: matrix.schemaVersion || null, updatedAt: null, boards: { launch: matrix.features.map(canonicalCard), avatar: Object.entries(AVATAR_GROUPS).flatMap(([group, titles]) => titles.map(title => avatarCard(title, group))) } };
+}
+const EVIDENCE_FIELDS = Object.freeze(["status", "evidence", "automated", "browserQa", "physicalDeviceQa", "accessibility", "productionStatus", "humanVerified", "blocker", "implementationRef", "tester", "verifiedAt"]);
+function legacyMatch(card, cards, board, storedVersion) {
+  const exact = cards.find(old => old.id === card.id);
+  if (exact) return exact;
+  if (Number(storedVersion || 0) >= 3) return null;
+  const aliases = board === "launch"
+    ? new Set([card.id.replace(/^canonical-/, ""), slug(card.title), slug(`${card.category}-${card.title}`)])
+    : new Set([slug(card.title), slug(`${card.category}-${card.title}`), slug(`avatar-${card.title}`)]);
+  const candidates = cards.filter(old => aliases.has(String(old.id || "")) || (old.title === card.title && (!old.category || old.category === card.category)));
+  return candidates.length === 1 ? candidates[0] : null;
 }
 function effectiveStatus(card) {
   if (card.status === "DONE" && card.humanRequired && !card.humanVerified) return "HUMAN_TEST_REQUIRED";
@@ -64,10 +75,10 @@ function createLaunchReadinessService({ filePath, canonicalMatrixPath = path.joi
     if (!fs.existsSync(filePath)) return base;
     const stored = JSON.parse(fs.readFileSync(filePath, "utf8"));
     for (const board of ["launch", "avatar"]) {
-      const previous = new Map((stored.boards?.[board] || []).map(card => [card.id, card]));
+      const oldCards = stored.boards?.[board] || [];
       base.boards[board] = base.boards[board].map(card => {
-        const old = previous.get(card.id) || {};
-        const mutable = Object.fromEntries(["status", "evidence", "automated", "browserQa", "physicalDeviceQa", "accessibility", "productionStatus", "humanVerified", "blocker", "implementationRef", "tester", "verifiedAt"].map(key => [key, old[key]]).filter(([, value]) => value !== undefined));
+        const old = legacyMatch(card, oldCards, board, stored.version) || {};
+        const mutable = Object.fromEntries(EVIDENCE_FIELDS.map(key => [key, old[key]]).filter(([, value]) => value !== undefined));
         // Canonical launch workflow status is always freshly projected, never overwritten.
         if (card.canonical) delete mutable.status;
         return { ...card, ...mutable, humanRequired: card.humanRequired };

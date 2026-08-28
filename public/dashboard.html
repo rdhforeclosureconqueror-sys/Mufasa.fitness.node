@@ -174,15 +174,15 @@
     <div class="sub">Client view: backend-synced weekly workouts + safe local fallback</div>
     <div class="sub" style="margin-top:6px; font-weight:700;">Diagnostics build active</div>
     </div>
-    <nav class="dashboard-actions" aria-label="Member navigation">
+    <nav class="dashboard-actions" aria-label="Member navigation" data-tour="dashboard-navigation">
       <a class="btn" aria-current="page" href="/dashboard.html">Home</a>
-      <a class="btn" href="#memberHomeTitle">My Program</a>
+      <a class="btn" href="#memberHomeTitle" data-tour="weekly-plan">My Program</a>
       <a class="btn" href="/workout.html">Train</a>
       <a class="btn" href="/exercise-library.html">Exercises</a>
       <a class="btn" href="/yoga.html">Yoga</a>
       <a class="btn" href="#gamificationExperience">Progress &amp; Rewards</a>
       <a id="aiCoachLink" class="btn" href="/coach.html">AI Coach</a>
-      <a class="btn" href="/">Profile &amp; Settings</a>
+      <a class="btn" href="/" data-tour="profile">Profile &amp; Settings</a>
     </nav>
     <div hidden aria-hidden="true">
       <button id="resetBtn" class="btn">Reset Local Data</button>
@@ -192,7 +192,7 @@
   </header>
 
   <div class="wrap">
-    <main id="memberHome" aria-labelledby="memberHomeTitle">
+    <main id="memberHome" aria-labelledby="memberHomeTitle" data-tour="dashboard-home">
       <section class="card" style="margin-bottom:14px;">
         <h2 id="memberHomeTitle">Your member home</h2>
         <p id="memberHomeStatus" class="muted" role="status" aria-live="polite">Loading your Journey and next step…</p>
@@ -219,7 +219,7 @@
         </div>
       </section>
     </main>
-    <section id="gamificationExperience" class="card gamification" aria-label="Your progression" aria-live="polite" aria-atomic="false"></section>
+    <section id="gamificationExperience" class="card gamification" aria-label="Your progression" aria-live="polite" aria-atomic="false" data-tour="progress-summary"></section>
     <section id="notificationExperience" class="card" aria-label="Notifications"></section>
     <section id="leaderboardExperience" class="card gamification" aria-label="Universal gamification leaderboard"></section>
     <div class="grid">

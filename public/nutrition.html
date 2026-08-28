@@ -31,14 +31,14 @@
           <h1>Log food, review estimates, and track your day.</h1>
           <p class="muted">Use barcode lookup, USDA common-food search, natural-language drafts, recent foods, saved meals, or custom foods. Confirm every entry before it is saved.</p>
           <div class="grid" aria-label="Food logging methods">
-            <button class="btn method primary" data-open="scanPanel"><strong>A. Scan Barcode</strong><br><span>UPC/EAN packaged foods</span></button>
-            <button class="btn method" data-open="searchPanel"><strong>B. Search Foods</strong><br><span>USDA common foods</span></button>
-            <button class="btn method" data-open="naturalPanel"><strong>C. Tell Pocket PT What I Ate</strong><br><span>Reviewable draft</span></button>
-            <button class="btn method green" data-open="recentPanel"><strong>D. Repeat Recent Meal</strong><br><span>Recent and saved meals</span></button>
+            <button class="btn method primary" data-open="scanPanel" data-tour="nutrition-scan"><strong>A. Scan Barcode</strong><br><span>UPC/EAN packaged foods</span></button>
+            <button class="btn method" data-open="searchPanel" data-tour="nutrition-search"><strong>B. Search Foods</strong><br><span>USDA common foods</span></button>
+            <button class="btn method" data-open="naturalPanel" data-tour="nutrition-natural-language"><strong>C. Tell Pocket PT What I Ate</strong><br><span>Reviewable draft</span></button>
+            <button class="btn method green" data-open="recentPanel" data-tour="nutrition-recent"><strong>D. Repeat Recent Meal</strong><br><span>Recent and saved meals</span></button>
           </div>
-          <div class="tabs"><button class="btn" data-open="customPanel">Add Custom Food</button><button class="btn" id="saveMealBtn">Save as Meal</button><button class="btn" id="refreshBtn">Refresh Today</button></div>
+          <div class="tabs" data-tour="nutrition-custom"><button class="btn" data-open="customPanel">Add Custom Food</button><button class="btn" id="saveMealBtn">Save as Meal</button><button class="btn" id="refreshBtn">Refresh Today</button></div>
         </div>
-        <aside class="card">
+        <aside class="card" data-tour="nutrition-summary">
           <h2>Daily calorie and macro totals</h2>
           <input type="date" id="journalDate" />
           <div id="dailySummary" class="summary" aria-live="polite"></div>
@@ -46,7 +46,7 @@
         </aside>
       </div>
 
-      <section class="card" id="weeklyNutritionMissions" aria-label="Weekly Nutrition Missions">
+      <section class="card" id="weeklyNutritionMissions" data-tour="weekly-plan" aria-label="Weekly Nutrition Missions">
         <h2>Weekly Nutrition Missions</h2>
         <p class="muted">Build a flexible grocery pantry, then use available foods for positive daily nutrition missions. Choose options that fit allergies, preferences, budget, and store availability.</p>
         <div class="tabs" role="tablist" aria-label="Weekly nutrition workflow">

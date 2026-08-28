@@ -40,7 +40,7 @@
     const state=global.AuthStateRuntime?.getCanonicalAuthState?.();
     authPresentation=presentationFromReadiness(result,state);
     render();
-    if(authPresentation.phase==="authenticated")setTimeout(()=>global.PocketPTGuide?.start("introduction"),250);
+    if(authPresentation.phase==="authenticated")setTimeout(()=>global.PocketPTGuide?.initialize(),250);
     return authPresentation;
   }
   function applyAuthEvent(event) {

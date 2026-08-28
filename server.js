@@ -904,7 +904,7 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "nutrition.html"));
   });
-  app.get("/admin/launch-readiness.html", requireAuth, requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY), (_req, res) => {
+  app.get("/admin/launch-readiness.html", (_req, res) => {
     res.set(SHELL_NO_STORE_HEADERS);
     res.sendFile(path.join(PUBLIC_DIR, "admin-launch-readiness.html"));
   });
