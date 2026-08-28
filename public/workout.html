@@ -1411,10 +1411,10 @@ First failing boundary: NONE</pre>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=2026-08-27-movenet-visible-audible-v22"></script>
   <script src="/pose-runtime.js?v=2026-08-28-movenet-temporal-display-proof-v25"></script>
-  <script src="/motion/normalized-pose.js?v=20260825-phase1c"></script>
-  <script src="/motion/avaturn-live-pose-solver.js?v=20260825-phase1c"></script>
+  <script src="/motion/normalized-pose.js?v=2026-08-28-full-rig-live-mirror-v1"></script>
+  <script src="/motion/avaturn-live-pose-solver.js?v=2026-08-28-full-rig-live-mirror-v1"></script>
   <script>window.__PHASE2_POSE_PROOF_ONLY__ = false;</script>
-  <script src="/motion/live-avatar-mirror.js?v=2026-08-27-movenet-visible-audible-v22"></script>
+  <script src="/motion/live-avatar-mirror.js?v=2026-08-28-full-rig-live-mirror-v1"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
@@ -2276,7 +2276,8 @@ First failing boundary: NONE</pre>
           runtime.bonesChangedLastFrame = mirrorProof.changedBones.length;
           runtime.lastBonesApplied = mirrorProof.changedBones;
           runtime.lastRetargetAt = mirrorProof.lastRetargetAt;
-          window.AvatarRuntime?.updateStatus?.({ normalizedPoseFrames: mirrorProof.poseFramesReceived, retargetFramesExecuted: mirrorProof.retargetFramesExecuted, bonesChangedLastFrame: mirrorProof.changedBones.length, changedBoneNames: mirrorProof.changedBones, lastRetargetAt: mirrorProof.lastRetargetAt ? new Date(mirrorProof.lastRetargetAt).toISOString() : null });
+          runtime.fullRigMapped = mirrorProof.fullRigMapped;
+          window.AvatarRuntime?.updateStatus?.({ normalizedPoseFrames: mirrorProof.poseFramesReceived, retargetFramesExecuted: mirrorProof.retargetFramesExecuted, bonesChangedLastFrame: mirrorProof.changedBones.length, changedBoneNames: mirrorProof.changedBones, expectedSegmentCount: mirrorProof.expectedSegmentCount, mappedSegmentCount: mirrorProof.mappedSegmentCount, mappedSegments: mirrorProof.mappedSegments, missingSegments: mirrorProof.missingSegments, expectedTorsoCount: mirrorProof.expectedTorsoCount, mappedTorsoCount: mirrorProof.mappedTorsoCount, mappedTorso: mirrorProof.mappedTorso, missingTorso: mirrorProof.missingTorso, fullRigMapped: mirrorProof.fullRigMapped, lastRetargetAt: mirrorProof.lastRetargetAt ? new Date(mirrorProof.lastRetargetAt).toISOString() : null });
         }
         runtime.renderer.render(runtime.scene, runtime.camera);
         runtime.renderFrameCount = Number(runtime.renderFrameCount || 0) + 1;
@@ -2783,13 +2784,22 @@ First failing boundary: NONE</pre>
       return Boolean(animId);
     }
 
-    window.__liveAvatarMirrorDiagnostics = () => ({
-      active: Boolean(liveAvatarMirror),
-      avatarOwned: Boolean(liveAvatarMirrorAvatar),
-      mode: getRenderMode(),
-      rendererOwners: avatarThreeRuntime?.renderer ? 1 : 0,
-      rafOwners: avatarThreeRuntime?.renderLoopActive ? 1 : 0
-    });
+    window.__liveAvatarMirrorDiagnostics = () => {
+      const proof = liveAvatarMirror?.diagnostics?.() || {};
+      return {
+        ...proof,
+        avatarRoot: undefined,
+        actualAvatarRootUuid: proof.avatarRoot?.uuid || liveAvatarMirrorAvatar?.uuid || "none",
+        authoritativeModelRootUuid: avatarThreeRuntime?.modelRoot?.uuid || "none",
+        diagnosticsMatchLoadedAvatar: Boolean(proof.avatarRoot && proof.avatarRoot === avatarThreeRuntime?.modelRoot),
+        active: Boolean(liveAvatarMirror),
+        avatarOwned: Boolean(liveAvatarMirrorAvatar),
+        mode: getRenderMode(),
+        poseListenerOwners: liveAvatarMirror ? 1 : 0,
+        rendererOwners: avatarThreeRuntime?.renderer ? 1 : 0,
+        rafOwners: avatarThreeRuntime?.renderLoopActive ? 1 : 0
+      };
+    };
 
     function fallbackRenderModeToCamera(reason, err) {
       if (AVATAR_FLAGS.AVATAR_DEBUG && err) console.warn(reason, err);

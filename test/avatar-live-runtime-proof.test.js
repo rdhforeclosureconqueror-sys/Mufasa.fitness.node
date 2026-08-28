@@ -10,7 +10,7 @@ test("runtime proof ties retarget identity, pose frames, render frames and activ
   assert.match(runtime, /runtime\?\.avatarOrientationRoot\?\.parent === runtime\?\.scene/);
   assert.match(runtime, /runtime\.retargetFramesExecuted = Number/);
   assert.match(runtime, /runtime\?\.renderLoopActive && lastRenderAgeMs != null && lastRenderAgeMs < 1000/);
-  assert.match(runtime, /identityOk && renderRunning && \(!trackingEnabled \|\| \(poseRunning && retargetRunning && boneProof\)\) \? 'ACTIVE'/);
+  assert.match(runtime, /identityOk && renderRunning && \(!trackingEnabled \|\| \(poseRunning && retargetRunning && boneProof && fullRigProof\)\) \? 'ACTIVE'/);
   assert.match(runtime, /posePacketsReceived: Number\(status\(\)\.posePacketsReceived/);
   assert.match(runtime, /runManualRuntimeTest/);
   assert.match(runtime, /runtime\?\.boneMap\?\.leftUpperArm/);

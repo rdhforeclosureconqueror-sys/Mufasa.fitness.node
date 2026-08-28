@@ -6,8 +6,10 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const workout = fs.readFileSync(path.join(root, "public/workout.html"), "utf8");
 const avatarRuntime = fs.readFileSync(path.join(root, "public/avatar-runtime.js"), "utf8");
+const motionLab = fs.readFileSync(path.join(root, "motion-lab/live-avatar-mirror.html"), "utf8");
 
 test("production workout loads the existing Phase 1B module graph in dependency order", () => {
+  const build = "2026-08-28-full-rig-live-mirror-v1";
   const modules = [
     "/motion/normalized-pose.js",
     "/motion/avaturn-live-pose-solver.js",
@@ -16,6 +18,10 @@ test("production workout loads the existing Phase 1B module graph in dependency 
   const positions = modules.map(module => workout.indexOf(`src="${module}`));
   assert.ok(positions.every(position => position > 0));
   assert.ok(positions[0] < positions[1] && positions[1] < positions[2]);
+  for (const module of modules) assert.match(workout, new RegExp(`${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=${build}`));
+  assert.equal((workout.match(new RegExp(build, "g")) || []).length, modules.length);
+  for (const module of modules) assert.match(motionLab, new RegExp(`${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=${build}`));
+  assert.equal((motionLab.match(new RegExp(build, "g")) || []).length, modules.length);
 });
 
 test("one mirror owns the actual mounted Avaturn root and existing render RAF update seam", () => {
@@ -56,6 +62,8 @@ test("production mirror reuses the existing camera, detector, PoseRuntime stream
   assert.doesNotMatch(workout, /new\s+AvaturnLivePoseSolver/);
   assert.equal((workout.match(/new threeRef\.WebGLRenderer/g) || []).length, 1);
   assert.equal((workout.match(/function ensureAvatarRenderLoop/g) || []).length, 1);
+  assert.match(workout, /poseListenerOwners: liveAvatarMirror \? 1 : 0/);
+  assert.match(workout, /diagnosticsMatchLoadedAvatar: Boolean\(proof\.avatarRoot && proof\.avatarRoot === avatarThreeRuntime\?\.modelRoot\)/);
 });
 
 test("normalized mirror maps the full bilateral rig", () => {

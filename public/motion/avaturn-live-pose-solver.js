@@ -12,6 +12,9 @@
     ["leftThigh", "LeftUpLeg", "LeftLeg", "left_hip", "left_knee"], ["rightThigh", "RightUpLeg", "RightLeg", "right_hip", "right_knee"],
     ["leftLowerLeg", "LeftLeg", "LeftFoot", "left_knee", "left_ankle"], ["rightLowerLeg", "RightLeg", "RightFoot", "right_knee", "right_ankle"]
   ]);
+  const EXPECTED_SEGMENTS = Object.freeze(SEGMENTS.map(([key]) => key));
+  const TORSO = Object.freeze([["hips","Hips","hipLine"],["spine","Spine","shoulderLine"],["chest","Spine1","shoulderLine"]]);
+  const EXPECTED_TORSO = Object.freeze(TORSO.map(([key]) => key));
   class AvaturnLivePoseSolver {
     constructor({ THREE, avatar, now = () => Date.now(), ...options } = {}) {
       if (!THREE || !avatar) throw new TypeError("THREE and avatar are required");
@@ -22,7 +25,7 @@
       const rightUpperArm = this.bindings.find(binding => binding.key === "rightUpperArm") || this.bindings[0];
       this.rightArm = rightUpperArm.bone; this.targetQuaternion = rightUpperArm.targetQuaternion;
       this.rest = Object.freeze({ position: rightUpperArm.bone.position.clone(), quaternion: rightUpperArm.restQuaternion.clone(), scale: rightUpperArm.bone.scale.clone(), childLocalDirection: rightUpperArm.bone.children[0].position.clone().normalize(), parentDirection: rightUpperArm.restDirection.clone() });
-      this.torsoBindings=[["hips","Hips","hipLine"],["spine","Spine","shoulderLine"],["chest","Spine1","shoulderLine"]].map(([key,name,line])=>{const bone=nodes.get(name);return bone?{key,bone,line,restQuaternion:bone.quaternion.clone(),currentQuaternion:bone.quaternion.clone(),targetQuaternion:bone.quaternion.clone()}:null;}).filter(Boolean);
+      this.torsoBindings=TORSO.map(([key,name,line])=>{const bone=nodes.get(name);return bone?{key,bone,line,restQuaternion:bone.quaternion.clone(),currentQuaternion:bone.quaternion.clone(),targetQuaternion:bone.quaternion.clone()}:null;}).filter(Boolean);
       this.changedBones=[]; avatar.updateMatrixWorld(true);
     }
     observe(frame) {
@@ -35,7 +38,7 @@
     update(deltaSeconds,at=this.now()){if(this.disposed)return this.state;if((this.state===STATES.TRACKING||this.state===STATES.HELD)&&this.lastGoodAt!=null&&Number(at)-this.lastGoodAt>this.options.holdMs)this.updateTrackingState(at);const alpha=1-Math.exp(-this.options.smoothingLambda*Math.max(0,Math.min(.1,Number(deltaSeconds)||0)));this.changedBones=[];for(const b of [...this.bindings,...this.torsoBindings]){const before=b.bone.quaternion.clone();b.currentQuaternion.slerp(b.targetQuaternion,alpha).normalize();b.bone.quaternion.copy(b.currentQuaternion);b.bone.updateMatrix?.();if(!before.equals(b.bone.quaternion))this.changedBones.push(b.bone.name);}this.avatar.updateMatrixWorld(true);return this.state;}
     restore(){for(const b of [...this.bindings,...this.torsoBindings]){b.bone.quaternion.copy(b.restQuaternion);if(b===this.bindings.find(binding=>binding.key==="rightUpperArm")){b.bone.position.copy(this.rest.position);b.bone.scale.copy(this.rest.scale);}b.currentQuaternion.copy(b.restQuaternion);b.targetQuaternion.copy(b.restQuaternion);b.bone.updateMatrix?.();}this.avatar.updateMatrixWorld(true);this.state=STATES.WAITING;this.lastGoodAt=null;this.changedBones=[];}
     dispose(){if(this.disposed)return;this.restore();this.disposed=true;}
-    diagnostics(){return Object.freeze({state:this.state,minimumConfidence:this.options.minimumConfidence,holdMs:this.options.holdMs,smoothingLambda:this.options.smoothingLambda,mappedSegments:Object.freeze(this.bindings.map(b=>b.key)),mappedTorso:Object.freeze(this.torsoBindings.map(b=>b.key)),changedBones:Object.freeze([...this.changedBones]),lastGoodAt:this.lastGoodAt});}
+    diagnostics(){const mappedSegments=this.bindings.map(b=>b.key),mappedTorso=this.torsoBindings.map(b=>b.key),missingSegments=EXPECTED_SEGMENTS.filter(key=>!mappedSegments.includes(key)),missingTorso=EXPECTED_TORSO.filter(key=>!mappedTorso.includes(key)),fullRigMapped=missingSegments.length===0&&missingTorso.length===0;return Object.freeze({state:this.state,minimumConfidence:this.options.minimumConfidence,holdMs:this.options.holdMs,smoothingLambda:this.options.smoothingLambda,expectedSegmentCount:EXPECTED_SEGMENTS.length,mappedSegmentCount:mappedSegments.length,mappedSegments:Object.freeze(mappedSegments),missingSegments:Object.freeze(missingSegments),expectedTorsoCount:EXPECTED_TORSO.length,mappedTorsoCount:mappedTorso.length,mappedTorso:Object.freeze(mappedTorso),missingTorso:Object.freeze(missingTorso),fullRigMapped:fullRigMapped?'YES':'NO',changedBones:Object.freeze([...this.changedBones]),lastGoodAt:this.lastGoodAt});}
   }
-  return Object.freeze({ AvaturnLivePoseSolver, DEFAULTS, STATES, SEGMENTS });
+  return Object.freeze({ AvaturnLivePoseSolver, DEFAULTS, STATES, SEGMENTS, EXPECTED_SEGMENTS, EXPECTED_TORSO });
 });
