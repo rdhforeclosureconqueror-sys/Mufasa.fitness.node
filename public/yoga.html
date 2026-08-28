@@ -13,10 +13,10 @@
   <a class="skip" href="#main">Skip to Yoga sessions</a>
   <header><nav aria-label="Member navigation"><a class="button" href="/dashboard.html">Home</a><a class="button" href="/workout.html">Train</a><a class="button" href="/exercise-library.html">Exercises</a><a class="button" aria-current="page" href="/yoga.html">Yoga</a><a class="button" href="/coach.html">Coach</a></nav></header>
   <main id="main">
-    <section class="hero" aria-labelledby="title"><p class="muted">Movement, recovery, and focus</p><h1 id="title">Yoga</h1><p>Choose a launch-approved session. Camera guidance is optional; completion never stores video or frames.</p></section>
+    <section class="hero" aria-labelledby="title" data-tour="yoga-overview"><p class="muted">Movement, recovery, and focus</p><h1 id="title">Yoga</h1><p>Choose a launch-approved session. Camera guidance is optional; completion never stores video or frames.</p></section>
     <p id="status" class="status" role="status" aria-live="polite">Loading available sessions…</p>
-    <section id="sessions" class="grid" aria-label="Available Yoga sessions" aria-busy="true"></section>
-    <section id="session-detail" aria-label="Yoga session detail" hidden></section>
+    <section id="sessions" class="grid" aria-label="Available Yoga sessions" aria-busy="true" data-tour="yoga-catalog"></section>
+    <section id="session-detail" aria-label="Yoga session detail" hidden data-tour="yoga-detail"></section>
   </main>
   <script src="/backend-origin.js"></script><script src="/api-client.js"></script><script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script><script src="/yoga.js"></script>
 <script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>

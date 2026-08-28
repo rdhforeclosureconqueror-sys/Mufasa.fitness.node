@@ -1013,8 +1013,8 @@
       </div>
 
       <div class="btn-row">
-        <button id="connectBtn">Connect Camera</button>
-        <button id="startBtn" class="secondary">Start Workout</button>
+        <button id="connectBtn" data-tour="camera">Connect Camera</button>
+        <button id="startBtn" class="secondary" data-tour="workout-controls">Start Workout</button>
         <label><input id="workoutVoiceToggle" type="checkbox" role="switch" aria-label="Workout Voice" checked> Workout Voice</label>
         <label><input id="guidedCoachToggle" type="checkbox" role="switch" aria-label="Guided Coach" aria-describedby="guidedCoachHelp" checked> Guided Coach</label>
         <label><input id="personalizedCoachingToggle" type="checkbox" role="switch" aria-label="Personalized Coaching"> Personalized Coaching</label>
@@ -1035,7 +1035,7 @@
         <button id="runSystemDiagnosticBtn" class="secondary" data-diagnostic-control hidden>🩺 Run System Diagnostic</button>
         <button id="exerciseLibraryBtn" class="secondary">🖼️ Exercise Library</button>
         <span id="threeBridgeFixMarker" class="chip" style="border-color:#22c55e;color:#22c55e;" data-avatar-feature>Three bridge fix active</span>
-        <button id="avatarCreateBtn" class="secondary" data-avatar-feature>🧍 Create Avatar</button>
+        <button id="avatarCreateBtn" class="secondary" data-avatar-feature data-tour="avatar-controls">🧍 Create Avatar</button>
         <img id="avatarThumb" class="avatar-thumb" alt="avatar thumbnail" data-avatar-feature />
 
         <select id="voiceSelect">
@@ -1192,16 +1192,16 @@ First failing boundary: NONE</pre>
       <p class="subtitle">Ma’at 2.0 remembers you and builds long-term programs from here.</p>
 
       <div id="profileSummary" class="small-card">Not signed in yet.</div>
-      <div id="retentionFlowRoot" class="retention-shell">
+      <div id="retentionFlowRoot" class="retention-shell" data-tour="intake-start">
         <h2 style="margin:0 0 6px 0;">Retention Journey</h2>
         <div id="retentionFlowStatus" class="retention-steps">Sign in to begin onboarding flow.</div>
         <div id="retentionFlowContent" class="retention-muted">Loading pilot profile...</div>
       </div>
 
-      <h2 id="today-workout" style="margin-top:12px;">Today’s Workout</h2>
+      <h2 id="today-workout" style="margin-top:12px;" data-tour="weekly-plan">Today’s Workout</h2>
       <p class="subtitle">Choose a template or use Ma’at 2.0’s program from your assessment.</p>
 
-      <select id="workoutSelect">
+      <select id="workoutSelect" data-tour="workout-selection">
         <option value="">— Select a workout —</option>
         <option value="pilot_bodyweight_squat">Bodyweight Squat (Pilot Starter)</option>
         <option value="pilot_push_up">Push-Up (Pilot Starter)</option>
@@ -1211,7 +1211,7 @@ First failing boundary: NONE</pre>
         <option value="yoga_back_release">Yoga Back Release Flow (Template)</option>
       </select>
 
-      <div id="workoutPlanView">
+      <div id="workoutPlanView" data-tour="workout-progress">
         Your workout plan will appear here after profile bootstrap and program selection.
       </div>
       <section id="yogaExecutionPanel" class="small-card" aria-labelledby="yogaExecutionTitle" hidden style="margin-top:10px;">

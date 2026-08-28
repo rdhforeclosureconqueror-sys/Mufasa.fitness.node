@@ -1,6 +1,6 @@
 "use strict";
 
-const TOUR_IDS = Object.freeze(["introduction", "intake", "training", "nutrition", "exercise-library", "yoga", "run-club", "progress", "avatar"]);
+const TOUR_IDS = Object.freeze(["introduction", "dashboard", "intake", "training", "challenge", "nutrition", "exercise-library", "yoga", "run-club", "progress", "avatar"]);
 const PROMPT_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 function cleanState(value = {}) {
@@ -30,6 +30,7 @@ function projectJourneyState(memberHome = {}) {
     intakeStarted: Boolean(memberHome.journey?.started),
     goalsComplete: Boolean(memberHome.journey?.complete),
     medicalHistoryReady: !memberHome.healthReview?.required,
+    healthReviewRequired: Boolean(memberHome.healthReview?.required),
     baselineReadyOrSkipped: Boolean(memberHome.journey?.complete),
     programExists: Boolean(programExists),
     firstWorkoutComplete: workoutsCompleted > 0,
@@ -45,7 +46,8 @@ function determineNextGuidance(member, guide = {}, { now = Date.now(), manual = 
   if (!member?.authenticated) return null;
   let prompt;
   if (!member.intakeComplete) prompt = { key: "intake-incomplete", title: member.intakeStarted ? "Continue your intake" : "Start your intake", explanation: "Complete your intake so PocketPT can personalize your experience.", route: "/workout.html#retentionFlowRoot", tourId: "intake" };
-  else if (!member.programExists) prompt = { key: "program-missing", title: "Review your personalized training plan", explanation: "Your intake is complete. Next, review or create your personalized training plan.", route: "/workout.html#generatedWorkoutPlan", tourId: "training" };
+  else if (member.healthReviewRequired || member.medicalHistoryReady === false) prompt = { key: "health-review", title: "Complete your readiness review", explanation: "Your readiness review needs to be completed before moving into training. Follow the instructions shown with your Intake.", route: "/workout.html#retentionFlowRoot", tourId: "intake" };
+  else if (!member.programExists) prompt = { key: "program-missing", title: "Review your personalized training plan", explanation: "Your Intake is complete. Next, review or create your personalized training plan.", route: "/workout.html#generatedWorkoutPlan", tourId: "training" };
   else if (!member.firstWorkoutComplete) prompt = { key: "first-workout", title: "Walk through your first training session", explanation: "Your program is ready. Let’s walk through your first training session.", route: "/workout.html#generatedWorkoutPlan", tourId: "training" };
   else if (!member.nutritionUsed) prompt = { key: "nutrition-discovery", title: "Explore nutrition when it helps", explanation: "You’ve started training. Nutrition can help PocketPT understand more of your transformation.", route: "/nutrition.html", tourId: "nutrition", optional: true };
   else prompt = { key: `returning-${String(member.nextAction?.type || "progress").replace(/_/g, "-")}`, title: member.nextAction?.title || "Continue your training", explanation: member.nextAction?.explanation || "Review your progress and choose your next useful action.", route: member.nextAction?.route || "/dashboard.html", tourId: member.nextAction?.route?.includes("workout") ? "training" : "progress" };
