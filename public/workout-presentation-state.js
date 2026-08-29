@@ -173,10 +173,18 @@
     if (detail.avatarAssetState === 'MOUNTED' || next === 'profile_ready' || next === 'requested' || next === 'mounted' || next === 'active') state.canonicalAvatarPresent = true;
     if (next === 'none' && detail.avatarAssetState !== 'MOUNTED') state.canonicalAvatarPresent = false;
     if (next === 'active' && (detail.presentationMode === 'avatar_overlay' || detail.presentationMode === 'avatar_only')) {
-      state.appliedRenderMode = deps.applyRenderMode?.(detail.presentationMode, {
-        persist: true,
-        source: 'avatar_runtime_presentation_state'
-      }) || detail.presentationMode;
+      const currentMode = deps.getRenderMode?.();
+      const preferenceSource = deps.getRenderDiagnostics?.().preferenceSource;
+      const explicitPreference = Boolean(preferenceSource && preferenceSource !== 'default');
+      // Preserve a newer explicit selector/storage/query preference. With no
+      // explicit preference, runtime activation may still promote the camera
+      // boot default to the saved avatar presentation.
+      state.appliedRenderMode = explicitPreference
+        ? currentMode
+        : (deps.applyRenderMode?.(detail.presentationMode, {
+          persist: true,
+          source: 'avatar_runtime_presentation_state'
+        }) || detail.presentationMode);
     } else if (next === 'none' || next === 'failed') {
       state.appliedRenderMode = 'camera';
     } else {
@@ -219,6 +227,20 @@
     return publish();
   }
 
-  global.WorkoutPresentationState = { configure, setCanonicalProfile, consumePresentation, setSyncState, getState: snapshot };
+  function bindRenderModeSelectors({ desktopSelector, mobileSelector, applyRenderMode } = {}) {
+    if (!desktopSelector || !mobileSelector || typeof applyRenderMode !== 'function') return null;
+    const handleChange = (event) => {
+      const selector = event?.currentTarget || event?.target;
+      return applyRenderMode(selector?.value, {
+        persist: true,
+        source: selector === mobileSelector ? 'mobile' : 'user'
+      });
+    };
+    desktopSelector.addEventListener('change', handleChange);
+    mobileSelector.addEventListener('change', handleChange);
+    return { handleChange };
+  }
+
+  global.WorkoutPresentationState = { configure, setCanonicalProfile, consumePresentation, setSyncState, getState: snapshot, bindRenderModeSelectors };
   publish();
 })(window);
