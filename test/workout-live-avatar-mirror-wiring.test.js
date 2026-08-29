@@ -9,7 +9,7 @@ const avatarRuntime = fs.readFileSync(path.join(root, "public/avatar-runtime.js"
 const motionLab = fs.readFileSync(path.join(root, "motion-lab/live-avatar-mirror.html"), "utf8");
 
 test("production workout loads the existing Phase 1B module graph in dependency order", () => {
-  const fullBodyBuild = "2026-08-29-full-body-retarget-v1";
+  const fullBodyBuild = "2026-08-29-full-body-loss-recovery-v1";
   const modules = [
     "/motion/normalized-pose.js",
     "/motion/avaturn-live-pose-solver.js",

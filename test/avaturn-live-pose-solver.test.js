@@ -70,3 +70,33 @@ test("partial loaded hierarchy explicitly reports missing bindings and cannot cl
   assert.deepEqual(diagnostics.missingSegments,["leftUpperArm","leftForearm","leftThigh","rightThigh","leftLowerLeg","rightLowerLeg"]);
   assert.equal(diagnostics.mappedTorsoCount,0);assert.deepEqual(diagnostics.missingTorso,["hips","spine","chest"]);assert.equal(diagnostics.fullRigMapped,"NO");
 });
+
+function fullBodyFrame(timestamp=1000, confidence=.32, weak={}) {
+  const point=(x,y,name)=>({x,y,confidence:weak[name]??confidence});
+  const joints={left_shoulder:point(.35,.25,"left_shoulder"),right_shoulder:point(.65,.25,"right_shoulder"),left_hip:point(.42,.55,"left_hip"),right_hip:point(.58,.55,"right_hip"),left_ankle:point(.4,.95,"left_ankle"),right_ankle:point(.6,.95,"right_ankle")};
+  return {timestamp,joints,directions:{bodyAxis:{x:0,y:1},shoulderLine:{x:1,y:0},hipLine:{x:1,y:0},rightUpperArm:{x:1,y:0}},landmarks:{bodyAxis:{x:0,y:1},shoulderLine:{x:1,y:0},hipLine:{x:1,y:0},shoulderCenter:{x:.5,y:.25},hipCenter:{x:.5,y:.55},ankleCenter:{x:.5,y:.95},bodyCenter:{x:.5,y:.4},bodyHeightPixels:70,bodyHeightNormalized:.7}};
+}
+
+test("full-body calibration uses mobile confidence independently of limb confidence",()=>{
+  const loaded=fullRig(),solver=new AvaturnLivePoseSolver({THREE,avatar:loaded.avatar,calibrationMs:0,calibrationMinFrames:1});
+  const mobile=fullBodyFrame();mobile.joints.right_elbow={x:.8,y:.4,confidence:.32};mobile.directions.rightUpperArm={x:1,y:0};
+  solver.observe(mobile);assert.equal(solver.fullBodyCalibrationState,"ACTIVE");assert.equal(solver.diagnostics().fullBodyCalibrationRequiredConfidence,.3);assert.equal(solver.diagnostics().minimumConfidence,.5);
+  assert.ok(loaded.nodes.get("RightArm").quaternion.equals(new THREE.Quaternion()),"low-confidence limb remains at rest while calibration succeeds");
+});
+
+test("calibration rejects the exact weak required joint and limbs still retarget",()=>{
+  const loaded=fullRig(),solver=new AvaturnLivePoseSolver({THREE,avatar:loaded.avatar,smoothingLambda:1000});const f=fullBodyFrame(1000,.8,{left_ankle:.1});
+  f.joints.right_elbow={x:.8,y:.4,confidence:.8};solver.observe(f);solver.update(1,1000);
+  assert.equal(solver.fullBodyCalibrationState,"WAITING");assert.equal(solver.diagnostics().fullBodyCalibrationRejectedReason,"LOW_LEFT_ANKLE_CONFIDENCE");assert.ok(!loaded.nodes.get("RightArm").quaternion.equals(new THREE.Quaternion()));
+});
+
+test("lost tracking smoothly returns the attached visible model without invalid root transforms",()=>{
+  const loaded=fullRig(),solver=new AvaturnLivePoseSolver({THREE,avatar:loaded.avatar,calibrationMs:0,calibrationMinFrames:1,holdMs:10,smoothingLambda:4});solver.observe(fullBodyFrame());solver.observe({...fullBodyFrame(1010),landmarks:{...fullBodyFrame(1010).landmarks,hipCenter:{x:.5,y:.7}}});solver.update(.1,1010);const moved=loaded.avatar.position.y;
+  solver.update(.01,1100);assert.equal(solver.state,STATES.LOST);assert.notEqual(loaded.avatar.position.y,solver.rootRestPosition.y);assert.ok(Math.abs(loaded.avatar.position.y-solver.rootRestPosition.y)<Math.abs(moved-solver.rootRestPosition.y));assert.equal(loaded.avatar.visible,true);assert.ok(loaded.avatar.parent===null);
+  solver.rootTargetPosition.x=NaN;solver.update(.1,1200);assert.ok(Number.isFinite(loaded.avatar.position.x));assert.equal(solver.diagnostics().rootTransformRejectedReason,"ROOT_POSITION_NON_FINITE");
+  solver.rootTargetQuaternion.set(NaN,0,0,0);solver.update(.1,1210);assert.ok(loaded.avatar.quaternion.toArray().every(Number.isFinite));assert.equal(solver.diagnostics().rootTransformRejectedReason,"ROOT_QUATERNION_INVALID");
+});
+
+test("subject loss resets calibration and full body can calibrate again",()=>{
+  const loaded=fullRig(),solver=new AvaturnLivePoseSolver({THREE,avatar:loaded.avatar,calibrationMs:0,calibrationMinFrames:1,holdMs:10,subjectLossResetMs:20});solver.observe(fullBodyFrame(1000));assert.equal(solver.fullBodyCalibrationState,"ACTIVE");solver.update(.1,1030);assert.equal(solver.fullBodyCalibrationState,"WAITING");solver.observe(fullBodyFrame(1040));assert.equal(solver.fullBodyCalibrationState,"ACTIVE");
+});
