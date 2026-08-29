@@ -27,7 +27,7 @@ test("login persistence and a Safari-style page reload restore the one canonical
   const restored = await reloaded.window.AuthStateRuntime.whenReady();
   assert.equal(restored.ok, true);
   assert.equal(reloaded.window.AuthStateRuntime.getCanonicalAuthState().user.roles[0], "admin");
-  assert.deepEqual(JSON.parse(JSON.stringify(reloaded.window.AuthStateRuntime.getSafeDiagnostics())), { authenticated: true, credentialPresent: true, source: "AuthStateRuntime.memory", storageSource: "localStorage", rememberMeConsent: true, frontendBundle: "20260824-auth-unified-drawer-v2", role: "admin", tokenFormatValid: true, expiryState: "valid", lastRestoreResult: "restored" });
+  assert.deepEqual(JSON.parse(JSON.stringify(reloaded.window.AuthStateRuntime.getSafeDiagnostics())), { authenticated: true, credentialPresent: true, source: "AuthStateRuntime.memory", storageSource: "localStorage", rememberMeConsent: true, frontendBundle: "2026-08-29-auth-readiness-propagation-v1", role: "admin", tokenFormatValid: true, expiryState: "valid", lastRestoreResult: "restored" });
 });
 
 test("invalid auth is cleared everywhere and logout removes canonical and retired aliases", async () => {

@@ -2,7 +2,7 @@
   "use strict";
 
   const global = globalScope || window;
-  const FRONTEND_BUILD = "20260824-auth-unified-drawer-v2";
+  const FRONTEND_BUILD = "2026-08-29-auth-readiness-propagation-v1";
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "auth-state-runtime.js": FRONTEND_BUILD });
   const TOKEN_STORAGE_KEY = "maatAuthToken";
   const PERSISTENCE_STORAGE_KEY = "maatAuthPersistence";
@@ -18,6 +18,25 @@
   let tokenHandoffSequence = 0;
   let tokenHandoffQueue = Promise.resolve();
 
+  function propagationProof() {
+    return global.__MAAT_AUTH_PROPAGATION_PROOF__ || (global.__MAAT_AUTH_PROPAGATION_PROOF__ = {
+      authRuntimeLoaded: true, bundle: FRONTEND_BUILD, storageInspectionCompleted: false,
+      sessionTokenPresent: false, persistentTokenPresent: false, persistenceConsent: "NONE",
+      selectedTokenSource: "none", storedTokenRead: false, storedTokenFormatValid: false,
+      storedTokenExpiry: "UNKNOWN", restoreEntered: false, restoreAttemptCount: 0,
+      validationRequestAttempted: false, validationRoute: "/api/auth/me",
+      validationHttpStatus: "NONE", validationResponseReceived: false,
+      canonicalAppAuthPopulated: false, canonicalUserPopulated: false,
+      canonicalTokenPopulated: false, authChangedFired: false, authReadyFired: false,
+      whenReadyResolved: false, whenReadyReason: "not_started",
+      firstFailingBoundary: "NONE", lastSafeError: "None"
+    });
+  }
+
+  function updatePropagationProof(values = {}) {
+    return Object.assign(propagationProof(), values);
+  }
+
   function storageInspection() {
     let sessionToken = null;
     let localToken = null;
@@ -29,7 +48,9 @@
     } catch (_) {}
     const persistentConsent = consent === "persistent";
     const source = sessionToken ? "sessionStorage" : (localToken && persistentConsent ? "localStorage" : "none");
-    return { token: sessionToken || (persistentConsent ? localToken : null), source, persistentConsent, rejectedUnconsentedLocalToken: Boolean(localToken && !persistentConsent) };
+    const result = { token: sessionToken || (persistentConsent ? localToken : null), source, persistentConsent, rejectedUnconsentedLocalToken: Boolean(localToken && !persistentConsent) };
+    updatePropagationProof({ storageInspectionCompleted: true, sessionTokenPresent: Boolean(sessionToken), persistentTokenPresent: Boolean(localToken), persistenceConsent: persistentConsent ? "PERSISTENT" : (sessionToken ? "SESSION" : "NONE"), selectedTokenSource: source });
+    return result;
   }
 
   function publishRestoreDiagnostics(values = {}) {
@@ -169,6 +190,8 @@
     try {
       const inspection = storageInspection();
       if (inspection.rejectedUnconsentedLocalToken) global.localStorage?.removeItem(TOKEN_STORAGE_KEY);
+      const metadata = tokenMetadata(inspection.token);
+      updatePropagationProof({ storedTokenRead: Boolean(inspection.token), storedTokenFormatValid: metadata.validFormat, storedTokenExpiry: metadata.expiryState === "unavailable" ? "UNKNOWN" : metadata.expiryState.toUpperCase(), firstFailingBoundary: inspection.token ? "NONE" : "TOKEN_READ" });
       publishRestoreDiagnostics({ tokenSource: inspection.source, rejectedUnconsentedLocalToken: inspection.rejectedUnconsentedLocalToken });
       void traceTokenHandoff(`${inspection.source} read-back value`, inspection.token, {}, { function: "getStoredToken" });
       return inspection.token;
@@ -249,11 +272,13 @@
     const debug = ensureDebugState();
     const at = new Date().toISOString();
     if (name === "auth:changed") {
+      updatePropagationProof({ authChangedFired: true });
       debug.authChangedFired = true;
       debug.lastAuthEventAt = at;
       console.log("[AUTH_CHANGED]", { reason, authenticated: detail?.isAuthenticated === true, hasToken: Boolean(detail?.token) });
     }
     if (name === "auth:ready") {
+      updatePropagationProof({ authReadyFired: true });
       debug.authReadyFired = true;
       debug.lastAuthReadyAt = at;
       console.log("[AUTH_READY]", { reason, authenticated: detail?.isAuthenticated === true, hasToken: Boolean(detail?.token) });
@@ -269,6 +294,7 @@
     const changed = !sameAuthState(previousState, nextState);
 
     global.APP_AUTH = nextState;
+    updatePropagationProof({ canonicalAppAuthPopulated: true, canonicalUserPopulated: Boolean(nextState.user), canonicalTokenPopulated: Boolean(nextState.token) });
     if (nextState.token) void traceTokenHandoff("token assigned to APP_AUTH", nextState.token, {}, { function: "setCanonicalAuthState" });
     if (nextState.user) global.__LAST_AUTH_USER = nextState.user;
     else if (options.clearLastUser === true) global.__LAST_AUTH_USER = null;
@@ -319,6 +345,7 @@
       return { ok: false, reason: metadata.expiryState === "expired" ? "expired_token" : "invalid_token", auth: global.APP_AUTH };
     }
     try {
+      updatePropagationProof({ validationRequestAttempted: true, validationRoute: "/api/auth/me", firstFailingBoundary: "NONE" });
       const onGreatness = global.location?.pathname === "/greatness.html";
       if (onGreatness) {
         recordCheckpoint("GREATNESS_CHECKPOINT_2", { canonicalTokenPresent: Boolean(token), authenticatedState: getCanonicalAuthState().isAuthenticated === true, authorizationHeaderAttached: Boolean(token), bearerPrefixCorrect: Boolean(token), tokenFormatValid: metadata.validFormat, requestUrl: global.MaatApiClient?.resolve?.("/api/auth/me") || `${baseUrl}/api/auth/me` });
@@ -335,6 +362,7 @@
       }, options.timeoutMs || RESTORE_TIMEOUT_MS);
       const authDiagnostics = canonicalResult?.diagnostics || { url: `${baseUrl}/api/auth/me`, dispatched: true, status: res.status, backendReached: true };
       ensureDebugState().lastMeDiagnostics = authDiagnostics;
+      updatePropagationProof({ validationResponseReceived: true, validationHttpStatus: res.status });
       const payload = canonicalResult ? (canonicalResult.payload || {}) : await res.json().catch(() => ({}));
       authDiagnostics.authTrace = payload?.authTrace || payload?.error?.details?.authTrace || null;
       authDiagnostics.requestId = res.headers?.get?.("x-request-id") || payload?.requestId || authDiagnostics.authTrace?.requestId || null;
@@ -372,6 +400,7 @@
       debug.lastAuthError = error?.message || String(error || "unknown_auth_refresh_error");
       const status = Number(error?.status || 0);
       const invalidSession = status === 401;
+      updatePropagationProof({ validationHttpStatus: status || "NONE", validationResponseReceived: Boolean(status), firstFailingBoundary: status ? "VALIDATION_RESPONSE" : "VALIDATION_REQUEST", lastSafeError: String(error?.message || "Authentication validation unavailable").slice(0, 160) });
       if (invalidSession) {
         const beforeCleanup = Boolean(getStoredToken());
         if (options.preserveTokenOn401 !== true) clearCanonicalAuthState(`${reason}:invalid_session`, { forceDispatch: options.forceDispatch === true, httpStatus: 401, file: "public/auth-state-runtime.js", function: "refreshAuthStatus" });
@@ -508,10 +537,13 @@
   function restoreCanonicalAuthState(options = {}) {
     if (restorePromise && options.force !== true) return restorePromise;
     const storedToken = getStoredToken();
+    const proof = propagationProof();
+    updatePropagationProof({ restoreEntered: true, restoreAttemptCount: proof.restoreAttemptCount + 1 });
     if (!storedToken) {
       authPhase = "unauthenticated";
       ensureDebugState().lastRestoreResult = "missing_token";
       publishRestoreDiagnostics({ tokenSource: "none", result: "missing_token" });
+      setCanonicalAuthState({ token: null, user: null }, { reason: "browser-storage-restore:missing_token", forceDispatch: true });
       return Promise.resolve({ ok: false, reason: "missing_token", auth: getCanonicalAuthState() });
     }
     authPhase = "restoring";
@@ -530,8 +562,13 @@
 
   function whenReady() {
     const state = getCanonicalAuthState();
-    if (state.isAuthenticated && state.token === backendValidatedToken) return Promise.resolve({ ok: true, auth: state, user: state.user });
-    return restoreCanonicalAuthState();
+    const readiness = state.isAuthenticated && state.token === backendValidatedToken
+      ? Promise.resolve({ ok: true, auth: state, user: state.user })
+      : restoreCanonicalAuthState();
+    return readiness.then((result) => {
+      updatePropagationProof({ whenReadyResolved: true, whenReadyReason: result.ok ? "authenticated" : (result.reason || "unknown"), firstFailingBoundary: result.ok ? "NONE" : propagationProof().firstFailingBoundary });
+      return result;
+    });
   }
 
   async function fetchWithTimeout(url, options = {}, timeoutMs = RESTORE_TIMEOUT_MS) {
@@ -605,6 +642,7 @@
     getAuthToken,
     getCanonicalAuthState,
     getSafeDiagnostics,
+    getPropagationProof: () => ({ ...propagationProof() }),
     getStoredToken,
     storageInspection,
     normalizeToken,
