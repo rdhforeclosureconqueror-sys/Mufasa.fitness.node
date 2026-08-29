@@ -5,12 +5,12 @@ const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, '../public/workout.html'), 'utf8');
 const alternateWorkout = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-const BUILD = '2026-08-28-avatar-mobile-stability-v2';
+const BUILD = '2026-08-29-full-body-retarget-v1';
 const POSE_BACKEND_BUILD = '2026-08-29-ios-webgl-backend-v1';
 const ALIGNED_ASSETS = [
   '/motion/avaturn-live-pose-solver.js',
   '/motion/live-avatar-mirror.js',
-  '/guided-experience.js'
+  '/motion/normalized-pose.js'
 ];
 
 test('workout loads every changed live-stability runtime with one coherent cache identifier', () => {
@@ -21,8 +21,8 @@ test('workout loads every changed live-stability runtime with one coherent cache
   }
 });
 
-test('unchanged normalized-pose runtime is not blindly moved to the stability cache identifier', () => {
-  assert.doesNotMatch(html, new RegExp(`/motion/normalized-pose\\.js\\?v=${BUILD}`));
+test('changed normalized-pose runtime shares the full-body cache identifier', () => {
+  assert.match(html, new RegExp(`/motion/normalized-pose\\.js\\?v=${BUILD}`));
 });
 
 test('alternate workout shell cannot load the changed pose runtime from the prior cache generation', () => {

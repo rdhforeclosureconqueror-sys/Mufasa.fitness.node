@@ -35,6 +35,13 @@
     const length = Math.hypot(x, y);
     return length >= MIN_SEGMENT_LENGTH ? Object.freeze({ x: x / length, y: y / length, z: 0 }) : null;
   }
+  function midpoint(a, b) {
+    if (!a || !b) return null;
+    return Object.freeze({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, z: null, confidence: Math.min(a.confidence, b.confidence) });
+  }
+  function distancePixels(a, b, width, height) {
+    return a && b ? Math.hypot((b.x-a.x)*width, (b.y-a.y)*height) : null;
+  }
   function fromMoveNetPosePacket(posePacket, options = {}) {
     const width = Number(posePacket?.video?.width || options.width || 0);
     const height = Number(posePacket?.video?.height || options.height || 0);
@@ -42,12 +49,17 @@
     const directions = Object.fromEntries(Object.entries(SEGMENTS).map(([name, [a, b]]) => [name, segmentDirection(joints[a], joints[b], width, height)]));
     const shoulderLine = segmentDirection(joints.left_shoulder, joints.right_shoulder, width, height);
     const hipLine = segmentDirection(joints.left_hip, joints.right_hip, width, height);
+    const shoulderCenter=midpoint(joints.left_shoulder,joints.right_shoulder),hipCenter=midpoint(joints.left_hip,joints.right_hip),ankleCenter=midpoint(joints.left_ankle,joints.right_ankle);
+    const bodyCenter=midpoint(shoulderCenter,hipCenter),torsoAxis=segmentDirection(shoulderCenter,hipCenter,width,height),bodyAxis=torsoAxis;
+    const estimatedFootBaseline=ankleCenter?Object.freeze({y:ankleCenter.y,z:null,confidence:ankleCenter.confidence}):null;
+    const landmarks=Object.freeze({shoulderCenter,hipCenter,bodyCenter,ankleCenter,estimatedFootBaseline,shoulderLine,hipLine,torsoAxis,bodyAxis,
+      bodyHeightPixels:distancePixels(shoulderCenter,ankleCenter,width,height),bodyHeightNormalized:distancePixels(shoulderCenter,ankleCenter,1,1),shoulderWidthPixels:distancePixels(joints.left_shoulder,joints.right_shoulder,width,height),hipWidthPixels:distancePixels(joints.left_hip,joints.right_hip,width,height)});
     const confidences = Object.values(joints).filter(Boolean).map(joint => joint.confidence);
     const overall = Number.isFinite(posePacket?.pose?.score) ? Math.max(0, Math.min(1, Number(posePacket.pose.score))) : confidences.length ? Math.min(...confidences) : 0;
     return Object.freeze({
-      schemaVersion: SCHEMA_VERSION, timestamp: Number(posePacket?.at || options.timestamp || Date.now()),
+      schemaVersion: SCHEMA_VERSION, videoWidth: width, videoHeight: height, timestamp: Number(posePacket?.at || options.timestamp || Date.now()),
       confidence: Object.freeze({ overall, bodyDetected: confidences.some(value => value >= 0.3) }),
-      joints: Object.freeze(joints), directions: Object.freeze({ ...directions, shoulderLine, hipLine }),
+      joints: Object.freeze(joints), directions: Object.freeze({ ...directions, shoulderLine, hipLine, torsoAxis, bodyAxis }), landmarks,
       // Compatibility aliases for the original one-arm proof consumers.
       rightShoulder: joints.right_shoulder, rightElbow: joints.right_elbow, rightUpperArmDirection: directions.rightUpperArm,
       coordinates: Object.freeze({ space: "mirrored-image-normalized", origin: "top-left", xAxis: "image-right", yAxis: "anatomical-up", zAxis: "unsupported", depth: "2d-only" }),

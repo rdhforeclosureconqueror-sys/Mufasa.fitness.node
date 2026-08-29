@@ -9,8 +9,7 @@ const avatarRuntime = fs.readFileSync(path.join(root, "public/avatar-runtime.js"
 const motionLab = fs.readFileSync(path.join(root, "motion-lab/live-avatar-mirror.html"), "utf8");
 
 test("production workout loads the existing Phase 1B module graph in dependency order", () => {
-  const originalBuild = "2026-08-28-full-rig-live-mirror-v1";
-  const stabilityBuild = "2026-08-28-avatar-mobile-stability-v2";
+  const fullBodyBuild = "2026-08-29-full-body-retarget-v1";
   const modules = [
     "/motion/normalized-pose.js",
     "/motion/avaturn-live-pose-solver.js",
@@ -19,10 +18,13 @@ test("production workout loads the existing Phase 1B module graph in dependency 
   const positions = modules.map(module => workout.indexOf(`src="${module}`));
   assert.ok(positions.every(position => position > 0));
   assert.ok(positions[0] < positions[1] && positions[1] < positions[2]);
-  assert.match(workout, new RegExp(`/motion/normalized-pose\\.js\\?v=${originalBuild}`));
-  for (const module of modules.slice(1)) assert.match(workout, new RegExp(`${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=${stabilityBuild}`));
-  for (const module of modules) assert.match(motionLab, new RegExp(`${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?v=${originalBuild}`));
-  assert.equal((motionLab.match(new RegExp(originalBuild, "g")) || []).length, modules.length);
+  for (const module of modules) {
+    const asset = module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.match(workout, new RegExp(`${asset}\\?v=${fullBodyBuild}`));
+    assert.match(motionLab, new RegExp(`${asset}\\?v=${fullBodyBuild}`));
+  }
+  assert.equal((motionLab.match(new RegExp(fullBodyBuild, "g")) || []).length, modules.length);
+
 });
 
 test("one mirror owns the actual mounted Avaturn root and existing render RAF update seam", () => {
