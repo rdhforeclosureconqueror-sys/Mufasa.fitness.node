@@ -29,7 +29,7 @@
   <script src="/form-engine.js"></script>
   <script src="/runtime-events.js?v=20260506"></script>
   <script src="/runtime-state.js?v=2026-08-27-movenet-visible-audible-v22"></script>
-  <script src="/workout-presentation-state.js?v=2026-08-27-movenet-visible-audible-v22"></script>
+  <script src="/workout-presentation-state.js?v=2026-08-29-render-mode-wiring-v1"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
@@ -399,6 +399,9 @@
       }
       .camera-mobile-controls {
         display: grid;
+      }
+      #renderModeControl {
+        display: none !important;
       }
       .modal-shell {
         align-items: flex-end;
@@ -1446,7 +1449,7 @@ First failing boundary: NONE</pre>
   <script src="/button-runtime.js?v=2026-08-27-movenet-visible-audible-v22"></script>
   <script src="/live-workout-breakpoints.js?v=20260507"></script>
   <script src="/status-panels.js?v=20260507"></script>
-  <script src="/workout-runtime.js?v=2026-08-27-movenet-visible-audible-v22"></script>
+  <script src="/workout-runtime.js?v=2026-08-29-render-mode-wiring-v1"></script>
   <script src="/mobile-layout-containment.js?v=2026-08-27-movenet-visible-audible-v22"></script>
   <script src="/workout-control-activation.js?v=2026-08-27-movenet-visible-audible-v22"></script>
   <script src="/generated-workout-runtime.js?v=2026-08-27-movenet-visible-audible-v22"></script>
@@ -1585,6 +1588,62 @@ First failing boundary: NONE</pre>
     let renderSelectorChangeLastReceived = "none";
     let renderSelectorChangeSource = "none";
     let requestedRenderMode = "camera";
+    function installRenderModeSelectorBinding({ presentationState, desktopSelector, mobileSelector, applyRenderMode, getCanonicalRenderMode, presentationElement, reportError } = {}) {
+      const proof = {
+        presentationStateLoaded: Boolean(presentationState),
+        binderAvailable: typeof presentationState?.bindRenderModeSelectors === "function",
+        binderAttached: false,
+        renderSelectorBinderAvailable: typeof presentationState?.bindRenderModeSelectors === "function",
+        renderSelectorBinderAttached: false,
+        desktopSelectorFound: Boolean(desktopSelector),
+        mobileSelectorFound: Boolean(mobileSelector),
+        desktopHandlerAttached: false,
+        mobileHandlerAttached: false,
+        desktopRenderSelectorBound: false,
+        mobileRenderSelectorBound: false,
+        desktopSelectorValue: desktopSelector?.value || null,
+        mobileSelectorValue: mobileSelector?.value || null,
+        canonicalRenderMode: getCanonicalRenderMode?.() || null,
+        workoutPresentationDataset: presentationElement?.dataset?.avatarPresentation || null,
+        presentationStateScriptVersion: "2026-08-29-render-mode-wiring-v1",
+        workoutRuntimeScriptVersion: "2026-08-29-render-mode-wiring-v1",
+        lastSelectorChangeSource: null,
+        lastSelectorChangeValue: null,
+        lastApplyRenderModeTimestamp: null,
+        renderSelectorBindingError: null,
+        bindingError: null
+      };
+      window.__renderModeBindingProof = proof;
+      if (!proof.binderAvailable) {
+        proof.renderSelectorBindingError = proof.bindingError = "RENDER_MODE_BINDER_MISSING";
+        console.error("RENDER_MODE_BINDER_MISSING", proof);
+        reportError?.("Render controls unavailable (RENDER_MODE_BINDER_MISSING)");
+        return proof;
+      }
+      const applyAndProve = (mode, options = {}) => {
+        proof.lastSelectorChangeSource = options.source || "unknown";
+        proof.lastSelectorChangeValue = mode;
+        const applied = applyRenderMode(mode, options);
+        proof.lastApplyRenderModeTimestamp = new Date().toISOString();
+        proof.desktopSelectorValue = desktopSelector?.value || null;
+        proof.mobileSelectorValue = mobileSelector?.value || null;
+        proof.canonicalRenderMode = getCanonicalRenderMode?.() || null;
+        proof.workoutPresentationDataset = presentationElement?.dataset?.avatarPresentation || null;
+        return applied;
+      };
+      const binding = presentationState.bindRenderModeSelectors({ desktopSelector, mobileSelector, applyRenderMode: applyAndProve });
+      proof.desktopHandlerAttached = proof.desktopRenderSelectorBound = Boolean(binding?.desktopHandlerAttached);
+      proof.mobileHandlerAttached = proof.mobileRenderSelectorBound = Boolean(binding?.mobileHandlerAttached);
+      proof.binderAttached = proof.renderSelectorBinderAttached = Boolean(
+        binding && proof.desktopHandlerAttached && proof.mobileHandlerAttached
+      );
+      if (!proof.binderAttached) {
+        proof.renderSelectorBindingError = proof.bindingError = "RENDER_MODE_BINDING_FAILED";
+        console.error("RENDER_MODE_BINDING_FAILED", proof);
+        reportError?.("Render controls unavailable (RENDER_MODE_BINDING_FAILED)");
+      }
+      return proof;
+    }
     function getAuthoritativeRenderSelector() {
       const visible = [renderModeMobileSelectEl, renderModeSelectEl].find((el) => el && el.getClientRects?.().length > 0);
       return visible || renderModeSelectEl || renderModeMobileSelectEl || null;
@@ -5213,10 +5272,14 @@ First failing boundary: NONE</pre>
         renderSelectorChangeSource = event.currentTarget.id;
       });
     }
-    window.WorkoutPresentationState?.bindRenderModeSelectors({
+    installRenderModeSelectorBinding({
+      presentationState: window.WorkoutPresentationState,
       desktopSelector: renderModeSelectEl,
       mobileSelector: renderModeMobileSelectEl,
-      applyRenderMode: applyRenderModeSelection
+      applyRenderMode: applyRenderModeSelection,
+      getCanonicalRenderMode: getRenderMode,
+      presentationElement: document.getElementById("workoutPresentation"),
+      reportError: (message) => updateRenderModeStatus(message, true)
     });
     if (avatarStageMobileSelectEl) {
       avatarStageMobileSelectEl.onchange = () => {

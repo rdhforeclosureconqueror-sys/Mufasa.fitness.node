@@ -238,7 +238,7 @@
     };
     desktopSelector.addEventListener('change', handleChange);
     mobileSelector.addEventListener('change', handleChange);
-    return { handleChange };
+    return { handleChange, desktopHandlerAttached: true, mobileHandlerAttached: true };
   }
 
   global.WorkoutPresentationState = { configure, setCanonicalProfile, consumePresentation, setSyncState, getState: snapshot, bindRenderModeSelectors };
