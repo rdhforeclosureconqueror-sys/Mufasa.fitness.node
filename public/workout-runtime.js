@@ -467,8 +467,9 @@
         else if (animId) global.cancelAnimationFrame?.(animId);
         const ctx = refs.canvasEl?.getContext?.('2d') || refs.ctx;
         if (ctx && refs.canvasEl) ctx.clearRect(0, 0, refs.canvasEl.width, refs.canvasEl.height);
-        glueDeps.setPersonLayerSuppressed?.(false);
-        glueDeps.setAvatar3dCanvasVisibility?.(false);
+        // Reset through the canonical presentation owner so selectors, dataset
+        // and computed layers cannot disagree after stopping.
+        glueDeps.resetRenderModeToCamera?.();
         glueDeps.setLastRenderMode?.('camera');
         glueDeps.addLog?.('system', 'Workout stopped. Reconnect camera and press Start Workout to resume.');
         console.log('[WORKOUT_LIFECYCLE] workout stopped', { sessionId: glueDeps.getSessionId?.() });

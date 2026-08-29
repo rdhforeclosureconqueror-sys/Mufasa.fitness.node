@@ -197,9 +197,8 @@ test("mounted GLB with rejected presentation falls back and cannot report ACTIVE
 
 test("selectors delegate to the render owner and a DOM value alone is not activation", () => {
   const html = asset("workout.html");
-  assert.match(html, /renderModeSelectEl\.onchange[\s\S]*applyRenderModeSelection\(renderModeSelectEl\.value/);
-  assert.match(html, /renderModeMobileSelectEl\.onchange[\s\S]*applyRenderModeSelection\(renderModeMobileSelectEl\.value/);
-  assert.match(html, /AVATAR_FLAGS\.AVATAR_MODE = nextMode;\s*applyLiveAvatarRenderPresentation\(nextMode\)/);
+  assert.match(html, /bindRenderModeSelectors\(\{[\s\S]*applyRenderMode: applyRenderModeSelection/);
+  assert.match(html, /AVATAR_FLAGS\.AVATAR_MODE = nextMode;[\s\S]*renderModeMobileSelectEl\.value = nextMode[\s\S]*applyLiveAvatarRenderPresentation\(nextMode\)/);
   assert.match(html, /getAuthoritativeRenderSelector\(\)\?\.id/);
   assert.doesNotMatch(html, /onchange\s*=\s*[^;]*\.value\s*=\s*["']avatar_only["']/);
 });

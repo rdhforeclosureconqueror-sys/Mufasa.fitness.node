@@ -1584,6 +1584,7 @@ First failing boundary: NONE</pre>
     const renderModeMobileSelectEl = document.getElementById("renderModeMobileSelect");
     let renderSelectorChangeLastReceived = "none";
     let renderSelectorChangeSource = "none";
+    let requestedRenderMode = "camera";
     function getAuthoritativeRenderSelector() {
       const visible = [renderModeMobileSelectEl, renderModeSelectEl].find((el) => el && el.getClientRects?.().length > 0);
       return visible || renderModeSelectEl || renderModeMobileSelectEl || null;
@@ -2621,6 +2622,7 @@ First failing boundary: NONE</pre>
     function applyRenderModeSelection(mode, { persist = true, source = "ui" } = {}) {
       const previousMode = AVATAR_FLAGS.AVATAR_MODE;
       const nextMode = sanitizeRenderMode(mode);
+      requestedRenderMode = nextMode;
       if (source === "user" || source === "mobile") {
         renderModePreferenceExplicit = true;
         renderModePreferenceSource = source;
@@ -2661,9 +2663,9 @@ First failing boundary: NONE</pre>
         return "camera";
       }
       AVATAR_FLAGS.AVATAR_MODE = nextMode;
+      if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
+      if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== nextMode) renderModeMobileSelectEl.value = nextMode;
       applyLiveAvatarRenderPresentation(nextMode);
-      const presentation = document.getElementById("workoutPresentation");
-      if (presentation) presentation.dataset.avatarPresentation = nextMode;
       syncLiveAvatarMirrorOwnership(nextMode);
       updateAvatarOverlayDiagnostics({
         lastRenderModeApplied: nextMode,
@@ -2671,8 +2673,6 @@ First failing boundary: NONE</pre>
       });
       updateAvatarRuntimeRenderModeStatus();
       console.log("[route-trace] renderMode:", nextMode);
-      if (renderModeSelectEl.value !== nextMode) renderModeSelectEl.value = nextMode;
-      if (renderModeMobileSelectEl && renderModeMobileSelectEl.value !== nextMode) renderModeMobileSelectEl.value = nextMode;
       updateRenderModeStatus(`${getRenderModeLabel(nextMode)} (${source})`, false);
       if (persist) {
         try { localStorage.setItem(AVATAR_MODE_STORAGE_KEY, nextMode); } catch (_) {}
@@ -2684,6 +2684,7 @@ First failing boundary: NONE</pre>
     }
 
     function applyLiveAvatarRenderPresentation(mode) {
+      mode = sanitizeRenderMode(mode);
       const avatarVisible = mode === "avatar_overlay" || mode === "avatar_only";
       const presentation = document.getElementById("workoutPresentation");
       if (presentation) presentation.dataset.avatarPresentation = mode;
@@ -2691,13 +2692,28 @@ First failing boundary: NONE</pre>
       setPersonLayerSuppressed(mode === "avatar_only");
       if (canvasEl) canvasEl.style.visibility = mode === "avatar_only" ? "hidden" : "visible";
       const videoCaptureActive = Boolean(videoEl?.srcObject && videoEl.srcObject.active !== false);
+      const videoStyle = videoEl ? getComputedStyle(videoEl) : null;
+      const overlayStyle = canvasEl ? getComputedStyle(canvasEl) : null;
+      const avatarStyle = avatar3dCanvasEl ? getComputedStyle(avatar3dCanvasEl) : null;
+      const presentationProof = {
+        requestedRenderMode,
+        canonicalRenderMode: getRenderMode(),
+        desktopSelectorValue: renderModeSelectEl?.value || null,
+        mobileSelectorValue: renderModeMobileSelectEl?.value || null,
+        datasetAvatarPresentation: presentation?.dataset.avatarPresentation || null,
+        videoComputedVisibility: videoStyle?.visibility || "unavailable",
+        overlayComputedVisibility: overlayStyle?.visibility || "unavailable",
+        avatarComputedVisibility: avatarStyle?.visibility || "unavailable"
+      };
       Object.assign(getAvatarRuntimeStatusRef(), {
         cameraCaptureActive: videoCaptureActive,
         poseSourceVideoActive: videoCaptureActive && videoEl.readyState >= 2,
         userVisibleVideoLayer: mode === "avatar_only" ? "HIDDEN" : "VISIBLE",
         avatarCanvasVisible: avatarVisible,
-        renderModeOwner: mode
+        renderModeOwner: mode,
+        renderModePresentationProof: presentationProof
       });
+      window.__renderModePresentationProof = presentationProof;
     }
 
     function activateSavedAvatarPresentation({ source = "saved_profile" } = {}) {
@@ -4713,9 +4729,9 @@ First failing boundary: NONE</pre>
       };
       const modeExpected = modeMap[renderMode] || modeMap.camera;
       const actualPersonSuppressed = stylesVideo?.visibility === "hidden";
-      const actualVideoVisible = videoRect.width > 0 && videoRect.height > 0 && stylesVideo?.display !== "none";
-      const actualOverlayVisible = overlayRect.width > 0 && overlayRect.height > 0 && stylesOverlay?.display !== "none";
-      const actualAvatarVisible = avatarRect.width > 0 && avatarRect.height > 0 && stylesAvatar?.display !== "none";
+      const actualVideoVisible = videoRect.width > 0 && videoRect.height > 0 && stylesVideo?.display !== "none" && stylesVideo?.visibility !== "hidden";
+      const actualOverlayVisible = overlayRect.width > 0 && overlayRect.height > 0 && stylesOverlay?.display !== "none" && stylesOverlay?.visibility !== "hidden";
+      const actualAvatarVisible = avatarRect.width > 0 && avatarRect.height > 0 && stylesAvatar?.display !== "none" && stylesAvatar?.visibility !== "hidden";
 
       const contextOverlay = getCanvasContextType(canvasEl) || "none";
       const contextAvatar = getCanvasContextType(avatar3dCanvasEl) || "none";
@@ -5012,6 +5028,7 @@ First failing boundary: NONE</pre>
           getAnimId: () => animId,
           setPersonLayerSuppressed,
           setAvatar3dCanvasVisibility,
+          resetRenderModeToCamera: () => applyRenderModeSelection("camera", { persist: true, source: "workout_stop" }),
           setLastRenderMode: (mode) => { lastRenderMode = mode; }
         }
       }),
@@ -5144,6 +5161,8 @@ First failing boundary: NONE</pre>
       getRenderMode,
       applyRenderMode: applyRenderModeSelection,
       getRenderDiagnostics: () => ({
+        requestedRenderMode,
+        canonicalRenderMode: getRenderMode(),
         currentMode: getRenderMode(),
         desktopSelectorValue: renderModeSelectEl?.value,
         mobileSelectorValue: renderModeMobileSelectEl?.value,
@@ -5155,7 +5174,11 @@ First failing boundary: NONE</pre>
         authoritativeSelectorValue: getAuthoritativeRenderSelector()?.value,
         selectorIsAuthoritative: Boolean(getAuthoritativeRenderSelector()),
         selectorChangeLastReceived: renderSelectorChangeLastReceived,
-        selectorChangeSource: renderSelectorChangeSource
+        selectorChangeSource: renderSelectorChangeSource,
+        datasetAvatarPresentation: document.getElementById("workoutPresentation")?.dataset.avatarPresentation,
+        videoComputedVisibility: videoEl ? getComputedStyle(videoEl).visibility : "unavailable",
+        overlayComputedVisibility: canvasEl ? getComputedStyle(canvasEl).visibility : "unavailable",
+        avatarComputedVisibility: avatar3dCanvasEl ? getComputedStyle(avatar3dCanvasEl).visibility : "unavailable"
       }),
       setAvatarLabel: setAvatarAssetStatus
     });
@@ -5179,19 +5202,22 @@ First failing boundary: NONE</pre>
         startDefineExercise
       }
     });
-    renderModeSelectEl.onchange = () => {
-      renderSelectorChangeLastReceived = renderModeSelectEl.value;
-      renderSelectorChangeSource = renderModeSelectEl.id;
-      applyRenderModeSelection(renderModeSelectEl.value, { persist: true, source: "user" });
-    };
+    renderModeSelectEl.addEventListener("change", (event) => {
+      renderSelectorChangeLastReceived = event.currentTarget.value;
+      renderSelectorChangeSource = event.currentTarget.id;
+    });
     window.addEventListener("pagehide", disposeLiveAvatarMirror, { once: true });
     if (renderModeMobileSelectEl) {
-      renderModeMobileSelectEl.onchange = () => {
-        renderSelectorChangeLastReceived = renderModeMobileSelectEl.value;
-        renderSelectorChangeSource = renderModeMobileSelectEl.id;
-        applyRenderModeSelection(renderModeMobileSelectEl.value, { persist: true, source: "mobile" });
-      };
+      renderModeMobileSelectEl.addEventListener("change", (event) => {
+        renderSelectorChangeLastReceived = event.currentTarget.value;
+        renderSelectorChangeSource = event.currentTarget.id;
+      });
     }
+    window.WorkoutPresentationState?.bindRenderModeSelectors({
+      desktopSelector: renderModeSelectEl,
+      mobileSelector: renderModeMobileSelectEl,
+      applyRenderMode: applyRenderModeSelection
+    });
     if (avatarStageMobileSelectEl) {
       avatarStageMobileSelectEl.onchange = () => {
         applyAvatarStageMode(avatarStageMobileSelectEl.value, { persist: true });
