@@ -128,6 +128,16 @@
       min-width: 0;
       box-sizing: border-box;
     }
+    /* Render-mode presentation is projected by the canonical
+       data-avatar-presentation state. Hiding these layers does not alter the
+       capture element, its stream, or the pose pipeline that reads from it. */
+    #workoutPresentation[data-avatar-presentation="avatar_only"] {
+      background: linear-gradient(135deg, #090909 0%, #1b1812 24%, #3f3017 52%, #8b681f 73%, #c6a13a 88%, #17130c 100%);
+    }
+    #workoutPresentation[data-avatar-presentation="avatar_only"] #video,
+    #workoutPresentation[data-avatar-presentation="avatar_only"] #overlay {
+      visibility: hidden !important;
+    }
     .camera-fs-actions {
       position: absolute;
       top: 10px;
@@ -2675,6 +2685,8 @@ First failing boundary: NONE</pre>
 
     function applyLiveAvatarRenderPresentation(mode) {
       const avatarVisible = mode === "avatar_overlay" || mode === "avatar_only";
+      const presentation = document.getElementById("workoutPresentation");
+      if (presentation) presentation.dataset.avatarPresentation = mode;
       setAvatar3dCanvasVisibility(avatarVisible);
       setPersonLayerSuppressed(mode === "avatar_only");
       if (canvasEl) canvasEl.style.visibility = mode === "avatar_only" ? "hidden" : "visible";
@@ -4697,7 +4709,7 @@ First failing boundary: NONE</pre>
       const modeMap = {
         camera: { videoVisible: true, skeletonVisible: true, avatar3dVisible: false, personSuppressed: false },
         avatar_overlay: { videoVisible: true, skeletonVisible: true, avatar3dVisible: true, personSuppressed: false },
-        avatar_only: { videoVisible: true, skeletonVisible: false, avatar3dVisible: true, personSuppressed: true }
+        avatar_only: { videoVisible: false, skeletonVisible: false, avatar3dVisible: true, personSuppressed: true }
       };
       const modeExpected = modeMap[renderMode] || modeMap.camera;
       const actualPersonSuppressed = stylesVideo?.visibility === "hidden";
