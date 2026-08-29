@@ -973,7 +973,7 @@ CREATE CLICKED: no</pre>
   <script src="/backend-read.js?v=20260425"></script>
   <script src="/session-write.js?v=20260425"></script>
   <script src="/workout-performance-runtime.js?v=2026-08-27-mobile-camera-layout-containment-v21"></script>
-  <script src="/pose-runtime.js?v=2026-08-28-avatar-mobile-stability-v2"></script>
+  <script src="/pose-runtime.js?v=2026-08-29-ios-webgl-backend-v1"></script>
   <script src="/assessment-runtime.js?v=20260507"></script>
   <script src="/rep-runtime.js?v=20260506"></script>
   <script src="/rep-analysis-runtime.js?v=20260506"></script>
@@ -3053,36 +3053,7 @@ CREATE CLICKED: no</pre>
         window.__liveWorkoutBreakpoints?.markPass?.("detector-ready", { source: "PoseRuntime.initMoveNetDetector", detectorReady: Boolean(detector) });
         return detector;
       }
-      await window.__ensurePoseRuntime();
-      try {
-        await tf.setBackend(mobileDevice ? "cpu" : "webgl");
-      } catch (err) {
-        console.warn("[detector-init] preferred backend unavailable, attempting cpu backend", err);
-        await tf.setBackend("cpu");
-      }
-      await tf.ready();
-      if (typeof poseDetection === "undefined") {
-        console.error("PoseDetection failed to load.");
-        trackingCapabilities.hasMoveNet = false;
-        logTrackerCapabilities();
-        window.__liveWorkoutBreakpoints?.markFail?.("detector-ready", new Error("poseDetection library unavailable"), { source: "initDetector" });
-        return null;
-      }
-      detector = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-      );
-      trackingCapabilities.hasMoveNet = true;
-      const detectorInitMs = Math.round(performance.now() - detectorInitStartedAt);
-      markPerfMetric("cameraBootMs", detectorInitMs);
-      trackPilotEvent("app_loaded", {
-        detectorInitMs,
-        tfBackend: tf.getBackend?.() || "unknown"
-      });
-      logTrackerCapabilities();
-      console.log("[POSE_RUNTIME] MoveNet detector created by legacy bridge.");
-      window.__liveWorkoutBreakpoints?.markPass?.("detector-ready", { source: "legacy initDetector", detectorReady: Boolean(detector), tfBackend: tf.getBackend?.() || "unknown" });
-      return detector;
+      throw new Error('PoseRuntime.initMoveNetDetector is required for authoritative backend selection');
       } catch (error) {
         window.__liveWorkoutBreakpoints?.markFail?.("detector-ready", error, { source: "initDetector" });
         throw error;

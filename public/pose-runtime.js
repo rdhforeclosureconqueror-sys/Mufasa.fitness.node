@@ -28,6 +28,7 @@
     framesAttempted: 0,
     framesSuccessful: 0,
     framesFailed: 0,
+    inferenceOpportunitiesSkipped: 0,
     lastInferenceMs: null,
     inferenceDurations: [],
     inferenceCompletionIntervals: [],
@@ -84,6 +85,60 @@
     return sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * fraction))];
   }
   function recordSample(list, value, limit = 120) { if (Number.isFinite(value)) { list.push(value); if (list.length > limit) list.splice(0, list.length - limit); } }
+
+  function backendRegistered(tfRuntime, name) {
+    try {
+      if (typeof tfRuntime.findBackendFactory === 'function') return Boolean(tfRuntime.findBackendFactory(name));
+      return Boolean(tfRuntime.engine?.().registryFactory?.[name]);
+    } catch (_) { return false; }
+  }
+
+  async function probeActiveBackend(tfRuntime) {
+    if (typeof tfRuntime.scalar !== 'function') throw new Error('TensorFlow scalar API unavailable for backend probe');
+    const value = tfRuntime.scalar(3);
+    try {
+      const data = await value.data();
+      if (Number(data?.[0]) !== 3) throw new Error('backend probe returned an unexpected value');
+    } finally { value.dispose?.(); }
+  }
+
+  async function selectInferenceBackend(tfRuntime, trace = {}) {
+    const startedAt = global.performance?.now?.() ?? Date.now();
+    trace.backendPrimaryRequested = 'webgl';
+    trace.backendRequested = 'webgl';
+    trace.tfReadyEntered = true;
+    await tfRuntime.ready();
+    trace.tfReadyResolved = true;
+    trace.backendPrimaryAvailable = backendRegistered(tfRuntime, 'webgl');
+    let reason = '';
+    try {
+      if (!trace.backendPrimaryAvailable) throw new Error('webgl backend not registered');
+      trace.backendPrimarySetResult = await tfRuntime.setBackend('webgl');
+      trace.backendSetResult = trace.backendPrimarySetResult;
+      if (trace.backendPrimarySetResult !== true) throw new Error('tf.setBackend("webgl") returned false');
+      await tfRuntime.ready();
+      if (tfRuntime.getBackend?.() !== 'webgl') throw new Error(`active backend is ${tfRuntime.getBackend?.() || 'unknown'}, not webgl`);
+      await probeActiveBackend(tfRuntime);
+      trace.backendPrimaryProbePassed = true;
+    } catch (error) {
+      reason = error?.message || String(error);
+      trace.backendPrimaryProbePassed = false;
+      trace.backendFallbackUsed = true;
+      trace.backendFallbackReason = reason;
+      const cpuAvailable = backendRegistered(tfRuntime, 'cpu');
+      if (!cpuAvailable) throw new Error(`WebGL failed (${reason}); cpu backend not registered`);
+      const cpuSet = await tfRuntime.setBackend('cpu');
+      if (cpuSet !== true) throw new Error(`WebGL failed (${reason}); tf.setBackend("cpu") returned false`);
+      await tfRuntime.ready();
+      if (tfRuntime.getBackend?.() !== 'cpu') throw new Error(`WebGL failed (${reason}); active fallback backend is not cpu`);
+    }
+    trace.backendFallbackUsed = trace.backendFallbackUsed === true;
+    trace.backendFallbackReason ||= 'NONE';
+    trace.backendFinalActive = tfRuntime.getBackend?.() || 'unknown';
+    trace.backendActive = trace.backendFinalActive;
+    trace.backendSelectionDurationMs = Math.round(((global.performance?.now?.() ?? Date.now()) - startedAt) * 10) / 10;
+    return trace.backendFinalActive;
+  }
 
   function createTemporalPoseTracker(config = {}) {
     const settings = { ...TRACKING, ...config };
@@ -361,10 +416,11 @@
     const panel = global.document?.getElementById?.('poseTrackingProofValues'); if (panel) panel.textContent = lines.join('\n');
     const performancePanel = global.document?.getElementById?.('posePerformanceProofValues');
     if (performancePanel) performancePanel.textContent = [
-      `Current backend: ${state.detectorBackend || 'unavailable'}`, `MoveNet enableSmoothing configured: ${state.movenetSmoothingConfigured ? 'YES' : 'NO'}`, '',
+      `Current backend: ${state.detectorBackend || 'unavailable'}`, `Backend active during inference: ${trace.backendActiveDuringInference || 'unavailable'}`, `MoveNet enableSmoothing configured: ${state.movenetSmoothingConfigured ? 'YES' : 'NO'}`, '',
       `Inference input: ${state.inferenceInputWidth || 'unavailable'}x${state.inferenceInputHeight || 'unavailable'} (${state.inferenceResolutionMode})`, `Performance mode: ${state.livePerformanceMode}`, `Paused subsystems: ${state.pausedSubsystems.join(', ') || 'none'}`, `Throttled subsystems: ${state.throttledSubsystems.join(', ') || 'none'}`, `Completed subsystems: ${state.completedSubsystems.join(', ') || 'none'}`, `Diagnostic UI Hz: ${state.diagnosticUiHz}`, '',
       `estimatePoses wall duration last: ${state.lastInferenceMs ?? 'unavailable'}ms`, `Inference duration rolling average: ${inferenceAverage == null ? 'unavailable' : inferenceAverage.toFixed(1)}ms`, `Inference duration p50 approximation: ${percentile(state.inferenceDurations, .50)?.toFixed?.(1) ?? 'unavailable'}ms`, `Inference duration p95 approximation: ${percentile(state.inferenceDurations, .95)?.toFixed?.(1) ?? 'unavailable'}ms`,
       `Time between completed inference generations: ${completionAverage == null ? 'unavailable' : completionAverage.toFixed(1)}ms`, `Inferred inference FPS: ${completionAverage ? (1000 / completionAverage).toFixed(2) : 'unavailable'}`, `Measured display FPS: ${overlayAverage ? (1000 / overlayAverage).toFixed(1) : 'unavailable'}`, `Last animation-frame interval: ${state.lastAnimationFrameInterval == null ? 'unavailable' : state.lastAnimationFrameInterval.toFixed(1)}ms`, '',
+      `Inference frames attempted: ${state.framesAttempted}`, `Inference frames successful: ${state.framesSuccessful}`, `Inference frames failed: ${state.framesFailed}`, `Inference opportunities skipped (document hidden): ${state.inferenceOpportunitiesSkipped}`, '',
       `Raw pose generation: ${state.inferenceGeneration}`, `Display tracker generation: ${state.displayTrackerGeneration}`, `Display render generation: ${state.displayRenderGeneration}`, `Animation frame count: ${state.animationFrameCount}`, `Display loop running independently: ${state.displayLoopRunning ? 'YES' : 'NO'}`,
       `Latest inference age: ${latestInferenceAge == null ? 'unavailable' : latestInferenceAge.toFixed(1)}ms`, `Frames rendered since last inference: ${state.framesRenderedSinceLastInference}`, `Frames rendered during previous inference interval: ${state.framesRenderedDuringPreviousInferenceInterval}`, `Maximum frames rendered between inferences: ${state.maxFramesRenderedBetweenInferences}`, `Display generation > inference generation: ${state.displayRenderGeneration > state.inferenceGeneration ? 'YES' : 'NOT YET'}`, '',
       `Currently tracked joints: ${state.trackedJointCount}`, `Currently coasting joints: ${state.coastingJointCount}`, `Currently reacquiring joints: ${state.reacquiringJointCount}`, `Currently lost joints: ${state.lostJointCount}`, `Oldest prediction age: ${state.oldestPredictionAge}ms`,
@@ -391,7 +447,7 @@
       `Pose bootstrap requested: ${yn(trace.poseBootstrapRequested)}`, `Pose bootstrap request generation: ${trace.poseBootstrapRequestGeneration || 0}`, `Pose bootstrap request source: ${trace.poseBootstrapRequestSource || 'none'}`, `Pose bootstrap skipped reason: ${trace.poseBootstrapSkippedReason || 'NONE'}`, `Authoritative camera runtime ID: ${trace.authoritativeCameraRuntimeId || 'none'}`, `Authoritative MediaStream ID: ${trace.authoritativeMediaStreamId || 'none'}`, `Authoritative video element ID: ${trace.authoritativeVideoElementId || 'none'}`, `Authoritative video srcObject stream ID: ${trace.authoritativeVideoSrcObjectStreamId || 'none'}`, `Authoritative video stream matches active stream: ${yn(trace.authoritativeVideoStreamMatchesActiveStream)}`, `Camera active predicate inputs: ${trace.cameraActivePredicateInputs || 'none'}`, `Camera active predicate: ${yn(trace.cameraActivePredicate)}`, `TensorFlow bootstrap function entered: ${yn(trace.tfBootstrapFunctionEntered)}`, `TensorFlow bootstrap entry count: ${trace.tfBootstrapEntryCount || 0}`, '',
       `TensorFlow loader requested: ${yn(trace.tfLoaderRequested)}`, `TensorFlow script/module URL: ${(trace.dependencyAttempts || []).map((item) => `${item.url} [${item.status}]`).join(', ') || 'none'}`, `TensorFlow load resolved: ${yn(trace.tfLoadResolved)}`, `TensorFlow load failed: ${yn(trace.tfLoadFailed)}`, `window.tf present: ${yn(trace.windowTfPresent)}`, `TensorFlow version: ${trace.tfVersion || 'unavailable'}`, '',
       `tf.ready entered: ${yn(trace.tfReadyEntered)}`, `tf.ready resolved: ${yn(trace.tfReadyResolved)}`, `tf.ready rejected: ${yn(trace.tfReadyRejected)}`, '',
-      `Backend requested: ${trace.backendRequested || 'none'}`, `Backend set result: ${trace.backendSetResult == null ? 'none' : String(trace.backendSetResult)}`, `Backend active: ${trace.backendActive || 'unavailable'}`, '',
+      `Backend primary requested: ${trace.backendPrimaryRequested || 'none'}`, `Backend primary available: ${yn(trace.backendPrimaryAvailable)}`, `Backend primary set result: ${trace.backendPrimarySetResult == null ? 'none' : String(trace.backendPrimarySetResult)}`, `Backend primary probe passed: ${yn(trace.backendPrimaryProbePassed)}`, `Backend fallback used: ${yn(trace.backendFallbackUsed)}`, `Backend fallback reason: ${trace.backendFallbackReason || 'NONE'}`, `Backend final active: ${trace.backendFinalActive || 'unavailable'}`, `Backend selection duration: ${trace.backendSelectionDurationMs ?? 'unavailable'}ms`, `Backend active at detector creation: ${trace.backendActiveAtDetectorCreation || 'unavailable'}`, `Backend active during inference: ${trace.backendActiveDuringInference || 'unavailable'}`, '',
       `Pose detection library present: ${yn(trace.poseDetectionPresent)}`, `MoveNet detector create entered: ${yn(trace.detectorCreateEntered)}`, `MoveNet detector create resolved: ${yn(trace.detectorCreateResolved)}`, `MoveNet detector create rejected: ${yn(trace.detectorCreateRejected)}`, `MoveNet model/config: ${trace.detectorModelConfig || 'none'}`, '',
       `Inference loop start entered: ${yn(trace.inferenceLoopStartEntered)}`, `Inference loop running: ${yn(state.loopRunning)}`, `estimatePoses entered count: ${trace.estimatePosesEnteredCount || 0}`, `estimatePoses resolved count: ${trace.estimatePosesResolvedCount || 0}`, `estimatePoses rejected count: ${trace.estimatePosesRejectedCount || 0}`, '',
       `First failing boundary: ${trace.firstFailingBoundary || 'NONE'}`, `Last bootstrap error name: ${trace.lastErrorName || 'NONE'}`, `Last bootstrap error message: ${trace.lastErrorMessage || 'NONE'}`, `Last bootstrap error timestamp: ${trace.lastErrorTimestamp || 'NONE'}`
@@ -460,20 +516,15 @@
       }
 
       trace.windowTfPresent = Boolean(tfRuntime); trace.tfVersion = tfRuntime?.version?.tfjs || tfRuntime?.version_core || '';
-      trace.poseDetectionPresent = Boolean(poseRuntime); trace.backendRequested = mobileDevice ? 'cpu' : 'webgl';
+      trace.poseDetectionPresent = Boolean(poseRuntime);
       try {
-        trace.backendSetResult = await tfRuntime.setBackend(trace.backendRequested);
-      } catch (err) {
-        console.warn('[POSE_RUNTIME] preferred backend unavailable, attempting cpu backend', err);
-        trace.backendRequested = 'cpu'; trace.backendSetResult = await tfRuntime.setBackend('cpu');
-      }
-      trace.tfReadyEntered = true;
-      try { await tfRuntime.ready(); trace.tfReadyResolved = true; } catch (error) { trace.tfReadyRejected = true; global.__recordPoseBootstrapFailure?.('TF_READY_REJECTED', error); throw error; }
+        await selectInferenceBackend(tfRuntime, trace);
+      } catch (error) { trace.tfReadyRejected = true; global.__recordPoseBootstrapFailure?.('TF_READY_REJECTED', error); throw error; }
       state.tfReady = true;
-      trace.backendActive = tfRuntime.getBackend?.() || 'unknown';
 
       const detectorConfig = { modelType: poseRuntime.movenet.modelType.SINGLEPOSE_LIGHTNING, enableSmoothing: true };
       trace.detectorCreateEntered = true; trace.detectorModelConfig = 'MoveNet SinglePose Lightning; enableSmoothing=true';
+      trace.backendActiveAtDetectorCreation = tfRuntime.getBackend?.() || 'unknown';
       const detector = await poseRuntime.createDetector(
         poseRuntime.SupportedModels.MoveNet,
         detectorConfig
@@ -683,7 +734,7 @@
         return;
       }
       try {
-        if (global.document?.hidden) { frameId = requestAnimationFrame(frame); return; }
+        if (global.document?.hidden) { state.inferenceOpportunitiesSkipped += 1; frameId = requestAnimationFrame(frame); return; }
         state.sourceConnected = Boolean(video?.isConnected);
         state.sourceDimensions = `${video?.videoWidth || video?.clientWidth || 0}x${video?.videoHeight || video?.clientHeight || 0}`;
         state.inferenceInputWidth=Number(video?.videoWidth||video?.clientWidth||0);state.inferenceInputHeight=Number(video?.videoHeight||video?.clientHeight||0);
@@ -694,6 +745,7 @@
         if (global.__workoutPerformance) global.__workoutPerformance.poseInferenceCalls += 1;
         const inferenceStartedAt = global.performance?.now?.() ?? Date.now();
         trace.estimatePosesEnteredCount = (trace.estimatePosesEnteredCount || 0) + 1;
+        trace.backendActiveDuringInference = global.tf?.getBackend?.() || state.detectorBackend || 'unknown';
         let poses;
         try { poses = await detector.estimatePoses(video, { flipHorizontal: true }); trace.estimatePosesResolvedCount = (trace.estimatePosesResolvedCount || 0) + 1; }
         catch (error) { trace.estimatePosesRejectedCount = (trace.estimatePosesRejectedCount || 0) + 1; global.__recordPoseBootstrapFailure?.('ESTIMATE_POSES_REJECTED', error); throw error; }
@@ -774,6 +826,7 @@
 
   global.PoseRuntime = {
     initMoveNetDetector,
+    selectInferenceBackend,
     bootstrapCamera,
     initOptionalTrackers,
     normalizePosePacket,

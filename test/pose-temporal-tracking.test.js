@@ -104,7 +104,8 @@ test('tracker resets on stop and detector configuration explicitly enables MoveN
   const { api } = load(); let callback; let config;
   const loop = api.startPoseLoop({ detector: { estimatePoses: async () => [raw(.9, 1, 1)] }, video: { id:'video', isConnected:true, videoWidth:100, videoHeight:100 }, requestAnimationFrame(fn) { callback = fn; return 1; }, cancelAnimationFrame() {} });
   await callback(); assert.equal(api.getState().displayTrackerGeneration, 1); loop.stop(); assert.equal(api.getState().displayTrackerGeneration, 0);
-  const tf = { setBackend: async () => true, ready: async () => {}, getBackend: () => 'cpu', version: { tfjs: '4.14.0' } };
+  let backend = 'cpu';
+  const tf = { findBackendFactory: () => true, setBackend: async (name) => { backend = name; return true; }, ready: async () => {}, getBackend: () => backend, scalar: value => ({ data: async () => [value], dispose() {} }), version: { tfjs: '4.14.0' } };
   const poseDetection = { SupportedModels: { MoveNet: 'MoveNet' }, movenet: { modelType: { SINGLEPOSE_LIGHTNING: 'lightning' } }, createDetector: async (_model, value) => { config = value; return {}; } };
   await api.initMoveNetDetector({ tf, poseDetection });
   assert.equal(config.modelType, 'lightning'); assert.equal(config.enableSmoothing, true); assert.equal(api.getState().movenetSmoothingConfigured, true);
