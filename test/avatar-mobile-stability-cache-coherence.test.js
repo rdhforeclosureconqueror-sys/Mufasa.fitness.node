@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, '../public/workout.html'), 'utf8');
 const alternateWorkout = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-const BUILD = '2026-08-29-full-body-retarget-v1';
+const BUILD = '2026-08-29-full-body-loss-recovery-v1';
 const POSE_BACKEND_BUILD = '2026-08-29-ios-webgl-backend-v1';
 const ALIGNED_ASSETS = [
   '/motion/avaturn-live-pose-solver.js',

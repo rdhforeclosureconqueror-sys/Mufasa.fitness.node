@@ -23,3 +23,5 @@ test("sequential MoveNet frames drive the full bilateral rendered hierarchy and 
   e.emit({posePacket:packet(.05,1100)});mirror.update(.1,1100);assert.equal(mirror.solver.state,"LOST");e.emit({posePacket:packet(.95,1200)});mirror.update(.1,1200);assert.equal(mirror.solver.state,"TRACKING");
   mirror.dispose();assert.equal(e.listeners.size,0);
 });
+
+test("lost tracking never hides the canvas or detaches the model",()=>{const e=new Events(),r=setup(),scene=new THREE.Scene(),canvas={style:{display:"block",visibility:"visible"}},session={THREE,avatar:r.avatar,scene,canvas,unloadMotion(){}};scene.add(r.avatar);const mirror=new LiveAvatarMirror({eventTarget:e,session,solverOptions:{holdMs:1}});mirror.solver.lastGoodAt=1;mirror.update(.1,100);const proof=mirror.diagnostics();assert.equal(proof.solverState,"LOST");assert.equal(proof.avatarCanvasDisplay,"block");assert.equal(proof.avatarCanvasVisibility,"visible");assert.equal(proof.avatarModelVisible,true);assert.equal(proof.avatarModelAttachedToScene,true);assert.equal(r.avatar.parent,scene);mirror.dispose();});
