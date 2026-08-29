@@ -31,7 +31,7 @@
   <script src="/runtime-state.js?v=2026-08-27-movenet-visible-audible-v22"></script>
   <script src="/workout-presentation-state.js?v=2026-08-29-render-mode-wiring-v1"></script>
   <script src="/runtime-bridges.js?v=20260506"></script>
-  <script src="/auth-state-runtime.js?v=20260824-global-nav-production-repair-v3"></script>
+  <script src="/auth-state-runtime.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
   <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
   <!-- The canonical client must exist before any deferred workout-source adapter. -->
   <script src="/api-client.js?v=20260823-workout-hub"></script>
@@ -3631,7 +3631,7 @@ First failing boundary: NONE</pre>
       return cleaned || "user";
     }
 
-    // Auth state ownership is delegated to /auth-state-runtime.js.
+    // Auth state ownership is delegated to /auth-state-runtime.js?v=2026-08-29-auth-readiness-propagation-v1.
 
     function onLoginUI(profile) {
       return window.AppHydrationRuntime?.renderProfileShell?.(profile);

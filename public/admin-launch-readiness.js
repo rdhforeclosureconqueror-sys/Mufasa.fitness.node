@@ -23,6 +23,7 @@
   function renderProof() {
     const surface = document.querySelector("#bootstrap-status");
     if (!surface) return;
+    const authProof = global.AuthStateRuntime?.getPropagationProof?.() || {};
     surface.innerHTML = `<details open><summary>Avatar Development Board status</summary><dl class="bootstrap-grid">
       <dt>Auth runtime</dt><dd>${esc(proof.authRuntime)}</dd><dt>Session restored</dt><dd>${esc(proof.sessionRestored)}</dd>
       <dt>Authenticated</dt><dd>${esc(proof.authenticated)}</dd><dt>Role</dt><dd>${esc(proof.role)}</dd>
@@ -31,6 +32,20 @@
       <dt>Avatar board received</dt><dd>${esc(proof.avatarReceived)}</dd><dt>Avatar card count</dt><dd>${esc(proof.avatarCount)}</dd>
       <dt>Expected avatar card count</dt><dd>${proof.expectedCount}</dd><dt>Render</dt><dd>${esc(proof.render)}</dd>
       <dt>Failure stage</dt><dd>${esc(proof.failureStage)}</dd><dt>Last error</dt><dd>${esc(proof.lastError)}</dd>
+    </dl></details><details open><summary>Auth propagation proof</summary><dl class="bootstrap-grid">
+      <dt>Auth runtime loaded</dt><dd>${authProof.authRuntimeLoaded ? "YES" : "NO"}</dd><dt>Auth bundle</dt><dd>${esc(authProof.bundle || "unknown")}</dd>
+      <dt>Storage inspection completed</dt><dd>${authProof.storageInspectionCompleted ? "YES" : "NO"}</dd><dt>Session token present</dt><dd>${authProof.sessionTokenPresent ? "YES" : "NO"}</dd>
+      <dt>Persistent token present</dt><dd>${authProof.persistentTokenPresent ? "YES" : "NO"}</dd><dt>Persistence consent</dt><dd>${esc(authProof.persistenceConsent || "NONE")}</dd>
+      <dt>Selected token source</dt><dd>${esc(authProof.selectedTokenSource || "none")}</dd><dt>Stored token read</dt><dd>${authProof.storedTokenRead ? "YES" : "NO"}</dd>
+      <dt>Stored token format valid</dt><dd>${authProof.storedTokenFormatValid ? "YES" : "NO"}</dd><dt>Stored token expiry</dt><dd>${esc(authProof.storedTokenExpiry || "UNKNOWN")}</dd>
+      <dt>Restore entered</dt><dd>${authProof.restoreEntered ? "YES" : "NO"}</dd><dt>Restore attempt count</dt><dd>${esc(authProof.restoreAttemptCount ?? 0)}</dd>
+      <dt>Restore validation request attempted</dt><dd>${authProof.validationRequestAttempted ? "YES" : "NO"}</dd><dt>Restore validation route</dt><dd>${esc(authProof.validationRoute || "NONE")}</dd>
+      <dt>Restore validation HTTP status</dt><dd>${esc(authProof.validationHttpStatus ?? "NONE")}</dd><dt>Restore validation response received</dt><dd>${authProof.validationResponseReceived ? "YES" : "NO"}</dd>
+      <dt>Canonical APP_AUTH populated</dt><dd>${authProof.canonicalAppAuthPopulated ? "YES" : "NO"}</dd><dt>Canonical user populated</dt><dd>${authProof.canonicalUserPopulated ? "YES" : "NO"}</dd>
+      <dt>Canonical token populated</dt><dd>${authProof.canonicalTokenPopulated ? "YES" : "NO"}</dd><dt>auth:changed fired</dt><dd>${authProof.authChangedFired ? "YES" : "NO"}</dd>
+      <dt>auth:ready fired</dt><dd>${authProof.authReadyFired ? "YES" : "NO"}</dd><dt>whenReady resolved</dt><dd>${authProof.whenReadyResolved ? "YES" : "NO"}</dd>
+      <dt>whenReady reason</dt><dd>${esc(authProof.whenReadyReason || "unknown")}</dd><dt>First failing boundary</dt><dd>${esc(authProof.firstFailingBoundary || "UNKNOWN")}</dd>
+      <dt>Last safe error</dt><dd>${esc(authProof.lastSafeError || "None")}</dd>
     </dl></details>`;
   }
   function fail(message, stage, options = {}) {
@@ -93,12 +108,13 @@
     const signIn = error.authState === "unauthenticated" || error.status === 401 || error.authState === "missing-token";
     surface.innerHTML = `<section class="failure" role="alert"><h2>Avatar Development Board unavailable</h2><p>${esc(proof.lastError)}</p>${signIn ? `<a href="${esc(global.AuthNavigation?.loginUrl(location.pathname) || "/login.html")}">Sign in</a>` : '<button type="button" data-retry>Retry</button>'}</section>`;
   }
-  async function load() {
+  async function load(options = {}) {
     const surface = document.querySelector("#board");
     surface.innerHTML = '<p role="status">Restoring your Pocket PT session…</p>';
     proof.authRuntime = global.AuthStateRuntime?.whenReady && global.AuthStateRuntime?.getCanonicalAuthState ? "READY" : "FAILED";
     renderProof();
     if (proof.authRuntime !== "READY" || !global.AuthNavigation?.requireUser) fail("Pocket PT authentication is unavailable. Retry this page.", "AUTH");
+    if (options.forceRestore === true) await global.AuthStateRuntime.restoreCanonicalAuthState({ force: true, reason: "readiness-board-retry" });
     const result = await global.AuthNavigation.requireUser({ redirect: false });
     proof.sessionRestored = result.retryable ? "NO" : "YES";
     if (!result.ok) {
@@ -121,7 +137,7 @@
   }
 
   document.addEventListener("click", event => {
-    if (event.target.closest("[data-retry]")) { load().catch(showFailure); return; }
+    if (event.target.closest("[data-retry]")) { load({ forceRestore: true }).catch(showFailure); return; }
     const tab = event.target.closest("[data-board]");
     if (tab) { board = tab.dataset.board; document.querySelectorAll("[data-board]").forEach(item => item.classList.toggle("active", item === tab)); try { render(); } catch (error) { showFailure(Object.assign(error, { stage: "RENDER" })); } }
     const id = event.target.closest("[data-edit]")?.dataset.edit;
