@@ -2,6 +2,8 @@ node_modules
 .env
 dist/
 data/youth-fitness/
+# Local readiness runtime state (human/operational state belongs in OPS_DIR).
+data/ops/
 
 # Local Python and notebook artifacts (never production inputs)
 venv/

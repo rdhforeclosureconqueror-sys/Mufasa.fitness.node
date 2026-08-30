@@ -8,6 +8,8 @@ Before completion, update every affected card with correlated changed-file evide
 
 The CLI is machine-authority only. Agents may record implementation completion, repository/file/commit/PR evidence, automated PASS/FAIL, and browser technical evidence. **Agents must never self-approve visual quality, physical-device acceptance, movement naturalness, UX acceptance, or any human-required criterion.** Only the authenticated, authorized Admin UI/API may record human verification.
 
+Development-task definitions and machine evidence are repository-backed in `data/readiness/`; operational status, CURRENT selection, QA, history, and all human state are OPS-backed. Always use `npm run readiness:update -- ...`; never commit generated `data/ops/` state.
+
 If significant tracked work has no applicable card, create a `canonical:false` development card with the CLI. The 20 canonical Avatar requirements, IDs, acceptance rules, and human gates are immutable and cannot be replaced by development cards.
 
 An implementation task is not complete until applicable readiness evidence is updated. Run `npm run readiness:validate` before reporting completion.
