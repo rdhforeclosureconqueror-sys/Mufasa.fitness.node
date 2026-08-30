@@ -11,14 +11,14 @@ function run(argv=process.argv.slice(2),env=process.env){
  const allowed=new Set(["create","start","select","evidence","block","unblock","request-human"]);if(!allowed.has(o.action)){if(/^human[-_]verify$/.test(o.action))throw new Error("Human verification must be recorded through an authenticated authorized admin interaction.");throw new Error(`unsupported_action:${o.action}`)}
  if(o.actorType||o["actor-type"]||o.actor||o.humanVerified||o["human-verified"])throw new Error("Readiness CLI is machine-authority only; actor and human verification inputs are forbidden.");
  if(o.action!=="create"&&!o.card)throw new Error("--card is required");
- const opsFile=env.READINESS_OPS_FILE||path.join(env.OPS_DIR||path.join(root,"data","ops"),"launch-readiness.json"),auditFile=env.READINESS_EVIDENCE_FILE||path.join(root,"data/readiness/development-evidence.json");
- const opsBackup=fs.existsSync(opsFile)?fs.readFileSync(opsFile):null,auditBackup=fs.existsSync(auditFile)?fs.readFileSync(auditFile):null;
- const service=createLaunchReadinessService({filePath:opsFile,canonicalMatrixPath:env.READINESS_MATRIX_FILE||path.join(root,"data/launch/feature-readiness-matrix.v1.json")});
+ const opsFile=env.READINESS_OPS_FILE||path.join(env.OPS_DIR||path.join(root,"data","ops"),"launch-readiness.json"),auditFile=env.READINESS_EVIDENCE_FILE||path.join(root,"data/readiness/development-evidence.json"),definitionsFile=env.READINESS_DEVELOPMENT_CARDS_FILE||path.join(root,"data/readiness/development-cards.json");
+ const opsBackup=fs.existsSync(opsFile)?fs.readFileSync(opsFile):null,auditBackup=fs.existsSync(auditFile)?fs.readFileSync(auditFile):null,definitionsBackup=fs.existsSync(definitionsFile)?fs.readFileSync(definitionsFile):null;
+ const service=createLaunchReadinessService({filePath:opsFile,canonicalMatrixPath:env.READINESS_MATRIX_FILE||path.join(root,"data/launch/feature-readiness-matrix.v1.json"),developmentCardsPath:definitionsFile});
  const files=safeFiles(o.files),dependsOn=safeFiles(o.dependsOn),timestamp=new Date().toISOString(),taskId=o.task||o.taskId||null;
  try{
   let result,cardId=o.card;
   if(o.action==="create"){
-   result=service.create(o.board,{title:o.title,category:o.category,description:o.description,priority:o.priority,dependsOn,humanRequired:o.humanRequired==="true",workStarted:o.started==="true",current:o.current==="true",createdAt:timestamp});
+   result=service.create(o.board,{id:o.card,title:o.title,category:o.category,description:o.description,priority:o.priority,dependsOn,humanRequired:o.humanRequired==="true",workStarted:o.started==="true",current:o.current==="true",createdAt:timestamp,source:o.source||"readiness:update",taskId});
    cardId=result.boards[o.board].at(-1).id;
   }else{
    const patch={action:o.action==="request-human"?"evidence":o.action,note:o.note||(o.action==="request-human"?"Human verification requested":undefined),automated:o.result,files,prNumber:o.pr?Number(o.pr):undefined,commitSha:o.commit,sourceType:o.action==="request-human"?"human_verification_request":o.sourceType,codeComplete:o.codeComplete==="true"?true:undefined,actorType:"machine"};
@@ -28,7 +28,7 @@ function run(argv=process.argv.slice(2),env=process.env){
   audit.entries=Array.isArray(audit.entries)?audit.entries:[];audit.entries.push({operationId:crypto.randomUUID(),board:o.board,cardId,sourceType:o.action==="create"?"card_creation":(o.sourceType||"implementation"),taskId,files,automated:o.result||null,evidence:o.note||o.description||`${o.action} recorded`,prNumber:o.pr?Number(o.pr):null,commitSha:o.commit||null,timestamp});
   atomicJson(auditFile,audit);
   return{card,auditEntry:audit.entries.at(-1)};
- }catch(error){restore(opsFile,opsBackup);restore(auditFile,auditBackup);throw error}
+ }catch(error){restore(opsFile,opsBackup);restore(auditFile,auditBackup);restore(definitionsFile,definitionsBackup);throw error}
 }
 if(require.main===module){try{console.log(JSON.stringify(run(),null,2))}catch(error){console.error(error.message);process.exitCode=1}}
 module.exports={run,parse};

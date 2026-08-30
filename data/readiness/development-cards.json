@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "cards": [
+    {
+      "id": "avatar-development-phase-2-mobile-kanban-spatial-awareness-redesign",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Phase 2 mobile Kanban spatial awareness redesign",
+      "category": "KANBAN UX",
+      "description": "Compact shared cards, detail drawer, priority/status coding, CURRENT/NEXT context, collapsed diagnostics, and mobile lane navigation for Launch and Avatar boards.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-08-30T06:44:02.353Z",
+      "source": "readiness:update",
+      "taskId": "phase-2-mobile-kanban"
+    }
+  ]
+}
