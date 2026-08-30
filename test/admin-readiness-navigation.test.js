@@ -132,3 +132,12 @@ test("every global navigation document target is a frontend static asset", () =>
   for (const href of hrefs) assert.ok(fs.existsSync(path.join(__dirname, "../public", href.replace(/^\//, ""))), `${href} must exist on the static frontend host`);
   assert.match(source, /label:"Client Management",href:"\/admin-members\.html"/);
 });
+
+test("Client Management pins its changed runtime after canonical dependencies", () => {
+  const html = read("public/admin-members.html");
+  const scripts = ["runtime-config.js", "api-client.js", "auth-state-runtime.js", "admin-members.js", "global-nav.js"];
+  assert.match(html, /admin-members\.js\?v=2026-08-29-readiness-api-routing-v1/);
+  for (let index = 1; index < scripts.length; index++) {
+    assert.ok(html.indexOf(scripts[index - 1]) < html.indexOf(scripts[index]), `${scripts[index - 1]} must load before ${scripts[index]}`);
+  }
+});
