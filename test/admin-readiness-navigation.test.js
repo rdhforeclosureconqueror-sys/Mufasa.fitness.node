@@ -13,7 +13,7 @@ const launch = [{ id: "launch-one", category: "LAUNCH", title: "Launch-only card
 const validData = { summaries: { launch: { counts: { ...counts, BACKLOG: 1 }, remaining: 1 }, avatar: { counts, remaining: 20 } }, boards: { launch, avatar } };
 
 test("both board shells exist and use one coherent versioned bootstrap", () => {
-  const expected = "/admin-launch-readiness.js?v=2026-08-29-readiness-api-routing-v1";
+  const expected = "/admin-launch-readiness.js?v=2026-08-30-mobile-kanban-v2";
   for (const file of ["public/admin-launch-readiness.html", "public/admin-avatar-development.html"]) {
     const html = read(file);
     assert.match(html, /id="bootstrap-status"/);
@@ -140,4 +140,45 @@ test("Client Management pins its changed runtime after canonical dependencies", 
   for (let index = 1; index < scripts.length; index++) {
     assert.ok(html.indexOf(scripts[index - 1]) < html.indexOf(scripts[index]), `${scripts[index - 1]} must load before ${scripts[index]}`);
   }
+});
+
+test("Phase 2 compact shared renderer keeps technical reports out of cards", () => {
+  const source = read("public/admin-launch-readiness.js");
+  assert.match(source, /function compactCard/);
+  const compact = source.slice(source.indexOf("function compactCard"), source.indexOf("function render()"));
+  assert.match(compact, /priority-chip/);
+  assert.match(compact, /status-chip/);
+  assert.match(compact, /CURRENT/);
+  assert.match(compact, /NEXT/);
+  assert.match(compact, /DEVELOPMENT/);
+  assert.match(compact, /REQUIREMENT/);
+  assert.doesNotMatch(compact, /implementationState|implementationRef|machineEvidence|history/);
+  assert.match(source, /function openDetail/);
+  assert.match(source, /Machine evidence/);
+  assert.match(source, /Blocker \/ notes/);
+  assert.match(source, /Update evidence/);
+  assert.match(source, /detailOrigin\?\.focus/);
+});
+
+test("Phase 2 diagnostics and mobile lanes remain explicit and cache coherent", () => {
+  const source = read("public/admin-launch-readiness.js"), css = read("public/admin-launch-readiness.css");
+  assert.match(source, /System status:.*Healthy/);
+  assert.match(source, /<details \$\{ok\?"":"open"\}/);
+  assert.match(source, /data-lane/);
+  assert.match(source, /data-jump-current/);
+  assert.match(css, /html,body\{max-width:100%;overflow-x:hidden\}/);
+  assert.match(css, /@media\(max-width:700px\)/);
+  assert.match(css, /word-break:break-word/);
+  for (const file of ["public/admin-launch-readiness.html", "public/admin-avatar-development.html"]) {
+    const html = read(file);
+    assert.match(html, /id="card-detail"/);
+    assert.match(html, /admin-launch-readiness\.css\?v=2026-08-30-mobile-kanban-v2/);
+    assert.match(html, /admin-launch-readiness\.js\?v=2026-08-30-mobile-kanban-v2/);
+  }
+});
+
+test("canonical validation filters development cards before enforcing twenty", () => {
+  const source = read("public/admin-launch-readiness.js");
+  assert.match(source, /filter\(card => card\.canonical !== false\)/);
+  assert.match(source, /canonicalCards\.length !== proof\.expectedCount/);
 });

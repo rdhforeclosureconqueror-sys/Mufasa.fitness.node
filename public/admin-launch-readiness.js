@@ -11,6 +11,8 @@
     "ACCEPTANCE": 4
   });
   let state;
+  let activeLane;
+  let detailOrigin;
   let board = document.body.dataset.defaultBoard || "launch";
   const proof = {
     authRuntime: "FAILED", sessionRestored: "NO", authenticated: "NO", role: "unknown", tokenPresent: "NO",
@@ -22,36 +24,15 @@
   const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const effective = card => card.status === "DONE" && card.humanRequired && !card.humanVerified ? "HUMAN_TEST_REQUIRED" : card.status;
 
+  function healthy() { return proof.authRuntime === "READY" && proof.authenticated === "YES" && proof.backendReached === "YES" && Number(proof.httpStatus) === 200 && proof.payload === "VALID" && proof.render === "COMPLETE" && proof.failureStage === "NONE"; }
   function renderProof() {
-    const surface = document.querySelector("#bootstrap-status");
-    if (!surface) return;
-    const authProof = global.AuthStateRuntime?.getPropagationProof?.() || {};
-    surface.innerHTML = `<details open><summary>Avatar Development Board status</summary><dl class="bootstrap-grid">
-      <dt>Auth runtime</dt><dd>${esc(proof.authRuntime)}</dd><dt>Session restored</dt><dd>${esc(proof.sessionRestored)}</dd>
-      <dt>Authenticated</dt><dd>${esc(proof.authenticated)}</dd><dt>Role</dt><dd>${esc(proof.role)}</dd>
-      <dt>Token present</dt><dd>${esc(proof.tokenPresent)}</dd><dt>Readiness request</dt><dd>${esc(proof.request)}</dd>
-      <dt>Readiness request route</dt><dd>${esc(proof.requestRoute)}</dd><dt>Resolved readiness origin</dt><dd>${esc(proof.resolvedOrigin)}</dd>
-      <dt>Resolved readiness URL</dt><dd>${esc(proof.resolvedUrl)}</dd><dt>Frontend origin</dt><dd>${esc(proof.frontendOrigin)}</dd>
-      <dt>Cross-origin request</dt><dd>${esc(proof.crossOrigin)}</dd><dt>Readiness backend reached</dt><dd>${esc(proof.backendReached)}</dd>
-      <dt>Readiness HTTP status</dt><dd>${esc(proof.httpStatus)}</dd><dt>Readiness payload</dt><dd>${esc(proof.payload)}</dd>
-      <dt>Avatar board received</dt><dd>${esc(proof.avatarReceived)}</dd><dt>Avatar card count</dt><dd>${esc(proof.avatarCount)}</dd>
-      <dt>Expected avatar card count</dt><dd>${proof.expectedCount}</dd><dt>Render</dt><dd>${esc(proof.render)}</dd>
-      <dt>Failure stage</dt><dd>${esc(proof.failureStage)}</dd><dt>Last error</dt><dd>${esc(proof.lastError)}</dd>
-    </dl></details><details open><summary>Auth propagation proof</summary><dl class="bootstrap-grid">
-      <dt>Auth runtime loaded</dt><dd>${authProof.authRuntimeLoaded ? "YES" : "NO"}</dd><dt>Auth bundle</dt><dd>${esc(authProof.bundle || "unknown")}</dd>
-      <dt>Storage inspection completed</dt><dd>${authProof.storageInspectionCompleted ? "YES" : "NO"}</dd><dt>Session token present</dt><dd>${authProof.sessionTokenPresent ? "YES" : "NO"}</dd>
-      <dt>Persistent token present</dt><dd>${authProof.persistentTokenPresent ? "YES" : "NO"}</dd><dt>Persistence consent</dt><dd>${esc(authProof.persistenceConsent || "NONE")}</dd>
-      <dt>Selected token source</dt><dd>${esc(authProof.selectedTokenSource || "none")}</dd><dt>Stored token read</dt><dd>${authProof.storedTokenRead ? "YES" : "NO"}</dd>
-      <dt>Stored token format valid</dt><dd>${authProof.storedTokenFormatValid ? "YES" : "NO"}</dd><dt>Stored token expiry</dt><dd>${esc(authProof.storedTokenExpiry || "UNKNOWN")}</dd>
-      <dt>Restore entered</dt><dd>${authProof.restoreEntered ? "YES" : "NO"}</dd><dt>Restore attempt count</dt><dd>${esc(authProof.restoreAttemptCount ?? 0)}</dd>
-      <dt>Restore validation request attempted</dt><dd>${authProof.validationRequestAttempted ? "YES" : "NO"}</dd><dt>Restore validation route</dt><dd>${esc(authProof.validationRoute || "NONE")}</dd>
-      <dt>Restore validation HTTP status</dt><dd>${esc(authProof.validationHttpStatus ?? "NONE")}</dd><dt>Restore validation response received</dt><dd>${authProof.validationResponseReceived ? "YES" : "NO"}</dd>
-      <dt>Canonical APP_AUTH populated</dt><dd>${authProof.canonicalAppAuthPopulated ? "YES" : "NO"}</dd><dt>Canonical user populated</dt><dd>${authProof.canonicalUserPopulated ? "YES" : "NO"}</dd>
-      <dt>Canonical token populated</dt><dd>${authProof.canonicalTokenPopulated ? "YES" : "NO"}</dd><dt>auth:changed fired</dt><dd>${authProof.authChangedFired ? "YES" : "NO"}</dd>
-      <dt>auth:ready fired</dt><dd>${authProof.authReadyFired ? "YES" : "NO"}</dd><dt>whenReady resolved</dt><dd>${authProof.whenReadyResolved ? "YES" : "NO"}</dd>
-      <dt>whenReady reason</dt><dd>${esc(authProof.whenReadyReason || "unknown")}</dd><dt>First failing boundary</dt><dd>${esc(authProof.firstFailingBoundary || "UNKNOWN")}</dd>
-      <dt>Last safe error</dt><dd>${esc(authProof.lastSafeError || "None")}</dd>
-    </dl></details>`;
+    const surface = document.querySelector("#bootstrap-status"); if (!surface) return;
+    const authProof = global.AuthStateRuntime?.getPropagationProof?.() || {}, ok = healthy();
+    const rows = [["Auth runtime",proof.authRuntime],["Session restored",proof.sessionRestored],["Authenticated",proof.authenticated],["Role",proof.role],["Token present",proof.tokenPresent],["Readiness request",proof.request],["Readiness request route",proof.requestRoute],["Resolved readiness origin",proof.resolvedOrigin],["Resolved readiness URL",proof.resolvedUrl],["Frontend origin",proof.frontendOrigin],["Cross-origin request",proof.crossOrigin],["Readiness backend reached",proof.backendReached],["Readiness HTTP status",proof.httpStatus],["Readiness payload",proof.payload],["Avatar board received",proof.avatarReceived],["Avatar card count",proof.avatarCount],["Expected avatar card count",proof.expectedCount],["Render",proof.render],["Failure stage",proof.failureStage],["Last error",proof.lastError]];
+    const authRows = [["Auth runtime loaded",authProof.authRuntimeLoaded?"YES":"NO"],["Auth bundle",authProof.bundle||"unknown"],["Storage inspection completed",authProof.storageInspectionCompleted?"YES":"NO"],["Session token present",authProof.sessionTokenPresent?"YES":"NO"],["Persistent token present",authProof.persistentTokenPresent?"YES":"NO"],["Selected token source",authProof.selectedTokenSource||"none"],["Restore entered",authProof.restoreEntered?"YES":"NO"],["Restore attempt count",authProof.restoreAttemptCount??0],["Restore validation request attempted",authProof.validationRequestAttempted?"YES":"NO"],["Restore validation route",authProof.validationRoute||"NONE"],["Restore validation HTTP status",authProof.validationHttpStatus??"NONE"],["Canonical APP_AUTH populated",authProof.canonicalAppAuthPopulated?"YES":"NO"],["auth:ready fired",authProof.authReadyFired?"YES":"NO"],["First failing boundary",authProof.firstFailingBoundary||"UNKNOWN"],["Last safe error",authProof.lastSafeError||"None"]];
+    const dl = values => `<dl class="bootstrap-grid">${values.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
+    surface.className=`bootstrap-status ${ok?"healthy":"attention"}`;
+    surface.innerHTML=`<details ${ok?"":"open"}><summary><span>System status: ${ok?"Healthy ✓":"Attention required"}</span><span class="diagnostic-hint">${ok?"Auth OK · Backend OK · Payload valid":`${esc(proof.failureStage)} · ${esc(proof.lastError)}`} <b>Diagnostics</b></span></summary><div class="diagnostic-sections"><section><h3>Readiness proof</h3>${dl(rows)}</section><section><h3>Auth propagation proof</h3>${dl(authRows)}</section></div></details>`;
   }
   function fail(message, stage, options = {}) {
     const error = new Error(message);
@@ -102,12 +83,24 @@
     proof.request = "SUCCESS";
     return options.validatePayload === false ? result.payload?.data : validatePayload(result.payload?.data);
   }
-  function render() {
-    const summary = state.summaries[board];
-    document.querySelector("#summary").className = "summary";
-    document.querySelector("#summary").innerHTML = [...Object.entries(summary.counts), ["REMAINING", summary.remaining]].map(([key, value]) => `<div class="metric"><strong>${value}</strong>${key.replaceAll("_", " ")}</div>`).join("");
-    document.querySelector("#board").innerHTML = statuses.map(status => `<section class="column"><h2>${status.replaceAll("_", " ")}</h2><div class="cards">${state.boards[board].filter(card => effective(card) === status).map(card => `<article class="card"><span class="badge">${esc(card.category)}</span><p><strong>Canonical status:</strong> ${esc(card.canonicalStatus || "Not applicable")}</p><h3>${esc(card.title)}</h3><p>${esc(card.definitionOfDone)}</p>${card.humanRequired && !card.humanVerified ? '<p class="warning">⚠ Physical/human verification outstanding</p>' : ""}<dl><dt>Implementation</dt><dd>${esc(card.implementationState || "Not recorded")}</dd><dt>Automated</dt><dd>${esc(card.automated)}</dd><dt>Browser QA</dt><dd>${esc(card.browserQa || "Not recorded")}</dd><dt>Physical-device QA</dt><dd>${esc(card.physicalDeviceQa || "Not recorded")}</dd><dt>Accessibility</dt><dd>${esc(card.accessibility || "Not recorded")}</dd><dt>Production</dt><dd>${esc(card.productionStatus || "Not recorded")}</dd><dt>Human sign-off</dt><dd>${card.humanVerified ? "Verified" : "Outstanding"}</dd><dt>Evidence</dt><dd>${esc(card.evidence || "None recorded")}</dd><dt>Blocker / notes</dt><dd>${esc(card.blocker || "None recorded")}</dd><dt>Reference</dt><dd>${esc(card.implementationRef || "Not linked")}</dd></dl><button data-edit="${card.id}">Update evidence</button></article>`).join("")}</div></section>`).join("");
+  const label = value => String(value || "").replaceAll("_", " ");
+  const sameCard = (pointer, card) => pointer && (pointer.id === card.id || pointer === card.id);
+  const splitValues = value => Array.isArray(value) ? value : String(value || "").split(/;\s*/).filter(Boolean);
+  function compactCard(card, summary) {
+    const status=effective(card), marker=sameCard(summary.currentCard,card)?"CURRENT":sameCard(summary.nextCard,card)?"NEXT":"";
+    const note=status==="BLOCKED"?card.blocker:card.humanRequired&&!card.humanVerified?"Human verification required":card.description||card.definitionOfDone||card.evidence||"No update recorded";
+    return `<article class="card priority-${esc((card.priority||"NORMAL").toLowerCase())} ${marker?`is-${marker.toLowerCase()}`:""}" tabindex="0" role="button" data-card="${esc(card.id)}" aria-label="Open ${esc(card.title)}, ${label(card.priority||"NORMAL")} priority, ${label(status)}"><div class="card-chips"><span class="priority-chip">${esc(card.priority||"NORMAL")}</span><span class="status-chip status-${status.toLowerCase()}">${status==="HUMAN_TEST_REQUIRED"?"⚠ ":""}${label(status)}</span></div><h3>${esc(card.title)}</h3><div class="card-meta"><span>${esc(card.category)}</span><span class="type-chip">${card.canonical===false?"DEVELOPMENT":"REQUIREMENT"}</span></div>${marker?`<strong class="pointer-marker marker-${marker.toLowerCase()}">${marker}</strong>`:""}<p class="card-note">${esc(String(note).slice(0,120))}</p></article>`;
   }
+  function render() {
+    const summary=state.summaries[board], cards=state.boards[board];
+    if(!activeLane||!statuses.includes(activeLane)) activeLane=effective(summary.currentCard||{})||statuses.find(status=>cards.some(card=>effective(card)===status))||statuses[0];
+    document.querySelector("#summary").className="summary";
+    document.querySelector("#summary").innerHTML=`<div class="pointers">${[["CURRENT",summary.currentCard],["NEXT",summary.nextCard],["LAST COMPLETED",summary.lastCompletedCard]].map(([name,card])=>`<div><span>${name}</span><strong>${esc(card?.title||"None")}</strong>${card&&name==="CURRENT"?'<button type="button" data-jump-current>Jump to current</button>':""}</div>`).join("")}</div>`;
+    document.querySelector("#board").innerHTML=`<nav class="lane-tabs" aria-label="Kanban lanes">${statuses.map(status=>{const count=cards.filter(card=>effective(card)===status).length;return `<button type="button" data-lane="${status}" class="${activeLane===status?"active":""}" aria-pressed="${activeLane===status}">${label(status)} <b>${count}</b></button>`}).join("")}</nav><div class="lanes">${statuses.map(status=>{const laneCards=cards.filter(card=>effective(card)===status);return `<section class="column" data-active="${activeLane===status}" data-column="${status}"><h2>${label(status)} <span>${laneCards.length}</span></h2><div class="cards">${laneCards.map(card=>compactCard(card,summary)).join("")||'<p class="empty">No cards</p>'}</div></section>`}).join("")}</div>`;
+  }
+  function disclosure(title,value){const values=splitValues(value),preview=values.slice(0,2);return `<details class="technical-list"><summary><span>${title}<small>${values.length} routes / references</small></span><b>View all</b></summary><div class="preview">${preview.map(v=>`<code>${esc(v)}</code>`).join("")}${values.length>2?`<p>+ ${values.length-2} more</p>`:""}</div><div class="all-values">${values.map(v=>`<code>${esc(v)}</code>`).join("")||"Not recorded"}</div></details>`}
+  function openDetail(id,origin){const card=state.boards[board].find(item=>item.id===id);if(!card)return;detailOrigin=origin;const summary=state.summaries[board],marker=sameCard(summary.currentCard,card)?"CURRENT":sameCard(summary.nextCard,card)?"NEXT":"";const values=[["Canonical status",card.canonicalStatus||"Not applicable"],["Effective status",label(effective(card))],["Priority",card.priority||"NORMAL"],["Description",card.description||card.definitionOfDone||"Not recorded"],["Dependencies",splitValues(card.dependsOn).join("\n")||"None"],["Automated status",card.automated||"NOT_RUN"],["Browser QA",card.browserQa||"Not recorded"],["Physical-device QA",card.physicalDeviceQa||"Not recorded"],["Accessibility",card.accessibility||"Not recorded"],["Production",card.productionStatus||"Not recorded"],["Human sign-off",card.humanVerified?"Verified by authorized human":"Outstanding"],["Machine evidence",Array.isArray(card.machineEvidence)?card.machineEvidence.map(x=>x.text||JSON.stringify(x)).join("\n"):card.evidence||"None recorded"],["Human evidence",card.humanVerificationNote||"None recorded"],["Blocker / notes",[card.blocker,card.notes].filter(Boolean).join("\n")||"None recorded"],["Changed files",splitValues(card.files).join("\n")||"None recorded"],["PR / commit",[card.prNumber&&`PR #${card.prNumber}`,card.commitSha].filter(Boolean).join(" · ")||"Not linked"],["History",Array.isArray(card.history)?card.history.map(x=>`${x.timestamp||""} ${x.type||"update"}: ${x.detail||x.note||""}`).join("\n"):"None recorded"],["Timestamps",[card.createdAt&&`Created ${card.createdAt}`,card.updatedAt&&`Updated ${card.updatedAt}`,card.completedAt&&`Completed ${card.completedAt}`].filter(Boolean).join("\n")||"Not recorded"]];const dialog=document.querySelector("#card-detail");dialog.querySelector(".detail-content").innerHTML=`<header><p>${esc(card.category)} · ${card.canonical===false?"DEVELOPMENT":"REQUIREMENT"}</p><h2>${esc(card.title)}</h2>${marker?`<strong class="pointer-marker marker-${marker.toLowerCase()}">${marker}</strong>`:""}</header>${disclosure("Implementation",card.implementationState||card.implementationRef)}${disclosure("Reference",card.implementationRef)}<dl class="detail-grid">${values.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl><button type="button" data-edit="${esc(card.id)}">Update evidence</button>`;dialog.showModal()}
+  function openEditor(id){const card=state.boards[board].find(item=>item.id===id),form=document.querySelector("#editor form");if(!card||!form)return;document.querySelector("#card-detail")?.close();form.board.value=board;form.id.value=id;form.status.innerHTML=statuses.map(status=>`<option ${status===card.status?"selected":""}>${status}</option>`).join("");form.status.disabled=Boolean(card.canonical);for(const key of ["automated","evidence","blocker","implementationRef"])form[key].value=card[key]||"";for(const key of ["codeComplete","humanRequired","humanVerified"])form[key].checked=Boolean(card[key]);document.querySelector("#editor").showModal()}
   function showFailure(error) {
     proof.request = proof.request === "SENT" ? "FAILED" : proof.request;
     proof.render = "FAILED";
@@ -149,12 +142,15 @@
   }
 
   document.addEventListener("click", event => {
-    if (event.target.closest("[data-retry]")) { load({ forceRestore: true }).catch(showFailure); return; }
-    const tab = event.target.closest("[data-board]");
-    if (tab) { board = tab.dataset.board; document.querySelectorAll("[data-board]").forEach(item => item.classList.toggle("active", item === tab)); try { render(); } catch (error) { showFailure(Object.assign(error, { stage: "RENDER" })); } }
-    const id = event.target.closest("[data-edit]")?.dataset.edit;
-    if (id) { const card = state.boards[board].find(item => item.id === id), form = document.querySelector("#editor form"); form.board.value = board; form.id.value = id; form.status.innerHTML = statuses.map(status => `<option ${status === card.status ? "selected" : ""}>${status}</option>`).join(""); form.status.disabled = Boolean(card.canonical); for (const key of ["automated", "evidence", "blocker", "implementationRef"]) form[key].value = card[key] || ""; for (const key of ["codeComplete", "humanRequired", "humanVerified"]) form[key].checked = Boolean(card[key]); document.querySelector("#editor").showModal(); }
+    if(event.target.closest("[data-retry]")){load({forceRestore:true}).catch(showFailure);return}
+    const tab=event.target.closest("[data-board]");if(tab){board=tab.dataset.board;activeLane=null;document.querySelectorAll("[data-board]").forEach(item=>item.classList.toggle("active",item===tab));render();return}
+    const lane=event.target.closest("[data-lane]");if(lane){activeLane=lane.dataset.lane;render();return}
+    if(event.target.closest("[data-jump-current]")){const current=state.summaries[board].currentCard;if(current){activeLane=effective(current);render();global.requestAnimationFrame?.(()=>document.querySelector(`[data-card="${current.id}"]`)?.focus())}return}
+    const edit=event.target.closest("[data-edit]");if(edit){openEditor(edit.dataset.edit);return}
+    const card=event.target.closest("[data-card]");if(card)openDetail(card.dataset.card,card);
   });
+  document.addEventListener("keydown",event=>{const card=event.target.closest?.("[data-card]");if(card&&(event.key==="Enter"||event.key===" ")){event.preventDefault();openDetail(card.dataset.card,card)}});
+  document.querySelector("#card-detail")?.addEventListener("close",()=>detailOrigin?.focus?.());
   document.querySelector("#editor").addEventListener("close", async event => {
     if (event.target.returnValue !== "save") return;
     const form = event.target.querySelector("form"), auth = global.AuthStateRuntime.getCanonicalAuthState();
