@@ -6,12 +6,34 @@
       "cardId": "avatar-acceptance-final-avatar-motion-launch-gate",
       "sourceType": "implementation",
       "taskId": "phase-1-kanban-development-os",
-      "files": ["src/services/launchReadinessService.js"],
+      "files": [
+        "src/services/launchReadinessService.js"
+      ],
       "automated": "PASS",
       "humanRequired": true,
       "humanVerified": false,
       "evidence": "Phase 1 readiness engine and authoritative reconciliation; no avatar movement runtime changed.",
       "timestamp": "2026-08-30T00:00:00.000Z"
+    },
+    {
+      "operationId": "3359d01f-9d1d-4fc1-961f-1163b4cfa9e2",
+      "board": "avatar",
+      "cardId": "avatar-acceptance-final-avatar-motion-launch-gate",
+      "sourceType": "implementation",
+      "taskId": "pr-571-hardening",
+      "files": [
+        "scripts/readiness-update.js",
+        "scripts/validate-readiness-contract.js",
+        "src/services/launchReadinessService.js",
+        "public/admin-launch-readiness.js",
+        "AGENTS.md",
+        "test/readiness-development-os.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "PR #571 hardening: correlated validation, dual-store machine-only updates, and controlled noncanonical development cards.",
+      "prNumber": 571,
+      "commitSha": "d34e080",
+      "timestamp": "2026-08-30T04:47:59.274Z"
     }
   ]
 }

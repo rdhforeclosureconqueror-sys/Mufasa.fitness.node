@@ -63,11 +63,12 @@
       fail("The readiness service responded, but the avatar board data is incomplete.", "RESPONSE_SHAPE");
     }
     proof.avatarReceived = "YES";
-    proof.avatarCount = data.boards.avatar.length;
-    const counts = data.boards.avatar.reduce((result, card) => { result[card.category] = (result[card.category] || 0) + 1; return result; }, {});
+    const canonicalCards = data.boards.avatar.filter(card => card.canonical !== false);
+    proof.avatarCount = canonicalCards.length;
+    const counts = canonicalCards.reduce((result, card) => { result[card.category] = (result[card.category] || 0) + 1; return result; }, {});
     const groupsValid = Object.entries(expectedAvatarGroups).every(([group, count]) => counts[group] === count);
-    if (data.boards.avatar.length !== proof.expectedCount || !groupsValid) {
-      fail(`Avatar Development Board expected 20 canonical workstreams but received ${data.boards.avatar.length}.`, "RESPONSE_SHAPE");
+    if (canonicalCards.length !== proof.expectedCount || !groupsValid) {
+      fail(`Avatar Development Board expected 20 canonical workstreams but received ${canonicalCards.length}.`, "RESPONSE_SHAPE");
     }
     proof.payload = "VALID";
     renderProof();
