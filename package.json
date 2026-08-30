@@ -11,6 +11,8 @@
     "prestart": "node scripts/ensure-exercise-index.js",
     "start": "node server.js",
     "lint": "node scripts/selfcheck.js",
+    "readiness:validate": "node scripts/validate-readiness-contract.js",
+    "readiness:update": "node scripts/readiness-update.js",
     "test": "node --test",
     "pilot:nonsecurity-checks": "node scripts/pilot-nonsecurity-checks.js",
     "performance:audit": "node scripts/performance-audit.js",

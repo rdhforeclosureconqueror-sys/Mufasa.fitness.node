@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "scopes": {
+    "avatar": {
+      "paths": [
+        "public/avatar-runtime.js",
+        "public/pose-runtime.js",
+        "public/motion/**",
+        "scripts/motion/**"
+      ],
+      "evidenceFile": "data/readiness/development-evidence.json"
+    }
+  }
+}

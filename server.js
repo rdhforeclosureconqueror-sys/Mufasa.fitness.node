@@ -2453,7 +2453,7 @@ function createApp(options = {}) {
   app.get("/api/me/guided-experience", requireAuth, (req,res)=>ok(res,req.requestId,guidedExperienceService.get(req.auth.userId)));
   app.patch("/api/me/guided-experience", requireAuth, (req,res)=>ok(res,req.requestId,guidedExperienceService.update(req.auth.userId,req.body||{})));
   app.get("/api/admin/launch-readiness", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY), (req,res)=>ok(res,req.requestId,launchReadinessService.snapshot()));
-  app.patch("/api/admin/launch-readiness/:board/:cardId", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT), (req,res)=>ok(res,req.requestId,launchReadinessService.update(req.params.board,req.params.cardId,req.body||{})));
+  app.patch("/api/admin/launch-readiness/:board/:cardId", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT), (req,res)=>ok(res,req.requestId,launchReadinessService.update(req.params.board,req.params.cardId,{...(req.body||{}),actorType:"human"})));
   const crmActor = req => ({ userId:req.auth.userId, role:req.authz.role });
   app.get("/admin/members.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-members.html")));
   app.get("/admin/client.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-client.html")));
