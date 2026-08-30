@@ -15,7 +15,9 @@
   const proof = {
     authRuntime: "FAILED", sessionRestored: "NO", authenticated: "NO", role: "unknown", tokenPresent: "NO",
     request: "NOT STARTED", httpStatus: "—", payload: "INVALID", avatarReceived: "NO", avatarCount: 0,
-    expectedCount: 20, render: "FAILED", failureStage: "AUTH", lastError: "None"
+    expectedCount: 20, requestRoute: "/api/admin/launch-readiness", resolvedOrigin: "UNKNOWN", resolvedUrl: "UNKNOWN",
+    frontendOrigin: global.location?.origin || "UNKNOWN", crossOrigin: "UNKNOWN", backendReached: "UNKNOWN",
+    render: "FAILED", failureStage: "AUTH", lastError: "None"
   };
   const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const effective = card => card.status === "DONE" && card.humanRequired && !card.humanVerified ? "HUMAN_TEST_REQUIRED" : card.status;
@@ -28,7 +30,10 @@
       <dt>Auth runtime</dt><dd>${esc(proof.authRuntime)}</dd><dt>Session restored</dt><dd>${esc(proof.sessionRestored)}</dd>
       <dt>Authenticated</dt><dd>${esc(proof.authenticated)}</dd><dt>Role</dt><dd>${esc(proof.role)}</dd>
       <dt>Token present</dt><dd>${esc(proof.tokenPresent)}</dd><dt>Readiness request</dt><dd>${esc(proof.request)}</dd>
-      <dt>HTTP status</dt><dd>${esc(proof.httpStatus)}</dd><dt>Readiness payload</dt><dd>${esc(proof.payload)}</dd>
+      <dt>Readiness request route</dt><dd>${esc(proof.requestRoute)}</dd><dt>Resolved readiness origin</dt><dd>${esc(proof.resolvedOrigin)}</dd>
+      <dt>Resolved readiness URL</dt><dd>${esc(proof.resolvedUrl)}</dd><dt>Frontend origin</dt><dd>${esc(proof.frontendOrigin)}</dd>
+      <dt>Cross-origin request</dt><dd>${esc(proof.crossOrigin)}</dd><dt>Readiness backend reached</dt><dd>${esc(proof.backendReached)}</dd>
+      <dt>Readiness HTTP status</dt><dd>${esc(proof.httpStatus)}</dd><dt>Readiness payload</dt><dd>${esc(proof.payload)}</dd>
       <dt>Avatar board received</dt><dd>${esc(proof.avatarReceived)}</dd><dt>Avatar card count</dt><dd>${esc(proof.avatarCount)}</dd>
       <dt>Expected avatar card count</dt><dd>${proof.expectedCount}</dd><dt>Render</dt><dd>${esc(proof.render)}</dd>
       <dt>Failure stage</dt><dd>${esc(proof.failureStage)}</dd><dt>Last error</dt><dd>${esc(proof.lastError)}</dd>
@@ -54,7 +59,7 @@
     throw error;
   }
   function validatePayload(data) {
-    if (!data || !data.boards || !data.boards.avatar || !Array.isArray(data.boards.avatar) || !data.summaries || !data.summaries.avatar) {
+    if (!data || !data.boards || !Array.isArray(data.boards.launch) || !Array.isArray(data.boards.avatar) || !data.summaries || !data.summaries.launch || !data.summaries.avatar) {
       fail("The readiness service responded, but the avatar board data is incomplete.", "RESPONSE_SHAPE");
     }
     proof.avatarReceived = "YES";
@@ -68,28 +73,33 @@
     renderProof();
     return data;
   }
-  async function request(url, token, options = {}) {
-    if (!token) fail("Your restored session does not contain an authentication token. Sign in again.", "AUTH", { authState: "missing-token" });
+  function applyRequestDiagnostics(path, diagnostics = {}) {
+    proof.requestRoute = path;
+    proof.resolvedOrigin = diagnostics.apiOrigin || global.MaatApiClient?.origin?.() || "UNKNOWN";
+    const resolved = diagnostics.url || global.MaatApiClient?.resolve?.(path);
+    proof.resolvedUrl = resolved ? (() => { const safe = new URL(resolved); safe.search = ""; safe.hash = ""; return safe.href; })() : "UNKNOWN";
+    proof.frontendOrigin = global.location?.origin || "UNKNOWN";
+    proof.crossOrigin = typeof diagnostics.crossOrigin === "boolean" ? (diagnostics.crossOrigin ? "YES" : "NO") : "UNKNOWN";
+    proof.backendReached = diagnostics.backendReached === true ? "YES" : diagnostics.backendReached === false ? "NO" : "UNKNOWN";
+    proof.httpStatus = diagnostics.status ?? "—";
+  }
+  async function request(path, options = {}) {
+    if (!global.MaatApiClient?.request) fail("The canonical readiness API client is unavailable. Retry this page.", "API");
     proof.request = "SENT";
+    applyRequestDiagnostics(path);
     renderProof();
-    let response;
-    try {
-      response = await global.fetch(url, { ...options, credentials: "same-origin", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...options.headers } });
-    } catch (_) {
-      fail("The Avatar Development Board could not be loaded from the readiness service.", "API");
-    }
-    proof.httpStatus = response.status;
-    if (!response.ok) {
+    const result = await global.MaatApiClient.request(path, options);
+    applyRequestDiagnostics(path, result.diagnostics);
+    if (!result.ok) {
+      const status = result.diagnostics?.status;
       const messages = {
         401: "Your Pocket PT session is no longer authorized. Sign in again.",
         403: "Your account is signed in but does not have Avatar Development Board permission."
       };
-      fail(messages[response.status] || "The Avatar Development Board could not be loaded from the readiness service.", response.status === 401 ? "AUTH" : response.status === 403 ? "AUTHORIZATION" : "API", { status: response.status });
+      fail(messages[status] || "The Avatar Development Board could not be loaded from the readiness service.", status === 401 ? "AUTH" : status === 403 ? "AUTHORIZATION" : "API", { status });
     }
     proof.request = "SUCCESS";
-    let payload;
-    try { payload = await response.json(); } catch (_) { fail("The readiness service responded, but the avatar board data is incomplete.", "RESPONSE_SHAPE"); }
-    return validatePayload(payload.data);
+    return options.validatePayload === false ? result.payload?.data : validatePayload(result.payload?.data);
   }
   function render() {
     const summary = state.summaries[board];
@@ -128,7 +138,8 @@
     proof.tokenPresent = auth?.token ? "YES" : "NO";
     renderProof();
     if (proof.authenticated !== "YES" || !auth?.user) fail("Sign in to view the Avatar Development Board.", "AUTH", { authState: "unauthenticated" });
-    state = await request("/api/admin/launch-readiness", auth.token);
+    if (!auth.token) fail("Your restored session does not contain an authentication token. Sign in again.", "AUTH", { authState: "missing-token" });
+    state = await request("/api/admin/launch-readiness");
     try { render(); } catch (_) { fail("The board data loaded, but the Kanban view could not be rendered.", "RENDER"); }
     proof.render = "COMPLETE";
     proof.failureStage = "NONE";
@@ -147,7 +158,7 @@
     if (event.target.returnValue !== "save") return;
     const form = event.target.querySelector("form"), auth = global.AuthStateRuntime.getCanonicalAuthState();
     const payload = { status: form.status.value, automated: form.automated.value, evidence: form.evidence.value, blocker: form.blocker.value, implementationRef: form.implementationRef.value, humanVerified: form.humanVerified.checked };
-    try { await request(`/api/admin/launch-readiness/${form.board.value}/${form.id.value}`, auth?.token, { method: "PATCH", body: JSON.stringify(payload) }); await load(); } catch (error) { showFailure(error); }
+    try { await request(`/api/admin/launch-readiness/${form.board.value}/${form.id.value}`, { method: "PATCH", body: payload, validatePayload: false }); await load(); } catch (error) { showFailure(error); }
   });
   load().catch(showFailure);
 })(typeof window !== "undefined" ? window : globalThis);

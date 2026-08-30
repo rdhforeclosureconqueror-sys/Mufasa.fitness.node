@@ -112,13 +112,13 @@ test("auth restoration requires recorded Remember Me consent and reports a redac
   const boot=(sessionMap=new Map())=>{const window={localStorage:makeStorage(localMap),sessionStorage:makeStorage(sessionMap),location:{origin:"https://example.test",pathname:"/workout.html",assign(){}},setTimeout,atob:value=>Buffer.from(value,"base64").toString("binary"),CustomEvent:class{constructor(type,{detail}={}){this.type=type;this.detail=detail}},dispatchEvent(){},addEventListener(){},fetch:async()=>({ok:true,status:200,headers:{get(){return null}},json:async()=>({ok:true,user:{id:"member",email:"member@example.test"}})})};window.window=window;vm.runInNewContext(fs.readFileSync(path.join(__dirname,"..","public","auth-state-runtime.js"),"utf8"),{window,globalThis:window,console,Date,JSON,Promise,Buffer});return window};
   let session=new Map(),window=boot(session);await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:false});assert.equal(window.AuthStateRuntime.storageInspection().source,"sessionStorage");
   window=boot(new Map());await new Promise(resolve=>setTimeout(resolve,0));assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,false);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"none");
-  await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:true});window=boot(new Map());await window.AuthStateRuntime.whenReady();assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"localStorage");assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rememberMeConsent,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.bundle,"20260824-auth-unified-drawer-v2");
+  await window.AuthStateRuntime.persistCanonicalAuthState({token,user:{id:"member"}},{rememberMe:true});window=boot(new Map());await window.AuthStateRuntime.whenReady();assert.equal(window.AuthStateRuntime.getCanonicalAuthState().isAuthenticated,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.tokenSource,"localStorage");assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rememberMeConsent,true);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.bundle,"2026-08-29-auth-readiness-propagation-v1");
   localMap.set("maatAuthToken",token);localMap.delete("maatAuthPersistence");window=boot(new Map());await new Promise(resolve=>setTimeout(resolve,0));assert.equal(window.AuthStateRuntime.getStoredToken(),null);assert.equal(localMap.has("maatAuthToken"),false);assert.equal(window.__MAAT_AUTH_RESTORE_DIAGNOSTICS__.rejectedUnconsentedLocalToken,true);
 });
 
-test("all HTML surfaces pin the production auth and navigation bundle",()=>{
-  const version="20260824-global-nav-production-repair-v3",root=path.join(__dirname,"..","public");
-  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")){const html=fs.readFileSync(path.join(root,file),"utf8");assert.match(html,new RegExp(`auth-state-runtime\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.js\\?v=${version}`),file);assert.match(html,new RegExp(`global-nav\\.css\\?v=${version}`),file);}
+test("all HTML surfaces pin a current production auth bundle and the navigation bundle",()=>{
+  const authVersions="(?:20260824-global-nav-production-repair-v3|2026-08-29-auth-readiness-propagation-v1)",navVersion="20260824-global-nav-production-repair-v3",root=path.join(__dirname,"..","public");
+  for(const file of fs.readdirSync(root).filter(name=>name.endsWith(".html")&&name!=="run-club-login.html")){const html=fs.readFileSync(path.join(root,file),"utf8");assert.match(html,new RegExp(`auth-state-runtime\\.js\\?v=${authVersions}`),file);assert.match(html,new RegExp(`global-nav\\.js\\?v=${navVersion}`),file);assert.match(html,new RegExp(`global-nav\\.css\\?v=${navVersion}`),file);}
 });
 
 test("Account A can logout, Account B remains isolated, and Account A can return",async t=>{
@@ -161,8 +161,8 @@ test("canonical login resolves the configured API origin and emits no credential
 
 test("admin dashboard and CRM surfaces use the one authoritative destination and canonical auth runtime",()=>{
  const dashboard=fs.readFileSync(path.join(__dirname,"..","public","dashboard.html"),"utf8"),dashboardJs=fs.readFileSync(path.join(__dirname,"..","public","dashboard.js"),"utf8"),members=fs.readFileSync(path.join(__dirname,"..","public","admin-members.js"),"utf8"),client=fs.readFileSync(path.join(__dirname,"..","public","admin-client.js"),"utf8");
- assert.match(dashboard,/id="clientManagementCard"[\s\S]*href="\/admin\/members\.html"/);assert.match(dashboardJs,/clientManagementCard\.hidden = !hasObservabilityAccess/);
- assert.match(members,/AuthStateRuntime\?\.getAuthToken/);assert.doesNotMatch(members,/getItem\("authToken"\)/);
+ assert.match(dashboard,/id="clientManagementCard"[\s\S]*href="\/admin-members\.html"/);assert.match(dashboardJs,/clientManagementCard\.hidden = !hasObservabilityAccess/);
+ assert.match(members,/MaatApiClient\.request/);assert.doesNotMatch(members,/getItem\("authToken"\)|fetch\(/);
  assert.match(client,/AuthStateRuntime\.whenReady\(\)/);assert.match(client,/MaatApiClient\.request/);assert.doesNotMatch(client,/getItem\("authToken"\)/);
  assert.match(client,/\/api\/admin\/clients\/\$\{routeId\(clientId\)\}\/conversation/);assert.match(client,/\/api\/me\/conversations\/\$\{routeId\(conversationId\)\}\/messages/);
 });
