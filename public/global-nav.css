@@ -10,7 +10,19 @@ html:not(.maat-admin-diagnostics) .trail-request-diagnostics,
 html:not(.maat-admin-diagnostics) #avatarDebugOverlay,
 html:not(.maat-admin-diagnostics) #frontendShellMarker,
 html:not(.maat-admin-diagnostics) #appBootStatus,
-html:not(.maat-admin-diagnostics) #clickDiagBanner{display:none!important}
+html:not(.maat-admin-diagnostics) #clickDiagBanner,
+html:not(.maat-admin-diagnostics) #buildVersionPill,
+html:not(.maat-admin-diagnostics) #formRulePanel,
+html:not(.maat-admin-diagnostics) #mobileLayoutContainmentProof,
+html:not(.maat-admin-diagnostics) #poseTrackingProof,
+html:not(.maat-admin-diagnostics) #poseOverlayProof,
+html:not(.maat-admin-diagnostics) #posePerformanceProof,
+html:not(.maat-admin-diagnostics) #poseBootstrapTrace,
+html:not(.maat-admin-diagnostics) #avatarManualControlEventTrace,
+html:not(.maat-admin-diagnostics) #avatarManualControlProof,
+html:not(.maat-admin-diagnostics) .status-line:has(#bootCoreLoadedMarker),
+html:not(.maat-admin-diagnostics) .card:has(#launchHealthStatus),
+html:not(.maat-admin-diagnostics) .title .sub[style*="font-weight:700"]{display:none!important}
 @media(max-width:849px){
   body>.maat-global-header{contain:style;width:100%;margin-left:0;margin-right:0}
   body>.maat-global-header>.maat-nav-panel{position:fixed!important;inset:0 auto 0 0!important;float:none!important;flex:none!important;width:min(86vw,360px)!important;min-width:0!important;max-width:calc(100vw - 44px)!important;margin:0!important;transform:none!important}
