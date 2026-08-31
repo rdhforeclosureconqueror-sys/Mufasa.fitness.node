@@ -8,14 +8,13 @@
   "use strict";
 
   const PRESENTATION_DEFAULTS = Object.freeze({ smoothingAlpha: .58, coastMs: 220, targetFps: 30 });
+  const LIVE_SOLVER_DEFAULTS = Object.freeze({ rootTranslationScale: .9, rootTranslationClamp: .75 });
   const BODY_FOLLOW_DEFAULTS = Object.freeze({
     minimumConfidence: .35,
     calibrationFrames: 8,
     minimumBodyHeight: .1,
     lateralScale: .62,
     lateralClamp: .48,
-    verticalBoostScale: .62,
-    verticalBoostClamp: .52,
     smoothingLambda: 10,
     missingFrameReturnMs: 320
   });
@@ -41,9 +40,7 @@
       this.neutralHip = null;
       this.neutralBodyHeight = null;
       this.targetLateral = 0;
-      this.targetVerticalBoost = 0;
       this.lateral = 0;
-      this.verticalBoost = 0;
       this.lastGoodAt = null;
       this.appliedFrames = 0;
     }
@@ -55,10 +52,10 @@
       if (!hip || !Number.isFinite(hip.x) || !Number.isFinite(hip.y) || confidence < this.options.minimumConfidence || bodyHeight < this.options.minimumBodyHeight) return false;
       this.lastGoodAt = Number(frame.timestamp || this.now());
       if (!this.calibrated) {
-        this.samples.push({ x: hip.x, y: hip.y, bodyHeight });
+        this.samples.push({ x: hip.x, bodyHeight });
         if (this.samples.length >= this.options.calibrationFrames) {
           const mean = key => this.samples.reduce((sum, sample) => sum + sample[key], 0) / this.samples.length;
-          this.neutralHip = Object.freeze({ x: mean("x"), y: mean("y") });
+          this.neutralHip = Object.freeze({ x: mean("x") });
           this.neutralBodyHeight = Math.max(this.options.minimumBodyHeight, mean("bodyHeight"));
           this.calibrated = true;
           this.samples.length = 0;
@@ -67,44 +64,33 @@
       }
       const height = Math.max(this.options.minimumBodyHeight, this.neutralBodyHeight || bodyHeight);
       const lateralNormalized = (hip.x - this.neutralHip.x) / height;
-      const downwardNormalized = Math.max(0, (hip.y - this.neutralHip.y) / height);
       this.targetLateral = this.clamp(lateralNormalized * this.options.lateralScale, this.options.lateralClamp);
-      this.targetVerticalBoost = -Math.min(this.options.verticalBoostClamp, downwardNormalized * this.options.verticalBoostScale);
       return true;
     }
     markMissing(at=this.now()) {
-      if (this.lastGoodAt != null && at - this.lastGoodAt > this.options.missingFrameReturnMs) {
-        this.targetLateral = 0;
-        this.targetVerticalBoost = 0;
-      }
+      if (this.lastGoodAt != null && at - this.lastGoodAt > this.options.missingFrameReturnMs) this.targetLateral = 0;
     }
     apply(deltaSeconds) {
       const alpha = 1 - Math.exp(-this.options.smoothingLambda * Math.max(0, Number(deltaSeconds) || 0));
       this.lateral += (this.targetLateral - this.lateral) * alpha;
-      this.verticalBoost += (this.targetVerticalBoost - this.verticalBoost) * alpha;
       if (this.avatar?.position) {
-        // The canonical solver runs first. Horizontal body travel is anchored to
-        // the captured avatar rest X; vertical body-follow is additive so it
-        // reinforces squat/floor descent without cancelling solver jump rise.
+        // The canonical solver remains the single owner of vertical root travel
+        // and floor orientation. This layer adds only lateral body-follow so a
+        // lunge/body shift moves the avatar root instead of leaving it planted.
         this.avatar.position.x = this.restX + this.lateral;
-        this.avatar.position.y += this.verticalBoost;
         this.appliedFrames += 1;
       }
     }
     restore() {
       this.targetLateral = 0;
-      this.targetVerticalBoost = 0;
       this.lateral = 0;
-      this.verticalBoost = 0;
       if (this.avatar?.position) this.avatar.position.x = this.restX;
     }
     diagnostics() {
       return Object.freeze({
         bodyFollowCalibrated: this.calibrated,
         bodyFollowLateral: this.lateral,
-        bodyFollowVerticalBoost: this.verticalBoost,
         bodyFollowTargetLateral: this.targetLateral,
-        bodyFollowTargetVerticalBoost: this.targetVerticalBoost,
         bodyFollowFrames: this.appliedFrames
       });
     }
@@ -115,7 +101,7 @@
       if (!eventTarget || !session?.avatar || !session?.THREE) throw new TypeError("eventTarget and a loaded motion session are required");
       this.eventTarget = eventTarget; this.session = session; this.cameraState = cameraState; this.onPose = onPose; this.now=now; this.disposed = false; this.poseFramesReceived = 0; this.retargetFramesExecuted = 0; this.lastRetargetAt = null;this.authoritativeTimes=[];this.lastBoundsAt=0;this.boundsProof={avatarWorldBoundsCenter:null,avatarWorldBoundsSize:null};
       session.unloadMotion?.();
-      this.solver = new solverApi.AvaturnLivePoseSolver({ THREE: session.THREE, avatar: session.avatar, now, ...solverOptions });
+      this.solver = new solverApi.AvaturnLivePoseSolver({ THREE: session.THREE, avatar: session.avatar, now, ...LIVE_SOLVER_DEFAULTS, ...solverOptions });
       this.stabilizer=new AvatarPresentationStabilizer({now,...stabilizerOptions});
       this.bodyFollower=new AvatarBodyFollower({avatar:session.avatar,now,...bodyFollowOptions});
       this.onFrame = event => {
@@ -130,5 +116,5 @@
     dispose() { if (this.disposed) return; this.eventTarget.removeEventListener("pose-runtime:frame", this.onFrame); this.bodyFollower.restore(); this.solver.dispose(); this.disposed = true; }
   }
 
-  return Object.freeze({ LiveAvatarMirror, AvatarPresentationStabilizer, AvatarBodyFollower, PRESENTATION_DEFAULTS, BODY_FOLLOW_DEFAULTS });
+  return Object.freeze({ LiveAvatarMirror, AvatarPresentationStabilizer, AvatarBodyFollower, PRESENTATION_DEFAULTS, LIVE_SOLVER_DEFAULTS, BODY_FOLLOW_DEFAULTS });
 });
