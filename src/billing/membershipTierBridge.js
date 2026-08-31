@@ -25,10 +25,25 @@ function createMembershipTierBridge(options = {}) {
     if (!req.auth?.userId) {
       return res.status(401).json({
         ok: false,
+        requestId: req.requestId || null,
         error: { code: "UNAUTHENTICATED", message: "Authentication required" }
       });
     }
     return next();
+  }
+
+  function sendBridgeError(res, req, error) {
+    const status = Number.isInteger(error?.status) ? error.status : 500;
+    const safeStatus = status >= 400 && status <= 599 ? status : 500;
+    return res.status(safeStatus).json({
+      ok: false,
+      requestId: req.requestId || null,
+      error: {
+        code: error?.code || "MEMBERSHIP_CHECKOUT_FAILED",
+        message: safeStatus >= 500 ? "Membership checkout could not be initialized safely." : (error?.message || "Membership checkout request is invalid."),
+        details: safeStatus < 500 ? (error?.details || null) : null
+      }
+    });
   }
 
   function register(app) {
@@ -54,7 +69,7 @@ function createMembershipTierBridge(options = {}) {
       });
     });
 
-    app.post("/api/billing/tier-checkout-session", requireCanonicalAuth, async (req, res, next) => {
+    app.post("/api/billing/tier-checkout-session", requireCanonicalAuth, async (req, res) => {
       try {
         rejectRawPaymentCredentialFields(req.body);
         const checkoutConfig = validateCheckoutConfig(env, req.body?.planId);
@@ -82,7 +97,7 @@ function createMembershipTierBridge(options = {}) {
           requestId: req.requestId || null
         });
       } catch (error) {
-        return next(error);
+        return sendBridgeError(res, req, error);
       }
     });
   }
