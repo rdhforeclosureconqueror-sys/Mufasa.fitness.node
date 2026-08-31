@@ -103,7 +103,28 @@
     throw error;
   }
 
+  async function ensureCanonicalBackendConfig() {
+    const configured = global.MAAT_BACKEND_ORIGIN || global.__MAAT_RUNTIME_CONFIG__?.backendOrigin;
+    if (configured) return configured;
+    if (!global.document) return null;
+    const existing = global.document.querySelector('script[data-pocketpt-runtime-config="1"]');
+    if (existing?.dataset.loaded === "1") return global.MAAT_BACKEND_ORIGIN || global.__MAAT_RUNTIME_CONFIG__?.backendOrigin || null;
+    await new Promise((resolve) => {
+      const script = existing || global.document.createElement("script");
+      if (!existing) {
+        script.src = "/runtime-config.js?v=20260831-world-bridge-backend-origin-v1";
+        script.dataset.pocketptRuntimeConfig = "1";
+        global.document.head.appendChild(script);
+      }
+      script.addEventListener("load", () => { script.dataset.loaded = "1"; resolve(); }, { once: true });
+      script.addEventListener("error", () => resolve(), { once: true });
+      if (existing && global.MAAT_BACKEND_ORIGIN) resolve();
+    });
+    return global.MAAT_BACKEND_ORIGIN || global.__MAAT_RUNTIME_CONFIG__?.backendOrigin || null;
+  }
+
   async function resolveArenaAuth() {
+    await ensureCanonicalBackendConfig();
     if (global.AuthNavigation?.requireUser) {
       const result = await global.AuthNavigation.requireUser({ returnTo: currentReturnTo() });
       if (result?.redirected) {
@@ -135,7 +156,8 @@
     const auth = await resolveArenaAuth();
     const token = auth?.token;
     if (!token) {
-      mark("AUTH_READY", "FAIL", "Canonical PocketPT authentication is temporarily unavailable on this device");
+      const safeReason = global.AuthStateRuntime?.getSafeDiagnostics?.()?.lastAuthReason || "auth_unavailable";
+      mark("AUTH_READY", "FAIL", `Canonical PocketPT authentication is temporarily unavailable (${safeReason})`);
       throw new Error("PocketPT authentication could not be verified. Try again in a moment.");
     }
     mark("AUTH_READY", "PASS", "Canonical PocketPT session restored");
