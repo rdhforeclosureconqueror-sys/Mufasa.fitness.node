@@ -6,7 +6,20 @@
   else root.PocketPTLiveAvatarMirror = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (normalized, solverApi) {
   "use strict";
+
   const PRESENTATION_DEFAULTS = Object.freeze({ smoothingAlpha: .58, coastMs: 220, targetFps: 30 });
+  const BODY_FOLLOW_DEFAULTS = Object.freeze({
+    minimumConfidence: .35,
+    calibrationFrames: 8,
+    minimumBodyHeight: .1,
+    lateralScale: .62,
+    lateralClamp: .48,
+    verticalBoostScale: .62,
+    verticalBoostClamp: .52,
+    smoothingLambda: 10,
+    missingFrameReturnMs: 320
+  });
+
   class AvatarPresentationStabilizer {
     constructor({ now=()=>Date.now(), ...options }={}){this.now=now;this.options={...PRESENTATION_DEFAULTS,...options};this.previous=null;this.current=null;this.lastPresented=null;this.interpolatedFrames=0;this.coastedFrames=0;this.reacquiredFrames=0;this.presentationFrames=0;this.sampleTimes=[];}
     blend(a,b,t,timestamp=b.timestamp){const joints={};for(const name of new Set([...Object.keys(a?.joints||{}),...Object.keys(b?.joints||{})])){const x=a?.joints?.[name],y=b?.joints?.[name];if(!x||!y){joints[name]=y||x;continue;}joints[name]=Object.freeze({...y,x:x.x+(y.x-x.x)*t,y:x.y+(y.y-x.y)*t,confidence:y.confidence});}const directions={};for(const name of new Set([...Object.keys(a?.directions||{}),...Object.keys(b?.directions||{})])){const x=a?.directions?.[name],y=b?.directions?.[name];if(!x||!y){directions[name]=y||x;continue;}const vx=x.x+(y.x-x.x)*t,vy=x.y+(y.y-x.y)*t,length=Math.hypot(vx,vy)||1;directions[name]=Object.freeze({x:vx/length,y:vy/length,z:0});}const landmarks={};for(const name of new Set([...Object.keys(a?.landmarks||{}),...Object.keys(b?.landmarks||{})])){const x=a?.landmarks?.[name],y=b?.landmarks?.[name];if(Number.isFinite(x)&&Number.isFinite(y))landmarks[name]=x+(y-x)*t;else if(x&&y&&Number.isFinite(x.x)&&Number.isFinite(y.x))landmarks[name]=Object.freeze({...y,x:x.x+(y.x-x.x)*t,y:x.y+(y.y-x.y)*t,confidence:y.confidence});else landmarks[name]=y??x;}for(const name of ["shoulderLine","hipLine","torsoAxis","bodyAxis"])landmarks[name]=directions[name]||landmarks[name];return Object.freeze({...b,timestamp,joints:Object.freeze(joints),directions:Object.freeze(directions),landmarks:Object.freeze(landmarks),rightShoulder:joints.right_shoulder,rightElbow:joints.right_elbow,rightUpperArmDirection:directions.rightUpperArm});}
@@ -15,23 +28,107 @@
     reset(){this.previous=this.current=this.lastPresented=null;}
     diagnostics(at=this.now()){const elapsed=this.sampleTimes.length>1?this.sampleTimes.at(-1)-this.sampleTimes[0]:0;return{avatarPresentationFps:elapsed>0?(this.sampleTimes.length-1)*1000/elapsed:0,interpolatedAvatarFrames:this.interpolatedFrames,coastedAvatarFrames:this.coastedFrames,reacquiredFrames:this.reacquiredFrames,avatarPoseAgeMs:this.current?Math.max(0,at-this.current.timestamp):null,avatarPresentationLatencyMs:this.lastPresented?Math.max(0,at-this.lastPresented.timestamp):null};}
   }
+
+  class AvatarBodyFollower {
+    constructor({ avatar, now=()=>Date.now(), ...options }={}) {
+      if (!avatar) throw new TypeError("avatar is required");
+      this.avatar = avatar;
+      this.now = now;
+      this.options = { ...BODY_FOLLOW_DEFAULTS, ...options };
+      this.restX = Number(avatar.position?.x || 0);
+      this.samples = [];
+      this.calibrated = false;
+      this.neutralHip = null;
+      this.neutralBodyHeight = null;
+      this.targetLateral = 0;
+      this.targetVerticalBoost = 0;
+      this.lateral = 0;
+      this.verticalBoost = 0;
+      this.lastGoodAt = null;
+      this.appliedFrames = 0;
+    }
+    clamp(value, limit) { return Math.max(-limit, Math.min(limit, value)); }
+    observe(frame) {
+      const hip = frame?.landmarks?.hipCenter;
+      const bodyHeight = Number(frame?.landmarks?.bodyHeightNormalized || 0);
+      const confidence = Math.min(Number(hip?.confidence || 0), Number(frame?.confidence?.overall ?? 1));
+      if (!hip || !Number.isFinite(hip.x) || !Number.isFinite(hip.y) || confidence < this.options.minimumConfidence || bodyHeight < this.options.minimumBodyHeight) return false;
+      this.lastGoodAt = Number(frame.timestamp || this.now());
+      if (!this.calibrated) {
+        this.samples.push({ x: hip.x, y: hip.y, bodyHeight });
+        if (this.samples.length >= this.options.calibrationFrames) {
+          const mean = key => this.samples.reduce((sum, sample) => sum + sample[key], 0) / this.samples.length;
+          this.neutralHip = Object.freeze({ x: mean("x"), y: mean("y") });
+          this.neutralBodyHeight = Math.max(this.options.minimumBodyHeight, mean("bodyHeight"));
+          this.calibrated = true;
+          this.samples.length = 0;
+        }
+        return true;
+      }
+      const height = Math.max(this.options.minimumBodyHeight, this.neutralBodyHeight || bodyHeight);
+      const lateralNormalized = (hip.x - this.neutralHip.x) / height;
+      const downwardNormalized = Math.max(0, (hip.y - this.neutralHip.y) / height);
+      this.targetLateral = this.clamp(lateralNormalized * this.options.lateralScale, this.options.lateralClamp);
+      this.targetVerticalBoost = -Math.min(this.options.verticalBoostClamp, downwardNormalized * this.options.verticalBoostScale);
+      return true;
+    }
+    markMissing(at=this.now()) {
+      if (this.lastGoodAt != null && at - this.lastGoodAt > this.options.missingFrameReturnMs) {
+        this.targetLateral = 0;
+        this.targetVerticalBoost = 0;
+      }
+    }
+    apply(deltaSeconds) {
+      const alpha = 1 - Math.exp(-this.options.smoothingLambda * Math.max(0, Number(deltaSeconds) || 0));
+      this.lateral += (this.targetLateral - this.lateral) * alpha;
+      this.verticalBoost += (this.targetVerticalBoost - this.verticalBoost) * alpha;
+      if (this.avatar?.position) {
+        // The canonical solver runs first. Horizontal body travel is anchored to
+        // the captured avatar rest X; vertical body-follow is additive so it
+        // reinforces squat/floor descent without cancelling solver jump rise.
+        this.avatar.position.x = this.restX + this.lateral;
+        this.avatar.position.y += this.verticalBoost;
+        this.appliedFrames += 1;
+      }
+    }
+    restore() {
+      this.targetLateral = 0;
+      this.targetVerticalBoost = 0;
+      this.lateral = 0;
+      this.verticalBoost = 0;
+      if (this.avatar?.position) this.avatar.position.x = this.restX;
+    }
+    diagnostics() {
+      return Object.freeze({
+        bodyFollowCalibrated: this.calibrated,
+        bodyFollowLateral: this.lateral,
+        bodyFollowVerticalBoost: this.verticalBoost,
+        bodyFollowTargetLateral: this.targetLateral,
+        bodyFollowTargetVerticalBoost: this.targetVerticalBoost,
+        bodyFollowFrames: this.appliedFrames
+      });
+    }
+  }
+
   class LiveAvatarMirror {
-    constructor({ eventTarget, session, cameraState = () => ({}), now = () => Date.now(), solverOptions = {}, stabilizerOptions = {}, onPose = () => {} } = {}) {
+    constructor({ eventTarget, session, cameraState = () => ({}), now = () => Date.now(), solverOptions = {}, stabilizerOptions = {}, bodyFollowOptions = {}, onPose = () => {} } = {}) {
       if (!eventTarget || !session?.avatar || !session?.THREE) throw new TypeError("eventTarget and a loaded motion session are required");
       this.eventTarget = eventTarget; this.session = session; this.cameraState = cameraState; this.onPose = onPose; this.now=now; this.disposed = false; this.poseFramesReceived = 0; this.retargetFramesExecuted = 0; this.lastRetargetAt = null;this.authoritativeTimes=[];this.lastBoundsAt=0;this.boundsProof={avatarWorldBoundsCenter:null,avatarWorldBoundsSize:null};
       session.unloadMotion?.();
       this.solver = new solverApi.AvaturnLivePoseSolver({ THREE: session.THREE, avatar: session.avatar, now, ...solverOptions });
       this.stabilizer=new AvatarPresentationStabilizer({now,...stabilizerOptions});
+      this.bodyFollower=new AvatarBodyFollower({avatar:session.avatar,now,...bodyFollowOptions});
       this.onFrame = event => {
         const camera = this.cameraState() || {};
         const frame = normalized.fromMoveNetPosePacket(event?.detail?.posePacket, { cameraFacing: camera.facingMode, previewMirrored: camera.isMirrored });
-        this.poseFramesReceived += 1;this.authoritativeTimes.push(frame.timestamp);if(this.authoritativeTimes.length>60)this.authoritativeTimes.shift();this.stabilizer.observe(frame); this.onPose(frame, this.solver.diagnostics());
+        this.poseFramesReceived += 1;this.authoritativeTimes.push(frame.timestamp);if(this.authoritativeTimes.length>60)this.authoritativeTimes.shift();this.stabilizer.observe(frame);this.bodyFollower.observe(frame); this.onPose(frame, this.solver.diagnostics());
       };
       eventTarget.addEventListener("pose-runtime:frame", this.onFrame);
     }
-    update(deltaSeconds, at=this.now()) {const frame=this.stabilizer.sample(at);if(frame)this.solver.observe(frame);else this.solver.updateTrackingState(at); const state = this.solver.update(deltaSeconds, at); if (this.solver.diagnostics().changedBones.length) { this.retargetFramesExecuted += 1; this.lastRetargetAt = Number(at || Date.now()); } return state; }
-    diagnostics() {const elapsed=this.authoritativeTimes.length>1?this.authoritativeTimes.at(-1)-this.authoritativeTimes[0]:0,at=this.now(),avatar=this.session.avatar,canvas=this.session.renderer?.domElement||this.session.canvas||null,computed=canvas&&typeof getComputedStyle==="function"?getComputedStyle(canvas):null;if(at-this.lastBoundsAt>=500&&this.session.THREE.Box3){const box=new this.session.THREE.Box3().setFromObject(avatar);if(!box.isEmpty()){this.boundsProof={avatarWorldBoundsCenter:Object.freeze(box.getCenter(new this.session.THREE.Vector3()).toArray()),avatarWorldBoundsSize:Object.freeze(box.getSize(new this.session.THREE.Vector3()).toArray())};}this.lastBoundsAt=at;}let attached=false;for(let node=avatar;node;node=node.parent)if(node===this.session.scene){attached=true;break}return Object.freeze({ ...this.solver.diagnostics(),...this.stabilizer.diagnostics(),...this.boundsProof,authoritativePoseFps:elapsed>0?(this.authoritativeTimes.length-1)*1000/elapsed:0, poseFramesReceived: this.poseFramesReceived, retargetFramesExecuted: this.retargetFramesExecuted, lastRetargetAt: this.lastRetargetAt,avatarCanvasFound:Boolean(canvas),avatarCanvasDisplay:canvas?.style?.display||"",avatarCanvasVisibility:canvas?.style?.visibility||"",avatarCanvasComputedDisplay:computed?.display||null,avatarCanvasComputedVisibility:computed?.visibility||null,avatarModelFound:Boolean(avatar),avatarModelVisible:avatar?.visible!==false,avatarModelAttachedToScene:attached, avatarRoot: avatar }); }
-    dispose() { if (this.disposed) return; this.eventTarget.removeEventListener("pose-runtime:frame", this.onFrame); this.solver.dispose(); this.disposed = true; }
+    update(deltaSeconds, at=this.now()) {const frame=this.stabilizer.sample(at);if(frame)this.solver.observe(frame);else{this.solver.updateTrackingState(at);this.bodyFollower.markMissing(at);} const state = this.solver.update(deltaSeconds, at);this.bodyFollower.apply(deltaSeconds); if (this.solver.diagnostics().changedBones.length) { this.retargetFramesExecuted += 1; this.lastRetargetAt = Number(at || Date.now()); } return state; }
+    diagnostics() {const elapsed=this.authoritativeTimes.length>1?this.authoritativeTimes.at(-1)-this.authoritativeTimes[0]:0,at=this.now(),avatar=this.session.avatar,canvas=this.session.renderer?.domElement||this.session.canvas||null,computed=canvas&&typeof getComputedStyle==="function"?getComputedStyle(canvas):null;if(at-this.lastBoundsAt>=500&&this.session.THREE.Box3){const box=new this.session.THREE.Box3().setFromObject(avatar);if(!box.isEmpty()){this.boundsProof={avatarWorldBoundsCenter:Object.freeze(box.getCenter(new this.session.THREE.Vector3()).toArray()),avatarWorldBoundsSize:Object.freeze(box.getSize(new this.session.THREE.Vector3()).toArray())};}this.lastBoundsAt=at;}let attached=false;for(let node=avatar;node;node=node.parent)if(node===this.session.scene){attached=true;break}return Object.freeze({ ...this.solver.diagnostics(),...this.stabilizer.diagnostics(),...this.bodyFollower.diagnostics(),...this.boundsProof,authoritativePoseFps:elapsed>0?(this.authoritativeTimes.length-1)*1000/elapsed:0, poseFramesReceived: this.poseFramesReceived, retargetFramesExecuted: this.retargetFramesExecuted, lastRetargetAt: this.lastRetargetAt,avatarCanvasFound:Boolean(canvas),avatarCanvasDisplay:canvas?.style?.display||"",avatarCanvasVisibility:canvas?.style?.visibility||"",avatarCanvasComputedDisplay:computed?.display||null,avatarCanvasComputedVisibility:computed?.visibility||null,avatarModelFound:Boolean(avatar),avatarModelVisible:avatar?.visible!==false,avatarModelAttachedToScene:attached, avatarRoot: avatar }); }
+    dispose() { if (this.disposed) return; this.eventTarget.removeEventListener("pose-runtime:frame", this.onFrame); this.bodyFollower.restore(); this.solver.dispose(); this.disposed = true; }
   }
-  return Object.freeze({ LiveAvatarMirror,AvatarPresentationStabilizer,PRESENTATION_DEFAULTS });
+
+  return Object.freeze({ LiveAvatarMirror, AvatarPresentationStabilizer, AvatarBodyFollower, PRESENTATION_DEFAULTS, BODY_FOLLOW_DEFAULTS });
 });
