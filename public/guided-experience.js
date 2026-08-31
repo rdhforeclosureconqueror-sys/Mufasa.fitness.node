@@ -42,7 +42,7 @@
     yoga: [
       { target: '[data-tour="yoga-overview"]', title: "Yoga for movement and recovery", body: "Use Yoga sessions for movement, recovery, and focus alongside your training." },
       { target: '[data-tour="yoga-catalog"]', title: "Choose a session", body: "Browse the available sessions and select one that fits your time and focus." },
-      { target: '[data-tour="yoga-detail"]', optional: true, title: "Review the session", body: "See the poses and session guidance before you begin. Camera guidance is optional, and video or frames are not stored." }
+      { target: '[data-tour="yoga-detail"], [data-tour="yoga-catalog"]', title: "Review the session", body: "Open a Yoga session to review the poses and guidance before you begin. If you have not opened one yet, choose it from this session list first. Camera guidance is optional, and video or frames are not stored." }
     ],
     nutrition: [
       { target: '[data-tour="nutrition-scan"]', title: "Scan a packaged food", body: "Scan a supported UPC or EAN barcode, then review the product information before saving it." },
@@ -53,15 +53,21 @@
       { target: '[data-tour="nutrition-summary"]', title: "Review today", body: "Check today’s journal and summary, refresh it after changes, and edit entries when needed." },
       { target: '[data-tour="weekly-plan"]', optional: true, title: "Plan your week", body: "Build a practical weekly food plan, grocery options, and daily missions when those tools are useful to you." }
     ],
-    "run-club": [{ target: "main", title: "Run Club", body: "Choose an available activity, set a realistic goal, and return here to continue your progress." }],
+    "run-club": [{ target: "main", title: "Run Club", body: "This is the free Stepping Into Greatness Run Club entry page. Learn how it works here, then choose Start free or Start your first run when you are ready. If Pocket PT needs you to sign in, the sign-in flow should return you to the member Run Club instead of dropping you at the dashboard." }],
     progress: [{ target: '[data-tour="progress-summary"]', title: "Progress & Rewards", body: "Review your saved workout history, progress, streaks, rewards, and the next action available to you." }],
-    avatar: [{ target: '[data-tour="avatar-controls"]', title: "Your avatar", body: "Use the currently available controls to choose or upload a compatible personalized avatar. Availability can vary by device." }]
+    avatar: [
+      { target: '[data-tour="avatar-controls"]', title: "Step 1 — Open Avatar Setup", body: "Tap Create Avatar to open the Avatar Setup window. This starts the process; your avatar is not created in a single tap." },
+      { target: '[data-tour="avatar-controls"]', title: "Step 2 — Create your avatar in Avaturn", body: "Inside Avatar Setup, tap Open Avaturn Creator. Create and customize your avatar there, then export or download the .glb file to your device." },
+      { target: '[data-tour="avatar-controls"]', title: "Step 3 — Return and choose the file", body: "Come back to Pocket PT after the .glb file is saved. Reopen Avatar Setup if needed, tap Choose File, and select the .glb file you exported from Avaturn." },
+      { target: '[data-tour="avatar-controls"]', title: "Step 4 — Upload Avatar", body: "After the file is selected, tap Upload Avatar (.glb). Keep this page open while Pocket PT validates the file and saves it to your profile." },
+      { target: '[data-tour="avatar-controls"]', title: "Step 5 — Confirm and close", body: "Wait until Pocket PT confirms the saved avatar is available. Once the saved avatar is confirmed, close Avatar Setup. Your personalized avatar can then be used by supported Pocket PT experiences." }
+    ]
   };
   const tourRoutes = Object.freeze({
     introduction: "/dashboard.html", dashboard: "/dashboard.html", intake: "/workout.html#retentionFlowRoot",
     training: "/workout.html", challenge: "/challenges.html", "exercise-library": "/exercise-library.html",
     yoga: "/yoga.html", nutrition: "/nutrition.html", progress: "/dashboard.html#gamificationExperience",
-    avatar: "/workout.html#avatarCreateBtn", "run-club": "/greatness.html"
+    avatar: "/workout.html#avatarCreateBtn", "run-club": "/stepping-into-greatness.html"
   });
   const contexts = [
     { match: /dashboard\.html$/, tourId: "dashboard" }, { match: /workout\.html$/, tourId: "training" },
