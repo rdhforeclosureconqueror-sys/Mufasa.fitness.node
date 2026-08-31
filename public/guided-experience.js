@@ -18,9 +18,9 @@
     ],
     intake: [
       { target: '[data-tour="intake-start"]', title: "Your Pocket PT Intake", body: "Your Intake helps Pocket PT personalize your experience. Start or continue here; most members finish in about 3–5 minutes." },
-      { target: '[data-tour="intake-wizard"]', title: "Follow your Intake journey", body: "The Intake shows one section at a time. Your answers are saved as you continue, so the next section always matches where you are in the journey." },
-      { target: '[data-tour="intake-current-section"]', title: "Complete the section in front of you", body: "Answer the visible questions at your own pace. Later sections appear only after you save and continue." },
-      { target: '[data-tour="intake-actions"]', title: "Save and continue", body: "Use Save & Continue to move forward, or Return later to keep your place. Review and submit at the end; Pocket PT does not diagnose or provide medical treatment." }
+      { target: '[data-tour="intake-wizard"], #retentionFlowRoot', title: "Follow your Intake journey", body: "The Intake shows one section at a time. Your answers are saved as you continue, so the next section always matches where you are in the journey." },
+      { target: '[data-tour="intake-current-section"], #retentionFlowRoot', title: "Complete the section in front of you", body: "Answer the visible questions at your own pace. Later sections appear only after you save and continue." },
+      { target: '[data-tour="intake-actions"], #retentionFlowRoot', title: "Save and continue", body: "Use Save & Continue to move forward, or Return later to keep your place. Review and submit at the end; Pocket PT does not diagnose or provide medical treatment." }
     ],
     training: [
       { target: '[data-tour="weekly-plan"]', title: "Your training area", body: "Review your plan, choose today’s workout, or resume a session you already started." },
