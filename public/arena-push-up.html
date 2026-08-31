@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <title>Unleash the Beast — Push-Up Arena</title>
+  <style>
+    *{box-sizing:border-box}html,body{height:100%;margin:0;background:#050505;color:#fff;font-family:Inter,system-ui,-apple-system,sans-serif}body{display:flex;flex-direction:column}header{min-height:64px;padding:max(12px,env(safe-area-inset-top)) 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2a2a2a;background:#0b0b0b}h1{font-size:clamp(18px,4vw,28px);margin:0}.exit{color:#fff;text-decoration:none;border:1px solid #555;border-radius:10px;padding:10px 14px}.stage{position:relative;flex:1;min-height:0}.status{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center}.card{max-width:620px;background:#111;border:1px solid #333;border-radius:16px;padding:24px;box-shadow:0 18px 60px #000}.card p{color:#ccc;line-height:1.5}.error{color:#ffb4b4}.game{width:100%;height:100%;border:0;display:none;background:#000}button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}.secondary{background:#242424;color:#fff}code{word-break:break-all;color:#ddd}footer{padding:8px 14px calc(8px + env(safe-area-inset-bottom));font-size:12px;color:#777;background:#0b0b0b}
+  </style>
+</head>
+<body>
+  <header><h1>UNLEASH THE BEAST — PUSH-UP ARENA</h1><a class="exit" href="/push-up-challenge.html">Exit Arena</a></header>
+  <main class="stage">
+    <div id="status" class="status"><div class="card"><h2>Connecting to PocketPT…</h2><p id="message">Securing your arena session.</p></div></div>
+    <iframe id="game" class="game" title="Unleash the Beast Godot arena" allow="fullscreen; gamepad"></iframe>
+  </main>
+  <footer>PocketPTWorldProtocol v1 · Camera access does not start automatically.</footer>
+<script>
+(() => {
+  const status = document.getElementById('status');
+  const message = document.getElementById('message');
+  const game = document.getElementById('game');
+  const showError = (text) => { status.style.display='grid'; game.style.display='none'; message.className='error'; message.textContent=text; };
+  async function jsonFetch(url, init={}) {
+    const response = await fetch(url, { credentials:'same-origin', headers:{'Content-Type':'application/json',...(init.headers||{})}, ...init });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload?.error?.message || `Request failed (${response.status})`);
+    return payload;
+  }
+  async function start() {
+    const params = new URLSearchParams(location.hash.replace(/^#/,''));
+    const ticket = params.get('ticket');
+    if (ticket) {
+      await jsonFetch('/api/game/session-exchange', { method:'POST', body:JSON.stringify({ticket}) });
+      history.replaceState(null, document.title, location.pathname + location.search);
+    }
+    const bootstrap = await jsonFetch('/api/game/bootstrap');
+    const build = await fetch('/api/game/build', { credentials:'same-origin', cache:'no-store' });
+    if (!build.ok) {
+      const member = bootstrap?.data?.member;
+      const experience = bootstrap?.data?.experience;
+      status.innerHTML = `<div class="card"><h2>Connected to PocketPT</h2><p>Member: <strong>${escapeHtml(member?.displayName || member?.id || 'Unknown')}</strong></p><p>Member ID: <code>${escapeHtml(member?.id || '')}</code></p><p>Experience: <strong>${escapeHtml(experience?.type || '')}</strong><br>Challenge: <strong>${escapeHtml(experience?.challengeId || '')}</strong></p><p>The authenticated bridge is ready. The Godot Web export has not been supplied at <code>/game/push-up-arena/index.html</code> yet.</p><a class="exit" href="/push-up-challenge.html">Return to Push-Up Challenge</a></div>`;
+      return;
+    }
+    game.src='/game/push-up-arena/index.html';
+    game.onload=()=>{status.style.display='none';game.style.display='block'};
+  }
+  function escapeHtml(value){return String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  start().catch(error => showError(error.message + ' Launch the arena from an authenticated PocketPT session.'));
+})();
+</script>
+</body>
+</html>
