@@ -35,6 +35,7 @@ function createWorldBridge(options = {}) {
   const rootDir = options.rootDir || process.cwd();
   const godotEntryPath = path.join(rootDir, "public", "game", "push-up-arena", "index.html");
   const backendPublicUrl = String(options.backendPublicUrl || process.env.BACKEND_PUBLIC_URL || "").replace(/\/$/, "");
+  const frontendPublicUrl = String(options.frontendPublicUrl || process.env.FRONTEND_PUBLIC_URL || "").replace(/\/$/, "");
   const secureCookie = options.secureCookie == null ? process.env.NODE_ENV === "production" : Boolean(options.secureCookie);
 
   function prune() {
@@ -107,6 +108,10 @@ function createWorldBridge(options = {}) {
     };
   }
 
+  function canonicalReturnUrl() {
+    return frontendPublicUrl ? `${frontendPublicUrl}/push-up-challenge.html` : "/push-up-challenge.html";
+  }
+
   function register(app) {
     app.post("/api/game/sessions", (req, res) => {
       if (!req.auth?.userId) return res.status(401).json({ ok: false, error: { code: "UNAUTHENTICATED", message: "Authentication required" } });
@@ -117,6 +122,7 @@ function createWorldBridge(options = {}) {
       }
       const created = createTicket(req.auth);
       const launchBase = backendPublicUrl || `${req.protocol}://${req.get("host")}`;
+      const returnTo = canonicalReturnUrl();
       res.set("Cache-Control", "private, no-store");
       return res.status(201).json({
         ok: true,
@@ -124,7 +130,7 @@ function createWorldBridge(options = {}) {
           protocolVersion: PROTOCOL_VERSION,
           session: { id: created.sessionId, expiresAt: new Date(created.expiresAt).toISOString() },
           experience: { ...EXPERIENCE },
-          launchUrl: `${launchBase}/arena/push-up#ticket=${created.ticket}`
+          launchUrl: `${launchBase}/arena/push-up?returnTo=${encodeURIComponent(returnTo)}#ticket=${created.ticket}`
         }
       });
     });
@@ -184,10 +190,11 @@ function createWorldBridge(options = {}) {
     createTicket,
     exchangeTicket,
     bootstrap,
+    canonicalReturnUrl,
     parseCookies,
     readSession,
     prune,
-    constants: { PROTOCOL_VERSION, EXPERIENCE, ARENA_COOKIE, ttlMs, godotEntryPath }
+    constants: { PROTOCOL_VERSION, EXPERIENCE, ARENA_COOKIE, ttlMs, godotEntryPath, frontendPublicUrl }
   };
 }
 
