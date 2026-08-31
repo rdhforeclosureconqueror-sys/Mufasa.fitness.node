@@ -40,6 +40,14 @@ test("arena shell uses server-owned return config then exchanges fragment ticket
   assert.doesNotMatch(html, /new URLSearchParams\(location\.search\).*returnTo/);
 });
 
+test("arena exit explicitly revokes the scoped arena session before returning to PocketPT", () => {
+  const html = read("public/arena-push-up.html");
+  assert.match(html, /data-arena-exit/);
+  assert.match(html, /fetch\('\/api\/game\/session',\s*\{\s*method:'DELETE'/);
+  assert.match(html, /credentials:'same-origin'/);
+  assert.match(html, /location\.assign\(destination \|\| returnTo\)/);
+});
+
 test("world bridge owns the canonical PocketPT return URL", () => {
   const source = read("src/world/worldBridge.js");
   assert.match(source, /FRONTEND_PUBLIC_URL/);
@@ -51,4 +59,6 @@ test("world bridge owns the canonical PocketPT return URL", () => {
 test("Render starts the bounded world bridge server", () => {
   const render = read("render.yaml");
   assert.match(render, /startCommand:\s*node world-bridge-server\.js/);
+  assert.match(render, /FRONTEND_PUBLIC_URL/);
+  assert.match(render, /https:\/\/mufasafitsite\.onrender\.com/);
 });
