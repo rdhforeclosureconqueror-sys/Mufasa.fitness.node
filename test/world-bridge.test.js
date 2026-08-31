@@ -11,22 +11,23 @@ function requestWithCookie(cookie = "") {
 test("world bridge creates an experience-scoped one-time launch ticket", () => {
   let clock = 1_700_000_000_000;
   const bridge = createWorldBridge({ now: () => clock, ttlMs: 60_000, secureCookie: false });
-  const created = bridge.createTicket({ userId: "member_a", email: "member.a@example.com", jti: "canonical-jti" });
+  const created = bridge.createTicket({ userId: "member_a", name: "Member A", email: "member.a@example.com", jti: "canonical-jti" });
   assert.ok(created.ticket.length >= 40);
   const first = bridge.exchangeTicket(created.ticket);
   assert.ok(first);
   assert.equal(first.session.userId, "member_a");
+  assert.equal(first.session.displayName, "Member A");
   assert.deepEqual(first.session.experience, EXPERIENCE);
   assert.equal(bridge.exchangeTicket(created.ticket), null, "launch ticket must be one-time use");
 });
 
 test("bootstrap exposes minimum member and experience data only", () => {
   const bridge = createWorldBridge({ now: () => 1_700_000_000_000, ttlMs: 60_000, secureCookie: false });
-  const created = bridge.createTicket({ userId: "member_b", email: "rashad@example.com", jti: "canonical-secret-id" });
+  const created = bridge.createTicket({ userId: "member_b", name: "Rashad", email: "rashad@example.com", jti: "canonical-secret-id" });
   const exchanged = bridge.exchangeTicket(created.ticket);
   const payload = bridge.bootstrap(exchanged.session);
   assert.equal(payload.protocolVersion, PROTOCOL_VERSION);
-  assert.deepEqual(payload.member, { id: "member_b", displayName: "rashad" });
+  assert.deepEqual(payload.member, { id: "member_b", displayName: "Rashad" });
   assert.deepEqual(payload.experience, { type: "PUSH_UP_ARENA", challengeId: "push_up" });
   assert.equal(payload.avatar, null);
   assert.deepEqual(payload.api, { baseUrl: "/api/game" });
@@ -36,6 +37,16 @@ test("bootstrap exposes minimum member and experience data only", () => {
   assert.equal(serialized.includes("password"), false);
   assert.equal(serialized.includes("health"), false);
   assert.equal(serialized.includes("intake"), false);
+});
+
+test("display name never derives from email or user id", () => {
+  const bridge = createWorldBridge({ secureCookie: false });
+  const withoutName = bridge.exchangeTicket(bridge.createTicket({ userId: "private-member-id", email: "private.person@example.com" }).ticket);
+  const payload = bridge.bootstrap(withoutName.session);
+  assert.equal(payload.member.displayName, "Member");
+  const serialized = JSON.stringify(payload);
+  assert.equal(serialized.includes("private.person"), false);
+  assert.equal(serialized.includes("private-member-id"), true, "canonical member id remains part of the explicit protocol identity contract");
 });
 
 test("expired launch ticket fails closed", () => {
