@@ -10,7 +10,7 @@
   </style>
 </head>
 <body>
-  <header><h1>UNLEASH THE BEAST — PUSH-UP ARENA</h1><a class="exit" href="/push-up-challenge.html">Exit Arena</a></header>
+  <header><h1>UNLEASH THE BEAST — PUSH-UP ARENA</h1><a id="exitArena" class="exit" href="/push-up-challenge.html">Exit Arena</a></header>
   <main class="stage">
     <div id="status" class="status"><div class="card"><h2>Connecting to PocketPT…</h2><p id="message">Securing your arena session.</p></div></div>
     <iframe id="game" class="game" title="Unleash the Beast Godot arena" allow="fullscreen; gamepad"></iframe>
@@ -21,6 +21,10 @@
   const status = document.getElementById('status');
   const message = document.getElementById('message');
   const game = document.getElementById('game');
+  const exitArena = document.getElementById('exitArena');
+  const requestedReturnTo = new URLSearchParams(location.search).get('returnTo');
+  const returnTo = requestedReturnTo && /^https?:\/\//i.test(requestedReturnTo) ? requestedReturnTo : '/push-up-challenge.html';
+  exitArena.href = returnTo;
   const showError = (text) => { status.style.display='grid'; game.style.display='none'; message.className='error'; message.textContent=text; };
   async function jsonFetch(url, init={}) {
     const response = await fetch(url, { credentials:'same-origin', headers:{'Content-Type':'application/json',...(init.headers||{})}, ...init });
@@ -40,7 +44,7 @@
     if (!build.ok) {
       const member = bootstrap?.data?.member;
       const experience = bootstrap?.data?.experience;
-      status.innerHTML = `<div class="card"><h2>Connected to PocketPT</h2><p>Member: <strong>${escapeHtml(member?.displayName || member?.id || 'Unknown')}</strong></p><p>Member ID: <code>${escapeHtml(member?.id || '')}</code></p><p>Experience: <strong>${escapeHtml(experience?.type || '')}</strong><br>Challenge: <strong>${escapeHtml(experience?.challengeId || '')}</strong></p><p>The authenticated bridge is ready. The Godot Web export has not been supplied at <code>/game/push-up-arena/index.html</code> yet.</p><a class="exit" href="/push-up-challenge.html">Return to Push-Up Challenge</a></div>`;
+      status.innerHTML = `<div class="card"><h2>Connected to PocketPT</h2><p>Member: <strong>${escapeHtml(member?.displayName || member?.id || 'Unknown')}</strong></p><p>Member ID: <code>${escapeHtml(member?.id || '')}</code></p><p>Experience: <strong>${escapeHtml(experience?.type || '')}</strong><br>Challenge: <strong>${escapeHtml(experience?.challengeId || '')}</strong></p><p>The authenticated bridge is ready. The Godot Web export has not been supplied at <code>/game/push-up-arena/index.html</code> yet.</p><a class="exit" href="${escapeHtml(returnTo)}">Return to Push-Up Challenge</a></div>`;
       return;
     }
     game.src='/game/push-up-arena/index.html';
