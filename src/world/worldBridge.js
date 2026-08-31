@@ -24,9 +24,7 @@ function parseCookies(header = "") {
 function safeDisplayName(auth = {}) {
   const explicit = String(auth.name || "").trim();
   if (explicit) return explicit.slice(0, 120);
-  const email = String(auth.email || "").trim();
-  if (email.includes("@")) return email.split("@")[0].slice(0, 120);
-  return String(auth.userId || "Member").slice(0, 120);
+  return "Member";
 }
 
 function createWorldBridge(options = {}) {
