@@ -22,13 +22,7 @@ describe('avatar calibration exclusive speech lock', () => {
       spoken.push(text);
       return new Promise((resolve) => { resolveSpeech = resolve; });
     };
-    const calibration = new AvatarMirrorCalibration({
-      now: () => now,
-      speak,
-      stableFrames: 1,
-      settleMs: 1500,
-      baseHoldMs: 1500
-    });
+    const calibration = new AvatarMirrorCalibration({ now: () => now, speak, stableFrames: 1, settleMs: 1500, baseHoldMs: 1500 });
     const frame = {
       timestamp: now,
       confidence: { bodyDetected: true },
@@ -49,8 +43,7 @@ describe('avatar calibration exclusive speech lock', () => {
     assert.equal(calibration.diagnostics().calibrationState, 'BODY_FOUND');
 
     resolveSpeech({ ok: true });
-    await Promise.resolve();
-    await Promise.resolve();
+    await Promise.resolve(); await Promise.resolve();
     assert.equal(calibration.diagnostics().calibrationState, 'SETTLING');
     assert.deepEqual(spoken, ['I can see you. Get into your base position and hold still.']);
   });
@@ -62,10 +55,7 @@ describe('avatar calibration exclusive speech lock', () => {
     const spoken = [];
     const calibration = new AvatarMirrorCalibration({
       now: () => now,
-      speak: (text) => {
-        spoken.push(text);
-        return new Promise((resolve) => resolvers.push(resolve));
-      },
+      speak: (text) => { spoken.push(text); return new Promise((resolve) => resolvers.push(resolve)); },
       stableFrames: 1,
       settleMs: 10,
       baseHoldMs: 20
@@ -113,6 +103,40 @@ describe('avatar calibration exclusive speech lock', () => {
     const result = await activateCanonicalCoachVoice();
     assert.equal(result.ok, true);
     assert.deepEqual(calls, [['setMuted', false], ['unlock'], ['startListening']]);
+  });
+
+  it('uses conversation-owned calibration speech so existing Mufasa stop recognition can interrupt it', async () => {
+    const calls = [];
+    global.CoachRuntime = {
+      getState: () => ({ muted: false }),
+      speak: async (text, source, options) => {
+        calls.push({ text, source, options });
+        return { ok: true };
+      }
+    };
+    const { AvatarCalibrationSpeechArbiter } = require(mirrorPath);
+    const arbiter = new AvatarCalibrationSpeechArbiter();
+    const result = await arbiter.queue('Hold still.');
+    assert.equal(result.ok, true);
+    assert.equal(calls[0].source, 'conversation-avatar-calibration');
+    assert.equal(calls[0].options.owner, 'avatar_calibration');
+    assert.equal(calls[0].options.interruptible, true);
+  });
+
+  it('treats a cancelled coach response as Mufasa stop and prevents queued speech from continuing', async () => {
+    const stopped = [];
+    global.CoachRuntime = {
+      getState: () => ({ muted: false }),
+      speak: async () => ({ cancelled: true }),
+      stopAllSpeech: (reason) => stopped.push(reason)
+    };
+    const { AvatarCalibrationSpeechArbiter } = require(mirrorPath);
+    const arbiter = new AvatarCalibrationSpeechArbiter();
+    const result = await arbiter.queue('Taking your base position now.');
+    assert.equal(result.reason, 'mufasa_stop');
+    assert.deepEqual(stopped, ['mufasa_stop']);
+    const later = await arbiter.queue('This must not play.');
+    assert.equal(later.reason, 'calibration_speech_stopped');
   });
 
   it('supports an explicit calibration stop that clears speech and releases the lock', () => {
