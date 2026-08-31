@@ -8,6 +8,7 @@
     ["SESSION_CREATE", "Arena session created"],
     ["ARENA_NAVIGATION", "Navigate to arena"]
   ];
+  const DEFINITIVE_AUTH_FAILURES = new Set(["missing_token", "invalid_token", "expired_token", "invalid_session"]);
   const debugState = new Map(DEBUG_STAGES.map(([id, label]) => [id, { id, label, status: "WAITING", detail: "", at: null }]));
 
   function clean(value) {
@@ -85,6 +86,23 @@
     return `${global.location?.pathname || "/push-up-challenge.html"}${global.location?.search || ""}${global.location?.hash || ""}`;
   }
 
+  function redirectToPocketPTSignIn(reason = "missing_token") {
+    const returnTo = currentReturnTo();
+    let target;
+    if (global.AuthNavigation?.loginUrl) {
+      target = global.AuthNavigation.loginUrl(returnTo);
+    } else {
+      const login = new URL("/login.html", global.location.origin);
+      login.searchParams.set("returnTo", returnTo);
+      target = `${login.pathname}${login.search}`;
+    }
+    mark("AUTH_READY", "WAITING", `PocketPT sign-in required on this device (${reason})`);
+    global.location.replace(target);
+    const error = new Error("Redirecting to PocketPT sign-in.");
+    error.code = "AUTH_REDIRECT";
+    throw error;
+  }
+
   async function resolveArenaAuth() {
     if (global.AuthNavigation?.requireUser) {
       const result = await global.AuthNavigation.requireUser({ returnTo: currentReturnTo() });
@@ -95,10 +113,12 @@
         throw error;
       }
       if (result?.ok && result?.auth?.token) return result.auth;
+      if (DEFINITIVE_AUTH_FAILURES.has(result?.reason)) redirectToPocketPTSignIn(result.reason);
       if (result?.reason && result?.retryable) {
         const refreshed = await global.AuthStateRuntime?.refreshAuthStatus?.({ reason: "world-bridge-launch-retry" });
         const auth = refreshed?.auth || global.AuthStateRuntime?.getCanonicalAuthState?.();
         if (refreshed?.ok && auth?.token) return auth;
+        if (DEFINITIVE_AUTH_FAILURES.has(refreshed?.reason)) redirectToPocketPTSignIn(refreshed.reason);
       }
     }
 
@@ -106,6 +126,7 @@
     const auth = readiness?.auth || global.AuthStateRuntime?.getCanonicalAuthState?.();
     const token = auth?.token || global.AuthStateRuntime?.getAuthToken?.();
     if (readiness?.ok && token) return { ...(auth || {}), token };
+    if (DEFINITIVE_AUTH_FAILURES.has(readiness?.reason)) redirectToPocketPTSignIn(readiness.reason);
     return null;
   }
 
@@ -114,8 +135,8 @@
     const auth = await resolveArenaAuth();
     const token = auth?.token;
     if (!token) {
-      mark("AUTH_READY", "FAIL", "Canonical PocketPT authentication is unavailable on this device");
-      throw new Error("Sign in to PocketPT on this device before entering the arena.");
+      mark("AUTH_READY", "FAIL", "Canonical PocketPT authentication is temporarily unavailable on this device");
+      throw new Error("PocketPT authentication could not be verified. Try again in a moment.");
     }
     mark("AUTH_READY", "PASS", "Canonical PocketPT session restored");
     const backendOrigin = global.MaatApiClient?.origin?.()
