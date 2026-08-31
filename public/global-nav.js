@@ -1,6 +1,6 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD = "20260824-global-nav-production-repair-v3";
+  const FRONTEND_BUILD = "20260831-admin-diagnostics-access-v1";
   if (global.MaatNavigation?.bundle === FRONTEND_BUILD) return;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "global-nav.js": FRONTEND_BUILD });
   const NAV_ITEMS = Object.freeze([
@@ -26,13 +26,28 @@
   const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
   const roleSet = user => new Set([user?.role,...(user?.roles||[])].filter(Boolean).map(value=>String(value).toLowerCase()));
   const allowed = (item,state) => item.auth !== "member" || (state.isAuthenticated && (!item.roles || item.roles.some(role=>roleSet(state.user).has(role))));
+  const DIAGNOSTIC_ROLES = new Set(["admin","super_admin"]);
+  const hasDiagnosticRole = user => [...roleSet(user)].some(role => DIAGNOSTIC_ROLES.has(role));
   const diagnostics = global.__MAAT_GLOBAL_NAV_DIAGNOSTICS__ = {
     bundle: FRONTEND_BUILD, initializationCount: 0, menuButtonFound: "NO", clickListenerAttached: "NO",
-    drawerFound: "NO", backdropFound: "NO", state: "closed", authRole: "restoring", currentPage: global.location?.pathname || "unknown"
+    drawerFound: "NO", backdropFound: "NO", state: "closed", authRole: "restoring", currentPage: global.location?.pathname || "unknown",
+    diagnosticAccess: "DENIED"
   };
   const DEFINITIVE_SIGNED_OUT_REASONS = new Set(["missing_token", "invalid_token", "expired_token", "invalid_session"]);
   let authPresentation = { phase: "restoring", state: null };
   let initialized = false;
+  function syncDiagnosticAccess(state) {
+    const permitted = state?.isAuthenticated === true && hasDiagnosticRole(state.user);
+    document.documentElement?.classList.toggle("maat-admin-diagnostics", permitted);
+    document.body?.classList.toggle("maat-admin-diagnostics", permitted);
+    if (!permitted) {
+      document.body?.classList.remove("developer-diagnostics");
+      try { global.localStorage?.removeItem("maatDeveloperDiagnostics"); } catch (_) {}
+    }
+    diagnostics.diagnosticAccess = permitted ? "ALLOWED" : "DENIED";
+    global.__MAAT_DIAGNOSTIC_ACCESS__ = Object.freeze({ allowed: permitted, roleRequired: ["admin","super_admin"] });
+    return permitted;
+  }
   function presentationFromReadiness(result, state) {
     if (result?.ok === true && state?.isAuthenticated === true && state?.token && state?.user) return { phase: "authenticated", state };
     if (DEFINITIVE_SIGNED_OUT_REASONS.has(result?.reason)) return { phase: "unauthenticated", state: { isAuthenticated: false, user: null } };
@@ -41,6 +56,7 @@
   function applyReadiness(result) {
     const state=global.AuthStateRuntime?.getCanonicalAuthState?.();
     authPresentation=presentationFromReadiness(result,state);
+    syncDiagnosticAccess(authPresentation.state);
     render();
     if(authPresentation.phase==="authenticated")setTimeout(()=>global.PocketPTGuide?.initialize(),250);
     return authPresentation;
@@ -50,6 +66,7 @@
     authPresentation=state?.isAuthenticated === true && state?.token && state?.user
       ? { phase:"authenticated",state }
       : { phase:"unauthenticated",state:{isAuthenticated:false,user:null} };
+    syncDiagnosticAccess(authPresentation.state);
     render();
   }
   function inspect() {
@@ -71,6 +88,7 @@
   }
   function render() {
     const wasOpen=diagnostics.state==="open",state=authPresentation.state||{isAuthenticated:false,user:null},restoring=authPresentation.phase==="restoring";
+    syncDiagnosticAccess(state);
     let header=document.querySelector(".maat-global-header");if(!header){header=document.createElement("header");header.className="maat-global-header";document.body.prepend(header)}
     const current=location.pathname==="/"?"/index.html":location.pathname,grouped=new Map();
     NAV_ITEMS.filter(item=>allowed(item,state)).forEach(item=>{if(!grouped.has(item.section))grouped.set(item.section,[]);grouped.get(item.section).push(item)});
@@ -86,11 +104,12 @@
     const toggle=event.target.closest?.(".maat-nav-toggle"),backdrop=event.target.closest?.(".maat-nav-backdrop"),signout=event.target.closest?.("[data-maat-signout]"),retry=event.target.closest?.("[data-maat-auth-retry]");
     if(toggle){event.preventDefault();setOpen(toggle.getAttribute("aria-expanded")!=="true");return}
     if(backdrop){event.preventDefault();setOpen(false);return}
-    if(retry){event.preventDefault();authPresentation={phase:"restoring",state:null};render();applyReadiness(await global.AuthStateRuntime?.restoreCanonicalAuthState?.({force:true,reason:"navigation-retry"}));return}
-    if(signout){signout.disabled=true;document.querySelector(".maat-nav-status").textContent="Signing out…";await global.AuthStateRuntime?.logout({redirectTo:"/login.html?signedOut=1"})}
+    if(retry){event.preventDefault();authPresentation={phase:"restoring",state:null};syncDiagnosticAccess(null);render();applyReadiness(await global.AuthStateRuntime?.restoreCanonicalAuthState?.({force:true,reason:"navigation-retry"}));return}
+    if(signout){signout.disabled=true;syncDiagnosticAccess(null);document.querySelector(".maat-nav-status").textContent="Signing out…";await global.AuthStateRuntime?.logout({redirectTo:"/login.html?signedOut=1"})}
   }
   function initialize() {
     if(initialized)return;initialized=true;diagnostics.initializationCount++;
+    syncDiagnosticAccess(null);
     document.addEventListener("click",onClick);diagnostics.clickListenerAttached="YES";
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&diagnostics.state==="open")setOpen(false)});
     global.addEventListener("auth:changed",applyAuthEvent);render();inspect();
@@ -99,6 +118,6 @@
     const readiness=global.AuthStateRuntime?.whenReady?.();
     if(readiness?.then)readiness.then(applyReadiness).catch(()=>applyReadiness({reason:"auth_unavailable"}));
   }
-  global.MaatNavigation={bundle:FRONTEND_BUILD,NAV_ITEMS,render,setOpen,getVisibleItems:state=>NAV_ITEMS.filter(item=>allowed(item,state)),getAuthPresentation:()=>authPresentation,presentationFromReadiness,diagnostics};
+  global.MaatNavigation={bundle:FRONTEND_BUILD,NAV_ITEMS,render,setOpen,getVisibleItems:state=>NAV_ITEMS.filter(item=>allowed(item,state)),getAuthPresentation:()=>authPresentation,presentationFromReadiness,diagnostics,hasDiagnosticRole,syncDiagnosticAccess};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialize,{once:true});else initialize();
 })(window);
