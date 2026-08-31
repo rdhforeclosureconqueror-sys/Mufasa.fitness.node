@@ -2,6 +2,15 @@
 .maat-nav-panel{width:100%;max-height:min(76vh,calc(100dvh - 88px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.maat-nav-backdrop{display:none}.maat-nav-open{overflow:hidden;overflow-x:hidden}.maat-nav-identity small,.maat-nav-link{overflow-wrap:anywhere;white-space:normal}@media(max-width:849px){.maat-global-header{position:relative}.maat-nav-panel{position:fixed;inset:0 auto 0 0;width:min(86vw,360px);max-width:calc(100vw - 44px);max-height:none;margin:0;padding:calc(18px + env(safe-area-inset-top,0px)) 14px calc(18px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));border-width:0 1px 0 0;border-radius:0;z-index:10002;overflow-x:hidden;transform:none}.maat-nav-backdrop:not([hidden]){display:block;position:fixed;inset:0;width:100vw;height:100dvh;margin:0;padding:0;border:0;border-radius:0;background:#0009;z-index:10001}.maat-nav-open{touch-action:none}}
 /* Production overlay invariant: injected navigation can never become a flex/grid column. */
 body>.maat-global-header{width:100%;min-width:0;max-width:none;flex:0 0 auto;align-self:stretch;transform:none}
+/* Developer diagnostics fail closed. Only a verified admin/super_admin account may unlock them. */
+html:not(.maat-admin-diagnostics) [data-diagnostic-panel],
+html:not(.maat-admin-diagnostics) [data-diagnostic-control],
+html:not(.maat-admin-diagnostics) .auth-consistency-diagnostics,
+html:not(.maat-admin-diagnostics) .trail-request-diagnostics,
+html:not(.maat-admin-diagnostics) #avatarDebugOverlay,
+html:not(.maat-admin-diagnostics) #frontendShellMarker,
+html:not(.maat-admin-diagnostics) #appBootStatus,
+html:not(.maat-admin-diagnostics) #clickDiagBanner{display:none!important}
 @media(max-width:849px){
   body>.maat-global-header{contain:style;width:100%;margin-left:0;margin-right:0}
   body>.maat-global-header>.maat-nav-panel{position:fixed!important;inset:0 auto 0 0!important;float:none!important;flex:none!important;width:min(86vw,360px)!important;min-width:0!important;max-width:calc(100vw - 44px)!important;margin:0!important;transform:none!important}
