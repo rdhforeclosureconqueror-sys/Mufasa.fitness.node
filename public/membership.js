@@ -3,6 +3,73 @@
 
   const global = globalScope || window;
   const STRIPE_JS_SRC = "https://js.stripe.com/v3/";
+  const FALLBACK_PLANS = Object.freeze([
+    Object.freeze({
+      id: "essential",
+      name: "PocketPT Essential",
+      shortName: "Essential",
+      monthlyCents: 999,
+      priceLabel: "$9.99",
+      interval: "month",
+      currency: "usd",
+      tagline: "Your personalized training foundation.",
+      recommended: false,
+      benefits: Object.freeze([
+        "Personalized training plan and workout calendar",
+        "Guided workout execution with saved history",
+        "Exercise Library and movement education",
+        "Challenges, personal bests, progress, streaks, and rewards",
+        "Core member dashboard and return-to-training experience"
+      ]),
+      capabilityNotes: Object.freeze([]),
+      checkoutConfigured: false
+    }),
+    Object.freeze({
+      id: "performance",
+      name: "PocketPT Performance",
+      shortName: "Performance",
+      monthlyCents: 1999,
+      priceLabel: "$19.99",
+      interval: "month",
+      currency: "usd",
+      tagline: "Training plus coaching intelligence for faster progress.",
+      recommended: true,
+      benefits: Object.freeze([
+        "Everything in Essential",
+        "AI Coach with authoritative PocketPT training context",
+        "Camera-based pose and form feedback on supported movements",
+        "Nutrition journal, nutrition missions, and connected nutrition guidance",
+        "Yoga, mobility, recovery, and adaptive training recommendations"
+      ]),
+      capabilityNotes: Object.freeze([
+        "Camera/form intelligence is available only on supported exercises and compatible devices."
+      ]),
+      checkoutConfigured: false
+    }),
+    Object.freeze({
+      id: "unleashed",
+      name: "PocketPT Unleashed",
+      shortName: "Unleashed",
+      monthlyCents: 3999,
+      priceLabel: "$39.99",
+      interval: "month",
+      currency: "usd",
+      tagline: "The complete PocketPT experience, including premium immersive capabilities as they become production-ready.",
+      recommended: false,
+      benefits: Object.freeze([
+        "Everything in Performance",
+        "Personalized avatar and premium 3D training experiences where supported",
+        "Premium challenge and arena experiences as they are released",
+        "Run Club and GPS performance tools on supported platforms",
+        "Early access to new premium PocketPT experiences after production acceptance"
+      ]),
+      capabilityNotes: Object.freeze([
+        "Immersive world, GPS, and other device-dependent experiences are included only when their production readiness requirements are satisfied."
+      ]),
+      checkoutConfigured: false
+    })
+  ]);
+
   const state = {
     embeddedCheckout: null,
     mounted: false,
@@ -12,7 +79,9 @@
     membership: null,
     membershipTier: null,
     pendingTrialEnd: null,
-    catalog: null
+    catalog: null,
+    catalogSource: null,
+    catalogLoadError: null
   };
 
   function $(id) { return global.document.getElementById(id); }
@@ -157,7 +226,7 @@
       }
 
       if (!plan.checkoutConfigured) {
-        card.appendChild(createTextElement("p", "unavailable", "Checkout setup pending"));
+        card.appendChild(createTextElement("p", "unavailable", state.catalogSource === "local-fallback" ? "Checkout availability is being verified" : "Checkout setup pending"));
       }
 
       const button = createTextElement("button", `btn choose ${plan.id === state.selectedPlanId ? "primary" : ""}`.trim(), plan.id === state.selectedPlanId ? "Selected" : `Choose ${plan.shortName}`);
@@ -194,7 +263,7 @@
       const blockedByMembership = Boolean(state.membership?.hasAccess || state.membership?.entitlement?.duplicateProtected);
       start.disabled = !plan.checkoutConfigured || blockedByMembership;
       start.textContent = !plan.checkoutConfigured
-        ? "Checkout setup pending"
+        ? (state.catalogSource === "local-fallback" ? "Verifying checkout availability" : "Checkout setup pending")
         : (blockedByMembership ? "Manage current membership" : "Start 7-day free trial");
     }
   }
@@ -213,22 +282,51 @@
 
     renderPlans();
     renderSelectedPlan();
-    if (!plan.checkoutConfigured) setStatus(`${plan.name} is defined, but its Stripe checkout price has not been configured yet.`, "warn");
+    if (state.catalogSource === "local-fallback") setStatus("Pricing is visible, but PocketPT could not verify live checkout availability. Refresh after the backend finishes deploying.", "warn");
+    else if (!plan.checkoutConfigured) setStatus(`${plan.name} is defined, but its Stripe checkout price has not been configured yet.`, "warn");
     else if (!state.membership?.hasAccess && !state.membership?.entitlement?.duplicateProtected) setStatus(`${plan.name} selected. Start your free trial when you're ready.`);
     return true;
   }
 
-  async function loadCatalog() {
-    const catalog = await requestJSON("/api/billing/plans", { auth: false });
+  function applyCatalog(catalog, source) {
     const plans = Array.isArray(catalog?.plans) ? catalog.plans : [];
     if (plans.length !== 3) throw new Error("membership_plan_catalog_invalid");
     state.catalog = catalog;
     state.plans = plans;
+    state.catalogSource = source;
     const requested = new URLSearchParams(global.location.search).get("plan");
     const validRequested = planById(requested) ? requested : null;
     state.selectedPlanId = validRequested || catalog.defaultPlanId || plans[0].id;
     renderPlans();
     renderSelectedPlan();
+  }
+
+  async function loadCatalog() {
+    const failures = [];
+    for (const route of ["/api/billing/plan", "/api/billing/plans"]) {
+      try {
+        const catalog = await requestJSON(route, { auth: false });
+        applyCatalog(catalog, route === "/api/billing/plan" ? "canonical" : "compatibility");
+        state.catalogLoadError = null;
+        return { degraded: false, source: state.catalogSource };
+      } catch (error) {
+        failures.push({ route, status: error?.status || null, code: error?.code || "REQUEST_FAILED" });
+      }
+    }
+
+    state.catalogLoadError = failures;
+    applyCatalog({
+      schemaVersion: 2,
+      plans: FALLBACK_PLANS.map((plan) => ({
+        ...plan,
+        benefits: [...plan.benefits],
+        capabilityNotes: [...plan.capabilityNotes]
+      })),
+      defaultPlanId: "performance",
+      interval: "month",
+      currency: "usd"
+    }, "local-fallback");
+    return { degraded: true, source: state.catalogSource };
   }
 
   async function loadMembership() {
@@ -276,6 +374,10 @@
   async function mountCheckout() {
     const plan = planById(state.selectedPlanId);
     if (!plan) throw new Error("membership_plan_not_selected");
+    if (state.catalogSource === "local-fallback") {
+      setStatus("Checkout is temporarily disabled until PocketPT verifies the live billing catalog.", "warn");
+      return;
+    }
     if (!plan.checkoutConfigured) {
       setStatus(`${plan.name} checkout is not configured yet.`, "warn");
       return;
@@ -348,12 +450,7 @@
   }
 
   async function boot() {
-    try {
-      await loadCatalog();
-    } catch (_) {
-      setStatus("PocketPT membership plans could not be loaded safely. Please try again later.", "error");
-      return;
-    }
+    const catalogResult = await loadCatalog();
 
     $("planGrid")?.addEventListener("click", (event) => {
       const button = event.target.closest?.("[data-select-plan]");
@@ -368,6 +465,11 @@
     $("refreshStatusBtn")?.addEventListener("click", () => refreshMembership().catch(() => setStatus("Unable to refresh membership status.", "error")));
 
     if (new URLSearchParams(global.location.search).get("checkout") === "return") show("successPanel", true);
+
+    if (catalogResult.degraded) {
+      setStatus("All three PocketPT plans are shown, but live billing verification is temporarily unavailable. Checkout stays disabled until the backend catalog responds.", "warn");
+      return;
+    }
 
     try {
       await refreshMembership();
@@ -398,7 +500,9 @@
       plans: state.plans.map((plan) => ({ ...plan })),
       selectedPlanId: state.selectedPlanId,
       activeCheckoutPlanId: state.activeCheckoutPlanId,
-      mounted: state.mounted
+      mounted: state.mounted,
+      catalogSource: state.catalogSource,
+      catalogLoadError: state.catalogLoadError ? state.catalogLoadError.map((entry) => ({ ...entry })) : null
     })
   };
 
