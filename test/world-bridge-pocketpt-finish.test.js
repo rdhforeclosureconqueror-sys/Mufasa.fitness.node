@@ -26,6 +26,17 @@ test("world launch helper creates only the fixed push-up arena experience", () =
   assert.doesNotMatch(source, /[?&](token|access_token)=/i);
 });
 
+test("launch-side bridge debug board reports the first sanitized failure", () => {
+  const source = read("public/world-bridge-launch.js");
+  for (const stage of ["PUSHUP_PAGE", "AUTH_READY", "BACKEND_RESOLVED", "SESSION_CREATE", "ARENA_NAVIGATION"]) {
+    assert.match(source, new RegExp(stage));
+  }
+  assert.match(source, /FIRST FAILURE/);
+  assert.match(source, /Copy Debug Report/);
+  assert.match(source, /Bearer \[REDACTED\]/);
+  assert.match(source, /ticket=\[REDACTED\]/);
+});
+
 test("arena shell uses server-owned return config then exchanges fragment ticket before bootstrap and Godot load", () => {
   const html = read("public/arena-push-up.html");
   const config = html.indexOf("/api/game/config");
@@ -38,6 +49,22 @@ test("arena shell uses server-owned return config then exchanges fragment ticket
   assert.ok(godotEntry > bootstrap, "Godot load must follow authenticated bootstrap");
   assert.match(html, /history\.replaceState/);
   assert.doesNotMatch(html, /new URLSearchParams\(location\.search\).*returnTo/);
+});
+
+test("arena debug command board traces every bridge boundary through Godot handshake", () => {
+  const html = read("public/arena-push-up.html");
+  for (const stage of ["ARENA_SHELL", "CONFIG", "TICKET_PRESENT", "SESSION_EXCHANGE", "FRAGMENT_SCRUB", "BOOTSTRAP", "IDENTITY", "BUILD_PROBE", "IFRAME_LOAD", "GODOT_HANDSHAKE", "EXIT_REVOKE"]) {
+    assert.match(html, new RegExp(stage));
+  }
+  assert.match(html, /World Bridge Command Board/);
+  assert.match(html, /FIRST FAILURE/);
+  assert.match(html, /Copy Debug Report/);
+  assert.match(html, /POCKETPT_GODOT_BRIDGE/);
+  assert.match(html, /data\.event==='READY'/);
+  assert.match(html, /data\.event==='ERROR'/);
+  assert.match(html, /event\.origin!==location\.origin/);
+  assert.match(html, /Bearer \[REDACTED\]/);
+  assert.match(html, /ticket=\[REDACTED\]/);
 });
 
 test("arena exit explicitly revokes the scoped arena session before returning to PocketPT", () => {
