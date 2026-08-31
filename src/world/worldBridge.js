@@ -122,7 +122,6 @@ function createWorldBridge(options = {}) {
       }
       const created = createTicket(req.auth);
       const launchBase = backendPublicUrl || `${req.protocol}://${req.get("host")}`;
-      const returnTo = canonicalReturnUrl();
       res.set("Cache-Control", "private, no-store");
       return res.status(201).json({
         ok: true,
@@ -130,7 +129,19 @@ function createWorldBridge(options = {}) {
           protocolVersion: PROTOCOL_VERSION,
           session: { id: created.sessionId, expiresAt: new Date(created.expiresAt).toISOString() },
           experience: { ...EXPERIENCE },
-          launchUrl: `${launchBase}/arena/push-up?returnTo=${encodeURIComponent(returnTo)}#ticket=${created.ticket}`
+          launchUrl: `${launchBase}/arena/push-up#ticket=${created.ticket}`
+        }
+      });
+    });
+
+    app.get("/api/game/config", (_req, res) => {
+      res.set("Cache-Control", "no-store");
+      return res.status(200).json({
+        ok: true,
+        data: {
+          protocolVersion: PROTOCOL_VERSION,
+          experience: { ...EXPERIENCE },
+          returnUrl: canonicalReturnUrl()
         }
       });
     });
