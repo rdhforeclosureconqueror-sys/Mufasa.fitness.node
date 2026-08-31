@@ -23,6 +23,16 @@ test("push-up arena launcher uses canonical auth navigation before world launch"
   assert.match(launcher, /\/api\/game\/sessions/);
 });
 
+test("arena auth loads canonical backend runtime config before retrying mobile auth", () => {
+  const launcher = read("public/world-bridge-launch.js");
+  const runtimeConfig = read("public/runtime-config.js");
+  assert.match(runtimeConfig, /https:\/\/mufasa-fitness-node\.onrender\.com/);
+  assert.match(launcher, /ensureCanonicalBackendConfig/);
+  assert.match(launcher, /\/runtime-config\.js\?v=20260831-world-bridge-backend-origin-v1/);
+  assert.match(launcher, /await ensureCanonicalBackendConfig\(\)/);
+  assert.match(launcher, /global\.MAAT_BACKEND_ORIGIN/);
+});
+
 test("definitive missing mobile auth redirects to canonical PocketPT sign-in", () => {
   const launcher = read("public/world-bridge-launch.js");
   assert.match(launcher, /DEFINITIVE_AUTH_FAILURES/);
