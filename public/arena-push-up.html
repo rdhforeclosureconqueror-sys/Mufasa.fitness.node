@@ -22,9 +22,7 @@
   const message = document.getElementById('message');
   const game = document.getElementById('game');
   const exitArena = document.getElementById('exitArena');
-  const requestedReturnTo = new URLSearchParams(location.search).get('returnTo');
-  const returnTo = requestedReturnTo && /^https?:\/\//i.test(requestedReturnTo) ? requestedReturnTo : '/push-up-challenge.html';
-  exitArena.href = returnTo;
+  let returnTo = '/push-up-challenge.html';
   const showError = (text) => { status.style.display='grid'; game.style.display='none'; message.className='error'; message.textContent=text; };
   async function jsonFetch(url, init={}) {
     const response = await fetch(url, { credentials:'same-origin', headers:{'Content-Type':'application/json',...(init.headers||{})}, ...init });
@@ -33,6 +31,11 @@
     return payload;
   }
   async function start() {
+    const config = await jsonFetch('/api/game/config', { cache:'no-store' });
+    if (config?.data?.returnUrl) {
+      returnTo = config.data.returnUrl;
+      exitArena.href = returnTo;
+    }
     const params = new URLSearchParams(location.hash.replace(/^#/,''));
     const ticket = params.get('ticket');
     if (ticket) {
