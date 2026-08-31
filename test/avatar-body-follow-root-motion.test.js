@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const THREE = require("three");
-const { AvatarBodyFollower, BODY_FOLLOW_DEFAULTS } = require("../public/motion/live-avatar-mirror");
+const { AvatarBodyFollower, BODY_FOLLOW_DEFAULTS, LIVE_SOLVER_DEFAULTS } = require("../public/motion/live-avatar-mirror");
 
 function frame({ x = 0.5, y = 0.55, bodyHeight = 0.7, confidence = 0.95 } = {}) {
   return {
@@ -14,7 +14,7 @@ function frame({ x = 0.5, y = 0.55, bodyHeight = 0.7, confidence = 0.95 } = {}) 
   };
 }
 
-test("body follower calibrates neutral stance before applying translation", () => {
+test("body follower calibrates neutral stance before applying lateral translation", () => {
   const avatar = new THREE.Group();
   const follower = new AvatarBodyFollower({ avatar, calibrationFrames: 2, smoothingLambda: 1000 });
   follower.observe(frame());
@@ -23,18 +23,6 @@ test("body follower calibrates neutral stance before applying translation", () =
   assert.equal(follower.calibrated, true);
   follower.apply(1);
   assert.ok(Math.abs(avatar.position.x) < 1e-9);
-  assert.ok(Math.abs(follower.verticalBoost) < 1e-9);
-});
-
-test("squat/floor lowering adds root descent instead of forcing the legs to carry all vertical travel", () => {
-  const avatar = new THREE.Group();
-  const follower = new AvatarBodyFollower({ avatar, calibrationFrames: 1, smoothingLambda: 1000, verticalBoostScale: 0.7 });
-  follower.observe(frame());
-  follower.observe(frame({ y: 0.75 }));
-  avatar.position.y = -0.2; // existing solver root translation happens first
-  follower.apply(1);
-  assert.ok(avatar.position.y < -0.2, "body follower should add downward root travel");
-  assert.ok(follower.verticalBoost < 0);
 });
 
 test("lateral hip travel moves the avatar root laterally for lunges", () => {
@@ -46,19 +34,37 @@ test("lateral hip travel moves the avatar root laterally for lunges", () => {
   assert.ok(avatar.position.x > 0, "avatar root should follow hip travel instead of remaining fixed");
 });
 
-test("low-confidence frames do not rewrite the body-follow target", () => {
+test("low-confidence frames do not rewrite the lateral body-follow target", () => {
   const avatar = new THREE.Group();
   const follower = new AvatarBodyFollower({ avatar, calibrationFrames: 1, smoothingLambda: 1000 });
   follower.observe(frame());
-  follower.observe(frame({ x: 0.6, y: 0.65 }));
-  const before = { x: follower.targetLateral, y: follower.targetVerticalBoost };
+  follower.observe(frame({ x: 0.6 }));
+  const before = follower.targetLateral;
   follower.observe(frame({ x: 0.1, y: 0.95, confidence: 0.1 }));
-  assert.equal(follower.targetLateral, before.x);
-  assert.equal(follower.targetVerticalBoost, before.y);
+  assert.equal(follower.targetLateral, before);
 });
 
-test("defaults keep body following bounded for live camera mirroring", () => {
+test("tracking loss returns lateral body follow toward neutral", () => {
+  let now = 1000;
+  const avatar = new THREE.Group();
+  const follower = new AvatarBodyFollower({ avatar, now: () => now, calibrationFrames: 1, smoothingLambda: 1000, missingFrameReturnMs: 100 });
+  follower.observe({ ...frame(), timestamp: now });
+  follower.observe({ ...frame({ x: 0.65 }), timestamp: now });
+  assert.notEqual(follower.targetLateral, 0);
+  now = 1200;
+  follower.markMissing(now);
+  follower.apply(1);
+  assert.ok(Math.abs(avatar.position.x) < 1e-6);
+});
+
+test("live mirror strengthens canonical vertical root travel for squat and floor transitions", () => {
+  assert.equal(LIVE_SOLVER_DEFAULTS.rootTranslationScale, 0.9);
+  assert.equal(LIVE_SOLVER_DEFAULTS.rootTranslationClamp, 0.75);
+  assert.ok(LIVE_SOLVER_DEFAULTS.rootTranslationScale > 0.45, "live mirror should allow more whole-body descent than the solver baseline");
+  assert.ok(LIVE_SOLVER_DEFAULTS.rootTranslationClamp > 0.38, "live mirror should not clamp squat/floor root travel at the former baseline");
+});
+
+test("defaults keep lateral body following bounded for live camera mirroring", () => {
   assert.ok(BODY_FOLLOW_DEFAULTS.lateralClamp > 0 && BODY_FOLLOW_DEFAULTS.lateralClamp <= 1);
-  assert.ok(BODY_FOLLOW_DEFAULTS.verticalBoostClamp > 0 && BODY_FOLLOW_DEFAULTS.verticalBoostClamp <= 1);
   assert.ok(BODY_FOLLOW_DEFAULTS.minimumConfidence >= 0.3);
 });
