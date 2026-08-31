@@ -1,6 +1,13 @@
 "use strict";
 
 const { ApiError } = require("../lib/apiResponse");
+const {
+  PLAN_IDS,
+  normalizePlanId,
+  getPlan,
+  listPublicPlans,
+  resolveStripePriceId
+} = require("../billing/membershipPlans");
 
 function requiredEnv(env, key) {
   const value = String(env?.[key] || "").trim();
@@ -15,7 +22,6 @@ function validatePrefix(value, key, prefix) {
     throw new ApiError("BILLING_CONFIG_INVALID", `${key} must use the expected Stripe prefix`, 503, { key, expectedPrefix: prefix });
   }
 }
-
 
 const RAW_PAYMENT_FIELD_NAMES = new Set([
   "card",
@@ -52,11 +58,25 @@ function rejectRawPaymentCredentialFields(body) {
   }
 }
 
-function validateCheckoutConfig(env = process.env) {
+function validateCheckoutConfig(env = process.env, requestedPlanId = null) {
   const secretKey = requiredEnv(env, "STRIPE_SECRET_KEY");
-  const priceId = requiredEnv(env, "STRIPE_PRICE_ID");
-  validatePrefix(priceId, "STRIPE_PRICE_ID", "price_");
-  return { secretKey, priceId };
+  const planId = normalizePlanId(requestedPlanId) || (requestedPlanId == null || requestedPlanId === "" ? PLAN_IDS.PERFORMANCE : null);
+  if (!planId) {
+    throw new ApiError("MEMBERSHIP_PLAN_INVALID", "Select a valid PocketPT membership plan", 400, {
+      allowedPlanIds: listPublicPlans(env).map((plan) => plan.id)
+    });
+  }
+
+  const plan = getPlan(planId);
+  const priceId = resolveStripePriceId(planId, env);
+  if (!priceId) {
+    throw new ApiError("BILLING_CONFIG_MISSING", `${plan.stripePriceEnv} is required for ${plan.name} checkout`, 503, {
+      missing: plan.stripePriceEnv,
+      planId
+    });
+  }
+  validatePrefix(priceId, plan.stripePriceEnv, "price_");
+  return { secretKey, priceId, planId, plan };
 }
 
 function validatePortalConfig(env = process.env) {
@@ -87,19 +107,23 @@ function resolvePublicBaseUrl({ env = process.env, req = null } = {}) {
   });
 }
 
-function resolveMembershipReturnUrl({ env = process.env, req = null } = {}) {
-  return `${resolvePublicBaseUrl({ env, req })}/membership.html?checkout=return`;
+function resolveMembershipReturnUrl({ env = process.env, req = null, planId = null } = {}) {
+  const normalizedPlanId = normalizePlanId(planId);
+  const suffix = normalizedPlanId ? `&plan=${encodeURIComponent(normalizedPlanId)}` : "";
+  return `${resolvePublicBaseUrl({ env, req })}/membership.html?checkout=return${suffix}`;
 }
 
 function getPublicBillingPlan(env = process.env) {
   return {
-    name: String(env.MEMBERSHIP_PLAN_NAME || "Pocket PT Monthly Membership").trim(),
-    priceLabel: String(env.MEMBERSHIP_PRICE_LABEL || "Official monthly price shown in secure Stripe checkout").trim(),
+    schemaVersion: 2,
+    plans: listPublicPlans(env),
+    defaultPlanId: PLAN_IDS.PERFORMANCE,
     interval: "month",
-    currency: String(env.MEMBERSHIP_PRICE_CURRENCY || "usd").trim().toLowerCase(),
+    currency: "usd",
     recurringDisclosure: "Recurring monthly subscription. Manage or cancel from the secure Stripe billing portal.",
     trialPeriodDays: 7,
-    trialDisclosure: "7-day free trial. Payment method required. Cancel before the displayed trial-end date and time to avoid the first monthly charge. After the trial, membership renews monthly until canceled."
+    trialDisclosure: "7-day free trial. Payment method required. Cancel before the displayed trial-end date and time to avoid the first monthly charge. After the trial, membership renews monthly until canceled.",
+    legacySinglePlanSupported: Boolean(String(env.STRIPE_PRICE_ID || "").trim())
   };
 }
 
