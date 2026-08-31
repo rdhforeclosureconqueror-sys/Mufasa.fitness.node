@@ -26,15 +26,26 @@ test("world launch helper creates only the fixed push-up arena experience", () =
   assert.doesNotMatch(source, /[?&](token|access_token)=/i);
 });
 
-test("arena shell exchanges fragment ticket before bootstrap and Godot load", () => {
+test("arena shell uses server-owned return config then exchanges fragment ticket before bootstrap and Godot load", () => {
   const html = read("public/arena-push-up.html");
+  const config = html.indexOf("/api/game/config");
   const exchange = html.indexOf("/api/game/session-exchange");
   const bootstrap = html.indexOf("/api/game/bootstrap");
   const godotEntry = html.indexOf("/game/push-up-arena/index.html");
-  assert.ok(exchange >= 0, "arena exchange route must be present");
+  assert.ok(config >= 0, "server-owned arena config route must be present");
+  assert.ok(exchange > config, "ticket exchange must follow arena config");
   assert.ok(bootstrap > exchange, "bootstrap must follow ticket exchange");
   assert.ok(godotEntry > bootstrap, "Godot load must follow authenticated bootstrap");
   assert.match(html, /history\.replaceState/);
+  assert.doesNotMatch(html, /new URLSearchParams\(location\.search\).*returnTo/);
+});
+
+test("world bridge owns the canonical PocketPT return URL", () => {
+  const source = read("src/world/worldBridge.js");
+  assert.match(source, /FRONTEND_PUBLIC_URL/);
+  assert.match(source, /\/api\/game\/config/);
+  assert.match(source, /returnUrl:\s*canonicalReturnUrl\(\)/);
+  assert.doesNotMatch(source, /launchUrl:.*returnTo=/);
 });
 
 test("Render starts the bounded world bridge server", () => {
