@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "contractId": "bodyweight_squat_standard_v1",
+  "exerciseId": "bodyweight_squat",
+  "status": "development-coaching-contract",
+  "purpose": "Define the movement intent, hard constraints, measurable targets, coaching cues, and compensation signals that a synthesized bodyweight squat must satisfy before it can be treated as a valid squat reference.",
+  "authorityBoundary": {
+    "biomechanicalGroundTruth": false,
+    "medicalDiagnosis": false,
+    "movementScreenOnly": true,
+    "notes": "Compensation signals are coaching/assessment observations, not diagnoses. Geometry targets require avatar- or MoveNet-specific calibration."
+  },
+  "setup": {
+    "stance": {
+      "rule": "bilateral_stable_stance",
+      "cue": "Stand with both feet planted at a comfortable approximately shoulder-width stance.",
+      "measurement": "stance width normalized to avatar/user shoulder width",
+      "targetRangeShoulderWidthRatio": [0.8, 1.2],
+      "hardFail": false
+    },
+    "feet": {
+      "rule": "dual_foot_contact",
+      "cue": "Keep the whole foot planted through the squat.",
+      "hardFail": true,
+      "requiredContacts": ["left_foot", "right_foot"],
+      "flightPermitted": false
+    }
+  },
+  "phaseOrder": ["start", "descent", "bottom", "ascent", "finish"],
+  "movementIntent": {
+    "descent": [
+      "pelvis_moves_down",
+      "pelvis_moves_slightly_back",
+      "hips_flex",
+      "knees_flex_bilaterally",
+      "ankles_dorsiflex_as_required",
+      "torso_inclines_only_as_needed_for_balance"
+    ],
+    "bottom": [
+      "feet_remain_planted",
+      "left_right_load_remains_symmetric_within_tolerance",
+      "knee_target_reached_without_tuck_or_flight"
+    ],
+    "ascent": [
+      "hips_extend",
+      "knees_extend_bilaterally",
+      "pelvis_rises",
+      "return_to_stable_standing"
+    ]
+  },
+  "numericalTargets": {
+    "insideKneeAngleDegrees": {
+      "standingTarget": 180,
+      "bottomTarget": 90,
+      "bottomEngineeringToleranceDegrees": 8,
+      "notes": "Measure from the actual avatar/user hip-knee-ankle geometry; do not infer from authored bone rotation constants alone."
+    },
+    "footAnchorResidual": {
+      "target": 0,
+      "unit": "avatar_height",
+      "hardFailAbove": 0.015
+    },
+    "pelvisDirection": {
+      "descentVerticalSign": "down",
+      "descentPosteriorIntent": true,
+      "ascentVerticalSign": "up"
+    }
+  },
+  "kneeTracking": {
+    "frontViewRule": "knees_track_in_the_same_general_direction_as_the_feet_without_caving_in_or bowing_out materially",
+    "sideViewRule": "forward knee travel must remain coordinated with heel contact, ankle dorsiflexion, pelvis depth, and balance",
+    "toeLinePolicy": "do_not_hard_fail_only_because_the_knee_passes_the_toes",
+    "notes": "A blanket knees-behind-toes rule is not used. Some valid squat styles and body proportions require the knee to travel forward of the toes. The engine should instead flag excessive or uncoordinated forward translation, heel rise, loss of balance, or failure to sit the pelvis down/back."
+  },
+  "hardConstraints": [
+    "dual_foot_contact",
+    "no_flight_phase",
+    "pelvis_descends_during_descent",
+    "pelvis_rises_during_ascent",
+    "bilateral_knee_flexion_then_extension",
+    "return_to_stable_standing"
+  ],
+  "requiredPrimitives": [
+    "standing",
+    "dual_foot_ground_contact",
+    "stable_stance",
+    "hip_hinge",
+    "bilateral_knee_flexion",
+    "root_descent",
+    "crouch",
+    "bilateral_knee_extension",
+    "hip_extension",
+    "standing_reacquisition"
+  ],
+  "coachCues": [
+    "Keep both feet planted.",
+    "Sit the hips down and slightly back like sitting into a chair.",
+    "Let the knees bend and track with the feet; do not let them collapse inward.",
+    "Stay balanced through the whole foot.",
+    "Stand back up by extending the hips and knees together."
+  ],
+  "compensationSignals": [
+    {"id":"heel_rise","view":"side","meaning":"loss of whole-foot contact or insufficient coordinated ankle/hip strategy"},
+    {"id":"knee_valgus","view":"front","meaning":"knee moves inward relative to foot/hip line"},
+    {"id":"knee_bow_out","view":"front","meaning":"knee moves materially outward relative to foot/hip line"},
+    {"id":"foot_turnout","view":"front","meaning":"foot rotates outward materially during the movement"},
+    {"id":"foot_flattening","view":"front","meaning":"arch/foot position visibly collapses during the movement"},
+    {"id":"asymmetric_weight_shift","view":"front","meaning":"pelvis/body shifts materially toward one side"},
+    {"id":"excessive_forward_lean","view":"side","meaning":"torso lean dominates instead of coordinated hip-knee-ankle squat mechanics"},
+    {"id":"insufficient_depth","view":"side","meaning":"bottom knee-angle/depth target is not reached"},
+    {"id":"excessive_uncoordinated_knee_translation","view":"side","meaning":"knee translates forward without the expected coordinated pelvis, ankle and heel-contact behavior"}
+  ]
+}
