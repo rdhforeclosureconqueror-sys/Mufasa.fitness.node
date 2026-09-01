@@ -30,7 +30,7 @@
   "movementIntent": {
     "descent": [
       "pelvis_moves_down",
-      "pelvis_moves_slightly_back",
+      "pelvis_moves_back",
       "hips_flex",
       "knees_flex_bilaterally",
       "ankles_dorsiflex_as_required",
@@ -39,12 +39,13 @@
     "bottom": [
       "feet_remain_planted",
       "left_right_load_remains_symmetric_within_tolerance",
-      "knee_target_reached_without_tuck_or_flight"
+      "knee_target_reached_without_tuck_or_flight",
+      "pelvis_remains_posterior_to_knee_in_reference_side_projection"
     ],
     "ascent": [
       "hips_extend",
       "knees_extend_bilaterally",
-      "pelvis_rises",
+      "pelvis_rises_and_moves_forward_toward_standing",
       "return_to_stable_standing"
     ]
   },
@@ -64,18 +65,28 @@
       "descentVerticalSign": "down",
       "descentPosteriorIntent": true,
       "ascentVerticalSign": "up"
+    },
+    "referenceSideGeometry": {
+      "style": "hip_back_reference_squat",
+      "posteriorPelvisTravelMinAvatarHeight": 0.08,
+      "bottomKneeForwardOfToeMaxAvatarHeight": 0.02,
+      "bottomPelvisPosteriorToKneeMinAvatarHeight": 0.03,
+      "hardFailForGeneratedReference": true,
+      "notes": "These are generator constraints for this canonical reference squat, not universal human squat scoring rules. The runtime should measure actual world/side-projected joint markers before accepting a generated reference."
     }
   },
   "kneeTracking": {
-    "frontViewRule": "knees_track_in_the_same_general_direction_as_the_feet_without_caving_in_or bowing_out materially",
-    "sideViewRule": "forward knee travel must remain coordinated with heel contact, ankle dorsiflexion, pelvis depth, and balance",
-    "toeLinePolicy": "do_not_hard_fail_only_because_the_knee_passes_the_toes",
-    "notes": "A blanket knees-behind-toes rule is not used. Some valid squat styles and body proportions require the knee to travel forward of the toes. The engine should instead flag excessive or uncoordinated forward translation, heel rise, loss of balance, or failure to sit the pelvis down/back."
+    "frontViewRule": "knees_track_in_the_same_general_direction_as_the_feet_without_caving_in_or_bowing_out_materially",
+    "sideViewRule": "for the canonical generated reference squat, forward knee travel is constrained while the pelvis must travel posteriorly and whole-foot contact remains stable",
+    "toeLinePolicy": "reference_generator_envelope_not_universal_human_rule",
+    "notes": "The generator uses a stricter toe-line envelope for this reference animation because the selected coaching style is sit-back dominant. Do not reuse this as a universal human movement-screen failure rule without exercise/style-specific calibration."
   },
   "hardConstraints": [
     "dual_foot_contact",
     "no_flight_phase",
     "pelvis_descends_during_descent",
+    "pelvis_moves_posteriorly_during_descent",
+    "reference_knee_forward_travel_envelope",
     "pelvis_rises_during_ascent",
     "bilateral_knee_flexion_then_extension",
     "return_to_stable_standing"
@@ -85,6 +96,7 @@
     "dual_foot_ground_contact",
     "stable_stance",
     "hip_hinge",
+    "posterior_pelvis_shift",
     "bilateral_knee_flexion",
     "root_descent",
     "crouch",
@@ -94,8 +106,8 @@
   ],
   "coachCues": [
     "Keep both feet planted.",
-    "Sit the hips down and slightly back like sitting into a chair.",
-    "Let the knees bend and track with the feet; do not let them collapse inward.",
+    "Sit the hips down and back like sitting into a chair.",
+    "Keep the knees tracking with the feet and inside the configured reference toe-line envelope.",
     "Stay balanced through the whole foot.",
     "Stand back up by extending the hips and knees together."
   ],
@@ -108,6 +120,7 @@
     {"id":"asymmetric_weight_shift","view":"front","meaning":"pelvis/body shifts materially toward one side"},
     {"id":"excessive_forward_lean","view":"side","meaning":"torso lean dominates instead of coordinated hip-knee-ankle squat mechanics"},
     {"id":"insufficient_depth","view":"side","meaning":"bottom knee-angle/depth target is not reached"},
-    {"id":"excessive_uncoordinated_knee_translation","view":"side","meaning":"knee translates forward without the expected coordinated pelvis, ankle and heel-contact behavior"}
+    {"id":"insufficient_posterior_hip_travel","view":"side","meaning":"pelvis drops without enough backward travel for the selected sit-back reference style"},
+    {"id":"reference_knee_envelope_exceeded","view":"side","meaning":"generated reference knee travels farther forward than the configured toe-line envelope"}
   ]
 }
