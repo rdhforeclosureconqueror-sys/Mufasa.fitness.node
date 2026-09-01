@@ -1,5 +1,6 @@
 (function(){"use strict";
 const routes={
+ runclub:{title:"Free Run Club",copy:"This is the free Pocket PT running community, separate from paid Stepping Into Greatness. Complete a runner profile, choose what the club may show, then enter the 24-hour community board.",choices:[["join_run_club","Continue to Free Run Club"]]},
  everyday:{title:"Everyday fitness",copy:"Pick the result closest to what you want. Your Retention Journey will still ask the shared health, safety, schedule and training questions.",choices:[["lose","Lose up to about 20 lb"],["gain","Gain up to about 20 lb"],["tone","Tone / recomposition"],["fitness","Strength & general fitness"]]},
  transformation:{title:"Major transformation",copy:"Choose the direction of your transformation so your trainer can understand your starting goal immediately.",choices:[["major_loss","Major weight loss"],["major_gain","Major weight gain / mass"],["recomp","Major body recomposition"],["lifestyle","Lifestyle reset"]]},
  athlete:{title:"Athlete development",copy:"The existing Athlete Performance section will ask your sport, current level and performance priorities. Rugby continues into the existing rugby supplement.",choices:[["athlete","Continue as an athlete"]]},
@@ -9,7 +10,9 @@ const pathwayFor=r=>r==="athlete"?"athlete_performance":r==="wellness"?"yoga_wel
 const goals={lose:["Lose up to about 20 lb","lose_body_fat",-20],gain:["Gain up to about 20 lb","gain_weight",20],tone:["Tone and improve body composition","body_recomposition",null],fitness:["Build strength and general fitness","general_health",null],major_loss:["Major weight-loss transformation","lose_body_fat",null],major_gain:["Major weight-gain transformation","gain_weight",null],recomp:["Major body recomposition","body_recomposition",null],lifestyle:["Lifestyle transformation","general_health",null]};
 const $=s=>document.querySelector(s),detail=$("#detail"),grid=$("#pathways"),status=$("#status");
 function show(route){const cfg=routes[route];grid.hidden=true;detail.hidden=false;$("#detailTitle").textContent=cfg.title;$("#detailCopy").textContent=cfg.copy;$("#choices").innerHTML="";for(const [key,label] of cfg.choices){const b=document.createElement("button");b.className="choice";b.textContent=label;b.onclick=()=>save(route,key);$("#choices").appendChild(b);}status.textContent="";}
-async function save(route,choice){status.textContent="Saving your Retention Journey starting point…";const pathway=pathwayFor(route);const payload={currentStep:"identity_profile",pathwaySelection:{selected:[pathway],primary:pathway}};
+async function save(route,choice){
+ if(route==="runclub"){location.replace("/free-run-club.html?firstRun=1");return;}
+ status.textContent="Saving your Retention Journey starting point…";const pathway=pathwayFor(route);const payload={currentStep:"identity_profile",pathwaySelection:{selected:[pathway],primary:pathway}};
  if(pathway==="general_fitness"){const g=goals[choice];payload.generalFitness={enabled:true,weightChangeGoal:g[1]};payload.goals={primaryGoal:g[0]};if(g[2]!=null)payload.generalFitness.desiredWeightChange=g[2];}
  if(pathway==="athlete_performance")payload.athletePerformance={enabled:true};
  if(pathway==="yoga_wellness"){payload.yogaWellness={enabled:true};const intent={yoga:"mobility",meditation:"stress_management",breathwork:"breathing",recovery:"recovery"}[choice];payload.yogaWellness.primaryIntentions=[intent];}
