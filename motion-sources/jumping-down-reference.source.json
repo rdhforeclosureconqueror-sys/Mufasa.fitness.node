@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "jumping-down-user-reference-fbx",
+    "originalFileName": "Jumping Down.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "3be87a62e1c1cf5a5e641f68d330f03a9547d6bc572b235cc3ef4246ca25321b",
+    "bytes": 588336,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "animationStackCount": 1,
+    "animationStackName": "mixamo.com",
+    "durationSeconds": 2.933333333333333,
+    "provider": "unknown-user-provided-reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "primaryCurrentBlock": "jump_to_land",
+    "huntEffect": "STRENGTHENS_EXISTING_CANDIDATE",
+    "secondaryEvidence": ["airborne_descent", "landing_compression", "bilateral_knee_flexion", "hip_absorption", "forward_root_travel", "stabilization"],
+    "notes": "Useful longer jump-down/landing reference. It strengthens Jump → Land but does not fill Feet Jump Back, Feet Jump Forward, or Feet Out / In."
+  },
+  "observedMechanics": {
+    "hipsTranslationXRange": [-3.362022638320923, 9.344110488891602],
+    "hipsTranslationYRange": [39.82461929321289, 188.04034423828125],
+    "hipsTranslationZRange": [-20.93020248413086, 167.73159790039062],
+    "leftThighRotationXRangeDegrees": [-4.1613874435424805, 116.8944091796875],
+    "rightThighRotationXRangeDegrees": [-0.23314990103244781, 111.77011108398438],
+    "leftLowerLegRotationXRangeDegrees": [-134.5100860595703, -7.142866611480713],
+    "rightLowerLegRotationXRangeDegrees": [-136.94468688964844, -1.0286543369293213]
+  },
+  "usePolicy": {
+    "allowedInRuntime": false,
+    "purpose": "landing and jump-descent mechanics evidence",
+    "notes": "Raw FBX remains external/reference-only until redistribution rights are confirmed."
+  }
+}
