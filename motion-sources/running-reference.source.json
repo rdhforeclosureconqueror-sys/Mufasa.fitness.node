@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "running-user-reference-fbx",
+    "originalFileName": "running.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "a42c91d09ff356b8e6e8954939536bd3d2c2d2f40b0d07132c4248c4d1618ff4",
+    "bytes": 332337,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "durationSeconds": 0.7,
+    "provider": "user-provided Mixamo-derived reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "usePolicy": {
+    "purpose": "derive neutral reusable movement mechanics without copying source performance styling",
+    "allowedInRuntime": false,
+    "notes": "Raw FBX is not committed. Store extracted mechanics/provenance only until redistribution rights are confirmed."
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "candidateEvidence": ["knee_drive_left", "knee_drive_right", "running_cycle", "alternating_hip_flexion"],
+    "cautions": ["Forward travel is source-specific and should not be copied as canonical distance.", "Use as bilateral knee-drive mechanics evidence, not a running-speed template."]
+  },
+  "observedRootMotion": {
+    "durationSeconds": 0.7,
+    "rootForwardTravel": 297.875179,
+    "rootVerticalRange": 7.603249,
+    "rootKeys": 22,
+    "leftThighXRangeDegrees": [-14.5, 49.8],
+    "rightThighXRangeDegrees": [-23.2, 56.4],
+    "leftLowerLegXRangeDegrees": [-108.3, -14.5],
+    "rightLowerLegXRangeDegrees": [-110.5, -8.3]
+  },
+  "humanVisualStatus": "PENDING HUMAN TRIM/STYLE REVIEW"
+}
