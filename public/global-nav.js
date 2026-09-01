@@ -1,6 +1,6 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD = "20260831-admin-diagnostics-access-v1";
+  const FRONTEND_BUILD = "20260901-guide-center-v1";
   if (global.MaatNavigation?.bundle === FRONTEND_BUILD) return;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "global-nav.js": FRONTEND_BUILD });
   const NAV_ITEMS = Object.freeze([
@@ -17,7 +17,7 @@
     {id:"greatness",label:"Stepping Into Greatness",href:"/greatness.html",section:"Wellness",auth:"member"},
     {id:"inbox",label:"Messages / Inbox",href:"/inbox.html",section:"Communication",auth:"member"},
     {id:"membership",label:"Membership / Access",href:"/membership.html",section:"Account",auth:"member"},
-    {id:"guided-tours",label:"Help / Guided Tours",href:"#guided-tours",section:"Account",auth:"member"},
+    {id:"guided-tours",label:"Help / Guide Center",href:"/guide-center.html",section:"Account",auth:"member"},
     {id:"admin",label:"Admin Dashboard",href:"/dashboard.html#admin",section:"Administration",auth:"member",roles:["admin","super_admin"]},
     {id:"launch-readiness",label:"Launch Readiness",href:"/admin-launch-readiness.html",section:"Administration",auth:"member",roles:["admin","super_admin"]},
     {id:"avatar-development",label:"Avatar Development Board",href:"/admin-avatar-development.html",section:"Administration",auth:"member",roles:["admin","super_admin"]},
@@ -99,8 +99,6 @@
     if(wasOpen)setOpen(true,{restoreFocus:false});else inspect();
   }
   async function onClick(event) {
-    const guides=event.target.closest?.('a[href="#guided-tours"]');
-    if(guides){event.preventDefault();setOpen(false);global.PocketPTGuide?.openHelp();return}
     const toggle=event.target.closest?.(".maat-nav-toggle"),backdrop=event.target.closest?.(".maat-nav-backdrop"),signout=event.target.closest?.("[data-maat-signout]"),retry=event.target.closest?.("[data-maat-auth-retry]");
     if(toggle){event.preventDefault();setOpen(toggle.getAttribute("aria-expanded")!=="true");return}
     if(backdrop){event.preventDefault();setOpen(false);return}
