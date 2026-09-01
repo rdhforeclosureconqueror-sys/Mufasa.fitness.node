@@ -1,0 +1,20 @@
+(function(){"use strict";
+const routes={
+ everyday:{title:"Everyday fitness",copy:"Pick the result closest to what you want. This becomes your starting context; the Journey will still ask the shared safety, schedule and training questions.",choices:[
+  ["lose","Lose up to about 20 lb"],["gain","Gain up to about 20 lb"],["tone","Tone / recomposition"],["fitness","Strength & general fitness"]]},
+ transformation:{title:"Major transformation",copy:"Tell Pocket PT the direction of the transformation so your trainer can understand the case at a glance.",choices:[["major_loss","Major weight loss"],["major_gain","Major weight gain / mass"],["recomp","Major body recomposition"],["lifestyle","Lifestyle reset"]]},
+ athlete:{title:"Athlete development",copy:"The canonical Athlete Performance intake will ask your sport, current level and performance priorities. Rugby automatically opens its existing rugby supplement.",choices:[["athlete","Continue as an athlete"]]},
+ wellness:{title:"Yoga, meditation & breathwork",copy:"Choose your main wellness emphasis. The canonical Yoga & Wellness intake will then ask experience, intentions, practice preferences and mobility limitations.",choices:[["yoga","Yoga / mobility"],["meditation","Meditation / stress management"],["breathwork","Pranayama / breathwork"],["recovery","Recovery / balance"]]}
+};
+const pathwayFor=r=>r==="athlete"?"athlete_performance":r==="wellness"?"yoga_wellness":"general_fitness";
+const goals={lose:["Lose up to about 20 lb","lose_body_fat",-20],gain:["Gain up to about 20 lb","gain_weight",20],tone:["Tone and improve body composition","body_recomposition",null],fitness:["Build strength and general fitness","general_health",null],major_loss:["Major weight-loss transformation","lose_body_fat",null],major_gain:["Major weight-gain transformation","gain_weight",null],recomp:["Major body recomposition","body_recomposition",null],lifestyle:["Lifestyle transformation","general_health",null]};
+const $=s=>document.querySelector(s),detail=$("#detail"),grid=$("#pathways"),status=$("#status");let active=null;
+function show(route){active=route;const cfg=routes[route];grid.hidden=true;detail.hidden=false;$("#detailTitle").textContent=cfg.title;$("#detailCopy").textContent=cfg.copy;$("#choices").innerHTML="";for(const [key,label] of cfg.choices){const b=document.createElement("button");b.className="choice";b.textContent=label;b.onclick=()=>save(route,key);$("#choices").appendChild(b);}status.textContent="";}
+async function save(route,choice){status.textContent="Saving your starting point…";const pathway=pathwayFor(route);const payload={currentStep:"identity_profile",pathwaySelection:{selected:[pathway],primary:pathway}};
+ if(pathway==="general_fitness"){const g=goals[choice];payload.generalFitness={enabled:true,weightChangeGoal:g[1]};payload.goals={primaryGoal:g[0]};if(g[2]!=null)payload.generalFitness.desiredWeightChange=g[2];}
+ if(pathway==="athlete_performance")payload.athletePerformance={enabled:true};
+ if(pathway==="yoga_wellness"){payload.yogaWellness={enabled:true};const intent={yoga:"mobility",meditation:"stress_management",breathwork:"breathing",recovery:"recovery"}[choice];payload.yogaWellness.primaryIntentions=[intent];}
+ try{const res=await fetch("/api/me/retention/intake",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});if(res.status===401){const next=encodeURIComponent(location.pathname+location.search);location.href="/login.html?next="+next;return;}if(!res.ok){const body=await res.json().catch(()=>({}));throw new Error(body.message||"Could not save your selection.");}status.textContent="Saved. Opening your personalized intake…";location.href="/workout.html?journey=1";}catch(err){status.textContent=err.message||"Could not save your selection. Please try again.";}}
+document.querySelectorAll("[data-route]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.route)));$("#back").addEventListener("click",()=>{detail.hidden=true;grid.hidden=false;active=null;});
+const requested=new URLSearchParams(location.search).get("path");if(routes[requested])show(requested);
+})();
