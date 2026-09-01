@@ -29,8 +29,8 @@
       "id": "actions",
       "label": "Actions",
       "cards": [
-        {"id":"elbow_flex","label":"Elbow Flex","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["push-up lowering","curl","pull"],"searchHints":["push","crawl","climb","curl"]},
-        {"id":"elbow_extend","label":"Elbow Extend","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["push-up rising","press"],"searchHints":["push","shove","press"]},
+        {"id":"elbow_flex","label":"Elbow Flex","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json","/motion/push-up-motion-spec.js"],"usefulFor":["push-up lowering","curl","pull"],"searchHints":["push","crawl","climb","curl"]},
+        {"id":"elbow_extend","label":"Elbow Extend","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json","/motion/push-up-motion-spec.js"],"usefulFor":["push-up rising","press"],"searchHints":["push","shove","press"]},
         {"id":"knee_drive_left","label":"Knee Drive L","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/running-reference.source.json"],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
         {"id":"knee_drive_right","label":"Knee Drive R","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/running-reference.source.json"],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
         {"id":"feet_jump_back","label":"Feet Jump Back","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee entry"],"searchHints":["hop back","jump back","dodge back"]},
