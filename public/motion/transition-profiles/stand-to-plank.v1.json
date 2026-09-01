@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "profileId": "stand_to_plank_reference_v1",
+  "displayName": "Stand to Plank — Neutral Mechanics Reference",
+  "sourceId": "start-plank-user-reference-fbx",
+  "durationSeconds": 4.9,
+  "purpose": "Transition assistance only. Preserve live body tracking as authority while giving the avatar a neutral root/pelvis descent reference when standing-to-floor tracking becomes unstable.",
+  "runtimeStatus": "reference-only-not-wired",
+  "stylePolicy": {
+    "preserveSourcePerformanceStyling": false,
+    "preserveRootDescentMechanics": true,
+    "preservePelvisPitchMechanics": true,
+    "ignoreDecorativeOrExpressiveUpperBodyMotion": true,
+    "livePoseRemainsAuthority": true
+  },
+  "coordinateNotes": {
+    "hipTranslation": "Source FBX local hip translation delta from the first frame; source units are preserved only as relative mechanics evidence.",
+    "hipRotationDeltaDegrees": "Source FBX hip Euler rotation delta from the first frame.",
+    "rootDrop01": "Coarse normalized root descent magnitude for transition blending. 0 = standing baseline, 1 = floor/plank depth reference."
+  },
+  "anchors": [
+    {"phase":"stand","timeSeconds":0.0,"rootDrop01":0.0,"hipTranslation":{"x":0.0,"y":0.0,"z":0.0},"hipRotationDeltaDegrees":{"x":0.0,"y":0.0,"z":0.0}},
+    {"phase":"hinge","timeSeconds":0.7,"rootDrop01":0.109,"hipTranslation":{"x":11.541,"y":-6.819,"z":-17.087},"hipRotationDeltaDegrees":{"x":27.44,"y":-3.09,"z":-8.26}},
+    {"phase":"crouch","timeSeconds":1.4,"rootDrop01":0.509,"hipTranslation":{"x":13.729,"y":-31.751,"z":-20.943},"hipRotationDeltaDegrees":{"x":76.44,"y":1.81,"z":3.14}},
+    {"phase":"hands_down","timeSeconds":2.1,"rootDrop01":0.714,"hipTranslation":{"x":-4.958,"y":-44.559,"z":-14.365},"hipRotationDeltaDegrees":{"x":78.6,"y":7.96,"z":7.27}},
+    {"phase":"weight_transfer","timeSeconds":2.8,"rootDrop01":0.707,"hipTranslation":{"x":-4.708,"y":-44.149,"z":-9.117},"hipRotationDeltaDegrees":{"x":86.5,"y":9.6,"z":2.53}},
+    {"phase":"leg_extension","timeSeconds":3.5,"rootDrop01":0.815,"hipTranslation":{"x":-1.582,"y":-50.896,"z":-3.759},"hipRotationDeltaDegrees":{"x":76.6,"y":5.63,"z":-0.93}},
+    {"phase":"plank_acquire","timeSeconds":4.2,"rootDrop01":1.0,"hipTranslation":{"x":-1.548,"y":-64.0,"z":0.717},"hipRotationDeltaDegrees":{"x":69.28,"y":7.05,"z":3.31}},
+    {"phase":"plank_stable","timeSeconds":4.9,"rootDrop01":1.0,"hipTranslation":{"x":0.04,"y":-62.42,"z":3.251},"hipRotationDeltaDegrees":{"x":68.83,"y":4.24,"z":-1.43}}
+  ]
+}

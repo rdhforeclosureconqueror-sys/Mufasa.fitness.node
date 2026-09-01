@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "start-plank-user-reference-fbx",
+    "originalFileName": "Start Plank.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "c76872258a72f20b34140d660a79fbb36d234519f1fde2bfb333ebe5548fc5eb",
+    "bytes": 705664,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "animationStackCount": 1,
+    "durationSeconds": 4.9,
+    "provider": "unknown-user-provided-reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "usePolicy": {
+    "purpose": "derive neutral stand-to-plank biomechanics without copying the source performance styling",
+    "allowedInRuntime": false,
+    "derivedProfile": "public/motion/transition-profiles/stand-to-plank.v1.json",
+    "notes": "The uploaded FBX binary is intentionally not committed until its redistribution/license status is confirmed. The repository stores only a coarse mechanics profile and provenance metadata derived from inspection."
+  },
+  "observedRootMotion": {
+    "hipsStartY": 103.54351806640625,
+    "hipsEndY": 41.12348175048828,
+    "hipsNetDrop": 62.42003631591797,
+    "hipsStartRotationXDegrees": 3.8462421894073486,
+    "hipsEndRotationXDegrees": 72.67240142822266
+  },
+  "humanVisualStatus": "PENDING HUMAN TRIM/STYLE REVIEW"
+}
