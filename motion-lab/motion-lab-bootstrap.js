@@ -6,16 +6,24 @@
     if(!button)return;
     button.disabled=false;
     button.onclick=async function(){
-      var runtime=window.MotionLabRuntime, squat=window.PocketPTSquatMotionSpec, status=document.getElementById("viewerStatus");
-      if(!runtime?.loadPushUp||!squat?.spec||!squat?.validate){
+      var runtime=window.MotionLabRuntime, squat=window.PocketPTSquatMotionSpec, profiles=window.PocketPTAvatarProfiles, status=document.getElementById("viewerStatus");
+      if(!runtime?.loadPushUp||!runtime?.loadAvatar||!squat?.spec||!squat?.validate||!profiles?.profiles?.reference){
         if(status)status.textContent="Synthesized squat preview unavailable (dependency_load_failed).";
         return {status:"failed",code:"dependency_load_failed"};
       }
+
+      if(status)status.textContent="Preparing synthesized squat reference avatar…";
+      var avatarOut=await runtime.loadAvatar(profiles.profiles.reference);
+      if(avatarOut?.status!=="ready"){
+        if(status)status.textContent="Synthesized squat preview unavailable because the reference avatar failed to load.";
+        return avatarOut||{status:"failed",code:"avatar_load_failed"};
+      }
+
       var previous=window.PocketPTPushUpMotionSpec;
       window.PocketPTPushUpMotionSpec=squat;
       try {
         var out=await runtime.loadPushUp();
-        if(out?.status==="ready"&&status)status.textContent="Renderer active — synthesized Squat Engineering Reference v1 loaded. Press Play to inspect it.";
+        if(out?.status==="ready"&&status)status.textContent="Renderer active — synthesized Squat Engineering Reference v1 loaded on the Phase E reference avatar. Press Play to inspect it.";
         return out;
       } finally {
         window.PocketPTPushUpMotionSpec=previous;
