@@ -35,7 +35,7 @@
         {"id":"knee_drive_right","label":"Knee Drive R","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/running-reference.source.json"],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
         {"id":"feet_jump_back","label":"Feet Jump Back","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee entry"],"searchHints":["hop back","jump back","dodge back"]},
         {"id":"feet_jump_forward","label":"Feet Jump Forward","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee exit"],"searchHints":["hop forward","jump forward","frog jump"]},
-        {"id":"feet_out_in","label":"Feet Out / In","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["plank jack","jumping jack"],"searchHints":["jumping jack","side hop","feet apart"]},
+        {"id":"feet_out_in","label":"Feet Out / In","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/jumping-jacks-reference.source.json"],"usefulFor":["plank jack","jumping jack"],"searchHints":["jumping jack","side hop","feet apart"]},
         {"id":"vertical_jump","label":"Vertical Jump","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/jumping-up-reference.source.json"],"usefulFor":["explosive burpee","jump squat"],"searchHints":["vertical jump","jump","leap"]}
       ]
     }
