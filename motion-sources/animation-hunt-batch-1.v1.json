@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batchId": "animation-hunt-batch-1",
   "targetAnimationCount": 5,
-  "receivedAnimationCount": 25,
+  "receivedAnimationCount": 26,
   "goal": "Use a small selected batch of animation references to fill distinct missing Movement Lego evidence while keeping additional useful references organized without forcing them into the current 17-card hunt.",
   "rules": [
     "Prefer a new missing Lego block over a duplicate unless the duplicate adds a materially different mechanic.",
@@ -27,15 +27,16 @@
   "selectedAnimationCount": 5,
   "selectedCoverage": {
     "beforeCandidateOrBetter": 5,
-    "afterCandidateOrBetter": 15,
-    "newCandidateBlocks": ["ground_to_stand","split_stance","stand_to_jump","jump_to_land","knee_drive_left","knee_drive_right","vertical_jump","elbow_flex","elbow_extend","feet_out_in"],
-    "remainingEmptyBlocks": ["feet_jump_back","feet_jump_forward"]
+    "afterCandidateOrBetter": 17,
+    "newCandidateBlocks": ["ground_to_stand","split_stance","stand_to_jump","jump_to_land","knee_drive_left","knee_drive_right","vertical_jump","elbow_flex","elbow_extend","feet_out_in","feet_jump_back","feet_jump_forward"],
+    "remainingEmptyBlocks": []
   },
   "supplementalKeepStudy": [
     {"fileName":"Kettlebell Swing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/kettlebell-swing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"hip_hinge","secondaryEvidence":["hip_extension","bilateral_knee_flexion_extension","root_descent_rise","arm_swing","standing_reacquisition"]},
     {"fileName":"Jumping Down.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-down-reference.source.json","currentHuntEffect":"STRENGTHENS jump_to_land CANDIDATE","futurePrimitive":"jump_descent_landing","secondaryEvidence":["airborne_descent","landing_compression","bilateral_knee_flexion","hip_absorption","forward_root_travel","stabilization"]},
     {"fileName":"Salsa Dancing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/salsa-dancing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"lateral_step_weight_shift","secondaryEvidence":["alternating_weight_shift","lateral_root_translation","pelvis_rotation","foot_pivot","rhythmic_step_cycle","turning"]},
-    {"fileName":"Jumping Jacks.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-jacks-reference.source.json","currentHuntEffect":"Feet Out / In changes from EMPTY to CANDIDATE","futurePrimitive":"bilateral_feet_out_in","secondaryEvidence":["bilateral_leg_abduction_adduction","vertical_hop_cycle","arm_abduction_adduction","landing_recovery"]}
+    {"fileName":"Jumping Jacks.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-jacks-reference.source.json","currentHuntEffect":"Feet Out / In changes from EMPTY to CANDIDATE","futurePrimitive":"bilateral_feet_out_in","secondaryEvidence":["bilateral_leg_abduction_adduction","vertical_hop_cycle","arm_abduction_adduction","landing_recovery"]},
+    {"fileName":"Cross Jumps.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/cross-jumps-reference.source.json","currentHuntEffect":"Feet Jump Back and Feet Jump Forward change from EMPTY to CANDIDATE","futurePrimitive":"multi_direction_hop","secondaryEvidence":["bilateral_takeoff","bilateral_landing","root_translation_xz","jump_recovery"],"reason":"2.033 s cyclic jump sequence with repeated vertical hops and large X/Z root displacement that moves away from and back toward the start position. Good candidate evidence for two-foot backward/forward repositioning; still requires paired MoveNet and human review before validation."}
   ],
   "reviewedButNotSelected": [
     {"fileName":"cover to stand (2).fbx","verdict":"MAYBE","reason":"Overlaps Ground → Stand."},
@@ -56,7 +57,8 @@
     {"fileName":"stand to cover (2).fbx","verdict":"MAYBE","reason":"Overlaps Stand → Ground."}
   ],
   "nextPriorityTargets": [
-    {"rank":1,"legoBlocks":["feet_jump_back","feet_jump_forward"],"desiredMotion":"two-foot backward/forward reposition from crouch or ground support","searchTerms":["jump back","hop back","frog jump","jump forward"]},
-    {"rank":2,"legoBlocks":["stand_to_jump","vertical_jump"],"desiredMotion":"longer full takeoff cycle to strengthen the short jumping-up candidate","searchTerms":["vertical jump","jumping","jump takeoff","leap"]}
+    {"rank":1,"goal":"Strengthen candidate blocks with paired MoveNet FRONT + SIDE human recordings."},
+    {"rank":2,"goal":"Find a longer full vertical jump/takeoff cycle to replace the short jumping-up fragment."},
+    {"rank":3,"goal":"Expand beyond the initial 17-card hunt into high-value primitives already discovered: hip hinge, lateral step/weight shift, turn/pivot, deceleration, fall/roll recovery."}
   ]
 }
