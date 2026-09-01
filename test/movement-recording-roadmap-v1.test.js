@@ -9,13 +9,13 @@ const roadmapRuntime = require('../public/motion/movement-recording-roadmap');
 const roadmap = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/motion/registry/movement-recording-roadmap.v1.json'), 'utf8'));
 const scavenger = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/motion/registry/movement-lego-scavenger.v1.json'), 'utf8'));
 
-test('foundation roadmap gives the trainer eight bounded gym captures', () => {
+test('foundation roadmap gives the trainer eight bounded paired gym captures', () => {
   const tasks = roadmap.foundationSession.tasks;
-  assert.equal(roadmap.foundationSession.label, 'Foundation 8');
+  assert.equal(roadmap.foundationSession.label, 'Foundation 8 — Paired Views');
   assert.equal(tasks.length, 8);
   assert.deepEqual(tasks.map((task) => task.order), [1,2,3,4,5,6,7,8]);
   for (const task of tasks) {
-    assert.ok(['front', 'side'].includes(task.view));
+    assert.deepEqual(task.requiredViews, ['front', 'side']);
     assert.ok([5000, 10000, 15000].includes(task.durationMs));
     assert.ok(task.repetitions.length > 10);
     assert.ok(task.twoDTeaches.length > 0);
@@ -36,16 +36,16 @@ test('every roadmap primary and secondary Lego block exists in the scavenger reg
 test('roadmap distinguishes captured 2D evidence from canonical readiness', () => {
   const task = roadmap.foundationSession.tasks[0];
   assert.equal(roadmapRuntime.taskStatus(task, []).captured, false);
-  const recordings = [{ meta: { primitiveId: task.primaryBlockId } }];
+  const recordings = task.requiredViews.map(captureView => ({ meta: { primitiveId:task.primaryBlockId, captureView } }));
   const status = roadmapRuntime.taskStatus(task, recordings);
   assert.equal(status.captured, true);
-  assert.equal(status.count, 1);
-  assert.match(roadmap.statusMeaning.CAPTURED, /does not mean/i);
+  assert.equal(status.count, 2);
+  assert.match(roadmap.statusMeaning.PAIRED_2D_COMPLETE, /not validation or READY/i);
 });
 
 test('foundation progress is computed only from saved primary-block evidence', () => {
   const tasks = roadmap.foundationSession.tasks;
-  const recordings = tasks.slice(0, 3).map((task, index) => ({ recordingId: `r${index}`, meta: { primitiveId: task.primaryBlockId } }));
+  const recordings = tasks.slice(0, 3).flatMap((task, index) => task.requiredViews.map(captureView => ({ recordingId: `r${index}-${captureView}`, meta: { primitiveId:task.primaryBlockId, captureView } })));
   const progress = roadmapRuntime.sessionProgress(tasks, recordings);
   assert.deepEqual(progress, { captured: 3, total: 8, complete: false });
 });

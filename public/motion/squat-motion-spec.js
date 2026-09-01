@@ -28,10 +28,9 @@
       root: Object.freeze({
         positionOffset: freezeVec(rootPosition),
         positionUnit: "avatar_height",
-        rotationOffsetEulerDegrees: freezeVec([0, 0, 0])
+        rotationOffsetEulerDegrees: freezeVec([pose.hipPitch, 0, 0])
       }),
       boneTargets: Object.freeze([
-        target("mixamorig:Hips", [pose.hipPitch, 0, 0]),
         target("mixamorig:Spine", [pose.spinePitch, 0, 0]),
         target("mixamorig:Spine1", [pose.spine1Pitch, 0, 0]),
         target("mixamorig:LeftUpLeg", [pose.thighPitch, 0, pose.thighOut]),
@@ -54,11 +53,11 @@
   });
   const MID = Object.freeze({
     hipPitch: 10, spinePitch: -5, spine1Pitch: -3,
-    thighPitch: -32, thighOut: 5, kneeFlex: 38, anklePitch: -5, armPitch: -18
+    thighPitch: 32, thighOut: 2, kneeFlex: -38, anklePitch: 16, armPitch: -18
   });
   const BOTTOM = Object.freeze({
     hipPitch: 18, spinePitch: -9, spine1Pitch: -5,
-    thighPitch: -62, thighOut: 8, kneeFlex: 78, anklePitch: -10, armPitch: -32
+    thighPitch: 62, thighOut: 2, kneeFlex: -78, anklePitch: 34, armPitch: -32
   });
 
   const spec = Object.freeze({
@@ -94,7 +93,7 @@
         "/motion-sources/jumping-up-reference.source.json",
         "/motion-sources/hard-landing-reference.source.json"
       ]),
-      values: "Rest-relative engineering offsets synthesized from reviewed movement relationships; values are intentionally conservative and require avatar plus human MoveNet review.",
+      values: "Rest-relative engineering offsets synthesized from reviewed movement relationships, with axis signs and root translation checked against the shipped Phase E armature. This partial-depth reference still requires human visual and MoveNet review.",
       unsupported: Object.freeze([
         "biomechanical ground truth",
         "joint torque",
@@ -109,9 +108,11 @@
     phaseOrder: Object.freeze(["start", "descent", "bottom", "ascent", "finish"]),
     phases: Object.freeze([
       phase("start", "position", 0, [0, 0, 0], STAND),
-      phase("descent", "eccentric", 0.25, [0, -0.14, -0.025], MID),
-      phase("bottom", "isometric", 0.5, [0, -0.28, -0.055], BOTTOM, { holdDurationSeconds: 0.15 }),
-      phase("ascent", "concentric", 0.75, [0, -0.14, -0.025], MID),
+      // The reference rig's leg-local X axes are reversed relative to world X.
+      // A 78-degree knee bend supports a partial squat, not a 0.28-height drop.
+      phase("descent", "eccentric", 0.25, [0, -0.025, -0.025], MID),
+      phase("bottom", "isometric", 0.5, [0, -0.10, -0.038], BOTTOM),
+      phase("ascent", "concentric", 0.75, [0, -0.025, -0.025], MID),
       phase("finish", "completion", 1, [0, 0, 0], STAND)
     ])
   });

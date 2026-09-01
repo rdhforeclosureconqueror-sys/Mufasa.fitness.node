@@ -181,7 +181,22 @@
     script.id = 'movementCaptureStudioRuntimeScript';
     script.src = '/motion/movement-capture-studio.js?v=2026-09-01-paired-views-milestones-v1';
     script.async = true;
-    script.onload = () => { state.movementCaptureStudioLoaded = Boolean(globalScope.PocketPTMovementCaptureStudio); state.updatedAt = new Date().toISOString(); renderBootStatus('movement-capture-studio-loaded'); loadMovementCaptureDebug(); };
+    script.onload = async () => {
+      try {
+        const workspace = await globalScope.PocketPTMovementCaptureStudio?.ready;
+        if (!workspace) throw new Error('movement-capture-studio-ui-unavailable');
+        state.movementCaptureStudioLoaded = true;
+        state.updatedAt = new Date().toISOString();
+        renderBootStatus('movement-capture-studio-loaded');
+        loadMovementCaptureDebug();
+      } catch (_) {
+        state.lastError = 'movement_capture_studio_init_failed';
+        state.updatedAt = new Date().toISOString();
+        renderBootStatus('movement-capture-studio-init-failed');
+        globalScope.__diagnosticAutoReport?.(state.lastError);
+        loadMovementCaptureDebug();
+      }
+    };
     script.onerror = () => { state.lastError = 'movement_capture_studio_load_failed'; state.updatedAt = new Date().toISOString(); renderBootStatus('movement-capture-studio-load-failed'); globalScope.__diagnosticAutoReport?.('movement_capture_studio_load_failed'); };
     document.head.appendChild(script); renderBootStatus('movement-capture-studio-requested');
   }
@@ -194,7 +209,22 @@
     script.id = 'movementRecordingRoadmapRuntimeScript';
     script.src = '/motion/movement-recording-roadmap.js?v=2026-09-01-paired-roadmap-v2';
     script.async = true;
-    script.onload = () => { state.movementRoadmapLoaded = Boolean(globalScope.PocketPTMovementRecordingRoadmap); state.updatedAt = new Date().toISOString(); renderBootStatus('movement-roadmap-loaded'); loadMovementCaptureStudio(); };
+    script.onload = async () => {
+      try {
+        const workspace = await globalScope.PocketPTMovementRecordingRoadmap?.ready;
+        if (!workspace) throw new Error('movement-roadmap-ui-unavailable');
+        state.movementRoadmapLoaded = true;
+        state.updatedAt = new Date().toISOString();
+        renderBootStatus('movement-roadmap-loaded');
+        loadMovementCaptureStudio();
+      } catch (_) {
+        state.lastError = 'movement_roadmap_init_failed';
+        state.updatedAt = new Date().toISOString();
+        renderBootStatus('movement-roadmap-init-failed');
+        globalScope.__diagnosticAutoReport?.(state.lastError);
+        loadMovementCaptureDebug();
+      }
+    };
     script.onerror = () => { state.lastError = 'movement_roadmap_load_failed'; state.updatedAt = new Date().toISOString(); renderBootStatus('movement-roadmap-load-failed'); globalScope.__diagnosticAutoReport?.('movement_roadmap_load_failed'); };
     document.head.appendChild(script); renderBootStatus('movement-roadmap-requested');
   }
@@ -207,7 +237,22 @@
     script.id = 'movementRecorderRuntimeScript';
     script.src = '/motion/movement-recorder.js?v=2026-09-01-movement-lego-recorder-v1';
     script.async = true;
-    script.onload = () => { state.movementRecorderLoaded = Boolean(globalScope.PocketPTMovementRecorder); state.updatedAt = new Date().toISOString(); renderBootStatus('movement-recorder-loaded'); loadTrainerMovementRoadmap(); };
+    script.onload = async () => {
+      try {
+        const workspace = await globalScope.PocketPTMovementRecorder?.ready;
+        if (!workspace) throw new Error('movement-recorder-ui-unavailable');
+        state.movementRecorderLoaded = true;
+        state.updatedAt = new Date().toISOString();
+        renderBootStatus('movement-recorder-loaded');
+        loadTrainerMovementRoadmap();
+      } catch (_) {
+        state.lastError = 'movement_recorder_init_failed';
+        state.updatedAt = new Date().toISOString();
+        renderBootStatus('movement-recorder-init-failed');
+        globalScope.__diagnosticAutoReport?.(state.lastError);
+        loadMovementCaptureDebug();
+      }
+    };
     script.onerror = () => { state.lastError = 'movement_recorder_load_failed'; state.updatedAt = new Date().toISOString(); renderBootStatus('movement-recorder-load-failed'); globalScope.__diagnosticAutoReport?.('movement_recorder_load_failed'); };
     document.head.appendChild(script); renderBootStatus('movement-recorder-requested');
   }

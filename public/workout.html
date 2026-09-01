@@ -1728,11 +1728,23 @@ First failing boundary: NONE</pre>
         }
       };
       appendPilotEventLocal(body);
+      const token = window.AuthStateRuntime?.getAuthToken?.();
+      if (!token) return;
+      // The server accepts bounded operational events; detailed camera/render
+      // diagnostics remain in the existing local log.
+      const eventName = event === "app_loaded" ? "workout_opened" : event;
+      if (!["workout_opened", "workout_started", "workout_completed", "challenge_started", "challenge_completed", "client_error"].includes(eventName)) return;
+      const eventPayload = { route: (window.location?.pathname || "/workout.html").slice(0, 120) };
+      for (const key of ["status", "durationMs", "label", "code"]) {
+        const value = payload[key];
+        if (typeof value === "string") eventPayload[key] = value.slice(0, 120);
+        else if (typeof value === "boolean" || typeof value === "number" && Number.isFinite(value)) eventPayload[key] = value;
+      }
       if (typeof fetch === "function") {
         fetch(NODE_PILOT_EVENTS_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ event: eventName, payload: eventPayload }),
           keepalive: true
         }).catch((err) => {
           console.warn("[pilot-event] send failed", event, err?.message || err);
@@ -4316,7 +4328,7 @@ First failing boundary: NONE</pre>
 
     window.AvatarRuntime?.configureRenderEngine?.({
       constants: {
-        TRACKING_MODES, BODY_VISIBILITY, LOST_HOLD_MS, TRACKING_LOG_THROTTLE_MS,
+        TRACKING_MODES, BODY_VISIBILITY,
         MAX_HEAD_YAW, MAX_HEAD_PITCH, MAX_SHOULDER_ROLL, ROTATION_SMOOTHING,
         ROOT_SMOOTHING, ARM_SMOOTHING, HIP_SMOOTHING, SHOULDER_TILT_MULTIPLIER
       },
@@ -4334,7 +4346,6 @@ First failing boundary: NONE</pre>
       getAvatarFacingDeg: () => avatarFacingDeg,
       isLiveAvatarMirrorActive: () => Boolean(liveAvatarMirror),
       updateOverlayDiagnostics: updateAvatarOverlayDiagnostics,
-      updateDebugOverlay: updateAvatarDebugOverlay,
       setRuntimeStatus: setAvatarRuntimeStatus
     });
 

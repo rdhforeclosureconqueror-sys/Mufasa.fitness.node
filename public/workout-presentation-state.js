@@ -103,6 +103,10 @@
 
     if (desktopRenderSelector && desktopRenderSelector.value !== next) desktopRenderSelector.value = next;
     if (mobileRenderSelector && mobileRenderSelector.value !== next) mobileRenderSelector.value = next;
+    // These writes already restore the authoritative presentation. Consuming
+    // their records prevents an endless observer -> microtask -> write loop
+    // that can starve DOMContentLoaded and the movement capture UI.
+    observer?.takeRecords();
     return next;
   }
 

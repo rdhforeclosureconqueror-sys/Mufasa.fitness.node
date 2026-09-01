@@ -9,7 +9,8 @@
   'use strict';
 
   const STORAGE_KEY = 'pocketpt.motionLegoRecordings.v1';
-  const MAX_LOCAL_RECORDINGS = 8;
+  // Foundation 8 requires two distinct recordings per movement.
+  const MAX_LOCAL_RECORDINGS = 16;
   const MAX_DURATION_MS = 15000;
   const MIN_FRAME_INTERVAL_MS = 60;
   const MIN_CONFIDENCE = 0.35;
@@ -161,13 +162,14 @@
       });
     }
 
-    start({ label, primitiveId, category, durationMs = 5000, notes = '' } = {}) {
+    start({ label, primitiveId, category, durationMs = 5000, notes = '', captureView, movementId, movementName, isCustom = false } = {}) {
       if (this.state === 'RECORDING') throw new Error('movement_recording_already_active');
       const cleanLabel = String(label || '').trim();
       const cleanPrimitive = String(primitiveId || '').trim();
       if (!cleanLabel && !cleanPrimitive) throw new Error('movement_label_or_primitive_required');
       const duration = Math.max(1000, Math.min(MAX_DURATION_MS, number(durationMs, 5000)));
       this.frames = [];
+      this.latest = null;
       this.startedAt = this.now();
       this.lastAcceptedAt = null;
       this.meta = Object.freeze({
@@ -176,6 +178,13 @@
         category: String(category || '').trim() || null,
         notes: String(notes || '').trim(),
         requestedDurationMs: duration,
+        ...(['front', 'side'].includes(captureView) ? {
+          captureView,
+          movementId: String(movementId || cleanPrimitive),
+          movementName: String(movementName || cleanLabel || cleanPrimitive),
+          isCustom: Boolean(isCustom),
+          requiredViews: Object.freeze(['front', 'side'])
+        } : {}),
         source: 'movenet_pose_runtime',
         schemaVersion: 1
       });
@@ -254,11 +263,26 @@
 
   function saveLocalRecording(recording, storage) {
     if (!recording) return [];
-    const list = readLocalRecordings(storage);
+    const list = readLocalRecordings(storage).filter(item => !recording.recordingId || item?.recordingId !== recording.recordingId);
     list.unshift(recording);
     const bounded = list.slice(0, MAX_LOCAL_RECORDINGS);
-    try { storage?.setItem?.(STORAGE_KEY, JSON.stringify(bounded)); } catch (_) {}
+    if (typeof storage?.setItem !== 'function') throw new Error('local_evidence_storage_unavailable');
+    try { storage.setItem(STORAGE_KEY, JSON.stringify(bounded)); } catch (_) { throw new Error('local_evidence_save_failed'); }
     return bounded;
+  }
+
+  function recordingForExport(recording, storage) {
+    if (!recording) return null;
+    return readLocalRecordings(storage).find(item => item?.recordingId === recording.recordingId) || recording;
+  }
+
+  function evidenceUrl(reference) {
+    // repoEvidence identifies repository files; /motion-sources is not a
+    // deployed asset directory on the separate static frontend.
+    const file = reference?.startsWith('/motion-sources/') ? reference.slice(1)
+      : reference?.startsWith('/motion/') ? 'public' + reference : null;
+    if (!file || !/^[a-z0-9_./-]+$/i.test(file) || file.split('/').includes('..')) return null;
+    return 'https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/main/' + file;
   }
 
   function escapeHtml(value) {
@@ -305,8 +329,16 @@
     let registry = { sections: [] };
     try {
       const response = await global.fetch('/motion/registry/movement-lego-scavenger.v1.json', { cache: 'no-store' });
-      if (response.ok) registry = await response.json();
-    } catch (_) {}
+      if (!response.ok) throw new Error('movement_registry_unavailable');
+      registry = await response.json();
+      if (!Array.isArray(registry.sections) || !registry.sections.length) throw new Error('movement_registry_invalid');
+    } catch (_) {
+      const message = document.createElement('p');
+      message.setAttribute('role', 'alert');
+      message.textContent = 'Movement Lego evidence could not be loaded. Reload the page to retry.';
+      host.appendChild(message);
+      return null;
+    }
 
     const allCards = (registry.sections || []).flatMap((section) => (section.cards || []).map((card) => ({ ...card, sectionId: section.id, sectionLabel: section.label })));
     const wrapper = document.createElement('section');
@@ -348,7 +380,8 @@
     function renderBoard() {
       const sections = $('mlrSections');
       const recordings = localRecordings();
-      const found = new Set(recordings.map((item) => item?.meta?.primitiveId).filter(Boolean));
+      const canonicalIds = new Set(allCards.map(card => card.id));
+      const found = new Set(recordings.map((item) => item?.meta?.primitiveId).filter(id => canonicalIds.has(id)));
       const repoFound = new Set(allCards.filter((card) => card.status !== 'EMPTY').map((card) => card.id));
       const covered = new Set([...found, ...repoFound]);
       $('mlrProgress').textContent = ` · ${covered.size}/${allCards.length} blocks have evidence`;
@@ -366,7 +399,12 @@
         $('mlrPrimitive').value = card.id;
         const detail = $('mlrDetail');
         detail.hidden = false;
-        detail.innerHTML = `<strong>${escapeHtml(card.label)}</strong><br>Status: ${escapeHtml(card.status)} · Local recordings: ${evidenceCount(card.id)}<br>Useful for: ${escapeHtml((card.usefulFor || []).join(', '))}<br>Search: ${escapeHtml((card.searchHints || []).join(', '))}`;
+        const evidence = (card.repoEvidence || []).map(reference => {
+          const url = evidenceUrl(reference);
+          return url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(reference.split('/').pop())}</a>` : '';
+        }).filter(Boolean).join(' · ');
+        detail.innerHTML = `<strong>${escapeHtml(card.label)}</strong><br>Status: ${escapeHtml(card.status)} · Local recordings: ${evidenceCount(card.id)}<br>Useful for: ${escapeHtml((card.usefulFor || []).join(', '))}<br>Source evidence: ${evidence || 'None yet'}<br>Search: ${escapeHtml((card.searchHints || []).join(', '))}`;
+        $('mlrPrimitive').dispatchEvent(new global.Event('change', { bubbles:true }));
       }));
     }
 
@@ -374,8 +412,8 @@
       const recording = snapshot.latest;
       startBtn.disabled = snapshot.state === 'RECORDING';
       stopBtn.disabled = snapshot.state !== 'RECORDING';
-      saveBtn.disabled = !recording;
-      exportBtn.disabled = !recording;
+      saveBtn.disabled = snapshot.state === 'RECORDING' || !recording?.summary?.usableFrameCount;
+      exportBtn.disabled = snapshot.state === 'RECORDING' || !recording;
       if (snapshot.state === 'RECORDING') {
         status.textContent = `RECORDING · ${snapshot.frameCount} normalized frames captured. Keep the full movement visible.`;
       } else if (recording) {
@@ -394,36 +432,48 @@
           category: selected?.dataset?.category || null,
           label: $('mlrLabel').value,
           notes: $('mlrNotes').value,
-          durationMs: Number($('mlrDuration').value)
+          durationMs: Number($('mlrDuration').value),
+          ...global.__movementCaptureStudio?.captureMetadata?.(select.value)
         });
       } catch (error) { status.textContent = `Recorder blocked: ${error.message || error}`; }
     });
     stopBtn.addEventListener('click', () => recorder.stop('manual'));
     saveBtn.addEventListener('click', () => {
-      if (!recorder.latest) return;
-      saveLocalRecording(recorder.latest, global.localStorage);
-      status.textContent = `${status.textContent}\nSaved as local movement evidence. Repository status is unchanged until reviewed.`;
-      renderBoard();
+      if (!recorder.latest?.summary?.usableFrameCount || recorder.state === 'RECORDING') return;
+      try {
+        saveLocalRecording(recorder.latest, global.localStorage);
+        status.textContent = `${status.textContent}\nSaved as local movement evidence. Repository status is unchanged until reviewed.`;
+        global.dispatchEvent(new global.CustomEvent('movement-recorder:saved', { detail: { recording: recorder.latest } }));
+        renderBoard();
+      } catch (_) {
+        status.textContent = 'Local evidence could not be saved. Export JSON to keep this recording.';
+      }
     });
-    exportBtn.addEventListener('click', () => downloadJson(global, recorder.latest));
+    exportBtn.addEventListener('click', () => downloadJson(global, recordingForExport(recorder.latest, global.localStorage)));
 
     renderBoard();
     global.__movementLegoRecorder = recorder;
     return recorder;
   }
 
-  if (typeof window !== 'undefined' && window.document) {
-    if (window.document.readyState === 'loading') window.document.addEventListener('DOMContentLoaded', () => bootstrapTrainerUI(window), { once: true });
-    else bootstrapTrainerUI(window);
-  }
+  // Consumers must await the UI and its registry fetch, not just script.onload.
+  const ready = typeof window !== 'undefined' && window.document
+    ? new Promise((resolve, reject) => {
+      const start = () => bootstrapTrainerUI(window).then(resolve, reject);
+      if (window.document.readyState === 'loading') window.document.addEventListener('DOMContentLoaded', start, { once:true });
+      else start();
+    })
+    : Promise.resolve(null);
 
-  return Object.freeze({
+  return Object.freeze({ ready,
     MovementRecorder,
     compactFrame,
     normalizePacket,
     summarize,
     readLocalRecordings,
     saveLocalRecording,
+    recordingForExport,
+    evidenceUrl,
     bootstrapTrainerUI,
     STORAGE_KEY,
     MAX_LOCAL_RECORDINGS,

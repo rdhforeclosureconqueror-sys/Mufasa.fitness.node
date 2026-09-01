@@ -216,8 +216,11 @@
     }
     loadMotionSpec(spec, compiler) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
+      // Restore the avatar before compiling rest-relative offsets. Otherwise
+      // switching from a playing/paused clip bakes its pose into the next clip.
+      this.unloadMotion();
       const built = compiler?.compile?.(this.THREE, spec, this.avatar); if (!built || built.status !== "ready") return built || this.failure("motion_compile_failed");
-      this.unloadMotion(); this.motionSpec = spec; this.motionDiagnostics = built.diagnostics; this.sessionClip = built.clip; this.action = this.mixer.clipAction(built.clip, this.avatar); this.setLoop(this.loop);
+      this.motionSpec = spec; this.motionDiagnostics = built.diagnostics; this.sessionClip = built.clip; this.action = this.mixer.clipAction(built.clip, this.avatar); this.setLoop(this.loop);
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...built.diagnostics, clipName: built.clip.name, clipDuration: built.clip.duration }) });
     }
     unloadMotion() { this.stop(); if (this.action && this.mixer && this.sessionClip) this.mixer.uncacheAction?.(this.sessionClip, this.avatar); this.action = null; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; return { status: "ready" }; }

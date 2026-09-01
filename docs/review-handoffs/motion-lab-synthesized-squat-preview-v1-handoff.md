@@ -1,5 +1,7 @@
 # Independent Review Handoff — Motion Lab Synthesized Squat Preview v1
 
+Historical handoff for PR #603. The temporary global adapter described below is superseded by the [Motion Lab and Movement Lego integration repair](motion-lab-lego-integration-repair-handoff.md), which contains the current architecture, verification and human-review requirements.
+
 ## Role
 
 Act as an independent reviewer. Do not assume the authoring bot is correct. Do not merge solely from this handoff.

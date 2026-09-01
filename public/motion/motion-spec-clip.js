@@ -77,22 +77,28 @@
     };
 
     for (const requestedName of targets) {
-      const actualName = resolved.get(requestedName).actualName;
+      const node = resolved.get(requestedName).object;
       const offsets = spec.phases.map(phase => requestedName === spec.skeleton.rootBone
         ? phase.root.rotationOffsetEulerDegrees
         : phase.boneTargets.find(target => target.bone === requestedName)?.rotationOffsetEulerDegrees || [0, 0, 0]);
-      tracks.push(new THREE.QuaternionKeyframeTrack(`${actualName}.quaternion`, times, quaternionValues(requestedName, offsets), THREE.InterpolateLinear));
+      tracks.push(new THREE.QuaternionKeyframeTrack(`${node.uuid || node.name}.quaternion`, times, quaternionValues(requestedName, offsets), THREE.InterpolateLinear));
     }
 
     const rootMatch = resolved.get(spec.skeleton.rootBone);
     const root = rootMatch.object;
     const restPosition = root.position.clone();
-    const positions = spec.phases.flatMap(phase => [
-      restPosition.x + phase.root.positionOffset[0] * scale,
-      restPosition.y + phase.root.positionOffset[1] * scale,
-      restPosition.z + phase.root.positionOffset[2] * scale
-    ]);
-    tracks.push(new THREE.VectorKeyframeTrack(`${rootMatch.actualName}.position`, times, positions, THREE.InterpolateSmooth));
+    const worldPosition = root.getWorldPosition?.(new THREE.Vector3());
+    const positions = spec.phases.flatMap(phase => {
+      const offset = phase.root.positionOffset;
+      // Avatar-height offsets describe world-space displacement. The reference
+      // armature is rotated and scaled to 0.01, so convert to its local space.
+      if (worldPosition && root.parent?.worldToLocal) {
+        const point = new THREE.Vector3(worldPosition.x + offset[0] * scale, worldPosition.y + offset[1] * scale, worldPosition.z + offset[2] * scale);
+        return root.parent.worldToLocal(point).toArray();
+      }
+      return [restPosition.x + offset[0] * scale, restPosition.y + offset[1] * scale, restPosition.z + offset[2] * scale];
+    });
+    tracks.push(new THREE.VectorKeyframeTrack(`${root.uuid || root.name}.position`, times, positions, THREE.InterpolateSmooth));
 
     const clip = new THREE.AnimationClip(spec.motionId, spec.durationSeconds, tracks);
     const aliasBindings = [...resolved.values()]
