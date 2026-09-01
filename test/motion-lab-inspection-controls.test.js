@@ -6,7 +6,7 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'motion-lab/index.html'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'motion-lab/motion-lab-bootstrap.js'), 'utf8');
-const controls = fs.readFileSync(path.join(ROOT, 'motion-lab/motion-lab-inspection-controls.js'), 'utf8');
+const controls = fs.readFileSync(path.join(ROOT, 'public/motion/motion-lab-inspection-controls.js'), 'utf8');
 
 test('Motion Lab exposes exact front side back inspection presets', () => {
   for (const id of ['viewFront', 'viewRight', 'viewBack', 'viewLeft', 'viewReset']) assert.match(html, new RegExp(`id="${id}"`));
@@ -17,7 +17,7 @@ test('Motion Lab exposes exact front side back inspection presets', () => {
 
 test('inspection controls are loaded after the canonical disposable session and before Motion Lab runtime', () => {
   const sessionIndex = bootstrap.indexOf('/dev/motion-lab-assets/disposable-motion-session.js');
-  const controlsIndex = bootstrap.indexOf('/dev/motion-lab-inspection-controls.js');
+  const controlsIndex = bootstrap.indexOf('/dev/motion-lab-assets/motion-lab-inspection-controls.js');
   const runtimeIndex = bootstrap.indexOf('/dev/motion-lab-runtime.js');
   assert.ok(sessionIndex >= 0 && controlsIndex > sessionIndex && runtimeIndex > controlsIndex);
 });
