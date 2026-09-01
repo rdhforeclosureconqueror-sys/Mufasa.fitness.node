@@ -4,6 +4,7 @@
   const VERSION_URL = `${NODE_BASE_URL}/__version`;
   const FRONTEND_BUILD = globalScope.APP_BUILD_VERSION || 'unknown-frontend';
   const host = globalScope.location?.host || 'unknown-host';
+  const MOVEMENT_CAPTURE_MODE = new URLSearchParams(globalScope.location?.search || '').get('movementCaptureStudio') === '1';
   const state = globalScope.__bootCoreState = {
     loaded: true,
     frontendBuild: FRONTEND_BUILD,
@@ -17,6 +18,9 @@
     movementCaptureStudioLoaded: false,
     movementCaptureDebugRequested: false,
     movementCaptureDebugLoaded: false,
+    movementCaptureFocusRequested: MOVEMENT_CAPTURE_MODE,
+    movementCaptureFocusActive: false,
+    movementCaptureFocusDenied: false,
     lastError: null,
     updatedAt: new Date().toISOString()
   };
@@ -38,10 +42,123 @@
       `capture studio loaded: ${state.movementCaptureStudioLoaded ? 'yes' : 'no'}`,
       `capture debug requested: ${state.movementCaptureDebugRequested ? 'yes' : 'no'}`,
       `capture debug loaded: ${state.movementCaptureDebugLoaded ? 'yes' : 'no'}`,
+      `capture focus requested: ${state.movementCaptureFocusRequested ? 'yes' : 'no'}`,
+      `capture focus active: ${state.movementCaptureFocusActive ? 'yes' : 'no'}`,
+      `capture focus denied: ${state.movementCaptureFocusDenied ? 'yes' : 'no'}`,
       `last boot error: ${state.lastError || 'none'}`
     ].join('\n');
   }
   function renderBuildPill(text) { const pill = document.getElementById('buildVersionPill'); if (pill) pill.textContent = text; }
+
+  function roleSet(user) {
+    return new Set([user?.role, ...(Array.isArray(user?.roles) ? user.roles : [])]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase()));
+  }
+
+  function isMovementCaptureAdmin(user) {
+    const roles = roleSet(user);
+    return roles.has('admin') || roles.has('super_admin');
+  }
+
+  function installMovementCaptureFocusStyles() {
+    if (document.getElementById('movementCaptureFocusStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'movementCaptureFocusStyles';
+    style.textContent = `
+      body.movement-capture-studio-mode{align-items:stretch;background:#020617}
+      body.movement-capture-studio-mode #appShell{grid-template-columns:minmax(0,1fr)!important;max-width:1120px!important;width:100%!important}
+      body.movement-capture-studio-mode .workout-support-pane{display:none!important}
+      body.movement-capture-studio-mode .workout-stage-pane{display:flex!important;flex-direction:column!important;gap:12px!important}
+      body.movement-capture-studio-mode .workout-stage-pane>*{display:none!important}
+      body.movement-capture-studio-mode #movementCaptureStudioHeading,
+      body.movement-capture-studio-mode #workoutPresentation,
+      body.movement-capture-studio-mode .workout-stage-pane>.btn-row,
+      body.movement-capture-studio-mode #exerciseTemplateBuilderPanel{display:flex!important}
+      body.movement-capture-studio-mode #movementCaptureStudioHeading{flex-direction:column;gap:7px;padding:14px;border:1px solid #facc15;border-radius:14px;background:#0b1220}
+      body.movement-capture-studio-mode #movementCaptureStudioHeading h1{margin:0;font-size:1.35rem;color:#fde68a}
+      body.movement-capture-studio-mode #movementCaptureStudioHeading p{margin:0;color:#cbd5e1;font-size:.88rem}
+      body.movement-capture-studio-mode #movementCaptureStudioHeading a{align-self:flex-start;color:#fde68a}
+      body.movement-capture-studio-mode .workout-stage-pane>.btn-row{flex-wrap:wrap!important;gap:8px!important}
+      body.movement-capture-studio-mode .workout-stage-pane>.btn-row>*{display:none!important}
+      body.movement-capture-studio-mode #connectBtn,
+      body.movement-capture-studio-mode #startBtn,
+      body.movement-capture-studio-mode #diagnosticsToggleBtn{display:inline-flex!important}
+      body.movement-capture-studio-mode #exerciseTemplateBuilderPanel{flex-direction:column!important;position:static!important;visibility:visible!important;opacity:1!important;width:100%!important;max-width:none!important}
+      body.movement-capture-studio-mode #frontendShellMarker,
+      body.movement-capture-studio-mode #clickDiagBanner,
+      body.movement-capture-studio-mode #authRestoreStatus,
+      body.movement-capture-studio-mode #userInfo{display:none!important}
+      @media(max-width:640px){body.movement-capture-studio-mode{padding:8px!important}body.movement-capture-studio-mode #appShell{padding:8px!important}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function renderMovementCaptureDenied() {
+    state.movementCaptureFocusDenied = true;
+    state.movementCaptureFocusActive = false;
+    state.updatedAt = new Date().toISOString();
+    let denied = document.getElementById('movementCaptureAccessDenied');
+    if (!denied) {
+      denied = document.createElement('section');
+      denied.id = 'movementCaptureAccessDenied';
+      denied.style.cssText = 'max-width:760px;margin:40px auto;padding:20px;border:1px solid #ef4444;border-radius:14px;background:#020617;color:#fff';
+      denied.innerHTML = '<h1>Movement Capture Studio</h1><p>Admin access is required.</p><p><a href="/dashboard.html" style="color:#fde68a">Return to Dashboard</a></p>';
+      document.body.prepend(denied);
+    }
+    const app = document.getElementById('appShell');
+    if (app) app.style.display = 'none';
+    renderBootStatus('movement-capture-focus-denied');
+  }
+
+  function revealMovementCaptureWorkspace() {
+    const panel = document.getElementById('exerciseTemplateBuilderPanel');
+    const stage = document.querySelector('.workout-stage-pane');
+    if (!panel || !stage) {
+      state.lastError = !panel ? 'movement_capture_builder_missing' : 'movement_capture_stage_missing';
+      state.updatedAt = new Date().toISOString();
+      renderBootStatus('movement-capture-focus-missing-boundary');
+      globalScope.__diagnosticAutoReport?.(state.lastError);
+      return false;
+    }
+    installMovementCaptureFocusStyles();
+    document.body.classList.add('movement-capture-studio-mode');
+    panel.hidden = false;
+    panel.classList.remove('hidden');
+    panel.removeAttribute('aria-hidden');
+
+    let heading = document.getElementById('movementCaptureStudioHeading');
+    if (!heading) {
+      heading = document.createElement('section');
+      heading.id = 'movementCaptureStudioHeading';
+      heading.innerHTML = '<h1>Movement Capture Studio</h1><p>Admin motion-intelligence workspace: collect FRONT + SIDE MoveNet evidence, custom movements, pose checkpoints, Motion Lego coverage, and first-failure diagnostics.</p><p>Use the canonical camera and pose runtime below. No raw video is stored by the Movement Lego Recorder.</p><a href="/dashboard.html">← Back to Dashboard</a>';
+      stage.prepend(heading);
+    }
+    if (panel.parentElement !== stage) stage.appendChild(panel);
+    state.movementCaptureFocusActive = true;
+    state.movementCaptureFocusDenied = false;
+    state.updatedAt = new Date().toISOString();
+    renderBootStatus('movement-capture-focus-active');
+    globalScope.setTimeout?.(() => panel.scrollIntoView?.({ block: 'start' }), 250);
+    return true;
+  }
+
+  async function activateMovementCaptureFocus() {
+    if (!MOVEMENT_CAPTURE_MODE) return false;
+    try {
+      await globalScope.AuthStateRuntime?.whenReady?.();
+      const auth = globalScope.AuthStateRuntime?.getCanonicalAuthState?.();
+      if (!auth?.isAuthenticated || !isMovementCaptureAdmin(auth.user)) {
+        renderMovementCaptureDenied();
+        return false;
+      }
+      return revealMovementCaptureWorkspace();
+    } catch (error) {
+      state.lastError = `movement_capture_focus_auth_failed:${error?.message || String(error)}`;
+      renderMovementCaptureDenied();
+      return false;
+    }
+  }
 
   function loadMovementCaptureDebug() {
     const builder = document.querySelector?.('[data-coach-template-builder]');
@@ -100,6 +217,7 @@
   renderBuildPill(`Build: loading… • Host: ${host}`);
   renderBootStatus('boot-core-start');
   loadTrainerMovementRecorder();
+  activateMovementCaptureFocus();
 
   (async function loadBackendVersion() {
     let buildText = 'Build error: network_error';
