@@ -9,7 +9,7 @@
       "label": "Transitions",
       "cards": [
         {"id":"stand_to_ground","label":"Stand → Ground","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json"],"usefulFor":["push-up entry","burpee entry","mountain climber entry","plank jack entry"],"searchHints":["get down","crouch","hands down","crawl start"]},
-        {"id":"ground_to_stand","label":"Ground → Stand","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee exit","floor exercise exit"],"searchHints":["get up","stand up","rise","recover"]},
+        {"id":"ground_to_stand","label":"Ground → Stand","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/situp-to-idle-reference.source.json"],"usefulFor":["burpee exit","floor exercise exit","sit-up recovery","general floor recovery"],"searchHints":["get up","stand up","rise","recover"]},
         {"id":"stand_to_jump","label":"Stand → Jump","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["explosive burpee","jump squat","vertical jump"],"searchHints":["jump","takeoff","leap"]},
         {"id":"jump_to_land","label":"Jump → Land","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["explosive burpee","jump squat","plyometrics"],"searchHints":["landing","jump landing","fall recovery"]}
       ]
