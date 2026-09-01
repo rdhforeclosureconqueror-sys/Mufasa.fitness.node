@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const FRONTEND_BUILD="20260824-auth-unified-drawer-v2",q=new URLSearchParams(location.search),form=document.querySelector("#form"),status=document.querySelector("#status"),modeLink=document.querySelector("#mode");
+const FRONTEND_BUILD="20260901-retention-journey-first-run-v1",q=new URLSearchParams(location.search),form=document.querySelector("#form"),status=document.querySelector("#status"),modeLink=document.querySelector("#mode");
 window.__MAAT_ASSET_VERSIONS__=Object.assign(window.__MAAT_ASSET_VERSIONS__||{}, {"login.js":FRONTEND_BUILD});
 let register=q.get("mode")==="register";
 const safeReturn=()=>window.AuthNavigation.normalizeReturnTo(q.get("returnTo"));
@@ -14,5 +14,5 @@ response=await fetch(endpoint(`/api/auth/${register?"register":"login"}`),{metho
 if(!response.ok||!payload.token){diagnostic({httpStatus:response.status,requestId:response.headers.get("x-request-id"),failureCode:payload.code||"AUTH_REJECTED",stage:"response"});throw Error(userMessage(response,payload))}
 const persisted=await AuthStateRuntime.persistCanonicalAuthState({token:payload.token,user:payload.user},{rememberMe,reason:"login-page"});if(!persisted.ok){diagnostic({httpStatus:response.status,failureCode:"AUTH_STORAGE_UNAVAILABLE",stage:"persistence"});throw Error("This browser could not store the session. Check private-browsing settings and try again.")}
 const verified=await AuthStateRuntime.refreshAuthStatus({token:payload.token,reason:"login-page-verification"});if(!verified.ok){diagnostic({httpStatus:verified.diagnostics?.status,failureCode:verified.reason||"AUTH_VERIFICATION_FAILED",stage:"verification"});throw Error("Your credentials were accepted, but the session could not be verified. Please try again.")}
-location.replace(safeReturn())}catch(error){if(!window.__MAAT_LOGIN_DIAGNOSTIC__||window.__MAAT_LOGIN_DIAGNOSTIC__.timestamp===undefined)diagnostic({httpStatus:response?.status??null,failureCode:"NETWORK_OR_RUNTIME_FAILURE",stage:response?"response":"network"});status.textContent=error.message||"Unable to sign in. Please try again.";button.disabled=false}};
+const destination=register?"/retention-journey-start.html?firstRun=1":safeReturn();location.replace(destination)}catch(error){if(!window.__MAAT_LOGIN_DIAGNOSTIC__||window.__MAAT_LOGIN_DIAGNOSTIC__.timestamp===undefined)diagnostic({httpStatus:response?.status??null,failureCode:"NETWORK_OR_RUNTIME_FAILURE",stage:response?"response":"network"});status.textContent=error.message||"Unable to sign in. Please try again.";button.disabled=false}};
 if(q.get("signedOut")==="1")status.textContent="You are signed out. You can now use another account.";render()})();
