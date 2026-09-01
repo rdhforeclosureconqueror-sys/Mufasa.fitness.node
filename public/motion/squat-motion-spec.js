@@ -65,6 +65,7 @@
     version: 3,
     status: "development-test-only",
     sourceManifest: "/motion-sources/squat-synthesis-v1.source.json",
+    movementContractRef: "/motion/contracts/bodyweight-squat.v1.json",
     skeleton: Object.freeze({ id: "canonical_phase_e_mixamo", rootBone: "mixamorig:Hips", rotationSpace: "rest_relative_local" }),
     durationSeconds: 3.2,
     loop: true,
@@ -75,6 +76,7 @@
       bottomKneeInsideAngleToleranceDegrees: 8,
       descentIntent: "pelvis descends and shifts slightly posterior as if sitting into a chair",
       ascentIntent: "pelvis rises while hips and knees extend back to standing",
+      kneeTrackingIntent: "knees track with the feet without valgus/varus collapse; forward knee travel is judged together with heel contact, ankle dorsiflexion, pelvis depth and balance rather than a universal knees-behind-toes rule",
       armsPriority: "secondary-after-lower-body-approval"
     }),
     groundingPolicy: Object.freeze({
@@ -97,7 +99,7 @@
         "/motion-sources/jumping-up-reference.source.json",
         "/motion-sources/hard-landing-reference.source.json"
       ]),
-      revisionReason: "Independent review of v2 measured an approximately 113-degree bottom knee angle and about 14 cm of ankle rise. v3 deepens the lower-body target toward 90 degrees and upgrades planted feet from descriptive metadata to an enforced compile-time contact constraint.",
+      revisionReason: "Independent review of v2 measured an approximately 113-degree bottom knee angle and about 14 cm of ankle rise. v3 deepens the lower-body target toward 90 degrees and upgrades planted feet from descriptive metadata to an enforced compile-time contact constraint. The canonical squat contract now also separates coaching intent from numeric geometry so future generator output is checked against both.",
       values: "Engineering targets for the shipped Phase E reference skeleton. Exact visual acceptance still requires side-view human review; these are not product scoring thresholds.",
       unsupported: Object.freeze(["biomechanical ground truth", "joint torque", "force", "medical guidance", "production scoring tolerances", "individual anthropometric fit"])
     }),
@@ -115,7 +117,7 @@
     const errors = [];
     const bones = new Set(availableBones);
     if (!candidate || typeof candidate !== "object") return Object.freeze({ valid: false, errors: Object.freeze(["motion spec must be an object"]) });
-    for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder"]) if (candidate[field] == null) errors.push(`${field} is required`);
+    for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder", "movementContractRef"]) if (candidate[field] == null) errors.push(`${field} is required`);
     if (!(candidate.durationSeconds > 0)) errors.push("durationSeconds must be positive");
     if (!candidate.groundingPolicy?.enforceContactAnchors) errors.push("squat requires enforced dual-foot contact anchors");
     const phases = Array.isArray(candidate.phases) ? candidate.phases : [];
@@ -146,6 +148,7 @@
       targetBottomKneeInsideAngleDegrees: candidate.movementContract?.bottomKneeInsideAngleTargetDegrees || null,
       groundingMode: candidate.groundingPolicy?.mode || null,
       contactAnchorsEnforced: Boolean(candidate.groundingPolicy?.enforceContactAnchors),
+      movementContractRef: candidate.movementContractRef || null,
       evidenceOnly: true,
       requiresHumanMoveNetReview: true
     });

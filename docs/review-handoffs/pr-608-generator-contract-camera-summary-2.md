@@ -1,0 +1,1 @@
+Follow-up reviewer note: squat v3 is already merged; this branch now contains only post-merge generator-contract and Motion Lab inspection-camera work intended for a new PR. Human mobile Safari acceptance is still required.
