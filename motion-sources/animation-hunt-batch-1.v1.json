@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "batchId": "animation-hunt-batch-1",
+  "targetAnimationCount": 5,
+  "receivedAnimationCount": 1,
+  "goal": "Use a small batch of animation references to fill distinct missing Movement Lego evidence instead of collecting duplicate motions.",
+  "rules": [
+    "Prefer a new missing Lego block over a duplicate unless the duplicate adds a materially different mechanic.",
+    "Each source is classified KEEP_STUDY, MAYBE, or SKIP.",
+    "Raw FBX binaries are not committed while redistribution/license status is unverified.",
+    "A source can support multiple Lego blocks, but one primary block is assigned for hunt accounting.",
+    "Animation evidence supplies 3D mechanics; paired MoveNet FRONT + SIDE evidence will be collected separately.",
+    "CANDIDATE means useful evidence exists; it does not mean validated or runtime-ready."
+  ],
+  "entries": [
+    {
+      "slot": 1,
+      "sourceId": "situp-to-idle-user-reference-fbx",
+      "fileName": "Situp To Idle.fbx",
+      "verdict": "KEEP_STUDY",
+      "primaryLegoBlock": "ground_to_stand",
+      "secondaryEvidence": ["supine_to_upright","torso_raise","root_rise","floor_recovery","standing_reacquisition"],
+      "manifest": "motion-sources/situp-to-idle-reference.source.json",
+      "huntEffect": "Ground → Stand changes from EMPTY to CANDIDATE",
+      "notes": "Strong floor-to-upright root rise and approximately 99 degrees of root pitch recovery over the 4.4 second Mixamo animation."
+    }
+  ],
+  "nextPriorityTargets": [
+    {"rank":1,"legoBlocks":["elbow_flex","elbow_extend"],"desiredMotion":"ground push / push-up-like arm press","searchTerms":["push up","push from ground","get up push","crawl push"]},
+    {"rank":2,"legoBlocks":["knee_drive_left","knee_drive_right"],"desiredMotion":"clear alternating or unilateral knee drive","searchTerms":["knee strike","climb","sprint start","high knees"]},
+    {"rank":3,"legoBlocks":["feet_jump_back","feet_jump_forward"],"desiredMotion":"two-foot backward/forward reposition from a crouch or support transition","searchTerms":["jump back","hop back","frog jump","jump forward"]},
+    {"rank":4,"legoBlocks":["stand_to_jump","vertical_jump","jump_to_land"],"desiredMotion":"full loading-takeoff-airborne-landing cycle","searchTerms":["vertical jump","jumping","jump landing","leap"]},
+    {"rank":5,"legoBlocks":["split_stance"],"desiredMotion":"clean step into a deep stable split stance","searchTerms":["lunge","sword stance","fighting stance","kneel step"]}
+  ]
+}
