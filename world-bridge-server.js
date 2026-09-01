@@ -17,6 +17,24 @@ function installFreeRunClub(app, options = {}) {
   userStore.ensureDirs();
   const freeRunClubCommunityService = createFreeRunClubCommunityService({ userStore });
   const routes = installFreeRunClubCommunityRoutes({ app, requireAuth, userStore, freeRunClubCommunityService });
+
+  // createApp's central error handler is registered before extension routes.
+  // Give these appended routes their own bounded error projection so validation
+  // failures do not fall through to Express' default HTML error response.
+  app.use((err, req, res, next) => {
+    if (!String(req.path || "").startsWith("/api/me/run-club/")) return next(err);
+    if (res.headersSent) return next(err);
+    const status = Number.isInteger(err?.status) ? err.status : 400;
+    return res.status(status).json({
+      ok: false,
+      requestId: req.requestId || null,
+      error: {
+        code: err?.code || "RUN_CLUB_REQUEST_FAILED",
+        message: err?.message || "Free Run Club request failed"
+      }
+    });
+  });
+
   app.locals.pocketPTFreeRunClub = { userStore, freeRunClubCommunityService, routes };
   return app.locals.pocketPTFreeRunClub;
 }
