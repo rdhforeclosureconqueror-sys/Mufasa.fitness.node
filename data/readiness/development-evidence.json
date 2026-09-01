@@ -502,6 +502,157 @@
       "prNumber": 606,
       "commitSha": null,
       "timestamp": "2026-09-01T15:26:21.757Z"
+    },
+    {
+      "operationId": "815d2906-5ec8-4e86-b19a-9412f7da1144",
+      "board": "avatar",
+      "cardId": "avatar-development-motion-lab-lego-integration-repair",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md",
+        "docs/review-handoffs/motion-lab-squat-binding-repair-v1-handoff.md",
+        "docs/review-handoffs/motion-lab-synthesized-squat-preview-v1-handoff.md",
+        "docs/review-handoffs/squat-grounded-v2-review-handoff.md",
+        "motion-lab/index.html",
+        "motion-lab/motion-lab-bootstrap.js",
+        "motion-lab/motion-lab-runtime.js",
+        "public/boot-core.js",
+        "public/motion/disposable-motion-session.js",
+        "public/motion/motion-spec-clip.js",
+        "public/motion/movement-capture-studio.js",
+        "public/motion/movement-recorder.js",
+        "public/motion/movement-recording-roadmap.js",
+        "public/motion/squat-motion-spec.js",
+        "public/workout-presentation-state.js",
+        "public/workout.html",
+        "test/avatar-calibration-exclusive-speech-lock.test.js",
+        "test/motion-lab-synthesized-squat-preview-v1.test.js",
+        "test/motion-lab.test.js",
+        "test/motion-spec-real-avatar.test.js",
+        "test/movement-capture-integration.test.js",
+        "test/movement-recording-roadmap-v1.test.js",
+        "test/squat-motion-spec-v1.test.js",
+        "test/stand-to-plank-transition-profile.test.js",
+        "test/workout-presentation-observer.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:09.340Z"
+    },
+    {
+      "operationId": "19fc92db-c496-4299-b0e6-66e8329dcae9",
+      "board": "avatar",
+      "cardId": "avatar-runtime-foundation-avatar-asset-runtime-foundation",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "motion-lab/index.html",
+        "motion-lab/motion-lab-bootstrap.js",
+        "motion-lab/motion-lab-runtime.js",
+        "public/motion/disposable-motion-session.js",
+        "public/workout-presentation-state.js",
+        "public/workout.html",
+        "test/workout-presentation-observer.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:09.532Z"
+    },
+    {
+      "operationId": "2f3d88f5-b3d2-4af8-97d3-fac5ce8336ca",
+      "board": "avatar",
+      "cardId": "avatar-runtime-foundation-runtime-bone-name-verification",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "public/motion/motion-spec-clip.js",
+        "test/motion-spec-real-avatar.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:09.717Z"
+    },
+    {
+      "operationId": "18a5e3a2-253b-4a3e-81e5-41fc40d80cb2",
+      "board": "avatar",
+      "cardId": "avatar-pose-pipeline-rest-pose-calibration-handling",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "public/motion/disposable-motion-session.js",
+        "public/motion/squat-motion-spec.js",
+        "test/avatar-calibration-exclusive-speech-lock.test.js",
+        "test/motion-spec-real-avatar.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:09.917Z"
+    },
+    {
+      "operationId": "34de1490-f052-41b9-98a1-50f4cffc6e5d",
+      "board": "avatar",
+      "cardId": "avatar-motion-recording-motion-recorder",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "public/boot-core.js",
+        "public/motion/movement-capture-studio.js",
+        "public/motion/movement-recorder.js",
+        "public/motion/movement-recording-roadmap.js",
+        "test/movement-capture-integration.test.js",
+        "test/movement-recording-roadmap-v1.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:10.104Z"
+    },
+    {
+      "operationId": "164c35cf-4feb-424e-ae77-2708c641094f",
+      "board": "avatar",
+      "cardId": "avatar-motion-recording-saved-motion-data-format",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "public/motion/movement-capture-studio.js",
+        "public/motion/movement-recorder.js",
+        "test/movement-capture-integration.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:10.292Z"
+    },
+    {
+      "operationId": "d388a650-659b-4d43-9551-0aef235fb027",
+      "board": "avatar",
+      "cardId": "avatar-acceptance-mobile-browser-qa",
+      "sourceType": "browser_technical",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md",
+        "motion-lab/motion-lab-runtime.js",
+        "public/boot-core.js",
+        "public/motion/movement-capture-studio.js",
+        "public/workout-presentation-state.js",
+        "public/workout.html"
+      ],
+      "automated": "PASS",
+      "evidence": "Published repair PR #606, implementation 42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b, incorporates main 5d03942 / grounded squat v2. Final focused suite 86/86 PASS; full suite 1689 PASS / 36 FAIL versus clean main 1662 PASS / 43 FAIL, no newly failing tests. Motion Lab and 390x844 capture Chromium technical checks pass with zero page errors/HTTP failures; pose input simulated. 316 route contracts, selfcheck, Phase E assets, diff and readiness validation pass. Human movement/UX, actual camera/MoveNet and physical-device acceptance remain open. See docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md; this evidence does not approve broader canonical requirements.",
+      "prNumber": 606,
+      "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
+      "timestamp": "2026-09-01T15:29:10.485Z"
     }
   ]
 }
