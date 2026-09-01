@@ -8,6 +8,10 @@ const iso = value => new Date(value).toISOString();
 const text = (value,max=500) => String(value == null ? "" : value).trim().slice(0,max);
 
 function createFreeRunClubCommunityService({ userStore, clock = () => Date.now() }) {
+  if (!userStore || typeof userStore.loadUser !== "function" || typeof userStore.updateUser !== "function") {
+    throw new Error("Free Run Club requires the canonical userStore");
+  }
+  function readUser(userId) { return userStore.loadUser(userId); }
   function ensure(user) {
     user.freeRunClub ||= { schemaVersion:2, profile:null, joinedAt:null, boardPosts:[] };
     user.freeRunClub.boardPosts ||= [];
@@ -45,7 +49,7 @@ function createFreeRunClubCommunityService({ userStore, clock = () => Date.now()
     userStore.updateUser(userId,user=>{ const d=ensure(user); d.profile=validateProfile(input); d.joinedAt ||= iso(clock()); result={...d.profile,joinedAt:d.joinedAt}; return user; });
     return result;
   }
-  function getProfile(userId) { const user=userStore.getUser(userId); if(!user) return null; const d=ensure(user); return d.profile ? {...d.profile,joinedAt:d.joinedAt} : null; }
+  function getProfile(userId) { const user=readUser(userId); const d=ensure(user); return d.profile ? {...d.profile,joinedAt:d.joinedAt} : null; }
   function createPost(userId,input={}) {
     let post;
     userStore.updateUser(userId,user=>{ const d=ensure(user); if(!d.profile) throw new Error("Complete Free Run Club profile first");
@@ -58,11 +62,11 @@ function createFreeRunClubCommunityService({ userStore, clock = () => Date.now()
   }
   function board(userIds=[]) {
     const posts=[];
-    for(const userId of userIds){ const user=userStore.getUser(userId); if(!user) continue; const d=ensure(user); if(!d.profile) continue; posts.push(...d.boardPosts); }
+    for(const userId of userIds){ const user=readUser(userId); const d=ensure(user); if(!d.profile) continue; posts.push(...d.boardPosts); }
     return posts.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
   }
   function diagnostic(userId) {
-    const user=userStore.getUser(userId); if(!user) return {firstFailure:"user_not_found",checks:[{id:"user",result:"FAIL"}]};
+    const user=readUser(userId);
     const d=ensure(user), checks=[
       {id:"domain",result:"PASS"},
       {id:"profile",result:d.profile?"PASS":"FAIL"},
@@ -70,7 +74,7 @@ function createFreeRunClubCommunityService({ userStore, clock = () => Date.now()
       {id:"board_retention",result:d.boardPosts.every(p=>Date.parse(p.createdAt)>=clock()-DAY_MS)?"PASS":"FAIL"},
       {id:"board_media_bounds",result:d.boardPosts.every(p=>!p.imageData||p.imageData.length<=MAX_IMAGE_DATA_LENGTH)?"PASS":"FAIL"}
     ];
-    return {diagnosticVersion:"free-run-club-first-failure-v2",firstFailure:checks.find(x=>x.result==="FAIL")?.id||null,checks,postCount:d.boardPosts.length};
+    return {diagnosticVersion:"free-run-club-first-failure-v3",firstFailure:checks.find(x=>x.result==="FAIL")?.id||null,checks,postCount:d.boardPosts.length};
   }
   return { saveProfile,getProfile,createPost,board,diagnostic,DAY_MS,MAX_IMAGE_DATA_LENGTH };
 }
