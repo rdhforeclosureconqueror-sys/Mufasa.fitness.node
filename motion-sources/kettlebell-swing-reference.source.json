@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "kettlebell-swing-user-reference-fbx",
+    "originalFileName": "Kettlebell Swing.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "d7fb085aff9631278de8df0df1e21129c647b400f44d82e7f306c1e94cd06237",
+    "bytes": 417072,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "animationStackCount": 1,
+    "durationSeconds": 1.0,
+    "rootKeyCount": 60,
+    "provider": "Mixamo-derived user-provided reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "currentHuntEffect": "NO_NEW_CURRENT_17_CARD",
+    "primaryFuturePrimitive": "hip_hinge",
+    "secondaryEvidence": ["hip_extension","bilateral_knee_flexion_extension","root_descent_rise","arm_swing","standing_reacquisition"],
+    "notes": "Strong cyclical hinge mechanics, but it does not directly fill any of the five currently EMPTY hunt cards. Keep as high-value future movement intelligence rather than forcing it into an incorrect current Lego block."
+  },
+  "observedMechanics": {
+    "hipsTranslationY": {"start":76.6062,"end":76.6062,"min":76.5029,"max":92.9615},
+    "hipsTranslationZ": {"start":2.4974,"end":2.4974,"min":2.4974,"max":19.0124},
+    "hipsRotationXDegrees": {"start":51.4046,"end":51.4046,"min":2.0945,"max":51.5032},
+    "leftUpLegRotationXDegrees": {"min":13.8413,"max":103.7103},
+    "rightUpLegRotationXDegrees": {"min":15.9099,"max":103.5647},
+    "leftLegRotationXDegrees": {"min":-64.3361,"max":-13.0012},
+    "rightLegRotationXDegrees": {"min":-63.9943,"max":-16.3308},
+    "leftArmRotationXDegrees": {"min":-39.2050,"max":53.0571},
+    "rightArmRotationXDegrees": {"min":-37.9004,"max":47.0129}
+  },
+  "usePolicy": {
+    "allowedInRuntime": false,
+    "rawBinaryCommitted": false,
+    "purpose": "study neutral hip-hinge, extension, knee and arm-swing mechanics without copying source performance styling",
+    "notes": "Preserve as external/reference-only until redistribution rights are verified. The repo stores only extracted mechanics and provenance."
+  },
+  "humanVisualStatus": "PENDING HUMAN STYLE/TRIM REVIEW"
+}
