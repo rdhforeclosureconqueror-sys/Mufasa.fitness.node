@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batchId": "animation-hunt-batch-1",
   "targetAnimationCount": 5,
-  "receivedAnimationCount": 24,
+  "receivedAnimationCount": 25,
   "goal": "Use a small selected batch of animation references to fill distinct missing Movement Lego evidence while keeping additional useful references organized without forcing them into the current 17-card hunt.",
   "rules": [
     "Prefer a new missing Lego block over a duplicate unless the duplicate adds a materially different mechanic.",
@@ -22,30 +22,20 @@
     {"slot":5,"sourceId":"crouched-sneaking-left-user-reference-fbx","fileName":"crouched sneaking left.fbx","verdict":"KEEP_STUDY","primaryLegoBlock":"split_stance","secondaryEvidence":["crouch","lateral_shift","asymmetric_leg_loading","low_stance"],"manifest":"motion-sources/crouched-sneaking-left-reference.source.json","huntEffect":"Split Stance changes from EMPTY to CANDIDATE"}
   ],
   "existingRepoEvidenceRecovered": [
-    {
-      "sourceId": "avaturn-push-up-source",
-      "displayName": "Existing Avaturn Push-Up motion",
-      "motionId": "push_up/avaturn_native_v1",
-      "provenance": "public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json",
-      "motionSpec": "public/motion/push-up-motion-spec.js",
-      "verdict": "KEEP_STUDY",
-      "candidateBlocks": ["elbow_flex","elbow_extend"],
-      "evidence": "The preserved push-up clip is validated as an animation asset and the repo motion spec explicitly models descent/bottom/ascent with forearm elbow offsets 0→35→70→35→0 degrees.",
-      "huntEffect": "Elbow Flex and Elbow Extend change from EMPTY to CANDIDATE",
-      "note": "This evidence already existed in the repository and should have been counted before requesting another push-up animation."
-    }
+    {"sourceId":"avaturn-push-up-source","displayName":"Existing Avaturn Push-Up motion","motionId":"push_up/avaturn_native_v1","provenance":"public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json","motionSpec":"public/motion/push-up-motion-spec.js","verdict":"KEEP_STUDY","candidateBlocks":["elbow_flex","elbow_extend"],"huntEffect":"Elbow Flex and Elbow Extend change from EMPTY to CANDIDATE"}
   ],
   "selectedAnimationCount": 5,
   "selectedCoverage": {
     "beforeCandidateOrBetter": 5,
-    "afterCandidateOrBetter": 14,
-    "newCandidateBlocks": ["ground_to_stand","split_stance","stand_to_jump","jump_to_land","knee_drive_left","knee_drive_right","vertical_jump","elbow_flex","elbow_extend"],
-    "remainingEmptyBlocks": ["feet_jump_back","feet_jump_forward","feet_out_in"]
+    "afterCandidateOrBetter": 15,
+    "newCandidateBlocks": ["ground_to_stand","split_stance","stand_to_jump","jump_to_land","knee_drive_left","knee_drive_right","vertical_jump","elbow_flex","elbow_extend","feet_out_in"],
+    "remainingEmptyBlocks": ["feet_jump_back","feet_jump_forward"]
   },
   "supplementalKeepStudy": [
     {"fileName":"Kettlebell Swing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/kettlebell-swing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"hip_hinge","secondaryEvidence":["hip_extension","bilateral_knee_flexion_extension","root_descent_rise","arm_swing","standing_reacquisition"]},
     {"fileName":"Jumping Down.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-down-reference.source.json","currentHuntEffect":"STRENGTHENS jump_to_land CANDIDATE","futurePrimitive":"jump_descent_landing","secondaryEvidence":["airborne_descent","landing_compression","bilateral_knee_flexion","hip_absorption","forward_root_travel","stabilization"]},
-    {"fileName":"Salsa Dancing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/salsa-dancing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"lateral_step_weight_shift","secondaryEvidence":["alternating_weight_shift","lateral_root_translation","pelvis_rotation","foot_pivot","rhythmic_step_cycle","turning"],"reason":"Strong lateral/rotational dance mechanics, but not a clean bilateral Feet Out / In cycle."}
+    {"fileName":"Salsa Dancing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/salsa-dancing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"lateral_step_weight_shift","secondaryEvidence":["alternating_weight_shift","lateral_root_translation","pelvis_rotation","foot_pivot","rhythmic_step_cycle","turning"]},
+    {"fileName":"Jumping Jacks.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-jacks-reference.source.json","currentHuntEffect":"Feet Out / In changes from EMPTY to CANDIDATE","futurePrimitive":"bilateral_feet_out_in","secondaryEvidence":["bilateral_leg_abduction_adduction","vertical_hop_cycle","arm_abduction_adduction","landing_recovery"]}
   ],
   "reviewedButNotSelected": [
     {"fileName":"cover to stand (2).fbx","verdict":"MAYBE","reason":"Overlaps Ground → Stand."},
@@ -67,7 +57,6 @@
   ],
   "nextPriorityTargets": [
     {"rank":1,"legoBlocks":["feet_jump_back","feet_jump_forward"],"desiredMotion":"two-foot backward/forward reposition from crouch or ground support","searchTerms":["jump back","hop back","frog jump","jump forward"]},
-    {"rank":2,"legoBlocks":["feet_out_in"],"desiredMotion":"bilateral feet apart/together cycle","searchTerms":["jumping jack","plank jack","side hop","feet apart together"]},
-    {"rank":3,"legoBlocks":["stand_to_jump","vertical_jump"],"desiredMotion":"longer full takeoff cycle to strengthen the short jumping-up candidate","searchTerms":["vertical jump","jumping","jump takeoff","leap"]}
+    {"rank":2,"legoBlocks":["stand_to_jump","vertical_jump"],"desiredMotion":"longer full takeoff cycle to strengthen the short jumping-up candidate","searchTerms":["vertical jump","jumping","jump takeoff","leap"]}
   ]
 }
