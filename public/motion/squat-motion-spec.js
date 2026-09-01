@@ -49,20 +49,20 @@
     thighPitch: 0, thighOut: 2, kneeFlex: 0, anklePitch: 0, armPitch: 0
   });
   const MID = Object.freeze({
-    hipPitch: 12, spinePitch: -6, spine1Pitch: -3,
-    thighPitch: 40, thighOut: 2, kneeFlex: -52, anklePitch: 21, armPitch: -18
+    hipPitch: 16, spinePitch: -7, spine1Pitch: -4,
+    thighPitch: 43, thighOut: 2, kneeFlex: -54, anklePitch: 16, armPitch: -18
   });
   const BOTTOM = Object.freeze({
-    hipPitch: 24, spinePitch: -11, spine1Pitch: -6,
-    thighPitch: 78, thighOut: 2, kneeFlex: -102, anklePitch: 44, armPitch: -32
+    hipPitch: 30, spinePitch: -13, spine1Pitch: -7,
+    thighPitch: 82, thighOut: 2, kneeFlex: -104, anklePitch: 28, armPitch: -32
   });
 
   const spec = Object.freeze({
     schemaVersion: 1,
     exerciseId: "bodyweight_squat",
-    motionId: "squat/synthesized_engineering_v3_90deg_groundlock",
-    displayName: "Synthesized Bodyweight Squat Engineering Reference v3 — 90° Ground Lock",
-    version: 3,
+    motionId: "squat/synthesized_engineering_v4_hip_back_geometry_lock",
+    displayName: "Synthesized Bodyweight Squat Engineering Reference v4 — Hip-Back Geometry Lock",
+    version: 4,
     status: "development-test-only",
     sourceManifest: "/motion-sources/squat-synthesis-v1.source.json",
     movementContractRef: "/motion/contracts/bodyweight-squat.v1.json",
@@ -74,10 +74,16 @@
       standingKneeInsideAngleTargetDegrees: 180,
       bottomKneeInsideAngleTargetDegrees: 90,
       bottomKneeInsideAngleToleranceDegrees: 8,
-      descentIntent: "pelvis descends and shifts slightly posterior as if sitting into a chair",
-      ascentIntent: "pelvis rises while hips and knees extend back to standing",
-      kneeTrackingIntent: "knees track with the feet without valgus/varus collapse; forward knee travel is judged together with heel contact, ankle dorsiflexion, pelvis depth and balance rather than a universal knees-behind-toes rule",
+      descentIntent: "feet stay planted while pelvis descends and moves posteriorly like sitting into a chair",
+      ascentIntent: "pelvis rises and returns forward toward standing while hips and knees extend together",
+      kneeTrackingIntent: "canonical reference uses a configured forward-knee envelope while preserving foot direction, heel contact and ankle accommodation",
       armsPriority: "secondary-after-lower-body-approval"
+    }),
+    referenceGeometryPolicy: Object.freeze({
+      mode: "side_projection_hip_back_envelope",
+      source: "/motion/contracts/bodyweight-squat.v1.json",
+      requiredMeasuredChecks: Object.freeze(["posterior_pelvis_travel", "reference_knee_forward_envelope", "pelvis_posterior_to_knee"]),
+      rule: "Depth must be achieved by coordinated hip-back plus knee flexion rather than excessive forward knee translation."
     }),
     groundingPolicy: Object.freeze({
       mode: "dual-foot-planted-runtime-anchor-lock",
@@ -89,9 +95,9 @@
       implementation: "The motion compiler converts avatar-height root offsets from world space into the rotated/scaled armature parent and then solves a root correction at each phase so the bilateral foot anchors remain at their standing world positions."
     }),
     synthesisBoundary: Object.freeze({
-      method: "movement-lego-composition-with-hard-contact-constraints",
+      method: "movement-lego-composition-with-hard-contact-and-reference-geometry-constraints",
       copiedNamedSquatAnimation: false,
-      sourcePrimitives: Object.freeze(["standing", "dual_foot_ground_contact", "stable_stance", "hip_hinge", "crouch", "bilateral_knee_flexion_extension", "root_descent_rise", "standing_reacquisition"]),
+      sourcePrimitives: Object.freeze(["standing", "dual_foot_ground_contact", "stable_stance", "hip_hinge", "posterior_pelvis_shift", "crouch", "bilateral_knee_flexion_extension", "root_descent_rise", "standing_reacquisition"]),
       evidenceReferences: Object.freeze([
         "/motion/transition-profiles/stand-to-plank.v1.json",
         "/motion-sources/crouched-sneaking-left-reference.source.json",
@@ -99,16 +105,16 @@
         "/motion-sources/jumping-up-reference.source.json",
         "/motion-sources/hard-landing-reference.source.json"
       ]),
-      revisionReason: "Independent review of v2 measured an approximately 113-degree bottom knee angle and about 14 cm of ankle rise. v3 deepens the lower-body target toward 90 degrees and upgrades planted feet from descriptive metadata to an enforced compile-time contact constraint. The canonical squat contract now also separates coaching intent from numeric geometry so future generator output is checked against both.",
-      values: "Engineering targets for the shipped Phase E reference skeleton. Exact visual acceptance still requires side-view human review; these are not product scoring thresholds.",
-      unsupported: Object.freeze(["biomechanical ground truth", "joint torque", "force", "medical guidance", "production scoring tolerances", "individual anthropometric fit"])
+      revisionReason: "Human side-view review of v3 showed adequate depth and improved grounding but a knee-dominant descent: the knees translated forward while the pelvis did not travel posteriorly enough. v4 preserves the 90-degree depth goal and foot lock while increasing posterior root travel, increasing hip contribution, and reducing ankle-driven forward-knee bias. Acceptance now requires measured side-projection geometry from the movement contract.",
+      values: "Engineering targets for the shipped Phase E reference skeleton. Exact visual acceptance still requires side-view human review; these are not universal human squat scoring thresholds.",
+      unsupported: Object.freeze(["biomechanical ground truth", "joint torque", "force", "medical guidance", "universal knees-behind-toes rule", "production scoring tolerances", "individual anthropometric fit"])
     }),
     phaseOrder: Object.freeze(["start", "descent", "bottom", "ascent", "finish"]),
     phases: Object.freeze([
       phase("start", "position", 0, [0, 0, 0], STAND),
-      phase("descent", "eccentric", 0.25, [0, -0.08, -0.035], MID),
-      phase("bottom", "isometric", 0.5, [0, -0.22, -0.075], BOTTOM, { holdDurationSeconds: 0.2 }),
-      phase("ascent", "concentric", 0.75, [0, -0.08, -0.035], MID),
+      phase("descent", "eccentric", 0.25, [0, -0.08, -0.065], MID),
+      phase("bottom", "isometric", 0.5, [0, -0.22, -0.14], BOTTOM, { holdDurationSeconds: 0.2 }),
+      phase("ascent", "concentric", 0.75, [0, -0.08, -0.065], MID),
       phase("finish", "completion", 1, [0, 0, 0], STAND)
     ])
   });
@@ -117,7 +123,7 @@
     const errors = [];
     const bones = new Set(availableBones);
     if (!candidate || typeof candidate !== "object") return Object.freeze({ valid: false, errors: Object.freeze(["motion spec must be an object"]) });
-    for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder", "movementContractRef"]) if (candidate[field] == null) errors.push(`${field} is required`);
+    for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder", "movementContractRef", "referenceGeometryPolicy"]) if (candidate[field] == null) errors.push(`${field} is required`);
     if (!(candidate.durationSeconds > 0)) errors.push("durationSeconds must be positive");
     if (!candidate.groundingPolicy?.enforceContactAnchors) errors.push("squat requires enforced dual-foot contact anchors");
     const phases = Array.isArray(candidate.phases) ? candidate.phases : [];
@@ -145,9 +151,11 @@
       durationSeconds: candidate.durationSeconds,
       phaseOrder: Object.freeze(candidate.phaseOrder.slice()),
       bottomRootDropAvatarHeights: Math.abs(bottom?.root?.positionOffset?.[1] || 0),
+      bottomPosteriorRootTravelAvatarHeights: Math.abs(bottom?.root?.positionOffset?.[2] || 0),
       targetBottomKneeInsideAngleDegrees: candidate.movementContract?.bottomKneeInsideAngleTargetDegrees || null,
       groundingMode: candidate.groundingPolicy?.mode || null,
       contactAnchorsEnforced: Boolean(candidate.groundingPolicy?.enforceContactAnchors),
+      referenceGeometryMode: candidate.referenceGeometryPolicy?.mode || null,
       movementContractRef: candidate.movementContractRef || null,
       evidenceOnly: true,
       requiresHumanMoveNetReview: true
