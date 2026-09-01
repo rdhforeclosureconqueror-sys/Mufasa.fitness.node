@@ -1,0 +1,7 @@
+const fs=require("node:fs");const path=require("node:path");const test=require("node:test");const assert=require("node:assert/strict");const root=path.join(__dirname,"..");const read=p=>fs.readFileSync(path.join(root,p),"utf8");
+
+test("Retention Journey exposes dedicated Free Run Club separate from paid Greatness",()=>{const html=read("public/retention-journey-start.html"),js=read("public/retention-journey-start.js");assert.match(html,/Free Run Club/);assert.match(html,/Paid Stepping Into Greatness is a separate product/);assert.match(js,/free-run-club\.html\?firstRun=1/);assert.doesNotMatch(js,/greatness\.html\?mode=run-club/);});
+
+test("Free Run Club route installer owns authenticated profile board and diagnostic APIs",()=>{const src=read("src/routes/freeRunClubCommunityRoutes.js");for(const route of ["/api/me/run-club/profile","/api/me/run-club/board","/api/me/run-club/diagnostic"])assert.match(src,new RegExp(route.replaceAll("/","\\/")));assert.match(src,/requireAuth/);assert.match(src,/createRateLimiter/);assert.match(src,/userStore\.listUsers/);assert.match(src,/profileUseConsent === true/);});
+
+test("Free Run Club browser diagnostics report first failed boundary",()=>{const js=read("public/free-run-club.js");assert.match(js,/firstFailure/);assert.match(js,/profile_api/);assert.match(js,/board_read_api/);assert.match(js,/server_diagnostic/);assert.match(js,/login\.html\?returnTo=/);});
