@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "situp-to-idle-user-reference-fbx",
+    "originalFileName": "Situp To Idle.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "8122fe11321bc66cd4f99a7bdab0756cdaf1a0fb2916049a9007ce99ccbe7b0c",
+    "bytes": 14199056,
+    "skeletonNamespace": "mixamorig",
+    "skeletonRoot": "mixamorig:Hips",
+    "modelNodeCount": 66,
+    "nodeAttributeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 171,
+    "animationStackCount": 2,
+    "primaryAnimationStack": "mixamo.com",
+    "primaryDurationSeconds": 4.4,
+    "primaryRootCurveKeyCount": 133,
+    "provider": "Mixamo, Inc.",
+    "sourceApplication": "mixamo.com",
+    "creator": "FBX SDK/FBX Plugins version 2020.2 build=71821dbdf",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "primaryLegoBlock": "ground_to_stand",
+    "secondaryEvidence": [
+      "supine_to_upright",
+      "torso_raise",
+      "root_rise",
+      "floor_recovery",
+      "standing_reacquisition"
+    ],
+    "possibleExerciseFamilies": [
+      "floor recovery",
+      "sit-up recovery",
+      "burpee recovery research",
+      "ground-to-standing transitions"
+    ],
+    "ignoreForNow": [
+      "source performance styling",
+      "character-specific presentation"
+    ]
+  },
+  "usePolicy": {
+    "purpose": "Study neutral floor-to-upright root and skeletal mechanics and compare them later with paired MoveNet FRONT + SIDE evidence.",
+    "allowedInRuntime": false,
+    "notes": "The raw FBX is intentionally not committed. Store provenance and derived mechanics only until redistribution/license status is confirmed. This source is evidence, not a validated movement primitive."
+  },
+  "observedRootMotion": {
+    "hipsStart": {"x": 0.148778, "y": 12.884202, "z": -3.324171},
+    "hipsEnd": {"x": -2.749965, "y": 93.038834, "z": -8.234985},
+    "hipsNetRiseY": 80.154632,
+    "hipsStartRotationDegrees": {"x": -95.027534, "y": -2.941491, "z": -1.121175},
+    "hipsEndRotationDegrees": {"x": 3.834296, "y": -3.679500, "z": -0.403161},
+    "netRootPitchChangeDegrees": 98.861830
+  },
+  "coarseMechanicsAnchors": [
+    {"timeSeconds":0.00,"phase":"floor_start","hips":{"x":0.149,"y":12.884,"z":-3.324},"rotationDegrees":{"x":-95.028,"y":-2.941,"z":-1.121}},
+    {"timeSeconds":0.55,"phase":"torso_raise","hips":{"x":-0.063,"y":13.423,"z":5.061},"rotationDegrees":{"x":-46.454,"y":-2.704,"z":-3.405}},
+    {"timeSeconds":1.10,"phase":"upright_low","hips":{"x":0.090,"y":15.177,"z":11.761},"rotationDegrees":{"x":-4.673,"y":-11.171,"z":0.064}},
+    {"timeSeconds":1.65,"phase":"weight_transfer","hips":{"x":-3.295,"y":23.615,"z":23.585},"rotationDegrees":{"x":-12.316,"y":-27.637,"z":19.621}},
+    {"timeSeconds":2.20,"phase":"root_rise","hips":{"x":2.113,"y":40.049,"z":35.960},"rotationDegrees":{"x":28.050,"y":-15.460,"z":2.241}},
+    {"timeSeconds":2.75,"phase":"standing_acquire","hips":{"x":2.181,"y":90.772,"z":49.930},"rotationDegrees":{"x":15.657,"y":-6.321,"z":-3.952}},
+    {"timeSeconds":3.30,"phase":"balance_recovery","hips":{"x":-5.644,"y":84.978,"z":17.166},"rotationDegrees":{"x":8.252,"y":-16.080,"z":-1.307}},
+    {"timeSeconds":3.85,"phase":"standing_stabilize","hips":{"x":-9.672,"y":92.804,"z":-6.175},"rotationDegrees":{"x":7.966,"y":-4.132,"z":1.692}},
+    {"timeSeconds":4.40,"phase":"idle_upright","hips":{"x":-2.750,"y":93.039,"z":-8.235},"rotationDegrees":{"x":3.834,"y":-3.680,"z":-0.403}}
+  ],
+  "humanVisualStatus": "PENDING HUMAN TRIM/STYLE REVIEW"
+}
