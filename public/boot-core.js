@@ -9,6 +9,10 @@
     frontendBuild: FRONTEND_BUILD,
     backendVersionReached: false,
     backendBuildParsed: false,
+    movementRecorderRequested: false,
+    movementRecorderLoaded: false,
+    movementRoadmapRequested: false,
+    movementRoadmapLoaded: false,
     lastError: null,
     updatedAt: new Date().toISOString()
   };
@@ -28,6 +32,10 @@
       `frontend build: ${FRONTEND_BUILD}`,
       `backend __version reached: ${state.backendVersionReached ? 'yes' : 'no'}`,
       `backend build parsed: ${state.backendBuildParsed ? 'yes' : 'no'}`,
+      `movement recorder requested: ${state.movementRecorderRequested ? 'yes' : 'no'}`,
+      `movement recorder loaded: ${state.movementRecorderLoaded ? 'yes' : 'no'}`,
+      `movement roadmap requested: ${state.movementRoadmapRequested ? 'yes' : 'no'}`,
+      `movement roadmap loaded: ${state.movementRoadmapLoaded ? 'yes' : 'no'}`,
       `last boot error: ${state.lastError || 'none'}`
     ];
     systemBootStatusEl.textContent = lines.join('\n');
@@ -39,10 +47,56 @@
     pill.textContent = text;
   }
 
+  function loadTrainerMovementRoadmap() {
+    const builder = document.querySelector?.('[data-coach-template-builder]');
+    if (!builder || globalScope.PocketPTMovementRecordingRoadmap || document.getElementById('movementRecordingRoadmapRuntimeScript')) return;
+    state.movementRoadmapRequested = true;
+    const script = document.createElement('script');
+    script.id = 'movementRecordingRoadmapRuntimeScript';
+    script.src = '/motion/movement-recording-roadmap.js?v=2026-09-01-foundation-roadmap-v1';
+    script.async = true;
+    script.onload = () => {
+      state.movementRoadmapLoaded = Boolean(globalScope.PocketPTMovementRecordingRoadmap);
+      state.updatedAt = new Date().toISOString();
+      renderBootStatus('movement-roadmap-loaded');
+    };
+    script.onerror = () => {
+      state.lastError = 'movement_roadmap_load_failed';
+      state.updatedAt = new Date().toISOString();
+      renderBootStatus('movement-roadmap-load-failed');
+    };
+    document.head.appendChild(script);
+    renderBootStatus('movement-roadmap-requested');
+  }
+
+  function loadTrainerMovementRecorder() {
+    const builder = document.querySelector?.('[data-coach-template-builder]');
+    if (!builder || globalScope.PocketPTMovementRecorder || document.getElementById('movementRecorderRuntimeScript')) return;
+    state.movementRecorderRequested = true;
+    const script = document.createElement('script');
+    script.id = 'movementRecorderRuntimeScript';
+    script.src = '/motion/movement-recorder.js?v=2026-09-01-movement-lego-recorder-v1';
+    script.async = true;
+    script.onload = () => {
+      state.movementRecorderLoaded = Boolean(globalScope.PocketPTMovementRecorder);
+      state.updatedAt = new Date().toISOString();
+      renderBootStatus('movement-recorder-loaded');
+      loadTrainerMovementRoadmap();
+    };
+    script.onerror = () => {
+      state.lastError = 'movement_recorder_load_failed';
+      state.updatedAt = new Date().toISOString();
+      renderBootStatus('movement-recorder-load-failed');
+    };
+    document.head.appendChild(script);
+    renderBootStatus('movement-recorder-requested');
+  }
+
   console.log('[BOOT_CORE] loaded');
   setText('bootCoreLoadedMarker', 'yes');
   renderBuildPill(`Build: loading… • Host: ${host}`);
   renderBootStatus('boot-core-start');
+  loadTrainerMovementRecorder();
 
   (async function loadBackendVersion() {
     let buildText = 'Build error: network_error';
