@@ -1,5 +1,6 @@
 (function(){"use strict";
 const routes={
+ private:{title:"Private Sessions",copy:"Tell us what kind of one-on-one coaching you want. This is a quote request, not a checkout, and Pocket PT will not calculate or display your price.",choices:[["request_private","Continue to private coaching request"]]},
  runclub:{title:"Free Run Club",copy:"This is the free Pocket PT running community, separate from paid Stepping Into Greatness. Complete a runner profile, choose what the club may show, then enter the 24-hour community board.",choices:[["join_run_club","Continue to Free Run Club"]]},
  everyday:{title:"Everyday fitness",copy:"Pick the result closest to what you want. Your Retention Journey will still ask the shared health, safety, schedule and training questions.",choices:[["lose","Lose up to about 20 lb"],["gain","Gain up to about 20 lb"],["tone","Tone / recomposition"],["fitness","Strength & general fitness"]]},
  transformation:{title:"Major transformation",copy:"Choose the direction of your transformation so your trainer can understand your starting goal immediately.",choices:[["major_loss","Major weight loss"],["major_gain","Major weight gain / mass"],["recomp","Major body recomposition"],["lifestyle","Lifestyle reset"]]},
@@ -11,6 +12,7 @@ const goals={lose:["Lose up to about 20 lb","lose_body_fat",-20],gain:["Gain up 
 const $=s=>document.querySelector(s),detail=$("#detail"),grid=$("#pathways"),status=$("#status");
 function show(route){const cfg=routes[route];grid.hidden=true;detail.hidden=false;$("#detailTitle").textContent=cfg.title;$("#detailCopy").textContent=cfg.copy;$("#choices").innerHTML="";for(const [key,label] of cfg.choices){const b=document.createElement("button");b.className="choice";b.textContent=label;b.onclick=()=>save(route,key);$("#choices").appendChild(b);}status.textContent="";}
 async function save(route,choice){
+ if(route==="private"){location.replace("/private-sessions.html?firstRun=1");return;}
  if(route==="runclub"){location.replace("/free-run-club.html?firstRun=1");return;}
  status.textContent="Saving your Retention Journey starting point…";const pathway=pathwayFor(route);const payload={currentStep:"identity_profile",pathwaySelection:{selected:[pathway],primary:pathway}};
  if(pathway==="general_fitness"){const g=goals[choice];payload.generalFitness={enabled:true,weightChangeGoal:g[1]};payload.goals={primaryGoal:g[0]};if(g[2]!=null)payload.generalFitness.desiredWeightChange=g[2];}
