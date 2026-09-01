@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "hard-landing-user-reference-fbx",
+    "originalFileName": "hard landing.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "ad42fbd3114e26fb6acc79c1e3a872ae8c398b8ed3fc2c6bd75eb91328e944c4",
+    "bytes": 467233,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "durationSeconds": 2.0,
+    "provider": "user-provided Mixamo-derived reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "usePolicy": {
+    "purpose": "derive neutral reusable movement mechanics without copying source performance styling",
+    "allowedInRuntime": false,
+    "notes": "Raw FBX is not committed. Store extracted mechanics/provenance only until redistribution rights are confirmed."
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "candidateEvidence": ["jump_to_land", "landing_compression", "bilateral_knee_flexion", "hip_absorption", "stabilization"],
+    "cautions": ["Landing style is performance-specific; neutralize before runtime use.", "Use the compression/recovery sequence, not source impact intensity, as the reusable mechanic."]
+  },
+  "observedRootMotion": {
+    "durationSeconds": 2.0,
+    "rootKeys": 61,
+    "hipsYStart": 86.235031,
+    "hipsYMin": 47.98378,
+    "hipsYEnd": 87.856094,
+    "rootRotationXRangeDegrees": [-26.159967, 64.053193]
+  },
+  "humanVisualStatus": "PENDING HUMAN TRIM/STYLE REVIEW"
+}
