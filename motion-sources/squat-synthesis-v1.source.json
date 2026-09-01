@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "squat-synthesis-v1",
+  "displayName": "Synthesized Bodyweight Squat Engineering Reference v1",
+  "kind": "derived-motion-composition",
+  "status": "development-only",
+  "binaryCommitted": false,
+  "humanMoveNetEvidence": "PENDING",
+  "validationStatus": "NOT_VALIDATED",
+  "purpose": "Prove that PocketPT can compose a new exercise motion from reusable movement mechanics without downloading or copying a named squat animation.",
+  "composition": {
+    "phaseOrder": ["start", "descent", "bottom", "ascent", "finish"],
+    "legoBlocks": ["standing", "crouch"],
+    "supplementalPrimitives": ["hip_hinge", "bilateral_knee_flexion_extension", "root_descent_rise", "standing_reacquisition"]
+  },
+  "evidence": [
+    {
+      "role": "neutral-start-end",
+      "reference": "public/motion/transition-profiles/stand-to-plank.v1.json",
+      "supports": ["standing", "standing_reacquisition"]
+    },
+    {
+      "role": "low-posture-and-root-descent",
+      "reference": "motion-sources/crouched-sneaking-left-reference.source.json",
+      "supports": ["crouch", "root_descent", "bilateral_leg_loading"],
+      "caution": "Sneaking style is not copied; only coarse low-stance mechanics are used."
+    },
+    {
+      "role": "hip-hinge-and-extension",
+      "reference": "motion-sources/kettlebell-swing-reference.source.json",
+      "supports": ["hip_hinge", "hip_extension", "bilateral_knee_flexion_extension", "root_descent_rise"],
+      "caution": "Kettlebell swing styling and ballistic timing are not copied."
+    },
+    {
+      "role": "bilateral-loading-and-extension",
+      "reference": "motion-sources/jumping-up-reference.source.json",
+      "supports": ["bilateral_leg_extension", "takeoff_loading"],
+      "caution": "Jump takeoff velocity is not used; only symmetric loading/extension directionality informs the proof."
+    },
+    {
+      "role": "compression-and-recovery",
+      "reference": "motion-sources/hard-landing-reference.source.json",
+      "supports": ["bilateral_knee_flexion", "hip_absorption", "stabilization"],
+      "caution": "Impact/landing style is not copied; only controlled compression/recovery relationships inform the proof."
+    }
+  ],
+  "engineeringAssumptions": [
+    "The first proof is intentionally symmetric left-to-right.",
+    "Root depth is expressed as a fraction of avatar height, not source FBX units.",
+    "Bone rotations are rest-relative engineering offsets intended for visual review, not anatomical ground truth.",
+    "The synthesized motion must not be used for scoring, coaching tolerances, medical claims, or biomechanical validation.",
+    "Front and side human MoveNet recordings will later be used to calibrate stance, knee tracking, torso angle, depth, timing, and phase boundaries."
+  ],
+  "acceptanceBoundary": {
+    "candidateIf": "The avatar visibly performs a coherent stand -> descend -> bottom -> rise -> stand cycle without using a downloaded squat animation.",
+    "notEnoughForValidated": [
+      "human front-view comparison",
+      "human side-view comparison",
+      "trainer visual review",
+      "runtime avatar visual verification"
+    ]
+  }
+}
