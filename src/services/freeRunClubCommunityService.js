@@ -2,13 +2,14 @@
 
 const crypto = require("crypto");
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_IMAGE_DATA_LENGTH = 1_900_000;
 const id = prefix => `${prefix}_${crypto.randomUUID()}`;
 const iso = value => new Date(value).toISOString();
 const text = (value,max=500) => String(value == null ? "" : value).trim().slice(0,max);
 
 function createFreeRunClubCommunityService({ userStore, clock = () => Date.now() }) {
   function ensure(user) {
-    user.freeRunClub ||= { schemaVersion:1, profile:null, joinedAt:null, boardPosts:[] };
+    user.freeRunClub ||= { schemaVersion:2, profile:null, joinedAt:null, boardPosts:[] };
     user.freeRunClub.boardPosts ||= [];
     prune(user.freeRunClub);
     return user.freeRunClub;
@@ -33,6 +34,12 @@ function createFreeRunClubCommunityService({ userStore, clock = () => Date.now()
       updatedAt:iso(clock())
     };
   }
+  function validateImageData(value) {
+    if (value == null || value === "") return null;
+    if (typeof value !== "string" || value.length > MAX_IMAGE_DATA_LENGTH) throw new Error("Shared photo is too large");
+    if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(value)) throw new Error("Shared photo must be JPEG, PNG, or WebP image data");
+    return value;
+  }
   function saveProfile(userId,input) {
     let result;
     userStore.updateUser(userId,user=>{ const d=ensure(user); d.profile=validateProfile(input); d.joinedAt ||= iso(clock()); result={...d.profile,joinedAt:d.joinedAt}; return user; });
@@ -42,10 +49,10 @@ function createFreeRunClubCommunityService({ userStore, clock = () => Date.now()
   function createPost(userId,input={}) {
     let post;
     userStore.updateUser(userId,user=>{ const d=ensure(user); if(!d.profile) throw new Error("Complete Free Run Club profile first");
-      const body=text(input.text,1500), imageUrl=text(input.imageUrl,1000)||null;
-      if(!body&&!imageUrl) throw new Error("Post must include text or an image");
-      if(imageUrl && d.profile.photoSharingConsent!==true) throw new Error("Photo sharing permission is required");
-      post={postId:id("runclub_post"),userId,displayName:d.profile.displayName,state:d.profile.state,text:body||null,imageUrl,createdAt:iso(clock()),expiresAt:iso(clock()+DAY_MS)};
+      const body=text(input.text,1500), imageData=validateImageData(input.imageData);
+      if(!body&&!imageData) throw new Error("Post must include text or an image");
+      if(imageData && d.profile.photoSharingConsent!==true) throw new Error("Photo sharing permission is required");
+      post={postId:id("runclub_post"),userId,displayName:d.profile.displayName,state:d.profile.state,text:body||null,imageData,createdAt:iso(clock()),expiresAt:iso(clock()+DAY_MS)};
       d.boardPosts.push(post); prune(d); return user; });
     return post;
   }
@@ -60,11 +67,12 @@ function createFreeRunClubCommunityService({ userStore, clock = () => Date.now()
       {id:"domain",result:"PASS"},
       {id:"profile",result:d.profile?"PASS":"FAIL"},
       {id:"profile_permission",result:d.profile?.profileUseConsent===true?"PASS":"FAIL"},
-      {id:"board_retention",result:d.boardPosts.every(p=>Date.parse(p.createdAt)>=clock()-DAY_MS)?"PASS":"FAIL"}
+      {id:"board_retention",result:d.boardPosts.every(p=>Date.parse(p.createdAt)>=clock()-DAY_MS)?"PASS":"FAIL"},
+      {id:"board_media_bounds",result:d.boardPosts.every(p=>!p.imageData||p.imageData.length<=MAX_IMAGE_DATA_LENGTH)?"PASS":"FAIL"}
     ];
-    return {diagnosticVersion:"free-run-club-first-failure-v1",firstFailure:checks.find(x=>x.result==="FAIL")?.id||null,checks,postCount:d.boardPosts.length};
+    return {diagnosticVersion:"free-run-club-first-failure-v2",firstFailure:checks.find(x=>x.result==="FAIL")?.id||null,checks,postCount:d.boardPosts.length};
   }
-  return { saveProfile,getProfile,createPost,board,diagnostic,DAY_MS };
+  return { saveProfile,getProfile,createPost,board,diagnostic,DAY_MS,MAX_IMAGE_DATA_LENGTH };
 }
 
-module.exports={createFreeRunClubCommunityService,DAY_MS};
+module.exports={createFreeRunClubCommunityService,DAY_MS,MAX_IMAGE_DATA_LENGTH};
