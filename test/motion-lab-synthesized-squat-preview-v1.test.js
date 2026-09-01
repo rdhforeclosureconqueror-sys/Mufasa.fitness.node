@@ -42,7 +42,7 @@ test("squat dependency uses the protected Motion Lab graph before runtime", () =
   const bootstrap = read("motion-lab/motion-lab-bootstrap.js");
   const position = bootstrap.indexOf("/dev/motion-lab-assets/squat-motion-spec.js");
   assert.ok(position >= 0 && position < bootstrap.indexOf("/dev/motion-lab-runtime.js"));
-  assert.match(read("motion-lab/index.html"), /Load Synthesized Squat v1 \(Reference Only\)/);
+  assert.match(read("motion-lab/index.html"), /Load Synthesized Squat v2 \(Reference Only\)/);
   assert.doesNotMatch(bootstrap, /PocketPTPushUpMotionSpec\s*=/);
 });
 
@@ -53,11 +53,11 @@ test("squat selects its own contract without autoplay or changing push-up identi
   await lab.loadAvatar(env.PocketPTAvatarProfiles.profiles.reference);
   assert.equal(buttons.get("loadSynthesizedSquat").disabled, false);
   assert.equal((await buttons.get("loadSynthesizedSquat").onclick()).status, "ready");
-  assert.equal(lab.snapshot().motion.motionId, "squat/synthesized_engineering_v1");
+  assert.equal(lab.snapshot().motion.motionId, "squat/synthesized_engineering_v2_grounded");
   assert.equal(lab.snapshot().playback, "ready");
   assert.equal(env.PocketPTPushUpMotionSpec, pushUp);
   await lab.loadPushUp();
-  assert.deepEqual(sessions[0].calls, ["squat/synthesized_engineering_v1","push_up_engineering_reference_v1"]);
+  assert.deepEqual(sessions[0].calls, ["squat/synthesized_engineering_v2_grounded","push_up_engineering_reference_v1"]);
 });
 
 test("squat restores the compatible reference avatar and failed loads cannot enable playback", async () => {

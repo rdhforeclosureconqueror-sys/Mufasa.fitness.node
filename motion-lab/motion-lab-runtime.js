@@ -89,7 +89,7 @@
     if(state.avatar?.avatarProfileId!=="phase-e-reference"){
       var reference=env.PocketPTAvatarProfiles?.profiles?.reference;
       if(!reference)return {status:"failed",code:"dependency_load_failed"};
-      viewerStatus("Preparing synthesized squat reference avatar…");
+      viewerStatus("Preparing grounded synthesized squat reference avatar…");
       var out=await loadAvatar(reference);
       if(out.status!=="ready")return out;
     }

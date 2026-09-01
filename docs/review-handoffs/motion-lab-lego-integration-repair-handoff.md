@@ -4,7 +4,7 @@ This repair connects the synthesized squat and Movement Lego capture workflow to
 
 Repository: `rdhforeclosureconqueror-sys/Mufasa.fitness.node`.
 
-Base: `95d6fafcce3af315e62bcb5eb6571bbcdfd958d9` (`main`, merge of PR #604). PRs #601, #602, #603 and #604 are merged. This follow-up incorporates #604's normalized bone-name resolution and automatic recovery to the reference avatar. It does not change either merged PR.
+Integration base: `5d039423dd9cc9b9dca0e2a6591528a418fabe18` (`main`, merge of PR #605). PRs #601–#605 are merged. This follow-up is [PR #606](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/606). It incorporates #604's normalized bone-name resolution and automatic reference-avatar recovery, and #605's grounded v2 identity, source evidence and dual-foot contact policy.
 
 ## What is connected
 
@@ -16,7 +16,7 @@ The study registry contains **17 Movement Lego blocks: 4 transitions, 5 postures
 | `POST /api/dev/motion-lab/session` | Existing authorized session creates the Motion Lab cookie. Local browser used a signed test admin token and received 201. |
 | `/dev/motion-lab` | Existing feature flag and Motion Lab access gate remain in place. Anonymous requests stay denied. |
 | `/dev/motion-lab-assets/*` | Squat spec now loads through the same protected module graph as the compiler, session and other specs. Route tests verify the complete required graph. |
-| Motion Lab → Load Synthesized Squat v1 | Uses `MotionLabRuntime.loadMotionSpec(contract)` and the existing disposable session/compiler. Automatically loads the Phase E reference avatar if needed. Play remains explicit. |
+| Motion Lab → Load Synthesized Squat v2 | Uses `MotionLabRuntime.loadMotionSpec(contract)` and the existing disposable session/compiler. Automatically loads the Phase E reference avatar if needed. Play remains explicit. |
 | Dashboard → Movement Capture Studio | Existing admin/super-admin entry points to `/workout.html?movementCaptureStudio=1`; its canonical recorder, roadmap, studio and debug modules finish startup in order. |
 | `/motion/registry/movement-lego-scavenger.v1.json` | All 17 candidate records and their referenced local evidence files were checked. Custom recordings cannot inflate coverage above 17/17. |
 | Source evidence links | Repository pointers now open their actual GitHub files. `motion-sources/` is repository evidence, not a deployed static directory. |
@@ -32,7 +32,7 @@ The repository route-authorization validator matches **all 316 registered routes
 - Preserved #604's exact/normalized bone resolver and ambiguous-alias rejection. Tracks bind to resolved object UUIDs; diagnostics retain the authored and actual bone names.
 - Corrected root translations for the shipped armature's rotation and 0.01 scale. Offsets expressed in avatar-height units are converted from world displacement into the root parent's local coordinates.
 - Restore the rest pose before compiling a new spec. Switching motions while playing or paused no longer bakes the previous pose into the next clip.
-- Corrected ignored pelvis rotation, reversed leg-axis signs and mismatched ankle/root offsets in the development squat. The result is explicitly a **partial-depth engineering reference**. A numerical regression check samples 101 times and bounds foot displacement to 2.5% of avatar height; this is not a claim of perfectly planted feet or natural movement.
+- Retained #605's root-channel pelvis rotation and grounded leg-axis directions, then calibrated ankle/root offsets against the shipped rig after correcting the compiler's world-to-local conversion. A 0.32-avatar-height root drop does not match this leg bend, so the result is explicitly a **partial-depth engineering reference** with a 0.10-height drop. Its motion ID remains `squat/synthesized_engineering_v2_grounded`; the visible button now says v2. A numerical regression check samples 101 times and bounds foot displacement to 2.5% of avatar height; this is not a claim of perfectly planted feet or natural movement.
 - Loading a motion does not autoplay. Stop, unload, failed avatar loads, late async completions and Dispose cannot leave an old motion selected or restore a stopped session. Dispose supports a fresh Initialize/Start cycle.
 
 ### Capture and export
@@ -55,7 +55,7 @@ Two existing test files were also missing their `node:test` imports. Their asser
 
 | Check | Evidence |
 | --- | --- |
-| Focused motion/capture/startup tests | 85 passing tests, including real GLTFLoader parsing of the shipped avatar and the canonical transition profile. |
+| Focused motion/capture/startup tests | 86 passing tests, including real GLTFLoader parsing of the shipped avatar and the canonical transition profile. |
 | Real avatar binding | Both engineering specs compile; the squat has 12 tracks, 11 bound targets and zero unbound targets. Unknown and ambiguous targets fail closed. |
 | Motion Lab browser | Chromium 149/WebGL2 against the actual local Express routes: personalized avatar → squat automatically switches to Phase E; load stays ready until Play; Pause, push-up switching, Stop, Dispose and reinitialize succeed. No page errors or failed HTTP responses. |
 | Cleanup | Zero active sessions, RAF owners, listeners, timers and canvases after disposal. |
@@ -76,7 +76,7 @@ node --test test/motion-lab*.test.js test/motion-spec-real-avatar.test.js \
 npm run lint
 npm run security:validate-routes
 npm run motion:validate-phase-e
-npm run readiness:validate -- --base 95d6fafcce3af315e62bcb5eb6571bbcdfd958d9
+npm run readiness:validate -- --base 5d039423dd9cc9b9dca0e2a6591528a418fabe18
 ```
 
 ### Full-suite comparison
@@ -85,10 +85,10 @@ The full repository suite is not green. The same environment produced:
 
 | Revision | Tests | Pass | Fail |
 | --- | ---: | ---: | ---: |
-| Clean main at `95d6faf` | 1,704 | 1,663 | 41 |
-| This repair | 1,724 | 1,688 | 36 |
+| Clean main at `5d03942` | 1,705 | 1,662 | 43 |
+| This repair | 1,725 | 1,689 | 36 |
 
-There are **zero newly failing tests** relative to the clean base. Three obsolete roadmap assertions and two test-loader failures are resolved. The remaining 36 failures reproduce at the base and cover existing calibration/mirror expectations, UI/auth fixtures, billing/community behavior and static build/security inventories. They still require triage before a repository-wide green or launch-ready claim.
+There are **zero newly failing tests** relative to the clean base. Three obsolete roadmap assertions, two stale v1-only Motion Lab assertions and two test-loader failures are resolved. The remaining 36 failures reproduce at the base and cover existing calibration/mirror expectations, UI/auth fixtures, billing/community behavior and static build/security inventories. They still require triage before a repository-wide green or launch-ready claim.
 
 Remaining failures by file:
 
@@ -122,7 +122,7 @@ Remaining failures by file:
 ## Required independent and human review
 
 1. Review the compiler's coordinate conversion, rest-pose restoration, generic loader and async cancellation handling. Confirm that #604's automatic reference-avatar recovery still works.
-2. In the deployed Motion Lab: Initialize Runtime → Start Session → load either avatar → Load Synthesized Squat v1 → Play. Observe at least two complete loops, then exercise Pause/Resume/Stop/Restart, switch to push-up and back, and Dispose/reinitialize.
+2. In the deployed Motion Lab: Initialize Runtime → Start Session → load either avatar → Load Synthesized Squat v2 → Play. Observe at least two complete loops, then exercise Pause/Resume/Stop/Restart, switch to push-up and back, and Dispose/reinitialize.
 3. A human must judge pelvis descent/backward travel, bilateral knee flexion, feet, bottom depth, return to standing, arm posture, sliding and overall movement naturalness. The automated engineering bound does not approve these criteria. The current depth is intentionally partial.
 4. On a physical target phone, open Dashboard → Movement Capture Studio. Use the existing camera/MoveNet flow to record distinct Front and Side takes. Save, reload and export them; inspect the tags and pose checkpoints. Check quota behavior and complete all eight paired tasks before calling Foundation 8 captured.
 5. Record human and physical-device decisions through the authenticated Admin readiness UI/API. Keep biomechanical, coaching/scoring and production-motion acceptance unproven until the required review exists.

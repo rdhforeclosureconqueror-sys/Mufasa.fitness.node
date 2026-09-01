@@ -19,14 +19,25 @@ test('descent and ascent are mirrored engineering poses', () => {
   const descent = SquatMotion.spec.phases.find(phase => phase.id === 'descent');
   const ascent = SquatMotion.spec.phases.find(phase => phase.id === 'ascent');
   assert.deepEqual(descent.root.positionOffset, ascent.root.positionOffset);
+  assert.deepEqual(descent.root.rotationOffsetEulerDegrees, ascent.root.rotationOffsetEulerDegrees);
   assert.deepEqual(descent.boneTargets, ascent.boneTargets);
 });
 
-test('bottom is lower than standing and preserves bilateral foot contact', () => {
-  const start = SquatMotion.spec.phases.find(phase => phase.id === 'start');
+test('grounded v2 preserves bilateral foot contact in every phase', () => {
+  assert.equal(SquatMotion.spec.version, 2);
+  assert.equal(SquatMotion.spec.motionId, 'squat/synthesized_engineering_v2_grounded');
+  assert.equal(SquatMotion.spec.groundingPolicy.mode, 'dual-foot-planted-engineering-reference');
+  for (const phase of SquatMotion.spec.phases) assert.deepEqual(phase.contacts, ['left_foot', 'right_foot']);
+});
+
+test('grounded v2 uses kettlebell-swing leg-chain direction instead of tuck-jump direction', () => {
   const bottom = SquatMotion.spec.phases.find(phase => phase.id === 'bottom');
-  assert.ok(bottom.root.positionOffset[1] < start.root.positionOffset[1]);
-  assert.deepEqual(bottom.contacts, ['left_foot', 'right_foot']);
+  const leftThigh = bottom.boneTargets.find(target => target.bone === 'mixamorig:LeftUpLeg');
+  const leftLeg = bottom.boneTargets.find(target => target.bone === 'mixamorig:LeftLeg');
+  assert.ok(leftThigh.rotationOffsetEulerDegrees[0] > 0);
+  assert.ok(leftLeg.rotationOffsetEulerDegrees[0] < 0);
+  assert.ok(bottom.root.positionOffset[1] < 0);
+  assert.ok(bottom.root.rotationOffsetEulerDegrees[0] > 0);
 });
 
 test('spec is explicitly development-only and not biomechanically authoritative', () => {
@@ -38,7 +49,8 @@ test('spec is explicitly development-only and not biomechanically authoritative'
 
 test('summary keeps human MoveNet review as a required next step', () => {
   const summary = SquatMotion.summary();
-  assert.equal(summary.motionId, 'squat/synthesized_engineering_v1');
+  assert.equal(summary.motionId, 'squat/synthesized_engineering_v2_grounded');
   assert.equal(summary.requiresHumanMoveNetReview, true);
   assert.equal(summary.bottomRootDropAvatarHeights, 0.10);
+  assert.equal(summary.groundingMode, 'dual-foot-planted-engineering-reference');
 });

@@ -481,6 +481,27 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-01T15:18:56.394Z"
+    },
+    {
+      "operationId": "78aff1b9-b0d0-4e37-be0d-2b94b24d86ac",
+      "board": "avatar",
+      "cardId": "avatar-development-motion-lab-lego-integration-repair",
+      "sourceType": "implementation",
+      "taskId": "motion-lab-lego-integration-603",
+      "files": [
+        "motion-lab/index.html",
+        "motion-lab/motion-lab-runtime.js",
+        "public/motion/squat-motion-spec.js",
+        "test/squat-motion-spec-v1.test.js",
+        "test/motion-lab-synthesized-squat-preview-v1.test.js",
+        "docs/review-handoffs/motion-lab-lego-integration-repair-handoff.md",
+        "docs/review-handoffs/squat-grounded-v2-review-handoff.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Reconciled PR 606 with main 5d03942 and merged grounded squat PR 605. Preserved v2 motion identity, source evidence, dual-foot policy and contact validation; retained calibrated partial-depth offsets after world-to-local conversion. Visible button now says v2. Focused suite 86/86 passes and Chromium Motion Lab loads grounded v2 without autoplay, errors or failed HTTP responses; cleanup is zero. Human movement, physical-device and MoveNet acceptance remain required.",
+      "prNumber": 606,
+      "commitSha": null,
+      "timestamp": "2026-09-01T15:26:21.757Z"
     }
   ]
 }
