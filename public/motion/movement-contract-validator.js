@@ -30,6 +30,7 @@
     const bottom = (spec.phases || []).find(phase => phase.id === "bottom");
     const finish = (spec.phases || []).find(phase => phase.id === "finish");
     if (contract.hardConstraints?.includes("pelvis_descends_during_descent") && !(bottom?.root?.positionOffset?.[1] < (start?.root?.positionOffset?.[1] ?? 0))) failures.push("pelvis_descent_missing");
+    if (contract.hardConstraints?.includes("pelvis_moves_posteriorly_during_descent") && !(bottom?.root?.positionOffset?.[2] < (start?.root?.positionOffset?.[2] ?? 0))) failures.push("pelvis_posterior_travel_missing");
     if (contract.hardConstraints?.includes("return_to_stable_standing") && JSON.stringify(finish?.root?.positionOffset || []) !== JSON.stringify(start?.root?.positionOffset || [])) failures.push("finish_root_not_restored");
 
     return freeze({ valid: failures.length === 0, failures: freeze(failures) });
@@ -39,6 +40,7 @@
     const checks = [];
     const target = contract?.numericalTargets?.insideKneeAngleDegrees;
     const footLimit = Number(contract?.numericalTargets?.footAnchorResidual?.hardFailAbove);
+    const side = contract?.numericalTargets?.referenceSideGeometry;
     const kneeAngle = Number(sample?.insideKneeAngleDegrees);
     const footResidual = Math.max(Number(sample?.leftFootResidual || 0), Number(sample?.rightFootResidual || 0));
 
@@ -47,6 +49,16 @@
       checks.push(freeze({ id: "bottom_knee_angle", pass: error <= Number(target.bottomEngineeringToleranceDegrees), actual: kneeAngle, target: target.bottomTarget, tolerance: target.bottomEngineeringToleranceDegrees }));
     }
     if (Number.isFinite(footLimit)) checks.push(freeze({ id: "dual_foot_anchor", pass: footResidual <= footLimit, actual: footResidual, max: footLimit }));
+
+    if (sample?.phaseId === "bottom" && side) {
+      const posterior = Number(sample?.pelvisPosteriorDisplacementAvatarHeight);
+      if (Number.isFinite(posterior)) checks.push(freeze({ id: "posterior_pelvis_travel", pass: posterior >= Number(side.posteriorPelvisTravelMinAvatarHeight), actual: posterior, min: side.posteriorPelvisTravelMinAvatarHeight }));
+      const kneeForward = Number(sample?.kneeForwardOfToeAvatarHeight);
+      if (Number.isFinite(kneeForward)) checks.push(freeze({ id: "reference_knee_forward_envelope", pass: kneeForward <= Number(side.bottomKneeForwardOfToeMaxAvatarHeight), actual: kneeForward, max: side.bottomKneeForwardOfToeMaxAvatarHeight }));
+      const pelvisBehindKnee = Number(sample?.pelvisPosteriorToKneeAvatarHeight);
+      if (Number.isFinite(pelvisBehindKnee)) checks.push(freeze({ id: "pelvis_posterior_to_knee", pass: pelvisBehindKnee >= Number(side.bottomPelvisPosteriorToKneeMinAvatarHeight), actual: pelvisBehindKnee, min: side.bottomPelvisPosteriorToKneeMinAvatarHeight }));
+    }
+
     if (sample?.heelRise === true) checks.push(freeze({ id: "heel_rise", pass: false }));
     if (sample?.kneeValgus === true) checks.push(freeze({ id: "knee_valgus", pass: false }));
     if (sample?.asymmetricWeightShift === true) checks.push(freeze({ id: "asymmetric_weight_shift", pass: false }));
