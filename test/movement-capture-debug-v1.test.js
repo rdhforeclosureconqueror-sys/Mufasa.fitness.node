@@ -9,43 +9,59 @@ test('reports the earliest expected pipeline failure instead of later symptoms',
   const checks = debug.deriveChecks({
     trainerHost:true, recorderModule:true, recorderUi:true,
     roadmapModule:false, roadmapUi:false, studioModule:false, studioUi:false,
-    poseRuntime:true, poseFrame:false, recorderState:{state:'IDLE',frameCount:0}, latest:null,
-    localEvidenceSaved:false, attempted:{capture:false,save:false}
+    poseRuntime:true, poseFrame:false, recorderState:{state:'IDLE',frameCount:0},
+    runtimeLatest:null, savedLatest:null, attempted:{capture:false,save:false,custom:false}
   });
   assert.equal(debug.findFirstFailure(checks)?.id, 'roadmap_module');
 });
 
-test('capture/save checks stay neutral until the user actually attempts them', () => {
+test('capture/save/custom checks stay neutral until the user actually attempts them', () => {
   const checks = debug.deriveChecks({
     trainerHost:true, recorderModule:true, recorderUi:true,
     roadmapModule:true, roadmapUi:true, studioModule:true, studioUi:true,
-    poseRuntime:true, poseFrame:false, recorderState:{state:'IDLE',frameCount:0}, latest:null,
-    localEvidenceSaved:false, attempted:{capture:false,save:false}
+    poseRuntime:true, poseFrame:false, recorderState:{state:'IDLE',frameCount:0},
+    runtimeLatest:null, savedLatest:null, customCreated:false,
+    attempted:{capture:false,save:false,custom:false}
   });
   assert.equal(debug.findFirstFailure(checks), null);
   assert.equal(checks.find((c) => c.id === 'pose_frame').expected, false);
   assert.equal(checks.find((c) => c.id === 'local_evidence_saved').expected, false);
+  assert.equal(checks.find((c) => c.id === 'custom_movement_created').expected, false);
 });
 
 test('after record is attempted, missing canonical pose frame is the first failure', () => {
   const checks = debug.deriveChecks({
     trainerHost:true, recorderModule:true, recorderUi:true,
     roadmapModule:true, roadmapUi:true, studioModule:true, studioUi:true,
-    poseRuntime:true, poseFrame:false, recorderState:{state:'RECORDING',frameCount:0}, latest:null,
-    localEvidenceSaved:false, attempted:{capture:true,save:false}
+    poseRuntime:true, poseFrame:false, recorderState:{state:'RECORDING',frameCount:0},
+    runtimeLatest:null, savedLatest:null, attempted:{capture:true,save:false,custom:false}
   });
   assert.equal(debug.findFirstFailure(checks)?.id, 'pose_frame');
 });
 
 test('after save, missing front/side tag is surfaced before missing checkpoints', () => {
-  const latest = { meta:{primitiveId:'crouch'}, summary:{frameCount:40}, poseCheckpoints:[] };
+  const runtimeLatest = { recordingId:'new1', meta:{primitiveId:'crouch'}, summary:{frameCount:40} };
+  const savedLatest = { ...runtimeLatest, poseCheckpoints:[] };
   const checks = debug.deriveChecks({
     trainerHost:true, recorderModule:true, recorderUi:true,
     roadmapModule:true, roadmapUi:true, studioModule:true, studioUi:true,
-    poseRuntime:true, poseFrame:true, recorderState:{state:'RECORDED',frameCount:40}, latest,
-    localEvidenceSaved:true, attempted:{capture:true,save:true}
+    poseRuntime:true, poseFrame:true, recorderState:{state:'RECORDED',frameCount:40},
+    runtimeLatest, savedLatest, attempted:{capture:true,save:true,custom:false}
   });
   assert.equal(debug.findFirstFailure(checks)?.id, 'capture_view_tagged');
+});
+
+test('a valid newly saved view with checkpoints clears the capture pipeline', () => {
+  const runtimeLatest = { recordingId:'new2', meta:{primitiveId:'crouch'}, summary:{frameCount:40} };
+  const savedLatest = { ...runtimeLatest, meta:{primitiveId:'crouch',captureView:'front'}, poseCheckpoints:[{id:'start'}] };
+  const checks = debug.deriveChecks({
+    trainerHost:true, recorderModule:true, recorderUi:true,
+    roadmapModule:true, roadmapUi:true, studioModule:true, studioUi:true,
+    poseRuntime:true, poseFrame:true, recorderState:{state:'RECORDED',frameCount:40},
+    runtimeLatest, savedLatest, customCreated:false,
+    attempted:{capture:true,save:true,custom:false}
+  });
+  assert.equal(debug.findFirstFailure(checks), null);
 });
 
 test('boot chain loads debug only after capture studio and does not create camera ownership', () => {
