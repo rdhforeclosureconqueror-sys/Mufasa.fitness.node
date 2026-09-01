@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batchId": "animation-hunt-batch-1",
   "targetAnimationCount": 5,
-  "receivedAnimationCount": 22,
+  "receivedAnimationCount": 24,
   "goal": "Use a small selected batch of animation references to fill distinct missing Movement Lego evidence while keeping additional useful references organized without forcing them into the current 17-card hunt.",
   "rules": [
     "Prefer a new missing Lego block over a duplicate unless the duplicate adds a materially different mechanic.",
@@ -43,7 +43,9 @@
     "remainingEmptyBlocks": ["feet_jump_back","feet_jump_forward","feet_out_in"]
   },
   "supplementalKeepStudy": [
-    {"fileName":"Kettlebell Swing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/kettlebell-swing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"hip_hinge","secondaryEvidence":["hip_extension","bilateral_knee_flexion_extension","root_descent_rise","arm_swing","standing_reacquisition"]}
+    {"fileName":"Kettlebell Swing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/kettlebell-swing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"hip_hinge","secondaryEvidence":["hip_extension","bilateral_knee_flexion_extension","root_descent_rise","arm_swing","standing_reacquisition"]},
+    {"fileName":"Jumping Down.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-down-reference.source.json","currentHuntEffect":"STRENGTHENS jump_to_land CANDIDATE","futurePrimitive":"jump_descent_landing","secondaryEvidence":["airborne_descent","landing_compression","bilateral_knee_flexion","hip_absorption","forward_root_travel","stabilization"]},
+    {"fileName":"Salsa Dancing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/salsa-dancing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"lateral_step_weight_shift","secondaryEvidence":["alternating_weight_shift","lateral_root_translation","pelvis_rotation","foot_pivot","rhythmic_step_cycle","turning"],"reason":"Strong lateral/rotational dance mechanics, but not a clean bilateral Feet Out / In cycle."}
   ],
   "reviewedButNotSelected": [
     {"fileName":"cover to stand (2).fbx","verdict":"MAYBE","reason":"Overlaps Ground → Stand."},
