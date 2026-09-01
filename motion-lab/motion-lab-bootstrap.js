@@ -12,7 +12,7 @@
         return {status:"failed",code:"dependency_load_failed"};
       }
 
-      if(status)status.textContent="Preparing synthesized squat reference avatar…";
+      if(status)status.textContent="Preparing grounded synthesized squat reference avatar…";
       var avatarOut=await runtime.loadAvatar(profiles.profiles.reference);
       if(avatarOut?.status!=="ready"){
         if(status)status.textContent="Synthesized squat preview unavailable because the reference avatar failed to load.";
@@ -23,7 +23,7 @@
       window.PocketPTPushUpMotionSpec=squat;
       try {
         var out=await runtime.loadPushUp();
-        if(out?.status==="ready"&&status)status.textContent="Renderer active — synthesized Squat Engineering Reference v1 loaded on the Phase E reference avatar. Press Play to inspect it.";
+        if(out?.status==="ready"&&status)status.textContent="Renderer active — grounded Squat Engineering Reference v2 loaded on the Phase E reference avatar. Feet are intended to remain planted; press Play to inspect the correction.";
         return out;
       } finally {
         window.PocketPTPushUpMotionSpec=previous;
