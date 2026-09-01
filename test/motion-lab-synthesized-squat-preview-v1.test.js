@@ -7,6 +7,8 @@ const ROOT = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'motion-lab/index.html'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'motion-lab/motion-lab-bootstrap.js'), 'utf8');
 const squat = fs.readFileSync(path.join(ROOT, 'public/motion/squat-motion-spec.js'), 'utf8');
+const compiler = fs.readFileSync(path.join(ROOT, 'public/motion/motion-spec-clip.js'), 'utf8');
+const compilerApi = require(path.join(ROOT, 'public/motion/motion-spec-clip.js'));
 
 test('Motion Lab exposes an explicit synthesized squat control', () => {
   assert.match(html, /id="loadSynthesizedSquat"/);
@@ -29,6 +31,21 @@ test('squat preview reuses the existing development motion-spec compiler path wi
   assert.doesNotMatch(bootstrap, /\.play\(\)/);
   assert.doesNotMatch(bootstrap, /getUserMedia/);
   assert.doesNotMatch(bootstrap, /createDetector/);
+});
+
+test('squat preview actively restores the compatible Phase E reference avatar before compiling', () => {
+  assert.match(bootstrap, /profiles\.profiles\.reference/);
+  assert.match(bootstrap, /await runtime\.loadAvatar\(profiles\.profiles\.reference\)/);
+  assert.match(bootstrap, /Preparing synthesized squat reference avatar/);
+});
+
+test('motion-spec compiler resolves canonical Mixamo names against sanitized avatar node names', () => {
+  assert.equal(compilerApi.normalizedBoneKey('mixamorig:Hips'), 'mixamorighips');
+  assert.equal(compilerApi.normalizedBoneKey('mixamorigHips'), 'mixamorighips');
+  assert.equal(compilerApi.normalizedBoneKey('mixamorig:LeftUpLeg'), compilerApi.normalizedBoneKey('mixamorigLeftUpLeg'));
+  assert.match(compiler, /normalized-alias/);
+  assert.match(compiler, /aliasBindingCount/);
+  assert.match(compiler, /motion_targets_ambiguous/);
 });
 
 test('squat contract stays development-only and synthesized', () => {
