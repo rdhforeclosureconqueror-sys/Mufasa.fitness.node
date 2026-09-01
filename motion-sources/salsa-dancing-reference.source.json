@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "salsa-dancing-user-reference-fbx",
+    "originalFileName": "Salsa Dancing.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "d3c78b63b94393cd06d660666e6f8ca4969bad0830337c3d2ea012b8fe743a0d",
+    "bytes": 1049424,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "animationStackCount": 1,
+    "animationStackName": "mixamo.com",
+    "durationSeconds": 11.966666666666667,
+    "provider": "unknown-user-provided-reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "currentHuntEffect": "NO_NEW_CURRENT_17_CARD",
+    "futurePrimitive": "lateral_step_weight_shift",
+    "secondaryEvidence": ["alternating_weight_shift", "lateral_root_translation", "pelvis_rotation", "foot_pivot", "rhythmic_step_cycle", "turning"],
+    "notes": "Long, information-rich lateral/rotational dance reference. It is not a clean bilateral Feet Out / In cycle, so it is retained as supplemental movement intelligence rather than used to close the current hunt card."
+  },
+  "observedMechanics": {
+    "hipsTranslationXRange": [-68.55697631835938, 93.37286376953125],
+    "hipsTranslationYRange": [78.0280532836914, 89.6587142944336],
+    "hipsTranslationZRange": [-16.809328079223633, 18.89710235595703],
+    "hipsRotationXRangeDegrees": [-9.198299407958984, 179.6123046875],
+    "hipsRotationYRangeDegrees": [-87.51887512207031, 86.55750274658203],
+    "leftThighRotationXRangeDegrees": [4.534365653991699, 53.5489501953125],
+    "rightThighRotationXRangeDegrees": [8.123766899108887, 58.169708251953125],
+    "leftLowerLegRotationXRangeDegrees": [-86.86259460449219, -25.544260025024414],
+    "rightLowerLegRotationXRangeDegrees": [-92.69081115722656, -23.694442749023438]
+  },
+  "usePolicy": {
+    "allowedInRuntime": false,
+    "purpose": "derive neutral lateral stepping, pelvis-turn, weight-shift, and pivot mechanics",
+    "notes": "Raw FBX remains external/reference-only until redistribution rights are confirmed."
+  }
+}

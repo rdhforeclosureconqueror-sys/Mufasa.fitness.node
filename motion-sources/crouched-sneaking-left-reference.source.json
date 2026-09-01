@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "crouched-sneaking-left-user-reference-fbx",
+    "originalFileName": "crouched sneaking left.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "592383c61ce9b989ab17b475264711f83363823094fe62b5b9d2e0bbac19cf6e",
+    "bytes": 391985,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "durationSeconds": 1.266667,
+    "provider": "user-provided Mixamo-derived reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "usePolicy": {
+    "purpose": "derive neutral reusable movement mechanics without copying source performance styling",
+    "allowedInRuntime": false,
+    "notes": "Raw FBX is not committed. Store extracted mechanics/provenance only until redistribution rights are confirmed."
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "candidateEvidence": ["split_stance", "crouch", "lateral_shift", "asymmetric_leg_loading", "low_stance"],
+    "cautions": ["This is low lateral locomotion, not a canonical lunge.", "Treat split-stance classification as candidate evidence requiring visual/human review."]
+  },
+  "observedRootMotion": {
+    "durationSeconds": 1.266667,
+    "rootKeys": 39,
+    "rootLateralTravel": -120.29344,
+    "hipsYRange": [68.351891, 72.465508],
+    "leftThighXRangeDegrees": [29.7, 57.3],
+    "rightThighXRangeDegrees": [51.7, 71.9]
+  },
+  "humanVisualStatus": "PENDING HUMAN TRIM/STYLE REVIEW"
+}

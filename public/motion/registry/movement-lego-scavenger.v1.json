@@ -9,9 +9,9 @@
       "label": "Transitions",
       "cards": [
         {"id":"stand_to_ground","label":"Stand → Ground","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json"],"usefulFor":["push-up entry","burpee entry","mountain climber entry","plank jack entry"],"searchHints":["get down","crouch","hands down","crawl start"]},
-        {"id":"ground_to_stand","label":"Ground → Stand","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee exit","floor exercise exit"],"searchHints":["get up","stand up","rise","recover"]},
-        {"id":"stand_to_jump","label":"Stand → Jump","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["explosive burpee","jump squat","vertical jump"],"searchHints":["jump","takeoff","leap"]},
-        {"id":"jump_to_land","label":"Jump → Land","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["explosive burpee","jump squat","plyometrics"],"searchHints":["landing","jump landing","fall recovery"]}
+        {"id":"ground_to_stand","label":"Ground → Stand","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/situp-to-idle-reference.source.json"],"usefulFor":["burpee exit","floor exercise exit","sit-up recovery","general floor recovery"],"searchHints":["get up","stand up","rise","recover"]},
+        {"id":"stand_to_jump","label":"Stand → Jump","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/jumping-up-reference.source.json"],"usefulFor":["explosive burpee","jump squat","vertical jump"],"searchHints":["jump","takeoff","leap"]},
+        {"id":"jump_to_land","label":"Jump → Land","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/hard-landing-reference.source.json"],"usefulFor":["explosive burpee","jump squat","plyometrics"],"searchHints":["landing","jump landing","fall recovery"]}
       ]
     },
     {
@@ -19,8 +19,8 @@
       "label": "Postures",
       "cards": [
         {"id":"standing","label":"Standing","status":"CANDIDATE","neededReferences":2,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json"],"usefulFor":["baseline","squat","lunge","burpee"],"searchHints":["idle","standing"]},
-        {"id":"crouch","label":"Crouch / Low","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json"],"usefulFor":["squat","burpee","ground entry"],"searchHints":["crouch","duck","low stance","kneel"]},
-        {"id":"split_stance","label":"Split Stance","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["lunge","split squat"],"searchHints":["fighting stance","sword stance","step forward","kneel"]},
+        {"id":"crouch","label":"Crouch / Low","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json","/motion-sources/crouched-sneaking-left-reference.source.json"],"usefulFor":["squat","burpee","ground entry"],"searchHints":["crouch","duck","low stance","kneel"]},
+        {"id":"split_stance","label":"Split Stance","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/crouched-sneaking-left-reference.source.json"],"usefulFor":["lunge","split squat"],"searchHints":["fighting stance","sword stance","step forward","kneel"]},
         {"id":"ground_support","label":"Ground Support","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json"],"usefulFor":["push-up","mountain climber","plank jack","burpee"],"searchHints":["crawl","bear crawl","push from ground"]},
         {"id":"plank","label":"Plank","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/transition-profiles/stand-to-plank.v1.json"],"usefulFor":["push-up","mountain climber","plank jack"],"searchHints":["plank","crawl start","prone support"]}
       ]
@@ -29,14 +29,14 @@
       "id": "actions",
       "label": "Actions",
       "cards": [
-        {"id":"elbow_flex","label":"Elbow Flex","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["push-up lowering","curl","pull"],"searchHints":["push","crawl","climb","curl"]},
-        {"id":"elbow_extend","label":"Elbow Extend","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["push-up rising","press"],"searchHints":["push","shove","press"]},
-        {"id":"knee_drive_left","label":"Knee Drive L","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
-        {"id":"knee_drive_right","label":"Knee Drive R","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
-        {"id":"feet_jump_back","label":"Feet Jump Back","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee entry"],"searchHints":["hop back","jump back","dodge back"]},
-        {"id":"feet_jump_forward","label":"Feet Jump Forward","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["burpee exit"],"searchHints":["hop forward","jump forward","frog jump"]},
-        {"id":"feet_out_in","label":"Feet Out / In","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["plank jack","jumping jack"],"searchHints":["jumping jack","side hop","feet apart"]},
-        {"id":"vertical_jump","label":"Vertical Jump","status":"EMPTY","neededReferences":3,"repoEvidence":[],"usefulFor":["explosive burpee","jump squat"],"searchHints":["vertical jump","jump","leap"]}
+        {"id":"elbow_flex","label":"Elbow Flex","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json","/motion/push-up-motion-spec.js"],"usefulFor":["push-up lowering","curl","pull"],"searchHints":["push","crawl","climb","curl"]},
+        {"id":"elbow_extend","label":"Elbow Extend","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json","/motion/push-up-motion-spec.js"],"usefulFor":["push-up rising","press"],"searchHints":["push","shove","press"]},
+        {"id":"knee_drive_left","label":"Knee Drive L","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/running-reference.source.json"],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
+        {"id":"knee_drive_right","label":"Knee Drive R","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/running-reference.source.json"],"usefulFor":["mountain climber","running","high knees"],"searchHints":["knee strike","run","climb","sprint start"]},
+        {"id":"feet_jump_back","label":"Feet Jump Back","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/cross-jumps-reference.source.json"],"usefulFor":["burpee entry"],"searchHints":["hop back","jump back","dodge back"]},
+        {"id":"feet_jump_forward","label":"Feet Jump Forward","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/cross-jumps-reference.source.json"],"usefulFor":["burpee exit"],"searchHints":["hop forward","jump forward","frog jump"]},
+        {"id":"feet_out_in","label":"Feet Out / In","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/jumping-jacks-reference.source.json"],"usefulFor":["plank jack","jumping jack"],"searchHints":["jumping jack","side hop","feet apart"]},
+        {"id":"vertical_jump","label":"Vertical Jump","status":"CANDIDATE","neededReferences":3,"repoEvidence":["/motion-sources/jumping-up-reference.source.json"],"usefulFor":["explosive burpee","jump squat"],"searchHints":["vertical jump","jump","leap"]}
       ]
     }
   ]

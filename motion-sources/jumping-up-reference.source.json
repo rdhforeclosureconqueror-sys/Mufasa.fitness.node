@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "jumping-up-user-reference-fbx",
+    "originalFileName": "jumping up.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "b220c929124a920bbbd59cb47a30691b51df5e9b7fa3f51e7db3d8c151067f54",
+    "bytes": 333841,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "durationSeconds": 0.233333,
+    "provider": "user-provided Mixamo-derived reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "usePolicy": {
+    "purpose": "derive neutral reusable movement mechanics without copying source performance styling",
+    "allowedInRuntime": false,
+    "notes": "Raw FBX is not committed. Store extracted mechanics/provenance only until redistribution rights are confirmed."
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "candidateEvidence": ["stand_to_jump", "vertical_jump", "takeoff_loading", "bilateral_leg_extension"],
+    "cautions": ["Only 8 root keys / 0.233 seconds: partial takeoff fragment, not a complete jump cycle.", "Needs a longer jump reference before validation."]
+  },
+  "observedRootMotion": {
+    "durationSeconds": 0.233333,
+    "rootKeys": 8,
+    "rootTranslationDelta": {"x": 4.086815, "y": -2.002342, "z": -7.647639},
+    "rootRotationDeltaDegrees": {"x": -23.182905, "y": 6.818073, "z": 16.763584}
+  },
+  "humanVisualStatus": "PENDING HUMAN TRIM/STYLE REVIEW"
+}

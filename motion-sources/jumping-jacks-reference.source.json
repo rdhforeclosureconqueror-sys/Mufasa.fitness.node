@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "jumping-jacks-user-reference-fbx",
+    "originalFileName": "Jumping Jacks.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "35af2f07751f7e45adba5a2d8f2a97a48226ce6ef0975883261c582007cc1141",
+    "bytes": 383168,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "animationStackCount": 1,
+    "durationSeconds": 1.0666666666666667,
+    "provider": "unknown-user-provided-reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "observedMechanics": {
+    "rootKeyCount": 33,
+    "hipsTranslationYRange": [81.74512481689453, 108.36808776855469],
+    "hipsTranslationZRange": [-6.215874671936035, 0.4986969232559204],
+    "leftUpLegRotationZRangeDegrees": [-6.702340602874756, 20.299991607666016],
+    "rightUpLegRotationZRangeDegrees": [-14.92025089263916, 10.892888069152832],
+    "leftFootRotationZRangeDegrees": [-17.61106300354004, 7.546743869781494],
+    "rightFootRotationZRangeDegrees": [-10.668014526367188, 16.2994384765625],
+    "leftArmLargestRotationRangeDegrees": 148.65149688720703,
+    "rightArmLargestRotationRangeDegrees": 156.53730010986328
+  },
+  "candidateLegoBlocks": ["feet_out_in"],
+  "secondaryEvidence": ["bilateral_leg_abduction_adduction", "vertical_hop_cycle", "arm_abduction_adduction", "landing_recovery"],
+  "verdict": "KEEP_STUDY",
+  "huntEffect": "Feet Out / In changes from EMPTY to CANDIDATE",
+  "usePolicy": {
+    "allowedInRuntime": false,
+    "notes": "Use as reference-only mechanics evidence. The bilateral leg/foot and arm ranges are consistent with an out/in jumping-jack cycle, but this remains candidate evidence until paired with human MoveNet capture and review."
+  }
+}

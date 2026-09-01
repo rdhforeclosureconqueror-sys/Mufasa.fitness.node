@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "batchId": "animation-hunt-batch-1",
+  "targetAnimationCount": 5,
+  "receivedAnimationCount": 26,
+  "goal": "Use a small selected batch of animation references to fill distinct missing Movement Lego evidence while keeping additional useful references organized without forcing them into the current 17-card hunt.",
+  "rules": [
+    "Prefer a new missing Lego block over a duplicate unless the duplicate adds a materially different mechanic.",
+    "Each source is classified KEEP_STUDY, MAYBE, or SKIP.",
+    "Raw FBX binaries are not committed while redistribution/license status is unverified.",
+    "A source can support multiple Lego blocks, but one primary block is assigned for hunt accounting.",
+    "Animation evidence supplies 3D mechanics; paired MoveNet FRONT + SIDE evidence will be collected separately.",
+    "CANDIDATE means useful evidence exists; it does not mean validated or runtime-ready.",
+    "High-value mechanics outside the current 17-card registry are logged as supplemental future primitives rather than misclassified.",
+    "Existing repo motion assets must be checked before declaring a hunt block EMPTY."
+  ],
+  "entries": [
+    {"slot":1,"sourceId":"situp-to-idle-user-reference-fbx","fileName":"Situp To Idle.fbx","verdict":"KEEP_STUDY","primaryLegoBlock":"ground_to_stand","secondaryEvidence":["supine_to_upright","torso_raise","root_rise","floor_recovery","standing_reacquisition"],"manifest":"motion-sources/situp-to-idle-reference.source.json","huntEffect":"Ground → Stand changes from EMPTY to CANDIDATE"},
+    {"slot":2,"sourceId":"running-user-reference-fbx","fileName":"running.fbx","verdict":"KEEP_STUDY","primaryLegoBlock":"knee_drive_left","secondaryEvidence":["knee_drive_right","running_cycle","alternating_hip_flexion","contralateral_arm_swing"],"manifest":"motion-sources/running-reference.source.json","huntEffect":"Knee Drive L and Knee Drive R change from EMPTY to CANDIDATE"},
+    {"slot":3,"sourceId":"jumping-up-user-reference-fbx","fileName":"jumping up.fbx","verdict":"KEEP_STUDY","primaryLegoBlock":"stand_to_jump","secondaryEvidence":["vertical_jump","takeoff_loading","bilateral_leg_extension"],"manifest":"motion-sources/jumping-up-reference.source.json","huntEffect":"Stand → Jump and Vertical Jump change from EMPTY to CANDIDATE","notes":"Short takeoff fragment; future longer reference still desired."},
+    {"slot":4,"sourceId":"hard-landing-user-reference-fbx","fileName":"hard landing.fbx","verdict":"KEEP_STUDY","primaryLegoBlock":"jump_to_land","secondaryEvidence":["landing_compression","bilateral_knee_flexion","hip_absorption","stabilization"],"manifest":"motion-sources/hard-landing-reference.source.json","huntEffect":"Jump → Land changes from EMPTY to CANDIDATE"},
+    {"slot":5,"sourceId":"crouched-sneaking-left-user-reference-fbx","fileName":"crouched sneaking left.fbx","verdict":"KEEP_STUDY","primaryLegoBlock":"split_stance","secondaryEvidence":["crouch","lateral_shift","asymmetric_leg_loading","low_stance"],"manifest":"motion-sources/crouched-sneaking-left-reference.source.json","huntEffect":"Split Stance changes from EMPTY to CANDIDATE"}
+  ],
+  "existingRepoEvidenceRecovered": [
+    {"sourceId":"avaturn-push-up-source","displayName":"Existing Avaturn Push-Up motion","motionId":"push_up/avaturn_native_v1","provenance":"public/motion/assets/exercises/push-up/avaturn-push-up-animation.provenance.json","motionSpec":"public/motion/push-up-motion-spec.js","verdict":"KEEP_STUDY","candidateBlocks":["elbow_flex","elbow_extend"],"huntEffect":"Elbow Flex and Elbow Extend change from EMPTY to CANDIDATE"}
+  ],
+  "selectedAnimationCount": 5,
+  "selectedCoverage": {
+    "beforeCandidateOrBetter": 5,
+    "afterCandidateOrBetter": 17,
+    "newCandidateBlocks": ["ground_to_stand","split_stance","stand_to_jump","jump_to_land","knee_drive_left","knee_drive_right","vertical_jump","elbow_flex","elbow_extend","feet_out_in","feet_jump_back","feet_jump_forward"],
+    "remainingEmptyBlocks": []
+  },
+  "supplementalKeepStudy": [
+    {"fileName":"Kettlebell Swing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/kettlebell-swing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"hip_hinge","secondaryEvidence":["hip_extension","bilateral_knee_flexion_extension","root_descent_rise","arm_swing","standing_reacquisition"]},
+    {"fileName":"Jumping Down.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-down-reference.source.json","currentHuntEffect":"STRENGTHENS jump_to_land CANDIDATE","futurePrimitive":"jump_descent_landing","secondaryEvidence":["airborne_descent","landing_compression","bilateral_knee_flexion","hip_absorption","forward_root_travel","stabilization"]},
+    {"fileName":"Salsa Dancing.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/salsa-dancing-reference.source.json","currentHuntEffect":"NO_NEW_CURRENT_17_CARD","futurePrimitive":"lateral_step_weight_shift","secondaryEvidence":["alternating_weight_shift","lateral_root_translation","pelvis_rotation","foot_pivot","rhythmic_step_cycle","turning"]},
+    {"fileName":"Jumping Jacks.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/jumping-jacks-reference.source.json","currentHuntEffect":"Feet Out / In changes from EMPTY to CANDIDATE","futurePrimitive":"bilateral_feet_out_in","secondaryEvidence":["bilateral_leg_abduction_adduction","vertical_hop_cycle","arm_abduction_adduction","landing_recovery"]},
+    {"fileName":"Cross Jumps.fbx","verdict":"KEEP_STUDY","manifest":"motion-sources/cross-jumps-reference.source.json","currentHuntEffect":"Feet Jump Back and Feet Jump Forward change from EMPTY to CANDIDATE","futurePrimitive":"multi_direction_hop","secondaryEvidence":["bilateral_takeoff","bilateral_landing","root_translation_xz","jump_recovery"],"reason":"2.033 s cyclic jump sequence with repeated vertical hops and large X/Z root displacement that moves away from and back toward the start position. Good candidate evidence for two-foot backward/forward repositioning; still requires paired MoveNet and human review before validation."}
+  ],
+  "reviewedButNotSelected": [
+    {"fileName":"cover to stand (2).fbx","verdict":"MAYBE","reason":"Overlaps Ground → Stand."},
+    {"fileName":"cover to stand.fbx","verdict":"MAYBE","reason":"Overlaps Ground → Stand."},
+    {"fileName":"crouched sneaking right.fbx","verdict":"MAYBE","reason":"Overlaps selected crouched sneaking left."},
+    {"fileName":"falling idle.fbx","verdict":"SKIP","reason":"Low current hunt value."},
+    {"fileName":"falling to roll.fbx","verdict":"MAYBE","reason":"Future fall/roll recovery evidence."},
+    {"fileName":"idle (2).fbx","verdict":"SKIP","reason":"Standing already covered."},
+    {"fileName":"idle (3).fbx","verdict":"SKIP","reason":"Standing already covered."},
+    {"fileName":"idle (4).fbx","verdict":"SKIP","reason":"Standing already covered."},
+    {"fileName":"idle (5).fbx","verdict":"SKIP","reason":"Standing already covered."},
+    {"fileName":"idle.fbx","verdict":"SKIP","reason":"Standing already covered."},
+    {"fileName":"left cover sneak.fbx","verdict":"MAYBE","reason":"Overlaps selected low/lateral mechanics."},
+    {"fileName":"left turn.fbx","verdict":"MAYBE","reason":"Future turning/pivot evidence."},
+    {"fileName":"right cover sneak.fbx","verdict":"MAYBE","reason":"Overlaps selected low/lateral mechanics."},
+    {"fileName":"right turn.fbx","verdict":"MAYBE","reason":"Future turning/pivot evidence."},
+    {"fileName":"run to stop.fbx","verdict":"MAYBE","reason":"Future deceleration evidence."},
+    {"fileName":"stand to cover (2).fbx","verdict":"MAYBE","reason":"Overlaps Stand → Ground."}
+  ],
+  "nextPriorityTargets": [
+    {"rank":1,"goal":"Strengthen candidate blocks with paired MoveNet FRONT + SIDE human recordings."},
+    {"rank":2,"goal":"Find a longer full vertical jump/takeoff cycle to replace the short jumping-up fragment."},
+    {"rank":3,"goal":"Expand beyond the initial 17-card hunt into high-value primitives already discovered: hip hinge, lateral step/weight shift, turn/pivot, deceleration, fall/roll recovery."}
+  ]
+}

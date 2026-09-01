@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sourceId": "cross-jumps-user-reference-fbx",
+    "originalFileName": "Cross Jumps.fbx",
+    "format": "fbx",
+    "fbxVersion": 7700,
+    "sha256": "0c3256cc7565cce22a440b061ead3ea5975018d8f36cf0a455ef6e877d79dc5c",
+    "bytes": 488208,
+    "skeletonNamespace": "mixamorig",
+    "modelNodeCount": 65,
+    "animationCurveCount": 315,
+    "animationCurveNodeCount": 54,
+    "animationStackCount": 1,
+    "durationSeconds": 2.033333333333333,
+    "provider": "unknown-user-provided-reference",
+    "licenseStatus": "unverified",
+    "binaryCommitted": false,
+    "status": "reference-only"
+  },
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "primaryLegoBlocks": ["feet_jump_back", "feet_jump_forward"],
+    "secondaryEvidence": ["multi_direction_hop", "bilateral_takeoff", "bilateral_landing", "root_translation_xz", "jump_recovery"],
+    "huntEffect": "Feet Jump Back and Feet Jump Forward change from EMPTY to CANDIDATE"
+  },
+  "observedRootMotion": {
+    "hipsTranslationXRange": [-26.704988479614258, 2.5012094974517822],
+    "hipsTranslationYRange": [82.75405883789062, 108.17548370361328],
+    "hipsTranslationZRange": [-24.70805549621582, 2.6454858779907227],
+    "startXYZ": [0.024588756263256073, 86.14096069335938, 0.7707890272140503],
+    "endXYZ": [0.024593360722064972, 86.14095306396484, 0.7707910537719727],
+    "notes": "The clip is cyclic and returns nearly to its start position. Root travel shows distinct X/Z directional hops with repeated Y peaks, including a large Z displacement away from start and subsequent return, which is useful candidate evidence for backward and forward two-foot repositioning."
+  },
+  "observedLegRangesDegrees": {
+    "leftUpLegX": [16.32406997680664, 38.38687515258789],
+    "rightUpLegX": [15.443269729614258, 42.907997131347656],
+    "leftLegX": [-53.544769287109375, -7.0805253982543945],
+    "rightLegX": [-62.71222686767578, -7.370850563049316],
+    "leftFootX": [-33.93316650390625, 33.03241729736328],
+    "rightFootX": [-24.164024353027344, 39.85443115234375]
+  },
+  "reviewBoundary": {
+    "candidateOnly": true,
+    "notes": "Direction labels are assigned from the clip's root displacement/recovery pattern and synchronized bilateral jump mechanics. This is not yet a validated burpee jump-back/jump-forward template; paired MoveNet evidence and human review remain required."
+  }
+}
