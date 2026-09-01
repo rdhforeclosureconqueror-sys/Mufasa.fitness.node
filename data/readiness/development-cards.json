@@ -14,6 +14,20 @@
       "createdAt": "2026-08-30T06:44:02.353Z",
       "source": "readiness:update",
       "taskId": "phase-2-mobile-kanban"
+    },
+    {
+      "id": "avatar-development-motion-lab-lego-integration-repair",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Motion Lab and Movement Lego integration repair",
+      "category": "MOTION INTEGRATION",
+      "description": "Repair real reference-avatar Motion Spec binding, explicit squat loading and lifecycle state, and verify recorder startup and evidence routes for the 17 candidate movement blocks.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-01T14:28:21.303Z",
+      "source": "readiness:update",
+      "taskId": "motion-lab-lego-integration-603"
     }
   ]
 }

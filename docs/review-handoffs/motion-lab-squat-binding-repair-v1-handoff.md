@@ -1,5 +1,7 @@
 # Independent Review Handoff — Motion Lab Squat Binding Repair v1
 
+Historical handoff for PR #604. Its bone resolution and automatic reference-avatar recovery are retained in the [Motion Lab and Movement Lego integration repair](motion-lab-lego-integration-repair-handoff.md); use that handoff for current implementation and validation details.
+
 ## Problem reproduced from live diagnostics
 
 The deployed Motion Lab exposed **Load Synthesized Squat v1 (Reference Only)**, but live device diagnostics showed two distinct failures:

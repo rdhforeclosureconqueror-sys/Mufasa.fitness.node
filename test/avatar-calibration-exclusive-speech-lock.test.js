@@ -1,5 +1,7 @@
 'use strict';
 
+const { describe, it, beforeEach } = require('node:test');
+const { setImmediate: flushSpeech } = require('node:timers/promises');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
@@ -43,7 +45,7 @@ describe('avatar calibration exclusive speech lock', () => {
     assert.equal(calibration.diagnostics().calibrationState, 'BODY_FOUND');
 
     resolveSpeech({ ok: true });
-    await Promise.resolve(); await Promise.resolve();
+    await flushSpeech();
     assert.equal(calibration.diagnostics().calibrationState, 'SETTLING');
     assert.deepEqual(spoken, ['I can see you. Get into your base position and hold still.']);
   });
@@ -73,7 +75,7 @@ describe('avatar calibration exclusive speech lock', () => {
 
     calibration.observe(frame, now);
     resolvers.shift()({ ok: true });
-    await Promise.resolve(); await Promise.resolve();
+    await flushSpeech();
     now = 20; frame.timestamp = now;
     calibration.observe(frame, now);
     assert.equal(calibration.diagnostics().calibrationState, 'COUNTDOWN_SPEAKING');
@@ -85,7 +87,7 @@ describe('avatar calibration exclusive speech lock', () => {
     assert.equal(calibration.captureEnabled(), false);
 
     resolvers.shift()({ ok: true });
-    await Promise.resolve(); await Promise.resolve();
+    await flushSpeech();
     assert.equal(calibration.diagnostics().calibrationState, 'CAPTURING_BASE');
     assert.equal(calibration.captureEnabled(), true);
   });

@@ -40,6 +40,13 @@
     render(); d.addEventListener('click',(e)=>{if(e?.target?.id==='mlrSave') global.setTimeout?.(render,20);}); global.addEventListener?.('storage',(e)=>{if(e?.key===STORAGE_KEY) render();});
     global.__movementRecordingRoadmap={roadmap,tasks,render}; return global.__movementRecordingRoadmap;
   }
-  if(typeof window!=='undefined'&&window.document){if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',()=>bootstrap(window),{once:true});else bootstrap(window);}
-  return Object.freeze({readRecordings,taskStatus,sessionProgress,loadTaskIntoRecorder,bootstrap,STORAGE_KEY,ROADMAP_URL,REQUIRED_VIEWS});
+  // Consumers must await the UI and its registry fetch, not just script.onload.
+  const ready = typeof window !== 'undefined' && window.document
+    ? new Promise((resolve, reject) => {
+      const start = () => bootstrap(window).then(resolve, reject);
+      if (window.document.readyState === 'loading') window.document.addEventListener('DOMContentLoaded', start, { once:true });
+      else start();
+    })
+    : Promise.resolve(null);
+  return Object.freeze({ ready,readRecordings,taskStatus,sessionProgress,loadTaskIntoRecorder,bootstrap,STORAGE_KEY,ROADMAP_URL,REQUIRED_VIEWS});
 });

@@ -51,6 +51,6 @@ test('summary keeps human MoveNet review as a required next step', () => {
   const summary = SquatMotion.summary();
   assert.equal(summary.motionId, 'squat/synthesized_engineering_v2_grounded');
   assert.equal(summary.requiresHumanMoveNetReview, true);
-  assert.equal(summary.bottomRootDropAvatarHeights, 0.32);
+  assert.equal(summary.bottomRootDropAvatarHeights, 0.10);
   assert.equal(summary.groundingMode, 'dual-foot-planted-engineering-reference');
 });

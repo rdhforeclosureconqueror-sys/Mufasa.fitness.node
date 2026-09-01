@@ -1,5 +1,7 @@
 # Independent Review Handoff — Grounded Synthesized Squat v2
 
+Historical handoff for PR #605. The [Motion Lab and Movement Lego integration repair](motion-lab-lego-integration-repair-handoff.md) preserves the grounded v2 identity and contact policy while correcting compiler root units and calibrating partial-depth offsets on the real Phase E rig. Use that report for current verification and remaining human acceptance.
+
 ## Purpose
 
 Human Motion Lab review of synthesized squat v1 found a clear visual failure: both feet rose off the ground and the motion read like a slow tuck jump rather than a squat. This revision is intended to correct that failure while preserving the Movement Lego synthesis approach.

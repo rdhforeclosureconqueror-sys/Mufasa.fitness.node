@@ -90,17 +90,21 @@
     }));
   }
 
-  function annotateLatest(storage, { primitiveId, captureView, movementId, movementName, isCustom }) {
+  function annotateLatest(storage, { recordingId, primitiveId, captureView, movementId, movementName, isCustom }) {
     const list = readJson(storage, RECORDINGS_KEY, []);
-    const index = list.findIndex((item) => item?.meta?.primitiveId === primitiveId && !item?.meta?.captureView);
-    const targetIndex = index >= 0 ? index : 0;
+    const targetIndex = list.findIndex((item) => item?.meta?.primitiveId === primitiveId && (recordingId ? item.recordingId === recordingId : !item?.meta?.captureView));
     const recording = list[targetIndex];
     if (!recording) return null;
-    recording.meta = { ...(recording.meta || {}), captureView, movementId: movementId || primitiveId, movementName: movementName || recording?.meta?.label || primitiveId, isCustom: Boolean(isCustom), requiredViews: [...REQUIRED_VIEWS] };
+    // Capture identity is fixed when Record is pressed, never inferred from
+    // whichever movement/view happens to be selected when Save is pressed.
+    const meta = recording.meta || {};
+    const view = meta.captureView || captureView;
+    if (!REQUIRED_VIEWS.includes(view)) return null;
+    recording.meta = { ...meta, captureView:view, movementId:meta.movementId || movementId || primitiveId, movementName:meta.movementName || movementName || meta.label || primitiveId, isCustom:meta.isCustom ?? Boolean(isCustom), requiredViews:[...REQUIRED_VIEWS] };
     recording.poseCheckpoints = buildMilestones(recording);
     recording.pairedViewStatus = coverage(list.map((item, idx) => idx === targetIndex ? recording : item), primitiveId);
     list[targetIndex] = recording;
-    writeJson(storage, RECORDINGS_KEY, list);
+    if (!writeJson(storage, RECORDINGS_KEY, list)) return null;
     return recording;
   }
 
@@ -116,8 +120,10 @@
     const recorderHost = document?.getElementById('motionLegoRecorder');
     if (!recorderHost || document.getElementById('movementCaptureStudio')) return null;
     installStyles(document);
-    let roadmap = null;
-    try { const r = await global.fetch(ROADMAP_URL, { cache:'no-store' }); if (r.ok) roadmap = await r.json(); } catch (_) {}
+    let roadmap = global.__movementRecordingRoadmap?.roadmap || null;
+    if (!roadmap) {
+      try { const r = await global.fetch(ROADMAP_URL, { cache:'no-store' }); if (r.ok) roadmap = await r.json(); } catch (_) {}
+    }
     const tasks = roadmap?.foundationSession?.tasks || [];
     const studio = document.createElement('section'); studio.id='movementCaptureStudio'; studio.className='mcs';
     studio.innerHTML = `<h4>Paired View + Pose Checkpoint Studio</h4><div id="mcsPair" class="mcs-pair">Select a roadmap movement or custom movement. Foundation captures require FRONT + SIDE.</div><div class="mcs-grid"><label>Capture view<select id="mcsView"><option value="front">Front</option><option value="side">Side</option></select></label><label>Movement identity<input id="mcsMovementName" placeholder="Loaded from roadmap or custom movement"></label></div><div class="mcs-custom"><strong>Custom movement</strong><div class="mcs-grid"><label>Name<input id="mcsCustomName" placeholder="Example: One-Arm Push-Up Left"></label><label>Base pattern<input id="mcsCustomBase" placeholder="Example: push-up variant"></label></div><button id="mcsCreateCustom" type="button" class="secondary">Create Custom Movement</button></div><div id="mcsCheckpoints" class="mcs-checkpoints"></div>`;
@@ -153,24 +159,29 @@
     document.addEventListener('click', (event) => {
       const taskButton = event.target?.closest?.('[data-load-roadmap-task]');
       if (taskButton) global.setTimeout?.(() => loadTask(tasks.find((t) => t.id === taskButton.dataset.loadRoadmapTask)), 0);
-      if (event.target?.id === 'mlrSave') global.setTimeout?.(() => {
-        const primitiveId = $('mlrPrimitive')?.value || active.primitiveId;
-        if (!primitiveId) return;
-        const view = $('mcsView')?.value || 'front';
-        const card = tasks.find((t) => t.primaryBlockId === primitiveId);
-        const annotated = annotateLatest(storage, { primitiveId, captureView:view, movementId:active.movementId || card?.id || primitiveId, movementName:active.movementName || card?.label || $('mlrLabel')?.value || primitiveId, isCustom:active.isCustom });
+    }, true);
+
+    global.addEventListener('movement-recorder:saved', (event) => {
+        const recording = event.detail?.recording;
+        const primitiveId = recording?.meta?.primitiveId;
+        const view = recording?.meta?.captureView;
+        if (!primitiveId || !REQUIRED_VIEWS.includes(view)) return;
+        const annotated = annotateLatest(storage, { ...recording.meta, recordingId:recording.recordingId });
+        if (!annotated) {
+          const status = $('mlrStatus'); if (status) status.textContent += '\nPose checkpoints could not be saved. Export this recording before continuing.';
+          return;
+        }
         renderCheckpoints(annotated);
         const next = nextRequiredView(recordings(), primitiveId);
         if (next) {
-          $('mcsView').value = next;
+          if (active.primitiveId === primitiveId) $('mcsView').value = next;
           const status = $('mlrStatus'); if (status) status.textContent += `\n${view.toUpperCase()} saved. Now rotate and record the ${next.toUpperCase()} view.`;
         } else {
           const status = $('mlrStatus'); if (status) status.textContent += '\nFront + Side paired evidence complete ✓';
         }
         renderPair();
         global.__movementRecordingRoadmap?.render?.();
-      }, 0);
-    }, true);
+    });
 
     $('mcsCreateCustom')?.addEventListener('click', () => {
       const name = $('mcsCustomName').value.trim(); if (!name) return;
@@ -187,12 +198,28 @@
       $('mcsMovementName').value=active.movementName; $('mcsView').value=chooseView(primitiveId); renderPair();
     });
     renderPair();
-    global.__movementCaptureStudio = { coverage:(id)=>coverage(recordings(),id), nextRequiredView:(id)=>nextRequiredView(recordings(),id), buildMilestones, skeletonSvg, customDefinitions };
+    function captureMetadata(primitiveId) {
+      const task = tasks.find(item => item.primaryBlockId === primitiveId);
+      const custom = customDefinitions().find(item => item.primitiveId === primitiveId);
+      const matching = active.primitiveId === primitiveId;
+      return {
+        captureView:$('mcsView').value,
+        movementId:matching ? active.movementId : task?.id || custom?.id || primitiveId,
+        movementName:matching ? $('mcsMovementName').value || active.movementName : task?.label || custom?.name || primitiveId,
+        isCustom:Boolean(custom)
+      };
+    }
+    global.__movementCaptureStudio = { coverage:(id)=>coverage(recordings(),id), nextRequiredView:(id)=>nextRequiredView(recordings(),id), buildMilestones, skeletonSvg, customDefinitions, captureMetadata };
     return global.__movementCaptureStudio;
   }
 
-  if (typeof window !== 'undefined' && window.document) {
-    if (window.document.readyState === 'loading') window.document.addEventListener('DOMContentLoaded', () => bootstrap(window), { once:true }); else bootstrap(window);
-  }
-  return Object.freeze({ REQUIRED_VIEWS, coverage, nextRequiredView, selectKeyFrame, skeletonSvg, buildMilestones, annotateLatest, bootstrap, RECORDINGS_KEY, CUSTOM_KEY });
+  // Consumers must await the UI and its registry fetch, not just script.onload.
+  const ready = typeof window !== 'undefined' && window.document
+    ? new Promise((resolve, reject) => {
+      const start = () => bootstrap(window).then(resolve, reject);
+      if (window.document.readyState === 'loading') window.document.addEventListener('DOMContentLoaded', start, { once:true });
+      else start();
+    })
+    : Promise.resolve(null);
+  return Object.freeze({ ready, REQUIRED_VIEWS, coverage, nextRequiredView, selectKeyFrame, skeletonSvg, buildMilestones, annotateLatest, bootstrap, RECORDINGS_KEY, CUSTOM_KEY });
 });

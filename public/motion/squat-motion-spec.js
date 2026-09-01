@@ -49,12 +49,12 @@
     thighPitch: 0, thighOut: 2, kneeFlex: 0, anklePitch: 0, armPitch: 0
   });
   const MID = Object.freeze({
-    hipPitch: 12, spinePitch: -4, spine1Pitch: -2,
-    thighPitch: 30, thighOut: 4, kneeFlex: -34, anklePitch: 4, armPitch: -16
+    hipPitch: 10, spinePitch: -5, spine1Pitch: -3,
+    thighPitch: 32, thighOut: 2, kneeFlex: -38, anklePitch: 16, armPitch: -18
   });
   const BOTTOM = Object.freeze({
-    hipPitch: 22, spinePitch: -8, spine1Pitch: -4,
-    thighPitch: 58, thighOut: 6, kneeFlex: -68, anklePitch: 8, armPitch: -28
+    hipPitch: 18, spinePitch: -9, spine1Pitch: -5,
+    thighPitch: 62, thighOut: 2, kneeFlex: -78, anklePitch: 34, armPitch: -32
   });
 
   const spec = Object.freeze({
@@ -87,15 +87,17 @@
         "/motion-sources/hard-landing-reference.source.json"
       ]),
       revisionReason: "Human Motion Lab review of v1 showed the feet rising and the motion reading like a slow tuck jump. v2 corrects the leg-chain direction using the grounded kettlebell-swing evidence and moves hip pitch onto the actual root rotation channel used by the compiler.",
-      values: "Rest-relative engineering offsets synthesized from reviewed movement relationships; values remain development-only and require visual plus later MoveNet review.",
+      values: "Rest-relative engineering offsets synthesized from reviewed movement relationships, with axis signs and root translation checked against the shipped Phase E armature. This partial-depth reference still requires human visual and MoveNet review.",
       unsupported: Object.freeze(["biomechanical ground truth", "joint torque", "force", "metric joint centers", "medical guidance", "scoring tolerances", "coaching thresholds", "individual anthropometric fit"])
     }),
     phaseOrder: Object.freeze(["start", "descent", "bottom", "ascent", "finish"]),
     phases: Object.freeze([
       phase("start", "position", 0, [0, 0, 0], STAND),
-      phase("descent", "eccentric", 0.25, [0, -0.16, -0.018], MID),
-      phase("bottom", "isometric", 0.5, [0, -0.32, -0.036], BOTTOM, { holdDurationSeconds: 0.15 }),
-      phase("ascent", "concentric", 0.75, [0, -0.16, -0.018], MID),
+      // Match root travel to the leg chain after world-to-local conversion.
+      // A 78-degree knee bend supports a partial squat, not a 0.32-height drop.
+      phase("descent", "eccentric", 0.25, [0, -0.025, -0.025], MID),
+      phase("bottom", "isometric", 0.5, [0, -0.10, -0.038], BOTTOM),
+      phase("ascent", "concentric", 0.75, [0, -0.025, -0.025], MID),
       phase("finish", "completion", 1, [0, 0, 0], STAND)
     ])
   });
