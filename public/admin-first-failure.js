@@ -14,10 +14,11 @@ async function billingTrial(){const r=await get("/api/billing/plan");if(!r.ok)re
 async function avatarBoundary(){const r=await get("/api/avatar/upload-contract");if(!r.ok)return fail("avatar_trial_boundary","Avatar trial restriction",`Avatar contract returned HTTP ${r.status}.`);const data=r.body?.data||r.body||{};const membershipGuard=String(data.membership||data.membershipRequirement||"").toLowerCase();if(membershipGuard&&membershipGuard!=="not-required")return pass("avatar_trial_boundary","Avatar trial restriction","Avatar upload contract declares a membership restriction.");return fail("avatar_trial_boundary","Avatar trial restriction","Avatar upload is still authentication-based with no verified trial-status guard. UI can hide avatar use, but backend isolation is not yet proven.")}
 const DEFINITIONS=[
  {id:"retention_ui",label:"Retention Journey entry",deps:["admin_auth"],run:()=>staticSurface("retention_ui","Retention Journey entry","/retention-journey-start.html","Private Sessions")},
- {id:"private_ui",label:"Private Sessions questionnaire",deps:["retention_ui"],run:()=>staticSurface("private_ui","Private Sessions questionnaire","/private-sessions.html","This is a coaching request, not a checkout")},
+ {id:"private_ui",label:"Private Sessions questionnaire",deps:["retention_ui"],run:()=>staticSurface("private_ui","Private Sessions questionnaire","/private-sessions.html","Checking your PocketPT sign-in")},
  {id:"quote_api",label:"Private coaching quote API",deps:["private_ui"],run:()=>apiReach("quote_api","Private coaching quote API","/api/me/private-coaching/quote")},
  {id:"crm",label:"Trainer / Client CRM",deps:["quote_api"],run:()=>apiReach("crm","Trainer / Client CRM","/api/admin/members")},
  {id:"messaging",label:"Secure member messaging",deps:["crm"],run:()=>apiReach("messaging","Secure member messaging","/api/me/conversations")},
+ {id:"guide_center",label:"Help / Guide Center",deps:["admin_auth"],run:()=>staticSurface("guide_center","Help / Guide Center","/guide-center.html","How to use the Guide Center")},
  {id:"trial",label:"7-day trial configuration",deps:["private_ui"],run:billingTrial},
  {id:"runclub_profile",label:"Free Run Club profile API",deps:["admin_auth"],run:()=>apiReach("runclub_profile","Free Run Club profile API","/api/me/run-club/profile")},
  {id:"runclub_board",label:"Free Run Club board API",deps:["runclub_profile"],run:()=>apiReach("runclub_board","Free Run Club board API","/api/me/run-club/board")},
