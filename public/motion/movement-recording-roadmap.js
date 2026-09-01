@@ -42,4 +42,4 @@
   }
   if(typeof window!=='undefined'&&window.document){if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',()=>bootstrap(window),{once:true});else bootstrap(window);}
   return Object.freeze({readRecordings,taskStatus,sessionProgress,loadTaskIntoRecorder,bootstrap,STORAGE_KEY,ROADMAP_URL,REQUIRED_VIEWS});
-})();
+});
