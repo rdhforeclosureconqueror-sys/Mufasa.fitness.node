@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batchId": "animation-hunt-batch-1",
   "targetAnimationCount": 5,
-  "receivedAnimationCount": 1,
+  "receivedAnimationCount": 21,
   "goal": "Use a small batch of animation references to fill distinct missing Movement Lego evidence instead of collecting duplicate motions.",
   "rules": [
     "Prefer a new missing Lego block over a duplicate unless the duplicate adds a materially different mechanic.",
@@ -19,17 +19,85 @@
       "fileName": "Situp To Idle.fbx",
       "verdict": "KEEP_STUDY",
       "primaryLegoBlock": "ground_to_stand",
-      "secondaryEvidence": ["supine_to_upright","torso_raise","root_rise","floor_recovery","standing_reacquisition"],
+      "secondaryEvidence": ["supine_to_upright", "torso_raise", "root_rise", "floor_recovery", "standing_reacquisition"],
       "manifest": "motion-sources/situp-to-idle-reference.source.json",
       "huntEffect": "Ground → Stand changes from EMPTY to CANDIDATE",
       "notes": "Strong floor-to-upright root rise and approximately 99 degrees of root pitch recovery over the 4.4 second Mixamo animation."
+    },
+    {
+      "slot": 2,
+      "sourceId": "running-user-reference-fbx",
+      "fileName": "running.fbx",
+      "verdict": "KEEP_STUDY",
+      "primaryLegoBlock": "knee_drive_left",
+      "secondaryEvidence": ["knee_drive_right", "running_cycle", "alternating_hip_flexion", "contralateral_arm_swing"],
+      "manifest": "motion-sources/running-reference.source.json",
+      "huntEffect": "Knee Drive L and Knee Drive R change from EMPTY to CANDIDATE",
+      "notes": "0.7 s / 22 root keys. Left thigh X spans about -14.5° to 49.8°, right thigh about -23.2° to 56.4°; lower legs show large alternating flexion ranges. Strong bilateral knee-drive mechanics."
+    },
+    {
+      "slot": 3,
+      "sourceId": "jumping-up-user-reference-fbx",
+      "fileName": "jumping up.fbx",
+      "verdict": "KEEP_STUDY",
+      "primaryLegoBlock": "stand_to_jump",
+      "secondaryEvidence": ["vertical_jump", "takeoff_loading", "bilateral_leg_extension"],
+      "manifest": "motion-sources/jumping-up-reference.source.json",
+      "huntEffect": "Stand → Jump and Vertical Jump change from EMPTY to CANDIDATE",
+      "notes": "Very short 0.233 s / 8-key takeoff fragment, so it is partial rather than a full jump cycle. Kept because it adds distinct takeoff evidence; requires later comparison with a longer jump reference."
+    },
+    {
+      "slot": 4,
+      "sourceId": "hard-landing-user-reference-fbx",
+      "fileName": "hard landing.fbx",
+      "verdict": "KEEP_STUDY",
+      "primaryLegoBlock": "jump_to_land",
+      "secondaryEvidence": ["landing_compression", "bilateral_knee_flexion", "hip_absorption", "stabilization"],
+      "manifest": "motion-sources/hard-landing-reference.source.json",
+      "huntEffect": "Jump → Land changes from EMPTY to CANDIDATE",
+      "notes": "2.0 s / 61 root keys. Hips descend to about 48 source units during the clip before recovering near 88; large bilateral thigh/lower-leg rotation ranges capture landing absorption and stabilization."
+    },
+    {
+      "slot": 5,
+      "sourceId": "crouched-sneaking-left-user-reference-fbx",
+      "fileName": "crouched sneaking left.fbx",
+      "verdict": "KEEP_STUDY",
+      "primaryLegoBlock": "split_stance",
+      "secondaryEvidence": ["crouch", "lateral_shift", "asymmetric_leg_loading", "low_stance"],
+      "manifest": "motion-sources/crouched-sneaking-left-reference.source.json",
+      "huntEffect": "Split Stance changes from EMPTY to CANDIDATE",
+      "notes": "1.267 s / 39 root keys with about 120.29 source units of lateral root translation. Left/right thigh and lower-leg ranges are materially asymmetric, making it useful split/low-stance evidence; not yet a validated lunge template."
     }
+  ],
+  "selectedAnimationCount": 5,
+  "selectedCoverage": {
+    "beforeCandidateOrBetter": 5,
+    "afterCandidateOrBetter": 12,
+    "newCandidateBlocks": ["ground_to_stand", "split_stance", "stand_to_jump", "jump_to_land", "knee_drive_left", "knee_drive_right", "vertical_jump"],
+    "remainingEmptyBlocks": ["elbow_flex", "elbow_extend", "feet_jump_back", "feet_jump_forward", "feet_out_in"]
+  },
+  "reviewedButNotSelected": [
+    {"fileName":"cover to stand (2).fbx","verdict":"MAYBE","reason":"Useful rise/cover mechanics, but overlaps Ground → Stand already selected via Situp To Idle."},
+    {"fileName":"cover to stand.fbx","verdict":"MAYBE","reason":"Useful rise/cover mechanics, but overlaps Ground → Stand already selected via Situp To Idle."},
+    {"fileName":"crouched sneaking right.fbx","verdict":"MAYBE","reason":"Useful low/lateral stance mechanics, but overlaps selected crouched sneaking left for this five-animation batch."},
+    {"fileName":"falling idle.fbx","verdict":"SKIP","reason":"Very short near-static fall-idle clip; low current hunt value."},
+    {"fileName":"falling to roll.fbx","verdict":"MAYBE","reason":"Strong future fall/roll recovery evidence, but not a current 17-card target."},
+    {"fileName":"idle (2).fbx","verdict":"SKIP","reason":"Standing/idle is already covered; adds little missing-hunt coverage."},
+    {"fileName":"idle (3).fbx","verdict":"SKIP","reason":"Standing/idle is already covered; adds little missing-hunt coverage."},
+    {"fileName":"idle (4).fbx","verdict":"SKIP","reason":"Standing/idle is already covered; adds little missing-hunt coverage."},
+    {"fileName":"idle (5).fbx","verdict":"SKIP","reason":"Standing/idle is already covered; adds little missing-hunt coverage."},
+    {"fileName":"idle.fbx","verdict":"SKIP","reason":"Standing/idle is already covered; adds little missing-hunt coverage."},
+    {"fileName":"left cover sneak.fbx","verdict":"MAYBE","reason":"Useful low/lateral mechanics, but overlaps selected crouched sneaking left."},
+    {"fileName":"left turn.fbx","verdict":"MAYBE","reason":"Useful turning/pivot evidence for a future rotation block, but not one of the current 17 cards."},
+    {"fileName":"right cover sneak.fbx","verdict":"MAYBE","reason":"Useful low/lateral mechanics, but overlaps selected crouched sneaking left."},
+    {"fileName":"right turn.fbx","verdict":"MAYBE","reason":"Useful turning/pivot evidence for a future rotation block, but not one of the current 17 cards."},
+    {"fileName":"run to stop.fbx","verdict":"MAYBE","reason":"Useful deceleration mechanics, but running gives cleaner knee-drive coverage for the current hunt."},
+    {"fileName":"stand to cover (2).fbx","verdict":"MAYBE","reason":"Useful lowering/cover mechanics, but overlaps Stand → Ground already covered by Start Plank."}
   ],
   "nextPriorityTargets": [
     {"rank":1,"legoBlocks":["elbow_flex","elbow_extend"],"desiredMotion":"ground push / push-up-like arm press","searchTerms":["push up","push from ground","get up push","crawl push"]},
-    {"rank":2,"legoBlocks":["knee_drive_left","knee_drive_right"],"desiredMotion":"clear alternating or unilateral knee drive","searchTerms":["knee strike","climb","sprint start","high knees"]},
-    {"rank":3,"legoBlocks":["feet_jump_back","feet_jump_forward"],"desiredMotion":"two-foot backward/forward reposition from a crouch or support transition","searchTerms":["jump back","hop back","frog jump","jump forward"]},
-    {"rank":4,"legoBlocks":["stand_to_jump","vertical_jump","jump_to_land"],"desiredMotion":"full loading-takeoff-airborne-landing cycle","searchTerms":["vertical jump","jumping","jump landing","leap"]},
-    {"rank":5,"legoBlocks":["split_stance"],"desiredMotion":"clean step into a deep stable split stance","searchTerms":["lunge","sword stance","fighting stance","kneel step"]}
+    {"rank":2,"legoBlocks":["feet_jump_back","feet_jump_forward"],"desiredMotion":"two-foot backward/forward reposition from crouch or ground support","searchTerms":["jump back","hop back","frog jump","jump forward"]},
+    {"rank":3,"legoBlocks":["feet_out_in"],"desiredMotion":"bilateral feet apart/together cycle","searchTerms":["jumping jack","plank jack","side hop","feet apart together"]},
+    {"rank":4,"legoBlocks":["stand_to_jump","vertical_jump"],"desiredMotion":"longer full takeoff cycle to strengthen the very short jumping-up candidate","searchTerms":["vertical jump","jumping","jump takeoff","leap"]}
   ]
 }
