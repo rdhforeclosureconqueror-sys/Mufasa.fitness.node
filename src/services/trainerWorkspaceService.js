@@ -1,6 +1,7 @@
 "use strict";
 
 const { ApiError } = require("../lib/apiResponse");
+const { buildGettingStartedModel } = require("./privateClientGettingStartedService");
 const NOTE_MAX_LENGTH = 4000;
 const clone = (value) => value == null ? value : structuredClone(value);
 
@@ -15,12 +16,14 @@ function createTrainerWorkspaceService({ store, userStore, authorizationResolver
     const completedAt=session=>session.completedAt||(session.endedAt?new Date(session.endedAt).toISOString():null);
     const last=sessions.sort((a,b)=>String(completedAt(b)||"").localeCompare(String(completedAt(a)||"")))[0];
     const transformation=user.transformationProfile||null;
+    const gettingStarted=buildGettingStartedModel(user);
     return {...identity(user),clientStatus:"active",journeyPathway:journey.pathway||journey.primaryGoal||null,
       intakeStatus:intake.status||(journey.submittedAt?"complete":"incomplete"),healthReviewStatus:journey.healthReviewRequired?"required":"clear",
       programStatus:user.program?"trainer_assigned":user.selectedProgram?"member_selected":user.generatedWorkoutPlan?"generated":"none",
       privateCoachingQuoteStatus:user.privateCoachingQuote?.quoteStatus||null,transformationCheckInCount:transformation?.checkIns?.length||0,
+      gettingStartedCompletedCount:gettingStarted.completedCount,gettingStartedTotalCount:gettingStarted.totalCount,gettingStartedNextAction:gettingStarted.nextAction?.title||null,readyForTrainerProgramming:gettingStarted.readyForTrainerProgramming,
       mostRecentWorkoutDate:last?completedAt(last):null,progressionStatus:user.generatedWorkoutProgressions?.at(-1)?.status||null,
-      nextAction:user.privateCoachingQuote?.quoteStatus==="requested"?"Review private coaching request":!transformation?.returnAgreement?"Complete Return Agreement / baseline":journey.healthReviewRequired?"Complete health review":user.program?"Continue assigned program":"Review training plan"};
+      nextAction:gettingStarted.readyForTrainerProgramming?"Prepare and assign client program":gettingStarted.nextAction?.title||(user.privateCoachingQuote?.quoteStatus==="requested"?"Review private coaching request":journey.healthReviewRequired?"Complete health review":user.program?"Continue assigned program":"Review training plan")};
   }
   function listClients(trainerUserId,query={}) {
     let clients=store.listByTrainer(trainerUserId,true).map(a=>summary(userStore.loadUser(a.clientUserId)));
@@ -30,7 +33,7 @@ function createTrainerWorkspaceService({ store, userStore, authorizationResolver
   }
   function detail(trainerUserId,clientUserId) {
     requireAccess(trainerUserId,clientUserId); const user=userStore.loadUser(clientUserId),journey=user.journeyProfile||{};
-    return {summary:summary(user),privateCoaching:clone(user.privateCoachingQuote||null),transformation:clone(user.transformationProfile||null),journey:{pathway:journey.pathway||null,goals:clone(journey.goals||journey.primaryGoal||null),submittedAt:journey.submittedAt||null},
+    return {summary:summary(user),privateCoaching:clone(user.privateCoachingQuote||null),transformation:clone(user.transformationProfile||null),gettingStarted:clone(buildGettingStartedModel(user)),journey:{pathway:journey.pathway||null,goals:clone(journey.goals||journey.primaryGoal||null),submittedAt:journey.submittedAt||null},
       health:{restrictions:clone(journey.healthRestrictions||journey.healthFlags||[]),reviewRequired:Boolean(journey.healthReviewRequired),warnings:clone(journey.reviewWarnings||[])},
       training:{activeProgram:clone(user.program||user.selectedProgram||user.generatedWorkoutPlan||null),source:summary(user).programStatus,recentWorkouts:Object.values(user.sessions||{}).filter(s=>s.completedAt||s.endedAt).slice(-10).map(s=>({id:s.id||s.sessionId,completedAt:s.completedAt||new Date(s.endedAt).toISOString()})),progression:clone(user.generatedWorkoutProgressions?.at(-1)||null),adaptation:clone(user.trainingAdaptation?.recommendation||null)},
       nutrition:{recommendation:clone(user.nutritionRecommendation?.summary||null),weeklyMission:clone(user.nutritionMissions?.find(m=>m.status==="active")||null),completedCount:(user.nutritionMissions||[]).filter(m=>m.status==="completed").length},

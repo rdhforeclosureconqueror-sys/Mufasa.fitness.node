@@ -5,62 +5,34 @@
   if (!status || !content) return;
   const text = value => String(value ?? "Not available");
   const escape = value => text(value).replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[char]);
-  function card(title, value, detail) {
-    return `<div class="kpi"><div class="label">${escape(title)}</div><div class="value" style="font-size:16px">${escape(value)}</div><div class="hint">${escape(detail)}</div></div>`;
+  function card(title, value, detail) { return `<div class="kpi"><div class="label">${escape(title)}</div><div class="value" style="font-size:16px">${escape(value)}</div><div class="hint">${escape(detail)}</div></div>`; }
+  function queueExerciseHubGuide(){ try { sessionStorage.setItem("pocketpt.pendingTour.v1", JSON.stringify({ id:"exercise-library", expiresAt:Date.now()+30000 })); } catch (_) {} }
+  const stateLabel = state => ({complete:"✓ Complete",scheduled:"◷ With trainer",trainer_action:"Trainer step",ready:"Ready",blocked:"Locked",pending:"Next step"}[state]||state);
+  function gettingStartedMarkup(model){
+    if(!model?.privateClient)return "";
+    const items=(model.tasks||[]).map(item=>`<article class="card" style="margin:10px 0;padding:14px;border-color:${item.complete?'rgba(68,255,154,.45)':item.state==='trainer_action'?'rgba(255,211,90,.55)':'rgba(255,255,255,.12)'}"><div style="display:flex;gap:12px;align-items:flex-start"><div style="font-size:22px;line-height:1">${item.complete?'✓':item.state==='scheduled'?'◷':item.state==='trainer_action'?'→':'○'}</div><div style="flex:1"><strong>${escape(item.title)}</strong><div class="muted" style="margin-top:5px">${escape(stateLabel(item.state))} · ${escape(item.detail)}</div>${item.route&&!["complete","trainer_action","blocked"].includes(item.state)?`<div class="member-home-actions" style="margin-top:8px"><a class="btn" href="${escape(item.route)}">Open step</a></div>`:""}${item.id==='measurements'&&!item.complete?`<div class="member-home-actions" style="margin-top:8px"><button class="btn" type="button" data-plan="measurementsPlan" data-value="self">I’ll enter mine</button><button class="btn" type="button" data-plan="measurementsPlan" data-value="trainer">Do with trainer</button></div>`:""}${item.id==='photos'&&!item.complete?`<div class="member-home-actions" style="margin-top:8px"><button class="btn" type="button" data-plan="photosPlan" data-value="self">I’ll upload mine</button><button class="btn" type="button" data-plan="photosPlan" data-value="trainer">Take with trainer</button></div>`:""}</div></div></article>`).join("");
+    return `<section class="card" style="margin:14px 0;border-color:rgba(68,255,154,.45)"><p class="muted" style="margin:0 0 4px">GETTING STARTED</p><h2 style="margin:0 0 8px">Your path to your first workout</h2><p style="margin-top:0"><strong>${escape(model.welcomeBackMessage||"")}</strong></p><p class="muted">${model.completedCount} of ${model.totalCount} steps complete. Complete what you can on your own; photos and measurements can be done with your trainer if you prefer.</p>${items}</section>`;
   }
-  function queueExerciseHubGuide(){
-    try { sessionStorage.setItem("pocketpt.pendingTour.v1", JSON.stringify({ id:"exercise-library", expiresAt:Date.now()+30000 })); } catch (_) {}
-  }
-  function render(home, privateQuote, transformation) {
+  function render(home, privateQuote, transformation, gettingStarted) {
     const privateClient = Boolean(privateQuote?.quote && privateQuote.quote.quoteStatus === "requested");
     const trainerProgramAssigned = home.activeProgram?.source === "Assigned program";
     const privatePending = privateClient && !trainerProgramAssigned;
-    const primary = privatePending
-      ? (home.journey?.complete
-          ? { title:"Your trainer is building your program", explanation:"Your coaching request is in, but your trainer has not assigned your fitness program yet. You can explore the Exercise Hub and test individual movements while you wait.", route:"/exercise-library.html?source=private-client" }
-          : { title:"Finish your Retention Journey", explanation:"Your trainer needs the rest of your Retention Journey before assigning your fitness program. Complete it so your goals, history, schedule, and preferences are available for programming.", route:"/workout.html#retentionFlowRoot" })
-      : home.primaryAction;
+    const primary = privatePending ? (home.journey?.complete ? { title:"Your trainer is building your program", explanation:"Your coaching request is in. Finish the remaining Getting Started steps so your trainer has everything needed to prepare your program.", route:"/dashboard.html" } : { title:"Finish your Retention Journey", explanation:"Your trainer needs the rest of your Retention Journey before assigning your fitness program.", route:"/workout.html#retentionFlowRoot" }) : home.primaryAction;
     const secondary = privatePending ? home.secondaryActions.filter(item => item.type !== "view_workout_plan") : home.secondaryActions;
     const transformationProfile=transformation?.profile||null;
     const transformationNotice=privateClient?`<div class="card" style="margin:12px 0;border-color:rgba(68,255,154,.35)"><strong>Your Transformation Profile</strong><p class="muted">${transformationProfile?.returnAgreement?`Return Agreement saved · ${transformationProfile?.checkIns?.length||0} check-in(s) recorded.`:"Complete your Return Agreement, baseline measurements, weight, and private front/side progress photos."}</p><div class="member-home-actions"><a class="btn" href="/transformation-profile.html">${transformationProfile?.returnAgreement?"Open Transformation Profile":"Set up Transformation Profile"}</a></div></div>`:"";
-    const privateNotice = privatePending ? `<div class="card" style="margin:12px 0;border-color:rgba(255,211,90,.35)"><strong>Private coaching program status</strong><p class="muted">No trainer-assigned fitness program is active yet. Your trainer will assign it after reviewing your Retention Journey and coaching request.</p><div class="member-home-actions">${home.journey?.complete ? '<a class="btn" data-private-exercise-hub href="/exercise-library.html?source=private-client">Build / test a workout in Exercise Hub</a>' : '<a class="btn" href="/workout.html#retentionFlowRoot">Finish Retention Journey</a>'}</div></div>` : "";
-    content.innerHTML = `
-      <p><strong>${escape(primary.title)}</strong></p><p class="muted">${escape(primary.explanation)}</p>
-      <div class="member-home-actions"><a class="btn" ${privatePending && home.journey?.complete ? 'data-private-exercise-hub' : ''} href="${escape(primary.route)}">${escape(primary.title)}</a></div>
-      ${transformationNotice}${privateNotice}
-      <h3>Journey summary</h3><div class="member-home-grid">
-        ${card("Journey", home.journey.status, home.journey.primaryPathway || "Choose your pathway")}
-        ${card("Active program", home.activeProgram.source, home.activeProgram.title)}
-        ${card("Next workout", privatePending ? "Waiting for trainer" : (home.inProgressSession?.status || home.nextWorkout?.status || "Not available"), privatePending ? "Your trainer has not assigned your program yet." : (home.inProgressSession?.title || home.nextWorkout?.title || home.emptyStateGuidance[0]))}
-        ${card("Weekly progress", home.progressSummary.status, `${home.progressSummary.workoutsCompleted} workouts completed`)}
-        ${card("Nutrition focus", home.nutritionMission.status, home.nutritionMission.title)}
-        ${card("Assessment", home.assessmentRecommendation ? "Ready" : "Not available", home.assessmentRecommendation?.title || "No assessment is currently recommended")}
-        ${card("Adaptation insight", home.trainingAdaptation.status, home.trainingAdaptation.insight)}
-        ${card("Health review", home.healthReview.state, home.healthReview.message)}
-      </div><nav class="member-home-actions" aria-label="Member areas">
-        ${secondary.map(item => `<a class="btn" href="${escape(item.route)}">${escape(item.title)}</a>`).join("")}
-        ${privateClient?'<a class="btn" href="/transformation-profile.html">Transformation Profile</a>':""}
-        <a class="btn" href="/workout.html#retentionFlowRoot">Journey intake</a>
-        <a class="btn" href="/workout.html#ohsSummaryView">Assessment</a>
-      </nav>`;
-    content.hidden = false;
-    status.textContent = "Your member home is ready.";
+    const privateNotice = privatePending ? `<div class="card" style="margin:12px 0;border-color:rgba(255,211,90,.35)"><strong>Private coaching program status</strong><p class="muted">${gettingStarted?.readyForTrainerProgramming?"Your preparation is complete. Your trainer now has what they need to prepare and assign your program.":"No trainer-assigned fitness program is active yet. Follow your Getting Started checklist so your trainer has the information and baseline needed for programming."}</p></div>` : "";
+    content.innerHTML = `<p><strong>${escape(primary.title)}</strong></p><p class="muted">${escape(primary.explanation)}</p><div class="member-home-actions"><a class="btn" href="${escape(primary.route)}">${escape(primary.title)}</a></div>${gettingStartedMarkup(gettingStarted)}${transformationNotice}${privateNotice}<h3>Journey summary</h3><div class="member-home-grid">${card("Journey", home.journey.status, home.journey.primaryPathway || "Choose your pathway")}${card("Active program", home.activeProgram.source, home.activeProgram.title)}${card("Next workout", privatePending ? "Waiting for trainer" : (home.inProgressSession?.status || home.nextWorkout?.status || "Not available"), privatePending ? "Complete the checklist, then your trainer assigns the program." : (home.inProgressSession?.title || home.nextWorkout?.title || home.emptyStateGuidance[0]))}${card("Weekly progress", home.progressSummary.status, `${home.progressSummary.workoutsCompleted} workouts completed`)}${card("Nutrition focus", home.nutritionMission.status, home.nutritionMission.title)}${card("Assessment", home.assessmentRecommendation ? "Ready" : "Not available", home.assessmentRecommendation?.title || "No assessment is currently recommended")}${card("Adaptation insight", home.trainingAdaptation.status, home.trainingAdaptation.insight)}${card("Health review", home.healthReview.state, home.healthReview.message)}</div><nav class="member-home-actions" aria-label="Member areas">${secondary.map(item => `<a class="btn" href="${escape(item.route)}">${escape(item.title)}</a>`).join("")}${privateClient?'<a class="btn" href="/transformation-profile.html">Transformation Profile</a>':""}<a class="btn" href="/workout.html#retentionFlowRoot">Journey intake</a><a class="btn" href="/workout.html#ohsSummaryView">Assessment</a></nav>`;
+    content.hidden = false; status.textContent = "Your member home is ready.";
     content.querySelectorAll("[data-private-exercise-hub]").forEach(link => link.addEventListener("click", queueExerciseHubGuide));
+    content.querySelectorAll("[data-plan]").forEach(button=>button.addEventListener("click",async()=>{button.disabled=true;try{await window.MufasaDashboardRuntime.authedRequest("/api/me/getting-started/preferences",{method:"PUT",body:{[button.dataset.plan]:button.dataset.value}});await load();}catch(error){status.textContent=error.message||"Could not save that choice.";}finally{button.disabled=false;}}));
   }
   async function load() {
     try {
-      const runtime = window.MufasaDashboardRuntime;
-      if (!runtime?.authedRequest) throw new Error("Sign in to load your member home.");
-      const [home, quoteResponse, transformationResponse] = await Promise.all([
-        runtime.authedRequest("/api/me/member-home"),
-        runtime.authedRequest("/api/me/private-coaching/quote").catch(() => ({ quote:null })),
-        runtime.authedRequest("/api/me/transformation-profile").catch(() => ({ profile:null }))
-      ]);
-      render(home, quoteResponse, transformationResponse);
-    } catch (error) {
-      status.textContent = `${error.message || "Member home is temporarily unavailable."} Retry by refreshing this page.`;
-      status.setAttribute("data-state", "retry-available");
-    }
+      const runtime = window.MufasaDashboardRuntime;if (!runtime?.authedRequest) throw new Error("Sign in to load your member home.");
+      const [home, quoteResponse, transformationResponse, gettingStarted] = await Promise.all([runtime.authedRequest("/api/me/member-home"),runtime.authedRequest("/api/me/private-coaching/quote").catch(() => ({ quote:null })),runtime.authedRequest("/api/me/transformation-profile").catch(() => ({ profile:null })),runtime.authedRequest("/api/me/getting-started").catch(() => null)]);
+      render(home, quoteResponse, transformationResponse, gettingStarted);
+    } catch (error) { status.textContent = `${error.message || "Member home is temporarily unavailable."} Retry by refreshing this page.`;status.setAttribute("data-state", "retry-available"); }
   }
   load();
 })();
