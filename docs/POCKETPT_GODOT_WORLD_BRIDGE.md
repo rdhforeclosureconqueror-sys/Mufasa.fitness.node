@@ -1,10 +1,14 @@
 # PocketPT ↔ Godot World Bridge
 
-Status: Phase 1 architecture + PocketPT bridge implementation. Do not merge without human and architecture review.
+Status: Phase 1 bridge plus the PocketPT-side Phase 2 avatar identity implementation. The Godot avatar loader, regenerated export, and device acceptance are still pending. Do not merge without independent architecture review.
 
 ## Audited baseline
 
 The bridge was designed against `main` SHA `cdc1ea4549d08b1972986551a87a7ced4358601d`.
+
+Phase 2 was audited against PocketPT `main` SHA `172b3ee04a81cd5040a6405727ee2e556c6b4760` and Godot `main` SHA `a55b495b996999974f4543bed51b1d7462112a6d`.
+
+Before review, the implementation branch was updated to PocketPT main `35bd3c11979e7651f428dd46ed97a84b4fc760e9`. The incoming changes only touched trial routing and its test; there were no overlapping Phase 2 changes.
 
 PocketPT remains authoritative for authentication, member identity, avatar identity/assets, fitness rules, MoveNet/body intelligence, verified challenge attempts, personal bests, leaderboards, history, rewards, and persisted movement recordings. Godot is a presentation/world runtime only.
 
@@ -20,7 +24,7 @@ Canonical browser auth is owned by `public/auth-state-runtime.js` and `window.AP
 
 ### Avatar
 
-The existing member profile owns avatar metadata. Uploaded GLBs live under the existing avatar upload boundary and owner-gated `/api/me/avatar/assets/:assetId` delivery. Phase 1 intentionally returns `avatar: null`. Phase 2 will add an arena-scoped asset delivery mechanism; Godot must not receive the member's canonical bearer solely to download a GLB.
+The existing member profile owns avatar metadata. Uploaded GLBs live under the existing avatar upload boundary and owner-gated `/api/me/avatar/assets/:assetId` delivery. Phase 2 now reads that same selection and ownership check through `app.locals.pocketPTAvatarAssets`, supplies a minimum avatar descriptor in bootstrap, and serves its GLB through `/api/game/avatar/asset`. Godot uses the existing arena cookie; it does not receive the canonical PocketPT bearer.
 
 ### Deployment/static hosting
 
@@ -100,6 +104,7 @@ The canonical PocketPT bearer is never placed in a URL and is not returned by bo
 - `POST /api/game/sessions` — canonical authenticated launch-session creation.
 - `POST /api/game/session-exchange` — one-time ticket → HttpOnly arena cookie.
 - `GET /api/game/bootstrap` — minimum `PocketPTWorldProtocol v1` bootstrap.
+- `GET /api/game/avatar/asset?version=<profileVersion>` — current member's canonical GLB, authorized by the arena session.
 - `DELETE /api/game/session` — explicit arena-session revocation.
 - `GET /api/game/build` — generated Godot entry availability.
 - `GET /arena/push-up` — immersive arena shell.
@@ -125,7 +130,7 @@ Phase 1 diagnostic success is:
 
 `Challenge: push_up`
 
-The Godot project/build is not present in the PocketPT repository at the audited SHA, so actual Godot Web runtime proof is a separate artifact-delivery step.
+The Phase 1 Web export is present in PocketPT at the Phase 2 audited SHA. The accessible `mufasa-world` main branch still contains a cube demo, not the working gym scenes and scripts. The working Godot source must be committed before its player loader can be integrated and a new export reviewed. See [the Phase 2 Godot handoff](review-handoffs/godot-phase2-avatar-identity-handoff.md).
 
 ## Godot export/deployment contract
 
@@ -145,27 +150,52 @@ Exit returns to `/push-up-challenge.html`.
 
 ## Phase 2 — avatar identity bridge
 
-Add only:
+The PocketPT implementation provides:
 
 - canonical avatar ID/profile version,
-- arena-authorized temporary asset URL or arena-scoped asset endpoint,
+- an arena-scoped asset endpoint,
 - fallback avatar contract,
 - asset version/cache behavior,
 - owner-isolation tests.
 
-Do not implement retargeting in this phase.
+Retargeting, walking, gesture controls, and push-up counting are separate work. Phase 2 does not claim that an uploaded model is already animation-compatible with the gym's player rig.
 
-Suggested protocol addition:
+Protocol v1 keeps its existing identity/session/experience fields and populates the reserved `avatar` field. `avatarState` is an additive availability/fallback field. A Phase 2 client must handle both a descriptor and `null`:
 
 ```json
-"avatar": {
-  "avatarId": "canonical-avatar-id",
-  "assetUrl": "/api/game/avatar/asset",
-  "profileVersion": 1
+{
+  "avatar": {
+    "avatarId": "11111111-1111-4111-8111-111111111111",
+    "assetUrl": "/api/game/avatar/asset?version=0123456789abcdef0123456789abcdef",
+    "profileVersion": "0123456789abcdef0123456789abcdef",
+    "format": "glb"
+  },
+  "avatarState": {
+    "status": "AVAILABLE",
+    "reason": null,
+    "fallback": "DEFAULT_AVATAR"
+  }
 }
 ```
 
-The arena endpoint resolves the authenticated arena session to the canonical member and serves/redirects only that member's authorized asset.
+`profileVersion` is an opaque 32-character revision of the selected avatar ID, avatar update timestamp, and stored file metadata. It is not a counter, a credential, or a checksum of the GLB contents. Cache any imported scene by member ID, avatar ID, and this revision. Bootstrap and asset responses are `private, no-store`; clear any in-memory avatar cache when the arena session ends or the member changes.
+
+The endpoint re-reads the canonical profile and rechecks existing asset ownership on every request. It does not accept a caller-selected member, asset ID, or external download URL. Relative canonical upload URLs and absolute URLs at configured PocketPT backend/frontend origins are supported; arbitrary external avatar sources are reported as unsupported and are never fetched.
+
+| Result | Contract |
+| --- | --- |
+| Current uploaded avatar available | `avatarState.status: AVAILABLE`, versioned descriptor in `avatar` |
+| No selected avatar | `avatar: null`, `FALLBACK`, `AVATAR_NOT_CONFIGURED` |
+| Missing GLB or failed ownership check | `avatar: null`, `FALLBACK`, `AVATAR_ASSET_UNAVAILABLE` |
+| External/unsupported model URL | `avatar: null`, `FALLBACK`, `AVATAR_SOURCE_UNSUPPORTED` |
+| Avatar capability disabled/unavailable | `avatar: null`, `FALLBACK`, `AVATAR_FEATURE_DISABLED` / `AVATAR_BRIDGE_UNAVAILABLE` |
+| No valid arena session | Asset request returns HTTP 401 `ARENA_SESSION_INVALID` |
+| Avatar removed/unavailable at download | HTTP 404 `ARENA_AVATAR_UNAVAILABLE` |
+| Missing/malformed revision | HTTP 400 `ARENA_AVATAR_VERSION_REQUIRED` |
+| Selection changed after bootstrap | HTTP 409 `ARENA_AVATAR_VERSION_CHANGED`; re-bootstrap |
+| Unexpected profile/file read failure | HTTP 503 `ARENA_AVATAR_READ_FAILED`, without internal error details |
+
+The Godot client must label a default avatar as a fallback, not silently present it as the member's avatar. Availability in bootstrap proves only that the server can resolve an owned asset; it is not proof of a successful download, Godot import, scene attachment, or visual acceptance.
 
 ## Phase 3 — challenge data
 
@@ -202,9 +232,9 @@ Physical iPhone acceptance is required before claiming mobile readiness. Validat
 
 ## Tests
 
-`node --test test/world-bridge.test.js`
+`node --test test/world-bridge.test.js test/world-avatar-bridge.test.js test/member-avatar-assets.test.js test/avatar-upload-transport.test.js`
 
-Coverage includes one-time ticket use, member binding, expiration/fail-closed behavior, minimum bootstrap fields, exclusion of canonical credential metadata/sensitive fields, fixed experience/challenge scope, and independent user sessions.
+Coverage includes one-time ticket use, member binding, expiration/fail-closed behavior, minimum bootstrap fields, exclusion of canonical credential metadata/sensitive fields, fixed experience/challenge scope, independent user sessions, the production startup path, upload-to-arena byte parity, foreign-profile URL rejection, avatar replacement/removal, fallback cases, legacy ownership migration, and version/cache behavior. These are server tests, not Godot browser or physical-device acceptance.
 
 Full repository test suite remains:
 
@@ -224,8 +254,8 @@ Full repository test suite remains:
 - global navigation unrelated to adding the eventual arena entry action,
 - multiplayer/social systems.
 
-## Phase 1 remaining integration task
+## Remaining integration task
 
-The PocketPT-side bridge is ready for the Godot-side workstream to provide an actual Web export at `/game/push-up-arena/index.html` and implement `PocketPTGameClient.initialize()` against `/api/game/bootstrap`. The frontend Push-Up Challenge must then wire its `ENTER UNLEASH THE BEAST` action to `POST /api/game/sessions` using `AuthStateRuntime`/canonical API origin and navigate to the returned `launchUrl`.
+The Phase 1 launcher, bootstrap handshake, and generated Web export are already present. The next integration task is to commit the working Godot gym source, extend its existing `PocketPTGameClient` to load the Phase 2 avatar descriptor, replace the player's placeholder visual with the imported model, and regenerate the export. Follow the Phase 2 handoff and obtain independent review plus browser/device evidence before treating avatar transfer as complete.
 
 Do not mark Godot Web load, browser end-to-end, or physical-iPhone proof complete until those are executed on the real deployed branch/build.

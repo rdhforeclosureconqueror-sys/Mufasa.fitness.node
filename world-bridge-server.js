@@ -90,7 +90,7 @@ function createWorldBridgeApp(options = {}) {
   installClientTransformation(app, options);
   installPrivateClientGettingStarted(app, options);
 
-  const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl });
+  const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl, avatarAssets:app.locals.pocketPTAvatarAssets });
   bridge.register(app);
   app.locals.pocketPTWorldBridge = bridge;
 
