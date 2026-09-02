@@ -20,6 +20,14 @@ function createCanonicalUserStore(options = {}) {
   return userStore;
 }
 
+function installDeploymentIdentity(app, options = {}) {
+  const env = options.env || process.env;
+  app.get("/api/deployment/identity", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    return res.status(200).json({ ok:true, data:{ service:"backend", commit:String(env.RENDER_GIT_COMMIT||env.GIT_COMMIT||"unknown"), runtime:"node", startCommand:"node world-bridge-server.js" } });
+  });
+}
+
 function installFreeRunClub(app, options = {}) {
   const userStore = createCanonicalUserStore(options);
   const freeRunClubCommunityService = createFreeRunClubCommunityService({ userStore });
@@ -42,7 +50,7 @@ function installPrivateCoaching(app, options = {}) {
     if (!String(req.path || "").startsWith("/api/me/private-coaching/")) return next(err);
     if (res.headersSent) return next(err);
     const status = Number.isInteger(err?.status) ? err.status : 400;
-    return res.status(status).json({ ok:false, requestId:req.requestId||null, error:{ code:err?.code||"PRIVATE_COACHING_REQUEST_FAILED", message:err?.message||"Private coaching request failed" } });
+    return res.status(status).json({ ok:false, requestId:req.requestId||null, error:{ code:err?.code||"PRIVATE_COACHING_REQUEST_FAILED", message:err?.message||"Private coaching request failed", ...(err?.details?{details:err.details}:{}) } });
   });
   app.locals.pocketPTPrivateCoaching = { userStore, service };
   return app.locals.pocketPTPrivateCoaching;
@@ -50,6 +58,7 @@ function installPrivateCoaching(app, options = {}) {
 
 function createWorldBridgeApp(options = {}) {
   const app = createApp(options);
+  installDeploymentIdentity(app, options);
   installFreeRunClub(app, options);
   installPrivateCoaching(app, options);
 
@@ -69,4 +78,4 @@ if (require.main === module) {
   app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching listening on :${PORT}`));
 }
 
-module.exports = { createWorldBridgeApp, installFreeRunClub, installPrivateCoaching };
+module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching };
