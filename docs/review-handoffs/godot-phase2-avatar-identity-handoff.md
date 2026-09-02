@@ -10,6 +10,7 @@ This change implements the PocketPT half and tests its transport/ownership contr
 - PocketPT audited main: `172b3ee04a81cd5040a6405727ee2e556c6b4760`
 - Updated review base: `35bd3c11979e7651f428dd46ed97a84b4fc760e9` (incoming trial-routing changes preserved; no Phase 2 overlap)
 - Implementation branch: `codex/godot-phase2-avatar-identity`
+- PocketPT draft: [PR #630](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/630)
 - Godot repository: `rdhforeclosureconqueror-sys/mufasa-world`
 - Godot audited main: `a55b495b996999974f4543bed51b1d7462112a6d`
 - Readiness board/card: `avatar` / `avatar-development-godot-phase2-avatar-identity`
