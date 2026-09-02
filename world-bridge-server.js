@@ -62,6 +62,12 @@ function installClientTransformation(app, options = {}) {
   const userStore = createCanonicalUserStore(options);
   const service = createClientTransformationService({ userStore });
   installClientTransformationRoutes({ app, requireAuth, service });
+  app.use((err, req, res, next) => {
+    if (!String(req.path || "").startsWith("/api/me/transformation-profile")) return next(err);
+    if (res.headersSent) return next(err);
+    const status = Number.isInteger(err?.status) ? err.status : 400;
+    return res.status(status).json({ ok:false, requestId:req.requestId||null, error:{ code:err?.code||"TRANSFORMATION_PROFILE_REQUEST_FAILED", message:err?.message||"Transformation profile request failed" } });
+  });
   app.locals.pocketPTClientTransformation = { userStore, service };
   return app.locals.pocketPTClientTransformation;
 }
