@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "contractId": "stationary_lunge_left_reference_v1",
+  "exerciseId": "stationary_lunge_left",
+  "status": "development-coaching-contract",
+  "purpose": "Define the movement intent, contact rules, measurable targets, coaching cues, and compensation signals for a synthesized stationary left-forward split-stance lunge reference.",
+  "authorityBoundary": {
+    "biomechanicalGroundTruth": false,
+    "medicalDiagnosis": false,
+    "movementScreenOnly": true,
+    "notes": "Engineering reference for the shipped avatar. Human proportions, stance length, ankle mobility, and lunge style require later calibration."
+  },
+  "setup": {
+    "stance": {
+      "rule": "left_forward_split_stance",
+      "cue": "Set the left foot forward and the right foot back on two stable rails rather than a tightrope.",
+      "frontSide": "left",
+      "rearSide": "right",
+      "hardFail": true
+    },
+    "contacts": {
+      "frontFoot": {"contact":"left_front_foot","bone":"mixamorig:LeftFoot","rule":"whole_front_foot_planted","hardFail":true},
+      "rearFoot": {"contact":"right_rear_forefoot","bone":"mixamorig:RightToeBase","rule":"rear_forefoot_planted_rear_heel_may_rise","hardFail":true},
+      "flightPermitted": false
+    }
+  },
+  "phaseOrder": ["start", "descent", "bottom", "ascent", "finish"],
+  "movementIntent": {
+    "start": ["stable_split_stance", "pelvis_centered_between_supports"],
+    "descent": ["pelvis_moves_down_more_than_forward_or_back", "front_knee_flexes", "rear_knee_flexes", "rear_knee_moves_toward_floor", "torso_stays_tall_with_small_balance_lean"],
+    "bottom": ["front_foot_remains_planted", "rear_forefoot_remains_planted", "front_knee_tracks_with_front_foot", "rear_knee_nears_floor_without_contact", "pelvis_remains_between_supports"],
+    "ascent": ["front_hip_and_knee_extend", "rear_hip_and_knee_extend", "pelvis_rises", "return_to_same_split_stance"],
+    "finish": ["same_split_stance_as_start"]
+  },
+  "numericalTargets": {
+    "frontKneeInsideAngleDegrees": {"startTarget":165,"bottomTarget":90,"bottomEngineeringToleranceDegrees":12},
+    "rearKneeInsideAngleDegrees": {"startTarget":165,"bottomTarget":90,"bottomEngineeringToleranceDegrees":15},
+    "contactAnchorResidual": {"target":0,"unit":"avatar_height","hardFailAbove":0.015},
+    "pelvis": {"descentVerticalSign":"down","dominantDirection":"vertical","maxHorizontalToVerticalTravelRatio":0.45},
+    "rearKneeClearance": {"rule":"approaches_floor_without_crossing_floor_plane"}
+  },
+  "hardConstraints": [
+    "left_forward_split_stance",
+    "front_whole_foot_contact",
+    "rear_forefoot_contact",
+    "no_flight_phase",
+    "pelvis_descends_during_descent",
+    "pelvis_rises_during_ascent",
+    "front_and_rear_knees_flex_then_extend",
+    "return_to_same_split_stance"
+  ],
+  "requiredPrimitives": [
+    "split_stance",
+    "stable_stance",
+    "front_leg_knee_flexion",
+    "rear_leg_knee_flexion",
+    "root_descent",
+    "front_leg_knee_extension",
+    "rear_leg_knee_extension",
+    "root_rise",
+    "split_stance_reacquisition"
+  ],
+  "coachCues": [
+    "Start in a stable split stance with the left foot forward and right foot back.",
+    "Keep the whole front foot planted and the rear forefoot connected to the floor.",
+    "Lower the body mostly straight down between the feet instead of lunging the torso forward.",
+    "Let the front knee track in the same direction as the front foot.",
+    "Drop the rear knee toward the floor while keeping the pelvis controlled.",
+    "Push through the front whole foot and rear forefoot to rise back to the same split stance."
+  ],
+  "compensationSignals": [
+    {"id":"front_heel_rise","view":"side","meaning":"front whole-foot contact lost"},
+    {"id":"front_knee_valgus","view":"front","meaning":"front knee caves inward relative to front foot"},
+    {"id":"tightrope_stance","view":"front","meaning":"stance becomes too narrow laterally for stable reference"},
+    {"id":"pelvis_lateral_shift","view":"front","meaning":"pelvis drifts materially away from the split-stance support corridor"},
+    {"id":"excessive_forward_translation","view":"side","meaning":"pelvis/torso travel forward dominates vertical descent"},
+    {"id":"rear_knee_not_descending","view":"side","meaning":"rear knee does not move toward the floor as the body lowers"},
+    {"id":"insufficient_depth","view":"side","meaning":"front/rear knee-angle targets are not approached"},
+    {"id":"rear_foot_contact_loss","view":"side","meaning":"rear forefoot leaves the ground"}
+  ],
+  "sourceEvidence": [
+    "/motion-sources/crouched-sneaking-left-reference.source.json",
+    "/motion-sources/kettlebell-swing-reference.source.json",
+    "/motion/transition-profiles/stand-to-plank.v1.json"
+  ],
+  "sourceEvidenceBoundary": "Crouched sneaking provides candidate split-stance/asymmetric leg-loading mechanics but is explicitly not treated as a canonical lunge clip. Squat/hinge evidence contributes grounded knee/hip flexion mechanics only."
+}
