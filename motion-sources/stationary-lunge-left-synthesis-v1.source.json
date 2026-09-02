@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "motionId": "lunge/stationary_left_synthesized_engineering_v1",
+  "exerciseId": "stationary_lunge_left",
+  "status": "synthesized-development-reference",
+  "copiedNamedLungeAnimation": false,
+  "goal": "Test whether the Movement Lego system can synthesize a stationary left-forward lunge from existing split-stance, grounding, and knee/hip mechanics without a dedicated lunge clip.",
+  "evidence": [
+    {
+      "ref": "/motion-sources/crouched-sneaking-left-reference.source.json",
+      "contribution": ["split_stance", "asymmetric_leg_loading", "low_stance"],
+      "caution": "Source itself is lateral low locomotion and is not treated as a canonical lunge."
+    },
+    {
+      "ref": "/motion-sources/kettlebell-swing-reference.source.json",
+      "contribution": ["grounded hip-knee flexion-extension relationship", "root control"]
+    },
+    {
+      "ref": "/motion/transition-profiles/stand-to-plank.v1.json",
+      "contribution": ["standing/root baseline", "controlled level change evidence"]
+    }
+  ],
+  "contract": "/motion/contracts/stationary-lunge-left.v1.json",
+  "contactDesign": {
+    "front": "left whole-foot anchor via mixamorig:LeftFoot",
+    "rear": "right rear-forefoot anchor via mixamorig:RightToeBase",
+    "anchorPhase": "authored start split stance",
+    "why": "A lunge should not force the rear heel flat, and its stable contact positions must be established after the split stance exists rather than from the avatar's neutral standing rest pose."
+  },
+  "reviewBoundary": {
+    "staticCodeReviewRequired": true,
+    "realSkeletonMeasurementRequired": true,
+    "humanMotionLabVisualReviewRequired": true,
+    "humanMoveNetValidationPending": true,
+    "productionReady": false
+  }
+}
