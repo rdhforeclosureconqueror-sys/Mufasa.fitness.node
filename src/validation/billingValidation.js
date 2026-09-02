@@ -1,122 +1,16 @@
 "use strict";
 
 const { ApiError } = require("../lib/apiResponse");
-const {
-  PLAN_IDS,
-  normalizePlanId,
-  getPlan,
-  listPublicPlans,
-  resolveStripePriceId
-} = require("../billing/membershipPlans");
-
-function requiredEnv(env, key) {
-  const value = String(env?.[key] || "").trim();
-  if (!value) {
-    throw new ApiError("BILLING_CONFIG_MISSING", `${key} is required for Stripe Embedded Checkout`, 503, { missing: key });
-  }
-  return value;
-}
-
-function validatePrefix(value, key, prefix) {
-  if (!String(value || "").startsWith(prefix)) {
-    throw new ApiError("BILLING_CONFIG_INVALID", `${key} must use the expected Stripe prefix`, 503, { key, expectedPrefix: prefix });
-  }
-}
-
-const RAW_PAYMENT_FIELD_NAMES = new Set([
-  "card", "cardnumber", "card_number", "number", "cvc", "cvv", "securitycode", "security_code",
-  "expiration", "expiry", "exp", "expmonth", "exp_month", "expyear", "exp_year"
-]);
-
-function containsRawPaymentCredentialField(value) {
-  if (!value || typeof value !== "object") return false;
-  if (Array.isArray(value)) return value.some(containsRawPaymentCredentialField);
-  for (const [key, nested] of Object.entries(value)) {
-    const normalized = String(key || "").replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
-    if (RAW_PAYMENT_FIELD_NAMES.has(normalized)) return true;
-    if (containsRawPaymentCredentialField(nested)) return true;
-  }
-  return false;
-}
-
-function rejectRawPaymentCredentialFields(body) {
-  if (containsRawPaymentCredentialField(body)) {
-    throw new ApiError("RAW_PAYMENT_DETAILS_FORBIDDEN", "Payment credentials must be entered only in Stripe-hosted secure components", 400);
-  }
-}
-
-function validateCheckoutConfig(env = process.env, requestedPlanId = null) {
-  const secretKey = requiredEnv(env, "STRIPE_SECRET_KEY");
-  const planId = normalizePlanId(requestedPlanId) || (requestedPlanId == null || requestedPlanId === "" ? PLAN_IDS.PERFORMANCE : null);
-  if (!planId) {
-    throw new ApiError("MEMBERSHIP_PLAN_INVALID", "Select a valid PocketPT membership plan", 400, {
-      allowedPlanIds: listPublicPlans(env).map((plan) => plan.id)
-    });
-  }
-  const plan = getPlan(planId);
-  const priceId = resolveStripePriceId(planId, env);
-  if (!priceId) {
-    throw new ApiError("BILLING_CONFIG_MISSING", `${plan.stripePriceEnv} is required for ${plan.name} checkout`, 503, {
-      missing: plan.stripePriceEnv,
-      planId
-    });
-  }
-  validatePrefix(priceId, plan.stripePriceEnv, "price_");
-  return { secretKey, priceId, planId, plan };
-}
-
-function validatePortalConfig(env = process.env) {
-  return { secretKey: requiredEnv(env, "STRIPE_SECRET_KEY") };
-}
-
-function validateWebhookConfig(env = process.env) {
-  const secretKey = requiredEnv(env, "STRIPE_SECRET_KEY");
-  const webhookSecret = requiredEnv(env, "STRIPE_WEBHOOK_SECRET");
-  validatePrefix(webhookSecret, "STRIPE_WEBHOOK_SECRET", "whsec_");
-  return { secretKey, webhookSecret };
-}
-
-function resolvePublicBaseUrl({ env = process.env, req = null } = {}) {
-  const configured = String(env.FRONTEND_PUBLIC_URL || env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, "");
-  if (configured) return configured;
-  if (req) {
-    const protocol = String(req.get("x-forwarded-proto") || req.protocol || "http").split(",")[0].trim() || "http";
-    const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim();
-    if (host) return `${protocol}://${host}`;
-  }
-  throw new ApiError("BILLING_CONFIG_MISSING", "FRONTEND_PUBLIC_URL, PUBLIC_BASE_URL, or request host is required for Stripe Embedded Checkout return URLs", 503, { missing: "FRONTEND_PUBLIC_URL" });
-}
-
-function resolveMembershipReturnUrl({ env = process.env, req = null, planId = null } = {}) {
-  const normalizedPlanId = normalizePlanId(planId);
-  const suffix = normalizedPlanId ? `&plan=${encodeURIComponent(normalizedPlanId)}` : "";
-  return `${resolvePublicBaseUrl({ env, req })}/membership.html?checkout=return${suffix}`;
-}
-
-function getPublicBillingPlan(env = process.env) {
-  const plans = listPublicPlans(env);
-  const defaultPlan = plans.find((plan) => plan.id === PLAN_IDS.PERFORMANCE) || plans[0];
-  return {
-    schemaVersion: 2,
-    plans,
-    defaultPlanId: PLAN_IDS.PERFORMANCE,
-    name: defaultPlan?.name || "PocketPT Performance",
-    priceLabel: defaultPlan?.priceLabel || "$19.99",
-    interval: "month",
-    currency: "usd",
-    recurringDisclosure: "Recurring monthly subscription. Manage or cancel from the secure Stripe billing portal.",
-    trialPeriodDays: 7,
-    trialDisclosure: "7-day free trial. Payment method required. Cancel before the displayed trial-end date and time to avoid the first monthly charge. After the trial, membership renews monthly until canceled.",
-    legacySinglePlanSupported: Boolean(String(env.STRIPE_PRICE_ID || "").trim())
-  };
-}
-
-module.exports = {
-  validateCheckoutConfig,
-  validatePortalConfig,
-  validateWebhookConfig,
-  rejectRawPaymentCredentialFields,
-  resolvePublicBaseUrl,
-  resolveMembershipReturnUrl,
-  getPublicBillingPlan
-};
+const { PLAN_IDS, normalizePlanId, getPlan, listPublicPlans, resolveStripePriceId } = require("../billing/membershipPlans");
+function requiredEnv(env,key){const value=String(env?.[key]||"").trim();if(!value)throw new ApiError("BILLING_CONFIG_MISSING",`${key} is required for Stripe Embedded Checkout`,503,{missing:key});return value;}
+function validatePrefix(value,key,prefix){if(!String(value||"").startsWith(prefix))throw new ApiError("BILLING_CONFIG_INVALID",`${key} must use the expected Stripe prefix`,503,{key,expectedPrefix:prefix});}
+const RAW_PAYMENT_FIELD_NAMES=new Set(["card","cardnumber","card_number","number","cvc","cvv","securitycode","security_code","expiration","expiry","exp","expmonth","exp_month","expyear","exp_year"]);
+function containsRawPaymentCredentialField(value){if(!value||typeof value!=="object")return false;if(Array.isArray(value))return value.some(containsRawPaymentCredentialField);for(const[key,nested]of Object.entries(value)){const normalized=String(key||"").replace(/[^a-zA-Z0-9_]/g,"").toLowerCase();if(RAW_PAYMENT_FIELD_NAMES.has(normalized))return true;if(containsRawPaymentCredentialField(nested))return true;}return false;}
+function rejectRawPaymentCredentialFields(body){if(containsRawPaymentCredentialField(body))throw new ApiError("RAW_PAYMENT_DETAILS_FORBIDDEN","Payment credentials must be entered only in Stripe-hosted secure components",400);}
+function validateCheckoutConfig(env=process.env,requestedPlanId=null){const secretKey=requiredEnv(env,"STRIPE_SECRET_KEY");const planId=normalizePlanId(requestedPlanId)||(requestedPlanId==null||requestedPlanId===""?PLAN_IDS.PERFORMANCE:null);if(!planId)throw new ApiError("MEMBERSHIP_PLAN_INVALID","Select a valid PocketPT membership plan",400,{allowedPlanIds:listPublicPlans(env).map(plan=>plan.id)});const plan=getPlan(planId),priceId=resolveStripePriceId(planId,env);if(!priceId)throw new ApiError("BILLING_CONFIG_MISSING",`${plan.stripePriceEnv} is required for ${plan.name} checkout`,503,{missing:plan.stripePriceEnv,planId});validatePrefix(priceId,plan.stripePriceEnv,"price_");return{secretKey,priceId,planId,plan};}
+function validatePortalConfig(env=process.env){return{secretKey:requiredEnv(env,"STRIPE_SECRET_KEY")};}
+function validateWebhookConfig(env=process.env){const secretKey=requiredEnv(env,"STRIPE_SECRET_KEY"),webhookSecret=requiredEnv(env,"STRIPE_WEBHOOK_SECRET");validatePrefix(webhookSecret,"STRIPE_WEBHOOK_SECRET","whsec_");return{secretKey,webhookSecret};}
+function resolvePublicBaseUrl({env=process.env,req=null}={}){const configured=String(env.FRONTEND_PUBLIC_URL||env.PUBLIC_BASE_URL||"").trim().replace(/\/+$/,"");if(configured)return configured;if(req){const protocol=String(req.get("x-forwarded-proto")||req.protocol||"http").split(",")[0].trim()||"http",host=String(req.get("x-forwarded-host")||req.get("host")||"").split(",")[0].trim();if(host)return`${protocol}://${host}`;}throw new ApiError("BILLING_CONFIG_MISSING","FRONTEND_PUBLIC_URL, PUBLIC_BASE_URL, or request host is required for Stripe Embedded Checkout return URLs",503,{missing:"FRONTEND_PUBLIC_URL"});}
+function resolveMembershipReturnUrl({env=process.env,req=null,planId=null}={}){const normalizedPlanId=normalizePlanId(planId),suffix=normalizedPlanId?`&plan=${encodeURIComponent(normalizedPlanId)}`:"";return`${resolvePublicBaseUrl({env,req})}/membership.html?checkout=return${suffix}`;}
+function getPublicBillingPlan(env=process.env){const plans=listPublicPlans(env),defaultPlan=plans.find(plan=>plan.id===PLAN_IDS.PERFORMANCE)||plans[0];return{schemaVersion:3,plans,defaultPlanId:PLAN_IDS.PERFORMANCE,name:defaultPlan?.name||"PocketPT Performance",priceLabel:defaultPlan?.priceLabel||"$19.99",interval:"month",currency:"usd",recurringDisclosure:"After your courtesy trial, choose a recurring monthly subscription. Manage or cancel from the secure Stripe billing portal.",trialPeriodDays:7,trialRequiresPaymentMethod:false,trialAccessLevel:"unleashed",trialDisclosure:"7-day PocketPT courtesy trial with full Premium-system access. No credit card or payment method is required to start. After the trial, choose Essential ($9.99), Performance ($19.99), or Unleashed ($39.99) to continue full-system access.",legacySinglePlanSupported:Boolean(String(env.STRIPE_PRICE_ID||"").trim())};}
+module.exports={validateCheckoutConfig,validatePortalConfig,validateWebhookConfig,rejectRawPaymentCredentialFields,resolvePublicBaseUrl,resolveMembershipReturnUrl,getPublicBillingPlan};
