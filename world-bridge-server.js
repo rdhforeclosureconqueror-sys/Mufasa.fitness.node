@@ -8,6 +8,8 @@ const { createFreeRunClubCommunityService } = require("./src/services/freeRunClu
 const { installFreeRunClubCommunityRoutes } = require("./src/routes/freeRunClubCommunityRoutes");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
+const { createClientTransformationService } = require("./src/services/clientTransformationService");
+const { installClientTransformationRoutes } = require("./src/routes/clientTransformationRoutes");
 const { createWorldBridge } = require("./src/world/worldBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
 
@@ -56,11 +58,26 @@ function installPrivateCoaching(app, options = {}) {
   return app.locals.pocketPTPrivateCoaching;
 }
 
+function installClientTransformation(app, options = {}) {
+  const userStore = createCanonicalUserStore(options);
+  const service = createClientTransformationService({ userStore });
+  installClientTransformationRoutes({ app, requireAuth, service });
+  app.use((err, req, res, next) => {
+    if (!String(req.path || "").startsWith("/api/me/transformation-profile")) return next(err);
+    if (res.headersSent) return next(err);
+    const status = Number.isInteger(err?.status) ? err.status : 400;
+    return res.status(status).json({ ok:false, requestId:req.requestId||null, error:{ code:err?.code||"TRANSFORMATION_PROFILE_REQUEST_FAILED", message:err?.message||"Transformation profile request failed" } });
+  });
+  app.locals.pocketPTClientTransformation = { userStore, service };
+  return app.locals.pocketPTClientTransformation;
+}
+
 function createWorldBridgeApp(options = {}) {
   const app = createApp(options);
   installDeploymentIdentity(app, options);
   installFreeRunClub(app, options);
   installPrivateCoaching(app, options);
+  installClientTransformation(app, options);
 
   const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl });
   bridge.register(app);
@@ -75,7 +92,7 @@ function createWorldBridgeApp(options = {}) {
 if (require.main === module) {
   const app = createWorldBridgeApp();
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching listening on :${PORT}`));
+  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching + Transformation Profile listening on :${PORT}`));
 }
 
-module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching };
+module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation };
