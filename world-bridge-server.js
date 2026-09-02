@@ -10,6 +10,8 @@ const { createPrivateCoachingQuoteService } = require("./src/services/privateCoa
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { createClientTransformationService } = require("./src/services/clientTransformationService");
 const { installClientTransformationRoutes } = require("./src/routes/clientTransformationRoutes");
+const { createPrivateClientGettingStartedService } = require("./src/services/privateClientGettingStartedService");
+const { installPrivateClientGettingStartedRoutes } = require("./src/routes/privateClientGettingStartedRoutes");
 const { createWorldBridge } = require("./src/world/worldBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
 
@@ -72,12 +74,21 @@ function installClientTransformation(app, options = {}) {
   return app.locals.pocketPTClientTransformation;
 }
 
+function installPrivateClientGettingStarted(app, options = {}) {
+  const userStore = createCanonicalUserStore(options);
+  const service = createPrivateClientGettingStartedService({ userStore });
+  installPrivateClientGettingStartedRoutes({ app, requireAuth, service });
+  app.locals.pocketPTPrivateClientGettingStarted = { userStore, service };
+  return app.locals.pocketPTPrivateClientGettingStarted;
+}
+
 function createWorldBridgeApp(options = {}) {
   const app = createApp(options);
   installDeploymentIdentity(app, options);
   installFreeRunClub(app, options);
   installPrivateCoaching(app, options);
   installClientTransformation(app, options);
+  installPrivateClientGettingStarted(app, options);
 
   const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl });
   bridge.register(app);
@@ -92,7 +103,7 @@ function createWorldBridgeApp(options = {}) {
 if (require.main === module) {
   const app = createWorldBridgeApp();
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching + Transformation Profile listening on :${PORT}`));
+  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching + Transformation Profile + Getting Started listening on :${PORT}`));
 }
 
-module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation };
+module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted };
