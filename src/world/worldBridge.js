@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { createAvatarBridge, AVATAR_ASSET_PATH } = require("./avatarBridge");
 
 const PROTOCOL_VERSION = 1;
 const EXPERIENCE = Object.freeze({ type: "PUSH_UP_ARENA", challengeId: "push_up" });
@@ -16,7 +17,9 @@ function parseCookies(header = "") {
     if (index <= 0) continue;
     const key = pair.slice(0, index).trim();
     const value = pair.slice(index + 1).trim();
-    if (key) result[key] = decodeURIComponent(value);
+    if (key) {
+      try { result[key] = decodeURIComponent(value); } catch (_) { /* Invalid cookies cannot authorize a session. */ }
+    }
   }
   return result;
 }
@@ -37,6 +40,22 @@ function createWorldBridge(options = {}) {
   const backendPublicUrl = String(options.backendPublicUrl || process.env.BACKEND_PUBLIC_URL || "").replace(/\/$/, "");
   const frontendPublicUrl = String(options.frontendPublicUrl || process.env.FRONTEND_PUBLIC_URL || "").replace(/\/$/, "");
   const secureCookie = options.secureCookie == null ? process.env.NODE_ENV === "production" : Boolean(options.secureCookie);
+  const avatarBridge = createAvatarBridge({ assets: options.avatarAssets, publicOrigins: [backendPublicUrl, frontendPublicUrl] });
+
+  function avatarError(res, error) {
+    const expected = ["ARENA_AVATAR_UNAVAILABLE", "ARENA_AVATAR_VERSION_REQUIRED", "ARENA_AVATAR_VERSION_CHANGED"].includes(error.code);
+    const missing = error.code === "ENOENT" || error.status === 404;
+    res.set("Cache-Control", "private, no-store");
+    res.type("application/json");
+    return res.status(expected ? error.status : missing ? 404 : 503).json({
+      ok: false,
+      error: {
+        code: expected ? error.code : missing ? "ARENA_AVATAR_UNAVAILABLE" : "ARENA_AVATAR_READ_FAILED",
+        message: expected ? error.message : "The saved avatar could not be read. Reload the arena bootstrap.",
+        ...(expected && error.details ? { details: error.details } : {})
+      }
+    });
+  }
 
   function prune() {
     const timestamp = now();
@@ -102,7 +121,7 @@ function createWorldBridge(options = {}) {
         id: session.userId,
         displayName: session.displayName
       },
-      avatar: null,
+      ...avatarBridge.describe(session.userId),
       experience: { ...session.experience },
       api: { baseUrl: "/api/game" }
     };
@@ -162,10 +181,34 @@ function createWorldBridge(options = {}) {
     });
 
     app.get("/api/game/bootstrap", (req, res) => {
+      res.set("Cache-Control", "private, no-store");
+      res.vary("Cookie");
       const resolved = readSession(req);
       if (!resolved) return res.status(401).json({ ok: false, error: { code: "ARENA_SESSION_INVALID", message: "Arena session is invalid or expired" } });
+      try {
+        return res.status(200).json({ ok: true, data: bootstrap(resolved.session) });
+      } catch (error) {
+        return avatarError(res, error);
+      }
+    });
+
+    app.get(AVATAR_ASSET_PATH, (req, res, next) => {
       res.set("Cache-Control", "private, no-store");
-      return res.status(200).json({ ok: true, data: bootstrap(resolved.session) });
+      res.vary("Cookie");
+      const resolved = readSession(req);
+      if (!resolved) return res.status(401).json({ ok: false, error: { code: "ARENA_SESSION_INVALID", message: "Arena session is invalid or expired" } });
+      try {
+        const asset = avatarBridge.read(resolved.session.userId, req.query.version);
+        res.type("model/gltf-binary");
+        res.set("X-PocketPT-Avatar-Version", asset.profileVersion);
+        return res.sendFile(asset.path, { cacheControl: false, lastModified: false }, (error) => {
+          if (!error) return;
+          if (res.headersSent) return next(error);
+          return avatarError(res, error);
+        });
+      } catch (error) {
+        return avatarError(res, error);
+      }
     });
 
     app.delete("/api/game/session", (req, res) => {

@@ -653,6 +653,70 @@
       "prNumber": 606,
       "commitSha": "42bb50fc9b1a4a3a7ca1bbf887c5ee570b7a316b",
       "timestamp": "2026-09-01T15:29:10.485Z"
+    },
+    {
+      "operationId": "ef4ba99c-9027-45ba-9a9e-c747046c4a25",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "card_creation",
+      "taskId": "godot-phase2-avatar-identity",
+      "files": [],
+      "automated": null,
+      "evidence": "Deliver the canonical member avatar through the existing arena session, with owner isolation, version handling, a missing-avatar fallback contract, and a Godot integration handoff. Godot runtime and physical iPhone acceptance remain separate required evidence.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-02T19:03:00.446Z"
+    },
+    {
+      "operationId": "8f3ad6e3-f991-490e-9563-c09f7f9f0b6c",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "implementation",
+      "taskId": "godot-phase2-avatar-identity",
+      "files": [
+        "server.js",
+        "world-bridge-server.js",
+        "src/world/worldBridge.js",
+        "src/world/avatarBridge.js",
+        "config/world-route-authorization-contract.js",
+        "test/world-avatar-bridge.test.js",
+        "docs/POCKETPT_GODOT_WORLD_BRIDGE.md",
+        "docs/review-handoffs/godot-phase2-avatar-identity-handoff.md"
+      ],
+      "automated": "PASS",
+      "evidence": "PocketPT half implemented on codex/godot-phase2-avatar-identity from main 172b3ee04a81cd5040a6405727ee2e556c6b4760: canonical avatar descriptor, arena-cookie delivery, ownership reuse, revision and fallback contract. Focused seven-file Node suite: 42 tests PASS, 0 FAIL, through the real createWorldBridgeApp HTTP entry and canonical upload/profile APIs. git diff --check PASS. Godot source integration/export and browser/production/iPhone/human visual acceptance are NOT performed or approved; see handoff.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-02T19:19:57.618Z"
+    },
+    {
+      "operationId": "ed6838c9-3822-49fb-8314-6d35f610db33",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "integration_blocker",
+      "taskId": "godot-phase2-avatar-identity",
+      "files": [],
+      "automated": null,
+      "evidence": "PocketPT implementation and automated tests are complete. Working gym scenes/scripts are absent from mufasa-world main a55b495b996999974f4543bed51b1d7462112a6d (cube demo only). Godot loader/player integration, regenerated Web export, independent review, desktop/browser technical QA, and physical iPhone/human avatar appearance and floor-placement acceptance remain required. No deployment or human verification claimed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-02T19:19:58.089Z"
+    },
+    {
+      "operationId": "72f88e84-0455-4762-b440-5bc555f72816",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "review_preparation",
+      "taskId": "godot-phase2-avatar-identity",
+      "files": [
+        "docs/POCKETPT_GODOT_WORLD_BRIDGE.md",
+        "docs/review-handoffs/godot-phase2-avatar-identity-handoff.md"
+      ],
+      "automated": null,
+      "evidence": "Readiness contract validation PASS. Before PR creation, fast-forwarded the implementation branch to main 35bd3c11979e7651f428dd46ed97a84b4fc760e9; incoming changes only affect public/trial.js and test/trial-retention-routing.test.js and do not overlap the tested Phase 2 implementation. Godot integration and human/device gates remain blocked as recorded.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-02T19:21:20.435Z"
     }
   ]
 }

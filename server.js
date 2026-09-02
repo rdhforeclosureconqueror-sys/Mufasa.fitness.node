@@ -1076,15 +1076,25 @@ function createApp(options = {}) {
     try { const pathname = new URL(String(modelUrl), "https://pocketpt.invalid").pathname; return pathname === `/uploads/avatars/${fileName}` || pathname === `/api/me/avatar/assets/${fileName.replace(/\.glb$/i, "")}`; }
     catch (_) { return false; }
   }
-  function requireOwnedAvatarAsset(req) {
-    const paths = avatarAssetPaths(req.params.assetId || req.params.fileName);
+  function requireOwnedAvatarAsset(userId, assetId) {
+    if (!userId) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
+    const paths = avatarAssetPaths(assetId);
     if (!fs.existsSync(paths.glb)) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
     let owned = false;
-    if (fs.existsSync(paths.metadata)) { try { owned = readJSON(paths.metadata)?.ownerUserId === req.auth.userId; } catch (_) { owned = false; } }
-    else { owned = profileOwnsLegacyAvatar(req.auth.userId, `${paths.id}.glb`); if (owned) writeJSON(paths.metadata, { assetId: paths.id, ownerUserId: req.auth.userId, migratedAt: new Date().toISOString() }); }
+    if (fs.existsSync(paths.metadata)) { try { owned = readJSON(paths.metadata)?.ownerUserId === userId; } catch (_) { owned = false; } }
+    else { owned = profileOwnsLegacyAvatar(userId, `${paths.id}.glb`); if (owned) writeJSON(paths.metadata, { assetId: paths.id, ownerUserId: userId, migratedAt: new Date().toISOString() }); }
     if (!owned) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
     return paths;
   }
+
+  // Share the canonical profile reader and ownership check with the arena.
+  // The bridge supplies its authenticated session member; no second avatar store
+  // or synthetic bearer credential is needed.
+  app.locals.pocketPTAvatarAssets = Object.freeze({
+    isEnabled: () => avatarFeatureEnabled,
+    getMemberAvatar: (userId) => userStore.loadUser(userId)?.profile?.avatar || null,
+    requireOwnedAsset: requireOwnedAvatarAsset
+  });
 
   function loadExerciseIndex() {
     if (!fs.existsSync(EX_INDEX_PATH)) return null;
@@ -3155,11 +3165,11 @@ function createApp(options = {}) {
 
   app.get("/api/me/avatar/assets/:assetId", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
-    const asset = requireOwnedAvatarAsset(req); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
+    const asset = requireOwnedAvatarAsset(req.auth.userId, req.params.assetId); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
   }));
   app.get("/uploads/avatars/:fileName", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
-    const asset = requireOwnedAvatarAsset(req); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
+    const asset = requireOwnedAvatarAsset(req.auth.userId, req.params.fileName); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
   }));
   // Keep the literal registration visible to the repository's authorization inventory;
   // the assertion below makes drift from the browser contract a boot-time failure.

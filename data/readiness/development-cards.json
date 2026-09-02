@@ -28,6 +28,20 @@
       "createdAt": "2026-09-01T14:28:21.303Z",
       "source": "readiness:update",
       "taskId": "motion-lab-lego-integration-603"
+    },
+    {
+      "id": "avatar-development-godot-phase2-avatar-identity",
+      "board": "avatar",
+      "canonical": false,
+      "title": "PocketPT to Godot Phase 2 avatar identity bridge",
+      "category": "WORLD BRIDGE",
+      "description": "Deliver the canonical member avatar through the existing arena session, with owner isolation, version handling, a missing-avatar fallback contract, and a Godot integration handoff. Godot runtime and physical iPhone acceptance remain separate required evidence.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-02T19:03:00.446Z",
+      "source": "readiness:update",
+      "taskId": "godot-phase2-avatar-identity"
     }
   ]
 }
