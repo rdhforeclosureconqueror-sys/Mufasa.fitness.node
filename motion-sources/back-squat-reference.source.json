@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "back-squat-user-reference-fbx",
+  "fileName": "Back Squat.fbx",
+  "sha256": "da6ddbfbd3c38060d9b4537b813fb387778517f2fdf40bf1214d20eb0dca4fe2",
+  "fileSizeBytes": 489696,
+  "fbxVersion": 7700,
+  "skeletonRoot": "mixamorig:Hips",
+  "binaryCommitted": false,
+  "licenseStatus": "unverified-reference-only",
+  "classification": {
+    "verdict": "KEEP_STUDY",
+    "primaryUse": "squat lower-body mechanics reference",
+    "secondaryUse": ["dual-foot grounded squat cycle", "hip-knee-ankle coordination", "pelvis descent", "posterior pelvis travel", "torso inclination"]
+  },
+  "animation": {
+    "stack": "mixamo.com",
+    "durationSeconds": 2.2666666667,
+    "rootKeyCount": 69,
+    "bottomTimeSeconds": 1.2666666667
+  },
+  "observedRanges": {
+    "hipsTranslationY": {"start": 93.3505783, "minimum": 38.4737625, "netBottomDrop": -54.8768158},
+    "hipsTranslationZ": {"start": 0.8002713, "bottom": -13.4202223, "netBottomPosteriorTravel": -14.2204936},
+    "hipsRotationX": {"start": 5.1994772, "bottom": 14.5593739, "bottomDelta": 9.3598967},
+    "leftUpLegRotationX": {"start": 10.7720823, "bottom": 119.7960739, "bottomDelta": 109.0239916},
+    "leftLegRotationX": {"start": -6.3224845, "bottom": -139.0258026, "bottomDelta": -132.7033181},
+    "leftFootRotationX": {"start": -2.1474850, "bottom": 32.9419060, "bottomDelta": 35.0893910},
+    "rightUpLegRotationX": {"start": 12.4278784, "bottom": 118.6638184, "bottomDelta": 106.2359400},
+    "rightLegRotationX": {"start": -6.2092919, "bottom": -136.9241486, "bottomDelta": -130.7148567},
+    "rightFootRotationX": {"start": -1.5957087, "bottom": 34.1202888, "bottomDelta": 35.7159975},
+    "spineRotationX": {"start": 4.9816632, "bottom": 19.8246536, "bottomDelta": 14.8429904}
+  },
+  "coarsePhases": [
+    {"id":"start","timeSeconds":0.0,"mechanics":"upright bilateral stance"},
+    {"id":"descent_mid","timeSeconds":0.6333333333,"mechanics":"hips descend/posterior; bilateral thigh, knee, and ankle flexion increases together"},
+    {"id":"bottom","timeSeconds":1.2666666667,"mechanics":"deep symmetric squat; hips are down about 54.9 source units and posterior about 14.2; thigh delta about +107 to +109 degrees; knee delta about -131 to -133 degrees; ankle delta about +35 degrees"},
+    {"id":"ascent_mid","timeSeconds":1.7666666667,"mechanics":"reverse toward standing with bilateral symmetry"},
+    {"id":"finish","timeSeconds":2.2666666667,"mechanics":"returns numerically to start pose"}
+  ],
+  "engineeringInterpretation": {
+    "use": "Use deltas and coordination relationships as reference mechanics. Do not copy source styling, arms, or unverified binary asset into production.",
+    "keyFinding": "The clip supplies a complete symmetric squat cycle with substantially larger thigh/knee/ankle flexion than synthesized v4 and a repeatable start-to-finish root trajectory.",
+    "contactBoundary": "Curve study does not by itself prove sole-ground contact in world space; PocketPT runtime contact constraints remain authoritative for planted-foot acceptance."
+  }
+}

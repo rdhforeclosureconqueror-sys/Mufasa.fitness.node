@@ -48,26 +48,30 @@
     hipPitch: 0, spinePitch: 0, spine1Pitch: 0,
     thighPitch: 0, thighOut: 2, kneeFlex: 0, anklePitch: 0, armPitch: 0
   });
+
+  // v5 lower-body values are derived from the uploaded Back Squat FBX by subtracting
+  // its standing-frame rotations from the corresponding descent/bottom rotations.
+  // The arms remain deliberately secondary until the lower body is owner-approved.
   const MID = Object.freeze({
-    hipPitch: 16, spinePitch: -7, spine1Pitch: -4,
-    thighPitch: 43, thighOut: 2, kneeFlex: -54, anklePitch: 16, armPitch: -18
+    hipPitch: 14, spinePitch: 2, spine1Pitch: 1,
+    thighPitch: 61, thighOut: 2, kneeFlex: -77, anklePitch: 30, armPitch: -18
   });
   const BOTTOM = Object.freeze({
-    hipPitch: 30, spinePitch: -13, spine1Pitch: -7,
-    thighPitch: 82, thighOut: 2, kneeFlex: -104, anklePitch: 28, armPitch: -32
+    hipPitch: 9, spinePitch: 15, spine1Pitch: 5,
+    thighPitch: 108, thighOut: 2, kneeFlex: -132, anklePitch: 35, armPitch: -32
   });
 
   const spec = Object.freeze({
     schemaVersion: 1,
     exerciseId: "bodyweight_squat",
-    motionId: "squat/synthesized_engineering_v4_hip_back_geometry_lock",
-    displayName: "Synthesized Bodyweight Squat Engineering Reference v4 — Hip-Back Geometry Lock",
-    version: 4,
+    motionId: "squat/synthesized_engineering_v5_back_squat_reference",
+    displayName: "Synthesized Bodyweight Squat Engineering Reference v5 — Back Squat Mechanics",
+    version: 5,
     status: "development-test-only",
     sourceManifest: "/motion-sources/squat-synthesis-v1.source.json",
     movementContractRef: "/motion/contracts/bodyweight-squat.v1.json",
     skeleton: Object.freeze({ id: "canonical_phase_e_mixamo", rootBone: "mixamorig:Hips", rotationSpace: "rest_relative_local" }),
-    durationSeconds: 3.2,
+    durationSeconds: 2.2666666667,
     loop: true,
     movementContract: Object.freeze({
       stance: "bilateral approximately shoulder-width",
@@ -75,46 +79,46 @@
       bottomKneeInsideAngleTargetDegrees: 90,
       bottomKneeInsideAngleToleranceDegrees: 8,
       descentIntent: "feet stay planted while pelvis descends and moves posteriorly like sitting into a chair",
-      ascentIntent: "pelvis rises and returns forward toward standing while hips and knees extend together",
-      kneeTrackingIntent: "canonical reference uses a configured forward-knee envelope while preserving foot direction, heel contact and ankle accommodation",
+      ascentIntent: "pelvis rises and returns toward standing while hips, knees, and ankles reverse the same coordinated chain",
+      kneeTrackingIntent: "knees track with the feet while depth comes from coordinated hip, knee, and ankle motion rather than knee translation alone",
       armsPriority: "secondary-after-lower-body-approval"
     }),
     referenceGeometryPolicy: Object.freeze({
-      mode: "side_projection_hip_back_envelope",
+      mode: "source-derived-back-squat-plus-runtime-grounding",
       source: "/motion/contracts/bodyweight-squat.v1.json",
-      requiredMeasuredChecks: Object.freeze(["posterior_pelvis_travel", "reference_knee_forward_envelope", "pelvis_posterior_to_knee"]),
-      rule: "Depth must be achieved by coordinated hip-back plus knee flexion rather than excessive forward knee translation."
+      mechanicsSource: "/motion-sources/back-squat-reference.source.json",
+      requiredMeasuredChecks: Object.freeze(["posterior_pelvis_travel", "reference_knee_forward_envelope", "pelvis_posterior_to_knee", "dual_foot_contact"]),
+      rule: "Use the extracted Back Squat hip/knee/ankle coordination as the primary lower-body shape while runtime grounding remains authoritative for foot contact."
     }),
     groundingPolicy: Object.freeze({
       mode: "dual-foot-planted-runtime-anchor-lock",
       contacts: Object.freeze(["left_foot", "right_foot"]),
       contactBones: Object.freeze({ left_foot: "mixamorig:LeftFoot", right_foot: "mixamorig:RightFoot" }),
       enforceContactAnchors: true,
-      sourceReference: "/motion-sources/kettlebell-swing-reference.source.json",
+      sourceReference: "/motion-sources/back-squat-reference.source.json",
       rule: "Both foot/ankle anchors remain fixed through descent, bottom, ascent and finish; no flight or takeoff is permitted.",
-      implementation: "The motion compiler converts avatar-height root offsets from world space into the rotated/scaled armature parent and then solves a root correction at each phase so the bilateral foot anchors remain at their standing world positions."
+      implementation: "The motion compiler converts avatar-height root offsets into the armature parent and applies per-phase root correction against the bilateral foot anchors."
     }),
     synthesisBoundary: Object.freeze({
-      method: "movement-lego-composition-with-hard-contact-and-reference-geometry-constraints",
+      method: "movement-lego-composition-rebased-on-extracted-back-squat-mechanics",
       copiedNamedSquatAnimation: false,
-      sourcePrimitives: Object.freeze(["standing", "dual_foot_ground_contact", "stable_stance", "hip_hinge", "posterior_pelvis_shift", "crouch", "bilateral_knee_flexion_extension", "root_descent_rise", "standing_reacquisition"]),
+      directBinaryPlayback: false,
+      sourcePrimitives: Object.freeze(["standing", "dual_foot_ground_contact", "stable_stance", "hip_hinge", "posterior_pelvis_shift", "crouch", "bilateral_knee_flexion_extension", "ankle_dorsiflexion", "root_descent_rise", "standing_reacquisition"]),
       evidenceReferences: Object.freeze([
-        "/motion/transition-profiles/stand-to-plank.v1.json",
-        "/motion-sources/crouched-sneaking-left-reference.source.json",
+        "/motion-sources/back-squat-reference.source.json",
         "/motion-sources/kettlebell-swing-reference.source.json",
-        "/motion-sources/jumping-up-reference.source.json",
-        "/motion-sources/hard-landing-reference.source.json"
+        "/motion/transition-profiles/stand-to-plank.v1.json"
       ]),
-      revisionReason: "Human side-view review of v3 showed adequate depth and improved grounding but a knee-dominant descent: the knees translated forward while the pelvis did not travel posteriorly enough. v4 preserves the 90-degree depth goal and foot lock while increasing posterior root travel, increasing hip contribution, and reducing ankle-driven forward-knee bias. Acceptance now requires measured side-projection geometry from the movement contract.",
-      values: "Engineering targets for the shipped Phase E reference skeleton. Exact visual acceptance still requires side-view human review; these are not universal human squat scoring thresholds.",
+      revisionReason: "Owner supplied a complete Back Squat FBX after v4 had been synthesized from partial evidence. v5 uses the source clip's measured standing-to-mid and standing-to-bottom lower-body deltas: approximately +61/+108 thigh flexion, -77/-132 knee rotation, +30/+35 ankle rotation, a deeper root descent, and a smaller source-derived posterior shift. This replaces repeated visual guesswork with a full squat-cycle mechanics reference while preserving PocketPT contact rules.",
+      values: "Engineering translation of one reference clip onto the shipped Phase E skeleton. Runtime and human visual acceptance remain required.",
       unsupported: Object.freeze(["biomechanical ground truth", "joint torque", "force", "medical guidance", "universal knees-behind-toes rule", "production scoring tolerances", "individual anthropometric fit"])
     }),
     phaseOrder: Object.freeze(["start", "descent", "bottom", "ascent", "finish"]),
     phases: Object.freeze([
       phase("start", "position", 0, [0, 0, 0], STAND),
-      phase("descent", "eccentric", 0.25, [0, -0.08, -0.065], MID),
-      phase("bottom", "isometric", 0.5, [0, -0.22, -0.14], BOTTOM, { holdDurationSeconds: 0.2 }),
-      phase("ascent", "concentric", 0.75, [0, -0.08, -0.065], MID),
+      phase("descent", "eccentric", 0.28, [0, -0.115, -0.050], MID),
+      phase("bottom", "isometric", 0.56, [0, -0.310, -0.080], BOTTOM, { holdDurationSeconds: 0.12 }),
+      phase("ascent", "concentric", 0.78, [0, -0.128, -0.054], MID),
       phase("finish", "completion", 1, [0, 0, 0], STAND)
     ])
   });
@@ -157,6 +161,7 @@
       contactAnchorsEnforced: Boolean(candidate.groundingPolicy?.enforceContactAnchors),
       referenceGeometryMode: candidate.referenceGeometryPolicy?.mode || null,
       movementContractRef: candidate.movementContractRef || null,
+      mechanicsSource: candidate.referenceGeometryPolicy?.mechanicsSource || null,
       evidenceOnly: true,
       requiresHumanMoveNetReview: true
     });
