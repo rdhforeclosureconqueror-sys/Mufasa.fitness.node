@@ -739,6 +739,66 @@
       "prNumber": 630,
       "commitSha": "4bd0eeebf248aa706f5118ecebaec6589a2c2c13",
       "timestamp": "2026-09-02T19:25:26.250Z"
+    },
+    {
+      "operationId": "d9c8f603-1f13-48e4-a968-dd5ccd6f410c",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Preparing PocketPT integration of the user-reported Godot export at source 4fbb43774a7cb93436eb17a162a78526a2f97509. Export bytes remain on the Windows computer; authenticated browser and device acceptance are pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-02T20:46:13.180Z"
+    },
+    {
+      "operationId": "94974774-7a5f-481a-ac91-ef33c798cc10",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Preparing PocketPT integration of the user-reported Godot export at source 4fbb43774a7cb93436eb17a162a78526a2f97509. Export bytes remain on the Windows computer; authenticated browser and device acceptance are pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-02T20:46:13.713Z"
+    },
+    {
+      "operationId": "74b1fbb4-5551-452a-9e52-bc012d7d9c23",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "export_package_review",
+      "taskId": null,
+      "files": [
+        "public/game/push-up-arena/index.html",
+        "public/game/push-up-arena/index.pck",
+        "public/game/push-up-arena/pocketpt-world-build.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Independently downloaded old and uploaded PCKs from Git. New SHA256 matches 17cfe23ae5b51cf338e0c910494911687441a4a3779671e4f79581be39f757be; 44356244 bytes matches HTML. All 94 embedded file lengths and MD5 checks pass. 51 existing resources identical, including Main scene, project.binary, player and gym scripts. 38 resources added, including avatar loader and city/world/transition resources; three PocketPT compiled scripts and two caches changed. Source/parser/runtime fixture results remain builder-reported; compiled scripts were not independently source-reviewed. Real authenticated avatar display, desktop visual, and physical iPhone testing remain pending. Loading-screen branding is unchanged.",
+      "prNumber": null,
+      "commitSha": "2de63518ded21175889f0249610ce13293d4d4b0",
+      "timestamp": "2026-09-02T21:04:24.391Z"
+    },
+    {
+      "operationId": "d610b723-75b7-4842-be91-1b4b50a1a215",
+      "board": "avatar",
+      "cardId": "avatar-development-godot-phase2-avatar-identity",
+      "sourceType": "pull_request",
+      "taskId": null,
+      "files": [
+        "public/game/push-up-arena/index.html",
+        "public/game/push-up-arena/index.pck",
+        "public/game/push-up-arena/pocketpt-world-build.json"
+      ],
+      "automated": null,
+      "evidence": "PR 631 publishes the verified Phase 2 Web export for authenticated testing. Package integrity and existing gym-resource preservation are verified. Merge/deployment and real-account desktop/iPhone visual acceptance remain pending; no complete Phase 2 acceptance is claimed.",
+      "prNumber": 631,
+      "commitSha": "54768a7fcbc9ebc39f5bc220c1bb73ff65211509",
+      "timestamp": "2026-09-02T21:06:06.040Z"
     }
   ]
 }
