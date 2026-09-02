@@ -91,23 +91,45 @@
       return restRootPosition.clone().add(new THREE.Vector3(offset[0] * scale, offset[1] * scale, offset[2] * scale));
     }
 
+    function applyAuthoredPhasePose(phase) {
+      const localRoot = worldOffsetToRootLocal(phase.root.positionOffset);
+      rootNode.position.copy(localRoot);
+      for (const name of targets) resolved.get(name).object.quaternion.copy(offsetQuaternion(name, requestedOffset(phase, name)));
+      avatar.updateMatrixWorld?.(true);
+      return localRoot;
+    }
+
+    function restoreRestPose() {
+      rootNode.position.copy(restRootPosition);
+      for (const name of targets) resolved.get(name).object.quaternion.copy(restQuaternions.get(name));
+      avatar.updateMatrixWorld?.(true);
+    }
+
     const enforceContacts = Boolean(spec.groundingPolicy?.enforceContactAnchors);
     const contactNames = Array.isArray(spec.groundingPolicy?.contacts) ? spec.groundingPolicy.contacts : [];
     const anchorWorld = new Map();
+    let anchorPhaseId = null;
     if (enforceContacts) {
+      const requestedAnchorPhaseId = spec.groundingPolicy?.anchorPhaseId;
+      const anchorPhase = requestedAnchorPhaseId ? spec.phases.find(phase => phase.id === requestedAnchorPhaseId) : null;
+      if (requestedAnchorPhaseId && !anchorPhase) {
+        return Object.freeze({ status: "failed", code: "motion_contact_anchor_phase_missing", diagnostics: Object.freeze({ anchorPhaseId: requestedAnchorPhaseId }) });
+      }
+      if (anchorPhase) {
+        applyAuthoredPhasePose(anchorPhase);
+        anchorPhaseId = anchorPhase.id;
+      }
       for (const contact of contactNames) {
         const boneName = contactBones[contact];
         if (boneName && resolved.has(boneName)) anchorWorld.set(contact, resolved.get(boneName).object.getWorldPosition(new THREE.Vector3()));
       }
+      if (anchorPhase) restoreRestPose();
     }
 
     const phaseRootPositions = [];
     const contactResiduals = [];
     for (const phase of spec.phases) {
-      let localRoot = worldOffsetToRootLocal(phase.root.positionOffset);
-      rootNode.position.copy(localRoot);
-      for (const name of targets) resolved.get(name).object.quaternion.copy(offsetQuaternion(name, requestedOffset(phase, name)));
-      avatar.updateMatrixWorld?.(true);
+      let localRoot = applyAuthoredPhasePose(phase);
 
       if (enforceContacts && phase.contacts?.length) {
         const corrections = [];
@@ -140,9 +162,7 @@
     }
 
     // Restore the authored rest pose before returning the clip; compilation must not mutate the loaded avatar.
-    rootNode.position.copy(restRootPosition);
-    for (const name of targets) resolved.get(name).object.quaternion.copy(restQuaternions.get(name));
-    avatar.updateMatrixWorld?.(true);
+    restoreRestPose();
 
     for (const requestedName of targets) {
       const node = resolved.get(requestedName).object;
@@ -173,6 +193,7 @@
         aliasBindingCount: aliasBindings.length,
         aliasBindings: Object.freeze(aliasBindings),
         contactLockApplied: enforceContacts,
+        contactAnchorPhaseId: anchorPhaseId,
         maxContactResidualWorldUnits: maxContactResidual,
         contactResiduals: Object.freeze(contactResiduals),
         trackCount: tracks.length
