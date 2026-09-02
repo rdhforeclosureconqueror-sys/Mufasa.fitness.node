@@ -3,6 +3,7 @@ const form=document.querySelector("#quoteForm"),status=document.querySelector("#
 const backend=()=>String(window.RuntimeState?.getBackendOrigin?.()||window.MAAT_BACKEND_ORIGIN||window.location.origin).replace(/\/$/,"");
 const token=()=>window.AuthStateRuntime?.getAuthToken?.()||window.AuthStateRuntime?.getCanonicalAuthState?.()?.token||null;
 const redirectToLogin=()=>location.replace("/login.html?returnTo="+encodeURIComponent("/private-sessions.html"));
+const serviceState=new Set();
 async function ensureSignedIn(){
   const runtime=window.AuthStateRuntime;
   const ready=runtime?.whenReady?await runtime.whenReady().catch(()=>null):null;
@@ -19,8 +20,16 @@ async function api(path,options={}){
   if(!r.ok)throw Error(b?.error?.message||b?.message||`HTTP ${r.status}`);return b.data||b;
 }
 function queueDashboardGuide(){try{sessionStorage.setItem("pocketpt.pendingTour.v1",JSON.stringify({id:"dashboard",expiresAt:Date.now()+30000}));}catch(_){}}
-function selectedServices(){return [...form.querySelectorAll('input[name="services"]')].filter(input=>input.checked).map(input=>input.value);}
-form.addEventListener("change",e=>{if(e.target.matches('input[name="services"]')&&selectedServices().length&&status.textContent.startsWith("Choose at least one"))status.textContent="";});
-form.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(form),services=selectedServices();if(!services.length){status.textContent="Choose at least one coaching service.";form.querySelector('input[name="services"]')?.focus();return;}const body={services,locationPreference:f.get("locationPreference"),sessionsPerWeek:Number(f.get("sessionsPerWeek")),paymentPreference:f.get("paymentPreference"),systemInterest:f.get("systemInterest"),budgetRange:f.get("budgetRange"),notes:f.get("notes")};status.textContent="Sending your request…";submit.disabled=true;try{await api("/api/me/private-coaching/quote",{method:"PUT",body:JSON.stringify(body)});status.textContent="Request sent ✓ Opening your PocketPT dashboard…";queueDashboardGuide();location.replace("/dashboard.html?source=private-sessions");}catch(err){submit.disabled=false;if(err.message!=="Sign in required")status.textContent=err.message;}});
+const serviceInputs=()=>[...form.querySelectorAll('input[name="services"]')];
+function syncServiceState(input){if(!input?.matches?.('input[name="services"]'))return;if(input.checked)serviceState.add(input.value);else serviceState.delete(input.value);}
+function selectedServices(){
+  const dom=serviceInputs().filter(input=>input.checked).map(input=>input.value);
+  const serialized=new FormData(form).getAll("services").map(String);
+  return [...new Set([...serviceState,...dom,...serialized])].filter(Boolean);
+}
+serviceInputs().forEach(syncServiceState);
+form.addEventListener("change",e=>{if(!e.target.matches('input[name="services"]'))return;syncServiceState(e.target);if(selectedServices().length&&status.textContent.startsWith("Choose at least one"))status.textContent="";});
+form.addEventListener("click",e=>{const input=e.target.closest?.('label.choice')?.querySelector?.('input[name="services"]')||e.target.closest?.('input[name="services"]');if(!input)return;setTimeout(()=>{syncServiceState(input);if(selectedServices().length&&status.textContent.startsWith("Choose at least one"))status.textContent="";},0);});
+form.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(form),services=selectedServices();if(!services.length){const domChecked=serviceInputs().filter(input=>input.checked).length,serialized=f.getAll("services").length;status.textContent=`Choose at least one coaching service. Debug: tracked ${serviceState.size}, checked ${domChecked}, serialized ${serialized}.`;form.querySelector('input[name="services"]')?.focus();return;}const body={services,locationPreference:f.get("locationPreference"),sessionsPerWeek:Number(f.get("sessionsPerWeek")),paymentPreference:f.get("paymentPreference"),systemInterest:f.get("systemInterest"),budgetRange:f.get("budgetRange"),notes:f.get("notes")};status.textContent="Sending your request…";submit.disabled=true;try{await api("/api/me/private-coaching/quote",{method:"PUT",body:JSON.stringify(body)});status.textContent="Request sent ✓ Opening your PocketPT dashboard…";queueDashboardGuide();location.replace("/dashboard.html?source=private-sessions");}catch(err){submit.disabled=false;if(err.message!=="Sign in required")status.textContent=err.message;}});
 ensureSignedIn();
 })();
