@@ -39,28 +39,31 @@
     });
   }
 
+  // V2 keeps the front-leg geometry that passed owner visual review and changes the rear chain.
+  // Start: rear leg is longer/straighter so the right toe can establish on the ground plane.
+  // Bottom: rear femur becomes more vertical while the rear knee flexes toward ~90°, driving the knee down instead of swinging the foot up.
   const SPLIT_START = Object.freeze({
     hipPitch: 2, spinePitch: -1, spine1Pitch: 0,
     leftThigh: 24, leftKnee: -16, leftAnkle: 7,
-    rightThigh: -22, rightKnee: -18, rightAnkle: -6
+    rightThigh: -30, rightKnee: -6, rightAnkle: -2
   });
   const MID = Object.freeze({
-    hipPitch: 5, spinePitch: -3, spine1Pitch: -1,
+    hipPitch: 4, spinePitch: -2, spine1Pitch: -1,
     leftThigh: 42, leftKnee: -50, leftAnkle: 13,
-    rightThigh: -31, rightKnee: -54, rightAnkle: -9
+    rightThigh: -18, rightKnee: -48, rightAnkle: -6
   });
   const BOTTOM = Object.freeze({
-    hipPitch: 7, spinePitch: -4, spine1Pitch: -2,
+    hipPitch: 6, spinePitch: -3, spine1Pitch: -1,
     leftThigh: 60, leftKnee: -82, leftAnkle: 18,
-    rightThigh: -42, rightKnee: -88, rightAnkle: -12
+    rightThigh: -8, rightKnee: -94, rightAnkle: -8
   });
 
   const spec = Object.freeze({
     schemaVersion: 1,
     exerciseId: "stationary_lunge_left",
-    motionId: "lunge/stationary_left_synthesized_engineering_v1",
-    displayName: "Synthesized Stationary Left Lunge Engineering Reference v1",
-    version: 1,
+    motionId: "lunge/stationary_left_synthesized_engineering_v2_rear_toe_grounded",
+    displayName: "Synthesized Stationary Left Lunge Engineering Reference v2 — Rear Toe Grounded",
+    version: 2,
     status: "development-test-only",
     sourceManifest: "/motion-sources/stationary-lunge-left-synthesis-v1.source.json",
     movementContractRef: "/motion/contracts/stationary-lunge-left.v1.json",
@@ -72,8 +75,9 @@
       startAndFinish: "same stable split stance",
       frontKneeBottomInsideAngleTargetDegrees: 90,
       rearKneeBottomInsideAngleTargetDegrees: 90,
-      descentIntent: "lower the pelvis mostly vertically between the front whole-foot and rear-forefoot supports",
-      rearKneeIntent: "rear knee approaches the floor without striking it",
+      descentIntent: "lower the pelvis mostly vertically between the front whole-foot and grounded right rear forefoot",
+      rearKneeIntent: "right rear knee travels down toward the floor while the right toe/ball of foot remains planted",
+      rearContactIntent: "right toe base stays on the floor; rear heel may rise",
       torsoIntent: "remain tall with only small balance lean",
       armsPriority: "secondary-after-lower-body-approval"
     }),
@@ -86,12 +90,17 @@
       }),
       enforceContactAnchors: true,
       anchorPhaseId: "start",
-      rule: "Capture contact anchors from the authored split-stance start pose, then preserve the front whole-foot and rear forefoot contacts through descent, bottom, ascent and finish."
+      anchorValidity: Object.freeze({
+        requiredGroundContacts: Object.freeze(["left_front_foot", "right_rear_forefoot"]),
+        rejectAirborneRearToe: true,
+        reviewRule: "Do not approve if the authored start pose establishes the right rear toe above the front-foot ground plane."
+      }),
+      rule: "Capture anchors from a valid split-stance start pose. Preserve the left whole foot and right toe/forefoot while the right rear knee descends toward the floor."
     }),
     synthesisBoundary: Object.freeze({
       method: "movement-lego-composition-with-split-stance-contact-constraints",
       copiedNamedLungeAnimation: false,
-      sourcePrimitives: Object.freeze(["split_stance", "asymmetric_leg_loading", "bilateral_knee_flexion_extension", "root_descent_rise", "stable_ground_contact"]),
+      sourcePrimitives: Object.freeze(["split_stance", "asymmetric_leg_loading", "bilateral_knee_flexion_extension", "rear_knee_descent", "root_descent_rise", "stable_ground_contact"]),
       evidenceReferences: Object.freeze([
         "/motion-sources/crouched-sneaking-left-reference.source.json",
         "/motion-sources/kettlebell-swing-reference.source.json",
@@ -103,9 +112,9 @@
     phaseOrder: Object.freeze(["start", "descent", "bottom", "ascent", "finish"]),
     phases: Object.freeze([
       phase("start", "position", 0, [0, 0, 0], SPLIT_START),
-      phase("descent", "eccentric", 0.25, [0, -0.08, 0], MID),
-      phase("bottom", "isometric", 0.5, [0, -0.18, 0], BOTTOM, { holdDurationSeconds: 0.2 }),
-      phase("ascent", "concentric", 0.75, [0, -0.08, 0], MID),
+      phase("descent", "eccentric", 0.25, [0, -0.09, 0], MID),
+      phase("bottom", "isometric", 0.5, [0, -0.22, 0], BOTTOM, { holdDurationSeconds: 0.25 }),
+      phase("ascent", "concentric", 0.75, [0, -0.09, 0], MID),
       phase("finish", "completion", 1, [0, 0, 0], SPLIT_START)
     ])
   });
@@ -118,6 +127,7 @@
     if (!(candidate.durationSeconds > 0)) errors.push("durationSeconds must be positive");
     if (!candidate.groundingPolicy?.enforceContactAnchors) errors.push("lunge requires contact-anchor enforcement");
     if (candidate.groundingPolicy?.anchorPhaseId !== "start") errors.push("lunge contact anchors must be established from authored split-stance start phase");
+    if (!candidate.groundingPolicy?.anchorValidity?.rejectAirborneRearToe) errors.push("lunge must reject an airborne rear-toe start anchor");
     const phases = Array.isArray(candidate.phases) ? candidate.phases : [];
     const ids = phases.map(item => item.id);
     if (JSON.stringify(ids) !== JSON.stringify(candidate.phaseOrder || [])) errors.push("phaseOrder must match phases");
@@ -136,6 +146,7 @@
     const bottom = candidate.phases.find(item => item.id === "bottom");
     return Object.freeze({
       motionId: candidate.motionId,
+      version: candidate.version,
       status: candidate.status,
       durationSeconds: candidate.durationSeconds,
       phaseOrder: Object.freeze(candidate.phaseOrder.slice()),
@@ -144,6 +155,7 @@
       rearKneeTargetDegrees: candidate.movementContract.rearKneeBottomInsideAngleTargetDegrees,
       groundingMode: candidate.groundingPolicy.mode,
       anchorPhaseId: candidate.groundingPolicy.anchorPhaseId,
+      rejectsAirborneRearToeAnchor: candidate.groundingPolicy.anchorValidity.rejectAirborneRearToe,
       evidenceOnly: true,
       requiresHumanMoveNetReview: true
     });
