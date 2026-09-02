@@ -15,6 +15,34 @@ test('dashboard trainer navigation injects an admin-only Movement Capture Studio
   assert.match(source, /developmentLaunchCard/);
 });
 
+test('dashboard keeps stable admin diagnostic launch surfaces even if downstream dashboard runtime fails', () => {
+  const source = read('public/trainer-navigation.js');
+  assert.match(source, /firstFailureDebugDashboardLink/);
+  assert.match(source, /\/admin-first-failure\.html/);
+  assert.match(source, /runClubDiagnosticsDashboardLink/);
+  assert.match(source, /\/admin-run-club-diagnostics\.html/);
+  assert.match(source, /motionLabDashboardLink/);
+  assert.match(source, /\/dev\/motion-lab/);
+  assert.match(source, /clientManagementDashboardLink/);
+  assert.match(source, /\/admin-members\.html/);
+  assert.match(source, /runClubDiagnosticsNav\.hidden = false/);
+  assert.match(source, /motionLabNav\.hidden = false/);
+  assert.match(source, /clientManagementCard\.hidden = false/);
+});
+
+test('canonical dashboard still contains the full launch health console and diagnostic controls', () => {
+  const html = read('public/dashboard.html');
+  assert.match(html, /Launch Health Console \(Admin\)/);
+  assert.match(html, /id="runDiagnosticBtn"/);
+  assert.match(html, /id="runExternalChecksBtn"/);
+  assert.match(html, /id="exportDiagnosticBtn"/);
+  assert.match(html, /id="copyRepairSummaryBtn"/);
+  assert.match(html, /id="refreshDiagnosticBtn"/);
+  assert.match(html, /id="runClubDiagnosticsNav"/);
+  assert.match(html, /id="motionLabNav"/);
+  assert.match(html, /id="launchHealthSections"/);
+});
+
 test('movement capture focus mode reveals the existing builder without creating a second camera', () => {
   const source = read('public/boot-core.js');
   assert.match(source, /movementCaptureStudio/);
