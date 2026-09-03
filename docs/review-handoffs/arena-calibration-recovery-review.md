@@ -4,6 +4,9 @@
 
 New review branch: `review/arena-calibration-recovery-20260903`.
 Audited main/base: `bb2a762e9b29a082cea8b1706c5422d588187c4c` (merged PR #633).
+Draft PR: https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/634
+Published implementation: `eb76ef786f03b132bc4dd3f9ba9b1fc055bc81bf`.
+Tested/published implementation tree: `2ba3c315b85f37da50743bb8e686ebd26826c4c0`.
 This is a follow-up repair, not an amendment to that merged PR. The draft PR and
 readiness evidence identify the implementation commit and current review head.
 Do not merge or deploy until independent review and the owner's applicable
