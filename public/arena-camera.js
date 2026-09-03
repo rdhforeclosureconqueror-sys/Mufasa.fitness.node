@@ -106,7 +106,7 @@
           if (!live()) return;
           const bodyVisible = visible(frame, confidence);
           onVisibility(bodyVisible);
-          onPose(bodyVisible ? frame : null, confidence);
+          onPose(bodyVisible ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight} : null, confidence);
           root.clearTimeout(op.staleTimer);
           op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, confidence);}}, 1500);
         }});
