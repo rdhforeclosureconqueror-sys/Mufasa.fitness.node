@@ -1,152 +1,112 @@
-# Independent review — Push-Up Arena diagnostics
+# Independent review — Arena diagnostics and phone setup
 
 Repository: `rdhforeclosureconqueror-sys/Mufasa.fitness.node`
 
 Branch: `review/arena-first-failure-diagnostics-20260903`
 
-Draft PR: [#633 — Add first-failure diagnostics to Push-Up Arena](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/633)
+Draft PR: [#633](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/633)
 
-Original implementation: `62d5811e3fcc8330f2922536a394fa3cb040efcf`. Independent review examined head `04785dfefd6136ae932fcfa4b7bb504c6ba8d040`. The tested keyboard repair is `4bc9b0f8951529d842bc6c966a11c36000739da9`; its following handoff/readiness commit records the repair evidence. Review the actual current PR head as well.
+Main/base verified: `743c9ac4490264dbea95176a97c716a95ed28efa`.
 
-Implementation started from main `2e09f66101c6c77b5485cc4696a739a8a01872de`. The final review branch is based on main `743c9ac4490264dbea95176a97c716a95ed28efa`, which includes the planning handoff from PR #632. Record and review the actual draft PR head, not a remembered commit. Do not merge during this independent review. Report findings to the owner, who will do the visual acceptance check.
+Previous keyboard repair: `4bc9b0f8951529d842bc6c966a11c36000739da9`, followed by evidence head `d56fd119e33fc19a066da2175b6ccd74aadce199`.
 
-## Keyboard repair for re-review
+Tested phone implementation: `ee1384420493011b114a72728a450bd99269b018`. Review the actual current PR head as well as that implementation; a later handoff/readiness commit records its evidence. The owner explicitly approved expanding the same draft PR to include the phone flow. Earlier independent findings apply only to the previously reviewed scope. Re-review the expanded change before owner acceptance. Do not merge or deploy.
 
-The independent review requested changes because opening the board left focus on its toggle, outside the board's Escape listener. The replacement keyboard regression failed on that reviewed code with **Opening must move focus to Close** before the repair was applied.
+## What the owner can expect
 
-The runtime repair adds two lines in `setOpen()`: detect a hidden-to-visible transition, then focus **Close** after showing the board. Escape and Close retain the existing return to the toggle. Repeated requests to show an already open board preserve the current focus, including the manual-copy textarea.
+The existing bridge debug panel becomes Arena Diagnostics, with observed first failure, blocked/unconnected dependencies, ownership and safe next actions. Opening focuses Close; Escape restores focus to its toggle. Repeated updates preserve manual-copy focus.
 
-This follow-up changes only `public/arena-diagnostics.js`, `test/arena-diagnostics.test.js`, this handoff and `data/readiness/development-evidence.json`. The full PR still contains the same nine files. Please recheck:
+The arena now has phone entry and guided camera setup. A compatible Godot build can negotiate thumb controls, Go to mat, caption briefing and down/stand acknowledgements. The current deployed export only sends legacy READY: it does not yet implement touch controls or the optional diagnostic sender. It remains usable for its existing avatar/keyboard behavior. Touch stays unavailable; Check my camera is usable independently.
 
-1. Focus the **Arena Diagnostics** toggle with the keyboard. Activate it with Enter. Focus must move to **Close** without another Tab press.
-2. Immediately press Escape. The board must hide, `aria-expanded` must become false and focus must return to the toggle. Reopen it and activate Close with Enter; the same recovery must work.
-3. While Copy Debug Report or its denied-clipboard fallback has focus, another `setOpen(true)` or diagnostic render must preserve that focus. Escape from the textarea must also close the board and return to the toggle.
-4. Inspect the regression fixture: it tracks one `document.activeElement`, respects hidden ancestors and bubbles key events from that element. It must not call the board's Escape callback directly to simulate a keyboard user.
-5. Independently rerun the six-file suite below, readiness validation and the whitespace check. The implementer's updated result is **57 passing tests**, with no failures or skips. The prior independent reviewer could not reproduce the earlier 55-test run because their environment could not resolve GitHub; this repair does not replace that missing independent execution evidence.
+Camera access is explicit. The canonical CameraController, MoveNet runtime and PoseCaptureEngine provide the camera check. Visibility reports fresh required joints, not an accepted push-up posture. Full start-position/rep rules remain draft/unconnected, so this implementation cannot start a countdown, count challenge reps, save a score or update a leaderboard. Coach audio and the actual coach avatar are not implemented here; the briefing is captioned.
 
-These focus tests use a controlled DOM fixture, not a live browser. Independent re-review, owner visual acceptance and physical-iPhone acceptance remain pending. The Godot sender, walking and challenge work remain outside this repair.
+The approved gym, generated Godot export, avatar import pipeline, server/auth implementation, exercise definitions and result stores remain unchanged. Read the [Godot/phone integration handoff](arena-phone-flow-godot-handoff.md) for the exact receiver contract, current state machine and remaining work.
 
-## What changed and what to expect
-
-The existing **Bridge Debug** panel on `/arena/push-up` becomes **Arena Diagnostics**. It reports the first observed failing dependency, the next unverified check, each check's owner and the next diagnostic action. Connection success does not imply animation, body tracking, rep recognition, saving or ghost success.
-
-The current Godot export sends the existing v1 READY handshake. It does **not yet send the new optional diagnostic messages**. Therefore, successful sign-in and launch can be green while **Game diagnostic reporting** is **NOT CONNECTED** and its dependent avatar checks are **BLOCKED**. This does not mean the owner's working avatar failed to load. Its existing in-game Phase 2 panel remains the current evidence until a sender is added to the editable Godot project.
-
-There are separate checks for personal-avatar descriptor, download, import, mount, default fallback, idle animation and walking. A default avatar never becomes a personal-avatar PASS. A moving character never becomes a walking-animation PASS. No camera, rep counter, timer, voice call, result write or leaderboard request starts merely by opening diagnostics.
-
-The existing gym, generated Godot export, avatar pipeline, server routes and authentication implementation are preserved. This change does not implement walking or the challenge. It supplies the observation layer for that work.
-
-## Files to inspect
+## Changed-file scope
 
 | File | Review focus |
 | --- | --- |
-| `public/arena-push-up.html` | Same arena/frame/exit; existing panel expanded, responsive layout, accessible controls and versioned script references. |
-| `public/arena-push-up.js` | Existing config → ticket exchange → bootstrap → build → game flow; safe diagnostics; message validation; timeouts; exit and page lifecycle. |
-| `public/arena-diagnostics.js` | Dependency model, truthful states, fixed safe messages, runtime reporter allowlist, report copying and rendering. |
-| `test/arena-diagnostics.test.js` | Behavioral model, actual launcher in controlled browser/HTTP fixtures, clipboard and keyboard handling. |
-| `test/world-bridge-pocketpt-finish.test.js` | Existing bridge checks updated for scripts extracted from the HTML. |
-| `scripts/preview-arena-diagnostics.js` | Standalone local preview using synthetic data only. Not imported by either production server. |
-| `data/readiness/development-cards.json` | New development card `avatar-development-arena-first-failure-diagnostics` on the `avatar` board. |
-| `data/readiness/development-evidence.json` | Correlated machine evidence from the canonical CLI; no human approval claim. |
-| This handoff | Review instructions, proof limits and remaining integration. |
+| `public/arena-push-up.html` | Existing frame/exit plus phone controls, camera preview, responsive layout, explicit scripts and accessible labels. |
+| `public/arena-push-up.js` | Canonical config/ticket/bootstrap/build flow; source/origin isolation; phone lifecycle and expiry/exit cleanup. |
+| `public/arena-diagnostics.js` | Dependency model, allowlists, truthful states, safe copying, focus/Escape, new camera/control boundaries. |
+| `public/arena-phone-flow.js` | Capability negotiation, input contexts, movement leases, command correlation, setup/return/suspension; no competitive counting. |
+| `public/arena-camera.js` | Canonical camera/capture reuse; permission cancellation, late grants, one detector, required-joint visibility and cleanup. |
+| `public/arena-phone-ui.js` | Thumb pointer handling, touch/keyboard recovery controls, camera opt-in, frame interaction lock and local camera selector. |
+| `test/arena-diagnostics.test.js` | Diagnostics/launcher coverage, real focus-path fixture, iframe isolation and phone lifecycle integration. |
+| `test/arena-phone-flow.test.js` | Scoped protocol, contexts, stale acknowledgements, leases, no start/counting from visibility. |
+| `test/arena-camera.test.js` | Real canonical CameraController with controlled devices, late permission/model completion, switching and disposal. |
+| `test/arena-phone-ui.test.js` | Actual UI bindings in a controlled DOM fixture, pointer cancellation, focus, camera opt-in and preview HTTP assets. |
+| `test/world-bridge-pocketpt-finish.test.js` | Existing bridge assertions updated for scripts extracted from HTML. |
+| `scripts/preview-arena-diagnostics.js` | Isolated synthetic preview. Never imported by a production server; substitutes a camera double only in this local server. |
+| `data/readiness/development-cards.json` | Existing PR's diagnostics development-card definition. Canonical requirements remain unchanged. |
+| `data/readiness/development-evidence.json` | Canonical CLI evidence for diagnostics and V1 phone work, without human approval. |
+| `docs/review-handoffs/pushup-arena-v1-reconnaissance.md` | Historical reconnaissance with explicit phone-first sequence supersession. |
+| `docs/review-handoffs/arena-phone-flow-godot-handoff.md` | Exact remaining Godot integration and exercise/competition limits. |
+| This handoff | Review procedure, proof limits and owner preview. |
 
-No `public/game/push-up-arena/*`, Godot scenes, animation clips, skeletons, `server.js`, auth services, exercise definitions, result stores or production deployment configuration should change in this PR. No generated `data/ops/` files should be committed.
+Expected full PR scope: seventeen files. No `public/game/push-up-arena/*`, generated `data/ops/`, Godot scenes/animations, server/auth services, exercise rules, scores or deployment configuration may change.
 
-## Required review checks
+## Required independent checks
 
-1. **Check the base and scope.** Verify the current main and draft head. Confirm the changed-file list above and that PR #632's planning content remains present. Confirm no changes to the working export or approved gym.
-2. **Preserve launch and identity.** The existing server-owned return URL, one-use fragment ticket, cookie-scoped bootstrap and fixed `PUSH_UP_ARENA / push_up` context remain authoritative. The panel does not read a bearer token or create another auth mechanism. Failed ticket exchange also removes the fragment.
-3. **Check first failure, not a cascade.** A bootstrap 401 is the first failure; dependent identity, build, handshake and runtime checks become blocked. A specifically reported import failure is visible even if other runtime evidence has not arrived. Starting a retry clears old dependent successes so a fresh download cannot revive an old mount PASS.
-4. **Check evidence limits.** READY proves the game connection. The build probe proves the server found an entry, not that its WASM/PCK rendered. A valid descriptor proves availability, not import. No evidence means NOT CONNECTED or BLOCKED, never PASS. Personal-avatar and fallback statuses remain distinct.
-5. **Check message isolation.** Accept only the exact game iframe's `contentWindow`, exact current origin, `POCKETPT_GODOT_BRIDGE` and numeric protocol v1. A second same-origin window cannot set the panel green. Runtime diagnostics also require the current random request ID, diagnostic version 1 and a strictly increasing safe-integer sequence. Reject old generations, duplicates, invalid statuses and unowned stages.
-6. **Check ownership.** Godot may report only its allowed visual/world checks. It cannot mark identity, camera, body visibility, rep validation, timer, leaderboard or persistence PASS. These still need instrumentation in their canonical PocketPT owners.
-7. **Check lifecycle.** READY arriving before iframe `load` remains PASS. A replacement iframe document resets game evidence and uses a new request ID. Session expiry blocks dependent checks and late reports. Browser back-cache restoration marks bootstrap stale and asks for reload. Exit cancels pending startup work, revokes the existing session and returns to the canonical PocketPT URL.
-8. **Check bounded behavior.** JSON requests time out after 20 seconds; game frame/READY waits after 120 seconds. A genuine late READY may recover. Exit revocation is bounded at 5 seconds. There is no polling loop or second avatar download. Expiry is a local check against the bootstrap timestamp, not a claim of continuous server validation or a new auth authority.
-9. **Check privacy and copying.** Retain only fixed diagnostic messages, stage/status IDs and observation times. Do not include raw HTTP errors, arbitrary game messages, URLs with fragments/queries, identity values, session IDs, cookies, tokens, video, landmarks or health data. Clipboard failure must show a selectable report and must not say it copied successfully.
-10. **Check the UI on devices.** Exercise toggle focus → Enter → Close focus → immediate Escape → hidden board and toggle focus. Also test Enter on Close, Escape from the manual-copy textarea, and focus preservation when an already open board receives diagnostic updates. Check scrolling, readable status words, Copy Debug Report, Reload Arena and Exit Arena. Confirm the overlay does not prevent exiting or recovering the normal game view. Human visual and physical-iPhone acceptance remain open.
+1. **Base and scope:** fetch current main/head, inspect all seventeen files and preserve the merged PR #632 planning material. Verify the current head descends from the tested implementation.
+2. **Launch/auth:** preserve one-use fragment ticket clearing, same-origin cookie requests, canonical return destination and fixed PUSH_UP_ARENA/push_up context. No bearer tokens copied into the arena.
+3. **First failure:** bootstrap failure blocks dependents; actual import/video/model failure names its boundary. READY does not imply avatar/animation/challenge success. Retry, expiry and frame replacement clear stale successes. A camera grant does not prove playable video or inference.
+4. **Evidence:** no sender means unconnected, no capability means disabled touch, and BODY_VISIBLE cannot imply valid posture/countdown/reps. Fallback never becomes personal-avatar success. Caption briefing never becomes voice PASS.
+5. **Message isolation:** exact current iframe/source/origin and numeric protocol v1. Diagnostic and phone flow request IDs and counters are independent. Check invalid versions, sequences, old generations and replies to cancelled/replaced commands. Godot cannot turn PocketPT camera, identity, readiness, timer or score rows green.
+6. **Controls:** pointer up/cancel/lost capture, blur, rotation, hide, reset and exit stop held movement. Leases are 300 ms, refreshed at ten Hz. Keyboard activation of a thumb button is a bounded nudge. Camera setup disallows navigation; return from an attempted lowering requires a matching standing acknowledgement. Read the receiver's required context lock; HTML inert alone is not controller proof.
+7. **Camera:** no getUserMedia/model download on launch. Use the existing controller/capture/runtime. Check denied and unanswered permission, late grants after cancel, model completion after exit, camera switching, track end, stale frames, orientation and hide. Only one detector per session; no second inference owner, recorder, profile store or body-data bridge.
+8. **Bounded behavior:** preserve existing HTTP/frame/READY/exit limits. Phone capability wait is three seconds, command acknowledgement twenty seconds and camera/model startup thirty seconds. Late valid capability replies cannot interrupt camera setup. Missing standing acknowledgement leaves movement locked. No polling/retry loop or second avatar download.
+9. **Privacy:** fixed safe diagnostic strings only; no raw browser/device errors, device IDs, member/session identifiers, tokens, video, landmarks or health data in copied reports. Camera IDs are confined to the local selector. Clipboard denial exposes manual copying without claiming success.
+10. **Keyboard/device UX:** focused toggle → Enter → Close focus → immediate Escape → hidden board and toggle focus. Test camera/return/stop controls, pointer release outside the button, scrolling, small portrait/landscape layouts and diagnostics access. Required controls must remain reachable. Real browser and physical-iPhone acceptance are still open.
+11. **Production/fixture separation:** the production page loads the real `arena-camera.js`. Only the isolated preview server supplies the camera double and synthetic APIs. No query parameter enables simulated evidence in production. A synthetic green panel is not production acceptance.
 
 ## Automated validation
 
-From the review branch, install the locked dependencies and run:
+The implementer's current result is **120 passing tests**, zero failures/skips, using:
 
 ```powershell
 npm ci --ignore-scripts --no-audit --no-fund
-node --test --test-reporter=spec test/arena-diagnostics.test.js test/world-bridge-pocketpt-finish.test.js test/world-bridge-production-entry.test.js test/world-bridge-mobile-auth.test.js test/world-bridge.test.js test/world-avatar-bridge.test.js
+node --test --test-reporter=spec test/arena-phone-flow.test.js test/arena-camera.test.js test/arena-phone-ui.test.js test/arena-diagnostics.test.js test/world-bridge-pocketpt-finish.test.js test/world-bridge-production-entry.test.js test/world-bridge-mobile-auth.test.js test/world-bridge.test.js test/world-avatar-bridge.test.js test/push-up-challenge-mvp.test.js test/push-up-tracking-continuity.test.js
 npm run readiness:validate -- --base 743c9ac4490264dbea95176a97c716a95ed28efa
 git diff --check 743c9ac4490264dbea95176a97c716a95ed28efa
 ```
 
-The implementer's targeted suite passed **57 tests** after the keyboard repair. Coverage includes dependency ordering and recovery, no invented passes, descriptor/fallback distinctions, source/origin/version validation, request generation and sequence rejection, stage ownership, safe reports, clipboard denial, the focused-toggle opening/Escape path, Close activation, focus preservation during updates, the actual shell's ticket ordering and scoped fetches, early READY, failed/malformed/stalled requests, bounded waits, expiry, back-cache restoration, iframe replacement and exit. The existing bridge/avatar server regression checks remain part of the command. Readiness validation and the whitespace check also pass. These are technical tests, not an independent test rerun or human visual approval.
+The earlier focused keyboard regression failed before its repair. Its realistic focus/bubbling coverage remains in this suite. The previous independent reviewer could not rerun the earlier 55-test suite due to GitHub DNS failure; the 120-pass result above is implementation evidence, not their independent execution.
 
-Browser preview was attempted through the provided browser tool. The environment rejected the local preview URL with `net::ERR_BLOCKED_BY_CLIENT`; no live-browser layout, real authenticated Godot run or physical-iPhone acceptance is claimed. Run the preview and deployed checks below independently.
+No new live-browser, authenticated Godot, real camera/movement, visual or physical-iPhone acceptance is claimed. The cloud browser rejected the preview with `net::ERR_BLOCKED_BY_CLIENT`. HTTP preview asset and JavaScript checks pass but do not establish rendered layout quality. The owner and reviewer must perform the checks below.
 
-## Local visual preview in PowerShell
+## Local visual preview from PowerShell
 
-In a checkout of this review branch, run:
+In a checkout of this branch:
 
 ```powershell
 node scripts/preview-arena-diagnostics.js
 ```
 
-Open the printed local address, normally `http://127.0.0.1:8769/`. The preview needs Node but no npm dependencies. It serves the actual panel files with **synthetic** API responses and a clearly labelled simulated game frame. It does not open the real gym, use real accounts, fetch avatars or save scores. Stop it with Ctrl+C.
+Open its printed local URL. Stop with Ctrl+C. No real account, avatar, camera, model or score is used. A prominent SYNTHETIC PREVIEW banner stays visible.
 
-| Case | Expected result |
+| Case | Expected behavior |
 | --- | --- |
-| `legacy` | Connection and descriptor checks succeed. Game reporting stays NOT CONNECTED; future checks do not become green. |
-| `avatar-failure` | Download reports PASS, import reports FAIL, mount is BLOCKED. Import is the first failure. |
-| `avatar-pass` | Separately reported download/import/mount pass. Walking and body/challenge checks remain unverified. |
-| `unauthorized` | Bootstrap 401 is the first failure; no game frame launches. |
-| `fallback` | Personal descriptor/download/import/mount are explicitly skipped for the fallback; the separately reported default display can pass. |
-| `clipboard-denied` | Clicking Copy Debug Report exposes the selectable report instead of claiming success. |
-| `390px narrow layout` | Panel and actions fit the narrow iframe and remain scrollable. This is layout coverage, not an iPhone/Safari emulator. |
+| `legacy` | READY succeeds, touch/diagnostic sender remain unavailable; Check my camera uses the simulated camera only. |
+| `phone-flow` | Go to mat → simulated arrival → caption briefing → Set up my camera → Enable camera → simulated body visibility. No countdown. Return waits for simulated standing. Thumb controls send commands. |
+| `phone-timeout` | Capabilities arrive; mat command never acknowledges. After twenty seconds, report command failure and allow another attempt. |
+| `phone-camera-denied` | Mat/briefing/setup work; Enable camera reports a synthetic permission failure. Retry and Return remain available. |
+| `avatar-failure` | Download PASS, import FAIL, mount BLOCKED; first failure is import. |
+| `avatar-pass` | Separately reported import/mount pass; no inferred walking/body/challenge success. |
+| `unauthorized` | Bootstrap fails; no gym launches. |
+| `fallback` | Default and personal-avatar evidence remain distinct. |
+| `clipboard-denied` | Copy exposes a selectable report, not false success. |
+| `390px narrow layout` | Inspect scrolling and controls. This is not an iPhone emulator. |
 
-## Deployed owner visual check
+## Owner/device acceptance after review and deployment decision
 
-After independent review and the owner's merge/deployment decision:
+1. Launch normally from signed-in PocketPT. Confirm the same personal avatar, approved gym and existing keyboard movement.
+2. On the current export, expect touch movement and the new Godot diagnostic reporter to be unavailable. Their missing reports do not prove the avatar failed.
+3. Tap Check my camera, then Enable camera. Only now should permission/model initialization begin. Test permission denial/retry, front/back selection where offered, rotation and app backgrounding. The camera must stop on Return/Exit and not restart automatically.
+4. Check framing guidance and BODY_VISIBLE with current joints. It must not start a countdown, score movement or label the person ready for a technically valid push-up.
+5. Inspect diagnostics, copying, Escape and recovery controls on desktop and a physical iPhone. Record human acceptance through the authorized readiness UI/API.
+6. After the Godot receiver/animations are reviewed and exported, repeat with Go to mat and in-world mat taps, correct walking/idle, real arrival/down/stand acknowledgements and keyboard locking during setup. That is separate evidence from this receiver-only PocketPT implementation.
 
-1. Sign in to PocketPT and enter Push-Up Arena through the usual link.
-2. Confirm the same member avatar, approved gym and existing arrow movement still appear.
-3. Open **Arena Diagnostics**. Confirm the panel version says `arena-diagnostics-v1`. Connection and descriptor checks should reflect this launch.
-4. With the existing Godot export, expect game diagnostic reporting to be NOT CONNECTED. Compare actual avatar import/mount evidence with the existing in-game Phase 2 panel. Do not interpret missing reporting as an avatar-load failure.
-5. Confirm there is no new camera prompt or challenge start. On desktop, focus the diagnostics toggle, press Enter and immediately press Escape; confirm the panel closes and focus returns to the toggle. Open, close, copy, reload and exit. Repeat the applicable controls on a physical iPhone. Record visual findings separately from automated test results.
+## Required response
 
-## Optional Godot diagnostic sender — next integration
-
-The receiver is ready, but the sender is not implemented in this PR. Add it only to the actual `C:\Users\pftgu\Documents\avlobytest` project after the source is available for review. Reuse its existing avatar loader and bridge; do not rebuild the import pipeline or hand-edit the exported PCK.
-
-The existing v1 READY message remains unchanged. Once received, the parent sends this additive request to the exact iframe origin:
-
-```json
-{
-  "type": "POCKETPT_GODOT_BRIDGE",
-  "event": "DIAGNOSTICS_REQUEST",
-  "protocolVersion": 1,
-  "diagnosticVersion": 1,
-  "requestId": "opaque-per-launch-correlation-id"
-}
-```
-
-The Godot-side sender must check the parent window and origin, retain the request ID, and report current observed states through the existing browser bridge:
-
-```json
-{
-  "type": "POCKETPT_GODOT_BRIDGE",
-  "event": "DIAGNOSTIC",
-  "protocolVersion": 1,
-  "diagnosticVersion": 1,
-  "requestId": "opaque-per-launch-correlation-id",
-  "sequence": 1,
-  "stage": "AVATAR_DOWNLOAD",
-  "status": "PASS"
-}
-```
-
-Allowed Godot stages are `AVATAR_DOWNLOAD`, `AVATAR_IMPORT`, `AVATAR_MOUNT`, `AVATAR_FALLBACK`, `ANIMATION_IDLE`, `LOCOMOTION`, `CHALLENGE_STATE`, and `GHOST_PLAYBACK`. Normal statuses are PASS, FAIL, RUNNING, WAITING or NOT_CONNECTED. SKIP is accepted only for optional fallback/ghost checks. When bootstrap selects a default fallback, personal download/import/mount PASS reports are rejected.
-
-Do not include member identifiers, GLB URLs, camera data or arbitrary error text. The receiver ignores such extra fields. Request IDs correlate evidence; they are not authentication credentials. Restart the sequence for a **new** request ID, preserve it for a duplicate request, and stop reporting on exit. Report RUNNING at the start of a new avatar attempt so dependent successes are invalidated before retry/replacement. Technical animation PASS means the runtime connected playback; the owner still judges whether it walks naturally.
-
-PocketPT's camera, control-channel acknowledgement, rep engine, timer, persistence, leaderboard, cadence loading and voice will get their own instrumentation as those phases are implemented. Do not load another detector or issue speculative challenge writes just to turn a diagnostic row green.
-
-## Required independent review response
-
-Return: reviewed base/head SHA; changed-file scope; PASS/FAIL/BLOCKED per review item; exact tests and results; the first defect found, with its file; visual/device evidence actually observed; remaining Godot sender work; and whether the panel is ready for the owner's visual test. Keep walking/challenge implementation and human approval separate. Do not merge, deploy, self-approve human readiness, or imply that simulated preview evidence proves the production avatar works.
+Return reviewed base/head SHA, scope, PASS/FAIL/BLOCKED for each item, commands/results independently obtained, first defect with file, actual browser/device evidence, Godot work still outstanding and whether this expanded PR is ready for the owner's visual test. Keep full challenge completion and human approval separate. Do not merge, deploy or self-approve human readiness.

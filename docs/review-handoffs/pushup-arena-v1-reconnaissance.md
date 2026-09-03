@@ -2,6 +2,8 @@
 
 Date: 2026-09-03. Status: architecture proposal for independent review, before runtime implementation. No merge or deployment is authorized by this document.
 
+Update: the owner subsequently approved touch-first phone entry, camera setup and held start posture as the ready signal. See [the phone/Godot handoff](arena-phone-flow-godot-handoff.md) for the superseding entry sequence and current implementation limits. The standing-gesture-first sequence below is historical; its ownership and unresolved exercise/scoring findings remain relevant.
+
 The member's saved avatar now appears in the existing gym. The owner reports passing bridge/avatar panels and working arrow movement, with the avatar gliding in its rest pose. The next visible deliverable is **that same avatar walking, stopping, and returning to idle in that same gym**. Body gestures will feed the same movement controller. PocketPT will recognize exercise; Godot will animate and present the competition.
 
 This handoff covers the fourteen requested reconnaissance outputs. Existing behavior, proposed behavior, and unavailable evidence are distinguished below. The city intro, other gyms, other games, multiplayer, and skeletal mirroring are outside this implementation.
