@@ -6,9 +6,25 @@ Branch: `review/arena-first-failure-diagnostics-20260903`
 
 Draft PR: [#633 — Add first-failure diagnostics to Push-Up Arena](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/633)
 
-Implementation reference: `62d5811e3fcc8330f2922536a394fa3cb040efcf`. Later handoff/readiness correlation commits do not change the tested runtime files. Review the actual current PR head as well.
+Original implementation: `62d5811e3fcc8330f2922536a394fa3cb040efcf`. Independent review examined head `04785dfefd6136ae932fcfa4b7bb504c6ba8d040`. The tested keyboard repair is `4bc9b0f8951529d842bc6c966a11c36000739da9`; its following handoff/readiness commit records the repair evidence. Review the actual current PR head as well.
 
 Implementation started from main `2e09f66101c6c77b5485cc4696a739a8a01872de`. The final review branch is based on main `743c9ac4490264dbea95176a97c716a95ed28efa`, which includes the planning handoff from PR #632. Record and review the actual draft PR head, not a remembered commit. Do not merge during this independent review. Report findings to the owner, who will do the visual acceptance check.
+
+## Keyboard repair for re-review
+
+The independent review requested changes because opening the board left focus on its toggle, outside the board's Escape listener. The replacement keyboard regression failed on that reviewed code with **Opening must move focus to Close** before the repair was applied.
+
+The runtime repair adds two lines in `setOpen()`: detect a hidden-to-visible transition, then focus **Close** after showing the board. Escape and Close retain the existing return to the toggle. Repeated requests to show an already open board preserve the current focus, including the manual-copy textarea.
+
+This follow-up changes only `public/arena-diagnostics.js`, `test/arena-diagnostics.test.js`, this handoff and `data/readiness/development-evidence.json`. The full PR still contains the same nine files. Please recheck:
+
+1. Focus the **Arena Diagnostics** toggle with the keyboard. Activate it with Enter. Focus must move to **Close** without another Tab press.
+2. Immediately press Escape. The board must hide, `aria-expanded` must become false and focus must return to the toggle. Reopen it and activate Close with Enter; the same recovery must work.
+3. While Copy Debug Report or its denied-clipboard fallback has focus, another `setOpen(true)` or diagnostic render must preserve that focus. Escape from the textarea must also close the board and return to the toggle.
+4. Inspect the regression fixture: it tracks one `document.activeElement`, respects hidden ancestors and bubbles key events from that element. It must not call the board's Escape callback directly to simulate a keyboard user.
+5. Independently rerun the six-file suite below, readiness validation and the whitespace check. The implementer's updated result is **57 passing tests**, with no failures or skips. The prior independent reviewer could not reproduce the earlier 55-test run because their environment could not resolve GitHub; this repair does not replace that missing independent execution evidence.
+
+These focus tests use a controlled DOM fixture, not a live browser. Independent re-review, owner visual acceptance and physical-iPhone acceptance remain pending. The Godot sender, walking and challenge work remain outside this repair.
 
 ## What changed and what to expect
 
@@ -47,7 +63,7 @@ No `public/game/push-up-arena/*`, Godot scenes, animation clips, skeletons, `ser
 7. **Check lifecycle.** READY arriving before iframe `load` remains PASS. A replacement iframe document resets game evidence and uses a new request ID. Session expiry blocks dependent checks and late reports. Browser back-cache restoration marks bootstrap stale and asks for reload. Exit cancels pending startup work, revokes the existing session and returns to the canonical PocketPT URL.
 8. **Check bounded behavior.** JSON requests time out after 20 seconds; game frame/READY waits after 120 seconds. A genuine late READY may recover. Exit revocation is bounded at 5 seconds. There is no polling loop or second avatar download. Expiry is a local check against the bootstrap timestamp, not a claim of continuous server validation or a new auth authority.
 9. **Check privacy and copying.** Retain only fixed diagnostic messages, stage/status IDs and observation times. Do not include raw HTTP errors, arbitrary game messages, URLs with fragments/queries, identity values, session IDs, cookies, tokens, video, landmarks or health data. Clipboard failure must show a selectable report and must not say it copied successfully.
-10. **Check the UI on devices.** Toggle open/closed, keyboard focus, Escape, scrolling, readable status words, Copy Debug Report, Reload Arena and Exit Arena. Confirm the overlay does not prevent exiting or recovering the normal game view. Human visual and physical-iPhone acceptance remain open.
+10. **Check the UI on devices.** Exercise toggle focus → Enter → Close focus → immediate Escape → hidden board and toggle focus. Also test Enter on Close, Escape from the manual-copy textarea, and focus preservation when an already open board receives diagnostic updates. Check scrolling, readable status words, Copy Debug Report, Reload Arena and Exit Arena. Confirm the overlay does not prevent exiting or recovering the normal game view. Human visual and physical-iPhone acceptance remain open.
 
 ## Automated validation
 
@@ -60,7 +76,7 @@ npm run readiness:validate -- --base 743c9ac4490264dbea95176a97c716a95ed28efa
 git diff --check 743c9ac4490264dbea95176a97c716a95ed28efa
 ```
 
-The targeted suite passed **55 tests**. Coverage includes dependency ordering and recovery, no invented passes, descriptor/fallback distinctions, source/origin/version validation, request generation and sequence rejection, stage ownership, safe reports, clipboard denial, keyboard close, the actual shell's ticket ordering and scoped fetches, early READY, failed/malformed/stalled requests, bounded waits, expiry, back-cache restoration, iframe replacement and exit. The existing bridge/avatar server regression checks remain part of the command. These are technical tests, not a human visual approval.
+The implementer's targeted suite passed **57 tests** after the keyboard repair. Coverage includes dependency ordering and recovery, no invented passes, descriptor/fallback distinctions, source/origin/version validation, request generation and sequence rejection, stage ownership, safe reports, clipboard denial, the focused-toggle opening/Escape path, Close activation, focus preservation during updates, the actual shell's ticket ordering and scoped fetches, early READY, failed/malformed/stalled requests, bounded waits, expiry, back-cache restoration, iframe replacement and exit. The existing bridge/avatar server regression checks remain part of the command. Readiness validation and the whitespace check also pass. These are technical tests, not an independent test rerun or human visual approval.
 
 Browser preview was attempted through the provided browser tool. The environment rejected the local preview URL with `net::ERR_BLOCKED_BY_CLIENT`; no live-browser layout, real authenticated Godot run or physical-iPhone acceptance is claimed. Run the preview and deployed checks below independently.
 
@@ -92,7 +108,7 @@ After independent review and the owner's merge/deployment decision:
 2. Confirm the same member avatar, approved gym and existing arrow movement still appear.
 3. Open **Arena Diagnostics**. Confirm the panel version says `arena-diagnostics-v1`. Connection and descriptor checks should reflect this launch.
 4. With the existing Godot export, expect game diagnostic reporting to be NOT CONNECTED. Compare actual avatar import/mount evidence with the existing in-game Phase 2 panel. Do not interpret missing reporting as an avatar-load failure.
-5. Confirm there is no new camera prompt or challenge start. Open, close, copy, reload and exit. Repeat on a physical iPhone. Record visual findings separately from automated test results.
+5. Confirm there is no new camera prompt or challenge start. On desktop, focus the diagnostics toggle, press Enter and immediately press Escape; confirm the panel closes and focus returns to the toggle. Open, close, copy, reload and exit. Repeat the applicable controls on a physical iPhone. Record visual findings separately from automated test results.
 
 ## Optional Godot diagnostic sender — next integration
 
