@@ -1,6 +1,6 @@
 # PocketPT ↔ Godot World Bridge
 
-Status: Phase 1 bridge plus the PocketPT-side Phase 2 avatar identity implementation. The Godot avatar loader, regenerated export, and device acceptance are still pending. Do not merge without independent architecture review.
+Status update, 2026-09-03: the Phase 2 avatar endpoint and Godot export are merged through PocketPT main `2e09f66101c6c77b5485cc4696a739a8a01872de` (PRs #630 and #631). The owner reports a visible personal avatar, passing bridge/avatar panels and working arrow movement in the existing gym. Walking animation and the body-controlled challenge remain incomplete. This observation does not establish physical-device, multiple-account or exercise acceptance. See the [Push-Up Arena V1 reconnaissance handoff](review-handoffs/pushup-arena-v1-reconnaissance.md) for the current implementation proposal and remaining evidence.
 
 ## Audited baseline
 
@@ -130,7 +130,7 @@ Phase 1 diagnostic success is:
 
 `Challenge: push_up`
 
-The Phase 1 Web export is present in PocketPT at the Phase 2 audited SHA. The accessible `mufasa-world` main branch still contains a cube demo, not the working gym scenes and scripts. The working Godot source must be committed before its player loader can be integrated and a new export reviewed. See [the Phase 2 Godot handoff](review-handoffs/godot-phase2-avatar-identity-handoff.md).
+The Phase 2 Web export is now present in PocketPT and the owner has observed its personal avatar mount. The accessible `mufasa-world` main branch still contains a cube demo, not the working gym scenes and scripts. The working Windows Godot source must be shared to implement locomotion from this repository workflow. The [Phase 2 Godot handoff](review-handoffs/godot-phase2-avatar-identity-handoff.md) records the earlier loader work; the [V1 reconnaissance](review-handoffs/pushup-arena-v1-reconnaissance.md) records the current source-access boundary.
 
 ## Godot export/deployment contract
 
@@ -240,7 +240,9 @@ Full repository test suite remains:
 
 `npm test`
 
-## Protected systems — do not modify for this workstream
+## Protected systems during the Phase 1 / Phase 2 workstream
+
+The list below bounded the completed identity/avatar work. The owner's subsequent Push-Up Arena V1 scope authorizes reviewed integration with exercise, challenge, voice and gamification systems through their canonical owners; it does not authorize duplicate systems. The V1 handoff is a pre-implementation proposal.
 
 - canonical auth/token format and account stores,
 - existing push-up MoveNet/tracking/rep engine,
@@ -256,6 +258,6 @@ Full repository test suite remains:
 
 ## Remaining integration task
 
-The Phase 1 launcher, bootstrap handshake, and generated Web export are already present. The next integration task is to commit the working Godot gym source, extend its existing `PocketPTGameClient` to load the Phase 2 avatar descriptor, replace the player's placeholder visual with the imported model, and regenerate the export. Follow the Phase 2 handoff and obtain independent review plus browser/device evidence before treating avatar transfer as complete.
+The launcher, bootstrap handshake, personal avatar loader and generated Web export are present, with owner-observed avatar display. The next visible task is to connect idle/walking animation to that imported avatar in the same gym, then route body intents and the Push-Up Arena workflow through the existing PocketPT systems. Share the working Godot source for that animation change and follow the V1 reconnaissance handoff. Keep independent developer review and the remaining browser/device evidence separate from the owner's current observation.
 
 Do not mark Godot Web load, browser end-to-end, or physical-iPhone proof complete until those are executed on the real deployed branch/build.

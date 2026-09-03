@@ -799,6 +799,55 @@
       "prNumber": 631,
       "commitSha": "54768a7fcbc9ebc39f5bc220c1bb73ff65211509",
       "timestamp": "2026-09-02T21:06:06.040Z"
+    },
+    {
+      "operationId": "a7c02d92-2b6d-4dee-a72d-d3038714653c",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "card_creation",
+      "taskId": "pushup-arena-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "Audit and connect canonical PocketPT body controls, validated push-up recognition, timed attempts, champion cadence, voice, and the existing Godot gym. Start with a reconnaissance handoff; runtime implementation and independent, trainer, browser, and physical-device acceptance remain separate gates.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-03T01:06:06.467Z"
+    },
+    {
+      "operationId": "a5f4bd29-4ce4-4cf4-bcbe-1fa0ede0d5dc",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "reconnaissance",
+      "taskId": "pushup-arena-v1",
+      "files": [
+        "docs/review-handoffs/pushup-arena-v1-reconnaissance.md",
+        "docs/POCKETPT_GODOT_WORLD_BRIDGE.md",
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Pre-implementation reconnaissance at main 2e09f66. Owner reports personal avatar display and arrow gliding; this is not a formal human/device approval. Inspected bridge, camera, three existing rep paths, Motion Lab, results, identity, privacy, gamification and voice. Fifty existing pure-runtime tests passed. Isolated probes reproduced a missing-pose completion and acceptance of a forged client total in legacy paths. Fourteen-part proposal documents reuse, controls, states, timing, persistence, ghost cadence, security, phases and tests. Working Godot source is not in mufasa-world; runtime changes, trainer review, independent review, authenticated browser and physical-device acceptance remain pending.",
+      "prNumber": null,
+      "commitSha": "2e09f66101c6c77b5485cc4696a739a8a01872de",
+      "timestamp": "2026-09-03T01:21:46.519Z"
+    },
+    {
+      "operationId": "b20736e1-0133-45ed-9b6c-b1193bef1e49",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "pull_request",
+      "taskId": "pushup-arena-v1",
+      "files": [
+        "docs/review-handoffs/pushup-arena-v1-reconnaissance.md",
+        "docs/POCKETPT_GODOT_WORLD_BRIDGE.md",
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Draft PR #632 contains the complete fourteen-part pre-implementation handoff at audited main 2e09f66 and refreshed bridge status. Fifty existing tests, isolated gap probes, two JSON examples, fourteen report outputs, readiness validation and whitespace checks were completed. Only four documentation/readiness files change. Runtime implementation is not complete; working Godot source, independent developer review, trainer approval and authenticated desktop/physical-iPhone acceptance remain pending. Nothing merged or deployed.",
+      "prNumber": 632,
+      "commitSha": "84cbae84d87aae9712a4f792caf3d9f72b2a27f7",
+      "timestamp": "2026-09-03T01:25:39.880Z"
     }
   ]
 }
