@@ -95,8 +95,23 @@ test('personal pose calibration records gates but cannot mark official start or 
   for (const stage of ['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED']) assert.equal(f.flow.calibration(stage), true);
   assert.ok(f.marks.some(([id, status]) => id === 'POSE_TOP_CALIBRATION' && status === 'PASS'));
   assert.ok(f.marks.some(([id, status]) => id === 'POSE_BOTTOM_CALIBRATION' && status === 'PASS'));
+  assert.ok(f.marks.some(([id, status]) => id === 'POSE_CYCLE_CALIBRATION' && status === 'PASS'));
   assert.equal(f.marks.some(([id, status]) => ['START_POSITION', 'READY_GESTURE', 'REP_DETECTOR', 'TIMER'].includes(id) && status === 'PASS'), false);
   assert.equal(JSON.stringify(f.sent).includes('sequenceLandmarks'), false);
+});
+
+test('timeout identifies the acquisition phase and recovery cannot revive cleared references', () => {
+  const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
+  f.flow.cameraStarting(); f.flow.cameraActive(); f.flow.visibility(true);
+  f.flow.calibration('CAPTURE_TOP'); f.flow.calibration('CAPTURE_BOTTOM');
+  f.flow.calibration('NEEDS_RETRY', 'TIMEOUT', 'CAPTURE_BOTTOM');
+  assert.equal(f.flow.snapshot().state, 'CALIBRATION_RETRY'); assert.equal(f.flow.snapshot().canRestartCalibration, true);
+  assert.deepEqual(f.marks.filter(x => x[0] === 'POSE_BOTTOM_CALIBRATION').at(-1), ['POSE_BOTTOM_CALIBRATION', 'FAIL', 'CALIBRATION_TIMEOUT']);
+  f.flow.visibility(false); f.flow.visibility(true); assert.equal(f.flow.snapshot().state, 'CALIBRATION_RETRY');
+  assert.equal(f.flow.calibration('CALIBRATED'), false);
+  f.flow.calibration('CAPTURE_TOP'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_TOP');
+  assert.equal(f.marks.filter(x => x[0] === 'POSE_TOP_CALIBRATION').at(-1)[1], 'RUNNING');
+  assert.equal(f.marks.filter(x => x[0] === 'POSE_BOTTOM_CALIBRATION').at(-1)[1], 'WAITING');
 });
 
 test('return waits for standing even if the down animation was never acknowledged', () => {

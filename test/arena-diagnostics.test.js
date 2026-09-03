@@ -31,6 +31,20 @@ test('successful bridge and descriptor never imply avatar, walking, camera or ch
   for (const id of ['AVATAR_DOWNLOAD', 'AVATAR_IMPORT', 'AVATAR_MOUNT', 'LOCOMOTION', 'BODY_DETECTOR', 'READY_GESTURE', 'REP_DETECTOR', 'TIMER', 'SCORE_PERSISTENCE', 'GHOST_PLAYBACK']) assert.notEqual(row(model, id).status, 'PASS');
 });
 
+test('personal calibration rows cannot be reported by Godot or substitute for exercise approval', () => {
+  const model = connected();
+  for (const id of ['POSE_TOP_CALIBRATION', 'POSE_BOTTOM_CALIBRATION', 'POSE_CYCLE_CALIBRATION']) assert.equal(model.acceptRuntime(evidence(id)), false);
+  for (const id of ['CAMERA_PERMISSION','CAMERA_STREAM','BODY_DETECTOR','BODY_VISIBILITY','POSE_TOP_CALIBRATION','POSE_BOTTOM_CALIBRATION','POSE_CYCLE_CALIBRATION']) model.mark(id,'PASS','POSE_CYCLE_CAPTURED');
+  assert.equal(row(model,'POSE_CYCLE_CALIBRATION').status,'PASS');
+  for (const id of ['START_POSITION','READY_GESTURE','REP_DETECTOR','TIMER','SCORE_PERSISTENCE']) assert.notEqual(row(model,id).status,'PASS');
+  model.mark('POSE_TOP_CALIBRATION','RUNNING','POSE_TOP_CAPTURING');
+  assert.notEqual(row(model,'POSE_CYCLE_CALIBRATION').status,'PASS');
+  model.mark('POSE_TOP_CALIBRATION','PASS','POSE_TOP_CAPTURED');
+  model.mark('POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT');
+  assert.equal(model.summary().firstFailure.id,'POSE_BOTTOM_CALIBRATION');
+  assert.equal(row(model,'POSE_CYCLE_CALIBRATION').status,'BLOCKED');
+});
+
 test('earliest upstream failure takes priority and downstream checks become blocked', () => {
   const model = connected();
   model.mark('GODOT_HANDSHAKE', 'FAIL', 'HANDSHAKE_TIMEOUT');

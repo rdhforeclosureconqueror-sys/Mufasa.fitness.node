@@ -42,8 +42,18 @@ test('camera does not request permission until explicit start and reuses canonic
   assert.equal(f.video.muted, true); assert.equal(f.video.playsInline, true);
   f.capture().options.onFrame(frame()); assert.equal(f.visibility.at(-1), true);
   assert.equal(f.poses.at(-1)[0].trackingState, 'LOCKED'); assert.equal(f.poses.at(-1)[1], .75);
+  assert.equal(f.poses.at(-1)[0].sourceWidth, 640); assert.equal(f.poses.at(-1)[0].sourceHeight, 480);
   [...f.timers.values()].find(timer => timer.delay === 1500).fn(); assert.equal(f.visibility.at(-1), false); assert.equal(f.poses.at(-1)[0], null);
   f.camera.stop(); assert.equal(f.video.srcObject, null); assert.equal(f.stats().captureStops, 1); assert.equal(f.timers.size, 0);
+});
+
+test('camera replacement ignores old callbacks and supplies the new source geometry', async () => {
+  const f = fixture(); await f.camera.start(); const old = f.capture().options.onFrame;
+  await f.camera.start(); f.video.videoWidth = 480; f.video.videoHeight = 640;
+  const count = f.poses.length; old(frame()); assert.equal(f.poses.length, count);
+  f.capture().options.onFrame(frame());
+  assert.equal(f.poses.at(-1)[0].sourceWidth, 480); assert.equal(f.poses.at(-1)[0].sourceHeight, 640);
+  f.camera.stop(); const stopped = f.poses.length; f.capture().options.onFrame(frame()); assert.equal(f.poses.length, stopped);
 });
 
 test('permission granted after cancellation stops the late stream without mounting or inference', async () => {

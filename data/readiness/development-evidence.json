@@ -1178,6 +1178,131 @@
       "prNumber": 633,
       "commitSha": "5f8040639eb575af442eda0c2dc6ddb330de14f4",
       "timestamp": "2026-09-03T16:07:01.898Z"
+    },
+    {
+      "operationId": "0b64ea53-7002-4c65-bbd3-c28c56dcd2bc",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [],
+      "automated": null,
+      "evidence": "Repair merged calibration timing and geometry; add bounded recovery, truthful diagnostics and interruption regressions.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-03T16:39:54.210Z"
+    },
+    {
+      "operationId": "ae2530e9-5e6d-4180-8f12-3b68823892d8",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [],
+      "automated": null,
+      "evidence": "Calibration hardening is CURRENT; full challenge and human acceptance remain separate.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-03T16:39:54.391Z"
+    },
+    {
+      "operationId": "47ae6218-6951-4530-b9df-d017a3b3fb20",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [],
+      "automated": null,
+      "evidence": "Extend calibration diagnostics with bounded failure and recovery evidence; preserve human review gates.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-03T16:40:36.543Z"
+    },
+    {
+      "operationId": "598673fa-d48b-4e9a-96c8-0835b3487206",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [
+        "public/arena-pose-calibration.js",
+        "public/arena-camera.js",
+        "public/arena-phone-flow.js",
+        "public/arena-phone-ui.js",
+        "public/arena-push-up.html",
+        "test/arena-calibration-hardening.test.js",
+        "test/arena-pose-calibration.test.js",
+        "test/arena-camera.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-phone-ui.test.js",
+        "docs/review-handoffs/arena-calibration-recovery-review.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Follow-up on merged main bb2a762e9b29a082cea8b1706c5422d588187c4c: time-window/aspect repair, bounded capture timeout, explicit restart and interruption cleanup. 114 targeted tests PASS after npm ci; no dependency changes. Whole V1 incomplete: Godot receiver/animations, reviewed form rules, timer/results/ghost integrations and owner/iPhone acceptance remain blocked. No live browser or physical-device acceptance, merge or deployment claimed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-03T17:58:10.815Z"
+    },
+    {
+      "operationId": "7eb56316-1ffd-4404-b8e7-704d89c749c1",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [
+        "public/arena-diagnostics.js",
+        "public/arena-phone-flow.js",
+        "test/arena-diagnostics.test.js",
+        "docs/review-handoffs/arena-calibration-recovery-review.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Personal TOP-return diagnostic is distinct from form validation; timeout/reset diagnostics clear reference evidence, preserve ownership and keep official scoring disconnected. 114 targeted tests PASS; readiness and diff validation PASS. Independent reviewer and owner visual/iPhone acceptance pending; Godot reporting remains unconnected. Risk prevention/detection/recovery/review checklist added.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-03T17:58:11.247Z"
+    },
+    {
+      "operationId": "93dbfb81-73c0-4d74-b2ff-faeb8f5e4423",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [
+        "public/arena-pose-calibration.js",
+        "public/arena-camera.js",
+        "public/arena-phone-flow.js",
+        "public/arena-phone-ui.js",
+        "public/arena-push-up.html",
+        "test/arena-calibration-hardening.test.js",
+        "test/arena-pose-calibration.test.js",
+        "test/arena-camera.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-phone-ui.test.js",
+        "docs/review-handoffs/arena-calibration-recovery-review.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Published new draft PR 634. Implementation tree 2ba3c315b85f37da50743bb8e686ebd26826c4c0 matches locally tested tree exactly. 114 targeted tests PASS, readiness and diff checks PASS. No merge/deploy; independent review and owner visual/iPhone checks pending. Whole V1 remains incomplete: Godot controls/animations/reporter, reviewed form rules and competition integrations still outstanding.",
+      "prNumber": 634,
+      "commitSha": "eb76ef786f03b132bc4dd3f9ba9b1fc055bc81bf",
+      "timestamp": "2026-09-03T18:00:12.944Z"
+    },
+    {
+      "operationId": "463ea834-70de-4442-85c8-a82a240af6bd",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "arena-calibration-hardening",
+      "files": [
+        "public/arena-diagnostics.js",
+        "public/arena-phone-flow.js",
+        "test/arena-diagnostics.test.js",
+        "docs/review-handoffs/arena-calibration-recovery-review.md"
+      ],
+      "automated": "PASS",
+      "evidence": "PR 634 diagnostic follow-up linked to exact implementation commit. New personal-reference cycle row and timeout/reset evidence are covered by the 114 passing targeted tests. Runtime Godot sender remains outstanding; no live browser, physical iPhone or human approval claimed. Independent review handoff and risk plan included; not merged/deployed.",
+      "prNumber": 634,
+      "commitSha": "eb76ef786f03b132bc4dd3f9ba9b1fc055bc81bf",
+      "timestamp": "2026-09-03T18:00:13.370Z"
     }
   ]
 }

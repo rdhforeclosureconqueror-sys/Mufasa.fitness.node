@@ -71,11 +71,11 @@
   </style>
   <script defer src="/runtime-state.js"></script>
   <script defer src="/push-up-challenge.js"></script>
-  <script defer src="/arena-diagnostics.js?v=20260903-arena-diagnostics-v1"></script>
-  <script defer src="/arena-phone-flow.js?v=20260903-phone-v1"></script>
-  <script defer src="/arena-pose-calibration.js?v=20260903-pose-calibration-v1"></script>
-  <script defer src="/arena-camera.js?v=20260903-phone-v1"></script>
-  <script defer src="/arena-phone-ui.js?v=20260903-phone-v1"></script>
+  <script defer src="/arena-diagnostics.js?v=20260903-calibration-v2"></script>
+  <script defer src="/arena-phone-flow.js?v=20260903-calibration-v2"></script>
+  <script defer src="/arena-pose-calibration.js?v=20260903-calibration-v2"></script>
+  <script defer src="/arena-camera.js?v=20260903-calibration-v2"></script>
+  <script defer src="/arena-phone-ui.js?v=20260903-calibration-v2"></script>
   <script defer src="/arena-push-up.js?v=20260903-arena-diagnostics-v1"></script>
 </head>
 <body>
@@ -98,6 +98,7 @@
       <button id="arenaSetupCamera" type="button" hidden>Check my camera</button>
       <button id="arenaRepeatBriefing" type="button" hidden>Read briefing again</button>
       <button id="arenaEnableCamera" class="primary" type="button" hidden>Enable camera</button>
+      <button id="arenaRestartCalibration" type="button" hidden>Restart pose capture</button>
       <button id="arenaReturnToGym" type="button" hidden>Return to gym</button>
     </div>
     <details id="arenaThumbControls" class="thumb-controls" hidden><summary>Move with thumb controls</summary>
