@@ -4,6 +4,10 @@ Repository: `rdhforeclosureconqueror-sys/Mufasa.fitness.node`
 
 Branch: `review/arena-first-failure-diagnostics-20260903`
 
+Draft PR: [#633 — Add first-failure diagnostics to Push-Up Arena](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/633)
+
+Implementation reference: `62d5811e3fcc8330f2922536a394fa3cb040efcf`. Later handoff/readiness correlation commits do not change the tested runtime files. Review the actual current PR head as well.
+
 Implementation started from main `2e09f66101c6c77b5485cc4696a739a8a01872de`. The final review branch is based on main `743c9ac4490264dbea95176a97c716a95ed28efa`, which includes the planning handoff from PR #632. Record and review the actual draft PR head, not a remembered commit. Do not merge during this independent review. Report findings to the owner, who will do the visual acceptance check.
 
 ## What changed and what to expect
