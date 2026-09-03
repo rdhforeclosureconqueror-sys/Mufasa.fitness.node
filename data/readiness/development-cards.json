@@ -56,6 +56,20 @@
       "createdAt": "2026-09-03T01:06:06.467Z",
       "source": "readiness:update",
       "taskId": "pushup-arena-v1"
+    },
+    {
+      "id": "avatar-development-arena-first-failure-diagnostics",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Push-Up Arena first-failure diagnostics",
+      "category": "WORLD BRIDGE",
+      "description": "Extend the existing arena Bridge Debug panel across connection, avatar, controls, camera, challenge, results and ghost boundaries. Show observed failures and blocked or unconnected checks separately, preserve the current gym and avatar pipeline, and supply an independent review handoff.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-03T12:51:56.966Z",
+      "source": "readiness:update",
+      "taskId": "arena-first-failure-diagnostics"
     }
   ]
 }
