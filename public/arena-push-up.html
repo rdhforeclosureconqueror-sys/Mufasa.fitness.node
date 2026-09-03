@@ -6,126 +6,114 @@
   <meta name="theme-color" content="#050505">
   <title>Unleash the Beast — Push-Up Arena</title>
   <style>
-    *{box-sizing:border-box}html,body{height:100%;margin:0;background:#050505;color:#fff;font-family:Inter,system-ui,-apple-system,sans-serif}body{display:flex;flex-direction:column}header{min-height:64px;padding:max(12px,env(safe-area-inset-top)) 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2a2a2a;background:#0b0b0b}h1{font-size:clamp(18px,4vw,28px);margin:0}.exit{color:#fff;text-decoration:none;border:1px solid #555;border-radius:10px;padding:10px 14px}.stage{position:relative;flex:1;min-height:0}.status{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center}.card{max-width:620px;background:#111;border:1px solid #333;border-radius:16px;padding:24px;box-shadow:0 18px 60px #000}.card p{color:#ccc;line-height:1.5}.error{color:#ffb4b4}.game{width:100%;height:100%;border:0;display:none;background:#000}button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}.secondary{background:#242424;color:#fff}code{word-break:break-all;color:#ddd}footer{padding:8px 14px calc(8px + env(safe-area-inset-bottom));font-size:12px;color:#777;background:#0b0b0b}
-    #bridgeDebugToggle{position:fixed;z-index:99998;right:14px;bottom:max(48px,calc(14px + env(safe-area-inset-bottom)));border:1px solid #765f1e;background:#17130a;color:#ffd35a;border-radius:999px;padding:10px 14px;box-shadow:0 10px 32px #000a;font:800 13px system-ui}#bridgeDebugBoard{position:fixed;z-index:99999;right:12px;bottom:max(94px,calc(60px + env(safe-area-inset-bottom)));width:min(460px,calc(100vw - 24px));max-height:min(74vh,660px);overflow:auto;background:#090b10f7;border:1px solid #39455a;border-radius:18px;box-shadow:0 26px 80px #000d;padding:14px;color:#f6f8fb;backdrop-filter:blur(14px);font:13px system-ui}#bridgeDebugBoard[hidden]{display:none}#bridgeDebugBoard h2{font-size:18px;color:#ffd35a;margin:0 0 4px}#bridgeDebugBoard .dbg-sub{margin:0 0 10px;color:#96a2b6}#bridgeDebugBoard .dbg-first{padding:10px;border:1px solid #3a465b;background:#111722;border-radius:10px;margin-bottom:12px}#bridgeDebugBoard .dbg-first.fail{border-color:#91394a;background:#2b1117;color:#ffc0c9}#bridgeDebugBoard ol{list-style:none;padding:0;margin:0;display:grid;gap:7px}#bridgeDebugBoard li{display:grid;grid-template-columns:72px 1fr;gap:8px;border:1px solid #293244;border-radius:10px;padding:8px;background:#0d1119}#bridgeDebugBoard .dbg-state{font-weight:900;font-size:11px;letter-spacing:.04em}.dbg-WAITING{color:#8994a7}.dbg-RUNNING{color:#ffd35a}.dbg-PASS{color:#4ee19a}.dbg-FAIL{color:#ff718b}.dbg-SKIP{color:#86b9ff}#bridgeDebugBoard small{display:block;color:#99a5b7;margin-top:2px;overflow-wrap:anywhere}#bridgeDebugBoard .dbg-actions{display:flex;gap:8px;margin-top:12px}#bridgeDebugBoard .dbg-actions button{min-height:36px;padding:7px 10px;background:#20283a;border:1px solid #3b4659;color:#fff;border-radius:8px;font-size:12px}@media(max-width:600px){#bridgeDebugBoard{right:8px;width:calc(100vw - 16px)}}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:#050505;color:#fff;font-family:Inter,system-ui,-apple-system,sans-serif}
+    body{display:flex;flex-direction:column}
+    header{min-height:64px;padding:max(12px,env(safe-area-inset-top)) 18px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #2a2a2a;background:#0b0b0b}
+    h1{font-size:clamp(18px,4vw,28px);margin:0}
+    .exit{color:#fff;text-decoration:none;border:1px solid #555;border-radius:10px;padding:10px 14px;flex-shrink:0}
+    .stage{position:relative;flex:1;min-height:0}
+    .status{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center}
+    .card{max-width:620px;background:#111;border:1px solid #333;border-radius:16px;padding:24px;box-shadow:0 18px 60px #000}
+    .card p{color:#ccc;line-height:1.5}
+    .error{color:#ffb4b4!important}
+    .game{width:100%;height:100%;border:0;display:none;background:#000}
+    button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}
+    button:focus-visible,a:focus-visible,textarea:focus-visible{outline:3px solid #74ecdf;outline-offset:3px}
+    footer{padding:8px 14px calc(8px + env(safe-area-inset-bottom));font-size:12px;color:#999;background:#0b0b0b}
+    #bridgeDebugToggle{position:fixed;z-index:99998;right:14px;bottom:max(48px,calc(14px + env(safe-area-inset-bottom)));border:1px solid #765f1e;background:#17130a;color:#ffd35a;border-radius:999px;padding:12px 16px;box-shadow:0 10px 32px #000a;font:800 13px system-ui}
+    #bridgeDebugBoard{position:fixed;z-index:99999;right:12px;bottom:max(100px,calc(64px + env(safe-area-inset-bottom)));width:min(500px,calc(100vw - 24px));max-height:min(72vh,720px);max-height:min(72dvh,720px);overflow:auto;overscroll-behavior:contain;background:#090b10fa;border:1px solid #39455a;border-radius:18px;box-shadow:0 26px 80px #000d;padding:16px;color:#f6f8fb;backdrop-filter:blur(14px);font:13px/1.45 system-ui}
+    #bridgeDebugBoard[hidden]{display:none}
+    #bridgeDebugBoard h2{font-size:20px;color:#ffd35a;margin:0 0 4px}
+    #bridgeDebugBoard h3{font-size:14px;margin:18px 0 8px;color:#dce4f2}
+    #bridgeDebugBoard .dbg-sub{margin:0 0 10px;color:#abb7ca}
+    #bridgeDebugBoard .dbg-first{padding:12px;border:1px solid #76622e;background:#211b0d;border-radius:10px;margin:12px 0}
+    #bridgeDebugBoard .dbg-first.fail{border-color:#a8485c;background:#2b1117;color:#ffc0c9}
+    #bridgeDebugBoard ol{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+    #bridgeDebugBoard li{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;border:1px solid #293244;border-radius:10px;padding:10px;background:#0d1119}
+    #bridgeDebugBoard .dbg-state{font-weight:900;font-size:11px;letter-spacing:.025em;overflow-wrap:anywhere}
+    #bridgeDebugBoard .dbg-WAITING{color:#b4bfd0}
+    #bridgeDebugBoard .dbg-RUNNING,#bridgeDebugBoard .dbg-NOT_CONNECTED{color:#ffd35a}
+    #bridgeDebugBoard .dbg-PASS{color:#4ee19a}
+    #bridgeDebugBoard .dbg-FAIL{color:#ff8198}
+    #bridgeDebugBoard .dbg-SKIP{color:#a7caff}
+    #bridgeDebugBoard .dbg-BLOCKED{color:#c3a3ed}
+    #bridgeDebugBoard small{display:block;color:#abb7ca;margin-top:4px;overflow-wrap:anywhere}
+    #bridgeDebugBoard .dbg-next{color:#ded8bb}
+    #bridgeDebugBoard .dbg-note{margin-top:16px}
+    #bridgeDebugBoard .dbg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    #bridgeDebugBoard .dbg-actions button{min-height:44px;padding:8px 12px;background:#20283a;border:1px solid #52617a;color:#fff;border-radius:8px;font-size:12px}
+    #bridgeDebugBoard textarea{width:100%;min-height:180px;max-height:240px;background:#131925;color:#fff;border:1px solid #62708b;border-radius:8px;padding:10px}
+    @media(max-width:600px){#bridgeDebugBoard{right:8px;width:calc(100vw - 16px);padding:12px}#bridgeDebugBoard li{grid-template-columns:88px minmax(0,1fr);gap:8px}}
+    [hidden]{display:none!important}
+    .stage{min-height:260px}
+    #bridgeDebugToggle{position:static;align-self:flex-end;margin:8px 14px}
+    .phone-panel{padding:14px max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));background:#10131a;border-top:1px solid #3d4655}
+    .phone-panel h2{font-size:20px;margin:0 0 6px;color:#ffd35a}
+    .phone-panel p{margin:6px 0 12px;line-height:1.45;color:#dae0eb;max-width:760px}
+    .phone-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .phone-panel button,.phone-panel select{min-height:48px;background:#253047;color:#fff;border:1px solid #546581;border-radius:10px;padding:12px 16px;font-size:14px}
+    .phone-panel button.primary{background:#ffd35a;color:#15110a;border-color:#ffd35a}
+    .phone-panel button:disabled{opacity:.5;cursor:default}
+    .phone-panel select{max-width:100%}
+    .thumb-controls{margin-top:12px;max-width:300px}
+    .thumb-controls summary{padding:12px 0;cursor:pointer}
+    .thumb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .thumb-grid button{touch-action:none;user-select:none;font-size:20px}
+    .thumb-grid .forward{grid-column:2}.thumb-grid .left{grid-column:1}.thumb-grid .back{grid-column:2}
+    .camera-stage{position:absolute;inset:0;background:#080b10}
+    .camera-stage video{width:100%;height:100%;object-fit:contain}
+    .camera-guide{position:absolute;inset:8%;border:2px dashed #ffd35a88;border-radius:20px;pointer-events:none}
+    #arenaBodyStatus{position:absolute;left:12px;right:12px;bottom:10px;background:#111e;padding:8px 12px;border-radius:8px;color:#ffd35a;font-size:14px;text-align:center}
+    #arenaBodyStatus[data-visible="true"]{color:#4ee19a}
+    #arenaCameraChoice{margin-top:12px}#arenaCameraChoice label{display:block;margin-bottom:6px}
+    @media(max-width:600px){header{align-items:flex-start}h1{font-size:18px}.phone-panel{padding-top:12px}.phone-actions button{flex:1 1 140px}.stage{min-height:240px}}
   </style>
+  <script defer src="/runtime-state.js"></script>
+  <script defer src="/push-up-challenge.js"></script>
+  <script defer src="/arena-diagnostics.js?v=20260903-arena-diagnostics-v1"></script>
+  <script defer src="/arena-phone-flow.js?v=20260903-phone-v1"></script>
+  <script defer src="/arena-pose-calibration.js?v=20260903-pose-calibration-v1"></script>
+  <script defer src="/arena-camera.js?v=20260903-phone-v1"></script>
+  <script defer src="/arena-phone-ui.js?v=20260903-phone-v1"></script>
+  <script defer src="/arena-push-up.js?v=20260903-arena-diagnostics-v1"></script>
 </head>
 <body>
   <header><h1>UNLEASH THE BEAST — PUSH-UP ARENA</h1><a id="exitArena" data-arena-exit class="exit" href="/push-up-challenge.html">Exit Arena</a></header>
   <main class="stage">
     <div id="status" class="status"><div class="card"><h2>Connecting to PocketPT…</h2><p id="message">Securing your arena session.</p></div></div>
     <iframe id="game" class="game" title="Unleash the Beast Godot arena" allow="fullscreen; gamepad"></iframe>
+    <section id="arenaCameraStage" class="camera-stage" hidden aria-label="Camera framing preview">
+      <video id="arenaCameraVideo" muted playsinline aria-label="Your live camera preview"></video>
+      <div class="camera-guide" aria-hidden="true"></div>
+      <p id="arenaBodyStatus" role="status">Waiting for a clear full-body view</p>
+    </section>
   </main>
+  <section id="arenaPhonePanel" class="phone-panel" hidden aria-labelledby="arenaPhoneTitle">
+    <h2 id="arenaPhoneTitle">Enter the Lion’s Den</h2>
+    <p id="arenaPhoneMessage" role="status" tabindex="-1">Connecting your gym session…</p>
+    <div class="phone-actions">
+      <button id="arenaGoToMat" class="primary" type="button" disabled>Go to mat</button>
+      <button id="arenaStopApproach" type="button" hidden>Stop walking</button>
+      <button id="arenaSetupCamera" type="button" hidden>Check my camera</button>
+      <button id="arenaRepeatBriefing" type="button" hidden>Read briefing again</button>
+      <button id="arenaEnableCamera" class="primary" type="button" hidden>Enable camera</button>
+      <button id="arenaReturnToGym" type="button" hidden>Return to gym</button>
+    </div>
+    <details id="arenaThumbControls" class="thumb-controls" hidden><summary>Move with thumb controls</summary>
+      <div class="thumb-grid" aria-label="Avatar movement">
+        <button type="button" class="forward" data-arena-move="MOVE_FORWARD" aria-label="Move forward">↑</button>
+        <button type="button" class="left" data-arena-move="MOVE_LEFT" aria-label="Move left">←</button>
+        <button type="button" id="arenaThumbStop" aria-label="Stop movement">■</button>
+        <button type="button" data-arena-move="MOVE_RIGHT" aria-label="Move right">→</button>
+        <button type="button" class="back" data-arena-move="MOVE_BACKWARD" aria-label="Move backward">↓</button>
+      </div>
+    </details>
+    <div id="arenaCameraChoice" hidden><label for="arenaCameraSelect">Choose camera</label><select id="arenaCameraSelect"></select></div>
+  </section>
   <footer>PocketPTWorldProtocol v1 · Camera access does not start automatically.</footer>
-  <button id="bridgeDebugToggle" type="button" aria-controls="bridgeDebugBoard" aria-expanded="false">Bridge Debug</button>
-  <aside id="bridgeDebugBoard" hidden aria-label="PocketPT Godot bridge debug command board"></aside>
-<script>
-(() => {
-  const status = document.getElementById('status');
-  const message = document.getElementById('message');
-  const game = document.getElementById('game');
-  const exitArena = document.getElementById('exitArena');
-  const debugToggle = document.getElementById('bridgeDebugToggle');
-  const debugBoard = document.getElementById('bridgeDebugBoard');
-  let returnTo = '/push-up-challenge.html';
-  let leaving = false;
-  const debugStages = [
-    ['ARENA_SHELL','Arena shell loaded'],
-    ['CONFIG','World config loaded'],
-    ['TICKET_PRESENT','Launch ticket present'],
-    ['SESSION_EXCHANGE','Ticket exchanged'],
-    ['FRAGMENT_SCRUB','Launch fragment removed'],
-    ['BOOTSTRAP','World bootstrap loaded'],
-    ['IDENTITY','PocketPT identity verified'],
-    ['BUILD_PROBE','Godot Web build available'],
-    ['IFRAME_LOAD','Godot iframe loaded'],
-    ['GODOT_HANDSHAKE','Godot client handshake'],
-    ['EXIT_REVOKE','Arena session revoked on exit']
-  ];
-  const debugState = new Map(debugStages.map(([id,label])=>[id,{id,label,status:'WAITING',detail:'',at:null}]));
-
-  function sanitize(value){return String(value==null?'':value).replace(/Bearer\s+[A-Za-z0-9._~-]+/gi,'Bearer [REDACTED]').replace(/ticket=[A-Za-z0-9_-]+/gi,'ticket=[REDACTED]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[email]').slice(0,260)}
-  function mark(id,state,detail=''){const row=debugState.get(id);if(!row)return;row.status=state;row.detail=sanitize(detail);row.at=new Date().toISOString();renderDebug()}
-  function firstFailure(){return [...debugState.values()].find((row)=>row.status==='FAIL')||null}
-  function debugReport(){const failure=firstFailure();return ['PocketPT ↔ Godot World Bridge Debug','Page: '+location.pathname,'First failure: '+(failure?(failure.id+' — '+(failure.detail||failure.label)):'none'),'',[...debugState.values()].map((row)=>`${row.status.padEnd(7)} ${row.id} — ${row.label}${row.detail?' — '+row.detail:''}${row.at?' — '+row.at:''}`).join('\n')].join('\n')}
-  function renderDebug(){const failure=firstFailure();debugBoard.innerHTML=`<h2>World Bridge Command Board</h2><p class="dbg-sub">Arena-side live trace · no credentials, ticket, cookie, or health data displayed.</p><div class="dbg-first ${failure?'fail':''}">${failure?`<strong>FIRST FAILURE:</strong> ${escapeHtml(failure.id)} — ${escapeHtml(failure.detail||failure.label)}`:'No failure detected yet.'}</div><ol>${[...debugState.values()].map((row)=>`<li><span class="dbg-state dbg-${row.status}">${row.status}</span><div><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.detail||row.id)}${row.at?' · '+escapeHtml(row.at.split('T')[1].replace('Z','')):''}</small></div></li>`).join('')}</ol><div class="dbg-actions"><button type="button" id="copyBridgeDebug">Copy Debug Report</button><button type="button" id="closeBridgeDebug">Close</button></div>`;debugBoard.querySelector('#copyBridgeDebug')?.addEventListener('click',async()=>{try{await navigator.clipboard?.writeText(debugReport())}catch(_){}});debugBoard.querySelector('#closeBridgeDebug')?.addEventListener('click',()=>setDebugOpen(false))}
-  function setDebugOpen(open){debugBoard.hidden=!open;debugToggle.setAttribute('aria-expanded',String(open));if(open)renderDebug()}
-  debugToggle.addEventListener('click',()=>setDebugOpen(debugBoard.hidden));
-  const showError = (text, stage) => { if(stage) mark(stage,'FAIL',text); status.style.display='grid'; game.style.display='none'; message.className='error'; message.textContent=text; setDebugOpen(true); };
-  async function jsonFetch(url, init={}) {
-    const response = await fetch(url, { credentials:'same-origin', headers:{'Content-Type':'application/json',...(init.headers||{})}, ...init });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) { const error=new Error(payload?.error?.message || `Request failed (${response.status})`); error.status=response.status; throw error; }
-    return payload;
-  }
-  async function endArenaSessionAndReturn(destination) {
-    if (leaving) return;
-    leaving = true;
-    mark('EXIT_REVOKE','RUNNING','DELETE /api/game/session');
-    try {
-      const response=await fetch('/api/game/session', { method:'DELETE', credentials:'same-origin', cache:'no-store', keepalive:true });
-      mark('EXIT_REVOKE',response.ok?'PASS':'FAIL',`HTTP ${response.status}`);
-    } catch (error) {
-      mark('EXIT_REVOKE','FAIL',error?.message||'cleanup request failed');
-    } finally {
-      location.assign(destination || returnTo);
-    }
-  }
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest?.('[data-arena-exit]');
-    if (!link) return;
-    event.preventDefault();
-    endArenaSessionAndReturn(link.href || returnTo);
-  });
-  window.addEventListener('message',(event)=>{
-    if(event.origin!==location.origin)return;
-    const data=event.data;
-    if(!data||data.type!=='POCKETPT_GODOT_BRIDGE')return;
-    if(data.event==='READY') mark('GODOT_HANDSHAKE','PASS',`Protocol ${sanitize(data.protocolVersion||'unknown')} · Godot client ready`);
-    if(data.event==='ERROR'){mark('GODOT_HANDSHAKE','FAIL',data.message||data.stage||'Godot reported an error');setDebugOpen(true)}
-  });
-  async function start() {
-    mark('ARENA_SHELL','PASS','First-party arena shell executing');
-    mark('CONFIG','RUNNING','GET /api/game/config');
-    let config;
-    try{config=await jsonFetch('/api/game/config', { cache:'no-store' });mark('CONFIG','PASS',`Protocol ${config?.data?.protocolVersion||'unknown'}`)}catch(error){showError(error.message,'CONFIG');return}
-    if (config?.data?.returnUrl) { returnTo = config.data.returnUrl; exitArena.href = returnTo; }
-    const params = new URLSearchParams(location.hash.replace(/^#/,''));
-    const ticket = params.get('ticket');
-    if (ticket) {
-      mark('TICKET_PRESENT','PASS','One-time launch ticket found in URL fragment');
-      mark('SESSION_EXCHANGE','RUNNING','POST /api/game/session-exchange');
-      try{await jsonFetch('/api/game/session-exchange', { method:'POST', body:JSON.stringify({ticket}) });mark('SESSION_EXCHANGE','PASS','Arena HttpOnly session created')}catch(error){showError(error.message,'SESSION_EXCHANGE');return}
-      history.replaceState(null, document.title, location.pathname + location.search);
-      mark('FRAGMENT_SCRUB','PASS','Launch fragment removed from browser history');
-    } else {
-      mark('TICKET_PRESENT','SKIP','No launch ticket; attempting existing arena session');
-      mark('SESSION_EXCHANGE','SKIP','Existing arena cookie path');
-      mark('FRAGMENT_SCRUB','SKIP','No fragment to remove');
-    }
-    mark('BOOTSTRAP','RUNNING','GET /api/game/bootstrap');
-    let bootstrap;
-    try{bootstrap=await jsonFetch('/api/game/bootstrap');mark('BOOTSTRAP','PASS',`Protocol ${bootstrap?.data?.protocolVersion||'unknown'}`)}catch(error){showError(error.message,'BOOTSTRAP');return}
-    const member=bootstrap?.data?.member;const experience=bootstrap?.data?.experience;
-    if(member?.id&&experience?.type==='PUSH_UP_ARENA'&&experience?.challengeId==='push_up') mark('IDENTITY','PASS',`Member resolved · ${experience.type} / ${experience.challengeId}`); else {showError('Bootstrap identity or Push-Up Arena scope is incomplete.','IDENTITY');return}
-    mark('BUILD_PROBE','RUNNING','GET /api/game/build');
-    let build;
-    try{build=await fetch('/api/game/build', { credentials:'same-origin', cache:'no-store' })}catch(error){showError(error.message,'BUILD_PROBE');return}
-    if (!build.ok) {
-      mark('BUILD_PROBE','FAIL',`HTTP ${build.status} · Godot Web export is not available yet`);
-      status.innerHTML = `<div class="card"><h2>Connected to PocketPT</h2><p>Member: <strong>${escapeHtml(member?.displayName || member?.id || 'Unknown')}</strong></p><p>Member ID: <code>${escapeHtml(member?.id || '')}</code></p><p>Experience: <strong>${escapeHtml(experience?.type || '')}</strong><br>Challenge: <strong>${escapeHtml(experience?.challengeId || '')}</strong></p><p>The authenticated bridge is ready. The Godot Web export has not been supplied at <code>/game/push-up-arena/index.html</code> yet.</p><p><button type="button" onclick="document.getElementById('bridgeDebugToggle').click()">Open Bridge Debug Board</button></p><a data-arena-exit class="exit" href="${escapeHtml(returnTo)}">Return to Push-Up Challenge</a></div>`;
-      setDebugOpen(true);
-      return;
-    }
-    mark('BUILD_PROBE','PASS',`HTTP ${build.status} · /game/push-up-arena/index.html`);
-    mark('IFRAME_LOAD','RUNNING','Loading Godot Web entry');
-    game.src='/game/push-up-arena/index.html';
-    game.onload=()=>{status.style.display='none';game.style.display='block';mark('IFRAME_LOAD','PASS','Godot Web iframe load event fired');mark('GODOT_HANDSHAKE','RUNNING','Waiting for POCKETPT_GODOT_BRIDGE READY message')};
-  }
-  function escapeHtml(value){return String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  renderDebug();
-  start().catch(error => showError(error.message + ' Launch the arena from an authenticated PocketPT session.'));
-})();
-</script>
+  <button id="bridgeDebugToggle" type="button" aria-controls="bridgeDebugBoard" aria-expanded="false">Arena Diagnostics</button>
+  <aside id="bridgeDebugBoard" hidden aria-label="PocketPT arena diagnostics"></aside>
+  <noscript>JavaScript is required to connect the arena. Return to the Push-Up Challenge using Exit Arena.</noscript>
 </body>
 </html>

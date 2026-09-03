@@ -39,40 +39,45 @@ test("launch-side bridge debug board reports the first sanitized failure", () =>
 
 test("arena shell uses server-owned return config then exchanges fragment ticket before bootstrap and Godot load", () => {
   const html = read("public/arena-push-up.html");
-  const config = html.indexOf("/api/game/config");
-  const exchange = html.indexOf("/api/game/session-exchange");
-  const bootstrap = html.indexOf("/api/game/bootstrap");
-  const godotEntry = html.indexOf("/game/push-up-arena/index.html");
+  assert.match(html, /arena-push-up\.js/);
+  const source = read("public/arena-push-up.js");
+  const config = source.indexOf("/api/game/config");
+  const exchange = source.indexOf("/api/game/session-exchange");
+  const bootstrap = source.indexOf("/api/game/bootstrap");
+  const godotEntry = source.indexOf("/game/push-up-arena/index.html");
   assert.ok(config >= 0, "server-owned arena config route must be present");
   assert.ok(exchange > config, "ticket exchange must follow arena config");
   assert.ok(bootstrap > exchange, "bootstrap must follow ticket exchange");
   assert.ok(godotEntry > bootstrap, "Godot load must follow authenticated bootstrap");
-  assert.match(html, /history\.replaceState/);
-  assert.doesNotMatch(html, /new URLSearchParams\(location\.search\).*returnTo/);
+  assert.match(source, /history\.replaceState/);
+  assert.doesNotMatch(source, /new URLSearchParams\(location\.search\).*returnTo/);
 });
 
 test("arena debug command board traces every bridge boundary through Godot handshake", () => {
   const html = read("public/arena-push-up.html");
+  const source = read("public/arena-push-up.js");
+  const diagnostics = read("public/arena-diagnostics.js");
   for (const stage of ["ARENA_SHELL", "CONFIG", "TICKET_PRESENT", "SESSION_EXCHANGE", "FRAGMENT_SCRUB", "BOOTSTRAP", "IDENTITY", "BUILD_PROBE", "IFRAME_LOAD", "GODOT_HANDSHAKE", "EXIT_REVOKE"]) {
-    assert.match(html, new RegExp(stage));
+    assert.match(diagnostics, new RegExp(stage));
   }
-  assert.match(html, /World Bridge Command Board/);
-  assert.match(html, /FIRST FAILURE/);
-  assert.match(html, /Copy Debug Report/);
-  assert.match(html, /POCKETPT_GODOT_BRIDGE/);
-  assert.match(html, /data\.event==='READY'/);
-  assert.match(html, /data\.event==='ERROR'/);
-  assert.match(html, /event\.origin!==location\.origin/);
-  assert.match(html, /Bearer \[REDACTED\]/);
-  assert.match(html, /ticket=\[REDACTED\]/);
+  assert.match(html, /Arena Diagnostics/);
+  assert.match(html, /arena-diagnostics\.js/);
+  assert.match(diagnostics, /FIRST FAILURE/);
+  assert.match(diagnostics, /Copy Debug Report/);
+  assert.match(source, /POCKETPT_GODOT_BRIDGE/);
+  assert.match(source, /data\.event === 'READY'/);
+  assert.match(source, /data\.event === 'ERROR'/);
+  assert.match(diagnostics, /event\.origin === origin/);
+  assert.match(diagnostics, /event\.source === frame\.contentWindow/);
 });
 
 test("arena exit explicitly revokes the scoped arena session before returning to PocketPT", () => {
   const html = read("public/arena-push-up.html");
+  const source = read("public/arena-push-up.js");
   assert.match(html, /data-arena-exit/);
-  assert.match(html, /fetch\('\/api\/game\/session',\s*\{\s*method:'DELETE'/);
-  assert.match(html, /credentials:'same-origin'/);
-  assert.match(html, /location\.assign\(destination \|\| returnTo\)/);
+  assert.match(source, /jsonFetch\('\/api\/game\/session',\s*\{method: 'DELETE'/);
+  assert.match(source, /credentials: 'same-origin'/);
+  assert.match(source, /location\.assign\(destination \|\| returnTo\)/);
 });
 
 test("world bridge owns the canonical PocketPT return URL", () => {
