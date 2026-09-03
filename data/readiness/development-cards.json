@@ -42,6 +42,20 @@
       "createdAt": "2026-09-02T19:03:00.446Z",
       "source": "readiness:update",
       "taskId": "godot-phase2-avatar-identity"
+    },
+    {
+      "id": "avatar-development-pushup-arena-v1",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Beast Mode Gym Push-Up Arena V1",
+      "category": "Godot challenge integration",
+      "description": "Audit and connect canonical PocketPT body controls, validated push-up recognition, timed attempts, champion cadence, voice, and the existing Godot gym. Start with a reconnaissance handoff; runtime implementation and independent, trainer, browser, and physical-device acceptance remain separate gates.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-03T01:06:06.467Z",
+      "source": "readiness:update",
+      "taskId": "pushup-arena-v1"
     }
   ]
 }
