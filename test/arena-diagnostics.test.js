@@ -278,6 +278,7 @@ async function launch(options = {}) {
   };
   let uuid = 0;
   context.window = {crypto: {randomUUID: () => `launch-${++uuid}`}, addEventListener: (name, cb) => events.set(name, cb),
+    PocketPTArenaPhoneUI: options.phone ? {mount: () => options.phone} : undefined,
     PocketPTArenaDiagnostics: {...diagnostics, create: settings => {model = diagnostics.create({...settings, now: () => clock}); return model;},
       mount: () => ({render() {}, setOpen(value) {open = value;}})}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../public/arena-push-up.js'), 'utf8'), context);
@@ -285,6 +286,7 @@ async function launch(options = {}) {
   return {model, calls, outgoing, nodes, game, location, timers: timerCallbacks, open: () => open,
     message: (data, source = game.contentWindow, origin = location.origin) => events.get('message')({data, source, origin}),
     pageEvent: (name, event) => events.get(name)?.(event),
+    visibility(hidden) {context.document.hidden = hidden; documentEvents.get('visibilitychange')?.();},
     advance(ms) {clock += ms; documentEvents.get('visibilitychange')?.();},
     async exit() {documentEvents.get('click')({target: {closest: () => nodes.get('exitArena')}, preventDefault() {}}); await new Promise(resolve => setImmediate(resolve));}
   };
@@ -409,4 +411,31 @@ test('exit uses canonical cookie-scoped revocation and blocks late game messages
   assert.equal(row(app.model, 'EXIT_REVOKE').status, 'PASS');
   app.message(ready);
   assert.notEqual(row(app.model, 'GODOT_HANDSHAKE').status, 'PASS');
+});
+
+test('phone controls inherit exact frame isolation and arena lifecycle cleanup', async () => {
+  const calls = [];
+  const phone = Object.fromEntries(['reset', 'connect', 'accept', 'close', 'suspend'].map(name => [name, (...args) => calls.push({name, args})]));
+  const app = await launch({phone});
+  app.message(ready);
+  assert.equal(calls.filter(x => x.name === 'connect').length, 1);
+  const flow = {...ready, event: 'ARENA_FLOW_CAPABILITIES', flowVersion: 1};
+  app.message(flow, {}, 'https://arena.example');
+  app.message(flow, app.game.contentWindow, 'https://other.example');
+  assert.equal(calls.some(x => x.name === 'accept'), false);
+  app.message(flow); assert.equal(calls.filter(x => x.name === 'accept').length, 1);
+  app.visibility(true); assert.equal(calls.at(-1).name, 'suspend');
+  app.visibility(false); app.advance(600001); assert.equal(calls.at(-1).name, 'close');
+  const count = calls.length; app.message(flow); assert.equal(calls.filter(x => x.name === 'accept').length, 1);
+  assert.ok(calls.length >= count);
+});
+
+test('frame replacement and exit close or reset the phone coordinator', async () => {
+  const calls = [];
+  const phone = Object.fromEntries(['reset', 'connect', 'accept', 'close', 'suspend'].map(name => [name, () => calls.push(name)]));
+  const app = await launch({phone}); app.message(ready); app.game.onload();
+  const before = calls.filter(x => x === 'reset').length;
+  app.game.contentDocument = {}; app.game.onload();
+  assert.equal(calls.filter(x => x === 'reset').length, before + 1);
+  await app.exit(); assert.equal(calls.at(-1), 'close');
 });

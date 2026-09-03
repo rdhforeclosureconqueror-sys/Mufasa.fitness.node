@@ -26,6 +26,10 @@
   const timers = new Map();
   const requests = new Set();
   const mark = (id, state, code) => model.mark(id, state, code);
+  const phone = window.PocketPTArenaPhoneUI?.mount({game, mark, send: data => {
+    const stopping = data.action === 'STOP' || (data.action === 'SET_CONTEXT' && data.context === 'LOCKED');
+    if (frameStarted && readyReceived && !disposed && !leaving && (Date.now() < expiresAt || stopping)) game.contentWindow.postMessage(data, location.origin);
+  }});
 
   function cancelTimer(name) { clearTimeout(timers.get(name)); timers.delete(name); }
   function schedule(name, delay, callback) {
@@ -34,6 +38,7 @@
   }
   function showError(stage, code) {
     if (disposed || leaving) return;
+    phone?.close();
     mark(stage, 'FAIL', code);
     status.style.display = 'grid';
     game.style.display = 'none';
@@ -66,6 +71,7 @@
   function expireSession() {
     if (!expiresAt || Date.now() < expiresAt || disposed || leaving) return;
     mark('SESSION_LIFETIME', 'FAIL', 'SESSION_EXPIRED');
+    phone?.close();
     model.close();
     cancelTimer('frame');
     cancelTimer('ready');
@@ -78,6 +84,7 @@
       protocolVersion: 1, diagnosticVersion: 1, requestId}, location.origin);
   }
   function startGameGeneration() {
+    phone?.reset();
     requestId = window.crypto.randomUUID();
     model.resetGame(requestId);
   }
@@ -102,8 +109,9 @@
       readyReceived = true;
       cancelTimer('ready');
       mark('GODOT_HANDSHAKE', 'PASS', 'HANDSHAKE_READY');
-      if (firstReady) requestDiagnostics();
+      if (firstReady) {requestDiagnostics(); phone?.connect();}
     } else if (data.event === 'ERROR') {
+      phone?.close();
       const sessionError = data.code === 'ARENA_SESSION_INVALID';
       mark(sessionError ? 'SESSION_LIFETIME' : 'GODOT_HANDSHAKE', 'FAIL', sessionError ? 'HTTP_401' : 'GAME_ERROR');
       readyReceived = false;
@@ -112,10 +120,11 @@
       view.setOpen(true);
     } else if (data.event === 'DIAGNOSTIC' && model.acceptRuntime(data) && model.summary().firstFailure) {
       view.setOpen(true);
-    }
+    } else phone?.accept(data);
   });
   async function endArenaSessionAndReturn(destination) {
     if (leaving) return;
+    phone?.close();
     leaving = true;
     for (const timer of timers.values()) clearTimeout(timer);
     for (const request of requests) request.abort();
@@ -134,8 +143,9 @@
     event.preventDefault();
     endArenaSessionAndReturn(returnTo);
   });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) expireSession(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) expireSession(); else phone?.suspend(); });
   window.addEventListener('pagehide', () => {
+    phone?.close();
     disposed = true;
     model.close();
     for (const timer of timers.values()) clearTimeout(timer);
