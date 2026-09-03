@@ -126,11 +126,15 @@ test('copied reports contain only allowlisted details, never arbitrary runtime p
 
 function panel(navigator) {
   const nodes = [];
-  const document = {createElement(tag) {
+  const document = {activeElement: null, createElement(tag) {
     const node = {tag, children: [], events: {}, attributes: {}, dataset: {}, textContent: '', hidden: false,
-      append(...children) {this.children.push(...children);}, replaceChildren() {this.children = [];},
+      append(...children) {for (const child of children) {child.parentElement = this; this.children.push(child);}},
+      replaceChildren() {for (const child of this.children) child.parentElement = null; this.children = [];},
       setAttribute(name, value) {this.attributes[name] = value;}, addEventListener(name, callback) {this.events[name] = callback;},
-      focus() {this.focused = true;}, select() {this.selected = true;}};
+      focus() {
+        for (let ancestor = this; ancestor; ancestor = ancestor.parentElement) if (ancestor.hidden) return;
+        document.activeElement = this;
+      }, select() {this.selected = true;}};
     nodes.push(node);
     return node;
   }};
@@ -139,36 +143,87 @@ function panel(navigator) {
   board.hidden = true;
   const toggle = document.createElement('button');
   const view = diagnostics.mount({model, board, toggle, document, navigator, reload() {}});
-  return {model, board, toggle, view, nodes, button: text => nodes.find(node => node.tag === 'button' && node.textContent === text)};
+  // Model keyboard bubbling from the focused element and native Enter activation.
+  // Calling the board handler directly would hide missing focus transfer on open.
+  function press(key) {
+    const target = document.activeElement;
+    assert.ok(target, 'A control must have focus before a keyboard event');
+    const event = {key, target, defaultPrevented: false, preventDefault() {this.defaultPrevented = true;}};
+    for (let node = target; node; node = node.parentElement) node.events.keydown?.(event);
+    if (key === 'Enter' && target.tag === 'button' && !event.defaultPrevented) target.events.click?.();
+    return event;
+  }
+  return {model, board, toggle, view, nodes, document, press, button: text => nodes.find(node => node.tag === 'button' && node.textContent === text)};
 }
 
 test('copy fallback exposes a selectable report when clipboard access is absent or denied', async () => {
   for (const navigator of [{}, {clipboard: {writeText: async () => {throw new Error('denied');}}}]) {
     const ui = panel(navigator);
+    ui.view.setOpen(true);
     await ui.button('Copy Debug Report').events.click();
     const textarea = ui.nodes.find(node => node.tag === 'textarea');
     assert.equal(textarea.hidden, false);
     assert.equal(textarea.readOnly, true);
-    assert.equal(textarea.focused, true);
+    assert.ok(ui.document.activeElement === textarea);
     assert.equal(textarea.selected, true);
     assert.equal(textarea.value, ui.model.report());
     assert.equal(ui.nodes.some(node => node.textContent === 'Report copied.'), false);
   }
 });
 
-test('successful copy and keyboard close have distinct, truthful UI feedback', async () => {
+test('successful copy reports clipboard success without exposing the manual fallback', async () => {
   let copied;
   const ui = panel({clipboard: {writeText: async text => {copied = text;}}});
-  ui.toggle.events.click();
-  assert.equal(ui.board.hidden, false);
-  assert.equal(ui.toggle.attributes['aria-expanded'], 'true');
+  ui.view.setOpen(true);
   await ui.button('Copy Debug Report').events.click();
   assert.equal(copied, ui.model.report());
   assert.equal(ui.nodes.some(node => node.textContent === 'Report copied.'), true);
-  ui.board.events.keydown({key: 'Escape', preventDefault() {}});
+  assert.equal(ui.nodes.find(node => node.tag === 'textarea').hidden, true);
+});
+
+test('keyboard opening focuses Close so Escape closes the panel and returns focus to the toggle', () => {
+  const ui = panel({});
+  ui.toggle.focus();
+  assert.ok(ui.document.activeElement === ui.toggle);
+  assert.equal(ui.press('Escape').defaultPrevented, false);
+  assert.equal(ui.board.hidden, true);
+
+  ui.press('Enter');
+  assert.equal(ui.board.hidden, false);
+  assert.equal(ui.toggle.attributes['aria-expanded'], 'true');
+  assert.ok(ui.document.activeElement === ui.button('Close'), 'Opening must move focus to Close');
+  assert.equal(ui.press('Escape').defaultPrevented, true);
   assert.equal(ui.board.hidden, true);
   assert.equal(ui.toggle.attributes['aria-expanded'], 'false');
-  assert.equal(ui.toggle.focused, true);
+  assert.ok(ui.document.activeElement === ui.toggle, 'Escape must return focus to the toggle');
+
+  ui.press('Enter');
+  assert.ok(ui.document.activeElement === ui.button('Close'));
+  ui.press('Enter');
+  assert.equal(ui.board.hidden, true);
+  assert.equal(ui.toggle.attributes['aria-expanded'], 'false');
+  assert.ok(ui.document.activeElement === ui.toggle, 'Close must return focus to the toggle');
+});
+
+test('repeated open requests preserve focus on Copy and the manual-copy report', async () => {
+  const ui = panel({});
+  ui.toggle.focus();
+  ui.press('Enter');
+  const copy = ui.button('Copy Debug Report');
+  copy.focus();
+  ui.view.setOpen(true);
+  assert.ok(ui.document.activeElement === copy, 'An already open panel must not steal focus');
+
+  await copy.events.click();
+  const textarea = ui.nodes.find(node => node.tag === 'textarea');
+  assert.ok(ui.document.activeElement === textarea);
+  ui.view.render();
+  ui.view.setOpen(true);
+  assert.ok(ui.document.activeElement === textarea, 'Diagnostic updates must preserve manual-copy focus');
+  assert.equal(textarea.selected, true);
+  assert.equal(ui.press('Escape').defaultPrevented, true);
+  assert.equal(ui.board.hidden, true);
+  assert.ok(ui.document.activeElement === ui.toggle);
 });
 
 test('bootstrap validation distinguishes identity, experience, expiry and avatar descriptor failures', () => {

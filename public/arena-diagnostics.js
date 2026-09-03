@@ -235,8 +235,10 @@
     fallback.setAttribute('aria-label', 'Diagnostic report for manual copying');
     board.append(copyStatus, fallback);
     function setOpen(open) {
+      const opening = open && board.hidden;
       board.hidden = !open;
       toggle.setAttribute('aria-expanded', String(open));
+      if (opening) close.focus();
       if (!open) toggle.focus();
     }
     toggle.addEventListener('click', () => setOpen(board.hidden));
