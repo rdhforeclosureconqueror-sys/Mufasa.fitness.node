@@ -1149,6 +1149,35 @@
       "prNumber": 633,
       "commitSha": null,
       "timestamp": "2026-09-03T16:04:11.953Z"
+    },
+    {
+      "operationId": "c944409f-a123-40fb-a8fe-0dd925bd5f87",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "pull_request",
+      "taskId": "arena-personal-pose-calibration",
+      "files": [
+        "public/arena-pose-calibration.js",
+        "public/arena-phone-flow.js",
+        "public/arena-camera.js",
+        "public/arena-phone-ui.js",
+        "public/arena-diagnostics.js",
+        "public/arena-push-up.html",
+        "test/arena-pose-calibration.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-camera.test.js",
+        "test/arena-phone-ui.test.js",
+        "scripts/preview-arena-diagnostics.js",
+        "docs/review-handoffs/arena-first-failure-diagnostics-review.md",
+        "docs/review-handoffs/arena-phone-flow-godot-handoff.md",
+        "docs/review-handoffs/pushup-arena-v1-reconnaissance.md",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Commit 5f804063 adds personal TOP/BOTTOM/TOP calibration to draft PR 633 on prior head 48d2168. Stable attempt-only joint-angle templates classify the member's own gates; photographs and raw landmarks are not saved or bridged. Calibration resets on camera replacement/exit and cannot pass official START_POSITION, REP_DETECTOR or TIMER checks. 124 targeted tests, readiness validation for 19 files, syntax and whitespace checks pass. Independent review, approved exercise rules, Godot receiver/animations, authenticated browser, real camera/body, visual and physical-iPhone acceptance remain required. No merge, deployment or human approval.",
+      "prNumber": 633,
+      "commitSha": "5f8040639eb575af442eda0c2dc6ddb330de14f4",
+      "timestamp": "2026-09-03T16:07:01.898Z"
     }
   ]
 }

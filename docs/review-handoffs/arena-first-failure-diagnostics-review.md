@@ -12,6 +12,8 @@ Previous keyboard repair: `4bc9b0f8951529d842bc6c966a11c36000739da9`, followed b
 
 Tested phone implementation: `ee1384420493011b114a72728a450bd99269b018`. Review the actual current PR head as well as that implementation; a later handoff/readiness commit records its evidence. The owner explicitly approved expanding the same draft PR to include the phone flow. Earlier independent findings apply only to the previously reviewed scope. Re-review the expanded change before owner acceptance. Do not merge or deploy.
 
+Tested personal calibration implementation: `5f8040639eb575af442eda0c2dc6ddb330de14f4`. This adds the attempt-scoped TOP/BOTTOM/TOP process after the phone/camera work. Review both the implementation and the actual final metadata head.
+
 ## What the owner can expect
 
 The existing bridge debug panel becomes Arena Diagnostics, with observed first failure, blocked/unconnected dependencies, ownership and safe next actions. Opening focuses Close; Escape restores focus to its toggle. Repeated updates preserve manual-copy focus.
