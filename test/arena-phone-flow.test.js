@@ -76,13 +76,27 @@ test('cancelled or timed-out mat commands reject late arrival without starting s
 test('camera setup locks movement, uses visibility only, and never arms a countdown', () => {
   const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
   assert.equal(f.flow.snapshot().previewOnly, false); assert.equal(f.sent.at(-1).action, 'PUSH_UP_START');
+  assert.equal(f.flow.calibration('CAPTURE_TOP'), true);
   assert.equal(f.flow.cameraStarting(), true); f.flow.cameraActive(); f.flow.visibility(true);
-  assert.equal(f.flow.snapshot().state, 'BODY_VISIBLE'); assert.equal(f.flow.hold('MOVE_FORWARD'), false);
+  assert.equal(f.flow.snapshot().state, 'CALIBRATING_TOP'); assert.equal(f.flow.hold('MOVE_FORWARD'), false);
   assert.equal(f.flow.approach(), false); assert.equal(f.flow.snapshot().context, 'CAMERA_SETUP');
   assert.equal(f.reply('AVATAR_DOWN'), true);
-  f.advance(65000); assert.equal(f.flow.snapshot().state, 'BODY_VISIBLE');
+  f.flow.calibration('CAPTURE_BOTTOM'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_BOTTOM');
+  f.flow.calibration('CONFIRM_TOP'); assert.equal(f.flow.snapshot().state, 'CONFIRMING_TOP');
+  f.flow.calibration('CALIBRATED'); assert.equal(f.flow.snapshot().state, 'CALIBRATED');
+  f.advance(65000); assert.equal(f.flow.snapshot().state, 'CALIBRATED');
   assert.equal(f.marks.some(([id, status]) => ['START_POSITION', 'READY_GESTURE', 'REP_DETECTOR', 'TIMER', 'SCORE_PERSISTENCE'].includes(id) && status === 'PASS'), false);
   f.flow.visibility(false); assert.equal(f.flow.snapshot().state, 'CAMERA_POSITIONING');
+});
+
+test('personal pose calibration records gates but cannot mark official start or rep checks as passed', () => {
+  const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
+  f.flow.cameraStarting(); f.flow.cameraActive(); f.flow.visibility(true);
+  for (const stage of ['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED']) assert.equal(f.flow.calibration(stage), true);
+  assert.ok(f.marks.some(([id, status]) => id === 'POSE_TOP_CALIBRATION' && status === 'PASS'));
+  assert.ok(f.marks.some(([id, status]) => id === 'POSE_BOTTOM_CALIBRATION' && status === 'PASS'));
+  assert.equal(f.marks.some(([id, status]) => ['START_POSITION', 'READY_GESTURE', 'REP_DETECTOR', 'TIMER'].includes(id) && status === 'PASS'), false);
+  assert.equal(JSON.stringify(f.sent).includes('sequenceLandmarks'), false);
 });
 
 test('return waits for standing even if the down animation was never acknowledged', () => {

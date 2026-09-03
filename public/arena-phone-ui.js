@@ -3,10 +3,14 @@
   function mount({game, mark, send}) {
     const doc = root.document, $ = id => doc.getElementById(id);
     const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo');
-    if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera) return null;
+    if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null;
+    const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
+      flow?.calibration(progress.stage);
+    }});
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
+      onPose(frame, confidence) {if (!flow?.snapshot().previewOnly) calibration.observe(frame, confidence);},
       onFailure: () => flow?.cameraError(),
       onDevices(devices, selected) {
         $('arenaCameraSelect').replaceChildren(...devices.map(device => {
@@ -15,7 +19,7 @@
         $('arenaCameraChoice').hidden = devices.length < 2;
       }
     });
-    function stopCamera() {cameraOperation++; camera.stop(); $('arenaCameraChoice').hidden = true;}
+    function stopCamera() {cameraOperation++; camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
     function releasePointer() {
       const held = pointer; pointer = null;
       if (held?.element.hasPointerCapture?.(held.id)) held.element.releasePointerCapture(held.id);
@@ -39,9 +43,16 @@
       $('arenaCameraStage').hidden = !state.cameraView;
       game.inert = !['CONNECTING', 'GYM', 'LEGACY', 'NEGOTIATING'].includes(state.state);
       game.style.visibility = state.cameraView ? 'hidden' : '';
-      $('arenaCameraSelect').disabled = !['CAMERA_POSITIONING', 'BODY_VISIBLE'].includes(state.state);
-      $('arenaBodyStatus').textContent = state.state === 'BODY_VISIBLE' ? 'Required joints visible · challenge has not started' : 'Waiting for a clear full-body view';
-      $('arenaBodyStatus').dataset.visible = String(state.state === 'BODY_VISIBLE');
+      $('arenaCameraSelect').disabled = !['CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED'].includes(state.state);
+      const cameraStatus = {
+        BODY_VISIBLE: 'Required joints visible · camera preview only',
+        CALIBRATING_TOP: 'Hold TOP still · capturing automatically',
+        CALIBRATING_BOTTOM: 'TOP captured ✓ · hold BOTTOM still',
+        CONFIRMING_TOP: 'TOP captured ✓ · BOTTOM captured ✓ · return to TOP',
+        CALIBRATED: 'TOP ✓ · BOTTOM ✓ · full personal cycle confirmed'
+      }[state.state];
+      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for a clear full-body view';
+      $('arenaBodyStatus').dataset.visible = String(Boolean(cameraStatus));
       if (pointer && !state.canMove) releasePointer();
       if (state.state === 'INTRO' && doc.activeElement === $('arenaStopApproach')) $('arenaSetupCamera').focus();
       if (state.state === 'GYM' && previousState === 'RETURNING' && panel.contains(doc.activeElement)) $('arenaGoToMat').focus();
@@ -52,6 +63,7 @@
     async function enableCamera(deviceId = '') {
       if (deviceId) {stopCamera(); flow.cameraError();}
       if (!flow.cameraStarting()) return;
+      if (!flow.snapshot().previewOnly && calibration.snapshot().stage === 'IDLE') calibration.start();
       $('arenaReturnToGym').focus();
       const generation = ++cameraOperation;
       try {await camera.start(deviceId); if (generation === cameraOperation) flow.cameraActive();}
@@ -60,7 +72,7 @@
     $('arenaGoToMat').addEventListener('click', () => {if (flow.approach()) $('arenaStopApproach').focus();});
     $('arenaStopApproach').addEventListener('click', () => {flow.cancelApproach(); $('arenaGoToMat').focus();});
     $('arenaSetupCamera').addEventListener('click', () => {
-      if (flow.setup()) $('arenaEnableCamera').focus();
+      if (flow.setup()) {if (!flow.snapshot().previewOnly) calibration.start(); $('arenaEnableCamera').focus();}
     });
     $('arenaEnableCamera').addEventListener('click', () => enableCamera());
     $('arenaReturnToGym').addEventListener('click', () => {if (flow.returnToGym()) (flow.snapshot().state === 'RETURNING' ? $('arenaPhoneMessage') : $('arenaSetupCamera')).focus();});

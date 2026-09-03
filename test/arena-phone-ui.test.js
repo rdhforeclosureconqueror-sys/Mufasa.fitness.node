@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const Flow = require('../public/arena-phone-flow');
+const Calibration = require('../public/arena-pose-calibration');
 
 function fixture(t) {
   const nodes = new Map(), events = new Map(), sent = []; let starts = 0, stops = 0, cameraOptions;
@@ -21,7 +22,7 @@ function fixture(t) {
   for (const [, id] of html.matchAll(/id="([^"]+)"/g)) node(id);
   const buttons = ['MOVE_LEFT', 'MOVE_RIGHT', 'MOVE_FORWARD', 'MOVE_BACKWARD'].map(action => {const button = node(action); button.dataset.arenaMove = action; return button;});
   nodes.get('arenaPhonePanel').querySelectorAll = () => buttons;
-  const root = {document: doc, crypto: {randomUUID: () => 'phone-scope'}, PocketPTArenaPhoneFlow: Flow,
+  const root = {document: doc, crypto: {randomUUID: () => 'phone-scope'}, PocketPTArenaPhoneFlow: Flow, PocketPTArenaPoseCalibration: Calibration,
     addEventListener: (name, fn) => events.set(name, fn),
     PocketPTArenaCamera: {create(options) {cameraOptions = options; return {async start() {starts++;}, stop() {stops++; options.onVisibility(false);}, resetTracking() {options.onVisibility(false);}};}}
   };
@@ -54,7 +55,7 @@ test('touch mat flow transfers focus to recovery controls and locks the iframe d
   assert.equal(f.stats().starts, 0);
   await f.nodes.get('arenaEnableCamera').fire('click'); assert.equal(f.stats().starts, 1);
   assert.equal(f.doc.activeElement.id, 'arenaReturnToGym'); assert.equal(f.nodes.get('arenaCameraStage').hidden, false);
-  f.cameraOptions().onVisibility(true); assert.match(f.nodes.get('arenaBodyStatus').textContent, /challenge has not started/);
+  f.cameraOptions().onVisibility(true); assert.match(f.nodes.get('arenaBodyStatus').textContent, /Hold TOP/);
 });
 
 test('suspend stops the camera and keeps navigation unavailable until explicit return', async t => {
@@ -90,7 +91,7 @@ test('preview serves phone assets and an isolated camera double with explicit sy
   const base = `http://127.0.0.1:${server.address().port}`;
   const page = await (await fetch(base + '/arena/push-up?case=phone-flow')).text();
   assert.match(page, /SYNTHETIC PREVIEW/);
-  for (const name of ['runtime-state.js', 'push-up-challenge.js', 'arena-phone-flow.js', 'arena-phone-ui.js', 'arena-camera.js']) {
+  for (const name of ['runtime-state.js', 'push-up-challenge.js', 'arena-phone-flow.js', 'arena-pose-calibration.js', 'arena-phone-ui.js', 'arena-camera.js']) {
     const response = await fetch(base + '/' + name + '?case=phone-flow'); assert.equal(response.status, 200);
     new vm.Script(await response.text());
   }

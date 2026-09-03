@@ -96,13 +96,13 @@ Validate exact parent window and trusted origin, numeric protocol/flow versions,
 
 `CONNECTING → NEGOTIATING → GYM` (or `LEGACY` when support is absent).
 
-`GYM → APPROACHING → INTRO → CAMERA_SETUP → CAMERA_STARTING → CAMERA_POSITIONING ↔ BODY_VISIBLE`.
+`GYM → APPROACHING → INTRO → CAMERA_SETUP → CAMERA_STARTING → CAMERA_POSITIONING → CALIBRATING_TOP → CALIBRATING_BOTTOM → CONFIRMING_TOP → CALIBRATED`.
 
 A legacy/normal gym can enter CAMERA_SETUP directly for a camera check; that path does not claim arrival or lower the avatar. Navigation is disabled during setup. When entered from the mat briefing, PocketPT also requests PUSH_UP_START.
 
 Return from an attempted down transition requires `RETURNING → AVATAR_STANDING → GYM`. Missing confirmation becomes RETURN_BLOCKED, with movement still disabled. Backgrounding becomes SUSPENDED and stops camera/movement. A fresh explicit return is required; camera access never resumes automatically. Expiry/exit becomes CLOSED. Reload/frame replacement invalidates both camera work and old game replies.
 
-BODY_VISIBLE is the current endpoint. START_POSITION remains unconnected. Do not turn it into a ready signal just because five joints are visible: standing people can also satisfy visibility.
+PocketPT now derives attempt-scoped TOP and BOTTOM geometry after BODY_VISIBLE and confirms a return to TOP. Those templates stay in browser memory; photographs are not saved and landmarks are not sent through this bridge. `CALIBRATED` is the current endpoint. START_POSITION remains unconnected because calibration identifies the member's two pose gates but does not certify side orientation, safe form or approved depth. Do not turn visibility or calibration alone into a countdown-ready signal.
 
 The next challenge implementation must connect reviewed orientation/top/alignment rules, a held ready posture, and the canonical timed-attempt owner. If readiness drops before start, cancel countdown/arming. During the sixty-second run, tracking loss invalidates the current cycle; it must not complete a rep. Use a single authoritative deadline and canonical result persistence. Do not copy the legacy hip-Y counter into this arena.
 

@@ -134,6 +134,9 @@ PocketPT's arena coordinator owns the workflow. Godot owns world/animation state
 | AVATAR_GET_DOWN | Godot performs stand→lower/kneel→push-up start; acknowledge completion. No timer yet. |
 | CAMERA_POSITIONING | Coach asks member to move into side-view framing; PocketPT owns the camera overlay. |
 | BODY_VISIBLE | Required current shoulder/elbow/wrist/hip/ankle joints are in frame and tracking has stabilized. Loss returns to positioning. |
+| CALIBRATE_TOP | Hold a stable personal up position; retain derived attempt-scoped geometry only, not a camera image. |
+| CALIBRATE_BOTTOM | Hold a stable, geometrically distinct personal down position. This does not independently certify approved depth. |
+| CONFIRM_TOP | Return to the captured top gate to demonstrate the personal TOP → BOTTOM → TOP signal cycle. |
 | PUSH_UP_START_POSITION | Approved top posture and body alignment held with dwell. Visibility alone is insufficient. |
 | COUNTDOWN | Backend arms a start; player/ghost presentation is prepared. Loss of required readiness before start cancels that arm and returns to positioning. |
 | ACTIVE_CHALLENGE | Sixty-second fixed window. Fresh TOP→BOTTOM→TOP with required gates produces one completed rep. Godot displays movement and score snapshots. |

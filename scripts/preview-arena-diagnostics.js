@@ -12,7 +12,7 @@ const files = new Map([
   ['/arena-diagnostics.js', ['arena-diagnostics.js', 'text/javascript']],
   ['/arena-push-up.js', ['arena-push-up.js', 'text/javascript']]
 ]);
-for (const name of ['runtime-state.js', 'push-up-challenge.js', 'arena-phone-flow.js', 'arena-phone-ui.js']) files.set(`/${name}`, [name, 'text/javascript']);
+for (const name of ['runtime-state.js', 'push-up-challenge.js', 'arena-phone-flow.js', 'arena-pose-calibration.js', 'arena-phone-ui.js']) files.set(`/${name}`, [name, 'text/javascript']);
 function createPreview() {
   return http.createServer((req, res) => {
     const url = new URL(req.url, 'http://fixture.local');

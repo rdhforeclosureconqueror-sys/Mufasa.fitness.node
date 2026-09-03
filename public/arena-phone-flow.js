@@ -16,7 +16,11 @@
     CAMERA_SETUP: ['Set your phone down', 'Place it on a stable surface at your side. Keep your shoulders, elbows, wrists, hips and ankles in view. Enable your camera before stepping back.'],
     CAMERA_STARTING: ['Opening your camera', 'Allow camera access if prompted. You can cancel and return to the gym.'],
     CAMERA_POSITIONING: ['Move into the camera view', 'Use the preview to check your framing. Navigation is off while you set up.'],
-    BODY_VISIBLE: ['Your body is visible', 'Camera check complete. Challenge start is not available in this build yet; no countdown or score has started.'],
+    BODY_VISIBLE: ['Your body is visible', 'Hold your normal top push-up position. PocketPT will capture the pose automatically.'],
+    CALIBRATING_TOP: ['Hold your TOP position', 'Keep still while PocketPT learns what your personal up position looks like.'],
+    CALIBRATING_BOTTOM: ['TOP captured — now lower', 'Move into your normal bottom position and hold still for the BOTTOM capture.'],
+    CONFIRMING_TOP: ['BOTTOM captured — return to TOP', 'Press back to your captured TOP position to confirm the full cycle.'],
+    CALIBRATED: ['Your personal rep cycle is captured', 'TOP → BOTTOM → TOP was confirmed. Official countdown and scoring remain off until the reviewed push-up rules are connected.'],
     CAMERA_ERROR: ['Camera needs attention', 'Check camera permission, then try again. You can also return to the gym.'],
     RETURNING: ['Returning to the gym', 'Waiting for your avatar to stand before enabling movement.'],
     RETURN_BLOCKED: ['Avatar return not confirmed', 'Try returning to the gym again. Movement stays off until your avatar is standing.'],
@@ -30,7 +34,7 @@
     setTimer = setTimeout, clearTimer = clearTimeout, setRepeater = setInterval, clearRepeater = clearInterval} = {}) {
     let state = 'CONNECTING', requestId = null, outgoing = 0, incoming = 0, pending = null;
     let capabilities = null, held = null, repeater = null, nudgeTimer = null, avatarNeedsStand = false;
-    let previewOnly = true, connected = false, context = 'LOCKED';
+    let previewOnly = true, connected = false, context = 'LOCKED', calibrationStage = 'IDLE';
     const timers = new Map();
     function cancel(name) { clearTimer(timers.get(name)); timers.delete(name); }
     function schedule(name, delay, fn) { cancel(name); timers.set(name, setTimer(() => {timers.delete(name); fn();}, delay)); }
@@ -41,7 +45,7 @@
         canApproach: state === 'GYM' && capabilities?.matApproach === true && capabilities?.pushUpTransition === true,
         canSetup: ['GYM', 'LEGACY', 'INTRO'].includes(state),
         canEnableCamera: ['CAMERA_SETUP', 'CAMERA_ERROR'].includes(state),
-        cameraView: ['CAMERA_STARTING', 'CAMERA_POSITIONING', 'BODY_VISIBLE', 'CAMERA_ERROR'].includes(state)};
+        cameraView: ['CAMERA_STARTING', 'CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED', 'CAMERA_ERROR'].includes(state)};
     }
     function transmit(event, payload = {}) {
       if (!connected || !requestId) return null;
@@ -118,23 +122,39 @@
     }
     function setup() {
       if (!snapshot().canSetup) return false;
-      previewOnly = state !== 'INTRO'; setContext('CAMERA_SETUP'); change('CAMERA_SETUP');
+      previewOnly = state !== 'INTRO'; calibrationStage = 'IDLE'; setContext('CAMERA_SETUP'); change('CAMERA_SETUP');
       if (!previewOnly) {
         avatarNeedsStand = true;
         pending = {action: 'PUSH_UP_START', sequence: control('PUSH_UP_START')};
         schedule('command', 20000, () => {pending = null; mark('MAT_APPROACH', 'FAIL', 'FLOW_ACK_TIMEOUT');});
       }
       mark('START_POSITION', 'NOT_CONNECTED', 'START_RULES_PENDING');
+      mark('POSE_TOP_CALIBRATION', previewOnly ? 'SKIP' : 'WAITING', previewOnly ? 'CALIBRATION_PREVIEW_ONLY' : 'POSE_TOP_WAITING');
+      mark('POSE_BOTTOM_CALIBRATION', previewOnly ? 'SKIP' : 'NOT_CONNECTED', previewOnly ? 'CALIBRATION_PREVIEW_ONLY' : 'POSE_BOTTOM_WAITING');
       return true;
     }
     function cameraStarting() {if (!snapshot().canEnableCamera) return false; change('CAMERA_STARTING'); return true;}
     function cameraActive() {if (state === 'CAMERA_STARTING') {mark('BODY_VISIBILITY', 'WAITING', 'BODY_NOT_VISIBLE'); change('CAMERA_POSITIONING');}}
     function visibility(visible) {
-      if (!['CAMERA_POSITIONING', 'BODY_VISIBLE'].includes(state)) return;
-      const next = visible ? 'BODY_VISIBLE' : 'CAMERA_POSITIONING';
+      if (!['CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED'].includes(state)) return;
+      const stageState = {CAPTURE_TOP: 'CALIBRATING_TOP', CAPTURE_BOTTOM: 'CALIBRATING_BOTTOM', CONFIRM_TOP: 'CONFIRMING_TOP', CALIBRATED: 'CALIBRATED'}[calibrationStage];
+      const next = visible ? (previewOnly ? 'BODY_VISIBLE' : (stageState || 'BODY_VISIBLE')) : 'CAMERA_POSITIONING';
       if (state === next) return;
       mark('BODY_VISIBILITY', visible ? 'PASS' : 'WAITING', visible ? 'BODY_VISIBLE_NOW' : 'BODY_NOT_VISIBLE');
       if (state !== next) change(next);
+    }
+    function calibration(next) {
+      if (previewOnly || !['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED'].includes(next)) return false;
+      const expected = {IDLE: 'CAPTURE_TOP', CAPTURE_TOP: 'CAPTURE_BOTTOM', CAPTURE_BOTTOM: 'CONFIRM_TOP', CONFIRM_TOP: 'CALIBRATED'}[calibrationStage];
+      if (next !== 'CAPTURE_TOP' && next !== expected) return false;
+      calibrationStage = next;
+      if (next === 'CAPTURE_TOP') {mark('POSE_TOP_CALIBRATION', 'RUNNING', 'POSE_TOP_CAPTURING'); mark('POSE_BOTTOM_CALIBRATION', 'NOT_CONNECTED', 'POSE_BOTTOM_WAITING');}
+      if (next === 'CAPTURE_BOTTOM') {mark('POSE_TOP_CALIBRATION', 'PASS', 'POSE_TOP_CAPTURED'); mark('POSE_BOTTOM_CALIBRATION', 'RUNNING', 'POSE_BOTTOM_CAPTURING');}
+      if (next === 'CONFIRM_TOP') mark('POSE_BOTTOM_CALIBRATION', 'PASS', 'POSE_BOTTOM_CAPTURED');
+      if (next === 'CALIBRATED') mark('START_POSITION', 'NOT_CONNECTED', 'PERSONAL_GATES_READY');
+      const mapped = {CAPTURE_TOP: 'CALIBRATING_TOP', CAPTURE_BOTTOM: 'CALIBRATING_BOTTOM', CONFIRM_TOP: 'CONFIRMING_TOP', CALIBRATED: 'CALIBRATED'}[next];
+      if (snapshot().cameraView && state !== 'CAMERA_POSITIONING') change(mapped);
+      return true;
     }
     function cameraError() {if (snapshot().cameraView) {stopCamera(); change('CAMERA_ERROR');}}
     function returnToGym() {
@@ -155,11 +175,11 @@
     function reset() {
       setContext('LOCKED'); stopCamera(); for (const name of timers.keys()) cancel(name);
       requestId = null; connected = false; capabilities = null; pending = null;
-      avatarNeedsStand = false; previewOnly = true; context = 'LOCKED'; change('CONNECTING');
+      avatarNeedsStand = false; previewOnly = true; calibrationStage = 'IDLE'; context = 'LOCKED'; change('CONNECTING');
     }
     function close() {reset(); change('CLOSED');}
     return {snapshot, connect, accept, hold, nudge, release, approach, cancelApproach, setup,
-      cameraStarting, cameraActive, visibility, cameraError, returnToGym, suspend, reset, close};
+      cameraStarting, cameraActive, visibility, calibration, cameraError, returnToGym, suspend, reset, close};
   }
   return Object.freeze({VERSION, COPY, create});
 });

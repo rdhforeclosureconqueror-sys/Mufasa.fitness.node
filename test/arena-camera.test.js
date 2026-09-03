@@ -8,7 +8,7 @@ const deferred = () => {let resolve, reject; const promise = new Promise((a, b) 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 function fixture(getUserMedia) {
   let stopped = 0, starts = 0, captureStops = 0, id = 0, capture;
-  const timers = new Map(), marks = [], visibility = [], events = new Map();
+  const timers = new Map(), marks = [], visibility = [], poses = [], events = new Map();
   const track = {stop() {stopped++;}, getSettings: () => ({deviceId: 'private-camera-id', facingMode: 'user'}), addEventListener: (name, cb) => events.set(name, cb), removeEventListener: name => events.delete(name)};
   const stream = {getTracks: () => [track], getVideoTracks: () => [track]};
   const video = {style: {}, videoWidth: 640, videoHeight: 480, readyState: 2, srcObject: null, play: async () => {}};
@@ -22,8 +22,8 @@ function fixture(getUserMedia) {
       PoseCaptureEngine: class {constructor(options) {capture = this; this.options = options;} async start() {starts++;} stop() {captureStops++;} resetTracking() {}}
     }
   };
-  const camera = create({root, video, onVisibility: v => visibility.push(v), onStatus: (...args) => marks.push(args)});
-  return {camera, root, stream, video, timers, marks, visibility, events, stats: () => ({stopped, starts, captureStops}), capture: () => capture};
+  const camera = create({root, video, onVisibility: v => visibility.push(v), onPose: (...value) => poses.push(value), onStatus: (...args) => marks.push(args)});
+  return {camera, root, stream, video, timers, marks, visibility, poses, events, stats: () => ({stopped, starts, captureStops}), capture: () => capture};
 }
 
 test('visibility requires fresh finite required joints; it does not claim valid push-up posture', () => {
@@ -41,7 +41,8 @@ test('camera does not request permission until explicit start and reuses canonic
   await f.camera.start(); assert.equal(f.video.srcObject, f.stream); assert.equal(f.stats().starts, 1);
   assert.equal(f.video.muted, true); assert.equal(f.video.playsInline, true);
   f.capture().options.onFrame(frame()); assert.equal(f.visibility.at(-1), true);
-  [...f.timers.values()].find(timer => timer.delay === 1500).fn(); assert.equal(f.visibility.at(-1), false);
+  assert.equal(f.poses.at(-1)[0].trackingState, 'LOCKED'); assert.equal(f.poses.at(-1)[1], .75);
+  [...f.timers.values()].find(timer => timer.delay === 1500).fn(); assert.equal(f.visibility.at(-1), false); assert.equal(f.poses.at(-1)[0], null);
   f.camera.stop(); assert.equal(f.video.srcObject, null); assert.equal(f.stats().captureStops, 1); assert.equal(f.timers.size, 0);
 });
 

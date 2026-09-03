@@ -13,7 +13,7 @@
           p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1 && Number.isFinite(p.confidence) && p.confidence >= minimumConfidence;
       });
   }
-  function create({root = window, video, onVisibility = () => {}, onStatus = () => {}, onDevices = () => {}, onFailure = () => {}}) {
+  function create({root = window, video, onVisibility = () => {}, onPose = () => {}, onStatus = () => {}, onDevices = () => {}, onFailure = () => {}}) {
     let current = null, detectorTask = null, retiredDetector = Promise.resolve();
     const aborted = () => Object.assign(new Error('Camera operation cancelled'), {name: 'AbortError'});
     function stopTracks(stream) {stream?.getTracks?.().forEach(track => track.stop());}
@@ -104,9 +104,11 @@
         const confidence = profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
         op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame) {
           if (!live()) return;
-          onVisibility(visible(frame, confidence));
+          const bodyVisible = visible(frame, confidence);
+          onVisibility(bodyVisible);
+          onPose(bodyVisible ? frame : null, confidence);
           root.clearTimeout(op.staleTimer);
-          op.staleTimer = root.setTimeout(() => {if (live()) onVisibility(false);}, 1500);
+          op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, confidence);}}, 1500);
         }});
         await op.capture.start(video, {detector}); check();
         root.clearTimeout(op.timeout);
