@@ -20,7 +20,9 @@ function loadWithFakeStabilizer(processImpl) {
     retargetFramesExecuted: 1,
     bonesChangedLastFrame: 4
   };
-  return require(modulePath);
+  const api = require(modulePath);
+  api.install();
+  return api;
 }
 
 function fullPacket(overrides = {}) {
