@@ -1,0 +1,11 @@
+'use strict';
+const test=require('node:test');const assert=require('node:assert/strict');const phase7=require('../public/mirror-motion-phase7.js');
+function p(name,x,y,confidence=.95){return{name,x,y,confidence,score:confidence};}
+function packet(points){return{keypoints:points};}
+function front(){return packet([p('left_shoulder',30,40),p('right_shoulder',70,40),p('left_hip',35,90),p('right_hip',65,90),p('nose',50,20)]);}
+function side(dir=1){return packet([p('left_shoulder',48,40),p('right_shoulder',56,40),p('left_hip',49,90),p('right_hip',55,90),p('nose',52+dir*3,20)]);}
+test('front-facing pose remains FRONT',()=>{const e=phase7.createFacingEngine();const out=e.process(front());assert.equal(out.orientationIntent.state,'FRONT');assert.equal(out.orientationIntent.measuredDepth,false);});
+test('side-facing requires hysteresis before state change',()=>{const e=phase7.createFacingEngine({enterFrames:3});assert.equal(e.process(side()).orientationIntent.state,'FRONT');assert.equal(e.process(side()).orientationIntent.state,'FRONT');assert.equal(e.process(side()).orientationIntent.state,'SIDE');});
+test('yaw intent is bounded and signed by face asymmetry',()=>{const e=phase7.createFacingEngine({enterFrames:1,maxYawDeg:60});const out=e.process(side(1));assert.equal(out.orientationIntent.state,'SIDE');assert.ok(out.orientationIntent.yawIntentDeg>0);assert.ok(out.orientationIntent.yawIntentDeg<=60);});
+test('low confidence holds previous intent instead of inventing a turn',()=>{const e=phase7.createFacingEngine({enterFrames:1});e.process(side(1));const weak=packet([p('left_shoulder',48,40,.2),p('right_shoulder',56,40,.2),p('left_hip',49,90,.2),p('right_hip',55,90,.2)]);const out=e.process(weak);assert.equal(out.orientationIntent.source,'hold');assert.equal(out.orientationIntent.state,'SIDE');});
+test('diagnostics explicitly report facing state and no measured depth',()=>{const text=phase7.diagnosticsText();assert.match(text,/Facing state:/);assert.match(text,/Measured depth: NO/);});
