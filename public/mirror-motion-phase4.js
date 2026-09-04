@@ -14,8 +14,11 @@
     squatDeepDeg: 115,
     horizontalTorsoRatio: 1.35,
     pushupBodyLineToleranceRatio: 0.8,
+    pushupEnterFrames: 3,
+    pushupExitFrames: 2,
     anchorMaxDriftRatio: 0.18,
     anchorCorrectionGain: 0.82,
+    anchorCorrectionMinRatio: 0.015,
     jackOpenAnkleRatio: 1.55,
     jackClosedAnkleRatio: 0.95
   });
@@ -45,11 +48,21 @@
     return ALIASES[key] || ALIASES[key.replace(/\s+/g,'_')] || null;
   }
 
+  function normalizeExerciseMeta(candidate) {
+    return normalizeExercise(candidate?.movementPattern || candidate?.pattern || candidate?.exerciseId || candidate?.id || candidate?.name || candidate);
+  }
+
   function selectedExercise() {
-    const direct=normalizeExercise(globalScope.__selectedExercise); if(direct) return direct;
+    // The progression runtime is the canonical current-exercise authority once a
+    // workout is running. __selectedExercise is only a compatibility snapshot and
+    // may still name the first strength block later in a multi-exercise workout.
+    const progression = globalScope.WorkoutProgressionRuntime?.getCurrentExerciseMeta?.();
+    const current = normalizeExerciseMeta(progression);
+    if (current) return current;
+    const direct = normalizeExercise(globalScope.__selectedExercise);
+    if (direct) return direct;
     const active=globalScope.ACTIVE_WORKOUT;
-    const candidate=active?.currentExercise || active?.exercise || active?.blocks?.strength?.[0];
-    return normalizeExercise(candidate?.movementPattern || candidate?.pattern || candidate?.id || candidate?.name || candidate);
+    return normalizeExerciseMeta(active?.currentExercise || active?.exercise || active?.blocks?.strength?.[0]);
   }
 
   function pointMap(packet) {
@@ -59,15 +72,24 @@
   }
 
   function bodyScale(map) {
-    const values=[dist(map.get('left_shoulder'),map.get('right_shoulder')),dist(map.get('left_hip'),map.get('right_hip'))].filter(Number.isFinite).filter(v=>v>1);
-    return values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
+    const ls=map.get('left_shoulder'), rs=map.get('right_shoulder'), lh=map.get('left_hip'), rh=map.get('right_hip');
+    const shoulder=dist(ls,rs), hip=dist(lh,rh);
+    const torso=[ls,rs,lh,rh].every(p=>usable(p,0)) ? dist(midpoint(ls,rs), midpoint(lh,rh)) : NaN;
+    // Left/right width collapses in a side-on push-up. Torso length remains a
+    // useful body-size reference, so use the strongest trustworthy projection.
+    const values=[shoulder,hip,torso].filter(Number.isFinite).filter(v=>v>1);
+    return values.length ? Math.max(...values) : NaN;
   }
 
   function createExerciseContextEngine(options={}) {
     const config={...DEFAULTS,...options};
     let phase='UNKNOWN', pattern=null, frames=0, anchorCorrections=0, anchorReleases=0, lastIssue='NONE', anchors={};
+    let pushupHorizontalStreak=0, pushupTransitionStreak=0, pushupContactActive=false;
 
-    function reset(){ phase='UNKNOWN'; pattern=null; frames=0; anchorCorrections=0; anchorReleases=0; lastIssue='NONE'; anchors={}; }
+    function reset(){
+      phase='UNKNOWN'; pattern=null; frames=0; anchorCorrections=0; anchorReleases=0; lastIssue='NONE'; anchors={};
+      pushupHorizontalStreak=0; pushupTransitionStreak=0; pushupContactActive=false;
+    }
 
     function classify(map, requestedPattern) {
       const ls=map.get('left_shoulder'), rs=map.get('right_shoulder'), lh=map.get('left_hip'), rh=map.get('right_hip');
@@ -110,38 +132,61 @@
       if(!anchor||!usable(point,config.minConfidence)||!Number.isFinite(scale)) return;
       const drift=Math.hypot(Number(point.x)-anchor.x,Number(point.y)-anchor.y), maxDrift=scale*config.anchorMaxDriftRatio;
       if(drift>maxDrift){ delete anchors[name]; anchorReleases+=1; lastIssue=`ANCHOR_RELEASED_EXCESS_DRIFT:${name}`; return; }
-      point.exerciseRawX=point.x; point.exerciseRawY=point.y;
-      point.x=Number(point.x)+(anchor.x-Number(point.x))*config.anchorCorrectionGain;
-      point.y=Number(point.y)+(anchor.y-Number(point.y))*config.anchorCorrectionGain;
-      point.exerciseConstraintState='contact_anchor'; point.exerciseAnchor=name;
-      stats.anchorCorrections+=1; anchorCorrections+=1; lastIssue=`CONTACT_ANCHORED:${name}`;
+      point.exerciseRawX=point.x; point.exerciseRawY=point.y; point.exerciseAnchor=name;
+      const correctionFloor=Math.max(0,scale*config.anchorCorrectionMinRatio);
+      if(drift>correctionFloor){
+        point.x=Number(point.x)+(anchor.x-Number(point.x))*config.anchorCorrectionGain;
+        point.y=Number(point.y)+(anchor.y-Number(point.y))*config.anchorCorrectionGain;
+        point.exerciseConstraintState='contact_anchor_corrected';
+        stats.anchorCorrections+=1; anchorCorrections+=1; lastIssue=`CONTACT_CORRECTED:${name}`;
+      } else {
+        point.exerciseConstraintState='contact_anchor_maintained';
+      }
     }
+
+    function resetPushupState(){ pushupHorizontalStreak=0; pushupTransitionStreak=0; pushupContactActive=false; }
 
     function process(packet, requestedPattern=null){
       frames+=1;
       const points=(packet?.keypoints||[]).map(p=>({...p})); const map=pointMap({keypoints:points});
       const nextPattern=requestedPattern || selectedExercise();
-      if(pattern && pattern!==nextPattern) releaseAnchors('EXERCISE_CHANGED');
+      if(pattern && pattern!==nextPattern){ releaseAnchors('EXERCISE_CHANGED'); resetPushupState(); }
       pattern=nextPattern;
-      const classification=classify(map,pattern); phase=classification.phase;
+      const classification=classify(map,pattern);
+      phase=classification.phase;
       const stats={anchorCorrections:0,anchoredContacts:Object.keys(anchors).length};
 
       if(pattern==='squat'){
+        resetPushupState();
         if(!anchors.left_ankle&&['SQUAT_STANDING','SQUAT_BENT'].includes(phase)) setAnchor('left_ankle',map.get('left_ankle'));
         if(!anchors.right_ankle&&['SQUAT_STANDING','SQUAT_BENT'].includes(phase)) setAnchor('right_ankle',map.get('right_ankle'));
         applyAnchor(map,'left_ankle',classification.scale,stats); applyAnchor(map,'right_ankle',classification.scale,stats);
       } else if(pattern==='pushup'){
-        if(phase==='PUSHUP_HORIZONTAL'){
+        if(classification.phase==='PUSHUP_HORIZONTAL'){
+          pushupHorizontalStreak+=1; pushupTransitionStreak=0;
+          if(!pushupContactActive && pushupHorizontalStreak>=Math.max(1,config.pushupEnterFrames)) pushupContactActive=true;
+        } else {
+          pushupTransitionStreak+=1; pushupHorizontalStreak=0;
+          if(pushupContactActive && pushupTransitionStreak>=Math.max(1,config.pushupExitFrames)){
+            if(Object.keys(anchors).length) releaseAnchors('PUSHUP_TRANSITION_CONFIRMED');
+            pushupContactActive=false;
+          }
+        }
+        phase=pushupContactActive?'PUSHUP_HORIZONTAL':'PUSHUP_TRANSITION';
+        if(pushupContactActive){
           for(const name of ['left_wrist','right_wrist','left_ankle','right_ankle']) if(!anchors[name]) setAnchor(name,map.get(name));
           for(const name of ['left_wrist','right_wrist','left_ankle','right_ankle']) applyAnchor(map,name,classification.scale,stats);
-        } else if(Object.keys(anchors).length) releaseAnchors('PUSHUP_TRANSITION');
-      } else if(Object.keys(anchors).length) releaseAnchors('NON_ANCHORED_EXERCISE');
+        }
+      } else {
+        resetPushupState();
+        if(Object.keys(anchors).length) releaseAnchors('NON_ANCHORED_EXERCISE');
+      }
 
       stats.anchoredContacts=Object.keys(anchors).length;
-      return {...packet,keypoints:points,exerciseContext:{version:2,pattern:pattern||'UNKNOWN',phase,bodyScalePx:Number.isFinite(classification.scale)?classification.scale:null,kneeAngleDeg:Number.isFinite(classification.kneeAvg)?classification.kneeAvg:null,frameStats:stats,anchors:{...anchors},lastIssue}};
+      return {...packet,keypoints:points,exerciseContext:{version:3,pattern:pattern||'UNKNOWN',phase,bodyScalePx:Number.isFinite(classification.scale)?classification.scale:null,kneeAngleDeg:Number.isFinite(classification.kneeAvg)?classification.kneeAvg:null,pushupHorizontalStreak,pushupTransitionStreak,frameStats:stats,anchors:{...anchors},lastIssue}};
     }
 
-    function diagnostics(){ return {frames,pattern:pattern||'UNKNOWN',phase,anchorCorrections,anchorReleases,anchoredContacts:Object.keys(anchors).length,lastIssue}; }
+    function diagnostics(){ return {frames,pattern:pattern||'UNKNOWN',phase,anchorCorrections,anchorReleases,anchoredContacts:Object.keys(anchors).length,pushupHorizontalStreak,pushupTransitionStreak,pushupContactActive,lastIssue}; }
     return Object.freeze({process,reset,diagnostics,config:Object.freeze({...config})});
   }
 
@@ -165,7 +210,7 @@
 
   function updateRuntimeDiagnostics(extra={}){
     const runtime=globalScope.AvatarRuntime?.getStatus?.()||globalScope.__avatarRuntimeStatus||(globalScope.__avatarRuntimeStatus={}); const d=engine.diagnostics();
-    Object.assign(runtime,{mirrorMotionPhase:4,mirrorMotionPhase4Installed:state.installed,mirrorMotionExercisePatched:state.avatarRuntimePatched,mirrorMotionExercisePattern:d.pattern,mirrorMotionExercisePhase:d.phase,mirrorMotionExerciseAnchoredContacts:d.anchoredContacts,mirrorMotionExerciseAnchorCorrections:d.anchorCorrections,mirrorMotionExerciseAnchorReleases:d.anchorReleases,mirrorMotionExerciseContextResets:state.contextResets,mirrorMotionExerciseContextResetReason:state.lastContextResetReason,mirrorMotionExerciseLastIssue:d.lastIssue,mirrorMotionExerciseFirstFailingBoundary:state.firstFailingBoundary,mirrorMotionExerciseProcessErrors:state.processErrors,...extra});
+    Object.assign(runtime,{mirrorMotionPhase:4,mirrorMotionPhase4Installed:state.installed,mirrorMotionExercisePatched:state.avatarRuntimePatched,mirrorMotionExercisePattern:d.pattern,mirrorMotionExercisePhase:d.phase,mirrorMotionExerciseAnchoredContacts:d.anchoredContacts,mirrorMotionExerciseAnchorCorrections:d.anchorCorrections,mirrorMotionExerciseAnchorReleases:d.anchorReleases,mirrorMotionExercisePushupHorizontalStreak:d.pushupHorizontalStreak,mirrorMotionExercisePushupTransitionStreak:d.pushupTransitionStreak,mirrorMotionExerciseContextResets:state.contextResets,mirrorMotionExerciseContextResetReason:state.lastContextResetReason,mirrorMotionExerciseLastIssue:d.lastIssue,mirrorMotionExerciseFirstFailingBoundary:state.firstFailingBoundary,mirrorMotionExerciseProcessErrors:state.processErrors,...extra});
     globalScope.__mirrorMotionPhase4Diagnostics={...state,...d};
   }
 
@@ -195,7 +240,7 @@
     Object.defineProperty(globalScope,'AvatarRuntime',{configurable:true,enumerable:prior?.enumerable!==false,get(){return prior?.get?prior.get.call(globalScope):fallbackValue;},set(next){ if(prior?.set) prior.set.call(globalScope,next); else fallbackValue=next; const current=prior?.get?prior.get.call(globalScope):fallbackValue; const patched=patchAvatarRuntime(current||next); if(!prior?.set) fallbackValue=patched; }});
   }
 
-  function diagnosticsText(){ const d=engine.diagnostics(); return ['MIRROR MOTION INTELLIGENCE — PHASE 4',`First failing boundary: ${state.firstFailingBoundary}`,`Pipeline stage: ${state.lastPipelineStage}`,`Runtime patched: ${state.avatarRuntimePatched?'YES':'NO'}`,`Renderer bound: ${state.rendererBound?'YES':'NO'}`,`Exercise pattern: ${d.pattern}`,`Exercise phase: ${d.phase}`,`Anchored contacts: ${d.anchoredContacts}`,`Anchor corrections: ${d.anchorCorrections}`,`Anchor releases: ${d.anchorReleases}`,`Context resets: ${state.contextResets}`,`Last context reset: ${state.lastContextResetReason}`,`Last exercise issue: ${d.lastIssue}`,`Process errors: ${state.processErrors}`].join('\n'); }
+  function diagnosticsText(){ const d=engine.diagnostics(); return ['MIRROR MOTION INTELLIGENCE — PHASE 4',`First failing boundary: ${state.firstFailingBoundary}`,`Pipeline stage: ${state.lastPipelineStage}`,`Runtime patched: ${state.avatarRuntimePatched?'YES':'NO'}`,`Renderer bound: ${state.rendererBound?'YES':'NO'}`,`Exercise pattern: ${d.pattern}`,`Exercise phase: ${d.phase}`,`Anchored contacts: ${d.anchoredContacts}`,`Anchor corrections: ${d.anchorCorrections}`,`Anchor releases: ${d.anchorReleases}`,`Push-up enter streak: ${d.pushupHorizontalStreak}`,`Push-up exit streak: ${d.pushupTransitionStreak}`,`Context resets: ${state.contextResets}`,`Last context reset: ${state.lastContextResetReason}`,`Last exercise issue: ${d.lastIssue}`,`Process errors: ${state.processErrors}`].join('\n'); }
 
   function ensureDebugPanel(){
     const doc=globalScope.document; if(!doc?.body) return null; let panel=doc.getElementById('mirrorMotionPhase4Debug');
