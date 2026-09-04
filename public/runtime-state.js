@@ -200,13 +200,18 @@
       "/workout-progression-runtime.js",
       "/dashboard-runtime.js",
       "/coach-runtime.js",
-      ...(avatarFeatureEnabled ? ["/avatar-runtime.js"] : []),
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/pose-stability-engine.js"] : []),
       "/landing-diagnostics.js",
       "/fitness.js"
     ];
     initStartupResourceAudit(initialScripts);
     initPerfMetrics();
     installScriptLoader();
+    if (avatarFeatureEnabled) {
+      global.__loadExternalScript("/mirror-motion-phase2.js?v=20260904-phase2", { async: false, defer: false }).catch((error) => {
+        recordBootstrapFailure("MIRROR_MOTION_PHASE2_LOAD_FAILED", error, { failingUrl: "/mirror-motion-phase2.js" });
+      });
+    }
     installPoseRuntimeEnsurer(config?.poseScripts);
     global.__avatarRuntimeStatus = global.__avatarRuntimeStatus || {};
     global.__avatarRuntimeStatus.featureEnabled = avatarFeatureEnabled;
