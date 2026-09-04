@@ -103,7 +103,44 @@ test('concrete stabilizer load failure replaces transient loading status', async
   assert.equal(diagnostics.firstFailingBoundary, 'STABILIZER_LOAD_FAILED');
 });
 
-test('long frame gaps reset stabilizer history before accepting a new stream', () => {
+test('failed stabilizer load becomes retryable after bounded backoff', async () => {
+  clearGlobals();
+  const modulePath = require.resolve('../public/mirror-motion-phase2.js');
+  delete require.cache[modulePath];
+  global.__avatarRuntimeStatus = { presentationAppliedMode: 'avatar_overlay', renderLoopState: 'RUNNING' };
+  const originalNow = Date.now;
+  let now = 1000;
+  let attempts = 0;
+  Date.now = () => now;
+  global.__loadExternalScript = () => {
+    attempts += 1;
+    if (attempts === 1) return Promise.reject(new Error('temporary network failure'));
+    global.PocketPTPoseStability = {
+      createPoseStabilizer() {
+        return { process: packet => packet, reset() {} };
+      }
+    };
+    return Promise.resolve(true);
+  };
+  try {
+    const phase2 = require(modulePath);
+    phase2.install();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(attempts, 1);
+    assert.equal(phase2.diagnostics().persistentFailure, 'STABILIZER_LOAD_FAILED');
+
+    now = 3501;
+    phase2.processForAvatar(fullPacket());
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(attempts, 2);
+    assert.equal(phase2.diagnostics().stabilizerReady, true);
+    assert.equal(phase2.diagnostics().persistentFailure, 'NONE');
+  } finally {
+    Date.now = originalNow;
+  }
+});
+
+test('long frame gap and person reacquisition cause only one tracker reset in a frame', () => {
   const phase2 = loadWithFakeStabilizer(packet => packet);
   phase2.reset();
   phase2.wrapRenderer(() => true);
@@ -115,7 +152,7 @@ test('long frame gaps reset stabilizer history before accepting a new stream', (
     const before = phase2.diagnostics().trackerResets;
     now = 2000;
     phase2.processForAvatar(fullPacket({ timestampMs: 200 }));
-    assert.ok(phase2.diagnostics().trackerResets > before);
+    assert.equal(phase2.diagnostics().trackerResets - before, 1);
   } finally {
     Date.now = originalNow;
   }
@@ -127,6 +164,7 @@ test('debug text includes the first failing boundary and pipeline counters', () 
   const text = phase2.diagnosticsText();
   assert.match(text, /First failing boundary:/);
   assert.match(text, /Persistent failure:/);
+  assert.match(text, /Stabilizer retry in:/);
   assert.match(text, /Raw \/ stabilized frames:/);
   assert.match(text, /Critical joint issue:/);
   assert.match(text, /Tracker resets:/);
