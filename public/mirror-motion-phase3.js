@@ -1,7 +1,10 @@
 (function initMirrorMotionPhase3(root, factory) {
   const api = factory(root || globalThis);
   if (typeof module === 'object' && module.exports) module.exports = api;
-  else root.PocketPTMirrorMotionPhase3 = api;
+  else {
+    root.PocketPTMirrorMotionPhase3 = api;
+    api.install();
+  }
 })(typeof window !== 'undefined' ? window : globalThis, function mirrorMotionPhase3Factory(globalScope) {
   'use strict';
 
@@ -36,9 +39,10 @@
   ]);
 
   const finite = value => Number.isFinite(Number(value));
-  const dist = (a, b) => (a && b && finite(a.x) && finite(a.y) && finite(b.x) && finite(b.y)) ? Math.hypot(Number(a.x)-Number(b.x), Number(a.y)-Number(b.y)) : NaN;
   const confidence = p => Number(p?.confidence ?? p?.score ?? 0) || 0;
-  const usableForCalibration = p => p && finite(p.x) && finite(p.y) && confidence(p) >= 0.72 && !['dropped','coasted'].includes(p.stabilityState);
+  const dist = (a, b) => (a && b && finite(a.x) && finite(a.y) && finite(b.x) && finite(b.y))
+    ? Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y))
+    : NaN;
 
   function createStructuralEngine(options = {}) {
     const config = { ...DEFAULTS, ...options };
@@ -48,6 +52,12 @@
     let corrections = 0;
     let identitySwaps = 0;
     let lastIssue = 'NONE';
+
+    function usableForCalibration(point) {
+      return point && finite(point.x) && finite(point.y)
+        && confidence(point) >= config.calibrationConfidence
+        && !['dropped','coasted'].includes(point.stabilityState);
+    }
 
     function reset() {
       segments.clear();
@@ -70,8 +80,8 @@
     function bodyScale(map) {
       const shoulder = dist(map.get('left_shoulder'), map.get('right_shoulder'));
       const hip = dist(map.get('left_hip'), map.get('right_hip'));
-      const candidates = [shoulder, hip].filter(Number.isFinite).filter(v => v > 1);
-      return candidates.length ? candidates.reduce((a,b) => a+b, 0) / candidates.length : 100;
+      const candidates = [shoulder, hip].filter(Number.isFinite).filter(value => value > 1);
+      return candidates.length ? candidates.reduce((sum, value) => sum + value, 0) / candidates.length : 100;
     }
 
     function maybeRecoverIdentity(map, scale, frameStats) {
@@ -86,19 +96,29 @@
         const traveledEnough = sameCost > scale * config.identityMinimumTravelRatio;
         const clearlySwapped = swapCost + scale * config.identitySwapMarginRatio < sameCost;
         if (!traveledEnough || !clearlySwapped) continue;
-        const lx = left.x, ly = left.y, ls = left.score, lc = left.confidence;
+
+        const leftSnapshot = {
+          x: left.x, y: left.y, score: left.score, confidence: left.confidence,
+          stabilityState: left.stabilityState, rawConfidence: left.rawConfidence
+        };
         left.x = right.x; left.y = right.y; left.score = right.score; left.confidence = right.confidence;
-        right.x = lx; right.y = ly; right.score = ls; right.confidence = lc;
+        left.stabilityState = right.stabilityState; left.rawConfidence = right.rawConfidence;
+        right.x = leftSnapshot.x; right.y = leftSnapshot.y; right.score = leftSnapshot.score; right.confidence = leftSnapshot.confidence;
+        right.stabilityState = leftSnapshot.stabilityState; right.rawConfidence = leftSnapshot.rawConfidence;
         left.structuralIdentityState = `recovered_from_${rightName}`;
         right.structuralIdentityState = `recovered_from_${leftName}`;
-        frameStats.identitySwaps += 1; identitySwaps += 1; lastIssue = `IDENTITY_RECOVERED:${label}`;
+        frameStats.identitySwaps += 1;
+        identitySwaps += 1;
+        lastIssue = `IDENTITY_RECOVERED:${label}`;
       }
     }
 
     function updateCalibration(name, length) {
       if (!Number.isFinite(length) || length <= 1) return;
       const current = segments.get(name) || { length, samples: 0 };
-      current.length = current.samples === 0 ? length : current.length + (length - current.length) * config.calibrationAlpha;
+      current.length = current.samples === 0
+        ? length
+        : current.length + (length - current.length) * config.calibrationAlpha;
       current.samples += 1;
       segments.set(name, current);
     }
@@ -110,6 +130,7 @@
       if (!Number.isFinite(observed) || observed <= 0) return;
       const errorRatio = Math.abs(observed - model.length) / Math.max(model.length, 1);
       if (errorRatio <= config.lengthToleranceRatio) return;
+
       const dx = Number(distal.x) - Number(proximal.x);
       const dy = Number(distal.y) - Number(proximal.y);
       const ratio = model.length / observed;
@@ -122,7 +143,9 @@
       distal.structuralObservedLength = observed;
       distal.structuralTargetLength = model.length;
       distal.structuralErrorRatio = errorRatio;
-      frameStats.lengthCorrections += 1; corrections += 1; lastIssue = `LENGTH_CONSTRAINED:${name}`;
+      frameStats.lengthCorrections += 1;
+      corrections += 1;
+      lastIssue = `LENGTH_CONSTRAINED:${name}`;
     }
 
     function process(packet) {
@@ -136,7 +159,7 @@
 
       for (const [name, aName, bName] of SEGMENTS) {
         const a = map.get(aName); const b = map.get(bName);
-        if (usableForCalibration(a) && usableForCalibration(b)) updateCalibration(name, dist(a,b));
+        if (usableForCalibration(a) && usableForCalibration(b)) updateCalibration(name, dist(a, b));
       }
 
       for (const [name, aName, bName] of SEGMENTS) {
@@ -146,8 +169,11 @@
       }
 
       for (const [name, point] of map) {
-        if (finite(point.x) && finite(point.y) && confidence(point) > 0) previous.set(name, { x: Number(point.x), y: Number(point.y) });
+        if (finite(point.x) && finite(point.y) && confidence(point) > 0) {
+          previous.set(name, { x: Number(point.x), y: Number(point.y) });
+        }
       }
+
       frameStats.calibratedSegments = [...segments.values()].filter(item => item.samples >= config.minCalibrationSamples).length;
       return {
         ...packet,
@@ -177,6 +203,189 @@
     return Object.freeze({ process, reset, diagnostics, config: Object.freeze({ ...config }) });
   }
 
-  const defaultEngine = createStructuralEngine();
-  return Object.freeze({ DEFAULTS, SEGMENTS, IDENTITY_PAIRS, createStructuralEngine, process: defaultEngine.process, reset: defaultEngine.reset, diagnostics: defaultEngine.diagnostics });
+  const engine = createStructuralEngine();
+  const state = {
+    installed: false,
+    avatarRuntimePatched: false,
+    rendererBound: false,
+    processErrors: 0,
+    firstFailingBoundary: 'NONE',
+    lastPipelineStage: 'BOOT'
+  };
+  let panelTimer = null;
+
+  function updateRuntimeDiagnostics(extra = {}) {
+    const runtime = globalScope.AvatarRuntime?.getStatus?.() || globalScope.__avatarRuntimeStatus || (globalScope.__avatarRuntimeStatus = {});
+    const diag = engine.diagnostics();
+    Object.assign(runtime, {
+      mirrorMotionPhase: 3,
+      mirrorMotionPhase3Installed: state.installed,
+      mirrorMotionStructuralPatched: state.avatarRuntimePatched,
+      mirrorMotionStructuralFrames: diag.frames,
+      mirrorMotionCalibratedSegments: diag.calibratedSegments,
+      mirrorMotionLengthCorrections: diag.corrections,
+      mirrorMotionIdentityRecoveries: diag.identitySwaps,
+      mirrorMotionStructuralLastIssue: diag.lastIssue,
+      mirrorMotionStructuralFirstFailingBoundary: state.firstFailingBoundary,
+      mirrorMotionStructuralProcessErrors: state.processErrors,
+      ...extra
+    });
+    globalScope.__mirrorMotionPhase3Diagnostics = { ...state, ...diag };
+  }
+
+  function wrapRenderer(renderer) {
+    state.rendererBound = typeof renderer === 'function';
+    updateRuntimeDiagnostics();
+    if (typeof renderer !== 'function') return renderer;
+    return function structurallyConstrainedRenderer(stabilizedPacket) {
+      state.lastPipelineStage = 'STRUCTURAL_PROCESS';
+      try {
+        const constrained = engine.process(stabilizedPacket);
+        state.firstFailingBoundary = 'NONE';
+        state.lastPipelineStage = 'STRUCTURAL_READY';
+        updateRuntimeDiagnostics();
+        return renderer(constrained);
+      } catch (error) {
+        state.processErrors += 1;
+        state.firstFailingBoundary = 'STRUCTURAL_PROCESS_ERROR';
+        state.lastPipelineStage = 'STRUCTURAL_PROCESS_ERROR';
+        updateRuntimeDiagnostics({ mirrorMotionStructuralLastError: String(error?.message || error) });
+        return renderer(stabilizedPacket);
+      }
+    };
+  }
+
+  function patchAvatarRuntime(runtime) {
+    if (!runtime || runtime.__mirrorMotionPhase3Patched) return runtime;
+    const originalBind = runtime.bindPoseFrameRenderer;
+    if (typeof originalBind !== 'function') {
+      state.firstFailingBoundary = 'PHASE3_AVATAR_BIND_API_MISSING';
+      updateRuntimeDiagnostics();
+      return runtime;
+    }
+    runtime.bindPoseFrameRenderer = function bindStructuralPoseFrameRenderer(renderer) {
+      return originalBind.call(runtime, wrapRenderer(renderer));
+    };
+    if (typeof runtime.registerPoseRenderer === 'function') {
+      runtime.registerPoseRenderer = function registerStructuralPoseRenderer(renderer) {
+        return originalBind.call(runtime, wrapRenderer(renderer));
+      };
+    }
+    Object.defineProperty(runtime, '__mirrorMotionPhase3Patched', { value: true, enumerable: false });
+    state.avatarRuntimePatched = true;
+    state.firstFailingBoundary = 'NONE';
+    state.lastPipelineStage = 'AVATAR_RUNTIME_PATCHED';
+    updateRuntimeDiagnostics();
+    return runtime;
+  }
+
+  function interceptAvatarRuntimeAssignment() {
+    if (globalScope.AvatarRuntime) {
+      patchAvatarRuntime(globalScope.AvatarRuntime);
+      return;
+    }
+    const prior = Object.getOwnPropertyDescriptor(globalScope, 'AvatarRuntime');
+    if (prior && prior.configurable === false) {
+      state.firstFailingBoundary = 'PHASE3_AVATAR_RUNTIME_INTERCEPT_BLOCKED';
+      updateRuntimeDiagnostics();
+      return;
+    }
+    let fallbackValue = prior?.value;
+    Object.defineProperty(globalScope, 'AvatarRuntime', {
+      configurable: true,
+      enumerable: prior?.enumerable !== false,
+      get() {
+        return prior?.get ? prior.get.call(globalScope) : fallbackValue;
+      },
+      set(next) {
+        if (prior?.set) prior.set.call(globalScope, next);
+        else fallbackValue = next;
+        const resolved = prior?.get ? prior.get.call(globalScope) : fallbackValue;
+        patchAvatarRuntime(resolved);
+      }
+    });
+  }
+
+  function diagnosticsText() {
+    const diag = engine.diagnostics();
+    return [
+      'MIRROR MOTION INTELLIGENCE — PHASE 3',
+      `First failing boundary: ${state.firstFailingBoundary}`,
+      `Pipeline stage: ${state.lastPipelineStage}`,
+      `Avatar runtime patched: ${state.avatarRuntimePatched ? 'YES' : 'NO'}`,
+      `Renderer bound: ${state.rendererBound ? 'YES' : 'NO'}`,
+      `Structural frames: ${diag.frames}`,
+      `Calibrated segments: ${diag.calibratedSegments} / ${SEGMENTS.length}`,
+      `Length corrections: ${diag.corrections}`,
+      `Left/right recoveries: ${diag.identitySwaps}`,
+      `Last structural issue: ${diag.lastIssue}`,
+      `Structural process errors: ${state.processErrors}`
+    ].join('\n');
+  }
+
+  function ensureDebugPanel() {
+    const doc = globalScope.document;
+    if (!doc?.body) return null;
+    let panel = doc.getElementById('mirrorMotionPhase3Debug');
+    if (!panel) {
+      panel = doc.createElement('details');
+      panel.id = 'mirrorMotionPhase3Debug';
+      panel.style.cssText = 'position:fixed;right:8px;bottom:8px;z-index:5001;max-width:min(92vw,520px);max-height:45vh;overflow:auto;background:rgba(2,6,23,.94);color:#e5e7eb;border:1px solid #22c55e;border-radius:10px;padding:8px;font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;';
+      const summary = doc.createElement('summary');
+      summary.textContent = 'Mirror Motion Phase 3 Debug';
+      summary.style.cssText = 'cursor:pointer;color:#86efac;font-weight:700;';
+      const pre = doc.createElement('pre');
+      pre.dataset.mirrorMotionPhase3Diagnostics = 'true';
+      pre.style.cssText = 'white-space:pre-wrap;margin:8px 0 0;';
+      panel.append(summary, pre);
+      doc.body.appendChild(panel);
+    }
+    return panel;
+  }
+
+  function refreshDebugPanel() {
+    const panel = ensureDebugPanel();
+    const pre = panel?.querySelector?.('[data-mirror-motion-phase3-diagnostics]');
+    if (pre) pre.textContent = diagnosticsText();
+  }
+
+  function install() {
+    if (state.installed) return api;
+    state.installed = true;
+    state.lastPipelineStage = 'INSTALLING';
+    interceptAvatarRuntimeAssignment();
+    const mount = () => {
+      ensureDebugPanel();
+      refreshDebugPanel();
+      if (!panelTimer && globalScope.setInterval) panelTimer = globalScope.setInterval(refreshDebugPanel, 500);
+    };
+    if (globalScope.document?.readyState === 'loading') globalScope.document.addEventListener('DOMContentLoaded', mount, { once: true });
+    else mount();
+    state.lastPipelineStage = 'INSTALLED';
+    updateRuntimeDiagnostics();
+    return api;
+  }
+
+  function reset() {
+    engine.reset();
+    state.processErrors = 0;
+    state.firstFailingBoundary = 'NONE';
+    state.lastPipelineStage = 'RESET';
+    updateRuntimeDiagnostics();
+  }
+
+  const api = Object.freeze({
+    DEFAULTS,
+    SEGMENTS,
+    IDENTITY_PAIRS,
+    createStructuralEngine,
+    process: engine.process,
+    reset,
+    diagnostics: () => ({ ...state, ...engine.diagnostics() }),
+    diagnosticsText,
+    wrapRenderer,
+    patchAvatarRuntime,
+    install
+  });
+  return api;
 });
