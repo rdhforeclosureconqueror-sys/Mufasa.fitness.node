@@ -169,7 +169,6 @@
         global.__markPerfMetric?.("poseModelLoadMs", Math.round(performance.now() - startedAt));
         return true;
       })().catch((error) => {
-        // A transient CDN/network failure must not permanently poison Retry.
         poseRuntimePromise = null;
         throw error;
       });
@@ -200,7 +199,7 @@
       "/workout-progression-runtime.js",
       "/dashboard-runtime.js",
       "/coach-runtime.js",
-      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/pose-stability-engine.js"] : []),
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/pose-stability-engine.js"] : []),
       "/landing-diagnostics.js",
       "/fitness.js"
     ];
@@ -208,9 +207,14 @@
     initPerfMetrics();
     installScriptLoader();
     if (avatarFeatureEnabled) {
-      global.__loadExternalScript("/mirror-motion-phase2.js?v=20260904-phase2", { async: false, defer: false }).catch((error) => {
-        recordBootstrapFailure("MIRROR_MOTION_PHASE2_LOAD_FAILED", error, { failingUrl: "/mirror-motion-phase2.js" });
-      });
+      global.__loadExternalScript("/mirror-motion-phase2.js?v=20260904-phase2", { async: false, defer: false })
+        .then(() => global.__loadExternalScript("/mirror-motion-phase3.js?v=20260904-phase3", { async: false, defer: false })
+          .catch((error) => {
+            recordBootstrapFailure("MIRROR_MOTION_PHASE3_LOAD_FAILED", error, { failingUrl: "/mirror-motion-phase3.js" });
+          }))
+        .catch((error) => {
+          recordBootstrapFailure("MIRROR_MOTION_PHASE2_LOAD_FAILED", error, { failingUrl: "/mirror-motion-phase2.js" });
+        });
     }
     installPoseRuntimeEnsurer(config?.poseScripts);
     global.__avatarRuntimeStatus = global.__avatarRuntimeStatus || {};
