@@ -33,16 +33,31 @@ test('learns segment lengths before enforcing structural constraints', () => {
   assert.equal(engine.diagnostics().calibratedSegments, 8);
 });
 
-test('constrains an implausible thigh-length change after calibration', () => {
-  const engine = phase3.createStructuralEngine({ minCalibrationSamples: 3, lengthToleranceRatio: 0.15 });
+test('constrains an implausible thigh-length change after calibration without contaminating the model', () => {
+  const engine = phase3.createStructuralEngine({ minCalibrationSamples: 3, lengthToleranceRatio: 0.15, calibrationUpdateToleranceRatio: 0.15 });
   for (let i = 0; i < 3; i += 1) engine.process(packet());
+  const before = engine.diagnostics().segmentModel.left_thigh.length;
   const bad = movePoint(packet(), 'left_knee', 115, 500);
   const out = engine.process(bad);
   const knee = out.keypoints.find(p => p.name === 'left_knee');
+  const after = engine.diagnostics().segmentModel.left_thigh.length;
   assert.equal(knee.structuralState, 'length_constrained');
   assert.equal(knee.structuralSegment, 'left_thigh');
-  assert.ok(Math.abs(knee.y - 320) < 5);
-  assert.equal(out.structural.frameStats.lengthCorrections > 0, true);
+  assert.ok(Math.abs(knee.y - 320) < 5, `expected correction to learned length, got ${knee.y}`);
+  assert.ok(Math.abs(after - before) < 0.001, `outlier changed model from ${before} to ${after}`);
+  assert.equal(out.structural.frameStats.calibrationRejected > 0, true);
+});
+
+test('uses a robust median while seeding calibration', () => {
+  const engine = phase3.createStructuralEngine({ minCalibrationSamples: 5 });
+  engine.process(packet());
+  engine.process(packet());
+  engine.process(movePoint(packet(), 'left_knee', 115, 500));
+  engine.process(packet());
+  engine.process(packet());
+  const model = engine.diagnostics().segmentModel.left_thigh;
+  assert.equal(model.samples, 5);
+  assert.ok(Math.abs(model.length - 100) < 0.001, `expected median seed near 100, got ${model.length}`);
 });
 
 test('does not calibrate from coasted low-trust joints', () => {
@@ -69,6 +84,20 @@ test('recovers an obvious left/right knee identity swap using temporal continuit
   assert.equal(out.structural.frameStats.identitySwaps > 0, true);
 });
 
+test('does not perform left/right recovery from coasted points', () => {
+  const engine = phase3.createStructuralEngine({ minCalibrationSamples: 99, identityMinimumTravelRatio: 0.1, identitySwapMarginRatio: 0.05 });
+  engine.process(packet());
+  const swapped = packet();
+  const left = swapped.keypoints.find(p => p.name === 'left_knee');
+  const right = swapped.keypoints.find(p => p.name === 'right_knee');
+  [left.x, right.x] = [right.x, left.x];
+  left.stabilityState = 'coasted';
+  right.stabilityState = 'coasted';
+  const out = engine.process(swapped);
+  assert.equal(out.structural.frameStats.identitySwaps, 0);
+  assert.equal(out.keypoints.find(p => p.name === 'left_knee').structuralIdentityState, undefined);
+});
+
 test('wrapper sends structurally constrained packet to downstream renderer', () => {
   const engine = phase3.createStructuralEngine({ minCalibrationSamples: 1, lengthToleranceRatio: 0.1 });
   engine.process(packet());
@@ -81,11 +110,29 @@ test('wrapper sends structurally constrained packet to downstream renderer', () 
   assert.equal(received.keypoints.find(p => p.name === 'left_knee').structuralState, 'length_constrained');
 });
 
-test('diagnostics expose calibration, corrections, identity recovery, and first failure fields', () => {
+test('Phase 3 structural state resets when Phase 2 tracker history resets', () => {
+  let trackerResets = 0;
+  global.PocketPTMirrorMotionPhase2 = { diagnostics: () => ({ trackerResets }) };
+  phase3.reset();
+  const wrapped = phase3.wrapRenderer(() => true);
+  for (let i = 0; i < 6; i += 1) wrapped(packet());
+  assert.equal(phase3.diagnostics().calibratedSegments, 8);
+  trackerResets = 1;
+  wrapped(packet());
+  const diag = phase3.diagnostics();
+  assert.equal(diag.structuralResets, 1);
+  assert.equal(diag.lastStructuralResetReason, 'PHASE2_TRACKER_RESET');
+  assert.equal(diag.calibratedSegments, 0);
+  delete global.PocketPTMirrorMotionPhase2;
+});
+
+test('diagnostics expose calibration rejection and structural reset fields', () => {
   phase3.reset();
   const text = phase3.diagnosticsText();
   assert.match(text, /First failing boundary:/);
   assert.match(text, /Calibrated segments:/);
+  assert.match(text, /Calibration outliers rejected:/);
   assert.match(text, /Length corrections:/);
   assert.match(text, /Left\/right recoveries:/);
+  assert.match(text, /Structural resets:/);
 });
