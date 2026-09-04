@@ -40,8 +40,9 @@
 
   function createIKEngine(options={}){
     const config={...DEFAULTS,...options};
+    const bendHistory=new Map();
     let frames=0, solved=0, unreachable=0, skipped=0, maxResidual=0, lastIssue='NONE';
-    function reset(){ frames=0; solved=0; unreachable=0; skipped=0; maxResidual=0; lastIssue='NONE'; }
+    function reset(){ bendHistory.clear(); frames=0; solved=0; unreachable=0; skipped=0; maxResidual=0; lastIssue='NONE'; }
     function process(packet){
       frames+=1;
       const points=(packet?.keypoints||[]).map(p=>({...p}));
@@ -61,9 +62,13 @@
         if(solutions.status!=='OK'){
           unreachable+=1; stats.unreachableChains+=1; lastIssue=`IK_${solutions.status}:${label}`; continue;
         }
-        const target=nearestSolution(solutions.points,joint);
+        const stableJoint = usable(joint,config.minConfidence) ? joint : null;
+        const hint = bendHistory.get(label) || stableJoint || joint;
+        const target=nearestSolution(solutions.points,hint);
         joint.ikRawX=joint.x; joint.ikRawY=joint.y;
         joint.x=target.x; joint.y=target.y; joint.ikState='solved'; joint.ikChain=label;
+        joint.ikBendHintSource=bendHistory.has(label)?'history':stableJoint?'current_joint':'weak_joint_fallback';
+        bendHistory.set(label,{x:target.x,y:target.y});
         const residual=Math.max(Math.abs(distance(root,joint)-l1),Math.abs(distance(joint,end)-l2));
         joint.ikResidualPx=residual;
         solved+=1; stats.solvedChains+=1; stats.maxResidualPx=Math.max(stats.maxResidualPx,residual); maxResidual=Math.max(maxResidual,residual);
@@ -71,9 +76,10 @@
       }
       const scale=Number(packet?.exerciseContext?.bodyScalePx)||Number(packet?.structural?.bodyScalePx)||NaN;
       const residualRatio=Number.isFinite(scale)&&scale>1?stats.maxResidualPx/scale:null;
-      return {...packet,keypoints:points,ik:{version:1,frame:frames,pattern:pattern||'UNKNOWN',frameStats:stats,maxResidualRatio:residualRatio,lastIssue}};
+      if(residualRatio!=null && residualRatio>config.maxSolveResidualRatio) lastIssue='IK_HIGH_RESIDUAL';
+      return {...packet,keypoints:points,ik:{version:2,frame:frames,pattern:pattern||'UNKNOWN',frameStats:stats,maxResidualRatio:residualRatio,lastIssue}};
     }
-    function diagnostics(){ return {frames,solvedChains:solved,unreachableChains:unreachable,skippedChains:skipped,maxResidualPx:maxResidual,lastIssue}; }
+    function diagnostics(){ return {frames,solvedChains:solved,unreachableChains:unreachable,skippedChains:skipped,maxResidualPx:maxResidual,bendHistoryChains:bendHistory.size,lastIssue}; }
     return Object.freeze({process,reset,diagnostics,config:Object.freeze({...config})});
   }
 
@@ -84,7 +90,7 @@
   function updateRuntimeDiagnostics(extra={}){
     const runtime=globalScope.AvatarRuntime?.getStatus?.()||globalScope.__avatarRuntimeStatus||(globalScope.__avatarRuntimeStatus={});
     const d=engine.diagnostics();
-    Object.assign(runtime,{mirrorMotionPhase:5,mirrorMotionPhase5Installed:state.installed,mirrorMotionIKPatched:state.avatarRuntimePatched,mirrorMotionIKFrames:d.frames,mirrorMotionIKSolvedChains:d.solvedChains,mirrorMotionIKUnreachableChains:d.unreachableChains,mirrorMotionIKSkippedChains:d.skippedChains,mirrorMotionIKMaxResidualPx:d.maxResidualPx,mirrorMotionIKLastIssue:d.lastIssue,mirrorMotionIKFirstFailingBoundary:state.firstFailingBoundary,mirrorMotionIKProcessErrors:state.processErrors,...extra});
+    Object.assign(runtime,{mirrorMotionPhase:5,mirrorMotionPhase5Installed:state.installed,mirrorMotionIKPatched:state.avatarRuntimePatched,mirrorMotionIKFrames:d.frames,mirrorMotionIKSolvedChains:d.solvedChains,mirrorMotionIKUnreachableChains:d.unreachableChains,mirrorMotionIKSkippedChains:d.skippedChains,mirrorMotionIKMaxResidualPx:d.maxResidualPx,mirrorMotionIKBendHistoryChains:d.bendHistoryChains,mirrorMotionIKLastIssue:d.lastIssue,mirrorMotionIKFirstFailingBoundary:state.firstFailingBoundary,mirrorMotionIKProcessErrors:state.processErrors,...extra});
     globalScope.__mirrorMotionPhase5Diagnostics={...state,...d};
   }
 
@@ -118,7 +124,7 @@
     Object.defineProperty(globalScope,'AvatarRuntime',{configurable:true,enumerable:prior?.enumerable!==false,get(){return prior?.get?prior.get.call(globalScope):value;},set(next){ if(prior?.set) prior.set.call(globalScope,next); else value=next; const current=prior?.get?prior.get.call(globalScope):value; const patched=patchAvatarRuntime(current||next); if(!prior?.set)value=patched; }});
   }
 
-  function diagnosticsText(){ const d=engine.diagnostics(); return ['MIRROR MOTION INTELLIGENCE — PHASE 5',`First failing boundary: ${state.firstFailingBoundary}`,`Pipeline stage: ${state.lastPipelineStage}`,`Runtime patched: ${state.avatarRuntimePatched?'YES':'NO'}`,`Renderer bound: ${state.rendererBound?'YES':'NO'}`,`IK frames: ${d.frames}`,`Chains solved: ${d.solvedChains}`,`Unreachable chains: ${d.unreachableChains}`,`Skipped chains: ${d.skippedChains}`,`Max residual: ${d.maxResidualPx.toFixed(2)}px`,`Last IK issue: ${d.lastIssue}`,`Process errors: ${state.processErrors}`].join('\n'); }
+  function diagnosticsText(){ const d=engine.diagnostics(); return ['MIRROR MOTION INTELLIGENCE — PHASE 5',`First failing boundary: ${state.firstFailingBoundary}`,`Pipeline stage: ${state.lastPipelineStage}`,`Runtime patched: ${state.avatarRuntimePatched?'YES':'NO'}`,`Renderer bound: ${state.rendererBound?'YES':'NO'}`,`IK frames: ${d.frames}`,`Chains solved: ${d.solvedChains}`,`Unreachable chains: ${d.unreachableChains}`,`Skipped chains: ${d.skippedChains}`,`Bend-history chains: ${d.bendHistoryChains}`,`Max residual: ${d.maxResidualPx.toFixed(2)}px`,`Last IK issue: ${d.lastIssue}`,`Process errors: ${state.processErrors}`].join('\n'); }
   function ensureDebugPanel(){ const doc=globalScope.document; if(!doc?.body)return null; let panel=doc.getElementById('mirrorMotionPhase5Debug'); if(!panel){ panel=doc.createElement('details'); panel.id='mirrorMotionPhase5Debug'; panel.style.cssText='position:fixed;right:8px;bottom:8px;z-index:5002;max-width:min(92vw,520px);max-height:45vh;overflow:auto;background:rgba(2,6,23,.94);color:#e5e7eb;border:1px solid #22d3ee;border-radius:10px;padding:8px;font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;'; const s=doc.createElement('summary'); s.textContent='Mirror Motion Phase 5 Debug'; s.style.cssText='cursor:pointer;color:#67e8f9;font-weight:700;'; const pre=doc.createElement('pre'); pre.dataset.mirrorMotionPhase5Diagnostics='true'; pre.style.cssText='white-space:pre-wrap;margin:8px 0 0;'; panel.append(s,pre); doc.body.appendChild(panel);} return panel; }
   function refreshDebugPanel(){ const p=ensureDebugPanel()?.querySelector?.('[data-mirror-motion-phase5-diagnostics]'); if(p)p.textContent=diagnosticsText(); }
   function install(){ if(state.installed)return api; state.installed=true; state.lastPipelineStage='INSTALLING'; interceptAvatarRuntimeAssignment(); const mount=()=>{ensureDebugPanel();refreshDebugPanel();if(!panelTimer&&globalScope.setInterval)panelTimer=globalScope.setInterval(refreshDebugPanel,500);}; if(globalScope.document?.readyState==='loading')globalScope.document.addEventListener('DOMContentLoaded',mount,{once:true}); else mount(); state.lastPipelineStage='INSTALLED'; updateRuntimeDiagnostics(); return api; }
