@@ -96,7 +96,7 @@
       "/form-engine.js", "/runtime-events.js", "/runtime-state.js", "/runtime-bridges.js", "/auth-state-runtime.js",
       "/diagnostics-client.js", "/backend-read.js", "/session-write.js", "/pose-runtime.js", "/rep-runtime.js",
       "/rep-analysis-runtime.js", "/hud-runtime.js", "/workout-progression-runtime.js", "/dashboard-runtime.js", "/coach-runtime.js",
-      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/mirror-motion-phase5.js", "/mirror-motion-phase6.js", "/mirror-motion-phase7.js", "/mirror-motion-phase8.js", "/mirror-motion-phase9.js", "/mirror-motion-phase10.js", "/pose-stability-engine.js"] : []),
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/mirror-motion-phase5.js", "/mirror-motion-phase6.js", "/mirror-motion-phase7.js", "/mirror-motion-phase8.js", "/mirror-motion-phase9.js", "/mirror-motion-phase10.js", "/mirror-motion-phase11.js", "/mirror-motion-phase12.js", "/pose-stability-engine.js"] : []),
       "/landing-diagnostics.js", "/fitness.js"
     ];
     initStartupResourceAudit(initialScripts); initPerfMetrics(); installScriptLoader();
