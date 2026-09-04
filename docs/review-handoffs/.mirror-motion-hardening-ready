@@ -1,0 +1,4 @@
+Audited base: 24a2262c95cbcee5812e2722d51b0118e2b0cbc7
+Phase 1: PR #635
+Phase 2: PR #636
+Corrective branch: fix/mirror-motion-phase1-phase2-hardening-20260904
