@@ -68,7 +68,7 @@
       { label: "MoveNet pose-detection", globalName: "poseDetection", src: poseScripts.find((src) => /@tensorflow-models\/pose-detection/.test(src)) || "configured_pose_scripts" }
     ], optionalDeps: [
       { label: "Face landmarks detection", globalName: "faceLandmarksDetection", src: poseScripts.find((src) => /face-landmarks-detection/.test(src)) },
-      { label: "Hand pose detection", globalName: "handPoseDetection", src: poseScripts.find((src) => /hand-pose-detection/.test(src)) }
+      { label: "Hand pose detection", globalName: "handPoseDetection", src: poseScripts.find((src) => /@tensorflow-models\/hand-pose-detection/.test(src)) }
     ].filter((dep) => dep.src) };
   }
   function installPoseRuntimeEnsurer(poseScripts){
@@ -96,7 +96,7 @@
       "/form-engine.js", "/runtime-events.js", "/runtime-state.js", "/runtime-bridges.js", "/auth-state-runtime.js",
       "/diagnostics-client.js", "/backend-read.js", "/session-write.js", "/pose-runtime.js", "/rep-runtime.js",
       "/rep-analysis-runtime.js", "/hud-runtime.js", "/workout-progression-runtime.js", "/dashboard-runtime.js", "/coach-runtime.js",
-      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/mirror-motion-phase5.js", "/mirror-motion-phase6.js", "/mirror-motion-phase7.js", "/mirror-motion-phase8.js", "/pose-stability-engine.js"] : []),
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/mirror-motion-phase5.js", "/mirror-motion-phase6.js", "/mirror-motion-phase7.js", "/mirror-motion-phase8.js", "/mirror-motion-phase9.js", "/mirror-motion-phase10.js", "/pose-stability-engine.js"] : []),
       "/landing-diagnostics.js", "/fitness.js"
     ];
     initStartupResourceAudit(initialScripts); initPerfMetrics(); installScriptLoader();
@@ -108,9 +108,11 @@
         .then(() => global.__loadExternalScript("/mirror-motion-phase6.js?v=20260904-phase6", { async: false, defer: false }))
         .then(() => global.__loadExternalScript("/mirror-motion-phase7.js?v=20260904-phase7", { async: false, defer: false }))
         .then(() => global.__loadExternalScript("/mirror-motion-phase8.js?v=20260904-phase8", { async: false, defer: false }))
+        .then(() => global.__loadExternalScript("/mirror-motion-phase9.js?v=20260904-phase9", { async: false, defer: false }))
+        .then(() => global.__loadExternalScript("/mirror-motion-phase10.js?v=20260904-phase10", { async: false, defer: false }))
         .catch((error) => {
           const src = error?.scriptSrc || error?.failingUrl || '';
-          const boundary = /phase8/.test(src) ? "MIRROR_MOTION_PHASE8_LOAD_FAILED" : /phase7/.test(src) ? "MIRROR_MOTION_PHASE7_LOAD_FAILED" : /phase6/.test(src) ? "MIRROR_MOTION_PHASE6_LOAD_FAILED" : /phase5/.test(src) ? "MIRROR_MOTION_PHASE5_LOAD_FAILED" : /phase4/.test(src) ? "MIRROR_MOTION_PHASE4_LOAD_FAILED" : /phase3/.test(src) ? "MIRROR_MOTION_PHASE3_LOAD_FAILED" : "MIRROR_MOTION_PHASE2_LOAD_FAILED";
+          const boundary = /phase10/.test(src) ? "MIRROR_MOTION_PHASE10_LOAD_FAILED" : /phase9/.test(src) ? "MIRROR_MOTION_PHASE9_LOAD_FAILED" : /phase8/.test(src) ? "MIRROR_MOTION_PHASE8_LOAD_FAILED" : /phase7/.test(src) ? "MIRROR_MOTION_PHASE7_LOAD_FAILED" : /phase6/.test(src) ? "MIRROR_MOTION_PHASE6_LOAD_FAILED" : /phase5/.test(src) ? "MIRROR_MOTION_PHASE5_LOAD_FAILED" : /phase4/.test(src) ? "MIRROR_MOTION_PHASE4_LOAD_FAILED" : /phase3/.test(src) ? "MIRROR_MOTION_PHASE3_LOAD_FAILED" : "MIRROR_MOTION_PHASE2_LOAD_FAILED";
           recordBootstrapFailure(boundary, error, { failingUrl: src || "mirror-motion-load-chain" });
         });
     }
