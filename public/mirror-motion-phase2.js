@@ -14,12 +14,14 @@
   ]);
   const CONFIDENCE_PRESENT = 0.18;
   const TRACKER_RESET_GAP_MS = 750;
+  const STABILIZER_RETRY_BACKOFF_MS = 2000;
 
   const state = {
     installed: false,
     avatarRuntimePatched: false,
     stabilizerReady: false,
     stabilizerLoadRequested: false,
+    stabilizerNextRetryAt: 0,
     persistentFailure: 'NONE',
     rawFrames: 0,
     stabilizedFrames: 0,
@@ -52,6 +54,11 @@
 
   function clearPersistentStabilizerFailure() {
     if (/^STABILIZER_/.test(state.persistentFailure)) state.persistentFailure = 'NONE';
+  }
+
+  function scheduleStabilizerRetry() {
+    state.stabilizerLoadRequested = false;
+    state.stabilizerNextRetryAt = Date.now() + STABILIZER_RETRY_BACKOFF_MS;
   }
 
   function pointMap(packet) {
@@ -97,6 +104,7 @@
       mirrorMotionFrameStats: { ...state.lastFrameStats },
       mirrorMotionProcessingMs: state.lastProcessingMs,
       mirrorMotionTrackerResets: state.trackerResets,
+      mirrorMotionStabilizerNextRetryAt: state.stabilizerNextRetryAt,
       mirrorMotionRendererErrors: state.rendererErrors,
       ...extra
     });
@@ -108,30 +116,38 @@
     if (globalScope.PocketPTPoseStability?.createPoseStabilizer) {
       stabilizer = globalScope.PocketPTPoseStability.createPoseStabilizer();
       state.stabilizerReady = true;
+      state.stabilizerLoadRequested = false;
+      state.stabilizerNextRetryAt = 0;
       clearPersistentStabilizerFailure();
       state.lastPipelineStage = 'STABILIZER_READY';
       updateRuntimeDiagnostics();
       return Promise.resolve(stabilizer);
     }
     if (state.stabilizerLoadRequested) return Promise.resolve(null);
+    if (state.stabilizerNextRetryAt && Date.now() < state.stabilizerNextRetryAt) return Promise.resolve(null);
+
     state.stabilizerLoadRequested = true;
     state.lastPipelineStage = 'STABILIZER_LOADING';
     state.firstFailingBoundary = 'STABILIZER_LOADING';
     const loader = globalScope.__loadExternalScript;
     if (typeof loader !== 'function') {
       recordFailure('STABILIZER_LOADER_UNAVAILABLE', null, { persistent: true });
+      scheduleStabilizerRetry();
       updateRuntimeDiagnostics();
       return Promise.resolve(null);
     }
     return loader('/pose-stability-engine.js?v=20260904-phase2', { async: false, defer: false })
       .then(() => {
+        state.stabilizerLoadRequested = false;
         if (!globalScope.PocketPTPoseStability?.createPoseStabilizer) {
           recordFailure('STABILIZER_EXPORT_MISSING', null, { persistent: true });
+          state.stabilizerNextRetryAt = Date.now() + STABILIZER_RETRY_BACKOFF_MS;
           updateRuntimeDiagnostics();
           return null;
         }
         stabilizer = globalScope.PocketPTPoseStability.createPoseStabilizer();
         state.stabilizerReady = true;
+        state.stabilizerNextRetryAt = 0;
         clearPersistentStabilizerFailure();
         state.firstFailingBoundary = 'NONE';
         state.lastPipelineStage = 'STABILIZER_READY';
@@ -140,6 +156,7 @@
       })
       .catch((error) => {
         recordFailure('STABILIZER_LOAD_FAILED', null, { persistent: true });
+        scheduleStabilizerRetry();
         updateRuntimeDiagnostics({ mirrorMotionLastError: String(error?.message || error) });
         return null;
       });
@@ -166,21 +183,25 @@
     state.lastCriticalJointIssue = 'NONE';
     const startedAt = nowMs();
 
-    if (stabilizer && priorRawAt != null && wallNow - priorRawAt > TRACKER_RESET_GAP_MS) {
-      resetTrackerHistory('FRAME_GAP');
-    }
-
     const rawPoints = rawPacket?.keypoints || [];
     const personPresent = rawPoints.some(point => Number(point?.score ?? point?.confidence ?? 0) >= CONFIDENCE_PRESENT);
+    let resetReason = null;
+
+    if (stabilizer && priorRawAt != null && wallNow - priorRawAt > TRACKER_RESET_GAP_MS) {
+      resetReason = 'FRAME_GAP';
+    }
+
     if (personPresent) {
-      if (stabilizer && state.lastPersonSeenAt != null && wallNow - state.lastPersonSeenAt > TRACKER_RESET_GAP_MS) {
-        resetTrackerHistory('PERSON_REACQUIRED');
+      if (!resetReason && stabilizer && state.lastPersonSeenAt != null && wallNow - state.lastPersonSeenAt > TRACKER_RESET_GAP_MS) {
+        resetReason = 'PERSON_REACQUIRED';
       }
       state.lastPersonSeenAt = wallNow;
     } else if (stabilizer && state.lastPersonSeenAt != null && wallNow - state.lastPersonSeenAt > TRACKER_RESET_GAP_MS) {
-      resetTrackerHistory('PERSON_LOST');
+      if (!resetReason) resetReason = 'PERSON_LOST';
       state.lastPersonSeenAt = null;
     }
+
+    if (resetReason) resetTrackerHistory(resetReason);
 
     if (!stabilizer) {
       ensureStabilizer();
@@ -288,6 +309,7 @@
   function diagnosticsText() {
     const runtime = globalScope.AvatarRuntime?.getStatus?.() || globalScope.__avatarRuntimeStatus || {};
     const age = state.lastStabilizedPoseAt == null ? 'n/a' : `${Math.max(0, Date.now() - state.lastStabilizedPoseAt)}ms`;
+    const retryIn = state.stabilizerNextRetryAt ? Math.max(0, state.stabilizerNextRetryAt - Date.now()) : 0;
     const fs = state.lastFrameStats;
     return [
       'MIRROR MOTION INTELLIGENCE — PHASE 2',
@@ -295,6 +317,7 @@
       `Persistent failure: ${state.persistentFailure}`,
       `Pipeline stage: ${state.lastPipelineStage}`,
       `Stabilizer: ${state.stabilizerReady ? 'READY' : 'LOADING/UNAVAILABLE'}`,
+      `Stabilizer retry in: ${retryIn}ms`,
       `Avatar runtime patched: ${state.avatarRuntimePatched ? 'YES' : 'NO'}`,
       `Renderer bound: ${state.rendererBound ? 'YES' : 'NO'}`,
       `Raw / stabilized frames: ${state.rawFrames} / ${state.stabilizedFrames}`,
