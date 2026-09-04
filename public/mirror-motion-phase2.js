@@ -13,12 +13,14 @@
     'left_knee','right_knee','left_ankle','right_ankle'
   ]);
   const CONFIDENCE_PRESENT = 0.18;
+  const TRACKER_RESET_GAP_MS = 750;
 
   const state = {
     installed: false,
     avatarRuntimePatched: false,
     stabilizerReady: false,
     stabilizerLoadRequested: false,
+    persistentFailure: 'NONE',
     rawFrames: 0,
     stabilizedFrames: 0,
     firstFailingBoundary: 'NONE',
@@ -28,6 +30,8 @@
     lastProcessingMs: 0,
     lastRawPoseAt: null,
     lastStabilizedPoseAt: null,
+    lastPersonSeenAt: null,
+    trackerResets: 0,
     rendererErrors: 0,
     rendererBound: false
   };
@@ -39,14 +43,15 @@
     return globalScope.performance?.now?.() ?? Date.now();
   }
 
-  function recordFailure(boundary, joint = null) {
-    if (state.firstFailingBoundary === 'NONE') state.firstFailingBoundary = boundary;
+  function recordFailure(boundary, joint = null, { persistent = false } = {}) {
+    if (persistent) state.persistentFailure = boundary;
+    state.firstFailingBoundary = boundary;
     if (joint) state.lastCriticalJointIssue = `${boundary}:${joint}`;
     return boundary;
   }
 
-  function clearTransientFailureIfHealthy() {
-    if (state.firstFailingBoundary === 'STABILIZER_LOADING') state.firstFailingBoundary = 'NONE';
+  function clearPersistentStabilizerFailure() {
+    if (/^STABILIZER_/.test(state.persistentFailure)) state.persistentFailure = 'NONE';
   }
 
   function pointMap(packet) {
@@ -62,6 +67,7 @@
     const raw = rawPacket?.keypoints || [];
     if (!raw.length) return 'DETECTION_NO_POSE';
     if (!raw.some(point => Number(point?.score ?? point?.confidence ?? 0) >= CONFIDENCE_PRESENT)) return 'DETECTION_LOW_CONFIDENCE';
+    if (state.persistentFailure !== 'NONE') return state.persistentFailure;
     if (!stabilizedPacket) return state.stabilizerReady ? 'STABILIZATION_NO_OUTPUT' : 'STABILIZER_LOADING';
 
     const byName = pointMap(stabilizedPacket);
@@ -85,10 +91,12 @@
       mirrorMotionRawFrames: state.rawFrames,
       mirrorMotionStabilizedFrames: state.stabilizedFrames,
       mirrorMotionFirstFailingBoundary: state.firstFailingBoundary,
+      mirrorMotionPersistentFailure: state.persistentFailure,
       mirrorMotionLastPipelineStage: state.lastPipelineStage,
       mirrorMotionLastCriticalJointIssue: state.lastCriticalJointIssue,
       mirrorMotionFrameStats: { ...state.lastFrameStats },
       mirrorMotionProcessingMs: state.lastProcessingMs,
+      mirrorMotionTrackerResets: state.trackerResets,
       mirrorMotionRendererErrors: state.rendererErrors,
       ...extra
     });
@@ -100,45 +108,79 @@
     if (globalScope.PocketPTPoseStability?.createPoseStabilizer) {
       stabilizer = globalScope.PocketPTPoseStability.createPoseStabilizer();
       state.stabilizerReady = true;
-      clearTransientFailureIfHealthy();
+      clearPersistentStabilizerFailure();
+      state.lastPipelineStage = 'STABILIZER_READY';
       updateRuntimeDiagnostics();
       return Promise.resolve(stabilizer);
     }
     if (state.stabilizerLoadRequested) return Promise.resolve(null);
     state.stabilizerLoadRequested = true;
     state.lastPipelineStage = 'STABILIZER_LOADING';
-    if (state.firstFailingBoundary === 'NONE') state.firstFailingBoundary = 'STABILIZER_LOADING';
+    state.firstFailingBoundary = 'STABILIZER_LOADING';
     const loader = globalScope.__loadExternalScript;
     if (typeof loader !== 'function') {
-      recordFailure('STABILIZER_LOADER_UNAVAILABLE');
+      recordFailure('STABILIZER_LOADER_UNAVAILABLE', null, { persistent: true });
       updateRuntimeDiagnostics();
       return Promise.resolve(null);
     }
     return loader('/pose-stability-engine.js?v=20260904-phase2', { async: false, defer: false })
       .then(() => {
         if (!globalScope.PocketPTPoseStability?.createPoseStabilizer) {
-          recordFailure('STABILIZER_EXPORT_MISSING');
+          recordFailure('STABILIZER_EXPORT_MISSING', null, { persistent: true });
+          updateRuntimeDiagnostics();
           return null;
         }
         stabilizer = globalScope.PocketPTPoseStability.createPoseStabilizer();
         state.stabilizerReady = true;
-        clearTransientFailureIfHealthy();
+        clearPersistentStabilizerFailure();
+        state.firstFailingBoundary = 'NONE';
         state.lastPipelineStage = 'STABILIZER_READY';
         updateRuntimeDiagnostics();
         return stabilizer;
       })
       .catch((error) => {
-        recordFailure('STABILIZER_LOAD_FAILED');
+        recordFailure('STABILIZER_LOAD_FAILED', null, { persistent: true });
         updateRuntimeDiagnostics({ mirrorMotionLastError: String(error?.message || error) });
         return null;
       });
   }
 
+  function resetTrackerHistory(reason) {
+    if (!stabilizer?.reset) return false;
+    stabilizer.reset();
+    state.trackerResets += 1;
+    state.lastFrameStats = { accepted: 0, smoothed: 0, coasted: 0, clamped: 0, dropped: 0 };
+    state.lastStabilizedPoseAt = null;
+    state.lastCriticalJointIssue = 'NONE';
+    state.lastPipelineStage = `TRACKER_RESET:${reason}`;
+    return true;
+  }
+
   function processForAvatar(rawPacket) {
+    const wallNow = Date.now();
+    const priorRawAt = state.lastRawPoseAt;
     state.rawFrames += 1;
-    state.lastRawPoseAt = Date.now();
+    state.lastRawPoseAt = wallNow;
     state.lastPipelineStage = 'RAW_POSE_RECEIVED';
+    state.firstFailingBoundary = 'NONE';
+    state.lastCriticalJointIssue = 'NONE';
     const startedAt = nowMs();
+
+    if (stabilizer && priorRawAt != null && wallNow - priorRawAt > TRACKER_RESET_GAP_MS) {
+      resetTrackerHistory('FRAME_GAP');
+    }
+
+    const rawPoints = rawPacket?.keypoints || [];
+    const personPresent = rawPoints.some(point => Number(point?.score ?? point?.confidence ?? 0) >= CONFIDENCE_PRESENT);
+    if (personPresent) {
+      if (stabilizer && state.lastPersonSeenAt != null && wallNow - state.lastPersonSeenAt > TRACKER_RESET_GAP_MS) {
+        resetTrackerHistory('PERSON_REACQUIRED');
+      }
+      state.lastPersonSeenAt = wallNow;
+    } else if (stabilizer && state.lastPersonSeenAt != null && wallNow - state.lastPersonSeenAt > TRACKER_RESET_GAP_MS) {
+      resetTrackerHistory('PERSON_LOST');
+      state.lastPersonSeenAt = null;
+    }
 
     if (!stabilizer) {
       ensureStabilizer();
@@ -160,16 +202,14 @@
     }
 
     state.stabilizedFrames += 1;
-    state.lastStabilizedPoseAt = Date.now();
+    state.lastStabilizedPoseAt = wallNow;
     state.lastFrameStats = { ...state.lastFrameStats, ...(stabilizedPacket?.stability?.frameStats || {}) };
     state.lastPipelineStage = 'STABILIZED_POSE_READY';
-    state.lastCriticalJointIssue = 'NONE';
     state.lastProcessingMs = nowMs() - startedAt;
 
     const runtime = globalScope.AvatarRuntime?.getStatus?.() || globalScope.__avatarRuntimeStatus || {};
     const failure = deriveFirstFailure(rawPacket, stabilizedPacket, runtime);
-    if (failure === 'NONE') state.firstFailingBoundary = 'NONE';
-    else {
+    if (failure !== 'NONE') {
       const [boundary, joint] = failure.split(':');
       recordFailure(boundary, joint || null);
     }
@@ -203,7 +243,7 @@
     if (!runtime || runtime.__mirrorMotionPhase2Patched) return runtime;
     const originalBind = runtime.bindPoseFrameRenderer;
     if (typeof originalBind !== 'function') {
-      recordFailure('AVATAR_BIND_API_MISSING');
+      recordFailure('AVATAR_BIND_API_MISSING', null, { persistent: true });
       updateRuntimeDiagnostics();
       return runtime;
     }
@@ -217,6 +257,7 @@
     }
     Object.defineProperty(runtime, '__mirrorMotionPhase2Patched', { value: true, enumerable: false });
     state.avatarRuntimePatched = true;
+    if (state.persistentFailure === 'AVATAR_BIND_API_MISSING') state.persistentFailure = 'NONE';
     state.lastPipelineStage = 'AVATAR_RUNTIME_PATCHED';
     updateRuntimeDiagnostics();
     return runtime;
@@ -228,7 +269,11 @@
       return;
     }
     const descriptor = Object.getOwnPropertyDescriptor(globalScope, 'AvatarRuntime');
-    if (descriptor && descriptor.configurable === false) return;
+    if (descriptor && descriptor.configurable === false) {
+      recordFailure('AVATAR_RUNTIME_INTERCEPT_BLOCKED', null, { persistent: true });
+      updateRuntimeDiagnostics();
+      return;
+    }
     let value;
     Object.defineProperty(globalScope, 'AvatarRuntime', {
       configurable: true,
@@ -247,6 +292,7 @@
     return [
       'MIRROR MOTION INTELLIGENCE — PHASE 2',
       `First failing boundary: ${state.firstFailingBoundary}`,
+      `Persistent failure: ${state.persistentFailure}`,
       `Pipeline stage: ${state.lastPipelineStage}`,
       `Stabilizer: ${state.stabilizerReady ? 'READY' : 'LOADING/UNAVAILABLE'}`,
       `Avatar runtime patched: ${state.avatarRuntimePatched ? 'YES' : 'NO'}`,
@@ -256,6 +302,7 @@
       `Critical joint issue: ${state.lastCriticalJointIssue}`,
       `Stabilizer processing: ${state.lastProcessingMs.toFixed(2)}ms`,
       `Stabilized pose age: ${age}`,
+      `Tracker resets: ${state.trackerResets}`,
       `Retarget frames: ${runtime.retargetFramesExecuted || 0}`,
       `Bones changed: ${runtime.bonesChangedLastFrame || 0}`,
       `Render loop: ${runtime.renderLoopState || 'UNKNOWN'}`,
@@ -309,15 +356,17 @@
 
   function reset() {
     stabilizer?.reset?.();
+    if (stabilizer) state.trackerResets += 1;
     state.rawFrames = 0;
     state.stabilizedFrames = 0;
-    state.firstFailingBoundary = 'NONE';
+    state.firstFailingBoundary = state.persistentFailure;
     state.lastPipelineStage = 'RESET';
     state.lastCriticalJointIssue = 'NONE';
     state.lastFrameStats = { accepted: 0, smoothed: 0, coasted: 0, clamped: 0, dropped: 0 };
     state.lastProcessingMs = 0;
     state.lastRawPoseAt = null;
     state.lastStabilizedPoseAt = null;
+    state.lastPersonSeenAt = null;
     state.rendererErrors = 0;
     updateRuntimeDiagnostics();
   }

@@ -67,7 +67,11 @@
 
     function process(posePacket, timestampMs) {
       const input = Array.isArray(posePacket?.keypoints) ? posePacket.keypoints : [];
-      const now = resolveTimestamp(posePacket, timestampMs, lastTimestamp, config.defaultFrameMs);
+      const resolvedNow = resolveTimestamp(posePacket, timestampMs, lastTimestamp, config.defaultFrameMs);
+      // Internal time must never move backward. A restarted source/session should
+      // reset the stabilizer, but a malformed/repeated frame timestamp must not
+      // extend coasting windows or create negative pose ages.
+      const now = lastTimestamp == null ? resolvedNow : Math.max(resolvedNow, lastTimestamp + 1);
       const frameDtMs = lastTimestamp == null ? config.defaultFrameMs : clamp(now - lastTimestamp, 1, 250);
       lastTimestamp = now;
       frameCount += 1;
@@ -89,7 +93,9 @@
               y: previous.y + previous.vy * dtSeconds,
               score: Math.max(confidence, previous.confidence * config.coastConfidenceDecay),
               confidence: Math.max(confidence, previous.confidence * config.coastConfidenceDecay),
-              stabilityState: 'coasted'
+              rawConfidence: confidence,
+              stabilityState: 'coasted',
+              stabilityCoastAgeMs: now - previous.lastTrustedAt
             };
             previous.x = coasted.x;
             previous.y = coasted.y;
@@ -100,7 +106,16 @@
             return coasted;
           }
           frameStats.dropped += 1;
-          return { ...raw, name, score: confidence, confidence, stabilityState: 'dropped' };
+          return {
+            ...raw,
+            name,
+            x: undefined,
+            y: undefined,
+            score: 0,
+            confidence: 0,
+            rawConfidence: confidence,
+            stabilityState: 'dropped'
+          };
         }
 
         const measuredX = Number(raw.x);
@@ -116,7 +131,18 @@
             lastOutputAt: now
           });
           frameStats.accepted += 1;
-          return { ...raw, name, x: measuredX, y: measuredY, score: confidence, confidence, stabilityState: 'accepted' };
+          return {
+            ...raw,
+            name,
+            x: measuredX,
+            y: measuredY,
+            score: confidence,
+            confidence,
+            rawConfidence: confidence,
+            stabilityState: 'accepted',
+            stabilityAlpha: 1,
+            stabilityDisplacementPx: 0
+          };
         }
 
         const dtSeconds = frameDtMs / 1000;
@@ -143,7 +169,15 @@
           1
         );
         const velocityWeight = clamp(observedSpeed / config.velocityForMaxAlphaPxPerSecond, 0, 1);
-        const responsiveness = Math.max(confidenceWeight, velocityWeight * confidenceWeight);
+        // The previous formula max(confidenceWeight, velocityWeight * confidenceWeight)
+        // collapsed algebraically to confidenceWeight because velocityWeight <= 1.
+        // This confidence-gated boost allows deliberate speed to increase response
+        // without letting a low-confidence high-velocity outlier become authoritative.
+        const responsiveness = clamp(
+          confidenceWeight + velocityWeight * confidenceWeight * (1 - confidenceWeight),
+          0,
+          1
+        );
         const alpha = lerp(config.minAlpha, config.maxAlpha, responsiveness);
         const nextX = lerp(previous.x, targetX, alpha);
         const nextY = lerp(previous.y, targetY, alpha);
@@ -169,8 +203,12 @@
           y: nextY,
           score: confidence,
           confidence,
+          rawConfidence: confidence,
           stabilityState: wasClamped ? 'clamped_smoothed' : 'smoothed',
-          stabilityAlpha: alpha
+          stabilityAlpha: alpha,
+          stabilityDisplacementPx: distance,
+          stabilityMaxJumpPx: maxJump,
+          stabilityObservedSpeedPxPerSecond: observedSpeed
         };
       });
 
@@ -180,7 +218,7 @@
         keypoints: output,
         timestampMs: now,
         stability: {
-          version: 1,
+          version: 2,
           frame: frameCount,
           frameStats,
           trackedPoints: states.size

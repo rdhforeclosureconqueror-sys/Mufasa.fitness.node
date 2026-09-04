@@ -22,6 +22,19 @@ test('high-confidence deliberate movement remains responsive', () => {
   assert.ok(next.x >= 120, `expected responsive movement, got ${next.x}`);
 });
 
+test('velocity increases responsiveness at the same confidence', () => {
+  const slow = createPoseStabilizer({ velocityForMaxAlphaPxPerSecond: 900 });
+  slow.process(packet(100, 100, 0.4), 0);
+  const slowPoint = slow.process(packet(103, 100, 0.4), 33).keypoints[0];
+
+  const fast = createPoseStabilizer({ velocityForMaxAlphaPxPerSecond: 900 });
+  fast.process(packet(100, 100, 0.4), 0);
+  const fastPoint = fast.process(packet(130, 100, 0.4), 33).keypoints[0];
+
+  assert.ok(fastPoint.stabilityAlpha > slowPoint.stabilityAlpha,
+    `expected velocity boost: fast=${fastPoint.stabilityAlpha}, slow=${slowPoint.stabilityAlpha}`);
+});
+
 test('brief low-confidence loss coasts from the tracked state rather than teleporting', () => {
   const tracker = createPoseStabilizer({ maxCoastMs: 200, confidenceFloor: 0.2 });
   tracker.process(packet(100, 100), 0);
@@ -37,6 +50,25 @@ test('implausible one-frame jumps are bounded before smoothing', () => {
   const next = tracker.process(packet(400, 100), 33).keypoints[0];
   assert.equal(next.stabilityState, 'clamped_smoothed');
   assert.ok(next.x <= 111, `jump should be bounded near the allowance, got ${next.x}`);
+});
+
+test('internal timestamp remains monotonic when source timestamps move backward', () => {
+  const tracker = createPoseStabilizer();
+  tracker.process(packet(100, 100), 100);
+  const next = tracker.process(packet(101, 100), 90);
+  assert.equal(next.timestampMs, 101);
+  assert.equal(tracker.diagnostics().lastTimestamp, 101);
+});
+
+test('dropped invalid points are neutralized before downstream retargeting', () => {
+  const tracker = createPoseStabilizer();
+  const next = tracker.process(packet(undefined, undefined, 0.95), 0).keypoints[0];
+  assert.equal(next.stabilityState, 'dropped');
+  assert.equal(next.score, 0);
+  assert.equal(next.confidence, 0);
+  assert.equal(next.x, undefined);
+  assert.equal(next.y, undefined);
+  assert.equal(next.rawConfidence, 0.95);
 });
 
 test('reset forgets prior motion history', () => {

@@ -3,7 +3,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+function clearGlobals() {
+  delete global.PocketPTPoseStability;
+  delete global.__loadExternalScript;
+  delete global.AvatarRuntime;
+  delete global.__mirrorMotionDiagnostics;
+}
+
 function loadWithFakeStabilizer(processImpl) {
+  clearGlobals();
   const modulePath = require.resolve('../public/mirror-motion-phase2.js');
   delete require.cache[modulePath];
   global.PocketPTPoseStability = {
@@ -81,11 +89,45 @@ test('renderer errors are surfaced as the retarget boundary and rethrown', () =>
   assert.equal(diagnostics.rendererErrors, 1);
 });
 
+test('concrete stabilizer load failure replaces transient loading status', async () => {
+  clearGlobals();
+  const modulePath = require.resolve('../public/mirror-motion-phase2.js');
+  delete require.cache[modulePath];
+  global.__avatarRuntimeStatus = { presentationAppliedMode: 'avatar_overlay', renderLoopState: 'RUNNING' };
+  global.__loadExternalScript = () => Promise.reject(new Error('network down'));
+  const phase2 = require(modulePath);
+  phase2.install();
+  await new Promise(resolve => setImmediate(resolve));
+  const diagnostics = phase2.diagnostics();
+  assert.equal(diagnostics.persistentFailure, 'STABILIZER_LOAD_FAILED');
+  assert.equal(diagnostics.firstFailingBoundary, 'STABILIZER_LOAD_FAILED');
+});
+
+test('long frame gaps reset stabilizer history before accepting a new stream', () => {
+  const phase2 = loadWithFakeStabilizer(packet => packet);
+  phase2.reset();
+  phase2.wrapRenderer(() => true);
+  const originalNow = Date.now;
+  try {
+    let now = 1000;
+    Date.now = () => now;
+    phase2.processForAvatar(fullPacket({ timestampMs: 100 }));
+    const before = phase2.diagnostics().trackerResets;
+    now = 2000;
+    phase2.processForAvatar(fullPacket({ timestampMs: 200 }));
+    assert.ok(phase2.diagnostics().trackerResets > before);
+  } finally {
+    Date.now = originalNow;
+  }
+});
+
 test('debug text includes the first failing boundary and pipeline counters', () => {
   const phase2 = loadWithFakeStabilizer(packet => packet);
   phase2.reset();
   const text = phase2.diagnosticsText();
   assert.match(text, /First failing boundary:/);
+  assert.match(text, /Persistent failure:/);
   assert.match(text, /Raw \/ stabilized frames:/);
   assert.match(text, /Critical joint issue:/);
+  assert.match(text, /Tracker resets:/);
 });
