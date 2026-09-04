@@ -12,6 +12,7 @@
     calibrationConfidence: 0.72,
     minCalibrationSamples: 6,
     calibrationAlpha: 0.18,
+    calibrationUpdateToleranceRatio: 0.18,
     lengthToleranceRatio: 0.22,
     identityConfidence: 0.55,
     identitySwapMarginRatio: 0.18,
@@ -43,6 +44,12 @@
   const dist = (a, b) => (a && b && finite(a.x) && finite(a.y) && finite(b.x) && finite(b.y))
     ? Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y))
     : NaN;
+  const median = values => {
+    const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+    if (!sorted.length) return NaN;
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
 
   function createStructuralEngine(options = {}) {
     const config = { ...DEFAULTS, ...options };
@@ -51,11 +58,18 @@
     let frames = 0;
     let corrections = 0;
     let identitySwaps = 0;
+    let calibrationRejects = 0;
     let lastIssue = 'NONE';
 
     function usableForCalibration(point) {
       return point && finite(point.x) && finite(point.y)
         && confidence(point) >= config.calibrationConfidence
+        && !['dropped','coasted'].includes(point.stabilityState);
+    }
+
+    function usableForIdentity(point) {
+      return point && finite(point.x) && finite(point.y)
+        && confidence(point) >= config.identityConfidence
         && !['dropped','coasted'].includes(point.stabilityState);
     }
 
@@ -65,6 +79,7 @@
       frames = 0;
       corrections = 0;
       identitySwaps = 0;
+      calibrationRejects = 0;
       lastIssue = 'NONE';
     }
 
@@ -81,15 +96,16 @@
       const shoulder = dist(map.get('left_shoulder'), map.get('right_shoulder'));
       const hip = dist(map.get('left_hip'), map.get('right_hip'));
       const candidates = [shoulder, hip].filter(Number.isFinite).filter(value => value > 1);
-      return candidates.length ? candidates.reduce((sum, value) => sum + value, 0) / candidates.length : 100;
+      return candidates.length ? candidates.reduce((sum, value) => sum + value, 0) / candidates.length : NaN;
     }
 
     function maybeRecoverIdentity(map, scale, frameStats) {
+      if (!Number.isFinite(scale) || scale <= 1) return;
       for (const [label, leftName, rightName] of IDENTITY_PAIRS) {
         const left = map.get(leftName); const right = map.get(rightName);
         const prevLeft = previous.get(leftName); const prevRight = previous.get(rightName);
         if (!left || !right || !prevLeft || !prevRight) continue;
-        if (confidence(left) < config.identityConfidence || confidence(right) < config.identityConfidence) continue;
+        if (!usableForIdentity(left) || !usableForIdentity(right)) continue;
         const sameCost = dist(left, prevLeft) + dist(right, prevRight);
         const swapCost = dist(left, prevRight) + dist(right, prevLeft);
         if (!Number.isFinite(sameCost) || !Number.isFinite(swapCost)) continue;
@@ -113,14 +129,33 @@
       }
     }
 
-    function updateCalibration(name, length) {
-      if (!Number.isFinite(length) || length <= 1) return;
-      const current = segments.get(name) || { length, samples: 0 };
-      current.length = current.samples === 0
-        ? length
-        : current.length + (length - current.length) * config.calibrationAlpha;
+    function updateCalibration(name, length, frameStats) {
+      if (!Number.isFinite(length) || length <= 1) return false;
+      const current = segments.get(name) || { length, samples: 0, rejected: 0, seed: [] };
+
+      if (current.samples < config.minCalibrationSamples) {
+        current.seed.push(length);
+        current.samples += 1;
+        current.length = median(current.seed);
+        if (current.samples >= config.minCalibrationSamples) current.seed = [];
+        segments.set(name, current);
+        return true;
+      }
+
+      const errorRatio = Math.abs(length - current.length) / Math.max(current.length, 1);
+      if (errorRatio > config.calibrationUpdateToleranceRatio) {
+        current.rejected += 1;
+        calibrationRejects += 1;
+        frameStats.calibrationRejected += 1;
+        lastIssue = `CALIBRATION_OUTLIER_REJECTED:${name}`;
+        segments.set(name, current);
+        return false;
+      }
+
+      current.length = current.length + (length - current.length) * config.calibrationAlpha;
       current.samples += 1;
       segments.set(name, current);
+      return true;
     }
 
     function constrainSegment(name, proximal, distal, frameStats) {
@@ -148,18 +183,26 @@
       lastIssue = `LENGTH_CONSTRAINED:${name}`;
     }
 
+    function serializeSegments() {
+      return Object.fromEntries([...segments.entries()].map(([name, value]) => [name, {
+        length: value.length,
+        samples: value.samples,
+        rejected: value.rejected || 0
+      }]));
+    }
+
     function process(packet) {
       frames += 1;
       const points = (packet?.keypoints || []).map(point => ({ ...point }));
       const map = pointMap(points);
-      const frameStats = { calibratedSegments: 0, lengthCorrections: 0, identitySwaps: 0 };
+      const frameStats = { calibratedSegments: 0, lengthCorrections: 0, identitySwaps: 0, calibrationRejected: 0 };
       const scale = bodyScale(map);
 
       maybeRecoverIdentity(map, scale, frameStats);
 
       for (const [name, aName, bName] of SEGMENTS) {
         const a = map.get(aName); const b = map.get(bName);
-        if (usableForCalibration(a) && usableForCalibration(b)) updateCalibration(name, dist(a, b));
+        if (usableForCalibration(a) && usableForCalibration(b)) updateCalibration(name, dist(a, b), frameStats);
       }
 
       for (const [name, aName, bName] of SEGMENTS) {
@@ -169,9 +212,7 @@
       }
 
       for (const [name, point] of map) {
-        if (finite(point.x) && finite(point.y) && confidence(point) > 0) {
-          previous.set(name, { x: Number(point.x), y: Number(point.y) });
-        }
+        if (usableForIdentity(point)) previous.set(name, { x: Number(point.x), y: Number(point.y) });
       }
 
       frameStats.calibratedSegments = [...segments.values()].filter(item => item.samples >= config.minCalibrationSamples).length;
@@ -179,12 +220,12 @@
         ...packet,
         keypoints: points,
         structural: {
-          version: 1,
+          version: 2,
           frame: frames,
-          bodyScalePx: scale,
+          bodyScalePx: Number.isFinite(scale) ? scale : null,
           frameStats,
           lastIssue,
-          segmentModel: Object.fromEntries([...segments.entries()].map(([name, value]) => [name, { ...value }]))
+          segmentModel: serializeSegments()
         }
       };
     }
@@ -195,8 +236,9 @@
         calibratedSegments: [...segments.values()].filter(item => item.samples >= config.minCalibrationSamples).length,
         corrections,
         identitySwaps,
+        calibrationRejects,
         lastIssue,
-        segmentModel: Object.fromEntries([...segments.entries()].map(([name, value]) => [name, { ...value }]))
+        segmentModel: serializeSegments()
       };
     }
 
@@ -209,10 +251,38 @@
     avatarRuntimePatched: false,
     rendererBound: false,
     processErrors: 0,
+    structuralResets: 0,
+    lastStructuralResetReason: 'NONE',
+    observedPhase2TrackerResets: null,
     firstFailingBoundary: 'NONE',
     lastPipelineStage: 'BOOT'
   };
   let panelTimer = null;
+
+  function upstreamTrackerResetCount() {
+    const phase2 = globalScope.PocketPTMirrorMotionPhase2?.diagnostics?.();
+    const direct = Number(phase2?.trackerResets);
+    if (Number.isFinite(direct)) return direct;
+    const fallback = Number(globalScope.__mirrorMotionDiagnostics?.trackerResets);
+    return Number.isFinite(fallback) ? fallback : null;
+  }
+
+  function syncUpstreamReset() {
+    const count = upstreamTrackerResetCount();
+    if (count == null) return false;
+    if (state.observedPhase2TrackerResets == null) {
+      state.observedPhase2TrackerResets = count;
+      return false;
+    }
+    if (count === state.observedPhase2TrackerResets) return false;
+
+    state.observedPhase2TrackerResets = count;
+    engine.reset();
+    state.structuralResets += 1;
+    state.lastStructuralResetReason = 'PHASE2_TRACKER_RESET';
+    state.lastPipelineStage = 'STRUCTURAL_RESET';
+    return true;
+  }
 
   function updateRuntimeDiagnostics(extra = {}) {
     const runtime = globalScope.AvatarRuntime?.getStatus?.() || globalScope.__avatarRuntimeStatus || (globalScope.__avatarRuntimeStatus = {});
@@ -225,6 +295,9 @@
       mirrorMotionCalibratedSegments: diag.calibratedSegments,
       mirrorMotionLengthCorrections: diag.corrections,
       mirrorMotionIdentityRecoveries: diag.identitySwaps,
+      mirrorMotionCalibrationRejects: diag.calibrationRejects,
+      mirrorMotionStructuralResets: state.structuralResets,
+      mirrorMotionStructuralResetReason: state.lastStructuralResetReason,
       mirrorMotionStructuralLastIssue: diag.lastIssue,
       mirrorMotionStructuralFirstFailingBoundary: state.firstFailingBoundary,
       mirrorMotionStructuralProcessErrors: state.processErrors,
@@ -240,6 +313,7 @@
     return function structurallyConstrainedRenderer(stabilizedPacket) {
       state.lastPipelineStage = 'STRUCTURAL_PROCESS';
       try {
+        syncUpstreamReset();
         const constrained = engine.process(stabilizedPacket);
         state.firstFailingBoundary = 'NONE';
         state.lastPipelineStage = 'STRUCTURAL_READY';
@@ -316,8 +390,11 @@
       `Renderer bound: ${state.rendererBound ? 'YES' : 'NO'}`,
       `Structural frames: ${diag.frames}`,
       `Calibrated segments: ${diag.calibratedSegments} / ${SEGMENTS.length}`,
+      `Calibration outliers rejected: ${diag.calibrationRejects}`,
       `Length corrections: ${diag.corrections}`,
       `Left/right recoveries: ${diag.identitySwaps}`,
+      `Structural resets: ${state.structuralResets}`,
+      `Last structural reset: ${state.lastStructuralResetReason}`,
       `Last structural issue: ${diag.lastIssue}`,
       `Structural process errors: ${state.processErrors}`
     ].join('\n');
@@ -369,6 +446,9 @@
   function reset() {
     engine.reset();
     state.processErrors = 0;
+    state.structuralResets = 0;
+    state.lastStructuralResetReason = 'NONE';
+    state.observedPhase2TrackerResets = null;
     state.firstFailingBoundary = 'NONE';
     state.lastPipelineStage = 'RESET';
     updateRuntimeDiagnostics();
