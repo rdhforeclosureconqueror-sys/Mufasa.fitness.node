@@ -155,7 +155,7 @@
       "/form-engine.js", "/runtime-events.js", "/runtime-state.js", "/runtime-bridges.js", "/auth-state-runtime.js",
       "/diagnostics-client.js", "/backend-read.js", "/session-write.js", "/pose-runtime.js", "/rep-runtime.js",
       "/rep-analysis-runtime.js", "/hud-runtime.js", "/workout-progression-runtime.js", "/dashboard-runtime.js", "/coach-runtime.js",
-      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/pose-stability-engine.js"] : []),
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/mirror-motion-phase5.js", "/pose-stability-engine.js"] : []),
       "/landing-diagnostics.js", "/fitness.js"
     ];
     initStartupResourceAudit(initialScripts);
@@ -165,9 +165,10 @@
       global.__loadExternalScript("/mirror-motion-phase2.js?v=20260904-phase2", { async: false, defer: false })
         .then(() => global.__loadExternalScript("/mirror-motion-phase3.js?v=20260904-phase3", { async: false, defer: false }))
         .then(() => global.__loadExternalScript("/mirror-motion-phase4.js?v=20260904-phase4", { async: false, defer: false }))
+        .then(() => global.__loadExternalScript("/mirror-motion-phase5.js?v=20260904-phase5", { async: false, defer: false }))
         .catch((error) => {
           const src = error?.scriptSrc || error?.failingUrl || '';
-          const boundary = /phase4/.test(src) ? "MIRROR_MOTION_PHASE4_LOAD_FAILED" : /phase3/.test(src) ? "MIRROR_MOTION_PHASE3_LOAD_FAILED" : "MIRROR_MOTION_PHASE2_LOAD_FAILED";
+          const boundary = /phase5/.test(src) ? "MIRROR_MOTION_PHASE5_LOAD_FAILED" : /phase4/.test(src) ? "MIRROR_MOTION_PHASE4_LOAD_FAILED" : /phase3/.test(src) ? "MIRROR_MOTION_PHASE3_LOAD_FAILED" : "MIRROR_MOTION_PHASE2_LOAD_FAILED";
           recordBootstrapFailure(boundary, error, { failingUrl: src || "mirror-motion-load-chain" });
         });
     }
