@@ -35,11 +35,30 @@ test('squat context anchors feet and corrects small camera drift', () => {
   assert.equal(find(second,'right_ankle').x,57);
 });
 
+test('clearing or changing the selected exercise releases stale contacts', () => {
+  const engine = phase4.createExerciseContextEngine();
+  assert.equal(engine.process(packet(),'squat').exerciseContext.frameStats.anchoredContacts,2);
+  const cleared = engine.process(packet(), 'jumping_jack');
+  assert.equal(cleared.exerciseContext.frameStats.anchoredContacts,0);
+  assert.match(cleared.exerciseContext.lastIssue,/ANCHORS_RELEASED/);
+});
+
 test('push-up transition does not lock contacts before horizontal posture is established', () => {
   const engine = phase4.createExerciseContextEngine();
   const upright = engine.process(packet(), 'pushup');
   assert.equal(upright.exerciseContext.phase,'PUSHUP_TRANSITION');
   assert.equal(upright.exerciseContext.frameStats.anchoredContacts,0);
+});
+
+test('forward bend is not enough to become push-up horizontal when hips and ankles are not aligned', () => {
+  const engine = phase4.createExerciseContextEngine();
+  const bent = packet({
+    left_shoulder:[40,80], right_shoulder:[40,100], left_hip:[100,82], right_hip:[100,98],
+    left_ankle:[105,180], right_ankle:[120,180]
+  });
+  const out = engine.process(bent,'pushup');
+  assert.equal(out.exerciseContext.phase,'PUSHUP_TRANSITION');
+  assert.equal(out.exerciseContext.frameStats.anchoredContacts,0);
 });
 
 test('horizontal push-up establishes wrist and ankle contact anchors', () => {
@@ -61,21 +80,35 @@ test('jumping jack classifies open state without planting the feet', () => {
   assert.equal(out.exerciseContext.frameStats.anchoredContacts,0);
 });
 
-test('renderer wrapper fails open if exercise-context processing throws', () => {
-  const original = phase4.createExerciseContextEngine;
+test('Phase 2 tracker reset clears Phase 4 contact context before next frame', () => {
+  let trackerResets = 1;
+  global.PocketPTMirrorMotionPhase2 = { diagnostics: () => ({ trackerResets }) };
+  global.__selectedExercise = 'Bodyweight Squat';
+  const wrapped = phase4.wrapRenderer(packetOut => packetOut);
+  const first = wrapped(packet());
+  assert.equal(first.exerciseContext.frameStats.anchoredContacts,2);
+  trackerResets = 2;
+  const second = wrapped(packet());
+  assert.equal(phase4.diagnostics().contextResets >= 1,true);
+  assert.equal(second.exerciseContext.pattern,'squat');
+  delete global.PocketPTMirrorMotionPhase2;
+  delete global.__selectedExercise;
+});
+
+test('renderer wrapper passes exercise-context packet to downstream renderer', () => {
   let received = null;
   const wrapped = phase4.wrapRenderer(p => { received = p; return true; });
   const raw = packet();
   assert.equal(wrapped(raw), true);
   assert.ok(received.exerciseContext);
-  assert.equal(typeof original, 'function');
 });
 
-test('diagnostics expose exercise state, contacts and first failure boundary', () => {
+test('diagnostics expose exercise state, contacts, resets and first failure boundary', () => {
   const text = phase4.diagnosticsText();
   assert.match(text,/First failing boundary:/);
   assert.match(text,/Exercise pattern:/);
   assert.match(text,/Exercise phase:/);
   assert.match(text,/Anchored contacts:/);
   assert.match(text,/Anchor corrections:/);
+  assert.match(text,/Context resets:/);
 });
