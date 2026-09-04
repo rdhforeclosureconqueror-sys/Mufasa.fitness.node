@@ -3,33 +3,14 @@
   const global = globalScope || window;
   const DEFAULT_BRAIN_BASE_URL = "https://mufasabrain.onrender.com";
   const DEFAULT_REQUIRED_POSE_DEPS = [
-    {
-      label: "TensorFlow.js",
-      globalName: "tf",
-      src: "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"
-    },
-    {
-      label: "MoveNet pose-detection",
-      globalName: "poseDetection",
-      src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"
-    }
+    { label: "TensorFlow.js", globalName: "tf", src: "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js" },
+    { label: "MoveNet pose-detection", globalName: "poseDetection", src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js" }
   ];
   const DEFAULT_OPTIONAL_POSE_DEPS = [
-    {
-      label: "Face landmarks detection",
-      globalName: "faceLandmarksDetection",
-      src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"
-    },
-    {
-      label: "Hand pose detection",
-      globalName: "handPoseDetection",
-      src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"
-    }
+    { label: "Face landmarks detection", globalName: "faceLandmarksDetection", src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js" },
+    { label: "Hand pose detection", globalName: "handPoseDetection", src: "https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js" }
   ];
-  const DEFAULT_POSE_SCRIPTS = [
-    ...DEFAULT_REQUIRED_POSE_DEPS.map((dep) => dep.src),
-    ...DEFAULT_OPTIONAL_POSE_DEPS.map((dep) => dep.src)
-  ];
+  const DEFAULT_POSE_SCRIPTS = [...DEFAULT_REQUIRED_POSE_DEPS.map((dep) => dep.src), ...DEFAULT_OPTIONAL_POSE_DEPS.map((dep) => dep.src)];
   let poseRuntimePromise = null;
   let headPerfStart = null;
 
@@ -56,11 +37,7 @@
   function log(tag, payload){ console.log(`[RUNTIME_STATE] ${tag}`, payload || ""); }
 
   function initStartupResourceAudit(initialScripts){
-    global.__startupResourceAudit = global.__startupResourceAudit || {
-      initialScripts: initialScripts || [],
-      deferredScripts: [],
-      deferredModules: []
-    };
+    global.__startupResourceAudit = global.__startupResourceAudit || { initialScripts: initialScripts || [], deferredScripts: [], deferredModules: [] };
     return global.__startupResourceAudit;
   }
 
@@ -91,7 +68,14 @@
         bootstrap.dependencyAttempts.push(attempt);
         if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoaderRequested = true;
         script.onload = () => { attempt.status = 'RESOLVED'; attempt.completedAt = new Date().toISOString(); if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoadResolved = true; resolve(true); };
-        script.onerror = (event) => { const error = new Error(`script_load_failed:${src}`); error.name = 'ScriptLoadError'; error.scriptSrc = src; error.loadEvent = event?.type || 'error'; attempt.status = 'FAILED'; attempt.loadEvent = error.loadEvent; attempt.completedAt = new Date().toISOString(); if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoadFailed = true; recordBootstrapFailure(/@tensorflow\/tfjs/.test(src) ? 'TF_SCRIPT_LOAD_FAILED' : 'POSE_DETECTION_SCRIPT_LOAD_FAILED', error, { failingUrl: src }); reject(error); };
+        script.onerror = (event) => {
+          const error = new Error(`script_load_failed:${src}`);
+          error.name = 'ScriptLoadError'; error.scriptSrc = src; error.loadEvent = event?.type || 'error';
+          attempt.status = 'FAILED'; attempt.loadEvent = error.loadEvent; attempt.completedAt = new Date().toISOString();
+          if (/@tensorflow\/tfjs/.test(src)) bootstrap.tfLoadFailed = true;
+          recordBootstrapFailure(/@tensorflow\/tfjs/.test(src) ? 'TF_SCRIPT_LOAD_FAILED' : 'POSE_DETECTION_SCRIPT_LOAD_FAILED', error, { failingUrl: src });
+          reject(error);
+        };
         document.head.appendChild(script);
       });
       task.catch(() => lazyScriptCache.delete(src));
@@ -106,10 +90,7 @@
     const src = dep?.src || "unknown_script";
     const globalName = dep?.globalName || "unknown_global";
     const error = new Error(`missing_dependency:${globalName}:${phase}:${src}`);
-    error.code = "POSE_RUNTIME_DEPENDENCY_MISSING";
-    error.dependency = globalName;
-    error.scriptSrc = src;
-    error.phase = phase;
+    error.code = "POSE_RUNTIME_DEPENDENCY_MISSING"; error.dependency = globalName; error.scriptSrc = src; error.phase = phase;
     return error;
   }
 
@@ -124,12 +105,7 @@
   }
 
   function normalizeConfiguredPoseScripts(poseScripts) {
-    if (!Array.isArray(poseScripts) || !poseScripts.length) {
-      return {
-        requiredDeps: DEFAULT_REQUIRED_POSE_DEPS,
-        optionalDeps: DEFAULT_OPTIONAL_POSE_DEPS
-      };
-    }
+    if (!Array.isArray(poseScripts) || !poseScripts.length) return { requiredDeps: DEFAULT_REQUIRED_POSE_DEPS, optionalDeps: DEFAULT_OPTIONAL_POSE_DEPS };
     return {
       requiredDeps: [
         { label: "TensorFlow.js", globalName: "tf", src: poseScripts.find((src) => /@tensorflow\/tfjs/.test(src)) || "configured_pose_scripts" },
@@ -160,60 +136,39 @@
         bootstrap.tfVersion = global.tf?.version?.tfjs || global.tf?.version_core || '';
         bootstrap.poseDetectionPresent = Boolean(global.poseDetection);
         for (const dep of optionalDeps) {
-          try {
-            await loadRuntimeDependency(dep, { required: false });
-          } catch (err) {
-            console.warn("[RUNTIME_STATE] optional pose dependency load failed", err);
-          }
+          try { await loadRuntimeDependency(dep, { required: false }); }
+          catch (err) { console.warn("[RUNTIME_STATE] optional pose dependency load failed", err); }
         }
         global.__markPerfMetric?.("poseModelLoadMs", Math.round(performance.now() - startedAt));
         return true;
-      })().catch((error) => {
-        poseRuntimePromise = null;
-        throw error;
-      });
+      })().catch((error) => { poseRuntimePromise = null; throw error; });
       return poseRuntimePromise;
     };
     return global.__ensurePoseRuntime;
   }
 
-  function isAvatarFeatureEnabled(){
-    return global.ENABLE_AVATAR_FEATURE === true;
-  }
+  function isAvatarFeatureEnabled(){ return global.ENABLE_AVATAR_FEATURE === true; }
 
   function initHeadRuntime(config){
     const avatarFeatureEnabled = isAvatarFeatureEnabled();
     const initialScripts = config?.initialScripts || [
-      "/form-engine.js",
-      "/runtime-events.js",
-      "/runtime-state.js",
-      "/runtime-bridges.js",
-      "/auth-state-runtime.js",
-      "/diagnostics-client.js",
-      "/backend-read.js",
-      "/session-write.js",
-      "/pose-runtime.js",
-      "/rep-runtime.js",
-      "/rep-analysis-runtime.js",
-      "/hud-runtime.js",
-      "/workout-progression-runtime.js",
-      "/dashboard-runtime.js",
-      "/coach-runtime.js",
-      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/pose-stability-engine.js"] : []),
-      "/landing-diagnostics.js",
-      "/fitness.js"
+      "/form-engine.js", "/runtime-events.js", "/runtime-state.js", "/runtime-bridges.js", "/auth-state-runtime.js",
+      "/diagnostics-client.js", "/backend-read.js", "/session-write.js", "/pose-runtime.js", "/rep-runtime.js",
+      "/rep-analysis-runtime.js", "/hud-runtime.js", "/workout-progression-runtime.js", "/dashboard-runtime.js", "/coach-runtime.js",
+      ...(avatarFeatureEnabled ? ["/avatar-runtime.js", "/mirror-motion-phase2.js", "/mirror-motion-phase3.js", "/mirror-motion-phase4.js", "/pose-stability-engine.js"] : []),
+      "/landing-diagnostics.js", "/fitness.js"
     ];
     initStartupResourceAudit(initialScripts);
     initPerfMetrics();
     installScriptLoader();
     if (avatarFeatureEnabled) {
       global.__loadExternalScript("/mirror-motion-phase2.js?v=20260904-phase2", { async: false, defer: false })
-        .then(() => global.__loadExternalScript("/mirror-motion-phase3.js?v=20260904-phase3", { async: false, defer: false })
-          .catch((error) => {
-            recordBootstrapFailure("MIRROR_MOTION_PHASE3_LOAD_FAILED", error, { failingUrl: "/mirror-motion-phase3.js" });
-          }))
+        .then(() => global.__loadExternalScript("/mirror-motion-phase3.js?v=20260904-phase3", { async: false, defer: false }))
+        .then(() => global.__loadExternalScript("/mirror-motion-phase4.js?v=20260904-phase4", { async: false, defer: false }))
         .catch((error) => {
-          recordBootstrapFailure("MIRROR_MOTION_PHASE2_LOAD_FAILED", error, { failingUrl: "/mirror-motion-phase2.js" });
+          const src = error?.scriptSrc || error?.failingUrl || '';
+          const boundary = /phase4/.test(src) ? "MIRROR_MOTION_PHASE4_LOAD_FAILED" : /phase3/.test(src) ? "MIRROR_MOTION_PHASE3_LOAD_FAILED" : "MIRROR_MOTION_PHASE2_LOAD_FAILED";
+          recordBootstrapFailure(boundary, error, { failingUrl: src || "mirror-motion-load-chain" });
         });
     }
     installPoseRuntimeEnsurer(config?.poseScripts);
@@ -225,70 +180,33 @@
     return { perfStart: headPerfStart, audit: global.__startupResourceAudit };
   }
 
-  function trimTrailingSlash(value){
-    return String(value || "").trim().replace(/\/+$/g, "");
-  }
-
+  function trimTrailingSlash(value){ return String(value || "").trim().replace(/\/+$/g, ""); }
   function normalizeBackendOrigin(value){
     const raw = trimTrailingSlash(value);
-    if (!raw) return "";
-    if (!/^[a-z][a-z\d+.-]*:/i.test(raw)) return "";
-    try {
-      return new URL(raw).origin;
-    } catch (_) {
-      return "";
-    }
+    if (!raw || !/^[a-z][a-z\d+.-]*:/i.test(raw)) return "";
+    try { return new URL(raw).origin; } catch (_) { return ""; }
   }
-
   function getBackendOrigin(){
-    const configuredOrigin = [
-      global.MAAT_BACKEND_ORIGIN,
-      global.MAAT_NODE_BASE_URL,
-      global.__MAAT_BACKEND_ORIGIN,
-      global.__MAAT_RUNTIME_CONFIG__?.backendOrigin,
-      global.__MAAT_RUNTIME_CONFIG__?.nodeBaseUrl,
-      global.__MAAT_RUNTIME_CONFIG?.backendOrigin,
-      global.__MAAT_RUNTIME_CONFIG?.nodeBaseUrl
-    ].map(normalizeBackendOrigin).find(Boolean);
+    const configuredOrigin = [global.MAAT_BACKEND_ORIGIN, global.MAAT_NODE_BASE_URL, global.__MAAT_BACKEND_ORIGIN, global.__MAAT_RUNTIME_CONFIG__?.backendOrigin, global.__MAAT_RUNTIME_CONFIG__?.nodeBaseUrl, global.__MAAT_RUNTIME_CONFIG?.backendOrigin, global.__MAAT_RUNTIME_CONFIG?.nodeBaseUrl]
+      .map(normalizeBackendOrigin).find(Boolean);
     const locationOrigin = normalizeBackendOrigin(global.location?.origin);
     const nodeBaseUrl = configuredOrigin || locationOrigin;
     try { global.localStorage?.setItem("maatNodeBaseUrl", nodeBaseUrl); } catch (_) {}
     return nodeBaseUrl;
   }
-
   function getEndpoints(){
     const nodeBaseUrl = getBackendOrigin();
     const brainBaseUrl = DEFAULT_BRAIN_BASE_URL;
     return Object.freeze({
-      brainBaseUrl,
-      askUrl: `${brainBaseUrl}/ask`,
-      programUrl: `${brainBaseUrl}/coach/program/generate`,
-      nodeBaseUrl,
-      nodeCommandUrl: `${nodeBaseUrl}/command`,
-      nodeProfileUrl: `${nodeBaseUrl}/api/me/profile`,
-      nodeSessionStartUrl: `${nodeBaseUrl}/api/sessions`,
-      pushupChallengeResultsUrl: `${nodeBaseUrl}/api/challenges/pushup/results`,
-      pushupChallengeLeaderboardUrl: `${nodeBaseUrl}/api/challenges/pushup/leaderboard`,
-      nodeOhsaUrl: `${nodeBaseUrl}/api/ohsa`,
-      nodePilotEventsUrl: `${nodeBaseUrl}/api/pilot/events`,
-      aiVoiceUrl: `${nodeBaseUrl}/api/speak`,
-      legacyFallbackRequireExplicitActions: true,
-      legacyFallbackAllowedActions: []
+      brainBaseUrl, askUrl: `${brainBaseUrl}/ask`, programUrl: `${brainBaseUrl}/coach/program/generate`, nodeBaseUrl,
+      nodeCommandUrl: `${nodeBaseUrl}/command`, nodeProfileUrl: `${nodeBaseUrl}/api/me/profile`, nodeSessionStartUrl: `${nodeBaseUrl}/api/sessions`,
+      pushupChallengeResultsUrl: `${nodeBaseUrl}/api/challenges/pushup/results`, pushupChallengeLeaderboardUrl: `${nodeBaseUrl}/api/challenges/pushup/leaderboard`,
+      nodeOhsaUrl: `${nodeBaseUrl}/api/ohsa`, nodePilotEventsUrl: `${nodeBaseUrl}/api/pilot/events`, aiVoiceUrl: `${nodeBaseUrl}/api/speak`,
+      legacyFallbackRequireExplicitActions: true, legacyFallbackAllowedActions: []
     });
   }
-
-  function createBackendReadClient(){
-    return global.BACKEND_READ_CLIENT || global.MufasaBackendRead?.getDefaultClient?.() || null;
-  }
-
+  function createBackendReadClient(){ return global.BACKEND_READ_CLIENT || global.MufasaBackendRead?.getDefaultClient?.() || null; }
   function getHeadPerfStart(){ return headPerfStart; }
 
-  global.RuntimeState = {
-    initHeadRuntime,
-    isAvatarFeatureEnabled,
-    getBackendOrigin,
-    getEndpoints,
-    createBackendReadClient,
-    getHeadPerfStart
-  };
+  global.RuntimeState = { initHeadRuntime, isAvatarFeatureEnabled, getBackendOrigin, getEndpoints, createBackendReadClient, getHeadPerfStart };
 })(typeof window !== "undefined" ? window : globalThis);
