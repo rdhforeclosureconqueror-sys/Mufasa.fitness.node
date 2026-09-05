@@ -17,6 +17,16 @@ test('Phase 15 opposes bounded Phase 14 lateral root motion when contacts are pl
   delete global.PocketPTMirrorMotionPhase14;
 });
 
+test('Phase 15 prefers explicit same-frame root evidence over stale global diagnostics',()=>{
+  global.PocketPTMirrorMotionPhase14={diagnostics:()=>({lastAppliedX:.2})};
+  const p=fresh();const packet={exerciseContext:{anchors:{left_ankle:{x:0,y:0}}}};
+  const out=p.analyze(packet,{sourceRootX:0});
+  assert.equal(out.contactCompensation.sourceRootX,0);
+  assert.equal(out.contactCompensation.rootXIntent,0);
+  assert.equal(out.contactCompensation.active,false);
+  delete global.PocketPTMirrorMotionPhase14;
+});
+
 test('Phase 15 clamps compensation and preserves review-first authority boundary',()=>{
   global.PocketPTMirrorMotionPhase14={diagnostics:()=>({lastAppliedX:.8})};
   const p=fresh();const out=p.analyze({exerciseContext:{anchors:{left_wrist:{x:0,y:0}}}});
