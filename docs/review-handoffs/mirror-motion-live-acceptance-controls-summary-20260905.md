@@ -1,0 +1,1 @@
+This branch adds UI controls for the existing live acceptance harness and no motion authority. Review the detailed handoff at docs/review-handoffs/mirror-motion-live-acceptance-controls-20260905.md.
