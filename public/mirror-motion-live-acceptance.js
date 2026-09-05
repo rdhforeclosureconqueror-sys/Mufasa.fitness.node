@@ -1,0 +1,24 @@
+(function initMirrorMotionLiveAcceptance(root,factory){const api=factory(root||globalThis);if(typeof module==='object'&&module.exports)module.exports=api;else{root.PocketPTMirrorMotionLiveAcceptance=api;api.install();}})(typeof window!=='undefined'?window:globalThis,function(globalScope){'use strict';
+const STEPS=Object.freeze([
+{id:'calibration',label:'Calibration voice + complete rest/base capture'},
+{id:'standing',label:'Standing neutral hold'},
+{id:'squat',label:'Squat'},
+{id:'jumping_jack',label:'Jumping jack'},
+{id:'turning',label:'Front → quarter → side → front turning'},
+{id:'pushup_transition',label:'Standing → floor → plank → standing'},
+{id:'lateral_step',label:'Camera still + side-step left/right'},
+{id:'camera_pan_near',label:'Member still + camera pan/shake — near distance'},
+{id:'camera_pan_far',label:'Member still + camera pan/shake — far distance'},
+{id:'tracker_reacquire',label:'Leave/re-enter frame + tracker reacquisition'},
+{id:'presentation_modes',label:'Avatar overlay + avatar-only presentation modes'}
+]);
+const state={installed:false,results:{},lastStep:null,lastSnapshot:null};
+function acceptance(){try{return globalScope.PocketPTMirrorMotionAcceptance?.evaluate?.()||null;}catch(error){return{status:'FAIL',firstFailingBoundary:'LIVE_ACCEPTANCE_ACCEPTANCE_EVALUATION_ERROR',firstWaitingBoundary:'NONE',error:String(error?.message||error)}};}
+function snapshot(extra={}){const a=acceptance();const review=globalScope.PocketPTMirrorMotionCameraReview?.diagnostics?.()||null;const activation=globalScope.PocketPTMirrorMotionCameraActivation?.diagnostics?.()||null;const phase13=globalScope.PocketPTMirrorMotionPhase13?.diagnostics?.()||null;const phase14=globalScope.PocketPTMirrorMotionPhase14?.diagnostics?.()||null;const out=Object.freeze({capturedAt:new Date().toISOString(),acceptanceStatus:String(a?.status||'UNAVAILABLE'),firstFailingBoundary:String(a?.firstFailingBoundary||'NONE'),firstWaitingBoundary:String(a?.firstWaitingBoundary||'NONE'),cameraReview:review,cameraActivation:activation,phase13,phase14,...extra});state.lastSnapshot=out;return out;}
+function record(stepId,result,notes=''){if(!STEPS.some(s=>s.id===stepId))throw new Error(`Unknown acceptance step: ${stepId}`);const normalized=String(result||'').toUpperCase();if(!['PASS','FAIL','BLOCKED'].includes(normalized))throw new Error('Result must be PASS, FAIL, or BLOCKED');const entry=Object.freeze({stepId,result:normalized,notes:String(notes||''),snapshot:snapshot({stepId,result:normalized})});state.results[stepId]=entry;state.lastStep=stepId;return entry;}
+function reset(){state.results={};state.lastStep=null;state.lastSnapshot=null;}
+function report(){const rows=STEPS.map(step=>{const r=state.results[step.id];return{...step,result:r?.result||'NOT_RUN',notes:r?.notes||'',firstFailingBoundary:r?.snapshot?.firstFailingBoundary||'NONE',firstWaitingBoundary:r?.snapshot?.firstWaitingBoundary||'NONE'};});const firstFailure=rows.find(r=>r.result==='FAIL'||r.result==='BLOCKED')||null;return Object.freeze({steps:rows,firstFailure,complete:rows.every(r=>r.result==='PASS'),canonicalAcceptance:snapshot()});}
+function diagnosticsText(){const r=report();const lines=['MIRROR MOTION — LIVE ACCEPTANCE HARNESS',`Canonical status: ${r.canonicalAcceptance.acceptanceStatus}`,`First failing boundary: ${r.canonicalAcceptance.firstFailingBoundary}`,`First waiting boundary: ${r.canonicalAcceptance.firstWaitingBoundary}`];for(const row of r.steps)lines.push(`${row.result.padEnd(7)} ${row.label}`);if(r.firstFailure)lines.push(`STOP AT: ${r.firstFailure.label} → ${r.firstFailure.firstFailingBoundary||r.firstFailure.firstWaitingBoundary}`);return lines.join('\n');}
+function panel(){const doc=globalScope.document;if(!doc?.body)return;let el=doc.getElementById('mirrorMotionLiveAcceptanceDebug');if(!el){el=doc.createElement('details');el.id='mirrorMotionLiveAcceptanceDebug';el.style.cssText='position:fixed;left:8px;top:8px;z-index:5020;background:rgba(2,6,23,.96);color:#fff;padding:8px;border:1px solid #a78bfa;border-radius:10px;font:12px monospace;max-width:520px;max-height:70vh;overflow:auto';const s=doc.createElement('summary');s.textContent='Mirror Live Acceptance';const pre=doc.createElement('pre');pre.dataset.liveAcceptance='true';el.append(s,pre);doc.body.appendChild(el);}el.querySelector('[data-live-acceptance]').textContent=diagnosticsText();}
+function install(){if(state.installed)return api;state.installed=true;if(globalScope.setInterval)globalScope.setInterval(panel,750);panel();return api;}
+const api=Object.freeze({STEPS,snapshot,record,report,diagnosticsText,reset,install});return api;});
