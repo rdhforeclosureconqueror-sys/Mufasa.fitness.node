@@ -124,6 +124,8 @@ function validateFormFindings(value) {
     const finding = assertObject(entry, `formFindings[${index}]`);
     const status = asString(finding.status, `formFindings[${index}].status`, { required: true, max: 32 });
     if (status !== "needs_attention") throw new ApiError("VALIDATION_ERROR", `formFindings[${index}].status must be needs_attention`, 400);
+    const source = asString(finding.source, `formFindings[${index}].source`, { required: true, max: 64 });
+    if (source !== "workout_form_runtime") throw new ApiError("VALIDATION_ERROR", `formFindings[${index}].source must be workout_form_runtime`, 400);
     return {
       exerciseId: asString(finding.exerciseId, `formFindings[${index}].exerciseId`, { required: true, max: 128 }),
       setIndex: asNumber(finding.setIndex, `formFindings[${index}].setIndex`, { required: true, min: 0, max: 500 }),
@@ -132,8 +134,8 @@ function validateFormFindings(value) {
       affectedFramePercentage: asNumber(finding.affectedFramePercentage, `formFindings[${index}].affectedFramePercentage`, { required: false, min: 0, max: 100 }),
       maximumConsecutiveDurationMs: asNumber(finding.maximumConsecutiveDurationMs, `formFindings[${index}].maximumConsecutiveDurationMs`, { required: false, min: 0, max: 600000 }),
       confidence: asNumber(finding.confidence, `formFindings[${index}].confidence`, { required: false, min: 0, max: 1 }),
-      recordedAt: asString(finding.recordedAt, `formFindings[${index}].recordedAt`, { required: false, max: 64 }),
-      source: asString(finding.source, `formFindings[${index}].source`, { required: false, max: 64 }) || "workout_form_runtime"
+      recordedAt: asString(finding.recordedAt, `formFindings[${index}].recordedAt`, { required: true, max: 64 }),
+      source
     };
   });
 }
