@@ -60,10 +60,17 @@
     };
 
     runtime.toggleMuted = function toggleMutedWithIntent(){
+      if (state.calibrationSuspended) {
+        original.setMuted(true);
+        setExplicitMute(true);
+        state.voiceEnabledByUser = false;
+        state.resumeRequestedDuringCalibration = false;
+        state.lastEvent = "USER_MUTED_DURING_CALIBRATION";
+        return true;
+      }
       const muted = original.toggleMuted();
       setExplicitMute(Boolean(muted));
       state.voiceEnabledByUser = !muted;
-      if (state.calibrationSuspended) state.resumeRequestedDuringCalibration = !muted;
       return muted;
     };
 
