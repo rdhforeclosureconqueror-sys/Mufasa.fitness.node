@@ -129,6 +129,12 @@
     return [detail?.sessionId || "no_session", detail?.workoutId || detail?.scheduledWorkoutId || "no_workout"].join("::");
   }
 
+  function currentFormFindings(detail) {
+    const supplied = Array.isArray(detail?.formFindings) ? detail.formFindings : null;
+    const runtime = Array.isArray(window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__) ? window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__ : [];
+    return (supplied || runtime).filter(item => item?.status === "needs_attention").slice(-24);
+  }
+
   function buildTrackingPayload(detail, program) {
     const workoutId = detail?.workoutId || detail?.scheduledWorkoutId;
     const programId = program?.programId || detail?.programId;
@@ -142,6 +148,7 @@
       reps: Number(detail?.repsCompleted || detail?.reps || 0),
       sets: Number(detail?.completedSets || detail?.sets || 0),
       formScore: detail?.formScoreSummary ?? null,
+      formFindings: currentFormFindings(detail),
       sessionDurationMinutes: Math.max(1, Math.round(Number(detail?.durationSeconds || 0) / 60)),
       notes: detail?.notes || null,
       completedAt: detail?.completedAt || new Date().toISOString(),
@@ -166,6 +173,7 @@
           body: trackingPayload,
           tag: RETENTION_TAG
         });
+        window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__ = [];
         const [history, progress, retentionRefresh] = await Promise.all([
           refreshHistory({ visibleErrors: true }),
           refreshProgressDashboard({ visibleErrors: true }),
@@ -219,6 +227,7 @@
       lastProgressDashboard: state.lastProgressDashboard,
       latestReward: state.latestReward,
       checkIns: state.checkIns,
+      pendingFormFindings: Array.isArray(window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__) ? window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__.length : 0,
       errors: state.errors.slice()
     })
   };
