@@ -2,6 +2,7 @@
 const {exerciseService}=require("../exercise-intelligence");
 
 const MAX_RECENT_WORKOUTS = 5;
+const MAX_CONTEXT_LIST_ITEMS = 6;
 
 function compactWorkout(item = {}) {
   return {
@@ -13,6 +14,52 @@ function compactWorkout(item = {}) {
     totalReps: item.reps ?? item.totalReps ?? null,
     formScore: item.formScore ?? null,
     completionStatus: item.completionStatus || item.status || null
+  };
+}
+
+function boundedList(value, limit = MAX_CONTEXT_LIST_ITEMS) {
+  return Array.isArray(value) ? value.filter(item => item !== null && item !== undefined).slice(0, limit) : [];
+}
+
+function compactJourneyProfile(profile = null) {
+  if (!profile || typeof profile !== "object") return null;
+  const recommendations = profile.recommendations || {};
+  const training = profile.trainingAvailability || {};
+  const equipment = profile.equipmentAvailability || {};
+  const pathways = boundedList(profile.pathways);
+  return {
+    authority: "derived_journey_profile",
+    version: profile.version ?? null,
+    primaryPathway: profile.primaryPathway || pathways[0] || null,
+    pathways,
+    experienceLevel: profile.experienceLevel || null,
+    trainingAvailability: {
+      days: boundedList(training.days, 7),
+      times: boundedList(training.times, 6),
+      activeDaysPerWeek: training.activeDaysPerWeek ?? null,
+      sessionsPerWeek: training.sessionsPerWeek ?? training.daysPerWeek ?? null,
+      sessionMinutes: training.sessionLengthMinutes ?? training.sessionMinutes ?? training.durationMinutes ?? null
+    },
+    equipmentAvailability: {
+      gymAccess: equipment.gymAccess ?? null,
+      fieldTrackAccess: equipment.fieldTrackAccess ?? null,
+      location: equipment.location || null,
+      equipment: boundedList(equipment.equipment, 12)
+    },
+    coachingRecommendations: {
+      workoutCategory: recommendations.workouts?.category || profile.workoutRecommendationCategory || null,
+      assessments: boundedList(recommendations.assessments?.items),
+      nutritionPriorities: boundedList(recommendations.nutrition?.items),
+      dashboardModules: boundedList(recommendations.dashboard?.modules || profile.dashboardModules),
+      reviewStatus: recommendations.reviewStatus || null
+    },
+    featureFlags: {
+      athletePerformance: pathways.includes("athlete_performance"),
+      yogaWellness: pathways.includes("yoga_wellness"),
+      rugbyEnabled: profile.rugbyEnabled === true,
+      healthReviewRequired: profile.healthReviewRequired === true
+    },
+    privacyPolicy: "bounded_coaching_projection_no_raw_intake"
   };
 }
 
@@ -34,11 +81,13 @@ function createCoachContextService({ userStore, memberGamificationService = null
     const yogaSessions = (Array.isArray(user.yogaSessions) ? user.yogaSessions : []).slice().sort((a,b)=>b.completedAt-a.completedAt).slice(0,5);
     const greatness = user.steppingIntoGreatness || null;
     const greatnessActivities = (greatness?.activities || []).filter((item) => item.status === "completed" && !item.deletedAt);
+    const journeyProfile = compactJourneyProfile(user.journeyProfile || user.retention?.journeyProfile || null);
 
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       generatedAt: new Date(clock()).toISOString(),
       member: { displayName: user.profile?.name || user.clientIntake?.name || null },
+      journey: journeyProfile,
       progress: gamification ? {
         currentLevel: gamification.level?.current ?? null,
         lifetimeXp: gamification.level?.lifetimeXp ?? null,
@@ -99,4 +148,4 @@ function createCoachContextService({ userStore, memberGamificationService = null
   return Object.freeze({ build });
 }
 
-module.exports = { createCoachContextService, compactWorkout, MAX_RECENT_WORKOUTS };
+module.exports = { createCoachContextService, compactWorkout, compactJourneyProfile, boundedList, MAX_RECENT_WORKOUTS, MAX_CONTEXT_LIST_ITEMS };
