@@ -3,6 +3,23 @@ const {exerciseService}=require("../exercise-intelligence");
 
 const MAX_RECENT_WORKOUTS = 5;
 const MAX_CONTEXT_LIST_ITEMS = 6;
+const MAX_RECENT_FORM_FINDINGS = 12;
+
+function compactFormFinding(item = {}, workout = {}) {
+  return {
+    workoutId: workout.workoutId || workout.sessionId || workout.id || null,
+    completedAt: workout.completedAt || workout.ts || null,
+    exerciseId: item.exerciseId || null,
+    setIndex: item.setIndex ?? null,
+    ruleId: item.ruleId || null,
+    status: item.status || null,
+    affectedFramePercentage: item.affectedFramePercentage ?? null,
+    maximumConsecutiveDurationMs: item.maximumConsecutiveDurationMs ?? null,
+    confidence: item.confidence ?? null,
+    recordedAt: item.recordedAt || null,
+    source: item.source || null
+  };
+}
 
 function compactWorkout(item = {}) {
   return {
@@ -13,6 +30,7 @@ function compactWorkout(item = {}) {
     exercisesCompleted: Array.isArray(item.exercisesCompleted) ? item.exercisesCompleted : null,
     totalReps: item.reps ?? item.totalReps ?? null,
     formScore: item.formScore ?? null,
+    formFindings: Array.isArray(item.formFindings) ? item.formFindings.slice(0,6).map(finding=>compactFormFinding(finding,item)) : [],
     completionStatus: item.completionStatus || item.status || null
   };
 }
@@ -65,7 +83,6 @@ function compactJourneyProfile(profile = null) {
 
 function createCoachContextService({ userStore, memberGamificationService = null, programService = null, challengeService = null, clock = () => Date.now() }) {
   function build(userId) {
-    // One authoritative member read is intentionally shared by every context section.
     const user = userStore.loadUser(userId);
     const tracked = Array.isArray(user.workoutTracking) ? user.workoutTracking : [];
     const sessions = Object.values(user.sessions || {}).filter((item) => item.completedAt || item.status === "completed");
@@ -73,6 +90,9 @@ function createCoachContextService({ userStore, memberGamificationService = null
       .sort((a, b) => Number(b.completedAt || b.ts || 0) - Number(a.completedAt || a.ts || 0))
       .slice(0, MAX_RECENT_WORKOUTS)
       .map(compactWorkout);
+    const trackedNewest = tracked.slice().sort((a,b)=>Number(b.completedAt||b.ts||0)-Number(a.completedAt||a.ts||0));
+    const recentFormFindings = trackedNewest.flatMap(workout => (Array.isArray(workout.formFindings)?workout.formFindings:[]).map(item=>compactFormFinding(item,workout))).filter(item=>item.status==='needs_attention').slice(0,MAX_RECENT_FORM_FINDINGS);
+    const latestWorkoutWithFindings = trackedNewest.find(workout=>Array.isArray(workout.formFindings)&&workout.formFindings.some(item=>item?.status==='needs_attention')) || null;
     const gamification = memberGamificationService?.get(userId) || null;
     const latestAchievement = gamification?.achievements?.filter((item) => item.state === "earned").at(-1) || null;
     const latestCheckIn = Array.isArray(user.checkIns) ? user.checkIns.at(-1) || null : null;
@@ -84,7 +104,7 @@ function createCoachContextService({ userStore, memberGamificationService = null
     const journeyProfile = compactJourneyProfile(user.journeyProfile || user.retention?.journeyProfile || null);
 
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       generatedAt: new Date(clock()).toISOString(),
       member: { displayName: user.profile?.name || user.clientIntake?.name || null },
       journey: journeyProfile,
@@ -102,6 +122,17 @@ function createCoachContextService({ userStore, memberGamificationService = null
         latestCompletionSummary: user.latestRewardSummary || null,
         upcoming: program?.nextWorkout || program?.sessions?.find((item) => item.status !== "completed") || null,
         currentProgram: program ? { id: program.programId || program.id || null, title: program.title || null, goal: program.goal || null, daysPerWeek: program.daysPerWeek ?? null, movementFocus: program.movementFocus || null } : null
+      },
+      formHistory: {
+        authority: "persisted_deterministic_workout_form",
+        decisionPolicy: "explain_only",
+        recentFindings: recentFormFindings,
+        latestWorkoutWithFindings: latestWorkoutWithFindings ? {
+          workoutId: latestWorkoutWithFindings.workoutId || latestWorkoutWithFindings.sessionId || latestWorkoutWithFindings.id || null,
+          completedAt: latestWorkoutWithFindings.completedAt || latestWorkoutWithFindings.ts || null,
+          findings: latestWorkoutWithFindings.formFindings.filter(item=>item?.status==='needs_attention').slice(0,6).map(item=>compactFormFinding(item,latestWorkoutWithFindings))
+        } : null,
+        rawCameraMediaIncluded: false
       },
       program: programView?.available ? {
         authority: "program_engine",
@@ -148,4 +179,4 @@ function createCoachContextService({ userStore, memberGamificationService = null
   return Object.freeze({ build });
 }
 
-module.exports = { createCoachContextService, compactWorkout, compactJourneyProfile, boundedList, MAX_RECENT_WORKOUTS, MAX_CONTEXT_LIST_ITEMS };
+module.exports = { createCoachContextService, compactWorkout, compactFormFinding, compactJourneyProfile, boundedList, MAX_RECENT_WORKOUTS, MAX_CONTEXT_LIST_ITEMS, MAX_RECENT_FORM_FINDINGS };

@@ -116,6 +116,30 @@ function validateProgramAssignment(input) {
   };
 }
 
+function validateFormFindings(value) {
+  if (value == null) return [];
+  if (!Array.isArray(value)) throw new ApiError("VALIDATION_ERROR", "formFindings must be an array", 400);
+  if (value.length > 24) throw new ApiError("VALIDATION_ERROR", "formFindings can include at most 24 items", 400);
+  return value.map((entry, index) => {
+    const finding = assertObject(entry, `formFindings[${index}]`);
+    const status = asString(finding.status, `formFindings[${index}].status`, { required: true, max: 32 });
+    if (status !== "needs_attention") throw new ApiError("VALIDATION_ERROR", `formFindings[${index}].status must be needs_attention`, 400);
+    const source = asString(finding.source, `formFindings[${index}].source`, { required: true, max: 64 });
+    if (source !== "workout_form_runtime") throw new ApiError("VALIDATION_ERROR", `formFindings[${index}].source must be workout_form_runtime`, 400);
+    return {
+      exerciseId: asString(finding.exerciseId, `formFindings[${index}].exerciseId`, { required: true, max: 128 }),
+      setIndex: asNumber(finding.setIndex, `formFindings[${index}].setIndex`, { required: true, min: 0, max: 500 }),
+      ruleId: asString(finding.ruleId, `formFindings[${index}].ruleId`, { required: true, max: 128 }),
+      status,
+      affectedFramePercentage: asNumber(finding.affectedFramePercentage, `formFindings[${index}].affectedFramePercentage`, { required: false, min: 0, max: 100 }),
+      maximumConsecutiveDurationMs: asNumber(finding.maximumConsecutiveDurationMs, `formFindings[${index}].maximumConsecutiveDurationMs`, { required: false, min: 0, max: 600000 }),
+      confidence: asNumber(finding.confidence, `formFindings[${index}].confidence`, { required: false, min: 0, max: 1 }),
+      recordedAt: asString(finding.recordedAt, `formFindings[${index}].recordedAt`, { required: true, max: 64 }),
+      source
+    };
+  });
+}
+
 function validateWorkoutTracking(input) {
   const payload = assertObject(input, "Request body");
   return {
@@ -125,6 +149,7 @@ function validateWorkoutTracking(input) {
     reps: asNumber(payload.reps, "reps", { required: false, min: 0, max: 2000 }),
     sets: asNumber(payload.sets, "sets", { required: false, min: 0, max: 500 }),
     formScore: asNumber(payload.formScore, "formScore", { required: false, min: 0, max: 100 }),
+    formFindings: validateFormFindings(payload.formFindings),
     sessionDurationMinutes: asNumber(payload.sessionDuration ?? payload.sessionDurationMinutes, "sessionDuration", { required: false, min: 0, max: 600 }),
     notes: asString(payload.notes, "notes", { required: false, max: 2000 }),
     completionStatus: asString(payload.completionStatus, "completionStatus", { required: true, max: 32 })
@@ -171,6 +196,7 @@ module.exports = {
   validateGoalsBaseline,
   validateProgramAssignment,
   validateWorkoutTracking,
+  validateFormFindings,
   validateWeeklyCheckIn,
   validateVisualProgressScan
 };
