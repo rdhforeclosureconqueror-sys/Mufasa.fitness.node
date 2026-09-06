@@ -36,18 +36,21 @@ function compactJourneyProfile(profile = null) {
     trainingAvailability: {
       days: boundedList(training.days, 7),
       times: boundedList(training.times, 6),
+      activeDaysPerWeek: training.activeDaysPerWeek ?? null,
       sessionsPerWeek: training.sessionsPerWeek ?? training.daysPerWeek ?? null,
-      sessionMinutes: training.sessionMinutes ?? training.durationMinutes ?? null
+      sessionMinutes: training.sessionLengthMinutes ?? training.sessionMinutes ?? training.durationMinutes ?? null
     },
     equipmentAvailability: {
+      gymAccess: equipment.gymAccess ?? null,
+      fieldTrackAccess: equipment.fieldTrackAccess ?? null,
       location: equipment.location || null,
       equipment: boundedList(equipment.equipment, 12)
     },
     coachingRecommendations: {
-      workoutCategory: recommendations.workouts?.category || null,
+      workoutCategory: recommendations.workouts?.category || profile.workoutRecommendationCategory || null,
       assessments: boundedList(recommendations.assessments?.items),
       nutritionPriorities: boundedList(recommendations.nutrition?.items),
-      dashboardModules: boundedList(recommendations.dashboard?.modules),
+      dashboardModules: boundedList(recommendations.dashboard?.modules || profile.dashboardModules),
       reviewStatus: recommendations.reviewStatus || null
     },
     featureFlags: {
