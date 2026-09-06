@@ -135,6 +135,11 @@
     return (supplied || runtime).filter(item => item?.status === "needs_attention").slice(-24);
   }
 
+  function clearPendingFormFindings(reason = "clear") {
+    window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__ = [];
+    console.info(RETENTION_TAG, "cleared pending form findings", reason);
+  }
+
   function buildTrackingPayload(detail, program) {
     const workoutId = detail?.workoutId || detail?.scheduledWorkoutId;
     const programId = program?.programId || detail?.programId;
@@ -173,7 +178,7 @@
           body: trackingPayload,
           tag: RETENTION_TAG
         });
-        window.__POCKETPT_FORM_FINDINGS_CURRENT_WORKOUT__ = [];
+        clearPendingFormFindings("workout-persisted");
         const [history, progress, retentionRefresh] = await Promise.all([
           refreshHistory({ visibleErrors: true }),
           refreshProgressDashboard({ visibleErrors: true }),
@@ -207,6 +212,10 @@
     ]);
     return { history, progress, retention };
   }
+
+  window.addEventListener("workout:selected", () => {
+    clearPendingFormFindings("new-workout-selected");
+  });
 
   window.addEventListener("workout:completed", (event) => {
     const detail = event?.detail || {};
