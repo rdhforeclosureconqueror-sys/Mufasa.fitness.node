@@ -46,12 +46,15 @@ test('calibration restores quiet state when voice was not active beforehand',()=
   assert.equal(h.runtimeState.muted,true);
 });
 
-test('explicit user mute during calibration prevents post-calibration wake-word resume',()=>{
+test('explicit user mute during calibration wins even if calibration already temporarily muted runtime',()=>{
   const h=harness({muted:false,listening:true});
   h.runtime.stopAllSpeech('avatar_calibration_acquire');
   h.runtimeState.listening=false;
+  h.runtime.setMuted(true); // simulate calibration-exclusive temporary mute
   const muted=h.runtime.toggleMuted();
   assert.equal(muted,true);
+  assert.equal(h.runtimeState.muted,true);
+  assert.equal(h.calls.includes('toggle:false'),false, 'member Mute must not toggle temporary calibration mute back off');
   const result=h.runtime.startListening();
   assert.equal(result.skipped,true);
   assert.equal(result.reason,'explicit_user_mute');
