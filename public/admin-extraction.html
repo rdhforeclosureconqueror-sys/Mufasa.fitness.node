@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Extraction OS | Pocket PT</title>
+  <link rel="stylesheet" href="/admin-extraction.css?v=20260906-extraction-os-v1">
+  <link rel="stylesheet" href="/global-nav.css?v=20260824-global-nav-production-repair-v3">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Admin / development only</p>
+        <h1>Extraction OS</h1>
+        <p class="lede">Turn Pocket PT's existing internal value into a bounded launch, put it in people's hands, measure what comes back, and let real evidence decide the next build.</p>
+      </div>
+      <a class="secondary-link" href="/admin-launch-readiness.html">Open Launch Readiness</a>
+    </header>
+
+    <section id="access-status" class="status-card" aria-live="polite">
+      <strong>Restoring admin readiness evidence…</strong>
+    </section>
+
+    <section class="extraction-identity panel">
+      <div>
+        <p class="kicker">Current extraction</p>
+        <h2>Pocket PT V1</h2>
+        <p><strong>Core promise:</strong> Help a member get started, choose or receive a workout, train with supported guidance, record the work, and see progress.</p>
+      </div>
+      <label class="deadline-field">Delivery deadline
+        <input id="delivery-deadline" type="date">
+      </label>
+    </section>
+
+    <section class="principle-strip" aria-label="Extraction rules">
+      <div><strong>Deadline is fixed.</strong><span>Scope is negotiable.</span></div>
+      <div><strong>Launch evidence beats ideas.</strong><span>Code presence is not customer value.</span></div>
+      <div><strong>Feedback closes the loop.</strong><span>Behavior is part of the Voice of the People.</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div><p class="kicker">1 · Cut the system</p><h2>Launch 1 Scope Freeze</h2></div>
+        <button type="button" id="reset-workspace" class="ghost">Reset local operator workspace</button>
+      </div>
+      <div class="scope-grid">
+        <article class="scope-card ship">
+          <h3>SHIP IN V1</h3>
+          <p>These capabilities carry the first customer promise.</p>
+          <div id="ship-list" class="checklist"></div>
+        </article>
+        <article class="scope-card defer">
+          <h3>POST-LAUNCH</h3>
+          <p>Important to the vision, but not allowed to hold Launch 1 hostage.</p>
+          <div id="defer-list" class="checklist"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="gate-grid">
+      <article class="panel gate-card" data-gate="product">
+        <p class="kicker">2 · Product gate</p>
+        <h2>Does the promised experience work?</h2>
+        <div id="product-gate" class="checklist"></div>
+      </article>
+      <article class="panel gate-card" data-gate="delivery">
+        <p class="kicker">3 · Delivery gate</p>
+        <h2>Can a real person obtain and use it?</h2>
+        <div id="delivery-gate" class="checklist"></div>
+      </article>
+      <article class="panel gate-card" data-gate="market">
+        <p class="kicker">4 · Market gate</p>
+        <h2>Do we know how this reaches people?</h2>
+        <div id="market-gate" class="checklist"></div>
+      </article>
+    </section>
+
+    <section class="panel market-plan">
+      <div class="section-heading"><div><p class="kicker">Distribution</p><h2>Marketing Contract</h2></div><span class="badge">Voice before scale</span></div>
+      <div class="form-grid">
+        <label>Who is the first user?<textarea data-field="market.who" placeholder="Example: adults who struggle with workout consistency and want structure/accountability."></textarea></label>
+        <label>What is the message?<textarea data-field="market.message" placeholder="What problem does Pocket PT solve for this person right now?"></textarea></label>
+        <label>Where will we reach them?<textarea data-field="market.channels" placeholder="Personal network, local fitness relationships, Run Club, social, community partners…"></textarea></label>
+        <label>What is the offer?<textarea data-field="market.offer" placeholder="Trial, founding membership, challenge entry, local pilot, etc."></textarea></label>
+        <label>What exact action do we want?<textarea data-field="market.action" placeholder="Visit → account → onboarding → first workout."></textarea></label>
+        <label>What is the initial budget?<input data-field="market.budget" placeholder="$0, $50, $100…"></label>
+      </div>
+    </section>
+
+    <section class="panel evidence-panel">
+      <div class="section-heading"><div><p class="kicker">Live repository evidence</p><h2>Launch Readiness Snapshot</h2></div><span id="evidence-updated" class="muted"></span></div>
+      <div id="readiness-summary" class="metrics"></div>
+      <div id="first-boundary" class="first-boundary"></div>
+    </section>
+
+    <section class="panel voice-panel">
+      <div class="section-heading"><div><p class="kicker">5 · Water / circulation</p><h2>Voice of the People</h2></div><span class="badge">Behavior + words</span></div>
+      <div class="metrics-inputs">
+        <label>Reached<input type="number" min="0" data-field="voice.reached"></label>
+        <label>Visited<input type="number" min="0" data-field="voice.visited"></label>
+        <label>Registered<input type="number" min="0" data-field="voice.registered"></label>
+        <label>Onboarded<input type="number" min="0" data-field="voice.onboarded"></label>
+        <label>First workout<input type="number" min="0" data-field="voice.firstWorkout"></label>
+        <label>Returned<input type="number" min="0" data-field="voice.returned"></label>
+        <label>Paid<input type="number" min="0" data-field="voice.paid"></label>
+        <label>Referred<input type="number" min="0" data-field="voice.referred"></label>
+      </div>
+      <label>What did people say?<textarea data-field="voice.words" placeholder="Questions, confusion, praise, objections, requested changes."></textarea></label>
+      <label>What did behavior show?<textarea data-field="voice.behavior" placeholder="Where did they stop, return, repeat, pay, or refer?"></textarea></label>
+      <label>First failure in the customer journey<textarea data-field="voice.firstFailure" placeholder="The first point where actual behavior stopped matching the intended journey."></textarea></label>
+      <label>V1.1 decision<textarea data-field="voice.nextDecision" placeholder="What evidence says we should change next — and what we will deliberately ignore for now."></textarea></label>
+    </section>
+
+    <section class="panel launch-decision">
+      <p class="kicker">6 · Launch decision</p>
+      <h2 id="launch-decision-title">Launch decision pending</h2>
+      <p id="launch-decision-copy"></p>
+      <div class="decision-actions">
+        <button id="evaluate-launch" type="button">Evaluate gates</button>
+        <a href="/workout.html" class="secondary-link">Open customer workout</a>
+        <a href="/" class="secondary-link">Open public landing</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="/runtime-config.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
+  <script src="/api-client.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
+  <script src="/auth-state-runtime.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
+  <script src="/auth-navigation.js?v=20260825-canonical-auth-pr1"></script>
+  <script src="/admin-extraction.js?v=20260906-extraction-os-v1"></script>
+  <script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
+</body>
+</html>
