@@ -24,7 +24,7 @@
       );
       if (!mirrorDiagnosticsPresent) return attempts >= 120;
       const script = document.createElement("script");
-      script.src = "/mirror-debug-center.js?v=20260906-consolidated";
+      script.src = "/mirror-debug-center.js?v=20260907-consolidated-v2";
       script.defer = true;
       script.dataset.mirrorDebugCenter = "true";
       document.head.appendChild(script);

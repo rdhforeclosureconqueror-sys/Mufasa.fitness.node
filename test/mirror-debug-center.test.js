@@ -17,19 +17,30 @@ test('mirror debug center consolidates legacy phase panels without removing diag
   assert.match(source, /Phase 18/);
 });
 
-test('debug center has explicit close/minimize path and preserves acceptance authority', () => {
+test('legacy debug panels are force-hidden even when old id rules use important display', () => {
+  const source = read('public/mirror-debug-center.js');
+  assert.match(source, /style\.setProperty\('display','none','important'\)/);
+  assert.match(source, /DISPLAY_VALUE/);
+  assert.match(source, /DISPLAY_PRIORITY/);
+  assert.match(source, /revealLegacy/);
+});
+
+test('debug center has close, copy-all, deduplication, and preserved acceptance authority', () => {
   const source = read('public/mirror-debug-center.js');
   assert.match(source, /data-close/);
   assert.match(source, /state\.open=false/);
+  assert.match(source, /data-copy-all/);
+  assert.match(source, /makeCopyReport/);
+  assert.match(source, /dedupe/);
   assert.match(source, /PocketPTMirrorMotionLiveAcceptanceControls/);
   assert.match(source, /controls\?\.record/);
   assert.match(source, /controls\?\.reset/);
 });
 
-test('runtime config loads consolidated diagnostics only after mirror diagnostics are present', () => {
+test('runtime config loads cache-busted consolidated diagnostics only after mirror diagnostics are present', () => {
   const source = read('public/runtime-config.js');
   assert.match(source, /mirrorDiagnosticsPresent/);
-  assert.match(source, /mirror-debug-center\.js\?v=20260906-consolidated/);
+  assert.match(source, /mirror-debug-center\.js\?v=20260907-consolidated-v2/);
   assert.match(source, /data-mirror-debug-center/);
   assert.match(source, /\[id\^="mirrorMotion"\]/);
 });
