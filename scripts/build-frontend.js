@@ -14,6 +14,12 @@ function repositoryCommit(){
   if(configured)return configured;
   try{return safeCommit(execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim());}catch{return null;}
 }
+function injectRuntimeConfig(html,cacheToken){
+  if(/data-pocketpt-runtime-config|\/runtime-config\.js(?:\?|["'])/i.test(html))return html;
+  const tag=`  <script src="/runtime-config.js?v=${encodeURIComponent(cacheToken)}" data-pocketpt-runtime-config="true"></script>`;
+  if(!html.includes("</head>"))throw new Error("Workout shell is missing </head> for runtime-config bootstrap injection");
+  return html.replace("</head>",`${tag}\n</head>`);
+}
 
 if(!browserKey)throw new Error("VITE_GOOGLE_MAPS_BROWSER_API_KEY is required for the frontend production build");
 fs.rmSync(output,{recursive:true,force:true});
@@ -22,9 +28,11 @@ const commit=repositoryCommit();
 const build=process.env.FRONTEND_BUILD_VERSION||commit||"local-unversioned";
 const generatedAt=new Date().toISOString();
 const workoutPath=path.join(output,"workout.html");
-fs.writeFileSync(workoutPath,fs.readFileSync(workoutPath,"utf8")
+let workoutHtml=fs.readFileSync(workoutPath,"utf8")
   .replaceAll("__FRONTEND_BUILD_VERSION__",()=>build)
-  .replaceAll("__FRONTEND_COMMIT__",()=>commit||"unknown"));
+  .replaceAll("__FRONTEND_COMMIT__",()=>commit||"unknown");
+workoutHtml=injectRuntimeConfig(workoutHtml,commit||build);
+fs.writeFileSync(workoutPath,workoutHtml);
 fs.writeFileSync(path.join(output,"__frontend-version.json"),JSON.stringify({
   schemaVersion:1,service:"frontend",build,commit,generatedAt,sourceDirectory:"public"
 },null,2)+"\n");
@@ -32,4 +40,4 @@ const mapPath=path.join(output,"trail-map.js");
 const sourceText=fs.readFileSync(mapPath,"utf8");
 if(!sourceText.includes(token))throw new Error("Frontend browser-key build token is missing");
 fs.writeFileSync(mapPath,sourceText.replaceAll(token,()=>browserKey));
-console.log(`Frontend static artifact built at ${output} from public (build ${build}; browser Maps key present; value redacted)`);
+console.log(`Frontend static artifact built at ${output} from public (build ${build}; runtime config ${commit||build}; browser Maps key present; value redacted)`);
