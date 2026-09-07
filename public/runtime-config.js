@@ -23,6 +23,13 @@
         || global.PocketPTMirrorMotionLiveAcceptance
       );
       if (!mirrorDiagnosticsPresent) return attempts >= 120;
+      if (!document.querySelector('script[data-mirror-deployment-diagnostics]')) {
+        const deployment = document.createElement("script");
+        deployment.src = "/mirror-deployment-diagnostics.js?v=20260907-deployment-parity-v1";
+        deployment.defer = true;
+        deployment.dataset.mirrorDeploymentDiagnostics = "true";
+        document.head.appendChild(deployment);
+      }
       const script = document.createElement("script");
       script.src = "/mirror-debug-center.js?v=20260907-consolidated-v2";
       script.defer = true;
