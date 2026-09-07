@@ -16,7 +16,6 @@
     let attempts = 0;
     const maybeLoadMirrorDebugCenter = () => {
       attempts += 1;
-      if (document.querySelector('script[data-mirror-debug-center]')) return true;
       const mirrorDiagnosticsPresent = Boolean(
         document.querySelector('[id^="mirrorMotion"], [data-mirror-motion-diagnostics], [data-mirror-motion-phase3-diagnostics], [data-mirror-motion-phase4-diagnostics]')
         || global.PocketPTMirrorMotionAcceptance
@@ -30,6 +29,7 @@
         deployment.dataset.mirrorDeploymentDiagnostics = "true";
         document.head.appendChild(deployment);
       }
+      if (document.querySelector('script[data-mirror-debug-center]')) return true;
       const script = document.createElement("script");
       script.src = "/mirror-debug-center.js?v=20260907-consolidated-v2";
       script.defer = true;
