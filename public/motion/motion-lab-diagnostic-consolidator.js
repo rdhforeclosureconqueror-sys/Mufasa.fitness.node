@@ -1,0 +1,170 @@
+(function initMotionLabDiagnosticConsolidator(root) {
+  'use strict';
+
+  const BUILD = '2026-09-08-canonical-diagnostic-v1';
+  let installed = false;
+  let observer = null;
+
+  function slug(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  function legacyDiagnosticsText() {
+    const rows = Array.from(root.document?.querySelectorAll?.('#stages tr') || []);
+    const lines = ['Motion Lab Diagnostic'];
+    rows.forEach(row => {
+      const cells = Array.from(row.cells || []);
+      if (cells.length < 2) return;
+      const key = slug(cells[0].textContent);
+      const status = String(cells[1].textContent || '').trim() || 'NOT RUN';
+      const detail = cells[3] ? String(cells[3].textContent || '').trim() : '';
+      lines.push(`${key}: ${status}${detail && detail !== '—' ? ` (${detail})` : ''}`);
+    });
+    return lines.join('\n');
+  }
+
+  function bootstrapText() {
+    const value = root.PocketPTMotionLabBootstrapDiagnostics?.snapshot?.();
+    if (!value) return 'bootstrap_status: unavailable';
+    return [
+      `bootstrap_status: ${value.status || 'unknown'}`,
+      `bootstrap_stage: ${value.stage || 'unknown'}`,
+      `bootstrap_code: ${value.code || 'NONE'}`,
+      `bootstrap_source: ${value.source || 'NONE'}`
+    ].join('\n');
+  }
+
+  function intelligenceText() {
+    return root.PocketPTMotionIntelligenceDiagnostics?.diagnosticsText?.()
+      || 'MOTION LAB — MOTION INTELLIGENCE DIAGNOSTICS\nStatus: UNAVAILABLE\nFirst failing boundary: MOTION_INTELLIGENCE_DIAGNOSTICS_UNAVAILABLE';
+  }
+
+  function combinedDiagnosticsText() {
+    return [
+      `MOTION LAB DIAGNOSTIC — CONSOLIDATED\nDiagnostic UI build: ${BUILD}`,
+      legacyDiagnosticsText(),
+      intelligenceText(),
+      'BOOTSTRAP DELIVERY',
+      bootstrapText()
+    ].join('\n\n');
+  }
+
+  function diagnosticsColumn() {
+    const stages = root.document?.getElementById?.('stages');
+    return stages?.closest?.('table')?.parentElement || null;
+  }
+
+  function moveIntelligenceIntoCanonicalDiagnostics() {
+    const column = diagnosticsColumn();
+    if (!column) return;
+
+    let marker = root.document.getElementById('motionDiagnosticUiBuild');
+    if (!marker) {
+      marker = root.document.createElement('p');
+      marker.id = 'motionDiagnosticUiBuild';
+      marker.className = 'measurement';
+    }
+    marker.textContent = `Diagnostic UI build: ${BUILD}`;
+    const table = root.document.getElementById('stages')?.closest?.('table');
+    if (table && marker.parentElement !== column) table.insertAdjacentElement('afterend', marker);
+
+    const heading = root.document.getElementById('motionIntelligenceDiagnosticsHeading');
+    const host = root.document.getElementById('motionIntelligenceDiagnostics');
+    const pre = root.document.getElementById('motionIntelligenceDiagnosticsText');
+    const oldCopy = root.document.getElementById('copyMotionIntelligenceDiagnostics');
+    const oldControls = oldCopy?.parentElement;
+
+    if (oldCopy) oldCopy.remove();
+    if (oldControls && oldControls.childElementCount === 0) oldControls.remove();
+
+    if (heading && heading.parentElement !== column) column.appendChild(heading);
+    if (host && host.parentElement !== column) column.appendChild(host);
+    if (pre && pre.parentElement !== column) column.appendChild(pre);
+
+    let combined = root.document.getElementById('canonicalMotionLabDiagnosticText');
+    if (!combined) {
+      const title = root.document.createElement('h3');
+      title.id = 'canonicalMotionLabDiagnosticHeading';
+      title.textContent = 'Canonical Copyable Diagnostic';
+      combined = root.document.createElement('pre');
+      combined.id = 'canonicalMotionLabDiagnosticText';
+      combined.style.whiteSpace = 'pre-wrap';
+      combined.style.overflowWrap = 'anywhere';
+      column.append(title, combined);
+    }
+    combined.textContent = combinedDiagnosticsText();
+  }
+
+  async function copyCombined(button) {
+    const text = combinedDiagnosticsText();
+    const pre = root.document?.getElementById?.('canonicalMotionLabDiagnosticText');
+    if (pre) pre.textContent = text;
+    try {
+      if (!root.navigator?.clipboard?.writeText) throw new Error('clipboard_unavailable');
+      await root.navigator.clipboard.writeText(text);
+      button.textContent = 'Copied Full Diagnostic';
+    } catch (_) {
+      if (pre) {
+        const range = root.document.createRange();
+        range.selectNodeContents(pre);
+        const selection = root.getSelection?.();
+        selection?.removeAllRanges?.();
+        selection?.addRange?.(range);
+      }
+      button.textContent = 'Select / Copy Full Diagnostic';
+    }
+    root.setTimeout?.(() => { button.textContent = 'Copy Full Diagnostic Summary'; }, 1600);
+  }
+
+  function wireCanonicalCopy() {
+    const button = root.document?.getElementById?.('copySummary');
+    if (!button) return false;
+    button.textContent = 'Copy Full Diagnostic Summary';
+    if (button.dataset.motionDiagnosticConsolidated === 'true') return true;
+    button.dataset.motionDiagnosticConsolidated = 'true';
+    button.addEventListener('click', function canonicalDiagnosticCopy(event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      copyCombined(button);
+    }, true);
+    return true;
+  }
+
+  function refresh() {
+    moveIntelligenceIntoCanonicalDiagnostics();
+    wireCanonicalCopy();
+    const pre = root.document?.getElementById?.('canonicalMotionLabDiagnosticText');
+    if (pre) pre.textContent = combinedDiagnosticsText();
+  }
+
+  function install() {
+    if (installed) {
+      refresh();
+      return api;
+    }
+    installed = true;
+    refresh();
+    root.addEventListener?.('pocketpt:motion-intelligence-diagnostics', refresh);
+    const stages = root.document?.getElementById?.('stages');
+    if (stages && typeof root.MutationObserver === 'function') {
+      observer = new root.MutationObserver(refresh);
+      observer.observe(stages, { childList: true, subtree: true, characterData: true });
+    }
+    return api;
+  }
+
+  const api = Object.freeze({
+    VERSION: '1.0.0-canonical-diagnostic-consolidation',
+    BUILD,
+    install,
+    refresh,
+    legacyDiagnosticsText,
+    combinedDiagnosticsText
+  });
+
+  root.PocketPTMotionLabDiagnosticConsolidator = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
