@@ -53,7 +53,7 @@
   }
 
   async function initialize() {
-    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionIntelligenceDiagnostics?.render?.(); return existing; }
+    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionIntelligenceDiagnostics?.render?.(); window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.(); return existing; }
     document.getElementById("initializeRuntime").disabled=true;
     publish({status:"starting",stage:"bootstrap",source:null,code:null,message:null,attempts:0});
     try {
@@ -84,6 +84,16 @@
       window.PocketPTDisposableMotionSession=guardedRuntime;
       await loadDependency("inspection_controls","/dev/motion-lab-assets/motion-lab-inspection-controls.js");
       await loadDependency("motion_lab_runtime","/dev/motion-lab-runtime.js");
+      await loadDependency("diagnostic_consolidator","/dev/motion-lab-assets/motion-lab-diagnostic-consolidator.js");
+      currentStage="diagnostic_consolidator_install";
+      var diagnosticConsolidator=window.PocketPTMotionLabDiagnosticConsolidator?.install?.();
+      if (!diagnosticConsolidator?.combinedDiagnosticsText) {
+        var diagnosticError=new Error("Motion Lab canonical diagnostic consolidator failed to install");
+        diagnosticError.code="motion_lab_diagnostic_consolidator_install_failed";
+        diagnosticError.stage=currentStage;
+        diagnosticError.source="PocketPTMotionLabDiagnosticConsolidator.install";
+        throw diagnosticError;
+      }
       await loadDependency("lunge_preview","/dev/motion-lab-assets/motion-lab-lunge-preview.js");
 
       currentStage="boundary_create";
@@ -114,13 +124,16 @@
       window.PocketPTMotionLabInspection?.wireButtons?.();
       window.PocketPTMotionLabLungePreview?.wire?.();
       window.PocketPTMotionIntelligenceDiagnostics?.render?.();
+      window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.();
       publish({status:"ready",stage:"ready",source:null,code:null,message:null});
+      window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.();
     } catch (error) {
       loaded=false;
       document.getElementById("initializeRuntime").disabled=false;
       publish({status:"failed",stage:error?.stage||currentStage,source:error?.source||error?.moduleUrl||error?.dependency||null,code:error?.code||"runtime_failed",message:error?.message||String(error),attempts:error?.attempts||diagnostics.attempts});
       document.getElementById("viewer").textContent=failureText(error);
       window.PocketPTMotionIntelligenceDiagnostics?.render?.();
+      window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.();
       console.error("[MOTION_LAB_BOOTSTRAP]",window.PocketPTMotionLabBootstrapDiagnostics.snapshot(),error);
     }
   }
