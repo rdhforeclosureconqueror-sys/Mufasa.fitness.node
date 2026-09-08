@@ -53,7 +53,7 @@
   }
 
   async function initialize() {
-    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabLungePreview?.wire?.(); return existing; }
+    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionLabIntelligenceDebug?.render?.(); return existing; }
     document.getElementById("initializeRuntime").disabled=true;
     publish({status:"starting",stage:"bootstrap",source:null,code:null,message:null,attempts:0});
     try {
@@ -83,6 +83,17 @@
       window.PocketPTDisposableMotionSession=guardedRuntime;
       await loadDependency("inspection_controls","/dev/motion-lab-assets/motion-lab-inspection-controls.js");
       await loadDependency("motion_lab_runtime","/dev/motion-lab-runtime.js");
+      await loadDependency("motion_intelligence_debug","/dev/motion-lab-assets/motion-lab-intelligence-debug.js");
+      currentStage="motion_intelligence_debug_install";
+      var debugRuntime=window.PocketPTMotionLabIntelligenceDebug?.install?.(window.MotionLabRuntime);
+      if (!debugRuntime?.loadMotionSpec || debugRuntime.__motionIntelligenceDebugInstalled !== true) {
+        var debugError=new Error("Motion Intelligence debug wrapper failed to install");
+        debugError.code="motion_intelligence_debug_install_failed";
+        debugError.stage=currentStage;
+        debugError.source="PocketPTMotionLabIntelligenceDebug.install";
+        throw debugError;
+      }
+      window.MotionLabRuntime=debugRuntime;
       await loadDependency("lunge_preview","/dev/motion-lab-assets/motion-lab-lunge-preview.js");
 
       currentStage="boundary_create";
@@ -112,12 +123,14 @@
       loaded=true;
       window.PocketPTMotionLabInspection?.wireButtons?.();
       window.PocketPTMotionLabLungePreview?.wire?.();
+      window.PocketPTMotionLabIntelligenceDebug?.render?.();
       publish({status:"ready",stage:"ready",source:null,code:null,message:null});
     } catch (error) {
       loaded=false;
       document.getElementById("initializeRuntime").disabled=false;
       publish({status:"failed",stage:error?.stage||currentStage,source:error?.source||error?.moduleUrl||error?.dependency||null,code:error?.code||"runtime_failed",message:error?.message||String(error),attempts:error?.attempts||diagnostics.attempts});
       document.getElementById("viewer").textContent=failureText(error);
+      window.PocketPTMotionLabIntelligenceDebug?.render?.();
       console.error("[MOTION_LAB_BOOTSTRAP]",window.PocketPTMotionLabBootstrapDiagnostics.snapshot(),error);
     }
   }
