@@ -82,6 +82,13 @@
       boundary.mount();
       currentStage="boundary_retry";
       await boundary.retry();
+      if (boundary.getStatus?.() !== "ready") {
+        var boundaryError=new Error("Motion viewer boundary did not reach ready state");
+        boundaryError.code="motion_viewer_boundary_failed";
+        boundaryError.stage="boundary_retry";
+        boundaryError.source="MotionViewerBoundary";
+        throw boundaryError;
+      }
       currentStage="runtime_initialize";
       var initialized=window.MotionLabRuntime.initialize();
       if (initialized && initialized.status === "failed") {
@@ -96,6 +103,7 @@
       window.PocketPTMotionLabLungePreview?.wire?.();
       publish({status:"ready",stage:"ready",source:null,code:null,message:null});
     } catch (error) {
+      loaded=false;
       document.getElementById("initializeRuntime").disabled=false;
       publish({status:"failed",stage:error?.stage||currentStage,source:error?.source||error?.moduleUrl||error?.dependency||null,code:error?.code||"runtime_failed",message:error?.message||String(error),attempts:error?.attempts||diagnostics.attempts});
       document.getElementById("viewer").textContent=failureText(error);
