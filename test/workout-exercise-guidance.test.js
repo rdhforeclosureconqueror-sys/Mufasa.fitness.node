@@ -20,6 +20,15 @@ test("guidance resolves current exercise through authenticated canonical exercis
   assert.match(runtime, /MaatApiClient/);
 });
 
+test("guidance refuses fuzzy first-result guessing and placeholder exercise labels", () => {
+  assert.match(runtime, /deterministicCatalogMatch/);
+  assert.match(runtime, /exercise_exact_match_not_found/);
+  assert.match(runtime, /exercise_identity_mismatch/);
+  assert.match(runtime, /isPlaceholderLabel/);
+  assert.match(runtime, /exercise_label_not_resolvable/);
+  assert.doesNotMatch(runtime, /\|\|rows\[0\]/);
+});
+
 test("guidance presents existing media and technique instead of an instructional void", () => {
   assert.match(runtime, /media\?\.illustrations/);
   assert.match(runtime, /Setup \/ start position/);
