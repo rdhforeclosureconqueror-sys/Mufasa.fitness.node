@@ -1,8 +1,11 @@
 (function (root, factory) {
-  const api = factory();
+  const adapter = typeof module === "object" && module.exports
+    ? require("./motion-lab-intelligence-adapter")
+    : root.PocketPTMotionLabIntelligenceAdapter;
+  const api = factory(adapter);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PocketPTMotionSpecClip = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (intelligenceAdapter) {
   "use strict";
 
   function normalizedBoneKey(name) {
@@ -110,6 +113,17 @@
     const anchorWorld = new Map();
     let anchorPhaseId = null;
     if (enforceContacts) {
+      if (!intelligenceAdapter?.solvePhaseContacts) {
+        return Object.freeze({ status: "failed", code: "motion_intelligence_adapter_unavailable", diagnostics: Object.freeze({ adapterRequired: true }) });
+      }
+      const missingContactMappings = contactNames.filter(contact => !contactBones[contact]);
+      if (missingContactMappings.length) {
+        return Object.freeze({
+          status: "failed",
+          code: "motion_contact_mapping_missing",
+          diagnostics: Object.freeze({ missingContacts: Object.freeze([...missingContactMappings]) })
+        });
+      }
       const requestedAnchorPhaseId = spec.groundingPolicy?.anchorPhaseId;
       const anchorPhase = requestedAnchorPhaseId ? spec.phases.find(phase => phase.id === requestedAnchorPhaseId) : null;
       if (requestedAnchorPhaseId && !anchorPhase) {
@@ -123,45 +137,88 @@
         const boneName = contactBones[contact];
         if (boneName && resolved.has(boneName)) anchorWorld.set(contact, resolved.get(boneName).object.getWorldPosition(new THREE.Vector3()));
       }
+      const missingAnchors = contactNames.filter(contact => !anchorWorld.has(contact));
+      if (missingAnchors.length) {
+        if (anchorPhase) restoreRestPose();
+        return Object.freeze({
+          status: "failed",
+          code: "motion_contact_anchor_unresolved",
+          diagnostics: Object.freeze({ anchorPhaseId, missingContacts: Object.freeze([...missingAnchors]) })
+        });
+      }
       if (anchorPhase) restoreRestPose();
     }
 
     const phaseRootPositions = [];
     const contactResiduals = [];
+    const phaseConstraintDiagnostics = [];
     for (const phase of spec.phases) {
       let localRoot = applyAuthoredPhasePose(phase);
 
       if (enforceContacts && phase.contacts?.length) {
-        const corrections = [];
+        const contactRecords = [];
+        const missingPhaseContacts = [];
         for (const contact of phase.contacts) {
           const boneName = contactBones[contact];
           const anchor = anchorWorld.get(contact);
-          if (!boneName || !anchor) continue;
-          const current = resolved.get(boneName).object.getWorldPosition(new THREE.Vector3());
-          corrections.push(anchor.clone().sub(current));
-        }
-        if (corrections.length) {
-          const correction = corrections.reduce((sum, item) => sum.add(item), new THREE.Vector3()).multiplyScalar(1 / corrections.length);
-          const rootWorld = rootNode.getWorldPosition(new THREE.Vector3()).add(correction);
-          localRoot = rootNode.parent?.worldToLocal ? rootNode.parent.worldToLocal(rootWorld) : localRoot.add(correction);
-          rootNode.position.copy(localRoot);
-          avatar.updateMatrixWorld?.(true);
-
-          let maxResidual = 0;
-          for (const contact of phase.contacts) {
-            const boneName = contactBones[contact];
-            const anchor = anchorWorld.get(contact);
-            if (!boneName || !anchor) continue;
-            const current = resolved.get(boneName).object.getWorldPosition(new THREE.Vector3());
-            maxResidual = Math.max(maxResidual, current.distanceTo(anchor));
+          const match = boneName ? resolved.get(boneName) : null;
+          if (!match?.object || !anchor) {
+            missingPhaseContacts.push(contact);
+            continue;
           }
-          contactResiduals.push(Object.freeze({ phaseId: phase.id, maxResidualWorldUnits: maxResidual }));
+          contactRecords.push(Object.freeze({
+            id: contact,
+            node: match.object,
+            current: match.object.getWorldPosition(new THREE.Vector3()),
+            anchor: anchor.clone()
+          }));
         }
+        if (missingPhaseContacts.length) {
+          restoreRestPose();
+          return Object.freeze({
+            status: "failed",
+            code: "motion_phase_contact_unresolved",
+            diagnostics: Object.freeze({
+              motionId: spec.motionId,
+              exerciseId: spec.exerciseId,
+              phaseId: phase.id,
+              firstFailingBoundary: Object.freeze({ type: "CONTACT_UNRESOLVED", contacts: Object.freeze([...missingPhaseContacts]) }),
+              missingContacts: Object.freeze([...missingPhaseContacts]),
+              intelligenceAdapterVersion: intelligenceAdapter.VERSION || null
+            })
+          });
+        }
+
+        const constrained = intelligenceAdapter.solvePhaseContacts({
+          THREE,
+          avatar,
+          rootNode,
+          bodyScale: scale,
+          contacts: contactRecords
+        });
+        if (constrained.status !== "ready") {
+          restoreRestPose();
+          return Object.freeze({
+            status: "failed",
+            code: constrained.code || "motion_kinematic_validation_failed",
+            diagnostics: Object.freeze({
+              motionId: spec.motionId,
+              exerciseId: spec.exerciseId,
+              phaseId: phase.id,
+              firstFailingBoundary: constrained.diagnostics?.firstFailure || null,
+              intelligenceAdapterVersion: intelligenceAdapter.VERSION || null,
+              adapterDiagnostics: constrained.diagnostics || null
+            })
+          });
+        }
+        localRoot = constrained.rootLocalPosition || rootNode.position.clone();
+        const phaseDiagnostics = Object.freeze({ phaseId: phase.id, ...constrained.diagnostics });
+        phaseConstraintDiagnostics.push(phaseDiagnostics);
+        contactResiduals.push(Object.freeze({ phaseId: phase.id, maxResidualWorldUnits: Number(constrained.diagnostics?.maxResidualWorldUnits) || 0 }));
       }
       phaseRootPositions.push(localRoot.clone());
     }
 
-    // Restore the authored rest pose before returning the clip; compilation must not mutate the loaded avatar.
     restoreRestPose();
 
     for (const requestedName of targets) {
@@ -194,8 +251,11 @@
         aliasBindings: Object.freeze(aliasBindings),
         contactLockApplied: enforceContacts,
         contactAnchorPhaseId: anchorPhaseId,
+        kinematicValidationApplied: enforceContacts,
+        intelligenceAdapterVersion: intelligenceAdapter?.VERSION || null,
         maxContactResidualWorldUnits: maxContactResidual,
         contactResiduals: Object.freeze(contactResiduals),
+        phaseConstraintDiagnostics: Object.freeze(phaseConstraintDiagnostics),
         trackCount: tracks.length
       })
     });
