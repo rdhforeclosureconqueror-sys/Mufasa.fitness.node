@@ -12,9 +12,9 @@
       aliases:Object.freeze(['push_up','pushup','push-up']),
       sourceType:'product_fixture',
       registryExerciseId:'push-up',
-      productEligible:true,
-      status:'active',
-      requiresHumanVerification:false
+      productEligible:false,
+      status:'registered-pending-product-clearance',
+      requiresHumanVerification:true
     }),
     bodyweight_squat:Object.freeze({
       exerciseId:'bodyweight_squat',
@@ -46,10 +46,38 @@
     return canonical?DESCRIPTORS[canonical]:null;
   }
 
+  function registryProductReadiness(resolved){
+    if(!resolved)return Object.freeze({productEligible:false,reason:'registry_resolution_missing'});
+    const exercise=resolved.exercise||{};
+    const motion=resolved.motion||{};
+    const fixture=resolved.fixture||{};
+    const avatar=resolved.avatar||{};
+    const skeleton=resolved.skeleton||{};
+    const checks={
+      exercise:Boolean(exercise.status==='active'&&exercise.audience==='product'),
+      motion:Boolean(motion.status==='active'&&motion.audience==='product'),
+      fixture:Boolean(fixture.status==='active'&&fixture.audience==='product'&&fixture.developmentOnly!==true),
+      avatar:Boolean(avatar.status==='active'&&avatar.productEligible===true&&avatar.runtimeAudience==='product'&&avatar.developmentOnly!==true),
+      license:Boolean(['cleared','approved','product-cleared'].includes(String(avatar.licenseStatus||'').toLowerCase())),
+      skeleton:Boolean(skeleton.status==='active'&&skeleton.audience==='product')
+    };
+    const failed=Object.entries(checks).filter(([,ok])=>!ok).map(([key])=>key);
+    return Object.freeze({productEligible:failed.length===0,reason:failed.length?`registry_not_product_clear:${failed.join(',')}`:'registry_product_clear',checks:Object.freeze(checks)});
+  }
+
   function availability(exerciseId){
     const descriptor=resolveDescriptor(exerciseId);
-    if(!descriptor)return Object.freeze({exerciseId:normalize(exerciseId)||null,available:false,productEligible:false,status:'unavailable',sourceType:null,requiresHumanVerification:false});
-    return Object.freeze({exerciseId:descriptor.exerciseId,available:true,productEligible:descriptor.productEligible,status:descriptor.status,sourceType:descriptor.sourceType,requiresHumanVerification:descriptor.requiresHumanVerification});
+    if(!descriptor)return Object.freeze({exerciseId:normalize(exerciseId)||null,available:false,productEligible:false,status:'unavailable',sourceType:null,requiresHumanVerification:false,reason:'not_registered'});
+    if(descriptor.sourceType!=='product_fixture')return Object.freeze({exerciseId:descriptor.exerciseId,available:true,productEligible:false,status:descriptor.status,sourceType:descriptor.sourceType,requiresHumanVerification:true,reason:'development_only'});
+    const registry=globalScope.PocketPTMotionRegistry;
+    if(!registry?.resolveExerciseMotion)return Object.freeze({exerciseId:descriptor.exerciseId,available:false,productEligible:false,status:'dependency-unavailable',sourceType:descriptor.sourceType,requiresHumanVerification:true,reason:'motion_registry_unavailable'});
+    try{
+      const resolved=registry.resolveExerciseMotion(descriptor.registryExerciseId);
+      const readiness=registryProductReadiness(resolved);
+      return Object.freeze({exerciseId:descriptor.exerciseId,available:true,productEligible:readiness.productEligible,status:readiness.productEligible?'active':'registered-pending-product-clearance',sourceType:descriptor.sourceType,requiresHumanVerification:!readiness.productEligible,reason:readiness.reason});
+    }catch(error){
+      return Object.freeze({exerciseId:descriptor.exerciseId,available:false,productEligible:false,status:'dependency-unavailable',sourceType:descriptor.sourceType,requiresHumanVerification:true,reason:error?.code||'motion_registry_resolution_failed'});
+    }
   }
 
   function loadScript(src){
@@ -73,7 +101,8 @@
       const registry=globalScope.PocketPTMotionRegistry;
       if(!registry?.resolveExerciseMotion)throw Object.assign(new Error('Product motion registry is unavailable'),{code:'motion_registry_unavailable'});
       const resolved=registry.resolveExerciseMotion(descriptor.registryExerciseId);
-      return Object.freeze({descriptor,resolved,productEligible:true,requiresHumanVerification:false});
+      const readiness=registryProductReadiness(resolved);
+      return Object.freeze({descriptor,resolved,productEligible:readiness.productEligible,requiresHumanVerification:!readiness.productEligible,readiness});
     }
     if(descriptor.sourceType==='motion_spec'){
       if(!globalScope[descriptor.globalName])await loadScript(descriptor.scriptUrl);
@@ -86,7 +115,8 @@
     throw Object.assign(new Error('Unsupported demo source'),{code:'unsupported_demo_source'});
   }
 
-  function list(){return Object.freeze(Object.values(DESCRIPTORS).map(item=>Object.freeze({...item,aliases:Object.freeze([...item.aliases])})));}
+  function list(){return Object.freeze(Object.values(DESCRIPTORS).map(item=>Object.freeze({...item,aliases:Object.freeze([...item.aliases])})));
+  }
 
-  return Object.freeze({normalize,resolveDescriptor,availability,load,list});
+  return Object.freeze({normalize,resolveDescriptor,availability,load,list,registryProductReadiness});
 });
