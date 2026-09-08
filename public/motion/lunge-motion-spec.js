@@ -49,9 +49,9 @@
   const spec = Object.freeze({
     schemaVersion: 1,
     exerciseId: "stationary_lunge_left",
-    motionId: "lunge/stationary_left_movement_definition_v2_step_in_three_reps",
-    displayName: "Stationary Left Lunge Movement Definition v2 — Step In + 3 Vertical Reps",
-    version: 2,
+    motionId: "lunge/stationary_left_movement_definition_v2_1_exit_release",
+    displayName: "Stationary Left Lunge Movement Definition v2.1 — Step In + 3 Vertical Reps + Exit Release",
+    version: 2.1,
     status: "development-test-only",
     sourceManifest: "/motion-sources/stationary-lunge-left-synthesis-v1.source.json",
     movementContractRef: "/motion/contracts/stationary-lunge-left.v2.json",
@@ -71,7 +71,7 @@
       rearKneeIntent: "right rear knee tracks primarily downward toward the floor while the right forefoot remains planted",
       frontShinIntent: "front shin remains approximately vertical at the bottom rather than the knee continuing far forward",
       ascentIntent: "drive the pelvis mostly straight up to the same split-stance top without moving the planted feet",
-      exitIntent: "after the third ascent, unload the left foot, step it back, and finish in the same neutral standing pose",
+      exitIntent: "after the third ascent, end loaded-lunge contact authority, then transition the legs back toward neutral standing without forcing the split-stance rear-toe anchor onto the neutralizing exit pose",
       torsoIntent: "remain tall with only small balance lean",
       armsPriority: "secondary-after-lower-body-approval"
     }),
@@ -81,7 +81,7 @@
       loadedTopPhases: Object.freeze(["rep1_top", "rep2_top", "rep3_top"]),
       bottomPhases: Object.freeze(["rep1_bottom", "rep2_bottom", "rep3_bottom"]),
       exitPhase: "step_back",
-      rule: "Feet remain anchored through all three repetitions; only the pelvis and linked leg chains cycle down/up."
+      rule: "Feet remain anchored through all three loaded repetitions. Loaded contact authority ends after rep3_top before the exit transition begins."
     }),
     groundingPolicy: Object.freeze({
       mode: "phase-aware-step-in-then-split-stance-anchor-lock",
@@ -99,13 +99,13 @@
         rejectAirborneRearToe: true,
         reviewRule: "Do not begin loaded descent until split_plant has the left whole foot and right forefoot on the same ground plane."
       }),
-      rule: "Standing and stepping phases are unconstrained by the forward-foot anchor. Capture the loaded anchors at split_plant, preserve both during all three repetitions, then release the left anchor for step_back."
+      rule: "Standing and stepping-in phases are unconstrained. Capture both loaded anchors at split_plant, preserve both through rep3_top, then release loaded anchor authority before step_back so the exit pose can return toward standing without an unreachable rear-leg target."
     }),
     trajectoryPolicy: Object.freeze({
       loadedDescent: verticalDown,
       loadedAscent: verticalUp,
       frontFoot: "plant during split_plant through rep3_top",
-      rearForefoot: "stay planted from split_plant through rep3_top",
+      rearForefoot: "stay planted from split_plant through rep3_top; loaded anchor authority ends before step_back",
       frontKnee: "approach 90 degrees at each bottom while tracking with the front foot",
       frontShin: "approximately vertical at each bottom",
       rearKnee: "approach the floor by moving downward rather than swinging forward/back",
@@ -143,7 +143,7 @@
       phase("rep3_bottom", "isometric", 0.78, [0, -0.14, 0], BOTTOM, { contacts: LOADED_CONTACTS, trajectory: verticalDown, holdDurationSeconds: 0.12 }),
       phase("rep3_top", "concentric", 0.86, [0, 0, 0], SPLIT_TOP, { contacts: LOADED_CONTACTS, trajectory: verticalUp }),
 
-      phase("step_back", "transition", 0.94, [0, 0, 0], STEP, { contacts: ["right_rear_forefoot"], movementIntent: "release left planted anchor and return left foot toward standing" }),
+      phase("step_back", "transition", 0.94, [0, 0, 0], STEP, { contacts: [], movementIntent: "loaded anchors released; return legs toward neutral standing without forcing split-stance IK" }),
       phase("stand_finish", "completion", 1.00, [0, 0, 0], STANDING, { contacts: [], movementIntent: "same neutral standing pose as start" })
     ])
   });
@@ -193,6 +193,8 @@
       const item = phases.find(candidatePhase => candidatePhase.id === id);
       if (JSON.stringify(item?.contacts || []) !== JSON.stringify(LOADED_CONTACTS)) errors.push(`${id} must preserve both split-stance contacts`);
     }
+    const exit = phases.find(item => item.id === "step_back");
+    if ((exit?.contacts || []).length) errors.push("step_back must release loaded split-stance contact authority before returning toward standing");
     for (const id of ["rep1_descent", "rep1_bottom", "rep2_descent", "rep2_bottom", "rep3_descent", "rep3_bottom"]) {
       const item = phases.find(candidatePhase => candidatePhase.id === id);
       if (item?.root?.positionOffset?.[0] !== 0 || item?.root?.positionOffset?.[2] !== 0) errors.push(`${id} must not author horizontal pelvis travel`);
