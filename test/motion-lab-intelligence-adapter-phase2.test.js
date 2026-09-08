@@ -10,43 +10,23 @@ const clipSource = fs.readFileSync(path.join(__dirname, '../public/motion/motion
 const bootstrapSource = fs.readFileSync(path.join(__dirname, '../motion-lab/motion-lab-bootstrap.js'), 'utf8');
 
 function vector(x,y,z){
-  return {
-    x,y,z,
-    clone(){return vector(this.x,this.y,this.z);},
-    add(v){this.x+=v.x;this.y+=v.y;this.z+=v.z;return this;}
-  };
+  return { x,y,z, clone(){return vector(this.x,this.y,this.z);}, add(v){this.x+=v.x;this.y+=v.y;this.z+=v.z;return this;} };
 }
+function threeStub(){ class Vector3 { constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;} } return { Vector3 }; }
 
-function threeStub(){
-  class Vector3 {
-    constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
-  }
-  return { Vector3 };
-}
-
-test('Phase 2 adapter is backed by shared Avatar Motion Intelligence Core',()=>{
-  assert.match(adapter.VERSION,/phase2/);
+test('shared Motion Lab adapter retains Phase 2 contact/root authority while evolving',()=>{
+  assert.match(adapter.VERSION,/phase(2|4)/);
   assert.equal(typeof adapter.solvePhaseContacts,'function');
   assert.equal(typeof core.solveRootAnchorCorrection,'function');
 });
 
 test('stationary split contacts resolve through one root correction',()=>{
   const THREE=threeStub();
-  const rootNode={
-    position:vector(0,0,0),
-    getWorldPosition(){return vector(0,0,0);},
-    parent:null
-  };
+  const rootNode={ position:vector(0,0,0), getWorldPosition(){return vector(0,0,0);}, parent:null };
   const avatar={updateMatrixWorld(){}};
   const frontNode={getWorldPosition(){return vector(.08,0,0);}};
   const rearNode={getWorldPosition(){return vector(.10,0,0);}};
-  const result=adapter.solvePhaseContacts({
-    THREE,avatar,rootNode,bodyScale:1,
-    contacts:[
-      {id:'left_front_foot',node:frontNode,current:vector(.08,0,0),anchor:vector(0,0,0)},
-      {id:'right_rear_forefoot',node:rearNode,current:vector(.10,0,0),anchor:vector(.02,0,0)}
-    ]
-  });
+  const result=adapter.solvePhaseContacts({ THREE,avatar,rootNode,bodyScale:1, contacts:[ {id:'left_front_foot',node:frontNode,current:vector(.08,0,0),anchor:vector(0,0,0)}, {id:'right_rear_forefoot',node:rearNode,current:vector(.10,0,0),anchor:vector(.02,0,0)} ] });
   assert.equal(result.status,'ready');
   assert.equal(result.diagnostics.contactCount,2);
   assert.equal(result.diagnostics.firstFailure,null);
