@@ -1,8 +1,9 @@
 (function initMotionLabPoseEditor(root, document) {
   'use strict';
 
-  const VERSION = '1.0.0-pose-authoring-v1';
+  const VERSION = '1.1.0-pose-authoring-mobile-fix';
   const INCH_TO_WORLD = 0.0254;
+  const GOLD_SCENE = 0xd4af37;
   const TARGETS = Object.freeze({
     left_foot: Object.freeze({ label: 'Left Foot', bone: 'mixamorig:LeftFoot', mode: 'endpoint', chain: ['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot'] }),
     right_foot: Object.freeze({ label: 'Right Foot', bone: 'mixamorig:RightFoot', mode: 'endpoint', chain: ['mixamorig:RightUpLeg','mixamorig:RightLeg','mixamorig:RightFoot'] }),
@@ -35,19 +36,35 @@
     const node = el('poseEditorStatus');
     if (node) { node.textContent = message; node.dataset.status = kind; }
   }
+  function normalizedBoneKey(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
   function traverseByName(name) {
-    let found = null;
-    activeSession?.avatar?.traverse?.(node => { if (!found && node.name === name) found = node; });
-    return found;
+    let exact = null;
+    const normalizedMatches = [];
+    const wanted = normalizedBoneKey(name);
+    activeSession?.avatar?.traverse?.(node => {
+      if (!node?.name) return;
+      if (!exact && node.name === name) exact = node;
+      if (wanted && normalizedBoneKey(node.name) === wanted) normalizedMatches.push(node);
+    });
+    if (exact) return exact;
+    return normalizedMatches.length === 1 ? normalizedMatches[0] : null;
+  }
+
+  function mountLiveViewer() {
+    const host = el('poseEditorLiveViewer');
+    const viewer = el('viewer');
+    const viewerStatus = el('viewerStatus');
+    if (!host || !viewer) return false;
+    if (viewerStatus && viewerStatus.parentElement !== host) host.appendChild(viewerStatus);
+    if (viewer.parentElement !== host) host.appendChild(viewer);
+    const oldSection = el('motionViewerSection');
+    if (oldSection) oldSection.hidden = true;
+    return true;
   }
 
   function cloneTransform(node) {
-    return Object.freeze({
-      position: node.position.clone(),
-      quaternion: node.quaternion.clone(),
-      scale: node.scale.clone()
-    });
+    return Object.freeze({ position: node.position.clone(), quaternion: node.quaternion.clone(), scale: node.scale.clone() });
   }
 
   function captureEditablePose() {
@@ -68,17 +85,13 @@
     for (const [name, transform] of map.entries()) {
       const node = traverseByName(name);
       if (!node) continue;
-      node.position.copy(transform.position);
-      node.quaternion.copy(transform.quaternion);
-      node.scale.copy(transform.scale);
+      node.position.copy(transform.position); node.quaternion.copy(transform.quaternion); node.scale.copy(transform.scale);
     }
     activeSession?.avatar?.updateMatrixWorld?.(true);
     return true;
   }
 
-  function phaseById(id) {
-    return activeSession?.motionSpec?.phases?.find(phase => phase.id === id) || null;
-  }
+  function phaseById(id) { return activeSession?.motionSpec?.phases?.find(phase => phase.id === id) || null; }
 
   function populatePhases() {
     const select = el('poseEditorPhase');
@@ -88,8 +101,7 @@
     select.replaceChildren();
     for (const phase of phases) {
       const option = document.createElement('option');
-      option.value = phase.id;
-      option.textContent = phase.id;
+      option.value = phase.id; option.textContent = phase.id;
       if (phase.id === current) option.selected = true;
       select.appendChild(option);
     }
@@ -112,13 +124,17 @@
     sampledPhaseId = phase.id;
     baseline = captureEditablePose();
     edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
-    status(`Editing phase “${sampledPhaseId}”. Tap − / + to adjust.`);
+    status(`Editing phase “${sampledPhaseId}”. Watch the live viewer and tap − / + to adjust.`);
     refreshOutput();
     return { status: 'ready', phaseId: sampledPhaseId, time };
   }
 
-  function axisVector(THREE, axis, amount) {
-    return new THREE.Vector3(axis === 'x' ? amount : 0, axis === 'y' ? amount : 0, axis === 'z' ? amount : 0);
+  function avatarRelativeVector(THREE, direction, amount) {
+    const local = direction === 'forward' ? new THREE.Vector3(0, 0, amount)
+      : direction === 'up' ? new THREE.Vector3(0, amount, 0)
+      : new THREE.Vector3(amount, 0, 0);
+    const q = activeSession?.avatar?.getWorldQuaternion?.(new THREE.Quaternion());
+    return q ? local.applyQuaternion(q) : local;
   }
 
   function worldToLocalDelta(node, worldDelta) {
@@ -127,16 +143,18 @@
     return worldDelta.clone().applyQuaternion(q);
   }
 
-  function applyEndpoint(target, axis, amountWorld) {
+  function applyEndpoint(target, direction, amountWorld) {
     const [rootName, jointName, endName] = target.chain || [];
     const rootNode = traverseByName(rootName), jointNode = traverseByName(jointName), endNode = traverseByName(endName);
-    if (!rootNode || !jointNode || !endNode) return { status: 'failed', code: 'authoring_chain_unresolved' };
+    if (!rootNode || !jointNode || !endNode) {
+      return { status: 'failed', code: 'authoring_chain_unresolved', diagnostics: { requested: [rootName, jointName, endName], resolved: [Boolean(rootNode), Boolean(jointNode), Boolean(endNode)] } };
+    }
     const THREE = activeSession.THREE;
     activeSession.avatar.updateMatrixWorld?.(true);
     const rootWorld = rootNode.getWorldPosition(new THREE.Vector3());
     const jointWorld = jointNode.getWorldPosition(new THREE.Vector3());
     const endWorld = endNode.getWorldPosition(new THREE.Vector3());
-    const targetWorld = endWorld.clone().add(axisVector(THREE, axis, amountWorld));
+    const targetWorld = endWorld.clone().add(avatarRelativeVector(THREE, direction, amountWorld));
     const length1 = rootWorld.distanceTo(jointWorld), length2 = jointWorld.distanceTo(endWorld);
     const out = root.PocketPTMotionLabIntelligenceAdapter?.solveAuthoringChain?.({
       THREE,
@@ -165,10 +183,10 @@
     return { status: 'ready' };
   }
 
-  function applyRootPosition(axis, amountWorld) {
+  function applyRootPosition(direction, amountWorld) {
     const node = traverseByName('mixamorig:Hips');
     if (!node) return { status: 'failed', code: 'authoring_root_unresolved' };
-    const delta = worldToLocalDelta(node, axisVector(activeSession.THREE, axis, amountWorld));
+    const delta = worldToLocalDelta(node, avatarRelativeVector(activeSession.THREE, direction, amountWorld));
     node.position.add(delta);
     activeSession.avatar.updateMatrixWorld?.(true);
     return { status: 'ready' };
@@ -183,8 +201,7 @@
   function recordEdit(edit) {
     const key = `${edit.phaseId}:${edit.target}:${edit.mode}:${edit.axis}`;
     const existing = edits.find(item => item.key === key);
-    if (existing) existing.amount += edit.amount;
-    else edits.push({ ...edit, key });
+    if (existing) existing.amount += edit.amount; else edits.push({ ...edit, key });
     edits = edits.filter(item => Math.abs(item.amount) > 1e-9);
   }
 
@@ -196,24 +213,22 @@
     const targetId = el('poseEditorTarget')?.value;
     const target = TARGETS[targetId];
     const mode = el('poseEditorMode')?.value || 'move';
-    const axis = el('poseEditorAxis')?.value || 'x';
+    const axis = el('poseEditorAxis')?.value || (mode === 'rotate' ? 'x' : 'forward');
     if (!target) return;
     const step = selectedStep(mode) * direction;
     let out;
     if (mode === 'rotate') out = applyRotation(target, axis, step);
     else if (target.mode === 'endpoint') out = applyEndpoint(target, axis, step);
     else if (target.mode === 'root') out = applyRootPosition(axis, step);
-    else {
-      status('Position mode is available for hands, feet, and hips. Use Rotate for this joint.', 'failed');
-      return;
-    }
+    else { status('Position mode is available for hands, feet, and hips. Use Rotate for this joint.', 'failed'); return; }
     if (out?.status !== 'ready') {
-      status(`Adjustment rejected: ${out?.code || 'authoring_failed'}`, 'failed');
+      const missing = out?.diagnostics?.requested ? ` (${out.diagnostics.requested.filter((_, i) => !out.diagnostics.resolved[i]).join(', ')})` : '';
+      status(`Adjustment rejected: ${out?.code || 'authoring_failed'}${missing}`, 'failed');
       return;
     }
     recordEdit({ phaseId: sampledPhaseId, target: targetId, bone: target.bone, mode, axis, amount: step, unit: mode === 'rotate' ? 'degrees' : 'world_units' });
     const shown = mode === 'rotate' ? `${Math.abs(step).toFixed(1)}°` : `${(Math.abs(step) / INCH_TO_WORLD).toFixed(2)} in`;
-    status(`${target.label}: ${direction > 0 ? '+' : '−'}${shown} ${axis.toUpperCase()} applied.`);
+    status(`${target.label}: ${direction > 0 ? '+' : '−'}${shown} ${axis} applied.`);
     refreshOutput();
   }
 
@@ -290,46 +305,32 @@
     }
     activeSession.avatar.updateMatrixWorld?.(true);
     edits = edits.filter(edit => !(edit.phaseId === sampledPhaseId && edit.target === el('poseEditorTarget')?.value));
-    status('Selected body part reset to the sampled phase pose.');
-    refreshOutput();
+    status('Selected body part reset to the sampled phase pose.'); refreshOutput();
   }
 
   function resetPhase() {
-    restorePose(baseline);
-    edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
-    status(`Phase “${sampledPhaseId}” reset.`);
-    refreshOutput();
+    restorePose(baseline); edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
+    status(`Phase “${sampledPhaseId}” reset.`); refreshOutput();
   }
 
   function resetAll() {
     if (!activeSession) return;
-    edits = [];
-    sampledPhaseId = null;
-    baseline = null;
-    previewClip = null;
+    edits = []; sampledPhaseId = null; baseline = null; previewClip = null;
     if (originalMotionSpec) {
       const out = activeSession.loadMotionSpec?.(originalMotionSpec, root.PocketPTMotionSpecClip);
-      if (out?.status === 'ready') {
-        originalClip = activeSession.sessionClip?.clone?.() || activeSession.sessionClip;
-        populatePhases();
-      }
+      if (out?.status === 'ready') { originalClip = activeSession.sessionClip?.clone?.() || activeSession.sessionClip; populatePhases(); }
     } else activeSession.restoreRestPose?.();
-    status('All pose-editor adjustments cleared.');
-    refreshOutput();
+    status('All pose-editor adjustments cleared.'); refreshOutput();
   }
 
   function exportPayload() {
     const scale = bodyScale();
     return Object.freeze({
-      schemaVersion: 1,
-      type: 'motion_lab_pose_adjustment',
-      editorVersion: VERSION,
+      schemaVersion: 1, type: 'motion_lab_pose_adjustment', editorVersion: VERSION,
       motionId: originalMotionSpec?.motionId || activeSession?.motionSpec?.motionId || null,
       exerciseId: originalMotionSpec?.exerciseId || activeSession?.motionSpec?.exerciseId || null,
       edits: edits.map(edit => Object.freeze({
-        phaseId: edit.phaseId,
-        target: edit.target,
-        bone: edit.bone,
+        phaseId: edit.phaseId, target: edit.target, bone: edit.bone,
         mode: edit.mode === 'move' ? 'endpoint_or_root_translation' : 'joint_rotation_delta',
         axis: edit.axis,
         amount: edit.mode === 'move' ? Number((edit.amount / Math.max(scale, 1e-9)).toFixed(6)) : Number(edit.amount.toFixed(3)),
@@ -339,50 +340,53 @@
   }
 
   function refreshOutput() {
-    const node = el('poseEditorOutput');
-    if (node) node.textContent = JSON.stringify(exportPayload(), null, 2);
-    const count = el('poseEditorEditCount');
-    if (count) count.textContent = String(edits.length);
+    const node = el('poseEditorOutput'); if (node) node.textContent = JSON.stringify(exportPayload(), null, 2);
+    const count = el('poseEditorEditCount'); if (count) count.textContent = String(edits.length);
   }
 
   async function copyAdjustment() {
     const text = JSON.stringify(exportPayload(), null, 2);
-    try {
-      await root.navigator?.clipboard?.writeText?.(text);
-      status('Motion Spec adjustment copied.');
-    } catch (_) {
-      const output = el('poseEditorOutput');
-      output?.focus?.();
-      output?.select?.();
-      status('Clipboard unavailable. Adjustment text selected for manual copy.');
+    try { await root.navigator?.clipboard?.writeText?.(text); status('Motion Spec adjustment copied.'); }
+    catch (_) { const output = el('poseEditorOutput'); output?.focus?.(); output?.select?.(); status('Clipboard unavailable. Adjustment text selected for manual copy.'); }
+  }
+
+  function updateAxisOptions() {
+    const select = el('poseEditorAxis');
+    const mode = el('poseEditorMode')?.value || 'move';
+    if (!select) return;
+    const previous = select.value;
+    select.replaceChildren();
+    const options = mode === 'rotate'
+      ? [['x','Pitch'],['y','Yaw'],['z','Roll']]
+      : [['forward','Forward / Back'],['up','Up / Down'],['lateral','Left / Right']];
+    for (const [value, label] of options) {
+      const option = document.createElement('option'); option.value = value; option.textContent = label; select.appendChild(option);
     }
+    if (options.some(([value]) => value === previous)) select.value = previous;
   }
 
   function updateModeHelp() {
+    updateAxisOptions();
     const target = TARGETS[el('poseEditorTarget')?.value];
     const mode = el('poseEditorMode')?.value || 'move';
     const help = el('poseEditorHelp');
     if (!help || !target) return;
     if (mode === 'move' && target.mode === 'joint') help.textContent = 'This joint uses rotation. Choose Rotate, or select a hand/foot/hips for position moves.';
-    else if (mode === 'move' && target.mode === 'endpoint') help.textContent = 'Moving this endpoint uses shared two-bone IK so the intermediate joint follows naturally.';
+    else if (mode === 'move' && target.mode === 'endpoint') help.textContent = 'Moving this endpoint uses shared two-bone IK. Forward/back is avatar-relative, not a hard-coded world axis.';
     else help.textContent = 'Adjustments are preview-only until you copy/save the structured Motion Spec adjustment.';
   }
 
   function enable(enabled) {
-    ['poseEditorPhase','poseEditorLoadPhase','poseEditorTarget','poseEditorMode','poseEditorAxis','poseEditorStep','poseEditorMinus','poseEditorPlus','poseEditorResetSelected','poseEditorResetPhase','poseEditorResetAll','poseEditorPlay','poseEditorCopy'].forEach(id => {
-      const node = el(id); if (node) node.disabled = !enabled;
-    });
+    ['poseEditorPhase','poseEditorLoadPhase','poseEditorTarget','poseEditorMode','poseEditorAxis','poseEditorStep','poseEditorMinus','poseEditorPlus','poseEditorResetSelected','poseEditorResetPhase','poseEditorResetAll','poseEditorPlay','poseEditorCopy'].forEach(id => { const node = el(id); if (node) node.disabled = !enabled; });
   }
 
   function wireUi() {
+    mountLiveViewer();
     if (el('poseEditorTarget')?.dataset.poseEditorWired === '1') return;
     const targetSelect = el('poseEditorTarget');
     if (!targetSelect) return;
-    targetSelect.dataset.poseEditorWired = '1';
-    targetSelect.replaceChildren();
-    for (const [id, target] of Object.entries(TARGETS)) {
-      const option = document.createElement('option'); option.value = id; option.textContent = target.label; targetSelect.appendChild(option);
-    }
+    targetSelect.dataset.poseEditorWired = '1'; targetSelect.replaceChildren();
+    for (const [id, target] of Object.entries(TARGETS)) { const option = document.createElement('option'); option.value = id; option.textContent = target.label; targetSelect.appendChild(option); }
     el('poseEditorLoadPhase')?.addEventListener('click', () => samplePhase(el('poseEditorPhase')?.value));
     el('poseEditorMinus')?.addEventListener('click', () => nudge(-1));
     el('poseEditorPlus')?.addEventListener('click', () => nudge(1));
@@ -398,15 +402,26 @@
 
   function attachSession(session) {
     activeSession = session;
+    const originalStart = session.start?.bind(session);
+    if (originalStart && !session.__poseEditorStartWrapped) {
+      session.start = async function poseEditorStart(container) {
+        const out = await originalStart(container);
+        if (out?.status === 'ready' && session.scene && session.THREE) {
+          session.scene.background = new session.THREE.Color(GOLD_SCENE);
+          mountLiveViewer();
+        }
+        return out;
+      };
+      session.__poseEditorStartWrapped = true;
+    }
     const originalLoadMotionSpec = session.loadMotionSpec?.bind(session);
     if (originalLoadMotionSpec && !session.__poseEditorLoadWrapped) {
       session.loadMotionSpec = function poseEditorLoadMotionSpec(spec, compiler) {
         const out = originalLoadMotionSpec(spec, compiler);
         if (out?.status === 'ready') {
-          originalMotionSpec = spec;
-          originalClip = session.sessionClip?.clone?.() || session.sessionClip;
+          originalMotionSpec = spec; originalClip = session.sessionClip?.clone?.() || session.sessionClip;
           previewClip = null; sampledPhaseId = null; baseline = null; edits = [];
-          populatePhases(); enable(true); refreshOutput();
+          populatePhases(); enable(true); refreshOutput(); mountLiveViewer();
           status('Motion loaded. Choose a phase to begin editing.');
         }
         return out;
@@ -426,28 +441,17 @@
   }
 
   function install(runtime = root.PocketPTDisposableMotionSession) {
-    if (installed) return root.PocketPTMotionLabPoseEditor;
+    if (installed) { mountLiveViewer(); return root.PocketPTMotionLabPoseEditor; }
     if (!runtime?.createMotionSession) return null;
     const originalCreate = runtime.createMotionSession.bind(runtime);
-    root.PocketPTDisposableMotionSession = Object.freeze({
-      ...runtime,
-      createMotionSession(options) { return attachSession(originalCreate(options)); },
-      __poseEditorInstalled: true
-    });
-    installed = true;
-    wireUi(); enable(false);
+    root.PocketPTDisposableMotionSession = Object.freeze({ ...runtime, createMotionSession(options) { return attachSession(originalCreate(options)); }, __poseEditorInstalled: true });
+    installed = true; wireUi(); enable(false);
     return root.PocketPTMotionLabPoseEditor;
   }
 
   root.PocketPTMotionLabPoseEditor = Object.freeze({
-    VERSION,
-    install,
-    wireUi,
-    getActiveSession: () => activeSession,
-    samplePhase,
-    resetAll,
-    exportAdjustment: exportPayload,
-    playAdjustedPreview
+    VERSION, install, wireUi, getActiveSession: () => activeSession, samplePhase, resetAll,
+    exportAdjustment: exportPayload, playAdjustedPreview, normalizedBoneKey, traverseByName, mountLiveViewer
   });
   wireUi(); enable(false);
 })(window, document);
