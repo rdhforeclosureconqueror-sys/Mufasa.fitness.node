@@ -1,4 +1,14 @@
 (function initKettlebellWorkoutHub(global){"use strict";
+  function loadSharedExerciseGuidance(){
+    if(global.__WORKOUT_EXERCISE_GUIDANCE__||document.getElementById("workoutExerciseGuidanceRuntimeScript"))return;
+    const script=document.createElement("script");
+    script.id="workoutExerciseGuidanceRuntimeScript";
+    script.src="/workout-exercise-guidance.js?v=20260907-exercise-guidance-v1";
+    script.async=false;
+    script.onerror=()=>console.warn("[WORKOUT_EXERCISE_GUIDANCE] shared guidance runtime failed to load");
+    document.head.appendChild(script);
+  }
+  loadSharedExerciseGuidance();
   const params=new URLSearchParams(global.location.search),sessionId=params.get("sessionId");
   if(!sessionId?.startsWith("kb_"))return;
   const SOURCE_VALUE=`challenge:${sessionId}`;
