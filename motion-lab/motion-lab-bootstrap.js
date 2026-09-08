@@ -72,6 +72,17 @@
       await loadDependency("motion_spec_clip","/dev/motion-lab-assets/motion-spec-clip.js");
       await loadDependency("motion_intelligence_diagnostics","/dev/motion-lab-assets/motion-lab-intelligence-diagnostics.js");
       await loadDependency("disposable_motion_session","/dev/motion-lab-assets/disposable-motion-session.js");
+      await loadDependency("motion_spec_playback_policy","/dev/motion-lab-assets/motion-spec-playback-policy.js");
+      currentStage="motion_spec_playback_policy_install";
+      var playbackRuntime=window.PocketPTMotionSpecPlaybackPolicy?.install?.(window.PocketPTDisposableMotionSession);
+      if (!playbackRuntime?.createMotionSession || playbackRuntime.__motionSpecPlaybackPolicyInstalled !== true) {
+        var playbackError=new Error("Motion Spec playback policy failed to install");
+        playbackError.code="motion_spec_playback_policy_install_failed";
+        playbackError.stage=currentStage;
+        playbackError.source="PocketPTMotionSpecPlaybackPolicy.install";
+        throw playbackError;
+      }
+      window.PocketPTDisposableMotionSession=playbackRuntime;
       await loadDependency("rest_pose_guard","/dev/motion-lab-assets/motion-lab-rest-pose-guard.js");
       currentStage="rest_pose_guard_install";
       var guardedRuntime=window.PocketPTMotionLabRestPoseGuard?.install?.(window.PocketPTDisposableMotionSession);
