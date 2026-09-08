@@ -1,9 +1,18 @@
 (function () {
   "use strict";
-  const FRONTEND_ORIGIN = "https://mufasafitsite.onrender.com";
-  const BUILD = "2026-08-20-ios-trace-v2";
+  const PRODUCTION_FRONTEND_ORIGIN = "https://mufasafitsite.onrender.com";
+  const BUILD = "2026-09-08-desktop-origin-v3";
   const status = document.getElementById("status");
+  const configuredOrigins = Array.isArray(window.PocketPTMotionLabLaunchConfig?.allowedOrigins)
+    ? window.PocketPTMotionLabLaunchConfig.allowedOrigins.filter((value) => typeof value === "string" && value)
+    : [];
+  const ALLOWED_OPENER_ORIGINS = new Set([
+    PRODUCTION_FRONTEND_ORIGIN,
+    window.location.origin,
+    ...configuredOrigins
+  ]);
   let accepted = false;
+  let openerOrigin = null;
   let readyAttempts = 0;
   let readyTimer = null;
   const safeFailures = new Set([
@@ -24,17 +33,28 @@
     "session_expired"
   ]);
 
+  function postToOpener(payload) {
+    if (!window.opener) return;
+    if (openerOrigin) {
+      window.opener.postMessage(payload, openerOrigin);
+      return;
+    }
+    for (const origin of ALLOWED_OPENER_ORIGINS) {
+      try { window.opener.postMessage(payload, origin); } catch (_) {}
+    }
+  }
+
   function report(state) {
-    status.textContent = `${state}\nhandoff build: ${BUILD}`;
+    status.textContent = `${state}\nhandoff build: ${BUILD}\nallowed opener origins: ${Array.from(ALLOWED_OPENER_ORIGINS).join(", ")}`;
     console.log(`[motion-lab-handoff] ${state}`);
-    window.opener?.postMessage({ type: "pocketpt:motion-lab-diagnostic", state, build: BUILD }, FRONTEND_ORIGIN);
+    postToOpener({ type: "pocketpt:motion-lab-diagnostic", state, build: BUILD });
   }
 
   function fail(code) {
     const safeCode = safeFailures.has(code) ? code : "failure_unknown";
     console.error(`[motion-lab-handoff] FAILED: ${safeCode}`);
     report(safeCode);
-    window.opener?.postMessage({ type: "pocketpt:motion-lab-error", code: safeCode }, FRONTEND_ORIGIN);
+    postToOpener({ type: "pocketpt:motion-lab-error", code: safeCode, build: BUILD });
   }
 
   report("handoff_document_loaded");
@@ -44,7 +64,8 @@
 
     report("handoff_message_received");
 
-    if (event.origin !== FRONTEND_ORIGIN) return fail("failure_message_origin_invalid");
+    if (!ALLOWED_OPENER_ORIGINS.has(event.origin)) return fail("failure_message_origin_invalid");
+    openerOrigin = event.origin;
     report("handoff_origin_valid");
 
     if (typeof event.data.token !== "string" || !event.data.token) return fail("failure_auth_token_missing");
@@ -80,7 +101,6 @@
     }
 
     report("session_cookie_expected");
-
     report("readiness_check_started");
 
     let readiness;
@@ -95,46 +115,35 @@
     }
 
     if (!readiness.ok) {
-      const status = readiness.status;
+      const readinessStatus = readiness.status;
       const readinessBody = await readiness.json().catch(() => ({}));
-      
       console.error("[motion-lab-handoff] Readiness check failed:", {
-        httpStatus: status,
+        httpStatus: readinessStatus,
         responseCode: readinessBody?.error?.code,
         responseMessage: readinessBody?.error?.message
       });
 
-      // Map server diagnostic codes to client failures
-      if (status === 401) {
+      if (readinessStatus === 401) {
         const serverCode = readinessBody?.error?.code;
         if (safeFailures.has(serverCode)) return fail(serverCode);
         return fail("failure_readiness_401");
-      } else if (status >= 400 && status < 500) {
-        console.error("[motion-lab-handoff] Readiness 4xx:", status);
-        return fail("failure_readiness_4xx");
-      } else if (status >= 500) {
-        console.error("[motion-lab-handoff] Readiness 5xx:", status);
-        return fail("failure_readiness_5xx");
-      } else {
-        console.error("[motion-lab-handoff] Readiness other:", status);
-        return fail("failure_readiness_other");
       }
+      if (readinessStatus >= 400 && readinessStatus < 500) return fail("failure_readiness_4xx");
+      if (readinessStatus >= 500) return fail("failure_readiness_5xx");
+      return fail("failure_readiness_other");
     }
 
     report("readiness_check_pass");
     report("navigation_started");
-    window.opener?.postMessage({ type: "pocketpt:motion-lab-launched" }, FRONTEND_ORIGIN);
+    postToOpener({ type: "pocketpt:motion-lab-launched", build: BUILD });
     window.location.replace(body.data.navigateTo);
   });
 
   if (!window.opener) return fail("failure_opener_missing");
-  // The new tab can finish loading before dashboard.js has installed its
-  // message listener. Repeat this credential-free readiness signal for a
-  // bounded interval; the authenticated message still requires the exact
-  // opener window and configured frontend origin above.
+
   function announceReady() {
     readyAttempts += 1;
-    window.opener?.postMessage({ type: "pocketpt:motion-lab-ready", build: BUILD }, FRONTEND_ORIGIN);
+    postToOpener({ type: "pocketpt:motion-lab-ready", build: BUILD });
     if (readyAttempts >= 20 && readyTimer) window.clearInterval(readyTimer);
   }
   announceReady();
