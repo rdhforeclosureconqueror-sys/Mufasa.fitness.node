@@ -94,6 +94,17 @@
         poseEditorError.source="PocketPTMotionLabPoseEditor.install";
         throw poseEditorError;
       }
+      await loadDependency("adjusted_preview_persistence","/dev/motion-lab-assets/motion-lab-adjusted-preview-persistence.js");
+      currentStage="adjusted_preview_persistence_install";
+      var persistentRuntime=window.PocketPTMotionLabAdjustedPreviewPersistence?.install?.(window.PocketPTDisposableMotionSession);
+      if (!persistentRuntime?.createMotionSession || persistentRuntime.__adjustedPreviewPersistenceInstalled !== true) {
+        var persistenceError=new Error("Adjusted preview persistence failed to install");
+        persistenceError.code="motion_lab_adjusted_preview_persistence_install_failed";
+        persistenceError.stage=currentStage;
+        persistenceError.source="PocketPTMotionLabAdjustedPreviewPersistence.install";
+        throw persistenceError;
+      }
+      window.PocketPTDisposableMotionSession=persistentRuntime;
       await loadDependency("motion_lab_runtime","/dev/motion-lab-runtime.js");
       await loadDependency("diagnostic_consolidator","/dev/motion-lab-assets/motion-lab-diagnostic-consolidator.js");
       currentStage="diagnostic_consolidator_install";
