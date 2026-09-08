@@ -116,6 +116,14 @@
       if (!intelligenceAdapter?.solvePhaseContacts) {
         return Object.freeze({ status: "failed", code: "motion_intelligence_adapter_unavailable", diagnostics: Object.freeze({ adapterRequired: true }) });
       }
+      const missingContactMappings = contactNames.filter(contact => !contactBones[contact]);
+      if (missingContactMappings.length) {
+        return Object.freeze({
+          status: "failed",
+          code: "motion_contact_mapping_missing",
+          diagnostics: Object.freeze({ missingContacts: Object.freeze([...missingContactMappings]) })
+        });
+      }
       const requestedAnchorPhaseId = spec.groundingPolicy?.anchorPhaseId;
       const anchorPhase = requestedAnchorPhaseId ? spec.phases.find(phase => phase.id === requestedAnchorPhaseId) : null;
       if (requestedAnchorPhaseId && !anchorPhase) {
@@ -129,6 +137,15 @@
         const boneName = contactBones[contact];
         if (boneName && resolved.has(boneName)) anchorWorld.set(contact, resolved.get(boneName).object.getWorldPosition(new THREE.Vector3()));
       }
+      const missingAnchors = contactNames.filter(contact => !anchorWorld.has(contact));
+      if (missingAnchors.length) {
+        if (anchorPhase) restoreRestPose();
+        return Object.freeze({
+          status: "failed",
+          code: "motion_contact_anchor_unresolved",
+          diagnostics: Object.freeze({ anchorPhaseId, missingContacts: Object.freeze([...missingAnchors]) })
+        });
+      }
       if (anchorPhase) restoreRestPose();
     }
 
@@ -140,17 +157,36 @@
 
       if (enforceContacts && phase.contacts?.length) {
         const contactRecords = [];
+        const missingPhaseContacts = [];
         for (const contact of phase.contacts) {
           const boneName = contactBones[contact];
           const anchor = anchorWorld.get(contact);
           const match = boneName ? resolved.get(boneName) : null;
-          if (!match?.object || !anchor) continue;
+          if (!match?.object || !anchor) {
+            missingPhaseContacts.push(contact);
+            continue;
+          }
           contactRecords.push(Object.freeze({
             id: contact,
             node: match.object,
             current: match.object.getWorldPosition(new THREE.Vector3()),
             anchor: anchor.clone()
           }));
+        }
+        if (missingPhaseContacts.length) {
+          restoreRestPose();
+          return Object.freeze({
+            status: "failed",
+            code: "motion_phase_contact_unresolved",
+            diagnostics: Object.freeze({
+              motionId: spec.motionId,
+              exerciseId: spec.exerciseId,
+              phaseId: phase.id,
+              firstFailingBoundary: Object.freeze({ type: "CONTACT_UNRESOLVED", contacts: Object.freeze([...missingPhaseContacts]) }),
+              missingContacts: Object.freeze([...missingPhaseContacts]),
+              intelligenceAdapterVersion: intelligenceAdapter.VERSION || null
+            })
+          });
         }
 
         const constrained = intelligenceAdapter.solvePhaseContacts({

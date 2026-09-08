@@ -70,6 +70,15 @@ test('Motion Spec compiler routes enforced contacts through adapter and reports 
   assert.doesNotMatch(clipSource,/corrections\.reduce\(\(sum, item\)/);
 });
 
+test('Motion Spec compiler fails closed when declared contact intent cannot be fully resolved',()=>{
+  assert.match(clipSource,/motion_contact_mapping_missing/);
+  assert.match(clipSource,/motion_contact_anchor_unresolved/);
+  assert.match(clipSource,/motion_phase_contact_unresolved/);
+  assert.match(clipSource,/missingPhaseContacts/);
+  assert.match(clipSource,/CONTACT_UNRESOLVED/);
+  assert.doesNotMatch(clipSource,/if \(!match\?\.object \|\| !anchor\) continue;/);
+});
+
 test('Motion Lab loads shared core and adapter before Motion Spec compiler',()=>{
   const coreIndex=bootstrapSource.indexOf('avatar_motion_intelligence_core');
   const adapterIndex=bootstrapSource.indexOf('motion_lab_intelligence_adapter');
