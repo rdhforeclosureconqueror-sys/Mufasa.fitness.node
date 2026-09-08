@@ -46,6 +46,8 @@
   function clear(panel){while(panel.firstChild)panel.removeChild(panel.firstChild);}
   function text(tag,value,className){const el=document.createElement(tag);if(className)el.className=className;el.textContent=String(value||'');return el;}
   function list(items,ordered=false){const root=document.createElement(ordered?'ol':'ul');(Array.isArray(items)?items:[items]).filter(Boolean).forEach(item=>root.appendChild(text('li',item)));return root;}
+  function normalizeName(value){return String(value||'').trim().toLowerCase().replace(/[\s_-]+/g,' ');}
+  function isPlaceholderLabel(value){const normalized=normalizeName(value);return !normalized||/^(exercise|current exercise|no exercise selected|select exercise|loading|ready|unknown)$/.test(normalized);}
 
   function setLoading(label){
     const panel=ensurePanel();
@@ -59,6 +61,7 @@
     const panel=ensurePanel();
     if(!panel)return;
     panel.dataset.state='fallback';
+    panel.removeAttribute('data-exercise-id');
     clear(panel);
     const head=document.createElement('div');head.className='weg-head';head.append(text('h3',`How to perform ${label||'this exercise'}`),text('span','Guidance fallback','weg-badge'));panel.append(head);
     panel.append(text('p','Technique details could not be loaded here. Do not guess at an unfamiliar movement; review the Exercise Hub before continuing.'));
@@ -67,7 +70,7 @@
   }
 
   function addMedia(panel,exercise){
-    const images=exercise?.media?.illustrations||[];
+    const images=[...(exercise?.media?.illustrations||[])];
     if(!images.length&&exercise?.media?.thumbnail)images.push(exercise.media.thumbnail);
     if(!images.length)return;
     const media=document.createElement('div');media.className='weg-media';
@@ -117,29 +120,44 @@
     return result.payload?.data??result.payload;
   }
 
+  function deterministicCatalogMatch(rows,label){
+    const target=normalizeName(label);
+    return rows.find(item=>{
+      const names=[item?.name,item?.displayName,item?.exerciseId].map(normalizeName).filter(Boolean);
+      return names.includes(target);
+    })||null;
+  }
+
   async function resolve(label){
     const clean=String(label||'').trim();
-    if(!clean)return;
+    if(isPlaceholderLabel(clean)){
+      const generation=++state.requestGeneration;
+      state.label=clean||null;state.exerciseId=null;state.status='fallback';state.lastError='exercise_label_not_resolvable';
+      setFallback(clean,state.lastError);
+      return generation;
+    }
     const generation=++state.requestGeneration;
-    state.label=clean;state.status='loading';state.lastError=null;setLoading(clean);
+    state.label=clean;state.exerciseId=null;state.status='loading';state.lastError=null;setLoading(clean);
     try{
       const catalog=await api(`/api/me/exercises?query=${encodeURIComponent(clean)}&limit=12&offset=0`);
       if(generation!==state.requestGeneration)return;
       const rows=Array.isArray(catalog?.exercises)?catalog.exercises:[];
-      const exact=rows.find(x=>String(x.name||x.displayName||'').trim().toLowerCase()===clean.toLowerCase())||rows[0];
-      if(!exact?.exerciseId)throw new Error('exercise_not_found');
+      const exact=deterministicCatalogMatch(rows,clean);
+      if(!exact?.exerciseId)throw new Error('exercise_exact_match_not_found');
       const exercise=await api(`/api/me/exercises/${encodeURIComponent(exact.exerciseId)}`);
       if(generation!==state.requestGeneration)return;
+      const canonicalNames=[exercise?.name,exercise?.displayName,exercise?.exerciseId].map(normalizeName).filter(Boolean);
+      if(!canonicalNames.includes(normalizeName(clean)))throw new Error('exercise_identity_mismatch');
       state.exerciseId=exercise.exerciseId;state.status='ready';renderExercise(exercise,clean);
     }catch(error){
       if(generation!==state.requestGeneration)return;
-      state.status='fallback';state.lastError=error?.message||String(error);setFallback(clean,state.lastError);
+      state.exerciseId=null;state.status='fallback';state.lastError=error?.message||String(error);setFallback(clean,state.lastError);
       console.warn('[WORKOUT_EXERCISE_GUIDANCE]',{label:clean,reason:state.lastError});
     }
   }
 
   function currentLabel(){return document.getElementById('exerciseLabel')?.textContent?.trim()||'';}
-  function sync(){const label=currentLabel();if(label&&label!==state.label)resolve(label);}
+  function sync(){const label=currentLabel();if(label!==state.label)resolve(label);}
 
   function boot(){
     installStyles();ensurePanel();sync();
