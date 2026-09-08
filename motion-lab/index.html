@@ -18,15 +18,16 @@
   <section><h2>Loaded motion</h2><dl id="motionDiagnostics"><dt>Motion</dt><dd>none</dd></dl><p class="measurement">Native playback uses the embedded clip on its own skeleton without renaming or retargeting. Push-up, squat, and lunge values are development engineering references, not medically or biomechanically authoritative.</p></section>
 
   <section id="poseEditorPanel"><h2>Pose Editor / Motion Authoring</h2>
-    <p class="measurement">Make small pose corrections without editing source code. Endpoint moves use shared IK so the hip/knee/ankle or shoulder/elbow/wrist chain follows naturally. Adjustments are preview-only until exported.</p>
-    <div class="controls">
+    <p class="measurement">Make small pose corrections while watching the live avatar. Endpoint moves use shared IK so the hip/knee/ankle or shoulder/elbow/wrist chain follows naturally. Adjustments are preview-only until exported.</p>
+    <div id="poseEditorLiveViewer" aria-label="Live Pose Editor avatar viewer"></div>
+    <div class="controls pose-editor-controls">
       <label>Phase <select id="poseEditorPhase" disabled></select></label>
       <button id="poseEditorLoadPhase" disabled>Load Phase for Editing</button>
       <label>Body part <select id="poseEditorTarget" disabled></select></label>
       <label>Mode <select id="poseEditorMode" disabled><option value="move">Move</option><option value="rotate">Rotate</option></select></label>
-      <label>Axis <select id="poseEditorAxis" disabled><option value="x">X — forward/back</option><option value="y">Y — up/down</option><option value="z">Z — left/right</option></select></label>
+      <label>Direction <select id="poseEditorAxis" disabled><option value="forward">Forward / Back</option><option value="up">Up / Down</option><option value="lateral">Left / Right</option></select></label>
       <label>Step <select id="poseEditorStep" disabled><option value="tiny">Tiny — 0.25 in / 1°</option><option value="small" selected>Small — 1 in / 5°</option><option value="medium">Medium — 5 in / 10°</option></select></label>
-      <button id="poseEditorMinus" disabled>−</button><button id="poseEditorPlus" disabled>+</button>
+      <button id="poseEditorMinus" disabled aria-label="Move or rotate negative">−</button><button id="poseEditorPlus" disabled aria-label="Move or rotate positive">+</button>
     </div>
     <p id="poseEditorHelp" class="measurement">Load a generated Motion Spec to begin.</p>
     <p id="poseEditorStatus" class="measurement" role="status">Pose Editor waiting for a generated motion.</p>
@@ -49,6 +50,6 @@
   </div></section>
   <section class="grid"><div><h2>Diagnostics</h2><table><thead><tr><th>Stage</th><th>Status</th><th>Elapsed</th><th>Detail</th></tr></thead><tbody id="stages"><tr><td>Route Gate</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Feature Flag</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>WebGL Capability</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Three Dependency</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Session Create</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Renderer Init</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Render Loop</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Context Status</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Cleanup</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Repeated Lifecycle</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>GLTF Loader</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Draco</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Avatar Asset</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Skeleton</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Animation Clip</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Anatomy Asset</td><td>NOT RUN</td><td>—</td><td>—</td></tr><tr><td>Muscle Metadata</td><td>NOT RUN</td><td>—</td><td>—</td></tr></tbody></table></div>
   <div><h2>Owned lifecycle resources</h2><dl id="resources"></dl><p class="measurement">Counts cover resources owned by DisposableMotionSession, not every browser listener.</p><h2>Page lifecycle</h2><dl id="pageLifecycle"></dl></div></section>
-  <section><h2>Motion viewer</h2><p id="viewerStatus" class="measurement" role="status">No renderer is active. Initialize Runtime, then start a session.</p><div id="viewer"></div></section>
+  <section id="motionViewerSection"><h2>Motion viewer</h2><p id="viewerStatus" class="measurement" role="status">No renderer is active. Initialize Runtime, then start a session.</p><div id="viewer"></div></section>
   <section><h2>Bounded event history</h2><ol id="history"></ol></section>
 </main><script src="/dev/motion-lab-assets/motion-lab-pose-editor-preview-guard.js" defer></script><script src="/dev/motion-lab-bootstrap.js" defer></script></body></html>
