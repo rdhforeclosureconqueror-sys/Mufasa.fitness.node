@@ -27,6 +27,17 @@ test('segment-length constraint works in 3D without changing a valid chain', () 
   nearly(Core.distance(proximal, corrected.point), 5);
 });
 
+test('mixed 2D and 3D segment inputs fail closed instead of manufacturing depth', () => {
+  const result = Core.constrainSegmentLength(
+    { x: 0, y: 0 },
+    { x: 0, y: 10, z: 3 },
+    5,
+    { toleranceRatio: 0.01 }
+  );
+  assert.equal(result.status, 'DIMENSION_MISMATCH');
+  assert.equal(Number.isNaN(Core.distance({ x: 0, y: 0 }, { x: 0, y: 10, z: 3 })), true);
+});
+
 test('contact anchors correct bounded drift and release implausible drift', () => {
   const anchor = { x: 0, y: 0, z: 0 };
   const corrected = Core.applyContactAnchor({ x: 4, y: 0, z: 0 }, anchor, 100);
@@ -35,6 +46,15 @@ test('contact anchors correct bounded drift and release implausible drift', () =
 
   const released = Core.applyContactAnchor({ x: 30, y: 0, z: 0 }, anchor, 100);
   assert.equal(released.status, 'RELEASED_EXCESS_DRIFT');
+});
+
+test('contact anchors reject mixed dimensions instead of assuming missing Z is zero', () => {
+  const result = Core.applyContactAnchor(
+    { x: 0.04, y: 0 },
+    { x: 0, y: 0, z: 0 },
+    100
+  );
+  assert.equal(result.status, 'DIMENSION_MISMATCH');
 });
 
 test('two-bone IK preserves calibrated chain lengths in 2D and 3D', () => {
@@ -63,6 +83,18 @@ test('two-bone IK preserves calibrated chain lengths in 2D and 3D', () => {
   nearly(Core.distance(threeD.point, { x: 4, y: 0, z: 2 }), 4);
 });
 
+test('two-bone IK rejects mixed 2D/3D chains', () => {
+  const mixed = Core.solveTwoBoneChain(
+    { x: 0, y: 0 },
+    { x: 3, y: 4 },
+    { x: 6, y: 0, z: 1 },
+    5,
+    5,
+    { bendHint: { x: 3, y: 4 } }
+  );
+  assert.equal(mixed.status, 'DIMENSION_MISMATCH');
+});
+
 test('stationary-lunge style dual contacts produce one bounded root correction instead of foot drift', () => {
   const result = Core.solveRootAnchorCorrection([
     { id: 'left_front_foot', current: { x: 0.04, y: 0, z: 0 }, anchor: { x: 0, y: 0, z: 0 } },
@@ -71,6 +103,17 @@ test('stationary-lunge style dual contacts produce one bounded root correction i
   assert.equal(result.status, 'CORRECTION_REQUIRED');
   assert.equal(result.contactCount, 2);
   assert.ok(Math.hypot(result.delta.x, result.delta.y, result.delta.z) <= 0.1000001);
+});
+
+test('multi-contact root correction fails closed when any contact mixes dimensions', () => {
+  const result = Core.solveRootAnchorCorrection([
+    { id: 'front', current: { x: 0.04, y: 0 }, anchor: { x: 0, y: 0 } },
+    { id: 'rear', current: { x: -1.92, y: 0.03 }, anchor: { x: -2, y: 0, z: 0 } }
+  ]);
+  assert.equal(result.status, 'DIMENSION_MISMATCH');
+  assert.equal(result.delta.x, 0);
+  assert.equal(result.delta.y, 0);
+  assert.equal(result.delta.z, 0);
 });
 
 test('yaw intent rejects fake depth and clamps rest-relative turn intent', () => {
@@ -94,5 +137,17 @@ test('kinematic validator reports the first violated constraint', () => {
   });
   assert.equal(result.status, 'FAILED');
   assert.equal(result.firstFailure.type, 'SEGMENT_LENGTH');
+  assert.equal(result.firstFailure.id, 'left_thigh');
+});
+
+test('kinematic validator exposes dimensional mismatch as the first failing boundary', () => {
+  const result = Core.validateKinematicPose({
+    segmentConstraints: [
+      { id: 'left_thigh', proximal: { x: 0, y: 0 }, distal: { x: 0, y: 10, z: 1 }, targetLength: 10 }
+    ],
+    contacts: []
+  });
+  assert.equal(result.status, 'FAILED');
+  assert.equal(result.firstFailure.type, 'SEGMENT_DIMENSION_MISMATCH');
   assert.equal(result.firstFailure.id, 'left_thigh');
 });
