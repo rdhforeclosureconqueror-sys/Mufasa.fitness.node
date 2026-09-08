@@ -161,7 +161,7 @@
 
   function install() {
     const save = el('poseEditorSaveDraft');
-    if (!save) return null;
+    if (!save || !editor()?.getActiveSession) return null;
     if (save.dataset.authoringDraftStoreWired !== '1') {
       save.dataset.authoringDraftStoreWired = '1';
       save.addEventListener('click', saveDraft);
@@ -169,7 +169,7 @@
       el('poseEditorDeleteDraft')?.addEventListener('click', deleteDraft);
     }
     updateButtons();
-    root.setInterval?.(updateButtons, 1000);
+    if (!root.__motionLabAuthoringDraftTimer) root.__motionLabAuthoringDraftTimer = root.setInterval?.(updateButtons, 1000);
     publish({ status: 'installed', firstFailingBoundary: null });
     return root.PocketPTMotionLabAuthoringDraftStore;
   }
@@ -184,4 +184,11 @@
     readDraft: readRecord,
     snapshot: () => lastSnapshot
   });
+
+  function autoInstall(attempt = 0) {
+    if (install()) return;
+    if (attempt < 80) root.setTimeout?.(() => autoInstall(attempt + 1), 250);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => autoInstall(), { once: true });
+  else autoInstall();
 })(window, document);
