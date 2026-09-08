@@ -1,7 +1,7 @@
 (function initMotionLabPhaseAuthoring(root, document) {
   'use strict';
 
-  const VERSION = '1.0.0-exact-phase-authoring';
+  const VERSION = '1.0.1-exact-phase-authoring-preview-truth';
   let installed = false;
   let lastSample = Object.freeze({ status: 'idle', phaseId: null, time: null, firstFailingBoundary: null });
 
@@ -73,6 +73,13 @@
     const button = oldButton.cloneNode(true);
     button.dataset.exactPhaseAuthoring = 'true';
     oldButton.replaceWith(button);
+
+    const truthGuard = root.PocketPTMotionLabPoseEditorPreviewGuard;
+    if (!truthGuard?.install?.()) {
+      setStatus('Exact phase authoring could not preserve the preview-truth guard.', 'failed');
+      return false;
+    }
+
     button.addEventListener('click', function () {
       const phaseId = document.getElementById('poseEditorPhase')?.value;
       samplePhase(phaseId);

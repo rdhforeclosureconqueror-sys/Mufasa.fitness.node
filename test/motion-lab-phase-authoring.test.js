@@ -19,6 +19,13 @@ function fakeButton() {
   };
 }
 
+function truthGuard() {
+  return {
+    installCalls: 0,
+    install() { this.installCalls += 1; return true; }
+  };
+}
+
 test('phase authoring is loaded after Pose Editor and before adjusted preview persistence', () => {
   const editor = bootstrap.indexOf('motion-lab-pose-editor.js');
   const phase = bootstrap.indexOf('motion-lab-phase-authoring.js');
@@ -36,34 +43,24 @@ test('exact phase sampler forces the selected action time to the requested phase
   const status = { textContent: '', dataset: {} };
   let updateCalls = 0;
   const action = { enabled: false, paused: false, time: 0, play() { this.played = true; } };
-  const mixer = {
-    setTime() {},
-    update(delta) { assert.equal(delta, 0); updateCalls += 1; }
-  };
+  const mixer = { setTime() {}, update(delta) { assert.equal(delta, 0); updateCalls += 1; } };
   const session = {
-    action,
-    mixer,
+    action, mixer,
     motionSpec: { durationSeconds: 10, phases: [{ id: 'split_plant', normalizedTime: 0.25 }] },
-    avatar: { updateMatrixWorld() {} },
-    pause() {}
+    avatar: { updateMatrixWorld() {} }, pause() {}
   };
   const editor = {
     getActiveSession() { return session; },
-    samplePhase(id) {
-      assert.equal(id, 'split_plant');
-      session.mixer.setTime(2.5);
-      return { status: 'ready', phaseId: id, time: 2.5 };
-    }
+    samplePhase(id) { assert.equal(id, 'split_plant'); session.mixer.setTime(2.5); return { status: 'ready', phaseId: id, time: 2.5 }; }
   };
-  const document = {
-    getElementById(id) {
-      if (id === 'poseEditorLoadPhase') return button.replacement || button;
-      if (id === 'poseEditorPhase') return select;
-      if (id === 'poseEditorStatus') return status;
-      return null;
-    }
-  };
-  const window = { PocketPTMotionLabPoseEditor: editor };
+  const document = { getElementById(id) {
+    if (id === 'poseEditorLoadPhase') return button.replacement || button;
+    if (id === 'poseEditorPhase') return select;
+    if (id === 'poseEditorStatus') return status;
+    return null;
+  } };
+  const guard = truthGuard();
+  const window = { PocketPTMotionLabPoseEditor: editor, PocketPTMotionLabPoseEditorPreviewGuard: guard };
   vm.runInNewContext(source, { window, document, Object, console });
   const api = window.PocketPTMotionLabPhaseAuthoring;
   assert.ok(api.install());
@@ -74,16 +71,30 @@ test('exact phase sampler forces the selected action time to the requested phase
   assert.ok(updateCalls >= 2);
   assert.equal(api.snapshot().phaseId, 'split_plant');
   assert.equal(api.snapshot().time, 2.5);
+  assert.equal(guard.installCalls, 1);
 });
 
-test('install replaces the old Load Phase button so stale single-phase capture listeners cannot block phase choice', () => {
+test('replacement Load Phase button reinstalls the existing preview-truth guard before authoring', () => {
   const button = fakeButton();
+  const guard = truthGuard();
   const document = { getElementById(id) { return id === 'poseEditorLoadPhase' ? (button.replacement || button) : null; } };
-  const window = { PocketPTMotionLabPoseEditor: { samplePhase() {}, getActiveSession() { return null; } } };
+  const window = {
+    PocketPTMotionLabPoseEditor: { samplePhase() {}, getActiveSession() { return null; } },
+    PocketPTMotionLabPoseEditorPreviewGuard: guard
+  };
   vm.runInNewContext(source, { window, document, Object, console });
   const api = window.PocketPTMotionLabPhaseAuthoring;
   assert.ok(api.install());
   assert.ok(button.replacement, 'old button should be replaced');
   assert.equal(button.replacement.dataset.exactPhaseAuthoring, 'true');
+  assert.equal(guard.installCalls, 1, 'preview truth guard must be reattached to replacement button');
   assert.equal(typeof button.replacement.listeners.click, 'function');
+});
+
+test('phase authoring fails closed if replacement button cannot preserve preview truth', () => {
+  const button = fakeButton();
+  const document = { getElementById(id) { return id === 'poseEditorLoadPhase' ? (button.replacement || button) : null; } };
+  const window = { PocketPTMotionLabPoseEditor: { samplePhase() {}, getActiveSession() { return null; } } };
+  vm.runInNewContext(source, { window, document, Object, console });
+  assert.equal(window.PocketPTMotionLabPhaseAuthoring.install(), null);
 });
