@@ -69,6 +69,7 @@
       await loadDependency("avatar_motion_intelligence_core","/dev/motion-lab-assets/avatar-motion-intelligence-core.js");
       await loadDependency("motion_lab_intelligence_adapter","/dev/motion-lab-assets/motion-lab-intelligence-adapter.js");
       await loadDependency("motion_spec_clip","/dev/motion-lab-assets/motion-spec-clip.js");
+      await loadDependency("motion_intelligence_debug","/dev/motion-lab-assets/motion-lab-intelligence-debug.js");
       await loadDependency("disposable_motion_session","/dev/motion-lab-assets/disposable-motion-session.js");
       await loadDependency("rest_pose_guard","/dev/motion-lab-assets/motion-lab-rest-pose-guard.js");
       currentStage="rest_pose_guard_install";
@@ -112,6 +113,7 @@
       loaded=true;
       window.PocketPTMotionLabInspection?.wireButtons?.();
       window.PocketPTMotionLabLungePreview?.wire?.();
+      window.PocketPTMotionLabIntelligenceDebug?.render?.();
       publish({status:"ready",stage:"ready",source:null,code:null,message:null});
     } catch (error) {
       loaded=false;
