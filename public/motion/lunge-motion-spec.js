@@ -37,7 +37,8 @@
   }
 
   const STANDING = Object.freeze({ hipPitch: 0, spinePitch: 0, spine1Pitch: 0, leftThigh: 0, leftKnee: 0, leftAnkle: 0, rightThigh: 0, rightKnee: 0, rightAnkle: 0 });
-  const STEP = Object.freeze({ hipPitch: 1, spinePitch: -1, spine1Pitch: 0, leftThigh: 55, leftKnee: -18, leftAnkle: 6, rightThigh: -6, rightKnee: -4, rightAnkle: -1 });
+  const STEP_FORWARD = Object.freeze({ hipPitch: 1, spinePitch: -1, spine1Pitch: 0, leftThigh: 55, leftKnee: -18, leftAnkle: 6, rightThigh: -6, rightKnee: -4, rightAnkle: -1 });
+  const STEP_BACK = Object.freeze({ hipPitch: 1, spinePitch: -1, spine1Pitch: 0, leftThigh: 18, leftKnee: -10, leftAnkle: 4, rightThigh: -12, rightKnee: -4, rightAnkle: -1 });
   const SPLIT_TOP = Object.freeze({ hipPitch: 2, spinePitch: -1, spine1Pitch: 0, leftThigh: 40, leftKnee: -10, leftAnkle: 4, rightThigh: -34, rightKnee: -6, rightAnkle: -3 });
   const DESCENT = Object.freeze({ hipPitch: 3, spinePitch: -1, spine1Pitch: 0, leftThigh: 49, leftKnee: -50, leftAnkle: 9, rightThigh: -22, rightKnee: -50, rightAnkle: -5 });
   const BOTTOM = Object.freeze({ hipPitch: 3, spinePitch: -1, spine1Pitch: 0, leftThigh: 58, leftKnee: -88, leftAnkle: 12, rightThigh: -12, rightKnee: -92, rightAnkle: -7 });
@@ -71,7 +72,7 @@
       rearKneeIntent: "right rear knee tracks primarily downward toward the floor while the right forefoot remains planted",
       frontShinIntent: "front shin remains approximately vertical at the bottom rather than the knee continuing far forward",
       ascentIntent: "drive the pelvis mostly straight up to the same split-stance top without moving the planted feet",
-      exitIntent: "after the third ascent, end loaded-lunge contact authority, then transition the legs back toward neutral standing without forcing the split-stance rear-toe anchor onto the neutralizing exit pose",
+      exitIntent: "after the third ascent, end loaded-lunge contact authority and progressively neutralize both legs toward standing; the exit transition must not reuse the aggressive forward-step pose",
       torsoIntent: "remain tall with only small balance lean",
       armsPriority: "secondary-after-lower-body-approval"
     }),
@@ -135,7 +136,7 @@
     ]),
     phases: Object.freeze([
       phase("stand_start", "setup", 0.00, [0, 0, 0], STANDING, { contacts: [], movementIntent: "neutral standing; no lunge load" }),
-      phase("step_forward", "transition", 0.08, [0, 0, 0], STEP, { contacts: [], movementIntent: "left hip flexes strongly to send the left foot forward and create enough stride length for the later 90-degree bottom" }),
+      phase("step_forward", "transition", 0.08, [0, 0, 0], STEP_FORWARD, { contacts: [], movementIntent: "left hip flexes strongly to send the left foot forward and create enough stride length for the later 90-degree bottom" }),
       phase("split_plant", "position", 0.16, [0, 0, 0], SPLIT_TOP, { contacts: LOADED_CONTACTS, movementIntent: "plant a deliberately long left-forward split stance before descent" }),
       phase("rep1_descent", "eccentric", 0.25, [0, -0.07, 0], DESCENT, { contacts: LOADED_CONTACTS, trajectory: verticalDown }),
       phase("rep1_bottom", "isometric", 0.32, [0, -0.14, 0], BOTTOM, { contacts: LOADED_CONTACTS, trajectory: verticalDown, holdDurationSeconds: 0.12 }),
@@ -146,7 +147,7 @@
       phase("rep3_descent", "eccentric", 0.71, [0, -0.07, 0], DESCENT, { contacts: LOADED_CONTACTS, trajectory: verticalDown }),
       phase("rep3_bottom", "isometric", 0.78, [0, -0.14, 0], BOTTOM, { contacts: LOADED_CONTACTS, trajectory: verticalDown, holdDurationSeconds: 0.12 }),
       phase("rep3_top", "concentric", 0.86, [0, 0, 0], SPLIT_TOP, { contacts: LOADED_CONTACTS, trajectory: verticalUp }),
-      phase("step_back", "transition", 0.94, [0, 0, 0], STEP, { contacts: [], movementIntent: "loaded anchors released; return legs toward neutral standing without forcing split-stance IK" }),
+      phase("step_back", "transition", 0.94, [0, 0, 0], STEP_BACK, { contacts: [], movementIntent: "loaded anchors released; both legs move monotonically toward neutral standing instead of re-entering the forward-step pose" }),
       phase("stand_finish", "completion", 1.00, [0, 0, 0], STANDING, { contacts: [], movementIntent: "same neutral standing pose as start" })
     ])
   });
@@ -202,6 +203,12 @@
     }
     const exit = phases.find(item => item.id === "step_back");
     if ((exit?.contacts || []).length) errors.push("step_back must release loaded split-stance contact authority before returning toward standing");
+    const rep3Top = phases.find(item => item.id === "rep3_top");
+    const exitLeftHip = Math.abs(bonePitch(exit, "mixamorig:LeftUpLeg") || 0);
+    const topLeftHip = Math.abs(bonePitch(rep3Top, "mixamorig:LeftUpLeg") || 0);
+    const exitRearHip = Math.abs(bonePitch(exit, "mixamorig:RightUpLeg") || 0);
+    const topRearHip = Math.abs(bonePitch(rep3Top, "mixamorig:RightUpLeg") || 0);
+    if (!(exitLeftHip < topLeftHip) || !(exitRearHip < topRearHip)) errors.push("LUNGE_EXIT_GEOMETRY: step_back must reduce both hip offsets toward neutral instead of reusing the forward-step pose");
     for (const id of ["rep1_descent", "rep1_bottom", "rep2_descent", "rep2_bottom", "rep3_descent", "rep3_bottom"]) {
       const item = phases.find(candidatePhase => candidatePhase.id === id);
       if (item?.root?.positionOffset?.[0] !== 0 || item?.root?.positionOffset?.[2] !== 0) errors.push(`${id} must not author horizontal pelvis travel`);
