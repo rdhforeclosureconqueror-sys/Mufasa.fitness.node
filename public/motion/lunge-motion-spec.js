@@ -19,11 +19,7 @@
       kind,
       normalizedTime,
       interpolation: "quaternion_slerp",
-      root: Object.freeze({
-        positionOffset: freezeVec(rootPosition),
-        positionUnit: "avatar_height",
-        rotationOffsetEulerDegrees: freezeVec([pose.hipPitch, 0, 0])
-      }),
+      root: Object.freeze({ positionOffset: freezeVec(rootPosition), positionUnit: "avatar_height", rotationOffsetEulerDegrees: freezeVec([pose.hipPitch, 0, 0]) }),
       boneTargets: Object.freeze([
         target("mixamorig:Spine", [pose.spinePitch, 0, 0]),
         target("mixamorig:Spine1", [pose.spine1Pitch, 0, 0]),
@@ -39,24 +35,9 @@
     });
   }
 
-  // V2 keeps the front-leg geometry that passed owner visual review and changes the rear chain.
-  // Start: rear leg is longer/straighter so the right toe can establish on the ground plane.
-  // Bottom: rear femur becomes more vertical while the rear knee flexes toward ~90°, driving the knee down instead of swinging the foot up.
-  const SPLIT_START = Object.freeze({
-    hipPitch: 2, spinePitch: -1, spine1Pitch: 0,
-    leftThigh: 24, leftKnee: -16, leftAnkle: 7,
-    rightThigh: -30, rightKnee: -6, rightAnkle: -2
-  });
-  const MID = Object.freeze({
-    hipPitch: 4, spinePitch: -2, spine1Pitch: -1,
-    leftThigh: 42, leftKnee: -50, leftAnkle: 13,
-    rightThigh: -18, rightKnee: -48, rightAnkle: -6
-  });
-  const BOTTOM = Object.freeze({
-    hipPitch: 6, spinePitch: -3, spine1Pitch: -1,
-    leftThigh: 60, leftKnee: -82, leftAnkle: 18,
-    rightThigh: -8, rightKnee: -94, rightAnkle: -8
-  });
+  const SPLIT_START = Object.freeze({ hipPitch: 2, spinePitch: -1, spine1Pitch: 0, leftThigh: 24, leftKnee: -16, leftAnkle: 7, rightThigh: -30, rightKnee: -6, rightAnkle: -2 });
+  const MID = Object.freeze({ hipPitch: 4, spinePitch: -2, spine1Pitch: -1, leftThigh: 42, leftKnee: -50, leftAnkle: 13, rightThigh: -18, rightKnee: -48, rightAnkle: -6 });
+  const BOTTOM = Object.freeze({ hipPitch: 6, spinePitch: -3, spine1Pitch: -1, leftThigh: 60, leftKnee: -82, leftAnkle: 18, rightThigh: -8, rightKnee: -94, rightAnkle: -8 });
 
   const spec = Object.freeze({
     schemaVersion: 1,
@@ -84,28 +65,22 @@
     groundingPolicy: Object.freeze({
       mode: "split-stance-front-foot-rear-forefoot-anchor-lock",
       contacts: Object.freeze(["left_front_foot", "right_rear_forefoot"]),
-      contactBones: Object.freeze({
-        left_front_foot: "mixamorig:LeftFoot",
-        right_rear_forefoot: "mixamorig:RightToeBase"
-      }),
+      contactBones: Object.freeze({ left_front_foot: "mixamorig:LeftFoot", right_rear_forefoot: "mixamorig:RightToeBase" }),
       enforceContactAnchors: true,
+      enforceGeneratedIK: true,
+      kinematicChains: Object.freeze([
+        Object.freeze({ id: "left_leg", contact: "left_front_foot", rootBone: "mixamorig:LeftUpLeg", jointBone: "mixamorig:LeftLeg", endBone: "mixamorig:LeftFoot", contactBone: "mixamorig:LeftFoot" }),
+        Object.freeze({ id: "right_leg", contact: "right_rear_forefoot", rootBone: "mixamorig:RightUpLeg", jointBone: "mixamorig:RightLeg", endBone: "mixamorig:RightFoot", contactBone: "mixamorig:RightToeBase" })
+      ]),
       anchorPhaseId: "start",
-      anchorValidity: Object.freeze({
-        requiredGroundContacts: Object.freeze(["left_front_foot", "right_rear_forefoot"]),
-        rejectAirborneRearToe: true,
-        reviewRule: "Do not approve if the authored start pose establishes the right rear toe above the front-foot ground plane."
-      }),
+      anchorValidity: Object.freeze({ requiredGroundContacts: Object.freeze(["left_front_foot", "right_rear_forefoot"]), rejectAirborneRearToe: true, reviewRule: "Do not approve if the authored start pose establishes the right rear toe above the front-foot ground plane." }),
       rule: "Capture anchors from a valid split-stance start pose. Preserve the left whole foot and right toe/forefoot while the right rear knee descends toward the floor."
     }),
     synthesisBoundary: Object.freeze({
       method: "movement-lego-composition-with-split-stance-contact-constraints",
       copiedNamedLungeAnimation: false,
       sourcePrimitives: Object.freeze(["split_stance", "asymmetric_leg_loading", "bilateral_knee_flexion_extension", "rear_knee_descent", "root_descent_rise", "stable_ground_contact"]),
-      evidenceReferences: Object.freeze([
-        "/motion-sources/crouched-sneaking-left-reference.source.json",
-        "/motion-sources/kettlebell-swing-reference.source.json",
-        "/motion/transition-profiles/stand-to-plank.v1.json"
-      ]),
+      evidenceReferences: Object.freeze(["/motion-sources/crouched-sneaking-left-reference.source.json", "/motion-sources/kettlebell-swing-reference.source.json", "/motion/transition-profiles/stand-to-plank.v1.json"]),
       evidenceCaution: "The crouched-sneaking source is candidate split-stance evidence only and is explicitly not a canonical lunge. This motion is synthesized from neutral mechanics and coaching constraints.",
       unsupported: Object.freeze(["biomechanical ground truth", "production scoring thresholds", "individual anthropometric fit", "medical diagnosis"])
     }),
@@ -126,8 +101,15 @@
     for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder", "movementContractRef"]) if (candidate[field] == null) errors.push(`${field} is required`);
     if (!(candidate.durationSeconds > 0)) errors.push("durationSeconds must be positive");
     if (!candidate.groundingPolicy?.enforceContactAnchors) errors.push("lunge requires contact-anchor enforcement");
+    if (!candidate.groundingPolicy?.enforceGeneratedIK) errors.push("lunge requires generated two-bone IK enforcement");
     if (candidate.groundingPolicy?.anchorPhaseId !== "start") errors.push("lunge contact anchors must be established from authored split-stance start phase");
     if (!candidate.groundingPolicy?.anchorValidity?.rejectAirborneRearToe) errors.push("lunge must reject an airborne rear-toe start anchor");
+    const chains = Array.isArray(candidate.groundingPolicy?.kinematicChains) ? candidate.groundingPolicy.kinematicChains : [];
+    if (chains.length !== 2) errors.push("lunge requires front and rear leg kinematic chains");
+    for (const chain of chains) {
+      for (const field of ["id", "contact", "rootBone", "jointBone", "endBone", "contactBone"]) if (!chain[field]) errors.push(`kinematic chain ${field} is required`);
+      for (const bone of [chain.rootBone, chain.jointBone, chain.endBone, chain.contactBone]) if (bone && !bones.has(bone)) errors.push(`unknown kinematic chain bone ${bone}`);
+    }
     const phases = Array.isArray(candidate.phases) ? candidate.phases : [];
     const ids = phases.map(item => item.id);
     if (JSON.stringify(ids) !== JSON.stringify(candidate.phaseOrder || [])) errors.push("phaseOrder must match phases");
@@ -144,21 +126,7 @@
 
   function summary(candidate = spec) {
     const bottom = candidate.phases.find(item => item.id === "bottom");
-    return Object.freeze({
-      motionId: candidate.motionId,
-      version: candidate.version,
-      status: candidate.status,
-      durationSeconds: candidate.durationSeconds,
-      phaseOrder: Object.freeze(candidate.phaseOrder.slice()),
-      bottomRootDropAvatarHeights: Math.abs(bottom?.root?.positionOffset?.[1] || 0),
-      frontKneeTargetDegrees: candidate.movementContract.frontKneeBottomInsideAngleTargetDegrees,
-      rearKneeTargetDegrees: candidate.movementContract.rearKneeBottomInsideAngleTargetDegrees,
-      groundingMode: candidate.groundingPolicy.mode,
-      anchorPhaseId: candidate.groundingPolicy.anchorPhaseId,
-      rejectsAirborneRearToeAnchor: candidate.groundingPolicy.anchorValidity.rejectAirborneRearToe,
-      evidenceOnly: true,
-      requiresHumanMoveNetReview: true
-    });
+    return Object.freeze({ motionId: candidate.motionId, version: candidate.version, status: candidate.status, durationSeconds: candidate.durationSeconds, phaseOrder: Object.freeze(candidate.phaseOrder.slice()), bottomRootDropAvatarHeights: Math.abs(bottom?.root?.positionOffset?.[1] || 0), frontKneeTargetDegrees: candidate.movementContract.frontKneeBottomInsideAngleTargetDegrees, rearKneeTargetDegrees: candidate.movementContract.rearKneeBottomInsideAngleTargetDegrees, groundingMode: candidate.groundingPolicy.mode, anchorPhaseId: candidate.groundingPolicy.anchorPhaseId, generatedIK: Boolean(candidate.groundingPolicy.enforceGeneratedIK), kinematicChainCount: candidate.groundingPolicy.kinematicChains?.length || 0, rejectsAirborneRearToeAnchor: candidate.groundingPolicy.anchorValidity.rejectAirborneRearToe, evidenceOnly: true, requiresHumanMoveNetReview: true });
   }
 
   return Object.freeze({ CANONICAL_BONES, spec, validate, summary });
