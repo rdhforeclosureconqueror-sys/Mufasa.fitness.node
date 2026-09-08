@@ -18,6 +18,16 @@
   const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
   const dimensions = point => ['x', 'y', 'z'].filter(axis => finite(point?.[axis]));
 
+  function pointDimension(point) {
+    if (!point || !finite(point.x) || !finite(point.y)) return 0;
+    return finite(point.z) ? 3 : 2;
+  }
+
+  function sameDimensions(...points) {
+    const dims = points.filter(Boolean).map(pointDimension);
+    return dims.length > 0 && dims[0] >= 2 && dims.every(value => value === dims[0]);
+  }
+
   function clonePoint(point) {
     if (!point) return null;
     const out = { ...point };
@@ -26,11 +36,13 @@
   }
 
   function vector(from, to) {
-    return {
-      x: Number(to?.x || 0) - Number(from?.x || 0),
-      y: Number(to?.y || 0) - Number(from?.y || 0),
-      z: Number(to?.z || 0) - Number(from?.z || 0)
+    if (!sameDimensions(from, to)) return null;
+    const out = {
+      x: Number(to.x) - Number(from.x),
+      y: Number(to.y) - Number(from.y)
     };
+    if (pointDimension(from) === 3) out.z = Number(to.z) - Number(from.z);
+    return out;
   }
 
   function add(a, b) {
@@ -68,15 +80,18 @@
   }
 
   function distance(a, b) {
-    if (!a || !b || !finite(a.x) || !finite(a.y) || !finite(b.x) || !finite(b.y)) return NaN;
+    if (!sameDimensions(a, b)) return NaN;
     const dx = Number(a.x) - Number(b.x), dy = Number(a.y) - Number(b.y);
-    const dz = finite(a.z) && finite(b.z) ? Number(a.z) - Number(b.z) : 0;
+    const dz = pointDimension(a) === 3 ? Number(a.z) - Number(b.z) : 0;
     return Math.hypot(dx, dy, dz);
   }
 
   function constrainSegmentLength(proximal, distal, targetLength, options = {}) {
     const toleranceRatio = Number(options.toleranceRatio ?? DEFAULTS.segmentLengthToleranceRatio);
     const target = Number(targetLength);
+    if (!sameDimensions(proximal, distal)) {
+      return Object.freeze({ status: 'DIMENSION_MISMATCH', point: clonePoint(distal), observedLength: NaN, targetLength: target });
+    }
     const observed = distance(proximal, distal);
     if (!Number.isFinite(target) || target <= 0 || !Number.isFinite(observed) || observed <= DEFAULTS.epsilon) {
       return Object.freeze({ status: 'INVALID', point: clonePoint(distal), observedLength: observed, targetLength: target });
@@ -89,7 +104,7 @@
     if (!direction) return Object.freeze({ status: 'DEGENERATE', point: clonePoint(distal), observedLength: observed, targetLength: target, errorRatio });
     const corrected = add(proximal, scale(direction, target));
     const point = { ...distal, x: corrected.x, y: corrected.y };
-    if (finite(distal?.z) || finite(proximal?.z)) point.z = corrected.z;
+    if (pointDimension(proximal) === 3) point.z = corrected.z;
     return Object.freeze({ status: 'CORRECTED', point: Object.freeze(point), observedLength: observed, targetLength: target, errorRatio });
   }
 
@@ -98,6 +113,9 @@
     const correctionGain = clamp(options.correctionGain ?? DEFAULTS.anchorCorrectionGain, 0, 1);
     const correctionMinRatio = Number(options.correctionMinRatio ?? DEFAULTS.anchorCorrectionMinRatio);
     const scaleValue = Number(bodyScale);
+    if (!sameDimensions(point, anchor)) {
+      return Object.freeze({ status: 'DIMENSION_MISMATCH', point: clonePoint(point), drift: NaN });
+    }
     const drift = distance(point, anchor);
     if (!Number.isFinite(drift) || !Number.isFinite(scaleValue) || scaleValue <= DEFAULTS.epsilon) {
       return Object.freeze({ status: 'INVALID', point: clonePoint(point), drift });
@@ -136,9 +154,11 @@
 
   function solveTwoBoneChain(root, joint, end, length1, length2, options = {}) {
     const l1 = Number(length1), l2 = Number(length2), epsilon = Number(options.epsilon ?? DEFAULTS.epsilon);
+    const bendHint = options.bendHint || joint;
+    if (!sameDimensions(root, joint, end, bendHint)) return Object.freeze({ status: 'DIMENSION_MISMATCH' });
     if (![l1, l2].every(value => Number.isFinite(value) && value > epsilon)) return Object.freeze({ status: 'INVALID_LENGTHS' });
     const rootToEnd = vector(root, end), endDistance = magnitude(rootToEnd);
-    if (!Number.isFinite(endDistance) || endDistance <= epsilon) return Object.freeze({ status: 'DEGENERATE' });
+    if (!rootToEnd || !Number.isFinite(endDistance) || endDistance <= epsilon) return Object.freeze({ status: 'DEGENERATE' });
     if (endDistance > l1 + l2 + epsilon || endDistance < Math.abs(l1 - l2) - epsilon) {
       return Object.freeze({ status: 'UNREACHABLE', distance: endDistance });
     }
@@ -146,17 +166,21 @@
     const along = (l1 * l1 - l2 * l2 + endDistance * endDistance) / (2 * endDistance);
     const height = Math.sqrt(Math.max(0, l1 * l1 - along * along));
     const center = add(root, scale(direction, along));
-    const perpendicular = choosePerpendicular(direction, center, options.bendHint || joint, epsilon);
+    const perpendicular = choosePerpendicular(direction, center, bendHint, epsilon);
     if (!perpendicular) return Object.freeze({ status: 'DEGENERATE_BEND_PLANE' });
     const solved = add(center, scale(perpendicular, height));
     const point = { ...joint, x: solved.x, y: solved.y };
-    if (finite(root?.z) || finite(end?.z) || finite(joint?.z)) point.z = solved.z;
+    if (pointDimension(root) === 3) point.z = solved.z;
     const residual = Math.max(Math.abs(distance(root, point) - l1), Math.abs(distance(point, end) - l2));
     return Object.freeze({ status: 'SOLVED', point: Object.freeze(point), distance: endDistance, residual, lengths: Object.freeze([l1, l2]) });
   }
 
   function solveRootAnchorCorrection(contacts, options = {}) {
-    const usable = (contacts || []).filter(contact => contact?.current && contact?.anchor && Number.isFinite(distance(contact.current, contact.anchor)));
+    const candidates = (contacts || []).filter(contact => contact?.current && contact?.anchor);
+    if (candidates.some(contact => !sameDimensions(contact.current, contact.anchor))) {
+      return Object.freeze({ status: 'DIMENSION_MISMATCH', delta: Object.freeze({ x: 0, y: 0, z: 0 }), contactCount: candidates.length });
+    }
+    const usable = candidates.filter(contact => Number.isFinite(distance(contact.current, contact.anchor)));
     if (!usable.length) return Object.freeze({ status: 'NO_CONTACTS', delta: Object.freeze({ x: 0, y: 0, z: 0 }), contactCount: 0 });
     const delta = { x: 0, y: 0, z: 0 };
     for (const contact of usable) {
@@ -188,13 +212,15 @@
     for (const constraint of pose.segmentConstraints || []) {
       const observed = distance(constraint.proximal, constraint.distal);
       const target = Number(constraint.targetLength), tolerance = Number(constraint.toleranceRatio ?? DEFAULTS.segmentLengthToleranceRatio);
-      if (!Number.isFinite(observed) || !Number.isFinite(target) || target <= 0) failures.push({ type: 'SEGMENT_INVALID', id: constraint.id || null });
+      if (!sameDimensions(constraint.proximal, constraint.distal)) failures.push({ type: 'SEGMENT_DIMENSION_MISMATCH', id: constraint.id || null });
+      else if (!Number.isFinite(observed) || !Number.isFinite(target) || target <= 0) failures.push({ type: 'SEGMENT_INVALID', id: constraint.id || null });
       else if (Math.abs(observed - target) / target > tolerance) failures.push({ type: 'SEGMENT_LENGTH', id: constraint.id || null });
     }
     for (const contact of pose.contacts || []) {
       const drift = distance(contact.current, contact.anchor);
       const maxDrift = Number(contact.maxDrift ?? 0);
-      if (!Number.isFinite(drift)) failures.push({ type: 'CONTACT_INVALID', id: contact.id || null });
+      if (!sameDimensions(contact.current, contact.anchor)) failures.push({ type: 'CONTACT_DIMENSION_MISMATCH', id: contact.id || null });
+      else if (!Number.isFinite(drift)) failures.push({ type: 'CONTACT_INVALID', id: contact.id || null });
       else if (drift > maxDrift) failures.push({ type: 'CONTACT_DRIFT', id: contact.id || null, drift, maxDrift });
     }
     return Object.freeze({ status: failures.length ? 'FAILED' : 'PASS', failures: Object.freeze(failures.map(Object.freeze)), firstFailure: failures[0] ? Object.freeze({ ...failures[0] }) : null });
