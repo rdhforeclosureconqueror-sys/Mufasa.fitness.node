@@ -1,16 +1,12 @@
 (function initMotionLabDiagnosticConsolidator(root) {
   'use strict';
 
-  const BUILD = '2026-09-08-canonical-diagnostic-v1';
+  const BUILD = '2026-09-08-canonical-diagnostic-v2-pose-editor';
   let installed = false;
   let observer = null;
 
   function slug(value) {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
   function legacyDiagnosticsText() {
@@ -43,11 +39,37 @@
       || 'MOTION LAB — MOTION INTELLIGENCE DIAGNOSTICS\nStatus: UNAVAILABLE\nFirst failing boundary: MOTION_INTELLIGENCE_DIAGNOSTICS_UNAVAILABLE';
   }
 
+  function poseEditorText() {
+    const editor = root.PocketPTMotionLabPoseEditor;
+    const session = editor?.getActiveSession?.();
+    const adjustment = editor?.exportAdjustment?.();
+    const statusNode = root.document?.getElementById?.('poseEditorStatus');
+    const phase = root.document?.getElementById?.('poseEditorPhase')?.value || session?.currentMotionPhase?.() || null;
+    const target = root.document?.getElementById?.('poseEditorTarget')?.value || null;
+    const mode = root.document?.getElementById?.('poseEditorMode')?.value || null;
+    const axis = root.document?.getElementById?.('poseEditorAxis')?.value || null;
+    const clipName = session?.sessionClip?.name || null;
+    return [
+      'MOTION LAB — POSE EDITOR DIAGNOSTICS',
+      `Editor status: ${editor ? 'READY' : 'UNAVAILABLE'}`,
+      `Editor version: ${editor?.VERSION || '—'}`,
+      `Active session: ${session ? 'YES' : 'NO'}`,
+      `Motion ID: ${adjustment?.motionId || session?.motionSpec?.motionId || '—'}`,
+      `Phase: ${phase || '—'}`,
+      `Selected target: ${target || '—'}`,
+      `Mode / axis: ${mode || '—'} / ${axis || '—'}`,
+      `Pending edits: ${Array.isArray(adjustment?.edits) ? adjustment.edits.length : 0}`,
+      `Adjusted preview clip: ${clipName && /POSE EDIT PREVIEW/.test(clipName) ? 'YES' : 'NO'}`,
+      `Editor message: ${statusNode?.textContent?.trim() || '—'}`
+    ].join('\n');
+  }
+
   function combinedDiagnosticsText() {
     return [
       `MOTION LAB DIAGNOSTIC — CONSOLIDATED\nDiagnostic UI build: ${BUILD}`,
       legacyDiagnosticsText(),
       intelligenceText(),
+      poseEditorText(),
       'BOOTSTRAP DELIVERY',
       bootstrapText()
     ].join('\n\n');
@@ -61,13 +83,8 @@
   function moveIntelligenceIntoCanonicalDiagnostics() {
     const column = diagnosticsColumn();
     if (!column) return;
-
     let marker = root.document.getElementById('motionDiagnosticUiBuild');
-    if (!marker) {
-      marker = root.document.createElement('p');
-      marker.id = 'motionDiagnosticUiBuild';
-      marker.className = 'measurement';
-    }
+    if (!marker) { marker = root.document.createElement('p'); marker.id = 'motionDiagnosticUiBuild'; marker.className = 'measurement'; }
     marker.textContent = `Diagnostic UI build: ${BUILD}`;
     const table = root.document.getElementById('stages')?.closest?.('table');
     if (table && marker.parentElement !== column) table.insertAdjacentElement('afterend', marker);
@@ -77,10 +94,8 @@
     const pre = root.document.getElementById('motionIntelligenceDiagnosticsText');
     const oldCopy = root.document.getElementById('copyMotionIntelligenceDiagnostics');
     const oldControls = oldCopy?.parentElement;
-
     if (oldCopy) oldCopy.remove();
     if (oldControls && oldControls.childElementCount === 0) oldControls.remove();
-
     if (heading && heading.parentElement !== column) column.appendChild(heading);
     if (host && host.parentElement !== column) column.appendChild(host);
     if (pre && pre.parentElement !== column) column.appendChild(pre);
@@ -109,11 +124,8 @@
       button.textContent = 'Copied Full Diagnostic';
     } catch (_) {
       if (pre) {
-        const range = root.document.createRange();
-        range.selectNodeContents(pre);
-        const selection = root.getSelection?.();
-        selection?.removeAllRanges?.();
-        selection?.addRange?.(range);
+        const range = root.document.createRange(); range.selectNodeContents(pre);
+        const selection = root.getSelection?.(); selection?.removeAllRanges?.(); selection?.addRange?.(range);
       }
       button.textContent = 'Select / Copy Full Diagnostic';
     }
@@ -127,9 +139,7 @@
     if (button.dataset.motionDiagnosticConsolidated === 'true') return true;
     button.dataset.motionDiagnosticConsolidated = 'true';
     button.addEventListener('click', function canonicalDiagnosticCopy(event) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      copyCombined(button);
+      event.preventDefault(); event.stopImmediatePropagation(); copyCombined(button);
     }, true);
     return true;
   }
@@ -142,12 +152,8 @@
   }
 
   function install() {
-    if (installed) {
-      refresh();
-      return api;
-    }
-    installed = true;
-    refresh();
+    if (installed) { refresh(); return api; }
+    installed = true; refresh();
     root.addEventListener?.('pocketpt:motion-intelligence-diagnostics', refresh);
     const stages = root.document?.getElementById?.('stages');
     if (stages && typeof root.MutationObserver === 'function') {
@@ -158,11 +164,12 @@
   }
 
   const api = Object.freeze({
-    VERSION: '1.0.0-canonical-diagnostic-consolidation',
+    VERSION: '1.1.0-canonical-diagnostic-pose-editor',
     BUILD,
     install,
     refresh,
     legacyDiagnosticsText,
+    poseEditorText,
     combinedDiagnosticsText
   });
 
