@@ -5,69 +5,112 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const Lunge = require('../public/motion/lunge-motion-spec.js');
-const contract = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/motion/contracts/stationary-lunge-left.v1.json'), 'utf8'));
+const contract = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/motion/contracts/stationary-lunge-left.v2.json'), 'utf8'));
 
 function phase(id) { return Lunge.spec.phases.find(item => item.id === id); }
 function rot(item, bone) { return item.boneTargets.find(target => target.bone === bone).rotationOffsetEulerDegrees[0]; }
 
-test('stationary left lunge v2 validates and stays development-only', () => {
+test('stationary left lunge movement definition v2 validates and stays development-only', () => {
   const result = Lunge.validate(Lunge.spec);
   assert.equal(result.valid, true, result.errors.join('\n'));
   assert.equal(Lunge.spec.version, 2);
-  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_synthesized_engineering_v2_rear_toe_grounded');
+  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_movement_definition_v2_step_in_three_reps');
   assert.equal(Lunge.spec.status, 'development-test-only');
   assert.equal(Lunge.spec.exerciseId, 'stationary_lunge_left');
+  assert.equal(Lunge.spec.loop, false);
+  assert.equal(Lunge.spec.movementContractRef, '/motion/contracts/stationary-lunge-left.v2.json');
   assert.equal(Lunge.spec.synthesisBoundary.copiedNamedLungeAnimation, false);
 });
 
-test('lunge v2 preserves asymmetric split stance and returns to the same stance', () => {
-  const start = phase('start');
-  const finish = phase('finish');
-  assert.ok(rot(start, 'mixamorig:LeftUpLeg') > 0);
-  assert.ok(rot(start, 'mixamorig:RightUpLeg') < 0);
+test('lunge v2 starts and finishes in the same neutral standing pose', () => {
+  const start = phase('stand_start');
+  const finish = phase('stand_finish');
+  assert.ok(start);
+  assert.ok(finish);
   assert.deepEqual(start.root, finish.root);
   assert.deepEqual(start.boneTargets, finish.boneTargets);
+  assert.deepEqual(start.contacts, []);
+  assert.deepEqual(finish.contacts, []);
+  assert.equal(rot(start, 'mixamorig:LeftUpLeg'), 0);
+  assert.equal(rot(start, 'mixamorig:RightUpLeg'), 0);
 });
 
-test('lunge v2 makes rear toe contact a hard authored-anchor requirement', () => {
-  assert.equal(Lunge.spec.groundingPolicy.enforceContactAnchors, true);
-  assert.equal(Lunge.spec.groundingPolicy.anchorPhaseId, 'start');
-  assert.equal(Lunge.spec.groundingPolicy.contactBones.left_front_foot, 'mixamorig:LeftFoot');
-  assert.equal(Lunge.spec.groundingPolicy.contactBones.right_rear_forefoot, 'mixamorig:RightToeBase');
-  assert.equal(Lunge.spec.groundingPolicy.anchorValidity.rejectAirborneRearToe, true);
-  assert.match(Lunge.spec.groundingPolicy.anchorValidity.reviewRule, /right rear toe above the front-foot ground plane/i);
-  for (const item of Lunge.spec.phases) assert.deepEqual(item.contacts, ['left_front_foot', 'right_rear_forefoot']);
+test('lunge v2 explicitly steps forward before establishing split-stance anchors', () => {
+  const step = phase('step_forward');
+  const plant = phase('split_plant');
+  assert.ok(rot(step, 'mixamorig:LeftUpLeg') > 0);
+  assert.ok(rot(plant, 'mixamorig:LeftUpLeg') > 0);
+  assert.ok(rot(plant, 'mixamorig:RightUpLeg') < 0);
+  assert.deepEqual(step.contacts, []);
+  assert.deepEqual(plant.contacts, ['left_front_foot', 'right_rear_forefoot']);
+  assert.equal(Lunge.spec.groundingPolicy.anchorPhaseId, 'split_plant');
 });
 
-test('lunge v2 keeps front-leg behavior while reorienting rear chain for knee-down motion', () => {
-  const start = phase('start');
-  const bottom = phase('bottom');
-  assert.ok(bottom.root.positionOffset[1] <= -0.22);
-  assert.ok(rot(bottom, 'mixamorig:LeftLeg') < rot(start, 'mixamorig:LeftLeg'));
-  assert.ok(rot(bottom, 'mixamorig:RightLeg') <= -90);
-  assert.ok(Math.abs(rot(bottom, 'mixamorig:RightUpLeg')) < Math.abs(rot(start, 'mixamorig:RightUpLeg')));
-  assert.ok(rot(start, 'mixamorig:RightLeg') > -10, 'rear knee should begin nearly extended so toe can establish low');
+test('lunge v2 authors exactly three planted down-up repetitions', () => {
+  assert.equal(Lunge.spec.repetitionPlan.count, 3);
+  assert.deepEqual(Lunge.spec.repetitionPlan.bottomPhases, ['rep1_bottom', 'rep2_bottom', 'rep3_bottom']);
+  const loaded = [
+    'rep1_descent','rep1_bottom','rep1_top',
+    'rep2_descent','rep2_bottom','rep2_top',
+    'rep3_descent','rep3_bottom','rep3_top'
+  ];
+  for (const id of loaded) assert.deepEqual(phase(id).contacts, ['left_front_foot', 'right_rear_forefoot']);
 });
 
-test('canonical lunge contract explicitly requires grounded right toe and rear-knee descent', () => {
-  assert.equal(contract.setup.stance.frontSide, 'left');
-  assert.equal(contract.setup.contacts.flightPermitted, false);
-  assert.match(contract.setup.contacts.rearFoot.rule, /right_toe_ball_of_foot_planted/);
-  assert.match(contract.setup.contacts.anchorEstablishmentRule, /airborne rear-toe anchor is invalid/i);
+test('loaded lunge trajectory is vertical-dominant instead of forward-driven', () => {
+  assert.equal(Lunge.spec.trajectoryPolicy.loadedDescent.direction, 'down');
+  assert.equal(Lunge.spec.trajectoryPolicy.loadedDescent.dominantAxis, 'vertical');
+  assert.equal(Lunge.spec.trajectoryPolicy.loadedAscent.direction, 'up');
+  for (const id of ['rep1_descent','rep1_bottom','rep2_descent','rep2_bottom','rep3_descent','rep3_bottom']) {
+    const item = phase(id);
+    assert.equal(item.root.positionOffset[0], 0, `${id} should not move pelvis laterally`);
+    assert.equal(item.root.positionOffset[2], 0, `${id} should not move pelvis forward/back`);
+    assert.ok(item.root.positionOffset[1] < 0, `${id} should move pelvis down`);
+  }
+});
+
+test('each bottom reduces root drop from the over-deep previous version and targets lunge geometry', () => {
+  for (const id of ['rep1_bottom','rep2_bottom','rep3_bottom']) {
+    const bottom = phase(id);
+    assert.equal(bottom.root.positionOffset[1], -0.14);
+    assert.ok(rot(bottom, 'mixamorig:LeftLeg') <= -70);
+    assert.ok(rot(bottom, 'mixamorig:RightLeg') <= -80);
+  }
+  assert.equal(Lunge.spec.movementContract.frontKneeBottomInsideAngleTargetDegrees, 90);
+  assert.equal(Lunge.spec.movementContract.rearKneeBottomInsideAngleTargetDegrees, 90);
+  assert.match(Lunge.spec.movementContract.frontShinIntent, /vertical/i);
+});
+
+test('step back releases the front anchor only after the third repetition', () => {
+  const rep3Top = phase('rep3_top');
+  const stepBack = phase('step_back');
+  assert.deepEqual(rep3Top.contacts, ['left_front_foot', 'right_rear_forefoot']);
+  assert.deepEqual(stepBack.contacts, ['right_rear_forefoot']);
+  assert.ok(stepBack.normalizedTime > rep3Top.normalizedTime);
+});
+
+test('canonical lunge v2 contract describes stand step plant vertical reps and return', () => {
+  assert.equal(contract.schemaVersion, 2);
+  assert.equal(contract.sequence.start, 'neutral_standing');
+  assert.equal(contract.sequence.loadedRepetitions, 3);
+  assert.equal(contract.setup.contacts.anchorEstablishmentPhase, 'split_plant');
+  assert.equal(contract.setup.contacts.anchorReleasePhase, 'step_back');
   assert.equal(contract.numericalTargets.frontKneeInsideAngleDegrees.bottomTarget, 90);
   assert.equal(contract.numericalTargets.rearKneeInsideAngleDegrees.bottomTarget, 90);
-  assert.ok(contract.hardConstraints.includes('rear_knee_descends_toward_floor'));
-  assert.ok(contract.hardConstraints.includes('valid_grounded_contact_anchor_establishment'));
-  assert.ok(contract.compensationSignals.some(signal => signal.id === 'rear_leg_swinging'));
-  assert.ok(contract.coachCues.some(cue => /right rear knee down toward the floor/i.test(cue)));
-  assert.match(contract.sourceEvidenceBoundary, /not treated as a canonical lunge/i);
+  assert.equal(contract.trajectory.loadedDescent.dominantDirection, 'vertical_down');
+  assert.ok(contract.hardConstraints.includes('step_left_foot_forward_before_loading'));
+  assert.ok(contract.hardConstraints.includes('three_loaded_repetitions'));
+  assert.ok(contract.hardConstraints.includes('finish_in_same_neutral_standing_pose'));
+  assert.ok(contract.coachCues.some(cue => /drive the body straight down/i.test(cue)));
+  assert.ok(contract.compensationSignals.some(signal => signal.id === 'pelvis_forward_drift'));
 });
 
-test('motion compiler still supports authored anchor phase needed by split stance', () => {
+test('motion compiler supports phase-aware contacts around the split anchor', () => {
   const compiler = fs.readFileSync(path.join(ROOT, 'public/motion/motion-spec-clip.js'), 'utf8');
   assert.match(compiler, /anchorPhaseId/);
   assert.match(compiler, /applyAuthoredPhasePose\(anchorPhase\)/);
-  assert.match(compiler, /motion_contact_anchor_phase_missing/);
+  assert.match(compiler, /phase\.contacts\?\.length/);
+  assert.match(compiler, /phase\.contacts\.includes\(chain\.contact\)/);
 });
 
 test('Motion Lab still exposes synthesized lunge through protected asset graph', () => {
