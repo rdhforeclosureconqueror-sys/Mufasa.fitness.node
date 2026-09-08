@@ -53,7 +53,7 @@
   }
 
   async function initialize() {
-    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabPoseEditor?.wireUi?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionIntelligenceDiagnostics?.render?.(); window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.(); return existing; }
+    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabPoseEditor?.wireUi?.(); window.PocketPTMotionLabPhaseAuthoring?.install?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionIntelligenceDiagnostics?.render?.(); window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.(); return existing; }
     document.getElementById("initializeRuntime").disabled=true;
     publish({status:"starting",stage:"bootstrap",source:null,code:null,message:null,attempts:0});
     try {
@@ -104,6 +104,16 @@
         poseEditorError.stage=currentStage;
         poseEditorError.source="PocketPTMotionLabPoseEditor.install";
         throw poseEditorError;
+      }
+      await loadDependency("phase_authoring","/dev/motion-lab-assets/motion-lab-phase-authoring.js");
+      currentStage="phase_authoring_install";
+      var phaseAuthoring=window.PocketPTMotionLabPhaseAuthoring?.install?.();
+      if (!phaseAuthoring?.samplePhase) {
+        var phaseAuthoringError=new Error("Exact phase authoring failed to install");
+        phaseAuthoringError.code="motion_lab_phase_authoring_install_failed";
+        phaseAuthoringError.stage=currentStage;
+        phaseAuthoringError.source="PocketPTMotionLabPhaseAuthoring.install";
+        throw phaseAuthoringError;
       }
       await loadDependency("adjusted_preview_persistence","/dev/motion-lab-assets/motion-lab-adjusted-preview-persistence.js");
       currentStage="adjusted_preview_persistence_install";
@@ -156,6 +166,7 @@
       loaded=true;
       window.PocketPTMotionLabInspection?.wireButtons?.();
       window.PocketPTMotionLabPoseEditor?.wireUi?.();
+      window.PocketPTMotionLabPhaseAuthoring?.install?.();
       window.PocketPTMotionLabLungePreview?.wire?.();
       window.PocketPTMotionIntelligenceDiagnostics?.render?.();
       window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.();
