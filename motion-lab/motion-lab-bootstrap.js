@@ -69,7 +69,16 @@
       await loadDependency("motion_spec_clip","/dev/motion-lab-assets/motion-spec-clip.js");
       await loadDependency("disposable_motion_session","/dev/motion-lab-assets/disposable-motion-session.js");
       await loadDependency("rest_pose_guard","/dev/motion-lab-assets/motion-lab-rest-pose-guard.js");
-      window.PocketPTMotionLabRestPoseGuard?.install?.();
+      currentStage="rest_pose_guard_install";
+      var guardedRuntime=window.PocketPTMotionLabRestPoseGuard?.install?.(window.PocketPTDisposableMotionSession);
+      if (!guardedRuntime?.createMotionSession || guardedRuntime.__restPoseGuardInstalled !== true) {
+        var guardError=new Error("Rest-pose guard failed to produce a guarded motion runtime");
+        guardError.code="rest_pose_guard_install_failed";
+        guardError.stage=currentStage;
+        guardError.source="PocketPTMotionLabRestPoseGuard.install";
+        throw guardError;
+      }
+      window.PocketPTDisposableMotionSession=guardedRuntime;
       await loadDependency("inspection_controls","/dev/motion-lab-assets/motion-lab-inspection-controls.js");
       await loadDependency("motion_lab_runtime","/dev/motion-lab-runtime.js");
       await loadDependency("lunge_preview","/dev/motion-lab-assets/motion-lab-lunge-preview.js");
