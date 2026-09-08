@@ -39,7 +39,8 @@
   function install(runtime = globalScope.PocketPTDisposableMotionSession) {
     if (!runtime?.createMotionSession || runtime.__restPoseGuardInstalled) return runtime;
     const originalCreate = runtime.createMotionSession.bind(runtime);
-    runtime.createMotionSession = function guardedCreateMotionSession(options) {
+
+    function guardedCreateMotionSession(options) {
       const session = originalCreate(options);
       let snapshot = null;
       let generation = 0;
@@ -95,9 +96,16 @@
       session.restoreRestPose = function restoreRestPoseNow() { return restore(snapshot); };
       session.getRestPoseDiagnostics = function getRestPoseDiagnostics() { return session.restPoseDiagnostics || { status: 'REST_POSE_NOT_CAPTURED', generation, boneCount: 0 }; };
       return session;
-    };
-    Object.defineProperty(runtime, '__restPoseGuardInstalled', { value: true });
-    return runtime;
+    }
+
+    // The canonical Disposable Motion Session API is intentionally frozen.
+    // Preserve that immutability contract by returning a wrapped API instead of
+    // mutating runtime.createMotionSession in place.
+    return Object.freeze({
+      ...runtime,
+      createMotionSession: guardedCreateMotionSession,
+      __restPoseGuardInstalled: true
+    });
   }
 
   return Object.freeze({ capture, restore, install });
