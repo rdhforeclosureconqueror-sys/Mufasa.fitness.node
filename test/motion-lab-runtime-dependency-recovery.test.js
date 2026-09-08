@@ -25,6 +25,14 @@ test("Motion Lab exposes the exact first failing stage and source",()=>{
   assert.match(bootstrap,/runtime_initialize/);
 });
 
+test("Motion Lab cannot report recovered unless MotionViewerBoundary actually reaches ready",()=>{
+  assert.match(bootstrap,/boundary\.getStatus\?\.\(\) !== "ready"/);
+  assert.match(bootstrap,/motion_viewer_boundary_failed/);
+  assert.match(bootstrap,/boundaryError\.stage="boundary_retry"/);
+  assert.match(bootstrap,/boundaryError\.source="MotionViewerBoundary"/);
+  assert.match(bootstrap,/loaded=false/);
+});
+
 test("local Three and GLTF module imports receive one browser-only cache-busted retry",()=>{
   assert.match(loader,/async function importLocalModule/);
   assert.match(loader,/motion_lab_retry=/);
