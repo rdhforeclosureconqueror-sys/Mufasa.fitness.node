@@ -53,7 +53,7 @@
   }
 
   async function initialize() {
-    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionIntelligenceDiagnostics?.render?.(); window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.(); return existing; }
+    if (loaded) { var existing=window.MotionLabRuntime?.initialize(); window.PocketPTMotionLabInspection?.wireButtons?.(); window.PocketPTMotionLabPoseEditor?.wireUi?.(); window.PocketPTMotionLabLungePreview?.wire?.(); window.PocketPTMotionIntelligenceDiagnostics?.render?.(); window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.(); return existing; }
     document.getElementById("initializeRuntime").disabled=true;
     publish({status:"starting",stage:"bootstrap",source:null,code:null,message:null,attempts:0});
     try {
@@ -68,6 +68,7 @@
       await loadDependency("lunge_motion_spec","/dev/motion-lab-assets/lunge-motion-spec.js");
       await loadDependency("avatar_motion_intelligence_core","/dev/motion-lab-assets/avatar-motion-intelligence-core.js");
       await loadDependency("motion_lab_intelligence_adapter","/dev/motion-lab-assets/motion-lab-intelligence-adapter.js");
+      await loadDependency("motion_lab_authoring_adapter","/dev/motion-lab-assets/motion-lab-authoring-adapter.js");
       await loadDependency("motion_spec_clip","/dev/motion-lab-assets/motion-spec-clip.js");
       await loadDependency("motion_intelligence_diagnostics","/dev/motion-lab-assets/motion-lab-intelligence-diagnostics.js");
       await loadDependency("disposable_motion_session","/dev/motion-lab-assets/disposable-motion-session.js");
@@ -83,6 +84,16 @@
       }
       window.PocketPTDisposableMotionSession=guardedRuntime;
       await loadDependency("inspection_controls","/dev/motion-lab-assets/motion-lab-inspection-controls.js");
+      await loadDependency("pose_editor","/dev/motion-lab-assets/motion-lab-pose-editor.js");
+      currentStage="pose_editor_install";
+      var poseEditor=window.PocketPTMotionLabPoseEditor?.install?.(window.PocketPTDisposableMotionSession);
+      if (!poseEditor?.exportAdjustment || window.PocketPTDisposableMotionSession?.__poseEditorInstalled !== true) {
+        var poseEditorError=new Error("Motion Lab pose editor failed to install");
+        poseEditorError.code="motion_lab_pose_editor_install_failed";
+        poseEditorError.stage=currentStage;
+        poseEditorError.source="PocketPTMotionLabPoseEditor.install";
+        throw poseEditorError;
+      }
       await loadDependency("motion_lab_runtime","/dev/motion-lab-runtime.js");
       await loadDependency("diagnostic_consolidator","/dev/motion-lab-assets/motion-lab-diagnostic-consolidator.js");
       currentStage="diagnostic_consolidator_install";
@@ -122,6 +133,7 @@
       }
       loaded=true;
       window.PocketPTMotionLabInspection?.wireButtons?.();
+      window.PocketPTMotionLabPoseEditor?.wireUi?.();
       window.PocketPTMotionLabLungePreview?.wire?.();
       window.PocketPTMotionIntelligenceDiagnostics?.render?.();
       window.PocketPTMotionLabDiagnosticConsolidator?.refresh?.();
