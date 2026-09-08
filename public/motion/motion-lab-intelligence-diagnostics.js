@@ -26,7 +26,7 @@
   });
 
   function numericMax(values) {
-    const finite = values.map(Number).filter(Number.isFinite);
+    const finite = values.filter(value => value != null && Number.isFinite(Number(value))).map(Number);
     return finite.length ? Math.max(...finite) : null;
   }
 
@@ -45,39 +45,50 @@
   function summarize(spec, result) {
     const diagnostics = result?.diagnostics || {};
     const phases = Array.isArray(diagnostics.phaseConstraintDiagnostics) ? diagnostics.phaseConstraintDiagnostics : [];
+    const adapterDiagnostics = diagnostics.adapterDiagnostics && typeof diagnostics.adapterDiagnostics === 'object'
+      ? diagnostics.adapterDiagnostics
+      : null;
     const declaredContacts = Array.isArray(spec?.groundingPolicy?.contacts) ? spec.groundingPolicy.contacts.length : 0;
     const declaredContactPhases = contactPhaseCount(spec);
-    const adapterEvidence = Boolean(diagnostics.intelligenceAdapterVersion || phases.length);
-    const contactValidationAttempted = diagnostics.kinematicValidationApplied === true || phases.length > 0;
+    // Runtime truth: a version string only proves availability. Execution requires
+    // actual phase output or adapter diagnostics from a failed solve.
+    const adapterExecuted = phases.length > 0 || Boolean(adapterDiagnostics);
     const compileReady = result?.status === 'ready';
-    const correctionMagnitudes = phases.map(phase => phase.correctionMagnitudeWorldUnits);
-    const correctionApplied = phases.some(phase => phase.correctionStatus === 'CORRECTION_REQUIRED');
-    const phaseFailure = phases.find(phase => phase.firstFailure);
+    const observedPhases = phases.map(phase => Object.freeze({ ...phase }));
+    if (adapterDiagnostics && diagnostics.phaseId && !observedPhases.some(phase => phase.phaseId === diagnostics.phaseId)) {
+      observedPhases.push(Object.freeze({ phaseId: diagnostics.phaseId, ...adapterDiagnostics }));
+    }
+    const correctionMagnitudes = observedPhases.map(phase => phase.correctionMagnitudeWorldUnits);
+    const correctionApplied = observedPhases.some(phase => phase.correctionStatus === 'CORRECTION_REQUIRED');
+    const phaseFailure = observedPhases.find(phase => phase.firstFailure);
     const firstBoundary = boundaryName(
-      diagnostics.firstFailingBoundary || diagnostics.adapterDiagnostics?.firstFailure || phaseFailure?.firstFailure,
+      diagnostics.firstFailingBoundary || adapterDiagnostics?.firstFailure || phaseFailure?.firstFailure,
       compileReady ? null : result?.code || 'motion_compile_failed'
     );
+    const validatedPhaseCount = observedPhases.filter(phase => !phase.firstFailure).length;
 
     return Object.freeze({
       compileStatus: compileReady ? 'PASS' : 'FAIL',
-      sharedIntelligenceCore: adapterEvidence ? 'PASS' : 'NOT REACHED',
-      intelligenceAdapter: adapterEvidence ? 'PASS' : 'NOT REACHED',
-      coreVersion: adapterEvidence ? root.PocketPTAvatarMotionIntelligenceCore?.VERSION || null : null,
+      sharedIntelligenceCore: adapterExecuted ? 'PASS' : 'NOT REACHED',
+      intelligenceAdapter: adapterExecuted ? 'PASS' : 'NOT REACHED',
+      coreVersion: adapterExecuted ? root.PocketPTAvatarMotionIntelligenceCore?.VERSION || null : null,
       adapterVersion: diagnostics.intelligenceAdapterVersion || null,
       motionId: diagnostics.motionId || spec?.motionId || null,
       exerciseId: diagnostics.exerciseId || spec?.exerciseId || null,
-      kinematicValidation: contactValidationAttempted ? (compileReady ? 'PASS' : 'FAIL') : (compileReady ? 'NOT APPLICABLE' : 'NOT REACHED'),
-      contactLock: diagnostics.contactLockApplied === true ? 'ACTIVE' : (compileReady ? 'INACTIVE' : 'NOT REACHED'),
+      kinematicValidation: adapterExecuted ? (compileReady ? 'PASS' : 'FAIL') : (compileReady ? 'NOT APPLICABLE' : 'NOT REACHED'),
+      contactLock: adapterExecuted ? (compileReady ? 'ACTIVE' : 'FAILED') : (compileReady ? 'INACTIVE' : 'NOT REACHED'),
       declaredGroundingContacts: declaredContacts,
       contactPhasesDeclared: declaredContactPhases,
-      contactPhasesValidated: phases.length,
-      rootContactCorrection: contactValidationAttempted ? (correctionApplied ? 'APPLIED' : 'NOT NEEDED') : (compileReady ? 'NOT APPLICABLE' : 'NOT REACHED'),
+      contactPhasesValidated: validatedPhaseCount,
+      rootContactCorrection: adapterExecuted ? (correctionApplied ? 'APPLIED' : (compileReady ? 'NOT NEEDED' : 'FAILED')) : (compileReady ? 'NOT APPLICABLE' : 'NOT REACHED'),
       maxRootCorrectionWorldUnits: numericMax(correctionMagnitudes),
-      maxContactResidualWorldUnits: Number.isFinite(Number(diagnostics.maxContactResidualWorldUnits)) ? Number(diagnostics.maxContactResidualWorldUnits) : numericMax(phases.map(phase => phase.maxResidualWorldUnits)),
+      maxContactResidualWorldUnits: Number.isFinite(Number(diagnostics.maxContactResidualWorldUnits))
+        ? Number(diagnostics.maxContactResidualWorldUnits)
+        : numericMax(observedPhases.map(phase => phase.maxResidualWorldUnits)),
       firstFailingPhase: diagnostics.phaseId || phaseFailure?.phaseId || null,
       firstFailingBoundary: firstBoundary,
       code: result?.code || null,
-      phaseConstraintDiagnostics: Object.freeze(phases.map(phase => Object.freeze({ ...phase }))),
+      phaseConstraintDiagnostics: Object.freeze(observedPhases),
       updatedAt: new Date().toISOString()
     });
   }
@@ -257,7 +268,7 @@
   }
 
   const api = Object.freeze({
-    VERSION: '1.0.0-consolidated',
+    VERSION: '1.0.1-consolidated-failure-truth',
     snapshot: () => Object.freeze({ ...snapshot }),
     summarize,
     diagnosticsText,

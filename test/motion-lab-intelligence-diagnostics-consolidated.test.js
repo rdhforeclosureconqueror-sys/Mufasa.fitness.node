@@ -18,11 +18,32 @@ test('diagnostics remain NOT RUN until an actual Motion Spec compile', () => {
 });
 
 test('compiler-level truth owns Motion Intelligence observability', () => {
-  assert.match(diagnostics, /const adapterEvidence = Boolean\(diagnostics\.intelligenceAdapterVersion \|\| phases\.length\)/);
-  assert.match(diagnostics, /kinematicValidationApplied/);
-  assert.match(diagnostics, /phaseConstraintDiagnostics/);
-  assert.match(diagnostics, /contactLockApplied/);
+  assert.match(diagnostics, /const adapterDiagnostics = diagnostics\.adapterDiagnostics/);
+  assert.match(diagnostics, /const adapterExecuted = phases\.length > 0 \|\| Boolean\(adapterDiagnostics\)/);
+  assert.match(diagnostics, /sharedIntelligenceCore: adapterExecuted \? 'PASS' : 'NOT REACHED'/);
+  assert.match(diagnostics, /intelligenceAdapter: adapterExecuted \? 'PASS' : 'NOT REACHED'/);
+  assert.doesNotMatch(diagnostics, /adapterEvidence = Boolean\(diagnostics\.intelligenceAdapterVersion/);
   assert.doesNotMatch(diagnostics, /MotionLabRuntime\.loadMotionSpec/);
+});
+
+test('failed adapter execution stays reached and preserves failing phase evidence', () => {
+  assert.match(diagnostics, /adapterDiagnostics && diagnostics\.phaseId/);
+  assert.match(diagnostics, /observedPhases\.push\(Object\.freeze\(\{ phaseId: diagnostics\.phaseId, \.\.\.adapterDiagnostics \}\)\)/);
+  assert.match(diagnostics, /kinematicValidation: adapterExecuted \? \(compileReady \? 'PASS' : 'FAIL'\)/);
+  assert.match(diagnostics, /contactLock: adapterExecuted \? \(compileReady \? 'ACTIVE' : 'FAILED'\)/);
+  assert.match(diagnostics, /rootContactCorrection: adapterExecuted \? \(correctionApplied \? 'APPLIED' : \(compileReady \? 'NOT NEEDED' : 'FAILED'\)\)/);
+  assert.match(diagnostics, /maxResidualWorldUnits/);
+  assert.match(diagnostics, /firstFailingPhase: diagnostics\.phaseId/);
+});
+
+test('version availability alone cannot claim adapter execution', () => {
+  assert.match(diagnostics, /adapterVersion: diagnostics\.intelligenceAdapterVersion \|\| null/);
+  assert.match(diagnostics, /const adapterExecuted = phases\.length > 0 \|\| Boolean\(adapterDiagnostics\)/);
+  assert.doesNotMatch(diagnostics, /adapterExecuted = Boolean\(diagnostics\.intelligenceAdapterVersion/);
+});
+
+test('numeric summaries do not convert missing values into fake zero measurements', () => {
+  assert.match(diagnostics, /values\.filter\(value => value != null && Number\.isFinite\(Number\(value\)\)\)\.map\(Number\)/);
 });
 
 test('consolidated surface exposes first failure, correction, residual, coverage and per-phase evidence', () => {
