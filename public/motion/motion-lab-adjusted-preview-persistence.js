@@ -1,14 +1,18 @@
 (function installAdjustedPreviewPersistence(root) {
   'use strict';
 
-  const VERSION = '1.0.0-adjusted-preview-persistence';
+  const VERSION = '1.0.1-adjusted-preview-persistence-truth';
   const EPSILON = 1e-7;
+  const PROPAGATION_SCOPE = 'all_track_samples';
+  const PROPAGATION_STRATEGY = 'constant_local_delta_from_edited_phase';
   let lastSnapshot = Object.freeze({
     status: 'idle',
     version: VERSION,
     changedTracks: 0,
     changedSamples: 0,
     lastClip: null,
+    propagationScope: PROPAGATION_SCOPE,
+    propagationStrategy: PROPAGATION_STRATEGY,
     firstFailingBoundary: null,
     lastWriter: null
   });
@@ -125,10 +129,39 @@
       changedTracks,
       changedSamples,
       lastClip: previewClip.name || null,
+      propagationScope: PROPAGATION_SCOPE,
+      propagationStrategy: PROPAGATION_STRATEGY,
       firstFailingBoundary: null,
       lastWriter: 'adjusted_preview_persistence'
     });
-    return { status: 'ready', changedTracks, changedSamples };
+    return { status: 'ready', changedTracks, changedSamples, propagationScope: PROPAGATION_SCOPE, propagationStrategy: PROPAGATION_STRATEGY };
+  }
+
+  function installEditorExportContract() {
+    const editor = root.PocketPTMotionLabPoseEditor;
+    if (!editor?.exportAdjustment) return false;
+    if (editor.__adjustedPreviewPersistenceExportContract === true) return true;
+    const originalExportAdjustment = editor.exportAdjustment.bind(editor);
+    root.PocketPTMotionLabPoseEditor = Object.freeze({
+      ...editor,
+      exportAdjustment() {
+        const payload = originalExportAdjustment() || {};
+        const edits = Array.isArray(payload.edits) ? payload.edits : [];
+        const sourcePhaseIds = Object.freeze([...new Set(edits.map(edit => edit?.phaseId).filter(Boolean))]);
+        return Object.freeze({
+          ...payload,
+          previewPersistence: Object.freeze({
+            enabled: edits.length > 0,
+            scope: PROPAGATION_SCOPE,
+            strategy: PROPAGATION_STRATEGY,
+            sourcePhaseIds,
+            canonicalMotionSpecUnchanged: true
+          })
+        });
+      },
+      __adjustedPreviewPersistenceExportContract: true
+    });
+    return true;
   }
 
   function patchSession(session) {
@@ -178,6 +211,10 @@
       publish({ status: 'failed', firstFailingBoundary: 'runtime_available', lastWriter: null });
       return null;
     }
+    if (!installEditorExportContract()) {
+      publish({ status: 'failed', firstFailingBoundary: 'editor_export_contract_available', lastWriter: null });
+      return null;
+    }
     if (runtime.__adjustedPreviewPersistenceInstalled) return runtime;
     const originalCreate = runtime.createMotionSession.bind(runtime);
     const wrapped = Object.freeze({
@@ -191,7 +228,10 @@
 
   root.PocketPTMotionLabAdjustedPreviewPersistence = Object.freeze({
     VERSION,
+    PROPAGATION_SCOPE,
+    PROPAGATION_STRATEGY,
     install,
+    installEditorExportContract,
     composePersistentPreview,
     snapshot: () => lastSnapshot
   });
