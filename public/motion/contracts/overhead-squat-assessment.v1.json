@@ -36,9 +36,16 @@
       "knees track in the same general direction as the feet",
       "descent follows START -> MID -> BOTTOM",
       "ascent mirrors the same geometry as BOTTOM -> MID -> START",
-      "arms remain overhead during descent, bottom, hold and ascent",
+      "both upper-arm shoulder-to-elbow segments point overhead in world space rather than copying a source rig local Euler axis",
       "elbows remain straight",
       "finish returns to the same overhead standing pose"
+    ],
+    "rigSemanticConstraints": [
+      "identify the actual loaded left upper-arm bone and its forearm child",
+      "identify the actual loaded right upper-arm bone and its forearm child",
+      "interpret overhead as a body-segment direction, not as a fixed local X/Y/Z rotation copied from another armature",
+      "solve shoulder-to-elbow direction against the target rig geometry before compiling the clip",
+      "preserve the original target avatar rest pose after compilation"
     ],
     "timing": {
       "repetitions": 3,
@@ -48,6 +55,7 @@
     },
     "visualAcceptanceCheckpoints": [
       "overhead setup pose",
+      "arms do not pass through torso or head because of rig-axis mismatch",
       "first descent direction",
       "first bottom depth and balance",
       "bottom hold is visibly present",
@@ -67,9 +75,14 @@
     "importantBoundary": "These are observation targets for a separate pose-analysis/scoring layer. The Motion Spec is the reference demonstration and does not diagnose causes or assign production severity thresholds."
   },
   "calibrationPolicy": {
-    "authorityOrder": ["overhead setup", "first bottom", "transition path", "grounding between phases", "repeatability", "scoring thresholds later"],
-    "provisionalField": "initial overhead arm rotation seed",
-    "ownerAction": "Use Motion Lab Pose Editor to visually correct the overhead setup if the coach avatar does not place straight arms near the ears, then promote that approved pose before treating arm geometry as canonical."
+    "authorityOrder": ["semantic bone identity and direction", "overhead setup", "first bottom", "transition path", "grounding between phases", "repeatability", "scoring thresholds later"],
+    "provisionalField": "exact arms-by-ears spacing after semantic world-up solve",
+    "ownerAction": "First verify the semantic solver keeps each shoulder-to-elbow segment overhead without crossing through the body. Then use Pose Editor only for small owner-approved spacing/twist refinement; do not reintroduce guessed source-rig Euler rotations."
+  },
+  "retargetLesson": {
+    "previousMistake": "The canonical Mixamo upper-arm local-X rotation was copied onto the Avaturn upper-arm bone after name remapping only.",
+    "whyItFailed": "Bone names can match semantically while their local coordinate axes differ. The same Euler value can therefore produce a different physical direction and an arm path through the torso.",
+    "systemUpgrade": "Describe important limb placement with semantic body-segment directions and solve those directions from the actual loaded armature geometry."
   },
   "playbackGenerationPolicy": {
     "namedPhasesRemainAuthoringAuthority": true,
@@ -79,6 +92,7 @@
   },
   "sourceNotes": [
     "Movement intent is adapted from the repository's existing Overhead Squat Assessment checklist.",
-    "Lower-body phase geometry intentionally reuses the current synthesized squat engineering reference so this test isolates whether adding a new movement contract and overhead constraint composes correctly."
+    "Lower-body phase geometry intentionally reuses the current synthesized squat engineering reference so this test isolates whether adding a new movement contract and overhead constraint composes correctly.",
+    "Upper-arm placement now uses target-rig semantic direction instead of a copied local-axis angle."
   ]
 }
