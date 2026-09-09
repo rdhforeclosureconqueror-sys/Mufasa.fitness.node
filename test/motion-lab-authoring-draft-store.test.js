@@ -59,25 +59,34 @@ test('saving requires real edits and a successfully built adjusted preview', () 
   assert.match(store, /clip_serialization_failed/);
 });
 
-test('canonical lunge is v2.3 and includes the owner-approved split-plant knee calibration', () => {
+test('canonical lunge v2.3 is based on the last playable v2.1 geometry', () => {
   assert.equal(Lunge.spec.version, 2.3);
-  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_movement_definition_v2_3_owner_split_knee');
-  assert.equal(pitch('split_plant', 'mixamorig:RightLeg'), -1);
-  assert.equal(pitch('rep1_top', 'mixamorig:RightLeg'), -6);
-  assert.equal(pitch('rep2_top', 'mixamorig:RightLeg'), -6);
-  assert.equal(pitch('rep3_top', 'mixamorig:RightLeg'), -6);
-  assert.equal(Lunge.spec.authoringGeometryGate.splitPlantOwnerApprovedRightKneePitchDegrees, -1);
+  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_movement_definition_v2_3_playable_base_owner_split_knee');
+  assert.equal(Lunge.spec.lineage.playableBaseMotionId, 'lunge/stationary_left_movement_definition_v2_1_exit_release');
+  assert.equal(pitch('step_forward', 'mixamorig:LeftUpLeg'), 34);
+  assert.equal(pitch('split_plant', 'mixamorig:LeftUpLeg'), 24);
+  assert.equal(pitch('rep1_bottom', 'mixamorig:LeftLeg'), -72);
   assert.match(index, /Load Stationary Lunge Left v2\.3 \(Reference Only\)/);
 });
 
-test('lunge validator protects the approved split-plant calibration', () => {
+test('owner split-plant correction is applied against the actual v2.1 -7 degree base', () => {
+  assert.equal(Lunge.spec.acceptedAuthoringAdjustment.basePitchDegrees, -7);
+  assert.equal(Lunge.spec.acceptedAuthoringAdjustment.approvedDeltaDegrees, 5);
+  assert.equal(Lunge.spec.acceptedAuthoringAdjustment.canonicalPitchDegrees, -2);
+  assert.equal(pitch('split_plant', 'mixamorig:RightLeg'), -2);
+  assert.equal(pitch('rep1_top', 'mixamorig:RightLeg'), -7);
+  assert.equal(pitch('rep2_top', 'mixamorig:RightLeg'), -7);
+  assert.equal(pitch('rep3_top', 'mixamorig:RightLeg'), -7);
+});
+
+test('lunge validator protects the playable-base calibration from drift', () => {
   const candidate = {
     ...Lunge.spec,
     phases: Lunge.spec.phases.map(item => item.id !== 'split_plant' ? item : {
       ...item,
       boneTargets: item.boneTargets.map(target => target.bone !== 'mixamorig:RightLeg' ? target : {
         ...target,
-        rotationOffsetEulerDegrees: [-6, 0, 0]
+        rotationOffsetEulerDegrees: [-1, 0, 0]
       })
     })
   };
