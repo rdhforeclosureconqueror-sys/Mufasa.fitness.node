@@ -34,9 +34,17 @@ test('local bar reuses the Pose Editor active session instead of creating a seco
   assert.doesNotMatch(controls, /clipAction\s*\(/);
 });
 
-test('Play automatically uses adjusted preview when pose edits exist and canonical session otherwise', () => {
-  assert.match(controls, /if \(pendingEdits\(\)\.length\) return root\.PocketPTMotionLabPoseEditor\?\.playAdjustedPreview/);
+test('Play builds adjusted preview when needed but resumes a matching paused adjusted preview', () => {
+  assert.match(controls, /const signature = adjustedSignature\(\)/);
+  assert.match(controls, /isAdjustedPreview\(session\) && signature === lastAdjustedSignature/);
   assert.match(controls, /return session\.play\?\.\(\)/);
+  assert.match(controls, /PocketPTMotionLabPoseEditor\?\.playAdjustedPreview/);
+  assert.match(controls, /lastAdjustedSignature = signature/);
+});
+
+test('Restart with pending edits intentionally rebuilds adjusted preview from the beginning', () => {
+  assert.match(controls, /function restart\(\)/);
+  assert.match(controls, /const out = root\.PocketPTMotionLabPoseEditor\?\.playAdjustedPreview/);
 });
 
 test('camera inspection remains independent from local playback transport', () => {
