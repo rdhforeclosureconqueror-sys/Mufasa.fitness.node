@@ -1,7 +1,7 @@
 (function initMotionLabPoseEditor(root, document) {
   'use strict';
 
-  const VERSION = '1.2.0-pose-authoring-durable-edits';
+  const VERSION = '1.3.0-pose-authoring-phase-key-truth';
   const INCH_TO_WORLD = 0.0254;
   const GOLD_SCENE = 0xd4af37;
   const TARGETS = Object.freeze({
@@ -245,6 +245,68 @@
     return changed;
   }
 
+  function trackForNode(clip, node, suffix) {
+    return clip?.tracks?.find(track => track.name.endsWith(suffix) && (track.name.startsWith(`${node.uuid}.`) || track.name.startsWith(`${node.name}.`))) || null;
+  }
+
+  function nearestTrackIndex(track, time) {
+    let nearest = 0, best = Infinity;
+    for (let i = 0; i < (track?.times?.length || 0); i += 1) {
+      const distance = Math.abs(Number(track.times[i]) - time);
+      if (distance < best) { best = distance; nearest = i; }
+    }
+    return nearest;
+  }
+
+  function restorePreviewPhaseKeys(names, phaseId) {
+    const phase = phaseById(phaseId);
+    if (!phase || !originalClip) return false;
+    if (!previewClip) previewClip = originalClip.clone?.() || originalClip;
+    if (!previewClip) return false;
+    const phaseTime = phase.normalizedTime * activeSession.motionSpec.durationSeconds;
+    for (const name of names || []) {
+      const node = traverseByName(name);
+      if (!node) continue;
+      for (const suffix of ['.quaternion', '.position']) {
+        const source = trackForNode(originalClip, node, suffix);
+        const destination = trackForNode(previewClip, node, suffix);
+        if (!source || !destination) continue;
+        const sourceIndex = nearestTrackIndex(source, phaseTime);
+        const destinationIndex = nearestTrackIndex(destination, phaseTime);
+        const size = destination.getValueSize();
+        for (let component = 0; component < size; component += 1) {
+          destination.values[destinationIndex * size + component] = source.values[sourceIndex * size + component];
+        }
+      }
+    }
+    return true;
+  }
+
+  function restoreLivePhaseFromCanonical(names, phaseId) {
+    const phase = phaseById(phaseId);
+    if (!phase || !originalClip || !activeSession?.motionSpec) return false;
+    const phaseTime = phase.normalizedTime * activeSession.motionSpec.durationSeconds;
+    let restored = false;
+    for (const name of names || []) {
+      const node = traverseByName(name);
+      if (!node) continue;
+      const quaternionTrack = trackForNode(originalClip, node, '.quaternion');
+      if (quaternionTrack) {
+        const index = nearestTrackIndex(quaternionTrack, phaseTime);
+        node.quaternion.fromArray(quaternionTrack.values, index * 4).normalize();
+        restored = true;
+      }
+      const positionTrack = trackForNode(originalClip, node, '.position');
+      if (positionTrack) {
+        const index = nearestTrackIndex(positionTrack, phaseTime);
+        node.position.fromArray(positionTrack.values, index * 3);
+        restored = true;
+      }
+    }
+    activeSession.avatar?.updateMatrixWorld?.(true);
+    return restored;
+  }
+
   function patchPreviewClip() {
     if (!activeSession?.sessionClip || !sampledPhaseId || !baseline) return { status: 'failed', code: 'preview_clip_unavailable' };
     const phase = phaseById(sampledPhaseId);
@@ -256,23 +318,15 @@
     for (const boneName of changed) {
       const node = traverseByName(boneName);
       if (!node) continue;
-      const quaternionTrack = clip.tracks.find(track => track.name.endsWith('.quaternion') && (track.name.startsWith(`${node.uuid}.`) || track.name.startsWith(`${node.name}.`)));
+      const quaternionTrack = trackForNode(clip, node, '.quaternion');
       if (quaternionTrack) {
-        let nearest = 0, best = Infinity;
-        for (let i = 0; i < quaternionTrack.times.length; i += 1) {
-          const distance = Math.abs(Number(quaternionTrack.times[i]) - phaseTime);
-          if (distance < best) { best = distance; nearest = i; }
-        }
+        const nearest = nearestTrackIndex(quaternionTrack, phaseTime);
         const values = node.quaternion.toArray();
         for (let c = 0; c < 4; c += 1) quaternionTrack.values[nearest * 4 + c] = values[c];
       }
-      const positionTrack = clip.tracks.find(track => track.name.endsWith('.position') && (track.name.startsWith(`${node.uuid}.`) || track.name.startsWith(`${node.name}.`)));
+      const positionTrack = trackForNode(clip, node, '.position');
       if (positionTrack) {
-        let nearest = 0, best = Infinity;
-        for (let i = 0; i < positionTrack.times.length; i += 1) {
-          const distance = Math.abs(Number(positionTrack.times[i]) - phaseTime);
-          if (distance < best) { best = distance; nearest = i; }
-        }
+        const nearest = nearestTrackIndex(positionTrack, phaseTime);
         const values = node.position.toArray();
         for (let c = 0; c < 3; c += 1) positionTrack.values[nearest * 3 + c] = values[c];
       }
@@ -288,7 +342,7 @@
     activeSession.stop?.();
     activeSession.sessionClip = built.clip;
     activeSession.action = activeSession.mixer.clipAction(built.clip, activeSession.avatar);
-    activeSession.setLoop?.(true);
+    activeSession.setLoop?.(originalMotionSpec?.loop !== false);
     activeSession.play?.();
     status(`Playing adjusted preview. ${edits.length} structured edit(s) accumulated.`);
     return built;
@@ -296,22 +350,24 @@
 
   function resetSelected() {
     if (!baseline) return;
-    const target = TARGETS[el('poseEditorTarget')?.value];
+    const targetId = el('poseEditorTarget')?.value;
+    const target = TARGETS[targetId];
     const names = new Set([target?.bone, ...(target?.chain || [])].filter(Boolean));
-    for (const name of names) {
-      const before = baseline.get(name), node = traverseByName(name);
-      if (!before || !node) continue;
-      node.position.copy(before.position); node.quaternion.copy(before.quaternion); node.scale.copy(before.scale);
-    }
-    activeSession.avatar.updateMatrixWorld?.(true);
-    edits = edits.filter(edit => !(edit.phaseId === sampledPhaseId && edit.target === el('poseEditorTarget')?.value));
-    previewClip = null;
-    status('Selected body part reset. Rebuild preview to apply remaining edits.'); refreshOutput();
+    edits = edits.filter(edit => !(edit.phaseId === sampledPhaseId && edit.target === targetId));
+    restorePreviewPhaseKeys(names, sampledPhaseId);
+    restoreLivePhaseFromCanonical(names, sampledPhaseId);
+    baseline = captureEditablePose();
+    status('Selected body part reset to the canonical phase pose. Other accumulated phase edits are preserved.'); refreshOutput();
   }
 
   function resetPhase() {
-    restorePose(baseline); edits = edits.filter(edit => edit.phaseId !== sampledPhaseId); previewClip = null;
-    status(`Phase “${sampledPhaseId}” reset. Rebuild preview to apply remaining edits.`); refreshOutput();
+    if (!baseline) return;
+    const names = new Set(baseline.keys());
+    edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
+    restorePreviewPhaseKeys(names, sampledPhaseId);
+    restoreLivePhaseFromCanonical(names, sampledPhaseId);
+    baseline = captureEditablePose();
+    status(`Phase “${sampledPhaseId}” reset to its canonical pose. Edits on other phases are preserved.`); refreshOutput();
   }
 
   function resetAll() {
@@ -321,6 +377,7 @@
       const out = activeSession.loadMotionSpec?.(originalMotionSpec, root.PocketPTMotionSpecClip);
       if (out?.status === 'ready') { originalClip = activeSession.sessionClip?.clone?.() || activeSession.sessionClip; populatePhases(); }
     } else activeSession.restoreRestPose?.();
+    document.dispatchEvent(new CustomEvent('motionlab:pose-editor-reset-all', { detail: { motionId: originalMotionSpec?.motionId || null } }));
     status('All pose-editor adjustments cleared.'); refreshOutput();
   }
 
@@ -480,7 +537,8 @@
 
   root.PocketPTMotionLabPoseEditor = Object.freeze({
     VERSION, install, wireUi, getActiveSession: () => activeSession, samplePhase, resetAll,
-    exportAdjustment: exportPayload, importAdjustment, playAdjustedPreview, normalizedBoneKey, traverseByName, mountLiveViewer
+    exportAdjustment: exportPayload, importAdjustment, buildAdjustedPreview: patchPreviewClip, playAdjustedPreview,
+    normalizedBoneKey, traverseByName, mountLiveViewer
   });
   wireUi(); enable(false);
 })(window, document);

@@ -1,7 +1,7 @@
 (function initMotionLabMotionDirectionAuthoring(root, document) {
   'use strict';
 
-  const VERSION = '1.2.0-motion-scoped-direction-humanize';
+  const VERSION = '1.3.0-visible-directed-authoring';
   const SAMPLE_COUNT = 7;
   const TARGET_BONES = Object.freeze({
     left_foot: Object.freeze(['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot']),
@@ -13,6 +13,12 @@
     left_shoulder: Object.freeze(['mixamorig:LeftArm']), right_shoulder: Object.freeze(['mixamorig:RightArm']),
     left_elbow: Object.freeze(['mixamorig:LeftForeArm']), right_elbow: Object.freeze(['mixamorig:RightForeArm']),
     hips: Object.freeze(['mixamorig:Hips']), spine: Object.freeze(['mixamorig:Spine']), head: Object.freeze(['mixamorig:Head'])
+  });
+  const POSITION_PROXY = Object.freeze({
+    left_shoulder: 'left_hand', left_elbow: 'left_hand',
+    right_shoulder: 'right_hand', right_elbow: 'right_hand',
+    left_hip: 'left_foot', left_knee: 'left_foot',
+    right_hip: 'right_foot', right_knee: 'right_foot'
   });
 
   let installed = false;
@@ -134,6 +140,11 @@
     return { status: 'ready', clip };
   }
 
+  function directionTarget(requestedTargetId, action) {
+    if (action === 'twist_in' || action === 'twist_out') return requestedTargetId;
+    return POSITION_PROXY[requestedTargetId] || requestedTargetId;
+  }
+
   function applyDirection(action) {
     syncMotionScope();
     syncPhaseOptions();
@@ -144,8 +155,11 @@
         : 'Choose valid consecutive From and To phases.';
       status(message, 'failed'); publish({ status: 'failed', firstFailingBoundary: transition.code }); return transition;
     }
-    const api = editor(), phaseApi = root.PocketPTMotionLabPhaseAuthoring, targetId = el('motionDirectionTarget')?.value, boneNames = TARGET_BONES[targetId];
-    if (!api?.playAdjustedPreview || !phaseApi?.samplePhase || !boneNames) {
+    const api = editor(), phaseApi = root.PocketPTMotionLabPhaseAuthoring;
+    const requestedTargetId = el('motionDirectionTarget')?.value;
+    const effectiveTargetId = directionTarget(requestedTargetId, action);
+    const boneNames = TARGET_BONES[effectiveTargetId];
+    if (!(api?.buildAdjustedPreview || api?.playAdjustedPreview) || !phaseApi?.samplePhase || !boneNames) {
       status('Motion direction authoring dependencies are not ready.', 'failed'); publish({ status: 'failed', firstFailingBoundary: 'MOTION_DIRECTION_DEPENDENCY' });
       return { status: 'failed', code: 'motion_direction_dependency' };
     }
@@ -158,8 +172,9 @@
       forward: ['move','forward',1], back: ['move','forward',-1], twist_in: ['rotate','y',1], twist_out: ['rotate','y',-1]
     };
     const command = map[action];
-    if (!command || !configurePoseEditor(targetId, command[0], command[1])) {
-      status('The selected direction could not be configured for this body part.', 'failed'); publish({ status: 'failed', firstFailingBoundary: 'DIRECTION_CONFIGURATION' });
+    if (!command || !configurePoseEditor(effectiveTargetId, command[0], command[1])) {
+      const proxyNote = effectiveTargetId !== requestedTargetId ? ` The ${requestedTargetId.replaceAll('_',' ')} uses ${effectiveTargetId.replaceAll('_',' ')} as its IK endpoint.` : '';
+      status(`The selected direction could not be configured for this body part.${proxyNote}`, 'failed'); publish({ status: 'failed', firstFailingBoundary: 'DIRECTION_CONFIGURATION' });
       return { status: 'failed', code: 'direction_configuration_failed' };
     }
 
@@ -167,21 +182,32 @@
     el(command[2] > 0 ? 'poseEditorPlus' : 'poseEditorMinus')?.click?.();
     const after = JSON.stringify(api.exportAdjustment?.()?.edits || []);
     if (after === before) {
-      status('That movement was rejected. For position direction use a hand, foot, or hips; use Twist for rotatable joints.', 'failed'); publish({ status: 'failed', firstFailingBoundary: 'AUTHORING_DELTA_REJECTED' });
+      status('That movement was rejected. Arm and leg joints route through their hand/foot IK endpoint; spine/head directional translation still requires direct Pose Editor rotation.', 'failed');
+      publish({ status: 'failed', firstFailingBoundary: 'AUTHORING_DELTA_REJECTED' });
       return { status: 'failed', code: 'authoring_delta_rejected' };
     }
 
-    const built = api.playAdjustedPreview(); session()?.pause?.();
+    const built = api.buildAdjustedPreview?.() || api.playAdjustedPreview?.();
     if (built?.status !== 'ready') { status(`Could not build the directed destination pose (${built?.code || 'preview_failed'}).`, 'failed'); publish({ status: 'failed', firstFailingBoundary: built?.code || 'DIRECTED_DESTINATION_BUILD' }); return built; }
     const merged = mergeDestinationKeys(workingClip || built.clip, built.clip, boneNames, sampled.time);
     if (!merged) { status('The directed destination could not be merged into the working motion.', 'failed'); publish({ status: 'failed', firstFailingBoundary: 'DESTINATION_KEY_MERGE' }); return { status: 'failed', code: 'destination_key_merge_failed' }; }
-    workingClip = merged; installClip(workingClip, false);
+    workingClip = merged;
+    const installedClip = installClip(workingClip, false);
+    if (installedClip.status !== 'ready') return installedClip;
+    const visible = phaseApi.samplePhase(transition.to.id);
+    if (visible?.status !== 'ready') {
+      status(`The direction was authored, but the edited destination could not be shown (${visible?.code || 'destination_render_failed'}).`, 'failed');
+      publish({ status: 'failed', firstFailingBoundary: visible?.code || 'DIRECTED_DESTINATION_RENDER' });
+      return visible;
+    }
 
-    const intent = Object.freeze({ fromPhaseId: transition.from.id, toPhaseId: transition.to.id, target: targetId, action, easing: el('motionDirectionHumanize')?.value || 'human', sampleCount: SAMPLE_COUNT });
+    const intent = Object.freeze({ fromPhaseId: transition.from.id, toPhaseId: transition.to.id, requestedTarget: requestedTargetId, target: effectiveTargetId, action, easing: el('motionDirectionHumanize')?.value || 'human', sampleCount: SAMPLE_COUNT });
     intents = intents.filter(item => !(item.fromPhaseId === intent.fromPhaseId && item.toPhaseId === intent.toPhaseId && item.target === intent.target && item.action === intent.action));
     intents.push(intent);
-    status(`${targetId.replaceAll('_',' ')}: ${action.replaceAll('_',' ')} authored from ${transition.from.id} → ${transition.to.id}. Press Preview Directed Motion.`);
-    poseStatus(`Directed transition authored: ${transition.from.id} → ${transition.to.id}.`); publish({ status: 'ready', firstFailingBoundary: null, lastIntent: intent });
+    const proxy = effectiveTargetId !== requestedTargetId ? ` via ${effectiveTargetId.replaceAll('_',' ')} IK` : '';
+    status(`${requestedTargetId.replaceAll('_',' ')}${proxy}: ${action.replaceAll('_',' ')} authored for ${transition.from.id} → ${transition.to.id}. The destination pose is shown now; Preview Directed Motion plays the transition.`);
+    poseStatus(`Directed destination visible: ${transition.from.id} → ${transition.to.id}.`);
+    publish({ status: 'ready', firstFailingBoundary: null, lastIntent: intent, destinationVisible: true });
     return { status: 'ready', intent, clip: workingClip };
   }
 
@@ -227,8 +253,7 @@
     syncMotionScope();
     if (intents.length === 0) return { status: 'failed', code: 'directed_motion_required' };
     if (options.refreshPose !== false) {
-      const poseBuilt = editor()?.playAdjustedPreview?.();
-      session()?.pause?.();
+      const poseBuilt = editor()?.buildAdjustedPreview?.() || editor()?.playAdjustedPreview?.();
       if (poseBuilt?.status !== 'ready') return poseBuilt || { status: 'failed', code: 'pose_preview_refresh_failed' };
       workingClip = poseBuilt.clip?.clone?.() || poseBuilt.clip;
     }
@@ -242,13 +267,18 @@
     }
     clip.name = `${clip.name || session()?.motionSpec?.motionId || 'motion'} [DIRECTED HUMANIZED PREVIEW]`;
     const installedClip = installClip(clip, options.play === true); if (installedClip.status !== 'ready') return installedClip;
-    if (options.play === true) status(`Previewing ${intents.length} directed transition(s) with humanized ease-in/ease-out timing.`);
+    if (options.play === true) status(`Previewing ${intents.length} directed transition(s). Timing changes acceleration/deceleration; the From/To phase spacing determines the transition duration.`);
     publish({ status: 'ready', firstFailingBoundary: null, shapedTracks: total, previewPlaying: options.play === true });
     return { status: 'ready', clip, shapedTracks: total, transitionCount: intents.length };
   }
 
   function preview() { return buildPreview({ play: true, refreshPose: true }); }
-  function clearPlan() { intents = []; workingClip = null; status('Directed transition plan cleared. Canonical Motion Spec was not changed.'); publish({ status: 'ready', firstFailingBoundary: null }); return { status: 'ready' }; }
+  function clearPlan() {
+    intents = []; workingClip = null;
+    status('Directed timing plan cleared. Pose changes already made through the direction buttons remain in the Pose Editor; use Reset Selected/Phase/All to remove those pose changes.');
+    publish({ status: 'ready', firstFailingBoundary: null });
+    return { status: 'ready' };
+  }
   function exportPlan() {
     syncMotionScope();
     const active = session();
@@ -294,10 +324,11 @@
       el('motionDirectionClear')?.addEventListener('click', clearPlan);
       el('motionDirectionFromPhase')?.addEventListener('change', updateAvailability);
       el('motionDirectionToPhase')?.addEventListener('change', updateAvailability);
+      document.addEventListener('motionlab:pose-editor-reset-all', clearPlan);
     }
     phaseObserver = new MutationObserver(syncPhaseOptions); phaseObserver.observe(sourcePhases, { childList: true });
     installed = true; syncPhaseOptions();
-    status('Choose consecutive From/To phases, a body part, then direct how it should travel. Human timing preserves the exact phase endpoints.');
+    status('Choose consecutive From/To phases, a body part, then a direction. Arm/leg joints route through hand/foot IK. Timing controls the ease shape; phase spacing determines duration.');
     publish({ status: 'installed', firstFailingBoundary: null }); return root.PocketPTMotionLabMotionDirectionAuthoring;
   }
 
