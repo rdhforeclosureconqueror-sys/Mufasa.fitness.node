@@ -17,6 +17,15 @@
     return Object.freeze({ ...record, bone: canonicalBoneToCoachBone(record.bone) });
   }
 
+  function remapSemanticTarget(target) {
+    if (!target || typeof target !== "object") return target;
+    return Object.freeze({
+      ...target,
+      bone:canonicalBoneToCoachBone(target.bone),
+      childBone:canonicalBoneToCoachBone(target.childBone)
+    });
+  }
+
   function remapChain(chain) {
     return Object.freeze({
       ...chain,
@@ -61,6 +70,10 @@
     const source = contract.spec;
     const sourceTargets = new Set([source.skeleton?.rootBone]);
     source.phases?.forEach(phase => phase.boneTargets?.forEach(target => sourceTargets.add(target.bone)));
+    (source.semanticPosePolicy?.targets || []).forEach(target => {
+      if (target?.bone) sourceTargets.add(target.bone);
+      if (target?.childBone) sourceTargets.add(target.childBone);
+    });
     Object.values(source.groundingPolicy?.contactBones || {}).forEach(name => sourceTargets.add(name));
     (source.groundingPolicy?.kinematicChains || []).forEach(chain => {
       [chain.rootBone, chain.jointBone, chain.endBone, chain.contactBone].forEach(name => sourceTargets.add(name));
@@ -80,6 +93,11 @@
       kinematicChains: Object.freeze((source.groundingPolicy.kinematicChains || []).map(remapChain))
     }) : source.groundingPolicy;
 
+    const semanticPosePolicy = source.semanticPosePolicy ? Object.freeze({
+      ...source.semanticPosePolicy,
+      targets:Object.freeze((source.semanticPosePolicy.targets || []).map(remapSemanticTarget))
+    }) : source.semanticPosePolicy;
+
     const coachRetarget = Object.freeze({
       sourceMotionId: source.motionId || null,
       sourceMotionVersion: source.version ?? null,
@@ -88,6 +106,7 @@
       targetSkeletonProfile: COACH_SKELETON_ID,
       aliasCount: aliases.length,
       aliases: Object.freeze(aliases),
+      semanticTargetCount:semanticPosePolicy?.targets?.length || 0,
       degradedContactAliases: Object.freeze(aliases.filter(item => /ToeBase$/.test(item.requestedName) && /Foot$/.test(item.coachBone)))
     });
 
@@ -100,12 +119,13 @@
         sourceSkeletonId: source.skeleton?.id || null,
         targetAvatarProfileId: COACH_PROFILE_ID,
         targetSkeletonProfile: COACH_SKELETON_ID,
-        retargetMode: "rest_relative_local_canonical_to_coach"
+        retargetMode: semanticPosePolicy?.targets?.length ? "semantic_world_direction_plus_rest_relative_local" : "rest_relative_local_canonical_to_coach"
       }),
       phases: Object.freeze((source.phases || []).map(phase => Object.freeze({
         ...phase,
         boneTargets: Object.freeze((phase.boneTargets || []).map(remapBoneRecord))
       }))),
+      semanticPosePolicy,
       groundingPolicy,
       acceptedAuthoringAdjustment: remapAuthoringAdjustment(source.acceptedAuthoringAdjustment),
       coachRetarget
@@ -166,6 +186,10 @@
 
   async function installOverheadSquatAssessmentTest(anchorButton) {
     try {
+      await loadScriptOnce("/dev/motion-lab-assets/motion-spec-semantic-direction-policy.js", "PocketPTMotionSpecSemanticDirectionPolicy");
+      var semanticCompiler = window.PocketPTMotionSpecSemanticDirectionPolicy?.install?.(window.PocketPTMotionSpecClip);
+      if (!semanticCompiler?.compile || semanticCompiler.__semanticDirectionPolicyInstalled !== true) throw new Error("Semantic direction policy failed to install");
+      window.PocketPTMotionSpecClip = semanticCompiler;
       await loadScriptOnce("/dev/motion-lab-assets/overhead-squat-assessment-motion-spec.js", "PocketPTOverheadSquatAssessmentMotionSpec");
       await loadScriptOnce("/dev/motion-lab-assets/motion-lab-overhead-squat-assessment-preview.js", "PocketPTMotionLabOverheadSquatAssessmentPreview");
       var button = document.getElementById("loadOverheadSquatAssessment");
