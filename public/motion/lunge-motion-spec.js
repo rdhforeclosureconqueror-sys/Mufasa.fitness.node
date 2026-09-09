@@ -36,13 +36,14 @@
     });
   }
 
+  // v2.3 is intentionally based on the last device-playable v2.1 geometry.
+  // The only promoted owner calibration is split_plant RightLeg pitch: -7° + 5° = -2°.
   const STANDING = Object.freeze({ hipPitch: 0, spinePitch: 0, spine1Pitch: 0, leftThigh: 0, leftKnee: 0, leftAnkle: 0, rightThigh: 0, rightKnee: 0, rightAnkle: 0 });
-  const STEP_FORWARD = Object.freeze({ hipPitch: 1, spinePitch: -1, spine1Pitch: 0, leftThigh: 55, leftKnee: -18, leftAnkle: 6, rightThigh: -6, rightKnee: -4, rightAnkle: -1 });
-  const STEP_BACK = Object.freeze({ hipPitch: 1, spinePitch: -1, spine1Pitch: 0, leftThigh: 18, leftKnee: -10, leftAnkle: 4, rightThigh: -12, rightKnee: -4, rightAnkle: -1 });
-  const SPLIT_PLANT = Object.freeze({ hipPitch: 2, spinePitch: -1, spine1Pitch: 0, leftThigh: 40, leftKnee: -10, leftAnkle: 4, rightThigh: -34, rightKnee: -1, rightAnkle: -3 });
-  const SPLIT_TOP = Object.freeze({ hipPitch: 2, spinePitch: -1, spine1Pitch: 0, leftThigh: 40, leftKnee: -10, leftAnkle: 4, rightThigh: -34, rightKnee: -6, rightAnkle: -3 });
-  const DESCENT = Object.freeze({ hipPitch: 3, spinePitch: -1, spine1Pitch: 0, leftThigh: 49, leftKnee: -50, leftAnkle: 9, rightThigh: -22, rightKnee: -50, rightAnkle: -5 });
-  const BOTTOM = Object.freeze({ hipPitch: 3, spinePitch: -1, spine1Pitch: 0, leftThigh: 58, leftKnee: -88, leftAnkle: 12, rightThigh: -12, rightKnee: -92, rightAnkle: -7 });
+  const STEP = Object.freeze({ hipPitch: 1, spinePitch: -1, spine1Pitch: 0, leftThigh: 34, leftKnee: -24, leftAnkle: 8, rightThigh: -4, rightKnee: -4, rightAnkle: -1 });
+  const SPLIT_TOP = Object.freeze({ hipPitch: 2, spinePitch: -1, spine1Pitch: 0, leftThigh: 24, leftKnee: -14, leftAnkle: 6, rightThigh: -27, rightKnee: -7, rightAnkle: -3 });
+  const SPLIT_PLANT = Object.freeze({ ...SPLIT_TOP, rightKnee: -2 });
+  const DESCENT = Object.freeze({ hipPitch: 3, spinePitch: -1, spine1Pitch: 0, leftThigh: 37, leftKnee: -42, leftAnkle: 10, rightThigh: -18, rightKnee: -44, rightAnkle: -5 });
+  const BOTTOM = Object.freeze({ hipPitch: 3, spinePitch: -1, spine1Pitch: 0, leftThigh: 48, leftKnee: -72, leftAnkle: 12, rightThigh: -9, rightKnee: -82, rightAnkle: -7 });
   const LOADED_CONTACTS = Object.freeze(["left_front_foot", "right_rear_forefoot"]);
 
   const verticalDown = Object.freeze({ target: "pelvis", direction: "down", dominantAxis: "vertical", horizontalTravelIntent: "minimal", rearKneeDirection: "down_toward_floor" });
@@ -51,8 +52,8 @@
   const spec = Object.freeze({
     schemaVersion: 1,
     exerciseId: "stationary_lunge_left",
-    motionId: "lunge/stationary_left_movement_definition_v2_3_owner_split_knee",
-    displayName: "Stationary Left Lunge Movement Definition v2.3 — Longer Step + Owner-Calibrated Split Plant",
+    motionId: "lunge/stationary_left_movement_definition_v2_3_playable_base_owner_split_knee",
+    displayName: "Stationary Left Lunge Movement Definition v2.3 — Playable v2.1 Base + Owner Split-Plant Knee",
     version: 2.3,
     status: "development-test-only",
     sourceManifest: "/motion-sources/stationary-lunge-left-synthesis-v1.source.json",
@@ -60,11 +61,28 @@
     skeleton: Object.freeze({ id: "canonical_phase_e_mixamo", rootBone: "mixamorig:Hips", rotationSpace: "rest_relative_local" }),
     durationSeconds: 7.2,
     loop: false,
+    lineage: Object.freeze({
+      playableBaseMotionId: "lunge/stationary_left_movement_definition_v2_1_exit_release",
+      playableBaseCommit: "dec75c9880d46a30c51c5321a7fd0ce4c3e1637b",
+      rejectedGeometryFamily: "v2.2-long-stride",
+      reason: "v2.2-family geometry previously failed to produce a ready runtime clip/action on device"
+    }),
+    acceptedAuthoringAdjustment: Object.freeze({
+      phaseId: "split_plant",
+      target: "right_knee",
+      bone: "mixamorig:RightLeg",
+      mode: "joint_rotation_delta",
+      axis: "x",
+      basePitchDegrees: -7,
+      approvedDeltaDegrees: 5,
+      canonicalPitchDegrees: -2,
+      scope: "split_plant_only"
+    }),
     movementContract: Object.freeze({
       style: "step into a left-forward stationary lunge, complete three controlled repetitions, then step back to standing",
       startAndFinish: "upright neutral standing position",
       setupIntent: "begin from the avatar rest-relative standing pose before creating the split stance",
-      stepIntent: "drive the left hip farther into flexion so the left foot travels far enough forward to establish a true lunge stance before loading",
+      stepIntent: "use the last device-playable v2.1 entry geometry; do not reintroduce the v2.2 long-stride geometry until runtime IK acceptance proves it playable",
       frontKneeBottomInsideAngleTargetDegrees: 90,
       frontKneeBottomToleranceDegrees: 10,
       rearKneeBottomInsideAngleTargetDegrees: 90,
@@ -73,22 +91,10 @@
       rearKneeIntent: "right rear knee tracks primarily downward toward the floor while the right forefoot remains planted",
       frontShinIntent: "front shin remains approximately vertical at the bottom rather than the knee continuing far forward",
       ascentIntent: "drive the pelvis mostly straight up to the same split-stance top without moving the planted feet",
-      exitIntent: "after the third ascent, end loaded-lunge contact authority and progressively neutralize both legs toward standing; the exit transition must not reuse the aggressive forward-step pose",
+      exitIntent: "after the third ascent, end loaded-lunge contact authority, then return toward standing using the last playable exit geometry",
       torsoIntent: "remain tall with only small balance lean",
-      ownerCalibration: "At split_plant only, the owner-approved RightLeg pitch is the v2.2 value plus +5 degrees, producing -1 degree. Repetition-top poses remain at -6 degrees until separately reviewed.",
+      ownerCalibration: "At split_plant only, apply the owner-approved +5 degree RightLeg pitch correction to the actual playable v2.1 base: -7 degrees becomes -2 degrees. Rep-top poses remain -7 degrees.",
       armsPriority: "secondary-after-lower-body-approval"
-    }),
-    authoringGeometryGate: Object.freeze({
-      purpose: "Reject a lunge definition that declares 90-degree bottom geometry but does not create enough forward hip flexion and split-stance reach to support it.",
-      stepForwardMinimumLeftHipFlexionDegrees: 50,
-      splitPlantMinimumLeftHipFlexionDegrees: 35,
-      splitPlantMinimumRearHipExtensionDegrees: 30,
-      splitPlantOwnerApprovedRightKneePitchDegrees: -1,
-      bottomMinimumFrontKneeFlexionOffsetDegrees: 80,
-      bottomMinimumRearKneeFlexionOffsetDegrees: 85,
-      targetFrontKneeInsideAngleDegrees: 90,
-      targetFrontKneeToleranceDegrees: 10,
-      firstFailingBoundary: "LUNGE_ENTRY_GEOMETRY"
     }),
     repetitionPlan: Object.freeze({
       count: 3,
@@ -110,7 +116,7 @@
       ]),
       anchorPhaseId: "split_plant",
       anchorValidity: Object.freeze({ requiredGroundContacts: LOADED_CONTACTS, rejectAirborneRearToe: true, reviewRule: "Do not begin loaded descent until split_plant has the left whole foot and right forefoot on the same ground plane." }),
-      rule: "Standing and stepping-in phases are unconstrained. Capture both loaded anchors at split_plant, preserve both through rep3_top, then release loaded anchor authority before step_back so the exit pose can return toward standing without an unreachable rear-leg target."
+      rule: "Standing and stepping-in phases are unconstrained. Capture both loaded anchors at split_plant, preserve both through rep3_top, then release loaded anchor authority before step_back."
     }),
     trajectoryPolicy: Object.freeze({
       loadedDescent: verticalDown,
@@ -123,11 +129,11 @@
       torso: "upright"
     }),
     synthesisBoundary: Object.freeze({
-      method: "movement-lego-composition-with-phase-aware-contact-constraints-explicit-pelvis-trajectory-entry-geometry-gate-and-owner-calibrated-split-plant",
+      method: "v2.1-playable-geometry-plus-owner-split-plant-knee-calibration",
       copiedNamedLungeAnimation: false,
       sourcePrimitives: Object.freeze(["neutral_stand", "step_forward", "split_stance", "stable_stance", "root_vertical_descent", "root_vertical_ascent", "bilateral_knee_flexion_extension", "rear_knee_descent", "stable_ground_contact", "step_back_to_stand"]),
       evidenceReferences: Object.freeze(["/motion-sources/crouched-sneaking-left-reference.source.json", "/motion-sources/kettlebell-swing-reference.source.json", "/motion/transition-profiles/stand-to-plank.v1.json"]),
-      evidenceCaution: "Reference sources contribute only primitive mechanics. The lunge sequence is defined by this movement contract rather than copied from a named lunge animation.",
+      evidenceCaution: "Reference sources contribute only primitive mechanics. Runtime playability remains a required acceptance boundary.",
       unsupported: Object.freeze(["biomechanical ground truth", "production scoring thresholds", "individual anthropometric fit", "medical diagnosis"])
     }),
     phaseOrder: Object.freeze([
@@ -139,8 +145,8 @@
     ]),
     phases: Object.freeze([
       phase("stand_start", "setup", 0.00, [0, 0, 0], STANDING, { contacts: [], movementIntent: "neutral standing; no lunge load" }),
-      phase("step_forward", "transition", 0.08, [0, 0, 0], STEP_FORWARD, { contacts: [], movementIntent: "left hip flexes strongly to send the left foot forward and create enough stride length for the later 90-degree bottom" }),
-      phase("split_plant", "position", 0.16, [0, 0, 0], SPLIT_PLANT, { contacts: LOADED_CONTACTS, movementIntent: "plant a deliberately long left-forward split stance using the owner-approved right-knee calibration" }),
+      phase("step_forward", "transition", 0.08, [0, 0, 0], STEP, { contacts: [], movementIntent: "device-playable v2.1 entry geometry" }),
+      phase("split_plant", "position", 0.16, [0, 0, 0], SPLIT_PLANT, { contacts: LOADED_CONTACTS, movementIntent: "device-playable v2.1 split stance with owner-approved +5 degree right-knee correction" }),
       phase("rep1_descent", "eccentric", 0.25, [0, -0.07, 0], DESCENT, { contacts: LOADED_CONTACTS, trajectory: verticalDown }),
       phase("rep1_bottom", "isometric", 0.32, [0, -0.14, 0], BOTTOM, { contacts: LOADED_CONTACTS, trajectory: verticalDown, holdDurationSeconds: 0.12 }),
       phase("rep1_top", "concentric", 0.40, [0, 0, 0], SPLIT_TOP, { contacts: LOADED_CONTACTS, trajectory: verticalUp }),
@@ -150,7 +156,7 @@
       phase("rep3_descent", "eccentric", 0.71, [0, -0.07, 0], DESCENT, { contacts: LOADED_CONTACTS, trajectory: verticalDown }),
       phase("rep3_bottom", "isometric", 0.78, [0, -0.14, 0], BOTTOM, { contacts: LOADED_CONTACTS, trajectory: verticalDown, holdDurationSeconds: 0.12 }),
       phase("rep3_top", "concentric", 0.86, [0, 0, 0], SPLIT_TOP, { contacts: LOADED_CONTACTS, trajectory: verticalUp }),
-      phase("step_back", "transition", 0.94, [0, 0, 0], STEP_BACK, { contacts: [], movementIntent: "loaded anchors released; both legs move monotonically toward neutral standing instead of re-entering the forward-step pose" }),
+      phase("step_back", "transition", 0.94, [0, 0, 0], STEP, { contacts: [], movementIntent: "loaded anchors released; preserve last device-playable v2.1 exit geometry" }),
       phase("stand_finish", "completion", 1.00, [0, 0, 0], STANDING, { contacts: [], movementIntent: "same neutral standing pose as start" })
     ])
   });
@@ -163,7 +169,7 @@
     const errors = [];
     const bones = new Set(availableBones);
     if (!candidate || typeof candidate !== "object") return Object.freeze({ valid: false, errors: Object.freeze(["motion spec must be an object"]) });
-    for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder", "movementContractRef", "repetitionPlan", "trajectoryPolicy", "authoringGeometryGate"]) if (candidate[field] == null) errors.push(`${field} is required`);
+    for (const field of ["exerciseId", "motionId", "version", "skeleton", "durationSeconds", "phases", "phaseOrder", "movementContractRef", "repetitionPlan", "trajectoryPolicy", "lineage", "acceptedAuthoringAdjustment"]) if (candidate[field] == null) errors.push(`${field} is required`);
     if (!(candidate.durationSeconds > 0)) errors.push("durationSeconds must be positive");
     if (candidate.loop !== false) errors.push("step-in lunge v2 must finish at standing instead of looping split stance");
     if (!candidate.groundingPolicy?.enforceContactAnchors) errors.push("lunge requires contact-anchor enforcement");
@@ -206,34 +212,17 @@
     }
     const exit = phases.find(item => item.id === "step_back");
     if ((exit?.contacts || []).length) errors.push("step_back must release loaded split-stance contact authority before returning toward standing");
-    const rep3Top = phases.find(item => item.id === "rep3_top");
-    const exitLeftHip = Math.abs(bonePitch(exit, "mixamorig:LeftUpLeg") || 0);
-    const topLeftHip = Math.abs(bonePitch(rep3Top, "mixamorig:LeftUpLeg") || 0);
-    const exitRearHip = Math.abs(bonePitch(exit, "mixamorig:RightUpLeg") || 0);
-    const topRearHip = Math.abs(bonePitch(rep3Top, "mixamorig:RightUpLeg") || 0);
-    if (!(exitLeftHip < topLeftHip) || !(exitRearHip < topRearHip)) errors.push("LUNGE_EXIT_GEOMETRY: step_back must reduce both hip offsets toward neutral instead of reusing the forward-step pose");
     for (const id of ["rep1_descent", "rep1_bottom", "rep2_descent", "rep2_bottom", "rep3_descent", "rep3_bottom"]) {
       const item = phases.find(candidatePhase => candidatePhase.id === id);
       if (item?.root?.positionOffset?.[0] !== 0 || item?.root?.positionOffset?.[2] !== 0) errors.push(`${id} must not author horizontal pelvis travel`);
     }
 
-    const gate = candidate.authoringGeometryGate || {};
-    const step = phases.find(item => item.id === "step_forward");
-    const splitPlant = phases.find(item => item.id === "split_plant");
-    const stepLeftHip = bonePitch(step, "mixamorig:LeftUpLeg");
-    const plantLeftHip = bonePitch(splitPlant, "mixamorig:LeftUpLeg");
-    const plantRearHip = bonePitch(splitPlant, "mixamorig:RightUpLeg");
-    const plantRightKnee = bonePitch(splitPlant, "mixamorig:RightLeg");
-    if (!(stepLeftHip >= gate.stepForwardMinimumLeftHipFlexionDegrees)) errors.push(`LUNGE_ENTRY_GEOMETRY: step_forward left hip flexion ${stepLeftHip}° is below ${gate.stepForwardMinimumLeftHipFlexionDegrees}° minimum; stride is too short`);
-    if (!(plantLeftHip >= gate.splitPlantMinimumLeftHipFlexionDegrees)) errors.push(`LUNGE_ENTRY_GEOMETRY: split_plant left hip flexion ${plantLeftHip}° is below ${gate.splitPlantMinimumLeftHipFlexionDegrees}° minimum; front foot is not far enough forward`);
-    if (!(Math.abs(plantRearHip) >= gate.splitPlantMinimumRearHipExtensionDegrees)) errors.push(`LUNGE_ENTRY_GEOMETRY: split_plant rear hip extension ${plantRearHip}° is below ${gate.splitPlantMinimumRearHipExtensionDegrees}° minimum; stance is too short`);
-    if (plantRightKnee !== gate.splitPlantOwnerApprovedRightKneePitchDegrees) errors.push(`LUNGE_OWNER_CALIBRATION: split_plant right knee pitch ${plantRightKnee}° must remain at owner-approved ${gate.splitPlantOwnerApprovedRightKneePitchDegrees}°`);
-    for (const id of candidate.repetitionPlan?.bottomPhases || []) {
-      const bottom = phases.find(item => item.id === id);
-      const frontKnee = Math.abs(bonePitch(bottom, "mixamorig:LeftLeg") || 0);
-      const rearKnee = Math.abs(bonePitch(bottom, "mixamorig:RightLeg") || 0);
-      if (frontKnee < gate.bottomMinimumFrontKneeFlexionOffsetDegrees) errors.push(`LUNGE_BOTTOM_GEOMETRY: ${id} front knee authored flexion ${frontKnee}° is below ${gate.bottomMinimumFrontKneeFlexionOffsetDegrees}° minimum`);
-      if (rearKnee < gate.bottomMinimumRearKneeFlexionOffsetDegrees) errors.push(`LUNGE_BOTTOM_GEOMETRY: ${id} rear knee authored flexion ${rearKnee}° is below ${gate.bottomMinimumRearKneeFlexionOffsetDegrees}° minimum`);
+    const adjustment = candidate.acceptedAuthoringAdjustment || {};
+    const plantPitch = bonePitch(anchor, adjustment.bone || "mixamorig:RightLeg");
+    if (adjustment.basePitchDegrees !== -7 || adjustment.approvedDeltaDegrees !== 5 || adjustment.canonicalPitchDegrees !== -2) errors.push("LUNGE_OWNER_CALIBRATION: v2.3 calibration provenance must remain -7 + 5 = -2");
+    if (plantPitch !== adjustment.canonicalPitchDegrees) errors.push(`LUNGE_OWNER_CALIBRATION: split_plant right knee pitch ${plantPitch}° must remain at owner-approved ${adjustment.canonicalPitchDegrees}°`);
+    for (const id of candidate.repetitionPlan?.loadedTopPhases || []) {
+      if (bonePitch(phases.find(item => item.id === id), "mixamorig:RightLeg") !== -7) errors.push(`LUNGE_OWNER_CALIBRATION_SCOPE: ${id} must remain on the playable v2.1 -7° value`);
     }
 
     return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors) });
@@ -242,7 +231,6 @@
   function summary(candidate = spec) {
     const bottoms = candidate.repetitionPlan.bottomPhases.map(id => candidate.phases.find(item => item.id === id)).filter(Boolean);
     const maxBottomDrop = bottoms.reduce((max, item) => Math.max(max, Math.abs(item.root.positionOffset[1] || 0)), 0);
-    const splitPlant = candidate.phases.find(item => item.id === "split_plant");
     return Object.freeze({
       motionId: candidate.motionId,
       version: candidate.version,
@@ -253,10 +241,8 @@
       maxBottomRootDropAvatarHeights: maxBottomDrop,
       frontKneeTargetDegrees: candidate.movementContract.frontKneeBottomInsideAngleTargetDegrees,
       rearKneeTargetDegrees: candidate.movementContract.rearKneeBottomInsideAngleTargetDegrees,
-      minimumStepLeftHipFlexionDegrees: candidate.authoringGeometryGate.stepForwardMinimumLeftHipFlexionDegrees,
-      minimumSplitPlantLeftHipFlexionDegrees: candidate.authoringGeometryGate.splitPlantMinimumLeftHipFlexionDegrees,
-      ownerApprovedSplitPlantRightKneePitchDegrees: bonePitch(splitPlant, "mixamorig:RightLeg"),
-      geometryGateBoundary: candidate.authoringGeometryGate.firstFailingBoundary,
+      playableBaseMotionId: candidate.lineage.playableBaseMotionId,
+      ownerApprovedSplitPlantRightKneePitchDegrees: candidate.acceptedAuthoringAdjustment.canonicalPitchDegrees,
       descentDominantAxis: candidate.trajectoryPolicy.loadedDescent.dominantAxis,
       groundingMode: candidate.groundingPolicy.mode,
       anchorPhaseId: candidate.groundingPolicy.anchorPhaseId,
