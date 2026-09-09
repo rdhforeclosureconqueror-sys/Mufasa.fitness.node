@@ -63,6 +63,16 @@ test('saved drafts preserve both structured pose edits and directed transition p
   assert.doesNotMatch(draftStore, /active\.play\?\.\(\)/);
 });
 
+test('directed transition state is scoped to the active motion and fails closed on mismatched restores', () => {
+  assert.match(authoring, /let activeMotionId = null/);
+  assert.match(authoring, /function syncMotionScope\(\)/);
+  assert.match(authoring, /if \(id !== activeMotionId\)/);
+  assert.match(authoring, /intents = \[\]/);
+  assert.match(authoring, /workingClip = null/);
+  assert.match(authoring, /transition_plan_motion_mismatch/);
+  assert.match(authoring, /TRANSITION_PLAN_CONTEXT_MISMATCH/);
+});
+
 test('new authoring asset uses the existing protected Motion Lab route', () => {
   assert.match(index, /\/dev\/motion-lab-assets\/motion-lab-motion-direction-authoring\.js/);
   assert.match(server, /app\.get\("\/dev\/motion-lab-assets\/:filename", motionLabGate/);
