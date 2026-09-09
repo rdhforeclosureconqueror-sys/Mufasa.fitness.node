@@ -218,4 +218,5 @@
     VERSION, STEP_SECONDS, install, wire, refresh, seek, step, play, pause, stop, restart,
     getActiveSession: activeSession
   });
+  install();
 })(window, document);
