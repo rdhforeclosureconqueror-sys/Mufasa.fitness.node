@@ -36,7 +36,14 @@ The bar is mounted inside `#poseEditorLiveViewer`, directly below the actual `#v
 
 When there are no pending pose edits, local Play delegates to the existing session `play()` path.
 
-When pending pose edits exist, local Play/Restart delegates to `PocketPTMotionLabPoseEditor.playAdjustedPreview()` so the owner sees the adjusted motion rather than accidentally replaying only the canonical clip.
+When pending pose edits exist, the local controls track an edit signature for the adjusted preview:
+
+- If the adjusted preview is stale or has not been built for the current edits, Play rebuilds it through `PocketPTMotionLabPoseEditor.playAdjustedPreview()`.
+- If the adjusted preview already matches the current edit signature and is merely paused, Play resumes the existing adjusted action from its current time instead of rebuilding/restarting it.
+- Restart intentionally rebuilds/plays the current adjusted preview from the beginning.
+- Any additional edit invalidates the prior adjusted-preview signature, so the next Play rebuilds the latest motion rather than resuming stale content.
+
+This fixes the review-discovered resume defect where paused adjusted playback could restart from time zero.
 
 No edit is required before Play becomes useful.
 
@@ -75,7 +82,11 @@ The already-static `motion-lab-pose-editor-preview-guard.js` loads the new local
 - 0.10-second stepping and scrubber support;
 - use of the Pose Editor active session;
 - no second AnimationMixer/session/clipAction authority;
-- adjusted-preview playback when edits exist;
+- canonical playback before edits;
+- adjusted-preview build when edits exist;
+- paused adjusted-preview resume without rebuild/restart when edit signature is unchanged;
+- adjusted-preview rebuild after the edit signature changes;
+- explicit Restart behavior;
 - no camera mutation in playback controls.
 
 ## Manual acceptance
@@ -89,11 +100,14 @@ The already-static `motion-lab-pose-editor-preview-guard.js` loads the new local
 7. Rotate the avatar view while paused; confirm the pose stays paused.
 8. Press Forward and Back; confirm motion steps in 0.10-second increments and remains paused.
 9. Drag the timeline and confirm the avatar follows the selected time.
-10. Resume Play and confirm playback continues.
+10. Resume Play and confirm playback continues from the inspected time.
 11. Make a Pose Editor adjustment.
 12. Press local Play and confirm the adjusted preview plays.
-13. Confirm top-level controls and local controls continue to operate the same animation state.
-14. Confirm no duplicate avatar, animation stacking, second canvas, or playback-state disagreement appears.
+13. Pause the adjusted preview midway, then press Play and confirm it resumes from the same time instead of restarting.
+14. Make another adjustment, then press Play and confirm the new adjusted preview is rebuilt and played.
+15. Press Restart and confirm the current adjusted preview begins from the start.
+16. Confirm top-level controls and local controls continue to operate the same animation state.
+17. Confirm no duplicate avatar, animation stacking, second canvas, or playback-state disagreement appears.
 
 ## First-failure order
 
@@ -103,12 +117,14 @@ If the controls fail, report the first failing boundary:
 2. local bar mounted under `poseEditorLiveViewer`
 3. active session resolved
 4. action resolved
-5. Play delegated to canonical or adjusted preview as expected
-6. Pause state reflected
-7. seek/step mixer time applied
-8. avatar pose updated
-9. timeline reflects current action time
-10. camera remains independently controllable
+5. pending-edit signature resolved
+6. adjusted-preview signature current/stale decision correct
+7. Play delegated to canonical play, adjusted rebuild, or adjusted resume as expected
+8. Pause state reflected
+9. seek/step mixer time applied
+10. avatar pose updated
+11. timeline reflects current action time
+12. camera remains independently controllable
 
 ## Readiness boundary
 
