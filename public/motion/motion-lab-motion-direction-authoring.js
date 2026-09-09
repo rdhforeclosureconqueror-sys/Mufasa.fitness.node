@@ -1,7 +1,7 @@
 (function initMotionLabMotionDirectionAuthoring(root, document) {
   'use strict';
 
-  const VERSION = '1.1.0-adjacent-phase-direction-humanize';
+  const VERSION = '1.2.0-motion-scoped-direction-humanize';
   const SAMPLE_COUNT = 7;
   const TARGET_BONES = Object.freeze({
     left_foot: Object.freeze(['mixamorig:LeftUpLeg','mixamorig:LeftLeg','mixamorig:LeftFoot']),
@@ -19,16 +19,29 @@
   let intents = [];
   let workingClip = null;
   let phaseObserver = null;
-  let lastSnapshot = Object.freeze({ status: 'idle', transitionCount: 0, firstFailingBoundary: null });
+  let activeMotionId = null;
+  let lastSnapshot = Object.freeze({ status: 'idle', motionId: null, transitionCount: 0, firstFailingBoundary: null });
 
   function el(id) { return document.getElementById(id); }
   function editor() { return root.PocketPTMotionLabPoseEditor; }
   function session() { return editor()?.getActiveSession?.() || null; }
+  function currentMotionId() { return session()?.motionSpec?.motionId || null; }
   function phases() { return Array.isArray(session()?.motionSpec?.phases) ? session().motionSpec.phases : []; }
   function phaseById(id) { return phases().find(item => item.id === id) || null; }
-  function publish(patch) { lastSnapshot = Object.freeze({ ...lastSnapshot, ...patch, transitionCount: intents.length }); }
+  function publish(patch) { lastSnapshot = Object.freeze({ ...lastSnapshot, ...patch, motionId: currentMotionId(), transitionCount: intents.length }); }
   function status(message, kind = 'ready') { const node = el('motionDirectionStatus'); if (node) { node.textContent = message; node.dataset.status = kind; } }
   function poseStatus(message, kind = 'ready') { const node = el('poseEditorStatus'); if (node) { node.textContent = message; node.dataset.status = kind; } }
+
+  function syncMotionScope() {
+    const id = currentMotionId();
+    if (id !== activeMotionId) {
+      intents = [];
+      workingClip = null;
+      activeMotionId = id;
+      publish({ status: id ? 'motion_changed' : 'idle', firstFailingBoundary: null });
+    }
+    return id;
+  }
 
   function easing(profile, t) {
     const x = Math.max(0, Math.min(1, Number(t) || 0));
@@ -50,6 +63,7 @@
   }
 
   function syncPhaseOptions() {
+    syncMotionScope();
     const from = el('motionDirectionFromPhase'), to = el('motionDirectionToPhase');
     if (!from || !to) return;
     const list = phases(), currentFrom = from.value, currentTo = to.value, sourcePhase = el('poseEditorPhase')?.value;
@@ -121,6 +135,7 @@
   }
 
   function applyDirection(action) {
+    syncMotionScope();
     syncPhaseOptions();
     const transition = validTransition();
     if (transition.status !== 'ready') {
@@ -209,6 +224,7 @@
   }
 
   function buildPreview(options = {}) {
+    syncMotionScope();
     if (intents.length === 0) return { status: 'failed', code: 'directed_motion_required' };
     if (options.refreshPose !== false) {
       const poseBuilt = editor()?.playAdjustedPreview?.();
@@ -233,10 +249,31 @@
 
   function preview() { return buildPreview({ play: true, refreshPose: true }); }
   function clearPlan() { intents = []; workingClip = null; status('Directed transition plan cleared. Canonical Motion Spec was not changed.'); publish({ status: 'ready', firstFailingBoundary: null }); return { status: 'ready' }; }
-  function exportPlan() { const active = session(); return Object.freeze({ schemaVersion: 1, type: 'motion_lab_transition_direction_plan', authoringVersion: VERSION, motionId: active?.motionSpec?.motionId || null, exerciseId: active?.motionSpec?.exerciseId || null, transitions: Object.freeze(intents.map(item => Object.freeze({ ...item }))) }); }
+  function exportPlan() {
+    syncMotionScope();
+    const active = session();
+    return Object.freeze({ schemaVersion: 1, type: 'motion_lab_transition_direction_plan', authoringVersion: VERSION, motionId: active?.motionSpec?.motionId || null, exerciseId: active?.motionSpec?.exerciseId || null, transitions: Object.freeze(intents.map(item => Object.freeze({ ...item }))) });
+  }
   function restorePlan(plan) {
     if (plan && plan.type !== 'motion_lab_transition_direction_plan') return { status: 'failed', code: 'transition_plan_invalid' };
-    intents = (Array.isArray(plan?.transitions) ? plan.transitions : []).map(item => Object.freeze({ ...item }));
+    const motionId = syncMotionScope();
+    if (plan?.motionId && motionId && plan.motionId !== motionId) {
+      status(`Saved directed transition plan belongs to a different motion (${plan.motionId}).`, 'failed');
+      publish({ status: 'failed', firstFailingBoundary: 'TRANSITION_PLAN_MOTION_MISMATCH' });
+      return { status: 'failed', code: 'transition_plan_motion_mismatch', expectedMotionId: motionId, actualMotionId: plan.motionId };
+    }
+    const restored = Array.isArray(plan?.transitions) ? plan.transitions : [];
+    const list = phases();
+    for (const item of restored) {
+      const fromIndex = list.findIndex(phase => phase.id === item?.fromPhaseId);
+      const toIndex = list.findIndex(phase => phase.id === item?.toPhaseId);
+      if (fromIndex < 0 || toIndex !== fromIndex + 1 || !TARGET_BONES[item?.target]) {
+        status('Saved directed transition plan contains a transition that is not valid for the loaded motion.', 'failed');
+        publish({ status: 'failed', firstFailingBoundary: 'TRANSITION_PLAN_CONTEXT_MISMATCH' });
+        return { status: 'failed', code: 'transition_plan_context_mismatch' };
+      }
+    }
+    intents = restored.map(item => Object.freeze({ ...item }));
     workingClip = session()?.sessionClip?.clone?.() || session()?.sessionClip || null;
     syncPhaseOptions();
     status(intents.length ? `Restored ${intents.length} directed transition(s) from the saved authored motion.` : 'No directed transitions were stored in this draft.');
