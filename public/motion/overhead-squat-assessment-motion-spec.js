@@ -45,9 +45,11 @@
 
   const contacts = Object.freeze(["left_foot", "right_foot"]);
   const phaseOrder = Object.freeze([
-    "setup_overhead", "rep1_descent", "rep1_bottom", "rep1_top",
-    "rep2_descent", "rep2_bottom", "rep2_top",
-    "rep3_descent", "rep3_bottom", "rep3_top", "finish_overhead"
+    "setup_overhead",
+    "rep1_descent_mid", "rep1_bottom", "rep1_bottom_hold", "rep1_ascent_mid", "rep1_top",
+    "rep2_descent_mid", "rep2_bottom", "rep2_bottom_hold", "rep2_ascent_mid", "rep2_top",
+    "rep3_descent_mid", "rep3_bottom", "rep3_bottom_hold", "rep3_ascent_mid", "rep3_top",
+    "finish_overhead"
   ]);
 
   const spec = Object.freeze({
@@ -59,7 +61,7 @@
     status: "development-test-only",
     movementContractRef: "/motion/contracts/overhead-squat-assessment.v1.json",
     skeleton: Object.freeze({ id:"canonical_phase_e_mixamo", rootBone:"mixamorig:Hips", rotationSpace:"rest_relative_local" }),
-    durationSeconds: 7.5,
+    durationSeconds: 9.0,
     loop: false,
     movementContract: Object.freeze({
       purpose: "whole-body movement screen demonstration for Motion Lab verification",
@@ -67,18 +69,34 @@
       armIntent: "both elbows remain straight while the arms stay overhead with upper arms near the ears",
       trunkIntent: "brace gently and keep the chest tall without manufacturing a rigid perfectly vertical torso",
       descentIntent: "descend under control to a comfortable pain-free depth using coordinated hip, knee and ankle motion",
-      ascentIntent: "reverse the same path back to the exact overhead standing position",
+      ascentIntent: "reverse the same START -> MID -> BOTTOM path as BOTTOM -> MID -> START",
       kneeIntent: "knees track in the same general direction as the feet; no authored valgus compensation",
       footIntent: "both feet remain planted for the entire assessment demonstration",
       repetitionIntent: "perform three repeatable assessment repetitions without changing stance or overhead reach",
       calibrationRule: "position authority before transition authority: visually approve overhead setup and first bottom before tuning the path between them"
     }),
-    repetitionPlan: Object.freeze({ count:3, startPhase:"setup_overhead", bottomPhases:Object.freeze(["rep1_bottom","rep2_bottom","rep3_bottom"]), topPhases:Object.freeze(["rep1_top","rep2_top","rep3_top"]), finishPhase:"finish_overhead" }),
+    repetitionPlan: Object.freeze({
+      count:3,
+      startPhase:"setup_overhead",
+      bottomPhases:Object.freeze(["rep1_bottom","rep2_bottom","rep3_bottom"]),
+      bottomHoldPhases:Object.freeze(["rep1_bottom_hold","rep2_bottom_hold","rep3_bottom_hold"]),
+      ascentMidPhases:Object.freeze(["rep1_ascent_mid","rep2_ascent_mid","rep3_ascent_mid"]),
+      topPhases:Object.freeze(["rep1_top","rep2_top","rep3_top"]),
+      finishPhase:"finish_overhead"
+    }),
     groundingPolicy: Object.freeze({
-      mode:"dual-foot-planted-runtime-anchor-lock", contacts,
+      mode:"dual-foot-planted-generated-ik-dense-playback",
+      contacts,
       contactBones:Object.freeze({ left_foot:"mixamorig:LeftFoot", right_foot:"mixamorig:RightFoot" }),
       enforceContactAnchors:true,
-      rule:"Capture bilateral foot anchors at setup_overhead and preserve them through finish_overhead."
+      enforceGeneratedIK:true,
+      anchorPhaseId:"setup_overhead",
+      continuousSolveSamplesPerTransition:4,
+      kinematicChains:Object.freeze([
+        Object.freeze({ id:"left_leg", contact:"left_foot", rootBone:"mixamorig:LeftUpLeg", jointBone:"mixamorig:LeftLeg", endBone:"mixamorig:LeftFoot", contactBone:"mixamorig:LeftFoot" }),
+        Object.freeze({ id:"right_leg", contact:"right_foot", rootBone:"mixamorig:RightUpLeg", jointBone:"mixamorig:RightLeg", endBone:"mixamorig:RightFoot", contactBone:"mixamorig:RightFoot" })
+      ]),
+      rule:"Capture bilateral anchors at setup_overhead. Generated leg IK owns foot contact while a dense preview expansion inserts solved intermediate playback samples between named phases."
     }),
     assessmentObservationContract: Object.freeze({
       views:Object.freeze(["front","right_side","back_optional"]),
@@ -97,15 +115,23 @@
     phaseOrder,
     phases:Object.freeze([
       phase("setup_overhead","setup",0.00,[0,0,0],START,{ movementIntent:"establish hip-width stance, bilateral planted feet, straight overhead arms" }),
-      phase("rep1_descent","eccentric",0.10,[0,-0.115,-0.050],MID),
-      phase("rep1_bottom","isometric",0.18,[0,-0.310,-0.080],BOTTOM,{ holdDurationSeconds:0.18, reviewCheckpoint:true }),
+      phase("rep1_descent_mid","eccentric",0.06,[0,-0.115,-0.050],MID),
+      phase("rep1_bottom","isometric",0.12,[0,-0.310,-0.080],BOTTOM,{ reviewCheckpoint:true }),
+      phase("rep1_bottom_hold","isometric_hold",0.14,[0,-0.310,-0.080],BOTTOM,{ holdDurationSeconds:0.18 }),
+      phase("rep1_ascent_mid","concentric",0.20,[0,-0.115,-0.050],MID),
       phase("rep1_top","concentric",0.28,[0,0,0],START),
-      phase("rep2_descent","eccentric",0.38,[0,-0.115,-0.050],MID),
-      phase("rep2_bottom","isometric",0.46,[0,-0.310,-0.080],BOTTOM,{ holdDurationSeconds:0.18 }),
-      phase("rep2_top","concentric",0.56,[0,0,0],START),
-      phase("rep3_descent","eccentric",0.66,[0,-0.115,-0.050],MID),
-      phase("rep3_bottom","isometric",0.74,[0,-0.310,-0.080],BOTTOM,{ holdDurationSeconds:0.18 }),
-      phase("rep3_top","concentric",0.84,[0,0,0],START),
+
+      phase("rep2_descent_mid","eccentric",0.36,[0,-0.115,-0.050],MID),
+      phase("rep2_bottom","isometric",0.42,[0,-0.310,-0.080],BOTTOM),
+      phase("rep2_bottom_hold","isometric_hold",0.44,[0,-0.310,-0.080],BOTTOM,{ holdDurationSeconds:0.18 }),
+      phase("rep2_ascent_mid","concentric",0.50,[0,-0.115,-0.050],MID),
+      phase("rep2_top","concentric",0.58,[0,0,0],START),
+
+      phase("rep3_descent_mid","eccentric",0.66,[0,-0.115,-0.050],MID),
+      phase("rep3_bottom","isometric",0.72,[0,-0.310,-0.080],BOTTOM),
+      phase("rep3_bottom_hold","isometric_hold",0.74,[0,-0.310,-0.080],BOTTOM,{ holdDurationSeconds:0.18 }),
+      phase("rep3_ascent_mid","concentric",0.80,[0,-0.115,-0.050],MID),
+      phase("rep3_top","concentric",0.88,[0,0,0],START),
       phase("finish_overhead","completion",1.00,[0,0,0],START,{ movementIntent:"finish in the same overhead standing assessment position" })
     ])
   });
@@ -117,6 +143,9 @@
     if (candidate.exerciseId !== "overhead_squat_assessment") errors.push("OHSA_EXERCISE_ID: overhead squat assessment identity required");
     if (candidate.repetitionPlan?.count !== 3) errors.push("OHSA_REP_COUNT: test contract requires three repetitions");
     if (!candidate.groundingPolicy?.enforceContactAnchors) errors.push("OHSA_GROUNDING: bilateral foot anchors must be enforced");
+    if (!candidate.groundingPolicy?.enforceGeneratedIK) errors.push("OHSA_GROUNDING_IK: bilateral generated leg IK must be enforced");
+    if (candidate.groundingPolicy?.anchorPhaseId !== "setup_overhead") errors.push("OHSA_ANCHOR_PHASE: setup_overhead must establish bilateral anchors");
+    if (!(candidate.groundingPolicy?.continuousSolveSamplesPerTransition >= 2)) errors.push("OHSA_CONTINUOUS_GROUNDING: dense solved playback samples are required");
     const phases = Array.isArray(candidate.phases) ? candidate.phases : [];
     if (JSON.stringify(phases.map(item=>item.id)) !== JSON.stringify(candidate.phaseOrder || [])) errors.push("OHSA_PHASE_ORDER: phaseOrder must match phases");
     if (phases[0]?.normalizedTime !== 0 || phases.at(-1)?.normalizedTime !== 1) errors.push("OHSA_TIME_RANGE: motion must span normalized time 0 through 1");
@@ -130,6 +159,12 @@
       const rightElbow = item.boneTargets?.find(t=>t.bone === "mixamorig:RightForeArm")?.rotationOffsetEulerDegrees?.[0];
       if (leftArm !== START.armPitch || rightArm !== START.armPitch) errors.push(`OHSA_ARMS: overhead arm target must remain constant for ${item.id}`);
       if (leftElbow !== 0 || rightElbow !== 0) errors.push(`OHSA_ELBOWS: elbows must remain straight for ${item.id}`);
+    }
+    for (const rep of [1,2,3]) {
+      const byId = new Map(phases.map(item=>[item.id,item]));
+      const bottom = byId.get(`rep${rep}_bottom`), hold = byId.get(`rep${rep}_bottom_hold`), ascentMid = byId.get(`rep${rep}_ascent_mid`), descentMid = byId.get(`rep${rep}_descent_mid`);
+      if (!bottom || !hold || JSON.stringify(bottom.root) !== JSON.stringify(hold.root) || JSON.stringify(bottom.boneTargets) !== JSON.stringify(hold.boneTargets)) errors.push(`OHSA_BOTTOM_HOLD: rep${rep} must preserve the bottom pose across the hold interval`);
+      if (!ascentMid || !descentMid || JSON.stringify(ascentMid.root) !== JSON.stringify(descentMid.root) || JSON.stringify(ascentMid.boneTargets) !== JSON.stringify(descentMid.boneTargets)) errors.push(`OHSA_MIRRORED_ASCENT: rep${rep} ascent must reverse through the same MID geometry`);
     }
     if (!bones.has(candidate.skeleton?.rootBone)) errors.push(`OHSA_ROOT_BONE: unknown root bone ${candidate.skeleton?.rootBone}`);
     return Object.freeze({ valid:errors.length===0, errors:Object.freeze(errors) });
