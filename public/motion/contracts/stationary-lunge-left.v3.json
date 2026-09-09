@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 3,
+  "contractId": "stationary_lunge_left_phase_first_v3",
+  "exerciseId": "stationary_lunge_left",
+  "status": "development-authoring-contract",
+  "purpose": "Rebuild the stationary left lunge around one owner-calibrated split stance. The transition from neutral standing directly into split_plant is the step. Loaded descendants are authored relative to that split stance instead of using separate competing entry/top poses.",
+  "canonicalMotion": {
+    "version": 3.0,
+    "motionId": "lunge/stationary_left_phase_first_v3_0_split_authority",
+    "previousMotionId": "lunge/stationary_left_movement_definition_v2_3_playable_base_owner_split_knee",
+    "splitCalibrationStatus": "owner_recalibration_required"
+  },
+  "phaseAuthority": {
+    "entryRule": "stand_start_to_split_plant_is_the_step",
+    "forbidIndependentStepPose": true,
+    "splitAuthorityPhaseId": "split_plant",
+    "topReturnRule": "rep1_top_rep2_top_rep3_top_must_match_split_plant_exactly",
+    "descendantPoseRule": "descent_and_bottom_are_relative_deltas_from_split_plant"
+  },
+  "sequence": {
+    "start": "neutral_standing",
+    "entry": "direct_transition_to_final_split_plant",
+    "loadedRepetitions": 3,
+    "loadedCycle": ["vertical_descent", "bottom", "vertical_ascent_to_exact_split_plant"],
+    "exit": "release_contacts_then_transition_directly_back_to_standing",
+    "finish": "same_neutral_standing_as_start"
+  },
+  "phaseOrder": [
+    "stand_start", "split_plant",
+    "rep1_descent", "rep1_bottom", "rep1_top",
+    "rep2_descent", "rep2_bottom", "rep2_top",
+    "rep3_descent", "rep3_bottom", "rep3_top",
+    "step_back", "stand_finish"
+  ],
+  "ownerCalibrationWorkflow": {
+    "step1": "Load split_plant in Motion Lab and place the avatar in the exact desired planted split stance.",
+    "step2": "Export/copy the structured diagnostics for every changed split-phase bone and root value.",
+    "step3": "Promote those values into the single SPLIT_PLANT authority pose.",
+    "step4": "Recompute/review descent and bottom only as movement deltas from that calibrated split stance.",
+    "step5": "Verify knees flex without inward collapse while planted feet remain fixed.",
+    "note": "Do not independently calibrate a step pose and split-top pose. Those separate authorities are intentionally removed in v3."
+  },
+  "movementIntent": {
+    "stand_start": ["upright_neutral_standing"],
+    "stand_to_split": ["left_leg_travels_into_final_split_stance", "destination_is_split_plant", "no_separate_step_pose"],
+    "split_plant": ["left_whole_foot_planted", "right_forefoot_planted", "pelvis_stable_between_supports", "owner_calibrated_pose_authority"],
+    "descent": ["pelvis_moves_mostly_straight_down", "front_and_rear_knees_flex_from_split_pose", "feet_remain_planted", "avoid_medial_knee_collapse"],
+    "bottom": ["rear_knee_moves_toward_floor", "front_shin_remains_near_vertical", "pelvis_remains_between_supports"],
+    "ascent": ["pelvis_moves_mostly_straight_up", "return_exactly_to_split_plant", "feet_remain_planted"],
+    "exit": ["release_loaded_contacts", "transition_from_split_pose_directly_to_neutral_standing"]
+  },
+  "contacts": {
+    "frontFoot": {"contact":"left_front_foot","bone":"mixamorig:LeftFoot","rule":"whole_front_foot_planted_from_split_plant_through_rep3_top"},
+    "rearFoot": {"contact":"right_rear_forefoot","bone":"mixamorig:RightToeBase","rule":"rear_forefoot_planted_from_split_plant_through_rep3_top"},
+    "anchorEstablishmentPhase": "split_plant",
+    "anchorReleasePhase": "step_back"
+  },
+  "trajectory": {
+    "loadedDescent": {"target":"pelvis","dominantDirection":"vertical_down","horizontalTravelIntent":"minimal","relativeTo":"split_plant"},
+    "loadedAscent": {"target":"pelvis","dominantDirection":"vertical_up","returnTarget":"split_plant","relativeTo":"split_plant"}
+  },
+  "hardConstraints": [
+    "no_independent_step_forward_pose",
+    "split_plant_is_single_loaded_top_authority",
+    "all_rep_tops_equal_split_plant",
+    "descent_and_bottom_are_relative_to_split_plant",
+    "front_foot_planted_during_loaded_reps",
+    "rear_forefoot_planted_during_loaded_reps",
+    "pelvis_motion_vertical_dominant",
+    "reject_visible_knee_collapse",
+    "release_contacts_before_step_back",
+    "stand_finish_matches_stand_start"
+  ],
+  "acceptanceBoundary": "The current split numbers in lunge-motion-spec-v3.js are only a seed copied from the prior development pose. Owner/device split-pose diagnostics are still required before v3 is treated as calibrated. Runtime compiler/IK/contact success remains required before Play readiness is claimed."
+}
