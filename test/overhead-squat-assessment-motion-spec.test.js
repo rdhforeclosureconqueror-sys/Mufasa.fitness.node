@@ -58,6 +58,17 @@ test('OHSA spec validates and defines ear alignment plus palms-in explicitly', (
   assert.match(Ohsa.spec.movementContract.handIntent, /palms face inward/i);
 });
 
+test('semantic resolver treats Mixamo-prefixed and Avaturn-style names as the same body identity', () => {
+  const { avatar, neck, head } = makeSemanticRig();
+  const neckMatch = Semantic.resolveNode(avatar, 'mixamorig:Neck');
+  const headMatch = Semantic.resolveNode(avatar, 'mixamorig_Head');
+  assert.equal(neckMatch.status, 'ready');
+  assert.equal(headMatch.status, 'ready');
+  assert.equal(neckMatch.object, neck);
+  assert.equal(headMatch.object, head);
+  assert.equal(Semantic.normalizedBoneKey('mixamorig:LeftHandIndex1'), Semantic.normalizedBoneKey('LeftHandIndex1'));
+});
+
 test('body-relative arm solver follows Neck-to-Head instead of absolute world-up', () => {
   const { avatar, spine2, neck, head, arm, forearm } = makeSemanticRig();
   spine2.rotation.x = THREE.MathUtils.degToRad(28);
