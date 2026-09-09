@@ -27,6 +27,33 @@
     });
   }
 
+  function remapAuthoringAdjustment(adjustment) {
+    if (!adjustment || typeof adjustment !== "object") return adjustment;
+    const mapped = { ...adjustment };
+    if (Object.prototype.hasOwnProperty.call(mapped, "bone")) mapped.bone = canonicalBoneToCoachBone(mapped.bone);
+    if (Array.isArray(mapped.deltas)) mapped.deltas = Object.freeze(mapped.deltas.map(remapBoneRecord));
+    return Object.freeze(mapped);
+  }
+
+  function currentAvatarProfileId(runtime) {
+    const snap = runtime?.snapshot?.();
+    if (snap?.avatar?.avatarProfileId) return snap.avatar.avatarProfileId;
+    if (snap?.motion?.avatarProfileId) return snap.motion.avatarProfileId;
+
+    // Older Motion Lab snapshots did not expose avatar state. The rendered Avatar Diagnostics
+    // panel is fed directly from state.avatar, so use its Profile row as the compatibility
+    // bridge until the runtime snapshot contract exposes avatar explicitly.
+    const diagnostics = document.getElementById?.("avatarDiagnostics");
+    if (diagnostics?.children) {
+      for (let i = 0; i < diagnostics.children.length - 1; i += 2) {
+        const term = diagnostics.children[i];
+        const value = diagnostics.children[i + 1];
+        if (String(term?.textContent || "").trim() === "Profile") return String(value?.textContent || "").trim() || null;
+      }
+    }
+    return null;
+  }
+
   function buildCoachSpec(contract) {
     if (!contract?.spec) return Object.freeze({ status: "failed", code: "motion_spec_missing" });
     var sourceValidation;
@@ -42,6 +69,8 @@
     (source.groundingPolicy?.kinematicChains || []).forEach(chain => {
       [chain.rootBone, chain.jointBone, chain.endBone, chain.contactBone].forEach(name => sourceTargets.add(name));
     });
+    if (source.acceptedAuthoringAdjustment?.bone) sourceTargets.add(source.acceptedAuthoringAdjustment.bone);
+    (source.acceptedAuthoringAdjustment?.deltas || []).forEach(delta => sourceTargets.add(delta?.bone));
 
     const aliases = [...sourceTargets].filter(Boolean).map(requestedName => Object.freeze({
       requestedName,
@@ -56,6 +85,8 @@
     }) : source.groundingPolicy;
 
     const coachRetarget = Object.freeze({
+      sourceMotionId: source.motionId || null,
+      sourceMotionVersion: source.version ?? null,
       sourceSkeletonId: source.skeleton?.id || null,
       targetAvatarProfileId: COACH_PROFILE_ID,
       targetSkeletonProfile: COACH_SKELETON_ID,
@@ -80,10 +111,7 @@
         boneTargets: Object.freeze((phase.boneTargets || []).map(remapBoneRecord))
       }))),
       groundingPolicy,
-      acceptedAuthoringAdjustment: source.acceptedAuthoringAdjustment ? Object.freeze({
-        ...source.acceptedAuthoringAdjustment,
-        bone: canonicalBoneToCoachBone(source.acceptedAuthoringAdjustment.bone)
-      }) : source.acceptedAuthoringAdjustment,
+      acceptedAuthoringAdjustment: remapAuthoringAdjustment(source.acceptedAuthoringAdjustment),
       coachRetarget
     });
 
@@ -107,8 +135,8 @@
     var coach = window.PocketPTAvatarProfiles?.profiles?.personalized;
     if (!runtime || !contract || !coach) return { status: "failed", code: "dependency_load_failed" };
 
-    var snap = runtime.snapshot?.();
-    if (snap?.motion?.avatarProfileId !== COACH_PROFILE_ID) {
+    var activeAvatarId = currentAvatarProfileId(runtime);
+    if (activeAvatarId !== COACH_PROFILE_ID) {
       var avatar = await runtime.loadAvatar(coach);
       if (avatar?.status !== "ready") return avatar;
     }
@@ -123,6 +151,8 @@
         ...(loaded.diagnostics || {}),
         coachAvatarProfileId: COACH_PROFILE_ID,
         coachSkeletonProfile: COACH_SKELETON_ID,
+        sourceMotionId: retargeted.spec.motionId || null,
+        sourceMotionVersion: retargeted.spec.version ?? null,
         retarget: retargeted.diagnostics
       })
     });
@@ -132,8 +162,10 @@
     var button = document.getElementById("loadSynthesizedLunge");
     if (!button || button.dataset.lungeWired === "1") return;
     button.dataset.lungeWired = "1";
-    button.textContent = "Load Stationary Lunge Left v2.3 (Coach Avatar)";
-    button.title = "Retarget Stationary Left Lunge v2.3 onto the personalized Avaturn coach skeleton";
+    var spec = window.PocketPTLungeMotionSpec?.spec;
+    var version = spec?.version == null ? "current" : "v" + spec.version;
+    button.textContent = "Load Stationary Lunge Left " + version + " (Coach Avatar)";
+    button.title = "Retarget the current canonical Stationary Left Lunge onto the personalized Avaturn coach skeleton";
     button.disabled = false;
     button.addEventListener("click", loadLunge);
   }
@@ -143,6 +175,7 @@
     load: loadLunge,
     buildCoachSpec: buildCoachSpec,
     canonicalBoneToCoachBone: canonicalBoneToCoachBone,
+    currentAvatarProfileId: currentAvatarProfileId,
     coachProfileId: COACH_PROFILE_ID,
     coachSkeletonId: COACH_SKELETON_ID
   });
