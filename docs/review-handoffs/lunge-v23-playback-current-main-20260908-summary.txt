@@ -1,1 +1,0 @@
-Repair summary: restore v2.3 to the last known-playable v2.1 movement geometry, keep the owner-approved split_plant right-knee +5° delta as -7° -> -2°, leave rep-top right knee at -7°, and preserve the runtime rule that Play only enables after a ready compiled motion/action exists.
