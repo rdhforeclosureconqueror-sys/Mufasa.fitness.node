@@ -299,5 +299,5 @@
     });
   }
 
-  return Object.freeze({ VERSION: '1.2.0-generated-ik-preserves-root-trajectory', PHASE4_DEFAULTS, solvePhaseContacts });
+  return Object.freeze({ VERSION: '1.2.0-phase4-generated-ik-preserves-root-trajectory', PHASE4_DEFAULTS, solvePhaseContacts });
 });
