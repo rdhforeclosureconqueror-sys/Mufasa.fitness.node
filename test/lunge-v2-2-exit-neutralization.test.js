@@ -1,39 +1,34 @@
 'use strict';
-
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-
 const ROOT = path.resolve(__dirname, '..');
 const Lunge = require('../public/motion/lunge-motion-spec.js');
+const phase = id => Lunge.spec.phases.find(item => item.id === id);
 
-function phase(id) { return Lunge.spec.phases.find(item => item.id === id); }
-function pitch(item, bone) { return item.boneTargets.find(target => target.bone === bone).rotationOffsetEulerDegrees[0]; }
-
-test('v2.2 uses distinct entry and exit transition geometry', () => {
-  const entry = phase('step_forward');
-  const top = phase('rep3_top');
-  const exit = phase('step_back');
-  assert.ok(pitch(entry, 'mixamorig:LeftUpLeg') >= 50, 'entry must retain the longer stride gate');
-  assert.ok(Math.abs(pitch(exit, 'mixamorig:LeftUpLeg')) < Math.abs(pitch(top, 'mixamorig:LeftUpLeg')), 'exit left hip must move toward neutral');
-  assert.ok(Math.abs(pitch(exit, 'mixamorig:RightUpLeg')) < Math.abs(pitch(top, 'mixamorig:RightUpLeg')), 'exit rear hip must move toward neutral');
-  assert.notDeepEqual(exit.boneTargets, entry.boneTargets, 'step_back must not reuse the aggressive step-forward pose');
+test('v3 removes separate step-forward and step-back key poses', () => {
+  assert.equal(phase('step_forward'), undefined);
+  assert.equal(phase('step_back'), undefined);
+  assert.deepEqual(Lunge.spec.phaseOrder.slice(0, 2), ['stand_start','split_plant']);
+  assert.equal(Lunge.spec.phaseOrder.at(-1), 'stand_finish');
 });
 
-test('validator rejects reusing the forward-step pose for step_back', () => {
-  const entry = phase('step_forward');
-  const candidate = {
-    ...Lunge.spec,
-    phases: Lunge.spec.phases.map(item => item.id === 'step_back' ? { ...item, boneTargets: entry.boneTargets } : item)
-  };
+test('v3 exit is direct from rep3_top to neutral standing after contacts release', () => {
+  assert.deepEqual(phase('rep3_top').contacts, ['left_front_foot','right_rear_forefoot']);
+  assert.deepEqual(phase('stand_finish').contacts, []);
+  assert.deepEqual(phase('stand_finish').boneTargets, phase('stand_start').boneTargets);
+  assert.deepEqual(phase('stand_finish').root, phase('stand_start').root);
+});
+
+test('validator rejects reintroducing old intermediate step phases', () => {
+  const candidate = { ...Lunge.spec, phaseOrder: ['stand_start','step_forward',...Lunge.spec.phaseOrder.slice(1)] };
   const result = Lunge.validate(candidate);
   assert.equal(result.valid, false);
-  assert.ok(result.errors.some(error => /LUNGE_EXIT_GEOMETRY/.test(error)));
+  assert.ok(result.errors.some(error => /LUNGE_PHASE_ORDER/.test(error)));
 });
 
-test('Motion Lab label matches active v2.2 motion', () => {
-  const html = fs.readFileSync(path.join(ROOT, 'motion-lab/index.html'), 'utf8');
-  assert.match(html, /Load Stationary Lunge Left v2\.2 \(Reference Only\)/);
-  assert.doesNotMatch(html, /Load Stationary Lunge Left v2\.1 \(Reference Only\)/);
+test('Motion Lab preview exposes phase-first v3 label dynamically', () => {
+  const preview = fs.readFileSync(path.join(ROOT, 'public/motion/motion-lab-lunge-preview.js'), 'utf8');
+  assert.match(preview, /Load Stationary Lunge Left v3\.0 Phase-First/);
 });

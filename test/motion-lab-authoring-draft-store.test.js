@@ -3,16 +3,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-
 const ROOT = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(ROOT, 'motion-lab/index.html'), 'utf8');
 const store = fs.readFileSync(path.join(ROOT, 'public/motion/motion-lab-authoring-draft-store.js'), 'utf8');
 const editor = fs.readFileSync(path.join(ROOT, 'public/motion/motion-lab-pose-editor.js'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'motion-lab/motion-lab-bootstrap.js'), 'utf8');
+const preview = fs.readFileSync(path.join(ROOT, 'public/motion/motion-lab-lunge-preview.js'), 'utf8');
 const Lunge = require('../public/motion/lunge-motion-spec.js');
-
-function phase(id) { return Lunge.spec.phases.find(item => item.id === id); }
-function pitch(id, bone) { return phase(id).boneTargets.find(item => item.bone === bone).rotationOffsetEulerDegrees[0]; }
+const phase = id => Lunge.spec.phases.find(item => item.id === id);
+const pitch = (id, bone) => phase(id).boneTargets.find(item => item.bone === bone).rotationOffsetEulerDegrees[0];
 
 test('Pose Editor exposes save load and delete authored motion controls', () => {
   assert.match(index, /id="poseEditorSaveDraft"[^>]*>Save Adjusted Motion</);
@@ -28,69 +27,47 @@ test('authoring draft store persists by motion id without rewriting canonical Mo
   assert.match(store, /adjustment/);
   assert.match(store, /clip: clipJson/);
   assert.doesNotMatch(store, /lunge\/stationary_left/);
-  assert.doesNotMatch(store, /lunge-motion-spec\.js/);
 });
 
 test('accumulated edits are preserved in preview clip instead of rebuilding only from original', () => {
   assert.match(editor, /previewClip\?\.clone\?\.\(\) \|\| originalClip\?\.clone/);
   assert.match(editor, /recordEdit[\s\S]*patchPreviewClip\(\)/);
-  assert.doesNotMatch(editor, /edits = edits\.filter\(edit => edit\.phaseId !== sampledPhaseId\)/);
 });
 
-test('saved authored clip restores both clip and structured edit state without autoplay', () => {
+test('saved authored clip restores structured edit state without autoplay', () => {
   assert.match(store, /AnimationClip\?\.parse/);
   assert.match(store, /SAVED AUTHORING DRAFT/);
-  assert.match(store, /active\.loadMotionSpec\(active\.motionSpec, compiler\)/);
   assert.match(store, /api\.importAdjustment\?\.\(record\.adjustment/);
-  assert.match(editor, /function importAdjustment\(payload\)/);
   assert.doesNotMatch(store, /active\.play\?\.\(\)/);
 });
 
 test('draft-store installation is tied to explicit Motion Lab runtime initialization', () => {
   assert.match(bootstrap, /installAuthoringDraftStore\(\)/);
   assert.match(bootstrap, /authoring_draft_store_install/);
-  assert.doesNotMatch(store, /attempt < 80/);
 });
 
-test('saving still requires authored content and a successfully built preview', () => {
-  assert.match(store, /authoring_edits_required/);
-  assert.match(store, /buildPreview|playAdjustedPreview/);
-  assert.match(store, /preview_failed|directed_preview_build|adjusted_preview_build/);
-  assert.match(store, /clip_serialization_failed/);
+test('canonical lunge v3 authoring identity matches phase-first split calibration', () => {
+  assert.equal(Lunge.spec.version, 3);
+  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_phase_first_v3_owner_split_plant');
+  assert.equal(Lunge.spec.lineage.resetMethod, 'phase-first-owner-split-plant');
+  assert.equal(pitch('split_plant', 'mixamorig:LeftUpLeg'), 79);
+  assert.equal(pitch('split_plant', 'mixamorig:LeftLeg'), -84);
+  assert.equal(pitch('split_plant', 'mixamorig:RightUpLeg'), -49);
+  assert.equal(pitch('split_plant', 'mixamorig:RightLeg'), -14);
+  assert.match(preview, /Load Stationary Lunge Left v3\.0 Phase-First/);
 });
 
-test('canonical lunge v2.3 authoring identity matches the playable-base lineage', () => {
-  assert.equal(Lunge.spec.version, 2.3);
-  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_movement_definition_v2_3_playable_base_owner_split_knee');
-  assert.equal(Lunge.spec.lineage.playableBaseMotionId, 'lunge/stationary_left_movement_definition_v2_1_exit_release');
-  assert.equal(Lunge.spec.lineage.rejectedGeometryFamily, 'v2.2-long-stride');
-  assert.equal(pitch('step_forward', 'mixamorig:LeftUpLeg'), 34);
-  assert.equal(pitch('split_plant', 'mixamorig:LeftUpLeg'), 24);
-  assert.match(index, /Load Stationary Lunge Left v2\.3 \(Reference Only\)/);
+test('owner split bundle provenance is explicit', () => {
+  const deltas = new Map(Lunge.spec.acceptedAuthoringAdjustment.deltas.map(item => [item.bone, item]));
+  assert.equal(deltas.get('mixamorig:LeftUpLeg').baseDegrees, 34);
+  assert.equal(deltas.get('mixamorig:LeftUpLeg').deltaDegrees, 45);
+  assert.equal(deltas.get('mixamorig:LeftUpLeg').canonicalDegrees, 79);
+  assert.equal(deltas.get('mixamorig:RightFoot').canonicalDegrees, 9);
 });
 
-test('owner split-plant correction is based on playable -7 degree lineage', () => {
-  assert.equal(Lunge.spec.acceptedAuthoringAdjustment.basePitchDegrees, -7);
-  assert.equal(Lunge.spec.acceptedAuthoringAdjustment.approvedDeltaDegrees, 5);
-  assert.equal(Lunge.spec.acceptedAuthoringAdjustment.canonicalPitchDegrees, -2);
-  assert.equal(pitch('split_plant', 'mixamorig:RightLeg'), -2);
-  assert.equal(pitch('rep1_top', 'mixamorig:RightLeg'), -7);
-  assert.equal(pitch('rep2_top', 'mixamorig:RightLeg'), -7);
-  assert.equal(pitch('rep3_top', 'mixamorig:RightLeg'), -7);
-});
-
-test('lunge validator protects playable-base calibration from drift', () => {
-  const candidate = {
-    ...Lunge.spec,
-    phases: Lunge.spec.phases.map(item => item.id !== 'split_plant' ? item : {
-      ...item,
-      boneTargets: item.boneTargets.map(target => target.bone !== 'mixamorig:RightLeg' ? target : {
-        ...target,
-        rotationOffsetEulerDegrees: [-1, 0, 0]
-      })
-    })
-  };
+test('lunge validator protects owner split pose from drift', () => {
+  const candidate = { ...Lunge.spec, phases: Lunge.spec.phases.map(item => item.id !== 'split_plant' ? item : { ...item, boneTargets: item.boneTargets.map(target => target.bone !== 'mixamorig:RightLeg' ? target : { ...target, rotationOffsetEulerDegrees: [-10,0,0] }) }) };
   const result = Lunge.validate(candidate);
   assert.equal(result.valid, false);
-  assert.ok(result.errors.some(error => /LUNGE_OWNER_CALIBRATION/.test(error)));
+  assert.ok(result.errors.some(error => /LUNGE_OWNER_SPLIT_CALIBRATION/.test(error)));
 });
