@@ -31,6 +31,28 @@
     </div>
     <p id="poseEditorHelp" class="measurement">Load a generated Motion Spec to begin.</p>
     <p id="poseEditorStatus" class="measurement" role="status">Pose Editor waiting for a generated motion.</p>
+
+    <div id="motionDirectionAuthoring" class="motion-authoring-group">
+      <h3>Transition / Motion Direction</h3>
+      <p class="measurement">Author how a selected body part travels from one exact phase to the next. Position directions reuse the existing shared IK path; Twist uses joint-local yaw. Human timing adds deterministic ease-in/ease-out keys while preserving both exact phase endpoints.</p>
+      <div class="controls pose-editor-controls">
+        <label>From <select id="motionDirectionFromPhase" disabled></select></label>
+        <label>To <select id="motionDirectionToPhase" disabled></select></label>
+        <label>Body part <select id="motionDirectionTarget" disabled></select></label>
+        <label>Step <select id="motionDirectionStep" disabled><option value="tiny">Tiny — 0.25 in / 1°</option><option value="small" selected>Small — 1 in / 5°</option><option value="medium">Medium — 5 in / 10°</option></select></label>
+        <label>Timing <select id="motionDirectionHumanize" disabled><option value="human" selected>Human — Ease In / Ease Out</option><option value="smooth">Smooth</option><option value="linear">Linear — Debug</option></select></label>
+      </div>
+      <div class="controls">
+        <button id="motionDirectionUp" disabled>Up</button><button id="motionDirectionDown" disabled>Down</button>
+        <button id="motionDirectionLeft" disabled>Left</button><button id="motionDirectionRight" disabled>Right</button>
+        <button id="motionDirectionForward" disabled>Forward</button><button id="motionDirectionBack" disabled>Back</button>
+        <button id="motionDirectionTwistIn" disabled>Twist +</button><button id="motionDirectionTwistOut" disabled>Twist −</button>
+        <button id="motionDirectionPreview" disabled>Preview Directed Motion</button><button id="motionDirectionClear" disabled>Clear Directed Plan</button>
+      </div>
+      <p id="motionDirectionStatus" class="measurement" role="status">Load a generated Motion Spec to author phase-to-phase direction.</p>
+      <p class="measurement"><strong>Boundary:</strong> this shapes acceleration/deceleration like an offline F-curve. It does not claim Blender F-curve parity, anticipation, secondary motion, collision response, or editable Bezier handles.</p>
+    </div>
+
     <div class="controls">
       <button id="poseEditorPlay" disabled>Play Adjusted Preview</button>
       <button id="poseEditorSaveDraft" disabled>Save Adjusted Motion</button>
@@ -56,4 +78,4 @@
   <div><h2>Owned lifecycle resources</h2><dl id="resources"></dl><p class="measurement">Counts cover resources owned by DisposableMotionSession, not every browser listener.</p><h2>Page lifecycle</h2><dl id="pageLifecycle"></dl></div></section>
   <section id="motionViewerSection"><h2>Motion viewer</h2><p id="viewerStatus" class="measurement" role="status">No renderer is active. Initialize Runtime, then start a session.</p><div id="viewer"></div></section>
   <section><h2>Bounded event history</h2><ol id="history"></ol></section>
-</main><script src="/dev/motion-lab-assets/motion-lab-pose-editor-preview-guard.js" defer></script><script src="/dev/motion-lab-bootstrap.js" defer></script><script src="/dev/motion-lab-assets/motion-lab-authoring-draft-store.js" defer></script></body></html>
+</main><script src="/dev/motion-lab-assets/motion-lab-pose-editor-preview-guard.js" defer></script><script src="/dev/motion-lab-bootstrap.js" defer></script><script src="/dev/motion-lab-assets/motion-lab-authoring-draft-store.js" defer></script><script src="/dev/motion-lab-assets/motion-lab-motion-direction-authoring.js" defer></script></body></html>
