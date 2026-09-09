@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "exerciseId": "overhead_squat_assessment",
+  "displayName": "Overhead Squat Assessment",
+  "status": "development-test-only",
+  "purpose": "Describe the desired assessment movement precisely enough for Motion Lab generation and visual verification without conflating demonstration with compensation scoring.",
+  "inputsRequiredForDesiredMotion": {
+    "startPosition": [
+      "feet approximately hip-width",
+      "feet directed forward",
+      "both feet planted",
+      "knees extended but not forcefully locked",
+      "trunk tall and braced",
+      "both elbows straight",
+      "arms overhead with upper arms near the ears"
+    ],
+    "phaseSequence": [
+      "establish overhead standing position",
+      "controlled descent",
+      "comfortable bottom position",
+      "controlled ascent to exact overhead standing position",
+      "repeat three times"
+    ],
+    "contactConstraints": [
+      "left foot remains planted",
+      "right foot remains planted",
+      "no jump or heel-release phase is authored"
+    ],
+    "trajectoryConstraints": [
+      "pelvis descends and travels posteriorly using the existing owner-reviewed squat reference geometry",
+      "knees flex with hips and ankles rather than driving the motion alone",
+      "knees track in the same general direction as the feet",
+      "arms remain overhead during descent, bottom and ascent",
+      "elbows remain straight",
+      "finish returns to the same overhead standing pose"
+    ],
+    "timing": {
+      "repetitions": 3,
+      "tempoIntent": "controlled assessment pace",
+      "bottomHoldSeconds": 0.18,
+      "autoplay": false
+    },
+    "visualAcceptanceCheckpoints": [
+      "overhead setup pose",
+      "first descent direction",
+      "first bottom depth and balance",
+      "bilateral foot grounding",
+      "knee tracking",
+      "torso forward lean",
+      "arm retention overhead",
+      "return to exact overhead top position",
+      "repeatability across all three reps"
+    ]
+  },
+  "assessmentObservation": {
+    "front": ["feet turn out", "knees move inward", "left-right asymmetry"],
+    "side": ["excessive forward lean", "lumbar extension pattern", "arms fall forward", "depth and heel contact"],
+    "backOptional": ["left-right asymmetry", "foot and knee tracking"],
+    "importantBoundary": "These are observation targets for a separate pose-analysis/scoring layer. The Motion Spec is the reference demonstration and does not diagnose causes or assign production severity thresholds."
+  },
+  "calibrationPolicy": {
+    "authorityOrder": ["overhead setup", "first bottom", "transition path", "repeatability", "scoring thresholds later"],
+    "provisionalField": "initial overhead arm rotation seed",
+    "ownerAction": "Use Motion Lab Pose Editor to visually correct the overhead setup if the coach avatar does not place straight arms near the ears, then promote that approved pose before treating arm geometry as canonical."
+  },
+  "sourceNotes": [
+    "Movement intent is adapted from the repository's existing Overhead Squat Assessment checklist.",
+    "Lower-body phase geometry intentionally reuses the current synthesized squat engineering reference so this test isolates whether adding a new movement contract and overhead constraint composes correctly."
+  ]
+}
