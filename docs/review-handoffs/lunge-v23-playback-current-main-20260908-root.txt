@@ -1,1 +1,0 @@
-First failing boundary: v2.3 reintroduced the rejected v2.2 long-stride geometry family. Static spec validation passes, but generated IK/contact-anchor compilation can fail, leaving runtime state.motion unset and Play disabled. Repair restores the device-playable v2.1 geometry base under v2.3 while preserving the split_plant-only owner knee correction.
