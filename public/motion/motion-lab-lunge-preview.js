@@ -29,6 +29,12 @@
 
   function buildCoachSpec(contract) {
     if (!contract?.spec) return Object.freeze({ status: "failed", code: "motion_spec_missing" });
+    var sourceValidation;
+    try { sourceValidation = contract.validate?.(contract.spec); } catch (_) { sourceValidation = null; }
+    if (!sourceValidation?.valid) {
+      return Object.freeze({ status: "failed", code: "motion_spec_invalid", diagnostics: Object.freeze({ sourceValidation: sourceValidation || null }) });
+    }
+
     const source = contract.spec;
     const sourceTargets = new Set([source.skeleton?.rootBone]);
     source.phases?.forEach(phase => phase.boneTargets?.forEach(target => sourceTargets.add(target.bone)));
@@ -49,6 +55,15 @@
       kinematicChains: Object.freeze((source.groundingPolicy.kinematicChains || []).map(remapChain))
     }) : source.groundingPolicy;
 
+    const coachRetarget = Object.freeze({
+      sourceSkeletonId: source.skeleton?.id || null,
+      targetAvatarProfileId: COACH_PROFILE_ID,
+      targetSkeletonProfile: COACH_SKELETON_ID,
+      aliasCount: aliases.length,
+      aliases: Object.freeze(aliases),
+      degradedContactAliases: Object.freeze(aliases.filter(item => /ToeBase$/.test(item.requestedName) && /Foot$/.test(item.coachBone)))
+    });
+
     const spec = Object.freeze({
       ...source,
       skeleton: Object.freeze({
@@ -56,6 +71,7 @@
         id: "coach_avaturn_native_v1",
         rootBone: canonicalBoneToCoachBone(source.skeleton?.rootBone),
         sourceSkeletonId: source.skeleton?.id || null,
+        targetAvatarProfileId: COACH_PROFILE_ID,
         targetSkeletonProfile: COACH_SKELETON_ID,
         retargetMode: "rest_relative_local_canonical_to_coach"
       }),
@@ -68,17 +84,21 @@
         ...source.acceptedAuthoringAdjustment,
         bone: canonicalBoneToCoachBone(source.acceptedAuthoringAdjustment.bone)
       }) : source.acceptedAuthoringAdjustment,
-      coachRetarget: Object.freeze({
-        sourceSkeletonId: source.skeleton?.id || null,
-        targetAvatarProfileId: COACH_PROFILE_ID,
-        targetSkeletonProfile: COACH_SKELETON_ID,
-        aliasCount: aliases.length,
-        aliases: Object.freeze(aliases),
-        degradedContactAliases: Object.freeze(aliases.filter(item => /ToeBase$/.test(item.requestedName) && /Foot$/.test(item.coachBone)))
-      })
+      coachRetarget
     });
 
-    return Object.freeze({ status: "ready", spec, diagnostics: spec.coachRetarget });
+    const retargetedContract = Object.freeze({
+      ...contract,
+      spec,
+      sourceSpec: source,
+      sourceValidation,
+      validate: function (candidate) {
+        if (candidate !== spec) return Object.freeze({ valid: false, errors: Object.freeze(["retargeted coach contract validates only its generated coach spec"]) });
+        return sourceValidation;
+      }
+    });
+
+    return Object.freeze({ status: "ready", spec, contract: retargetedContract, diagnostics: coachRetarget });
   }
 
   async function loadLunge() {
@@ -95,7 +115,7 @@
 
     var retargeted = buildCoachSpec(contract);
     if (retargeted.status !== "ready") return retargeted;
-    var loaded = await runtime.loadMotionSpec(retargeted.spec);
+    var loaded = await runtime.loadMotionSpec(retargeted.contract);
     if (loaded?.status !== "ready") return loaded;
     return Object.freeze({
       ...loaded,
