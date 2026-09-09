@@ -141,8 +141,7 @@
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'saved_draft_load' });
       return out || { status: 'failed', code: 'saved_draft_load_failed' };
     }
-    active.play?.();
-    status(`Loaded saved authored motion from ${record.savedAt}. You can keep editing from this draft.`);
+    status(`Loaded saved authored motion from ${record.savedAt}. Press Play to preview or continue editing from this draft.`);
     publish({ status: 'loaded', motionId: id, savedAt: record.savedAt, firstFailingBoundary: null });
     updateButtons();
     return { status: 'ready', motionId: id, savedAt: record.savedAt };
