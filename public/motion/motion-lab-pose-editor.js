@@ -282,6 +282,31 @@
     return true;
   }
 
+  function restoreLivePhaseFromCanonical(names, phaseId) {
+    const phase = phaseById(phaseId);
+    if (!phase || !originalClip || !activeSession?.motionSpec) return false;
+    const phaseTime = phase.normalizedTime * activeSession.motionSpec.durationSeconds;
+    let restored = false;
+    for (const name of names || []) {
+      const node = traverseByName(name);
+      if (!node) continue;
+      const quaternionTrack = trackForNode(originalClip, node, '.quaternion');
+      if (quaternionTrack) {
+        const index = nearestTrackIndex(quaternionTrack, phaseTime);
+        node.quaternion.fromArray(quaternionTrack.values, index * 4).normalize();
+        restored = true;
+      }
+      const positionTrack = trackForNode(originalClip, node, '.position');
+      if (positionTrack) {
+        const index = nearestTrackIndex(positionTrack, phaseTime);
+        node.position.fromArray(positionTrack.values, index * 3);
+        restored = true;
+      }
+    }
+    activeSession.avatar?.updateMatrixWorld?.(true);
+    return restored;
+  }
+
   function patchPreviewClip() {
     if (!activeSession?.sessionClip || !sampledPhaseId || !baseline) return { status: 'failed', code: 'preview_clip_unavailable' };
     const phase = phaseById(sampledPhaseId);
@@ -328,22 +353,21 @@
     const targetId = el('poseEditorTarget')?.value;
     const target = TARGETS[targetId];
     const names = new Set([target?.bone, ...(target?.chain || [])].filter(Boolean));
-    for (const name of names) {
-      const before = baseline.get(name), node = traverseByName(name);
-      if (!before || !node) continue;
-      node.position.copy(before.position); node.quaternion.copy(before.quaternion); node.scale.copy(before.scale);
-    }
-    activeSession.avatar.updateMatrixWorld?.(true);
     edits = edits.filter(edit => !(edit.phaseId === sampledPhaseId && edit.target === targetId));
     restorePreviewPhaseKeys(names, sampledPhaseId);
-    status('Selected body part reset. Other accumulated phase edits are preserved.'); refreshOutput();
+    restoreLivePhaseFromCanonical(names, sampledPhaseId);
+    baseline = captureEditablePose();
+    status('Selected body part reset to the canonical phase pose. Other accumulated phase edits are preserved.'); refreshOutput();
   }
 
   function resetPhase() {
-    restorePose(baseline);
+    if (!baseline) return;
+    const names = new Set(baseline.keys());
     edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
-    restorePreviewPhaseKeys(new Set(baseline?.keys?.() || []), sampledPhaseId);
-    status(`Phase “${sampledPhaseId}” reset. Edits on other phases are preserved.`); refreshOutput();
+    restorePreviewPhaseKeys(names, sampledPhaseId);
+    restoreLivePhaseFromCanonical(names, sampledPhaseId);
+    baseline = captureEditablePose();
+    status(`Phase “${sampledPhaseId}” reset to its canonical pose. Edits on other phases are preserved.`); refreshOutput();
   }
 
   function resetAll() {
