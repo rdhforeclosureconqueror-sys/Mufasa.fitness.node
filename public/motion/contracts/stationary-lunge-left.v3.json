@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 3,
+  "exerciseId": "stationary_lunge_left",
+  "status": "development-coaching-contract",
+  "canonicalMotion": {
+    "motionId": "lunge/stationary_left_phase_first_v3_owner_split_plant",
+    "version": 3.0,
+    "previousMotionId": "lunge/stationary_left_movement_definition_v2_3_playable_base_owner_split_knee",
+    "resetMethod": "phase-first-owner-split-plant"
+  },
+  "sequence": {
+    "start": "neutral_standing",
+    "entry": "direct_transition_to_split_plant",
+    "loadedRepetitions": 3,
+    "exit": "direct_transition_to_neutral_standing"
+  },
+  "ownerSplitPlantCalibration": {
+    "sourcePhaseId": "step_forward",
+    "promotedPhaseId": "split_plant",
+    "editorVersion": "1.2.0-pose-authoring-durable-edits",
+    "canonicalPitchDegrees": {
+      "mixamorig:LeftUpLeg": 79,
+      "mixamorig:LeftLeg": -84,
+      "mixamorig:LeftFoot": 8,
+      "mixamorig:RightUpLeg": -49,
+      "mixamorig:RightLeg": -14,
+      "mixamorig:RightFoot": 9
+    },
+    "sourceDeltasDegrees": {
+      "mixamorig:LeftUpLeg": 45,
+      "mixamorig:LeftLeg": -60,
+      "mixamorig:RightUpLeg": -45,
+      "mixamorig:RightLeg": -10,
+      "mixamorig:RightFoot": 10
+    }
+  },
+  "phaseAuthority": {
+    "approvedPose": "split_plant",
+    "nextCalibrationTarget": "rep1_bottom",
+    "rule": "Approve each key position first. Do not reuse old v2.x descent/bottom joint rotations after changing the split pose."
+  },
+  "loadedMotion": {
+    "contacts": ["left_front_foot", "right_rear_forefoot"],
+    "anchorPhase": "split_plant",
+    "generatedIK": true,
+    "descent": "pelvis straight down with minimal horizontal travel while contacts stay planted",
+    "bottom": "provisional: split bone intent plus -0.14 avatar-height pelvis drop; generated IK resolves the leg chains",
+    "ascent": "pelvis straight up to the exact split_plant pose",
+    "frontFoot": "left whole foot planted",
+    "rearFoot": "right rear forefoot/toe planted"
+  },
+  "phaseOrder": [
+    "stand_start",
+    "split_plant",
+    "rep1_descent",
+    "rep1_bottom",
+    "rep1_top",
+    "rep2_descent",
+    "rep2_bottom",
+    "rep2_top",
+    "rep3_descent",
+    "rep3_bottom",
+    "rep3_top",
+    "stand_finish"
+  ],
+  "authorityBoundary": {
+    "biomechanicalGroundTruth": false,
+    "medicalDiagnosis": false,
+    "movementScreenOnly": true,
+    "notes": "v3.0 is a phase-first calibration baseline. split_plant is owner-authored. Bottom geometry remains provisional until separately calibrated in Motion Lab. Runtime generated IK/contact enforcement remains the final playability authority."
+  }
+}
