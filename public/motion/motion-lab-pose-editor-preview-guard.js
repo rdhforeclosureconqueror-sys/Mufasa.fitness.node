@@ -1,7 +1,8 @@
 (function initMotionLabPoseEditorPreviewGuard(root, document) {
   'use strict';
 
-  const VERSION = '1.0.0-single-phase-preview-truth';
+  const VERSION = '1.1.0-single-phase-preview-truth-local-playback-loader';
+  const LOCAL_PLAYBACK_SRC = '/dev/motion-lab-assets/motion-lab-local-playback-controls.js';
 
   function pendingEdits() {
     const payload = root.PocketPTMotionLabPoseEditor?.exportAdjustment?.();
@@ -38,7 +39,22 @@
     setStatus(`Preview truth guard: phase “${activeEditedPhase}” has pending edits. Play/copy them or Reset Phase/Reset All before editing another phase.`);
   }
 
+  function ensureLocalPlaybackControls() {
+    if (root.PocketPTMotionLabLocalPlaybackControls) {
+      root.PocketPTMotionLabLocalPlaybackControls.install?.();
+      return true;
+    }
+    if (document.querySelector(`script[src="${LOCAL_PLAYBACK_SRC}"]`)) return true;
+    const node = document.createElement('script');
+    node.src = LOCAL_PLAYBACK_SRC;
+    node.async = false;
+    node.dataset.motionLabLocalPlayback = 'true';
+    document.head.appendChild(node);
+    return true;
+  }
+
   function install() {
+    ensureLocalPlaybackControls();
     const button = document.getElementById('poseEditorLoadPhase');
     if (!button) return false;
     if (button.dataset.previewTruthGuard === 'true') return true;
@@ -49,8 +65,10 @@
 
   root.PocketPTMotionLabPoseEditorPreviewGuard = Object.freeze({
     VERSION,
+    LOCAL_PLAYBACK_SRC,
     install,
-    pendingEdits
+    pendingEdits,
+    ensureLocalPlaybackControls
   });
 
   install();
