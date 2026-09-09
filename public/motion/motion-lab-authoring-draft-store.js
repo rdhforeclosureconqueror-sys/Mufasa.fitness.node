@@ -132,8 +132,7 @@
     const compiler = Object.freeze({
       compile() {
         return Object.freeze({
-          status: 'ready',
-          clip,
+          status: 'ready', clip,
           diagnostics: Object.freeze({
             authoredDraft: true,
             authoredDraftSavedAt: record.savedAt,
@@ -174,8 +173,7 @@
   function deleteDraft() {
     const id = motionId();
     if (!id) return { status: 'failed', code: 'active_motion_required' };
-    try { root.localStorage?.removeItem?.(key(id)); }
-    catch (_) {}
+    try { root.localStorage?.removeItem?.(key(id)); } catch (_) {}
     status('Saved authored motion draft deleted. Canonical Motion Spec was not changed.');
     publish({ status: 'deleted', motionId: id, savedAt: null, firstFailingBoundary: null });
     updateButtons();
@@ -191,24 +189,14 @@
       el('poseEditorLoadDraft')?.addEventListener('click', loadDraft);
       el('poseEditorDeleteDraft')?.addEventListener('click', deleteDraft);
     }
+    directionAuthoring()?.install?.();
     updateButtons();
     if (!root.__motionLabAuthoringDraftTimer) root.__motionLabAuthoringDraftTimer = root.setInterval?.(updateButtons, 1000);
     publish({ status: 'installed', firstFailingBoundary: null });
     return root.PocketPTMotionLabAuthoringDraftStore;
   }
 
-  root.PocketPTMotionLabAuthoringDraftStore = Object.freeze({
-    VERSION,
-    install,
-    saveDraft,
-    loadDraft,
-    deleteDraft,
-    hasDraft: id => Boolean(readRecord(id)),
-    readDraft: readRecord,
-    snapshot: () => lastSnapshot
-  });
-
+  root.PocketPTMotionLabAuthoringDraftStore = Object.freeze({ VERSION, install, saveDraft, loadDraft, deleteDraft, hasDraft: id => Boolean(readRecord(id)), readDraft: readRecord, snapshot: () => lastSnapshot });
   function tryInitialInstall() { install(); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInitialInstall, { once: true });
-  else tryInitialInstall();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInitialInstall, { once: true }); else tryInitialInstall();
 })(window, document);
