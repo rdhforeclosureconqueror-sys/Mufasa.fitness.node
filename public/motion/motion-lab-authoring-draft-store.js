@@ -1,7 +1,7 @@
 (function initMotionLabAuthoringDraftStore(root, document) {
   'use strict';
 
-  const VERSION = '1.0.0-authoring-draft-store';
+  const VERSION = '1.1.0-authoring-draft-store';
   const PREFIX = 'pocketpt.motionLab.authoringDraft.v1:';
   let lastSnapshot = Object.freeze({ status: 'idle', motionId: null, savedAt: null, firstFailingBoundary: null });
 
@@ -94,14 +94,15 @@
     status(`Saved authored motion draft for ${id}.`);
     publish({ status: 'saved', motionId: id, savedAt, firstFailingBoundary: null });
     updateButtons();
-    return { status: 'ready', motionId: id, savedAt };
+    return { status: 'ready', motionId: id, savedAt, editCount: adjustment.edits.length };
   }
 
   function loadDraft() {
+    const api = editor();
     const active = session();
     const id = motionId();
     const record = readRecord(id);
-    if (!active || !id || !record) {
+    if (!api || !active || !id || !record) {
       status('No saved authored motion exists for the loaded motion.', 'failed');
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'saved_draft_available' });
       return { status: 'failed', code: 'saved_draft_missing' };
@@ -141,10 +142,16 @@
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'saved_draft_load' });
       return out || { status: 'failed', code: 'saved_draft_load_failed' };
     }
-    status(`Loaded saved authored motion from ${record.savedAt}. Press Play to preview or continue editing from this draft.`);
+    const restored = api.importAdjustment?.(record.adjustment);
+    if (restored?.status !== 'ready') {
+      status(`Saved clip loaded, but edit state could not be restored (${restored?.code || 'edit_state_restore_failed'}).`, 'failed');
+      publish({ status: 'failed', motionId: id, savedAt: record.savedAt, firstFailingBoundary: 'saved_edit_state_restore' });
+      return restored || { status: 'failed', code: 'saved_edit_state_restore_failed' };
+    }
+    status(`Loaded saved authored motion from ${record.savedAt}. ${record.adjustment?.edits?.length || 0} edit(s) restored.`);
     publish({ status: 'loaded', motionId: id, savedAt: record.savedAt, firstFailingBoundary: null });
     updateButtons();
-    return { status: 'ready', motionId: id, savedAt: record.savedAt };
+    return { status: 'ready', motionId: id, savedAt: record.savedAt, editCount: record.adjustment?.edits?.length || 0 };
   }
 
   function deleteDraft() {
@@ -184,10 +191,7 @@
     snapshot: () => lastSnapshot
   });
 
-  function autoInstall(attempt = 0) {
-    if (install()) return;
-    if (attempt < 80) root.setTimeout?.(() => autoInstall(attempt + 1), 250);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => autoInstall(), { once: true });
-  else autoInstall();
+  function tryInitialInstall() { install(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInitialInstall, { once: true });
+  else tryInitialInstall();
 })(window, document);
