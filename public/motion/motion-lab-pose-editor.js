@@ -1,7 +1,7 @@
 (function initMotionLabPoseEditor(root, document) {
   'use strict';
 
-  const VERSION = '1.1.0-pose-authoring-mobile-fix';
+  const VERSION = '1.2.0-pose-authoring-durable-edits';
   const INCH_TO_WORLD = 0.0254;
   const GOLD_SCENE = 0xd4af37;
   const TARGETS = Object.freeze({
@@ -123,8 +123,7 @@
     activeSession.avatar.updateMatrixWorld?.(true);
     sampledPhaseId = phase.id;
     baseline = captureEditablePose();
-    edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
-    status(`Editing phase “${sampledPhaseId}”. Watch the live viewer and tap − / + to adjust.`);
+    status(`Editing phase “${sampledPhaseId}”. Existing edits are preserved. Watch the live viewer and tap − / + to adjust.`);
     refreshOutput();
     return { status: 'ready', phaseId: sampledPhaseId, time };
   }
@@ -227,8 +226,9 @@
       return;
     }
     recordEdit({ phaseId: sampledPhaseId, target: targetId, bone: target.bone, mode, axis, amount: step, unit: mode === 'rotate' ? 'degrees' : 'world_units' });
+    patchPreviewClip();
     const shown = mode === 'rotate' ? `${Math.abs(step).toFixed(1)}°` : `${(Math.abs(step) / INCH_TO_WORLD).toFixed(2)} in`;
-    status(`${target.label}: ${direction > 0 ? '+' : '−'}${shown} ${axis} applied.`);
+    status(`${target.label}: ${direction > 0 ? '+' : '−'}${shown} ${axis} applied and accumulated.`);
     refreshOutput();
   }
 
@@ -250,7 +250,7 @@
     const phase = phaseById(sampledPhaseId);
     if (!phase) return { status: 'failed', code: 'phase_required' };
     const phaseTime = phase.normalizedTime * activeSession.motionSpec.durationSeconds;
-    const clip = originalClip?.clone?.() || activeSession.sessionClip.clone?.();
+    const clip = previewClip?.clone?.() || originalClip?.clone?.() || activeSession.sessionClip.clone?.();
     if (!clip) return { status: 'failed', code: 'preview_clip_clone_failed' };
     const changed = changedBones();
     for (const boneName of changed) {
@@ -279,7 +279,7 @@
     }
     clip.name = `${originalClip?.name || clip.name} [POSE EDIT PREVIEW]`;
     previewClip = clip;
-    return { status: 'ready', clip, changedBones: changed };
+    return { status: 'ready', clip, changedBones: changed, editCount: edits.length };
   }
 
   function playAdjustedPreview() {
@@ -290,7 +290,7 @@
     activeSession.action = activeSession.mixer.clipAction(built.clip, activeSession.avatar);
     activeSession.setLoop?.(true);
     activeSession.play?.();
-    status(`Playing adjusted preview. ${built.changedBones.length} bone transform(s) changed.`);
+    status(`Playing adjusted preview. ${edits.length} structured edit(s) accumulated.`);
     return built;
   }
 
@@ -305,12 +305,13 @@
     }
     activeSession.avatar.updateMatrixWorld?.(true);
     edits = edits.filter(edit => !(edit.phaseId === sampledPhaseId && edit.target === el('poseEditorTarget')?.value));
-    status('Selected body part reset to the sampled phase pose.'); refreshOutput();
+    previewClip = null;
+    status('Selected body part reset. Rebuild preview to apply remaining edits.'); refreshOutput();
   }
 
   function resetPhase() {
-    restorePose(baseline); edits = edits.filter(edit => edit.phaseId !== sampledPhaseId);
-    status(`Phase “${sampledPhaseId}” reset.`); refreshOutput();
+    restorePose(baseline); edits = edits.filter(edit => edit.phaseId !== sampledPhaseId); previewClip = null;
+    status(`Phase “${sampledPhaseId}” reset. Rebuild preview to apply remaining edits.`); refreshOutput();
   }
 
   function resetAll() {
@@ -337,6 +338,34 @@
         unit: edit.mode === 'move' ? 'avatar_height' : 'degrees'
       }))
     });
+  }
+
+  function importAdjustment(payload) {
+    const expectedMotionId = originalMotionSpec?.motionId || activeSession?.motionSpec?.motionId || null;
+    if (!payload || payload.type !== 'motion_lab_pose_adjustment' || !Array.isArray(payload.edits)) return { status: 'failed', code: 'adjustment_payload_invalid' };
+    if (expectedMotionId && payload.motionId && payload.motionId !== expectedMotionId) return { status: 'failed', code: 'adjustment_motion_mismatch' };
+    const scale = bodyScale();
+    const restored = [];
+    for (const item of payload.edits) {
+      const target = TARGETS[item.target];
+      if (!target || !item.phaseId || !item.axis || !Number.isFinite(Number(item.amount))) return { status: 'failed', code: 'adjustment_edit_invalid' };
+      const move = item.mode === 'endpoint_or_root_translation';
+      restored.push({
+        phaseId: item.phaseId,
+        target: item.target,
+        bone: item.bone || target.bone,
+        mode: move ? 'move' : 'rotate',
+        axis: item.axis,
+        amount: move ? Number(item.amount) * Math.max(scale, 1e-9) : Number(item.amount),
+        unit: move ? 'world_units' : 'degrees',
+        key: `${item.phaseId}:${item.target}:${move ? 'move' : 'rotate'}:${item.axis}`
+      });
+    }
+    edits = restored;
+    previewClip = activeSession?.sessionClip?.clone?.() || previewClip;
+    refreshOutput();
+    status(`Restored ${edits.length} saved edit(s) into the authoring state.`);
+    return { status: 'ready', editCount: edits.length };
   }
 
   function refreshOutput() {
@@ -373,7 +402,7 @@
     if (!help || !target) return;
     if (mode === 'move' && target.mode === 'joint') help.textContent = 'This joint uses rotation. Choose Rotate, or select a hand/foot/hips for position moves.';
     else if (mode === 'move' && target.mode === 'endpoint') help.textContent = 'Moving this endpoint uses shared two-bone IK. Forward/back is avatar-relative, not a hard-coded world axis.';
-    else help.textContent = 'Adjustments are preview-only until you copy/save the structured Motion Spec adjustment.';
+    else help.textContent = 'Adjustments accumulate across phases until reset, saved, or promoted.';
   }
 
   function enable(enabled) {
@@ -451,7 +480,7 @@
 
   root.PocketPTMotionLabPoseEditor = Object.freeze({
     VERSION, install, wireUi, getActiveSession: () => activeSession, samplePhase, resetAll,
-    exportAdjustment: exportPayload, playAdjustedPreview, normalizedBoneKey, traverseByName, mountLiveViewer
+    exportAdjustment: exportPayload, importAdjustment, playAdjustedPreview, normalizedBoneKey, traverseByName, mountLiveViewer
   });
   wireUi(); enable(false);
 })(window, document);
