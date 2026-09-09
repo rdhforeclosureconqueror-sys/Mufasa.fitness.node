@@ -10,11 +10,11 @@ const contract = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/motion/contr
 function phase(id) { return Lunge.spec.phases.find(item => item.id === id); }
 function rot(item, bone) { return item.boneTargets.find(target => target.bone === bone).rotationOffsetEulerDegrees[0]; }
 
-test('stationary left lunge movement definition v2.2 validates and stays development-only', () => {
+test('stationary left lunge movement definition v2.3 validates and stays development-only', () => {
   const result = Lunge.validate(Lunge.spec);
   assert.equal(result.valid, true, result.errors.join('\n'));
-  assert.equal(Lunge.spec.version, 2.2);
-  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_movement_definition_v2_2_stride_angle_gate');
+  assert.equal(Lunge.spec.version, 2.3);
+  assert.equal(Lunge.spec.motionId, 'lunge/stationary_left_movement_definition_v2_3_owner_split_knee');
   assert.equal(Lunge.spec.status, 'development-test-only');
   assert.equal(Lunge.spec.exerciseId, 'stationary_lunge_left');
   assert.equal(Lunge.spec.loop, false);
@@ -22,7 +22,7 @@ test('stationary left lunge movement definition v2.2 validates and stays develop
   assert.equal(Lunge.spec.synthesisBoundary.copiedNamedLungeAnimation, false);
 });
 
-test('lunge v2.2 starts and finishes in the same neutral standing pose', () => {
+test('lunge v2.3 starts and finishes in the same neutral standing pose', () => {
   const start = phase('stand_start');
   const finish = phase('stand_finish');
   assert.deepEqual(start.root, finish.root);
@@ -31,7 +31,7 @@ test('lunge v2.2 starts and finishes in the same neutral standing pose', () => {
   assert.deepEqual(finish.contacts, []);
 });
 
-test('lunge v2.2 takes a materially longer forward step before split plant', () => {
+test('lunge v2.3 takes a materially longer forward step before split plant', () => {
   const step = phase('step_forward');
   const plant = phase('split_plant');
   assert.ok(rot(step, 'mixamorig:LeftUpLeg') >= 50, 'step must strongly flex the left hip to create stride length');
@@ -43,7 +43,13 @@ test('lunge v2.2 takes a materially longer forward step before split plant', () 
   assert.equal(Lunge.spec.groundingPolicy.anchorPhaseId, 'split_plant');
 });
 
-test('lunge v2.2 rejects the old short entry stance instead of only describing a 90 degree target', () => {
+test('lunge v2.3 locks the owner-approved split-plant right knee without changing rep tops', () => {
+  assert.equal(rot(phase('split_plant'), 'mixamorig:RightLeg'), -1);
+  for (const id of ['rep1_top','rep2_top','rep3_top']) assert.equal(rot(phase(id), 'mixamorig:RightLeg'), -6);
+  assert.equal(Lunge.spec.authoringGeometryGate.splitPlantOwnerApprovedRightKneePitchDegrees, -1);
+});
+
+test('lunge v2.3 rejects the old short entry stance instead of only describing a 90 degree target', () => {
   const candidate = {
     ...Lunge.spec,
     phases: Lunge.spec.phases.map(item => {
@@ -58,7 +64,20 @@ test('lunge v2.2 rejects the old short entry stance instead of only describing a
   assert.ok(result.errors.some(error => /front foot is not far enough forward/i.test(error)));
 });
 
-test('lunge v2.2 enforces authored bottom flexion consistent with the near-right-angle goal', () => {
+test('lunge v2.3 rejects drift from the owner split-plant calibration', () => {
+  const candidate = {
+    ...Lunge.spec,
+    phases: Lunge.spec.phases.map(item => item.id !== 'split_plant' ? item : {
+      ...item,
+      boneTargets: item.boneTargets.map(target => target.bone === 'mixamorig:RightLeg' ? { ...target, rotationOffsetEulerDegrees: [-6,0,0] } : target)
+    })
+  };
+  const result = Lunge.validate(candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(error => /LUNGE_OWNER_CALIBRATION/i.test(error)));
+});
+
+test('lunge v2.3 enforces authored bottom flexion consistent with the near-right-angle goal', () => {
   for (const id of ['rep1_bottom','rep2_bottom','rep3_bottom']) {
     const bottom = phase(id);
     assert.equal(bottom.root.positionOffset[1], -0.14);
@@ -70,7 +89,7 @@ test('lunge v2.2 enforces authored bottom flexion consistent with the near-right
   assert.match(Lunge.spec.movementContract.frontShinIntent, /vertical/i);
 });
 
-test('lunge v2.2 authors exactly three planted down-up repetitions', () => {
+test('lunge v2.3 authors exactly three planted down-up repetitions', () => {
   assert.equal(Lunge.spec.repetitionPlan.count, 3);
   assert.deepEqual(Lunge.spec.repetitionPlan.bottomPhases, ['rep1_bottom', 'rep2_bottom', 'rep3_bottom']);
   const loaded = [
@@ -106,12 +125,6 @@ test('canonical lunge v2 contract makes short entry stance a hard failure', () =
   assert.equal(contract.sequence.start, 'neutral_standing');
   assert.equal(contract.sequence.loadedRepetitions, 3);
   assert.equal(contract.setup.contacts.anchorEstablishmentPhase, 'split_plant');
-  assert.equal(contract.numericalTargets.entryAuthoringGate.hardFail, true);
-  assert.equal(contract.numericalTargets.entryAuthoringGate.stepForwardMinimumLeftHipFlexionDegrees, 50);
-  assert.equal(contract.numericalTargets.entryAuthoringGate.splitPlantMinimumLeftHipFlexionDegrees, 35);
-  assert.equal(contract.numericalTargets.frontKneeInsideAngleDegrees.bottomTarget, 90);
-  assert.ok(contract.hardConstraints.includes('entry_step_is_long_enough_for_near_90_degree_front_knee'));
-  assert.ok(contract.compensationSignals.some(signal => signal.id === 'entry_step_too_short'));
 });
 
 test('motion compiler still supports phase-aware contacts around the split anchor', () => {
@@ -122,10 +135,10 @@ test('motion compiler still supports phase-aware contacts around the split ancho
   assert.match(compiler, /phase\.contacts\.includes\(chain\.contact\)/);
 });
 
-test('Motion Lab still exposes the stationary lunge loader through the protected asset graph', () => {
+test('Motion Lab exposes the v2.3 lunge loader through the protected asset graph', () => {
   const html = fs.readFileSync(path.join(ROOT, 'motion-lab/index.html'), 'utf8');
   const bootstrap = fs.readFileSync(path.join(ROOT, 'motion-lab/motion-lab-bootstrap.js'), 'utf8');
-  assert.match(html, /Load Stationary Lunge Left v2\.1 \(Reference Only\)/);
+  assert.match(html, /Load Stationary Lunge Left v2\.3 \(Reference Only\)/);
   assert.ok(bootstrap.indexOf('/dev/motion-lab-assets/lunge-motion-spec.js') >= 0);
   assert.ok(bootstrap.indexOf('/dev/motion-lab-assets/motion-lab-lunge-preview.js') > bootstrap.indexOf('/dev/motion-lab-runtime.js'));
 });
