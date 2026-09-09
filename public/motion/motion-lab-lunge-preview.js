@@ -112,6 +112,8 @@
     var button = document.getElementById("loadSynthesizedLunge");
     if (!button || button.dataset.lungeWired === "1") return;
     button.dataset.lungeWired = "1";
+    button.textContent = "Load Stationary Lunge Left v2.3 (Coach Avatar)";
+    button.title = "Retarget Stationary Left Lunge v2.3 onto the personalized Avaturn coach skeleton";
     button.disabled = false;
     button.addEventListener("click", loadLunge);
   }
