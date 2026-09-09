@@ -18,7 +18,7 @@
   <section><h2>Loaded motion</h2><dl id="motionDiagnostics"><dt>Motion</dt><dd>none</dd></dl><p class="measurement">Native playback uses the embedded clip on its own skeleton without renaming or retargeting. Push-up, squat, and lunge values are development engineering references, not medically or biomechanically authoritative.</p></section>
 
   <section id="poseEditorPanel"><h2>Pose Editor / Motion Authoring</h2>
-    <p class="measurement">Make small pose corrections while watching the live avatar. Endpoint moves use shared IK so the hip/knee/ankle or shoulder/elbow/wrist chain follows naturally. Adjustments are preview-only until exported.</p>
+    <p class="measurement">Make small pose corrections while watching the live avatar. Endpoint moves use shared IK so the hip/knee/ankle or shoulder/elbow/wrist chain follows naturally. Adjustments stay in the authoring workspace until you save a draft or promote them into the canonical Motion Spec.</p>
     <div id="poseEditorLiveViewer" aria-label="Live Pose Editor avatar viewer"></div>
     <div class="controls pose-editor-controls">
       <label>Phase <select id="poseEditorPhase" disabled></select></label>
@@ -33,11 +33,15 @@
     <p id="poseEditorStatus" class="measurement" role="status">Pose Editor waiting for a generated motion.</p>
     <div class="controls">
       <button id="poseEditorPlay" disabled>Play Adjusted Preview</button>
+      <button id="poseEditorSaveDraft" disabled>Save Adjusted Motion</button>
+      <button id="poseEditorLoadDraft" disabled>Load Saved Motion</button>
+      <button id="poseEditorDeleteDraft" disabled>Delete Saved Motion</button>
       <button id="poseEditorResetSelected" disabled>Reset Selected</button>
       <button id="poseEditorResetPhase" disabled>Reset Phase</button>
       <button id="poseEditorResetAll" disabled>Reset All</button>
       <button id="poseEditorCopy" disabled>Copy Motion Spec Adjustment</button>
     </div>
+    <p id="poseEditorSaveStatus" class="measurement" role="status">Saved authored motion: <strong id="poseEditorSavedDraftState">NONE</strong>. Saved drafts are browser-local and do not silently rewrite the canonical Motion Spec.</p>
     <p class="measurement">Pending structured edits: <strong id="poseEditorEditCount">0</strong></p>
     <textarea id="poseEditorOutput" rows="10" readonly aria-label="Pose Editor structured Motion Spec adjustment"></textarea>
   </section>
@@ -52,4 +56,4 @@
   <div><h2>Owned lifecycle resources</h2><dl id="resources"></dl><p class="measurement">Counts cover resources owned by DisposableMotionSession, not every browser listener.</p><h2>Page lifecycle</h2><dl id="pageLifecycle"></dl></div></section>
   <section id="motionViewerSection"><h2>Motion viewer</h2><p id="viewerStatus" class="measurement" role="status">No renderer is active. Initialize Runtime, then start a session.</p><div id="viewer"></div></section>
   <section><h2>Bounded event history</h2><ol id="history"></ol></section>
-</main><script src="/dev/motion-lab-assets/motion-lab-pose-editor-preview-guard.js" defer></script><script src="/dev/motion-lab-bootstrap.js" defer></script></body></html>
+</main><script src="/dev/motion-lab-assets/motion-lab-pose-editor-preview-guard.js" defer></script><script src="/dev/motion-lab-bootstrap.js" defer></script><script src="/dev/motion-lab-assets/motion-lab-authoring-draft-store.js" defer></script></body></html>
