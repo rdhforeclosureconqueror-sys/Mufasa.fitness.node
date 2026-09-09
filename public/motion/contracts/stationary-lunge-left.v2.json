@@ -3,12 +3,19 @@
   "contractId": "stationary_lunge_left_reference_v2",
   "exerciseId": "stationary_lunge_left",
   "status": "development-coaching-contract",
-  "purpose": "Define a complete left-forward stationary lunge sequence that starts in neutral standing, takes a sufficiently long forward step, performs three vertical knee-drop repetitions, steps back, and finishes in the same neutral standing pose.",
+  "purpose": "Define the current development stationary-left-lunge sequence on the last device-playable v2.1 movement geometry, with one owner-approved split-plant right-knee correction, while keeping runtime compiler/IK/contact enforcement as the final playability authority.",
   "authorityBoundary": {
     "biomechanicalGroundTruth": false,
     "medicalDiagnosis": false,
     "movementScreenOnly": true,
-    "notes": "Engineering reference for the shipped avatar. The 90-degree target must be supported by a sufficiently long authored split stance; final world-space geometry still requires visual/runtime acceptance."
+    "notes": "This contract must stay aligned with public/motion/lunge-motion-spec.js. The rejected v2.2 long-stride geometry is not the active runtime base. Device/runtime acceptance remains required."
+  },
+  "canonicalMotion": {
+    "version": 2.3,
+    "motionId": "lunge/stationary_left_movement_definition_v2_3_playable_base_owner_split_knee",
+    "playableBaseMotionId": "lunge/stationary_left_movement_definition_v2_1_exit_release",
+    "playableBaseCommit": "dec75c9880d46a30c51c5321a7fd0ce4c3e1637b",
+    "rejectedGeometryFamily": "v2.2-long-stride"
   },
   "ownerCalibration": {
     "motionRevision": "v2.3",
@@ -17,18 +24,19 @@
     "bone": "mixamorig:RightLeg",
     "mode": "joint_rotation_delta",
     "axis": "x",
+    "basePitchDegrees": -7,
     "approvedDeltaDegrees": 5,
-    "v22BasePitchDegrees": -6,
-    "v23CanonicalPitchDegrees": -1,
+    "requiredPitchDegrees": -2,
     "scope": "split_plant_only",
-    "note": "Owner visually accepted this split-plant correction in Motion Lab. Repetition-top right-knee values remain at the v2.2 value until separately reviewed."
+    "repTopPitchDegrees": -7,
+    "note": "Apply only the owner-approved +5 degree split-plant correction to the actual playable v2.1 RightLeg base. Repetition-top right-knee values remain on the playable v2.1 value."
   },
   "sequence": {
     "start": "neutral_standing",
-    "entry": "left_foot_steps_forward_far_enough_to_create_lunge_geometry",
+    "entry": "left_foot_steps_forward_using_playable_v2_1_geometry",
     "loadedRepetitions": 3,
     "loadedCycle": ["vertical_descent", "bottom", "vertical_ascent"],
-    "exit": "left_foot_steps_back_to_neutral_standing",
+    "exit": "release_loaded_contacts_then_step_back_using_playable_v2_1_geometry",
     "finish": "same_neutral_standing_as_start"
   },
   "phaseOrder": [
@@ -39,15 +47,23 @@
     "step_back", "stand_finish"
   ],
   "setup": {
-    "standing": {"rule":"begin_upright_in_neutral_rest_relative_stance","cue":"Start standing tall before creating the lunge stance.","hardFail":true},
+    "standing": {
+      "rule": "begin_upright_in_neutral_rest_relative_stance",
+      "cue": "Start standing tall before creating the lunge stance.",
+      "hardFail": true
+    },
     "step": {
       "frontSide": "left",
       "rearSide": "right",
-      "rule": "left_hip_flexes_and_left_foot_steps_forward_far_enough_to_support_near_90_degree_front_knee_geometry",
-      "cue": "Take a real lunge step. The front foot must travel far enough forward that dropping straight down can create a near-right-angle front knee without the knee simply driving forward.",
+      "rule": "use_last_device_playable_v2_1_entry_geometry",
+      "cue": "Use the currently playable entry while longer-stride geometry remains rejected pending runtime IK acceptance.",
       "hardFail": true
     },
-    "plant": {"rule":"establish_long_stable_left_forward_split_stance_before_loading","cue":"Plant the whole left foot well forward and the right forefoot behind before the first descent.","hardFail":true},
+    "plant": {
+      "rule": "establish_playable_split_stance_before_loading",
+      "cue": "Plant the whole left foot and right forefoot before the first descent.",
+      "hardFail": true
+    },
     "contacts": {
       "frontFoot": {"contact":"left_front_foot","bone":"mixamorig:LeftFoot","rule":"whole_front_foot_planted_during_loaded_repetitions","hardFail":true},
       "rearFoot": {"contact":"right_rear_forefoot","bone":"mixamorig:RightToeBase","rule":"right_toe_ball_of_foot_planted_during_loaded_repetitions_rear_heel_may_rise","hardFail":true},
@@ -58,81 +74,72 @@
   },
   "movementIntent": {
     "stand_start": ["upright_neutral_standing", "no_lunge_load"],
-    "step_forward": ["left_hip_flexes_strongly", "left_foot_moves_forward_far_enough_for_lunge", "right_support_stays_behind", "torso_stays_tall"],
-    "split_plant": ["left_whole_foot_planted_well_forward", "right_forefoot_planted_behind", "long_stable_split_stance", "owner_approved_right_knee_pitch", "pelvis_between_supports"],
-    "descent": ["pelvis_moves_mostly_straight_down", "minimal_horizontal_pelvis_travel", "front_knee_flexes_toward_90_degrees", "front_shin_near_vertical", "rear_knee_moves_down_toward_floor", "both_loaded_contacts_stay_planted", "torso_stays_tall"],
-    "bottom": ["front_knee_near_90_degrees", "rear_knee_near_90_degrees", "rear_knee_near_floor_without_hard_impact", "front_shin_near_vertical", "pelvis_between_supports", "both_loaded_contacts_preserved"],
-    "ascent": ["pelvis_moves_mostly_straight_up", "front_and_rear_knees_extend", "feet_stay_planted", "return_to_same_split_top"],
-    "step_back": ["release_left_forward_anchor_after_rep3_top", "left_foot_returns_to_standing", "right_support_remains_stable"],
+    "step_forward": ["playable_v2_1_entry_geometry", "left_foot_moves_forward", "right_support_stays_behind", "torso_stays_tall"],
+    "split_plant": ["left_whole_foot_planted", "right_forefoot_planted", "owner_approved_right_knee_pitch_minus_2", "pelvis_between_supports"],
+    "descent": ["pelvis_moves_mostly_straight_down", "minimal_horizontal_pelvis_travel", "both_loaded_contacts_stay_planted", "torso_stays_tall"],
+    "bottom": ["loaded_contacts_preserved", "rear_knee_moves_toward_floor", "pelvis_between_supports"],
+    "ascent": ["pelvis_moves_mostly_straight_up", "feet_stay_planted", "return_to_same_split_top"],
+    "step_back": ["release_loaded_contacts_after_rep3_top", "use_playable_v2_1_exit_geometry", "return_toward_standing"],
     "stand_finish": ["same_upright_neutral_standing_as_start"]
+  },
+  "authoredReferenceGeometry": {
+    "stepForwardLeftHipFlexionDegrees": 34,
+    "splitPlantLeftHipFlexionDegrees": 24,
+    "splitPlantRearHipExtensionDegrees": -27,
+    "splitPlantRightKneePitchDegrees": -2,
+    "repTopRightKneePitchDegrees": -7,
+    "bottomFrontKneePitchDegrees": -72,
+    "bottomRearKneePitchDegrees": -82,
+    "note": "These values record the active playable-base development geometry. They are not biomechanical ground truth."
   },
   "trajectory": {
     "loadedDescent": {"target":"pelvis","dominantDirection":"vertical_down","maxHorizontalToVerticalTravelRatio":0.25,"rearKneeDirection":"down_toward_floor"},
     "loadedAscent": {"target":"pelvis","dominantDirection":"vertical_up","maxHorizontalToVerticalTravelRatio":0.25,"returnTarget":"same_split_top"}
   },
   "numericalTargets": {
-    "entryAuthoringGate": {
-      "stepForwardMinimumLeftHipFlexionDegrees": 50,
-      "splitPlantMinimumLeftHipFlexionDegrees": 35,
-      "splitPlantMinimumRearHipExtensionDegrees": 30,
-      "hardFail": true,
-      "reason": "A short entry stance cannot support the declared near-90-degree front-knee bottom without compensatory forward travel."
-    },
-    "ownerSplitPlantRightKneePitchDegrees": {"target":-1,"hardFail":true,"source":"owner_motion_lab_visual_acceptance"},
-    "frontKneeInsideAngleDegrees": {"bottomTarget":90,"bottomEngineeringToleranceDegrees":10},
-    "rearKneeInsideAngleDegrees": {"bottomTarget":90,"bottomEngineeringToleranceDegrees":15},
-    "frontShinFromVerticalDegrees": {"bottomTarget":0,"bottomEngineeringToleranceDegrees":10},
+    "frontKneeInsideAngleDegrees": {"bottomTarget":90,"bottomEngineeringToleranceDegrees":10,"status":"coaching_target_not_runtime_playability_gate"},
+    "rearKneeInsideAngleDegrees": {"bottomTarget":90,"bottomEngineeringToleranceDegrees":15,"status":"coaching_target_not_runtime_playability_gate"},
+    "frontShinFromVerticalDegrees": {"bottomTarget":0,"bottomEngineeringToleranceDegrees":10,"status":"coaching_target_not_runtime_playability_gate"},
     "pelvisBottomDrop": {"authoredTarget":0.14,"unit":"avatar_height","direction":"down"},
     "contactAnchorResidual": {"target":0,"unit":"avatar_height","hardFailAbove":0.015},
-    "rearToeGroundPlane": {"targetHeightDifferenceFromFrontSupport":0,"unit":"avatar_height","hardFailAbove":0.015},
-    "rearKneeClearance": {"bottomTarget":"near_ground_without_hard_impact","hardFailIf":"rear_knee_moves_up_or_away_from_floor_during_descent"}
+    "rearToeGroundPlane": {"targetHeightDifferenceFromFrontSupport":0,"unit":"avatar_height","hardFailAbove":0.015}
   },
   "hardConstraints": [
     "start_in_neutral_standing",
-    "step_left_foot_forward_before_loading",
-    "entry_step_is_long_enough_for_near_90_degree_front_knee",
-    "left_hip_flexion_reaches_entry_minimum",
-    "establish_long_split_plant_before_loaded_descent",
-    "owner_approved_split_plant_right_knee_pitch_is_preserved",
+    "use_playable_v2_1_runtime_geometry",
+    "do_not_reintroduce_rejected_v2_2_long_stride_without_runtime_acceptance",
+    "establish_split_plant_before_loaded_descent",
+    "owner_split_plant_right_knee_pitch_is_minus_2_degrees",
+    "rep_top_right_knee_pitch_remains_minus_7_degrees",
     "front_whole_foot_contact_during_loaded_repetitions",
     "right_rear_toe_forefoot_contact_during_loaded_repetitions",
     "pelvis_descent_is_vertical_dominant",
     "pelvis_ascent_is_vertical_dominant",
-    "front_knee_approaches_90_degrees_at_bottom",
-    "front_shin_remains_near_vertical_at_bottom",
-    "rear_knee_descends_toward_floor",
     "three_loaded_repetitions",
     "feet_do_not_restep_between_reps",
-    "step_back_only_after_rep3_top",
+    "release_loaded_contacts_before_step_back",
     "finish_in_same_neutral_standing_pose"
   ],
   "requiredPrimitives": ["neutral_stand","step_forward","split_stance","stable_stance","root_vertical_descent","front_leg_knee_flexion","rear_leg_knee_flexion","rear_knee_descent","root_vertical_ascent","front_leg_knee_extension","rear_leg_knee_extension","step_back_to_stand"],
   "coachCues": [
     "Start standing tall.",
-    "Drive the left thigh forward and take a longer step than a walking stride.",
-    "Plant the left foot far enough forward to create room for the front knee to approach 90 degrees when the body drops.",
-    "Use the approved split-plant right-knee angle before beginning the loaded descent.",
+    "Use the current playable step and establish both support contacts before loading.",
     "Keep the right toes and ball of the foot planted while the right heel is free to rise.",
-    "Once the stance is planted, drive the body straight down instead of lunging the torso forward.",
-    "At the bottom, bring the front knee close to a right angle and keep the front shin close to vertical.",
-    "Drive the right rear knee down toward the floor rather than letting the rear leg swing behind you.",
+    "Once the stance is planted, drive the body mostly straight down.",
     "Rise mostly straight up to the same split stance.",
     "Repeat the down-up cycle three times without moving the feet.",
-    "After the third rep, step the left foot back and finish standing tall."
+    "After the third rep, release the loaded contacts and step back to standing."
   ],
   "compensationSignals": [
     {"id":"starts_in_split_stance","view":"side","meaning":"entry step is missing; motion does not begin from neutral standing"},
-    {"id":"entry_step_too_short","view":"side","meaning":"left hip/foot does not travel far enough forward to create room for near-90-degree front-knee geometry"},
-    {"id":"split_plant_owner_calibration_drift","view":"side","meaning":"right knee at split_plant no longer matches the owner-approved pitch"},
+    {"id":"split_plant_owner_calibration_drift","view":"side","meaning":"right knee at split_plant no longer matches the owner-approved -2 degree pitch"},
     {"id":"front_heel_rise","view":"side","meaning":"front whole-foot contact lost during loaded phase"},
-    {"id":"front_knee_excessive_forward_travel","view":"side","meaning":"front shin is no longer near vertical and the motion is translating forward instead of dropping down"},
     {"id":"pelvis_forward_drift","view":"side","meaning":"horizontal pelvis travel is too large relative to vertical descent"},
     {"id":"rear_knee_not_descending","view":"side","meaning":"rear knee does not move toward the floor as the body lowers"},
-    {"id":"rear_leg_swinging","view":"side","meaning":"rear leg behaves like a running stride instead of a grounded support chain"},
     {"id":"rear_foot_contact_loss","view":"side","meaning":"right rear toe/forefoot leaves the ground during a loaded repetition"},
     {"id":"feet_restep_between_reps","view":"side","meaning":"the planted split stance was not preserved across all three repetitions"},
-    {"id":"does_not_return_to_stand","view":"side","meaning":"motion ends in split stance instead of stepping back to neutral"}
+    {"id":"does_not_return_to_stand","view":"side","meaning":"motion does not return to neutral standing"}
   ],
   "sourceEvidence": ["/motion-sources/crouched-sneaking-left-reference.source.json","/motion-sources/kettlebell-swing-reference.source.json","/motion/transition-profiles/stand-to-plank.v1.json"],
-  "sourceEvidenceBoundary": "Reference sources supply primitive mechanics only. This movement definition is authoritative for sequence and entry geometry. The v2.3 split-plant right-knee calibration is additionally based on explicit owner visual acceptance in Motion Lab."
+  "sourceEvidenceBoundary": "Reference sources supply primitive mechanics only. The active development runtime is v2.3 on the last device-playable v2.1 geometry plus the owner-approved split-plant right-knee correction. The compiler/generated-IK/contact path remains final playability authority."
 }
