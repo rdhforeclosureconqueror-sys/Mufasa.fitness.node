@@ -16,15 +16,21 @@ function byId(id) {
 function makeArmRig() {
   const avatar = new THREE.Object3D();
   avatar.name = 'Avatar';
+  const hips = new THREE.Bone(); hips.name = 'Hips';
+  const spine = new THREE.Bone(); spine.name = 'Spine';
+  const spine1 = new THREE.Bone(); spine1.name = 'Spine1';
   const shoulderParent = new THREE.Bone(); shoulderParent.name = 'Spine2';
   const arm = new THREE.Bone(); arm.name = 'LeftArm';
   const forearm = new THREE.Bone(); forearm.name = 'LeftForeArm';
   // Deliberately model a rig whose arm's rest segment points along local +X.
-  // A copied local-X Euler convention cannot be assumed to mean "overhead" here.
   forearm.position.set(1, 0, 0);
-  avatar.add(shoulderParent); shoulderParent.add(arm); arm.add(forearm);
+  avatar.add(hips); hips.add(spine); spine.add(spine1); spine1.add(shoulderParent); shoulderParent.add(arm); arm.add(forearm);
   avatar.updateMatrixWorld(true);
-  return { avatar, arm, forearm };
+  return { avatar, hips, spine, spine1, shoulderParent, arm, forearm };
+}
+
+function armDirection(arm, forearm) {
+  return forearm.getWorldPosition(new THREE.Vector3()).sub(arm.getWorldPosition(new THREE.Vector3())).normalize();
 }
 
 test('OHSA motion spec validates and exposes three controlled reps', () => {
@@ -62,32 +68,88 @@ test('semantic direction solver points a target-rig arm overhead even when its r
   });
   assert.equal(result.status, 'ready');
   avatar.updateMatrixWorld(true);
-  const direction = forearm.getWorldPosition(new THREE.Vector3()).sub(arm.getWorldPosition(new THREE.Vector3())).normalize();
+  const direction = armDirection(arm, forearm);
   assert.ok(direction.distanceTo(new THREE.Vector3(0,1,0)) < 1e-6, `solved direction was ${direction.toArray()}`);
   assert.ok(result.diagnostics.beforeAngleDegrees > 80);
   assert.ok(result.diagnostics.residualDegrees < 1e-5);
 });
 
-test('semantic compiler policy restores the avatar rest pose after compiling the rig-correct basis', () => {
-  const { avatar, arm, forearm } = makeArmRig();
+test('phase-specific semantic solve compensates changing torso rotation instead of reusing one rest-pose quaternion', () => {
+  const { avatar, hips, spine, spine1, arm, forearm } = makeArmRig();
   const original = arm.quaternion.clone();
-  let sawOverheadDuringCompile = false;
+  const spec = {
+    skeleton:{ rootBone:'Hips' },
+    durationSeconds:2,
+    semanticPosePolicy:{ targets:[{ id:'left_overhead', type:'bone_direction_world', bone:'LeftArm', childBone:'LeftForeArm', worldDirection:[0,1,0] }] },
+    phases:[
+      { id:'top', normalizedTime:0, root:{ positionOffset:[0,0,0], rotationOffsetEulerDegrees:[0,0,0] }, boneTargets:[
+        { bone:'Spine', rotationOffsetEulerDegrees:[0,0,0] },
+        { bone:'Spine1', rotationOffsetEulerDegrees:[0,0,0] },
+        { bone:'LeftArm', rotationOffsetEulerDegrees:[0,0,0] },
+        { bone:'LeftForeArm', rotationOffsetEulerDegrees:[0,0,0] }
+      ]},
+      { id:'bottom', normalizedTime:1, root:{ positionOffset:[0,0,0], rotationOffsetEulerDegrees:[20,0,0] }, boneTargets:[
+        { bone:'Spine', rotationOffsetEulerDegrees:[18,0,0] },
+        { bone:'Spine1', rotationOffsetEulerDegrees:[11,0,0] },
+        { bone:'LeftArm', rotationOffsetEulerDegrees:[0,0,0] },
+        { bone:'LeftForeArm', rotationOffsetEulerDegrees:[0,0,0] }
+      ]}
+    ]
+  };
+
+  const prepared = SemanticDirection.buildPhaseSpecificSpec(THREE, spec, avatar);
+  assert.equal(prepared.status, 'ready');
+  assert.equal(prepared.diagnostics.solvedPhaseCount, 2);
+  const topArm = prepared.spec.phases[0].boneTargets.find(item => item.bone === 'LeftArm').rotationOffsetEulerDegrees;
+  const bottomArm = prepared.spec.phases[1].boneTargets.find(item => item.bone === 'LeftArm').rotationOffsetEulerDegrees;
+  assert.notDeepEqual(bottomArm, topArm, 'torso rotation must produce a phase-specific local arm solution');
+
+  const rest = new Map([[hips, hips.quaternion.clone()], [spine, spine.quaternion.clone()], [spine1, spine1.quaternion.clone()], [arm, original.clone()]]);
+  function applyPreparedPhase(phase) {
+    for (const [node, q] of rest) node.quaternion.copy(q);
+    const rootEuler = phase.root.rotationOffsetEulerDegrees.map(THREE.MathUtils.degToRad);
+    hips.quaternion.copy(rest.get(hips)).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...rootEuler, 'XYZ')));
+    for (const target of phase.boneTargets) {
+      const node = target.bone === 'Spine' ? spine : target.bone === 'Spine1' ? spine1 : target.bone === 'LeftArm' ? arm : null;
+      if (!node || !rest.has(node)) continue;
+      const e = target.rotationOffsetEulerDegrees.map(THREE.MathUtils.degToRad);
+      node.quaternion.copy(rest.get(node)).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...e, 'XYZ')));
+    }
+    avatar.updateMatrixWorld(true);
+  }
+
+  for (const phase of prepared.spec.phases) {
+    applyPreparedPhase(phase);
+    const direction = armDirection(arm, forearm);
+    assert.ok(direction.distanceTo(new THREE.Vector3(0,1,0)) < 1e-5, `${phase.id} direction was ${direction.toArray()}`);
+  }
+  assert.ok(arm.quaternion.angleTo(original) > 0, 'test application should alter arm after verification');
+  arm.quaternion.copy(original);
+  avatar.updateMatrixWorld(true);
+});
+
+test('semantic compiler policy prepares phase-specific targets and restores the avatar after preparation', () => {
+  const { avatar, arm } = makeArmRig();
+  const original = arm.quaternion.clone();
+  let receivedPhaseSpecific = false;
   const base = {
-    compile(_THREE, _spec, loadedAvatar) {
-      loadedAvatar.updateMatrixWorld(true);
-      const direction = forearm.getWorldPosition(new THREE.Vector3()).sub(arm.getWorldPosition(new THREE.Vector3())).normalize();
-      sawOverheadDuringCompile = direction.distanceTo(new THREE.Vector3(0,1,0)) < 1e-6;
+    compile(_THREE, preparedSpec) {
+      receivedPhaseSpecific = preparedSpec?.semanticPoseCompilation?.mode === 'phase-specific-after-ancestor-pose';
       return { status:'ready', clip:{}, diagnostics:{} };
     }
   };
   const wrapped = SemanticDirection.install(base);
   const out = wrapped.compile(THREE, {
-    semanticPosePolicy:{ targets:[{ type:'bone_direction_world', bone:'LeftArm', childBone:'LeftForeArm', worldDirection:[0,1,0] }] }
+    skeleton:{ rootBone:'Hips' },
+    durationSeconds:1,
+    semanticPosePolicy:{ targets:[{ type:'bone_direction_world', bone:'LeftArm', childBone:'LeftForeArm', worldDirection:[0,1,0] }] },
+    phases:[{ id:'setup', normalizedTime:0, root:{ positionOffset:[0,0,0], rotationOffsetEulerDegrees:[0,0,0] }, boneTargets:[{ bone:'LeftArm', rotationOffsetEulerDegrees:[0,0,0] }, { bone:'LeftForeArm', rotationOffsetEulerDegrees:[0,0,0] }] }]
   }, avatar);
   assert.equal(out.status, 'ready');
-  assert.equal(sawOverheadDuringCompile, true);
+  assert.equal(receivedPhaseSpecific, true);
   assert.equal(out.diagnostics.semanticDirectionPolicyApplied, true);
-  assert.ok(arm.quaternion.angleTo(original) < 1e-10, 'arm rest quaternion must be restored after compilation');
+  assert.equal(out.diagnostics.semanticDirectionSolveMode, 'phase-specific-after-ancestor-pose');
+  assert.ok(arm.quaternion.angleTo(original) < 1e-10, 'avatar rest quaternion must be restored before/after compilation');
 });
 
 test('OHSA encodes a real 0.18 second bottom hold for all three reps', () => {
@@ -142,7 +204,6 @@ test('OHSA Coach preview expands grounded transitions into solved playback sampl
   assert.ok(expanded.spec.playbackGroundingExpansion.insertedGroundingSamples > 0);
   assert.equal(expanded.spec.playbackGroundingExpansion.segmentsPerGroundedTransition, 4);
   assert.equal(expanded.contract.validate(expanded.spec).valid, true);
-  // Spec-level semanticPosePolicy survives phase densification and applies to generated samples too.
   assert.equal(expanded.spec.semanticPosePolicy.targets.length, 2);
 
   const generated = expanded.spec.phases.filter(phase => phase.generatedPlaybackSample);
