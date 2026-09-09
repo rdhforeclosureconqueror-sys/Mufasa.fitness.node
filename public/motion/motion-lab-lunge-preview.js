@@ -39,10 +39,6 @@
     const snap = runtime?.snapshot?.();
     if (snap?.avatar?.avatarProfileId) return snap.avatar.avatarProfileId;
     if (snap?.motion?.avatarProfileId) return snap.motion.avatarProfileId;
-
-    // Older Motion Lab snapshots did not expose avatar state. The rendered Avatar Diagnostics
-    // panel is fed directly from state.avatar, so use its Profile row as the compatibility
-    // bridge until the runtime snapshot contract exposes avatar explicitly.
     const diagnostics = document.getElementById?.("avatarDiagnostics");
     if (diagnostics?.children) {
       for (let i = 0; i < diagnostics.children.length - 1; i += 2) {
@@ -134,13 +130,11 @@
     var contract = window.PocketPTLungeMotionSpec;
     var coach = window.PocketPTAvatarProfiles?.profiles?.personalized;
     if (!runtime || !contract || !coach) return { status: "failed", code: "dependency_load_failed" };
-
     var activeAvatarId = currentAvatarProfileId(runtime);
     if (activeAvatarId !== COACH_PROFILE_ID) {
       var avatar = await runtime.loadAvatar(coach);
       if (avatar?.status !== "ready") return avatar;
     }
-
     var retargeted = buildCoachSpec(contract);
     if (retargeted.status !== "ready") return retargeted;
     var loaded = await runtime.loadMotionSpec(retargeted.contract);
@@ -158,16 +152,48 @@
     });
   }
 
+  function loadScriptOnce(src, globalName) {
+    if (window[globalName]) return Promise.resolve(window[globalName]);
+    return new Promise(function (resolve, reject) {
+      var node = document.createElement("script");
+      node.src = src;
+      node.async = false;
+      node.onload = function () { window[globalName] ? resolve(window[globalName]) : reject(new Error(globalName + " did not install")); };
+      node.onerror = function () { reject(new Error("Failed to load " + src)); };
+      document.head.appendChild(node);
+    });
+  }
+
+  async function installOverheadSquatAssessmentTest(anchorButton) {
+    try {
+      await loadScriptOnce("/dev/motion-lab-assets/overhead-squat-assessment-motion-spec.js", "PocketPTOverheadSquatAssessmentMotionSpec");
+      await loadScriptOnce("/dev/motion-lab-assets/motion-lab-overhead-squat-assessment-preview.js", "PocketPTMotionLabOverheadSquatAssessmentPreview");
+      var button = document.getElementById("loadOverheadSquatAssessment");
+      if (!button && anchorButton?.parentNode) {
+        button = document.createElement("button");
+        button.id = "loadOverheadSquatAssessment";
+        button.disabled = true;
+        anchorButton.parentNode.insertBefore(button, anchorButton.nextSibling);
+      }
+      window.PocketPTMotionLabOverheadSquatAssessmentPreview?.wire?.();
+    } catch (error) {
+      console.error("[MOTION_LAB_OHSA_INSTALL]", error);
+    }
+  }
+
   function wire() {
     var button = document.getElementById("loadSynthesizedLunge");
-    if (!button || button.dataset.lungeWired === "1") return;
-    button.dataset.lungeWired = "1";
-    var spec = window.PocketPTLungeMotionSpec?.spec;
-    var version = spec?.version == null ? "current" : "v" + spec.version;
-    button.textContent = "Load Stationary Lunge Left " + version + " (Coach Avatar)";
-    button.title = "Retarget the current canonical Stationary Left Lunge onto the personalized Avaturn coach skeleton";
-    button.disabled = false;
-    button.addEventListener("click", loadLunge);
+    if (!button) return;
+    if (button.dataset.lungeWired !== "1") {
+      button.dataset.lungeWired = "1";
+      var spec = window.PocketPTLungeMotionSpec?.spec;
+      var version = spec?.version == null ? "current" : "v" + spec.version;
+      button.textContent = "Load Stationary Lunge Left " + version + " (Coach Avatar)";
+      button.title = "Retarget the current canonical Stationary Left Lunge onto the personalized Avaturn coach skeleton";
+      button.disabled = false;
+      button.addEventListener("click", loadLunge);
+    }
+    installOverheadSquatAssessmentTest(button);
   }
 
   window.PocketPTMotionLabLungePreview = Object.freeze({
@@ -177,6 +203,7 @@
     canonicalBoneToCoachBone: canonicalBoneToCoachBone,
     currentAvatarProfileId: currentAvatarProfileId,
     coachProfileId: COACH_PROFILE_ID,
-    coachSkeletonId: COACH_SKELETON_ID
+    coachSkeletonId: COACH_SKELETON_ID,
+    installOverheadSquatAssessmentTest: installOverheadSquatAssessmentTest
   });
 })(window, document);
