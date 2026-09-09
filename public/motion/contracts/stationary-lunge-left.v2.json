@@ -3,16 +3,29 @@
   "contractId": "stationary_lunge_left_reference_v2",
   "exerciseId": "stationary_lunge_left",
   "status": "development-coaching-contract",
-  "purpose": "Define a complete left-forward stationary lunge sequence that starts in neutral standing, steps into a stable split stance, performs three vertical knee-drop repetitions, steps back, and finishes in the same neutral standing pose.",
+  "purpose": "Define a complete left-forward stationary lunge sequence that starts in neutral standing, takes a sufficiently long forward step, performs three vertical knee-drop repetitions, steps back, and finishes in the same neutral standing pose.",
   "authorityBoundary": {
     "biomechanicalGroundTruth": false,
     "medicalDiagnosis": false,
     "movementScreenOnly": true,
-    "notes": "Engineering reference for the shipped avatar. Human proportions, stance length, ankle mobility, and lunge style require later calibration and visual acceptance."
+    "notes": "Engineering reference for the shipped avatar. The 90-degree target must be supported by a sufficiently long authored split stance; final world-space geometry still requires visual/runtime acceptance."
+  },
+  "ownerCalibration": {
+    "motionRevision": "v2.3",
+    "phaseId": "split_plant",
+    "target": "right_knee",
+    "bone": "mixamorig:RightLeg",
+    "mode": "joint_rotation_delta",
+    "axis": "x",
+    "approvedDeltaDegrees": 5,
+    "v22BasePitchDegrees": -6,
+    "v23CanonicalPitchDegrees": -1,
+    "scope": "split_plant_only",
+    "note": "Owner visually accepted this split-plant correction in Motion Lab. Repetition-top right-knee values remain at the v2.2 value until separately reviewed."
   },
   "sequence": {
     "start": "neutral_standing",
-    "entry": "left_foot_steps_forward_into_split_stance",
+    "entry": "left_foot_steps_forward_far_enough_to_create_lunge_geometry",
     "loadedRepetitions": 3,
     "loadedCycle": ["vertical_descent", "bottom", "vertical_ascent"],
     "exit": "left_foot_steps_back_to_neutral_standing",
@@ -26,23 +39,15 @@
     "step_back", "stand_finish"
   ],
   "setup": {
-    "standing": {
-      "rule": "begin_upright_in_neutral_rest_relative_stance",
-      "cue": "Start standing tall before creating the lunge stance.",
-      "hardFail": true
-    },
+    "standing": {"rule":"begin_upright_in_neutral_rest_relative_stance","cue":"Start standing tall before creating the lunge stance.","hardFail":true},
     "step": {
       "frontSide": "left",
       "rearSide": "right",
-      "rule": "left_foot_steps_forward_right_support_remains_behind",
-      "cue": "Step the left foot forward far enough to create room to drop straight down rather than pitching forward.",
+      "rule": "left_hip_flexes_and_left_foot_steps_forward_far_enough_to_support_near_90_degree_front_knee_geometry",
+      "cue": "Take a real lunge step. The front foot must travel far enough forward that dropping straight down can create a near-right-angle front knee without the knee simply driving forward.",
       "hardFail": true
     },
-    "plant": {
-      "rule": "establish_stable_left_forward_split_stance_before_loading",
-      "cue": "Plant the whole left foot and the right forefoot before the first descent.",
-      "hardFail": true
-    },
+    "plant": {"rule":"establish_long_stable_left_forward_split_stance_before_loading","cue":"Plant the whole left foot well forward and the right forefoot behind before the first descent.","hardFail":true},
     "contacts": {
       "frontFoot": {"contact":"left_front_foot","bone":"mixamorig:LeftFoot","rule":"whole_front_foot_planted_during_loaded_repetitions","hardFail":true},
       "rearFoot": {"contact":"right_rear_forefoot","bone":"mixamorig:RightToeBase","rule":"right_toe_ball_of_foot_planted_during_loaded_repetitions_rear_heel_may_rise","hardFail":true},
@@ -53,8 +58,8 @@
   },
   "movementIntent": {
     "stand_start": ["upright_neutral_standing", "no_lunge_load"],
-    "step_forward": ["left_foot_moves_forward", "right_support_stays_behind", "torso_stays_tall"],
-    "split_plant": ["left_whole_foot_planted", "right_forefoot_planted", "stable_split_stance", "pelvis_between_supports"],
+    "step_forward": ["left_hip_flexes_strongly", "left_foot_moves_forward_far_enough_for_lunge", "right_support_stays_behind", "torso_stays_tall"],
+    "split_plant": ["left_whole_foot_planted_well_forward", "right_forefoot_planted_behind", "long_stable_split_stance", "owner_approved_right_knee_pitch", "pelvis_between_supports"],
     "descent": ["pelvis_moves_mostly_straight_down", "minimal_horizontal_pelvis_travel", "front_knee_flexes_toward_90_degrees", "front_shin_near_vertical", "rear_knee_moves_down_toward_floor", "both_loaded_contacts_stay_planted", "torso_stays_tall"],
     "bottom": ["front_knee_near_90_degrees", "rear_knee_near_90_degrees", "rear_knee_near_floor_without_hard_impact", "front_shin_near_vertical", "pelvis_between_supports", "both_loaded_contacts_preserved"],
     "ascent": ["pelvis_moves_mostly_straight_up", "front_and_rear_knees_extend", "feet_stay_planted", "return_to_same_split_top"],
@@ -62,20 +67,18 @@
     "stand_finish": ["same_upright_neutral_standing_as_start"]
   },
   "trajectory": {
-    "loadedDescent": {
-      "target": "pelvis",
-      "dominantDirection": "vertical_down",
-      "maxHorizontalToVerticalTravelRatio": 0.25,
-      "rearKneeDirection": "down_toward_floor"
-    },
-    "loadedAscent": {
-      "target": "pelvis",
-      "dominantDirection": "vertical_up",
-      "maxHorizontalToVerticalTravelRatio": 0.25,
-      "returnTarget": "same_split_top"
-    }
+    "loadedDescent": {"target":"pelvis","dominantDirection":"vertical_down","maxHorizontalToVerticalTravelRatio":0.25,"rearKneeDirection":"down_toward_floor"},
+    "loadedAscent": {"target":"pelvis","dominantDirection":"vertical_up","maxHorizontalToVerticalTravelRatio":0.25,"returnTarget":"same_split_top"}
   },
   "numericalTargets": {
+    "entryAuthoringGate": {
+      "stepForwardMinimumLeftHipFlexionDegrees": 50,
+      "splitPlantMinimumLeftHipFlexionDegrees": 35,
+      "splitPlantMinimumRearHipExtensionDegrees": 30,
+      "hardFail": true,
+      "reason": "A short entry stance cannot support the declared near-90-degree front-knee bottom without compensatory forward travel."
+    },
+    "ownerSplitPlantRightKneePitchDegrees": {"target":-1,"hardFail":true,"source":"owner_motion_lab_visual_acceptance"},
     "frontKneeInsideAngleDegrees": {"bottomTarget":90,"bottomEngineeringToleranceDegrees":10},
     "rearKneeInsideAngleDegrees": {"bottomTarget":90,"bottomEngineeringToleranceDegrees":15},
     "frontShinFromVerticalDegrees": {"bottomTarget":0,"bottomEngineeringToleranceDegrees":10},
@@ -87,7 +90,10 @@
   "hardConstraints": [
     "start_in_neutral_standing",
     "step_left_foot_forward_before_loading",
-    "establish_split_plant_before_loaded_descent",
+    "entry_step_is_long_enough_for_near_90_degree_front_knee",
+    "left_hip_flexion_reaches_entry_minimum",
+    "establish_long_split_plant_before_loaded_descent",
+    "owner_approved_split_plant_right_knee_pitch_is_preserved",
     "front_whole_foot_contact_during_loaded_repetitions",
     "right_rear_toe_forefoot_contact_during_loaded_repetitions",
     "pelvis_descent_is_vertical_dominant",
@@ -96,27 +102,16 @@
     "front_shin_remains_near_vertical_at_bottom",
     "rear_knee_descends_toward_floor",
     "three_loaded_repetitions",
-    "feet_do_not_restep_between_loaded_repetitions",
+    "feet_do_not_restep_between_reps",
     "step_back_only_after_rep3_top",
     "finish_in_same_neutral_standing_pose"
   ],
-  "requiredPrimitives": [
-    "neutral_stand",
-    "step_forward",
-    "split_stance",
-    "stable_stance",
-    "root_vertical_descent",
-    "front_leg_knee_flexion",
-    "rear_leg_knee_flexion",
-    "rear_knee_descent",
-    "root_vertical_ascent",
-    "front_leg_knee_extension",
-    "rear_leg_knee_extension",
-    "step_back_to_stand"
-  ],
+  "requiredPrimitives": ["neutral_stand","step_forward","split_stance","stable_stance","root_vertical_descent","front_leg_knee_flexion","rear_leg_knee_flexion","rear_knee_descent","root_vertical_ascent","front_leg_knee_extension","rear_leg_knee_extension","step_back_to_stand"],
   "coachCues": [
     "Start standing tall.",
-    "Step the left foot forward and plant the whole foot.",
+    "Drive the left thigh forward and take a longer step than a walking stride.",
+    "Plant the left foot far enough forward to create room for the front knee to approach 90 degrees when the body drops.",
+    "Use the approved split-plant right-knee angle before beginning the loaded descent.",
     "Keep the right toes and ball of the foot planted while the right heel is free to rise.",
     "Once the stance is planted, drive the body straight down instead of lunging the torso forward.",
     "At the bottom, bring the front knee close to a right angle and keep the front shin close to vertical.",
@@ -127,6 +122,8 @@
   ],
   "compensationSignals": [
     {"id":"starts_in_split_stance","view":"side","meaning":"entry step is missing; motion does not begin from neutral standing"},
+    {"id":"entry_step_too_short","view":"side","meaning":"left hip/foot does not travel far enough forward to create room for near-90-degree front-knee geometry"},
+    {"id":"split_plant_owner_calibration_drift","view":"side","meaning":"right knee at split_plant no longer matches the owner-approved pitch"},
     {"id":"front_heel_rise","view":"side","meaning":"front whole-foot contact lost during loaded phase"},
     {"id":"front_knee_excessive_forward_travel","view":"side","meaning":"front shin is no longer near vertical and the motion is translating forward instead of dropping down"},
     {"id":"pelvis_forward_drift","view":"side","meaning":"horizontal pelvis travel is too large relative to vertical descent"},
@@ -136,10 +133,6 @@
     {"id":"feet_restep_between_reps","view":"side","meaning":"the planted split stance was not preserved across all three repetitions"},
     {"id":"does_not_return_to_stand","view":"side","meaning":"motion ends in split stance instead of stepping back to neutral"}
   ],
-  "sourceEvidence": [
-    "/motion-sources/crouched-sneaking-left-reference.source.json",
-    "/motion-sources/kettlebell-swing-reference.source.json",
-    "/motion/transition-profiles/stand-to-plank.v1.json"
-  ],
-  "sourceEvidenceBoundary": "Reference sources supply primitive mechanics only. This v2 movement definition is authoritative for sequence and engineering intent: stand, step forward, plant, descend vertically, reach the lunge bottom, rise vertically, repeat three times, step back, stand."
+  "sourceEvidence": ["/motion-sources/crouched-sneaking-left-reference.source.json","/motion-sources/kettlebell-swing-reference.source.json","/motion/transition-profiles/stand-to-plank.v1.json"],
+  "sourceEvidenceBoundary": "Reference sources supply primitive mechanics only. This movement definition is authoritative for sequence and entry geometry. The v2.3 split-plant right-knee calibration is additionally based on explicit owner visual acceptance in Motion Lab."
 }
