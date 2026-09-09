@@ -1,0 +1,1 @@
+Primary review risk: this adapter rule applies to any Motion Lab phase with generated kinematic chains, not only lunge. The reviewer must check whether another generated-IK exercise relied on root-first anchor correction. If so, narrow solver ownership to an explicit per-phase trajectory flag before merge. Contact-only phases are unchanged.
