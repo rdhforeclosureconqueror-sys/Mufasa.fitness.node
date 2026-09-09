@@ -1,7 +1,7 @@
 (function initMotionLabAuthoringDraftStore(root, document) {
   'use strict';
 
-  const VERSION = '1.0.0-authoring-draft-store';
+  const VERSION = '1.1.0-authoring-draft-transition-plan';
   const PREFIX = 'pocketpt.motionLab.authoringDraft.v1:';
   let lastSnapshot = Object.freeze({ status: 'idle', motionId: null, savedAt: null, firstFailingBoundary: null });
 
@@ -12,6 +12,7 @@
     if (node) { node.textContent = message; node.dataset.status = kind; }
   }
   function editor() { return root.PocketPTMotionLabPoseEditor; }
+  function directionAuthoring() { return root.PocketPTMotionLabMotionDirectionAuthoring; }
   function session() { return editor()?.getActiveSession?.() || null; }
   function motionId() { return session()?.motionSpec?.motionId || editor()?.exportAdjustment?.()?.motionId || null; }
   function key(id) { return `${PREFIX}${encodeURIComponent(String(id || ''))}`; }
@@ -56,15 +57,21 @@
       return { status: 'failed', code: 'active_motion_required' };
     }
     const adjustment = api.exportAdjustment?.();
-    if (!Array.isArray(adjustment?.edits) || adjustment.edits.length === 0) {
-      status('Make at least one pose adjustment before saving.', 'failed');
+    const transitionPlan = directionAuthoring()?.exportPlan?.() || null;
+    const hasPoseEdits = Array.isArray(adjustment?.edits) && adjustment.edits.length > 0;
+    const hasDirectedTransitions = Array.isArray(transitionPlan?.transitions) && transitionPlan.transitions.length > 0;
+    if (!hasPoseEdits && !hasDirectedTransitions) {
+      status('Make at least one pose or directed-transition adjustment before saving.', 'failed');
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'authoring_edits_available' });
       return { status: 'failed', code: 'authoring_edits_required' };
     }
-    const built = api.playAdjustedPreview?.();
+
+    const built = hasDirectedTransitions
+      ? directionAuthoring()?.buildPreview?.({ play: false })
+      : api.playAdjustedPreview?.();
     if (built?.status !== 'ready') {
       status(`Could not build the adjusted motion (${built?.code || 'preview_failed'}).`, 'failed');
-      publish({ status: 'failed', motionId: id, firstFailingBoundary: 'adjusted_preview_build' });
+      publish({ status: 'failed', motionId: id, firstFailingBoundary: hasDirectedTransitions ? 'directed_preview_build' : 'adjusted_preview_build' });
       return built || { status: 'failed', code: 'preview_failed' };
     }
     active.pause?.();
@@ -79,9 +86,10 @@
       schemaVersion: 1,
       storeVersion: VERSION,
       motionId: id,
-      exerciseId: adjustment.exerciseId || active.motionSpec?.exerciseId || null,
+      exerciseId: adjustment?.exerciseId || transitionPlan?.exerciseId || active.motionSpec?.exerciseId || null,
       savedAt,
       adjustment,
+      transitionPlan: hasDirectedTransitions ? transitionPlan : null,
       clip: clipJson
     });
     try {
@@ -92,7 +100,7 @@
       return { status: 'failed', code: 'browser_storage_write_failed', cause: String(error?.message || error) };
     }
     status(`Saved authored motion draft for ${id}.`);
-    publish({ status: 'saved', motionId: id, savedAt, firstFailingBoundary: null });
+    publish({ status: 'saved', motionId: id, savedAt, directedTransitionCount: transitionPlan?.transitions?.length || 0, firstFailingBoundary: null });
     updateButtons();
     return { status: 'ready', motionId: id, savedAt };
   }
@@ -129,7 +137,8 @@
             authoredDraft: true,
             authoredDraftSavedAt: record.savedAt,
             authoredDraftStoreVersion: record.storeVersion || null,
-            authoredDraftEditCount: record.adjustment?.edits?.length || 0
+            authoredDraftEditCount: record.adjustment?.edits?.length || 0,
+            authoredDraftDirectedTransitionCount: record.transitionPlan?.transitions?.length || 0
           })
         });
       }
@@ -141,8 +150,9 @@
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'saved_draft_load' });
       return out || { status: 'failed', code: 'saved_draft_load_failed' };
     }
+    if (record.transitionPlan && directionAuthoring()?.restorePlan) directionAuthoring().restorePlan(record.transitionPlan);
     status(`Loaded saved authored motion from ${record.savedAt}. Press Play to preview or continue editing from this draft.`);
-    publish({ status: 'loaded', motionId: id, savedAt: record.savedAt, firstFailingBoundary: null });
+    publish({ status: 'loaded', motionId: id, savedAt: record.savedAt, directedTransitionCount: record.transitionPlan?.transitions?.length || 0, firstFailingBoundary: null });
     updateButtons();
     return { status: 'ready', motionId: id, savedAt: record.savedAt };
   }
