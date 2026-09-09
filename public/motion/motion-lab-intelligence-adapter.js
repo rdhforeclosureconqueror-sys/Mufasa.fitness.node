@@ -192,7 +192,7 @@
       return Object.freeze({ status: 'failed', code: 'motion_intelligence_adapter_unavailable' });
     }
     if (!contacts.length) {
-      return Object.freeze({ status: 'ready', rootLocalPosition: rootNode.position.clone(), diagnostics: Object.freeze({ contactCount: 0, correctionStatus: 'NO_CONTACTS', chainCount: 0, chainDiagnostics: Object.freeze([]), firstFailure: null, maxResidualWorldUnits: 0 }) });
+      return Object.freeze({ status: 'ready', rootLocalPosition: rootNode.position.clone(), diagnostics: Object.freeze({ contactCount: 0, correctionStatus: 'NO_CONTACTS', rootTrajectoryPreserved: false, chainCount: 0, chainDiagnostics: Object.freeze([]), firstFailure: null, maxResidualWorldUnits: 0 }) });
     }
 
     const normalized = contacts.map(contact => Object.freeze({
@@ -201,19 +201,24 @@
       anchor: toPoint(contact.anchor)
     }));
 
+    const generatedIKOwnsContactSolve = chains.length > 0;
     const maxCorrection = Number.isFinite(bodyScale) && bodyScale > 0
       ? bodyScale * coreApi.DEFAULTS.anchorMaxDriftRatio
       : Infinity;
-    const correction = coreApi.solveRootAnchorCorrection(normalized, { maxCorrection });
-    if (correction.status === 'DIMENSION_MISMATCH') {
-      return Object.freeze({ status: 'failed', code: 'motion_contact_dimension_mismatch', diagnostics: Object.freeze({ correctionStatus: correction.status, firstFailure: Object.freeze({ type: 'CONTACT_DIMENSION_MISMATCH' }) }) });
-    }
+    let correction = Object.freeze({ status: 'SKIPPED_FOR_GENERATED_IK', rawMagnitude: 0, delta: Object.freeze({ x: 0, y: 0, z: 0 }) });
 
-    if (correction.status === 'CORRECTION_REQUIRED') {
-      const rootWorld = rootNode.getWorldPosition(new THREE.Vector3()).add(toVector3(THREE, correction.delta));
-      const local = rootNode.parent?.worldToLocal ? rootNode.parent.worldToLocal(rootWorld) : rootNode.position.clone().add(toVector3(THREE, correction.delta));
-      rootNode.position.copy(local);
-      avatar.updateMatrixWorld?.(true);
+    if (!generatedIKOwnsContactSolve) {
+      correction = coreApi.solveRootAnchorCorrection(normalized, { maxCorrection });
+      if (correction.status === 'DIMENSION_MISMATCH') {
+        return Object.freeze({ status: 'failed', code: 'motion_contact_dimension_mismatch', diagnostics: Object.freeze({ correctionStatus: correction.status, rootTrajectoryPreserved: false, firstFailure: Object.freeze({ type: 'CONTACT_DIMENSION_MISMATCH' }) }) });
+      }
+
+      if (correction.status === 'CORRECTION_REQUIRED') {
+        const rootWorld = rootNode.getWorldPosition(new THREE.Vector3()).add(toVector3(THREE, correction.delta));
+        const local = rootNode.parent?.worldToLocal ? rootNode.parent.worldToLocal(rootWorld) : rootNode.position.clone().add(toVector3(THREE, correction.delta));
+        rootNode.position.copy(local);
+        avatar.updateMatrixWorld?.(true);
+      }
     }
 
     const chainDiagnostics = [];
@@ -228,6 +233,7 @@
             contactCount: contacts.length,
             correctionStatus: correction.status,
             correctionMagnitudeWorldUnits: Number(correction.rawMagnitude) || 0,
+            rootTrajectoryPreserved: generatedIKOwnsContactSolve,
             chainCount: chains.length,
             chainDiagnostics: Object.freeze([...chainDiagnostics, solved.diagnostics]),
             firstFailure: solved.diagnostics?.firstFailure || null
@@ -267,6 +273,7 @@
           contactCount: refreshed.length,
           correctionStatus: correction.status,
           correctionMagnitudeWorldUnits: Number(correction.rawMagnitude) || 0,
+          rootTrajectoryPreserved: generatedIKOwnsContactSolve,
           chainCount: chains.length,
           chainDiagnostics: Object.freeze(chainDiagnostics),
           maxResidualWorldUnits: residual,
@@ -283,6 +290,7 @@
         contactCount: refreshed.length,
         correctionStatus: correction.status,
         correctionMagnitudeWorldUnits: Number(correction.rawMagnitude) || 0,
+        rootTrajectoryPreserved: generatedIKOwnsContactSolve,
         chainCount: chains.length,
         chainDiagnostics: Object.freeze(chainDiagnostics),
         maxResidualWorldUnits: residual,
@@ -291,5 +299,5 @@
     });
   }
 
-  return Object.freeze({ VERSION: '1.1.0-phase4-generated-ik', PHASE4_DEFAULTS, solvePhaseContacts });
+  return Object.freeze({ VERSION: '1.2.0-generated-ik-preserves-root-trajectory', PHASE4_DEFAULTS, solvePhaseContacts });
 });
