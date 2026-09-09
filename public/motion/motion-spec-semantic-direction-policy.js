@@ -5,10 +5,13 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "1.2.0-body-relative-direction-and-palm-plane";
+  const VERSION = "1.2.1-cross-rig-semantic-alias-normalization";
 
   function normalizedBoneKey(name) {
-    return String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    return String(name || "")
+      .toLowerCase()
+      .replace(/^mixamorig[:_]?/, "")
+      .replace(/[^a-z0-9]/g, "");
   }
 
   function resolveNode(avatar, requestedName) {
