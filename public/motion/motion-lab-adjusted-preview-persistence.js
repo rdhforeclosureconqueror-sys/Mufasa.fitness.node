@@ -1,24 +1,31 @@
 (function installAdjustedPreviewPersistence(root) {
   'use strict';
 
-  const VERSION = '1.0.1-adjusted-preview-persistence-truth';
+  const VERSION = '1.1.0-phase-key-authority';
   const EPSILON = 1e-7;
   const PROPAGATION_SCOPE = 'all_track_samples';
   const PROPAGATION_STRATEGY = 'constant_local_delta_from_edited_phase';
+  const PHASE_KEY_SCOPE = 'authored_phase_keys';
+  const PHASE_KEY_STRATEGY = 'pose_editor_key_authority';
   let lastSnapshot = Object.freeze({
     status: 'idle',
     version: VERSION,
     changedTracks: 0,
     changedSamples: 0,
     lastClip: null,
-    propagationScope: PROPAGATION_SCOPE,
-    propagationStrategy: PROPAGATION_STRATEGY,
+    propagationScope: PHASE_KEY_SCOPE,
+    propagationStrategy: PHASE_KEY_STRATEGY,
     firstFailingBoundary: null,
     lastWriter: null
   });
 
   function publish(patch) {
     lastSnapshot = Object.freeze({ ...lastSnapshot, ...patch });
+  }
+
+  function durablePhaseEditorActive() {
+    const editor = root.PocketPTMotionLabPoseEditor;
+    return Boolean(editor?.buildAdjustedPreview && /phase-key|durable-edits/i.test(String(editor.VERSION || '')));
   }
 
   function copyTimesEqual(a, b) {
@@ -132,7 +139,7 @@
       propagationScope: PROPAGATION_SCOPE,
       propagationStrategy: PROPAGATION_STRATEGY,
       firstFailingBoundary: null,
-      lastWriter: 'adjusted_preview_persistence'
+      lastWriter: 'legacy_adjusted_preview_persistence'
     });
     return { status: 'ready', changedTracks, changedSamples, propagationScope: PROPAGATION_SCOPE, propagationStrategy: PROPAGATION_STRATEGY };
   }
@@ -148,12 +155,13 @@
         const payload = originalExportAdjustment() || {};
         const edits = Array.isArray(payload.edits) ? payload.edits : [];
         const sourcePhaseIds = Object.freeze([...new Set(edits.map(edit => edit?.phaseId).filter(Boolean))]);
+        const phaseOwned = durablePhaseEditorActive();
         return Object.freeze({
           ...payload,
           previewPersistence: Object.freeze({
             enabled: edits.length > 0,
-            scope: PROPAGATION_SCOPE,
-            strategy: PROPAGATION_STRATEGY,
+            scope: phaseOwned ? PHASE_KEY_SCOPE : PROPAGATION_SCOPE,
+            strategy: phaseOwned ? PHASE_KEY_STRATEGY : PROPAGATION_STRATEGY,
             sourcePhaseIds,
             canonicalMotionSpecUnchanged: true
           })
@@ -173,7 +181,18 @@
       const originalClipAction = session.mixer.clipAction.bind(session.mixer);
       session.mixer.clipAction = function persistentClipAction(clip, optionalRoot, blendMode) {
         if (clip?.name?.includes?.('[POSE EDIT PREVIEW]') && state.canonicalClip) {
-          composePersistentPreview(state.canonicalClip, clip);
+          if (durablePhaseEditorActive()) {
+            publish({
+              status: 'ready',
+              changedTracks: 0,
+              changedSamples: 0,
+              lastClip: clip.name || null,
+              propagationScope: PHASE_KEY_SCOPE,
+              propagationStrategy: PHASE_KEY_STRATEGY,
+              firstFailingBoundary: null,
+              lastWriter: 'pose_editor_phase_keys'
+            });
+          } else composePersistentPreview(state.canonicalClip, clip);
         }
         return originalClipAction(clip, optionalRoot, blendMode);
       };
@@ -230,6 +249,8 @@
     VERSION,
     PROPAGATION_SCOPE,
     PROPAGATION_STRATEGY,
+    PHASE_KEY_SCOPE,
+    PHASE_KEY_STRATEGY,
     install,
     installEditorExportContract,
     composePersistentPreview,
