@@ -46,7 +46,8 @@ test('stationary lunge defines three generated descent-bottom-ascent repetitions
 });
 
 test('generated IK owns planted-foot correction so authored pelvis descent is not cancelled', () => {
-  assert.equal(adapter.VERSION, '1.2.0-generated-ik-preserves-root-trajectory');
+  assert.equal(adapter.VERSION, '1.2.0-phase4-generated-ik-preserves-root-trajectory');
+  assert.match(adapter.VERSION, /phase4/);
   assert.match(adapterSource, /generatedIKOwnsContactSolve = chains\.length > 0/);
   assert.match(adapterSource, /SKIPPED_FOR_GENERATED_IK/);
   assert.match(adapterSource, /if \(!generatedIKOwnsContactSolve\) \{\s*correction = coreApi\.solveRootAnchorCorrection/);
