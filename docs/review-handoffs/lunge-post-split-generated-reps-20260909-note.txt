@@ -1,1 +1,0 @@
-Owner intent: the system should generate the lunge mechanics from the movement definition and constraints. Manual frame-by-frame or guessed bone-angle authoring is not the target architecture. The pose editor remains for calibration/override, not for mandatory animation construction.
