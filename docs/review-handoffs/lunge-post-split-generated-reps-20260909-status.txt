@@ -1,0 +1,1 @@
+Implementation status before review: code and focused regression test are committed. Full repository test suite, readiness CLI update/validation, and human Motion Lab visual acceptance are not claimed by this handoff and must be performed by the reviewing dev/backend environment.
