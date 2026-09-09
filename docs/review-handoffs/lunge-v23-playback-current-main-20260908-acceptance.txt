@@ -1,0 +1,1 @@
+Phone acceptance: initialize runtime; load reference avatar; load Stationary Lunge Left v2.3; confirm Play enables; play full finite motion; if Play remains disabled, copy consolidated diagnostics.
