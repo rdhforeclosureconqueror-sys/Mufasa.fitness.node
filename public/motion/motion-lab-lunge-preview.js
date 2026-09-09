@@ -18,6 +18,8 @@
     var button = document.getElementById("loadSynthesizedLunge");
     if (!button || button.dataset.lungeWired === "1") return;
     button.dataset.lungeWired = "1";
+    button.textContent = "Load Stationary Lunge Left v3.0 Phase-First (Reference Only)";
+    button.title = "Development-only phase-first lunge: standing transitions directly to the owner-authored split plant; loaded reps use pelvis vertical motion plus planted-contact IK";
     button.disabled = false;
     button.addEventListener("click", loadLunge);
   }
