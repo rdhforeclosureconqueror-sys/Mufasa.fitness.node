@@ -67,7 +67,10 @@
   async function loadExtractedAnimation(){if(state.avatar?.avatarProfileId!=="avaturn-personalized-candidate")return incompatible("RETARGET REQUIRED: extracted native fixture requires the personalized Avaturn avatar.");var t=now(),fixture=env.PocketPTAvaturnPushUpFixture?.fixture,out=await session?.loadExtractedAnimation?.(fixture)||{status:"failed",code:"avatar_required"};if(out.status==="ready"){state.motion=out.diagnostics;state.playback="ready";viewerStatus("Extracted independent push-up fixture selected. Press Play to begin.");}set("animation_clip",out.status==="ready"&&out.diagnostics.unboundTrackCount===0?"pass":"fail",t,out.code,out.diagnostics?out.diagnostics.intendedTrackCount+" intended; "+out.diagnostics.boundTrackCount+" bound; "+out.diagnostics.unboundTrackCount+" unbound":null);render();return out;}
   function unloadAnimation(){var out=session?.unloadMotion?.()||{status:"ready"};state.motion=null;state.playback="stopped";viewerStatus("Animation unloaded; avatar remains in its rest pose.");render();return out;}
   async function loadMotionSpec(contract){
-    if(session?.state!=="running"||state.avatarLoading||state.avatar?.avatarProfileId!=="phase-e-reference")return incompatible("Development Motion Spec requires the Phase E reference avatar.");
+    var avatarId=state.avatar?.avatarProfileId,coachTarget=contract?.spec?.coachRetarget?.targetAvatarProfileId;
+    var referenceCompatible=avatarId==="phase-e-reference"&&!coachTarget;
+    var coachCompatible=avatarId==="avaturn-personalized-candidate"&&coachTarget===avatarId&&contract?.spec?.skeleton?.targetSkeletonProfile==="avaturn-native-v1";
+    if(session?.state!=="running"||state.avatarLoading||(!referenceCompatible&&!coachCompatible))return incompatible("Development Motion Spec requires either the Phase E reference avatar or an explicitly validated Coach-retargeted contract for the personalized Avaturn avatar.");
     var t=now(),compiler=env.PocketPTMotionSpecClip,check;
     try{check=contract?.validate?.(contract.spec);}catch(_){check=null;}
     if(!check?.valid||contract?.spec?.status!=="development-test-only"){
@@ -77,7 +80,7 @@
     var out;
     try{out=session.loadMotionSpec(contract.spec,compiler);}catch(_){out={status:"failed",code:"motion_compile_failed"};}
     if(out.status==="ready"){
-      state.motion={...out.diagnostics,avatarProfileId:state.avatar.avatarProfileId,animationSource:"development-motion-spec",bindingMode:"DIRECT / LOADER-NORMALIZED"};state.playback="ready";
+      state.motion={...out.diagnostics,avatarProfileId:state.avatar.avatarProfileId,animationSource:"development-motion-spec",bindingMode:coachCompatible?"CANONICAL / COACH-RETARGETED":"DIRECT / LOADER-NORMALIZED",skeletonProfile:contract?.spec?.skeleton?.targetSkeletonProfile||contract?.spec?.skeleton?.id||null,coachRetarget:contract?.spec?.coachRetarget||null};state.playback="ready";
       viewerStatus("Renderer active — "+(contract.spec.displayName||contract.spec.motionId)+" loaded. Press Play to inspect it.");
     }else viewerStatus("Motion could not be loaded ("+(out.code||"motion_compile_failed")+").");
     set("animation_clip",out.status==="ready"&&out.diagnostics?.unboundTargetCount===0?"pass":"fail",t,out.code,out.status==="ready"?out.diagnostics.trackCount+" tracks; "+out.diagnostics.unboundTargetCount+" unbound targets":out.diagnostics?.unboundTargets?.join(", "));
