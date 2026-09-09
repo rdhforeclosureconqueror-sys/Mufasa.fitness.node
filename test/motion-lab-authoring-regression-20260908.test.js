@@ -20,10 +20,15 @@ test('durable Pose Editor owns authored phase keys instead of legacy all-sample 
   assert.match(persistence, /lastWriter: 'pose_editor_phase_keys'/);
 });
 
-test('reset selected and reset phase restore only their canonical keys while preserving other preview edits', () => {
+test('reset selected and reset phase restore canonical preview and live pose before re-authoring', () => {
   assert.match(editor, /function restorePreviewPhaseKeys\(names, phaseId\)/);
-  assert.match(editor, /restorePreviewPhaseKeys\(names, sampledPhaseId\)/);
-  assert.match(editor, /restorePreviewPhaseKeys\(new Set\(baseline\?\.keys\?\.\(\) \|\| \[\]\), sampledPhaseId\)/);
+  assert.match(editor, /function restoreLivePhaseFromCanonical\(names, phaseId\)/);
+  assert.match(editor, /node\.quaternion\.fromArray\(quaternionTrack\.values, index \* 4\)\.normalize\(\)/);
+  assert.match(editor, /node\.position\.fromArray\(positionTrack\.values, index \* 3\)/);
+  assert.match(editor, /function resetSelected\(\)[\s\S]*?restorePreviewPhaseKeys\(names, sampledPhaseId\);[\s\S]*?restoreLivePhaseFromCanonical\(names, sampledPhaseId\);[\s\S]*?baseline = captureEditablePose\(\)/);
+  assert.match(editor, /function resetPhase\(\)[\s\S]*?restorePreviewPhaseKeys\(names, sampledPhaseId\);[\s\S]*?restoreLivePhaseFromCanonical\(names, sampledPhaseId\);[\s\S]*?baseline = captureEditablePose\(\)/);
+  assert.doesNotMatch(editor, /function resetSelected\(\)[\s\S]{0,900}restorePose\(baseline\)/);
+  assert.doesNotMatch(editor, /function resetPhase\(\)[\s\S]{0,500}restorePose\(baseline\)/);
   assert.doesNotMatch(editor, /function resetSelected\(\)[\s\S]{0,900}previewClip = null/);
   assert.doesNotMatch(editor, /function resetPhase\(\)[\s\S]{0,500}previewClip = null/);
 });
