@@ -5,7 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "1.2.1-cross-rig-semantic-alias-normalization";
+  const VERSION = "1.2.2-palm-facing-normal-correction";
 
   function normalizedBoneKey(name) {
     return String(name || "")
@@ -83,22 +83,51 @@
     const axis = axisMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin).normalize();
     const va = aMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
     const vb = bMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
-    let normal = va.clone().cross(vb);
+
+    // With the mirrored index/pinky landmark ordering used by the Motion Spec, the
+    // raw A x B normal points through the back-of-hand side. Invert it once so
+    // semantic "palm faces reference" means the anatomical palm surface faces the
+    // reference, not merely an arbitrary side of the hand plane.
+    let normal = va.clone().cross(vb).multiplyScalar(-1);
     if (Number(target?.normalSign) < 0) normal.multiplyScalar(-1);
     normal.addScaledVector(axis, -normal.dot(axis));
     if (!(normal.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_palm_plane_degenerate" });
     normal.normalize();
+
     let inward = refMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
     inward.addScaledVector(axis, -inward.dot(axis));
     if (!(inward.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_palm_reference_degenerate" });
     inward.normalize();
+
+    const beforeAngleDegrees = THREE.MathUtils.radToDeg(normal.angleTo(inward));
     const signed = Math.atan2(axis.dot(normal.clone().cross(inward)), normal.dot(inward));
     const delta = new THREE.Quaternion().setFromAxisAngle(axis, signed);
     const desiredWorld = delta.multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
     const parentWorld = hand.parent?.getWorldQuaternion ? hand.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
     hand.quaternion.copy(parentWorld.clone().invert().multiply(desiredWorld));
     avatar.updateMatrixWorld?.(true);
-    return Object.freeze({ status:"ready", diagnostics:Object.freeze({ id:target.id || null, type:target.type, bone:hand.name, twistDegrees:THREE.MathUtils.radToDeg(signed), palmReference:refMatch.object.name }) });
+
+    const solvedOrigin = hand.getWorldPosition(new THREE.Vector3());
+    const solvedAxis = axisMatch.object.getWorldPosition(new THREE.Vector3()).sub(solvedOrigin).normalize();
+    const solvedA = aMatch.object.getWorldPosition(new THREE.Vector3()).sub(solvedOrigin);
+    const solvedB = bMatch.object.getWorldPosition(new THREE.Vector3()).sub(solvedOrigin);
+    let solvedPalmNormal = solvedA.clone().cross(solvedB).multiplyScalar(-1);
+    if (Number(target?.normalSign) < 0) solvedPalmNormal.multiplyScalar(-1);
+    solvedPalmNormal.addScaledVector(solvedAxis, -solvedPalmNormal.dot(solvedAxis)).normalize();
+    let solvedInward = refMatch.object.getWorldPosition(new THREE.Vector3()).sub(solvedOrigin);
+    solvedInward.addScaledVector(solvedAxis, -solvedInward.dot(solvedAxis)).normalize();
+    const residualDegrees = THREE.MathUtils.radToDeg(solvedPalmNormal.angleTo(solvedInward));
+
+    return Object.freeze({ status:"ready", diagnostics:Object.freeze({
+      id:target.id || null,
+      type:target.type,
+      bone:hand.name,
+      twistDegrees:THREE.MathUtils.radToDeg(signed),
+      beforeAngleDegrees,
+      residualDegrees,
+      palmReference:refMatch.object.name,
+      palmNormalConvention:"negative-mirrored-index-pinky-cross"
+    }) });
   }
 
   function buildPhaseSpecificSpec(THREE, spec, avatar) {
