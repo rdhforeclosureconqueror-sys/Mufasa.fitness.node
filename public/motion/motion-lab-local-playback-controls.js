@@ -1,10 +1,11 @@
 (function initMotionLabLocalPlaybackControls(root, document) {
   'use strict';
 
-  const VERSION = '1.0.0-local-viewer-single-playback-authority';
+  const VERSION = '1.0.1-local-viewer-single-playback-authority';
   const STEP_SECONDS = 0.10;
   let installed = false;
   let raf = null;
+  let lastAdjustedSignature = null;
 
   function el(id) { return document.getElementById(id); }
   function activeSession() { return root.PocketPTMotionLabPoseEditor?.getActiveSession?.() || null; }
@@ -12,6 +13,8 @@
     const payload = root.PocketPTMotionLabPoseEditor?.exportAdjustment?.();
     return Array.isArray(payload?.edits) ? payload.edits : [];
   }
+  function adjustedSignature() { return JSON.stringify(pendingEdits()); }
+  function isAdjustedPreview(session) { return String(session?.sessionClip?.name || '').includes('[POSE EDIT PREVIEW]'); }
   function duration(session) {
     const clipDuration = Number(session?.sessionClip?.duration);
     const specDuration = Number(session?.motionSpec?.durationSeconds);
@@ -127,7 +130,16 @@
   function play() {
     const session = activeSession();
     if (!session?.action) return { status: 'failed', code: 'animation_required' };
-    if (pendingEdits().length) return root.PocketPTMotionLabPoseEditor?.playAdjustedPreview?.() || { status: 'failed', code: 'adjusted_preview_unavailable' };
+    if (pendingEdits().length) {
+      const signature = adjustedSignature();
+      if (isAdjustedPreview(session) && signature === lastAdjustedSignature) {
+        return session.play?.() || { status: 'failed', code: 'playback_unavailable' };
+      }
+      const out = root.PocketPTMotionLabPoseEditor?.playAdjustedPreview?.() || { status: 'failed', code: 'adjusted_preview_unavailable' };
+      if (out?.status === 'ready') lastAdjustedSignature = signature;
+      return out;
+    }
+    lastAdjustedSignature = null;
     return session.play?.() || { status: 'failed', code: 'playback_unavailable' };
   }
 
@@ -146,7 +158,13 @@
   function restart() {
     const session = activeSession();
     if (!session?.action) return { status: 'failed', code: 'animation_required' };
-    if (pendingEdits().length) return root.PocketPTMotionLabPoseEditor?.playAdjustedPreview?.() || { status: 'failed', code: 'adjusted_preview_unavailable' };
+    if (pendingEdits().length) {
+      const signature = adjustedSignature();
+      const out = root.PocketPTMotionLabPoseEditor?.playAdjustedPreview?.() || { status: 'failed', code: 'adjusted_preview_unavailable' };
+      if (out?.status === 'ready') lastAdjustedSignature = signature;
+      return out;
+    }
+    lastAdjustedSignature = null;
     return session.restart?.() || { status: 'failed', code: 'restart_unavailable' };
   }
 
