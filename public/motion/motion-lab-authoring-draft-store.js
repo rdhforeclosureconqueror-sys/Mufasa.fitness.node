@@ -1,7 +1,7 @@
 (function initMotionLabAuthoringDraftStore(root, document) {
   'use strict';
 
-  const VERSION = '1.1.0-authoring-draft-store';
+  const VERSION = '1.2.0-authoring-draft-transition-plan';
   const PREFIX = 'pocketpt.motionLab.authoringDraft.v1:';
   let lastSnapshot = Object.freeze({ status: 'idle', motionId: null, savedAt: null, firstFailingBoundary: null });
 
@@ -12,6 +12,7 @@
     if (node) { node.textContent = message; node.dataset.status = kind; }
   }
   function editor() { return root.PocketPTMotionLabPoseEditor; }
+  function directionAuthoring() { return root.PocketPTMotionLabMotionDirectionAuthoring; }
   function session() { return editor()?.getActiveSession?.() || null; }
   function motionId() { return session()?.motionSpec?.motionId || editor()?.exportAdjustment?.()?.motionId || null; }
   function key(id) { return `${PREFIX}${encodeURIComponent(String(id || ''))}`; }
@@ -56,15 +57,21 @@
       return { status: 'failed', code: 'active_motion_required' };
     }
     const adjustment = api.exportAdjustment?.();
-    if (!Array.isArray(adjustment?.edits) || adjustment.edits.length === 0) {
-      status('Make at least one pose adjustment before saving.', 'failed');
+    const transitionPlan = directionAuthoring()?.exportPlan?.() || null;
+    const hasPoseEdits = Array.isArray(adjustment?.edits) && adjustment.edits.length > 0;
+    const hasDirectedTransitions = Array.isArray(transitionPlan?.transitions) && transitionPlan.transitions.length > 0;
+    if (!hasPoseEdits && !hasDirectedTransitions) {
+      status('Make at least one pose or directed-transition adjustment before saving.', 'failed');
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'authoring_edits_available' });
       return { status: 'failed', code: 'authoring_edits_required' };
     }
-    const built = api.playAdjustedPreview?.();
+
+    const built = hasDirectedTransitions
+      ? directionAuthoring()?.buildPreview?.({ play: false, refreshPose: true })
+      : api.playAdjustedPreview?.();
     if (built?.status !== 'ready') {
       status(`Could not build the adjusted motion (${built?.code || 'preview_failed'}).`, 'failed');
-      publish({ status: 'failed', motionId: id, firstFailingBoundary: 'adjusted_preview_build' });
+      publish({ status: 'failed', motionId: id, firstFailingBoundary: hasDirectedTransitions ? 'directed_preview_build' : 'adjusted_preview_build' });
       return built || { status: 'failed', code: 'preview_failed' };
     }
     active.pause?.();
@@ -79,9 +86,10 @@
       schemaVersion: 1,
       storeVersion: VERSION,
       motionId: id,
-      exerciseId: adjustment.exerciseId || active.motionSpec?.exerciseId || null,
+      exerciseId: adjustment?.exerciseId || transitionPlan?.exerciseId || active.motionSpec?.exerciseId || null,
       savedAt,
       adjustment,
+      transitionPlan: hasDirectedTransitions ? transitionPlan : null,
       clip: clipJson
     });
     try {
@@ -92,9 +100,9 @@
       return { status: 'failed', code: 'browser_storage_write_failed', cause: String(error?.message || error) };
     }
     status(`Saved authored motion draft for ${id}.`);
-    publish({ status: 'saved', motionId: id, savedAt, firstFailingBoundary: null });
+    publish({ status: 'saved', motionId: id, savedAt, directedTransitionCount: transitionPlan?.transitions?.length || 0, firstFailingBoundary: null });
     updateButtons();
-    return { status: 'ready', motionId: id, savedAt, editCount: adjustment.edits.length };
+    return { status: 'ready', motionId: id, savedAt, editCount: adjustment?.edits?.length || 0, directedTransitionCount: transitionPlan?.transitions?.length || 0 };
   }
 
   function loadDraft() {
@@ -124,13 +132,13 @@
     const compiler = Object.freeze({
       compile() {
         return Object.freeze({
-          status: 'ready',
-          clip,
+          status: 'ready', clip,
           diagnostics: Object.freeze({
             authoredDraft: true,
             authoredDraftSavedAt: record.savedAt,
             authoredDraftStoreVersion: record.storeVersion || null,
-            authoredDraftEditCount: record.adjustment?.edits?.length || 0
+            authoredDraftEditCount: record.adjustment?.edits?.length || 0,
+            authoredDraftDirectedTransitionCount: record.transitionPlan?.transitions?.length || 0
           })
         });
       }
@@ -142,23 +150,30 @@
       publish({ status: 'failed', motionId: id, firstFailingBoundary: 'saved_draft_load' });
       return out || { status: 'failed', code: 'saved_draft_load_failed' };
     }
-    const restored = api.importAdjustment?.(record.adjustment);
+    const restored = api.importAdjustment?.(record.adjustment || { schemaVersion: 1, type: 'motion_lab_pose_adjustment', motionId: id, edits: [] });
     if (restored?.status !== 'ready') {
       status(`Saved clip loaded, but edit state could not be restored (${restored?.code || 'edit_state_restore_failed'}).`, 'failed');
       publish({ status: 'failed', motionId: id, savedAt: record.savedAt, firstFailingBoundary: 'saved_edit_state_restore' });
       return restored || { status: 'failed', code: 'saved_edit_state_restore_failed' };
     }
-    status(`Loaded saved authored motion from ${record.savedAt}. ${record.adjustment?.edits?.length || 0} edit(s) restored.`);
-    publish({ status: 'loaded', motionId: id, savedAt: record.savedAt, firstFailingBoundary: null });
+    if (record.transitionPlan) {
+      const transitionRestored = directionAuthoring()?.restorePlan?.(record.transitionPlan);
+      if (transitionRestored?.status !== 'ready') {
+        status(`Saved clip loaded, but directed transition state could not be restored (${transitionRestored?.code || 'transition_state_restore_failed'}).`, 'failed');
+        publish({ status: 'failed', motionId: id, savedAt: record.savedAt, firstFailingBoundary: 'saved_transition_state_restore' });
+        return transitionRestored || { status: 'failed', code: 'saved_transition_state_restore_failed' };
+      }
+    } else directionAuthoring()?.restorePlan?.({ schemaVersion: 1, type: 'motion_lab_transition_direction_plan', motionId: id, transitions: [] });
+    status(`Loaded saved authored motion from ${record.savedAt}. ${record.adjustment?.edits?.length || 0} edit(s) and ${record.transitionPlan?.transitions?.length || 0} directed transition(s) restored.`);
+    publish({ status: 'loaded', motionId: id, savedAt: record.savedAt, directedTransitionCount: record.transitionPlan?.transitions?.length || 0, firstFailingBoundary: null });
     updateButtons();
-    return { status: 'ready', motionId: id, savedAt: record.savedAt, editCount: record.adjustment?.edits?.length || 0 };
+    return { status: 'ready', motionId: id, savedAt: record.savedAt, editCount: record.adjustment?.edits?.length || 0, directedTransitionCount: record.transitionPlan?.transitions?.length || 0 };
   }
 
   function deleteDraft() {
     const id = motionId();
     if (!id) return { status: 'failed', code: 'active_motion_required' };
-    try { root.localStorage?.removeItem?.(key(id)); }
-    catch (_) {}
+    try { root.localStorage?.removeItem?.(key(id)); } catch (_) {}
     status('Saved authored motion draft deleted. Canonical Motion Spec was not changed.');
     publish({ status: 'deleted', motionId: id, savedAt: null, firstFailingBoundary: null });
     updateButtons();
@@ -174,24 +189,14 @@
       el('poseEditorLoadDraft')?.addEventListener('click', loadDraft);
       el('poseEditorDeleteDraft')?.addEventListener('click', deleteDraft);
     }
+    directionAuthoring()?.install?.();
     updateButtons();
     if (!root.__motionLabAuthoringDraftTimer) root.__motionLabAuthoringDraftTimer = root.setInterval?.(updateButtons, 1000);
     publish({ status: 'installed', firstFailingBoundary: null });
     return root.PocketPTMotionLabAuthoringDraftStore;
   }
 
-  root.PocketPTMotionLabAuthoringDraftStore = Object.freeze({
-    VERSION,
-    install,
-    saveDraft,
-    loadDraft,
-    deleteDraft,
-    hasDraft: id => Boolean(readRecord(id)),
-    readDraft: readRecord,
-    snapshot: () => lastSnapshot
-  });
-
+  root.PocketPTMotionLabAuthoringDraftStore = Object.freeze({ VERSION, install, saveDraft, loadDraft, deleteDraft, hasDraft: id => Boolean(readRecord(id)), readDraft: readRecord, snapshot: () => lastSnapshot });
   function tryInitialInstall() { install(); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInitialInstall, { once: true });
-  else tryInitialInstall();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInitialInstall, { once: true }); else tryInitialInstall();
 })(window, document);
