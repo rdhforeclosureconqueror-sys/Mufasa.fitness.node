@@ -23,11 +23,23 @@ test('generated motion registry persists only after the generated motion is acti
   const source=read('public/motion/motion-lab-generated-motion-registry.js');
   assert.match(source,/pocketpt\.motionLab\.generatedMotions\.v1/);
   assert.match(source,/pocketpt:motion-spec-generated/);
+  assert.match(source,/const spec=canonicalSpec\(generated\)/);
+  assert.match(source,/const result=upsert\(spec\)/);
   assert.match(source,/play&&!play\.disabled&&selectedMotionMatches\(id\)/);
   assert.match(source,/FIRST FAILURE: generated Motion Spec did not become the active motion with an enabled Play control/);
   assert.match(source,/Generated Motions/);
   assert.match(source,/data-generated-motion/);
-  assert.match(source,/runtime\.loadMotionSpec\(item\.contract\)/);
-  assert.match(source,/contract\?\.spec\|\|contract/);
   assert.match(source,/Press Play to inspect/);
+});
+
+test('generated motion registry stores serializable specs and reconstructs a runtime contract when selected',()=>{
+  const source=read('public/motion/motion-lab-generated-motion-registry.js');
+  assert.match(source,/item=\{schemaVersion:1,motionId:id,displayName:displayName\(spec\),savedAt:now,spec\}/);
+  assert.doesNotMatch(source,/savedAt:now,contract\}/);
+  assert.match(source,/function rebuildContract\(spec\)/);
+  assert.match(source,/validate:validatePersistedSpec/);
+  assert.match(source,/const contract=rebuildContract\(spec\)/);
+  assert.match(source,/runtime\.loadMotionSpec\(contract\)/);
+  assert.match(source,/candidate\?\.skeleton\?\.targetSkeletonProfile!=="avaturn-native-v1"/);
+  assert.match(source,/surface anchor phase required/);
 });
