@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "generatorPlanId": "pocketpt-yoga-generation-plans-v1",
+  "sessionId": "beginner-flow",
+  "plans": [
+    {"exerciseId":"mountain","archetype":"neutral-standing-hold","supports":["left_foot","right_foot"],"semanticRequirements":["bilateral_grounding","neutral_stack","palms_in"],"parameters":{"entrySeconds":1.5,"holdSeconds":3,"exitSeconds":1.0}},
+    {"exerciseId":"chair","archetype":"bilateral-squat-overhead-hold","supports":["left_foot","right_foot"],"semanticRequirements":["bilateral_grounding","generated_leg_ik","arms_by_ears","palms_face_each_other"],"parameters":{"depth":"moderate","entrySeconds":2,"holdSeconds":3,"exitSeconds":2}},
+    {"exerciseId":"warrior-ii","archetype":"wide-split-stance-lateral-reach","supports":["left_foot","right_foot"],"semanticRequirements":["dual_foot_grounding","split_stance","front_knee_track","rear_leg_long","arms_horizontal_opposed","palms_down","gaze_front_hand"],"parameters":{"entrySeconds":2.5,"holdSeconds":3,"exitSeconds":2.5}},
+    {"exerciseId":"downward-dog","archetype":"inverted-v-four-point","supports":["left_hand","right_hand","left_foot","right_foot"],"semanticRequirements":["four_point_grounding","hips_high","arms_long","spine_long","head_between_arms"],"parameters":{"entrySeconds":2.5,"holdSeconds":3,"exitSeconds":2}},
+    {"exerciseId":"cobra","archetype":"prone-spinal-extension","supports":["pelvis","left_leg","right_leg","left_hand","right_hand"],"semanticRequirements":["pelvis_grounded","hands_grounded","thoracic_extension","shoulders_depressed","neck_follows_spine"],"parameters":{"entrySeconds":2,"holdSeconds":3,"exitSeconds":2}},
+    {"exerciseId":"bridge","archetype":"supine-hip-extension","supports":["left_foot","right_foot","upper_back","head","upper_arms"],"semanticRequirements":["feet_grounded","upper_back_grounded","head_grounded","hip_extension","knees_parallel"],"parameters":{"entrySeconds":2,"holdSeconds":3,"exitSeconds":2}}
+  ],
+  "rule": "Plans select reusable movement archetypes and semantic requirements. They do not contain per-frame keyframes or avatar-specific bone rotations."
+}
