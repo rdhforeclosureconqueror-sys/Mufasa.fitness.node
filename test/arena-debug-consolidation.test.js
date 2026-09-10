@@ -15,6 +15,12 @@ test('arena debug adapter preserves legacy producer while enforcing one visible 
   assert.match(source, /MutationObserver/);
 });
 
+test('arena consolidation loader points at the adapter', () => {
+  const source = read('public/arena-debug-consolidation-loader.js');
+  assert.match(source, /arena-debug-consolidation\.js/);
+  assert.match(source, /data-arena-debug-consolidation|arenaDebugConsolidation/);
+});
+
 test('arena camera implementation remains intact and explicit-start', () => {
   const camera = read('public/arena-camera.js');
   const ui = read('public/arena-phone-ui.js');
