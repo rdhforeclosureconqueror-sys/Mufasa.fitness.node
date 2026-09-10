@@ -19,14 +19,15 @@ test('Yoga runtime gate loads the generated motion registry through protected Mo
   assert.match(source,/\/dev\/motion-lab-assets\//);
 });
 
-test('generated motion registry persists only after Play is actually enabled',()=>{
+test('generated motion registry persists only after the generated motion is active and Play is enabled',()=>{
   const source=read('public/motion/motion-lab-generated-motion-registry.js');
   assert.match(source,/pocketpt\.motionLab\.generatedMotions\.v1/);
   assert.match(source,/pocketpt:motion-spec-generated/);
-  assert.match(source,/play&&!play\.disabled/);
-  assert.match(source,/FIRST FAILURE: generated Motion Spec did not reach an enabled Play control/);
+  assert.match(source,/play&&!play\.disabled&&selectedMotionMatches\(id\)/);
+  assert.match(source,/FIRST FAILURE: generated Motion Spec did not become the active motion with an enabled Play control/);
   assert.match(source,/Generated Motions/);
   assert.match(source,/data-generated-motion/);
-  assert.match(source,/runtime\.loadMotionSpec\(item\.spec\)/);
+  assert.match(source,/runtime\.loadMotionSpec\(item\.contract\)/);
+  assert.match(source,/contract\?\.spec\|\|contract/);
   assert.match(source,/Press Play to inspect/);
 });
