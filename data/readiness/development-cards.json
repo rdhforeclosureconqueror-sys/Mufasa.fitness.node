@@ -84,6 +84,20 @@
       "createdAt": "2026-09-10T13:28:11.621Z",
       "source": "readiness:update",
       "taskId": "pr-764-regression-audit"
+    },
+    {
+      "id": "avatar-development-thriller-motion-lab-runtime",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Thriller Motion Lab runtime integration",
+      "category": "DEVELOPMENT",
+      "description": "PR #778 text/code integration for independent Thriller Mixamo motion catalog, truthful browser asset and retarget boundaries, controls, diagnostics, and tests.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-10T22:02:11.545Z",
+      "source": "readiness:update",
+      "taskId": "pr-778"
     }
   ]
 }

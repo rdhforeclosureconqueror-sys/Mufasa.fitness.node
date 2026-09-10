@@ -190,6 +190,31 @@
         skeletonProfile: fixture.skeletonProfile, avatarProfileId: this.avatarProfile.avatarId, animationSource: "extracted-independent-push-up-fixture", bindingMode: "NATIVE",
         clipName: clip.name, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: fixture.expectedTrackCount, ...binding, playbackState: "ready" }) });
     }
+    async loadIndependentRetargetedMotion(motion) {
+      const base = { motionId: motion?.id || null, selectedPart: motion?.displayName || null, sourceFbx: motion?.sourceFbxPath || null,
+        runtimeAsset: motion?.runtimeAssetPath || null, sourceSkeletonProfile: motion?.sourceSkeletonProfile || null,
+        targetAvatarProfile: this.avatarProfile?.avatarId || null, targetSkeletonProfile: this.avatarProfile?.skeletonProfile || null,
+        bindingMode: motion?.bindingMode || "RETARGET REQUIRED", retargetProfile: motion?.retargetProfile || null,
+        clipName: null, clipDuration: null, trackCount: 0, intendedTrackCount: 0, boundTrackCount: 0, unboundTrackCount: 0,
+        unboundTracks: Object.freeze([]), playbackState: "unloaded" };
+      const failed = (code, boundary, detail = {}, cause = null) => Object.freeze({ status: "failed", code, cause,
+        diagnostics: Object.freeze({ ...base, ...detail, firstFailingBoundary: boundary }) });
+      if (!motion?.id || !motion.runtimeAssetPath) return failed("thriller_catalog_invalid", "catalog");
+      if (!this.avatar || !this.mixer) return failed("avatar_required", "target avatar");
+      if (this.avatarProfile?.avatarId !== motion.targetAvatarProfile) return failed("RETARGET REQUIRED", "retarget compatibility", { bindingMode: "RETARGET REQUIRED" });
+      if (this.avatarProfile?.skeletonProfile !== motion.targetSkeletonProfile) return failed("RETARGET REQUIRED", "retarget compatibility", { bindingMode: "RETARGET REQUIRED" });
+      const asset = await this.loadAsset(motion.runtimeAssetPath, "fixture");
+      if (asset?.status === "failed") return failed(asset.code === "asset_missing" ? "THRILLER_BROWSER_ASSET_REQUIRED" : asset.code, asset.code === "asset_missing" ? "asset availability" : "loader", {}, asset.cause);
+      const clip = asset.animations?.[0];
+      if (!clip) { this.disposeObjectResources(asset.scene); return failed("animation_missing", "source animation"); }
+      const tracks = clip.tracks || [], binding = this.inspectClipBindings(clip);
+      const inventory = { clipName: clip.name || "(unnamed)", clipDuration: clip.duration, duration: clip.duration,
+        trackCount: tracks.length, intendedTrackCount: tracks.length, ...binding };
+      if (!tracks.length) { this.disposeObjectResources(asset.scene); return failed("animation_tracks_missing", "source animation", inventory); }
+      if (binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return failed("animation_binding_failed", "track binding", inventory, binding.unboundTracks.join(", ")); }
+      this.unloadMotion(); this.animationFixture = asset; this.sessionClip = clip; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...base, ...inventory, playbackState: "ready", firstFailingBoundary: "NONE" }) });
+    }
     loadNativeAnimation(mode = "full") {
       if (!this.avatar || !this.mixer || !this.avatarAsset) return this.failure("avatar_required");
       if (this.avatarProfile?.avatarId !== "avaturn-personalized-candidate") return this.failure("native_animation_incompatible_profile");
