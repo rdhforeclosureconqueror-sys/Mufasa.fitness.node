@@ -64,12 +64,36 @@
     ].join('\n');
   }
 
+  function thrillerText() {
+    const motion = root.MotionLabRuntime?.snapshot?.().motion;
+    if (!motion?.motionId?.startsWith?.('thriller-part-')) return 'THRILLER MOTION\nSelected Thriller part: NONE\nFIRST FAILURE: NONE';
+    return [
+      'THRILLER MOTION',
+      `Selected Thriller part: ${motion.selectedPart || '—'}`,
+      `Stable motion ID: ${motion.motionId}`,
+      `Source FBX: ${motion.sourceFbx || '—'}`,
+      `Derived runtime asset: ${motion.runtimeAsset || '—'}`,
+      `Source skeleton/profile: ${motion.sourceSkeletonProfile || '—'}`,
+      `Target avatar profile: ${motion.targetAvatarProfile || '—'}`,
+      `Target skeleton profile: ${motion.targetSkeletonProfile || '—'}`,
+      `Clip name: ${motion.clipName || '—'}`,
+      `Clip duration: ${motion.clipDuration ?? '—'}`,
+      `Track count: ${motion.trackCount ?? '—'}`,
+      `Intended / bound / unbound tracks: ${motion.intendedTrackCount ?? '—'} / ${motion.boundTrackCount ?? '—'} / ${motion.unboundTrackCount ?? '—'}`,
+      `Unbound track names: ${motion.unboundTracks?.join?.(', ') || 'none'}`,
+      `Binding/retarget mode: ${motion.bindingMode || '—'} / ${motion.retargetProfile || '—'}`,
+      `Playback state: ${root.MotionLabRuntime?.snapshot?.().playback || motion.playbackState || 'stopped'}`,
+      `FIRST FAILURE: ${motion.firstFailingBoundary || 'NONE'}`
+    ].join('\n');
+  }
+
   function combinedDiagnosticsText() {
     return [
       `MOTION LAB DIAGNOSTIC — CONSOLIDATED\nDiagnostic UI build: ${BUILD}`,
       legacyDiagnosticsText(),
       intelligenceText(),
       poseEditorText(),
+      thrillerText(),
       'BOOTSTRAP DELIVERY',
       bootstrapText()
     ].join('\n\n');
@@ -170,6 +194,7 @@
     refresh,
     legacyDiagnosticsText,
     poseEditorText,
+    thrillerText,
     combinedDiagnosticsText
   });
 
