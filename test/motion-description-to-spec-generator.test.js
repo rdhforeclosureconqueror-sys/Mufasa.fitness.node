@@ -18,6 +18,27 @@ test('generic generator produces Coach-targeted supported Motion Specs for all s
   for(const id of expected){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.status,'ready',id);assert.equal(out.spec.exerciseId,id);assert.equal(out.spec.status,'development-test-only');assert.equal(out.spec.skeleton.targetSkeletonProfile,'avaturn-native-v1');assert.equal(out.spec.coachRetarget.targetAvatarProfileId,'avaturn-personalized-candidate');assert.equal(out.spec.generationMetadata.generatedDraft,true);assert.equal(out.spec.generationMetadata.descriptionAuthority,true);assert.ok(out.spec.phases.length>=4);assert.equal(out.spec.phases[0].normalizedTime,0);assert.equal(out.spec.phases.at(-1).normalizedTime,1);assert.equal(out.contract.validate(out.spec).valid,true);assert.equal(out.diagnostics.contactSolvingDeferred,false);assert.equal(out.diagnostics.endpointContactSolvingApplied,true);assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,false);assert.equal(out.diagnostics.firstDeferredCapability,null);assert.ok(out.spec.groundingPolicy.contacts.length>=2);assert.ok(out.spec.groundingPolicy.kinematicChains.length>=2);}
 });
 
+test('Chair normalizes the imported T-pose, visibly squats, holds, and returns',()=>{
+  const out=Generator.generate(requestFor('chair'),byPlan.get('chair'));
+  assert.equal(out.status,'ready');
+  assert.deepEqual(out.spec.phases.map(x=>x.id),['start','descent','target','hold','ascent','finish']);
+  const start=out.spec.phases[0],descent=out.spec.phases[1],target=out.spec.phases[2],hold=out.spec.phases[3],finish=out.spec.phases[5];
+  const bone=(phase,name)=>phase.boneTargets.find(x=>x.bone===name).rotationOffsetEulerDegrees;
+  assert.deepEqual(bone(start,'LeftArm'),[0,0,88]);
+  assert.deepEqual(bone(start,'RightArm'),[0,0,-88]);
+  assert.notDeepEqual(bone(start,'LeftArm'),[0,0,0]);
+  assert.ok(descent.root.positionOffset[1]<start.root.positionOffset[1]);
+  assert.ok(target.root.positionOffset[1]<descent.root.positionOffset[1]);
+  assert.deepEqual(bone(target,'LeftUpLeg'),[78,0,2]);
+  assert.deepEqual(bone(target,'LeftLeg'),[-95,0,0]);
+  assert.deepEqual(bone(target,'LeftArm'),[0,0,-88]);
+  assert.deepEqual(bone(target,'RightArm'),[0,0,88]);
+  assert.deepEqual(hold.root.positionOffset,target.root.positionOffset);
+  assert.deepEqual(finish.root.positionOffset,start.root.positionOffset);
+  assert.deepEqual(bone(finish,'LeftArm'),bone(start,'LeftArm'));
+  assert.deepEqual(bone(finish,'RightArm'),bone(start,'RightArm'));
+});
+
 test('body-surface policy is present only when the description declares body-surface support',()=>{
   for(const id of ['mountain','chair','warrior-ii','downward-dog']){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.spec.surfaceSupportPolicy.constraints.length,0,id);}
   for(const id of ['cobra','bridge']){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.diagnostics.bodySurfaceSolvingApplied,true,id);assert.ok(out.spec.surfaceSupportPolicy.constraints.length>=3,id);assert.equal(out.spec.surfaceSupportPolicy.anchorPhaseId,'start',id);}
