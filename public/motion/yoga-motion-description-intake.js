@@ -1,119 +1,21 @@
 (function (window, document) {
   "use strict";
-
-  const STORAGE_KEY = "pocketpt.motionGenerationRequest.v1";
-  const TEMPLATE_URL = "/motion/yoga/motion-description-template.v1.json";
-  const REGISTRY_URL = "/motion/yoga/beginner-flow-motion-descriptions.v1.json";
-  const REQUIRED = ["exerciseId","displayName","source","startState","targetShape","segmentRelationships","supports","trajectory","orientation","timing","transitionIn","transitionOut","visualAcceptance"];
-
-  function stage(id, label, status, detail) {
-    return Object.freeze({ id, label, status, detail: detail || "" });
-  }
-
-  function validateDescription(description) {
-    const missing = REQUIRED.filter(key => description?.[key] == null || (Array.isArray(description[key]) && description[key].length === 0));
-    return Object.freeze({ valid: missing.length === 0, missing: Object.freeze(missing) });
-  }
-
-  function buildGenerationRequest(description) {
-    const validation = validateDescription(description);
-    if (!validation.valid) return Object.freeze({ status:"failed", code:"DESCRIPTION_TEMPLATE_INVALID", validation });
-    return Object.freeze({
-      schemaVersion:1,
-      requestType:"motion-description-to-draft",
-      source:Object.freeze({ ...description.source }),
-      exerciseId:description.exerciseId,
-      displayName:description.displayName,
-      description,
-      generationContract:Object.freeze({
-        targetAvatarRole:"coach",
-        targetSkeletonProfile:"avaturn-native-v1",
-        generationMode:"phase-first-semantic-draft",
-        autoplay:false,
-        humanVisualAcceptanceRequired:true,
-        preserveDescriptionAsAuthority:true
-      })
-    });
-  }
-
-  async function fetchJson(url) {
-    const response = await fetch(url, { cache:"no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status} loading ${url}`);
-    return response.json();
-  }
-
-  function readStoredRequest() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
-    catch (_) { return null; }
-  }
-
-  function firstFailure(stages) {
-    return stages.find(item => item.status === "FAIL") || null;
-  }
-
-  function renderPanel(model) {
-    let panel = document.getElementById("yogaMotionIntakePanel");
-    if (!panel) {
-      panel = document.createElement("section");
-      panel.id = "yogaMotionIntakePanel";
-      const main = document.querySelector("main");
-      const header = main?.querySelector("header");
-      if (main) main.insertBefore(panel, header?.nextSibling || main.firstChild);
-    }
-    const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-    const failure = firstFailure(model.stages);
-    panel.innerHTML = `<h2>Yoga Motion Description Intake</h2>
-      <p class="measurement"><strong>Source:</strong> ${esc(model.description?.displayName || "none")} · ${esc(model.sessionId || "—")}</p>
-      <p class="measurement"><strong>First failure:</strong> ${failure ? `${esc(failure.label)} — ${esc(failure.detail)}` : "NONE IN INTAKE"}</p>
-      <div class="grid"><div><h3>Pipeline</h3><table><thead><tr><th>Boundary</th><th>Status</th><th>Detail</th></tr></thead><tbody>${model.stages.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${esc(item.detail)}</td></tr>`).join("")}</tbody></table></div>
-      <div><h3>Generation description</h3><textarea id="yogaMotionDescriptionOutput" rows="16" readonly>${esc(JSON.stringify(model.description || {}, null, 2))}</textarea><div class="controls"><button id="copyYogaMotionDescription">Copy Description</button><button id="emitYogaMotionGeneration" ${model.generationRequest ? "" : "disabled"}>Send to Motion Generator</button></div><p id="yogaMotionIntakeStatus" class="measurement" role="status">${model.generationRequest ? "Description is valid and ready for the Motion Spec generation boundary." : "Description intake is not ready."}</p></div></div>`;
-    panel.querySelector("#copyYogaMotionDescription")?.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(JSON.stringify(model.description || {}, null, 2)); } catch (_) {}
-    });
-    panel.querySelector("#emitYogaMotionGeneration")?.addEventListener("click", () => {
-      if (!model.generationRequest) return;
-      window.dispatchEvent(new CustomEvent("pocketpt:motion-generation-request", { detail:model.generationRequest }));
-      const status = panel.querySelector("#yogaMotionIntakeStatus");
-      if (status) status.textContent = "Generation request emitted. Motion Lab generator/adapter should now convert this description into a draft Motion Spec; diagnostics must report the first downstream failure.";
-    });
-  }
-
-  async function loadFromNavigation() {
-    const params = new URLSearchParams(location.search);
-    if (params.get("motionSource") !== "yoga") return Object.freeze({ status:"ignored" });
-    const sessionId = params.get("session") || "";
-    const poseId = params.get("pose") || "";
-    const stages = [];
-    const stored = readStoredRequest();
-    const storedMatches = stored?.description?.exerciseId === poseId && stored?.description?.source?.sessionId === sessionId;
-    const navigationHandoffValid = Boolean(sessionId && poseId);
-    stages.push(stage("handoff","Yoga handoff", navigationHandoffValid ? "PASS" : "FAIL", navigationHandoffValid ? (storedMatches ? "authorized yoga context + stored request found" : "authorized yoga context received; resolving description on Motion Lab origin") : "session or pose context missing"));
-
-    let template = null, registry = null;
-    try { [template, registry] = await Promise.all([fetchJson(TEMPLATE_URL), fetchJson(REGISTRY_URL)]); stages.push(stage("resources","Description resources","PASS","template + beginner-flow registry loaded")); }
-    catch (error) { stages.push(stage("resources","Description resources","FAIL",error.message)); renderPanel({ sessionId, poseId, description:storedMatches ? stored.description : null, generationRequest:null, stages }); return Object.freeze({ status:"failed", code:"DESCRIPTION_RESOURCES_UNAVAILABLE" }); }
-
-    const description = storedMatches
-      ? stored.description
-      : (registry.descriptions || []).find(item => item.exerciseId === poseId && item.source?.sessionId === sessionId);
-    stages.push(stage("description","Pose description", description ? "PASS" : "FAIL", description ? `${description.displayName} resolved` : `no description for ${sessionId}/${poseId}`));
-
-    const validation = validateDescription(description);
-    stages.push(stage("template","Template validation", validation.valid ? "PASS" : "FAIL", validation.valid ? `${template.templateId} required fields satisfied` : `missing: ${validation.missing.join(", ")}`));
-    const generationRequest = validation.valid ? buildGenerationRequest(description) : null;
-    stages.push(stage("request","Generation request", generationRequest?.status === "failed" ? "FAIL" : generationRequest ? "PASS" : "BLOCKED", generationRequest ? "phase-first semantic draft request built" : "waiting for valid description"));
-    stages.push(stage("generator","Motion Spec generator","PENDING","downstream generator must translate description semantics into a canonical draft Motion Spec"));
-    stages.push(stage("coach","Coach Avatar","PENDING","load/retain personalized Coach Avatar after draft generation"));
-    stages.push(stage("compile","Compile / bind","PENDING","compile generated draft against Coach skeleton; fail closed on unbound/ambiguous targets"));
-    stages.push(stage("playback","Playable demo","PENDING","Play enabled only after successful compilation"));
-
-    const model = Object.freeze({ sessionId, poseId, description, generationRequest, stages:Object.freeze(stages) });
-    renderPanel(model);
-    if (generationRequest) window.dispatchEvent(new CustomEvent("pocketpt:motion-description-ready", { detail:generationRequest }));
-    return Object.freeze({ status:generationRequest ? "ready" : "failed", model });
-  }
-
-  window.PocketPTYogaMotionDescriptionIntake = Object.freeze({ STORAGE_KEY, REQUIRED:Object.freeze(REQUIRED.slice()), validateDescription, buildGenerationRequest, loadFromNavigation });
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadFromNavigation, { once:true });
-  else loadFromNavigation();
-})(window, document);
+  const STORAGE_KEY="pocketpt.motionGenerationRequest.v1";
+  const TEMPLATE_URL="/motion/yoga/motion-description-template.v1.json";
+  const REGISTRY_URL="/motion/yoga/beginner-flow-motion-descriptions.v1.json";
+  const PLAN_URL="/motion/yoga/beginner-flow-generation-plans.v1.json";
+  const GENERATOR_URL="/motion/motion-description-to-spec-generator.js";
+  const REQUIRED=["exerciseId","displayName","source","startState","targetShape","segmentRelationships","supports","trajectory","orientation","timing","transitionIn","transitionOut","visualAcceptance"];
+  function stage(id,label,status,detail){return {id,label,status,detail:detail||""};}
+  function validateDescription(description){const missing=REQUIRED.filter(key=>description?.[key]==null||(Array.isArray(description[key])&&description[key].length===0));return Object.freeze({valid:missing.length===0,missing:Object.freeze(missing)});}
+  function buildGenerationRequest(description){const validation=validateDescription(description);if(!validation.valid)return Object.freeze({status:"failed",code:"DESCRIPTION_TEMPLATE_INVALID",validation});return Object.freeze({schemaVersion:1,requestType:"motion-description-to-draft",source:Object.freeze({...description.source}),exerciseId:description.exerciseId,displayName:description.displayName,description,generationContract:Object.freeze({targetAvatarRole:"coach",targetSkeletonProfile:"avaturn-native-v1",generationMode:"phase-first-semantic-draft",autoplay:false,humanVisualAcceptanceRequired:true,preserveDescriptionAsAuthority:true})});}
+  async function fetchJson(url){const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw new Error(`HTTP ${response.status} loading ${url}`);return response.json();}
+  function readStoredRequest(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");}catch(_){return null;}}
+  function firstFailure(stages){return stages.find(item=>item.status==="FAIL")||null;}
+  async function ensureGenerator(){if(window.PocketPTMotionDescriptionGenerator)return window.PocketPTMotionDescriptionGenerator;await new Promise((resolve,reject)=>{const existing=document.querySelector(`script[data-motion-description-generator]`);if(existing){existing.addEventListener("load",resolve,{once:true});existing.addEventListener("error",()=>reject(new Error("motion generator load failed")),{once:true});return;}const script=document.createElement("script");script.src=GENERATOR_URL;script.defer=true;script.dataset.motionDescriptionGenerator="true";script.onload=resolve;script.onerror=()=>reject(new Error("motion generator load failed"));document.head.appendChild(script);});return window.PocketPTMotionDescriptionGenerator||null;}
+  function renderPanel(model){let panel=document.getElementById("yogaMotionIntakePanel");if(!panel){panel=document.createElement("section");panel.id="yogaMotionIntakePanel";const main=document.querySelector("main"),header=main?.querySelector("header");if(main)main.insertBefore(panel,header?.nextSibling||main.firstChild);}const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));const failure=firstFailure(model.stages);panel.innerHTML=`<h2>Yoga Motion Description Intake</h2><p class="measurement"><strong>Source:</strong> ${esc(model.description?.displayName||"none")} · ${esc(model.sessionId||"—")}</p><p class="measurement"><strong>First failure:</strong> ${failure?`${esc(failure.label)} — ${esc(failure.detail)}`:"NONE"}</p><div class="grid"><div><h3>Pipeline</h3><table><thead><tr><th>Boundary</th><th>Status</th><th>Detail</th></tr></thead><tbody>${model.stages.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${esc(item.detail)}</td></tr>`).join("")}</tbody></table></div><div><h3>Generation description</h3><textarea id="yogaMotionDescriptionOutput" rows="16" readonly>${esc(JSON.stringify(model.description||{},null,2))}</textarea><div class="controls"><button id="copyYogaMotionDescription">Copy Description</button><button id="emitYogaMotionGeneration" ${model.generationRequest&&model.plan?"":"disabled"}>Create Motion Draft</button></div><p id="yogaMotionIntakeStatus" class="measurement" role="status">${esc(model.statusText||"Description intake ready.")}</p>${model.generated?.spec?`<h3>Generated Motion Spec</h3><textarea rows="12" readonly>${esc(JSON.stringify(model.generated.spec,null,2))}</textarea>`:""}</div></div>`;panel.querySelector("#copyYogaMotionDescription")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(JSON.stringify(model.description||{},null,2));}catch(_){}});panel.querySelector("#emitYogaMotionGeneration")?.addEventListener("click",()=>{if(!model.generationRequest)return;window.dispatchEvent(new CustomEvent("pocketpt:motion-generation-request",{detail:model.generationRequest}));generateAndLoad(model);});}
+  async function generateAndLoad(model){const stages=model.stages.map(item=>({...item}));const set=(id,status,detail)=>{const item=stages.find(x=>x.id===id);if(item){item.status=status;item.detail=detail;}};let generator;try{generator=await ensureGenerator();}catch(error){set("generator","FAIL",error.message||"generator_load_failed");renderPanel({...model,stages,statusText:"Generator unavailable."});return;}if(!generator){set("generator","FAIL","PocketPTMotionDescriptionGenerator unavailable");renderPanel({...model,stages,statusText:"Generator unavailable."});return;}const generated=generator.generate(model.generationRequest,model.plan);if(generated.status!=="ready"){set("generator","FAIL",`${generated.code||"generation_failed"}`);renderPanel({...model,generated,stages,statusText:"Draft generation failed."});return;}set("generator","PASS",`${generated.diagnostics.archetype}; ${generated.diagnostics.phaseCount} phases`);window.dispatchEvent(new CustomEvent("pocketpt:motion-spec-generated",{detail:generated}));const runtime=window.MotionLabRuntime,profiles=window.PocketPTAvatarProfiles;if(!runtime||!profiles?.profiles?.personalized){set("coach","FAIL","Motion Lab runtime or Coach profile unavailable");renderPanel({...model,generated,stages,statusText:"Draft generated; Coach runtime unavailable."});return;}let avatar;try{avatar=await runtime.loadAvatar(profiles.profiles.personalized);}catch(error){avatar={status:"failed",code:error?.message||"coach_load_throw"};}if(avatar?.status!=="ready"){set("coach","FAIL",avatar?.code||"coach_load_failed");renderPanel({...model,generated,stages,statusText:"Draft generated; Coach Avatar failed to load."});return;}set("coach","PASS","personalized Coach Avatar ready");let compiled;try{compiled=await runtime.loadMotionSpec(generated.contract);}catch(error){compiled={status:"failed",code:error?.message||"compile_throw"};}if(compiled?.status!=="ready"){set("compile","FAIL",compiled?.code||"motion_compile_failed");set("playback","BLOCKED","compile must pass before playback");renderPanel({...model,generated,stages,statusText:"Draft generated; compile failed. Use first failure above."});return;}set("compile","PASS","generated draft compiled and bound to Coach skeleton");set("playback","PASS","motion selected; press Play to inspect (no autoplay)");renderPanel({...model,generated,stages,statusText:"Generated draft is loaded on the Coach Avatar. Press Play to inspect and calibrate."});}
+  async function loadFromNavigation(){const params=new URLSearchParams(location.search);if(params.get("motionSource")!=="yoga")return Object.freeze({status:"ignored"});const sessionId=params.get("session")||"",poseId=params.get("pose")||"",stages=[];const stored=readStoredRequest(),storedMatches=stored?.description?.exerciseId===poseId&&stored?.description?.source?.sessionId===sessionId,navigationHandoffValid=Boolean(sessionId&&poseId);stages.push(stage("handoff","Yoga handoff",navigationHandoffValid?"PASS":"FAIL",navigationHandoffValid?(storedMatches?"authorized yoga context + stored request found":"authorized yoga context received; resolving description on Motion Lab origin"):"session or pose context missing"));let template,registry,plans;try{[template,registry,plans]=await Promise.all([fetchJson(TEMPLATE_URL),fetchJson(REGISTRY_URL),fetchJson(PLAN_URL)]);stages.push(stage("resources","Description resources","PASS","template + descriptions + generation plans loaded"));}catch(error){stages.push(stage("resources","Description resources","FAIL",error.message));renderPanel({sessionId,poseId,description:storedMatches?stored.description:null,generationRequest:null,plan:null,stages,statusText:"Description resources unavailable."});return Object.freeze({status:"failed",code:"DESCRIPTION_RESOURCES_UNAVAILABLE"});}const description=storedMatches?stored.description:(registry.descriptions||[]).find(item=>item.exerciseId===poseId&&item.source?.sessionId===sessionId);stages.push(stage("description","Pose description",description?"PASS":"FAIL",description?`${description.displayName} resolved`:`no description for ${sessionId}/${poseId}`));const validation=validateDescription(description);stages.push(stage("template","Template validation",validation.valid?"PASS":"FAIL",validation.valid?`${template.templateId} required fields satisfied`:`missing: ${validation.missing.join(", ")}`));const generationRequest=validation.valid?buildGenerationRequest(description):null;stages.push(stage("request","Generation request",generationRequest?.status==="failed"?"FAIL":generationRequest?"PASS":"BLOCKED",generationRequest?"phase-first semantic draft request built":"waiting for valid description"));const plan=(plans.plans||[]).find(item=>item.exerciseId===poseId)||null;stages.push(stage("plan","Generation plan",plan?"PASS":"FAIL",plan?`${plan.archetype} resolved`:`no generation plan for ${poseId}`));stages.push(stage("generator","Motion Spec generator","PENDING","press Create Motion Draft"));stages.push(stage("coach","Coach Avatar","PENDING","loads after successful draft generation"));stages.push(stage("compile","Compile / bind","PENDING","generated draft must bind to Coach skeleton"));stages.push(stage("playback","Playable demo","PENDING","Play enabled only after successful compilation"));const model={sessionId,poseId,description,generationRequest,plan,stages,statusText:"Description and generation plan are ready. Create Motion Draft to run the engine."};renderPanel(model);if(generationRequest)window.dispatchEvent(new CustomEvent("pocketpt:motion-description-ready",{detail:generationRequest}));return Object.freeze({status:generationRequest&&plan?"ready":"failed",model});}
+  window.PocketPTYogaMotionDescriptionIntake=Object.freeze({STORAGE_KEY,REQUIRED:Object.freeze(REQUIRED.slice()),validateDescription,buildGenerationRequest,ensureGenerator,loadFromNavigation,generateAndLoad});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",loadFromNavigation,{once:true});else loadFromNavigation();
+})(window,document);
