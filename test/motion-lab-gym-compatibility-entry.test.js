@@ -1,0 +1,3 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const src=fs.readFileSync(path.join(__dirname,'../motion-lab/motion-lab-gym-compatibility-entry.js'),'utf8');
+test('entrypoint loads only isolated gym integration',()=>{assert.match(src,/motion-lab-gym-compatibility-integration\.js/);assert.doesNotMatch(src,/motion-lab-bootstrap\.js|MotionViewerBoundary|playAnimation|GO_TO_MAT/);});
+test('entrypoint is idempotent and exposes load first failure',()=>{assert.match(src,/__POCKETPT_GYM_COMPATIBILITY_ENTRY__/);assert.match(src,/GYM_COMPATIBILITY_INTEGRATION_SCRIPT/);});
