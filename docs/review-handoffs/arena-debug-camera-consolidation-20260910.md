@@ -24,3 +24,10 @@ Current Arena HTML still owns the legacy `bridgeDebugToggle` / `bridgeDebugBoard
 
 ## Safety boundary
 Do not modify or restore `public/game/push-up-arena/index.html` or `index.pck` in this repair. The new Godot export remains protected separately until the PocketPT baseline is repaired and camera behavior is verified.
+
+## Browser acceptance after wiring
+1. Open signed-in Push-Up Challenge and enter Arena.
+2. Confirm only one debug launcher is visible.
+3. Open it, verify Copy All + close + FIRST FAILURE.
+4. In legacy READY mode choose Check my camera, then Enable camera.
+5. Verify CAMERA_PERMISSION -> CAMERA_STREAM -> BODY_DETECTOR -> BODY_VISIBILITY advance from observed runtime evidence.
