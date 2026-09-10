@@ -1391,6 +1391,10 @@ function createApp(options = {}) {
     res.set(SHELL_NO_STORE_HEADERS);
     return res.sendFile(path.join(PUBLIC_DIR, "motion", "assets", "phase-e", req.params.filename));
   });
+  app.get("/motion/assets/thriller/runtime/:filename", motionLabGate, (req, res) => {
+    if (!/^[A-Za-z0-9 ()_-]+\.glb$/.test(req.params.filename)) return res.status(404).end();
+    return res.sendFile(path.join(PUBLIC_DIR, "motion", "assets", "thriller", "runtime", req.params.filename));
+  });
   // Product-safe member-gated route: serves the push-up avatar for authenticated members.
   // The push-up challenge page is public, but the 3D avatar preview requires auth.
   // Unauthenticated users fall back to the stick-figure instructional preview.

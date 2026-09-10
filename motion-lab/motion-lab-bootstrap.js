@@ -65,6 +65,7 @@
       await loadDependency("shared_3d_loader","/dev/motion-lab-assets/shared3d-loader.js");
       await loadDependency("phase_e_assets","/dev/motion-lab-assets/phase-e-assets.js");
       await loadDependency("avatar_profiles","/dev/motion-lab-assets/avatar-profiles.js");
+      await loadDependency("thriller_motion_catalog","/dev/motion-lab-assets/thriller-motion-catalog.js");
       await loadDependency("push_up_fixture","/dev/motion-lab-assets/avaturn-push-up-fixture.js");
       await loadDependency("push_up_motion_spec","/dev/motion-lab-assets/push-up-motion-spec.js");
       await loadDependency("squat_motion_spec","/dev/motion-lab-assets/squat-motion-spec.js");
