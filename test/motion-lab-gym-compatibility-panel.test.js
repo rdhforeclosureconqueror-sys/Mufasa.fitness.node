@@ -1,0 +1,5 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../motion-lab/motion-lab-gym-compatibility-panel.js'),'utf8');
+test('panel exposes owner mapping controls and first failure output',()=>{['gymInspectAvatar','gymRestPoseValid','gymSaveMapping','gymCopyCompatibility','gymCompatibilityFirstFailure','gymBoneMappingRows','gymCompatibilityOutput'].forEach(id=>assert.match(source,new RegExp(id)));});
+test('panel delegates mapping and persistence to canonical controller',()=>{assert.match(source,/inspectRuntime/);assert.match(source,/applyCorrection/);assert.match(source,/createMappingProfile/);assert.match(source,/saveProfile/);assert.match(source,/firstFailureText/);});
+test('panel does not autoplay motion or manipulate Godot',()=>{assert.doesNotMatch(source,/\.play\s*\(/);assert.doesNotMatch(source,/GO_TO_MAT|NavigationAgent|MoveNet|TensorFlow/);});
