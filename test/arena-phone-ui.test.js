@@ -145,7 +145,8 @@ test('preview serves phone assets and an isolated camera double with explicit sy
   const base = `http://127.0.0.1:${server.address().port}`;
   const page = await (await fetch(base + '/arena/push-up?case=phone-flow')).text();
   assert.match(page, /SYNTHETIC PREVIEW/);
-  for (const name of ['runtime-state.js', 'push-up-challenge.js', 'arena-phone-flow.js', 'arena-pose-calibration.js', 'arena-phone-ui.js', 'arena-camera.js']) {
+  for (const name of ['runtime-state.js', 'push-up-challenge.js', 'arena-phone-flow.js', 'arena-pose-calibration.js', 'arena-phone-ui.js', 'arena-camera.js',
+    'arena-push-up-debug-entry.js', 'arena-debug-consolidation-loader.js', 'arena-debug-consolidation.js']) {
     const response = await fetch(base + '/' + name + '?case=phone-flow'); assert.equal(response.status, 200);
     new vm.Script(await response.text());
   }

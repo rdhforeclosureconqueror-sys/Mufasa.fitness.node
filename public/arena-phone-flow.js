@@ -45,7 +45,9 @@
     function snapshot() {
       return {state, context, previewOnly, title: COPY[state][0], description: COPY[state][1],
         canMove: state === 'GYM' && capabilities?.touchNavigation === true,
-        canApproach: state === 'GYM' && capabilities?.matApproach === true && capabilities?.pushUpTransition === true,
+        // Walking to the mat and entering the push-up pose are independently
+        // negotiated capabilities. GO_TO_MAT must not wait for the latter.
+        canApproach: state === 'GYM' && capabilities?.matApproach === true,
         canSetup: ['GYM', 'LEGACY', 'INTRO'].includes(state),
         canEnableCamera: ['CAMERA_SETUP', 'CAMERA_ERROR'].includes(state),
         canRestartCalibration: !previewOnly && TRACKING_STATES.includes(state),
