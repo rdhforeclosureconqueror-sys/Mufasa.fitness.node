@@ -1,17 +1,22 @@
 (function(window,document){
   "use strict";
-  const VERSION="1.0.0-yoga-runtime-gate";
+  const VERSION="1.0.1-yoga-runtime-gate";
   const BUTTON_ID="emitYogaMotionGeneration";
   const INIT_ID="initializeRuntime";
   let bypass=false;
   let pending=null;
 
-  function ready(){
+  function snapshot(){
+    return window.PocketPTMotionLabBootstrapDiagnostics?.snapshot?.()||null;
+  }
+
+  function dependenciesReady(){
     return Boolean(window.MotionLabRuntime&&window.PocketPTAvatarProfiles?.profiles?.personalized);
   }
 
-  function snapshot(){
-    return window.PocketPTMotionLabBootstrapDiagnostics?.snapshot?.()||null;
+  function ready(){
+    const diag=snapshot();
+    return dependenciesReady()&&diag?.status==="ready";
   }
 
   function statusText(text){
@@ -25,11 +30,15 @@
     pending=new Promise((resolve)=>{
       const started=Date.now();
       const poll=()=>{
-        if(ready()){pending=null;resolve({status:"ready"});return;}
         const diag=snapshot();
         if(diag?.status==="failed"){
           pending=null;
           resolve({status:"failed",code:diag.code||"motion_lab_bootstrap_failed",stage:diag.stage||"bootstrap",source:diag.source||null});
+          return;
+        }
+        if(dependenciesReady()&&diag?.status==="ready"){
+          pending=null;
+          resolve({status:"ready"});
           return;
         }
         if(Date.now()-started>=timeoutMs){
