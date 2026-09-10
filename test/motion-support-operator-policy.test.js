@@ -55,15 +55,15 @@ test('Cobra uses a prone floor setup and promotes pelvis/leg surfaces to support
   assert.equal(cobra.diagnostics.surfaceSupportSolvingDeferred,false);
 });
 
-test('Bridge starts and finishes supine, anchors feet and upper back, and validates head/upper-arm support planes',()=>{
+test('Bridge starts and finishes supine, keeps feet on limb IK, and validates upper-back/head/upper-arm support without rotating the Hips root through trunk IK',()=>{
   const bridge=Generator.generate(request('bridge'),plan.get('bridge'));
   assert.equal(bridge.status,'ready');
   assert.deepEqual(bridge.spec.phases[0].root.rotationOffsetEulerDegrees,[-90,0,0]);
   assert.deepEqual(bridge.spec.phases.at(-1).root.rotationOffsetEulerDegrees,[-90,0,0]);
   assert.ok(bridge.spec.phases.find(x=>x.id==='target').root.positionOffset[1] > bridge.spec.phases[0].root.positionOffset[1]);
-  assert.deepEqual(bridge.spec.groundingPolicy.contacts,['left_foot','right_foot','upper_back']);
-  assert.ok(bridge.spec.groundingPolicy.kinematicChains.some(x=>x.id==='upper_back_chain'));
-  assert.deepEqual(bridge.spec.surfaceSupportPolicy.constraints.map(x=>x.bone),['Head','LeftArm','RightArm']);
+  assert.deepEqual(bridge.spec.groundingPolicy.contacts,['left_foot','right_foot']);
+  assert.equal(bridge.spec.groundingPolicy.kinematicChains.some(x=>x.rootBone==='Hips'),false);
+  assert.deepEqual(bridge.spec.surfaceSupportPolicy.constraints.map(x=>x.bone),['Spine2','Head','LeftArm','RightArm']);
   assert.equal(bridge.diagnostics.supportOperators.bodySurfaceSolvingApplied,true);
   assert.equal(bridge.diagnostics.firstDeferredCapability,null);
 });
