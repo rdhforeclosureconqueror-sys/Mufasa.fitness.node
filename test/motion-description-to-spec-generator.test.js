@@ -18,6 +18,21 @@ test('generic generator produces Coach-targeted supported Motion Specs for all s
   for(const id of expected){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.status,'ready',id);assert.equal(out.spec.exerciseId,id);assert.equal(out.spec.status,'development-test-only');assert.equal(out.spec.skeleton.targetSkeletonProfile,'avaturn-native-v1');assert.equal(out.spec.coachRetarget.targetAvatarProfileId,'avaturn-personalized-candidate');assert.equal(out.spec.generationMetadata.generatedDraft,true);assert.equal(out.spec.generationMetadata.descriptionAuthority,true);assert.ok(out.spec.phases.length>=4);assert.equal(out.spec.phases[0].normalizedTime,0);assert.equal(out.spec.phases.at(-1).normalizedTime,1);assert.equal(out.contract.validate(out.spec).valid,true);assert.equal(out.diagnostics.contactSolvingDeferred,false);assert.equal(out.diagnostics.endpointContactSolvingApplied,true);assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,false);assert.equal(out.diagnostics.firstDeferredCapability,null);assert.ok(out.spec.groundingPolicy.contacts.length>=2);assert.ok(out.spec.groundingPolicy.kinematicChains.length>=2);}
 });
 
+test('Mountain target explicitly lowers both arms instead of inheriting the avatar T-pose rest offsets',()=>{
+  const out=Generator.generate(requestFor('mountain'),byPlan.get('mountain'));
+  assert.equal(out.status,'ready');
+  const target=out.spec.phases.find(phase=>phase.id==='target');
+  const hold=out.spec.phases.find(phase=>phase.id==='hold');
+  const left=target.boneTargets.find(item=>item.bone==='LeftArm');
+  const right=target.boneTargets.find(item=>item.bone==='RightArm');
+  assert.deepEqual(left.rotationOffsetEulerDegrees,[0,0,88]);
+  assert.deepEqual(right.rotationOffsetEulerDegrees,[0,0,-88]);
+  assert.notDeepEqual(left.rotationOffsetEulerDegrees,[0,0,0]);
+  assert.notDeepEqual(right.rotationOffsetEulerDegrees,[0,0,0]);
+  assert.deepEqual(hold.boneTargets.find(item=>item.bone==='LeftArm').rotationOffsetEulerDegrees,left.rotationOffsetEulerDegrees);
+  assert.deepEqual(hold.boneTargets.find(item=>item.bone==='RightArm').rotationOffsetEulerDegrees,right.rotationOffsetEulerDegrees);
+});
+
 test('body-surface policy is present only when the description declares body-surface support',()=>{
   for(const id of ['mountain','chair','warrior-ii','downward-dog']){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.spec.surfaceSupportPolicy.constraints.length,0,id);}
   for(const id of ['cobra','bridge']){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.diagnostics.bodySurfaceSolvingApplied,true,id);assert.ok(out.spec.surfaceSupportPolicy.constraints.length>=3,id);assert.equal(out.spec.surfaceSupportPolicy.anchorPhaseId,'start',id);}
