@@ -24,9 +24,20 @@ test('owner correction resolves an unmapped canonical joint', () => {
   assert.equal(corrected.firstFailure, 'NONE');
 });
 
+test('owner correction rejects reusing a raw bone already assigned to another canonical joint', () => {
+  const bones = required.filter(name => name !== 'LeftArm').concat('upper_arm_L');
+  const initial = gym.inspectRuntime({ mounted: true, skeleton: { bones }, animations: ['Idle'], restPoseValid: true });
+  assert.throws(() => gym.applyCorrection(initial, 'LeftArm', 'Hips'), /already mapped/);
+});
+
 test('mapping profile cannot save with unresolved required bones', () => {
   const report = gym.inspectRuntime({ mounted: true, skeleton: { bones: ['Hips'] }, restPoseValid: true });
   assert.throws(() => gym.createMappingProfile(report, { restPoseValid: true }), /unresolved required joint/);
+});
+
+test('mapping profile requires rest-pose PASS from inspected runtime, not only a caller flag', () => {
+  const report = gym.inspectRuntime({ mounted: true, skeleton: { bones: required }, animations: ['Idle'], restPoseValid: false });
+  assert.throws(() => gym.createMappingProfile(report, { restPoseValid: true }), /rest pose validation/);
 });
 
 test('mapping profile requires explicit rest-pose validation and round-trips through storage', () => {
