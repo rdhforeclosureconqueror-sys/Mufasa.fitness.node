@@ -85,13 +85,15 @@
     const poseId = params.get("pose") || "";
     const stages = [];
     const stored = readStoredRequest();
-    stages.push(stage("handoff","Yoga handoff", stored ? "PASS" : "FAIL", stored ? "stored request found" : "no stored generation request"));
+    const storedMatches = stored?.description?.exerciseId === poseId && stored?.description?.source?.sessionId === sessionId;
+    const navigationHandoffValid = Boolean(sessionId && poseId);
+    stages.push(stage("handoff","Yoga handoff", navigationHandoffValid ? "PASS" : "FAIL", navigationHandoffValid ? (storedMatches ? "authorized yoga context + stored request found" : "authorized yoga context received; resolving description on Motion Lab origin") : "session or pose context missing"));
 
     let template = null, registry = null;
     try { [template, registry] = await Promise.all([fetchJson(TEMPLATE_URL), fetchJson(REGISTRY_URL)]); stages.push(stage("resources","Description resources","PASS","template + beginner-flow registry loaded")); }
-    catch (error) { stages.push(stage("resources","Description resources","FAIL",error.message)); renderPanel({ sessionId, poseId, description:stored?.description || null, generationRequest:null, stages }); return Object.freeze({ status:"failed", code:"DESCRIPTION_RESOURCES_UNAVAILABLE" }); }
+    catch (error) { stages.push(stage("resources","Description resources","FAIL",error.message)); renderPanel({ sessionId, poseId, description:storedMatches ? stored.description : null, generationRequest:null, stages }); return Object.freeze({ status:"failed", code:"DESCRIPTION_RESOURCES_UNAVAILABLE" }); }
 
-    const description = (stored?.description?.exerciseId === poseId && stored?.description?.source?.sessionId === sessionId)
+    const description = storedMatches
       ? stored.description
       : (registry.descriptions || []).find(item => item.exerciseId === poseId && item.source?.sessionId === sessionId);
     stages.push(stage("description","Pose description", description ? "PASS" : "FAIL", description ? `${description.displayName} resolved` : `no description for ${sessionId}/${poseId}`));
