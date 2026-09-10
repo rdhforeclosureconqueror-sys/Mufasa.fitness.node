@@ -15,13 +15,24 @@ test('reports full canonical coverage for semantic personalized skeleton', () =>
   assert.equal(result.mappingCoverage, `${completeBones.length}/${completeBones.length}`);
   assert.equal(result.firstFailure, 'NONE');
   assert.equal(result.canonicalMap.Hips, 'Hips');
+  assert.equal(result.canonicalMap.Spine2, 'Spine2');
 });
 
-test('maps Mixamo aliases to canonical semantic joints', () => {
+test('maps source Mixamo aliases to canonical semantic joints', () => {
   const mixamo = completeBones.map(name => `mixamorig:${name}`);
   const result = compatibility.buildCanonicalMap(mixamo);
   assert.equal(result.unmapped.length, 0);
   assert.equal(result.map.LeftArm, 'mixamorig:LeftArm');
+  assert.equal(result.map.Spine2, 'mixamorig:Spine2');
+});
+
+test('maps Three.js-sanitized Mixamo runtime names to canonical semantic joints', () => {
+  const sanitized = completeBones.map(name => `mixamorig${name}`);
+  const result = compatibility.buildCanonicalMap(sanitized);
+  assert.equal(result.unmapped.length, 0);
+  assert.equal(result.map.Hips, 'mixamorigHips');
+  assert.equal(result.map.LeftArm, 'mixamorigLeftArm');
+  assert.equal(result.map.Spine2, 'mixamorigSpine2');
 });
 
 test('FIRST FAILURE stops at first unresolved compatibility boundary', () => {
@@ -34,6 +45,7 @@ test('FIRST FAILURE stops at first unresolved compatibility boundary', () => {
   });
   assert.equal(result.firstFailure, 'CANONICAL_MAP_RESOLVED');
   assert.ok(result.unmapped.some(item => item.joint === 'LeftArm'));
+  assert.ok(result.unmapped.some(item => item.joint === 'Spine2'));
   assert.match(compatibility.formatReport(result), /FIRST FAILURE: CANONICAL_MAP_RESOLVED/);
 });
 
