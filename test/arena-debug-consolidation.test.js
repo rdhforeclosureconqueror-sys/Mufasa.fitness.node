@@ -24,3 +24,10 @@ test('arena camera implementation remains intact and explicit-start', () => {
   assert.match(camera, /CAMERA_STREAM/); assert.match(camera, /BODY_DETECTOR/);
   assert.match(camera, /initMoveNetDetector/); assert.match(ui, /arenaEnableCamera/); assert.match(ui, /camera\.start/);
 });
+
+test('integration gate remains explicit until Arena HTML loads the entry', () => {
+  const html = read('public/arena-push-up.html');
+  // Flip this assertion when wiring the entry into the page. Keeping this test explicit prevents
+  // a draft adapter from being mistaken for a deployed repair.
+  assert.doesNotMatch(html, /arena-push-up-debug-entry\.js/);
+});
