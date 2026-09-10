@@ -28,7 +28,7 @@ test('production frontend build injects a commit-cache-busted runtime config int
 test('runtime config loads deployment identity diagnostics before consolidated mirror center',()=>{
   const runtime=read('public/runtime-config.js');
   const deploymentAt=runtime.indexOf('/mirror-deployment-diagnostics.js?v=20260907-deployment-parity-v1');
-  const centerAt=runtime.indexOf('/mirror-debug-center.js?v=20260907-consolidated-v2');
+  const centerAt=runtime.indexOf('/mirror-debug-center.js?v=20260910-phone-consolidation-v3');
   assert.ok(deploymentAt>=0,'deployment diagnostics loader missing');
   assert.ok(centerAt>deploymentAt,'deployment diagnostics should be requested before consolidated center');
   assert.match(runtime,/data-mirror-deployment-diagnostics/);
