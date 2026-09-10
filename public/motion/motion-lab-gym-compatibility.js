@@ -4,7 +4,7 @@
   else root.PocketPTMotionLabGymCompatibility = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (root) {
   "use strict";
-  const VERSION = "motion-lab-gym-compatibility-v1";
+  const VERSION = "motion-lab-gym-compatibility-v1.1";
   const STORAGE_KEY = "pocketpt.motionLab.gymCompatibility.v1";
 
   function authority() { return root.PocketPTPersonalAvatarCompatibility || null; }
@@ -28,6 +28,8 @@
     const available = new Set(report.boneNames || []);
     if (!available.has(rawBoneName)) throw new Error(`Bone not present on loaded avatar: ${rawBoneName}`);
     if (!(authority()?.REQUIRED_CANONICAL_JOINTS || []).includes(canonicalJoint)) throw new Error(`Unknown canonical joint: ${canonicalJoint}`);
+    const existingOwner = Object.entries(report.canonicalMap || {}).find(([joint, raw]) => joint !== canonicalJoint && raw === rawBoneName);
+    if (existingOwner) throw new Error(`Bone already mapped to canonical joint ${existingOwner[0]}: ${rawBoneName}`);
     const next = JSON.parse(JSON.stringify(report));
     next.canonicalMap = next.canonicalMap || {};
     next.canonicalMap[canonicalJoint] = rawBoneName;
@@ -41,15 +43,22 @@
 
   function createMappingProfile(report, options) {
     const opts = options || {};
+    const compat = authority();
+    const required = compat?.REQUIRED_CANONICAL_JOINTS || [];
     const unresolved = report?.unmapped || [];
     if (unresolved.length) throw new Error(`Cannot save mapping profile with ${unresolved.length} unresolved required joint(s)`);
-    if (opts.restPoseValid !== true) throw new Error("Cannot save mapping profile before rest pose validation");
+    const map = report?.canonicalMap || {};
+    const missing = required.filter(joint => !map[joint]);
+    if (missing.length) throw new Error(`Cannot save mapping profile with ${missing.length} missing required mapping(s)`);
+    if (new Set(required.map(joint => map[joint])).size !== required.length) throw new Error("Cannot save mapping profile with duplicate raw-bone mappings");
+    const restStage = (report?.stages || []).find(item => item.stage === "REST_POSE_VALID");
+    if (opts.restPoseValid !== true || restStage?.status !== "PASS") throw new Error("Cannot save mapping profile before rest pose validation");
     return Object.freeze({
       schemaVersion: 1,
       profileId: opts.profileId || `${report.avatarId || "personalized"}-gym-map-v1`,
       avatarId: report.avatarId || null,
       skeletonProfile: report.skeletonProfile || null,
-      canonicalMap: Object.freeze(Object.assign({}, report.canonicalMap || {})),
+      canonicalMap: Object.freeze(Object.assign({}, map)),
       restPoseValid: true,
       embeddedAnimations: Object.freeze((report.embeddedAnimations || []).map(item => Object.freeze(Object.assign({}, item)))),
       validationStatus: "development-verified",
