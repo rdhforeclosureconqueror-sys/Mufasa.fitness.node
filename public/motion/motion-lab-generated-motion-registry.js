@@ -1,6 +1,6 @@
 (function(window,document){
   "use strict";
-  const VERSION="1.0.0-generated-motion-registry";
+  const VERSION="1.0.1-generated-motion-registry";
   const STORAGE_KEY="pocketpt.motionLab.generatedMotions.v1";
   const MAX_ITEMS=24;
   let pendingGenerated=null;
@@ -16,20 +16,24 @@
     localStorage.setItem(STORAGE_KEY,JSON.stringify(items.slice(0,MAX_ITEMS)));
   }
 
-  function motionId(spec){
+  function canonicalSpec(contract){return contract?.spec||contract||null;}
+
+  function motionId(contract){
+    const spec=canonicalSpec(contract);
     return String(spec?.motionId||spec?.id||"").trim();
   }
 
-  function displayName(spec){
-    return String(spec?.displayName||motionId(spec)||"Generated Motion").trim();
+  function displayName(contract){
+    const spec=canonicalSpec(contract);
+    return String(spec?.displayName||motionId(contract)||"Generated Motion").trim();
   }
 
-  function upsert(spec){
-    const id=motionId(spec);
+  function upsert(contract){
+    const id=motionId(contract);
     if(!id)return {status:"failed",code:"generated_motion_id_missing"};
     const now=new Date().toISOString();
     const current=read().filter(item=>item?.motionId!==id);
-    const item={schemaVersion:1,motionId:id,displayName:displayName(spec),savedAt:now,spec};
+    const item={schemaVersion:1,motionId:id,displayName:displayName(contract),savedAt:now,contract};
     write([item,...current]);
     render();
     return {status:"ready",item};
@@ -55,6 +59,11 @@
 
   function esc(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
 
+  function selectedMotionMatches(id){
+    const diagnostics=document.getElementById("motionDiagnostics")?.textContent||"";
+    return Boolean(id&&diagnostics.includes(id));
+  }
+
   async function load(id){
     const item=find(id);
     const status=document.getElementById("generatedMotionRegistryStatus");
@@ -67,12 +76,12 @@
     try{avatar=await runtime.loadAvatar(profile);}catch(error){avatar={status:"failed",code:error?.message||"coach_load_throw"};}
     if(avatar?.status!=="ready"){if(status)status.textContent=`Coach Avatar load failed: ${avatar?.code||"unknown"}`;return avatar;}
     let compiled;
-    try{compiled=await runtime.loadMotionSpec(item.spec);}catch(error){compiled={status:"failed",code:error?.message||"compile_throw"};}
+    try{compiled=await runtime.loadMotionSpec(item.contract);}catch(error){compiled={status:"failed",code:error?.message||"compile_throw"};}
     if(compiled?.status!=="ready"){if(status)status.textContent=`Generated motion compile failed: ${compiled?.code||"unknown"}`;return compiled;}
     const play=document.getElementById("playAnimation");
-    if(play?.disabled){if(status)status.textContent="Generated motion compiled but Play is still disabled.";return {status:"failed",code:"generated_motion_play_control_disabled"};}
+    if(play?.disabled||!selectedMotionMatches(item.motionId)){if(status)status.textContent="Generated motion compiled but did not become the active playable selection.";return {status:"failed",code:"generated_motion_not_selected"};}
     if(status)status.textContent=`${item.displayName} loaded. Press Play to inspect.`;
-    window.dispatchEvent(new CustomEvent("pocketpt:generated-motion-loaded",{detail:{motionId:item.motionId,spec:item.spec}}));
+    window.dispatchEvent(new CustomEvent("pocketpt:generated-motion-loaded",{detail:{motionId:item.motionId,contract:item.contract}}));
     return {status:"ready",item};
   }
 
@@ -87,13 +96,15 @@
 
   function waitForPlayableAndPersist(generated,timeoutMs=12000){
     pendingGenerated=generated;
+    const contract=generated.contract||generated.spec;
+    const id=motionId(contract);
     const started=Date.now();
     const poll=()=>{
       if(pendingGenerated!==generated)return;
       const play=document.getElementById("playAnimation");
-      if(play&&!play.disabled){
+      if(id&&play&&!play.disabled&&selectedMotionMatches(id)){
         pendingGenerated=null;
-        const result=upsert(generated.contract||generated.spec);
+        const result=upsert(contract);
         const status=document.getElementById("generatedMotionRegistryStatus");
         if(status)status.textContent=result.status==="ready"?`${result.item.displayName} saved and selectable.`:`Generated motion was playable but could not be saved: ${result.code}`;
         return;
@@ -101,7 +112,7 @@
       if(Date.now()-started>=timeoutMs){
         pendingGenerated=null;
         const status=document.getElementById("generatedMotionRegistryStatus");
-        if(status)status.textContent="FIRST FAILURE: generated Motion Spec did not reach an enabled Play control, so it was not registered as usable.";
+        if(status)status.textContent="FIRST FAILURE: generated Motion Spec did not become the active motion with an enabled Play control, so it was not registered as usable.";
         return;
       }
       window.setTimeout(poll,75);
@@ -115,6 +126,6 @@
     waitForPlayableAndPersist(generated);
   });
 
-  window.PocketPTGeneratedMotionRegistry=Object.freeze({VERSION,STORAGE_KEY,read,find,upsert,remove,load,render});
+  window.PocketPTGeneratedMotionRegistry=Object.freeze({VERSION,STORAGE_KEY,read,find,upsert,remove,load,render,motionId,selectedMotionMatches});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",render,{once:true});else render();
 })(window,document);
