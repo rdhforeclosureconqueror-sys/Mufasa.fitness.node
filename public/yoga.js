@@ -5,7 +5,7 @@ let active=null,index=0,startedAt=null,history=[];
 const ACTIVE_YOGA_WORKOUT_KEY="mufasa.activeWorkout.v1";
 const MOTION_REQUEST_KEY="pocketpt.motionGenerationRequest.v1";
 const BEGINNER_FLOW_ID="beginner-flow";
-const BEGINNER_MOTION_REGISTRY="/dev/motion-lab-assets/yoga/beginner-flow-motion-descriptions.v1.json";
+const BEGINNER_MOTION_REGISTRY="/motion/yoga/beginner-flow-motion-descriptions.v1.json";
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 async function request(route,options={}){const result=await window.MaatApiClient.request(route,options);if(!result.ok)throw new Error(result.payload?.error?.message||result.payload?.message||result.error?.message||"Yoga is temporarily unavailable.");return result.payload.data;}
 async function fetchJson(route){const response=await fetch(route,{cache:"no-store"});if(!response.ok)throw new Error(`Motion description unavailable (${response.status}).`);return response.json();}
