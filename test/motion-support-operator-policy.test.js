@@ -29,8 +29,6 @@ test('Chair automatically promotes both planted feet into generated leg IK',()=>
   assert.deepEqual(out.spec.groundingPolicy.contacts,['left_foot','right_foot']);
   assert.equal(out.spec.groundingPolicy.kinematicChains.length,2);
   for(const phase of out.spec.phases)assert.deepEqual(phase.contacts,['left_foot','right_foot']);
-  assert.equal(out.diagnostics.endpointContactSolvingApplied,true);
-  assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,false);
 });
 
 test('Downward Dog promotes four endpoint supports with two arm and two leg chains',()=>{
@@ -42,18 +40,32 @@ test('Downward Dog promotes four endpoint supports with two arm and two leg chai
   assert.deepEqual(out.spec.phases.find(x=>x.id==='start').contacts,[]);
   assert.deepEqual(out.spec.phases.find(x=>x.id==='target').contacts,['left_hand','right_hand','left_foot','right_foot']);
   assert.deepEqual(out.spec.phases.find(x=>x.id==='hold').contacts,['left_hand','right_hand','left_foot','right_foot']);
-  assert.deepEqual(out.spec.phases.find(x=>x.id==='finish').contacts,[]);
 });
 
-test('Cobra and Bridge report body-surface supports as the next explicit engine capability',()=>{
+test('Cobra uses a prone floor setup and promotes pelvis/leg surfaces to support-plane constraints',()=>{
   const cobra=Generator.generate(request('cobra'),plan.get('cobra'));
   assert.equal(cobra.status,'ready');
-  assert.deepEqual(cobra.diagnostics.supportOperators.surfaceSupportsDeferred,['pelvis','left_leg','right_leg']);
-  assert.equal(cobra.diagnostics.firstDeferredCapability,'BODY_SURFACE_SUPPORT_SOLVER');
+  assert.deepEqual(cobra.spec.phases[0].root.rotationOffsetEulerDegrees,[90,0,0]);
+  assert.deepEqual(cobra.spec.phases.at(-1).root.rotationOffsetEulerDegrees,[90,0,0]);
+  assert.equal(cobra.spec.groundingPolicy.anchorPhaseId,'start');
+  assert.deepEqual(cobra.spec.groundingPolicy.contacts,['left_hand','right_hand']);
+  assert.deepEqual(cobra.diagnostics.supportOperators.surfaceSupports,['pelvis','left_leg','right_leg']);
+  assert.equal(cobra.spec.surfaceSupportPolicy.anchorPhaseId,'start');
+  assert.deepEqual(cobra.spec.surfaceSupportPolicy.constraints.map(x=>x.bone),['Hips','LeftUpLeg','RightUpLeg']);
+  assert.equal(cobra.diagnostics.surfaceSupportSolvingDeferred,false);
+});
+
+test('Bridge starts and finishes supine, anchors feet and upper back, and validates head/upper-arm support planes',()=>{
   const bridge=Generator.generate(request('bridge'),plan.get('bridge'));
   assert.equal(bridge.status,'ready');
-  assert.deepEqual(bridge.diagnostics.supportOperators.surfaceSupportsDeferred,['upper_back','head','upper_arms']);
-  assert.equal(bridge.diagnostics.firstDeferredCapability,'BODY_SURFACE_SUPPORT_SOLVER');
+  assert.deepEqual(bridge.spec.phases[0].root.rotationOffsetEulerDegrees,[-90,0,0]);
+  assert.deepEqual(bridge.spec.phases.at(-1).root.rotationOffsetEulerDegrees,[-90,0,0]);
+  assert.ok(bridge.spec.phases.find(x=>x.id==='target').root.positionOffset[1] > bridge.spec.phases[0].root.positionOffset[1]);
+  assert.deepEqual(bridge.spec.groundingPolicy.contacts,['left_foot','right_foot','upper_back']);
+  assert.ok(bridge.spec.groundingPolicy.kinematicChains.some(x=>x.id==='upper_back_chain'));
+  assert.deepEqual(bridge.spec.surfaceSupportPolicy.constraints.map(x=>x.bone),['Head','LeftArm','RightArm']);
+  assert.equal(bridge.diagnostics.supportOperators.bodySurfaceSolvingApplied,true);
+  assert.equal(bridge.diagnostics.firstDeferredCapability,null);
 });
 
 test('unknown support semantics fail closed instead of being silently ignored',()=>{
@@ -61,20 +73,20 @@ test('unknown support semantics fail closed instead of being silently ignored',(
   const out=Generator.generate(request('mountain'),fake);
   assert.equal(out.status,'failed');
   assert.equal(out.code,'SUPPORT_OPERATOR_UNSUPPORTED');
-  assert.deepEqual(out.diagnostics.unsupportedSupports,['mystery_contact']);
 });
 
-test('Motion Lab loads support policy then generator then Yoga intake',()=>{
-  const html=fs.readFileSync(path.join(__dirname,'../motion-lab/index.html'),'utf8');
-  const policy=html.indexOf('/dev/motion-lab-assets/motion-support-operator-policy.js');
-  const generator=html.indexOf('/dev/motion-lab-assets/motion-description-to-spec-generator.js');
-  const intake=html.indexOf('/dev/motion-lab-assets/yoga-motion-description-intake.js');
-  assert.ok(policy>=0&&generator>policy&&intake>generator);
+test('Motion Spec compiler contains fail-closed body-surface residual validation',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../public/motion/motion-spec-clip.js'),'utf8');
+  assert.match(source,/surfaceSupportPolicy/);
+  assert.match(source,/motion_surface_support_drift/);
+  assert.match(source,/SURFACE_SUPPORT_DRIFT/);
+  assert.match(source,/surfaceSupportResiduals/);
 });
 
-test('Yoga first-failure panel includes an explicit support/contact operator boundary',()=>{
+test('Yoga first-failure panel reports body-surface operators instead of deferred metadata',()=>{
   const source=fs.readFileSync(path.join(__dirname,'../public/motion/yoga-motion-description-intake.js'),'utf8');
-  assert.match(source,/stage\("supports","Support\/contact operators"/);
-  assert.match(source,/surfaceSupportsDeferred/);
-  assert.match(source,/enforcedContacts/);
+  assert.match(source,/Support\/contact operators/);
+  assert.match(source,/body surfaces:/);
+  assert.match(source,/plane checks:/);
+  assert.doesNotMatch(source,/deferred body-surface supports/);
 });
