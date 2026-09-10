@@ -1,8 +1,9 @@
 (function(window,document){
   "use strict";
-  const VERSION="1.0.1-yoga-runtime-gate";
+  const VERSION="1.1.0-yoga-runtime-gate-generated-registry";
   const BUTTON_ID="emitYogaMotionGeneration";
   const INIT_ID="initializeRuntime";
+  const REGISTRY_URL="/dev/motion-lab-assets/motion-lab-generated-motion-registry.js";
   let bypass=false;
   let pending=null;
 
@@ -22,6 +23,25 @@
   function statusText(text){
     const el=document.getElementById("yogaMotionIntakeStatus");
     if(el)el.textContent=text;
+  }
+
+  function ensureGeneratedRegistry(){
+    if(window.PocketPTGeneratedMotionRegistry)return Promise.resolve(window.PocketPTGeneratedMotionRegistry);
+    return new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-generated-motion-registry]');
+      if(existing){
+        existing.addEventListener("load",()=>resolve(window.PocketPTGeneratedMotionRegistry||null),{once:true});
+        existing.addEventListener("error",()=>reject(new Error("generated motion registry load failed")),{once:true});
+        return;
+      }
+      const script=document.createElement("script");
+      script.src=REGISTRY_URL;
+      script.defer=true;
+      script.dataset.generatedMotionRegistry="true";
+      script.onload=()=>resolve(window.PocketPTGeneratedMotionRegistry||null);
+      script.onerror=()=>reject(new Error("generated motion registry load failed"));
+      document.head.appendChild(script);
+    });
   }
 
   function waitForReady(timeoutMs=15000){
@@ -74,11 +94,16 @@
       statusText(`Runtime/bootstrap failed at ${out.stage||"unknown"}: ${out.code||"motion_lab_runtime_unavailable"}`);
       return;
     }
+    try{await ensureGeneratedRegistry();}catch(error){
+      statusText(`Generated motion registry failed to load: ${error.message||"unknown"}`);
+      return;
+    }
     statusText("Motion Lab runtime + Coach profile ready. Creating motion draft…");
     bypass=true;
     try{button.click();}finally{bypass=false;}
   }
 
   document.addEventListener("click",intercept,true);
-  window.PocketPTYogaMotionRuntimeGate=Object.freeze({VERSION,ready,ensureReady,waitForReady});
+  ensureGeneratedRegistry().catch(()=>{});
+  window.PocketPTYogaMotionRuntimeGate=Object.freeze({VERSION,ready,ensureReady,waitForReady,ensureGeneratedRegistry});
 })(window,document);
