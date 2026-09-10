@@ -13,14 +13,14 @@ Base: `6140f06d`
 ## First failure found
 Current Arena HTML still owns the legacy `bridgeDebugToggle` / `bridgeDebugBoard` UI directly, while the newer Mirror Debug Center only discovers mirror-motion diagnostic surfaces. The Arena therefore bypasses the single-authority consolidation contract.
 
-## Repair in this PR
-- Added `arena-debug-consolidation.js`, which consumes the existing Arena diagnostic board as an evidence producer while suppressing its competing launcher/panel.
-- Added one Arena Debug Center with Copy All, close, live refresh, and earliest-first failure extraction.
-- Added an explicit loader/entry chain for the Arena adapter.
-- Added regression coverage that protects the existing camera permission, stream, MoveNet detector, body-visibility plumbing.
+## Repair staged in this draft
+- `arena-debug-consolidation.js` consumes the existing Arena diagnostic board as an evidence producer while suppressing its competing launcher/panel.
+- One Arena Debug Center provides Copy All, close, live refresh, and earliest-first failure extraction.
+- Explicit loader/entry files are present for page integration.
+- Regression coverage protects the existing camera permission, stream, MoveNet detector, and body-visibility plumbing.
 
-## Remaining integration gate before merge
-The Arena HTML must load `/arena-push-up-debug-entry.js` after the legacy Arena diagnostics producer. Until that one-line page wiring is present and browser-tested, this PR is intentionally draft and must not be merged.
+## FIRST FAILURE / merge gate
+`ARENA_DEBUG_ENTRY_NOT_WIRED`: `public/arena-push-up.html` does not yet load `/arena-push-up-debug-entry.js`. The adapter is therefore not active in the browser yet. This PR is intentionally draft and MUST NOT be merged until that page wiring is added and browser-tested.
 
 ## Safety boundary
 Do not modify or restore `public/game/push-up-arena/index.html` or `index.pck` in this repair. The new Godot export remains protected separately until the PocketPT baseline is repaired and camera behavior is verified.
