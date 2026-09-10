@@ -1,6 +1,6 @@
 (function(window,document){
   "use strict";
-  const VERSION="1.0.1-generated-motion-registry";
+  const VERSION="1.0.2-generated-motion-registry";
   const STORAGE_KEY="pocketpt.motionLab.generatedMotions.v1";
   const MAX_ITEMS=24;
   let pendingGenerated=null;
@@ -16,24 +16,41 @@
     localStorage.setItem(STORAGE_KEY,JSON.stringify(items.slice(0,MAX_ITEMS)));
   }
 
-  function canonicalSpec(contract){return contract?.spec||contract||null;}
+  function canonicalSpec(value){return value?.spec||value?.contract?.spec||value||null;}
 
-  function motionId(contract){
-    const spec=canonicalSpec(contract);
+  function motionId(value){
+    const spec=canonicalSpec(value);
     return String(spec?.motionId||spec?.id||"").trim();
   }
 
-  function displayName(contract){
-    const spec=canonicalSpec(contract);
-    return String(spec?.displayName||motionId(contract)||"Generated Motion").trim();
+  function displayName(value){
+    const spec=canonicalSpec(value);
+    return String(spec?.displayName||motionId(value)||"Generated Motion").trim();
   }
 
-  function upsert(contract){
-    const id=motionId(contract);
+  function validatePersistedSpec(candidate){
+    const errors=[];
+    if(!candidate?.motionId)errors.push("motionId required");
+    if(!Array.isArray(candidate?.phases)||candidate.phases.length<2)errors.push("phases required");
+    if(candidate?.skeleton?.targetSkeletonProfile!=="avaturn-native-v1")errors.push("Coach target required");
+    if(candidate?.groundingPolicy?.enforceContactAnchors&&!candidate.groundingPolicy.anchorPhaseId)errors.push("contact anchor phase required");
+    if(candidate?.surfaceSupportPolicy?.constraints?.length&&!candidate.surfaceSupportPolicy.anchorPhaseId)errors.push("surface anchor phase required");
+    return Object.freeze({valid:errors.length===0,errors:Object.freeze(errors)});
+  }
+
+  function rebuildContract(spec){
+    return Object.freeze({spec,validate:validatePersistedSpec});
+  }
+
+  function upsert(value){
+    const spec=canonicalSpec(value);
+    const id=motionId(spec);
     if(!id)return {status:"failed",code:"generated_motion_id_missing"};
+    const validation=validatePersistedSpec(spec);
+    if(!validation.valid)return {status:"failed",code:"generated_motion_spec_invalid",diagnostics:validation};
     const now=new Date().toISOString();
     const current=read().filter(item=>item?.motionId!==id);
-    const item={schemaVersion:1,motionId:id,displayName:displayName(contract),savedAt:now,contract};
+    const item={schemaVersion:1,motionId:id,displayName:displayName(spec),savedAt:now,spec};
     write([item,...current]);
     render();
     return {status:"ready",item};
@@ -68,6 +85,10 @@
     const item=find(id);
     const status=document.getElementById("generatedMotionRegistryStatus");
     if(!item){if(status)status.textContent="Generated motion not found in this browser.";return {status:"failed",code:"generated_motion_not_found"};}
+    const spec=canonicalSpec(item.spec||item.contract);
+    const validation=validatePersistedSpec(spec);
+    if(!validation.valid){if(status)status.textContent="Saved generated motion is invalid and cannot be loaded.";return {status:"failed",code:"generated_motion_spec_invalid",diagnostics:validation};}
+    const contract=rebuildContract(spec);
     const runtime=window.MotionLabRuntime;
     const profile=window.PocketPTAvatarProfiles?.profiles?.personalized;
     if(!runtime||!profile){if(status)status.textContent="Initialize Motion Lab runtime first.";return {status:"failed",code:"motion_lab_runtime_unavailable"};}
@@ -76,13 +97,13 @@
     try{avatar=await runtime.loadAvatar(profile);}catch(error){avatar={status:"failed",code:error?.message||"coach_load_throw"};}
     if(avatar?.status!=="ready"){if(status)status.textContent=`Coach Avatar load failed: ${avatar?.code||"unknown"}`;return avatar;}
     let compiled;
-    try{compiled=await runtime.loadMotionSpec(item.contract);}catch(error){compiled={status:"failed",code:error?.message||"compile_throw"};}
+    try{compiled=await runtime.loadMotionSpec(contract);}catch(error){compiled={status:"failed",code:error?.message||"compile_throw"};}
     if(compiled?.status!=="ready"){if(status)status.textContent=`Generated motion compile failed: ${compiled?.code||"unknown"}`;return compiled;}
     const play=document.getElementById("playAnimation");
     if(play?.disabled||!selectedMotionMatches(item.motionId)){if(status)status.textContent="Generated motion compiled but did not become the active playable selection.";return {status:"failed",code:"generated_motion_not_selected"};}
     if(status)status.textContent=`${item.displayName} loaded. Press Play to inspect.`;
-    window.dispatchEvent(new CustomEvent("pocketpt:generated-motion-loaded",{detail:{motionId:item.motionId,contract:item.contract}}));
-    return {status:"ready",item};
+    window.dispatchEvent(new CustomEvent("pocketpt:generated-motion-loaded",{detail:{motionId:item.motionId,contract}}));
+    return {status:"ready",item,contract};
   }
 
   function render(){
@@ -96,15 +117,15 @@
 
   function waitForPlayableAndPersist(generated,timeoutMs=12000){
     pendingGenerated=generated;
-    const contract=generated.contract||generated.spec;
-    const id=motionId(contract);
+    const spec=canonicalSpec(generated);
+    const id=motionId(spec);
     const started=Date.now();
     const poll=()=>{
       if(pendingGenerated!==generated)return;
       const play=document.getElementById("playAnimation");
       if(id&&play&&!play.disabled&&selectedMotionMatches(id)){
         pendingGenerated=null;
-        const result=upsert(contract);
+        const result=upsert(spec);
         const status=document.getElementById("generatedMotionRegistryStatus");
         if(status)status.textContent=result.status==="ready"?`${result.item.displayName} saved and selectable.`:`Generated motion was playable but could not be saved: ${result.code}`;
         return;
@@ -126,6 +147,6 @@
     waitForPlayableAndPersist(generated);
   });
 
-  window.PocketPTGeneratedMotionRegistry=Object.freeze({VERSION,STORAGE_KEY,read,find,upsert,remove,load,render,motionId,selectedMotionMatches});
+  window.PocketPTGeneratedMotionRegistry=Object.freeze({VERSION,STORAGE_KEY,read,find,upsert,remove,load,render,motionId,canonicalSpec,rebuildContract,validatePersistedSpec,selectedMotionMatches});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",render,{once:true});else render();
 })(window,document);
