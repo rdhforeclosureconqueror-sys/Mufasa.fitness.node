@@ -1,0 +1,2 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+test('canonical bootstrap remains the current main lifecycle implementation',()=>{const src=fs.readFileSync(path.join(__dirname,'../motion-lab/motion-lab-bootstrap.js'),'utf8');assert.match(src,/thriller_motion_catalog/);assert.match(src,/MotionViewerBoundary\.create/);assert.match(src,/PocketPTMotionLabDiagnosticConsolidator/);assert.ok(src.length>10000,'bootstrap was unexpectedly compressed/replaced');});
