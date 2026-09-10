@@ -2,8 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "pocketpt.motionGenerationRequest.v1";
-  const TEMPLATE_URL = "/dev/motion-lab-assets/yoga/motion-description-template.v1.json";
-  const REGISTRY_URL = "/dev/motion-lab-assets/yoga/beginner-flow-motion-descriptions.v1.json";
+  const TEMPLATE_URL = "/motion/yoga/motion-description-template.v1.json";
+  const REGISTRY_URL = "/motion/yoga/beginner-flow-motion-descriptions.v1.json";
   const REQUIRED = ["exerciseId","displayName","source","startState","targetShape","segmentRelationships","supports","trajectory","orientation","timing","transitionIn","transitionOut","visualAcceptance"];
 
   function stage(id, label, status, detail) {
@@ -84,7 +84,7 @@
     const sessionId = params.get("session") || "";
     const poseId = params.get("pose") || "";
     const stages = [];
-    let stored = readStoredRequest();
+    const stored = readStoredRequest();
     stages.push(stage("handoff","Yoga handoff", stored ? "PASS" : "FAIL", stored ? "stored request found" : "no stored generation request"));
 
     let template = null, registry = null;
