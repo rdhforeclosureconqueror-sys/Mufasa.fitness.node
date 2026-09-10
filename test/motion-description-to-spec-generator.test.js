@@ -33,7 +33,23 @@ test('generic generator produces a Coach-targeted Motion Spec draft for all six 
     assert.equal(out.spec.phases[0].normalizedTime,0);
     assert.equal(out.spec.phases.at(-1).normalizedTime,1);
     assert.equal(out.contract.validate(out.spec).valid,true);
-    assert.equal(out.diagnostics.contactSolvingDeferred,true);
+    assert.equal(out.diagnostics.contactSolvingDeferred,false);
+    assert.equal(out.diagnostics.endpointContactSolvingApplied,true);
+    assert.ok(out.spec.groundingPolicy.contacts.length>=2);
+    assert.ok(out.spec.groundingPolicy.kinematicChains.length>=2);
+  }
+});
+
+test('surface support deferral is explicit only where the current engine lacks that operator',()=>{
+  for(const id of ['mountain','chair','warrior-ii','downward-dog']){
+    const out=Generator.generate(requestFor(id),byPlan.get(id));
+    assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,false,id);
+    assert.equal(out.diagnostics.firstDeferredCapability,null,id);
+  }
+  for(const id of ['cobra','bridge']){
+    const out=Generator.generate(requestFor(id),byPlan.get(id));
+    assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,true,id);
+    assert.equal(out.diagnostics.firstDeferredCapability,'BODY_SURFACE_SUPPORT_SOLVER',id);
   }
 });
 
@@ -51,7 +67,7 @@ test('generator is archetype-driven rather than keyed to six exercise IDs in cod
   for(const id of expected) assert.doesNotMatch(source,new RegExp(`exerciseId\\s*===?\\s*["']${id}["']`));
 });
 
-test('Yoga Motion Lab intake now runs generator -> Coach -> compile -> playable boundaries',()=>{
+test('Yoga Motion Lab intake runs generator -> supports -> Coach -> compile -> playable boundaries',()=>{
   const source=fs.readFileSync(path.join(__dirname,'../public/motion/yoga-motion-description-intake.js'),'utf8');
   assert.match(source,/beginner-flow-generation-plans\.v1\.json/);
   assert.match(source,/motion-description-to-spec-generator\.js/);
@@ -59,5 +75,5 @@ test('Yoga Motion Lab intake now runs generator -> Coach -> compile -> playable 
   assert.match(source,/pocketpt:motion-generation-request/);
   assert.match(source,/runtime\.loadAvatar\(profiles\.profiles\.personalized\)/);
   assert.match(source,/runtime\.loadMotionSpec\(generated\.contract\)/);
-  for(const id of ['handoff','resources','description','template','request','plan','generator','coach','compile','playback']) assert.match(source,new RegExp(`stage\\(["']${id}["']`));
+  for(const id of ['handoff','resources','description','template','request','plan','generator','supports','coach','compile','playback']) assert.match(source,new RegExp(`stage\\(["']${id}["']`));
 });
