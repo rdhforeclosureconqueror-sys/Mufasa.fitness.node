@@ -1,0 +1,2 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+test('activation snippet targets the isolated entry module',()=>{const line=fs.readFileSync(path.join(__dirname,'../motion-lab/gym-compatibility-activation.txt'),'utf8').trim();assert.equal(line,'<script src="/dev/motion-lab-gym-compatibility-entry.js" defer></script>');});
