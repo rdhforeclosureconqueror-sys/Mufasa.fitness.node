@@ -1398,6 +1398,34 @@
       "prNumber": 763,
       "commitSha": "8860dba",
       "timestamp": "2026-09-10T12:52:57.787Z"
+    },
+    {
+      "operationId": "b8a456d6-cae9-4865-ae6b-5ee0b462df41",
+      "board": "avatar",
+      "cardId": "avatar-development-repository-regression-root-cause-audit-764",
+      "sourceType": "card_creation",
+      "taskId": "pr-764-regression-audit",
+      "files": [],
+      "automated": null,
+      "evidence": "Classify full-suite failures against main, identify proven history boundaries, and document Motion Lab, generated-motion, debug, camera, Arena, billing, extraction, and fixture findings without mixing unrelated repairs into PR 764.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T13:28:11.621Z"
+    },
+    {
+      "operationId": "ba9dc7fc-8b99-4cf4-9e45-ebad344fe080",
+      "board": "avatar",
+      "cardId": "avatar-development-repository-regression-root-cause-audit-764",
+      "sourceType": "implementation",
+      "taskId": "pr-764-regression-audit",
+      "files": [
+        "docs/reviews/pr-764-repository-regression-root-cause-audit-20260910.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Audited all 18 full-suite failures at PR 764 head and detached main parent 6140f06; none are caused by PR 764. Proven boundaries include avatar exclusive voice commit 8e6b172/PR 665, Motion Lab allowlist commit 94d1ffa/PR 733, and current disposable fixture break at 82903db/PR 759. Mountain Pose end-to-end saved playback and human/device browser verification remain unverified.",
+      "prNumber": 764,
+      "commitSha": null,
+      "timestamp": "2026-09-10T13:29:57.880Z"
     }
   ]
 }

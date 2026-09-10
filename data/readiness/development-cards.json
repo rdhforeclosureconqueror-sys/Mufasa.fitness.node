@@ -70,6 +70,20 @@
       "createdAt": "2026-09-03T12:51:56.966Z",
       "source": "readiness:update",
       "taskId": "arena-first-failure-diagnostics"
+    },
+    {
+      "id": "avatar-development-repository-regression-root-cause-audit-764",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Repository regression root-cause audit for PR 764",
+      "category": "REGRESSION AUDIT",
+      "description": "Classify full-suite failures against main, identify proven history boundaries, and document Motion Lab, generated-motion, debug, camera, Arena, billing, extraction, and fixture findings without mixing unrelated repairs into PR 764.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-10T13:28:11.621Z",
+      "source": "readiness:update",
+      "taskId": "pr-764-regression-audit"
     }
   ]
 }
