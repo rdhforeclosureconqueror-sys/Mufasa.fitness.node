@@ -1,7 +1,7 @@
 (function () {
   "use strict";
   const PRODUCTION_FRONTEND_ORIGIN = "https://mufasafitsite.onrender.com";
-  const BUILD = "2026-09-08-desktop-origin-v3";
+  const BUILD = "2026-09-09-yoga-context-v1";
   const status = document.getElementById("status");
   const configuredOrigins = Array.isArray(window.PocketPTMotionLabLaunchConfig?.allowedOrigins)
     ? window.PocketPTMotionLabLaunchConfig.allowedOrigins.filter((value) => typeof value === "string" && value)
@@ -55,6 +55,19 @@
     console.error(`[motion-lab-handoff] FAILED: ${safeCode}`);
     report(safeCode);
     postToOpener({ type: "pocketpt:motion-lab-error", code: safeCode, build: BUILD });
+  }
+
+  function destinationWithAllowedContext(navigateTo) {
+    const launchParams = new URLSearchParams(window.location.search);
+    if (launchParams.get("motionSource") !== "yoga") return navigateTo;
+    const session = launchParams.get("session") || "";
+    const pose = launchParams.get("pose") || "";
+    if (!session || !pose) return navigateTo;
+    const destination = new URL(navigateTo, window.location.origin);
+    destination.searchParams.set("motionSource", "yoga");
+    destination.searchParams.set("session", session);
+    destination.searchParams.set("pose", pose);
+    return `${destination.pathname}${destination.search}${destination.hash}`;
   }
 
   report("handoff_document_loaded");
@@ -136,7 +149,7 @@
     report("readiness_check_pass");
     report("navigation_started");
     postToOpener({ type: "pocketpt:motion-lab-launched", build: BUILD });
-    window.location.replace(body.data.navigateTo);
+    window.location.replace(destinationWithAllowedContext(body.data.navigateTo));
   });
 
   if (!window.opener) return fail("failure_opener_missing");

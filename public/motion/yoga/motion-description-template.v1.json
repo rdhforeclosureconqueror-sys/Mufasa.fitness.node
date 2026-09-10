@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "templateId": "pocketpt-motion-description-v1",
+  "purpose": "Describe an exercise precisely enough for Motion Lab to generate a Coach Avatar draft without hard-coding an animation clip.",
+  "required": [
+    "exerciseId",
+    "displayName",
+    "source",
+    "startState",
+    "targetShape",
+    "segmentRelationships",
+    "supports",
+    "trajectory",
+    "orientation",
+    "timing",
+    "transitionIn",
+    "transitionOut",
+    "visualAcceptance"
+  ],
+  "fieldGuide": {
+    "startState": "Body configuration before entering the pose.",
+    "targetShape": "The final whole-body shape the generator must reach.",
+    "segmentRelationships": "Relationships between body segments; prefer semantic relationships over rig-specific Euler angles.",
+    "supports": "Feet, hands, knees, pelvis, back or other contact points that must remain anchored.",
+    "trajectory": "How major joints/body segments travel from start to target.",
+    "orientation": "Palms, toes, head/gaze, torso and limb-facing requirements.",
+    "timing": "Entry duration, hold, exit duration and repetitions.",
+    "transitionIn": "Ordered phase intent for entering the target shape.",
+    "transitionOut": "Ordered phase intent for returning or continuing.",
+    "visualAcceptance": "Human checkpoints that must pass before the motion is canonical."
+  },
+  "generationRule": "Description semantics are authoritative. Target-rig bone names, rest pose, local axes, IK, contact solving and interpolation are Motion Lab responsibilities. Generated drafts remain development-only until visual acceptance."
+}
