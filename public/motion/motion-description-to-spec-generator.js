@@ -4,7 +4,7 @@
   if(typeof module==="object"&&module.exports)module.exports=api;else root.PocketPTMotionDescriptionGenerator=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(supportPolicy){
   "use strict";
-  const VERSION="1.2.0-body-surface-floor-setups";
+  const VERSION="1.2.1-mountain-arms-down";
   const BONES=Object.freeze({hips:"Hips",spine:"Spine",spine1:"Spine1",spine2:"Spine2",neck:"Neck",head:"Head",lArm:"LeftArm",lFore:"LeftForeArm",lHand:"LeftHand",rArm:"RightArm",rFore:"RightForeArm",rHand:"RightHand",lThigh:"LeftUpLeg",lLeg:"LeftLeg",lFoot:"LeftFoot",rThigh:"RightUpLeg",rLeg:"RightLeg",rFoot:"RightFoot"});
   const v=x=>Object.freeze(x.slice());
   const target=(bone,e)=>Object.freeze({bone,rotationOffsetEulerDegrees:v(e)});
@@ -15,7 +15,7 @@
   function threePhase(plan,targetTargets,targetRoot={pos:[0,0,0],rot:[0,0,0]}){const x=timing(plan),base=baseTargets();return {duration:x.duration,phases:[phase("start",0,{pos:[0,0,0],rot:[0,0,0]},base),phase("target",x.targetTime,targetRoot,targetTargets),phase("hold",x.holdTime,targetRoot,targetTargets),phase("finish",1,{pos:[0,0,0],rot:[0,0,0]},base)]};}
   function floorPhase(plan,setupTargets,setupRoot,targetTargets,targetRoot){const x=timing(plan);return {duration:x.duration,phases:[phase("start",0,setupRoot,setupTargets),phase("target",x.targetTime,targetRoot,targetTargets),phase("hold",x.holdTime,targetRoot,targetTargets),phase("finish",1,setupRoot,setupTargets)]};}
   const ARCHETYPES=Object.freeze({
-    "neutral-standing-hold":plan=>threePhase(plan,baseTargets()),
+    "neutral-standing-hold":plan=>{const base=baseTargets(),mountain=replace(base,{[BONES.lArm]:[0,0,88],[BONES.rArm]:[0,0,-88]});return threePhase(plan,mountain);},
     "bilateral-squat-overhead-hold":plan=>{const base=baseTargets(),t=replace(base,{[BONES.spine]:[12,0,0],[BONES.spine1]:[5,0,0],[BONES.lThigh]:[78,0,2],[BONES.rThigh]:[78,0,-2],[BONES.lLeg]:[-95,0,0],[BONES.rLeg]:[-95,0,0],[BONES.lFoot]:[28,0,0],[BONES.rFoot]:[28,0,0],[BONES.lArm]:[0,0,-88],[BONES.rArm]:[0,0,88]});return threePhase(plan,t,{pos:[0,-.22,-.05],rot:[10,0,0]});},
     "wide-split-stance-lateral-reach":plan=>{const base=baseTargets(),t=replace(base,{[BONES.lArm]:[0,0,-90],[BONES.rArm]:[0,0,90],[BONES.lThigh]:[20,0,18],[BONES.lLeg]:[-45,0,0],[BONES.rThigh]:[-8,0,-20],[BONES.rLeg]:[-8,0,0]});return threePhase(plan,t,{pos:[0,-.10,0],rot:[0,0,0]});},
     "inverted-v-four-point":plan=>{const base=baseTargets(),t=replace(base,{[BONES.spine]:[20,0,0],[BONES.spine1]:[10,0,0],[BONES.lArm]:[0,0,-110],[BONES.rArm]:[0,0,110],[BONES.lThigh]:[-55,0,0],[BONES.rThigh]:[-55,0,0],[BONES.lLeg]:[18,0,0],[BONES.rLeg]:[18,0,0]});return threePhase(plan,t,{pos:[0,-.55,0],rot:[65,0,0]});},
