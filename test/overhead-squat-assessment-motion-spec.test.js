@@ -38,7 +38,10 @@ function direction(a, b) {
 
 function palmNormal(hand, index, pinky) {
   const origin = hand.getWorldPosition(new THREE.Vector3());
-  return index.getWorldPosition(new THREE.Vector3()).sub(origin).cross(pinky.getWorldPosition(new THREE.Vector3()).sub(origin)).normalize();
+  return index.getWorldPosition(new THREE.Vector3()).sub(origin)
+    .cross(pinky.getWorldPosition(new THREE.Vector3()).sub(origin))
+    .multiplyScalar(-1)
+    .normalize();
 }
 
 test('OHSA spec validates and defines ear alignment plus palms-in explicitly', () => {
@@ -84,7 +87,7 @@ test('body-relative arm solver follows Neck-to-Head instead of absolute world-up
   assert.ok(direction(arm, forearm).angleTo(new THREE.Vector3(0,1,0)) > THREE.MathUtils.degToRad(20), 'arm must not remain room-vertical');
 });
 
-test('palm solver twists hand around its long axis so palm faces inward', () => {
+test('palm solver twists hand around its long axis so anatomical palm faces inward', () => {
   const { avatar, head, hand, middle, index, pinky } = makeSemanticRig();
   const out = Semantic.orientPalmTowardReference(THREE, avatar, {
     id:'left_palm_in', type:'hand_plane_faces_reference', bone:'LeftHand', childBone:'LeftHandMiddle1', planePointA:'LeftHandIndex1', planePointB:'LeftHandPinky1', referenceBone:'Head', normalSign:1
@@ -97,6 +100,7 @@ test('palm solver twists hand around its long axis so palm faces inward', () => 
   let normal = palmNormal(hand, index, pinky);
   normal.addScaledVector(axis, -normal.dot(axis)).normalize();
   assert.ok(normal.angleTo(desired) < 1e-5, `palm residual ${THREE.MathUtils.radToDeg(normal.angleTo(desired))}°`);
+  assert.equal(out.diagnostics.palmNormalConvention, 'negative-mirrored-index-pinky-cross');
 });
 
 test('phase-specific preparation keeps arm beside ears while torso angle changes', () => {
