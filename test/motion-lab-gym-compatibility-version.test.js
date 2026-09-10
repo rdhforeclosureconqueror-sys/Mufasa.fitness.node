@@ -1,0 +1,1 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');test('integration exposes a versioned contract',()=>{const src=fs.readFileSync(path.join(__dirname,'../motion-lab/motion-lab-gym-compatibility-integration.js'),'utf8');assert.match(src,/motion-lab-gym-compatibility-integration-v2/);});
