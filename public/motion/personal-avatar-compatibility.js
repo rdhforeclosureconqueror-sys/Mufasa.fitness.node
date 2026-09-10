@@ -5,23 +5,23 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "personal-avatar-compatibility-v1";
+  const VERSION = "personal-avatar-compatibility-v1.1";
   const REQUIRED_CANONICAL_JOINTS = Object.freeze([
-    "Hips", "Spine", "Spine1", "Neck", "Head",
+    "Hips", "Spine", "Spine1", "Spine2", "Neck", "Head",
     "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand",
     "RightShoulder", "RightArm", "RightForeArm", "RightHand",
     "LeftUpLeg", "LeftLeg", "LeftFoot",
     "RightUpLeg", "RightLeg", "RightFoot"
   ]);
 
-  const ALIASES = Object.freeze({
-    Hips: ["Hips", "mixamorig:Hips"], Spine: ["Spine", "mixamorig:Spine"], Spine1: ["Spine1", "mixamorig:Spine1"],
-    Neck: ["Neck", "mixamorig:Neck"], Head: ["Head", "mixamorig:Head"],
-    LeftShoulder: ["LeftShoulder", "mixamorig:LeftShoulder"], LeftArm: ["LeftArm", "mixamorig:LeftArm"], LeftForeArm: ["LeftForeArm", "mixamorig:LeftForeArm"], LeftHand: ["LeftHand", "mixamorig:LeftHand"],
-    RightShoulder: ["RightShoulder", "mixamorig:RightShoulder"], RightArm: ["RightArm", "mixamorig:RightArm"], RightForeArm: ["RightForeArm", "mixamorig:RightForeArm"], RightHand: ["RightHand", "mixamorig:RightHand"],
-    LeftUpLeg: ["LeftUpLeg", "mixamorig:LeftUpLeg"], LeftLeg: ["LeftLeg", "mixamorig:LeftLeg"], LeftFoot: ["LeftFoot", "mixamorig:LeftFoot"],
-    RightUpLeg: ["RightUpLeg", "mixamorig:RightUpLeg"], RightLeg: ["RightLeg", "mixamorig:RightLeg"], RightFoot: ["RightFoot", "mixamorig:RightFoot"]
-  });
+  function aliasesFor(joint) {
+    return Object.freeze([joint, `mixamorig:${joint}`, `mixamorig${joint}`]);
+  }
+
+  const ALIASES = Object.freeze(REQUIRED_CANONICAL_JOINTS.reduce((out, joint) => {
+    out[joint] = aliasesFor(joint);
+    return out;
+  }, {}));
 
   function namesFromSkeleton(skeleton) {
     const bones = Array.isArray(skeleton?.bones) ? skeleton.bones : [];
