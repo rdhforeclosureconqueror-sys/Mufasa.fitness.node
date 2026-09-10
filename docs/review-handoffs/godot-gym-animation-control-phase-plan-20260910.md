@@ -4,7 +4,7 @@ Date: 2026-09-10
 
 ## Owner-observed baseline
 
-Physical iPhone acceptance established that the Push-Up Arena launches, the personal avatar downloads/imports/mounts, the v1 Godot handshake and diagnostic reporter work, touch/world control negotiation works, and GO_TO_MAT physically moves the avatar. The current visible failure is that locomotion translates the character without a walking animation. The current Arena diagnostic report has no live evidence for ANIMATION_IDLE or LOCOMOTION. Camera/MoveNet-to-Godot retargeting remains later work.
+Owner-observed iPhone behavior indicates that the Push-Up Arena launches, the personal avatar appears to download/import/mount, the v1 Godot handshake and diagnostic reporter respond, touch/world control negotiation responds, and GO_TO_MAT visibly moves the avatar. These observations are implementation inputs, not repository-authorized physical-device acceptance. Formal physical-device/human acceptance remains pending until recorded through the required readiness authority. The current owner-observed visible failure is that locomotion translates the character without a walking animation. The current Arena diagnostic report has no live evidence for ANIMATION_IDLE or LOCOMOTION. Camera/MoveNet-to-Godot retargeting remains later work.
 
 This plan deliberately phases the work instead of combining locomotion, exercise playback, Mufasa autonomy, and camera retargeting in one change.
 
@@ -67,7 +67,7 @@ Diagnostic chain:
 
 Also report current state, velocity, requested clip, resolved clip, playback position, and whether movement came from manual control or GO_TO_MAT.
 
-Acceptance on phone:
+Device acceptance criteria (pending authorized verification):
 
 - standing avatar visibly idles;
 - directional control visibly walks instead of glides;
@@ -162,4 +162,4 @@ This planning PR defines the sequence. Implementation should move as small revie
 5. Phase 4 shared exercise registry.
 6. Phase 5 camera/MoveNet retarget bridge.
 
-Each implementation PR must include its own first-failure diagnostics and device acceptance criteria.
+Each implementation PR must include its own first-failure diagnostics and device acceptance criteria. Formal readiness evidence for this plan and subsequent implementation phases must be recorded through the repository's canonical readiness workflow before those phases are treated as complete.
