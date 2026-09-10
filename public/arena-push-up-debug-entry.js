@@ -10,12 +10,13 @@
     if (!doc.getElementById(SUPPRESSION_STYLE_ID)) {
       const style = doc.createElement('style');
       style.id = SUPPRESSION_STYLE_ID;
-      style.textContent = '#bridgeDebugBoard,#bridgeDebugToggle{display:none!important}';
+      style.textContent = '[data-pocketpt-debug-producer="true"]{display:none!important}';
       (doc.head || doc.documentElement).appendChild(style);
     }
     for (const id of ['bridgeDebugBoard', 'bridgeDebugToggle']) {
       const element = doc.getElementById(id);
       if (!element) continue;
+      element.setAttribute('data-pocketpt-debug-producer', 'true');
       element.setAttribute('aria-hidden', 'true');
       element.style.setProperty('display', 'none', 'important');
     }
@@ -31,15 +32,16 @@
     }
     if (root.document.querySelector('script[data-arena-debug-consolidation-loader]')) return;
     const script = root.document.createElement('script');
-    script.src = '/arena-debug-consolidation-loader.js?v=20260910-consolidation-v2';
+    script.src = '/arena-debug-consolidation-loader.js?v=20260910-consolidation-v3';
     script.async = false;
     script.dataset.arenaDebugConsolidationLoader = 'true';
     root.document.head.appendChild(script);
   }
 
-  // Install suppression immediately; waiting for DOMContentLoaded allowed the old
-  // diagnostics control to reappear and cover the phone controls during startup.
+  // This entry is the first deferred script in the Arena document. Start the
+  // authority chain now, during deferred-script execution, rather than waiting for
+  // DOMContentLoaded (which fires only after the later diagnostic-capable deferred
+  // scripts have already executed). This closes the startup authority race.
   suppressLegacyAuthority();
-  if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', start, {once: true});
-  else start();
+  start();
 })(typeof window === 'undefined' ? globalThis : window);
