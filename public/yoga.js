@@ -3,8 +3,12 @@
 const root=document.getElementById("sessions"),detail=document.getElementById("session-detail"),status=document.getElementById("status");
 let active=null,index=0,startedAt=null,history=[];
 const ACTIVE_YOGA_WORKOUT_KEY="mufasa.activeWorkout.v1";
+const MOTION_REQUEST_KEY="pocketpt.motionGenerationRequest.v1";
+const BEGINNER_FLOW_ID="beginner-flow";
+const BEGINNER_MOTION_REGISTRY="/dev/motion-lab-assets/yoga/beginner-flow-motion-descriptions.v1.json";
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 async function request(route,options={}){const result=await window.MaatApiClient.request(route,options);if(!result.ok)throw new Error(result.payload?.error?.message||result.payload?.message||result.error?.message||"Yoga is temporarily unavailable.");return result.payload.data;}
+async function fetchJson(route){const response=await fetch(route,{cache:"no-store"});if(!response.ok)throw new Error(`Motion description unavailable (${response.status}).`);return response.json();}
 function completedIds(){return new Set(history.map(item=>item.sessionId));}
 function renderLibrary(data){
  const sessions=data.sessions||data||[],completed=completedIds();
@@ -13,12 +17,25 @@ function renderLibrary(data){
 }
 function renderStep(){
  const step=active.steps[index],last=index===active.steps.length-1,media=step.media;
- detail.innerHTML=`<button class="text-button" data-library>← Yoga library</button><article class="session-shell"><header class="session-heading"><p class="eyebrow">Session preview</p><h1>${esc(active.name)}</h1><p>${esc(active.purpose)}</p><p class="session-meta"><span>${esc(active.difficulty)}</span><span>${Number(active.durationMinutes)} min</span><span>${active.equipment?.length?esc(active.equipment.join(", ")):"No equipment"}</span><span>Camera optional</span></p><button class="button primary" data-launch>Start Session in Train</button></header><section class="overview"><h2>Session goal</h2><p>${esc(active.purpose)}</p>${active.safetyNotes?.length?`<ul>${active.safetyNotes.map(note=>`<li>${esc(note)}</li>`).join("")}</ul>`:""}</section><section class="pose" aria-labelledby="pose-title"><div class="progress-copy">Pose ${index+1} of ${active.steps.length}</div><progress value="${index+1}" max="${active.steps.length}">${index+1} of ${active.steps.length}</progress>${media?.url?`<img class="pose-media" src="${esc(media.url)}" alt="${esc(media.alt||step.name)}">`:""}<p class="eyebrow">${esc(step.category)}</p><h2 id="pose-title">${esc(step.name)}</h2><p>${esc(step.description)}</p><dl><div><dt>Hold</dt><dd>${Number(step.holdSeconds)} seconds</dd></div>${step.restSeconds?`<div><dt>Rest</dt><dd>${Number(step.restSeconds)} seconds</dd></div>`:""}</dl>${step.transition?`<div class="instruction"><h3>Transition</h3><p>${esc(step.transition)}</p></div>`:""}${step.safetyNotes?.length?`<div class="instruction"><h3>Practice safely</h3><ul>${step.safetyNotes.map(note=>`<li>${esc(note)}</li>`).join("")}</ul></div>`:""}</section><div class="step-actions"><button class="button" data-prev ${index===0?"disabled":""}>Previous</button>${last?'<span>Start the session in Train to record completion.</span>':'<button class="button" data-next>Preview next pose</button>'}</div></article>`;
+ const motionButton=active.id===BEGINNER_FLOW_ID?'<button class="button" data-motion-animation>Motion Animation</button>':"";
+ detail.innerHTML=`<button class="text-button" data-library>← Yoga library</button><article class="session-shell"><header class="session-heading"><p class="eyebrow">Session preview</p><h1>${esc(active.name)}</h1><p>${esc(active.purpose)}</p><p class="session-meta"><span>${esc(active.difficulty)}</span><span>${Number(active.durationMinutes)} min</span><span>${active.equipment?.length?esc(active.equipment.join(", ")):"No equipment"}</span><span>Camera optional</span></p><button class="button primary" data-launch>Start Session in Train</button></header><section class="overview"><h2>Session goal</h2><p>${esc(active.purpose)}</p>${active.safetyNotes?.length?`<ul>${active.safetyNotes.map(note=>`<li>${esc(note)}</li>`).join("")}</ul>`:""}</section><section class="pose" aria-labelledby="pose-title"><div class="progress-copy">Pose ${index+1} of ${active.steps.length}</div><progress value="${index+1}" max="${active.steps.length}">${index+1} of ${active.steps.length}</progress>${media?.url?`<img class="pose-media" src="${esc(media.url)}" alt="${esc(media.alt||step.name)}">`:""}<p class="eyebrow">${esc(step.category)}</p><h2 id="pose-title">${esc(step.name)}</h2><p>${esc(step.description)}</p><dl><div><dt>Hold</dt><dd>${Number(step.holdSeconds)} seconds</dd></div>${step.restSeconds?`<div><dt>Rest</dt><dd>${Number(step.restSeconds)} seconds</dd></div>`:""}</dl>${step.transition?`<div class="instruction"><h3>Transition</h3><p>${esc(step.transition)}</p></div>`:""}${step.safetyNotes?.length?`<div class="instruction"><h3>Practice safely</h3><ul>${step.safetyNotes.map(note=>`<li>${esc(note)}</li>`).join("")}</ul></div>`:""}<div class="step-actions">${motionButton}</div></section><div class="step-actions"><button class="button" data-prev ${index===0?"disabled":""}>Previous</button>${last?'<span>Start the session in Train to record completion.</span>':'<button class="button" data-next>Preview next pose</button>'}</div></article>`;
  detail.hidden=false;root.hidden=true;document.querySelector(".hero").hidden=true;
  detail.querySelector("[data-library]").addEventListener("click",showLibrary);
  detail.querySelector("[data-launch]").addEventListener("click",launchInTrain);
+ detail.querySelector("[data-motion-animation]")?.addEventListener("click",()=>launchMotionAnimation(step));
  detail.querySelector("[data-prev]").addEventListener("click",()=>{index--;renderStep();scrollTo(0,0)});
  detail.querySelector("[data-next]")?.addEventListener("click",()=>{index++;renderStep();scrollTo(0,0)});
+}
+async function launchMotionAnimation(step){
+ status.textContent=`Preparing ${step.name} motion description…`;
+ try{
+   const registry=await fetchJson(BEGINNER_MOTION_REGISTRY);
+   const description=(registry.descriptions||[]).find(item=>item.exerciseId===step.poseId);
+   if(!description)throw new Error(`No Motion Description Template entry exists for ${step.name}.`);
+   const payload={schemaVersion:1,createdAt:new Date().toISOString(),sourcePage:"/yoga.html",sessionId:active.id,poseId:step.poseId,description};
+   localStorage.setItem(MOTION_REQUEST_KEY,JSON.stringify(payload));
+   location.assign(`/motion-lab/?motionSource=yoga&session=${encodeURIComponent(active.id)}&pose=${encodeURIComponent(step.poseId)}`);
+ }catch(error){status.textContent=error.message;}
 }
 function launchInTrain(){
  const first=active.steps[0];
