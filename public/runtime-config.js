@@ -31,7 +31,10 @@
       }
       if (document.querySelector('script[data-mirror-debug-center]')) return true;
       const script = document.createElement("script");
-      script.src = "/mirror-debug-center.js?v=20260907-consolidated-v2";
+      // This version must move whenever mirror-debug-center.js changes. Mobile
+      // Safari was still executing the cached v2 center after the Arena authority
+      // repair, leaving the individual producer panels visible on the phone.
+      script.src = "/mirror-debug-center.js?v=20260910-phone-consolidation-v3";
       script.defer = true;
       script.dataset.mirrorDebugCenter = "true";
       document.head.appendChild(script);

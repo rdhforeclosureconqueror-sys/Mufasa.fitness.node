@@ -40,7 +40,7 @@ test('debug center has close, copy-all, deduplication, and preserved acceptance 
 test('runtime config loads cache-busted consolidated diagnostics only after mirror diagnostics are present', () => {
   const source = read('public/runtime-config.js');
   assert.match(source, /mirrorDiagnosticsPresent/);
-  assert.match(source, /mirror-debug-center\.js\?v=20260907-consolidated-v2/);
+  assert.match(source, /mirror-debug-center\.js\?v=20260910-phone-consolidation-v3/);
   assert.match(source, /data-mirror-debug-center/);
   assert.match(source, /\[id\^="mirrorMotion"\]/);
 });
