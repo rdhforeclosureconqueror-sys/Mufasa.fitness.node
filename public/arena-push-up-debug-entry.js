@@ -38,9 +38,10 @@
     root.document.head.appendChild(script);
   }
 
-  // Install suppression immediately; waiting for DOMContentLoaded allowed the old
-  // diagnostics control to reappear and cover the phone controls during startup.
+  // This entry is the first deferred script in the Arena document. Start the
+  // authority chain now, during deferred-script execution, rather than waiting for
+  // DOMContentLoaded (which fires only after the later diagnostic-capable deferred
+  // scripts have already executed). This closes the startup authority race.
   suppressLegacyAuthority();
-  if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', start, {once: true});
-  else start();
+  start();
 })(typeof window === 'undefined' ? globalThis : window);
