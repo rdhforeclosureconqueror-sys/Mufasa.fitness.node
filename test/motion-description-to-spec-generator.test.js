@@ -24,8 +24,10 @@ test('generic generator produces a Coach-targeted Motion Spec draft for all six 
     const out=Generator.generate(requestFor(id),byPlan.get(id));
     assert.equal(out.status,'ready',id);
     assert.equal(out.spec.exerciseId,id);
+    assert.equal(out.spec.status,'development-test-only');
     assert.equal(out.spec.skeleton.targetSkeletonProfile,'avaturn-native-v1');
     assert.equal(out.spec.coachRetarget.targetAvatarProfileId,'avaturn-personalized-candidate');
+    assert.equal(out.spec.generationMetadata.generatedDraft,true);
     assert.equal(out.spec.generationMetadata.descriptionAuthority,true);
     assert.ok(out.spec.phases.length>=4);
     assert.equal(out.spec.phases[0].normalizedTime,0);
@@ -54,6 +56,7 @@ test('Yoga Motion Lab intake now runs generator -> Coach -> compile -> playable 
   assert.match(source,/beginner-flow-generation-plans\.v1\.json/);
   assert.match(source,/motion-description-to-spec-generator\.js/);
   assert.match(source,/Create Motion Draft/);
+  assert.match(source,/pocketpt:motion-generation-request/);
   assert.match(source,/runtime\.loadAvatar\(profiles\.profiles\.personalized\)/);
   assert.match(source,/runtime\.loadMotionSpec\(generated\.contract\)/);
   for(const id of ['handoff','resources','description','template','request','plan','generator','coach','compile','playback']) assert.match(source,new RegExp(`stage\\(["']${id}["']`));
