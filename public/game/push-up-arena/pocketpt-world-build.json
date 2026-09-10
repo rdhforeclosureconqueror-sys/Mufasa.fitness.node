@@ -1,10 +1,10 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-godot-reporter-029d727",
+  "buildId": "pocketpt-godot-runtime-fix-b5ad1b7",
   "godotVersion": "4.5.1",
-  "reportedGodotSourceCommit": "029d727614df50f550c6b88e9ada79024aefa91a",
-  "artifactUploadCommit": "053ee75cdf76b95ada15a55be172b866ee14e5f2",
-  "pckBytes": 47637752,
-  "pckSha256": "f40fce19168161f39a60b2d73da33441df3a13134aeea7318c5c1603031ed402",
+  "reportedGodotSourceCommit": "b5ad1b72d7d3b62246a2c6f738a1e93e906f666f",
+  "artifactUploadCommit": "9a340fd2882a4e63aaf7e070fccbee6578583a3f",
+  "pckBytes": 47676404,
+  "pckSha256": "93c3d545118e10ab0844e9ebcb469191a960b7aeeca2b46feecc8cabbeabebd4",
   "authenticatedVisualAcceptance": "pending"
 }
