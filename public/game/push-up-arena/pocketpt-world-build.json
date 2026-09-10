@@ -1,10 +1,10 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-avatar-phase2-4fbb437",
+  "buildId": "pocketpt-godot-reporter-029d727",
   "godotVersion": "4.5.1",
-  "reportedGodotSourceCommit": "4fbb43774a7cb93436eb17a162a78526a2f97509",
-  "artifactUploadCommit": "2de63518ded21175889f0249610ce13293d4d4b0",
-  "pckBytes": 44356244,
-  "pckSha256": "17cfe23ae5b51cf338e0c910494911687441a4a3779671e4f79581be39f757be",
+  "reportedGodotSourceCommit": "029d727614df50f550c6b88e9ada79024aefa91a",
+  "artifactUploadCommit": "053ee75cdf76b95ada15a55be172b866ee14e5f2",
+  "pckBytes": 47637752,
+  "pckSha256": "f40fce19168161f39a60b2d73da33441df3a13134aeea7318c5c1603031ed402",
   "authenticatedVisualAcceptance": "pending"
 }
