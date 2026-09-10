@@ -6,9 +6,12 @@ const ACTIVE_YOGA_WORKOUT_KEY="mufasa.activeWorkout.v1";
 const MOTION_REQUEST_KEY="pocketpt.motionGenerationRequest.v1";
 const BEGINNER_FLOW_ID="beginner-flow";
 const BEGINNER_MOTION_REGISTRY="/motion/yoga/beginner-flow-motion-descriptions.v1.json";
+const MOTION_LAB_BACKEND_BASE=(window.RuntimeState?.getBackendOrigin?.()||window.MAAT_BACKEND_ORIGIN||window.MAAT_NODE_BASE_URL||window.location.origin).replace(/\/$/,"");
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 async function request(route,options={}){const result=await window.MaatApiClient.request(route,options);if(!result.ok)throw new Error(result.payload?.error?.message||result.payload?.message||result.error?.message||"Yoga is temporarily unavailable.");return result.payload.data;}
 async function fetchJson(route){const response=await fetch(route,{cache:"no-store"});if(!response.ok)throw new Error(`Motion description unavailable (${response.status}).`);return response.json();}
+function motionLabBackendUrl(pathname){return `${MOTION_LAB_BACKEND_BASE}${pathname}`;}
+function getMotionLabAuthToken(){return window.AuthStateRuntime?.getAuthToken?.()||null;}
 function completedIds(){return new Set(history.map(item=>item.sessionId));}
 function renderLibrary(data){
  const sessions=data.sessions||data||[],completed=completedIds();
@@ -28,14 +31,35 @@ function renderStep(){
 }
 async function launchMotionAnimation(step){
  status.textContent=`Preparing ${step.name} motion description…`;
+ const query=`?motionSource=yoga&session=${encodeURIComponent(active.id)}&pose=${encodeURIComponent(step.poseId)}`;
+ const backendOrigin=new URL(MOTION_LAB_BACKEND_BASE).origin;
+ const launchWindow=window.open(motionLabBackendUrl(`/dev/motion-lab-launch${query}`),"_blank");
+ if(!launchWindow){status.textContent="Motion Lab launch window was blocked. Allow pop-ups and try again.";return;}
  try{
    const registry=await fetchJson(BEGINNER_MOTION_REGISTRY);
    const description=(registry.descriptions||[]).find(item=>item.exerciseId===step.poseId);
    if(!description)throw new Error(`No Motion Description Template entry exists for ${step.name}.`);
    const payload={schemaVersion:1,createdAt:new Date().toISOString(),sourcePage:"/yoga.html",sessionId:active.id,poseId:step.poseId,description};
    localStorage.setItem(MOTION_REQUEST_KEY,JSON.stringify(payload));
-   location.assign(`/motion-lab/?motionSource=yoga&session=${encodeURIComponent(active.id)}&pose=${encodeURIComponent(step.poseId)}`);
- }catch(error){status.textContent=error.message;}
+   const token=getMotionLabAuthToken();
+   if(!token)throw new Error("Motion Lab authorization token is unavailable. Sign in again and retry.");
+   await new Promise((resolve,reject)=>{
+     const cleanup=()=>{window.clearTimeout(timeout);window.removeEventListener("message",onMessage);};
+     const timeout=window.setTimeout(()=>{cleanup();reject(new Error("Motion Lab launch timed out."));},10000);
+     function onMessage(message){
+       if(message.origin!==backendOrigin||message.source!==launchWindow)return;
+       if(message.data?.type==="pocketpt:motion-lab-ready"){
+         launchWindow.postMessage({type:"pocketpt:motion-lab-auth",token},backendOrigin);
+         status.textContent=`Opening ${step.name} in Motion Lab…`;
+         return;
+       }
+       if(message.data?.type==="pocketpt:motion-lab-launched"){cleanup();resolve();return;}
+       if(message.data?.type==="pocketpt:motion-lab-error"){cleanup();reject(new Error(`Motion Lab launch failed: ${message.data.code||"unknown"}.`));}
+     }
+     window.addEventListener("message",onMessage);
+   });
+   status.textContent="";
+ }catch(error){try{launchWindow.close();}catch(_){}status.textContent=error.message;}
 }
 function launchInTrain(){
  const first=active.steps[0];
