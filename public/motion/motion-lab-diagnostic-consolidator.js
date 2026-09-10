@@ -82,6 +82,12 @@
       `Intended / bound / unbound tracks: ${motion.intendedTrackCount ?? '—'} / ${motion.boundTrackCount ?? '—'} / ${motion.unboundTrackCount ?? '—'}`,
       `Unbound track names: ${motion.unboundTracks?.join?.(', ') || 'none'}`,
       `Binding/retarget mode: ${motion.bindingMode || '—'} / ${motion.retargetProfile || '—'}`,
+      `Mixer root: ${motion.mixerRootName || '—'} / ${motion.mixerRootUuid || '—'}`,
+      `Personalized avatar root: ${motion.personalizedAvatarRootName || '—'} / ${motion.personalizedAvatarRootUuid || '—'}`,
+      `Runtime GLB scene root: ${motion.runtimeSceneRootName || '—'} / ${motion.runtimeSceneRootUuid || '—'}`,
+      `Mixer root === mounted avatar root: ${motion.mixerRootIsVisibleAvatar === true ? 'YES' : 'NO'}`,
+      `Changed representative bones: ${motion.changedRepresentativeBones?.join?.(', ') || 'none'}`,
+      `Boundaries: ${motion.boundaries?.map?.(stage => stage.boundary + '=' + stage.status)?.join?.(' -> ') || 'none'}`,
       `Playback state: ${root.MotionLabRuntime?.snapshot?.().playback || motion.playbackState || 'stopped'}`,
       `FIRST FAILURE: ${motion.firstFailingBoundary || 'NONE'}`
     ].join('\n');

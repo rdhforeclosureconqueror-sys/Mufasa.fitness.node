@@ -13,6 +13,7 @@
     displayName: `Thriller Part ${number}`,
     sourceFbxPath: `/motion/assets/thriller/Thriller Part ${number}.fbx`,
     runtimeAssetPath: `/motion/assets/thriller/runtime/Thriller Part ${number}.glb`,
+    runtimeClipName: `Thriller_Part_${number}_Avaturn`,
     runtimeFormat: "GLB",
     sourceSkeletonProfile: SOURCE_PROFILE,
     targetAvatarProfile: "avaturn-personalized-candidate",

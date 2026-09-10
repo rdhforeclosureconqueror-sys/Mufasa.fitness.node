@@ -23,7 +23,7 @@
       this.options = options; this.env = options.environment || globalScope; this.loader = options.loader || defaultLoader;
       this.state = "created"; this.controller = new AbortController(); this.listeners = []; this.timers = new Set();
       this.renderer = null; this.scene = null; this.camera = null; this.mesh = null; this.canvas = null; this.raf = null; this.THREE = null;
-      this.avatar = null; this.avatarAsset = null; this.avatarProfile = null; this.avatarLoadVersion = 0; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true;
+      this.avatar = null; this.avatarAsset = null; this.avatarProfile = null; this.avatarLoadVersion = 0; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; this.mixer = null; this.action = null; this.clock = null; this.loop = true; this.thrillerDiagnostics = null; this.thrillerBoneSnapshot = null;
       this.counted = true; counters.activeSessions++;
     }
     diagnostic(event, detail = {}) { try { this.options.onDiagnostic?.(Object.freeze({ event, ...detail })); } catch (_) {} }
@@ -175,6 +175,18 @@
       }
       return Object.freeze({ boundTrackCount: tracks.length - unboundTracks.length, unboundTrackCount: unboundTracks.length, unboundTracks: Object.freeze(unboundTracks) });
     }
+    findAvatarNode(name) { let found = null; this.avatar?.traverse?.(node => { if (!found && node.name === name) found = node; }); return found; }
+    snapshotRepresentativeBones() {
+      const values = {};
+      for (const name of ["Hips", "Spine", "LeftArm", "RightArm", "LeftUpLeg", "RightUpLeg"]) {
+        const bone = this.findAvatarNode(name);
+        if (bone) values[name] = [bone.position, bone.quaternion, bone.scale].flatMap(value => value?.toArray?.() || []);
+      }
+      return Object.freeze(values);
+    }
+    changedRepresentativeBones(before, after, epsilon = 1e-7) {
+      return Object.keys(before || {}).filter(name => (before[name] || []).some((value, index) => Math.abs(value - after?.[name]?.[index]) > epsilon));
+    }
     async loadExtractedAnimation(fixture) {
       if (!this.avatar || !this.mixer) return this.failure("avatar_required");
       if (!fixture?.developmentOnly || this.avatarProfile?.avatarId !== fixture.compatibleAvatarProfile || this.avatarProfile?.skeletonProfile !== fixture.skeletonProfile) return this.failure("retarget_required");
@@ -191,29 +203,32 @@
         clipName: clip.name, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: fixture.expectedTrackCount, ...binding, playbackState: "ready" }) });
     }
     async loadIndependentRetargetedMotion(motion) {
-      const base = { motionId: motion?.id || null, selectedPart: motion?.displayName || null, sourceFbx: motion?.sourceFbxPath || null,
-        runtimeAsset: motion?.runtimeAssetPath || null, sourceSkeletonProfile: motion?.sourceSkeletonProfile || null,
-        targetAvatarProfile: this.avatarProfile?.avatarId || null, targetSkeletonProfile: this.avatarProfile?.skeletonProfile || null,
-        bindingMode: motion?.bindingMode || "RETARGET REQUIRED", retargetProfile: motion?.retargetProfile || null,
-        clipName: null, clipDuration: null, trackCount: 0, intendedTrackCount: 0, boundTrackCount: 0, unboundTrackCount: 0,
-        unboundTracks: Object.freeze([]), playbackState: "unloaded" };
-      const failed = (code, boundary, detail = {}, cause = null) => Object.freeze({ status: "failed", code, cause,
-        diagnostics: Object.freeze({ ...base, ...detail, firstFailingBoundary: boundary }) });
-      if (!motion?.id || !motion.runtimeAssetPath) return failed("thriller_catalog_invalid", "catalog");
+      const base = { motionId: motion?.id || null, selectedPart: motion?.displayName || null, sourceFbx: motion?.sourceFbxPath || null, runtimeAsset: motion?.runtimeAssetPath || null, sourceSkeletonProfile: motion?.sourceSkeletonProfile || null, targetAvatarProfile: this.avatarProfile?.avatarId || null, targetSkeletonProfile: this.avatarProfile?.skeletonProfile || null, bindingMode: motion?.bindingMode || "RETARGET REQUIRED", retargetProfile: motion?.retargetProfile || null, clipName: null, clipDuration: null, trackCount: 0, intendedTrackCount: 0, boundTrackCount: 0, unboundTrackCount: 0, unboundTracks: Object.freeze([]), playbackState: "unloaded" };
+      const failed = (code, boundary, detail = {}, cause = null) => Object.freeze({ status: "failed", code, cause, diagnostics: Object.freeze({ ...base, ...detail, firstFailingBoundary: boundary }) });
+      if (!motion?.id || !motion.runtimeAssetPath || !motion.runtimeClipName) return failed("thriller_catalog_invalid", "catalog");
       if (!this.avatar || !this.mixer) return failed("avatar_required", "target avatar");
-      if (this.avatarProfile?.avatarId !== motion.targetAvatarProfile) return failed("RETARGET REQUIRED", "retarget compatibility", { bindingMode: "RETARGET REQUIRED" });
-      if (this.avatarProfile?.skeletonProfile !== motion.targetSkeletonProfile) return failed("RETARGET REQUIRED", "retarget compatibility", { bindingMode: "RETARGET REQUIRED" });
+      if (this.avatarProfile?.avatarId !== motion.targetAvatarProfile || this.avatarProfile?.skeletonProfile !== motion.targetSkeletonProfile) return failed("RETARGET REQUIRED", "retarget compatibility", { bindingMode: "RETARGET REQUIRED" });
+      const boundaries = [], pass = (boundary, detail = null) => boundaries.push(Object.freeze({ boundary, status: "PASS", detail }));
       const asset = await this.loadAsset(motion.runtimeAssetPath, "fixture");
       if (asset?.status === "failed") return failed(asset.code === "asset_missing" ? "THRILLER_BROWSER_ASSET_REQUIRED" : asset.code, asset.code === "asset_missing" ? "asset availability" : "loader", {}, asset.cause);
-      const clip = asset.animations?.[0];
-      if (!clip) { this.disposeObjectResources(asset.scene); return failed("animation_missing", "source animation"); }
-      const tracks = clip.tracks || [], binding = this.inspectClipBindings(clip);
-      const inventory = { clipName: clip.name || "(unnamed)", clipDuration: clip.duration, duration: clip.duration,
-        trackCount: tracks.length, intendedTrackCount: tracks.length, ...binding };
-      if (!tracks.length) { this.disposeObjectResources(asset.scene); return failed("animation_tracks_missing", "source animation", inventory); }
-      if (binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return failed("animation_binding_failed", "track binding", inventory, binding.unboundTracks.join(", ")); }
+      pass("THRILLER_RUNTIME_ASSET_LOADED", motion.runtimeAssetPath);
+      const clip = asset.animations?.find(candidate => candidate.name === motion.runtimeClipName);
+      if (!clip) { this.disposeObjectResources(asset.scene); return failed("animation_missing", "THRILLER_CLIP_SELECTED", { runtimeClipNames: Object.freeze((asset.animations || []).map(candidate => candidate.name)) }); }
+      pass("THRILLER_CLIP_SELECTED", clip.name);
+      const tracks = clip.tracks || [], binding = this.inspectClipBindings(clip), runtimeScene = asset.scene || null, mixerRoot = this.mixer?.getRoot?.() || null;
+      const runtimeNodes = [], runtimeSkeletonRoots = [];
+      runtimeScene?.traverse?.(node => { runtimeNodes.push(node.name || "(unnamed)"); if (node.isBone && !node.parent?.isBone) runtimeSkeletonRoots.push(node.name || "(unnamed)"); });
+      const runtimeClipInventory = (asset.animations || []).map(candidate => Object.freeze({ name: candidate.name || "(unnamed)", duration: candidate.duration, trackCount: candidate.tracks?.length || 0, trackNames: Object.freeze((candidate.tracks || []).map(track => track.name)) }));
+      const inventory = { clipName: clip.name || "(unnamed)", clipDuration: clip.duration, duration: clip.duration, trackCount: tracks.length, intendedTrackCount: tracks.length, ...binding, runtimeClipNames: Object.freeze(runtimeClipInventory.map(candidate => candidate.name)), runtimeClipInventory: Object.freeze(runtimeClipInventory), runtimeSceneNodes: Object.freeze(runtimeNodes), runtimeSkeletonRoots: Object.freeze(runtimeSkeletonRoots), runtimeSkinCount: asset.parser?.json?.skins?.length ?? 0, runtimeMeshCount: asset.parser?.json?.meshes?.length ?? 0, runtimeSceneRootName: runtimeScene?.name || "(unnamed)", runtimeSceneRootUuid: runtimeScene?.uuid || null, mixerRootName: mixerRoot?.name || "(unnamed)", mixerRootUuid: mixerRoot?.uuid || null, personalizedAvatarRootName: this.avatar?.name || "(unnamed)", personalizedAvatarRootUuid: this.avatar?.uuid || null, mixerRootIsVisibleAvatar: mixerRoot === this.avatar };
+      if (!tracks.length) { this.disposeObjectResources(asset.scene); return failed("animation_tracks_missing", "THRILLER_CLIP_SELECTED", inventory); }
+      if (binding.unboundTrackCount) { this.disposeObjectResources(asset.scene); return failed("animation_binding_failed", "TRACK_TARGETS_RESOLVE_ON_VISIBLE_AVATAR", inventory, binding.unboundTracks.join(", ")); }
+      pass("TRACK_TARGETS_RESOLVE_ON_VISIBLE_AVATAR", `${binding.boundTrackCount}/${tracks.length}`);
+      if (mixerRoot !== this.avatar) { this.disposeObjectResources(asset.scene); return failed("animation_mixer_root_mismatch", "MIXER_ROOT_IS_VISIBLE_AVATAR", { ...inventory, boundaries: Object.freeze(boundaries) }); }
+      pass("MIXER_ROOT_IS_VISIBLE_AVATAR", this.avatar?.uuid || null);
       this.unloadMotion(); this.animationFixture = asset; this.sessionClip = clip; this.action = this.mixer.clipAction(clip, this.avatar); this.setLoop(this.loop);
-      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...base, ...inventory, playbackState: "ready", firstFailingBoundary: "NONE" }) });
+      this.thrillerBoneSnapshot = this.snapshotRepresentativeBones();
+      this.thrillerDiagnostics = { ...base, ...inventory, boundaries: Object.freeze(boundaries), playbackState: "ready", firstFailingBoundary: "THRILLER_VISIBLE_PLAYBACK_NOT_CONFIRMED" };
+      return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...this.thrillerDiagnostics }) });
     }
     loadNativeAnimation(mode = "full") {
       if (!this.avatar || !this.mixer || !this.avatarAsset) return this.failure("avatar_required");
@@ -248,10 +263,24 @@
       this.motionSpec = spec; this.motionDiagnostics = built.diagnostics; this.sessionClip = built.clip; this.action = this.mixer.clipAction(built.clip, this.avatar); this.setLoop(this.loop);
       return Object.freeze({ status: "ready", diagnostics: Object.freeze({ ...built.diagnostics, clipName: built.clip.name, clipDuration: built.clip.duration }) });
     }
-    unloadMotion() { this.stop(); if (this.action && this.mixer && this.sessionClip) this.mixer.uncacheAction?.(this.sessionClip, this.avatar); this.action = null; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; return { status: "ready" }; }
+    unloadMotion() { this.stop(); if (this.action && this.mixer && this.sessionClip) this.mixer.uncacheAction?.(this.sessionClip, this.avatar); this.action = null; this.animationFixture = null; this.nativeSourceClip = null; this.sessionClip = null; this.motionSpec = null; this.motionDiagnostics = null; this.thrillerDiagnostics = null; this.thrillerBoneSnapshot = null; return { status: "ready" }; }
     currentMotionPhase() { if (!this.motionSpec || !this.action) return null; const duration = this.motionSpec.durationSeconds, normalized = duration > 0 ? Math.max(0, Math.min(1, Number(this.action.time || 0) / duration)) : 0; return this.motionSpec.phases.slice().reverse().find(phase => normalized >= phase.normalizedTime)?.id || this.motionSpec.phases[0]?.id || null; }
     unloadAvatar() { this.avatarLoadVersion++; this.unloadMotion(); if (this.avatar) { this.scene?.remove?.(this.avatar); this.disposeObjectResources(this.avatar); } this.avatar = this.avatarAsset = this.avatarProfile = this.mixer = this.clock = null; if (this.mesh) this.mesh.visible = true; return { status: "ready" }; }
-    play() { if (!this.action) return this.failure("animation_required"); this.action.paused = false; this.action.play(); return { status: "playing" }; }
+    play() {
+      if (!this.action) return this.failure("animation_required");
+      this.action.paused = false; this.action.play();
+      if (!this.thrillerDiagnostics) return { status: "playing" };
+      const before = this.snapshotRepresentativeBones();
+      this.mixer.update(1 / 30);
+      const changedBones = this.changedRepresentativeBones(before, this.snapshotRepresentativeBones());
+      if (!changedBones.length) {
+        this.thrillerDiagnostics = { ...this.thrillerDiagnostics, playbackState: "failed", changedRepresentativeBones: Object.freeze([]), firstFailingBoundary: "VISIBLE_AVATAR_BONES_NOT_ANIMATED" };
+        return Object.freeze({ status: "failed", code: "VISIBLE_AVATAR_BONES_NOT_ANIMATED", diagnostics: Object.freeze({ ...this.thrillerDiagnostics }) });
+      }
+      const boundaries = [...this.thrillerDiagnostics.boundaries, Object.freeze({ boundary: "VISIBLE_AVATAR_BONES_CHANGED_AFTER_PLAYBACK_TICK", status: "PASS", detail: changedBones.join(", ") }), Object.freeze({ boundary: "THRILLER_VISIBLE_PLAYBACK_CONFIRMED", status: "PASS", detail: "mounted avatar transforms changed" })];
+      this.thrillerDiagnostics = { ...this.thrillerDiagnostics, boundaries: Object.freeze(boundaries), playbackState: "playing", changedRepresentativeBones: Object.freeze(changedBones), firstFailingBoundary: "NONE" };
+      return Object.freeze({ status: "playing", diagnostics: Object.freeze({ ...this.thrillerDiagnostics }) });
+    }
     pause() { if (!this.action) return this.failure("animation_required"); this.action.paused = true; return { status: "paused" }; }
     resume() { return this.play(); }
     stop() { this.action?.stop?.(); this.mixer?.stopAllAction?.(); return { status: "stopped" }; }

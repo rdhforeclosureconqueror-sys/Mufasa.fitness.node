@@ -1549,6 +1549,72 @@
       "prNumber": 778,
       "commitSha": "8535fee",
       "timestamp": "2026-09-10T22:06:00.722Z"
+    },
+    {
+      "operationId": "48836147-86d2-46aa-855b-b5aa65e46967",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-part1-visible-playback-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "Investigating confirmed Thriller Part 1 false-positive playback against the mounted personalized avatar.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T23:36:34.005Z"
+    },
+    {
+      "operationId": "d2d1c77f-42ff-45af-93e5-25644c379c28",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-part1-visible-playback-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT: prove Part 1 GLB clip/root binding and require mounted-avatar transform changes.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T23:36:34.533Z"
+    },
+    {
+      "operationId": "a1f7d637-3d50-483e-acb8-857129dd44b4",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-part1-visible-playback-fix",
+      "files": [
+        "public/motion/disposable-motion-session.js",
+        "public/motion/thriller-motion-catalog.js",
+        "public/motion/motion-lab-diagnostic-consolidator.js",
+        "motion-lab/motion-lab-runtime.js",
+        "test/thriller-motion-lab-runtime.test.js",
+        "docs/review-handoffs/thriller-part1-visible-playback-root-cause-20260910.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Part 1 root cause proven: animations[0] selected stale two-key source action. Exact Avaturn dance clip selection, visible-avatar binding/mixer-root evidence, post-tick representative-bone mutation gate, false-positive regression test, and GLB inventory added. Targeted tests and lint pass. Full npm test has unrelated pre-existing Extraction OS failures. Browser/production and physical-device QA not performed; human visual/movement/UX acceptance remains required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T23:39:44.868Z"
+    },
+    {
+      "operationId": "95f0e5a7-837d-49ee-8bce-4b8e5b650b1f",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-part1-visible-playback-fix",
+      "files": [
+        "public/motion/disposable-motion-session.js",
+        "public/motion/thriller-motion-catalog.js",
+        "public/motion/motion-lab-diagnostic-consolidator.js",
+        "motion-lab/motion-lab-runtime.js",
+        "test/thriller-motion-lab-runtime.test.js",
+        "docs/review-handoffs/thriller-part1-visible-playback-root-cause-20260910.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation committed. Human visual acceptance still required; browser screenshot unavailable because Playwright package download was forbidden (HTTP 403).",
+      "prNumber": null,
+      "commitSha": "bf2bf5ca049ca3976a07ea6e81ceade2db81467c",
+      "timestamp": "2026-09-10T23:40:14.019Z"
     }
   ]
 }

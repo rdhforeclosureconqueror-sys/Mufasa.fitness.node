@@ -14,7 +14,7 @@ test("Thriller catalog has stable ordered IDs and preserves source FBX separatel
   assert.deepEqual(catalog.parts.map(x => x.id), [1,2,3,4].map(x => `thriller-part-${x}`));
   assert.deepEqual(catalog.parts.map(x => x.sourceFbxPath), [1,2,3,4].map(x => `/motion/assets/thriller/Thriller Part ${x}.fbx`));
   assert.deepEqual(catalog.parts.map(x => x.runtimeAssetPath), [1,2,3,4].map(x => `/motion/assets/thriller/runtime/Thriller Part ${x}.glb`));
-  assert.ok(catalog.parts.every(x => x.sourceSkeletonProfile === "mixamo-v1" && x.targetSkeletonProfile === "avaturn-native-v1"));
+  assert.ok(catalog.parts.every((x, i) => x.sourceSkeletonProfile === "mixamo-v1" && x.targetSkeletonProfile === "avaturn-native-v1" && x.runtimeClipName === `Thriller_Part_${i + 1}_Avaturn`));
 });
 
 function runtimeHarness(loadResult) {
@@ -62,13 +62,13 @@ test("Play becomes available only for a fully bound Thriller clip and existing n
 test("independent motion loader fails closed for incompatible skeleton and unbound intended tracks", async () => {
   const session = sessionRuntime.createMotionSession();
   session.avatar = { traverse(visitor){ visitor({name:"Hips",quaternion:{}}); } };
-  session.mixer = { clipAction(){ throw new Error("must not bind"); } };
+  session.mixer = { getRoot(){ return session.avatar; }, clipAction(){ throw new Error("must not bind"); } };
   session.avatarProfile = {avatarId:"avaturn-personalized-candidate",skeletonProfile:"wrong-profile"};
   let out = await session.loadIndependentRetargetedMotion(catalog.parts[0]);
   assert.equal(out.code, "RETARGET REQUIRED"); assert.equal(out.diagnostics.firstFailingBoundary, "retarget compatibility");
   session.avatarProfile.skeletonProfile = "avaturn-native-v1";
   session.THREE = {PropertyBinding:{parseTrackName(name){return {nodeName:name.split(".")[0],propertyName:"quaternion"};},findNode(){return null;}}};
-  session.loadAsset = async () => ({scene:{traverse(){}},animations:[{name:"clip",duration:1,tracks:[{name:"Missing.quaternion"}]}]});
+  session.loadAsset = async () => ({scene:{traverse(){}},animations:[{name:catalog.parts[0].runtimeClipName,duration:1,tracks:[{name:"Missing.quaternion"}]}]});
   session.disposeObjectResources = () => ({});
   out = await session.loadIndependentRetargetedMotion(catalog.parts[0]);
   assert.equal(out.code, "animation_binding_failed"); assert.equal(out.diagnostics.intendedTrackCount, 1); assert.equal(out.diagnostics.boundTrackCount, 0); assert.deepEqual(out.diagnostics.unboundTracks, ["Missing.quaternion"]);
@@ -78,4 +78,37 @@ test("independent motion loader fails closed for incompatible skeleton and unbou
 test("shared browser loader boundary is GLTF-only and never claims direct FBX support", () => {
   const loader = read("public/motion/shared3d-loader.js");
   assert.match(loader, /GLTFLoader/); assert.doesNotMatch(loader, /FBXLoader/);
+});
+
+function transform(value = [0,0,0]) { return { values:[...value], toArray(){ return [...this.values]; } }; }
+function representativeAvatar() {
+  const bones = ["Hips","Spine","LeftArm","RightArm","LeftUpLeg","RightUpLeg"].map(name => ({name,position:transform(),quaternion:transform([0,0,0,1]),scale:transform([1,1,1])}));
+  return {name:"MountedPersonalizedAvatar",uuid:"avatar-uuid",traverse(visitor){ bones.forEach(visitor); },bones};
+}
+
+test("timeline progress and resolved tracks fail when only the mounted-avatar bones remain unchanged", async () => {
+  const session = sessionRuntime.createMotionSession(), avatar = representativeAvatar(), runtimeScene = {name:"RuntimeFixture",uuid:"fixture-uuid",traverse(){}};
+  session.avatar = avatar; session.avatarProfile = {avatarId:"avaturn-personalized-candidate",skeletonProfile:"avaturn-native-v1"};
+  const action = {paused:false,play(){return this;},setLoop(){},stop(){},isRunning(){return true;},time:0};
+  session.mixer = {getRoot(){return avatar;},clipAction(){return action;},update(dt){action.time += dt;},stopAllAction(){}};
+  session.THREE = {LoopRepeat:1,LoopOnce:2,PropertyBinding:{parseTrackName(){return {nodeName:"Hips",propertyName:"quaternion"};},findNode(root,name){let found;root.traverse(node=>{if(node.name===name)found=node;});return found;}}};
+  session.loadAsset = async () => ({scene:runtimeScene,animations:[{name:catalog.parts[0].runtimeClipName,duration:29.86,tracks:[{name:"Hips.quaternion"}]}]});
+  const loaded = await session.loadIndependentRetargetedMotion(catalog.parts[0]);
+  assert.equal(loaded.status,"ready"); assert.equal(loaded.diagnostics.mixerRootIsVisibleAvatar,true);
+  assert.equal(loaded.diagnostics.firstFailingBoundary,"THRILLER_VISIBLE_PLAYBACK_NOT_CONFIRMED");
+  const played = session.play();
+  assert.equal(action.time > 0,true); assert.equal(played.code,"VISIBLE_AVATAR_BONES_NOT_ANIMATED");
+  assert.equal(played.diagnostics.firstFailingBoundary,"VISIBLE_AVATAR_BONES_NOT_ANIMATED");
+  session.dispose();
+});
+
+test("Thriller Part 1 GLB selects the authored Avaturn dance clip rather than the two-key source action", () => {
+  const data=fs.readFileSync(path.join(root,"public/motion/assets/thriller/runtime/Thriller Part 1.glb"));
+  const jsonLength=data.readUInt32LE(12), gltf=JSON.parse(data.toString("utf8",20,20+jsonLength).trim());
+  assert.deepEqual(gltf.animations.map(animation=>animation.name),["Armature|mixamo.com|Layer0","avaturn_animation","Thriller_Part_1_Avaturn"]);
+  const selected=gltf.animations.find(animation=>animation.name===catalog.parts[0].runtimeClipName);
+  assert.equal(selected.channels.length,162);
+  assert.equal(gltf.accessors[selected.samplers[0].input].count,896);
+  assert.equal(gltf.accessors[gltf.animations[0].samplers[0].input].count,2);
+  assert.equal(gltf.meshes?.length||0,0);
 });
