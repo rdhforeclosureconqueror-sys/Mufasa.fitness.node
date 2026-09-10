@@ -47,6 +47,14 @@ test('capabilities require current nonce, exact version, sequence and context lo
   assert.equal(f.capabilities(), false); // A later packet cannot renegotiate authority.
 });
 
+test('GO_TO_MAT requires matApproach but does not require pushUpTransition', () => {
+  const f = fixture();
+  assert.equal(f.capabilities({pushUpTransition: false}), true);
+  assert.equal(f.flow.snapshot().canApproach, true);
+  assert.equal(f.flow.approach(), true);
+  assert.equal(f.sent.at(-1).action, 'GO_TO_MAT');
+});
+
 test('touch holds use bounded leases; release and keyboard nudge stop without another input', () => {
   const f = fixture(); f.capabilities();
   assert.equal(f.flow.hold('MOVE_LEFT'), true); assert.equal(f.flow.hold('MOVE_RIGHT'), false);

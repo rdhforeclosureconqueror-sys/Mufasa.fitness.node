@@ -1303,6 +1303,129 @@
       "prNumber": 634,
       "commitSha": "eb76ef786f03b132bc4dd3f9ba9b1fc055bc81bf",
       "timestamp": "2026-09-03T18:00:13.370Z"
+    },
+    {
+      "operationId": "97c3d542-ddfc-48af-945b-6ee610c4aa73",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "pr-763-review",
+      "files": [],
+      "automated": null,
+      "evidence": "Review and repair PR #763 Arena debug consolidation, camera path, and GO_TO_MAT capability gate",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T12:46:18.943Z"
+    },
+    {
+      "operationId": "3187adee-f646-4cdc-a714-3ae6a6170b52",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "pr-763-review",
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT for PR #763 review and regression repair",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T12:46:19.487Z"
+    },
+    {
+      "operationId": "f5f1ba74-4d16-4566-863e-8f2401527719",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "pr-763-review",
+      "files": [
+        "public/arena-push-up.html",
+        "public/arena-push-up-debug-entry.js",
+        "public/arena-debug-consolidation-loader.js",
+        "public/arena-debug-consolidation.js",
+        "public/arena-phone-flow.js",
+        "scripts/preview-arena-diagnostics.js",
+        "test/arena-debug-consolidation.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-phone-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Wired the Arena consolidated debug entry; retained and visually suppressed the legacy diagnostic producer; added Copy All, Close, FIRST FAILURE, and live evidence authority; decoupled GO_TO_MAT from pushUpTransition; Arena camera and diagnostic suites pass. Authenticated browser, physical-device camera, protected Godot export, and human visual/UX acceptance remain unverified.",
+      "prNumber": 763,
+      "commitSha": null,
+      "timestamp": "2026-09-10T12:52:23.203Z"
+    },
+    {
+      "operationId": "b3a04e56-27a9-457a-939e-4efabb49165f",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "pr-763-review",
+      "files": [
+        "public/arena-push-up.html",
+        "public/arena-push-up-debug-entry.js",
+        "public/arena-debug-consolidation-loader.js",
+        "public/arena-debug-consolidation.js",
+        "public/arena-phone-flow.js",
+        "scripts/preview-arena-diagnostics.js",
+        "test/arena-debug-consolidation.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-phone-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation committed as 3fc35e3 for PR #763. Relevant Arena debug, flow, camera, diagnostics, pose calibration, syntax, lint, and readiness checks pass. Human visual/UX, authenticated browser, real camera, physical device, and protected Godot export remain independently unverified.",
+      "prNumber": 763,
+      "commitSha": "3fc35e3",
+      "timestamp": "2026-09-10T12:52:44.419Z"
+    },
+    {
+      "operationId": "c11084a5-969e-4f1f-906b-13534959ce61",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "pr-763-review",
+      "files": [
+        "public/arena-push-up.html",
+        "public/arena-push-up-debug-entry.js",
+        "public/arena-debug-consolidation-loader.js",
+        "public/arena-debug-consolidation.js",
+        "public/arena-phone-flow.js",
+        "scripts/preview-arena-diagnostics.js",
+        "test/arena-debug-consolidation.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-phone-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Final implementation commit 8860dba for PR #763; human/device/browser verification remains required.",
+      "prNumber": 763,
+      "commitSha": "8860dba",
+      "timestamp": "2026-09-10T12:52:57.787Z"
+    },
+    {
+      "operationId": "b8a456d6-cae9-4865-ae6b-5ee0b462df41",
+      "board": "avatar",
+      "cardId": "avatar-development-repository-regression-root-cause-audit-764",
+      "sourceType": "card_creation",
+      "taskId": "pr-764-regression-audit",
+      "files": [],
+      "automated": null,
+      "evidence": "Classify full-suite failures against main, identify proven history boundaries, and document Motion Lab, generated-motion, debug, camera, Arena, billing, extraction, and fixture findings without mixing unrelated repairs into PR 764.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T13:28:11.621Z"
+    },
+    {
+      "operationId": "ba9dc7fc-8b99-4cf4-9e45-ebad344fe080",
+      "board": "avatar",
+      "cardId": "avatar-development-repository-regression-root-cause-audit-764",
+      "sourceType": "implementation",
+      "taskId": "pr-764-regression-audit",
+      "files": [
+        "docs/reviews/pr-764-repository-regression-root-cause-audit-20260910.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Audited all 18 full-suite failures at PR 764 head and detached main parent 6140f06; none are caused by PR 764. Proven boundaries include avatar exclusive voice commit 8e6b172/PR 665, Motion Lab allowlist commit 94d1ffa/PR 733, and current disposable fixture break at 82903db/PR 759. Mountain Pose end-to-end saved playback and human/device browser verification remain unverified.",
+      "prNumber": 764,
+      "commitSha": null,
+      "timestamp": "2026-09-10T13:29:57.880Z"
     }
   ]
 }
