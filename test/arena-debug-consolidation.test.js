@@ -15,13 +15,15 @@ test('Arena shell loads the debug entry instead of documenting a missing integra
   assert.doesNotMatch(html, /ARENA_DEBUG_ENTRY_NOT_WIRED/);
 });
 
-test('debug entry and loader form a cache-busted, idempotent load chain', () => {
+test('debug entry starts the cache-busted authority chain during deferred execution', () => {
   const entry = read('public/arena-push-up-debug-entry.js');
   const loader = read('public/arena-debug-consolidation-loader.js');
   new vm.Script(entry); new vm.Script(loader);
   assert.match(entry, /arena-debug-consolidation-loader\.js\?v=20260910-consolidation-v3/);
   assert.match(loader, /arena-debug-consolidation\.js\?v=20260910-consolidation-v3/);
-  assert.match(entry, /DOMContentLoaded/); assert.match(loader, /PocketPTArenaDebugConsolidationLoader/);
+  assert.doesNotMatch(entry, /addEventListener\('DOMContentLoaded'/);
+  assert.match(entry, /suppressLegacyAuthority\(\);\s*start\(\);/);
+  assert.match(loader, /PocketPTArenaDebugConsolidationLoader/);
 });
 
 test('debug entry enrolls the legacy board in the presentation contract before the authority loads', () => {
