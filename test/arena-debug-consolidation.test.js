@@ -18,9 +18,17 @@ test('debug entry and loader form a cache-busted, idempotent load chain', () => 
   const entry = read('public/arena-push-up-debug-entry.js');
   const loader = read('public/arena-debug-consolidation-loader.js');
   new vm.Script(entry); new vm.Script(loader);
-  assert.match(entry, /arena-debug-consolidation-loader\.js\?v=20260910-consolidation-v1/);
-  assert.match(loader, /arena-debug-consolidation\.js\?v=20260910-consolidation-v1/);
+  assert.match(entry, /arena-debug-consolidation-loader\.js\?v=20260910-consolidation-v2/);
+  assert.match(loader, /arena-debug-consolidation\.js\?v=20260910-consolidation-v2/);
   assert.match(entry, /DOMContentLoaded/); assert.match(loader, /PocketPTArenaDebugConsolidationLoader/);
+});
+
+test('debug entry suppresses the legacy board before the consolidated authority loads', () => {
+  const entry = read('public/arena-push-up-debug-entry.js');
+  assert.match(entry, /arena-debug-legacy-suppression/);
+  assert.match(entry, /#bridgeDebugBoard,#bridgeDebugToggle\{display:none!important\}/);
+  assert.match(entry, /suppressLegacyAuthority\(\);/);
+  assert.match(entry, /style\.setProperty\('display', 'none', 'important'\)/);
 });
 
 test('one debug authority owns launcher, Copy All, Close and FIRST FAILURE while preserving the producer', () => {
