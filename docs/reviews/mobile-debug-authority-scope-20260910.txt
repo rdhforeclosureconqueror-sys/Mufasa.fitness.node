@@ -1,0 +1,1 @@
+Scope: runtime-config presentation authority + focused regression test + review handoff. No Godot, mat navigation, camera motion calculation, MoveNet, IK, retargeting, or workout-state behavior changes.
