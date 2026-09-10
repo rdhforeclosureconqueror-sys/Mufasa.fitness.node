@@ -5,7 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "1.2.2-palm-facing-normal-correction";
+  const VERSION = "1.3.0-phase-scoped-yoga-semantics";
 
   function normalizedBoneKey(name) {
     return String(name || "")
@@ -53,10 +53,17 @@
     const boneMatch = resolveNode(avatar, target?.bone);
     const childMatch = resolveNode(avatar, target?.childBone);
     if (boneMatch.status !== "ready" || childMatch.status !== "ready") return Object.freeze({ status:"failed", code:"semantic_target_unbound" });
-    const wanted = desiredDirection(THREE, avatar, target);
-    if (wanted.status !== "ready") return wanted;
     const bone = boneMatch.object, child = childMatch.object;
     avatar.updateMatrixWorld?.(true);
+    let wanted;
+    if (target?.type === "bone_points_to_reference") {
+      const refMatch = resolveNode(avatar, target?.referenceBone);
+      if (refMatch.status !== "ready") return Object.freeze({ status:"failed", code:"semantic_reference_unbound" });
+      const direction = refMatch.object.getWorldPosition(new THREE.Vector3()).sub(bone.getWorldPosition(new THREE.Vector3()));
+      if (!(direction.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_reference_zero_length" });
+      wanted = Object.freeze({ status:"ready", direction:direction.normalize() });
+    } else wanted = desiredDirection(THREE, avatar, target);
+    if (wanted.status !== "ready") return wanted;
     const current = child.getWorldPosition(new THREE.Vector3()).sub(bone.getWorldPosition(new THREE.Vector3()));
     if (!(current.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_bone_zero_length" });
     current.normalize();
@@ -70,37 +77,43 @@
     return Object.freeze({ status:"ready", diagnostics:Object.freeze({ id:target.id || null, type:target.type, bone:bone.name, residualDegrees:THREE.MathUtils.radToDeg(solved.angleTo(wanted.direction)), beforeAngleDegrees }) });
   }
 
-  function orientPalmTowardReference(THREE, avatar, target) {
+  function palmDesiredDirection(THREE, avatar, target, origin, axis) {
+    let wanted;
+    if (target?.type === "hand_plane_faces_world") {
+      const v = Array.isArray(target.worldDirection) ? target.worldDirection : null;
+      if (!v || v.length !== 3) return Object.freeze({ status:"failed", code:"semantic_palm_world_direction_invalid" });
+      wanted = new THREE.Vector3(Number(v[0]), Number(v[1]), Number(v[2]));
+    } else {
+      const refMatch = resolveNode(avatar, target?.referenceBone);
+      if (refMatch.status !== "ready") return Object.freeze({ status:"failed", code:"semantic_palm_target_unbound" });
+      wanted = refMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
+    }
+    wanted.addScaledVector(axis, -wanted.dot(axis));
+    if (!(wanted.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_palm_reference_degenerate" });
+    return Object.freeze({ status:"ready", direction:wanted.normalize() });
+  }
+
+  function orientPalm(THREE, avatar, target) {
     const handMatch = resolveNode(avatar, target?.bone);
     const axisMatch = resolveNode(avatar, target?.childBone);
     const aMatch = resolveNode(avatar, target?.planePointA);
     const bMatch = resolveNode(avatar, target?.planePointB);
-    const refMatch = resolveNode(avatar, target?.referenceBone);
-    if ([handMatch, axisMatch, aMatch, bMatch, refMatch].some(match => match.status !== "ready")) return Object.freeze({ status:"failed", code:"semantic_palm_target_unbound" });
+    if ([handMatch, axisMatch, aMatch, bMatch].some(match => match.status !== "ready")) return Object.freeze({ status:"failed", code:"semantic_palm_target_unbound" });
     const hand = handMatch.object;
     avatar.updateMatrixWorld?.(true);
     const origin = hand.getWorldPosition(new THREE.Vector3());
     const axis = axisMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin).normalize();
     const va = aMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
     const vb = bMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
-
-    // With the mirrored index/pinky landmark ordering used by the Motion Spec, the
-    // raw A x B normal points through the back-of-hand side. Invert it once so
-    // semantic "palm faces reference" means the anatomical palm surface faces the
-    // reference, not merely an arbitrary side of the hand plane.
     let normal = va.clone().cross(vb).multiplyScalar(-1);
     if (Number(target?.normalSign) < 0) normal.multiplyScalar(-1);
     normal.addScaledVector(axis, -normal.dot(axis));
     if (!(normal.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_palm_plane_degenerate" });
     normal.normalize();
-
-    let inward = refMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
-    inward.addScaledVector(axis, -inward.dot(axis));
-    if (!(inward.lengthSq() > 0)) return Object.freeze({ status:"failed", code:"semantic_palm_reference_degenerate" });
-    inward.normalize();
-
-    const beforeAngleDegrees = THREE.MathUtils.radToDeg(normal.angleTo(inward));
-    const signed = Math.atan2(axis.dot(normal.clone().cross(inward)), normal.dot(inward));
+    const wanted = palmDesiredDirection(THREE, avatar, target, origin, axis);
+    if (wanted.status !== "ready") return wanted;
+    const beforeAngleDegrees = THREE.MathUtils.radToDeg(normal.angleTo(wanted.direction));
+    const signed = Math.atan2(axis.dot(normal.clone().cross(wanted.direction)), normal.dot(wanted.direction));
     const delta = new THREE.Quaternion().setFromAxisAngle(axis, signed);
     const desiredWorld = delta.multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
     const parentWorld = hand.parent?.getWorldQuaternion ? hand.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
@@ -114,9 +127,9 @@
     let solvedPalmNormal = solvedA.clone().cross(solvedB).multiplyScalar(-1);
     if (Number(target?.normalSign) < 0) solvedPalmNormal.multiplyScalar(-1);
     solvedPalmNormal.addScaledVector(solvedAxis, -solvedPalmNormal.dot(solvedAxis)).normalize();
-    let solvedInward = refMatch.object.getWorldPosition(new THREE.Vector3()).sub(solvedOrigin);
-    solvedInward.addScaledVector(solvedAxis, -solvedInward.dot(solvedAxis)).normalize();
-    const residualDegrees = THREE.MathUtils.radToDeg(solvedPalmNormal.angleTo(solvedInward));
+    const solvedWanted = palmDesiredDirection(THREE, avatar, target, solvedOrigin, solvedAxis);
+    if (solvedWanted.status !== "ready") return solvedWanted;
+    const residualDegrees = THREE.MathUtils.radToDeg(solvedPalmNormal.angleTo(solvedWanted.direction));
 
     return Object.freeze({ status:"ready", diagnostics:Object.freeze({
       id:target.id || null,
@@ -125,10 +138,12 @@
       twistDegrees:THREE.MathUtils.radToDeg(signed),
       beforeAngleDegrees,
       residualDegrees,
-      palmReference:refMatch.object.name,
+      palmReference:target.type === "hand_plane_faces_world" ? `world:${target.worldDirection.join(",")}` : target.referenceBone,
       palmNormalConvention:"negative-mirrored-index-pinky-cross"
     }) });
   }
+
+  function orientPalmTowardReference(THREE, avatar, target) { return orientPalm(THREE, avatar, target); }
 
   function buildPhaseSpecificSpec(THREE, spec, avatar) {
     const semanticTargets = Array.isArray(spec?.semanticPosePolicy?.targets) ? spec.semanticPosePolicy.targets : [];
@@ -193,9 +208,10 @@
         applyPhasePose(phase);
         const replacements = new Map();
         for (const target of semanticTargets) {
+          if (Array.isArray(target.phaseIds) && !target.phaseIds.includes(phase.id)) continue;
           let solved;
-          if (target.type === "bone_direction_world" || target.type === "bone_direction_reference") solved = orientBoneToDirection(THREE, avatar, target);
-          else if (target.type === "hand_plane_faces_reference") solved = orientPalmTowardReference(THREE, avatar, target);
+          if (["bone_direction_world","bone_direction_reference","bone_points_to_reference"].includes(target.type)) solved = orientBoneToDirection(THREE, avatar, target);
+          else if (["hand_plane_faces_reference","hand_plane_faces_world"].includes(target.type)) solved = orientPalm(THREE, avatar, target);
           else return Object.freeze({ status:"failed", code:"semantic_target_type_unsupported", diagnostics:Object.freeze({ targetType:target.type || null }) });
           if (solved.status !== "ready") return solved;
           const bone = nodes.get(target.bone);
@@ -238,5 +254,5 @@
     });
   }
 
-  return Object.freeze({ VERSION, normalizedBoneKey, resolveNode, orientBoneToDirection, orientPalmTowardReference, buildPhaseSpecificSpec, install });
+  return Object.freeze({ VERSION, normalizedBoneKey, resolveNode, orientBoneToDirection, orientPalmTowardReference, orientPalm, buildPhaseSpecificSpec, install });
 });
