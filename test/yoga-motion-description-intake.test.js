@@ -47,14 +47,27 @@ test('descriptions carry support, trajectory and orientation information needed 
   assert.ok(byId.get('bridge').supports.some(x => /head supported/i.test(x)));
 });
 
-test('Yoga UI exposes Motion Animation only through beginner-flow handoff wiring', () => {
+test('Yoga UI exposes Motion Animation only through beginner-flow and uses the authorized Motion Lab launcher', () => {
   const source = read('public/yoga.js');
   assert.match(source, /BEGINNER_FLOW_ID="beginner-flow"/);
   assert.match(source, /data-motion-animation>Motion Animation/);
   assert.match(source, /active\.id===BEGINNER_FLOW_ID/);
   assert.match(source, /pocketpt\.motionGenerationRequest\.v1/);
-  assert.match(source, /\/motion-lab\/\?motionSource=yoga&session=/);
+  assert.match(source, /\/dev\/motion-lab-launch/);
+  assert.match(source, /motionSource=yoga&session=/);
+  assert.match(source, /pocketpt:motion-lab-auth/);
+  assert.match(source, /pocketpt:motion-lab-ready/);
   assert.match(source, /\/motion\/yoga\/beginner-flow-motion-descriptions\.v1\.json/);
+});
+
+test('Motion Lab launcher preserves only the bounded Yoga generation context into the protected destination', () => {
+  const launcher = read('motion-lab/motion-lab-launch.js');
+  assert.match(launcher, /destinationWithAllowedContext/);
+  assert.match(launcher, /motionSource.*yoga/);
+  assert.match(launcher, /searchParams\.set\("session", session\)/);
+  assert.match(launcher, /searchParams\.set\("pose", pose\)/);
+  assert.match(launcher, /window\.location\.replace\(destinationWithAllowedContext\(body\.data\.navigateTo\)\)/);
+  assert.doesNotMatch(launcher, /destination\.search\s*=\s*window\.location\.search/);
 });
 
 test('Motion Lab loads Yoga intake through protected JS route and intake uses public description JSON', () => {
@@ -64,6 +77,7 @@ test('Motion Lab loads Yoga intake through protected JS route and intake uses pu
   assert.match(intake, /\/motion\/yoga\/motion-description-template\.v1\.json/);
   assert.match(intake, /\/motion\/yoga\/beginner-flow-motion-descriptions\.v1\.json/);
   assert.match(intake, /Yoga Motion Description Intake/);
+  assert.match(intake, /authorized yoga context received; resolving description on Motion Lab origin/);
 });
 
 test('Motion Lab intake exposes explicit first-boundary diagnostics through playable-demo boundary', () => {
