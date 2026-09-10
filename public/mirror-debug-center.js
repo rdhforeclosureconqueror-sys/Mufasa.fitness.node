@@ -45,6 +45,7 @@
   }
 
   function purposeFor(label){
+    // Phase 18 is the final direction-aware floor-assistance producer.
     const n = phaseNumber(label);
     const purposes = {
       2:'MoveNet confidence + temporal stabilization',3:'Body proportions + left/right structural constraints',4:'Exercise context + contact anchors',5:'Contact-aware IK',6:'Adaptive live smoothing/curves',7:'Facing intent',8:'Rest-relative avatar yaw',9:'Foreshortening guard',10:'Live foreshortening activation',11:'Near/far occlusion authority',12:'Pipeline health + downstream loader truth',13:'Lateral body intent',14:'Avatar root-X movement',15:'Contact/root conflict analysis',16:'Contact compensation',17:'Standing-to-floor transition state',18:'Direction-aware floor assistance'
@@ -164,6 +165,27 @@
   function render(){
     const doc = global.document;
     if (!doc?.body) return;
+    const delegated = global.PocketPTDebugPresentation?.authority === 'arena';
+    if (delegated) {
+      const panels = discoverPanels();
+      panels.forEach(panel => global.PocketPTDebugPresentation.suppress?.(panel));
+      global.PocketPTDebugPresentation.suppress?.(doc.getElementById(CENTER_ID));
+      global.PocketPTDebugPresentation.suppress?.(doc.getElementById(LAUNCHER_ID));
+      if (!state.delegated) {
+        state.delegated = true;
+        global.PocketPTDebugPresentation.registerProducer?.('mirror-debug-center', {
+          label: 'Mirror motion diagnostics',
+          report: () => makeCopyReport(
+            global.PocketPTMirrorMotionAcceptance?.diagnostics?.()?.mirrorMotionFoundationStatus || 'UNKNOWN',
+            currentAcceptance().report?.firstFailure?.label || panels.map(panel => firstBoundaryFrom(diagnosticsText(panel))).find(Boolean) || 'NONE',
+            currentAcceptance().report?.steps?.find(step => step.result === 'NOT_RUN')?.label || 'Waiting for evidence',
+            currentAcceptance().h?.diagnosticsText?.() || '',
+            panels.map(panel => ({label: labelFor(panel), text: diagnosticsText(panel)}))
+          )
+        });
+      }
+      return;
+    }
     installStyles();
     const panels = markLegacyPanels();
 

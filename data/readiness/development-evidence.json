@@ -1426,6 +1426,72 @@
       "prNumber": 764,
       "commitSha": null,
       "timestamp": "2026-09-10T13:29:57.880Z"
+    },
+    {
+      "operationId": "3e2818aa-b825-43ea-baae-da4ba6f88227",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "debug-authority-regression-769",
+      "files": [],
+      "automated": null,
+      "evidence": "Investigate repository history and repair the Push-Up Arena multi-authority diagnostic regression at the producer/render boundary.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T17:20:11.654Z"
+    },
+    {
+      "operationId": "641bf824-56aa-4f12-b460-6ffafaf33f31",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "debug-authority-regression-769",
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT: prove first bad boundary and restore one durable visible diagnostic authority.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T17:20:12.547Z"
+    },
+    {
+      "operationId": "63a594ab-bd31-47d3-b314-37179b7f2083",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "debug-authority-regression-769",
+      "files": [
+        "public/arena-push-up.html",
+        "public/arena-push-up-debug-entry.js",
+        "public/arena-debug-consolidation-loader.js",
+        "public/arena-debug-consolidation.js",
+        "public/mirror-debug-center.js",
+        "test/arena-debug-consolidation.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "History-proven regression repair: PR 763 implementation commit 25c4c5c created an Arena authority scoped only to bridgeDebugBoard/bridgeDebugToggle and did not enroll the already-existing mirror-motion producer family; PR 768 repeated that narrow suppression. The Arena authority now owns a central producer contract, loads before diagnostic-capable runtime, suppresses legacy/dynamic/rerendered producer presentation while retaining DOM/provider evidence, aggregates earliest failure and Copy All, and makes mirror-debug-center data-only when Arena owns presentation. 66 focused Arena/mirror/mobile tests, syntax, lint, readiness validation, and diff check PASS. Embedded Godot HTML contains only canvas/boot status and no matching diagnostic DOM; PCK/source-level visual behavior remains unverified. No browser binary or physical iPhone was available; human visual/UX/device acceptance remains pending. Mat navigation/export artifacts were not changed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-10T17:29:44.952Z"
+    },
+    {
+      "operationId": "3a55d790-12b5-476a-a144-13d2bda6f7d7",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "debug-authority-regression-769",
+      "files": [
+        "public/arena-push-up.html",
+        "public/arena-push-up-debug-entry.js",
+        "public/arena-debug-consolidation-loader.js",
+        "public/arena-debug-consolidation.js",
+        "public/mirror-debug-center.js",
+        "test/arena-debug-consolidation.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation committed as 279132f. Pull-request metadata prepared with title Restore one durable Push-Up Arena debug authority; the make_pr integration returned no numeric PR identifier. Automated evidence PASS; authenticated browser, physical iPhone, compiled Godot in-canvas behavior, and authorized human visual/UX acceptance remain unverified. Mat-arrival deployment unchanged.",
+      "prNumber": null,
+      "commitSha": "279132f",
+      "timestamp": "2026-09-10T17:31:47.602Z"
     }
   ]
 }

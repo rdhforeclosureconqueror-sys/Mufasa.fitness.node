@@ -13,7 +13,7 @@
       let script = root.document.querySelector('script[data-arena-debug-consolidation]');
       if (!script) {
         script = root.document.createElement('script');
-        script.src = '/arena-debug-consolidation.js?v=20260910-consolidation-v2';
+        script.src = '/arena-debug-consolidation.js?v=20260910-consolidation-v3';
         script.async = false;
         script.dataset.arenaDebugConsolidation = 'true';
         root.document.head.appendChild(script);
