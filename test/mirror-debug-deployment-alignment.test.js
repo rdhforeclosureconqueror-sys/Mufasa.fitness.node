@@ -25,13 +25,12 @@ test('production frontend build injects a commit-cache-busted runtime config int
   }finally{fs.rmSync(out,{recursive:true,force:true});}
 });
 
-test('runtime config loads deployment identity diagnostics before consolidated mirror center',()=>{
+test('runtime config loads current deployment identity diagnostics alongside the consolidated mirror authority',()=>{
   const runtime=read('public/runtime-config.js');
-  const deploymentAt=runtime.indexOf('/mirror-deployment-diagnostics.js?v=20260907-deployment-parity-v1');
-  const centerAt=runtime.indexOf('/mirror-debug-center.js?v=20260910-phone-consolidation-v3');
-  assert.ok(deploymentAt>=0,'deployment diagnostics loader missing');
-  assert.ok(centerAt>deploymentAt,'deployment diagnostics should be requested before consolidated center');
+  assert.match(runtime,/\/mirror-debug-center\.js\?v=20260910-producer-authority-v4/);
+  assert.match(runtime,/\/mirror-deployment-diagnostics\.js\?v=20260910-producer-authority-v2/);
   assert.match(runtime,/data-mirror-deployment-diagnostics/);
+  assert.match(runtime,/PocketPTMirrorPresentationAuthority/);
 });
 
 test('deployment diagnostics compare canonical frontend and backend deployment identities without creating another visible panel',()=>{

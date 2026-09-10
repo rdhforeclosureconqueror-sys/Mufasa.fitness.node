@@ -37,10 +37,14 @@ test('debug center has close, copy-all, deduplication, and preserved acceptance 
   assert.match(source, /controls\?\.reset/);
 });
 
-test('runtime config loads cache-busted consolidated diagnostics only after mirror diagnostics are present', () => {
+test('runtime config establishes presentation authority and immediately loads current consolidated diagnostics', () => {
   const source = read('public/runtime-config.js');
-  assert.match(source, /mirrorDiagnosticsPresent/);
-  assert.match(source, /mirror-debug-center\.js\?v=20260910-phone-consolidation-v3/);
+  const guardAt = source.indexOf('pocketpt-mirror-producer-presentation-guard');
+  const centerAt = source.indexOf('/mirror-debug-center.js?v=20260910-producer-authority-v4');
+  assert.ok(guardAt >= 0, 'presentation guard must be installed');
+  assert.ok(centerAt > guardAt, 'consolidated center must load after the presentation guard is established');
+  assert.match(source, /PocketPTMirrorPresentationAuthority/);
   assert.match(source, /data-mirror-debug-center/);
-  assert.match(source, /\[id\^="mirrorMotion"\]/);
+  assert.match(source, /body > \[id\^="mirrorMotion"\]/);
+  assert.doesNotMatch(source, /mirrorDiagnosticsPresent/);
 });
