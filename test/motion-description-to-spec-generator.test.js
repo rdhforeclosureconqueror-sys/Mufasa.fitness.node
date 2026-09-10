@@ -42,7 +42,7 @@ test('generator fails closed for missing or unsupported generation plan',()=>{
 });
 
 test('generator is archetype-driven rather than keyed to six exercise IDs in code',()=>{
-  assert.deepEqual(Generator.ARCHETYPES.sort(),[
+  assert.deepEqual([...Generator.ARCHETYPES].sort(),[
     'bilateral-squat-overhead-hold','inverted-v-four-point','neutral-standing-hold','prone-spinal-extension','supine-hip-extension','wide-split-stance-lateral-reach'
   ].sort());
   const source=fs.readFileSync(path.join(__dirname,'../public/motion/motion-description-to-spec-generator.js'),'utf8');
