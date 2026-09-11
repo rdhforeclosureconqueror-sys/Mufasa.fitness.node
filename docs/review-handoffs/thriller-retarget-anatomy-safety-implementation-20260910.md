@@ -6,7 +6,7 @@ This implements the work specified by merged #785 without reopening or rewriting
 
 The existing Thriller runtime already proves clip selection, 162/162 target-name binding, and mixer-root identity. The remaining failure class is transform-space incompatibility: source/offline-retargeted local transforms can resolve to the correct target bone name while still carrying source-skeleton segment translations, scale, or uncompensated rest orientation that is unsafe on the mounted personalized Avaturn skeleton.
 
-The new reusable `retarget-motion-compatibility.js` policy is installed through the existing Gym Compatibility seam after the canonical Motion Lab runtime is READY. It does not replace the canonical bootstrap and does not create a Thriller-only table of bone offsets.
+The new reusable `retarget-motion-compatibility.js` policy uses the existing Gym Compatibility seam without replacing the canonical Motion Lab bootstrap. The page entry preloads the policy and installs a guarded `PocketPTDisposableMotionSession` assignment before the Initialize Runtime button can be used; therefore every session created during canonical bootstrap is protected, including the first session. After canonical runtime READY, the existing integration verifies that the final wrapped runtime still carries the retarget-safety authority before the compatibility panel reports READY. This avoids a startup race and does not create a Thriller-only table of bone offsets.
 
 ## Reusable source-profile -> canonical -> target-profile correction
 
@@ -54,7 +54,7 @@ Only after the anatomy boundary passes is `THRILLER_VISIBLE_PLAYBACK_CONFIRMED=P
 4. a technically animated/exploded pose cannot retain Thriller playback success;
 5. a valid pose inserts anatomy PASS before visible-playback confirmation.
 
-The Gym Compatibility integration contract is also extended to verify the safety policy loads from the protected Motion Lab asset route and wraps the canonical disposable runtime before the compatibility panel reports READY.
+The Gym Compatibility integration contract is also extended to verify the safety policy is preloaded through the protected Motion Lab asset route, guards `PocketPTDisposableMotionSession` assignment before runtime initialization is released, and remains present on the final canonical runtime before the compatibility panel reports READY.
 
 ## Scope / non-regression
 
