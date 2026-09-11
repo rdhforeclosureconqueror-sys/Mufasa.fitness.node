@@ -6,7 +6,7 @@
   "use strict";
   const profiles = Object.freeze({
     reference: Object.freeze({ avatarId: "phase-e-reference", displayName: "Phase E Reference Avatar", source: "phase-e-canonical", assetUrl: "/motion/assets/phase-e/canonical-avatar.glb", skeletonProfile: "mixamo-phase-e", status: "reference-fallback", developmentOnly: true, role: "legacy-reference", canonicalDemoTarget: false }),
-    personalized: Object.freeze({ avatarId: "avaturn-personalized-candidate", displayName: "PocketPT Personalized Coach Avatar", source: "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb", assetUrl: "/dev/motion-lab-avatar-assets/avaturn-push-up-source.glb", skeletonProfile: "avaturn-native-v1", status: "canonical-coach-demo-target", developmentOnly: true, role: "coach", canonicalDemoTarget: true })
+    personalized: Object.freeze({ avatarId: "avaturn-personalized-candidate", displayName: "PocketPT Personalized Coach Avatar", source: "exercise-generation/source-assets/avaturn/avaturn-push-up-source.glb", assetUrl: "/motion/assets/exercises/push-up/avaturn-push-up-avatar.glb", assetResolver: "authenticated-product-backend", skeletonProfile: "avaturn-native-v1", status: "canonical-coach-demo-target", developmentOnly: true, role: "coach", canonicalDemoTarget: true })
   });
   function get(avatarId) { return Object.values(profiles).find(profile => profile.avatarId === avatarId) || null; }
   return Object.freeze({ profiles, get });
