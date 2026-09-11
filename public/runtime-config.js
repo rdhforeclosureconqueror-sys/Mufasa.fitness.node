@@ -30,7 +30,7 @@
       if (id === "pocketptMirrorDebugCenter" || id === "pocketptMirrorDebugLauncher") return false;
       return /^mirrorMotion.*(?:Debug|Acceptance|Controls)$/i.test(id)
         || /^mirror.*Camera.*(?:Debug|Review|Motion)$/i.test(id)
-        || element.matches?.('[data-pocketpt-debug-producer="true"]') === true;
+        || (/^mirror/i.test(id) && element.matches?.('[data-pocketpt-debug-producer="true"]') === true);
     };
 
     const suppressLegacyMirrorPanel = (element) => {
@@ -48,7 +48,7 @@
     const suppressLegacyMirrorTree = (node) => {
       if (!node || node.nodeType !== 1) return false;
       let changed = suppressLegacyMirrorPanel(node);
-      node.querySelectorAll?.('[id^="mirrorMotion"],[id^="mirrorCamera"],[data-pocketpt-debug-producer="true"]')
+      node.querySelectorAll?.('[id^="mirrorMotion"],[id^="mirrorCamera"],[id^="mirror"][data-pocketpt-debug-producer="true"]')
         .forEach((element) => { if (suppressLegacyMirrorPanel(element)) changed = true; });
       return changed;
     };
