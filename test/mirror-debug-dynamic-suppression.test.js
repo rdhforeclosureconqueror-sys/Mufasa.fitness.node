@@ -69,7 +69,7 @@ function bootRuntimeConfig() {
   return { context, observer: observerInstance, created };
 }
 
-test('late legacy Mirror Motion panel is suppressed immediately while consolidated authority is exempt', () => {
+test('late legacy Mirror Motion panel is suppressed immediately while other authorities stay untouched', () => {
   const { context, observer } = bootRuntimeConfig();
   assert.ok(observer, 'presentation observer should install');
   assert.equal(context.PocketPTMirrorPresentationAuthority.dynamicProducerSuppression, true);
@@ -93,5 +93,11 @@ test('late legacy Mirror Motion panel is suppressed immediately while consolidat
   const center = fakeElement('pocketptMirrorDebugCenter');
   center.style.setProperty('display', 'block', 'important');
   observer.callback([{ type: 'childList', addedNodes: [center] }]);
-  assert.equal(center.style.getPropertyValue('display'), 'block', 'canonical debug center must remain visible');
+  assert.equal(center.style.getPropertyValue('display'), 'block', 'canonical Mirror Debug Center must remain visible');
+
+  const arenaProducer = fakeElement('bridgeDebugBoard');
+  arenaProducer.matches = selector => selector.includes('data-pocketpt-debug-producer');
+  arenaProducer.style.setProperty('display', 'block', 'important');
+  observer.callback([{ type: 'childList', addedNodes: [arenaProducer] }]);
+  assert.equal(arenaProducer.style.getPropertyValue('display'), 'block', 'Mirror authority must not suppress non-Mirror diagnostic producers');
 });
