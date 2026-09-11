@@ -27,10 +27,11 @@ test('production frontend build injects a commit-cache-busted runtime config int
 
 test('runtime config loads current deployment identity diagnostics alongside the consolidated mirror authority',()=>{
   const runtime=read('public/runtime-config.js');
-  assert.match(runtime,/\/mirror-debug-center\.js\?v=20260910-producer-authority-v4/);
+  assert.match(runtime,/\/mirror-debug-center\.js\?v=20260910-producer-authority-v5/);
   assert.match(runtime,/\/mirror-deployment-diagnostics\.js\?v=20260910-producer-authority-v2/);
   assert.match(runtime,/data-mirror-deployment-diagnostics/);
   assert.match(runtime,/PocketPTMirrorPresentationAuthority/);
+  assert.match(runtime,/dynamicProducerSuppression: true/);
 });
 
 test('deployment diagnostics compare canonical frontend and backend deployment identities without creating another visible panel',()=>{
