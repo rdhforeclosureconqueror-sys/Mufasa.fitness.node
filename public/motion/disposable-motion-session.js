@@ -209,9 +209,11 @@
       if (!this.avatar || !this.mixer) return failed("avatar_required", "target avatar");
       if (this.avatarProfile?.avatarId !== motion.targetAvatarProfile || this.avatarProfile?.skeletonProfile !== motion.targetSkeletonProfile) return failed("RETARGET REQUIRED", "retarget compatibility", { bindingMode: "RETARGET REQUIRED" });
       const boundaries = [], pass = (boundary, detail = null) => boundaries.push(Object.freeze({ boundary, status: "PASS", detail }));
+      globalThis.PocketPTRetargetMotionCompatibility?.markCrashBoundary?.("THRILLER_RUNTIME_ASSET_LOADED", motion.runtimeAssetPath);
       const asset = await this.loadAsset(motion.runtimeAssetPath, "fixture");
       if (asset?.status === "failed") return failed(asset.code === "asset_missing" ? "THRILLER_BROWSER_ASSET_REQUIRED" : asset.code, asset.code === "asset_missing" ? "asset availability" : "loader", {}, asset.cause);
       pass("THRILLER_RUNTIME_ASSET_LOADED", motion.runtimeAssetPath);
+      globalThis.PocketPTRetargetMotionCompatibility?.markCrashBoundary?.("THRILLER_CLIP_SELECTED", motion.runtimeClipName);
       const clip = asset.animations?.find(candidate => candidate.name === motion.runtimeClipName);
       if (!clip) { this.disposeObjectResources(asset.scene); return failed("animation_missing", "THRILLER_CLIP_SELECTED", { runtimeClipNames: Object.freeze((asset.animations || []).map(candidate => candidate.name)) }); }
       pass("THRILLER_CLIP_SELECTED", clip.name);
