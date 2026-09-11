@@ -4,8 +4,9 @@
   else root.PocketPTMotionLabGymCompatibility = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (root) {
   "use strict";
-  const VERSION = "motion-lab-gym-compatibility-v1.1";
+  const VERSION = "motion-lab-gym-compatibility-v1.2";
   const STORAGE_KEY = "pocketpt.motionLab.gymCompatibility.v1";
+  const REMOTE_PATH = "/api/me/gym-mapping-profile";
 
   function authority() { return root.PocketPTPersonalAvatarCompatibility || null; }
   function profile() { return root.PocketPTAvatarProfiles?.profiles?.personalized || null; }
@@ -83,11 +84,60 @@
     return raw ? JSON.parse(raw) : null;
   }
 
+  function backendBase(options) {
+    const explicit = String(options?.baseUrl || "").trim();
+    const runtime = String(root.RuntimeState?.getBackendOrigin?.() || "").trim();
+    const origin = String(root.location?.origin || "").trim();
+    return (explicit || runtime || origin).replace(/\/+$/, "");
+  }
+
+  function authToken(options) {
+    const explicit = String(options?.authToken || "").trim();
+    const runtime = String(root.AuthStateRuntime?.getAuthToken?.() || "").trim();
+    return explicit || runtime || "";
+  }
+
+  async function requestRemote(method, mappingProfile, options) {
+    const fetchImpl = options?.fetchImpl || root.fetch;
+    if (typeof fetchImpl !== "function") throw new Error("Gym mapping remote transport unavailable");
+    const token = authToken(options);
+    if (!token) throw new Error("Gym mapping remote save requires authenticated PocketPT session");
+    const response = await fetchImpl(`${backendBase(options)}${REMOTE_PATH}`, {
+      method,
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: mappingProfile ? JSON.stringify({ profile: mappingProfile }) : undefined,
+      cache: "no-store"
+    });
+    let payload = null;
+    try { payload = await response.json(); } catch (_) {}
+    if (!response.ok || !payload?.ok) {
+      const error = new Error(payload?.error?.message || `Gym mapping bridge request failed (${response.status})`);
+      error.code = payload?.error?.code || "GYM_MAPPING_REMOTE_FAILED";
+      error.status = response.status;
+      throw error;
+    }
+    return payload.data?.profile || null;
+  }
+
+  function saveProfileRemote(mappingProfile, options) {
+    return requestRemote("PUT", mappingProfile, options || {});
+  }
+
+  function loadProfileRemote(options) {
+    return requestRemote("GET", null, options || {});
+  }
+
+  async function saveProfileEverywhere(mappingProfile, options) {
+    saveProfile(mappingProfile, options?.storage);
+    const remote = await saveProfileRemote(mappingProfile, options || {});
+    return { local: mappingProfile, remote };
+  }
+
   function firstFailureText(report) {
     const compat = authority();
     if (compat?.formatReport && report?.stages) return compat.formatReport(report);
     return `POCKETPT MOTION LAB — GYM COMPATIBILITY\nFIRST FAILURE: ${report?.firstFailure || "UNKNOWN"}`;
   }
 
-  return Object.freeze({ VERSION, STORAGE_KEY, inspectRuntime, applyCorrection, createMappingProfile, saveProfile, loadProfile, firstFailureText });
+  return Object.freeze({ VERSION, STORAGE_KEY, REMOTE_PATH, inspectRuntime, applyCorrection, createMappingProfile, saveProfile, loadProfile, saveProfileRemote, loadProfileRemote, saveProfileEverywhere, firstFailureText });
 });

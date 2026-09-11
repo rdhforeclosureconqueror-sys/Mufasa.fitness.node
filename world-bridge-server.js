@@ -13,6 +13,7 @@ const { installClientTransformationRoutes } = require("./src/routes/clientTransf
 const { createPrivateClientGettingStartedService } = require("./src/services/privateClientGettingStartedService");
 const { installPrivateClientGettingStartedRoutes } = require("./src/routes/privateClientGettingStartedRoutes");
 const { createWorldBridge } = require("./src/world/worldBridge");
+const { createGymMappingBridge } = require("./src/world/gymMappingBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
 
 function createCanonicalUserStore(options = {}) {
@@ -82,6 +83,20 @@ function installPrivateClientGettingStarted(app, options = {}) {
   return app.locals.pocketPTPrivateClientGettingStarted;
 }
 
+function installGymMapping(app, options = {}) {
+  const userStore = createCanonicalUserStore(options);
+  const gymMappingBridge = createGymMappingBridge({ userStore, now: options.gymMappingNow });
+  gymMappingBridge.registerMemberRoutes(app, requireAuth);
+  app.use((err, req, res, next) => {
+    if (!String(req.path || "").startsWith("/api/me/gym-mapping-profile")) return next(err);
+    if (res.headersSent) return next(err);
+    const status = Number.isInteger(err?.status) ? err.status : 400;
+    return res.status(status).json({ ok:false, requestId:req.requestId||null, error:{ code:err?.code||"GYM_MAPPING_REQUEST_FAILED", message:err?.message||"Gym mapping profile request failed" } });
+  });
+  app.locals.pocketPTGymMapping = { userStore, gymMappingBridge };
+  return gymMappingBridge;
+}
+
 function createWorldBridgeApp(options = {}) {
   const app = createApp(options);
   installDeploymentIdentity(app, options);
@@ -89,8 +104,9 @@ function createWorldBridgeApp(options = {}) {
   installPrivateCoaching(app, options);
   installClientTransformation(app, options);
   installPrivateClientGettingStarted(app, options);
+  const gymMappingBridge = installGymMapping(app, options);
 
-  const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl, avatarAssets:app.locals.pocketPTAvatarAssets });
+  const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl, avatarAssets:app.locals.pocketPTAvatarAssets, gymMappingBridge });
   bridge.register(app);
   app.locals.pocketPTWorldBridge = bridge;
 
@@ -103,7 +119,7 @@ function createWorldBridgeApp(options = {}) {
 if (require.main === module) {
   const app = createWorldBridgeApp();
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching + Transformation Profile + Getting Started listening on :${PORT}`));
+  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching + Transformation Profile + Getting Started + Gym Mapping listening on :${PORT}`));
 }
 
-module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted };
+module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted, installGymMapping };
