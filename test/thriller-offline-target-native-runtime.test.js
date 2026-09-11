@@ -22,6 +22,13 @@ function mapping() {
   for (let i = 1; i < 20; i++) canonicalMap[`Joint${i}`] = `Bone${i}`;
   return { canonicalMap };
 }
+function transform(values) { return { values:[...values], toArray(){ return [...this.values]; }, fromArray(next){ this.values=[...next]; } }; }
+function avatarScene() {
+  const hips = { name:"Hips", isBone:true, parent:null, position:transform([0,1,0]), quaternion:transform([0,0,0,1]), scale:transform([1,1,1]) };
+  const bones = [hips];
+  for (let i=1;i<20;i++) bones.push({ name:`Bone${i}`, isBone:true, parent:hips, position:transform([0,0.05+i/100,0]), quaternion:transform([0,0,0,1]), scale:transform([1,1,1]) });
+  return { name:"PersonalizedAvatar", uuid:"avatar-test", updateMatrixWorld(){}, traverse(visitor){ bones.forEach(visitor); }, bones };
+}
 const THREE = { AnimationClip: class AnimationClip { constructor(name, duration, tracks) { this.name = name; this.duration = duration; this.tracks = tracks; } } };
 
 test("offline Avaturn Thriller uses target-native filter-only clip instead of runtime quaternion conversion", () => {
@@ -55,6 +62,42 @@ test("Thriller catalog is explicitly offline-retargeted to Avaturn and qualifies
   assert.equal(motion.bindingMode, runtime.OFFLINE_BINDING);
   assert.match(motion.runtimeClipName, /_Avaturn$/);
   assert.equal(runtime.isOfflineTargetNative(motion, session), true);
+});
+
+test("offline target-native selection bypasses the full independent loader and binds only the filtered clip", async () => {
+  const previousCompatibility = globalThis.PocketPTMotionLabGymCompatibility;
+  globalThis.PocketPTMotionLabGymCompatibility = { loadProfile(){ return mapping(); } };
+  let originalLoadCalls = 0, disposedScenes = 0, boundClip = null;
+  const avatar = avatarScene(), sourceClip = fixtureClip(), sourceScene = { traverse(){}, name:"OfflineFixture" };
+  const session = {
+    THREE,
+    avatar,
+    avatarProfile:{ avatarId:"avaturn-personalized-candidate", skeletonProfile:"avaturn-native-v1" },
+    mixer:{ getRoot(){ return avatar; }, clipAction(clip){ boundClip=clip; return { setLoop(){}, play(){}, stop(){}, time:0 }; } },
+    loop:true,
+    async loadIndependentRetargetedMotion(){ originalLoadCalls++; throw new Error("full loader must not run for target-native Thriller"); },
+    async loadAsset(){ return { scene:sourceScene, animations:[sourceClip], parser:{json:{skins:[],meshes:[]}} }; },
+    inspectClipBindings(clip){ return { boundTrackCount:clip.tracks.length, unboundTrackCount:0, unboundTracks:Object.freeze([]) }; },
+    disposeObjectResources(scene){ if(scene===sourceScene) disposedScenes++; },
+    snapshotRepresentativeBones(){ return Object.freeze([]); },
+    stop(){ return {status:"stopped"}; },
+    unloadMotion(){ return {status:"ready"}; },
+    setLoop(){}
+  };
+  try {
+    runtime.decorateSession(session);
+    const out = await session.loadIndependentRetargetedMotion(catalog.parts[0]);
+    assert.equal(out.status,"ready");
+    assert.equal(originalLoadCalls,0,"target-native path must never enter the old 162-track full loader");
+    assert.equal(out.diagnostics.fullIndependentLoaderSkipped,true);
+    assert.equal(out.diagnostics.runtimeRetargetSkipped,true);
+    assert.equal(out.diagnostics.trackCount,21);
+    assert.equal(boundClip.tracks.length,21);
+    assert.equal(disposedScenes,1,"source GLB scene should be released immediately after extracting the safe clip");
+  } finally {
+    if(previousCompatibility===undefined) delete globalThis.PocketPTMotionLabGymCompatibility;
+    else globalThis.PocketPTMotionLabGymCompatibility=previousCompatibility;
+  }
 });
 
 test("Motion Lab loads offline target-native runtime after review hardening and before runtime installation", () => {
