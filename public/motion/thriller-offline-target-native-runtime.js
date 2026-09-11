@@ -9,7 +9,7 @@
   "use strict";
   if (!base) throw new Error("reviewed retarget compatibility policy required");
 
-  const OFFLINE_TARGET_NATIVE_VERSION = "thriller-offline-target-native-v1";
+  const OFFLINE_TARGET_NATIVE_VERSION = "thriller-offline-target-native-v2-direct-load";
   const OFFLINE_BINDING = "OFFLINE RETARGETED / REVIEW REQUIRED";
   const ROOT_BONE = "Hips";
 
@@ -59,8 +59,9 @@
       status: "ready",
       clip: safeClip,
       diagnostics: Object.freeze({
-        mode: "offline-target-native-filter-only",
+        mode: "offline-target-native-direct-load-filter-only",
         runtimeRetargetSkipped: true,
+        fullIndependentLoaderSkipped: true,
         sourceTrackCount: clip.tracks.length,
         playableTrackCount: retained.length,
         canonicalJointsRetained: quaternionTracks,
@@ -82,6 +83,28 @@
       && /_Avaturn$/i.test(String(motion?.runtimeClipName || ""));
   }
 
+  function diagnosticsBase(motion, session) {
+    return {
+      motionId: motion?.id || null,
+      selectedPart: motion?.displayName || null,
+      sourceFbx: motion?.sourceFbxPath || null,
+      runtimeAsset: motion?.runtimeAssetPath || null,
+      sourceSkeletonProfile: motion?.sourceSkeletonProfile || null,
+      targetAvatarProfile: session?.avatarProfile?.avatarId || null,
+      targetSkeletonProfile: session?.avatarProfile?.skeletonProfile || null,
+      bindingMode: motion?.bindingMode || OFFLINE_BINDING,
+      retargetProfile: motion?.retargetProfile || null,
+      clipName: null,
+      clipDuration: null,
+      trackCount: 0,
+      intendedTrackCount: 0,
+      boundTrackCount: 0,
+      unboundTrackCount: 0,
+      unboundTracks: Object.freeze([]),
+      playbackState: "unloaded"
+    };
+  }
+
   function decorateSession(session) {
     if (!session || session.__thrillerOfflineTargetNativeInstalled) return session;
     Object.defineProperty(session, "__thrillerOfflineTargetNativeInstalled", { value: true, configurable: false });
@@ -93,42 +116,90 @@
     session.loadIndependentRetargetedMotion = async function loadOfflineTargetNativeMotion(motion) {
       if (!isOfflineTargetNative(motion, session)) return originalLoad(motion);
 
-      base.markCrashBoundary?.("THRILLER_OFFLINE_TARGET_NATIVE_LOAD", motion.id);
-      const loaded = await originalLoad(motion);
-      if (loaded?.status !== "ready") return loaded;
+      const meta = diagnosticsBase(motion, session);
+      const fail = (code, boundary, detail = {}) => {
+        const diagnostics = Object.freeze({ ...meta, ...detail, playbackState: "failed", firstFailingBoundary: boundary });
+        session.thrillerDiagnostics = diagnostics;
+        return Object.freeze({ status: "failed", code, diagnostics });
+      };
+
+      if (!motion?.id || !motion.runtimeAssetPath || !motion.runtimeClipName) return fail("thriller_catalog_invalid", "THRILLER_TARGET_NATIVE_CATALOG");
+      if (!session.avatar || !session.mixer) return fail("avatar_required", "THRILLER_TARGET_NATIVE_AVATAR");
+      if (session.avatarProfile?.avatarId !== motion.targetAvatarProfile || session.avatarProfile?.skeletonProfile !== motion.targetSkeletonProfile) return fail("RETARGET REQUIRED", "THRILLER_TARGET_NATIVE_PROFILE");
+
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_REQUESTED", motion.id);
 
       let mappingProfile = null;
       try { mappingProfile = root.PocketPTMotionLabGymCompatibility?.loadProfile?.() || null; } catch (_) {}
-      const sourceClip = session.sessionClip;
-      const baseline = base.capturePose?.(session.THREE, session.avatar) || null;
-      const safe = makeSafeClip(session.THREE, sourceClip, mappingProfile);
+      const mapping = authoritativeBones(mappingProfile);
+      if (!mapping.complete) return fail("gym_mapping_required", "THRILLER_TARGET_NATIVE_MAPPING");
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_MAPPING_READY", `${mapping.bones.size} mapped bones`);
+
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_ASSET_LOAD_STARTED", motion.runtimeAssetPath);
+      const asset = await session.loadAsset?.(motion.runtimeAssetPath, "fixture");
+      if (!asset || asset.status === "failed") return fail(asset?.code || "asset_load_failed", "THRILLER_TARGET_NATIVE_ASSET_LOAD", { cause: asset?.cause || null });
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_ASSET_PARSED", motion.runtimeAssetPath);
+
+      const clip = asset.animations?.find(candidate => candidate.name === motion.runtimeClipName);
+      if (!clip) {
+        session.disposeObjectResources?.(asset.scene);
+        return fail("animation_missing", "THRILLER_TARGET_NATIVE_CLIP", { runtimeClipNames: Object.freeze((asset.animations || []).map(candidate => candidate.name)) });
+      }
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_CLIP_FOUND", `${clip.name}; ${clip.tracks?.length || 0} tracks`);
+
+      const safe = makeSafeClip(session.THREE, clip, mappingProfile);
       if (safe.status !== "ready") {
-        originalStop?.();
-        const diagnostics = Object.freeze({ ...(loaded.diagnostics || {}), playbackState: "failed", firstFailingBoundary: safe.code, offlineTargetNative: safe.diagnostics || null });
-        session.thrillerDiagnostics = diagnostics;
-        return Object.freeze({ status: "failed", code: safe.code, diagnostics });
+        session.disposeObjectResources?.(asset.scene);
+        return fail(safe.code, "THRILLER_TARGET_NATIVE_FILTER", { offlineTargetNative: safe.diagnostics || null });
+      }
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_FILTERED", `${safe.diagnostics.playableTrackCount}/${safe.diagnostics.sourceTrackCount}`);
+
+      const binding = session.inspectClipBindings?.(safe.clip);
+      if (!binding) {
+        session.disposeObjectResources?.(asset.scene);
+        return fail("binding_inspector_unavailable", "THRILLER_TARGET_NATIVE_BINDING");
+      }
+      if (binding.unboundTrackCount) {
+        session.disposeObjectResources?.(asset.scene);
+        return fail("animation_binding_failed", "THRILLER_TARGET_NATIVE_BINDING", {
+          intendedTrackCount: safe.clip.tracks.length,
+          boundTrackCount: binding.boundTrackCount,
+          unboundTrackCount: binding.unboundTrackCount,
+          unboundTracks: binding.unboundTracks
+        });
+      }
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_BINDING_CHECKED", `${binding.boundTrackCount}/${safe.clip.tracks.length}`);
+
+      const mixerRoot = session.mixer?.getRoot?.() || null;
+      if (mixerRoot && mixerRoot !== session.avatar) {
+        session.disposeObjectResources?.(asset.scene);
+        return fail("animation_mixer_root_mismatch", "THRILLER_TARGET_NATIVE_MIXER_ROOT");
       }
 
-      base.markCrashBoundary?.("THRILLER_OFFLINE_TARGET_NATIVE_FILTERED", `${safe.diagnostics.playableTrackCount}/${safe.diagnostics.sourceTrackCount}`);
+      const baseline = base.capturePose?.(session.THREE, session.avatar) || null;
       originalStop?.();
-      session.mixer?.uncacheAction?.(sourceClip, session.avatar);
+      session.disposeObjectResources?.(asset.scene);
+      session.animationFixture = null;
       session.sessionClip = safe.clip;
       session.action = session.mixer.clipAction(safe.clip, session.avatar);
       session.setLoop?.(session.loop);
+      base.markCrashBoundary?.("THRILLER_TARGET_NATIVE_ACTION_BOUND", safe.clip.name);
+
       session.__thrillerOfflineTargetNativeBaseline = baseline;
       session.__thrillerOfflineTargetNativeDiagnostics = safe.diagnostics;
       session.thrillerBoneSnapshot = session.snapshotRepresentativeBones?.() || session.thrillerBoneSnapshot;
       session.thrillerDiagnostics = {
-        ...(loaded.diagnostics || {}),
+        ...meta,
         clipName: safe.clip.name,
         clipDuration: safe.clip.duration,
         trackCount: safe.diagnostics.playableTrackCount,
         intendedTrackCount: safe.diagnostics.playableTrackCount,
-        boundTrackCount: safe.diagnostics.playableTrackCount,
+        boundTrackCount: binding.boundTrackCount,
         unboundTrackCount: 0,
         unboundTracks: Object.freeze([]),
         retargetNormalization: safe.diagnostics,
         runtimeRetargetSkipped: true,
+        fullIndependentLoaderSkipped: true,
         playbackState: "ready",
         firstFailingBoundary: "THRILLER_VISIBLE_PLAYBACK_NOT_CONFIRMED"
       };
