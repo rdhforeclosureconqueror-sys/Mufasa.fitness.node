@@ -1615,6 +1615,115 @@
       "prNumber": null,
       "commitSha": "bf2bf5ca049ca3976a07ea6e81ceade2db81467c",
       "timestamp": "2026-09-10T23:40:14.019Z"
+    },
+    {
+      "operationId": "6610b468-b585-4a7b-baeb-a5d7aea1d91e",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "Investigating Thriller Part 1 semantic retarget divergence; overhead squat path is an immutable control.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T02:05:32.580Z"
+    },
+    {
+      "operationId": "01666948-1b0b-417c-9c46-6138a1903e8f",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT: trace source semantic pose through retarget basis conversion before changing behavior.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T02:05:32.997Z"
+    },
+    {
+      "operationId": "9d558f3e-ac52-4f47-b695-60923edc8566",
+      "board": "avatar",
+      "cardId": "avatar-development-motion-lab-gym-runtime-adapter",
+      "sourceType": "card_creation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "Connect Gym Compatibility inspection to the canonical mounted personalized-avatar owner, preserve lifecycle unload/reload truth, and add regression coverage without a duplicate loader or bone inventory.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T02:05:33.590Z"
+    },
+    {
+      "operationId": "7a592141-c9fc-411c-a87d-192298376fba",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [
+        "public/motion/retarget-motion-compatibility.js",
+        "test/thriller-retarget-motion-compatibility.test.js",
+        "docs/review-handoffs/motion-lab-gym-thriller-boundary-fix-20260911.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Thriller Part 1 local-basis root cause replaced by hierarchy-aware world/rest semantic conversion relative to the animated target parent. Added frame basis traces and structure then kinematic validation; connected rotation contortion regression fails closed. Focused tests and lint PASS. Overhead squat untouched. No browser screenshot tooling or physical iPhone QA; authorized human movement/visual acceptance remains required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T02:12:12.421Z"
+    },
+    {
+      "operationId": "034b050b-04c5-4539-860c-b3d90921a23f",
+      "board": "avatar",
+      "cardId": "avatar-development-motion-lab-gym-runtime-adapter",
+      "sourceType": "implementation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [
+        "motion-lab/motion-lab-runtime.js",
+        "public/motion/motion-lab-gym-compatibility.js",
+        "test/motion-lab-gym-runtime-adapter.test.js",
+        "docs/review-handoffs/motion-lab-gym-thriller-boundary-fix-20260911.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Canonical runtime adapter exposes the existing mounted personalized-avatar profile, skeleton profile, same 54-name inventory, embedded clips and rest-pose state. Load/unload/reload regression PASS; compatibility focused tests PASS. No polling or duplicate loader. Physical iPhone and authorized human rest-pose/visual acceptance remain required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T02:12:12.447Z"
+    },
+    {
+      "operationId": "5b83a0b1-1c70-4df1-a2ef-a06d7d952e5a",
+      "board": "avatar",
+      "cardId": "avatar-development-motion-lab-gym-runtime-adapter",
+      "sourceType": "implementation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [
+        "motion-lab/motion-lab-runtime.js",
+        "public/motion/motion-lab-gym-compatibility.js",
+        "test/motion-lab-gym-runtime-adapter.test.js",
+        "docs/review-handoffs/motion-lab-gym-thriller-boundary-fix-20260911.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 61befa5. Pull-request metadata created; make_pr returned no numeric PR ID. Focused compatibility regression PASS. Browser screenshot unavailable because no Chromium/Playwright is installed. Physical iPhone and authorized human rest-pose/visual acceptance remain required.",
+      "prNumber": null,
+      "commitSha": "61befa5",
+      "timestamp": "2026-09-11T02:15:30.787Z"
+    },
+    {
+      "operationId": "7871de08-deb6-4e7a-903e-7ed468c1710f",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-gym-runtime-boundary-fix",
+      "files": [
+        "public/motion/retarget-motion-compatibility.js",
+        "test/thriller-retarget-motion-compatibility.test.js",
+        "docs/review-handoffs/motion-lab-gym-thriller-boundary-fix-20260911.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 61befa5. Pull-request metadata created; make_pr returned no numeric PR ID. Focused retarget and kinematic regression PASS. Full suite exposed unrelated existing failures and hung at mirror-motion-phase2 before interruption. No browser screenshot tooling or physical iPhone QA; authorized human movement/visual acceptance remains required.",
+      "prNumber": null,
+      "commitSha": "61befa5",
+      "timestamp": "2026-09-11T02:15:30.825Z"
     }
   ]
 }
