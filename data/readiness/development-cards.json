@@ -98,6 +98,20 @@
       "createdAt": "2026-09-10T22:02:11.545Z",
       "source": "readiness:update",
       "taskId": "pr-778"
+    },
+    {
+      "id": "avatar-development-motion-lab-gym-runtime-adapter",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Motion Lab Gym Compatibility canonical runtime adapter",
+      "category": "MOTION INTEGRATION",
+      "description": "Connect Gym Compatibility inspection to the canonical mounted personalized-avatar owner, preserve lifecycle unload/reload truth, and add regression coverage without a duplicate loader or bone inventory.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-11T02:05:33.590Z",
+      "source": "readiness:update",
+      "taskId": "thriller-gym-runtime-boundary-fix"
     }
   ]
 }

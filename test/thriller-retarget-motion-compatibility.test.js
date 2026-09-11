@@ -37,6 +37,9 @@ test("canonical retarget normalization converts 54x position/quaternion/scale ch
   assert.equal(out.diagnostics.rootTranslationTrackCount,1);
   assert.equal(out.diagnostics.quaternionTrackCount,54);
   assert.equal(out.diagnostics.playableTrackCount,55);
+  assert.equal(out.diagnostics.normalizationMode,"hierarchy-aware-world-rest-basis");
+  assert.ok(out.diagnostics.rotationBasisSamples.length>0);
+  for(const field of ["sourceRestLocalQuaternion","sourceRestWorldQuaternion","sourceAnimatedLocalQuaternion","sourceAnimatedWorldQuaternion","targetRestLocalQuaternion","targetRestWorldQuaternion","targetProducedLocalQuaternion","targetProducedWorldQuaternion","sourceParentWorldTransform","targetParentWorldTransform","sourceBoneDirection","targetBoneDirection","sourceSemanticRotationDelta","targetAppliedSemanticRotationDelta"])assert.ok(field in out.diagnostics.rotationBasisSamples[0],field);
   assert.ok(out.diagnostics.firstSourceRisk);
   assert.equal(out.diagnostics.firstSourceRisk.property,"position");
   assert.equal(out.clip.tracks.some(item=>item.name==="Bone1.position"),false);
@@ -72,7 +75,7 @@ function baseRuntime(playMutation){
     const action={time:0,paused:false,play(){return this;},stop(){this.time=0;return this;},setLoop(){},isRunning(){return true;}};
     const session={THREE,avatar,avatarProfile:{avatarId:"avaturn-personalized-candidate",skeletonProfile:"avaturn-native-v1"},animationFixture:null,sessionClip:null,action:null,loop:true,options:{},mixer:{clipAction(next){session.sessionClip=next;session.action=action;return action;},uncacheAction(){},stopAllAction(){}},diagnostic(){},setLoop(){},
       async loadIndependentRetargetedMotion(){session.animationFixture={scene:source};session.sessionClip=clip;session.action=action;session.thrillerDiagnostics={motionId:"thriller-part-1",boundaries:[{boundary:"TRACK_TARGETS_RESOLVE_ON_VISIBLE_AVATAR",status:"PASS"}],playbackState:"ready",firstFailingBoundary:"THRILLER_VISIBLE_PLAYBACK_NOT_CONFIRMED"};return{status:"ready",diagnostics:{...session.thrillerDiagnostics,trackCount:162,intendedTrackCount:162,boundTrackCount:162,unboundTrackCount:0}};},
-      play(){action.time+=1/30;playMutation(session);session.thrillerDiagnostics={...session.thrillerDiagnostics,boundaries:[...session.thrillerDiagnostics.boundaries,{boundary:"VISIBLE_AVATAR_BONES_CHANGED_AFTER_PLAYBACK_TICK",status:"PASS"},{boundary:"THRILLER_VISIBLE_PLAYBACK_CONFIRMED",status:"PASS"}],playbackState:"playing",firstFailingBoundary:"NONE"};return{status:"playing",diagnostics:{...session.thrillerDiagnostics}};},
+      play(){action.time=1;for(const item of session.sessionClip.tracks.filter(item=>item.name.endsWith(".quaternion"))){const node=session.avatar.nodes.find(candidate=>`${candidate.name}.quaternion`===item.name);if(node)node.quaternion.values=Array.from(item.values).slice(-4);}playMutation(session);session.thrillerDiagnostics={...session.thrillerDiagnostics,boundaries:[...session.thrillerDiagnostics.boundaries,{boundary:"VISIBLE_AVATAR_BONES_CHANGED_AFTER_PLAYBACK_TICK",status:"PASS"},{boundary:"THRILLER_VISIBLE_PLAYBACK_CONFIRMED",status:"PASS"}],playbackState:"playing",firstFailingBoundary:"NONE"};return{status:"playing",diagnostics:{...session.thrillerDiagnostics}};},
       stop(){action.stop();return{status:"stopped"};},unloadMotion(){session.stop();session.thrillerDiagnostics=null;return{status:"ready"};}
     };return session;
   }};
@@ -86,24 +89,33 @@ test("runtime policy blocks a technically animated but structurally exploded Thr
   assert.equal(loaded.diagnostics.playableTrackCount,5);
   const played=session.play();
   assert.equal(played.status,"failed");
-  assert.equal(played.code,"RETARGETED_POSE_ANATOMY_INVALID");
-  assert.equal(played.diagnostics.firstFailingBoundary,"RETARGETED_POSE_ANATOMY_INVALID");
+  assert.equal(played.code,"RETARGETED_POSE_STRUCTURE_INVALID");
+  assert.equal(played.diagnostics.firstFailingBoundary,"RETARGETED_POSE_STRUCTURE_INVALID");
   assert.equal(played.diagnostics.boundaries.some(x=>x.boundary==="THRILLER_VISIBLE_PLAYBACK_CONFIRMED"),false);
-  const anatomy=played.diagnostics.boundaries.find(x=>x.boundary==="RETARGETED_POSE_ANATOMY_VALID");
+  const anatomy=played.diagnostics.boundaries.find(x=>x.boundary==="RETARGETED_POSE_STRUCTURE_VALID");
   assert.equal(anatomy.status,"FAIL");
-  const info=played.diagnostics.boundaries.find(x=>x.boundary==="RETARGETED_POSE_ANATOMY_FIRST_OFFENDER");
+  const info=played.diagnostics.boundaries.find(x=>x.boundary==="RETARGETED_POSE_STRUCTURE_VALID_FIRST_OFFENDER");
   assert.match(info.status,/bone=Bone2/);
   assert.match(info.status,/property=position/);
 });
 
-test("runtime policy inserts anatomy PASS before Thriller visible playback confirmation for valid motion",async()=>{
-  const runtime=compat.installRuntime(baseRuntime(session=>{session.avatar.nodes[2].quaternion.values=[0,0.2,0,0.979795897];}));
+test("runtime policy inserts structure and semantic kinematic PASS before Thriller visible playback confirmation",async()=>{
+  const runtime=compat.installRuntime(baseRuntime(()=>{}));
   const session=runtime.createMotionSession();
   await session.loadIndependentRetargetedMotion({sourceSkeletonProfile:"mixamo-v1",targetSkeletonProfile:"avaturn-native-v1"});
   const played=session.play();
   assert.equal(played.status,"playing");
   assert.equal(played.diagnostics.firstFailingBoundary,"NONE");
   const names=played.diagnostics.boundaries.map(x=>x.boundary);
-  assert.ok(names.indexOf("RETARGETED_POSE_ANATOMY_VALID")>=0);
-  assert.ok(names.indexOf("THRILLER_VISIBLE_PLAYBACK_CONFIRMED")>names.indexOf("RETARGETED_POSE_ANATOMY_VALID"));
+  assert.ok(names.indexOf("RETARGETED_POSE_STRUCTURE_VALID")>=0);
+  assert.ok(names.indexOf("RETARGETED_POSE_KINEMATIC_VALID")>names.indexOf("RETARGETED_POSE_STRUCTURE_VALID"));
+  assert.ok(names.indexOf("THRILLER_VISIBLE_PLAYBACK_CONFIRMED")>names.indexOf("RETARGETED_POSE_KINEMATIC_VALID"));
+});
+
+test("semantic kinematic gate rejects connected rotation-only contortion",()=>{
+  const source=skeleton(4),target=skeleton(4,0.003),prepared=compat.prepareClip(THREE,sourceClip(source),source,target);
+  target.nodes.forEach((node,index)=>{const output=prepared.clip.tracks.find(item=>item.name===`${node.name}.quaternion`);node.quaternion.values=Array.from(output.values).slice(-4);if(index===2)node.quaternion.values=[0.8,0,0,0.6];});
+  assert.equal(compat.validatePose(THREE,prepared.baseline,target,{timestamp:1}).status,"PASS");
+  const semantic=compat.validateKinematics(THREE,prepared.diagnostics.kinematicReference,target,{timestamp:1});
+  assert.equal(semantic.status,"FAIL");assert.equal(semantic.boundary,"RETARGETED_POSE_KINEMATIC_VALID");assert.equal(semantic.offender.property,"semantic_world_rotation");
 });

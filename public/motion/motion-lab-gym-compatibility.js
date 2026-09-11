@@ -37,6 +37,9 @@
     next.mappingCoverage = `${Object.keys(next.canonicalMap).length}/${authority().REQUIRED_CANONICAL_JOINTS.length}`;
     const stage = (next.stages || []).find(item => item.stage === "CANONICAL_MAP_RESOLVED");
     if (stage) { stage.status = next.unmapped.length ? "FAIL" : "PASS"; stage.detail = next.unmapped.length ? `${next.unmapped.length} required joints unresolved` : "all required canonical joints resolved"; }
+    const classified = (next.stages || []).find(item => item.stage === "COMPATIBILITY_CLASSIFIED");
+    const rest = (next.stages || []).find(item => item.stage === "REST_POSE_VALID");
+    if (classified) { classified.status = !next.unmapped.length && rest?.status === "PASS" ? "PASS" : "FAIL"; classified.detail = classified.status === "PASS" ? "mapping and rest-pose compatibility" : "mapping or rest-pose compatibility incomplete"; }
     next.firstFailure = ((next.stages || []).find(item => item.status === "FAIL") || {}).stage || "NONE";
     return next;
   }

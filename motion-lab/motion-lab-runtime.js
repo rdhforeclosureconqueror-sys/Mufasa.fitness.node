@@ -46,6 +46,12 @@
     render();return out;
   }
   function unloadAvatar(){avatarRequestVersion++;var out=session?.unloadAvatar?.()||{status:"ready"};clearSelection();viewerStatus(session?.state==="running"?"Renderer active — no avatar selected.":"No renderer is active.");render();return out;}
+  function personalizedAvatarState(){
+    var diagnostics=state?.avatar,profile=env.PocketPTAvatarProfiles?.profiles?.personalized;
+    var mounted=Boolean(session?.state==="running"&&session?.avatar&&diagnostics?.avatarProfileId===profile?.avatarId);
+    if(!mounted)return Object.freeze({mounted:false,avatar:null,avatarId:null,avatarProfile:null,skeletonProfile:null,skeleton:null,boneNames:Object.freeze([]),animations:Object.freeze([]),embeddedAnimations:Object.freeze([]),restPoseValid:false});
+    return Object.freeze({mounted:true,avatar:profile,avatarId:diagnostics.avatarProfileId,avatarProfile:profile,skeletonProfile:profile?.skeletonProfile||null,skeleton:Object.freeze({bones:diagnostics.boneNames}),boneNames:diagnostics.boneNames,animations:diagnostics.animations,embeddedAnimations:diagnostics.animations,restPoseValid:false});
+  }
 
   async function loadAnimation(){if(state.avatar?.avatarProfileId!=="phase-e-reference")return incompatible("Phase E fixture requires the Phase E reference avatar.");var t=now(),out=await session?.loadAnimation(env.PocketPTPhaseEAssets.paths.animation)||{status:"failed",code:"avatar_required"};if(out.status==="ready"){state.motion={...out.diagnostics,avatarProfileId:state.avatar?.avatarProfileId,animationSource:"phase-e-animation-fixture",bindingMode:"DIRECT / PROFILE-COMPATIBLE"};state.playback="ready";}set("animation_clip",out.status==="ready"&&out.diagnostics.unboundTrackCount===0?"pass":"fail",t,out.code,out.diagnostics?out.diagnostics.trackCount+" tracks; "+out.diagnostics.unboundTrackCount+" unbound":null);return out;}
 
@@ -124,5 +130,5 @@
     ["disposeRuntime","startSession","stressTest","loadAvatar","loadPersonalizedAvatar"].forEach(function(id){var button=env.document?.getElementById(id);if(button)button.disabled=true;});
     env.document?.querySelectorAll("[data-failure]").forEach(function(button){button.disabled=true;});
   }
-  return Object.freeze({STATUS:STATUS,STAGES:Object.freeze(STAGES.slice()),result:result,mount:mount,initialize:initialize,start:start,stop:stop,loadAvatar:loadAvatar,unloadAvatar:unloadAvatar,loadAnimation:loadAnimation,loadNativeAnimation:loadNativeAnimation,loadExtractedAnimation:loadExtractedAnimation,selectThrillerMotion:selectThrillerMotion,unloadAnimation:unloadAnimation,loadPushUp:loadPushUp,loadSynthesizedSquat:loadSynthesizedSquat,loadMotionSpec:loadMotionSpec,failure:failure,stress:stress,reset:reset,dispose:dispose,summary:summary,snapshot:function(){return{stages:state?.stages,resources:counts(),stress:state?.stress,motion:state?.motion,playback:state?.playback,events:events.slice()};}});
+  return Object.freeze({STATUS:STATUS,STAGES:Object.freeze(STAGES.slice()),result:result,mount:mount,initialize:initialize,start:start,stop:stop,loadAvatar:loadAvatar,unloadAvatar:unloadAvatar,personalizedAvatarState:personalizedAvatarState,gymCompatibilityState:personalizedAvatarState,loadAnimation:loadAnimation,loadNativeAnimation:loadNativeAnimation,loadExtractedAnimation:loadExtractedAnimation,selectThrillerMotion:selectThrillerMotion,unloadAnimation:unloadAnimation,loadPushUp:loadPushUp,loadSynthesizedSquat:loadSynthesizedSquat,loadMotionSpec:loadMotionSpec,failure:failure,stress:stress,reset:reset,dispose:dispose,summary:summary,snapshot:function(){return{stages:state?.stages,resources:counts(),stress:state?.stress,avatar:state?.avatar,motion:state?.motion,playback:state?.playback,events:events.slice()};}});
 });

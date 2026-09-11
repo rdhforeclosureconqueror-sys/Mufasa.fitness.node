@@ -41,6 +41,16 @@
     return copy(node?.position, [0, 0, 0]);
   }
 
+  function worldQuaternion(THREE, node) {
+    if (node?.getWorldQuaternion && THREE?.Quaternion) {
+      const quaternion = new THREE.Quaternion();
+      node.getWorldQuaternion(quaternion);
+      return copy(quaternion, [0, 0, 0, 1]);
+    }
+    const local = normalizedQuaternion(copy(node?.quaternion, [0, 0, 0, 1])) || [0, 0, 0, 1];
+    return node?.parent?.isBone ? quaternionMultiply(worldQuaternion(THREE, node.parent), local) : local;
+  }
+
   function skeletonSpan(snapshot) {
     const positions = (snapshot?.order || []).map(name => snapshot.bones?.[name]?.worldPosition).filter(finiteArray);
     if (positions.length < 2) return 0;
@@ -60,8 +70,8 @@
       const position = copy(node.position, [0, 0, 0]);
       const quaternion = copy(node.quaternion, [0, 0, 0, 1]);
       const scale = copy(node.scale, [1, 1, 1]);
-      const world = worldPosition(THREE, node);
-      bones[name] = Object.freeze({ name, parentName, position: Object.freeze(position), quaternion: Object.freeze(quaternion), scale: Object.freeze(scale), worldPosition: Object.freeze(world) });
+      const world = worldPosition(THREE, node), worldQuat = worldQuaternion(THREE, node);
+      bones[name] = Object.freeze({ name, parentName, position: Object.freeze(position), quaternion: Object.freeze(quaternion), worldQuaternion: Object.freeze(worldQuat), scale: Object.freeze(scale), worldPosition: Object.freeze(world) });
       order.push(name);
     });
     const snapshot = { bones: Object.freeze(bones), order: Object.freeze(order) };
@@ -83,6 +93,19 @@
     ];
   }
   const quaternionInverse = q => [-q[0], -q[1], -q[2], q[3]];
+  const quaternionDot = (a, b) => Math.abs(a.reduce((sum, value, index) => sum + value * b[index], 0));
+  const quaternionAngle = (a, b) => 2 * Math.acos(Math.min(1, Math.max(-1, quaternionDot(a, b))));
+  function rotateVector(quaternion, vector) {
+    const q = normalizedQuaternion(quaternion) || [0, 0, 0, 1], v = [vector[0], vector[1], vector[2], 0];
+    return quaternionMultiply(quaternionMultiply(q, v), quaternionInverse(q)).slice(0, 3);
+  }
+  function quaternionSlerp(a, b, alpha) {
+    let dot = a.reduce((sum, value, index) => sum + value * b[index], 0), end = b;
+    if (dot < 0) { dot = -dot; end = b.map(value => -value); }
+    if (dot > 0.9995) return normalizedQuaternion(a.map((value, index) => value + alpha * (end[index] - value)));
+    const theta = Math.acos(Math.min(1, dot)), sin = Math.sin(theta);
+    return a.map((value, index) => (Math.sin((1 - alpha) * theta) * value + Math.sin(alpha * theta) * end[index]) / sin);
+  }
 
   function parseTrack(track) {
     const name = String(track?.name || "");
@@ -96,6 +119,17 @@
       times: track?.times ? Array.from(track.times) : [],
       values: track?.values ? Array.from(track.values) : []
     });
+  }
+
+  function sampleQuaternionTrack(track, timestamp, fallback) {
+    if (!track) return fallback;
+    const times = Array.from(track.times || []), values = Array.from(track.values || []);
+    if (!times.length) return fallback;
+    let upper = times.findIndex(value => Number(value) >= timestamp);
+    if (upper <= 0) return normalizedQuaternion(values.slice(0, 4)) || fallback;
+    if (upper < 0) return normalizedQuaternion(values.slice(-4)) || fallback;
+    const lower = upper - 1, span = Number(times[upper]) - Number(times[lower]), alpha = span > 0 ? (timestamp - Number(times[lower])) / span : 0;
+    return quaternionSlerp(normalizedQuaternion(values.slice(lower * 4, lower * 4 + 4)) || fallback, normalizedQuaternion(values.slice(upper * 4, upper * 4 + 4)) || fallback, alpha);
   }
 
   function trackItemSize(track, property) {
@@ -135,7 +169,32 @@
     const sourceSpan = sourcePose.span, targetSpan = targetPose.span;
     const measuredScale = sourceSpan > 1e-6 && targetSpan > 1e-6 ? targetSpan / sourceSpan : 1;
     const rootScaleRatio = Number.isFinite(measuredScale) && measuredScale >= 0.25 && measuredScale <= 4 ? measuredScale : 1;
-    const output = [], diagnostics = { sourceTrackCount: clip.tracks.length, playableTrackCount: 0, quaternionTrackCount: 0, rootTranslationTrackCount: 0, removedNonRootPositionTrackCount: 0, removedScaleTrackCount: 0, passthroughTrackCount: 0, rootBone, rootScaleRatio, sourceSkeletonSpan: sourceSpan, targetSkeletonSpan: targetSpan, normalizationMode: "target-rest + source-motion-delta", firstSourceRisk: null };
+    const quaternionTracks = new Map();
+    for (const candidate of clip.tracks) { const parsed = parseTrack(candidate); if (parsed.property === "quaternion") quaternionTracks.set(parsed.nodeName, candidate); }
+    const outputTracks = new Map();
+    const sourceWorldAt = (name, timestamp, cache) => {
+      if (cache.has(name)) return cache.get(name);
+      const rest = sourcePose.bones[name];
+      if (!rest) return [0, 0, 0, 1];
+      const local = sampleQuaternionTrack(quaternionTracks.get(name), timestamp, rest.quaternion);
+      const world = rest.parentName ? quaternionMultiply(sourceWorldAt(rest.parentName, timestamp, cache), local) : local;
+      cache.set(name, normalizedQuaternion(world)); return cache.get(name);
+    };
+    const targetLocalAt = (name, timestamp, sourceCache, targetWorldCache) => {
+      if (targetWorldCache.has(name)) return targetWorldCache.get(name).local;
+      const sourceRest = sourcePose.bones[name], targetRest = targetPose.bones[name];
+      if (!sourceRest || !targetRest) return targetRest?.quaternion || [0, 0, 0, 1];
+      const sourceAnimatedWorld = sourceWorldAt(name, timestamp, sourceCache);
+      const semanticWorldDelta = quaternionMultiply(sourceAnimatedWorld, quaternionInverse(sourceRest.worldQuaternion));
+      const desiredWorld = normalizedQuaternion(quaternionMultiply(semanticWorldDelta, targetRest.worldQuaternion));
+      const parentWorld = targetRest.parentName && targetPose.bones[targetRest.parentName]
+        ? targetLocalAt(targetRest.parentName, timestamp, sourceCache, targetWorldCache) && targetWorldCache.get(targetRest.parentName).world
+        : [0, 0, 0, 1];
+      const local = normalizedQuaternion(quaternionMultiply(quaternionInverse(parentWorld), desiredWorld));
+      targetWorldCache.set(name, { local, world: desiredWorld, semanticWorldDelta });
+      return local;
+    };
+    const output = [], diagnostics = { sourceTrackCount: clip.tracks.length, playableTrackCount: 0, quaternionTrackCount: 0, rootTranslationTrackCount: 0, removedNonRootPositionTrackCount: 0, removedScaleTrackCount: 0, passthroughTrackCount: 0, rootBone, rootScaleRatio, sourceSkeletonSpan: sourceSpan, targetSkeletonSpan: targetSpan, normalizationMode: "hierarchy-aware-world-rest-basis", firstSourceRisk: null, rotationBasisSamples: [] };
 
     for (const sourceTrack of clip.tracks) {
       const { nodeName, property } = parseTrack(sourceTrack), size = trackItemSize(sourceTrack, property), rawValues = Array.from(sourceTrack?.values || []);
@@ -164,12 +223,12 @@
         for (let offset = 0; offset < values.length; offset += 4) {
           const sampled = normalizedQuaternion(values.slice(offset, offset + 4));
           if (!sampled) return Object.freeze({ status: "failed", code: "retarget_quaternion_non_finite", diagnostics: Object.freeze({ ...diagnostics, firstFailure: "RETARGET_CLIP_NORMALIZATION", firstSourceRisk: Object.freeze({ bone: nodeName, property, timestamp: Number(track.times?.[offset / 4] || 0), baseline: Object.freeze(Array.from(sourceRest)), sampled: Object.freeze(values.slice(offset, offset + 4)), delta: Infinity, ratio: Infinity }) }) });
-          const delta = quaternionMultiply(quaternionInverse(sourceRest), sampled);
-          const compensated = normalizedQuaternion(quaternionMultiply(targetRestQuat, delta));
+          const timestamp = Number(track.times?.[offset / 4] || 0);
+          const compensated = targetLocalAt(nodeName, timestamp, new Map(), new Map());
           for (let axis = 0; axis < 4; axis++) values[offset + axis] = compensated[axis];
         }
         track.values = track.values?.constructor && track.values.constructor !== Array ? new track.values.constructor(values) : values;
-        diagnostics.quaternionTrackCount++; output.push(track); continue;
+        diagnostics.quaternionTrackCount++; outputTracks.set(nodeName, track); output.push(track); continue;
       }
       diagnostics.passthroughTrackCount++; output.push(track);
     }
@@ -180,6 +239,27 @@
     safeClip.tracks = output;
     safeClip.duration = clip.duration;
     diagnostics.playableTrackCount = output.length;
+    diagnostics.kinematicReference = Object.freeze({ sourcePose, targetPose, sourceQuaternionTracks: quaternionTracks, targetQuaternionTracks: outputTracks });
+    const tracedBones = ["Hips", "LeftUpLeg", "LeftLeg", "LeftFoot", "Spine", "LeftArm"].filter(name => sourcePose.bones[name] && targetPose.bones[name]);
+    const firstTrack = quaternionTracks.get(tracedBones[0]), sourceTimes = Array.from(firstTrack?.times || []);
+    const sampleTimes = [...new Set([sourceTimes[0], sourceTimes[1], sourceTimes[Math.floor(sourceTimes.length / 2)], sourceTimes.at(-1)].filter(Number.isFinite))];
+    const firstChild = (pose, name) => pose.order.find(candidate => pose.bones[candidate]?.parentName === name);
+    diagnostics.rotationBasisSamples = Object.freeze(sampleTimes.flatMap(timestamp => {
+      const sourceCache = new Map(), targetCache = new Map();
+      return tracedBones.map(name => {
+        const sourceRest = sourcePose.bones[name], targetRest = targetPose.bones[name], producedLocal = targetLocalAt(name, timestamp, sourceCache, targetCache), produced = targetCache.get(name);
+        const sourceAnimatedLocal = sampleQuaternionTrack(quaternionTracks.get(name), timestamp, sourceRest.quaternion), sourceAnimatedWorld = sourceWorldAt(name, timestamp, sourceCache);
+        const sourceParentWorld = sourceRest.parentName ? sourceWorldAt(sourceRest.parentName, timestamp, sourceCache) : [0, 0, 0, 1];
+        if (targetRest.parentName) targetLocalAt(targetRest.parentName, timestamp, sourceCache, targetCache);
+        const targetParentWorld = targetRest.parentName ? targetCache.get(targetRest.parentName)?.world || targetPose.bones[targetRest.parentName]?.worldQuaternion : [0, 0, 0, 1];
+        const sourceChild = firstChild(sourcePose, name), targetChild = firstChild(targetPose, name);
+        const sourceDirection = sourceChild ? sourcePose.bones[sourceChild].worldPosition.map((value, axis) => value - sourceRest.worldPosition[axis]) : [0, 0, 0];
+        const targetDirection = targetChild ? targetPose.bones[targetChild].worldPosition.map((value, axis) => value - targetRest.worldPosition[axis]) : [0, 0, 0];
+        const sourceDelta = quaternionMultiply(sourceAnimatedWorld, quaternionInverse(sourceRest.worldQuaternion));
+        const targetDelta = quaternionMultiply(produced.world, quaternionInverse(targetRest.worldQuaternion));
+        return Object.freeze({ timestamp, bone: name, sourceRestLocalQuaternion: sourceRest.quaternion, sourceRestWorldQuaternion: sourceRest.worldQuaternion, sourceAnimatedLocalQuaternion: sourceAnimatedLocal, sourceAnimatedWorldQuaternion: sourceAnimatedWorld, targetRestLocalQuaternion: targetRest.quaternion, targetRestWorldQuaternion: targetRest.worldQuaternion, targetProducedLocalQuaternion: producedLocal, targetProducedWorldQuaternion: produced.world, sourceParentWorldTransform: Object.freeze({ quaternion: sourceParentWorld, position: sourceRest.parentName ? sourcePose.bones[sourceRest.parentName]?.worldPosition : [0, 0, 0] }), targetParentWorldTransform: Object.freeze({ quaternion: targetParentWorld, position: targetRest.parentName ? targetPose.bones[targetRest.parentName]?.worldPosition : [0, 0, 0] }), sourceBoneDirection: Object.freeze(rotateVector(sourceDelta, sourceDirection)), targetBoneDirection: Object.freeze(rotateVector(targetDelta, targetDirection)), sourceSemanticRotationDelta: Object.freeze(sourceDelta), targetAppliedSemanticRotationDelta: Object.freeze(targetDelta) });
+      });
+    }));
     diagnostics.firstSourceRisk = diagnostics.firstSourceRisk ? Object.freeze(diagnostics.firstSourceRisk) : null;
     return Object.freeze({ status: "ready", clip: safeClip, baseline: targetPose, diagnostics: Object.freeze(diagnostics) });
   }
@@ -220,6 +300,28 @@
     return Object.freeze({ status: "PASS", boundary: "RETARGETED_POSE_ANATOMY_VALID", code: null, offender: null, timestamp, span });
   }
 
+  function validateKinematics(THREE, reference, targetScene, options = {}) {
+    const timestamp = Number(options.timestamp || 0), tolerance = Number(options.angularTolerance || 0.35);
+    const current = capturePose(THREE, targetScene), sourceCache = new Map();
+    const sourceWorld = name => {
+      if (sourceCache.has(name)) return sourceCache.get(name);
+      const rest = reference?.sourcePose?.bones?.[name];
+      if (!rest) return null;
+      const local = sampleQuaternionTrack(reference.sourceQuaternionTracks?.get?.(name), timestamp, rest.quaternion);
+      const parent = rest.parentName ? sourceWorld(rest.parentName) : [0, 0, 0, 1];
+      const world = normalizedQuaternion(quaternionMultiply(parent || [0, 0, 0, 1], local)); sourceCache.set(name, world); return world;
+    };
+    for (const name of reference?.sourceQuaternionTracks?.keys?.() || []) {
+      const sourceRest = reference.sourcePose.bones[name], targetRest = reference.targetPose.bones[name], targetNow = current.bones[name];
+      if (!sourceRest || !targetRest || !targetNow) continue;
+      const sourceDelta = normalizedQuaternion(quaternionMultiply(sourceWorld(name), quaternionInverse(sourceRest.worldQuaternion)));
+      const targetDelta = normalizedQuaternion(quaternionMultiply(targetNow.worldQuaternion, quaternionInverse(targetRest.worldQuaternion)));
+      const delta = quaternionAngle(sourceDelta, targetDelta);
+      if (!Number.isFinite(delta) || delta > tolerance) return Object.freeze({ status: "FAIL", boundary: "RETARGETED_POSE_KINEMATIC_VALID", code: "RETARGETED_POSE_KINEMATIC_INVALID", offender: offender(name, "semantic_world_rotation", timestamp, sourceDelta, targetDelta, delta, tolerance > 0 ? delta / tolerance : Infinity) });
+    }
+    return Object.freeze({ status: "PASS", boundary: "RETARGETED_POSE_KINEMATIC_VALID", code: null, offender: null, timestamp, angularTolerance: tolerance });
+  }
+
   function assignTransform(target, values) {
     if (!target || !values) return;
     if (target.fromArray) { target.fromArray(values); return; }
@@ -257,15 +359,16 @@
       kept.push(Object.freeze({ boundary, status, detail }));
       return kept;
     }
-    function failAnatomy(validation) {
+    function failValidation(validation) {
       const detail = failureDetail(validation), current = session.thrillerDiagnostics || {};
       originalStop?.(); restorePose(session.__thrillerAnatomyBaseline, session.avatar);
-      const anatomyBoundaries = mergeBoundary(current.boundaries, "RETARGETED_POSE_ANATOMY_VALID", "FAIL", detail);
-      anatomyBoundaries.push(Object.freeze({ boundary: "RETARGETED_POSE_ANATOMY_FIRST_OFFENDER", status: `INFO ${detail}`, detail }));
-      const boundaries = Object.freeze(anatomyBoundaries);
-      session.thrillerDiagnostics = { ...current, boundaries, playbackState: "failed", firstFailingBoundary: "RETARGETED_POSE_ANATOMY_INVALID", anatomyValidation: Object.freeze(validation), anatomyFailure: validation.offender || null, anatomyFailureDetail: detail };
-      session.diagnostic?.("retargeted_pose_anatomy_invalid", { firstFailure: "RETARGETED_POSE_ANATOMY_INVALID", detail });
-      return Object.freeze({ status: "failed", code: "RETARGETED_POSE_ANATOMY_INVALID", diagnostics: Object.freeze({ ...session.thrillerDiagnostics }) });
+      const failure = validation.code || "RETARGETED_POSE_STRUCTURE_INVALID", boundary = validation.boundary || "RETARGETED_POSE_STRUCTURE_VALID";
+      const failed = mergeBoundary(current.boundaries, boundary, "FAIL", detail);
+      failed.push(Object.freeze({ boundary: `${boundary}_FIRST_OFFENDER`, status: `INFO ${detail}`, detail }));
+      const boundaries = Object.freeze(failed);
+      session.thrillerDiagnostics = { ...current, boundaries, playbackState: "failed", firstFailingBoundary: failure, poseValidation: Object.freeze(validation), anatomyFailure: validation.offender || null, anatomyFailureDetail: detail };
+      session.diagnostic?.("retargeted_pose_validation_invalid", { firstFailure: failure, detail });
+      return Object.freeze({ status: "failed", code: failure, diagnostics: Object.freeze({ ...session.thrillerDiagnostics }) });
     }
 
     session.loadIndependentRetargetedMotion = async function loadIndependentRetargetedMotionWithSafety(motion) {
@@ -295,18 +398,24 @@
     session.play = function playWithAnatomyValidation() {
       const played = originalPlay();
       if (!session.thrillerDiagnostics || played?.status === "failed") return played;
-      const validation = validatePose(session.THREE, session.__thrillerAnatomyBaseline, session.avatar, { rootBone: session.__thrillerRootBone || ROOT_BONE, timestamp: Number(session.action?.time || 0) });
-      if (validation.status !== "PASS") return failAnatomy(validation);
-      const current = session.thrillerDiagnostics || played.diagnostics || {}, withoutFinal = (current.boundaries || []).filter(item => item.boundary !== "RETARGETED_POSE_ANATOMY_VALID" && item.boundary !== "THRILLER_VISIBLE_PLAYBACK_CONFIRMED");
-      const boundaries = Object.freeze([...withoutFinal, Object.freeze({ boundary: "RETARGETED_POSE_ANATOMY_VALID", status: "PASS", detail: `structural invariants valid at ${validation.timestamp.toFixed(6)}s` }), Object.freeze({ boundary: "THRILLER_VISIBLE_PLAYBACK_CONFIRMED", status: "PASS", detail: "mounted avatar transforms changed and anatomy remained structurally valid" })]);
-      session.thrillerDiagnostics = { ...current, boundaries, anatomyValidation: validation, anatomyFailure: null, anatomyFailureDetail: null, playbackState: "playing", firstFailingBoundary: "NONE" };
+      const timestamp = Number(session.action?.time || 0), structure = validatePose(session.THREE, session.__thrillerAnatomyBaseline, session.avatar, { rootBone: session.__thrillerRootBone || ROOT_BONE, timestamp });
+      if (structure.status !== "PASS") return failValidation({ ...structure, boundary: "RETARGETED_POSE_STRUCTURE_VALID", code: "RETARGETED_POSE_STRUCTURE_INVALID" });
+      const kinematic = validateKinematics(session.THREE, session.__thrillerRetargetDiagnostics?.kinematicReference, session.avatar, { timestamp });
+      if (kinematic.status !== "PASS") return failValidation(kinematic);
+      const current = session.thrillerDiagnostics || played.diagnostics || {}, withoutFinal = (current.boundaries || []).filter(item => !["RETARGETED_POSE_ANATOMY_VALID","RETARGETED_POSE_STRUCTURE_VALID","RETARGETED_POSE_KINEMATIC_VALID","THRILLER_VISIBLE_PLAYBACK_CONFIRMED"].includes(item.boundary));
+      const boundaries = Object.freeze([...withoutFinal, Object.freeze({ boundary: "RETARGETED_POSE_STRUCTURE_VALID", status: "PASS", detail: `structural invariants valid at ${timestamp.toFixed(6)}s` }), Object.freeze({ boundary: "RETARGETED_POSE_KINEMATIC_VALID", status: "PASS", detail: `source/target semantic world rotations agree at ${timestamp.toFixed(6)}s` }), Object.freeze({ boundary: "THRILLER_VISIBLE_PLAYBACK_CONFIRMED", status: "PASS", detail: "mounted avatar transforms changed and semantic pose remained valid" })]);
+      session.thrillerDiagnostics = { ...current, boundaries, anatomyValidation: structure, kinematicValidation: kinematic, anatomyFailure: null, anatomyFailureDetail: null, playbackState: "playing", firstFailingBoundary: "NONE" };
       return Object.freeze({ status: "playing", diagnostics: Object.freeze({ ...session.thrillerDiagnostics }) });
     };
 
     if (session.options) session.options.onFrame = function thrillerSafetyFrame(active) {
       if (session.thrillerDiagnostics?.playbackState === "playing" && session.__thrillerAnatomyBaseline) {
         const validation = validatePose(session.THREE, session.__thrillerAnatomyBaseline, session.avatar, { rootBone: session.__thrillerRootBone || ROOT_BONE, timestamp: Number(session.action?.time || 0) });
-        if (validation.status !== "PASS") failAnatomy(validation);
+        if (validation.status !== "PASS") failValidation({ ...validation, boundary: "RETARGETED_POSE_STRUCTURE_VALID", code: "RETARGETED_POSE_STRUCTURE_INVALID" });
+        else {
+          const kinematic = validateKinematics(session.THREE, session.__thrillerRetargetDiagnostics?.kinematicReference, session.avatar, { timestamp: Number(session.action?.time || 0) });
+          if (kinematic.status !== "PASS") failValidation(kinematic);
+        }
       }
       return originalOnFrame?.(active);
     };
@@ -326,5 +435,5 @@
     return Object.freeze(wrapped);
   }
 
-  return Object.freeze({ VERSION, ROOT_BONE, LIMITS, capturePose, prepareClip, validatePose, restorePose, failureDetail, decorateSession, installRuntime });
+  return Object.freeze({ VERSION, ROOT_BONE, LIMITS, capturePose, prepareClip, validatePose, validateKinematics, restorePose, failureDetail, decorateSession, installRuntime });
 });
