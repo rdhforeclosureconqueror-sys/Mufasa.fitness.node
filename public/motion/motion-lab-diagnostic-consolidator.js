@@ -66,7 +66,9 @@
 
   function thrillerText() {
     const motion = root.MotionLabRuntime?.snapshot?.().motion;
-    if (!motion?.motionId?.startsWith?.('thriller-part-')) return 'THRILLER MOTION\nSelected Thriller part: NONE\nFIRST FAILURE: NONE';
+    const crash = root.PocketPTRetargetMotionCompatibility?.readCrashBreadcrumb?.();
+    const prep = motion?.retargetNormalization || {};
+    if (!motion?.motionId?.startsWith?.('thriller-part-')) return `THRILLER MOTION\nSelected Thriller part: NONE\nFIRST FAILURE: ${crash?.boundary || 'NONE'}`;
     return [
       'THRILLER MOTION',
       `Selected Thriller part: ${motion.selectedPart || '—'}`,
@@ -89,6 +91,13 @@
       `Changed representative bones: ${motion.changedRepresentativeBones?.join?.(', ') || 'none'}`,
       `Boundaries: ${motion.boundaries?.map?.(stage => stage.boundary + '=' + stage.status)?.join?.(' -> ') || 'none'}`,
       `Playback state: ${root.MotionLabRuntime?.snapshot?.().playback || motion.playbackState || 'stopped'}`,
+      `Persistent incomplete boundary: ${crash?.boundary || 'NONE'}`,
+      `Retarget preparation start / end / duration: ${prep.preparationStartedAt ?? '—'} / ${prep.preparationEndedAt ?? '—'} / ${prep.preparationDurationMs ?? '—'} ms`,
+      `Quaternion tracks / canonical joints: ${prep.quaternionTrackCount ?? '—'} / ${prep.canonicalJointsRetargeted ?? '—'}`,
+      `Source keyframes / batches / largest batch: ${prep.sourceKeyframesProcessed ?? '—'} / ${prep.batchCount ?? '—'} / ${prep.largestBatchDurationMs ?? '—'} ms`,
+      `Yields / full-frame cache retained: ${prep.yieldCount ?? '—'} / ${prep.fullFrameCacheRetained === true ? 'YES' : prep.fullFrameCacheRetained === false ? 'NO' : '—'}`,
+      `Validation cadence: ${motion.validationCadenceMs ?? '—'} ms`,
+      `First failed bone / property: ${motion.anatomyFailure?.bone || 'NONE'} / ${motion.anatomyFailure?.property || 'NONE'}`,
       `FIRST FAILURE: ${motion.firstFailingBoundary || 'NONE'}`
     ].join('\n');
   }

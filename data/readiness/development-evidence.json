@@ -1724,6 +1724,70 @@
       "prNumber": null,
       "commitSha": "61befa5",
       "timestamp": "2026-09-11T02:15:30.825Z"
+    },
+    {
+      "operationId": "642fe65d-6fb3-4b5d-9404-947659245a0d",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-mobile-safari-crash-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "Investigating physical iPhone Mobile Safari tab crash across persistent Thriller lifecycle boundaries; Gym mapping and overhead squat paths are protected controls.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T03:30:15.925Z"
+    },
+    {
+      "operationId": "f38cffeb-cad9-4b35-b593-384aae3e5fbd",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-mobile-safari-crash-fix",
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT: bound Thriller retarget preparation memory, yield work, persist crash breadcrumbs, and bound validation cadence without changing protected controls.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T03:30:16.474Z"
+    },
+    {
+      "operationId": "4af78386-dcc8-422d-8f96-37f39dbcaf9b",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-mobile-safari-crash-fix",
+      "files": [
+        "motion-lab/motion-lab-runtime.js",
+        "public/motion/disposable-motion-session.js",
+        "public/motion/motion-lab-diagnostic-consolidator.js",
+        "public/motion/retarget-motion-compatibility-review-fix.js",
+        "test/thriller-retarget-review-hardening.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented persistent crash-boundary breadcrumbs, 20-joint authoritative bounded-memory streaming retarget preparation with browser yields, 100 ms fail-closed validation cadence, and preparation/validation diagnostics. Synthetic 54-bone x 896-sample coverage, existing Thriller runtime/retarget, Gym 20/20 mapping, protected Overhead Squat hash, lint, diff check, and readiness validation preparation PASS. No browser/production or physical iPhone QA performed; deployment steps 1-7 and authorized human visual/movement/UX acceptance remain required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-11T03:34:46.760Z"
+    },
+    {
+      "operationId": "140e9bbe-bf93-418f-8a36-3cd9a829a525",
+      "board": "avatar",
+      "cardId": "avatar-development-thriller-motion-lab-runtime",
+      "sourceType": "implementation",
+      "taskId": "thriller-mobile-safari-crash-fix",
+      "files": [
+        "motion-lab/motion-lab-runtime.js",
+        "public/motion/disposable-motion-session.js",
+        "public/motion/motion-lab-diagnostic-consolidator.js",
+        "public/motion/retarget-motion-compatibility-review-fix.js",
+        "test/thriller-retarget-review-hardening.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 7dc02ce. Pull-request metadata created with title Fix Thriller Mobile Safari retarget preparation crash; make_pr returned no numeric PR ID. Automated focused suite 32/32 PASS, lint PASS, diff checks PASS, readiness validation PASS. Physical iPhone Safari and authorized human visual/movement/UX acceptance remain required after deployment.",
+      "prNumber": null,
+      "commitSha": "7dc02ce",
+      "timestamp": "2026-09-11T03:35:14.105Z"
     }
   ]
 }
