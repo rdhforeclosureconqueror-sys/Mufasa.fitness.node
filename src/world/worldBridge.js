@@ -41,6 +41,7 @@ function createWorldBridge(options = {}) {
   const frontendPublicUrl = String(options.frontendPublicUrl || process.env.FRONTEND_PUBLIC_URL || "").replace(/\/$/, "");
   const secureCookie = options.secureCookie == null ? process.env.NODE_ENV === "production" : Boolean(options.secureCookie);
   const avatarBridge = createAvatarBridge({ assets: options.avatarAssets, publicOrigins: [backendPublicUrl, frontendPublicUrl] });
+  const gymMappingBridge = options.gymMappingBridge || null;
 
   function avatarError(res, error) {
     const expected = ["ARENA_AVATAR_UNAVAILABLE", "ARENA_AVATAR_VERSION_REQUIRED", "ARENA_AVATAR_VERSION_CHANGED"].includes(error.code);
@@ -111,6 +112,9 @@ function createWorldBridge(options = {}) {
   }
 
   function bootstrap(session) {
+    const mapping = gymMappingBridge
+      ? gymMappingBridge.describe(session.userId)
+      : { gymMappingProfile: null, gymMappingState: { status: "UNAVAILABLE", schemaVersion: 1, profileId: null, savedAt: null } };
     return {
       protocolVersion: PROTOCOL_VERSION,
       session: {
@@ -122,6 +126,7 @@ function createWorldBridge(options = {}) {
         displayName: session.displayName
       },
       ...avatarBridge.describe(session.userId),
+      ...mapping,
       experience: { ...session.experience },
       api: { baseUrl: "/api/game" }
     };
