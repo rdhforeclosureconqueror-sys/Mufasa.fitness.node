@@ -9,7 +9,7 @@ const {execFileSync}=require('node:child_process');
 const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 
-test('production frontend build injects a commit-cache-busted runtime config into workout shell',()=>{
+test('production frontend build injects an early commit-cache-busted runtime config into workout shell',()=>{
   const out=fs.mkdtempSync(path.join(os.tmpdir(),'pocketpt-debug-build-'));
   const commit='1234567890abcdef1234567890abcdef12345678';
   try{
@@ -22,6 +22,9 @@ test('production frontend build injects a commit-cache-busted runtime config int
     assert.match(workout,new RegExp(`/runtime-config\\.js\\?v=${commit}`));
     assert.match(workout,/data-pocketpt-runtime-config="true"/);
     assert.equal((workout.match(/data-pocketpt-runtime-config="true"/g)||[]).length,1);
+    const runtimeAt=workout.indexOf('/runtime-config.js');
+    const formEngineAt=workout.indexOf('/form-engine.js');
+    assert.ok(runtimeAt>=0 && formEngineAt>=0 && runtimeAt<formEngineAt,'runtime-config must establish debug presentation authority before core workout scripts');
   }finally{fs.rmSync(out,{recursive:true,force:true});}
 });
 
