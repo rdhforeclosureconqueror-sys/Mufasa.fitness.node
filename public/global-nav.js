@@ -1,6 +1,6 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD = "20260912-milelefit-brand-v2";
+  const FRONTEND_BUILD = "20260912-milelefit-brand-v3";
   if (global.MaatNavigation?.bundle === FRONTEND_BUILD) return;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "global-nav.js": FRONTEND_BUILD });
 
@@ -14,6 +14,8 @@
   const LEGACY_BRAND_PATTERN = /Pocket PT|PocketPT|POCKET PT|POCKETPT/g;
   const BRAND_ATTRS = ["title", "aria-label", "placeholder", "alt"];
   const BRAND_SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE"]);
+  const APP_OWNED_DYNAMIC_BRAND_SELECTOR = '#pocketptMirrorDebugCenter, #pocketptMirrorDebugLauncher, [data-milelefit-brand-owned="true"]';
+  let brandObserver = null;
 
   function replacePublicBrand(value) {
     if (typeof value !== "string" || !LEGACY_BRAND_PATTERN.test(value)) {
@@ -76,11 +78,48 @@
     root.querySelectorAll?.(BRAND_ATTRS.map((attribute) => `[${attribute}]`).join(",")).forEach(brandElementAttributes);
   }
 
+  function isAppOwnedDynamicBrandNode(node) {
+    const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    return Boolean(element?.closest?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR));
+  }
+
+  function brandAppOwnedDynamicSubtree(node) {
+    if (!node) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (isAppOwnedDynamicBrandNode(node)) brandTextNode(node);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    if (node.matches?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR)) applyPublicBrand(node);
+    node.querySelectorAll?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR).forEach(applyPublicBrand);
+  }
+
   function installPublicBranding() {
-    // Brand only the server/static DOM that exists when the shared shell initializes.
-    // Do not observe later mutations: those may contain user-authored messages,
-    // profile data, trainer notes, or other content that must remain verbatim.
+    // Brand only the static application DOM on first load. Later mutation branding
+    // is explicitly limited to app-owned diagnostic/brand surfaces. Member messages,
+    // trainer notes, profile data, and other user-authored content remain verbatim.
     applyPublicBrand(document);
+    if (brandObserver || !document.documentElement || typeof MutationObserver !== "function") return;
+    brandObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "characterData") {
+          if (isAppOwnedDynamicBrandNode(mutation.target)) brandTextNode(mutation.target);
+          return;
+        }
+        if (mutation.type === "attributes") {
+          if (isAppOwnedDynamicBrandNode(mutation.target)) brandElementAttributes(mutation.target);
+          return;
+        }
+        mutation.addedNodes.forEach(brandAppOwnedDynamicSubtree);
+      });
+    });
+    brandObserver.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: BRAND_ATTRS
+    });
   }
 
   const NAV_ITEMS = Object.freeze([
