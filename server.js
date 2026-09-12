@@ -19,6 +19,7 @@ const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorks
 const { createTrainerWorkspaceService } = require("./src/services/trainerWorkspaceService");
 const { createClientMessagingStore } = require("./src/repositories/clientMessagingStore");
 const { createClientCrmService } = require("./src/services/clientCrmService");
+const { createChallengeParticipantService } = require("./src/services/challengeParticipantService");
 const { createSessionService } = require("./src/services/sessionService");
 const { createYogaService } = require("./src/services/yogaService");
 const { loadGamificationConfig } = require("./src/config/gamification");
@@ -551,6 +552,7 @@ function createApp(options = {}) {
     userStore,
     stripeClient: options.stripeClient
   });
+  const challengeParticipantService = createChallengeParticipantService({ userStore });
   const clientCrmService = createClientCrmService({ userStore, authCredentialStore, membershipService, trainerWorkspaceStore, messagingStore: clientMessagingStore, authorizationResolver });
 
   function hasOperatorBillingBypass(req) {
@@ -2442,6 +2444,11 @@ function createApp(options = {}) {
       billingBypass: hasOperatorBillingBypass(req) ? { hasAccess: true, reason: "admin_operator_bypass" } : null
     });
   }));
+
+  app.get("/api/me/challenge-participants/push_up", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { participant: challengeParticipantService.get(req.auth.userId) }, 200)));
+  app.put("/api/me/challenge-participants/push_up", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, { participant: challengeParticipantService.capture(req.auth.userId, req.body) }, 200)));
 
   app.get("/api/me/onboarding-status", requireAuth, asyncHandler(async (req, res) => {
     const result = userDataService.getOnboardingStatus(req.auth.userId);
