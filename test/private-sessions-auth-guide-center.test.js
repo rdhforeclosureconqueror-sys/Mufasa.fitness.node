@@ -33,6 +33,16 @@ test('global navigation has a permanent Guide Center destination', () => {
   assert.match(js, /guide to the guides/i);
 });
 
+test('global navigation presents MileleFit while preserving PocketPT internal guide contract', () => {
+  const nav = read('public/global-nav.js');
+  assert.match(nav, /name: "MileleFit"/);
+  assert.match(nav, /tagline: "Forever Fit\."/);
+  assert.match(nav, /label:"MileleFit Workout"/);
+  assert.match(nav, /global\.PocketPTGuide\?\.initialize\(\)/);
+  assert.match(nav, /installPublicBrandObserver\(\)/);
+  assert.match(nav, /applyPublicBrand\(document\)/);
+});
+
 test('admin first-failure diagnostics include the Guide Center boundary', () => {
   const js = read('public/admin-first-failure.js');
   assert.match(js, /id:"guide_center"/);
