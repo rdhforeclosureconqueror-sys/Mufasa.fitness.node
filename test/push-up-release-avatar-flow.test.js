@@ -28,16 +28,34 @@ test('Push-Up release uses the existing canonical avatar owners instead of a sec
   assert.doesNotMatch(js, /indexedDB/i);
 });
 
-test('arena launch is fail-closed behind canonical avatar verification', () => {
+test('arena launch is fail-closed behind authoritative owned-avatar availability', () => {
   const js = read('public/push-up-release.js');
+  assert.match(js, /function arenaAssetId\(modelUrl\)/);
+  assert.match(js, /\/api\/me\/avatar\/assets\//);
+  assert.match(js, /method: 'HEAD'/);
+  assert.match(js, /authorization: `Bearer \$\{authToken\}`/);
+  assert.match(js, /AVATAR_SOURCE_UNSUPPORTED/);
+  assert.match(js, /AVATAR_ASSET_UNAVAILABLE/);
+
   const enter = js.indexOf('async function enterArena()');
   const verify = js.indexOf("refreshAuthAndAvatar('pre-arena')", enter);
   const gate = js.indexOf("if (!ready) throw new Error('Your personalized avatar must be verified before arena entry.')", verify);
   const launch = js.indexOf('PocketPTWorldLaunch.createArenaSession()', gate);
   assert.ok(enter >= 0, 'enterArena exists');
-  assert.ok(verify > enter, 'canonical profile/avatar refresh occurs at arena entry');
-  assert.ok(gate > verify, 'avatar readiness is checked before launch');
+  assert.ok(verify > enter, 'canonical profile and owned asset are reverified at arena entry');
+  assert.ok(gate > verify, 'authoritative avatar readiness is checked before launch');
   assert.ok(launch > gate, 'existing world bridge session creator runs only after avatar gate passes');
+});
+
+test('profile URL presence alone never unlocks the release gate', () => {
+  const js = read('public/push-up-release.js');
+  const render = js.slice(js.indexOf('function renderAvatar('), js.indexOf('function renderSignedOut()'));
+  assert.match(render, /setGate\('Verifying the saved avatar with the arena asset authority…', false\)/);
+  assert.doesNotMatch(render, /setGate\([^\n]*true\)/);
+
+  const verifier = js.slice(js.indexOf('async function verifyArenaAvatar('), js.indexOf('function renderAvatar('));
+  assert.match(verifier, /response\.ok/);
+  assert.match(verifier, /setGate\('Avatar verified\. You can enter the Push-Up Arena\.', true\)/);
 });
 
 test('release keeps the existing personalized arena experience contract', () => {
