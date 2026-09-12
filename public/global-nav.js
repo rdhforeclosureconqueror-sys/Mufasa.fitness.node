@@ -1,6 +1,6 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD = "20260912-milelefit-brand-v3";
+  const FRONTEND_BUILD = "20260912-milelefit-brand-v4";
   if (global.MaatNavigation?.bundle === FRONTEND_BUILD) return;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "global-nav.js": FRONTEND_BUILD });
 
@@ -12,7 +12,7 @@
   global.MileleFitBrand = PUBLIC_BRAND;
 
   const LEGACY_BRAND_PATTERN = /Pocket PT|PocketPT|POCKET PT|POCKETPT/g;
-  const BRAND_ATTRS = ["title", "aria-label", "placeholder", "alt"];
+  const BRAND_ATTRS = ["title", "aria-label", "placeholder", "alt", "data-copy-text"];
   const BRAND_SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE"]);
   const APP_OWNED_DYNAMIC_BRAND_SELECTOR = '#pocketptMirrorDebugCenter, #pocketptMirrorDebugLauncher, [data-milelefit-brand-owned="true"]';
   let brandObserver = null;
@@ -90,7 +90,10 @@
       return;
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
-    if (node.matches?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR)) applyPublicBrand(node);
+    if (isAppOwnedDynamicBrandNode(node)) {
+      applyPublicBrand(node);
+      return;
+    }
     node.querySelectorAll?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR).forEach(applyPublicBrand);
   }
 
