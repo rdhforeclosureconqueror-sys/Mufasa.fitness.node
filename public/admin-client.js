@@ -3,6 +3,7 @@
   const document = global.document, clientId = new URLSearchParams(global.location.search).get("userId"), content = document.querySelector("#content"), errorTarget = document.querySelector("#error");
   const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const routeId = value => encodeURIComponent(String(value));
+  const title = value => String(value || "").replace(/(^|_)([a-z])/g, (_match, prefix, character) => `${prefix ? " " : ""}${character.toUpperCase()}`);
   async function api(path, options = {}, operation = "client.request", conversationId = null) {
     const result = await global.MaatApiClient.request(path, options);
     if (!result.ok) { console.error("[CLIENT_MESSAGING]", { operation, route: global.location.pathname, userId: clientId, conversationId, status: result.response?.status || null, code: result.payload?.error?.code || null, failureClass: result.diagnostics?.failureClass || null }); throw new Error(result.response?.status === 401 ? "Your session has expired. Please sign in again." : "Unable to load messages. Please try again."); }
@@ -20,7 +21,8 @@
     if (!clientId) throw new Error("No client was selected.");
     const readiness = await global.AuthStateRuntime.whenReady(); if (!readiness.ok || !global.AuthStateRuntime.getCanonicalAuthState().isAuthenticated) throw new Error("Please sign in to manage client messages.");
     const data = await api(`/api/admin/clients/${routeId(clientId)}/overview`, {}, "client.overview"); document.querySelector("#name").textContent = data.summary.displayName;
-    document.querySelector("#summary").innerHTML = [`Email: ${data.summary.email || "Unavailable"}`, `Role: ${data.summary.role || "Unavailable"}`, `Account ID: ${data.summary.userId}`, `Member since: ${data.summary.joinedAt || "Unknown"}`, `Last active: ${data.summary.lastActiveAt || "No activity"}`, `Membership: ${data.summary.payment.status}`, `Program: ${data.summary.activeProgram?.title || "None"}`, `Challenge: ${data.summary.activeChallenge?.title || "None"}`].map(value => `<div class="card">${esc(value)}</div>`).join(""); await tab(global.location.search.includes("message=1") ? "messages" : "overview");
+    const participant = data.summary.challengeParticipant || data.challengeParticipant || null;
+    document.querySelector("#summary").innerHTML = [`Email: ${data.summary.email || "Unavailable"}`, `Role: ${data.summary.role || "Unavailable"}`, `Account ID: ${data.summary.userId}`, `Member since: ${data.summary.joinedAt || "Unknown"}`, `Last active: ${data.summary.lastActiveAt || "No activity"}`, `Membership: ${data.summary.payment.status}`, `Program: ${data.summary.activeProgram?.title || "None"}`, `Challenge: ${participant?.challengeTitle || data.summary.activeChallenge?.title || "None"}`, `Fitness level: ${participant?.fitnessLevel ? title(participant.fitnessLevel) : "Not captured"}`, `Entry source: ${participant?.entryContext ? title(participant.entryContext) : "Not captured"}`, `Challenge joined: ${participant?.joinedAt || "Not captured"}`].map(value => `<div class="card">${esc(value)}</div>`).join(""); await tab(global.location.search.includes("message=1") ? "messages" : "overview");
   }
   document.querySelectorAll("[data-tab]").forEach(button => button.addEventListener("click", () => tab(button.dataset.tab).catch(showError))); global.AdminClientMessaging = Object.freeze({ start, messages }); start().catch(showError);
 })(window);
