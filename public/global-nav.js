@@ -1,6 +1,6 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD = "20260912-milelefit-brand-v1";
+  const FRONTEND_BUILD = "20260912-milelefit-brand-v2";
   if (global.MaatNavigation?.bundle === FRONTEND_BUILD) return;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "global-nav.js": FRONTEND_BUILD });
 
@@ -14,7 +14,6 @@
   const LEGACY_BRAND_PATTERN = /Pocket PT|PocketPT|POCKET PT|POCKETPT/g;
   const BRAND_ATTRS = ["title", "aria-label", "placeholder", "alt"];
   const BRAND_SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE"]);
-  let brandObserver = null;
 
   function replacePublicBrand(value) {
     if (typeof value !== "string" || !LEGACY_BRAND_PATTERN.test(value)) {
@@ -77,39 +76,11 @@
     root.querySelectorAll?.(BRAND_ATTRS.map((attribute) => `[${attribute}]`).join(",")).forEach(brandElementAttributes);
   }
 
-  function installPublicBrandObserver() {
+  function installPublicBranding() {
+    // Brand only the server/static DOM that exists when the shared shell initializes.
+    // Do not observe later mutations: those may contain user-authored messages,
+    // profile data, trainer notes, or other content that must remain verbatim.
     applyPublicBrand(document);
-    if (brandObserver || !document.documentElement || typeof MutationObserver !== "function") return;
-    brandObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === "characterData") {
-          if (containsLegacyBrand(mutation.target?.nodeValue)) brandTextNode(mutation.target);
-          return;
-        }
-        if (mutation.type === "attributes") {
-          const value = mutation.target?.getAttribute?.(mutation.attributeName);
-          if (containsLegacyBrand(value)) brandElementAttributes(mutation.target);
-          return;
-        }
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            if (containsLegacyBrand(node.nodeValue)) brandTextNode(node);
-            return;
-          }
-          if (node.nodeType === Node.ELEMENT_NODE && containsLegacyBrand(node.textContent || "")) applyPublicBrand(node);
-          else if (node.nodeType === Node.ELEMENT_NODE) brandElementAttributes(node);
-        });
-      });
-      const nextTitle = replacePublicBrand(document.title);
-      if (nextTitle !== document.title) document.title = nextTitle;
-    });
-    brandObserver.observe(document.documentElement, {
-      subtree: true,
-      childList: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: BRAND_ATTRS
-    });
   }
 
   const NAV_ITEMS = Object.freeze([
@@ -205,7 +176,6 @@
     const identity=state.isAuthenticated?`<div class="maat-nav-identity"><strong>${escapeHtml(state.user?.name||state.user?.email||"Signed in")}</strong><br><small>${escapeHtml(state.user?.email||"")}${state.user?.role?` · ${escapeHtml(state.user.role)}`:""}</small></div>`:"";
     const account=restoring?'<p class="maat-nav-auth-restoring" role="status">Restoring session…</p>':authPresentation.phase==="error"?'<p class="maat-nav-auth-error" role="alert">Session verification failed. Check your connection and retry.</p><button type="button" data-maat-auth-retry>Retry</button>':state.isAuthenticated?'<button class="maat-nav-signout" type="button" data-maat-signout>Sign Out</button>':'<a class="maat-nav-link" href="/login.html">Sign In</a><a class="maat-nav-link" href="/login.html?mode=register">Create Account</a>';
     header.innerHTML=`<div class="maat-nav-bar"><a class="maat-nav-brand" href="/index.html">${PUBLIC_BRAND.name}</a><span class="maat-nav-context">${escapeHtml(document.title.split("·")[0].split("|")[0].trim())}</span><button class="maat-nav-toggle" type="button" aria-expanded="false" aria-controls="maatNavPanel" aria-label="Open navigation menu">Menu</button></div><button class="maat-nav-backdrop" type="button" aria-label="Close navigation menu" hidden></button><nav id="maatNavPanel" class="maat-nav-panel" aria-label="Global navigation" data-frontend-build="${FRONTEND_BUILD}" hidden>${identity}${links}<section class="maat-nav-section"><h2>Account</h2><div class="maat-nav-links">${account}</div></section><p class="maat-nav-status" role="status" aria-live="polite"></p></nav>`;
-    applyPublicBrand(document);
     if(wasOpen)setOpen(true,{restoreFocus:false});else inspect();
   }
   async function onClick(event) {
@@ -217,7 +187,7 @@
   }
   function initialize() {
     if(initialized)return;initialized=true;diagnostics.initializationCount++;
-    installPublicBrandObserver();
+    installPublicBranding();
     syncDiagnosticAccess(null);
     document.addEventListener("click",onClick);diagnostics.clickListenerAttached="YES";
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&diagnostics.state==="open")setOpen(false)});
