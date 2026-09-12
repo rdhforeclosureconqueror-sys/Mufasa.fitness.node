@@ -1788,6 +1788,78 @@
       "prNumber": null,
       "commitSha": "7dc02ce",
       "timestamp": "2026-09-11T03:35:14.105Z"
+    },
+    {
+      "operationId": "a01956ca-d4e7-4e0e-b964-662014bd357e",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-light-signup",
+      "sourceType": "card_creation",
+      "taskId": "pushup-light-signup",
+      "files": [],
+      "automated": null,
+      "evidence": "Add owner-scoped lightweight Push-Up Challenge signup metadata, canonical session adoption, CRM projection, diagnostics, and regression coverage while preserving the existing avatar and arena pipeline.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-12T23:09:04.752Z"
+    },
+    {
+      "operationId": "f550be73-f1f8-4a60-a70c-28e773b1eb35",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-light-signup",
+      "sourceType": "implementation",
+      "taskId": "pushup-light-signup",
+      "files": [
+        "server.js",
+        "src/services/challengeParticipantService.js",
+        "src/services/clientCrmService.js",
+        "config/route-authorization-contract.js",
+        "public/push-up-release.html",
+        "public/push-up-release.js",
+        "public/admin-members.js",
+        "test/push-up-light-signup.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented lightweight canonical Push-Up registration, owner-scoped metadata, CRM projection, first-failure stages, and avatar-pipeline continuation. Targeted 27-test auth/CRM/Push-Up/world-bridge regression set passed; lint and syntax checks passed. Full npm test was stopped after hanging beyond two minutes in an unrelated existing suite; global-navigation selected run also has three pre-existing arena-push-up.html bundle failures. Browser screenshot unavailable because no browser runtime is installed. Visual/UX and physical-device acceptance remain human-required and were not self-approved.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-12T23:17:33.516Z"
+    },
+    {
+      "operationId": "fc10cfe5-e556-473e-a24f-ac9de699d574",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-light-signup",
+      "sourceType": "implementation",
+      "taskId": "pushup-light-signup",
+      "files": [
+        "server.js",
+        "src/services/challengeParticipantService.js",
+        "src/services/clientCrmService.js",
+        "config/route-authorization-contract.js",
+        "public/push-up-release.html",
+        "public/push-up-release.js",
+        "public/admin-members.js",
+        "test/push-up-light-signup.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation committed on pushup-light-signup as a08a14e. Automated targeted regression coverage passed; human visual/UX and physical-device acceptance remain unverified.",
+      "prNumber": null,
+      "commitSha": "a08a14e",
+      "timestamp": "2026-09-12T23:17:46.581Z"
+    },
+    {
+      "operationId": "0eada706-e13e-448f-969d-add6fc21c574",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-light-signup",
+      "sourceType": "implementation",
+      "taskId": "pushup-light-signup",
+      "files": [
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Correlated implementation commit c848643 recorded; readiness remains HUMAN_TEST_REQUIRED pending authorized visual/UX acceptance.",
+      "prNumber": null,
+      "commitSha": "c848643",
+      "timestamp": "2026-09-12T23:17:56.127Z"
     }
   ]
 }

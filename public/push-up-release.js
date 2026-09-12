@@ -1,7 +1,7 @@
 (function installMileleFitPushUpRelease(global) {
   'use strict';
 
-  const BUILD = '20260912-avatar-gate-v2';
+  const BUILD = '20260912-light-signup-v1';
   const AVATURN_URL = 'https://www.avaturn.me/';
   const state = {
     build: BUILD,
@@ -82,7 +82,7 @@
   }
 
   function loginTarget(mode = 'login') {
-    const returnTo = `${global.location.pathname}${global.location.search}${global.location.hash}`;
+    const returnTo = '/push-up.html';
     if (global.AuthNavigation?.loginUrl) {
       const url = global.AuthNavigation.loginUrl(returnTo);
       if (mode === 'register') {
@@ -264,9 +264,93 @@
     $('releaseAvatarReadyBadge').hidden = true;
     $('releaseAvatarThumb').hidden = true;
     $('releaseAvatarPlaceholder').hidden = false;
-    setStatus('Sign in or create an account so MileleFit can load your personalized avatar.');
+    setStatus('Join with four quick details so MileleFit can create your player and load avatar setup.');
     setGate('Sign in first. Arena access is tied to your MileleFit member profile.', false);
-    trace('AUTH', 'WAITING', 'member sign-in required');
+    trace('SIGNUP_FORM', 'WAITING', 'lightweight challenge registration ready');
+  }
+
+  function signupError(message = '') {
+    const el = $('releaseSignupError');
+    if (el) el.textContent = message;
+  }
+
+  async function authRequest(route, body) {
+    return global.MaatApiClient.request(route, { method: 'POST', body, auth: false });
+  }
+
+  async function establishCanonicalAuth(payload) {
+    trace('CANONICAL_AUTH', 'RUNNING', 'adopting auth response through AuthStateRuntime');
+    const adopted = await global.AuthStateRuntime.persistCanonicalAuthState(
+      { token: payload.token, user: payload.user },
+      { reason: 'push_up_challenge_signup', rememberMe: false }
+    );
+    if (!adopted?.ok || !global.AuthStateRuntime.getCanonicalAuthState()?.isAuthenticated) {
+      throw Object.assign(new Error('Your account was created, but this browser could not establish the session.'), { signupStage: 'CANONICAL_AUTH' });
+    }
+    state.auth = global.AuthStateRuntime.getCanonicalAuthState();
+    trace('CANONICAL_AUTH', 'PASS', 'canonical member session established');
+  }
+
+  async function saveParticipantMetadata(fitnessLevel) {
+    trace('PARTICIPANT_METADATA', 'RUNNING', 'saving owner-scoped Push-Up Challenge entry');
+    const result = await global.MaatApiClient.request('/api/me/challenge-participants/push_up', {
+      method: 'PUT', body: { fitnessLevel }
+    });
+    if (!result.ok) {
+      throw Object.assign(new Error(result.payload?.error?.message || result.payload?.error || 'Challenge details could not be saved.'), { signupStage: 'PARTICIPANT_METADATA' });
+    }
+    trace('PARTICIPANT_METADATA', 'PASS', 'challenge source and fitness level saved');
+  }
+
+  async function submitSignup(event) {
+    event.preventDefault();
+    const button = $('releaseCreateAccountBtn');
+    const original = button.textContent;
+    const values = {
+      name: $('releaseSignupName').value.trim(),
+      email: $('releaseSignupEmail').value.trim(),
+      password: $('releaseSignupPassword').value,
+      fitnessLevel: $('releaseSignupFitnessLevel').value
+    };
+    button.disabled = true;
+    button.textContent = 'CREATING ACCOUNT…';
+    signupError('');
+    trace('ACCOUNT_REGISTER', 'RUNNING', 'POST /api/auth/register');
+    try {
+      let result = await authRequest('/api/auth/register', {
+        name: values.name, email: values.email, password: values.password, entryContext: 'push_up_challenge'
+      });
+      if (result.diagnostics?.status === 409 && result.payload?.code === 'ACCOUNT_EXISTS') {
+        trace('ACCOUNT_REGISTER', 'PASS', 'existing account preserved; authenticating supplied credentials');
+        result = await authRequest('/api/auth/login', { email: values.email, password: values.password });
+        if (!result.ok) {
+          const error = new Error('This email already has a MileleFit account. Sign in with your existing password to continue.');
+          error.signupStage = 'ACCOUNT_REGISTER';
+          error.existingAccount = true;
+          throw error;
+        }
+      } else if (!result.ok) {
+        throw Object.assign(new Error(result.payload?.error?.message || result.payload?.error || 'Account registration failed.'), { signupStage: 'ACCOUNT_REGISTER' });
+      } else {
+        trace('ACCOUNT_REGISTER', 'PASS', 'ACCOUNT_CREATED');
+      }
+      await establishCanonicalAuth(result.payload);
+      await saveParticipantMetadata(values.fitnessLevel);
+      trace('RELEASE_REFRESH', 'RUNNING', 'refreshing canonical account and profile');
+      await refreshAuthAndAvatar('challenge-signup');
+      trace('RELEASE_REFRESH', 'PASS', 'release experience refreshed without intake navigation');
+      trace('AVATAR_GATE', 'PASS', state.avatarReady ? 'saved avatar verified' : 'existing avatar setup unlocked');
+      $('releaseSignupPassword').value = '';
+    } catch (error) {
+      trace(error.signupStage || 'ACCOUNT_REGISTER', 'FAIL', error?.message || 'signup failed');
+      signupError(error.message);
+      if (error.existingAccount) {
+        signupError(`${error.message} Use SIGN IN below; you will return to this Push-Up Challenge.`);
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
   }
 
   function configureCanonicalRuntimes(authToken) {
@@ -428,7 +512,7 @@
 
   function bind() {
     $('releaseSignInBtn').addEventListener('click', () => global.location.assign(loginTarget('login')));
-    $('releaseCreateAccountBtn').addEventListener('click', () => global.location.assign(loginTarget('register')));
+    $('releaseSignupForm').addEventListener('submit', submitSignup);
     $('releaseOpenAvaturnBtn').addEventListener('click', () => {
       const popup = global.open(AVATURN_URL, 'avaturn_creator', 'popup=true,width=1100,height=800');
       $('releaseAvatarUploadStatus').textContent = popup ? 'Avaturn opened. Export your .glb, then return here and upload it.' : 'Popup blocked. Allow popups or open Avaturn in a new tab.';

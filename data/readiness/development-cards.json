@@ -112,6 +112,20 @@
       "createdAt": "2026-09-11T02:05:33.590Z",
       "source": "readiness:update",
       "taskId": "thriller-gym-runtime-boundary-fix"
+    },
+    {
+      "id": "avatar-development-pushup-light-signup",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Lightweight Push-Up Challenge registration",
+      "category": "AUTHENTICATION",
+      "description": "Add owner-scoped lightweight Push-Up Challenge signup metadata, canonical session adoption, CRM projection, diagnostics, and regression coverage while preserving the existing avatar and arena pipeline.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-12T23:09:04.752Z",
+      "source": "readiness:update",
+      "taskId": "pushup-light-signup"
     }
   ]
 }
