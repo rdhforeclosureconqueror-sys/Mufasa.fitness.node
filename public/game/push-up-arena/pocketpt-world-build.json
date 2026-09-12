@@ -1,10 +1,31 @@
-{
-  "protocolVersion": 1,
-  "buildId": "pocketpt-mat-arrival-823ab23",
-  "godotVersion": "4.5.1",
-  "reportedGodotSourceCommit": "823ab23368f9dec9b4976eae4a3c0da5bd33f88a",
-  "artifactUploadCommit": "2735429c0905403fcbe8e33f26a849553124fb04",
-  "pckBytes": 47676596,
-  "pckSha256": "b8fc15c6dd3ac6b97c71a31bbb89f6188318cc6c2085fcd65a5f8e8e1978261b",
-  "authenticatedVisualAcceptance": "pending"
+﻿{
+    "protocolVersion":  1,
+    "buildId":  "pocketpt-player-animations-823ab23-20260911",
+    "godotVersion":  "4.5.1",
+    "reportedGodotSourceCommit":  "563f4573f33f148515c1cece6d0e35dbed4e6866",
+    "sourceWorktreeState":  "dirty-approved-export",
+    "artifactUploadCommit":  "1a6c4edbe7004e8b1ba5cfae852d5717dd8ce53e",
+    "pckBytes":  83218036,
+    "pckSha256":  "8b993bdb2bb8ebc6db019f7748096f4990ccdfac56362bc04f867adb21496ed4",
+    "authenticatedVisualAcceptance":  "pending",
+    "localRuntimeAcceptance":  "pass",
+    "animationSystem":  {
+                            "locomotion":  [
+                                               "player/Idle",
+                                               "player/Walk",
+                                               "player/Run"
+                                           ],
+                            "actions":  [
+                                            "action/ThrillerPart1"
+                                        ],
+                            "actionOverrideReturn":  "player/Idle",
+                            "frozenResourceSha256":  {
+                                                         "player_locomotion_library.tres":  "8886501d58770702301bda4a2e001a0a3b67ce1bb2752784f9f853ca431aa527",
+                                                         "player_locomotion_tree.tres":  "4447f42a01f51239d433dcfd7921fdc9de3e90e11722b9b417610aed82463807",
+                                                         "player_action_library.tres":  "e6202a825ed63e1243ce1e56cf42674668b2777f13d00977f11630bec0d289d6",
+                                                         "rashad_walk_corrected.glb":  "506c30f50099d03ee076881677634b658675c7c7441cb7b1762838db32cc85e3",
+                                                         "rashad_run_target_native.glb":  "905989c50e6ec707983d83ea9a382c16e10784559c50a2e72f3d8fcafaa323c4",
+                                                         "rashad_thriller_part1_target_native.glb":  "395b401642c57c168ffdeebc68273ee92757f6e23c4811fe94d4431a905b854c"
+                                                     }
+                        }
 }
