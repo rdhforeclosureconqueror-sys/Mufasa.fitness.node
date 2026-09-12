@@ -1,10 +1,26 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-mat-arrival-823ab23",
+  "buildId": "pocketpt-player-animations-bc66f64-20260912",
   "godotVersion": "4.5.1",
-  "reportedGodotSourceCommit": "823ab23368f9dec9b4976eae4a3c0da5bd33f88a",
-  "artifactUploadCommit": "2735429c0905403fcbe8e33f26a849553124fb04",
-  "pckBytes": 47676596,
-  "pckSha256": "b8fc15c6dd3ac6b97c71a31bbb89f6188318cc6c2085fcd65a5f8e8e1978261b",
-  "authenticatedVisualAcceptance": "pending"
+  "godotSourceCommit": "bc66f6489893540a70af8ea9368d26c0c42be2d1",
+  "mainScene": "res://Main.tscn",
+  "pckBytes": 47542152,
+  "pckSha256": "595df3e199acfe4279769fc875bc6f38346cc7853c60d5d2e5b0a36c44015c9d",
+  "htmlBytes": 5443,
+  "htmlSha256": "5b34c52da1328b9324bb7b3664e5cdbcf911a829933bdf99e92e90449ae95190",
+  "wasmBytes": 38034280,
+  "wasmSha256": "6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547",
+  "productionPayloadManifestSha256": "d3d337ff77e8d487e74869d47b1bce4ef713599721f1aa41a292d7f7f3ee899d",
+  "uidCacheClassification": "Godot 4.5.1 engine-generated non-runtime metadata",
+  "localRuntimeAcceptance": "pass",
+  "authenticatedVisualAcceptance": "pending",
+  "animationAcceptance": {
+    "Idle": "pass",
+    "Walk": "pass",
+    "Run": "pass",
+    "ThrillerPart1": "pass",
+    "GoToMat": "pass",
+    "CollisionToIdle": "pass"
+  },
+  "note": "Authoritative artifact exported from a clean detached worktree at the exact Godot source commit. Production/browser authenticated visual acceptance remains pending."
 }
