@@ -1,13 +1,135 @@
 (function installGlobalNavigation(global) {
   "use strict";
-  const FRONTEND_BUILD = "20260901-guide-center-v1";
+  const FRONTEND_BUILD = "20260912-milelefit-brand-v4";
   if (global.MaatNavigation?.bundle === FRONTEND_BUILD) return;
   global.__MAAT_ASSET_VERSIONS__ = Object.assign(global.__MAAT_ASSET_VERSIONS__ || {}, { "global-nav.js": FRONTEND_BUILD });
+
+  const PUBLIC_BRAND = Object.freeze({
+    name: "MileleFit",
+    tagline: "Forever Fit.",
+    legacyNames: Object.freeze(["Pocket PT", "PocketPT", "POCKET PT", "POCKETPT"])
+  });
+  global.MileleFitBrand = PUBLIC_BRAND;
+
+  const LEGACY_BRAND_PATTERN = /Pocket PT|PocketPT|POCKET PT|POCKETPT/g;
+  const BRAND_ATTRS = ["title", "aria-label", "placeholder", "alt", "data-copy-text"];
+  const BRAND_SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE"]);
+  const APP_OWNED_DYNAMIC_BRAND_SELECTOR = '#pocketptMirrorDebugCenter, #pocketptMirrorDebugLauncher, [data-milelefit-brand-owned="true"]';
+  let brandObserver = null;
+
+  function replacePublicBrand(value) {
+    if (typeof value !== "string" || !LEGACY_BRAND_PATTERN.test(value)) {
+      LEGACY_BRAND_PATTERN.lastIndex = 0;
+      return value;
+    }
+    LEGACY_BRAND_PATTERN.lastIndex = 0;
+    return value.replace(LEGACY_BRAND_PATTERN, PUBLIC_BRAND.name);
+  }
+
+  function containsLegacyBrand(value) {
+    if (typeof value !== "string") return false;
+    const found = LEGACY_BRAND_PATTERN.test(value);
+    LEGACY_BRAND_PATTERN.lastIndex = 0;
+    return found;
+  }
+
+  function brandTextNode(node) {
+    if (!node || node.nodeType !== Node.TEXT_NODE) return;
+    const parent = node.parentElement;
+    if (!parent || BRAND_SKIP_TAGS.has(parent.tagName) || !containsLegacyBrand(node.nodeValue)) return;
+    node.nodeValue = replacePublicBrand(node.nodeValue);
+  }
+
+  function brandElementAttributes(element) {
+    if (!element?.getAttribute) return;
+    BRAND_ATTRS.forEach((attribute) => {
+      const value = element.getAttribute(attribute);
+      if (!containsLegacyBrand(value)) return;
+      element.setAttribute(attribute, replacePublicBrand(value));
+    });
+  }
+
+  function applyPublicBrand(root = document) {
+    if (!root) return;
+    if (root === document) {
+      document.title = replacePublicBrand(document.title);
+      const description = document.querySelector('meta[name="description"]');
+      if (description && containsLegacyBrand(description.content)) description.content = replacePublicBrand(description.content);
+    }
+
+    if (root.nodeType === Node.TEXT_NODE) {
+      brandTextNode(root);
+      return;
+    }
+
+    if (root.nodeType === Node.ELEMENT_NODE) brandElementAttributes(root);
+    if (root.nodeType !== Node.DOCUMENT_NODE && root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const parent = node.parentElement;
+      if (!parent || BRAND_SKIP_TAGS.has(parent.tagName) || !containsLegacyBrand(node.nodeValue)) continue;
+      textNodes.push(node);
+    }
+    textNodes.forEach(brandTextNode);
+
+    root.querySelectorAll?.(BRAND_ATTRS.map((attribute) => `[${attribute}]`).join(",")).forEach(brandElementAttributes);
+  }
+
+  function isAppOwnedDynamicBrandNode(node) {
+    const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    return Boolean(element?.closest?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR));
+  }
+
+  function brandAppOwnedDynamicSubtree(node) {
+    if (!node) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (isAppOwnedDynamicBrandNode(node)) brandTextNode(node);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    if (isAppOwnedDynamicBrandNode(node)) {
+      applyPublicBrand(node);
+      return;
+    }
+    node.querySelectorAll?.(APP_OWNED_DYNAMIC_BRAND_SELECTOR).forEach(applyPublicBrand);
+  }
+
+  function installPublicBranding() {
+    // Brand only the static application DOM on first load. Later mutation branding
+    // is explicitly limited to app-owned diagnostic/brand surfaces. Member messages,
+    // trainer notes, profile data, and other user-authored content remain verbatim.
+    applyPublicBrand(document);
+    if (brandObserver || !document.documentElement || typeof MutationObserver !== "function") return;
+    brandObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "characterData") {
+          if (isAppOwnedDynamicBrandNode(mutation.target)) brandTextNode(mutation.target);
+          return;
+        }
+        if (mutation.type === "attributes") {
+          if (isAppOwnedDynamicBrandNode(mutation.target)) brandElementAttributes(mutation.target);
+          return;
+        }
+        mutation.addedNodes.forEach(brandAppOwnedDynamicSubtree);
+      });
+    });
+    brandObserver.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: BRAND_ATTRS
+    });
+  }
+
   const NAV_ITEMS = Object.freeze([
     {id:"home",label:"Home",href:"/index.html",section:"Main",auth:"public"},
     {id:"dashboard",label:"Dashboard",href:"/dashboard.html",section:"Main",auth:"member"},
     {id:"profile",label:"My Page / Profile",href:"/dashboard.html#profile",section:"Main",auth:"member"},
-    {id:"workout",label:"Pocket PT Workout",href:"/workout.html",section:"Training",auth:"member"},
+    {id:"workout",label:"MileleFit Workout",href:"/workout.html",section:"Training",auth:"member"},
     {id:"exercises",label:"Exercise Library",href:"/exercise-library.html",section:"Training",auth:"public"},
     {id:"challenges",label:"Challenges",href:"/challenges.html",section:"Training",auth:"member"},
     {id:"coach",label:"Trainer / Coach",href:"/trainer.html",section:"Training",auth:"member",roles:["trainer","admin","super_admin"]},
@@ -95,7 +217,7 @@
     const links=[...grouped].map(([section,items])=>`<section class="maat-nav-section"><h2>${section}</h2><div class="maat-nav-links">${items.map(item=>`<a class="maat-nav-link" href="${item.href}"${current===item.href.split("#")[0]?" aria-current=\"page\"":""}>${item.label}${item.premium&&state.user?.accessTier==="free"?'<span class="maat-nav-lock">Upgrade</span>':""}</a>`).join("")}</div></section>`).join("");
     const identity=state.isAuthenticated?`<div class="maat-nav-identity"><strong>${escapeHtml(state.user?.name||state.user?.email||"Signed in")}</strong><br><small>${escapeHtml(state.user?.email||"")}${state.user?.role?` · ${escapeHtml(state.user.role)}`:""}</small></div>`:"";
     const account=restoring?'<p class="maat-nav-auth-restoring" role="status">Restoring session…</p>':authPresentation.phase==="error"?'<p class="maat-nav-auth-error" role="alert">Session verification failed. Check your connection and retry.</p><button type="button" data-maat-auth-retry>Retry</button>':state.isAuthenticated?'<button class="maat-nav-signout" type="button" data-maat-signout>Sign Out</button>':'<a class="maat-nav-link" href="/login.html">Sign In</a><a class="maat-nav-link" href="/login.html?mode=register">Create Account</a>';
-    header.innerHTML=`<div class="maat-nav-bar"><a class="maat-nav-brand" href="/index.html">Pocket PT</a><span class="maat-nav-context">${escapeHtml(document.title.split("·")[0].split("|")[0].trim())}</span><button class="maat-nav-toggle" type="button" aria-expanded="false" aria-controls="maatNavPanel" aria-label="Open navigation menu">Menu</button></div><button class="maat-nav-backdrop" type="button" aria-label="Close navigation menu" hidden></button><nav id="maatNavPanel" class="maat-nav-panel" aria-label="Global navigation" data-frontend-build="${FRONTEND_BUILD}" hidden>${identity}${links}<section class="maat-nav-section"><h2>Account</h2><div class="maat-nav-links">${account}</div></section><p class="maat-nav-status" role="status" aria-live="polite"></p></nav>`;
+    header.innerHTML=`<div class="maat-nav-bar"><a class="maat-nav-brand" href="/index.html">${PUBLIC_BRAND.name}</a><span class="maat-nav-context">${escapeHtml(document.title.split("·")[0].split("|")[0].trim())}</span><button class="maat-nav-toggle" type="button" aria-expanded="false" aria-controls="maatNavPanel" aria-label="Open navigation menu">Menu</button></div><button class="maat-nav-backdrop" type="button" aria-label="Close navigation menu" hidden></button><nav id="maatNavPanel" class="maat-nav-panel" aria-label="Global navigation" data-frontend-build="${FRONTEND_BUILD}" hidden>${identity}${links}<section class="maat-nav-section"><h2>Account</h2><div class="maat-nav-links">${account}</div></section><p class="maat-nav-status" role="status" aria-live="polite"></p></nav>`;
     if(wasOpen)setOpen(true,{restoreFocus:false});else inspect();
   }
   async function onClick(event) {
@@ -107,6 +229,7 @@
   }
   function initialize() {
     if(initialized)return;initialized=true;diagnostics.initializationCount++;
+    installPublicBranding();
     syncDiagnosticAccess(null);
     document.addEventListener("click",onClick);diagnostics.clickListenerAttached="YES";
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&diagnostics.state==="open")setOpen(false)});
@@ -116,6 +239,6 @@
     const readiness=global.AuthStateRuntime?.whenReady?.();
     if(readiness?.then)readiness.then(applyReadiness).catch(()=>applyReadiness({reason:"auth_unavailable"}));
   }
-  global.MaatNavigation={bundle:FRONTEND_BUILD,NAV_ITEMS,render,setOpen,getVisibleItems:state=>NAV_ITEMS.filter(item=>allowed(item,state)),getAuthPresentation:()=>authPresentation,presentationFromReadiness,diagnostics,hasDiagnosticRole,syncDiagnosticAccess};
+  global.MaatNavigation={bundle:FRONTEND_BUILD,NAV_ITEMS,brand:PUBLIC_BRAND,applyPublicBrand,render,setOpen,getVisibleItems:state=>NAV_ITEMS.filter(item=>allowed(item,state)),getAuthPresentation:()=>authPresentation,presentationFromReadiness,diagnostics,hasDiagnosticRole,syncDiagnosticAccess};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialize,{once:true});else initialize();
 })(window);
