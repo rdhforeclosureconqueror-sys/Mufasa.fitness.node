@@ -1,7 +1,7 @@
 (function installMileleFitPushUpRelease(global) {
   'use strict';
 
-  const BUILD = '20260912-light-signup-v1';
+  const BUILD = '20260912-light-signup-v2';
   const AVATURN_URL = 'https://www.avaturn.me/';
   const state = {
     build: BUILD,
@@ -291,15 +291,21 @@
     trace('CANONICAL_AUTH', 'PASS', 'canonical member session established');
   }
 
-  async function saveParticipantMetadata(fitnessLevel) {
-    trace('PARTICIPANT_METADATA', 'RUNNING', 'saving owner-scoped Push-Up Challenge entry');
+  async function saveParticipantMetadata(fitnessLevel, authToken) {
+    trace('PARTICIPANT_METADATA', 'RUNNING', 'saving owner-scoped Push-Up Challenge entry before release unlock');
+    if (!authToken) {
+      throw Object.assign(new Error('Challenge identity token was not returned.'), { signupStage: 'PARTICIPANT_METADATA' });
+    }
     const result = await global.MaatApiClient.request('/api/me/challenge-participants/push_up', {
-      method: 'PUT', body: { fitnessLevel }
+      method: 'PUT',
+      body: { fitnessLevel },
+      auth: false,
+      headers: { authorization: `Bearer ${authToken}` }
     });
     if (!result.ok) {
       throw Object.assign(new Error(result.payload?.error?.message || result.payload?.error || 'Challenge details could not be saved.'), { signupStage: 'PARTICIPANT_METADATA' });
     }
-    trace('PARTICIPANT_METADATA', 'PASS', 'challenge source and fitness level saved');
+    trace('PARTICIPANT_METADATA', 'PASS', 'challenge source and fitness level saved before canonical auth activation');
   }
 
   async function submitSignup(event) {
@@ -334,8 +340,8 @@
       } else {
         trace('ACCOUNT_REGISTER', 'PASS', 'ACCOUNT_CREATED');
       }
+      await saveParticipantMetadata(values.fitnessLevel, result.payload?.token);
       await establishCanonicalAuth(result.payload);
-      await saveParticipantMetadata(values.fitnessLevel);
       trace('RELEASE_REFRESH', 'RUNNING', 'refreshing canonical account and profile');
       await refreshAuthAndAvatar('challenge-signup');
       trace('RELEASE_REFRESH', 'PASS', 'release experience refreshed without intake navigation');
