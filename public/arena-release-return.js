@@ -5,11 +5,8 @@
   if (params.get('entry') !== 'release') return;
 
   let releaseReturnUrl = null;
-  let resolved = false;
 
   async function resolveReturnUrl() {
-    if (resolved) return releaseReturnUrl;
-    resolved = true;
     try {
       const response = await global.fetch('/api/game/config', {
         credentials: 'same-origin',
@@ -23,10 +20,7 @@
       if (!['https:', 'http:'].includes(trusted.protocol) || trusted.username || trusted.password || trusted.pathname !== '/push-up-challenge.html') {
         throw new Error('arena_config_return_invalid');
       }
-      const target = new URL('/push-up.html', trusted.origin);
-      releaseReturnUrl = target.href;
-      const exit = global.document.getElementById('exitArena');
-      if (exit) exit.href = releaseReturnUrl;
+      releaseReturnUrl = new URL('/push-up.html', trusted.origin).href;
       return releaseReturnUrl;
     } catch (error) {
       global.console?.warn?.('[RELEASE_ARENA_RETURN] unable to resolve release return URL', error?.message || error);
@@ -36,10 +30,9 @@
 
   async function revokeAndReturn(event) {
     const link = event.target?.closest?.('[data-arena-exit]');
-    if (!link) return;
+    if (!link || !releaseReturnUrl) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    const destination = await resolveReturnUrl();
     try {
       await global.fetch('/api/game/session', {
         method: 'DELETE',
@@ -49,9 +42,13 @@
         headers: { 'Content-Type': 'application/json' }
       });
     } catch (_) {}
-    global.location.assign(destination || '/push-up.html');
+    global.location.assign(releaseReturnUrl);
   }
 
-  global.document.addEventListener('click', revokeAndReturn, true);
-  resolveReturnUrl();
+  resolveReturnUrl().then((destination) => {
+    if (!destination) return;
+    const exit = global.document.getElementById('exitArena');
+    if (exit) exit.href = destination;
+    global.document.addEventListener('click', revokeAndReturn, true);
+  });
 })(window);
