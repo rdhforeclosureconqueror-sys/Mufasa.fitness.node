@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - 'world-bridge-server.js'
+      - 'src/world/worldBridge.js'
       - 'src/world/lobbyBridge.js'
       - 'test/world-lobby-bridge.test.js'
+      - 'test/world-lobby-session-revocation.test.js'
       - 'test/world-bridge.test.js'
       - '.github/workflows/living-lobby-checks.yml'
   workflow_dispatch:
@@ -23,4 +25,4 @@ jobs:
       - run: npm ci
       - run: node --check src/world/lobbyBridge.js
       - run: node --check world-bridge-server.js
-      - run: node --test test/world-bridge.test.js test/world-lobby-bridge.test.js
+      - run: node --test test/world-bridge.test.js test/world-lobby-bridge.test.js test/world-lobby-session-revocation.test.js
