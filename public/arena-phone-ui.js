@@ -45,6 +45,13 @@
       game.inert = !['CONNECTING', 'GYM', 'LEGACY', 'NEGOTIATING'].includes(state.state);
       game.style.visibility = state.cameraView ? 'hidden' : '';
       $('arenaCameraSelect').disabled = !['CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED', 'CALIBRATION_RETRY'].includes(state.state);
+      $('arenaWalkMode').disabled = !state.canMove;
+      $('arenaRunMode').disabled = !state.canMove;
+      $('arenaWalkMode').dataset.selected = String(state.movementMode === 'WALK');
+      $('arenaRunMode').dataset.selected = String(state.movementMode === 'RUN');
+      $('arenaWalkMode').ariaPressed = String(state.movementMode === 'WALK');
+      $('arenaRunMode').ariaPressed = String(state.movementMode === 'RUN');
+      $('arenaLocomotionModeStatus').textContent = state.movementMode === 'RUN' ? 'Run mode' : 'Walk mode';
       const cameraStatus = {
         BODY_VISIBLE: 'Required joints visible · camera preview only',
         CALIBRATING_TOP: 'Hold TOP still · capturing automatically',
@@ -83,6 +90,8 @@
     $('arenaReturnToGym').addEventListener('click', () => {if (flow.returnToGym()) (flow.snapshot().state === 'RETURNING' ? $('arenaPhoneMessage') : $('arenaSetupCamera')).focus();});
     $('arenaCameraSelect').addEventListener('change', () => enableCamera($('arenaCameraSelect').value));
     $('arenaRepeatBriefing').addEventListener('click', () => $('arenaPhoneMessage').focus());
+    $('arenaWalkMode').addEventListener('click', () => flow.setLocomotionMode('WALK'));
+    $('arenaRunMode').addEventListener('click', () => flow.setLocomotionMode('RUN'));
     for (const button of panel.querySelectorAll('[data-arena-move]')) {
       button.addEventListener('pointerdown', event => {
         if (pointer || event.button !== 0 || !flow.hold(button.dataset.arenaMove)) return;
