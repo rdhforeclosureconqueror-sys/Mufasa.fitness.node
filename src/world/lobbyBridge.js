@@ -2,6 +2,7 @@
 
 const crypto = require("node:crypto");
 const { WebSocket, WebSocketServer } = require("ws");
+const { createAvatarBridge } = require("./avatarBridge");
 
 const LOBBY_PROTOCOL_VERSION = 1;
 const LOBBY_PATH = "/api/game/lobby/ws";
@@ -22,10 +23,14 @@ function validPosition(value) {
 
 function createLobbyBridge(options = {}) {
   const worldBridge = options.worldBridge;
-  if (!worldBridge?.readSession || !worldBridge?.bootstrap || !worldBridge?.readAvatarForUser) {
-    throw new Error("Lobby bridge requires world bridge session and avatar capabilities");
+  if (!worldBridge?.readSession || !worldBridge?.bootstrap) {
+    throw new Error("Lobby bridge requires world bridge session capabilities");
   }
 
+  const avatarBridge = createAvatarBridge({
+    assets: options.avatarAssets,
+    publicOrigins: Array.isArray(options.publicOrigins) ? options.publicOrigins : []
+  });
   const now = options.now || (() => Date.now());
   const heartbeatMs = Number(options.heartbeatMs || DEFAULT_HEARTBEAT_MS);
   const presencesById = new Map();
@@ -264,7 +269,7 @@ function createLobbyBridge(options = {}) {
       }
 
       try {
-        const asset = worldBridge.readAvatarForUser(target.userId, version);
+        const asset = avatarBridge.read(target.userId, version);
         res.type("model/gltf-binary");
         res.set("X-PocketPT-Avatar-Version", asset.profileVersion);
         return res.sendFile(asset.path, { cacheControl: false, lastModified: false }, (error) => {
