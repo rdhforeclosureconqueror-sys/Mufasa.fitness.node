@@ -88,6 +88,24 @@ function createLobbyBridge(options = {}) {
     return true;
   }
 
+  function sessionExpired(presence) {
+    return !Number.isFinite(presence.expiresAt) || presence.expiresAt <= now();
+  }
+
+  function expirePresence(presence) {
+    if (presencesById.get(presence.presenceId)?.ws !== presence.ws) return false;
+    send(presence.ws, {
+      type: "ERROR",
+      protocolVersion: LOBBY_PROTOCOL_VERSION,
+      roomId: ROOM_ID,
+      code: "ARENA_SESSION_EXPIRED",
+      message: "Arena session expired; reconnect through the authenticated arena flow"
+    });
+    removePresence(presence.presenceId, "SESSION_EXPIRED");
+    try { presence.ws.close(4003, "Arena session expired"); } catch (_) {}
+    return true;
+  }
+
   function replaceExistingPresence(userId) {
     const existingId = presenceIdByUserId.get(userId);
     if (!existingId) return;
@@ -136,6 +154,7 @@ function createLobbyBridge(options = {}) {
       sessionId: session.sessionId,
       userId: session.userId,
       displayName: session.displayName,
+      expiresAt: Number(session.expiresAt),
       avatar: bootstrap.avatar ? {
         avatarId: bootstrap.avatar.avatarId,
         profileVersion: bootstrap.avatar.profileVersion,
@@ -166,6 +185,10 @@ function createLobbyBridge(options = {}) {
     ws.on("pong", () => { presence.isAlive = true; presence.lastSeenAt = now(); });
     ws.on("message", (raw) => {
       if (presencesById.get(presenceId)?.ws !== ws) return;
+      if (sessionExpired(presence)) {
+        expirePresence(presence);
+        return;
+      }
       if (!rateLimitAllows(presence)) {
         send(ws, { type: "ERROR", code: "STATE_RATE_LIMIT", message: "Player state updates are limited to 30 per second" });
         return;
@@ -214,6 +237,10 @@ function createLobbyBridge(options = {}) {
 
     heartbeatTimer = setInterval(() => {
       for (const presence of presencesById.values()) {
+        if (sessionExpired(presence)) {
+          expirePresence(presence);
+          continue;
+        }
         if (!presence.isAlive) { presence.ws.terminate(); continue; }
         presence.isAlive = false;
         if (presence.ws.readyState === WebSocket.OPEN) presence.ws.ping();
@@ -302,6 +329,7 @@ function createLobbyBridge(options = {}) {
         presenceId: presence.presenceId,
         userId: presence.userId,
         sessionId: presence.sessionId,
+        expiresAt: presence.expiresAt,
         lastSeenAt: presence.lastSeenAt,
         state: { ...presence.state, position: [...presence.state.position] }
       }))
