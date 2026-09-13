@@ -2144,6 +2144,21 @@
       "prNumber": 808,
       "commitSha": "a675b7e912b3dc3c8ade139aef559efe46cd7095",
       "timestamp": "2026-09-13T23:35:15.990Z"
+    },
+    {
+      "operationId": "244eb0cb-0368-4aad-b81a-b3fc459d4b42",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to derive its target branch from GitHub workflow context so checkout, pushback, and PR attribution stay aligned with the branch that triggered the run.",
+      "prNumber": 808,
+      "commitSha": "a3c5068ae85545ba1d884258cbc733df9ec1a6a0",
+      "timestamp": "2026-09-13T23:36:04.867Z"
     }
   ]
 }
