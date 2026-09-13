@@ -1,5 +1,6 @@
 "use strict";
 
+const http = require("node:http");
 const path = require("path");
 const { createApp } = require("./server");
 const { requireAuth } = require("./src/middleware/auth");
@@ -13,6 +14,7 @@ const { installClientTransformationRoutes } = require("./src/routes/clientTransf
 const { createPrivateClientGettingStartedService } = require("./src/services/privateClientGettingStartedService");
 const { installPrivateClientGettingStartedRoutes } = require("./src/routes/privateClientGettingStartedRoutes");
 const { createWorldBridge } = require("./src/world/worldBridge");
+const { createLobbyBridge } = require("./src/world/lobbyBridge");
 const { createGymMappingBridge } = require("./src/world/gymMappingBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
 
@@ -110,16 +112,35 @@ function createWorldBridgeApp(options = {}) {
   bridge.register(app);
   app.locals.pocketPTWorldBridge = bridge;
 
+  const backendPublicUrl = String(options.backendPublicUrl || process.env.BACKEND_PUBLIC_URL || "").replace(/\/$/, "");
+  const frontendPublicUrl = String(options.frontendPublicUrl || process.env.FRONTEND_PUBLIC_URL || "").replace(/\/$/, "");
+  const lobbyBridge = createLobbyBridge({
+    worldBridge: bridge,
+    avatarAssets: app.locals.pocketPTAvatarAssets,
+    publicOrigins: [backendPublicUrl, frontendPublicUrl].filter(Boolean),
+    now: options.lobbyNow,
+    heartbeatMs: options.lobbyHeartbeatMs
+  });
+  lobbyBridge.registerHttp(app);
+  app.locals.pocketPTLobbyBridge = lobbyBridge;
+
   const membershipTierBridge = createMembershipTierBridge({ rootDir:options.rootDir||process.cwd(), dataDir:options.dataDir, env:options.env||process.env, stripeClient:options.stripeClient });
   membershipTierBridge.register(app);
   app.locals.pocketPTMembershipTierBridge = membershipTierBridge;
   return app;
 }
 
-if (require.main === module) {
-  const app = createWorldBridgeApp();
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + membership tiers + Free Run Club + Private Coaching + Transformation Profile + Getting Started + Gym Mapping listening on :${PORT}`));
+function createWorldBridgeHttpServer(options = {}) {
+  const app = createWorldBridgeApp(options);
+  const server = http.createServer(app);
+  app.locals.pocketPTLobbyBridge.attach(server);
+  return { app, server, lobbyBridge: app.locals.pocketPTLobbyBridge };
 }
 
-module.exports = { createWorldBridgeApp, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted, installGymMapping };
+if (require.main === module) {
+  const { server } = createWorldBridgeHttpServer();
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + Living Lobby + membership tiers + Free Run Club + Private Coaching + Transformation Profile + Getting Started + Gym Mapping listening on :${PORT}`));
+}
+
+module.exports = { createWorldBridgeApp, createWorldBridgeHttpServer, installDeploymentIdentity, installFreeRunClub, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted, installGymMapping };
