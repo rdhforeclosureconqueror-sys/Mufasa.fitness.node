@@ -20,13 +20,25 @@ jobs:
         with:
           ref: fix/walk-thriller-mobile-view-20260913
 
-      - name: Checkout exact generated Godot candidate
-        uses: actions/checkout@v4
-        with:
-          repository: rdhforeclosureconqueror-sys/mufasagodot
-          ref: generated/web-candidate
-          path: godot-candidate
-          token: ${{ secrets.MUFASAGODOT_REPO_READ_TOKEN }}
+      - name: Fetch exact generated Godot candidate
+        shell: bash
+        env:
+          GODOT_REPO_READ_TOKEN: ${{ secrets.MUFASAGODOT_REPO_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf godot-candidate
+          if [ -n "${GODOT_REPO_READ_TOKEN:-}" ]; then
+            git clone --depth 1 --filter=blob:none --sparse \
+              --branch generated/web-candidate \
+              "https://x-access-token:${GODOT_REPO_READ_TOKEN}@github.com/rdhforeclosureconqueror-sys/mufasagodot.git" \
+              godot-candidate
+          else
+            git clone --depth 1 --filter=blob:none --sparse \
+              --branch generated/web-candidate \
+              "https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git" \
+              godot-candidate
+          fi
+          git -C godot-candidate sparse-checkout set build/ci-web
 
       - name: Setup Node
         uses: actions/setup-node@v4
