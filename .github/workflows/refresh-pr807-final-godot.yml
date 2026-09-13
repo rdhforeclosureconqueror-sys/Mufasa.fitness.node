@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      TARGET_BRANCH: fix/walk-thriller-mobile-view-20260913
+      TARGET_BRANCH: ${{ github.ref_name }}
     steps:
       - name: Checkout PR807
         uses: actions/checkout@v4
