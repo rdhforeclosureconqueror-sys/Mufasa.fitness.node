@@ -9,23 +9,39 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   refresh_validate_record:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TARGET_BRANCH: ${{ github.ref_name }}
     steps:
       - name: Checkout PR807
         uses: actions/checkout@v4
         with:
-          ref: fix/walk-thriller-mobile-view-20260913
+          ref: ${{ env.TARGET_BRANCH }}
 
-      - name: Checkout exact generated Godot candidate
-        uses: actions/checkout@v4
-        with:
-          repository: rdhforeclosureconqueror-sys/mufasagodot
-          ref: generated/web-candidate
-          path: godot-candidate
+      - name: Fetch exact generated Godot candidate
+        shell: bash
+        env:
+          GODOT_REPO_READ_TOKEN: ${{ secrets.MUFASAGODOT_REPO_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf godot-candidate
+          if [ -n "${GODOT_REPO_READ_TOKEN:-}" ]; then
+            git clone --depth 1 --filter=blob:none --sparse \
+              --branch generated/web-candidate \
+              "https://x-access-token:${GODOT_REPO_READ_TOKEN}@github.com/rdhforeclosureconqueror-sys/mufasagodot.git" \
+              godot-candidate
+          else
+            git clone --depth 1 --filter=blob:none --sparse \
+              --branch generated/web-candidate \
+              "https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git" \
+              godot-candidate
+          fi
+          git -C godot-candidate sparse-checkout set build/ci-web
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -76,28 +92,51 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
           git diff --cached --check
+          if git diff --cached --quiet; then
+            SHA=$(git rev-parse HEAD)
+            echo "No runtime artifact changes to commit."
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git commit -m "Stage final reviewed Godot PR2 candidate [skip ci]"
           SHA=$(git rev-parse HEAD)
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          git push origin HEAD:fix/walk-thriller-mobile-view-20260913
+          git push origin HEAD:"${TARGET_BRANCH}"
 
       - name: Refresh readiness evidence
         shell: bash
         env:
           RUNTIME_SHA: ${{ steps.runtime.outputs.sha }}
           READINESS_OPS_FILE: /tmp/pr807-final-readiness.json
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/arena-phone-flow.js,public/arena-phone-ui.js,public/arena-push-up.html,public/game/push-up-arena/index.html,public/game/push-up-arena/index.pck,public/game/push-up-arena/pocketpt-world-build.json --pr 807 --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
+          AUTH_HEADER=$(printf '%s %s %s' 'Authorization:' 'Bearer' "$GITHUB_TOKEN")
+          PR_NUMBER=$(
+            curl --fail --silent --show-error --get \
+              -H "$AUTH_HEADER" \
+              -H "Accept: application/vnd.github+json" \
+              --data "state=open" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${TARGET_BRANCH}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
+            | python3 -c 'import json,sys; pulls=json.load(sys.stdin); print(pulls[0]["number"] if pulls else "")'
+          )
+          PR_ARGS=()
+          if [ -n "$PR_NUMBER" ]; then
+            PR_ARGS=(--pr "$PR_NUMBER")
+          fi
+          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json "${PR_ARGS[@]}" --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
           npm run readiness:validate
 
       - name: Commit readiness audit
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/readiness/development-evidence.json
           git diff --cached --check
           if ! git diff --cached --quiet; then
             git commit -m "Refresh PR807 final readiness evidence [skip ci]"
-            git push origin HEAD:fix/walk-thriller-mobile-view-20260913
+            git push origin HEAD:"${TARGET_BRANCH}"
           fi

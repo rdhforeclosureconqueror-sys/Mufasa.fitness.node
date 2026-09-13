@@ -1929,6 +1929,52 @@
       "timestamp": "2026-09-13T22:44:12.048Z"
     },
     {
+      "operationId": "3932cd32-000e-4ec4-b4e7-4503464d7204",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/arena-phone-flow.js",
+        "public/arena-phone-ui.js",
+        "public/arena-push-up.html",
+        "public/game/push-up-arena/index.html",
+        "public/game/push-up-arena/index.pck",
+        "public/game/push-up-arena/pocketpt-world-build.json"
+      ],
+      "automated": "PASS",
+      "evidence": "One-thumb 360 joystick implementation passed focused automated control/UI regressions and packages Godot source b1d5a8a7c478a711f80d2fcb2550bba67fcb4104 based on action-safe e863f914. Production phone joystick feel, diagonal steering, movement naturalness, and human UX acceptance remain pending authorized human verification.",
+      "prNumber": 808,
+      "commitSha": "4f0b2d48549af62c6677291cf6ba1de3da9e475d",
+      "timestamp": "2026-09-13T22:47:18.393Z"
+    },
+    {
+      "operationId": "e7e8037d-3022-4478-87fa-934b44cd5dd7",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Start merge conflict resolution for joystick branch",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-13T23:24:52.324Z"
+    },
+    {
+      "operationId": "6e28c6ab-3e95-4f18-96bc-e10dac08203a",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT: resolve merge conflicts on joystick branch",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-13T23:24:52.477Z"
+    },
+    {
       "operationId": "0dabc22b-989e-4987-868a-9a960ee0145b",
       "board": "avatar",
       "cardId": "avatar-development-pushup-arena-v1",
@@ -1947,6 +1993,172 @@
       "prNumber": 807,
       "commitSha": "7d30d19ab8a8063d4fd93aa075ec86b5c698a3e8",
       "timestamp": "2026-09-13T23:03:44.557Z"
+    },
+    {
+      "operationId": "21496d04-767f-459d-b75b-6be4ef9bd5c8",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Resolved origin/main merge conflicts while preserving the joystick runtime candidate and carrying forward PR807 final readiness evidence. Focused arena regressions and readiness:validate passed; security:validate-routes still reports the pre-existing missing GET /motion/assets/thriller/runtime/:filename authorization audit entry.",
+      "prNumber": 808,
+      "commitSha": "fa831e6542953af8e0fa47dc12cc28514f5387f1",
+      "timestamp": "2026-09-13T23:26:25.460Z"
+    },
+    {
+      "operationId": "58d2d032-16d9-4dda-bed4-904349765df1",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Hardened the carried-forward PR807 refresh workflow so cross-repo checkout can use an explicit read token, runtime staging becomes a no-op when artifacts are unchanged while still emitting a SHA, and readiness commits always configure git identity.",
+      "prNumber": 808,
+      "commitSha": "3e0bbde6648264229f248775c2dab9f14d538288",
+      "timestamp": "2026-09-13T23:27:54.711Z"
+    },
+    {
+      "operationId": "4ee02c77-07a2-49a2-9255-d065f3b56235",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Adjusted the carried-forward PR807 refresh workflow to use an explicit cross-repo read token input and to keep readiness file evidence aligned with every staged runtime artifact.",
+      "prNumber": 808,
+      "commitSha": "8a2a14f1b1cfdbcf29b4a2786eb8bd025f326f38",
+      "timestamp": "2026-09-13T23:28:42.405Z"
+    },
+    {
+      "operationId": "9aacb6cf-813a-44d7-8395-fbdc22a2d203",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to clone the Godot candidate with the explicit read token when available and fall back to anonymous/public checkout when it is not, while retaining the earlier no-op commit and readiness evidence fixes.",
+      "prNumber": 808,
+      "commitSha": "f3a44b891317a930ee39c59f36a2f1b09f491eb9",
+      "timestamp": "2026-09-13T23:29:33.306Z"
+    },
+    {
+      "operationId": "270e7629-2a46-484b-ba53-18e3da1d2462",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Aligned the carried-forward PR807 refresh workflow readiness evidence with the exact runtime artifact files that the workflow stages and commits.",
+      "prNumber": 808,
+      "commitSha": "1ce7cdba8889622f828720cdaba7e75732b24fa5",
+      "timestamp": "2026-09-13T23:30:26.235Z"
+    },
+    {
+      "operationId": "55492d0a-2359-4340-8655-ce5c4bd03273",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Removed the hard-coded PR number from the carried-forward PR807 refresh workflow so its readiness evidence remains branch-local instead of misattributing future runs.",
+      "prNumber": 808,
+      "commitSha": "08a9621f73385b02e2b2168e7fda887e6807e1ce",
+      "timestamp": "2026-09-13T23:31:17.553Z"
+    },
+    {
+      "operationId": "48f0464b-f0e6-4e7e-82a4-a0470fe8a81d",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to look up the open PR for its branch at runtime and pass that PR number into readiness:update, keeping workflow-generated evidence aligned with the branch it actually updates.",
+      "prNumber": 808,
+      "commitSha": "fbe6037faa0c3c0a2e3e4e27bac11cfebe2cc7ca",
+      "timestamp": "2026-09-13T23:32:55.997Z"
+    },
+    {
+      "operationId": "7f1ee870-a0df-4197-8009-f24c6855190b",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Added pull-requests: read to the carried-forward PR807 refresh workflow so its dynamic branch PR lookup can call the pull requests API before recording readiness evidence.",
+      "prNumber": 808,
+      "commitSha": "cd4c47dfc4c37638193c6ac6c299d4c8df81ced2",
+      "timestamp": "2026-09-13T23:33:39.832Z"
+    },
+    {
+      "operationId": "1b8cb896-5fb8-468d-820a-2fc295646fcd",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to resolve its branch PR number from the checked-out git branch, so readiness evidence follows the branch actually being updated after any in-job commits.",
+      "prNumber": 808,
+      "commitSha": "68b28d5352b0847644d28f1c1598566b58925b1a",
+      "timestamp": "2026-09-13T23:34:25.789Z"
+    },
+    {
+      "operationId": "42b67a65-8c03-487d-895b-9f8a78fc58a5",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to use its configured target branch for checkout, pushback, and PR attribution, avoiding detached-HEAD ambiguity during readiness evidence recording.",
+      "prNumber": 808,
+      "commitSha": "a675b7e912b3dc3c8ade139aef559efe46cd7095",
+      "timestamp": "2026-09-13T23:35:15.990Z"
+    },
+    {
+      "operationId": "244eb0cb-0368-4aad-b81a-b3fc459d4b42",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to derive its target branch from GitHub workflow context so checkout, pushback, and PR attribution stay aligned with the branch that triggered the run.",
+      "prNumber": 808,
+      "commitSha": "a3c5068ae85545ba1d884258cbc733df9ec1a6a0",
+      "timestamp": "2026-09-13T23:36:04.867Z"
     }
   ]
 }

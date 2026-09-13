@@ -40,6 +40,7 @@
     let capabilities = null, held = null, repeater = null, nudgeTimer = null, avatarNeedsStand = false;
     let previewOnly = true, connected = false, context = 'LOCKED', calibrationStage = 'IDLE', bodyVisible = false;
     let movementMode = 'WALK';
+    let movementVector = null;
     const timers = new Map();
     function cancel(name) { clearTimer(timers.get(name)); timers.delete(name); }
     function schedule(name, delay, fn) { cancel(name); timers.set(name, setTimer(() => {timers.delete(name); fn();}, delay)); }
@@ -65,8 +66,13 @@
       if (!capabilities) return null;
       return transmit('CONTROL_INTENT', {context, action, ...extra});
     }
+    function pulseHeld() {
+      if (held === 'MOVE_VECTOR' && movementVector) return control('MOVE_VECTOR', {x: movementVector.x, y: movementVector.y, validForMs: 300});
+      if (DIRECTIONS.has(held)) return control(held, {intensity: 1, validForMs: 300});
+      return null;
+    }
     function release() {
-      clearRepeater(repeater); repeater = null; clearTimer(nudgeTimer); nudgeTimer = null; held = null;
+      clearRepeater(repeater); repeater = null; clearTimer(nudgeTimer); nudgeTimer = null; held = null; movementVector = null;
       control('STOP');
     }
     function setContext(next) { release(); context = next; control('SET_CONTEXT'); }
@@ -135,9 +141,18 @@
     }
     function hold(action) {
       if (!snapshot().canMove || held || !DIRECTIONS.has(action)) return false;
-      held = action;
-      const pulse = () => control(action, {intensity: 1, validForMs: 300});
-      pulse(); repeater = setRepeater(pulse, 100); return true;
+      held = action; movementVector = null;
+      pulseHeld(); repeater = setRepeater(pulseHeld, 100); return true;
+    }
+    function moveVector(x, y) {
+      if (!snapshot().canMove || !Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 1 || Math.abs(y) > 1) return false;
+      const magnitude = Math.hypot(x, y);
+      if (magnitude <= 0.12) { if (held === 'MOVE_VECTOR') release(); return true; }
+      if (held && held !== 'MOVE_VECTOR') return false;
+      movementVector = {x: x / magnitude, y: y / magnitude};
+      if (!held) { held = 'MOVE_VECTOR'; pulseHeld(); repeater = setRepeater(pulseHeld, 100); }
+      else pulseHeld();
+      return true;
     }
     function nudge(action) {if (!hold(action)) return false; nudgeTimer = setTimer(release, 200); return true;}
     function approach() {
@@ -229,7 +244,7 @@
       avatarNeedsStand = false; previewOnly = true; calibrationStage = 'IDLE'; bodyVisible = false; context = 'LOCKED'; movementMode = 'WALK'; change('CONNECTING');
     }
     function close() {reset(); change('CLOSED');}
-    return {snapshot, connect, accept, hold, nudge, release, setLocomotionMode, playAction, approach, cancelApproach, setup,
+    return {snapshot, connect, accept, hold, nudge, moveVector, release, setLocomotionMode, playAction, approach, cancelApproach, setup,
       cameraStarting, cameraActive, visibility, calibration, cameraError, returnToGym, suspend, reset, close};
   }
   return Object.freeze({VERSION, COPY, create});

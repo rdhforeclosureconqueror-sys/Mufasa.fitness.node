@@ -23,7 +23,22 @@
     function releasePointer() {
       const held = pointer; pointer = null;
       if (held?.element.hasPointerCapture?.(held.id)) held.element.releasePointerCapture(held.id);
+      const knob = $('arenaJoystickKnob'); if (knob) knob.style.transform = 'translate3d(0,0,0)';
       flow.release();
+    }
+    function joystickVector(event) {
+      const joystick = $('arenaJoystick'), rect = joystick.getBoundingClientRect();
+      const radius = Math.max(1, Math.min(rect.width, rect.height) / 2);
+      let x = (event.clientX - (rect.left + rect.width / 2)) / radius;
+      let y = (event.clientY - (rect.top + rect.height / 2)) / radius;
+      const magnitude = Math.hypot(x, y);
+      if (magnitude > 1) { x /= magnitude; y /= magnitude; }
+      return {x, y};
+    }
+    function applyJoystick(event) {
+      const vector = joystickVector(event), radiusPx = 42;
+      $('arenaJoystickKnob').style.transform = `translate3d(${(vector.x * radiusPx).toFixed(1)}px, ${(vector.y * radiusPx).toFixed(1)}px, 0)`;
+      return flow.moveVector(vector.x, vector.y);
     }
     function render(state) {
       panel.hidden = ['CONNECTING', 'CLOSED'].includes(state.state);
@@ -95,16 +110,21 @@
     $('arenaWalkMode').addEventListener('click', () => flow.setLocomotionMode('WALK'));
     $('arenaRunMode').addEventListener('click', () => flow.setLocomotionMode('RUN'));
     $('arenaThrillerAction').addEventListener('click', () => {releasePointer(); flow.playAction('ThrillerPart1');});
-    for (const button of panel.querySelectorAll('[data-arena-move]')) {
-      button.addEventListener('pointerdown', event => {
-        if (pointer || event.button !== 0 || !flow.hold(button.dataset.arenaMove)) return;
-        event.preventDefault(); pointer = {id: event.pointerId, element: button};
-        try {button.setPointerCapture(event.pointerId);} catch (_) {releasePointer();}
-      });
-      for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(name, event => {if (pointer?.id === event.pointerId) releasePointer();});
-      button.addEventListener('click', event => {if (event.detail === 0) flow.nudge(button.dataset.arenaMove);});
-    }
-    $('arenaThumbStop').addEventListener('click', releasePointer);
+    const joystick = $('arenaJoystick');
+    const keyDirections = {ArrowLeft: 'MOVE_LEFT', ArrowRight: 'MOVE_RIGHT', ArrowUp: 'MOVE_FORWARD', ArrowDown: 'MOVE_BACKWARD'};
+    joystick.addEventListener('pointerdown', event => {
+      if (pointer || event.button !== 0 || !flow.snapshot().canMove) return;
+      event.preventDefault(); pointer = {id: event.pointerId, element: joystick};
+      try {joystick.setPointerCapture(event.pointerId);} catch (_) {releasePointer(); return;}
+      applyJoystick(event);
+    });
+    joystick.addEventListener('pointermove', event => {if (pointer?.id === event.pointerId) {event.preventDefault(); applyJoystick(event);}});
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) joystick.addEventListener(name, event => {if (pointer?.id === event.pointerId) releasePointer();});
+    joystick.addEventListener('keydown', event => {
+      const action = keyDirections[event.key]; if (!action || event.repeat) return;
+      event.preventDefault(); flow.hold(action);
+    });
+    joystick.addEventListener('keyup', event => {if (keyDirections[event.key]) {event.preventDefault(); flow.release();}});
     root.addEventListener('blur', releasePointer);
     root.addEventListener('orientationchange', () => {releasePointer(); camera.resetTracking(); calibration.invalidate();});
     return {
