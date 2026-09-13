@@ -51,6 +51,29 @@ test("temporary Push-Up avatar validation center is visible to normal test profi
   assert.doesNotMatch(js, /authorization:\s*`Bearer|sessionToken|arenaTicket/i, "copy/debug adapter must not render credentials");
 });
 
+test("validation center prefers recovered current readiness over historical release failures", () => {
+  const js = read("public/push-up-avatar-validation.js");
+  const pass = js.indexOf("if (avatarUrl && release.avatarReady)");
+  const historical = js.indexOf("else if (first)", pass);
+  assert.ok(pass >= 0, "current avatar readiness branch exists");
+  assert.ok(historical > pass, "historical first failure is evaluated only after current readiness");
+  assert.match(js, /Historical failures remain in[\s\S]*successful replacement\/recovery/);
+});
+
+test("validation center does not overwrite synchronous upload failures owned by ProfileWriteRuntime", () => {
+  const js = read("public/push-up-avatar-validation.js");
+  assert.doesNotMatch(js, /releaseUploadAvatarBtn[^\n]*addEventListener\(['"]click['"][\s\S]{0,220}avatarDiagUpload[^\n]*STARTING/);
+  assert.doesNotMatch(js, /releaseUploadAvatarBtn[^\n]*addEventListener\(['"]click['"][\s\S]{0,220}avatarDiagError[^\n]*NONE/);
+  assert.match(js, /ProfileWriteRuntime is the single upload authority/);
+});
+
+test("COPY ALL falls back when Clipboard API is unavailable", () => {
+  const js = read("public/push-up-avatar-validation.js");
+  assert.match(js, /typeof writeText !== 'function'/);
+  assert.match(js, /showCopyFallback\(payload\)/);
+  assert.match(js, /writeText\.call\(global\.navigator\.clipboard, payload\)/);
+});
+
 test("ProfileWriteRuntime remains the single upload authority with contract, backend, profile reload, and runtime diagnostics", () => {
   const writer = read("public/profile-write-runtime.js");
   for (const token of [
