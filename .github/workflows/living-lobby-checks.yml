@@ -1,0 +1,26 @@
+name: Living Lobby checks
+
+on:
+  pull_request:
+    paths:
+      - 'world-bridge-server.js'
+      - 'src/world/lobbyBridge.js'
+      - 'test/world-lobby-bridge.test.js'
+      - 'test/world-bridge.test.js'
+      - '.github/workflows/living-lobby-checks.yml'
+  workflow_dispatch:
+
+jobs:
+  lobby:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node --check src/world/lobbyBridge.js
+      - run: node --check world-bridge-server.js
+      - run: node --test test/world-bridge.test.js test/world-lobby-bridge.test.js
