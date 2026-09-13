@@ -2054,6 +2054,21 @@
       "prNumber": 808,
       "commitSha": "f3a44b891317a930ee39c59f36a2f1b09f491eb9",
       "timestamp": "2026-09-13T23:29:33.306Z"
+    },
+    {
+      "operationId": "270e7629-2a46-484b-ba53-18e3da1d2462",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Aligned the carried-forward PR807 refresh workflow readiness evidence with the exact runtime artifact files that the workflow stages and commits.",
+      "prNumber": 808,
+      "commitSha": "1ce7cdba8889622f828720cdaba7e75732b24fa5",
+      "timestamp": "2026-09-13T23:30:26.235Z"
     }
   ]
 }
