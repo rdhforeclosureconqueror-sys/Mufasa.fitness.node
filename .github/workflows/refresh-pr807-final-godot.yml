@@ -105,9 +105,24 @@ jobs:
         env:
           RUNTIME_SHA: ${{ steps.runtime.outputs.sha }}
           READINESS_OPS_FILE: /tmp/pr807-final-readiness.json
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
+          AUTH_HEADER=$(printf '%s %s %s' 'Authorization:' 'Bearer' "$GITHUB_TOKEN")
+          PR_NUMBER=$(
+            curl --fail --silent --show-error --get \
+              -H "$AUTH_HEADER" \
+              -H "Accept: application/vnd.github+json" \
+              --data "state=open" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${GITHUB_REF_NAME}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
+            | python3 -c 'import json,sys; pulls=json.load(sys.stdin); print(pulls[0]["number"] if pulls else "")'
+          )
+          PR_ARGS=()
+          if [ -n "$PR_NUMBER" ]; then
+            PR_ARGS=(--pr "$PR_NUMBER")
+          fi
+          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json "${PR_ARGS[@]}" --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
           npm run readiness:validate
 
       - name: Commit readiness audit
