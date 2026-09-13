@@ -151,6 +151,13 @@ function createLobbyBridge(options = {}) {
     return true;
   }
 
+  function sweepInvalidPresences(exceptPresenceId = null) {
+    for (const presence of [...presencesById.values()]) {
+      if (presence.presenceId === exceptPresenceId) continue;
+      ensureSessionAuthority(presence);
+    }
+  }
+
   function replaceExistingPresence(userId) {
     const existingId = presenceIdByUserId.get(userId);
     if (!existingId) return;
@@ -185,6 +192,7 @@ function createLobbyBridge(options = {}) {
   }
 
   function join(ws, resolved) {
+    sweepInvalidPresences();
     const session = resolved.session;
     replaceExistingPresence(session.userId);
 
@@ -244,6 +252,7 @@ function createLobbyBridge(options = {}) {
       if (parsed.state.seq <= presence.state.seq) return;
       presence.state = parsed.state;
       presence.lastSeenAt = now();
+      sweepInvalidPresences(presenceId);
       broadcast({
         type: "PLAYER_STATE",
         protocolVersion: LOBBY_PROTOCOL_VERSION,
@@ -279,7 +288,7 @@ function createLobbyBridge(options = {}) {
     wss.on("connection", (ws, request) => join(ws, request.pocketPTLobbySession));
 
     heartbeatTimer = setInterval(() => {
-      for (const presence of presencesById.values()) {
+      for (const presence of [...presencesById.values()]) {
         if (!ensureSessionAuthority(presence)) continue;
         if (!presence.isAlive) { presence.ws.terminate(); continue; }
         presence.isAlive = false;
@@ -321,6 +330,7 @@ function createLobbyBridge(options = {}) {
       const resolved = worldBridge.readSession(req);
       if (!resolved) return res.status(401).json({ ok: false, error: { code: "ARENA_SESSION_INVALID", message: "Arena session is invalid or expired" } });
 
+      sweepInvalidPresences();
       const requesterPresenceId = presenceIdBySessionId.get(resolved.session.sessionId);
       const requester = requesterPresenceId ? presencesById.get(requesterPresenceId) : null;
       const target = presencesById.get(String(req.params.presenceId || ""));
