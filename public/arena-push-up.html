@@ -56,11 +56,15 @@
     .phone-panel button.primary{background:#ffd35a;color:#15110a;border-color:#ffd35a}
     .phone-panel button:disabled{opacity:.5;cursor:default}
     .phone-panel select{max-width:100%}
-    .thumb-controls{margin-top:12px;max-width:300px}
+    .thumb-controls{margin-top:12px;max-width:320px}
     .thumb-controls summary{padding:12px 0;cursor:pointer}
     .thumb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
     .thumb-grid button{touch-action:none;user-select:none;font-size:20px}
     .thumb-grid .forward{grid-column:2}.thumb-grid .left{grid-column:1}.thumb-grid .back{grid-column:2}
+    .locomotion-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .locomotion-mode button{min-height:44px}
+    .locomotion-mode button[data-selected="true"]{background:#ffd35a;color:#15110a;border-color:#ffd35a}
+    .locomotion-mode span{grid-column:1/-1;color:#aebbd0;font-size:12px;text-align:center}
     .camera-stage{position:absolute;inset:0;background:#080b10}
     .camera-stage video{width:100%;height:100%;object-fit:contain}
     .camera-guide{position:absolute;inset:8%;border:2px dashed #ffd35a88;border-radius:20px;pointer-events:none}
@@ -73,10 +77,10 @@
   <script defer src="/runtime-state.js"></script>
   <script defer src="/push-up-challenge.js"></script>
   <script defer src="/arena-diagnostics.js?v=20260903-calibration-v2"></script>
-  <script defer src="/arena-phone-flow.js?v=20260903-calibration-v2"></script>
+  <script defer src="/arena-phone-flow.js?v=20260913-walk-run-v1"></script>
   <script defer src="/arena-pose-calibration.js?v=20260903-calibration-v2"></script>
   <script defer src="/arena-camera.js?v=20260903-calibration-v2"></script>
-  <script defer src="/arena-phone-ui.js?v=20260903-calibration-v2"></script>
+  <script defer src="/arena-phone-ui.js?v=20260913-walk-run-v1"></script>
   <script defer src="/arena-release-return.js?v=20260912-release-return-v1"></script>
   <script defer src="/arena-push-up.js?v=20260903-arena-diagnostics-v1"></script>
 </head>
@@ -110,6 +114,11 @@
         <button type="button" id="arenaThumbStop" aria-label="Stop movement">■</button>
         <button type="button" data-arena-move="MOVE_RIGHT" aria-label="Move right">→</button>
         <button type="button" class="back" data-arena-move="MOVE_BACKWARD" aria-label="Move backward">↓</button>
+      </div>
+      <div class="locomotion-mode" role="group" aria-label="Movement speed">
+        <button id="arenaWalkMode" type="button" aria-pressed="true" data-selected="true">Walk</button>
+        <button id="arenaRunMode" type="button" aria-pressed="false" data-selected="false">Run</button>
+        <span id="arenaLocomotionModeStatus" aria-live="polite">Walk mode</span>
       </div>
     </details>
     <div id="arenaCameraChoice" hidden><label for="arenaCameraSelect">Choose camera</label><select id="arenaCameraSelect"></select></div>
