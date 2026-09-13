@@ -10,7 +10,6 @@ on:
       - public/arena-push-up.html
       - test/arena-locomotion-mode.test.js
       - .github/workflows/stage-godot-walk-run.yml
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -113,24 +112,24 @@ jobs:
             jsSha256: js.sha256,
             wasmBytes: wasm.bytes,
             wasmSha256: wasm.sha256,
-            localRuntimeAcceptance: 'pass',
+            localRuntimeAcceptance: 'pending',
             localPackagedAcceptance: 'pass',
             authenticatedVisualAcceptance: 'pending',
             authenticatedProductionVisualAcceptance: 'pending',
             animationAcceptance: {
-              Idle: 'pass',
-              Walk: 'pass',
-              Run: 'pass',
-              WalkRunModeSwitch: 'pass',
-              StopToIdle: 'pass',
-              GoToMat: 'pass',
-              ArrivalIdle: 'pass',
-              CollisionIdle: 'pass',
-              ThrillerPart1: 'pass',
-              AnimationIdleDiagnostic: 'pass',
-              LocomotionDiagnostic: 'pass'
+              Idle: 'pending',
+              Walk: 'pending',
+              Run: 'pending',
+              WalkRunModeSwitch: 'pending',
+              StopToIdle: 'pending',
+              GoToMat: 'pending',
+              ArrivalIdle: 'pending',
+              CollisionIdle: 'pending',
+              ThrillerPart1: 'pending',
+              AnimationIdleDiagnostic: 'pending',
+              LocomotionDiagnostic: 'pending'
             },
-            note: 'Godot Web candidate exported automatically from the exact recorded source commit. Production phone visual acceptance remains pending.'
+            note: 'Godot Web candidate exported automatically from the exact recorded source commit. Packaging and provenance checks passed; runtime and production phone visual acceptance remain pending.'
           };
           fs.writeFileSync('pocketpt-world-build.json', JSON.stringify(manifest, null, 2) + '\n');
           NODE
