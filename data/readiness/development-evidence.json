@@ -2009,6 +2009,21 @@
       "prNumber": 808,
       "commitSha": "fa831e6542953af8e0fa47dc12cc28514f5387f1",
       "timestamp": "2026-09-13T23:26:25.460Z"
+    },
+    {
+      "operationId": "58d2d032-16d9-4dda-bed4-904349765df1",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Hardened the carried-forward PR807 refresh workflow so cross-repo checkout can use an explicit read token, runtime staging becomes a no-op when artifacts are unchanged while still emitting a SHA, and readiness commits always configure git identity.",
+      "prNumber": 808,
+      "commitSha": "3e0bbde6648264229f248775c2dab9f14d538288",
+      "timestamp": "2026-09-13T23:27:54.711Z"
     }
   ]
 }
