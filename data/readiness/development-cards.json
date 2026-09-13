@@ -126,6 +126,20 @@
       "createdAt": "2026-09-12T23:09:04.752Z",
       "source": "readiness:update",
       "taskId": "pushup-light-signup"
+    },
+    {
+      "id": "avatar-development-living-lobby-pr803-review",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Living Lobby PR 803 independent review",
+      "category": "WORLD BRIDGE",
+      "description": "Independently audit, test, and minimally correct the authenticated Living Lobby Milestone 1 repository/server implementation from PR #803, preserving canonical auth and avatar ownership while verifying presence, movement, reconnect, cleanup, and same-room avatar authorization.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-09-13T03:14:57.719Z",
+      "source": "readiness:update",
+      "taskId": "pr-803-independent-review"
     }
   ]
 }

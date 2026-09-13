@@ -23,7 +23,7 @@ function validPosition(value) {
 
 function createLobbyBridge(options = {}) {
   const worldBridge = options.worldBridge;
-  if (!worldBridge?.readSession || !worldBridge?.bootstrap) {
+  if (!worldBridge?.readSession || !worldBridge?.bootstrap || !worldBridge?.constants?.ARENA_COOKIE) {
     throw new Error("Lobby bridge requires world bridge session capabilities");
   }
 
@@ -92,6 +92,25 @@ function createLobbyBridge(options = {}) {
     return !Number.isFinite(presence.expiresAt) || presence.expiresAt <= now();
   }
 
+  function sessionRequestForCredential(credential) {
+    const cookie = `${worldBridge.constants.ARENA_COOKIE}=${encodeURIComponent(String(credential || ""))}`;
+    return {
+      headers: { cookie },
+      get(name) { return String(name).toLowerCase() === "cookie" ? cookie : null; }
+    };
+  }
+
+  function backingSessionActive(presence) {
+    if (!presence.arenaCredential) return false;
+    const resolved = worldBridge.readSession(sessionRequestForCredential(presence.arenaCredential));
+    return Boolean(
+      resolved
+      && resolved.credential === presence.arenaCredential
+      && resolved.session?.sessionId === presence.sessionId
+      && resolved.session?.userId === presence.userId
+    );
+  }
+
   function expirePresence(presence) {
     if (presencesById.get(presence.presenceId)?.ws !== presence.ws) return false;
     send(presence.ws, {
@@ -104,6 +123,39 @@ function createLobbyBridge(options = {}) {
     removePresence(presence.presenceId, "SESSION_EXPIRED");
     try { presence.ws.close(4003, "Arena session expired"); } catch (_) {}
     return true;
+  }
+
+  function revokePresence(presence) {
+    if (presencesById.get(presence.presenceId)?.ws !== presence.ws) return false;
+    send(presence.ws, {
+      type: "ERROR",
+      protocolVersion: LOBBY_PROTOCOL_VERSION,
+      roomId: ROOM_ID,
+      code: "ARENA_SESSION_INVALID",
+      message: "Arena session is no longer active; reconnect through the authenticated arena flow"
+    });
+    removePresence(presence.presenceId, "SESSION_REVOKED");
+    try { presence.ws.close(4004, "Arena session revoked"); } catch (_) {}
+    return true;
+  }
+
+  function ensureSessionAuthority(presence) {
+    if (sessionExpired(presence)) {
+      expirePresence(presence);
+      return false;
+    }
+    if (!backingSessionActive(presence)) {
+      revokePresence(presence);
+      return false;
+    }
+    return true;
+  }
+
+  function sweepInvalidPresences(exceptPresenceId = null) {
+    for (const presence of [...presencesById.values()]) {
+      if (presence.presenceId === exceptPresenceId) continue;
+      ensureSessionAuthority(presence);
+    }
   }
 
   function replaceExistingPresence(userId) {
@@ -140,6 +192,7 @@ function createLobbyBridge(options = {}) {
   }
 
   function join(ws, resolved) {
+    sweepInvalidPresences();
     const session = resolved.session;
     replaceExistingPresence(session.userId);
 
@@ -155,6 +208,7 @@ function createLobbyBridge(options = {}) {
       userId: session.userId,
       displayName: session.displayName,
       expiresAt: Number(session.expiresAt),
+      arenaCredential: resolved.credential,
       avatar: bootstrap.avatar ? {
         avatarId: bootstrap.avatar.avatarId,
         profileVersion: bootstrap.avatar.profileVersion,
@@ -185,10 +239,7 @@ function createLobbyBridge(options = {}) {
     ws.on("pong", () => { presence.isAlive = true; presence.lastSeenAt = now(); });
     ws.on("message", (raw) => {
       if (presencesById.get(presenceId)?.ws !== ws) return;
-      if (sessionExpired(presence)) {
-        expirePresence(presence);
-        return;
-      }
+      if (!ensureSessionAuthority(presence)) return;
       if (!rateLimitAllows(presence)) {
         send(ws, { type: "ERROR", code: "STATE_RATE_LIMIT", message: "Player state updates are limited to 30 per second" });
         return;
@@ -201,6 +252,7 @@ function createLobbyBridge(options = {}) {
       if (parsed.state.seq <= presence.state.seq) return;
       presence.state = parsed.state;
       presence.lastSeenAt = now();
+      sweepInvalidPresences(presenceId);
       broadcast({
         type: "PLAYER_STATE",
         protocolVersion: LOBBY_PROTOCOL_VERSION,
@@ -236,11 +288,8 @@ function createLobbyBridge(options = {}) {
     wss.on("connection", (ws, request) => join(ws, request.pocketPTLobbySession));
 
     heartbeatTimer = setInterval(() => {
-      for (const presence of presencesById.values()) {
-        if (sessionExpired(presence)) {
-          expirePresence(presence);
-          continue;
-        }
+      for (const presence of [...presencesById.values()]) {
+        if (!ensureSessionAuthority(presence)) continue;
         if (!presence.isAlive) { presence.ws.terminate(); continue; }
         presence.isAlive = false;
         if (presence.ws.readyState === WebSocket.OPEN) presence.ws.ping();
@@ -281,6 +330,7 @@ function createLobbyBridge(options = {}) {
       const resolved = worldBridge.readSession(req);
       if (!resolved) return res.status(401).json({ ok: false, error: { code: "ARENA_SESSION_INVALID", message: "Arena session is invalid or expired" } });
 
+      sweepInvalidPresences();
       const requesterPresenceId = presenceIdBySessionId.get(resolved.session.sessionId);
       const requester = requesterPresenceId ? presencesById.get(requesterPresenceId) : null;
       const target = presencesById.get(String(req.params.presenceId || ""));
