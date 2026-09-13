@@ -26,7 +26,7 @@ jobs:
           repository: rdhforeclosureconqueror-sys/mufasagodot
           ref: generated/web-candidate
           path: godot-candidate
-          token: ${{ secrets.MUFASAGODOT_REPO_READ_TOKEN || github.token }}
+          token: ${{ secrets.MUFASAGODOT_REPO_READ_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -95,7 +95,7 @@ jobs:
           READINESS_OPS_FILE: /tmp/pr807-final-readiness.json
         run: |
           set -euo pipefail
-          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/arena-phone-flow.js,public/arena-phone-ui.js,public/arena-push-up.html,public/game/push-up-arena/index.html,public/game/push-up-arena/index.pck,public/game/push-up-arena/pocketpt-world-build.json --pr 807 --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
+          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/arena-phone-flow.js,public/arena-phone-ui.js,public/arena-push-up.html,public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json --pr 807 --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
           npm run readiness:validate
 
       - name: Commit readiness audit
