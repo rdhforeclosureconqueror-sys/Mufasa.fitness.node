@@ -47,7 +47,7 @@
     @media(max-width:600px){#bridgeDebugBoard{right:8px;width:calc(100vw - 16px);padding:12px}#bridgeDebugBoard li{grid-template-columns:88px minmax(0,1fr);gap:8px}}
     [hidden]{display:none!important}
     .stage{min-height:260px}
-    #bridgeDebugToggle{position:static;align-self:flex-end;margin:8px 14px}
+    #bridgeDebugToggle{position:fixed;right:8px;bottom:max(40px,calc(8px + env(safe-area-inset-bottom)));margin:0;padding:8px 10px;font-size:11px;opacity:.88}
     .phone-panel{padding:14px max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));background:#10131a;border-top:1px solid #3d4655}
     .phone-panel h2{font-size:20px;margin:0 0 6px;color:#ffd35a}
     .phone-panel p{margin:6px 0 12px;line-height:1.45;color:#dae0eb;max-width:760px}
@@ -65,6 +65,7 @@
     .locomotion-mode button{min-height:44px}
     .locomotion-mode button[data-selected="true"]{background:#ffd35a;color:#15110a;border-color:#ffd35a}
     .locomotion-mode span{grid-column:1/-1;color:#aebbd0;font-size:12px;text-align:center}
+    .locomotion-mode .thriller-action{grid-column:1/-1;background:#3a2456;border-color:#8d6bb5;color:#fff}
     .camera-stage{position:absolute;inset:0;background:#080b10}
     .camera-stage video{width:100%;height:100%;object-fit:contain}
     .camera-guide{position:absolute;inset:8%;border:2px dashed #ffd35a88;border-radius:20px;pointer-events:none}
@@ -77,10 +78,10 @@
   <script defer src="/runtime-state.js"></script>
   <script defer src="/push-up-challenge.js"></script>
   <script defer src="/arena-diagnostics.js?v=20260903-calibration-v2"></script>
-  <script defer src="/arena-phone-flow.js?v=20260913-walk-run-v1"></script>
+  <script defer src="/arena-phone-flow.js?v=20260913-walk-facing-thriller-v2"></script>
   <script defer src="/arena-pose-calibration.js?v=20260903-calibration-v2"></script>
   <script defer src="/arena-camera.js?v=20260903-calibration-v2"></script>
-  <script defer src="/arena-phone-ui.js?v=20260913-walk-run-v1"></script>
+  <script defer src="/arena-phone-ui.js?v=20260913-walk-facing-thriller-v2"></script>
   <script defer src="/arena-release-return.js?v=20260912-release-return-v1"></script>
   <script defer src="/arena-push-up.js?v=20260903-arena-diagnostics-v1"></script>
 </head>
@@ -118,6 +119,7 @@
       <div class="locomotion-mode" role="group" aria-label="Movement speed">
         <button id="arenaWalkMode" type="button" aria-pressed="true" data-selected="true">Walk</button>
         <button id="arenaRunMode" type="button" aria-pressed="false" data-selected="false">Run</button>
+        <button id="arenaThrillerAction" class="thriller-action" type="button" hidden>Thriller</button>
         <span id="arenaLocomotionModeStatus" aria-live="polite">Walk mode</span>
       </div>
     </details>
