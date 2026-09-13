@@ -2084,6 +2084,21 @@
       "prNumber": 808,
       "commitSha": "08a9621f73385b02e2b2168e7fda887e6807e1ce",
       "timestamp": "2026-09-13T23:31:17.553Z"
+    },
+    {
+      "operationId": "48f0464b-f0e6-4e7e-82a4-a0470fe8a81d",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Updated the carried-forward PR807 refresh workflow to look up the open PR for its branch at runtime and pass that PR number into readiness:update, keeping workflow-generated evidence aligned with the branch it actually updates.",
+      "prNumber": 808,
+      "commitSha": "fbe6037faa0c3c0a2e3e4e27bac11cfebe2cc7ca",
+      "timestamp": "2026-09-13T23:32:55.997Z"
     }
   ]
 }
