@@ -86,9 +86,13 @@
     const reload = $('avatarDiagReload')?.textContent || '';
     let boundary = 'NONE';
     let status = 'WAITING';
-    if (first) {
-      boundary = first.stage || 'RELEASE';
-      status = 'FAIL';
+
+    // Current verified readiness is authoritative. Historical failures remain in
+    // the trace below, but must not keep the validation center red after a
+    // successful replacement/recovery has unlocked the arena.
+    if (avatarUrl && release.avatarReady) {
+      boundary = 'NONE';
+      status = 'PASS';
     } else if (/FAILED/i.test(contract)) {
       boundary = 'UPLOAD_CONTRACT';
       status = 'FAIL';
@@ -98,9 +102,9 @@
     } else if (/FAILED/i.test(reload)) {
       boundary = 'PROFILE_RELOAD';
       status = 'FAIL';
-    } else if (avatarUrl && release.avatarReady) {
-      boundary = 'NONE';
-      status = 'PASS';
+    } else if (first) {
+      boundary = first.stage || 'RELEASE';
+      status = 'FAIL';
     }
     text('releaseAvatarDebugStatus', status);
     text('releaseAvatarDebugFirstFailure', boundary);
@@ -134,20 +138,29 @@
     return lines.join('\n');
   }
 
+  function showCopyFallback(payload) {
+    const target = $('releaseAvatarDebugCopyFallback');
+    if (!target) return false;
+    target.hidden = false;
+    target.value = payload;
+    target.focus();
+    target.select();
+    return true;
+  }
+
   async function copyDebug() {
     const payload = collectDebugText();
+    const writeText = global.navigator?.clipboard?.writeText;
+    if (typeof writeText !== 'function') {
+      showCopyFallback(payload);
+      return;
+    }
     try {
-      await global.navigator?.clipboard?.writeText?.(payload);
+      await writeText.call(global.navigator.clipboard, payload);
       text('releaseCopyAvatarDebugBtn', 'COPIED');
       global.setTimeout(() => text('releaseCopyAvatarDebugBtn', 'COPY ALL'), 1400);
     } catch (_) {
-      const target = $('releaseAvatarDebugCopyFallback');
-      if (target) {
-        target.hidden = false;
-        target.value = payload;
-        target.focus();
-        target.select();
-      }
+      showCopyFallback(payload);
     }
   }
 
@@ -188,11 +201,11 @@
       text('avatarDiagLaunch', 'REQUESTED');
       updateDerivedDiagnostics();
     });
-    $('releaseUploadAvatarBtn')?.addEventListener('click', () => {
-      text('avatarDiagUpload', 'STARTING');
-      text('avatarDiagError', 'NONE');
-      updateDerivedDiagnostics();
-    });
+
+    // ProfileWriteRuntime is the single upload authority and owns the upload,
+    // HTTP, compatibility, and error diagnostic fields. Do not pre-emptively
+    // overwrite them in a second click listener; synchronous validation errors
+    // (no file, wrong extension, oversize) must remain visible.
     $('releaseSaveManualAvatarBtn')?.addEventListener('click', () => saveManualAvatar().catch((error) => {
       text('avatarDiagError', error?.code || error?.message || 'MANUAL_SAVE_FAILED');
       updateDerivedDiagnostics();
