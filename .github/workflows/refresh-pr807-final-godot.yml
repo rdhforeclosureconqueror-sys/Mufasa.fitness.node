@@ -109,13 +109,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
           AUTH_HEADER=$(printf '%s %s %s' 'Authorization:' 'Bearer' "$GITHUB_TOKEN")
           PR_NUMBER=$(
             curl --fail --silent --show-error --get \
               -H "$AUTH_HEADER" \
               -H "Accept: application/vnd.github+json" \
               --data "state=open" \
-              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${GITHUB_REF_NAME}" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}" \
               "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
             | python3 -c 'import json,sys; pulls=json.load(sys.stdin); print(pulls[0]["number"] if pulls else "")'
           )
