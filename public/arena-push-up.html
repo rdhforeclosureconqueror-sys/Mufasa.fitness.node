@@ -56,11 +56,15 @@
     .phone-panel button.primary{background:#ffd35a;color:#15110a;border-color:#ffd35a}
     .phone-panel button:disabled{opacity:.5;cursor:default}
     .phone-panel select{max-width:100%}
-    .thumb-controls{margin-top:12px;max-width:320px}
-    .thumb-controls summary{padding:12px 0;cursor:pointer}
-    .thumb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-    .thumb-grid button{touch-action:none;user-select:none;font-size:20px}
-    .thumb-grid .forward{grid-column:2}.thumb-grid .left{grid-column:1}.thumb-grid .back{grid-column:2}
+    .thumb-controls{margin-top:10px;max-width:360px}
+    .thumb-controls summary{padding:10px 0;cursor:pointer}
+    .joystick-wrap{display:grid;place-items:center;gap:8px}
+    .joystick{position:relative;width:154px;height:154px;border-radius:50%;touch-action:none;user-select:none;background:radial-gradient(circle at center,#1b2538 0 28%,#111827 29% 62%,#0a0f18 63%);border:2px solid #52617a;box-shadow:inset 0 0 0 1px #ffffff0d,0 8px 28px #0008}
+    .joystick::before,.joystick::after{content:"";position:absolute;background:#64748b55;pointer-events:none}
+    .joystick::before{left:50%;top:12%;bottom:12%;width:1px}
+    .joystick::after{top:50%;left:12%;right:12%;height:1px}
+    .joystick-knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;background:#ffd35a;border:3px solid #fff2a8;box-shadow:0 8px 18px #000a;pointer-events:none;transition:transform 45ms linear}
+    .joystick-hint{color:#aebbd0;font-size:12px;text-align:center;margin:0}
     .locomotion-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
     .locomotion-mode button{min-height:44px}
     .locomotion-mode button[data-selected="true"]{background:#ffd35a;color:#15110a;border-color:#ffd35a}
@@ -78,10 +82,10 @@
   <script defer src="/runtime-state.js"></script>
   <script defer src="/push-up-challenge.js"></script>
   <script defer src="/arena-diagnostics.js?v=20260903-calibration-v2"></script>
-  <script defer src="/arena-phone-flow.js?v=20260913-walk-facing-thriller-v2"></script>
+  <script defer src="/arena-phone-flow.js?v=20260913-joystick-v1"></script>
   <script defer src="/arena-pose-calibration.js?v=20260903-calibration-v2"></script>
   <script defer src="/arena-camera.js?v=20260903-calibration-v2"></script>
-  <script defer src="/arena-phone-ui.js?v=20260913-walk-facing-thriller-v2"></script>
+  <script defer src="/arena-phone-ui.js?v=20260913-joystick-v1"></script>
   <script defer src="/arena-release-return.js?v=20260912-release-return-v1"></script>
   <script defer src="/arena-push-up.js?v=20260903-arena-diagnostics-v1"></script>
 </head>
@@ -108,13 +112,12 @@
       <button id="arenaRestartCalibration" type="button" hidden>Restart pose capture</button>
       <button id="arenaReturnToGym" type="button" hidden>Return to gym</button>
     </div>
-    <details id="arenaThumbControls" class="thumb-controls" hidden><summary>Move with thumb controls</summary>
-      <div class="thumb-grid" aria-label="Avatar movement">
-        <button type="button" class="forward" data-arena-move="MOVE_FORWARD" aria-label="Move forward">↑</button>
-        <button type="button" class="left" data-arena-move="MOVE_LEFT" aria-label="Move left">←</button>
-        <button type="button" id="arenaThumbStop" aria-label="Stop movement">■</button>
-        <button type="button" data-arena-move="MOVE_RIGHT" aria-label="Move right">→</button>
-        <button type="button" class="back" data-arena-move="MOVE_BACKWARD" aria-label="Move backward">↓</button>
+    <details id="arenaThumbControls" class="thumb-controls" hidden open><summary>Move with joystick</summary>
+      <div class="joystick-wrap">
+        <div id="arenaJoystick" class="joystick" role="application" tabindex="0" aria-label="Movement joystick. Drag in any direction and release to stop." aria-describedby="arenaJoystickHint">
+          <span id="arenaJoystickKnob" class="joystick-knob" aria-hidden="true"></span>
+        </div>
+        <p id="arenaJoystickHint" class="joystick-hint">Drag to move · release to stop</p>
       </div>
       <div class="locomotion-mode" role="group" aria-label="Movement speed">
         <button id="arenaWalkMode" type="button" aria-pressed="true" data-selected="true">Walk</button>

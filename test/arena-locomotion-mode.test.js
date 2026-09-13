@@ -93,3 +93,13 @@ test('mobile arena keeps diagnostics floating and exposes Thriller without consu
   assert.doesNotMatch(html, /#bridgeDebugToggle\{position:static/);
   assert.match(html, /#bridgeDebugToggle\{position:fixed/);
 });
+
+test('phone movement UI uses a one-thumb 360 joystick while preserving Walk Run and Thriller controls', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../public/arena-push-up.html'), 'utf8');
+  const ui = fs.readFileSync(path.join(__dirname, '../public/arena-phone-ui.js'), 'utf8');
+  const flow = fs.readFileSync(path.join(__dirname, '../public/arena-phone-flow.js'), 'utf8');
+  assert.match(html, /id="arenaJoystick"/);
+  assert.doesNotMatch(html, /class="thumb-grid"/);
+  assert.match(ui, /flow\.moveVector/);
+  assert.match(flow, /'MOVE_VECTOR'/);
+});

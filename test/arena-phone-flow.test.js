@@ -64,6 +64,17 @@ test('touch holds use bounded leases; release and keyboard nudge stop without an
   assert.equal(f.flow.nudge('MOVE_RIGHT'), true); f.advance(201); assert.equal(f.sent.at(-1).action, 'STOP');
 });
 
+test('360 joystick vectors preserve diagonal direction, refresh the lease, and release to STOP', () => {
+  const f = fixture(); f.capabilities();
+  assert.equal(f.flow.moveVector(0.6, -0.8), true);
+  assert.equal(f.sent.at(-1).action, 'MOVE_VECTOR');
+  assert.equal(f.sent.at(-1).x, 0.6); assert.equal(f.sent.at(-1).y, -0.8);
+  f.advance(250); assert.equal(f.sent.filter(x => x.action === 'MOVE_VECTOR').length, 3);
+  assert.equal(f.flow.moveVector(-0.8, -0.6), true);
+  assert.ok(Math.abs(f.sent.at(-1).x + 0.8) < 1e-9); assert.ok(Math.abs(f.sent.at(-1).y + 0.6) < 1e-9);
+  f.flow.release(); assert.equal(f.sent.at(-1).action, 'STOP');
+  assert.equal(f.flow.moveVector(2, 0), false);
+});
 test('mat arrival is correlated to the pending command and cannot be inferred from sending it', () => {
   const f = fixture(); f.capabilities(); assert.equal(f.flow.approach(), true);
   const command = f.sent.at(-1);

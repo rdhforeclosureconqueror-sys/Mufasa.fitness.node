@@ -16,7 +16,8 @@ function fixture(t) {
       addEventListener(name, fn) {(this.events[name] ||= []).push(fn);},
       fire(name, data = {}) {return Promise.all((this.events[name] || []).map(fn => fn(data)));},
       replaceChildren() {}, focus() {doc.activeElement = this;}, contains: value => [...nodes.values()].includes(value),
-      setPointerCapture(id) {this.pointerId = id;}, hasPointerCapture(id) {return this.pointerId === id;}, releasePointerCapture() {this.pointerId = null;}
+      setPointerCapture(id) {this.pointerId = id;}, hasPointerCapture(id) {return this.pointerId === id;}, releasePointerCapture() {this.pointerId = null;},
+      getBoundingClientRect() {return this.rect || {left:0,top:0,width:160,height:160};}
     }; nodes.set(id, result); return result;
   }
   const html = fs.readFileSync(path.join(__dirname, '../public/arena-push-up.html'), 'utf8');
@@ -89,14 +90,15 @@ test('camera check outside mat setup cannot collect references or expose restart
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/preview only/);
 });
 
-test('thumb pointer cancellation stops movement and release-click cannot restart it', async t => {
-  const f = fixture(t), button = f.nodes.get('MOVE_LEFT');
-  await button.fire('pointerdown', {button: 0, pointerId: 7, preventDefault() {}});
-  assert.equal(f.sent.at(-1).action, 'MOVE_LEFT');
-  await button.fire('pointercancel', {pointerId: 7}); assert.equal(f.sent.at(-1).action, 'STOP');
-  const count = f.sent.length; await button.fire('click', {detail: 1}); assert.equal(f.sent.length, count);
+test('joystick pointer drag sends a 360 vector and release stops movement', async t => {
+  const f = fixture(t), joystick = f.nodes.get('arenaJoystick');
+  await joystick.fire('pointerdown', {button: 0, pointerId: 7, clientX: 128, clientY: 32, preventDefault() {}});
+  assert.equal(f.sent.at(-1).action, 'MOVE_VECTOR');
+  assert.ok(f.sent.at(-1).x > 0); assert.ok(f.sent.at(-1).y < 0);
+  await joystick.fire('pointermove', {pointerId: 7, clientX: 160, clientY: 80, preventDefault() {}});
+  assert.ok(f.sent.at(-1).x > 0.99); assert.ok(Math.abs(f.sent.at(-1).y) < 1e-9);
+  await joystick.fire('pointercancel', {pointerId: 7}); assert.equal(f.sent.at(-1).action, 'STOP');
 });
-
 test('touch mat flow transfers focus to recovery controls and locks the iframe during setup', async t => {
   const f = fixture(t);
   assert.equal(f.stats().starts, 0); assert.equal(f.nodes.get('game').inert, false);
@@ -120,10 +122,10 @@ test('suspend stops the camera and keeps navigation unavailable until explicit r
   assert.equal(f.stats().starts, 1);
 });
 
-test('blur and orientation change release a captured thumb control', async t => {
-  const f = fixture(t), button = f.nodes.get('MOVE_FORWARD');
+test('blur and orientation change release a captured joystick', async t => {
+  const f = fixture(t), joystick = f.nodes.get('arenaJoystick');
   for (const event of ['blur', 'orientationchange']) {
-    await button.fire('pointerdown', {button: 0, pointerId: 9, preventDefault() {}});
+    await joystick.fire('pointerdown', {button: 0, pointerId: 9, clientX: 80, clientY: 0, preventDefault() {}});
     f.events.get(event)(); assert.equal(f.sent.at(-1).action, 'STOP');
   }
 });
@@ -134,7 +136,7 @@ test('all phone UI elements exist once and touch controls expose accessible name
   const ids = [...html.matchAll(/id="([^"]+)"/g)].map(x => x[1]);
   assert.equal(new Set(ids).size, ids.length);
   for (const [, id] of ui.matchAll(/\$\('([^']+)'\)/g)) assert.ok(ids.includes(id), id);
-  for (const direction of ['left', 'right', 'forward', 'backward']) assert.ok(html.includes(`aria-label="Move ${direction}"`));
+  assert.match(html, /id="arenaJoystick"/); assert.match(html, /Drag in any direction and release to stop/);
 });
 
 test('preview serves phone assets and an isolated camera double with explicit synthetic labels', async t => {
