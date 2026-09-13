@@ -1,9 +1,9 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-walk-run-413fa07-20260913",
+  "buildId": "pocketpt-walk-run-1677200-20260913",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "413fa077490c16623d9a876cbf8346d9ef29e692",
-  "reportedGodotSourceCommit": "413fa077490c16623d9a876cbf8346d9ef29e692",
+  "godotSourceCommit": "16772002bee70e07fb8044893dfd074610f09f50",
+  "reportedGodotSourceCommit": "16772002bee70e07fb8044893dfd074610f09f50",
   "mainScene": "res://Main.tscn",
   "pckBytes": 47548104,
   "pckSha256": "4b40e82961daa1bd7fe4d3ae337887a5f424b929ad6d3700dfb884796a9df79f",
