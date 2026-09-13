@@ -15,11 +15,13 @@ jobs:
   refresh_validate_record:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TARGET_BRANCH: fix/walk-thriller-mobile-view-20260913
     steps:
       - name: Checkout PR807
         uses: actions/checkout@v4
         with:
-          ref: fix/walk-thriller-mobile-view-20260913
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Fetch exact generated Godot candidate
         shell: bash
@@ -99,7 +101,7 @@ jobs:
           git commit -m "Stage final reviewed Godot PR2 candidate [skip ci]"
           SHA=$(git rev-parse HEAD)
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          git push origin HEAD:fix/walk-thriller-mobile-view-20260913
+          git push origin HEAD:"${TARGET_BRANCH}"
 
       - name: Refresh readiness evidence
         shell: bash
@@ -109,14 +111,13 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
           AUTH_HEADER=$(printf '%s %s %s' 'Authorization:' 'Bearer' "$GITHUB_TOKEN")
           PR_NUMBER=$(
             curl --fail --silent --show-error --get \
               -H "$AUTH_HEADER" \
               -H "Accept: application/vnd.github+json" \
               --data "state=open" \
-              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${TARGET_BRANCH}" \
               "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
             | python3 -c 'import json,sys; pulls=json.load(sys.stdin); print(pulls[0]["number"] if pulls else "")'
           )
@@ -137,5 +138,5 @@ jobs:
           git diff --cached --check
           if ! git diff --cached --quiet; then
             git commit -m "Refresh PR807 final readiness evidence [skip ci]"
-            git push origin HEAD:fix/walk-thriller-mobile-view-20260913
+            git push origin HEAD:"${TARGET_BRANCH}"
           fi
