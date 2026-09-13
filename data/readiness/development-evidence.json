@@ -2099,6 +2099,21 @@
       "prNumber": 808,
       "commitSha": "fbe6037faa0c3c0a2e3e4e27bac11cfebe2cc7ca",
       "timestamp": "2026-09-13T23:32:55.997Z"
+    },
+    {
+      "operationId": "7f1ee870-a0df-4197-8009-f24c6855190b",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Added pull-requests: read to the carried-forward PR807 refresh workflow so its dynamic branch PR lookup can call the pull requests API before recording readiness evidence.",
+      "prNumber": 808,
+      "commitSha": "cd4c47dfc4c37638193c6ac6c299d4c8df81ced2",
+      "timestamp": "2026-09-13T23:33:39.832Z"
     }
   ]
 }
