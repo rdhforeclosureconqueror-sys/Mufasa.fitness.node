@@ -68,6 +68,8 @@
     const profile = canonicalProfile();
     const avatar = profile?.avatar || null;
     const avatarUrl = String(avatar?.avatarModelUrl || avatar?.modelUrl || '').trim();
+    const releaseTrace = $('releaseAvatarDiagnostics');
+    if (releaseTrace) releaseTrace.hidden = false;
 
     text('avatarDiagCanonicalUrl', avatarUrl ? 'YES' : 'NO');
     text('avatarDiagCanonicalProfile', profile ? 'READY' : (release.auth ? 'LOADING' : 'SIGNED OUT'));
