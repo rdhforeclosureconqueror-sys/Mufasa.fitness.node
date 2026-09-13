@@ -26,6 +26,7 @@ jobs:
           repository: rdhforeclosureconqueror-sys/mufasagodot
           ref: generated/web-candidate
           path: godot-candidate
+          token: ${{ secrets.MUFASAGODOT_REPO_READ_TOKEN || github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -76,6 +77,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
           git diff --cached --check
+          if git diff --cached --quiet; then
+            SHA=$(git rev-parse HEAD)
+            echo "No runtime artifact changes to commit."
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git commit -m "Stage final reviewed Godot PR2 candidate [skip ci]"
           SHA=$(git rev-parse HEAD)
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
@@ -95,6 +102,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/readiness/development-evidence.json
           git diff --cached --check
           if ! git diff --cached --quiet; then
