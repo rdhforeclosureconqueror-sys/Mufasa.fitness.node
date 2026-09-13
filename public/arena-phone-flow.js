@@ -6,6 +6,7 @@
   'use strict';
   const VERSION = 1;
   const DIRECTIONS = new Set(['MOVE_LEFT', 'MOVE_RIGHT', 'MOVE_FORWARD', 'MOVE_BACKWARD']);
+  const LOCOMOTION_MODES = new Set(['WALK', 'RUN']);
   const TRACKING_STATES = ['CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED', 'CALIBRATION_RETRY'];
   const CALIBRATION_STATES = {CAPTURE_TOP: 'CALIBRATING_TOP', CAPTURE_BOTTOM: 'CALIBRATING_BOTTOM', CONFIRM_TOP: 'CONFIRMING_TOP', CALIBRATED: 'CALIBRATED', NEEDS_RETRY: 'CALIBRATION_RETRY'};
   const COPY = Object.freeze({
@@ -38,12 +39,13 @@
     let state = 'CONNECTING', requestId = null, outgoing = 0, incoming = 0, pending = null;
     let capabilities = null, held = null, repeater = null, nudgeTimer = null, avatarNeedsStand = false;
     let previewOnly = true, connected = false, context = 'LOCKED', calibrationStage = 'IDLE', bodyVisible = false;
+    let movementMode = 'WALK';
     const timers = new Map();
     function cancel(name) { clearTimer(timers.get(name)); timers.delete(name); }
     function schedule(name, delay, fn) { cancel(name); timers.set(name, setTimer(() => {timers.delete(name); fn();}, delay)); }
     function change(next) { state = next; onChange(snapshot()); }
     function snapshot() {
-      return {state, context, previewOnly, title: COPY[state][0], description: COPY[state][1],
+      return {state, context, previewOnly, movementMode, title: COPY[state][0], description: COPY[state][1],
         canMove: state === 'GYM' && capabilities?.touchNavigation === true,
         // Walking to the mat and entering the push-up pose are independently
         // negotiated capabilities. GO_TO_MAT must not wait for the latter.
@@ -68,6 +70,14 @@
       control('STOP');
     }
     function setContext(next) { release(); context = next; control('SET_CONTEXT'); }
+    function setLocomotionMode(mode) {
+      if (!LOCOMOTION_MODES.has(mode) || !snapshot().canMove) return false;
+      if (movementMode === mode) return true;
+      if (control('SET_LOCOMOTION_MODE', {mode}) === null) return false;
+      movementMode = mode;
+      onChange(snapshot());
+      return true;
+    }
     function command(action, next, timeoutState) {
       pending = {action, sequence: control(action)};
       change(next);
@@ -97,8 +107,11 @@
         incoming = data.sequence; cancel('capabilities');
         capabilities = Object.fromEntries(['contextLock', 'touchNavigation', 'matApproach', 'pushUpTransition'].map(key => [key, data.capabilities[key]]));
         mark('CONTROL_CHANNEL', 'PASS', 'TOUCH_CONNECTED');
-        if (['NEGOTIATING', 'LEGACY'].includes(state)) {setContext('GYM_NAVIGATION'); change('GYM');}
-        else setContext('LOCKED');
+        if (['NEGOTIATING', 'LEGACY'].includes(state)) {
+          setContext('GYM_NAVIGATION');
+          change('GYM');
+          control('SET_LOCOMOTION_MODE', {mode: movementMode});
+        } else setContext('LOCKED');
         return true;
       }
       if (data.event !== 'ARENA_FLOW_EVENT' || !pending || data.replyTo !== pending.sequence) return false;
@@ -107,7 +120,12 @@
       incoming = data.sequence; cancel('command'); pending = null;
       if (data.result === 'AT_MAT') {setContext('LOCKED'); mark('MAT_APPROACH', 'PASS', 'MAT_REACHED'); change('INTRO');}
       if (data.result === 'AVATAR_DOWN') mark('MAT_APPROACH', 'PASS', 'AVATAR_POSITIONED');
-      if (data.result === 'AVATAR_STANDING') {avatarNeedsStand = false; setContext('GYM_NAVIGATION'); change('GYM');}
+      if (data.result === 'AVATAR_STANDING') {
+        avatarNeedsStand = false;
+        setContext('GYM_NAVIGATION');
+        change('GYM');
+        control('SET_LOCOMOTION_MODE', {mode: movementMode});
+      }
       return true;
     }
     function hold(action) {
@@ -187,7 +205,11 @@
       mark('CAMERA_PERMISSION', 'WAITING', 'CAMERA_OFF');
       mark('CAMERA_STREAM', 'WAITING', 'CAMERA_OFF');
       if (avatarNeedsStand) {setContext('LOCKED'); command('STAND_UP', 'RETURNING', 'RETURN_BLOCKED');}
-      else {setContext(capabilities ? 'GYM_NAVIGATION' : 'LOCKED'); change(capabilities ? 'GYM' : 'LEGACY');}
+      else {
+        setContext(capabilities ? 'GYM_NAVIGATION' : 'LOCKED');
+        change(capabilities ? 'GYM' : 'LEGACY');
+        if (capabilities) control('SET_LOCOMOTION_MODE', {mode: movementMode});
+      }
       return true;
     }
     function suspend() {
@@ -199,10 +221,10 @@
     function reset() {
       setContext('LOCKED'); stopCamera(); for (const name of timers.keys()) cancel(name);
       requestId = null; connected = false; capabilities = null; pending = null;
-      avatarNeedsStand = false; previewOnly = true; calibrationStage = 'IDLE'; bodyVisible = false; context = 'LOCKED'; change('CONNECTING');
+      avatarNeedsStand = false; previewOnly = true; calibrationStage = 'IDLE'; bodyVisible = false; context = 'LOCKED'; movementMode = 'WALK'; change('CONNECTING');
     }
     function close() {reset(); change('CLOSED');}
-    return {snapshot, connect, accept, hold, nudge, release, approach, cancelApproach, setup,
+    return {snapshot, connect, accept, hold, nudge, release, setLocomotionMode, approach, cancelApproach, setup,
       cameraStarting, cameraActive, visibility, calibration, cameraError, returnToGym, suspend, reset, close};
   }
   return Object.freeze({VERSION, COPY, create});
