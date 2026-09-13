@@ -80,6 +80,14 @@ async function stopFixture(fixture, clients = []) {
   await new Promise((resolve) => fixture.server.close(resolve));
 }
 
+async function revokeSession(fixture, cookie) {
+  const response = await fetch(`${fixture.baseUrl}/api/game/session`, {
+    method: "DELETE",
+    headers: { Cookie: cookie }
+  });
+  assert.equal(response.status, 200);
+}
+
 test("explicit arena session revocation removes movement authority before the next state update", async () => {
   const fixture = await startFixture();
   const clients = [];
@@ -96,11 +104,7 @@ test("explicit arena session revocation removes movement authority before the ne
     await b.next("ROOM_SNAPSHOT");
     await a.next("PLAYER_JOINED");
 
-    const revoked = await fetch(`${fixture.baseUrl}/api/game/session`, {
-      method: "DELETE",
-      headers: { Cookie: cookieA }
-    });
-    assert.equal(revoked.status, 200);
+    await revokeSession(fixture, cookieA);
 
     a.ws.send(JSON.stringify({
       type: "PLAYER_STATE",
@@ -142,13 +146,70 @@ test("heartbeat sweep removes an explicitly revoked idle presence without waitin
     await b.next("ROOM_SNAPSHOT");
     await a.next("PLAYER_JOINED");
 
-    const revoked = await fetch(`${fixture.baseUrl}/api/game/session`, {
-      method: "DELETE",
-      headers: { Cookie: cookieA }
-    });
-    assert.equal(revoked.status, 200);
+    await revokeSession(fixture, cookieA);
 
     const left = await b.next("PLAYER_LEFT", 750);
+    assert.equal(left.presenceId, snapshotA.selfPresenceId);
+    assert.equal(left.reason, "SESSION_REVOKED");
+    assert.equal(fixture.lobby.diagnostics().playerCount, 1);
+    assert.equal(fixture.lobby.diagnostics().players[0].userId, "member_b");
+  } finally {
+    await stopFixture(fixture, clients);
+  }
+});
+
+test("late join snapshot does not include a presence whose arena session was revoked", async () => {
+  const fixture = await startFixture({ heartbeatMs: 60000 });
+  const clients = [];
+  try {
+    const cookieA = createArenaCookie(fixture.bridge, "member_a", "Rashad");
+    const a = connectClient(fixture.wsUrl, cookieA);
+    clients.push(a);
+    await a.opened;
+    await a.next("ROOM_SNAPSHOT");
+
+    await revokeSession(fixture, cookieA);
+
+    const cookieB = createArenaCookie(fixture.bridge, "member_b", "Late Joiner");
+    const b = connectClient(fixture.wsUrl, cookieB);
+    clients.push(b);
+    await b.opened;
+    const snapshotB = await b.next("ROOM_SNAPSHOT");
+
+    assert.equal(snapshotB.players.length, 1);
+    assert.equal(snapshotB.players[0].member.id, "member_b");
+    assert.equal(snapshotB.selfPresenceId, snapshotB.players[0].presenceId);
+    assert.equal(fixture.lobby.diagnostics().playerCount, 1);
+  } finally {
+    await stopFixture(fixture, clients);
+  }
+});
+
+test("same-room avatar authorization removes a revoked target before serving it", async () => {
+  const fixture = await startFixture({ heartbeatMs: 60000 });
+  const clients = [];
+  try {
+    const cookieA = createArenaCookie(fixture.bridge, "member_a", "Rashad");
+    const cookieB = createArenaCookie(fixture.bridge, "member_b", "Observer");
+    const a = connectClient(fixture.wsUrl, cookieA);
+    const b = connectClient(fixture.wsUrl, cookieB);
+    clients.push(a, b);
+
+    await a.opened;
+    const snapshotA = await a.next("ROOM_SNAPSHOT");
+    await b.opened;
+    await b.next("ROOM_SNAPSHOT");
+    await a.next("PLAYER_JOINED");
+
+    await revokeSession(fixture, cookieA);
+
+    const response = await fetch(
+      `${fixture.baseUrl}/api/game/lobby/players/${encodeURIComponent(snapshotA.selfPresenceId)}/avatar?version=${"a".repeat(32)}`,
+      { headers: { Cookie: cookieB } }
+    );
+    assert.equal(response.status, 403);
+
+    const left = await b.next("PLAYER_LEFT");
     assert.equal(left.presenceId, snapshotA.selfPresenceId);
     assert.equal(left.reason, "SESSION_REVOKED");
     assert.equal(fixture.lobby.diagnostics().playerCount, 1);
