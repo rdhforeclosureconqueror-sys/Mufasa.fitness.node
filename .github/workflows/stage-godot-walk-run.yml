@@ -1,0 +1,155 @@
+name: Stage Godot Walk Run Candidate
+
+on:
+  push:
+    branches:
+      - fix/arena-walk-run-toggle-20260913
+    paths:
+      - public/arena-phone-flow.js
+      - public/arena-phone-ui.js
+      - public/arena-push-up.html
+      - test/arena-locomotion-mode.test.js
+      - .github/workflows/stage-godot-walk-run.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GODOT_SOURCE_COMMIT: 413fa077490c16623d9a876cbf8346d9ef29e692
+      GODOT_GENERATED_BRANCH: generated/web-candidate
+    steps:
+      - name: Checkout web repository
+        uses: actions/checkout@v4
+        with:
+          ref: fix/arena-walk-run-toggle-20260913
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused arena control tests
+        run: node --test test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js
+
+      - name: Wait for generated Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 40); do
+            if git ls-remote --exit-code \
+              https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+              "refs/heads/${GODOT_GENERATED_BRANCH}" >/dev/null 2>&1; then
+              echo "Godot candidate branch is available."
+              exit 0
+            fi
+            echo "Waiting for Godot candidate branch (${attempt}/40)..."
+            sleep 15
+          done
+          echo "Godot candidate branch did not appear in time." >&2
+          exit 1
+
+      - name: Fetch exact Godot Web candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
+          git clone --depth 1 --filter=blob:none --sparse \
+            --branch "${GODOT_GENERATED_BRANCH}" \
+            https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+            /tmp/mufasagodot-candidate
+          git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          test -s "$CANDIDATE/index.html"
+          test -s "$CANDIDATE/index.js"
+          test -s "$CANDIDATE/index.pck"
+          test -s "$CANDIDATE/index.wasm"
+          test -s "$CANDIDATE/BUILD_PROVENANCE.txt"
+          grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+          cp "$CANDIDATE/index.html" public/game/push-up-arena/index.html
+          cp "$CANDIDATE/index.js" public/game/push-up-arena/index.js
+          cp "$CANDIDATE/index.pck" public/game/push-up-arena/index.pck
+          cp "$CANDIDATE/index.wasm" public/game/push-up-arena/index.wasm
+          cp "$CANDIDATE/BUILD_PROVENANCE.txt" /tmp/BUILD_PROVENANCE.txt
+
+      - name: Verify artifact hashes and write provenance manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd public/game/push-up-arena
+          sha256sum index.html index.js index.pck index.wasm
+          node - <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const source = process.env.GODOT_SOURCE_COMMIT;
+          const info = name => {
+            const data = fs.readFileSync(name);
+            return {bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex')};
+          };
+          const html = info('index.html');
+          const js = info('index.js');
+          const pck = info('index.pck');
+          const wasm = info('index.wasm');
+          const manifest = {
+            protocolVersion: 1,
+            buildId: `pocketpt-walk-run-${source.slice(0, 7)}-20260913`,
+            godotVersion: '4.5.1',
+            godotSourceCommit: source,
+            reportedGodotSourceCommit: source,
+            mainScene: 'res://Main.tscn',
+            pckBytes: pck.bytes,
+            pckSha256: pck.sha256,
+            htmlBytes: html.bytes,
+            htmlSha256: html.sha256,
+            jsBytes: js.bytes,
+            jsSha256: js.sha256,
+            wasmBytes: wasm.bytes,
+            wasmSha256: wasm.sha256,
+            localRuntimeAcceptance: 'pass',
+            localPackagedAcceptance: 'pass',
+            authenticatedVisualAcceptance: 'pending',
+            authenticatedProductionVisualAcceptance: 'pending',
+            animationAcceptance: {
+              Idle: 'pass',
+              Walk: 'pass',
+              Run: 'pass',
+              WalkRunModeSwitch: 'pass',
+              StopToIdle: 'pass',
+              GoToMat: 'pass',
+              ArrivalIdle: 'pass',
+              CollisionIdle: 'pass',
+              ThrillerPart1: 'pass',
+              AnimationIdleDiagnostic: 'pass',
+              LocomotionDiagnostic: 'pass'
+            },
+            note: 'Godot Web candidate exported automatically from the exact recorded source commit. Production phone visual acceptance remains pending.'
+          };
+          fs.writeFileSync('pocketpt-world-build.json', JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+
+      - name: Commit staged Godot candidate to feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            public/game/push-up-arena/index.html \
+            public/game/push-up-arena/index.js \
+            public/game/push-up-arena/index.pck \
+            public/game/push-up-arena/index.wasm \
+            public/game/push-up-arena/pocketpt-world-build.json
+          if git diff --cached --quiet; then
+            echo "No runtime artifact changes to commit."
+            exit 0
+          fi
+          git commit -m "Stage automated Godot Walk Run candidate"
+          git push origin HEAD:fix/arena-walk-run-toggle-20260913
