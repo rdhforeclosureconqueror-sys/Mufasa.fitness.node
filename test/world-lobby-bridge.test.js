@@ -52,9 +52,10 @@ function connectClient(url, cookie) {
   return { ws, opened, next };
 }
 
-async function startFixture() {
-  const bridge = createWorldBridge({ secureCookie: false, ttlMs: 60000 });
-  const lobby = createLobbyBridge({ worldBridge: bridge, heartbeatMs: 60000 });
+async function startFixture(options = {}) {
+  const now = options.now || (() => Date.now());
+  const bridge = createWorldBridge({ secureCookie: false, ttlMs: options.ttlMs || 60000, now });
+  const lobby = createLobbyBridge({ worldBridge: bridge, heartbeatMs: options.heartbeatMs || 60000, now });
   const server = http.createServer((_req, res) => {
     res.statusCode = 404;
     res.end("not found");
@@ -166,6 +167,39 @@ test("stale movement sequence numbers cannot roll a player backward", async () =
     assert.equal(state.seq, 4);
     assert.deepEqual(state.position, [4, 0, 1]);
     assert.equal(state.locomotion, "RUN");
+  } finally {
+    await stopFixture(fixture, clients);
+  }
+});
+
+test("expired arena sessions are removed before they can keep broadcasting lobby movement", async () => {
+  let timestamp = 1000;
+  const fixture = await startFixture({ now: () => timestamp, ttlMs: 100, heartbeatMs: 60000 });
+  const clients = [];
+  try {
+    const a = connectClient(fixture.url, createArenaCookie(fixture.bridge, "member_a", "Rashad"));
+    clients.push(a);
+    await a.opened;
+    const snapshotA = await a.next("ROOM_SNAPSHOT");
+    const presenceA = snapshotA.selfPresenceId;
+
+    timestamp = 1050;
+    const b = connectClient(fixture.url, createArenaCookie(fixture.bridge, "member_b", "Daughter A"));
+    clients.push(b);
+    await b.opened;
+    await b.next("ROOM_SNAPSHOT");
+    await a.next("PLAYER_JOINED");
+
+    timestamp = 1101;
+    a.ws.send(JSON.stringify({ type: "PLAYER_STATE", seq: 1, position: [8, 0, 8], yaw: 0.2, locomotion: "RUN" }));
+
+    const expired = await a.next("ERROR");
+    assert.equal(expired.code, "ARENA_SESSION_EXPIRED");
+    const left = await b.next("PLAYER_LEFT");
+    assert.equal(left.presenceId, presenceA);
+    assert.equal(left.reason, "SESSION_EXPIRED");
+    assert.equal(fixture.lobby.diagnostics().playerCount, 1);
+    assert.equal(fixture.lobby.diagnostics().players[0].userId, "member_b");
   } finally {
     await stopFixture(fixture, clients);
   }
