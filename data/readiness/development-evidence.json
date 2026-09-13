@@ -2069,6 +2069,21 @@
       "prNumber": 808,
       "commitSha": "1ce7cdba8889622f828720cdaba7e75732b24fa5",
       "timestamp": "2026-09-13T23:30:26.235Z"
+    },
+    {
+      "operationId": "55492d0a-2359-4340-8655-ce5c4bd03273",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/refresh-pr807-final-godot.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Removed the hard-coded PR number from the carried-forward PR807 refresh workflow so its readiness evidence remains branch-local instead of misattributing future runs.",
+      "prNumber": 808,
+      "commitSha": "08a9621f73385b02e2b2168e7fda887e6807e1ce",
+      "timestamp": "2026-09-13T23:31:17.553Z"
     }
   ]
 }
