@@ -70,3 +70,26 @@ test('arena markup and phone UI expose explicit Walk and Run controls', () => {
   assert.match(html, />Walk<\/button>/);
   assert.match(html, />Run<\/button>/);
 });
+
+
+test('Thriller action is explicit, stops movement first, and is unavailable while locked', () => {
+  const f = fixture();
+  assert.equal(f.flow.playAction('ThrillerPart1'), true);
+  assert.equal(f.sent.at(-2).action, 'STOP');
+  assert.equal(f.sent.at(-1).action, 'PLAY_ACTION');
+  assert.equal(f.sent.at(-1).name, 'ThrillerPart1');
+  assert.equal(f.sent.at(-1).context, 'GYM_NAVIGATION');
+  assert.equal(f.flow.approach(), true);
+  const count = f.sent.length;
+  assert.equal(f.flow.playAction('ThrillerPart1'), false);
+  assert.equal(f.sent.length, count);
+});
+
+test('mobile arena keeps diagnostics floating and exposes Thriller without consuming gym height', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../public/arena-push-up.html'), 'utf8');
+  const ui = fs.readFileSync(path.join(__dirname, '../public/arena-phone-ui.js'), 'utf8');
+  assert.match(html, /id="arenaThrillerAction"/);
+  assert.match(ui, /playAction\('ThrillerPart1'\)/);
+  assert.doesNotMatch(html, /#bridgeDebugToggle\{position:static/);
+  assert.match(html, /#bridgeDebugToggle\{position:fixed/);
+});

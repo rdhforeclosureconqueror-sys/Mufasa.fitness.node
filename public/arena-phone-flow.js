@@ -78,6 +78,11 @@
       onChange(snapshot());
       return true;
     }
+    function playAction(name) {
+      if (name !== 'ThrillerPart1' || !snapshot().canMove) return false;
+      release();
+      return control('PLAY_ACTION', {name}) !== null;
+    }
     function command(action, next, timeoutState) {
       pending = {action, sequence: control(action)};
       change(next);
@@ -224,7 +229,7 @@
       avatarNeedsStand = false; previewOnly = true; calibrationStage = 'IDLE'; bodyVisible = false; context = 'LOCKED'; movementMode = 'WALK'; change('CONNECTING');
     }
     function close() {reset(); change('CLOSED');}
-    return {snapshot, connect, accept, hold, nudge, release, setLocomotionMode, approach, cancelApproach, setup,
+    return {snapshot, connect, accept, hold, nudge, release, setLocomotionMode, playAction, approach, cancelApproach, setup,
       cameraStarting, cameraActive, visibility, calibration, cameraError, returnToGym, suspend, reset, close};
   }
   return Object.freeze({VERSION, COPY, create});

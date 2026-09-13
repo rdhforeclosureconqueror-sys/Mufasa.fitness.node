@@ -1,0 +1,103 @@
+name: Refresh PR807 Final Godot Candidate
+
+on:
+  push:
+    branches:
+      - fix/walk-thriller-mobile-view-20260913
+    paths:
+      - .github/workflows/refresh-pr807-final-godot.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh_validate_record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout PR807
+        uses: actions/checkout@v4
+        with:
+          ref: fix/walk-thriller-mobile-view-20260913
+
+      - name: Checkout exact generated Godot candidate
+        uses: actions/checkout@v4
+        with:
+          repository: rdhforeclosureconqueror-sys/mufasagodot
+          ref: generated/web-candidate
+          path: godot-candidate
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify and stage exact Godot PR2 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          WANT="9fab3b5f8955a0c7eaa57f475fc2a43a376baf09"
+          grep -F "godot_source_commit=$WANT" godot-candidate/build/ci-web/BUILD_PROVENANCE.txt
+          mkdir -p public/game/push-up-arena
+          cp godot-candidate/build/ci-web/index.html public/game/push-up-arena/index.html
+          cp godot-candidate/build/ci-web/index.js public/game/push-up-arena/index.js
+          cp godot-candidate/build/ci-web/index.pck public/game/push-up-arena/index.pck
+          cp godot-candidate/build/ci-web/index.wasm public/game/push-up-arena/index.wasm
+
+      - name: Write exact manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root = Path('public/game/push-up-arena')
+          def meta(n):
+              b=(root/n).read_bytes(); return len(b), hashlib.sha256(b).hexdigest()
+          hb,hs=meta('index.html'); jb,js=meta('index.js'); pb,ps=meta('index.pck'); wb,ws=meta('index.wasm')
+          m={'protocolVersion':1,'buildId':'pocketpt-walk-facing-thriller-9fab3b5-20260913','godotVersion':'4.5.1','godotSourceCommit':'9fab3b5f8955a0c7eaa57f475fc2a43a376baf09','mainScene':'res://Main.tscn','pckBytes':pb,'pckSha256':ps,'htmlBytes':hb,'htmlSha256':hs,'jsBytes':jb,'jsSha256':js,'wasmBytes':wb,'wasmSha256':ws,'localPackagedAcceptance':'pass','authenticatedProductionVisualAcceptance':'pending','sourceValidation':{'Walk':'pass','Run':'pass','ThrillerPart1':'pass','MovementFacing':'pass','FallbackFacing':'pass','ActionOverrideMovementLock':'pass','ActionRebindRelease':'pass','ActionReadinessGuard':'pass','HeadlessAvatarAnchorSafety':'pass','ManualRouteTakeoverCleanup':'pass'},'note':'Exact current Godot PR #2 candidate after review fixes. Automated/source validation passed; authenticated production phone visual acceptance remains pending.'}
+          (root/'pocketpt-world-build.json').write_text(json.dumps(m,indent=2)+'\n')
+          print(json.dumps(m,indent=2))
+          PY
+
+      - name: Run focused phone regressions
+        run: node --test test/arena-locomotion-mode.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js
+
+      - name: Commit exact runtime
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf godot-candidate
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
+          git diff --cached --check
+          git commit -m "Stage final reviewed Godot PR2 candidate [skip ci]"
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          git push origin HEAD:fix/walk-thriller-mobile-view-20260913
+
+      - name: Refresh readiness evidence
+        shell: bash
+        env:
+          RUNTIME_SHA: ${{ steps.runtime.outputs.sha }}
+          READINESS_OPS_FILE: /tmp/pr807-final-readiness.json
+        run: |
+          set -euo pipefail
+          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/arena-phone-flow.js,public/arena-phone-ui.js,public/arena-push-up.html,public/game/push-up-arena/index.html,public/game/push-up-arena/index.pck,public/game/push-up-arena/pocketpt-world-build.json --pr 807 --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification."
+          npm run readiness:validate
+
+      - name: Commit readiness audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add data/readiness/development-evidence.json
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh PR807 final readiness evidence [skip ci]"
+            git push origin HEAD:fix/walk-thriller-mobile-view-20260913
+          fi

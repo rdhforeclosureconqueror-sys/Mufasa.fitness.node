@@ -52,6 +52,8 @@
       $('arenaWalkMode').ariaPressed = String(state.movementMode === 'WALK');
       $('arenaRunMode').ariaPressed = String(state.movementMode === 'RUN');
       $('arenaLocomotionModeStatus').textContent = state.movementMode === 'RUN' ? 'Run mode' : 'Walk mode';
+      $('arenaThrillerAction').hidden = !state.canMove;
+      $('arenaThrillerAction').disabled = !state.canMove;
       const cameraStatus = {
         BODY_VISIBLE: 'Required joints visible · camera preview only',
         CALIBRATING_TOP: 'Hold TOP still · capturing automatically',
@@ -92,6 +94,7 @@
     $('arenaRepeatBriefing').addEventListener('click', () => $('arenaPhoneMessage').focus());
     $('arenaWalkMode').addEventListener('click', () => flow.setLocomotionMode('WALK'));
     $('arenaRunMode').addEventListener('click', () => flow.setLocomotionMode('RUN'));
+    $('arenaThrillerAction').addEventListener('click', () => {releasePointer(); flow.playAction('ThrillerPart1');});
     for (const button of panel.querySelectorAll('[data-arena-move]')) {
       button.addEventListener('pointerdown', event => {
         if (pointer || event.button !== 0 || !flow.hold(button.dataset.arenaMove)) return;
