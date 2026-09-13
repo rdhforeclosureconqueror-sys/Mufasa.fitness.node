@@ -1,13 +1,13 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-walk-facing-thriller-e863f91-20260913",
+  "buildId": "pocketpt-walk-facing-thriller-9fab3b5-20260913",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "e863f91414ae786c7d773dd051ca71b16c1b26fe",
+  "godotSourceCommit": "9fab3b5f8955a0c7eaa57f475fc2a43a376baf09",
   "mainScene": "res://Main.tscn",
-  "pckBytes": 47549448,
-  "pckSha256": "436ffc44d70f3c8f88c660b08f55e56f530bf123c68d689bd96e4c9722406a97",
+  "pckBytes": 47550248,
+  "pckSha256": "389f290e91d272749dbcea325f842635d216c24614a8b1f6a16ce1aace2e7e4f",
   "htmlBytes": 5443,
-  "htmlSha256": "3b73fb22216787e34f5a911f2ee6e73b960129ebdf8868c8b21e51c40642fb36",
+  "htmlSha256": "e6c94937601b55d7fb5cfa28554e55bac0e44bfb9dbbe2724aad7e2bc69bdcd6",
   "jsBytes": 305185,
   "jsSha256": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
   "wasmBytes": 38034280,
@@ -19,9 +19,12 @@
     "Run": "pass",
     "ThrillerPart1": "pass",
     "MovementFacing": "pass",
+    "FallbackFacing": "pass",
     "ActionOverrideMovementLock": "pass",
+    "ActionRebindRelease": "pass",
     "ActionReadinessGuard": "pass",
-    "HeadlessAvatarAnchorSafety": "pass"
+    "HeadlessAvatarAnchorSafety": "pass",
+    "ManualRouteTakeoverCleanup": "pass"
   },
-  "note": "Cloud-exported from current Godot PR #2 head after action-safety fixes. Packaging/source checks pass; authenticated production phone visual acceptance remains pending."
+  "note": "Exact current Godot PR #2 candidate after review fixes. Automated/source validation passed; authenticated production phone visual acceptance remains pending."
 }
