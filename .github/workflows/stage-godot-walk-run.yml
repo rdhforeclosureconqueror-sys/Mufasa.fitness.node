@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      GODOT_SOURCE_COMMIT: 413fa077490c16623d9a876cbf8346d9ef29e692
+      GODOT_SOURCE_COMMIT: 16772002bee70e07fb8044893dfd074610f09f50
       GODOT_GENERATED_BRANCH: generated/web-candidate
     steps:
       - name: Checkout web repository
