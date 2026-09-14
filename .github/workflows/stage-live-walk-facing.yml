@@ -1,0 +1,129 @@
+name: Stage Live Walk Facing Candidate
+
+on:
+  push:
+    branches:
+      - fix/live-walk-facing-debug-panel-20260913
+    paths:
+      - .github/workflows/stage-live-walk-facing.yml
+
+permissions:
+  contents: write
+
+jobs:
+  stage_validate_commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GODOT_SOURCE_SHA: b12f28f365bb5b0b4e5d82146263dcfb68d9bcce
+    steps:
+      - name: Checkout Web branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/live-walk-facing-debug-panel-20260913
+
+      - name: Move diagnostics launcher away from joystick
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('public/arena-push-up.html')
+          s=p.read_text()
+          old1='#bridgeDebugToggle{position:fixed;z-index:99998;right:14px;bottom:max(48px,calc(14px + env(safe-area-inset-bottom)));border:1px solid #765f1e;background:#17130a;color:#ffd35a;border-radius:999px;padding:12px 16px;box-shadow:0 10px 32px #000a;font:800 13px system-ui}'
+          new1='#bridgeDebugToggle{position:fixed;z-index:99998;right:8px;top:max(72px,calc(64px + env(safe-area-inset-top)));bottom:auto;border:1px solid #765f1e;background:#17130a;color:#ffd35a;border-radius:999px;padding:6px 8px;box-shadow:0 8px 22px #0009;font:800 10px system-ui;opacity:.72}'
+          old2='#bridgeDebugToggle{position:fixed;right:8px;bottom:max(40px,calc(8px + env(safe-area-inset-bottom)));margin:0;padding:8px 10px;font-size:11px;opacity:.88}'
+          new2='#bridgeDebugToggle{position:fixed;right:8px;top:max(72px,calc(64px + env(safe-area-inset-top)));bottom:auto;margin:0;padding:6px 8px;font-size:10px;opacity:.72}'
+          if old1 not in s: raise SystemExit('FIRST FAILURE: base diagnostics-toggle CSS not found')
+          if old2 not in s: raise SystemExit('FIRST FAILURE: mobile diagnostics-toggle CSS not found')
+          s=s.replace(old1,new1,1).replace(old2,new2,1)
+          p.write_text(s)
+          print('WEB_DEBUG_LAUNCHER_MOVE: PASS')
+          PY
+
+      - name: Fetch exact Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            rm -rf /tmp/godot-generated
+            if git clone -q --depth 1 --branch generated/web-candidate https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git /tmp/godot-generated; then
+              PROV=/tmp/godot-generated/build/ci-web/BUILD_PROVENANCE.txt
+              if [[ -f "$PROV" ]] && grep -Fq "godot_source_commit=$GODOT_SOURCE_SHA" "$PROV"; then
+                cat "$PROV"
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo "FIRST FAILURE: exact Godot candidate $GODOT_SOURCE_SHA did not appear" >&2
+          exit 1
+
+      - name: Stage exact Godot runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/godot-generated/build/ci-web
+          DEST=public/game/push-up-arena
+          mkdir -p "$DEST"
+          for file in index.html index.js index.pck index.wasm; do
+            test -s "$SRC/$file"
+            cp "$SRC/$file" "$DEST/$file"
+          done
+
+      - name: Write exact build manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root=Path('public/game/push-up-arena')
+          source='b12f28f365bb5b0b4e5d82146263dcfb68d9bcce'
+          def meta(name):
+              data=(root/name).read_bytes(); return len(data), hashlib.sha256(data).hexdigest()
+          hb,hs=meta('index.html'); jb,js=meta('index.js'); pb,ps=meta('index.pck'); wb,ws=meta('index.wasm')
+          m={
+            'protocolVersion':1,
+            'buildId':'pocketpt-live-walk-facing-debug-b12f28f-20260913',
+            'godotVersion':'4.5.1',
+            'godotSourceCommit':source,
+            'mainScene':'res://Main.tscn',
+            'pckBytes':pb,'pckSha256':ps,
+            'htmlBytes':hb,'htmlSha256':hs,
+            'jsBytes':jb,'jsSha256':js,
+            'wasmBytes':wb,'wasmSha256':ws,
+            'localPackagedAcceptance':'pass',
+            'authenticatedProductionVisualAcceptance':'pending',
+            'sourceValidation':{
+              'WalkVisibleGait':'pass','WalkSlowerCadence':'pass','WalkInPlace':'pass',
+              'MovementFacing':'pass','WebInternalDebugPanelHidden':'pass',
+              'RunRegression':'pass','GoToMatRegression':'pass','ThrillerRegression':'pass'
+            },
+            'note':'Live acceptance repair: visible slower Walk from proven target-native gait, corrected visual facing, internal Godot Web debug panel hidden. Production phone visual acceptance pending.'
+          }
+          (root/'pocketpt-world-build.json').write_text(json.dumps(m,indent=2)+'\n')
+          print(json.dumps(m,indent=2))
+          PY
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused arena regressions
+        run: node --test test/arena-locomotion-mode.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-diagnostics.test.js
+
+      - name: Commit clean Web candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/stage-live-walk-facing.yml
+          git add public/arena-push-up.html public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
+          git diff --cached --check
+          git commit -m "Stage live Walk facing and debug-panel fix [skip ci]"
+          git push origin HEAD:fix/live-walk-facing-debug-panel-20260913
