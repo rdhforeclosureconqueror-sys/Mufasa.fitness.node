@@ -33,5 +33,14 @@ jobs:
       - name: Syntax check arena bridge
         run: node --check public/arena-push-up.js
 
-      - name: Run focused diagnostics regressions
-        run: node --test test/arena-pre-ready-startup.test.js test/arena-diagnostics.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js
+      - name: Pre-READY startup regression
+        run: node --test test/arena-pre-ready-startup.test.js
+
+      - name: Existing arena diagnostics regression
+        run: node --test test/arena-diagnostics.test.js
+
+      - name: Existing phone flow regression
+        run: node --test test/arena-phone-flow.test.js
+
+      - name: Existing phone UI regression
+        run: node --test test/arena-phone-ui.test.js
