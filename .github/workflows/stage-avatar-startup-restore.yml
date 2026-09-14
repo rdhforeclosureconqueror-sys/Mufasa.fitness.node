@@ -38,8 +38,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Protect arena bridge and controls
-        run: node --test test/world-lobby-bridge.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js test/arena-diagnostics.test.js
+      - name: Protect arena bridge, controls, and staging contract
+        run: node --test test/world-lobby-bridge.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js test/arena-diagnostics.test.js test/stage-current-godot-candidate.test.js
 
       - name: Fetch current generated Godot candidate
         shell: bash
