@@ -1,0 +1,51 @@
+name: Record PR 809 readiness evidence
+
+on:
+  push:
+    branches:
+      - fix/live-walk-facing-debug-panel-20260913
+
+permissions:
+  contents: write
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/live-walk-facing-debug-panel-20260913
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Record canonical readiness evidence
+        env:
+          READINESS_OPS_FILE: ${{ runner.temp }}/launch-readiness.json
+        run: >-
+          npm run readiness:update --
+          --board avatar
+          --action evidence
+          --card avatar-development-pushup-arena-v1
+          --files public/arena-push-up.html,public/game/push-up-arena/index.html,public/game/push-up-arena/index.pck,public/game/push-up-arena/pocketpt-world-build.json
+          --result PASS
+          --codeComplete true
+          --pr 809
+          --commit d0e7d4851db61feed6786ce3a387e2fa0c9311f5
+          --note "PR #809 packages Godot PR #4 runtime source b12f28f365bb5b0b4e5d82146263dcfb68d9bcce with visible Walk gait, corrected visual facing, hidden internal Web diagnostics panel, and relocated Arena diagnostics launcher. Automated Walk cadence/in-place, facing, personalized locomotion, phone flow, GO_TO_MAT, Run, Thriller, Web locomotion/UI/diagnostics validation passed. Production iPhone visual acceptance, locomotion naturalness, GO_TO_MAT visual behavior, diagonal facing, Run/Thriller regression, release-to-Idle, and final diagnostics placement remain pending authorized human/physical-device verification."
+
+      - name: Validate readiness contract
+        run: npm run readiness:validate
+
+      - name: Commit readiness evidence and remove temporary workflow
+        run: |
+          git config user.name "readiness-bot"
+          git config user.email "readiness-bot@users.noreply.github.com"
+          git rm .github/workflows/record-pr809-readiness.yml
+          git add data/readiness/development-evidence.json
+          git commit -m "Record PR 809 readiness evidence"
+          git push origin HEAD:fix/live-walk-facing-debug-panel-20260913
