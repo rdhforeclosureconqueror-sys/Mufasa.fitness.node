@@ -1,0 +1,47 @@
+name: Arena Pre-READY Trace Gate
+
+on:
+  pull_request:
+    paths:
+      - "public/arena-push-up.html"
+      - "public/arena-pre-ready-trace.js"
+      - "test/arena-pre-ready-trace.test.js"
+      - "test/arena-diagnostics.test.js"
+      - "test/arena-phone-flow.test.js"
+      - "test/arena-phone-ui.test.js"
+      - ".github/workflows/arena-pre-ready-trace-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  arena-pre-ready-trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check trace adapter
+        run: node --check public/arena-pre-ready-trace.js
+
+      - name: Pre-READY trace regression
+        run: node --test test/arena-pre-ready-trace.test.js
+
+      - name: Existing arena diagnostics regression
+        run: node --test test/arena-diagnostics.test.js
+
+      - name: Existing phone flow regression
+        run: node --test test/arena-phone-flow.test.js
+
+      - name: Existing phone UI regression
+        run: node --test test/arena-phone-ui.test.js
