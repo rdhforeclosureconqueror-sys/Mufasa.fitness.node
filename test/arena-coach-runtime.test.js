@@ -22,11 +22,12 @@ test('Arena configures the canonical CoachRuntime to use the arena-session speec
   assert.equal(root.PocketPTArenaCoachRuntime.configure().ok, true);
 });
 
-test('Arena page preloads CoachRuntime before live motion and keeps body status out of the video area', () => {
+test('Arena page preloads CoachRuntime before live motion and keeps body/form status out of the video area', () => {
   const html = fs.readFileSync(path.join(__dirname, '../public/arena-push-up.html'), 'utf8');
   assert.ok(html.indexOf('/coach-runtime.js') < html.indexOf('/arena-live-motion-adapter.js'));
   assert.ok(html.indexOf('/arena-coach-runtime.js') < html.indexOf('/arena-live-motion-adapter.js'));
-  assert.match(html, /\.camera-stage video\{[^}]*height:calc\(100% - 46px\)/);
-  assert.match(html, /#arenaBodyStatus\{[^}]*bottom:0[^}]*min-height:46px/);
+  assert.match(html, /\.camera-stage video\{[^}]*height:calc\(100% - 64px\)/);
+  assert.match(html, /#arenaBodyStatus\{[^}]*bottom:0[^}]*min-height:64px/);
+  assert.match(html, /#arenaBodyStatus\[data-form="fail"\]\{color:#ff7588\}/);
   assert.match(html, /@media\(max-width:600px\)[\s\S]*\.camera-stage\{width:calc\(100% - 16px\)/);
 });
