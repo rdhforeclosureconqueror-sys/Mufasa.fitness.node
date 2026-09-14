@@ -10,11 +10,20 @@
   const MAX_GAP_MS = 350;
   const PHASE_TIMEOUT_MS = 30000;
   const MAX_AGE_MS = 1500;
-  // These limits establish signal stability and two distinct personal poses.
-  // They are not exercise-form, depth, or safety thresholds.
   const MAX_STABILITY_DEGREES = 7;
   const MIN_POSE_SEPARATION_DEGREES = 20;
   const MAX_BOTTOM_ELBOW_DEGREES = 95;
+
+  // Calibration guidance is intentionally separate from the authoritative
+  // competition profile. The member gets immediate setup feedback here while
+  // the reviewed scoring rules remain the only source of official rep credit.
+  // These values are measured from a smoothed side-view hold, so the grace is
+  // small but not so small that normal 2-D pose jitter makes a valid setup
+  // impossible to capture.
+  const TOP_ELBOW_MIN_DEGREES = 160;
+  const TOP_SHOULDER_TARGET_DEGREES = 90;
+  const TOP_SHOULDER_GRACE_DEGREES = 12;
+  const BODY_ALIGNMENT_GRACE_DEGREES = 10;
 
   function angle(a, b, c) {
     const ab = {x: a.x - b.x, y: a.y - b.y}, cb = {x: c.x - b.x, y: c.y - b.y};
@@ -23,17 +32,26 @@
     const cosine = Math.max(-1, Math.min(1, (ab.x * cb.x + ab.y * cb.y) / denominator));
     return Math.acos(cosine) * 180 / Math.PI;
   }
+  function frameEligible(frame) {
+    return frame?.calibrationUsable === true || (frame?.analysisUsable === true && frame.trackingState === 'LOCKED');
+  }
+  function requiredPointStatus(frame, minimumConfidence) {
+    const points = frame?.sequenceLandmarks || {};
+    return Object.fromEntries(NAMES.map(name => {
+      const point = points[name];
+      const visible = Boolean(point && !point.cached && !point.displayOnly && Number.isFinite(point.x) && Number.isFinite(point.y) &&
+        point.x > 0 && point.x < 1 && point.y > 0 && point.y < 1 && Number.isFinite(point.confidence) &&
+        point.confidence >= minimumConfidence && point.confidence <= 1);
+      return [name, {visible, confidence: Number.isFinite(point?.confidence) ? Number(point.confidence) : 0}];
+    }));
+  }
   function signature(frame, minimumConfidence) {
-    if (!Number.isFinite(minimumConfidence) || minimumConfidence <= 0 || minimumConfidence > 1 || frame?.analysisUsable !== true || frame.trackingState !== 'LOCKED') return null;
+    if (!Number.isFinite(minimumConfidence) || minimumConfidence <= 0 || minimumConfidence > 1 || !frameEligible(frame)) return null;
     const {sourceWidth: width, sourceHeight: height} = frame;
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
+    const status = requiredPointStatus(frame, minimumConfidence);
+    if (!NAMES.every(name => status[name].visible)) return null;
     const points = frame.sequenceLandmarks || {};
-    if (!NAMES.every(name => {
-      const point = points[name];
-      return point && !point.cached && !point.displayOnly && Number.isFinite(point.x) && Number.isFinite(point.y) &&
-        point.x > 0 && point.x < 1 && point.y > 0 && point.y < 1 &&
-        Number.isFinite(point.confidence) && point.confidence >= minimumConfidence && point.confidence <= 1;
-    })) return null;
     // Restore one common coordinate scale before measuring angles. Rendering
     // transforms (contain/crop/mirror/CSS pixels) never enter this calculation.
     const p = Object.fromEntries(NAMES.map(name => [name, {x: points[name].x * width, y: points[name].y * height}]));
@@ -52,6 +70,40 @@
     const center = mean(samples.map(sample => sample.vector));
     const spread = Math.max(...samples.map(sample => distance(sample.vector, center)));
     return spread <= MAX_STABILITY_DEGREES ? {center, spread} : null;
+  }
+  function formFromVector(vector, stage) {
+    if (!Array.isArray(vector) || vector.length !== 3 || !vector.every(Number.isFinite)) return null;
+    const [elbowAngle, shoulderAngle, bodyAngle] = vector;
+    const bodyDeviation = Math.abs(180 - bodyAngle);
+    const bodyLine = bodyDeviation <= BODY_ALIGNMENT_GRACE_DEGREES;
+    if (stage === 'CAPTURE_BOTTOM') {
+      const checks = {elbowDepth: elbowAngle <= MAX_BOTTOM_ELBOW_DEGREES, bodyLine};
+      return {angles: {elbow: elbowAngle, shoulder: shoulderAngle, body: bodyAngle, bodyDeviation}, checks,
+        allPass: Object.values(checks).every(Boolean)};
+    }
+    const checks = {
+      elbowExtension: elbowAngle >= TOP_ELBOW_MIN_DEGREES,
+      shoulderStack: Math.abs(shoulderAngle - TOP_SHOULDER_TARGET_DEGREES) <= TOP_SHOULDER_GRACE_DEGREES,
+      bodyLine
+    };
+    return {angles: {elbow: elbowAngle, shoulder: shoulderAngle, body: bodyAngle, bodyDeviation}, checks,
+      allPass: Object.values(checks).every(Boolean)};
+  }
+  function evaluateFrame(frame, minimumConfidence, stage = 'CAPTURE_TOP') {
+    const confidence = Number(minimumConfidence);
+    const status = Number.isFinite(confidence) && confidence > 0 && confidence <= 1 ? requiredPointStatus(frame, confidence) : {};
+    const vector = signature(frame, confidence);
+    if (!vector) {
+      return {
+        usable: false,
+        stage,
+        side: frame?.side || null,
+        missing: NAMES.filter(name => !status[name]?.visible),
+        checks: {}, angles: null, allPass: false
+      };
+    }
+    const form = formFromVector(vector, stage) || {checks: {}, angles: null, allPass: false};
+    return {usable: true, stage, side: frame?.side || null, missing: [], ...form};
   }
 
   function create({now = () => Date.now(), onChange = () => {}, setTimer = setTimeout, clearTimer = clearTimeout} = {}) {
@@ -81,6 +133,10 @@
     function start() {erase(); reason = failedStage = null; advance('CAPTURE_TOP');}
     function fresh(frame) {return Number.isFinite(frame?.timestamp) && frame.timestamp >= 0 && now() - frame.timestamp <= MAX_AGE_MS && frame.timestamp - now() <= 250;}
     function sameSource(frame) {return !source || (frame.side === source.side && frame.sourceWidth === source.width && frame.sourceHeight === source.height);}
+    function evaluate(frame, minimumConfidence) {
+      const evaluationStage = stage === 'CAPTURE_BOTTOM' ? 'CAPTURE_BOTTOM' : (stage === 'CONFIRM_TOP' ? 'CONFIRM_TOP' : 'CAPTURE_TOP');
+      return evaluateFrame(frame, minimumConfidence, evaluationStage);
+    }
     function observe(frame, minimumConfidence) {
       if (!['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED'].includes(stage)) return false;
       if (deadline !== null && now() >= deadline) {invalidate('TIMEOUT'); return false;}
@@ -103,11 +159,10 @@
       while (samples.length > 2 && samples[1].at <= frame.timestamp - STABLE_MS) samples.shift();
       const candidate = stable(samples);
       if (!candidate) return false;
+      const form = formFromVector(candidate.center, stage);
+      if (!form?.allPass) return false;
       if (stage === 'CAPTURE_TOP') {top = candidate; advance('CAPTURE_BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
-        // Personal geometry may narrow matching tolerance, but it must never
-        // turn a shallow repetition into an acceptable BOTTOM reference.
-        if (candidate.center[0] > MAX_BOTTOM_ELBOW_DEGREES) return false;
         if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 3)) return false;
         bottom = candidate;
         const separation = distance(top.center, bottom.center);
@@ -127,7 +182,8 @@
       if (bottomDistance <= tolerance && bottomDistance < topDistance) return 'BOTTOM';
       return 'BETWEEN';
     }
-    return {start, reset, invalidate, observe, classify, snapshot};
+    return {start, reset, invalidate, observe, classify, evaluate, snapshot};
   }
-  return Object.freeze({create, signature, distance, STABLE_MS, MAX_BOTTOM_ELBOW_DEGREES});
+  return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, STABLE_MS, MAX_BOTTOM_ELBOW_DEGREES,
+    TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});
 });
