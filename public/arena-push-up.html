@@ -21,7 +21,7 @@
     button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}
     button:focus-visible,a:focus-visible,textarea:focus-visible{outline:3px solid #74ecdf;outline-offset:3px}
     footer{padding:8px 14px calc(8px + env(safe-area-inset-bottom));font-size:12px;color:#999;background:#0b0b0b}
-    #bridgeDebugToggle{position:fixed;z-index:99998;right:14px;bottom:max(48px,calc(14px + env(safe-area-inset-bottom)));border:1px solid #765f1e;background:#17130a;color:#ffd35a;border-radius:999px;padding:12px 16px;box-shadow:0 10px 32px #000a;font:800 13px system-ui}
+    #bridgeDebugToggle{position:fixed;z-index:99998;right:8px;top:max(72px,calc(64px + env(safe-area-inset-top)));bottom:auto;border:1px solid #765f1e;background:#17130a;color:#ffd35a;border-radius:999px;padding:6px 8px;box-shadow:0 8px 22px #0009;font:800 10px system-ui;opacity:.72}
     #bridgeDebugBoard{position:fixed;z-index:99999;right:12px;bottom:max(100px,calc(64px + env(safe-area-inset-bottom)));width:min(500px,calc(100vw - 24px));max-height:min(72vh,720px);max-height:min(72dvh,720px);overflow:auto;overscroll-behavior:contain;background:#090b10fa;border:1px solid #39455a;border-radius:18px;box-shadow:0 26px 80px #000d;padding:16px;color:#f6f8fb;backdrop-filter:blur(14px);font:13px/1.45 system-ui}
     #bridgeDebugBoard[hidden]{display:none}
     #bridgeDebugBoard h2{font-size:20px;color:#ffd35a;margin:0 0 4px}
@@ -47,7 +47,7 @@
     @media(max-width:600px){#bridgeDebugBoard{right:8px;width:calc(100vw - 16px);padding:12px}#bridgeDebugBoard li{grid-template-columns:88px minmax(0,1fr);gap:8px}}
     [hidden]{display:none!important}
     .stage{min-height:260px}
-    #bridgeDebugToggle{position:fixed;right:8px;bottom:max(40px,calc(8px + env(safe-area-inset-bottom)));margin:0;padding:8px 10px;font-size:11px;opacity:.88}
+    #bridgeDebugToggle{position:fixed;right:8px;top:max(72px,calc(64px + env(safe-area-inset-top)));bottom:auto;margin:0;padding:6px 8px;font-size:10px;opacity:.72}
     .phone-panel{padding:14px max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));background:#10131a;border-top:1px solid #3d4655}
     .phone-panel h2{font-size:20px;margin:0 0 6px;color:#ffd35a}
     .phone-panel p{margin:6px 0 12px;line-height:1.45;color:#dae0eb;max-width:760px}
