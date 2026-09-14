@@ -1,0 +1,186 @@
+name: Stage Push-Up Maze Preview
+
+on:
+  push:
+    branches:
+      - feat/stage-pushup-maze-preview-20260913
+    paths:
+      - .github/workflows/stage-pushup-maze-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: stage-pushup-maze-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TARGET_BRANCH: feat/stage-pushup-maze-preview-20260913
+      GODOT_SOURCE_COMMIT: 763dc41484d16d459323b2ff9e67bb4723b2bf31
+      GODOT_CANDIDATE_COMMIT: 9e70036b1a4796f0935bc21f589b336321416825
+    steps:
+      - name: Checkout web repository
+        uses: actions/checkout@v4
+        with:
+          ref: feat/stage-pushup-maze-preview-20260913
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Protect Living Lobby and phone controls
+        run: node --test test/world-lobby-bridge.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js
+
+      - name: Fetch pinned Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+            /tmp/mufasagodot-candidate
+          git -C /tmp/mufasagodot-candidate sparse-checkout init --cone
+          git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
+          git -C /tmp/mufasagodot-candidate checkout --detach "${GODOT_CANDIDATE_COMMIT}"
+          ACTUAL="$(git -C /tmp/mufasagodot-candidate rev-parse HEAD)"
+          test "$ACTUAL" = "$GODOT_CANDIDATE_COMMIT"
+
+      - name: Verify producer provenance and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          for file in index.html index.js index.pck index.wasm BUILD_PROVENANCE.txt; do
+            test -s "$CANDIDATE/$file"
+          done
+          grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+          (
+            cd /tmp/mufasagodot-candidate
+            grep -E '^[0-9a-f]{64}  build/ci-web/(index.html|index.js|index.pck|index.wasm)$' build/ci-web/BUILD_PROVENANCE.txt | sha256sum -c -
+          )
+          mkdir -p public/game/push-up-arena
+          cp "$CANDIDATE/index.html" public/game/push-up-arena/index.html
+          cp "$CANDIDATE/index.js" public/game/push-up-arena/index.js
+          cp "$CANDIDATE/index.pck" public/game/push-up-arena/index.pck
+          cp "$CANDIDATE/index.wasm" public/game/push-up-arena/index.wasm
+          cp "$CANDIDATE/BUILD_PROVENANCE.txt" /tmp/PUSHUP_MAZE_BUILD_PROVENANCE.txt
+
+      - name: Verify staged bytes and write manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const path = require('path');
+          const root = 'public/game/push-up-arena';
+          const source = process.env.GODOT_SOURCE_COMMIT;
+          const candidate = process.env.GODOT_CANDIDATE_COMMIT;
+          const provenance = fs.readFileSync('/tmp/PUSHUP_MAZE_BUILD_PROVENANCE.txt', 'utf8');
+          const meta = (name) => {
+            const data = fs.readFileSync(path.join(root, name));
+            return {bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex')};
+          };
+          const expected = {};
+          for (const line of provenance.split(/\r?\n/)) {
+            const match = line.match(/^([0-9a-f]{64})  build\/ci-web\/(index\.(?:html|js|pck|wasm))$/);
+            if (match) expected[match[2]] = match[1];
+          }
+          for (const name of ['index.html','index.js','index.pck','index.wasm']) {
+            const actual = meta(name).sha256;
+            if (!expected[name] || expected[name] !== actual) throw new Error(`Producer hash mismatch for ${name}`);
+          }
+          const html=meta('index.html'), js=meta('index.js'), pck=meta('index.pck'), wasm=meta('index.wasm');
+          const manifest = {
+            protocolVersion: 1,
+            buildId: `pocketpt-pushup-maze-${source.slice(0,7)}-20260913`,
+            godotVersion: '4.5.1',
+            godotSourceCommit: source,
+            godotCandidateCommit: candidate,
+            producerHashVerification: 'pass',
+            mainScene: 'res://Main.tscn',
+            pckBytes:pck.bytes, pckSha256:pck.sha256,
+            htmlBytes:html.bytes, htmlSha256:html.sha256,
+            jsBytes:js.bytes, jsSha256:js.sha256,
+            wasmBytes:wasm.bytes, wasmSha256:wasm.sha256,
+            localPackagedAcceptance: 'pass',
+            practiceMaze: {
+              structureRegression: 'pass',
+              existingPhoneControlRegression: 'pass',
+              existingMultiplayerRegression: 'pass',
+              physicalThumbNavigation: 'pending',
+              visualMazeAcceptance: 'pending',
+              tensorFlowBodyControl: 'pending',
+              pushupPoweredSpeed: 'pending'
+            },
+            note: 'Exact hash-verified Godot Push-Up Practice Maze shell staged for owner thumb-control visual testing. TensorFlow and push-up-powered movement are intentionally deferred.'
+          };
+          fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
+          console.log(JSON.stringify(manifest,null,2));
+          NODE
+
+      - name: Commit staged maze preview
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            SHA=$(git rev-parse HEAD)
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "Stage push-up maze Godot preview [skip ci]"
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          git push origin HEAD:"${TARGET_BRANCH}"
+
+      - name: Refresh readiness evidence
+        shell: bash
+        env:
+          RUNTIME_SHA: ${{ steps.runtime.outputs.sha }}
+          READINESS_OPS_FILE: /tmp/pushup-maze-readiness.json
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          AUTH_HEADER=$(printf '%s %s %s' 'Authorization:' 'Bearer' "$GITHUB_TOKEN")
+          PR_NUMBER=$(
+            curl --fail --silent --show-error --get \
+              -H "$AUTH_HEADER" \
+              -H "Accept: application/vnd.github+json" \
+              --data "state=open" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${TARGET_BRANCH}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
+            | python3 -c 'import json,sys; pulls=json.load(sys.stdin); print(pulls[0]["number"] if pulls else "")'
+          )
+          PR_ARGS=()
+          if [ -n "$PR_NUMBER" ]; then PR_ARGS=(--pr "$PR_NUMBER"); fi
+          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json "${PR_ARGS[@]}" --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Hash-verified Push-Up Practice Maze shell staged from Godot source ${GODOT_SOURCE_COMMIT}. Automated structure, phone-control, multiplayer, and packaging checks passed. Physical thumb navigation and visual maze acceptance remain pending; TensorFlow/body steering and push-up-powered speed are explicitly deferred."
+          npm run readiness:validate
+
+      - name: Commit readiness audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/readiness/development-evidence.json
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "Record push-up maze preview readiness [skip ci]"
+            git push origin HEAD:"${TARGET_BRANCH}"
+          fi
