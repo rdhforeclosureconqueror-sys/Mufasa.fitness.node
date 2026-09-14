@@ -94,12 +94,11 @@ test('cancelled or timed-out mat commands reject late arrival without starting s
 
 test('camera setup locks movement, uses visibility only, and never arms a countdown', () => {
   const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
-  assert.equal(f.flow.snapshot().previewOnly, false); assert.equal(f.sent.at(-1).action, 'PUSH_UP_START');
+  assert.equal(f.flow.snapshot().previewOnly, false); assert.equal(f.sent.some(packet => packet.action === 'PUSH_UP_START'), false);
   assert.equal(f.flow.calibration('CAPTURE_TOP'), true);
   assert.equal(f.flow.cameraStarting(), true); f.flow.cameraActive(); f.flow.visibility(true);
   assert.equal(f.flow.snapshot().state, 'CALIBRATING_TOP'); assert.equal(f.flow.hold('MOVE_FORWARD'), false);
   assert.equal(f.flow.approach(), false); assert.equal(f.flow.snapshot().context, 'CAMERA_SETUP');
-  assert.equal(f.reply('AVATAR_DOWN'), true);
   f.flow.calibration('CAPTURE_BOTTOM'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_BOTTOM');
   f.flow.calibration('CONFIRM_TOP'); assert.equal(f.flow.snapshot().state, 'CONFIRMING_TOP');
   f.flow.calibration('CALIBRATED'); assert.equal(f.flow.snapshot().state, 'CALIBRATED');
@@ -133,12 +132,9 @@ test('timeout identifies the acquisition phase and recovery cannot revive cleare
   assert.equal(f.marks.filter(x => x[0] === 'POSE_BOTTOM_CALIBRATION').at(-1)[1], 'WAITING');
 });
 
-test('return waits for standing even if the down animation was never acknowledged', () => {
+test('return releases setup directly to locomotion without obsolete authored transitions', () => {
   const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
-  f.flow.returnToGym(); assert.equal(f.sent.at(-1).action, 'STAND_UP');
-  assert.equal(f.flow.snapshot().state, 'RETURNING'); assert.equal(f.flow.hold('MOVE_RIGHT'), false);
-  f.advance(20000); assert.equal(f.flow.snapshot().state, 'RETURN_BLOCKED');
-  f.flow.returnToGym(); assert.equal(f.reply('AVATAR_STANDING'), true);
+  f.flow.returnToGym(); assert.equal(f.sent.some(packet => ['PUSH_UP_START','STAND_UP'].includes(packet.action)), false);
   assert.equal(f.flow.snapshot().state, 'GYM'); assert.equal(f.flow.snapshot().canMove, true);
 });
 

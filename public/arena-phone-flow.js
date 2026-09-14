@@ -37,7 +37,7 @@
   function create({send, onChange = () => {}, mark = () => {}, stopCamera = () => {},
     setTimer = setTimeout, clearTimer = clearTimeout, setRepeater = setInterval, clearRepeater = clearInterval} = {}) {
     let state = 'CONNECTING', requestId = null, outgoing = 0, incoming = 0, pending = null;
-    let capabilities = null, held = null, repeater = null, nudgeTimer = null, avatarNeedsStand = false;
+    let capabilities = null, held = null, repeater = null, nudgeTimer = null;
     let previewOnly = true, connected = false, context = 'LOCKED', calibrationStage = 'IDLE', bodyVisible = false;
     let movementMode = 'WALK';
     let movementVector = null;
@@ -130,17 +130,10 @@
         return true;
       }
       if (data.event !== 'ARENA_FLOW_EVENT' || !pending || data.replyTo !== pending.sequence) return false;
-      const expected = {GO_TO_MAT: ['AT_MAT', 'APPROACHING'], PUSH_UP_START: ['AVATAR_DOWN', null], STAND_UP: ['AVATAR_STANDING', 'RETURNING']}[pending.action];
+      const expected = {GO_TO_MAT: ['AT_MAT', 'APPROACHING']}[pending.action];
       if (!expected || data.result !== expected[0] || (expected[1] && state !== expected[1])) return false;
       incoming = data.sequence; cancel('command'); pending = null;
       if (data.result === 'AT_MAT') {setContext('LOCKED'); mark('MAT_APPROACH', 'PASS', 'MAT_REACHED'); change('INTRO');}
-      if (data.result === 'AVATAR_DOWN') mark('MAT_APPROACH', 'PASS', 'AVATAR_POSITIONED');
-      if (data.result === 'AVATAR_STANDING') {
-        avatarNeedsStand = false;
-        setContext('GYM_NAVIGATION');
-        change('GYM');
-        control('SET_LOCOMOTION_MODE', {mode: movementMode});
-      }
       return true;
     }
     function hold(action) {
@@ -171,11 +164,9 @@
     function setup() {
       if (!snapshot().canSetup) return false;
       previewOnly = state !== 'INTRO'; calibrationStage = 'IDLE'; bodyVisible = false; setContext('CAMERA_SETUP'); change('CAMERA_SETUP');
-      if (!previewOnly) {
-        avatarNeedsStand = true;
-        pending = {action: 'PUSH_UP_START', sequence: control('PUSH_UP_START')};
-        schedule('command', 20000, () => {pending = null; mark('MAT_APPROACH', 'FAIL', 'FLOW_ACK_TIMEOUT');});
-      }
+      // LIVE_MOCAP, not an optional authored PUSH_UP_START clip, owns the
+      // personalized body after calibration. Do not manufacture an animation
+      // acknowledgement or make camera setup depend on that legacy command.
       mark('START_POSITION', 'NOT_CONNECTED', 'START_RULES_PENDING');
       mark('POSE_TOP_CALIBRATION', previewOnly ? 'SKIP' : 'WAITING', previewOnly ? 'CALIBRATION_PREVIEW_ONLY' : 'POSE_TOP_WAITING');
       mark('POSE_BOTTOM_CALIBRATION', previewOnly ? 'SKIP' : 'NOT_CONNECTED', previewOnly ? 'CALIBRATION_PREVIEW_ONLY' : 'POSE_BOTTOM_WAITING');
@@ -228,12 +219,9 @@
       stopCamera(); cancel('command'); pending = null;
       mark('CAMERA_PERMISSION', 'WAITING', 'CAMERA_OFF');
       mark('CAMERA_STREAM', 'WAITING', 'CAMERA_OFF');
-      if (avatarNeedsStand) {setContext('LOCKED'); command('STAND_UP', 'RETURNING', 'RETURN_BLOCKED');}
-      else {
-        setContext(capabilities ? 'GYM_NAVIGATION' : 'LOCKED');
-        change(capabilities ? 'GYM' : 'LEGACY');
-        if (capabilities) control('SET_LOCOMOTION_MODE', {mode: movementMode});
-      }
+      setContext(capabilities ? 'GYM_NAVIGATION' : 'LOCKED');
+      change(capabilities ? 'GYM' : 'LEGACY');
+      if (capabilities) control('SET_LOCOMOTION_MODE', {mode: movementMode});
       return true;
     }
     function suspend() {
@@ -245,7 +233,7 @@
     function reset() {
       setContext('LOCKED'); stopCamera(); for (const name of timers.keys()) cancel(name);
       requestId = null; connected = false; capabilities = null; pending = null;
-      avatarNeedsStand = false; previewOnly = true; calibrationStage = 'IDLE'; bodyVisible = false; context = 'LOCKED'; movementMode = 'WALK'; change('CONNECTING');
+      previewOnly = true; calibrationStage = 'IDLE'; bodyVisible = false; context = 'LOCKED'; movementMode = 'WALK'; change('CONNECTING');
     }
     function close() {reset(); change('CLOSED');}
     return {snapshot, connect, accept, hold, nudge, moveVector, release, setLocomotionMode, playAction, approach, cancelApproach, setup,

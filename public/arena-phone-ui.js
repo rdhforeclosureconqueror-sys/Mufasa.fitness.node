@@ -2,16 +2,20 @@
   'use strict';
   function mount({game, mark, send}) {
     const doc = root.document, $ = id => doc.getElementById(id);
-    const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo');
+    const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo'), overlay = $('arenaPoseOverlay');
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null;
     const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
+      liveMotion?.setExerciseCalibration(progress.calibrated);
+      const cue = {CAPTURE_TOP:'Get into your top push-up position and hold.',CAPTURE_BOTTOM:'Lower until your elbows reach at least 90 degrees and hold.',CONFIRM_TOP:'Return to the top position and hold.'}[progress.stage];
+      if (cue) root.CoachRuntime?.speak?.(cue, 'arena-calibration', {owner:'avatar_calibration', interruptible:true, timerNeutral:true});
     }});
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
       onPose(frame, confidence, posePacket) {
-        if (!flow?.snapshot().previewOnly) calibration.observe(frame, confidence);
+        drawPose(posePacket);
+        if (!flow?.snapshot().previewOnly && liveMotion?.diagnostics().calibrationReady) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
       },
       onFailure: () => flow?.cameraError(),
@@ -22,6 +26,18 @@
         $('arenaCameraChoice').hidden = devices.length < 2;
       }
     });
+    function drawPose(packet) {
+      const context = overlay?.getContext?.('2d');
+      if (!context) return;
+      const width = overlay.width = Math.max(1, video.videoWidth || 1), height = overlay.height = Math.max(1, video.videoHeight || 1);
+      context.clearRect(0, 0, width, height);
+      const points = Object.fromEntries((packet?.keypoints || []).filter(point => Number(point.score) >= .35).map(point => [point.name, point]));
+      const links = [['left_shoulder','right_shoulder'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
+      context.strokeStyle = '#4ee19a'; context.lineWidth = Math.max(3, width / 180);
+      for (const [a,b] of links) if (points[a] && points[b]) {context.beginPath();context.moveTo(points[a].x,points[a].y);context.lineTo(points[b].x,points[b].y);context.stroke();}
+      context.fillStyle = '#ffd35a';
+      for (const point of Object.values(points)) {context.beginPath();context.arc(point.x,point.y,Math.max(4,width/120),0,Math.PI*2);context.fill();}
+    }
     function stopCamera() {cameraOperation++; liveMotion?.release('CAMERA_STOPPED'); camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
     function releasePointer() {
       const held = pointer; pointer = null;
@@ -61,7 +77,6 @@
       $('arenaRepeatBriefing').hidden = state.state !== 'INTRO';
       $('arenaCameraStage').hidden = !state.cameraView;
       game.inert = !['CONNECTING', 'GYM', 'LEGACY', 'NEGOTIATING'].includes(state.state);
-      game.style.visibility = state.cameraView ? 'hidden' : '';
       $('arenaCameraSelect').disabled = !['CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED', 'CALIBRATION_RETRY'].includes(state.state);
       $('arenaWalkMode').disabled = !state.canMove;
       $('arenaRunMode').disabled = !state.canMove;
@@ -88,7 +103,8 @@
       previousState = state.state;
     }
     flow = root.PocketPTArenaPhoneFlow.create({send, mark, onChange: render, stopCamera});
-    liveMotion = root.PocketPTArenaLiveMotion?.create({send: (event, payload) => flow.liveMocap(event, payload), mark});
+    liveMotion = root.PocketPTArenaLiveMotion?.create({send: (event, payload) => flow.liveMocap(event, payload), mark,
+      onRestReady: () => {if (!flow.snapshot().previewOnly && calibration.snapshot().stage === 'IDLE') calibration.start();}});
     mark('MIRROR_MOTION_INPUT', liveMotion ? 'WAITING' : 'FAIL', liveMotion ? 'MIRROR_INPUT_WAITING' : 'MIRROR_RUNTIME_MISSING');
     render(flow.snapshot());
     async function enableCamera(deviceId = '') {
@@ -99,7 +115,7 @@
       try {
         await liveMotion?.activateVoice?.();
         await camera.start(deviceId);
-        if (generation === cameraOperation) {flow.cameraActive(); if (!flow.snapshot().previewOnly) calibration.start();}
+        if (generation === cameraOperation) flow.cameraActive();
       }
       catch (_) {if (generation === cameraOperation) flow.cameraError();}
     }

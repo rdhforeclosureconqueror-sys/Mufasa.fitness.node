@@ -2403,6 +2403,87 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-14T19:21:35.050Z"
+    },
+    {
+      "operationId": "99d9baee-bc3b-462b-8586-1b95a3e7bf69",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "calibration-live-avatar-control",
+      "files": [],
+      "automated": null,
+      "evidence": "Started calibration to LIVE personalized avatar control repair; removing obsolete authored-transition dependency, separating rest and exercise calibration, and gating LIVE_MOCAP acquisition on valid TOP/BOTTOM/TOP.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T21:01:10.482Z"
+    },
+    {
+      "operationId": "2551e01c-538a-4475-b3d4-2cc955fab7e7",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "calibration-live-avatar-control",
+      "files": [],
+      "automated": null,
+      "evidence": "Selected Push-Up Arena V1 as CURRENT for calibration to LIVE_MOCAP milestone.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T21:01:11.111Z"
+    },
+    {
+      "operationId": "5c402872-c0d6-496f-a1e3-fffa9f9f13a4",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "calibration-live-avatar-control",
+      "files": [],
+      "automated": null,
+      "evidence": "Started affected first-failure pipeline extension through exercise calibration and live-avatar visual readiness.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T21:01:11.747Z"
+    },
+    {
+      "operationId": "92dca3c9-fcc1-4e86-86cf-df581a7b03bc",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "calibration-live-avatar-control",
+      "files": [
+        "public/arena-diagnostics.js",
+        "public/arena-live-motion-adapter.js",
+        "public/arena-phone-flow.js",
+        "public/arena-phone-ui.js",
+        "public/arena-pose-calibration.js",
+        "public/arena-push-up.html",
+        "server.js",
+        "test/arena-live-motion-adapter.test.js",
+        "test/arena-phone-flow.test.js",
+        "test/arena-pose-calibration.test.js",
+        "test/tts-speak-proxy.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented Web calibration-to-LIVE_MOCAP boundary: protected rest completes before separate 3-second TOP/BOTTOM/TOP capture; BOTTOM enforces <=95-degree elbow evidence; LIVE_MOCAP acquisition/frames wait for calibration; release restores GYM_NAVIGATION without unsupported PUSH_UP_START/STAND_UP acknowledgements. Camera skeleton preview remains visible alongside the existing Godot gym/personal avatar. Canonical CoachRuntime remains sole owner and /api/speak now honors COACH_TTS_VOICE when configured. Focused 60-test suite and lint PASS. Existing staged Godot runtime/export is unchanged. Browser runtime, correct audible persona, body-down/up visual following, jitter, and physical-phone locomotion restoration remain unverified human/physical gates.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T21:04:04.947Z"
+    },
+    {
+      "operationId": "e7670b20-7671-4ed5-aa42-61696d849ffa",
+      "board": "avatar",
+      "cardId": "avatar-development-arena-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "calibration-live-avatar-control",
+      "files": [
+        "public/arena-diagnostics.js",
+        "public/arena-live-motion-adapter.js",
+        "test/arena-live-motion-adapter.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "MOCAP_BRIDGE now depends on observed rest processing plus successful TOP/BOTTOM/TOP; added LIVE_AVATAR_VISUAL_READY after Godot frame application. No stage is marked PASS from code load. Physical visual readiness remains unverified and human-required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T21:04:05.602Z"
     }
   ]
 }

@@ -20,26 +20,26 @@ function create(options = {}) {
     classify(value, confidence) {time = value.timestamp; return calibration.classify(value, confidence);}};
 }
 function hold(calibration, kind, start = 0) {
-  for (let index = 0; index < 8; index++) calibration.observe(frame(kind, start + index * 100, index % 2 ? .001 : 0), .75);
+  for (let index = 0; index < 11; index++) calibration.observe(frame(kind, start + index * 300, index % 2 ? .001 : 0), .75);
 }
 
 test('captures stable personal TOP and BOTTOM geometry and confirms TOP return', () => {
   const stages = [], calibration = create({onChange: state => stages.push(state.stage)});
   calibration.start(); hold(calibration, 'TOP');
   assert.deepEqual(calibration.snapshot(), {stage: 'CAPTURE_BOTTOM', reason: null, failedStage: null, topCaptured: true, bottomCaptured: false, calibrated: false});
-  hold(calibration, 'BOTTOM', 800);
+  hold(calibration, 'BOTTOM', 3300);
   assert.deepEqual(calibration.snapshot(), {stage: 'CONFIRM_TOP', reason: null, failedStage: null, topCaptured: true, bottomCaptured: true, calibrated: false});
-  hold(calibration, 'TOP', 1600);
+  hold(calibration, 'TOP', 6600);
   assert.equal(calibration.snapshot().calibrated, true);
   assert.deepEqual(stages, ['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED']);
-  assert.equal(calibration.classify(frame('TOP', 2400), .75), 'TOP');
-  assert.equal(calibration.classify(frame('BOTTOM', 2500), .75), 'BOTTOM');
+  assert.equal(calibration.classify(frame('TOP', 9900), .75), 'TOP');
+  assert.equal(calibration.classify(frame('BOTTOM', 10000), .75), 'BOTTOM');
 });
 
 test('does not capture an unchanged or unstable pose as BOTTOM', () => {
   const calibration = create(); calibration.start(); hold(calibration, 'TOP');
-  hold(calibration, 'TOP', 800); assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
-  for (let index = 0; index < 16; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 1600 + index * 100), .75);
+  hold(calibration, 'TOP', 3300); assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  for (let index = 0; index < 16; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 6600 + index * 100), .75);
   assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
 });
 

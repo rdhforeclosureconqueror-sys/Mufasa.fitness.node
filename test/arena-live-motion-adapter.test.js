@@ -37,6 +37,7 @@ test('headless adapter withholds mocap until canonical rest calibration and send
   at+=1; assert.equal(adapter.observe(packet(at)),false); await flush();
   at+=1; assert.equal(adapter.observe(packet(at)),false); await flush();
   at+=1; adapter.observe(packet(at)); await flush();
+  adapter.setExerciseCalibration(true);
   at+=1; assert.equal(adapter.observe(packet(at,55)),true);
   assert.equal(sent[0].event,'LIVE_MOCAP_ACQUIRE'); assert.ok(sent.slice(1).every(x=>x.event==='LIVE_MOCAP_FRAME'));
   const frame=sent.at(-1); assert.equal(frame.mocapVersion,1); assert.ok(frame.frameSequence >= 1); assert.equal(frame.restBaseReady,true);
@@ -52,6 +53,7 @@ test('release closes the mocap session and a later pose begins a new scoped sequ
     processPose: canonicalProcess,
     calibrationOptions:{stableFrames:1,settleMs:0,baseHoldMs:0},speak:async()=>({ok:true})});
   for(let i=0;i<4;i++){adapter.observe(packet(++at));await flush();}
+  adapter.setExerciseCalibration(true);
   adapter.observe(packet(++at,55)); adapter.release('CAMERA_STOPPED');
   assert.equal(sent.at(-1).event,'LIVE_MOCAP_RELEASE'); assert.equal(sent.at(-1).mocapSessionId,'session-1');
   assert.equal(adapter.diagnostics().sessionId,null); assert.equal(adapter.diagnostics().frameSequence,0);

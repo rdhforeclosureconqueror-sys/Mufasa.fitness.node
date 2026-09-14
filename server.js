@@ -1818,7 +1818,7 @@ function createApp(options = {}) {
 
       const {
         text,
-        voice = "alloy",
+        voice,
         format = "mp3",
         speed,
         pitch
@@ -1849,7 +1849,11 @@ function createApp(options = {}) {
         return res.status(500).json({ ok: false, error: "TTS_INTERNAL_TOKEN_MISSING" });
       }
 
-      const upstreamSpeakBody = { text, voice, format, speed, pitch };
+      // The backend configuration is the canonical coach persona. Arena pages
+      // have no voice selector, so accepting the browser's implicit "alloy"
+      // default made their coach differ from the configured deployment voice.
+      const configuredVoice = String(process.env.COACH_TTS_VOICE || voice || "alloy").trim() || "alloy";
+      const upstreamSpeakBody = { text, voice: configuredVoice, format, speed, pitch };
       console.info("[tts] upstream request", {
         requestId: req.requestId,
         operation: "provider_request"

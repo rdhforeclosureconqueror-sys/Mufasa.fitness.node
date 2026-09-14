@@ -9,6 +9,7 @@ const Calibration = require('../public/arena-pose-calibration');
 
 function fixture(t) {
   const nodes = new Map(), events = new Map(), sent = [], marks = [], timers = new Map(); let starts = 0, stops = 0, cameraOptions, time = 0, timerId = 0;
+  let restReady = false, exerciseCalibrated = false;
   function advance(ms) {time += ms; for (const [id, timer] of [...timers]) if (timer.at <= time) {timers.delete(id); timer.fn();}}
   const doc = {activeElement: null, createElement: () => node('option'), getElementById: id => nodes.get(id)};
   function node(id) {
@@ -27,6 +28,19 @@ function fixture(t) {
   const root = {document: doc, crypto: {randomUUID: () => 'phone-scope'}, PocketPTArenaPhoneFlow: Flow,
     PocketPTArenaPoseCalibration: {create: options => Calibration.create({...options, now: () => time,
       setTimer(fn, ms) {timers.set(++timerId, {fn, at: time + ms}); return timerId;}, clearTimer: id => timers.delete(id)})},
+    PocketPTArenaLiveMotion: {create(options = {}) {
+      return {
+        diagnostics() {return {calibrationReady: restReady};},
+        observe() {
+          if (!restReady) {restReady = true; options.onRestReady?.();}
+          return exerciseCalibrated;
+        },
+        setExerciseCalibration(ready) {exerciseCalibrated = ready === true; return exerciseCalibrated;},
+        release() {restReady = false; exerciseCalibrated = false;},
+        reset() {restReady = false; exerciseCalibrated = false;},
+        async activateVoice() {return {ok: true};}
+      };
+    }},
     addEventListener: (name, fn) => events.set(name, fn),
     PocketPTArenaCamera: {create(options) {cameraOptions = options; return {async start() {starts++;}, stop() {stops++; options.onVisibility(false);}, resetTracking() {options.onVisibility(false);}};}}
   };
@@ -36,12 +50,13 @@ function fixture(t) {
   ui.connect(); let sequence = 0;
   const packet = data => ({type: 'POCKETPT_GODOT_BRIDGE', protocolVersion: 1, flowVersion: 1, requestId: 'phone-scope', sequence: ++sequence, ...data});
   ui.accept(packet({event: 'ARENA_FLOW_CAPABILITIES', capabilities: {contextLock: true, touchNavigation: true, matApproach: true, pushUpTransition: true}}));
-  function hold(kind) {
+  function pose(kind, count = 1) {
     const points = kind === 'BOTTOM' ? {shoulder:[.2,.3],elbow:[.1,.4],wrist:[.2,.45],hip:[.4,.3],ankle:[.7,.3]}
       : {shoulder:[.2,.2],elbow:[.2,.3],wrist:[.2,.4],hip:[.4,.2],ankle:[.7,.2]};
-    for (let i=0;i<40;i++) {advance(33); cameraOptions.onVisibility(true); cameraOptions.onPose({timestamp:time,sourceWidth:640,sourceHeight:480,side:'left',analysisUsable:true,trackingState:'LOCKED',sequenceLandmarks:Object.fromEntries(Object.entries(points).map(([name,[x,y]])=>[name,{x,y,confidence:.95}]))},.75);}
+    for (let i=0;i<count;i++) {advance(33); cameraOptions.onVisibility(true); cameraOptions.onPose({timestamp:time,sourceWidth:640,sourceHeight:480,side:'left',analysisUsable:true,trackingState:'LOCKED',sequenceLandmarks:Object.fromEntries(Object.entries(points).map(([name,[x,y]])=>[name,{x,y,confidence:.95}]))},.75);}
   }
-  return {ui, nodes, doc, events, sent, packet, marks, timers, advance, hold, cameraOptions: () => cameraOptions, stats: () => ({starts, stops})};
+  function hold(kind) {pose(kind, 105);}
+  return {ui, nodes, doc, events, sent, packet, marks, timers, advance, hold, pose, cameraOptions: () => cameraOptions, stats: () => ({starts, stops})};
 }
 
 async function startCalibration(f) {
@@ -69,7 +84,7 @@ test('coordinator deadlines show retry and camera switching starts fresh capture
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/Capture paused/);
   assert.deepEqual(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1),['POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT']);
   f.nodes.get('arenaCameraSelect').value='different-device';await f.nodes.get('arenaCameraSelect').fire('change');
-  f.cameraOptions().onVisibility(true);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Hold TOP/);
+  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Hold TOP/);
   assert.equal(f.stats().starts,2);
 });
 
@@ -111,7 +126,7 @@ test('touch mat flow transfers focus to recovery controls and locks the iframe d
   assert.equal(f.stats().starts, 0);
   await f.nodes.get('arenaEnableCamera').fire('click'); assert.equal(f.stats().starts, 1);
   assert.equal(f.doc.activeElement.id, 'arenaReturnToGym'); assert.equal(f.nodes.get('arenaCameraStage').hidden, false);
-  f.cameraOptions().onVisibility(true); assert.match(f.nodes.get('arenaBodyStatus').textContent, /Hold TOP/);
+  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent, /Hold TOP/);
 });
 
 test('suspend stops the camera and keeps navigation unavailable until explicit return', async t => {

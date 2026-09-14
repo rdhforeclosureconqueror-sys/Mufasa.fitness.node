@@ -10,12 +10,14 @@ on:
       - "public/arena-diagnostics.js"
       - "public/arena-phone-flow.js"
       - "public/arena-phone-ui.js"
+      - "public/arena-pose-calibration.js"
       - "public/push-up-challenge.js"
       - "test/arena-pre-ready-trace.test.js"
       - "test/arena-live-motion-adapter.test.js"
       - "test/arena-diagnostics.test.js"
       - "test/arena-phone-flow.test.js"
       - "test/arena-phone-ui.test.js"
+      - "test/arena-pose-calibration.test.js"
       - ".github/workflows/arena-pre-ready-trace-ci.yml"
 
 permissions:
@@ -42,12 +44,16 @@ jobs:
         run: |
           node --check public/arena-pre-ready-trace.js
           node --check public/arena-live-motion-adapter.js
+          node --check public/arena-pose-calibration.js
 
       - name: Pre-READY trace regression
         run: node --test test/arena-pre-ready-trace.test.js
 
       - name: Live motion adapter regression
         run: node --test test/arena-live-motion-adapter.test.js
+
+      - name: Push-up pose calibration regression
+        run: node --test test/arena-pose-calibration.test.js
 
       - name: Existing arena diagnostics regression
         run: node --test test/arena-diagnostics.test.js

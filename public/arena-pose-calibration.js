@@ -6,7 +6,7 @@
   'use strict';
   const NAMES = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
   const MIN_SAMPLES = 4;
-  const STABLE_MS = 700;
+  const STABLE_MS = 3000;
   const MAX_GAP_MS = 350;
   const PHASE_TIMEOUT_MS = 30000;
   const MAX_AGE_MS = 1500;
@@ -14,6 +14,7 @@
   // They are not exercise-form, depth, or safety thresholds.
   const MAX_STABILITY_DEGREES = 7;
   const MIN_POSE_SEPARATION_DEGREES = 20;
+  const MAX_BOTTOM_ELBOW_DEGREES = 95;
 
   function angle(a, b, c) {
     const ab = {x: a.x - b.x, y: a.y - b.y}, cb = {x: c.x - b.x, y: c.y - b.y};
@@ -104,6 +105,9 @@
       if (!candidate) return false;
       if (stage === 'CAPTURE_TOP') {top = candidate; advance('CAPTURE_BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
+        // Personal geometry may narrow matching tolerance, but it must never
+        // turn a shallow repetition into an acceptable BOTTOM reference.
+        if (candidate.center[0] > MAX_BOTTOM_ELBOW_DEGREES) return false;
         if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 3)) return false;
         bottom = candidate;
         const separation = distance(top.center, bottom.center);
@@ -125,5 +129,5 @@
     }
     return {start, reset, invalidate, observe, classify, snapshot};
   }
-  return Object.freeze({create, signature, distance});
+  return Object.freeze({create, signature, distance, STABLE_MS, MAX_BOTTOM_ELBOW_DEGREES});
 });
