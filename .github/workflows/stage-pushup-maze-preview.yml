@@ -3,7 +3,7 @@ name: Stage Push-Up Maze Preview
 on:
   push:
     branches:
-      - feat/stage-pushup-maze-preview-20260913
+      - fix/stage-pushup-maze-web-diagnostics-20260913
     paths:
       - .github/workflows/stage-pushup-maze-preview.yml
   workflow_dispatch:
@@ -21,14 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      TARGET_BRANCH: feat/stage-pushup-maze-preview-20260913
-      GODOT_SOURCE_COMMIT: 763dc41484d16d459323b2ff9e67bb4723b2bf31
-      GODOT_CANDIDATE_COMMIT: 9e70036b1a4796f0935bc21f589b336321416825
+      TARGET_BRANCH: fix/stage-pushup-maze-web-diagnostics-20260913
+      GODOT_SOURCE_COMMIT: 6e8bb44bbb611865360775548899d72c2b73fa9e
+      GODOT_CANDIDATE_COMMIT: 11bd3fe996d62bb999b45167ea85ff95f4fe513d
     steps:
       - name: Checkout web repository
         uses: actions/checkout@v4
         with:
-          ref: feat/stage-pushup-maze-preview-20260913
+          ref: fix/stage-pushup-maze-web-diagnostics-20260913
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -119,12 +119,13 @@ jobs:
               structureRegression: 'pass',
               existingPhoneControlRegression: 'pass',
               existingMultiplayerRegression: 'pass',
+              consolidatedWebDiagnostics: 'pass',
               physicalThumbNavigation: 'pending',
               visualMazeAcceptance: 'pending',
               tensorFlowBodyControl: 'pending',
               pushupPoweredSpeed: 'pending'
             },
-            note: 'Exact hash-verified Godot Push-Up Practice Maze shell staged for owner thumb-control visual testing. TensorFlow and push-up-powered movement are intentionally deferred.'
+            note: 'Exact hash-verified Godot Push-Up Practice Maze shell with consolidated Web FIRST FAILURE reporting staged for owner thumb-control visual testing. TensorFlow and push-up-powered movement are intentionally deferred.'
           };
           fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
           console.log(JSON.stringify(manifest,null,2));
@@ -169,7 +170,7 @@ jobs:
           )
           PR_ARGS=()
           if [ -n "$PR_NUMBER" ]; then PR_ARGS=(--pr "$PR_NUMBER"); fi
-          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json "${PR_ARGS[@]}" --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Hash-verified Push-Up Practice Maze shell staged from Godot source ${GODOT_SOURCE_COMMIT}. Automated structure, phone-control, multiplayer, and packaging checks passed. Physical thumb navigation and visual maze acceptance remain pending; TensorFlow/body steering and push-up-powered speed are explicitly deferred."
+          npm run readiness:update -- --board avatar --action evidence --card avatar-development-pushup-arena-v1 --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json "${PR_ARGS[@]}" --commit "$RUNTIME_SHA" --result PASS --sourceType implementation --codeComplete true --note "Hash-verified Push-Up Practice Maze with consolidated Web FIRST FAILURE reporting staged from Godot source ${GODOT_SOURCE_COMMIT}. Automated maze, diagnostics, phone-control, multiplayer, and packaging checks passed. Physical thumb navigation and visual maze acceptance remain pending; TensorFlow/body steering and push-up-powered speed are explicitly deferred."
           npm run readiness:validate
 
       - name: Commit readiness audit
