@@ -89,6 +89,10 @@
       release();
       return control('PLAY_ACTION', {name}) !== null;
     }
+    function liveMocap(event, payload = {}) {
+      if (previewOnly || !TRACKING_STATES.includes(state) || !['LIVE_MOCAP_ACQUIRE', 'LIVE_MOCAP_FRAME', 'LIVE_MOCAP_RELEASE'].includes(event)) return null;
+      return transmit(event, payload);
+    }
     function command(action, next, timeoutState) {
       pending = {action, sequence: control(action)};
       change(next);
@@ -245,7 +249,7 @@
     }
     function close() {reset(); change('CLOSED');}
     return {snapshot, connect, accept, hold, nudge, moveVector, release, setLocomotionMode, playAction, approach, cancelApproach, setup,
-      cameraStarting, cameraActive, visibility, calibration, cameraError, returnToGym, suspend, reset, close};
+      cameraStarting, cameraActive, visibility, calibration, liveMocap, cameraError, returnToGym, suspend, reset, close};
   }
   return Object.freeze({VERSION, COPY, create});
 });
