@@ -4,13 +4,16 @@
     const doc = root.document, $ = id => doc.getElementById(id);
     const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo');
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
-    let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null;
+    let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null;
     const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
     }});
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
-      onPose(frame, confidence) {if (!flow?.snapshot().previewOnly) calibration.observe(frame, confidence);},
+      onPose(frame, confidence, posePacket) {
+        if (!flow?.snapshot().previewOnly) calibration.observe(frame, confidence);
+        liveMotion?.observe(posePacket);
+      },
       onFailure: () => flow?.cameraError(),
       onDevices(devices, selected) {
         $('arenaCameraSelect').replaceChildren(...devices.map(device => {
@@ -19,7 +22,7 @@
         $('arenaCameraChoice').hidden = devices.length < 2;
       }
     });
-    function stopCamera() {cameraOperation++; camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
+    function stopCamera() {cameraOperation++; liveMotion?.release('CAMERA_STOPPED'); camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
     function releasePointer() {
       const held = pointer; pointer = null;
       if (held?.element.hasPointerCapture?.(held.id)) held.element.releasePointerCapture(held.id);
@@ -85,6 +88,8 @@
       previousState = state.state;
     }
     flow = root.PocketPTArenaPhoneFlow.create({send, mark, onChange: render, stopCamera});
+    liveMotion = root.PocketPTArenaLiveMotion?.create({send: (event, payload) => flow.liveMocap(event, payload), mark});
+    mark('MIRROR_MOTION_INPUT', liveMotion ? 'WAITING' : 'FAIL', liveMotion ? 'MIRROR_INPUT_WAITING' : 'MIRROR_RUNTIME_MISSING');
     render(flow.snapshot());
     async function enableCamera(deviceId = '') {
       if (deviceId) {stopCamera(); flow.cameraError();}
@@ -132,7 +137,7 @@
       accept: data => flow.accept(data),
       suspend() {releasePointer(); flow.suspend();},
       reset() {releasePointer(); scope = null; flow.reset();},
-      close() {releasePointer(); scope = null; flow.close(); camera.dispose?.();}
+      close() {releasePointer(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}
     };
   }
   root.PocketPTArenaPhoneUI = Object.freeze({mount});

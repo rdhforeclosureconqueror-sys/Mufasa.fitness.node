@@ -102,13 +102,13 @@
         const detector = await detectorForSession(); check();
         const profile = root.PushUpChallenge.getPushUpProfile();
         const confidence = profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
-        op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame) {
+        op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame, source = {}) {
           if (!live()) return;
           const bodyVisible = visible(frame, confidence);
           onVisibility(bodyVisible);
-          onPose(bodyVisible ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight} : null, confidence);
+          onPose(bodyVisible ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight} : null, confidence, bodyVisible ? source.posePacket || null : null);
           root.clearTimeout(op.staleTimer);
-          op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, confidence);}}, 1500);
+          op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, confidence, null);}}, 1500);
         }});
         await op.capture.start(video, {detector}); check();
         root.clearTimeout(op.timeout);
