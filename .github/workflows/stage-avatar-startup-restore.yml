@@ -3,7 +3,7 @@ name: Stage Verified Current Godot Candidate
 on:
   push:
     branches:
-      - fix/stage-current-godot-candidate-20260914
+      - codex/audit-and-fix-stale-godot-build-issues
     paths:
       - .github/workflows/stage-avatar-startup-restore.yml
   workflow_dispatch:
