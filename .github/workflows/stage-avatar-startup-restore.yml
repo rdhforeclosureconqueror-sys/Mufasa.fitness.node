@@ -1,0 +1,136 @@
+name: Stage Avatar Startup Restore
+
+on:
+  push:
+    branches:
+      - fix/stage-avatar-startup-restore-20260914
+    paths:
+      - .github/workflows/stage-avatar-startup-restore.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage-avatar-startup-restore-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TARGET_BRANCH: fix/stage-avatar-startup-restore-20260914
+      GODOT_SOURCE_COMMIT: 37a5bde0e9dfd56317fed5a3f2ca68a3b1d587a2
+      GODOT_CANDIDATE_COMMIT: 4d465cdefba8e14b6867a20061c3d38728f2e2c3
+    steps:
+      - name: Checkout web repository
+        uses: actions/checkout@v4
+        with:
+          ref: fix/stage-avatar-startup-restore-20260914
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Protect arena bridge and controls
+        run: node --test test/world-lobby-bridge.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js test/arena-diagnostics.test.js
+
+      - name: Fetch pinned Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
+          git clone --filter=blob:none --no-checkout https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git /tmp/mufasagodot-candidate
+          git -C /tmp/mufasagodot-candidate sparse-checkout init --cone
+          git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
+          git -C /tmp/mufasagodot-candidate checkout --detach "${GODOT_CANDIDATE_COMMIT}"
+          test "$(git -C /tmp/mufasagodot-candidate rev-parse HEAD)" = "$GODOT_CANDIDATE_COMMIT"
+
+      - name: Verify producer provenance and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          for file in index.html index.js index.pck index.wasm BUILD_PROVENANCE.txt; do test -s "$CANDIDATE/$file"; done
+          grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+          (
+            cd /tmp/mufasagodot-candidate
+            grep -E '^[0-9a-f]{64}  build/ci-web/(index.html|index.js|index.pck|index.wasm)$' build/ci-web/BUILD_PROVENANCE.txt | sha256sum -c -
+          )
+          mkdir -p public/game/push-up-arena
+          cp "$CANDIDATE/index.html" public/game/push-up-arena/index.html
+          cp "$CANDIDATE/index.js" public/game/push-up-arena/index.js
+          cp "$CANDIDATE/index.pck" public/game/push-up-arena/index.pck
+          cp "$CANDIDATE/index.wasm" public/game/push-up-arena/index.wasm
+          cp "$CANDIDATE/BUILD_PROVENANCE.txt" /tmp/BUILD_PROVENANCE.txt
+
+      - name: Write verified build manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const path = require('path');
+          const root = 'public/game/push-up-arena';
+          const provenance = fs.readFileSync('/tmp/BUILD_PROVENANCE.txt','utf8');
+          const expected = {};
+          for (const line of provenance.split(/\r?\n/)) {
+            const m = line.match(/^([0-9a-f]{64})  build\/ci-web\/(index\.(?:html|js|pck|wasm))$/);
+            if (m) expected[m[2]] = m[1];
+          }
+          const meta = name => {
+            const data = fs.readFileSync(path.join(root,name));
+            return {bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
+          };
+          const files = {};
+          for (const name of ['index.html','index.js','index.pck','index.wasm']) {
+            files[name] = meta(name);
+            if (files[name].sha256 !== expected[name]) throw new Error(`hash mismatch ${name}`);
+          }
+          const manifest = {
+            protocolVersion: 1,
+            buildId: `pocketpt-avatar-startup-restore-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}-20260914`,
+            godotVersion: '4.5.1',
+            godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
+            godotCandidateCommit: process.env.GODOT_CANDIDATE_COMMIT,
+            producerHashVerification: 'pass',
+            mainScene: 'res://Main.tscn',
+            pckBytes: files['index.pck'].bytes,
+            pckSha256: files['index.pck'].sha256,
+            htmlBytes: files['index.html'].bytes,
+            htmlSha256: files['index.html'].sha256,
+            jsBytes: files['index.js'].bytes,
+            jsSha256: files['index.js'].sha256,
+            wasmBytes: files['index.wasm'].bytes,
+            wasmSha256: files['index.wasm'].sha256,
+            regressionFix: {
+              firstFailureObserved: 'GODOT_HANDSHAKE',
+              knownGoodStartupRestored: true,
+              personalAvatarPhysicalAcceptance: 'pending',
+              mazePreserved: true,
+              mazePhysicalAcceptance: 'pass-owner-observed'
+            },
+            note: 'Restores known-good PocketPT bootstrap/debug startup while preserving the working Push-Up Practice Maze. Personal avatar mount requires owner device confirmation.'
+          };
+          fs.writeFileSync(path.join(root,'pocketpt-world-build.json'),JSON.stringify(manifest,null,2)+'\n');
+          NODE
+
+      - name: Commit staged candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "Stage avatar startup restore Godot candidate [skip ci]"
+            git push origin HEAD:"${TARGET_BRANCH}"
+          fi
