@@ -112,7 +112,7 @@
   const RUNTIME_CODES = Object.freeze({PASS: 'RUNTIME_PASS', FAIL: 'RUNTIME_FAIL', RUNNING: 'RUNTIME_RUNNING', WAITING: 'RUNTIME_WAITING', SKIP: 'RUNTIME_SKIPPED', NOT_CONNECTED: 'NOT_REPORTED'});
   const CONNECTED_STAGES = new Set(['ARENA_SHELL', 'CONFIG', 'TICKET_PRESENT', 'SESSION_EXCHANGE', 'FRAGMENT_SCRUB', 'BOOTSTRAP', 'IDENTITY', 'CHALLENGE_CONTEXT', 'SESSION_LIFETIME', 'BUILD_PROBE', 'IFRAME_LOAD', 'GODOT_HANDSHAKE', 'AVATAR_DESCRIPTOR', 'EXIT_REVOKE']);
   const MULTIPLAYER_FAILURES = new Set(['MULTIPLAYER_SOCKET_NOT_READY', 'ROOM_SNAPSHOT_MISSING', 'REMOTE_PRESENCE_NOT_SPAWNED', 'LOCAL_STATE_NOT_PUBLISHING', 'STATE_TRANSPORT_SEND_FAILED', 'REMOTE_STATE_NOT_RECEIVED', 'REMOTE_STATE_STALE', 'REMOTE_STATE_NOT_APPLIED', 'REMOTE_PUPPET_NOT_MOVING', 'NONE']);
-  const MULTIPLAYER_DEFAULT = Object.freeze({connectionState: 'NOT_REPORTED', roomId: 'NOT_REPORTED', selfPresenceId: 'NOT_REPORTED', localMemberId: 'NOT_REPORTED', roomPlayerCount: 0, remotePlayerCount: 0, remoteAvatarsLoaded: 0, stateSendAttempts: 0, stateSendSuccesses: 0, lastSentSeq: 0, statePacketsReceived: 0, lastReceivedSeq: 0, lastStateAgeMs: null, remoteMovementApplies: 0, reconnectCount: 0, connectionGeneration: 0, snapshotReceived: false, localPhysicallyMoving: false, oppositePlayerMoving: false, remoteTargetsApplied: 0, remotePuppetMoves: 0, lastError: 'NONE', firstFailure: 'NOT_REPORTED'});
+  const MULTIPLAYER_DEFAULT = Object.freeze({connectionState: 'NOT_REPORTED', roomId: 'NOT_REPORTED', selfPresenceId: 'NOT_REPORTED', localMemberId: 'NOT_REPORTED', roomPlayerCount: 0, remotePlayerCount: 0, remoteAvatarsLoaded: 0, stateSendAttempts: 0, stateSendSuccesses: 0, lastSentSeq: 0, statePacketsReceived: 0, lastReceivedSeq: 0, lastStateAgeMs: null, roomReadyAgeMs: null, remoteMovementApplies: 0, reconnectCount: 0, connectionGeneration: 0, snapshotReceived: false, localPhysicallyMoving: false, remoteMovementExpected: false, remoteTargetsApplied: 0, remotePuppetMoves: 0, lastError: 'NONE', firstFailure: 'NOT_REPORTED'});
 
   function multiplayerFirstFailure(value) {
     if (!value || value.connectionState === 'NOT_REPORTED') return 'NOT_REPORTED';
@@ -121,10 +121,14 @@
     if (value.roomPlayerCount > 1 && value.remotePlayerCount < value.roomPlayerCount - 1) return 'REMOTE_PRESENCE_NOT_SPAWNED';
     if (value.localPhysicallyMoving && value.stateSendAttempts === 0) return 'LOCAL_STATE_NOT_PUBLISHING';
     if (value.stateSendAttempts > value.stateSendSuccesses) return 'STATE_TRANSPORT_SEND_FAILED';
-    if (value.oppositePlayerMoving && value.stateSendSuccesses > 0 && value.statePacketsReceived === 0) return 'REMOTE_STATE_NOT_RECEIVED';
-    if (value.oppositePlayerMoving && value.statePacketsReceived > 0 && Number.isFinite(value.lastStateAgeMs) && value.lastStateAgeMs > 1000) return 'REMOTE_STATE_STALE';
+    // PR #12 publishes a heartbeat every 500 ms. Once a two-player room has
+    // been READY for a grace window, zero inbound packets is itself proof of
+    // a receive/relay stall; we do not require unknowable "other player moving" evidence.
+    if (value.remotePlayerCount > 0 && value.stateSendSuccesses > 0 && value.statePacketsReceived === 0 && Number.isFinite(value.roomReadyAgeMs) && value.roomReadyAgeMs > 1500) return 'REMOTE_STATE_NOT_RECEIVED';
+    if (value.remotePlayerCount > 0 && value.statePacketsReceived > 0 && Number.isFinite(value.lastStateAgeMs) && value.lastStateAgeMs > 1500) return 'REMOTE_STATE_STALE';
     if (value.statePacketsReceived > value.remoteTargetsApplied) return 'REMOTE_STATE_NOT_APPLIED';
-    if (value.remoteTargetsApplied > 0 && value.remotePuppetMoves === 0) return 'REMOTE_PUPPET_NOT_MOVING';
+    // Accepted idle heartbeat targets must not falsely accuse interpolation.
+    if (value.remoteMovementExpected && value.remoteTargetsApplied > 0 && value.remotePuppetMoves === 0) return 'REMOTE_PUPPET_NOT_MOVING';
     return 'NONE';
   }
 
@@ -222,17 +226,17 @@
     function multiplayerSnapshot() { return Object.freeze({...multiplayer}); }
     function multiplayerReport() {
       const m = multiplayer;
-      return ['MULTIPLAYER', `Connection: ${m.connectionState}`, `Room: ${m.roomId}`, `Self presence: ${m.selfPresenceId}`, `Local member: ${m.localMemberId}`, `Room players: ${m.roomPlayerCount}`, `Remote players: ${m.remotePlayerCount}`, `Remote avatars loaded: ${m.remoteAvatarsLoaded}`, `State send attempts: ${m.stateSendAttempts}`, `State send successes: ${m.stateSendSuccesses}`, `Last sent seq: ${m.lastSentSeq}`, `State packets received: ${m.statePacketsReceived}`, `Last received seq: ${m.lastReceivedSeq}`, `Last state age: ${m.lastStateAgeMs === null ? 'N/A' : `${m.lastStateAgeMs} ms`}`, `Remote movement applies: ${m.remoteMovementApplies}`, `Reconnects: ${m.reconnectCount}`, `Connection generation: ${m.connectionGeneration}`, `Last error: ${m.lastError}`, `MULTIPLAYER FIRST FAILURE: ${m.firstFailure}`].join('\n');
+      return ['MULTIPLAYER', `Connection: ${m.connectionState}`, `Room: ${m.roomId}`, `Self presence: ${m.selfPresenceId}`, `Local member: ${m.localMemberId}`, `Room players: ${m.roomPlayerCount}`, `Remote players: ${m.remotePlayerCount}`, `Remote avatars loaded: ${m.remoteAvatarsLoaded}`, `Room ready age: ${m.roomReadyAgeMs === null ? 'N/A' : `${m.roomReadyAgeMs} ms`}`, `State send attempts: ${m.stateSendAttempts}`, `State send successes: ${m.stateSendSuccesses}`, `Last sent seq: ${m.lastSentSeq}`, `State packets received: ${m.statePacketsReceived}`, `Last received seq: ${m.lastReceivedSeq}`, `Last state age: ${m.lastStateAgeMs === null ? 'N/A' : `${m.lastStateAgeMs} ms`}`, `Remote targets applied: ${m.remoteTargetsApplied}`, `Remote movement expected: ${m.remoteMovementExpected ? 'YES' : 'NO'}`, `Remote puppet moves: ${m.remotePuppetMoves}`, `Reconnects: ${m.reconnectCount}`, `Connection generation: ${m.connectionGeneration}`, `Last error: ${m.lastError}`, `MULTIPLAYER FIRST FAILURE: ${m.firstFailure}`].join('\n');
     }
     function acceptMultiplayer(data) {
       if (closed || !requestId || data?.type !== 'POCKETPT_GODOT_BRIDGE' || data.event !== 'MULTIPLAYER_DIAGNOSTIC' || data.protocolVersion !== 1 || data.diagnosticVersion !== 1 || data.requestId !== requestId) return false;
       if (!Number.isSafeInteger(data.sequence) || data.sequence <= multiplayerSequence || !data.multiplayer || typeof data.multiplayer !== 'object') return false;
       const source = data.multiplayer, counts = ['roomPlayerCount', 'remotePlayerCount', 'remoteAvatarsLoaded', 'stateSendAttempts', 'stateSendSuccesses', 'lastSentSeq', 'statePacketsReceived', 'lastReceivedSeq', 'remoteMovementApplies', 'reconnectCount', 'connectionGeneration', 'remoteTargetsApplied', 'remotePuppetMoves'];
-      if (!['CONNECTING', 'READY', 'CLOSED', 'ERROR'].includes(source.connectionState) || counts.some(key => !Number.isSafeInteger(source[key]) || source[key] < 0) || (source.lastStateAgeMs !== null && (!Number.isFinite(source.lastStateAgeMs) || source.lastStateAgeMs < 0))) return false;
+      if (!['CONNECTING', 'READY', 'CLOSED', 'ERROR'].includes(source.connectionState) || counts.some(key => !Number.isSafeInteger(source[key]) || source[key] < 0) || (source.lastStateAgeMs !== null && (!Number.isFinite(source.lastStateAgeMs) || source.lastStateAgeMs < 0)) || (source.roomReadyAgeMs !== null && (!Number.isFinite(source.roomReadyAgeMs) || source.roomReadyAgeMs < 0))) return false;
       const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,128}$/.test(value) ? value : 'NOT_REPORTED';
       multiplayerSequence = data.sequence;
-      multiplayer = {connectionState: source.connectionState, roomId: identifier(source.roomId), selfPresenceId: identifier(source.selfPresenceId), localMemberId: identifier(source.localMemberId), lastStateAgeMs: source.lastStateAgeMs,
-        snapshotReceived: source.snapshotReceived === true, localPhysicallyMoving: source.localPhysicallyMoving === true, oppositePlayerMoving: source.oppositePlayerMoving === true, lastError: identifier(source.lastError), ...Object.fromEntries(counts.map(key => [key, source[key]]))};
+      multiplayer = {connectionState: source.connectionState, roomId: identifier(source.roomId), selfPresenceId: identifier(source.selfPresenceId), localMemberId: identifier(source.localMemberId), lastStateAgeMs: source.lastStateAgeMs, roomReadyAgeMs: source.roomReadyAgeMs,
+        snapshotReceived: source.snapshotReceived === true, localPhysicallyMoving: source.localPhysicallyMoving === true, remoteMovementExpected: source.remoteMovementExpected === true, lastError: identifier(source.lastError), ...Object.fromEntries(counts.map(key => [key, source[key]]))};
       multiplayer.firstFailure = multiplayerFirstFailure(multiplayer);
       if (source.firstFailure && MULTIPLAYER_FAILURES.has(source.firstFailure) && source.firstFailure !== multiplayer.firstFailure) multiplayer.lastError = 'REPORTER_FIRST_FAILURE_MISMATCH';
       onChange();

@@ -26,8 +26,8 @@ function evidence(stage, status = 'PASS', extra = {}) {
 function multiplayer(extra = {}, sequence = 1) {
   return {type: 'POCKETPT_GODOT_BRIDGE', event: 'MULTIPLAYER_DIAGNOSTIC', protocolVersion: 1, diagnosticVersion: 1, requestId: 'launch-a', sequence, multiplayer: {
     connectionState: 'READY', roomId: 'lions_den', selfPresenceId: 'presence-a', localMemberId: 'member-a', roomPlayerCount: 2, remotePlayerCount: 1, remoteAvatarsLoaded: 1,
-    stateSendAttempts: 12, stateSendSuccesses: 12, lastSentSeq: 12, statePacketsReceived: 11, lastReceivedSeq: 11, lastStateAgeMs: 43, remoteMovementApplies: 11,
-    reconnectCount: 0, connectionGeneration: 1, snapshotReceived: true, localPhysicallyMoving: true, oppositePlayerMoving: true, remoteTargetsApplied: 11, remotePuppetMoves: 10, lastError: 'NONE', firstFailure: 'NONE', ...extra
+    stateSendAttempts: 12, stateSendSuccesses: 12, lastSentSeq: 12, statePacketsReceived: 11, lastReceivedSeq: 11, lastStateAgeMs: 43, roomReadyAgeMs: 2000, remoteMovementApplies: 11,
+    reconnectCount: 0, connectionGeneration: 1, snapshotReceived: true, localPhysicallyMoving: true, remoteMovementExpected: true, remoteTargetsApplied: 11, remotePuppetMoves: 10, lastError: 'NONE', firstFailure: 'NONE', ...extra
   }};
 }
 
@@ -36,7 +36,7 @@ test('multiplayer telemetry exposes the complete state replication chain', () =>
   assert.equal(model.acceptMultiplayer(multiplayer()), true);
   assert.deepEqual(model.multiplayerSnapshot(), {...multiplayer().multiplayer, firstFailure: 'NONE'});
   const report = model.report();
-  for (const text of ['MULTIPLAYER', 'Connection: READY', 'Room: lions_den', 'Room players: 2', 'Remote players: 1', 'Remote avatars loaded: 1', 'State send attempts: 12', 'State send successes: 12', 'Last sent seq: 12', 'State packets received: 11', 'Last received seq: 11', 'Last state age: 43 ms', 'Remote movement applies: 11', 'Reconnects: 0', 'Connection generation: 1', 'MULTIPLAYER FIRST FAILURE: NONE']) assert.match(report, new RegExp(text));
+  for (const text of ['MULTIPLAYER', 'Connection: READY', 'Room: lions_den', 'Room players: 2', 'Remote players: 1', 'Remote avatars loaded: 1', 'Room ready age: 2000 ms', 'State send attempts: 12', 'State send successes: 12', 'Last sent seq: 12', 'State packets received: 11', 'Last received seq: 11', 'Last state age: 43 ms', 'Remote targets applied: 11', 'Remote movement expected: YES', 'Remote puppet moves: 10', 'Reconnects: 0', 'Connection generation: 1', 'MULTIPLAYER FIRST FAILURE: NONE']) assert.match(report, new RegExp(text));
 });
 
 test('multiplayer diagnostics select only the earliest proven replication failure', () => {
@@ -46,16 +46,22 @@ test('multiplayer diagnostics select only the earliest proven replication failur
     [{remotePlayerCount: 0, remoteAvatarsLoaded: 0}, 'REMOTE_PRESENCE_NOT_SPAWNED'],
     [{stateSendAttempts: 0, stateSendSuccesses: 0, lastSentSeq: 0}, 'LOCAL_STATE_NOT_PUBLISHING'],
     [{stateSendSuccesses: 11}, 'STATE_TRANSPORT_SEND_FAILED'],
-    [{statePacketsReceived: 0, lastReceivedSeq: 0, remoteTargetsApplied: 0, remotePuppetMoves: 0}, 'REMOTE_STATE_NOT_RECEIVED'],
-    [{lastStateAgeMs: 1001}, 'REMOTE_STATE_STALE'],
+    [{statePacketsReceived: 0, lastReceivedSeq: 0, lastStateAgeMs: null, roomReadyAgeMs: 1501, remoteTargetsApplied: 0, remotePuppetMoves: 0}, 'REMOTE_STATE_NOT_RECEIVED'],
+    [{lastStateAgeMs: 1501}, 'REMOTE_STATE_STALE'],
     [{remoteTargetsApplied: 10}, 'REMOTE_STATE_NOT_APPLIED'],
-    [{remotePuppetMoves: 0}, 'REMOTE_PUPPET_NOT_MOVING']
+    [{remoteMovementExpected: true, remotePuppetMoves: 0}, 'REMOTE_PUPPET_NOT_MOVING']
   ];
   for (const [change, expected] of cases) {
     const model = connected();
     assert.equal(model.acceptMultiplayer(multiplayer(change)), true);
     assert.equal(model.multiplayerSnapshot().firstFailure, expected);
   }
+});
+
+test('idle heartbeat traffic does not falsely report a frozen remote puppet', () => {
+  const model = connected();
+  assert.equal(model.acceptMultiplayer(multiplayer({localPhysicallyMoving: false, remoteMovementExpected: false, remotePuppetMoves: 0})), true);
+  assert.equal(model.multiplayerSnapshot().firstFailure, 'NONE');
 });
 
 test('multiplayer telemetry is launch-correlated, generation-reset and monotonic', () => {
