@@ -4,6 +4,8 @@
   "godotVersion": "4.5.1",
   "godotSourceCommit": "d8b161b2fe8c4676b2d023e9a50c05c6d0d8210a",
   "reportedGodotSourceCommit": "d8b161b2fe8c4676b2d023e9a50c05c6d0d8210a",
+  "godotCandidateCommit": "d45a46e49e62cadf3479dba04885e499f85fba89",
+  "producerHashVerification": "pass",
   "mainScene": "res://Main.tscn",
   "pckBytes": 47575896,
   "pckSha256": "563bd08bb69321a3b55d39485817d57e44489faa7558236d02342ccdc68ab9e4",
@@ -27,5 +29,5 @@
     "reconnectNoGhost": "pending",
     "threeDistinctMembersVisible": "pending"
   },
-  "note": "Exact Godot multiplayer candidate staged from the tested source commit. Server and arena control regressions passed before staging. Physical authenticated multi-device acceptance remains pending."
+  "note": "Pinned Godot multiplayer candidate staged from the tested source commit after producer hash verification. Server and arena control regressions passed before staging. Physical authenticated multi-device acceptance remains pending."
 }
