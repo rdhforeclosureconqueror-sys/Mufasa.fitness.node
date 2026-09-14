@@ -113,6 +113,16 @@ test("/api/speak sends x-internal-token and compatible body to AIVOICE_URL /spea
   });
 });
 
+test("/api/speak applies the configured canonical coach voice over a page default", async (t) => {
+  const provider = await withVoiceProvider(t, (_req, res) => {res.writeHead(200, {"content-type":"audio/mpeg"}); res.end("audio");});
+  setEnv(t, {AIVOICE_URL: provider.baseUrl, SKILL_WORLD_TTS_TOKEN: "internal", COACH_TTS_VOICE: "garvey"});
+  await withAppServer(t, async baseUrl => {
+    const res = await postSpeak(baseUrl, {text:"Hold your top position", voice:"alloy", format:"mp3"});
+    assert.equal(res.status, 200);
+    assert.equal(provider.requests[0].body.voice, "garvey");
+  });
+});
+
 test("/api/speak returns safe error when SKILL_WORLD_TTS_TOKEN is missing", async (t) => {
   const provider = await withVoiceProvider(t, (_req, res) => {
     res.writeHead(200, { "content-type": "audio/mpeg" });

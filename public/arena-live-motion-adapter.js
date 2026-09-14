@@ -163,10 +163,10 @@
   }
 
   function create({send = () => null, mark = () => {}, now = () => Date.now(), randomUUID = () => root.crypto.randomUUID(),
-    calibrationOptions = {}, speak, processPose = null} = {}) {
+    calibrationOptions = {}, speak, processPose = null, onRestReady = () => {}} = {}) {
     if (!normalized?.fromMoveNetPosePacket || !mirror?.AvatarMirrorCalibration) return null;
     let sessionId = null, frameSequence = 0, baseline = null, released = true, inputFrames = 0, outputFrames = 0;
-    let canonicalFrames = 0, processor = typeof processPose === 'function' ? processPose : null, foundationError = null;
+    let canonicalFrames = 0, processor = typeof processPose === 'function' ? processPose : null, foundationError = null, exerciseCalibrated = false, restNotified = false;
     let foundationPromise = null;
     const calibration = new mirror.AvatarMirrorCalibration({now, speak, ...calibrationOptions,
       onCue: () => mark('COACH_VOICE', 'RUNNING', 'COACH_CUE_QUEUED')});
@@ -190,7 +190,7 @@
     }
     function release(reason = 'FLOW_RELEASED') {
       if (sessionId && !released) send('LIVE_MOCAP_RELEASE', {mocapVersion: VERSION, mocapSessionId: sessionId, reason});
-      released = true; sessionId = null; frameSequence = 0; baseline = null;
+      released = true; sessionId = null; frameSequence = 0; baseline = null; exerciseCalibrated = false; restNotified = false;
       mirror.resumeCanonicalCoachVoice?.();
       mark('GODOT_LIVE_MOCAP', 'WAITING', 'MOCAP_RELEASED');
     }
@@ -212,8 +212,11 @@
         mark('REST_BASE_CAPTURE', state.calibrationReady ? 'PASS' : 'RUNNING', state.calibrationReady ? 'REST_BASE_READY' : 'REST_BASE_CAPTURING');
         if (capture && !baseline) baseline = captureBaseline(frame);
         if (!state.calibrationReady || !baseline) {mark('MIRROR_MOTION_READY', 'WAITING', 'MIRROR_REST_NOT_READY'); return false;}
+        if (!restNotified) {restNotified = true; onRestReady();}
         const joints = restRelativeJoints(frame, baseline, processedPacket);
         if (Object.keys(joints).length < 4) {mark('MIRROR_MOTION_READY', 'FAIL', 'MIRROR_OUTPUT_INVALID'); return false;}
+        mark('MIRROR_MOTION_READY', 'PASS', 'MIRROR_PHASE2_18_OUTPUT_READY');
+        if (!exerciseCalibrated) {mark('MOCAP_BRIDGE', 'WAITING', 'PUSHUP_CALIBRATION_PENDING'); return false;}
         if (!sessionId) {
           sessionId = randomUUID(); released = false;
           const acquired = send('LIVE_MOCAP_ACQUIRE', {mocapVersion: VERSION, mocapSessionId: sessionId, trackingState: 'TRACKING', restBaseReady: true});
@@ -227,7 +230,6 @@
         const sent = send('LIVE_MOCAP_FRAME', packet);
         if (sent === null || sent === false) {mark('MOCAP_BRIDGE', 'FAIL', 'MOCAP_SEND_REJECTED'); return false;}
         outputFrames++;
-        mark('MIRROR_MOTION_READY', 'PASS', 'MIRROR_PHASE2_18_OUTPUT_READY');
         mark('MOCAP_BRIDGE', 'PASS', 'MOCAP_FRAME_SENT');
         return true;
       } catch (error) {
@@ -248,12 +250,17 @@
       }
     }
     function reset() {release('FLOW_RESET'); calibration.stopSpeech?.();}
+    function setExerciseCalibration(ready) {
+      exerciseCalibrated = ready === true;
+      if (!exerciseCalibrated && sessionId) release('PUSHUP_CALIBRATION_RESET');
+      return exerciseCalibrated;
+    }
     function diagnostics() {
       return Object.freeze({version: VERSION, inputFrames, canonicalFrames, outputFrames, sessionId, frameSequence,
         foundationReady: Boolean(processor), foundationError: foundationError ? String(foundationError.message || foundationError) : null,
-        ...calibration.diagnostics()});
+        exerciseCalibrated, ...calibration.diagnostics()});
     }
-    return Object.freeze({observe, release, reset, diagnostics, activateVoice, ensureFoundation});
+    return Object.freeze({observe, release, reset, diagnostics, activateVoice, ensureFoundation, setExerciseCalibration});
   }
 
   return Object.freeze({VERSION, CANONICAL_SCRIPTS, SEGMENT_BONES, captureBaseline, restRelativeJoints, create});
