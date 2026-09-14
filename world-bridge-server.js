@@ -14,6 +14,7 @@ const { installClientTransformationRoutes } = require("./src/routes/clientTransf
 const { createPrivateClientGettingStartedService } = require("./src/services/privateClientGettingStartedService");
 const { installPrivateClientGettingStartedRoutes } = require("./src/routes/privateClientGettingStartedRoutes");
 const { createWorldBridge } = require("./src/world/worldBridge");
+const { createArenaCoachVoiceBridge } = require("./src/world/arenaCoachVoiceBridge");
 const { createLobbyBridge } = require("./src/world/lobbyBridge");
 const { createGymMappingBridge } = require("./src/world/gymMappingBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
@@ -111,6 +112,10 @@ function createWorldBridgeApp(options = {}) {
   const bridge = createWorldBridge({ rootDir:options.rootDir||process.cwd(), now:options.worldBridgeNow, ttlMs:options.worldBridgeTtlMs, secureCookie:options.worldBridgeSecureCookie, backendPublicUrl:options.backendPublicUrl, avatarAssets:app.locals.pocketPTAvatarAssets, gymMappingBridge });
   bridge.register(app);
   app.locals.pocketPTWorldBridge = bridge;
+
+  const arenaCoachVoiceBridge = createArenaCoachVoiceBridge({ worldBridge:bridge, env:options.env||process.env, fetchImpl:options.fetch, now:options.worldBridgeNow });
+  arenaCoachVoiceBridge.register(app);
+  app.locals.pocketPTArenaCoachVoiceBridge = arenaCoachVoiceBridge;
 
   const backendPublicUrl = String(options.backendPublicUrl || process.env.BACKEND_PUBLIC_URL || "").replace(/\/$/, "");
   const frontendPublicUrl = String(options.frontendPublicUrl || process.env.FRONTEND_PUBLIC_URL || "").replace(/\/$/, "");
