@@ -1,0 +1,41 @@
+name: Arena Phone Voice Gate
+
+on:
+  pull_request:
+    paths:
+      - "public/arena-push-up.html"
+      - "public/arena-coach-runtime.js"
+      - "src/world/arenaCoachVoiceBridge.js"
+      - "world-bridge-server.js"
+      - "test/arena-coach-runtime.test.js"
+      - "test/arena-coach-voice-bridge.test.js"
+      - ".github/workflows/arena-phone-voice-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  arena-phone-voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Syntax check
+        run: |
+          node --check public/arena-coach-runtime.js
+          node --check src/world/arenaCoachVoiceBridge.js
+          node --check world-bridge-server.js
+      - name: Arena coach runtime regression
+        run: node --test test/arena-coach-runtime.test.js
+      - name: Arena coach voice bridge regression
+        run: node --test test/arena-coach-voice-bridge.test.js
+      - name: Existing Arena phone UI regression
+        run: node --test test/arena-phone-ui.test.js
