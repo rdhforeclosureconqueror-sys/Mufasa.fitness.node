@@ -1,25 +1,28 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-current-candidate-6d8b145-20260914",
+  "buildId": "pocketpt-multiplayer-diagnostics-a58dc14-20260914",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "6d8b145a29a49f34a2197ffc91ddac69f85d6a6b",
-  "godotCandidateCommit": "ff0f951644c673a4ad0bc0b5a8b09f88733b005a",
+  "godotSourceCommit": "a58dc141b71f7b737e7f89a7fef5d4ef10a9c08b",
+  "godotCandidateCommit": "f355026a22dec9496b9c2bc9a40424e13d59e5a0",
   "producerHashVerification": "pass",
   "mainScene": "res://Main.tscn",
-  "pckBytes": 47629716,
-  "pckSha256": "a55e574d2a724c63c9e33d139a00e1a2f9bf55ff9288eeae3f67f6052a9d1112",
+  "pckBytes": 47652008,
+  "pckSha256": "6e3f038145b63d73160572bd398c55ac0e58fc802108690db00e8b7f015e48ea",
   "htmlBytes": 5443,
-  "htmlSha256": "d2ecc945654f0cc117646c755a12606f69cc0aeae32d9cb7fd19430c5c5fd0f7",
+  "htmlSha256": "fc304d620ebac2b49c688ae41074a4a60d476fe0a83af4941823dab7b8c482e8",
   "jsBytes": 305185,
   "jsSha256": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
   "wasmBytes": 38034280,
   "wasmSha256": "6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547",
   "regressionFix": {
-    "firstFailureObserved": "MUFASA_FIT_STAGING",
     "latestVerifiedCandidateStaged": true,
+    "multiplayerStateSyncRepairIncluded": true,
+    "armRestRetargetRepairIncluded": true,
+    "multiplayerDiagnosticProducerIncluded": true,
     "personalAvatarPhysicalAcceptance": "pending",
-    "mazePreserved": true,
-    "mazePhysicalAcceptance": "pending"
+    "multiplayerPhysicalAcceptance": "pending",
+    "armVisualAcceptance": "pending",
+    "mazePreserved": true
   },
-  "note": "Stages the exact hash-verified generated/web-candidate for Godot source 6d8b145. Personal avatar, multiplayer, maze, and physical-device acceptance remain pending authorized human verification."
+  "note": "Exact hash-verified generated/web-candidate for Godot source a58dc14. Includes reviewed multiplayer state-sync, avatar rest-retarget, and multiplayer diagnostic producer changes. Two-device movement and final arm appearance still require physical verification."
 }

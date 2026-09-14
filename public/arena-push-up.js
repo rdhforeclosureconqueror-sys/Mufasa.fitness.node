@@ -120,6 +120,9 @@
       view.setOpen(true);
     } else if (data.event === 'DIAGNOSTIC' && model.acceptRuntime(data) && model.summary().firstFailure) {
       view.setOpen(true);
+    } else if (data.event === 'MULTIPLAYER_DIAGNOSTIC') {
+      const accepted = model.acceptMultiplayer(data);
+      if (accepted && !['NONE', 'NOT_REPORTED'].includes(model.multiplayerSnapshot().firstFailure)) view.setOpen(true);
     } else phone?.accept(data);
   });
   async function endArenaSessionAndReturn(destination) {
