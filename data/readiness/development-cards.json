@@ -154,6 +154,20 @@
       "createdAt": "2026-09-14T17:26:19.687Z",
       "source": "readiness:update",
       "taskId": "multiplayer-first-failure-diagnostics"
+    },
+    {
+      "id": "avatar-development-runtime-rest-retarget-arm-axis",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Runtime avatar rest retarget arm-axis repair",
+      "category": "AVATAR RETARGET",
+      "description": "Correct local-space humanoid rotation retargeting for personalized skeletons and add anatomical elbow-plane regression evidence without hard-coded axis offsets.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-14T19:59:48.718Z",
+      "source": "readiness:update",
+      "taskId": "finish-live-multiplayer-arm-retarget"
     }
   ]
 }

@@ -2403,6 +2403,103 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-14T19:21:35.050Z"
+    },
+    {
+      "operationId": "e2a78c81-ac8f-4a99-9099-98fc58d1bade",
+      "board": "avatar",
+      "cardId": "avatar-development-multiplayer-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [],
+      "automated": null,
+      "evidence": "Investigating deployed STATE_RATE_LIMIT/browser-send acknowledgement first failure; preserving current 12.5 Hz design and requiring physical two-device re-verification.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T19:59:47.471Z"
+    },
+    {
+      "operationId": "84f6689e-d6c0-480d-96ef-41cada022664",
+      "board": "avatar",
+      "cardId": "avatar-development-multiplayer-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [],
+      "automated": null,
+      "evidence": "CURRENT implementation track: prove and repair browser WebSocket send acknowledgement contract.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T19:59:48.035Z"
+    },
+    {
+      "operationId": "f1112a91-093f-4c58-9e8a-ddba6ebdf793",
+      "board": "avatar",
+      "cardId": "avatar-development-runtime-rest-retarget-arm-axis",
+      "sourceType": "card_creation",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [],
+      "automated": null,
+      "evidence": "Correct local-space humanoid rotation retargeting for personalized skeletons and add anatomical elbow-plane regression evidence without hard-coded axis offsets.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T19:59:48.718Z"
+    },
+    {
+      "operationId": "6ffc47ca-4ba1-4b69-82f7-f395ed76e123",
+      "board": "avatar",
+      "cardId": "avatar-development-multiplayer-first-failure-diagnostics",
+      "sourceType": "implementation",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [],
+      "automated": null,
+      "evidence": "BLOCKED: required rdhforeclosureconqueror-sys/mufasagodot source repository is absent from /workspace; HTTPS clone through configured proxy returns CONNECT 403 and direct access cannot resolve github.com. Packaged runtime contains compiled .gdc only, so source-level implementation and honest regressions cannot proceed. Physical two-device movement and arm-quality acceptance remain required and unapproved.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T20:02:00.335Z"
+    },
+    {
+      "operationId": "cc8bdb16-0875-4699-bd56-078d28659e11",
+      "board": "avatar",
+      "cardId": "avatar-development-runtime-rest-retarget-arm-axis",
+      "sourceType": "implementation",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [],
+      "automated": null,
+      "evidence": "BLOCKED: required rdhforeclosureconqueror-sys/mufasagodot source repository is absent from /workspace; HTTPS clone through configured proxy returns CONNECT 403 and direct access cannot resolve github.com. Packaged runtime contains compiled .gdc only, so source-level implementation and honest regressions cannot proceed. Physical two-device movement and arm-quality acceptance remain required and unapproved.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-14T20:02:00.963Z"
+    },
+    {
+      "operationId": "25f2dead-653b-4d3c-af72-01038040b6fe",
+      "board": "avatar",
+      "cardId": "avatar-development-multiplayer-first-failure-diagnostics",
+      "sourceType": "blocker_evidence",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Readiness contract validates. Commit acfd139 records only the missing-source/network blocker; no Godot implementation, browser QA, production QA, or physical/human acceptance was performed.",
+      "prNumber": null,
+      "commitSha": "acfd1399447d60905af7d3ab19127910814a3f9a",
+      "timestamp": "2026-09-14T20:02:31.791Z"
+    },
+    {
+      "operationId": "0d302f25-8577-4f3e-b391-2fc81676e5e1",
+      "board": "avatar",
+      "cardId": "avatar-development-runtime-rest-retarget-arm-axis",
+      "sourceType": "blocker_evidence",
+      "taskId": "finish-live-multiplayer-arm-retarget",
+      "files": [
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Readiness contract validates. Commit acfd139 records only the missing-source/network blocker; no Godot implementation, browser QA, production QA, or physical/human acceptance was performed.",
+      "prNumber": null,
+      "commitSha": "acfd1399447d60905af7d3ab19127910814a3f9a",
+      "timestamp": "2026-09-14T20:02:32.406Z"
     }
   ]
 }
