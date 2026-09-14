@@ -1,28 +1,31 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-live-walk-facing-debug-b12f28f-20260913",
+  "buildId": "pocketpt-multiplayer-34ab1b2-20260913",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "b12f28f365bb5b0b4e5d82146263dcfb68d9bcce",
+  "godotSourceCommit": "34ab1b2f7cbb01173bf415a8b4009e909e69e63e",
+  "reportedGodotSourceCommit": "34ab1b2f7cbb01173bf415a8b4009e909e69e63e",
   "mainScene": "res://Main.tscn",
-  "pckBytes": 47573608,
-  "pckSha256": "efbf394cd50de2fe2483ab9281921d2923cea0eadb25406ef13e8cbdbf179e4a",
+  "pckBytes": 47575896,
+  "pckSha256": "31a5e5e796006939f10a71744ea7ed038bf72baa4d2fa81ead8718ffca61b07e",
   "htmlBytes": 5443,
-  "htmlSha256": "2655fe41ae1734b410c50a11db068b4870843f7155ea1389189148447c378b1b",
+  "htmlSha256": "c255263fc1224be51e1b8cde579910aeb4703456d246478e07110919516b8475",
   "jsBytes": 305185,
   "jsSha256": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
   "wasmBytes": 38034280,
   "wasmSha256": "6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547",
+  "localRuntimeAcceptance": "pending",
   "localPackagedAcceptance": "pass",
+  "authenticatedVisualAcceptance": "pending",
   "authenticatedProductionVisualAcceptance": "pending",
-  "sourceValidation": {
-    "WalkVisibleGait": "pass",
-    "WalkSlowerCadence": "pass",
-    "WalkInPlace": "pass",
-    "MovementFacing": "pass",
-    "WebInternalDebugPanelHidden": "pass",
-    "RunRegression": "pass",
-    "GoToMatRegression": "pass",
-    "ThrillerRegression": "pass"
+  "multiplayerAcceptance": {
+    "sourceRegression": "pass",
+    "packagedCandidate": "pass",
+    "websocketConnection": "pending",
+    "twoDistinctMembersVisible": "pending",
+    "bidirectionalMovement": "pending",
+    "leaveDespawn": "pending",
+    "reconnectNoGhost": "pending",
+    "threeDistinctMembersVisible": "pending"
   },
-  "note": "Live acceptance repair: visible slower Walk from proven target-native gait, corrected visual facing, internal Godot Web debug panel hidden. Production phone visual acceptance pending."
+  "note": "Exact Godot multiplayer candidate staged from the tested source commit. Server and arena control regressions passed before staging. Physical authenticated multi-device acceptance remains pending."
 }
