@@ -5,10 +5,16 @@ on:
     paths:
       - "public/arena-push-up.html"
       - "public/arena-coach-runtime.js"
+      - "public/arena-camera.js"
+      - "public/arena-phone-ui.js"
+      - "public/arena-pose-calibration.js"
       - "src/world/arenaCoachVoiceBridge.js"
       - "world-bridge-server.js"
       - "test/arena-coach-runtime.test.js"
       - "test/arena-coach-voice-bridge.test.js"
+      - "test/arena-camera.test.js"
+      - "test/arena-phone-ui.test.js"
+      - "test/arena-pose-calibration.test.js"
       - ".github/workflows/arena-phone-voice-ci.yml"
 
 permissions:
@@ -31,11 +37,18 @@ jobs:
       - name: Syntax check
         run: |
           node --check public/arena-coach-runtime.js
+          node --check public/arena-camera.js
+          node --check public/arena-phone-ui.js
+          node --check public/arena-pose-calibration.js
           node --check src/world/arenaCoachVoiceBridge.js
           node --check world-bridge-server.js
       - name: Arena coach runtime regression
         run: node --test test/arena-coach-runtime.test.js
       - name: Arena coach voice bridge regression
         run: node --test test/arena-coach-voice-bridge.test.js
-      - name: Existing Arena phone UI regression
+      - name: Arena camera regression
+        run: node --test test/arena-camera.test.js
+      - name: Arena pose calibration regression
+        run: node --test test/arena-pose-calibration.test.js
+      - name: Arena phone UI regression
         run: node --test test/arena-phone-ui.test.js
