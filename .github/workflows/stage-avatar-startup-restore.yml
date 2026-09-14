@@ -1,9 +1,9 @@
-name: Stage Avatar Startup Restore
+name: Stage Verified Current Godot Candidate
 
 on:
   push:
     branches:
-      - fix/stage-avatar-startup-restore-20260914
+      - fix/stage-current-godot-candidate-20260914
     paths:
       - .github/workflows/stage-avatar-startup-restore.yml
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: stage-avatar-startup-restore-${{ github.ref }}
+  group: stage-current-godot-candidate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,14 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      TARGET_BRANCH: fix/stage-avatar-startup-restore-20260914
-      GODOT_SOURCE_COMMIT: 37a5bde0e9dfd56317fed5a3f2ca68a3b1d587a2
-      GODOT_CANDIDATE_COMMIT: 4d465cdefba8e14b6867a20061c3d38728f2e2c3
+      TARGET_BRANCH: ${{ github.ref_name }}
+      GODOT_SOURCE_COMMIT: 6d8b145a29a49f34a2197ffc91ddac69f85d6a6b
+      GODOT_GENERATED_BRANCH: generated/web-candidate
     steps:
       - name: Checkout web repository
         uses: actions/checkout@v4
         with:
-          ref: fix/stage-avatar-startup-restore-20260914
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -41,16 +41,19 @@ jobs:
       - name: Protect arena bridge and controls
         run: node --test test/world-lobby-bridge.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js test/arena-diagnostics.test.js
 
-      - name: Fetch pinned Godot candidate
+      - name: Fetch current generated Godot candidate
         shell: bash
         run: |
           set -euo pipefail
           rm -rf /tmp/mufasagodot-candidate
-          git clone --filter=blob:none --no-checkout https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git /tmp/mufasagodot-candidate
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            --branch "${GODOT_GENERATED_BRANCH}" \
+            https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+            /tmp/mufasagodot-candidate
           git -C /tmp/mufasagodot-candidate sparse-checkout init --cone
           git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
-          git -C /tmp/mufasagodot-candidate checkout --detach "${GODOT_CANDIDATE_COMMIT}"
-          test "$(git -C /tmp/mufasagodot-candidate rev-parse HEAD)" = "$GODOT_CANDIDATE_COMMIT"
+          git -C /tmp/mufasagodot-candidate checkout --detach "${GODOT_GENERATED_BRANCH}"
+          git -C /tmp/mufasagodot-candidate rev-parse HEAD > /tmp/GODOT_CANDIDATE_COMMIT
 
       - name: Verify producer provenance and hashes
         shell: bash
@@ -80,6 +83,7 @@ jobs:
           const path = require('path');
           const root = 'public/game/push-up-arena';
           const provenance = fs.readFileSync('/tmp/BUILD_PROVENANCE.txt','utf8');
+          const candidateCommit = fs.readFileSync('/tmp/GODOT_CANDIDATE_COMMIT','utf8').trim();
           const expected = {};
           for (const line of provenance.split(/\r?\n/)) {
             const m = line.match(/^([0-9a-f]{64})  build\/ci-web\/(index\.(?:html|js|pck|wasm))$/);
@@ -96,10 +100,10 @@ jobs:
           }
           const manifest = {
             protocolVersion: 1,
-            buildId: `pocketpt-avatar-startup-restore-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}-20260914`,
+            buildId: `pocketpt-current-candidate-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}-20260914`,
             godotVersion: '4.5.1',
             godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
-            godotCandidateCommit: process.env.GODOT_CANDIDATE_COMMIT,
+            godotCandidateCommit: candidateCommit,
             producerHashVerification: 'pass',
             mainScene: 'res://Main.tscn',
             pckBytes: files['index.pck'].bytes,
@@ -111,13 +115,13 @@ jobs:
             wasmBytes: files['index.wasm'].bytes,
             wasmSha256: files['index.wasm'].sha256,
             regressionFix: {
-              firstFailureObserved: 'GODOT_HANDSHAKE',
-              knownGoodStartupRestored: true,
+              firstFailureObserved: 'MUFASA_FIT_STAGING',
+              latestVerifiedCandidateStaged: true,
               personalAvatarPhysicalAcceptance: 'pending',
               mazePreserved: true,
-              mazePhysicalAcceptance: 'pass-owner-observed'
+              mazePhysicalAcceptance: 'pending'
             },
-            note: 'Restores known-good PocketPT bootstrap/debug startup while preserving the working Push-Up Practice Maze. Personal avatar mount requires owner device confirmation.'
+            note: 'Stages the exact hash-verified generated/web-candidate for Godot source 6d8b145. Personal avatar, multiplayer, maze, and physical-device acceptance remain pending authorized human verification.'
           };
           fs.writeFileSync(path.join(root,'pocketpt-world-build.json'),JSON.stringify(manifest,null,2)+'\n');
           NODE
