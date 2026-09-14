@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: stage-godot-multiplayer-${{ github.ref }}
@@ -21,6 +22,7 @@ jobs:
     timeout-minutes: 25
     env:
       GODOT_SOURCE_COMMIT: d8b161b2fe8c4676b2d023e9a50c05c6d0d8210a
+      GODOT_CANDIDATE_COMMIT: d45a46e49e62cadf3479dba04885e499f85fba89
       GODOT_GENERATED_BRANCH: generated/web-candidate
       WEB_BRANCH: feat/lions-den-multiplayer-stage-20260913
     steps:
@@ -44,30 +46,7 @@ jobs:
       - name: Protect arena control tests
         run: node --test test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js
 
-      - name: Wait for exact generated Godot candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 60); do
-            rm -rf /tmp/mufasagodot-probe
-            if git clone --depth 1 --filter=blob:none --sparse \
-              --branch "${GODOT_GENERATED_BRANCH}" \
-              https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
-              /tmp/mufasagodot-probe >/dev/null 2>&1; then
-              git -C /tmp/mufasagodot-probe sparse-checkout set build/ci-web >/dev/null 2>&1 || true
-              PROVENANCE=/tmp/mufasagodot-probe/build/ci-web/BUILD_PROVENANCE.txt
-              if [[ -s "$PROVENANCE" ]] && grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$PROVENANCE" >/dev/null; then
-                echo "Exact multiplayer Godot candidate is available."
-                exit 0
-              fi
-            fi
-            echo "Candidate exists but exact source is not published yet (${attempt}/60)."
-            sleep 10
-          done
-          echo "Exact Godot multiplayer candidate did not appear." >&2
-          exit 1
-
-      - name: Fetch exact Godot Web candidate
+      - name: Fetch pinned Godot Web candidate
         shell: bash
         run: |
           set -euo pipefail
@@ -76,18 +55,39 @@ jobs:
             --branch "${GODOT_GENERATED_BRANCH}" \
             https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
             /tmp/mufasagodot-candidate
+          ACTUAL_CANDIDATE_COMMIT="$(git -C /tmp/mufasagodot-candidate rev-parse HEAD)"
+          if [[ "$ACTUAL_CANDIDATE_COMMIT" != "$GODOT_CANDIDATE_COMMIT" ]]; then
+            echo "Generated candidate branch moved: expected $GODOT_CANDIDATE_COMMIT, got $ACTUAL_CANDIDATE_COMMIT" >&2
+            exit 1
+          fi
           git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
           CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
           for file in index.html index.js index.pck index.wasm BUILD_PROVENANCE.txt; do
             test -s "$CANDIDATE/$file"
           done
           grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+
+      - name: Verify producer hashes and stage exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          PROVENANCE="$CANDIDATE/BUILD_PROVENANCE.txt"
+          for file in index.html index.js index.pck index.wasm; do
+            EXPECTED="$(awk -v wanted="build/ci-web/${file}" '$2 == wanted {print $1}' "$PROVENANCE")"
+            test -n "$EXPECTED"
+            ACTUAL="$(sha256sum "$CANDIDATE/$file" | awk '{print $1}')"
+            if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+              echo "Producer hash mismatch for $file: expected $EXPECTED, got $ACTUAL" >&2
+              exit 1
+            fi
+          done
           mkdir -p public/game/push-up-arena
           cp "$CANDIDATE/index.html" public/game/push-up-arena/index.html
           cp "$CANDIDATE/index.js" public/game/push-up-arena/index.js
           cp "$CANDIDATE/index.pck" public/game/push-up-arena/index.pck
           cp "$CANDIDATE/index.wasm" public/game/push-up-arena/index.wasm
-          cp "$CANDIDATE/BUILD_PROVENANCE.txt" /tmp/MULTIPLAYER_BUILD_PROVENANCE.txt
+          cp "$PROVENANCE" /tmp/MULTIPLAYER_BUILD_PROVENANCE.txt
 
       - name: Verify artifacts and write multiplayer provenance manifest
         shell: bash
@@ -99,6 +99,7 @@ jobs:
           const fs = require('fs');
           const crypto = require('crypto');
           const source = process.env.GODOT_SOURCE_COMMIT;
+          const candidate = process.env.GODOT_CANDIDATE_COMMIT;
           const info = name => {
             const data = fs.readFileSync(name);
             return {bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex')};
@@ -113,6 +114,8 @@ jobs:
             godotVersion: '4.5.1',
             godotSourceCommit: source,
             reportedGodotSourceCommit: source,
+            godotCandidateCommit: candidate,
+            producerHashVerification: 'pass',
             mainScene: 'res://Main.tscn',
             pckBytes: pck.bytes,
             pckSha256: pck.sha256,
@@ -136,15 +139,17 @@ jobs:
               reconnectNoGhost: 'pending',
               threeDistinctMembersVisible: 'pending'
             },
-            note: 'Exact Godot multiplayer candidate staged from the tested source commit. Server and arena control regressions passed before staging. Physical authenticated multi-device acceptance remains pending.'
+            note: 'Pinned Godot multiplayer candidate staged from the tested source commit after producer hash verification. Server and arena control regressions passed before staging. Physical authenticated multi-device acceptance remains pending.'
           };
           fs.writeFileSync('pocketpt-world-build.json', JSON.stringify(manifest, null, 2) + '\n');
           NODE
 
       - name: Commit staged multiplayer candidate
+        id: runtime
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
@@ -153,9 +158,62 @@ jobs:
             public/game/push-up-arena/index.pck \
             public/game/push-up-arena/index.wasm \
             public/game/push-up-arena/pocketpt-world-build.json
+          git diff --cached --check
           if git diff --cached --quiet; then
+            SHA="$(git rev-parse HEAD)"
             echo "No runtime artifact changes to commit."
+            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git commit -m "Stage Lion's Den multiplayer Godot candidate"
+          git commit -m "Stage pinned Lion's Den multiplayer Godot candidate [skip ci]"
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           git push origin HEAD:"${WEB_BRANCH}"
+
+      - name: Refresh readiness evidence
+        shell: bash
+        env:
+          RUNTIME_SHA: ${{ steps.runtime.outputs.sha }}
+          READINESS_OPS_FILE: /tmp/pr811-multiplayer-readiness.json
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          AUTH_HEADER=$(printf '%s %s %s' 'Authorization:' 'Bearer' "$GITHUB_TOKEN")
+          PR_NUMBER=$(
+            curl --fail --silent --show-error --get \
+              -H "$AUTH_HEADER" \
+              -H "Accept: application/vnd.github+json" \
+              --data "state=open" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${WEB_BRANCH}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
+            | python3 -c 'import json,sys; pulls=json.load(sys.stdin); print(pulls[0]["number"] if pulls else "")'
+          )
+          PR_ARGS=()
+          if [ -n "$PR_NUMBER" ]; then
+            PR_ARGS=(--pr "$PR_NUMBER")
+          fi
+          npm run readiness:update -- \
+            --board avatar \
+            --action evidence \
+            --card avatar-development-pushup-arena-v1 \
+            --files public/game/push-up-arena/index.html,public/game/push-up-arena/index.js,public/game/push-up-arena/index.pck,public/game/push-up-arena/index.wasm,public/game/push-up-arena/pocketpt-world-build.json \
+            "${PR_ARGS[@]}" \
+            --commit "$RUNTIME_SHA" \
+            --result PASS \
+            --sourceType implementation \
+            --codeComplete true \
+            --note "Lion's Den multiplayer source ${GODOT_SOURCE_COMMIT} and pinned producer candidate ${GODOT_CANDIDATE_COMMIT} passed Godot multiplayer regression, exact producer-hash verification, Living Lobby server tests, and arena control regressions. Physical authenticated two-/three-member visibility, bidirectional movement, leave/despawn, reconnect/no-ghost, and production visual acceptance remain pending authorized human verification."
+          npm run readiness:validate
+
+      - name: Commit readiness audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/readiness/development-evidence.json
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "Record PR811 multiplayer readiness evidence [skip ci]"
+            git push origin HEAD:"${WEB_BRANCH}"
+          fi
