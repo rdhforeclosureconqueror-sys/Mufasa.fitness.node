@@ -8,16 +8,16 @@ const test = require('node:test');
 const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'stage-avatar-startup-restore.yml');
 const workflow = fs.readFileSync(workflowPath, 'utf8');
 
-test('staging workflow accepts only the verified 6d8b145 generated candidate', () => {
-  assert.match(workflow, /GODOT_SOURCE_COMMIT: 6d8b145a29a49f34a2197ffc91ddac69f85d6a6b/);
+test('staging workflow accepts only the verified 7492057 generated candidate', () => {
+  assert.match(workflow, /GODOT_SOURCE_COMMIT: 7492057e951d863cb64125b20451643688e01bb1/);
   assert.match(workflow, /GODOT_GENERATED_BRANCH: generated\/web-candidate/);
   assert.match(workflow, /grep -Fx "godot_source_commit=\$\{GODOT_SOURCE_COMMIT\}"/);
-  assert.doesNotMatch(workflow, /37a5bde0e9dfd56317fed5a3f2ca68a3b1d587a2/);
+  assert.doesNotMatch(workflow, /6d8b145a29a49f34a2197ffc91ddac69f85d6a6b/);
 });
 
-test('staging workflow runs on the actual Codex review branch', () => {
-  assert.match(workflow, /- codex\/audit-and-fix-stale-godot-build-issues/);
-  assert.doesNotMatch(workflow, /- fix\/stage-current-godot-candidate-20260914/);
+test('staging workflow runs on the physical-acceptance round-2 staging branch', () => {
+  assert.match(workflow, /- fix\/stage-multiplayer-arm-round2-20260914/);
+  assert.doesNotMatch(workflow, /- codex\/audit-and-fix-stale-godot-build-issues/);
 });
 
 test('staging workflow records candidate identity and verifies producer bytes before copy', () => {
