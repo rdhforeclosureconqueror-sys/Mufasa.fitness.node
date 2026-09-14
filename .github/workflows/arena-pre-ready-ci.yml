@@ -1,0 +1,37 @@
+name: Arena Pre-READY Diagnostics Gate
+
+on:
+  pull_request:
+    paths:
+      - "public/arena-push-up.js"
+      - "test/arena-pre-ready-startup.test.js"
+      - "test/arena-diagnostics.test.js"
+      - "test/arena-phone-flow.test.js"
+      - "test/arena-phone-ui.test.js"
+      - ".github/workflows/arena-pre-ready-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  arena-pre-ready:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check arena bridge
+        run: node --check public/arena-push-up.js
+
+      - name: Run focused diagnostics regressions
+        run: node --test test/arena-pre-ready-startup.test.js test/arena-diagnostics.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js
