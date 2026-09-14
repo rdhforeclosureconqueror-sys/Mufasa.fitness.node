@@ -96,7 +96,11 @@
       if (!flow.cameraStarting()) return;
       $('arenaReturnToGym').focus();
       const generation = ++cameraOperation;
-      try {await camera.start(deviceId); if (generation === cameraOperation) {flow.cameraActive(); if (!flow.snapshot().previewOnly) calibration.start();}}
+      try {
+        await liveMotion?.activateVoice?.();
+        await camera.start(deviceId);
+        if (generation === cameraOperation) {flow.cameraActive(); if (!flow.snapshot().previewOnly) calibration.start();}
+      }
       catch (_) {if (generation === cameraOperation) flow.cameraError();}
     }
     $('arenaGoToMat').addEventListener('click', () => {if (flow.approach()) $('arenaStopApproach').focus();});
