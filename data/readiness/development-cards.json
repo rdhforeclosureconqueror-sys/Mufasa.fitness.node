@@ -140,6 +140,20 @@
       "createdAt": "2026-09-13T03:14:57.719Z",
       "source": "readiness:update",
       "taskId": "pr-803-independent-review"
+    },
+    {
+      "id": "avatar-development-multiplayer-first-failure-diagnostics",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Multiplayer replication first-failure diagnostics",
+      "category": "WORLD BRIDGE",
+      "description": "Trace final CharacterBody state replication across Godot, WebSocket relay, remote sequence/application/interpolation, and expose earliest proven multiplayer failure in the consolidated Arena diagnostics with targeted regression coverage.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-14T17:26:19.687Z",
+      "source": "readiness:update",
+      "taskId": "multiplayer-first-failure-diagnostics"
     }
   ]
 }

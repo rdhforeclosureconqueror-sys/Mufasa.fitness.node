@@ -65,6 +65,7 @@ function createPreview() {
       let requestId = null, sequence = 0, flowId = null, flowSequence = 0, activeCommand = null;
       const scenario = ${JSON.stringify(scenario)};
       const send = (stage, status) => parent.postMessage({type:'POCKETPT_GODOT_BRIDGE',event:'DIAGNOSTIC',protocolVersion:1,diagnosticVersion:1,requestId,sequence:++sequence,stage,status},location.origin);
+      const sendMultiplayer = () => parent.postMessage({type:'POCKETPT_GODOT_BRIDGE',event:'MULTIPLAYER_DIAGNOSTIC',protocolVersion:1,diagnosticVersion:1,requestId,sequence:1,multiplayer:{connectionState:'READY',roomId:'lions_den',selfPresenceId:'fixture-presence',localMemberId:'fixture-member',roomPlayerCount:2,remotePlayerCount:1,remoteAvatarsLoaded:1,stateSendAttempts:154,stateSendSuccesses:154,lastSentSeq:154,statePacketsReceived:147,lastReceivedSeq:147,lastStateAgeMs:43,remoteMovementApplies:146,reconnectCount:0,connectionGeneration:1,snapshotReceived:true,localPhysicallyMoving:true,oppositePlayerMoving:true,remoteTargetsApplied:147,remotePuppetMoves:146,lastError:'NONE',firstFailure:'NONE'}},location.origin);
       addEventListener('message', event => {
         const data = event.data;
         if(event.origin !== location.origin || event.source !== parent || data?.type !== 'POCKETPT_GODOT_BRIDGE' || data.protocolVersion !== 1) return;
@@ -86,7 +87,7 @@ function createPreview() {
         if(data.event !== 'DIAGNOSTICS_REQUEST' || data.requestId === requestId) return;
         requestId = data.requestId; sequence = 0;
         if(scenario === 'avatar-failure'){send('AVATAR_DOWNLOAD','PASS');send('AVATAR_IMPORT','FAIL');}
-        if(scenario === 'avatar-pass'){send('AVATAR_DOWNLOAD','PASS');send('AVATAR_IMPORT','PASS');send('AVATAR_MOUNT','PASS');}
+        if(scenario === 'avatar-pass'){send('AVATAR_DOWNLOAD','PASS');send('AVATAR_IMPORT','PASS');send('AVATAR_MOUNT','PASS');sendMultiplayer();}
         if(scenario === 'fallback')send('AVATAR_FALLBACK','PASS');
       });
       parent.postMessage({type:'POCKETPT_GODOT_BRIDGE',event:'READY',protocolVersion:1},location.origin);
