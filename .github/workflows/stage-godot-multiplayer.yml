@@ -1,0 +1,161 @@
+name: Stage Godot Multiplayer Candidate
+
+on:
+  push:
+    branches:
+      - feat/lions-den-multiplayer-stage-20260913
+    paths:
+      - .github/workflows/stage-godot-multiplayer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage-godot-multiplayer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GODOT_SOURCE_COMMIT: 34ab1b2f7cbb01173bf415a8b4009e909e69e63e
+      GODOT_GENERATED_BRANCH: generated/web-candidate
+      WEB_BRANCH: feat/lions-den-multiplayer-stage-20260913
+    steps:
+      - name: Checkout web repository
+        uses: actions/checkout@v4
+        with:
+          ref: feat/lions-den-multiplayer-stage-20260913
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Living Lobby server tests
+        run: node --test test/world-lobby-bridge.test.js
+
+      - name: Protect arena control tests
+        run: node --test test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/arena-locomotion-mode.test.js
+
+      - name: Wait for exact generated Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            rm -rf /tmp/mufasagodot-probe
+            if git clone --depth 1 --filter=blob:none --sparse \
+              --branch "${GODOT_GENERATED_BRANCH}" \
+              https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+              /tmp/mufasagodot-probe >/dev/null 2>&1; then
+              git -C /tmp/mufasagodot-probe sparse-checkout set build/ci-web >/dev/null 2>&1 || true
+              PROVENANCE=/tmp/mufasagodot-probe/build/ci-web/BUILD_PROVENANCE.txt
+              if [[ -s "$PROVENANCE" ]] && grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$PROVENANCE" >/dev/null; then
+                echo "Exact multiplayer Godot candidate is available."
+                exit 0
+              fi
+            fi
+            echo "Candidate exists but exact source is not published yet (${attempt}/60)."
+            sleep 10
+          done
+          echo "Exact Godot multiplayer candidate did not appear." >&2
+          exit 1
+
+      - name: Fetch exact Godot Web candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
+          git clone --depth 1 --filter=blob:none --sparse \
+            --branch "${GODOT_GENERATED_BRANCH}" \
+            https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+            /tmp/mufasagodot-candidate
+          git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          for file in index.html index.js index.pck index.wasm BUILD_PROVENANCE.txt; do
+            test -s "$CANDIDATE/$file"
+          done
+          grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+          mkdir -p public/game/push-up-arena
+          cp "$CANDIDATE/index.html" public/game/push-up-arena/index.html
+          cp "$CANDIDATE/index.js" public/game/push-up-arena/index.js
+          cp "$CANDIDATE/index.pck" public/game/push-up-arena/index.pck
+          cp "$CANDIDATE/index.wasm" public/game/push-up-arena/index.wasm
+          cp "$CANDIDATE/BUILD_PROVENANCE.txt" /tmp/MULTIPLAYER_BUILD_PROVENANCE.txt
+
+      - name: Verify artifacts and write multiplayer provenance manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd public/game/push-up-arena
+          sha256sum index.html index.js index.pck index.wasm
+          node - <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const source = process.env.GODOT_SOURCE_COMMIT;
+          const info = name => {
+            const data = fs.readFileSync(name);
+            return {bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex')};
+          };
+          const html = info('index.html');
+          const js = info('index.js');
+          const pck = info('index.pck');
+          const wasm = info('index.wasm');
+          const manifest = {
+            protocolVersion: 1,
+            buildId: `pocketpt-multiplayer-${source.slice(0, 7)}-20260913`,
+            godotVersion: '4.5.1',
+            godotSourceCommit: source,
+            reportedGodotSourceCommit: source,
+            mainScene: 'res://Main.tscn',
+            pckBytes: pck.bytes,
+            pckSha256: pck.sha256,
+            htmlBytes: html.bytes,
+            htmlSha256: html.sha256,
+            jsBytes: js.bytes,
+            jsSha256: js.sha256,
+            wasmBytes: wasm.bytes,
+            wasmSha256: wasm.sha256,
+            localRuntimeAcceptance: 'pending',
+            localPackagedAcceptance: 'pass',
+            authenticatedVisualAcceptance: 'pending',
+            authenticatedProductionVisualAcceptance: 'pending',
+            multiplayerAcceptance: {
+              sourceRegression: 'pass',
+              packagedCandidate: 'pass',
+              websocketConnection: 'pending',
+              twoDistinctMembersVisible: 'pending',
+              bidirectionalMovement: 'pending',
+              leaveDespawn: 'pending',
+              reconnectNoGhost: 'pending',
+              threeDistinctMembersVisible: 'pending'
+            },
+            note: 'Exact Godot multiplayer candidate staged from the tested source commit. Server and arena control regressions passed before staging. Physical authenticated multi-device acceptance remains pending.'
+          };
+          fs.writeFileSync('pocketpt-world-build.json', JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+
+      - name: Commit staged multiplayer candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            public/game/push-up-arena/index.html \
+            public/game/push-up-arena/index.js \
+            public/game/push-up-arena/index.pck \
+            public/game/push-up-arena/index.wasm \
+            public/game/push-up-arena/pocketpt-world-build.json
+          if git diff --cached --quiet; then
+            echo "No runtime artifact changes to commit."
+            exit 0
+          fi
+          git commit -m "Stage Lion's Den multiplayer Godot candidate"
+          git push origin HEAD:"${WEB_BRANCH}"
