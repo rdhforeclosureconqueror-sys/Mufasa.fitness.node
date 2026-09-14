@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      GODOT_SOURCE_COMMIT: 34ab1b2f7cbb01173bf415a8b4009e909e69e63e
+      GODOT_SOURCE_COMMIT: d8b161b2fe8c4676b2d023e9a50c05c6d0d8210a
       GODOT_GENERATED_BRANCH: generated/web-candidate
       WEB_BRANCH: feat/lions-den-multiplayer-stage-20260913
     steps:
