@@ -23,6 +23,16 @@
   let expiresAt = 0;
   let requestId = null;
   let lastRequestedId = null;
+  let lastGodotStartupStage = null;
+  const GODOT_STARTUP_STAGES = new Set([
+    'MAIN_SCENE_READY', 'BOOTSTRAP_ENTERED', 'CLIENT_CREATED', 'DEBUG_BOUND',
+    'MAIN_SCENE_MISSING', 'AVATAR_LOADER_BOUND', 'LOCAL_RUNTIME_BOUND', 'LOCAL_PLAYER_MISSING',
+    'CLIENT_INITIALIZE_QUEUED', 'OPTIONAL_MULTIPLAYER_QUEUED', 'OPTIONAL_MULTIPLAYER_ENTERED',
+    'OPTIONAL_MULTIPLAYER_SKIPPED', 'OPTIONAL_MULTIPLAYER_SCRIPT_LOAD', 'REMOTE_AVATAR_LOADER_CREATE',
+    'LOBBY_CLIENT_CREATE', 'OPTIONAL_MULTIPLAYER_BOUND', 'INNER_BOOTSTRAP_STARTED',
+    'INNER_BOOTSTRAP_ACCEPTED', 'READY_SENT', 'CORE_CLIENT_ERROR', 'AVATAR_LOADING',
+    'AVATAR_MOUNTED', 'AVATAR_FALLBACK', 'AVATAR_ERROR', 'PRACTICE_RUNTIME_STARTED', 'UNKNOWN_STAGE'
+  ]);
   const timers = new Map();
   const requests = new Set();
   const mark = (id, state, code) => model.mark(id, state, code);
@@ -35,6 +45,21 @@
   function schedule(name, delay, callback) {
     cancelTimer(name);
     timers.set(name, setTimeout(() => { timers.delete(name); if (!disposed && !leaving) callback(); }, delay));
+  }
+  function renderStartupStage(stage, stageStatus = 'RUNNING') {
+    if (!GODOT_STARTUP_STAGES.has(stage)) return;
+    const board = document.getElementById('bridgeDebugBoard');
+    if (!board) return;
+    let trace = board.querySelector('#godotPreReadyStage');
+    if (!trace) {
+      trace = document.createElement('div');
+      trace.id = 'godotPreReadyStage';
+      trace.style.cssText = 'margin:8px 0 12px;padding:9px 10px;border:1px solid #59657a;border-radius:10px;background:#101722;color:#f5f7fb;font:700 12px system-ui;overflow-wrap:anywhere';
+      board.prepend(trace);
+    }
+    trace.textContent = `PRE-READY GODOT STAGE: ${stage} · ${stageStatus}`;
+    trace.dataset.stage = stage;
+    trace.dataset.status = stageStatus;
   }
   function showError(stage, code) {
     if (disposed || leaving) return;
@@ -86,12 +111,15 @@
   function startGameGeneration() {
     phone?.reset();
     requestId = window.crypto.randomUUID();
+    lastGodotStartupStage = null;
     model.resetGame(requestId);
   }
   function waitForReady() {
     mark('GODOT_HANDSHAKE', 'RUNNING', 'REQUEST_STARTED');
+    if (lastGodotStartupStage) renderStartupStage(lastGodotStartupStage, 'RUNNING');
     schedule('ready', 120000, () => {
       mark('GODOT_HANDSHAKE', 'FAIL', 'HANDSHAKE_TIMEOUT');
+      if (lastGodotStartupStage) renderStartupStage(lastGodotStartupStage, 'TIMEOUT');
       view.setOpen(true);
     });
   }
@@ -99,6 +127,18 @@
     if (!frameStarted || disposed || leaving || !diagnostics.isGameMessage(event, game, location.origin)) return;
     if (Date.now() >= expiresAt) { expireSession(); return; }
     const data = event.data;
+    if (data.event === 'STARTUP_STAGE') {
+      const stage = String(data.stage || '');
+      const stageStatus = String(data.status || '');
+      if (data.protocolVersion !== 1 || !GODOT_STARTUP_STAGES.has(stage) || !['PASS', 'FAIL'].includes(stageStatus)) return;
+      lastGodotStartupStage = stage;
+      if (!readyReceived) {
+        mark('GODOT_HANDSHAKE', stageStatus === 'FAIL' ? 'FAIL' : 'RUNNING', stageStatus === 'FAIL' ? 'GAME_ERROR' : 'REQUEST_STARTED');
+        renderStartupStage(stage, stageStatus);
+        if (stageStatus === 'FAIL') view.setOpen(true);
+      }
+      return;
+    }
     if (data.event === 'READY') {
       if (frameLoaded && readyDocument !== game.contentDocument) {
         startGameGeneration();
@@ -107,8 +147,10 @@
       readyDocument = game.contentDocument;
       const firstReady = !readyReceived;
       readyReceived = true;
+      lastGodotStartupStage = 'READY_SENT';
       cancelTimer('ready');
       mark('GODOT_HANDSHAKE', 'PASS', 'HANDSHAKE_READY');
+      renderStartupStage('READY_SENT', 'PASS');
       if (firstReady) {requestDiagnostics(); phone?.connect();}
     } else if (data.event === 'ERROR') {
       phone?.close();
@@ -116,6 +158,7 @@
       mark(sessionError ? 'SESSION_LIFETIME' : 'GODOT_HANDSHAKE', 'FAIL', sessionError ? 'HTTP_401' : 'GAME_ERROR');
       readyReceived = false;
       cancelTimer('ready');
+      if (lastGodotStartupStage) renderStartupStage(lastGodotStartupStage, 'FAIL');
       if (sessionError) model.close();
       view.setOpen(true);
     } else if (data.event === 'DIAGNOSTIC' && model.acceptRuntime(data) && model.summary().firstFailure) {
