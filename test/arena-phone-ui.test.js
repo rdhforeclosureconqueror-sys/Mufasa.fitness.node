@@ -68,13 +68,13 @@ async function startCalibration(f) {
 
 test('real coordinator rotates from captured references to retry, and explicit restart clears all gates', async t => {
   const f=fixture(t);await startCalibration(f);f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/reference cycle observed/);
+  assert.match(f.nodes.get('arenaBodyStatus').textContent,/calibration complete/);
   assert.equal(f.timers.size,0);f.events.get('orientationchange')();
   assert.equal(f.nodes.get('arenaRestartCalibration').hidden,false);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Capture paused/);
   assert.equal(f.nodes.get('arenaBodyStatus').dataset.visible,'false');
   await f.nodes.get('arenaRestartCalibration').fire('click');
   assert.equal(f.doc.activeElement.id,'arenaReturnToGym');f.hold('TOP');
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/hold BOTTOM/);
+  assert.match(f.nodes.get('arenaBodyStatus').textContent,/BOTTOM:/);
   assert.equal(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1)[1],'RUNNING');
   assert.equal(f.marks.some(([id,status])=>['START_POSITION','REP_DETECTOR','TIMER'].includes(id)&&status==='PASS'),false);
 });
@@ -84,7 +84,7 @@ test('coordinator deadlines show retry and camera switching starts fresh capture
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/Capture paused/);
   assert.deepEqual(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1),['POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT']);
   f.nodes.get('arenaCameraSelect').value='different-device';await f.nodes.get('arenaCameraSelect').fire('change');
-  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Hold TOP/);
+  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent,/TOP:/);
   assert.equal(f.stats().starts,2);
 });
 
@@ -102,7 +102,7 @@ test('camera check outside mat setup cannot collect references or expose restart
   const f=fixture(t);await f.nodes.get('arenaSetupCamera').fire('click');await f.nodes.get('arenaEnableCamera').fire('click');
   f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
   assert.equal(f.nodes.get('arenaRestartCalibration').hidden,true);assert.equal(f.timers.size,0);
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/preview only/);
+  assert.match(f.nodes.get('arenaBodyStatus').textContent,/Required joints visible/);
 });
 
 test('joystick pointer drag sends a 360 vector and release stops movement', async t => {
@@ -126,7 +126,7 @@ test('touch mat flow transfers focus to recovery controls and locks the iframe d
   assert.equal(f.stats().starts, 0);
   await f.nodes.get('arenaEnableCamera').fire('click'); assert.equal(f.stats().starts, 1);
   assert.equal(f.doc.activeElement.id, 'arenaReturnToGym'); assert.equal(f.nodes.get('arenaCameraStage').hidden, false);
-  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent, /Hold TOP/);
+  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent, /TOP:/);
 });
 
 test('suspend stops the camera and keeps navigation unavailable until explicit return', async t => {

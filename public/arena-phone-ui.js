@@ -14,7 +14,7 @@
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
       onPose(frame, confidence, posePacket) {
-        drawPose(posePacket);
+        drawPose(posePacket, frame, confidence);
         if (!flow?.snapshot().previewOnly && liveMotion?.diagnostics().calibrationReady) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
       },
@@ -26,17 +26,99 @@
         $('arenaCameraChoice').hidden = devices.length < 2;
       }
     });
-    function drawPose(packet) {
+    function issueLabels(evaluation) {
+      if (!evaluation?.usable) return evaluation?.missing?.length ? [`clearer ${evaluation.missing.join(', ')}`] : ['clearer body view'];
+      const checks = evaluation.checks || {}, issues = [];
+      if (evaluation.stage === 'CAPTURE_BOTTOM') {
+        if (checks.elbowDepth === false) issues.push('lower elbow to 95° or less');
+        if (checks.bodyLine === false) issues.push('align shoulder · hip · ankle');
+        return issues;
+      }
+      if (checks.elbowExtension === false) issues.push('straighten arm');
+      if (checks.shoulderStack === false) issues.push('set arm/shoulder near 90°');
+      if (checks.bodyLine === false) issues.push('align shoulder · hip · ankle');
+      return issues;
+    }
+    function angleSummary(evaluation) {
+      const angles = evaluation?.angles;
+      if (!angles) return '';
+      return `elbow ${Math.round(angles.elbow)}° · shoulder ${Math.round(angles.shoulder)}° · body ${Math.round(angles.body)}°`;
+    }
+    function updatePoseStatus(evaluation) {
+      const status = $('arenaBodyStatus');
+      if (!status || !evaluation) return;
+      const stage = evaluation.stage;
+      const active = ['CAPTURE_TOP','CAPTURE_BOTTOM','CONFIRM_TOP'].includes(stage);
+      if (!active) return;
+      const issues = issueLabels(evaluation);
+      const label = stage === 'CAPTURE_BOTTOM' ? 'BOTTOM' : 'TOP';
+      if (evaluation.usable && evaluation.allPass) {
+        status.textContent = `${label} ✓ ${angleSummary(evaluation)} · hold still 3 seconds`;
+        status.dataset.visible = 'true'; status.dataset.form = 'pass';
+      } else {
+        status.textContent = `Adjust ${label}: ${issues.join(' · ') || 'hold a clear side view'}${evaluation.usable ? ` · ${angleSummary(evaluation)}` : ''}`;
+        status.dataset.visible = 'false'; status.dataset.form = 'fail';
+      }
+    }
+    function drawPose(packet, frame, confidence) {
       const context = overlay?.getContext?.('2d');
       if (!context) return;
-      const width = overlay.width = Math.max(1, video.videoWidth || 1), height = overlay.height = Math.max(1, video.videoHeight || 1);
-      context.clearRect(0, 0, width, height);
-      const points = Object.fromEntries((packet?.keypoints || []).filter(point => Number(point.score) >= .35).map(point => [point.name, point]));
+      const displayWidth = Math.max(1, Math.round(overlay.clientWidth || video.clientWidth || video.videoWidth || 1));
+      const displayHeight = Math.max(1, Math.round(overlay.clientHeight || video.clientHeight || video.videoHeight || 1));
+      const dpr = Math.max(1, Math.min(3, Number(root.devicePixelRatio) || 1));
+      const pixelWidth = Math.max(1, Math.round(displayWidth * dpr)), pixelHeight = Math.max(1, Math.round(displayHeight * dpr));
+      if (overlay.width !== pixelWidth) overlay.width = pixelWidth;
+      if (overlay.height !== pixelHeight) overlay.height = pixelHeight;
+      context.setTransform?.(dpr, 0, 0, dpr, 0, 0);
+      context.clearRect(0, 0, displayWidth, displayHeight);
+      if (!packet?.keypoints?.length || !video.videoWidth || !video.videoHeight) return;
+
+      const sourceWidth = Number(packet?.video?.width || video.videoWidth), sourceHeight = Number(packet?.video?.height || video.videoHeight);
+      const scale = Math.min(displayWidth / sourceWidth, displayHeight / sourceHeight);
+      const renderedWidth = sourceWidth * scale, renderedHeight = sourceHeight * scale;
+      const offsetX = (displayWidth - renderedWidth) / 2, offsetY = (displayHeight - renderedHeight) / 2;
+      const mirrored = String(video.style?.transform || '').includes('scaleX(-1)');
+      const map = point => {
+        const rawX = offsetX + Number(point.x) * scale;
+        return {x: mirrored ? displayWidth - rawX : rawX, y: offsetY + Number(point.y) * scale};
+      };
+      const points = Object.fromEntries((packet.keypoints || []).filter(point => Number(point.score) >= .12)
+        .map(point => [point.name || point.part, {...point, ...map(point)}]));
       const links = [['left_shoulder','right_shoulder'],['left_shoulder','left_elbow'],['left_elbow','left_wrist'],['right_shoulder','right_elbow'],['right_elbow','right_wrist'],['left_shoulder','left_hip'],['right_shoulder','right_hip'],['left_hip','right_hip'],['left_hip','left_knee'],['left_knee','left_ankle'],['right_hip','right_knee'],['right_knee','right_ankle']];
-      context.strokeStyle = '#4ee19a'; context.lineWidth = Math.max(3, width / 180);
-      for (const [a,b] of links) if (points[a] && points[b]) {context.beginPath();context.moveTo(points[a].x,points[a].y);context.lineTo(points[b].x,points[b].y);context.stroke();}
-      context.fillStyle = '#ffd35a';
-      for (const point of Object.values(points)) {context.beginPath();context.arc(point.x,point.y,Math.max(4,width/120),0,Math.PI*2);context.fill();}
+      const evaluation = frame ? calibration.evaluate(frame, confidence) : null;
+      const selected = evaluation?.side;
+      const stage = evaluation?.stage;
+      const checks = evaluation?.checks || {};
+      const GREEN = '#4ee19a', RED = '#ff5d73';
+      const confidenceGood = point => Number(point?.score || 0) >= confidence;
+      function formPassForLink(a, b) {
+        if (!confidenceGood(points[a]) || !confidenceGood(points[b])) return false;
+        if (!selected || !stage) return true;
+        const side = a.startsWith('left_') || b.startsWith('left_') ? 'left' : (a.startsWith('right_') || b.startsWith('right_') ? 'right' : null);
+        if (side && side !== selected) return true;
+        const arm = /_(shoulder|elbow|wrist)$/.test(a) && /_(shoulder|elbow|wrist)$/.test(b);
+        const body = /_(shoulder|hip|knee|ankle)$/.test(a) && /_(shoulder|hip|knee|ankle)$/.test(b) && !arm;
+        if (arm) return stage === 'CAPTURE_BOTTOM' ? checks.elbowDepth !== false : checks.elbowExtension !== false && checks.shoulderStack !== false;
+        if (body) return checks.bodyLine !== false;
+        return true;
+      }
+      context.lineCap = 'round'; context.lineJoin = 'round'; context.lineWidth = Math.max(3, displayWidth / 120);
+      for (const [a,b] of links) {
+        if (!points[a] || !points[b]) continue;
+        context.strokeStyle = formPassForLink(a,b) ? GREEN : RED;
+        context.beginPath(); context.moveTo(points[a].x,points[a].y); context.lineTo(points[b].x,points[b].y); context.stroke();
+      }
+      for (const [name, point] of Object.entries(points)) {
+        let pass = confidenceGood(point);
+        if (selected && name.startsWith(`${selected}_`)) {
+          if (['elbow','wrist'].some(joint => name.endsWith(`_${joint}`))) pass = pass && (stage === 'CAPTURE_BOTTOM' ? checks.elbowDepth !== false : checks.elbowExtension !== false && checks.shoulderStack !== false);
+          if (['hip','knee','ankle'].some(joint => name.endsWith(`_${joint}`))) pass = pass && checks.bodyLine !== false;
+          if (name.endsWith('_shoulder')) pass = pass && (stage === 'CAPTURE_BOTTOM' ? checks.bodyLine !== false : checks.shoulderStack !== false && checks.bodyLine !== false);
+        }
+        context.fillStyle = pass ? GREEN : RED;
+        context.beginPath(); context.arc(point.x,point.y,Math.max(4,displayWidth/95),0,Math.PI*2); context.fill();
+      }
+      updatePoseStatus(evaluation);
     }
     function stopCamera() {cameraOperation++; liveMotion?.release('CAMERA_STOPPED'); camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
     function releasePointer() {
@@ -88,15 +170,16 @@
       $('arenaThrillerAction').hidden = !state.canMove;
       $('arenaThrillerAction').disabled = !state.canMove;
       const cameraStatus = {
-        BODY_VISIBLE: 'Required joints visible · camera preview only',
-        CALIBRATING_TOP: 'Hold TOP still · capturing automatically',
-        CALIBRATING_BOTTOM: 'TOP captured ✓ · hold BOTTOM still',
-        CONFIRMING_TOP: 'TOP captured ✓ · BOTTOM captured ✓ · return to TOP',
-        CALIBRATED: 'TOP ✓ · BOTTOM ✓ · reference cycle observed, not form approval',
-        CALIBRATION_RETRY: 'Capture paused · check framing and restart'
+        BODY_VISIBLE: 'Required joints visible · green = usable · red = adjust',
+        CALIBRATING_TOP: 'TOP: green = in range · red = adjust · hold 3 seconds',
+        CALIBRATING_BOTTOM: 'BOTTOM: reach 95° elbow or deeper · hold 3 seconds',
+        CONFIRMING_TOP: 'Return to TOP · green = in range · hold 3 seconds',
+        CALIBRATED: 'TOP ✓ · BOTTOM ✓ · calibration complete',
+        CALIBRATION_RETRY: 'Capture paused · check the red joints and restart'
       }[state.state];
-      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for a clear full-body view';
+      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for a clear full-body view · red joints need attention';
       $('arenaBodyStatus').dataset.visible = String(Boolean(cameraStatus) && state.state !== 'CALIBRATION_RETRY');
+      $('arenaBodyStatus').dataset.form = state.state === 'CALIBRATED' ? 'pass' : 'neutral';
       if (pointer && !state.canMove) releasePointer();
       if (state.state === 'INTRO' && doc.activeElement === $('arenaStopApproach')) $('arenaSetupCamera').focus();
       if (state.state === 'GYM' && previousState === 'RETURNING' && panel.contains(doc.activeElement)) $('arenaGoToMat').focus();

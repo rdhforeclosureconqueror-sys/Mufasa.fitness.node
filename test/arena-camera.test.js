@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {create, visible} = require('../public/arena-camera');
 const {CameraController} = require('../public/push-up-challenge');
-const frame = () => ({analysisUsable: true, trackingState: 'LOCKED', sequenceLandmarks: Object.fromEntries(['shoulder', 'elbow', 'wrist', 'hip', 'ankle'].map(name => [name, {x: .5, y: .5, confidence: .9}]))});
+const frame = () => ({side:'left', analysisUsable: true, trackingState: 'LOCKED', sequenceLandmarks: Object.fromEntries(['shoulder', 'elbow', 'wrist', 'hip', 'ankle'].map(name => [name, {x: .5, y: .5, confidence: .9}]))});
 const deferred = () => {let resolve, reject; const promise = new Promise((a, b) => {resolve = a; reject = b;}); return {promise, resolve, reject};};
 const flush = () => new Promise(resolve => setImmediate(resolve));
 function fixture(getUserMedia) {
@@ -26,13 +26,16 @@ function fixture(getUserMedia) {
   return {camera, root, stream, video, timers, marks, visibility, poses, events, stats: () => ({stopped, starts, captureStops}), capture: () => capture};
 }
 
-test('visibility requires fresh finite required joints; it does not claim valid push-up posture', () => {
-  assert.equal(visible(frame(), .75), true);
+test('calibration visibility checks required joints without borrowing the stricter scoring lock', () => {
+  assert.equal(visible(frame(), .5), true);
+  const degraded = frame(); degraded.analysisUsable = false; degraded.trackingState = 'DEGRADED';
+  for (const point of Object.values(degraded.sequenceLandmarks)) point.confidence = .55;
+  assert.equal(visible(degraded, .5), true);
   for (const patch of [{cached: true}, {displayOnly: true}, {confidence: NaN}, {confidence: .2}, {x: Infinity}, {x: 0}, {y: 1.1}]) {
-    const f = frame(); Object.assign(f.sequenceLandmarks.elbow, patch); assert.equal(visible(f, .75), false);
+    const f = frame(); Object.assign(f.sequenceLandmarks.elbow, patch); assert.equal(visible(f, .5), false);
   }
-  const missing = frame(); delete missing.sequenceLandmarks.wrist; assert.equal(visible(missing, .75), false);
-  const lost = frame(); lost.trackingState = 'DEGRADED'; assert.equal(visible(lost, .75), false);
+  const missing = frame(); delete missing.sequenceLandmarks.wrist; assert.equal(visible(missing, .5), false);
+  const noSide = frame(); delete noSide.side; assert.equal(visible(noSide, .5), false);
   assert.equal(visible(frame(), NaN), false);
 });
 
@@ -41,10 +44,22 @@ test('camera does not request permission until explicit start and reuses canonic
   await f.camera.start(); assert.equal(f.video.srcObject, f.stream); assert.equal(f.stats().starts, 1);
   assert.equal(f.video.muted, true); assert.equal(f.video.playsInline, true);
   f.capture().options.onFrame(frame()); assert.equal(f.visibility.at(-1), true);
-  assert.equal(f.poses.at(-1)[0].trackingState, 'LOCKED'); assert.equal(f.poses.at(-1)[1], .75);
+  assert.equal(f.poses.at(-1)[0].trackingState, 'LOCKED'); assert.equal(f.poses.at(-1)[1], .5);
   assert.equal(f.poses.at(-1)[0].sourceWidth, 640); assert.equal(f.poses.at(-1)[0].sourceHeight, 480);
+  assert.equal(f.poses.at(-1)[0].calibrationUsable, true);
   [...f.timers.values()].find(timer => timer.delay === 1500).fn(); assert.equal(f.visibility.at(-1), false); assert.equal(f.poses.at(-1)[0], null);
   f.camera.stop(); assert.equal(f.video.srcObject, null); assert.equal(f.stats().captureStops, 1); assert.equal(f.timers.size, 0);
+});
+
+test('low-confidence required joint stays visible to the overlay instead of erasing the pose packet', async () => {
+  const f = fixture(); await f.camera.start();
+  const weak = frame(); weak.analysisUsable = false; weak.trackingState = 'DEGRADED'; weak.sequenceLandmarks.ankle.confidence = .3;
+  const packet = {video:{width:640,height:480},keypoints:[{name:'left_ankle',x:300,y:400,score:.3}]};
+  f.capture().options.onFrame(weak, {posePacket:packet});
+  assert.equal(f.visibility.at(-1), false);
+  assert.ok(f.poses.at(-1)[0]);
+  assert.equal(f.poses.at(-1)[0].calibrationUsable, false);
+  assert.equal(f.poses.at(-1)[2], packet);
 });
 
 test('camera replacement ignores old callbacks and supplies the new source geometry', async () => {
