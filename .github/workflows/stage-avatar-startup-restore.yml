@@ -3,7 +3,7 @@ name: Stage Verified Current Godot Candidate
 on:
   push:
     branches:
-      - codex/add-multiplayer-diagnostics-and-failure-investigation
+      - codex/audit-and-fix-stale-godot-build-issues
     paths:
       - .github/workflows/stage-avatar-startup-restore.yml
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 25
     env:
       TARGET_BRANCH: ${{ github.ref_name }}
-      GODOT_SOURCE_COMMIT: a58dc141b71f7b737e7f89a7fef5d4ef10a9c08b
+      GODOT_SOURCE_COMMIT: 6d8b145a29a49f34a2197ffc91ddac69f85d6a6b
       GODOT_GENERATED_BRANCH: generated/web-candidate
     steps:
       - name: Checkout web repository
@@ -100,7 +100,7 @@ jobs:
           }
           const manifest = {
             protocolVersion: 1,
-            buildId: `pocketpt-multiplayer-diagnostics-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}-20260914`,
+            buildId: `pocketpt-current-candidate-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}-20260914`,
             godotVersion: '4.5.1',
             godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
             godotCandidateCommit: candidateCommit,
@@ -115,16 +115,13 @@ jobs:
             wasmBytes: files['index.wasm'].bytes,
             wasmSha256: files['index.wasm'].sha256,
             regressionFix: {
+              firstFailureObserved: 'MUFASA_FIT_STAGING',
               latestVerifiedCandidateStaged: true,
-              multiplayerStateSyncRepairIncluded: true,
-              armRestRetargetRepairIncluded: true,
-              multiplayerDiagnosticProducerIncluded: true,
               personalAvatarPhysicalAcceptance: 'pending',
-              multiplayerPhysicalAcceptance: 'pending',
-              armVisualAcceptance: 'pending',
-              mazePreserved: true
+              mazePreserved: true,
+              mazePhysicalAcceptance: 'pending'
             },
-            note: 'Exact hash-verified generated/web-candidate for Godot source a58dc14. Includes reviewed multiplayer state-sync, avatar rest-retarget, and multiplayer diagnostic producer changes. Two-device movement and final arm appearance still require physical verification.'
+            note: 'Stages the exact hash-verified generated/web-candidate for Godot source 6d8b145. Personal avatar, multiplayer, maze, and physical-device acceptance remain pending authorized human verification.'
           };
           fs.writeFileSync(path.join(root,'pocketpt-world-build.json'),JSON.stringify(manifest,null,2)+'\n');
           NODE
@@ -138,6 +135,6 @@ jobs:
           git add public/game/push-up-arena/index.html public/game/push-up-arena/index.js public/game/push-up-arena/index.pck public/game/push-up-arena/index.wasm public/game/push-up-arena/pocketpt-world-build.json
           git diff --cached --check
           if ! git diff --cached --quiet; then
-            git commit -m "Stage reviewed multiplayer Godot candidate [skip ci]"
+            git commit -m "Stage avatar startup restore Godot candidate [skip ci]"
             git push origin HEAD:"${TARGET_BRANCH}"
           fi
