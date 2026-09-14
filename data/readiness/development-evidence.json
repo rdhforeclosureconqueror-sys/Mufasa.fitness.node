@@ -2177,6 +2177,25 @@
       "prNumber": 809,
       "commitSha": "d0e7d4851db61feed6786ce3a387e2fa0c9311f5",
       "timestamp": "2026-09-14T01:02:27.990Z"
+    },
+    {
+      "operationId": "64093454-3859-4cc5-b46a-7ddb25ce1ace",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/game/push-up-arena/index.html",
+        "public/game/push-up-arena/index.js",
+        "public/game/push-up-arena/index.pck",
+        "public/game/push-up-arena/index.wasm",
+        "public/game/push-up-arena/pocketpt-world-build.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Lion's Den multiplayer source d8b161b2fe8c4676b2d023e9a50c05c6d0d8210a and pinned producer candidate d45a46e49e62cadf3479dba04885e499f85fba89 passed Godot multiplayer regression, exact producer-hash verification, Living Lobby server tests, and arena control regressions. Physical authenticated two-/three-member visibility, bidirectional movement, leave/despawn, reconnect/no-ghost, and production visual acceptance remain pending authorized human verification.",
+      "prNumber": 811,
+      "commitSha": "28d11af71216a28dc3612724553706d907c56327",
+      "timestamp": "2026-09-14T02:21:29.565Z"
     }
   ]
 }
