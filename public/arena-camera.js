@@ -5,10 +5,15 @@
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
   const JOINTS = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
+  // Framing/calibration is deliberately more tolerant than authoritative
+  // scoring. Three-second stability and explicit form gates provide the
+  // calibration safety net; the reviewed scoring profile keeps its own .75
+  // confidence requirement for official rep evidence.
+  const CALIBRATION_CONFIDENCE_CAP = .5;
   function visible(frame, minimumConfidence) {
-    return Number.isFinite(minimumConfidence) && frame?.analysisUsable === true && frame.trackingState === 'LOCKED' &&
+    return Number.isFinite(minimumConfidence) && minimumConfidence > 0 && minimumConfidence <= 1 && ['left','right'].includes(frame?.side) &&
       JOINTS.every(name => {
-        const p = frame.sequenceLandmarks?.[name];
+        const p = frame?.sequenceLandmarks?.[name];
         return p && !p.cached && !p.displayOnly && Number.isFinite(p.x) && Number.isFinite(p.y) &&
           p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1 && Number.isFinite(p.confidence) && p.confidence >= minimumConfidence;
       });
@@ -101,14 +106,19 @@
         await root.__ensurePoseRuntime(); check();
         const detector = await detectorForSession(); check();
         const profile = root.PushUpChallenge.getPushUpProfile();
-        const confidence = profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
+        const scoringConfidence = Number(profile.poseAnalysis.rules[0].minimumLandmarkConfidence);
+        const calibrationConfidence = Math.min(Number.isFinite(scoringConfidence) ? scoringConfidence : .75, CALIBRATION_CONFIDENCE_CAP);
         op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame, source = {}) {
           if (!live()) return;
-          const bodyVisible = visible(frame, confidence);
+          const bodyVisible = visible(frame, calibrationConfidence);
+          const enriched = frame ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight, calibrationUsable: bodyVisible} : null;
           onVisibility(bodyVisible);
-          onPose(bodyVisible ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight} : null, confidence, bodyVisible ? source.posePacket || null : null);
+          // Never hide MoveNet evidence merely because the stricter form gate is
+          // not satisfied. The UI needs the raw packet to show the member which
+          // joint or segment is preventing calibration.
+          onPose(enriched, calibrationConfidence, source.posePacket || null, {bodyVisible, scoringConfidence});
           root.clearTimeout(op.staleTimer);
-          op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, confidence, null);}}, 1500);
+          op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, calibrationConfidence, null, {bodyVisible:false, scoringConfidence});}}, 1500);
         }});
         await op.capture.start(video, {detector}); check();
         root.clearTimeout(op.timeout);
@@ -128,5 +138,5 @@
     function resetTracking() {current?.capture?.resetTracking(); onVisibility(false);}
     return {start, stop, resetTracking, dispose: disposeSession};
   }
-  return Object.freeze({create, visible});
+  return Object.freeze({create, visible, CALIBRATION_CONFIDENCE_CAP});
 });
