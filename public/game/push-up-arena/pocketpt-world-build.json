@@ -1,15 +1,15 @@
 {
   "protocolVersion": 1,
-  "buildId": "pocketpt-pushup-maze-763dc41-20260913",
+  "buildId": "pocketpt-pushup-maze-6e8bb44-20260913",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "763dc41484d16d459323b2ff9e67bb4723b2bf31",
-  "godotCandidateCommit": "9e70036b1a4796f0935bc21f589b336321416825",
+  "godotSourceCommit": "6e8bb44bbb611865360775548899d72c2b73fa9e",
+  "godotCandidateCommit": "11bd3fe996d62bb999b45167ea85ff95f4fe513d",
   "producerHashVerification": "pass",
   "mainScene": "res://Main.tscn",
-  "pckBytes": 47588764,
-  "pckSha256": "bf2971576beca4304c4af64b6f9f674499992a017f2f3942389ef5b30504fc70",
+  "pckBytes": 47591936,
+  "pckSha256": "7613c95c238e8a900c7517da9781a8dea5bdc131bea7e8e757200d538dc4d26a",
   "htmlBytes": 5443,
-  "htmlSha256": "bf9b49f6148dcdb8748ed2f5c700bb6ce777bf8edc82a8e23419d9eef6e2a20d",
+  "htmlSha256": "03ea9edc9d20fc1a80ddbd302ce105b185ed67d9f4218725371cce0283b00c7c",
   "jsBytes": 305185,
   "jsSha256": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f",
   "wasmBytes": 38034280,
@@ -19,10 +19,11 @@
     "structureRegression": "pass",
     "existingPhoneControlRegression": "pass",
     "existingMultiplayerRegression": "pass",
+    "consolidatedWebDiagnostics": "pass",
     "physicalThumbNavigation": "pending",
     "visualMazeAcceptance": "pending",
     "tensorFlowBodyControl": "pending",
     "pushupPoweredSpeed": "pending"
   },
-  "note": "Exact hash-verified Godot Push-Up Practice Maze shell staged for owner thumb-control visual testing. TensorFlow and push-up-powered movement are intentionally deferred."
+  "note": "Exact hash-verified Godot Push-Up Practice Maze shell with consolidated Web FIRST FAILURE reporting staged for owner thumb-control visual testing. TensorFlow and push-up-powered movement are intentionally deferred."
 }
