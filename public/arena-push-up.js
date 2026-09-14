@@ -33,6 +33,7 @@
     'INNER_BOOTSTRAP_ACCEPTED', 'READY_SENT', 'CORE_CLIENT_ERROR', 'AVATAR_LOADING',
     'AVATAR_MOUNTED', 'AVATAR_FALLBACK', 'AVATAR_ERROR', 'PRACTICE_RUNTIME_STARTED', 'UNKNOWN_STAGE'
   ]);
+  const HANDSHAKE_FATAL_STARTUP_STAGES = new Set(['MAIN_SCENE_MISSING', 'CORE_CLIENT_ERROR']);
   const timers = new Map();
   const requests = new Set();
   const mark = (id, state, code) => model.mark(id, state, code);
@@ -49,7 +50,7 @@
   function renderStartupStage(stage, stageStatus = 'RUNNING') {
     if (!GODOT_STARTUP_STAGES.has(stage)) return;
     const board = document.getElementById('bridgeDebugBoard');
-    if (!board) return;
+    if (!board || typeof board.querySelector !== 'function' || typeof board.prepend !== 'function' || typeof document.createElement !== 'function') return;
     let trace = board.querySelector('#godotPreReadyStage');
     if (!trace) {
       trace = document.createElement('div');
@@ -133,7 +134,8 @@
       if (data.protocolVersion !== 1 || !GODOT_STARTUP_STAGES.has(stage) || !['PASS', 'FAIL'].includes(stageStatus)) return;
       lastGodotStartupStage = stage;
       if (!readyReceived) {
-        mark('GODOT_HANDSHAKE', stageStatus === 'FAIL' ? 'FAIL' : 'RUNNING', stageStatus === 'FAIL' ? 'GAME_ERROR' : 'REQUEST_STARTED');
+        const handshakeFatal = stageStatus === 'FAIL' && HANDSHAKE_FATAL_STARTUP_STAGES.has(stage);
+        mark('GODOT_HANDSHAKE', handshakeFatal ? 'FAIL' : 'RUNNING', handshakeFatal ? 'GAME_ERROR' : 'REQUEST_STARTED');
         renderStartupStage(stage, stageStatus);
         if (stageStatus === 'FAIL') view.setOpen(true);
       }
@@ -235,7 +237,6 @@
     } else {
       mark('TICKET_PRESENT', 'SKIP', 'EXISTING_SESSION');
       mark('SESSION_EXCHANGE', 'SKIP', 'EXISTING_SESSION');
-      // Clear even an empty/unrecognized fragment; it is never diagnostic data.
       if (location.hash) history.replaceState(null, document.title, location.pathname + location.search);
       mark('FRAGMENT_SCRUB', 'SKIP', 'NO_FRAGMENT');
     }
@@ -284,7 +285,6 @@
       status.style.display = 'none';
       game.style.display = 'block';
       mark('IFRAME_LOAD', 'PASS', 'FRAME_LOADED');
-      // READY can precede the load event. Never overwrite that success with a wait.
       if (!readyReceived) waitForReady();
       else requestDiagnostics();
     };
