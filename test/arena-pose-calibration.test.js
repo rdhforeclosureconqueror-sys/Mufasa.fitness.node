@@ -54,11 +54,15 @@ test('timeout preserves already captured references and retry resumes the failed
   assert.deepEqual(calibration.snapshot(), {stage:'CAPTURE_BOTTOM', reason:null, failedStage:null, topCaptured:true, bottomCaptured:false, calibrated:false});
 });
 
-test('does not capture an unchanged or unstable pose as BOTTOM', () => {
-  const calibration = create(); calibration.start(); hold(calibration, 'TOP');
-  hold(calibration, 'TOP', 3300); assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
-  for (let index = 0; index < 16; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 6600 + index * 100), .75);
+test('does not capture an unchanged or unstable pose as BOTTOM before the fast attempt times out', () => {
+  const calibration = create(); calibration.start(); quickHold(calibration, 'TOP');
   assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  for (let index = 0; index < 8; index++) calibration.observe(frame('TOP', 1400 + index * 200), .4);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().bottomCaptured, false);
+  for (let index = 0; index < 8; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 3000 + index * 200), .4);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().bottomCaptured, false);
 });
 
 test('rejects unusable frames and exposes no pose geometry in public state', () => {
