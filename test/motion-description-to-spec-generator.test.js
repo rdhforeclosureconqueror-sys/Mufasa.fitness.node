@@ -14,6 +14,46 @@ function requestFor(id){const description=byDescription.get(id);return {schemaVe
 
 test('Beginner Full-Body Flow has exactly six reusable generation plans',()=>{assert.deepEqual([...byPlan.keys()],expected);assert.equal(new Set(plans.plans.map(item=>item.archetype)).size,6);for(const plan of plans.plans){assert.ok(Array.isArray(plan.semanticRequirements)&&plan.semanticRequirements.length>=3);assert.ok(Array.isArray(plan.supports)&&plan.supports.length>=2);}});
 
+test('Warrior II, Downward Dog, and Cobra descriptions classify reusable movement mechanics instead of rig rotations',()=>{
+  const cases={
+    'warrior-ii':{family:'standing-split-stance',arm:'opposed-lateral-reach-from-shoulders',reuse:'stationary-lunge-lower-body'},
+    'downward-dog':{family:'four-point-inverted-hip-hinge',arm:'forward-support-line-from-shoulders',reuse:'four-point-support'},
+    'cobra':{family:'prone-spinal-extension',arm:'hands-fixed-elbows-track-back-beside-ribs',reuse:'spinal-extension'}
+  };
+  for(const [id,expectedClass] of Object.entries(cases)){
+    const description=byDescription.get(id),plan=byPlan.get(id);
+    assert.ok(description?.movementClassification,id);
+    assert.ok(description?.directionalRules,id);
+    assert.equal(description.movementClassification.movementFamily,expectedClass.family,id);
+    assert.equal(description.movementClassification.armPathPattern,expectedClass.arm,id);
+    assert.ok(description.movementClassification.reuseFamilies.includes(expectedClass.reuse),id);
+    assert.ok(Array.isArray(description.directionalRules.arms)&&description.directionalRules.arms.length>=2,id);
+    assert.ok(description.directionalRules.prohibitedTrajectories.some(x=>/behind|posterior|backward/i.test(x)),id);
+    assert.deepEqual(plan.movementClassification.movementFamily,description.movementClassification.movementFamily,id);
+    assert.deepEqual(plan.movementClassification.armPathPattern,description.movementClassification.armPathPattern,id);
+    assert.ok(plan.semanticRequirements.includes('no_posterior_arm_sweep'),id);
+    const serialized=JSON.stringify(description);
+    assert.doesNotMatch(serialized,/rotationOffsetEulerDegrees|\bEuler\b|\b-?\d+\s*degrees?\b/i,id);
+  }
+});
+
+test('classified descriptions state the intended arm direction explicitly',()=>{
+  const warrior=byDescription.get('warrior-ii');
+  assert.ok(warrior.directionalRules.arms.some(x=>/laterally outward/i.test(x)));
+  assert.ok(warrior.directionalRules.lowerBody.some(x=>/lunge/i.test(x)));
+  assert.ok(warrior.directionalRules.prohibitedTrajectories.some(x=>/rear knee dropping/i.test(x)));
+
+  const dog=byDescription.get('downward-dog');
+  assert.ok(dog.directionalRules.arms.some(x=>/in front of the shoulders/i.test(x)));
+  assert.ok(dog.directionalRules.arms.some(x=>/biceps.*ears/i.test(x)));
+  assert.ok(dog.directionalRules.prohibitedTrajectories.some(x=>/arms sweeping behind/i.test(x)));
+
+  const cobra=byDescription.get('cobra');
+  assert.ok(cobra.directionalRules.arms.some(x=>/hands stay planted/i.test(x)));
+  assert.ok(cobra.directionalRules.arms.some(x=>/elbows point backward beside the ribs/i.test(x)));
+  assert.ok(cobra.directionalRules.prohibitedTrajectories.some(x=>/upper arms sweeping behind/i.test(x)));
+});
+
 test('generic generator produces Coach-targeted supported Motion Specs for all six descriptions',()=>{
   for(const id of expected){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.status,'ready',id);assert.equal(out.spec.exerciseId,id);assert.equal(out.spec.status,'development-test-only');assert.equal(out.spec.skeleton.targetSkeletonProfile,'avaturn-native-v1');assert.equal(out.spec.coachRetarget.targetAvatarProfileId,'avaturn-personalized-candidate');assert.equal(out.spec.generationMetadata.generatedDraft,true);assert.equal(out.spec.generationMetadata.descriptionAuthority,true);assert.ok(out.spec.phases.length>=4);assert.equal(out.spec.phases[0].normalizedTime,0);assert.equal(out.spec.phases.at(-1).normalizedTime,1);assert.equal(out.contract.validate(out.spec).valid,true);assert.equal(out.diagnostics.contactSolvingDeferred,false);assert.equal(out.diagnostics.endpointContactSolvingApplied,true);assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,false);assert.equal(out.diagnostics.firstDeferredCapability,null);assert.ok(out.spec.groundingPolicy.contacts.length>=2);assert.ok(out.spec.groundingPolicy.kinematicChains.length>=2);}
 });
