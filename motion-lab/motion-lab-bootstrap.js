@@ -74,6 +74,13 @@
       await loadDependency("motion_lab_intelligence_adapter","/dev/motion-lab-assets/motion-lab-intelligence-adapter.js");
       await loadDependency("motion_lab_authoring_adapter","/dev/motion-lab-assets/motion-lab-authoring-adapter.js");
       await loadDependency("motion_spec_clip","/dev/motion-lab-assets/motion-spec-clip.js");
+      await loadDependency("motion_spec_semantic_direction_policy","/dev/motion-lab-assets/motion-spec-semantic-direction-policy.js");
+      currentStage="motion_spec_semantic_direction_policy_install";
+      var semanticCompiler=window.PocketPTMotionSpecSemanticDirectionPolicy?.install?.(window.PocketPTMotionSpecClip);
+      if (!semanticCompiler?.compile || semanticCompiler.__semanticDirectionPolicyInstalled !== true) {
+        var semanticError=new Error("Motion Spec semantic direction policy failed to install"); semanticError.code="motion_spec_semantic_direction_policy_install_failed"; semanticError.stage=currentStage; semanticError.source="PocketPTMotionSpecSemanticDirectionPolicy.install"; throw semanticError;
+      }
+      window.PocketPTMotionSpecClip=semanticCompiler;
       await loadDependency("motion_intelligence_diagnostics","/dev/motion-lab-assets/motion-lab-intelligence-diagnostics.js");
       await loadDependency("disposable_motion_session","/dev/motion-lab-assets/disposable-motion-session.js");
       await loadDependency("motion_spec_playback_policy","/dev/motion-lab-assets/motion-spec-playback-policy.js");
