@@ -34,6 +34,21 @@ test('Motion Intelligence is moved into the existing Diagnostics column', () => 
   assert.match(consolidator, /Diagnostic UI build:/);
 });
 
+test('canonical diagnostic includes focused Yoga demo semantic and playback truth', () => {
+  assert.match(consolidator, /MOTION LAB — YOGA DEMO DIAGNOSTICS/);
+  assert.match(consolidator, /YOGA_MOTION_SPEC_MISSING/);
+  assert.match(consolidator, /YOGA_TARGET_PHASE_MISSING/);
+  assert.match(consolidator, /YOGA_TARGET_NOT_DISTINCT_FROM_START/);
+  assert.match(consolidator, /YOGA_TARGET_BINDING_INCOMPLETE/);
+  assert.match(consolidator, /YOGA_CHANGED_BONE_TRACKS_MISSING/);
+  assert.match(consolidator, /Changed-bone tracks present/);
+  assert.match(consolidator, /Playback state \/ phase \/ time/);
+  assert.match(consolidator, /Owner visual acceptance: REQUIRED/);
+  assert.match(consolidator, /pocketpt:motion-spec-generated/);
+  assert.match(consolidator, /trackTargets = new Set/);
+  assert.match(consolidator, /avatarTargets\.set\(node\.name, node\.uuid \|\| node\.name\)/);
+});
+
 test('bootstrap loads and installs the consolidator after Motion Lab runtime', () => {
   const runtime = bootstrap.indexOf('/dev/motion-lab-runtime.js');
   const consolidatorIndex = bootstrap.indexOf('/dev/motion-lab-assets/motion-lab-diagnostic-consolidator.js');
