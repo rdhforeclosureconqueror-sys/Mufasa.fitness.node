@@ -8,8 +8,13 @@
     const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
       liveMotion?.setExerciseCalibration(progress.calibrated);
-      const cue = {CAPTURE_TOP:'Get into your top push-up position and hold.',CAPTURE_BOTTOM:'Lower until your elbows reach at least 90 degrees and hold.',CONFIRM_TOP:'Return to the top position and hold.'}[progress.stage];
-      if (cue) root.CoachRuntime?.speak?.(cue, 'arena-calibration', {owner:'avatar_calibration', interruptible:true, timerNeutral:true});
+      const cue = {
+        CAPTURE_TOP:'Top position. Hold. One, two, three.',
+        CAPTURE_BOTTOM:'Bottom position. Hold. One, two, three.',
+        CONFIRM_TOP:'Back to top. Hold. One, two, three.',
+        NEEDS_RETRY:"Didn't get it. Relax for a second, then tap Restart pose capture."
+      }[progress.stage];
+      if (cue) root.CoachRuntime?.speak?.(cue, 'arena-calibration', {owner:'avatar_calibration', interruptible:false, timerNeutral:true});
     }});
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
@@ -30,12 +35,12 @@
       if (!evaluation?.usable) return evaluation?.missing?.length ? [`clearer ${evaluation.missing.join(', ')}`] : ['clearer body view'];
       const checks = evaluation.checks || {}, issues = [];
       if (evaluation.stage === 'CAPTURE_BOTTOM') {
-        if (checks.elbowDepth === false) issues.push('lower elbow to 95° or less');
+        if (checks.elbowDepth === false) issues.push('lower elbow a little more');
         if (checks.bodyLine === false) issues.push('align shoulder · hip · ankle');
         return issues;
       }
-      if (checks.elbowExtension === false) issues.push('straighten arm');
-      if (checks.shoulderStack === false) issues.push('set arm/shoulder near 90°');
+      if (checks.elbowExtension === false) issues.push('straighten arm a little more');
+      if (checks.shoulderStack === false) issues.push('set arm/shoulder closer to 90°');
       if (checks.bodyLine === false) issues.push('align shoulder · hip · ankle');
       return issues;
     }
@@ -53,7 +58,7 @@
       const issues = issueLabels(evaluation);
       const label = stage === 'CAPTURE_BOTTOM' ? 'BOTTOM' : 'TOP';
       if (evaluation.usable && evaluation.allPass) {
-        status.textContent = `${label} ✓ ${angleSummary(evaluation)} · hold still 3 seconds`;
+        status.textContent = `${label} ✓ ${angleSummary(evaluation)} · hold steady · snap`;
         status.dataset.visible = 'true'; status.dataset.form = 'pass';
       } else {
         status.textContent = `Adjust ${label}: ${issues.join(' · ') || 'hold a clear side view'}${evaluation.usable ? ` · ${angleSummary(evaluation)}` : ''}`;
@@ -171,11 +176,11 @@
       $('arenaThrillerAction').disabled = !state.canMove;
       const cameraStatus = {
         BODY_VISIBLE: 'Required joints visible · green = usable · red = adjust',
-        CALIBRATING_TOP: 'TOP: green = in range · red = adjust · hold 3 seconds',
-        CALIBRATING_BOTTOM: 'BOTTOM: reach 95° elbow or deeper · hold 3 seconds',
-        CONFIRMING_TOP: 'Return to TOP · green = in range · hold 3 seconds',
+        CALIBRATING_TOP: 'TOP: get mostly green · hold briefly · snap',
+        CALIBRATING_BOTTOM: 'BOTTOM: lower · get mostly green · hold briefly · snap',
+        CONFIRMING_TOP: 'Back to TOP · hold briefly · snap',
         CALIBRATED: 'TOP ✓ · BOTTOM ✓ · calibration complete',
-        CALIBRATION_RETRY: 'Capture paused · check the red joints and restart'
+        CALIBRATION_RETRY: "Didn't get it · rest for a second · captured poses are kept when possible"
       }[state.state];
       $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for a clear full-body view · red joints need attention';
       $('arenaBodyStatus').dataset.visible = String(Boolean(cameraStatus) && state.state !== 'CALIBRATION_RETRY');
@@ -210,7 +215,9 @@
     $('arenaEnableCamera').addEventListener('click', () => enableCamera());
     $('arenaRestartCalibration').addEventListener('click', () => {
       if (!flow.snapshot().canRestartCalibration) return;
-      camera.resetTracking(); calibration.start(); $('arenaReturnToGym').focus();
+      camera.resetTracking();
+      if (!calibration.retry?.()) calibration.start();
+      $('arenaReturnToGym').focus();
     });
     $('arenaReturnToGym').addEventListener('click', () => {if (flow.returnToGym()) (flow.snapshot().state === 'RETURNING' ? $('arenaPhoneMessage') : $('arenaSetupCamera')).focus();});
     $('arenaCameraSelect').addEventListener('change', () => enableCamera($('arenaCameraSelect').value));
