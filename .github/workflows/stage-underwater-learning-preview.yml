@@ -1,0 +1,158 @@
+name: Stage Underwater Learning Preview
+
+on:
+  push:
+    branches:
+      - preview/underwater-learning-world
+    paths:
+      - .github/workflows/stage-underwater-learning-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage-underwater-learning-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stage-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TARGET_BRANCH: preview/underwater-learning-world
+      GODOT_SOURCE_COMMIT: d381d4da21d55c9d0291483a67794f7f9cc5bfb9
+      GODOT_GENERATED_BRANCH: generated/web-candidate
+      PREVIEW_ROOT: public/game/underwater-learning-preview
+    steps:
+      - name: Checkout web preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch generated Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            --branch "${GODOT_GENERATED_BRANCH}" \
+            https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+            /tmp/mufasagodot-candidate
+          git -C /tmp/mufasagodot-candidate sparse-checkout init --cone
+          git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
+          git -C /tmp/mufasagodot-candidate checkout --detach "${GODOT_GENERATED_BRANCH}"
+          git -C /tmp/mufasagodot-candidate rev-parse HEAD > /tmp/GODOT_CANDIDATE_COMMIT
+
+      - name: Verify provenance and stage isolated preview package
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          for file in index.html index.js index.pck index.wasm BUILD_PROVENANCE.txt; do test -s "$CANDIDATE/$file"; done
+          grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+          (
+            cd /tmp/mufasagodot-candidate
+            grep -E '^[0-9a-f]{64}  build/ci-web/(index.html|index.js|index.pck|index.wasm)$' build/ci-web/BUILD_PROVENANCE.txt | sha256sum -c -
+          )
+          mkdir -p "$PREVIEW_ROOT"
+          cp "$CANDIDATE/index.html" "$PREVIEW_ROOT/index.html"
+          cp "$CANDIDATE/index.js" "$PREVIEW_ROOT/index.js"
+          cp "$CANDIDATE/index.pck" "$PREVIEW_ROOT/index.pck"
+          cp "$CANDIDATE/index.wasm" "$PREVIEW_ROOT/index.wasm"
+          cp "$CANDIDATE/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt"
+
+      - name: Add opt-in preview switch without changing default arena
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/arena-push-up.js')
+          s = p.read_text()
+          needle = "  const exitArena = document.getElementById('exitArena');\n"
+          insert = needle + "  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';\n  const previewGameEntryPath = '/game/underwater-learning-preview/index.html';\n"
+          if 'const underwaterPreview =' not in s:
+              if needle not in s: raise SystemExit('arena preview insertion point missing')
+              s = s.replace(needle, insert, 1)
+          old = "    game.src = '/game/push-up-arena/index.html';"
+          new = "    game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html';"
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('arena iframe assignment point missing')
+          p.write_text(s)
+          PY
+          grep -F "underwaterPreview" public/arena-push-up.js
+          grep -F "previewGameEntryPath = '/game/underwater-learning-preview/index.html'" public/arena-push-up.js
+          grep -F "game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html'" public/arena-push-up.js
+
+      - name: Write preview manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = process.env.PREVIEW_ROOT;
+          const candidateCommit = fs.readFileSync('/tmp/GODOT_CANDIDATE_COMMIT','utf8').trim();
+          const manifest = {
+            protocolVersion: 1,
+            buildId: `underwater-make10-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}`,
+            godotVersion: '4.5.1',
+            godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
+            godotCandidateCommit: candidateCommit,
+            deploymentMode: 'isolated-private-preview',
+            productionArenaUntouched: true,
+            avatarStartupContract: 'load-after-avatar-ready',
+            lesson: 'MAKE_10_TREASURE_HUNT',
+            swimAnimation: 'PENDING',
+            previewQuery: '/arena/push-up?preview=underwater',
+            note: 'Private underwater learning preview. Without ?preview=underwater the arena still loads the normal production Godot package.'
+          };
+          fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
+          NODE
+
+      - name: Protect default arena and preview opt-in behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test test/arena-diagnostics.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/world-bridge-pocketpt-finish.test.js
+          node - <<'NODE'
+          const fs = require('fs');
+          const s = fs.readFileSync('public/arena-push-up.js','utf8');
+          if (!s.includes("new URLSearchParams(location.search).get('preview') === 'underwater'")) throw new Error('preview query gate missing');
+          if (!s.includes("const previewGameEntryPath = '/game/underwater-learning-preview/index.html'")) throw new Error('preview package path missing');
+          if (!s.includes("game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html'")) throw new Error('default arena isolation missing');
+          const bootstrap = s.indexOf('/api/game/bootstrap');
+          const productionGodot = s.indexOf('/game/push-up-arena/index.html');
+          if (productionGodot <= bootstrap) throw new Error('production Godot path moved before authenticated bootstrap');
+          const manifest = JSON.parse(fs.readFileSync('public/game/underwater-learning-preview/pocketpt-world-build.json','utf8'));
+          if (manifest.godotSourceCommit !== process.env.GODOT_SOURCE_COMMIT) throw new Error('preview provenance mismatch');
+          if (manifest.productionArenaUntouched !== true) throw new Error('production isolation marker missing');
+          NODE
+
+      - name: Commit isolated preview package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/arena-push-up.js
+          git add -f "$PREVIEW_ROOT/index.html" "$PREVIEW_ROOT/index.js" "$PREVIEW_ROOT/index.pck" "$PREVIEW_ROOT/index.wasm" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/pocketpt-world-build.json"
+          # Generated Godot HTML may intentionally contain trailing whitespace/newlines.
+          # Protect hand-authored text without mutating the hash-verified producer files.
+          git diff --cached --check -- public/arena-push-up.js "$PREVIEW_ROOT/pocketpt-world-build.json"
+          if ! git diff --cached --quiet; then
+            git commit -m "Stage avatar-safe underwater Make 10 preview [skip ci]"
+            git push origin HEAD:"${TARGET_BRANCH}"
+          fi

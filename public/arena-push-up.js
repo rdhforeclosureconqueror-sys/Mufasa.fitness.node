@@ -5,6 +5,8 @@
   const message = document.getElementById('message');
   const game = document.getElementById('game');
   const exitArena = document.getElementById('exitArena');
+  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';
+  const previewGameEntryPath = '/game/underwater-learning-preview/index.html';
   if (!diagnostics) {
     message.textContent = 'Arena diagnostics could not load. Reload this page.';
     return;
@@ -249,7 +251,7 @@
       else requestDiagnostics();
     };
     game.onerror = () => { mark('IFRAME_LOAD', 'FAIL', 'NETWORK_ERROR'); view.setOpen(true); };
-    game.src = '/game/push-up-arena/index.html';
+    game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html';
   }
   start().catch(() => showError('ARENA_SHELL', 'PAGE_ERROR'));
 })();
