@@ -1,7 +1,7 @@
 (function initMotionLabDiagnosticConsolidator(root) {
   'use strict';
 
-  const BUILD = '2026-09-08-canonical-diagnostic-v2-pose-editor';
+  const BUILD = '2026-09-15-canonical-diagnostic-v3-yoga-demo';
   let installed = false;
   let observer = null;
 
@@ -64,6 +64,82 @@
     ].join('\n');
   }
 
+  function sameVector(a, b) {
+    const av = Array.isArray(a) ? a : [];
+    const bv = Array.isArray(b) ? b : [];
+    if (av.length !== bv.length) return false;
+    return av.every((value, index) => Math.abs((Number(value) || 0) - (Number(bv[index]) || 0)) < 0.000001);
+  }
+
+  function phaseTargetMap(phase) {
+    return new Map((phase?.boneTargets || []).map(item => [item.bone, item.rotationOffsetEulerDegrees || []]));
+  }
+
+  function yogaDemoText() {
+    const editor = root.PocketPTMotionLabPoseEditor;
+    const session = editor?.getActiveSession?.();
+    const spec = session?.motionSpec || null;
+    const motion = root.MotionLabRuntime?.snapshot?.().motion || null;
+    const params = new URLSearchParams(root.location?.search || '');
+    const requestedPose = params.get('pose') || spec?.exerciseId || motion?.exerciseId || null;
+    const requestedSession = params.get('session') || null;
+    const yogaActive = params.get('motionSource') === 'yoga' || spec?.motionId?.startsWith?.('generated/yoga/') || motion?.motionId?.startsWith?.('generated/yoga/');
+
+    if (!yogaActive) {
+      return [
+        'MOTION LAB — YOGA DEMO DIAGNOSTICS',
+        'Status: NOT ACTIVE',
+        'Requested pose: —',
+        'FIRST FAILURE: NONE'
+      ].join('\n');
+    }
+
+    const phases = Array.isArray(spec?.phases) ? spec.phases : [];
+    const start = phases.find(item => item.id === 'start') || phases[0] || null;
+    const target = phases.find(item => item.id === 'target') || phases.find(item => item.id === 'hold') || null;
+    const startMap = phaseTargetMap(start);
+    const targetMap = phaseTargetMap(target);
+    const changedBones = [];
+    targetMap.forEach((rotation, bone) => {
+      if (!sameVector(startMap.get(bone) || [], rotation)) changedBones.push(bone);
+    });
+    const rootPositionChanged = !sameVector(start?.root?.positionOffset, target?.root?.positionOffset);
+    const rootRotationChanged = !sameVector(start?.root?.rotationOffsetEulerDegrees, target?.root?.rotationOffsetEulerDegrees);
+    const targetDistinct = Boolean(target && (changedBones.length || rootPositionChanged || rootRotationChanged));
+
+    const tracks = Array.isArray(session?.sessionClip?.tracks) ? session.sessionClip.tracks : [];
+    const changedBoneTracks = changedBones.filter(bone => tracks.some(track => String(track?.name || '').startsWith(`${bone}.`)));
+    const missingChangedBoneTracks = changedBones.filter(bone => !changedBoneTracks.includes(bone));
+    const playback = session?.playbackDiagnostics?.() || {};
+    const currentPhase = session?.currentMotionPhase?.() || null;
+
+    let firstFailure = 'NONE';
+    if (!spec) firstFailure = 'YOGA_MOTION_SPEC_MISSING';
+    else if (!target) firstFailure = 'YOGA_TARGET_PHASE_MISSING';
+    else if (!targetDistinct) firstFailure = 'YOGA_TARGET_NOT_DISTINCT_FROM_START';
+    else if ((motion?.unboundTargetCount || motion?.unboundTrackCount || 0) > 0) firstFailure = 'YOGA_TARGET_BINDING_INCOMPLETE';
+    else if (missingChangedBoneTracks.length) firstFailure = 'YOGA_CHANGED_BONE_TRACKS_MISSING';
+
+    return [
+      'MOTION LAB — YOGA DEMO DIAGNOSTICS',
+      `Status: ${firstFailure === 'NONE' ? 'READY FOR VISUAL CHECK' : 'FAIL'}`,
+      `Requested session / pose: ${requestedSession || '—'} / ${requestedPose || '—'}`,
+      `Motion ID: ${spec?.motionId || motion?.motionId || '—'}`,
+      `Generated phases: ${phases.map(item => item.id).join(' -> ') || 'none'}`,
+      `Target phase present: ${target ? 'YES' : 'NO'}`,
+      `Target differs from start: ${targetDistinct ? 'YES' : 'NO'}`,
+      `Changed target bones: ${changedBones.join(', ') || 'none'}`,
+      `Root target delta: position=${rootPositionChanged ? 'YES' : 'NO'} rotation=${rootRotationChanged ? 'YES' : 'NO'}`,
+      `Changed-bone tracks present: ${changedBoneTracks.length} / ${changedBones.length}`,
+      `Missing changed-bone tracks: ${missingChangedBoneTracks.join(', ') || 'none'}`,
+      `Runtime bound / unbound targets: ${motion?.boundTargetCount ?? motion?.boundTrackCount ?? '—'} / ${motion?.unboundTargetCount ?? motion?.unboundTrackCount ?? '—'}`,
+      `Clip tracks: ${tracks.length || motion?.trackCount || '—'}`,
+      `Playback state / phase / time: ${playback.state || root.MotionLabRuntime?.snapshot?.().playback || 'stopped'} / ${currentPhase || '—'} / ${Number(playback.currentTime || 0).toFixed(3)} s`,
+      'Owner visual acceptance: REQUIRED',
+      `FIRST FAILURE: ${firstFailure}`
+    ].join('\n');
+  }
+
   function thrillerText() {
     const motion = root.MotionLabRuntime?.snapshot?.().motion;
     const crash = root.PocketPTRetargetMotionCompatibility?.readCrashBreadcrumb?.();
@@ -108,6 +184,7 @@
       legacyDiagnosticsText(),
       intelligenceText(),
       poseEditorText(),
+      yogaDemoText(),
       thrillerText(),
       'BOOTSTRAP DELIVERY',
       bootstrapText()
@@ -194,6 +271,7 @@
     if (installed) { refresh(); return api; }
     installed = true; refresh();
     root.addEventListener?.('pocketpt:motion-intelligence-diagnostics', refresh);
+    root.addEventListener?.('pocketpt:motion-spec-generated', refresh);
     const stages = root.document?.getElementById?.('stages');
     if (stages && typeof root.MutationObserver === 'function') {
       observer = new root.MutationObserver(refresh);
@@ -203,12 +281,13 @@
   }
 
   const api = Object.freeze({
-    VERSION: '1.1.0-canonical-diagnostic-pose-editor',
+    VERSION: '1.2.0-canonical-diagnostic-yoga-demo',
     BUILD,
     install,
     refresh,
     legacyDiagnosticsText,
     poseEditorText,
+    yogaDemoText,
     thrillerText,
     combinedDiagnosticsText
   });
