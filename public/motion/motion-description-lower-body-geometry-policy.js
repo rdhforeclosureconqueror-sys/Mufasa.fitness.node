@@ -4,8 +4,9 @@
   else root.PocketPTMotionDescriptionLowerBodyGeometryPolicy=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='1.0.0-split-stance-geometry';
+  const VERSION='1.0.1-split-stance-geometry-fail-closed';
   const PATTERN='front-knee-bent-rear-leg-straight';
+  const FRONT_SIDE_EPSILON_DEGREES=2;
   const TARGET_PHASES=new Set(['target','hold']);
   const OPERATORS=Object.freeze([
     Object.freeze({id:'lower:split-stance-knee-over-ankle',category:'lower-body-geometry',source:'description.lowerBodyPattern'}),
@@ -24,8 +25,10 @@
 
   function detectFrontSide(spec){
     const target=(spec?.phases||[]).find(phase=>phase.id==='target')||(spec?.phases||[]).find(phase=>phase.id==='hold');
-    const left=Math.abs(degrees(target,'LeftLeg',0)),right=Math.abs(degrees(target,'RightLeg',0));
-    return right>left?'right':'left';
+    if(!target)return null;
+    const left=Math.abs(degrees(target,'LeftLeg',0)),right=Math.abs(degrees(target,'RightLeg',0)),delta=left-right;
+    if(Math.abs(delta)<FRONT_SIDE_EPSILON_DEGREES)return null;
+    return delta>0?'left':'right';
   }
 
   function geometryPolicy(frontSide){return Object.freeze({
@@ -55,7 +58,9 @@
   function apply(spec){
     const classification=spec?.generationMetadata?.movementClassification;
     if(classification?.lowerBodyPattern!==PATTERN)return Object.freeze({status:'ready',applied:false,spec,diagnostics:Object.freeze({policyVersion:VERSION,pattern:classification?.lowerBodyPattern||null})});
-    const frontSide=detectFrontSide(spec),policy=geometryPolicy(frontSide),phases=Object.freeze((spec.phases||[]).map(phase=>patchPhase(phase,frontSide)));
+    const frontSide=detectFrontSide(spec);
+    if(!frontSide)return Object.freeze({status:'failed',code:'LOWER_BODY_GEOMETRY_FRONT_SIDE_AMBIGUOUS',diagnostics:Object.freeze({policyVersion:VERSION,pattern:PATTERN,epsilonDegrees:FRONT_SIDE_EPSILON_DEGREES})});
+    const policy=geometryPolicy(frontSide),phases=Object.freeze((spec.phases||[]).map(phase=>patchPhase(phase,frontSide)));
     const existing=(spec.generationMetadata?.selectedMovementOperators||[]).slice(),ids=new Set(existing.map(item=>item?.id).filter(Boolean));
     for(const item of OPERATORS)if(!ids.has(item.id))existing.push(item);
     const generationMetadata=Object.freeze({...spec.generationMetadata,selectedMovementOperators:Object.freeze(existing),lowerBodyGeometryPolicyVersion:VERSION});
@@ -68,7 +73,9 @@
     const originalGenerate=generator.generate.bind(generator);
     return Object.freeze({...generator,__lowerBodyGeometryPolicyInstalled:true,lowerBodyGeometryPolicyVersion:VERSION,generate(request,plan){
       const generated=originalGenerate(request,plan);if(generated?.status!=='ready'||!generated?.spec)return generated;
-      const applied=apply(generated.spec);if(applied.status!=='ready'||!applied.applied)return generated;
+      const applied=apply(generated.spec);
+      if(applied.status!=='ready')return Object.freeze({status:'failed',code:applied.code||'LOWER_BODY_GEOMETRY_POLICY_FAILED',diagnostics:applied.diagnostics||null});
+      if(!applied.applied)return generated;
       const contract=Object.freeze({...generated.contract,spec:applied.spec});
       return Object.freeze({...generated,spec:applied.spec,contract,diagnostics:Object.freeze({...generated.diagnostics,lowerBodyGeometryPolicy:applied.diagnostics})});
     }});
@@ -79,5 +86,5 @@
     const wrapped=wrapGenerator(scope.PocketPTMotionDescriptionGenerator);scope.PocketPTMotionDescriptionGenerator=wrapped;return wrapped;
   }
 
-  return Object.freeze({VERSION,PATTERN,DEFAULTS,OPERATORS,detectFrontSide,geometryPolicy,apply,wrapGenerator,install});
+  return Object.freeze({VERSION,PATTERN,FRONT_SIDE_EPSILON_DEGREES,DEFAULTS,OPERATORS,detectFrontSide,geometryPolicy,apply,wrapGenerator,install});
 });
