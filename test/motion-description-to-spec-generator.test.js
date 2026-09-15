@@ -18,7 +18,7 @@ test('generic generator produces Coach-targeted supported Motion Specs for all s
   for(const id of expected){const out=Generator.generate(requestFor(id),byPlan.get(id));assert.equal(out.status,'ready',id);assert.equal(out.spec.exerciseId,id);assert.equal(out.spec.status,'development-test-only');assert.equal(out.spec.skeleton.targetSkeletonProfile,'avaturn-native-v1');assert.equal(out.spec.coachRetarget.targetAvatarProfileId,'avaturn-personalized-candidate');assert.equal(out.spec.generationMetadata.generatedDraft,true);assert.equal(out.spec.generationMetadata.descriptionAuthority,true);assert.ok(out.spec.phases.length>=4);assert.equal(out.spec.phases[0].normalizedTime,0);assert.equal(out.spec.phases.at(-1).normalizedTime,1);assert.equal(out.contract.validate(out.spec).valid,true);assert.equal(out.diagnostics.contactSolvingDeferred,false);assert.equal(out.diagnostics.endpointContactSolvingApplied,true);assert.equal(out.diagnostics.surfaceSupportSolvingDeferred,false);assert.equal(out.diagnostics.firstDeferredCapability,null);assert.ok(out.spec.groundingPolicy.contacts.length>=2);assert.ok(out.spec.groundingPolicy.kinematicChains.length>=2);}
 });
 
-test('Chair normalizes the imported T-pose, visibly squats, holds, and returns',()=>{
+test('Chair keeps arms-down start/finish but uses rig-aware ear-line semantics during loaded phases',()=>{
   const out=Generator.generate(requestFor('chair'),byPlan.get('chair'));
   assert.equal(out.status,'ready');
   assert.deepEqual(out.spec.phases.map(x=>x.id),['start','descent','target','hold','ascent','finish']);
@@ -26,17 +26,22 @@ test('Chair normalizes the imported T-pose, visibly squats, holds, and returns',
   const bone=(phase,name)=>phase.boneTargets.find(x=>x.bone===name).rotationOffsetEulerDegrees;
   assert.deepEqual(bone(start,'LeftArm'),[0,0,88]);
   assert.deepEqual(bone(start,'RightArm'),[0,0,-88]);
-  assert.notDeepEqual(bone(start,'LeftArm'),[0,0,0]);
+  assert.deepEqual(bone(descent,'LeftArm'),[0,0,88]);
+  assert.deepEqual(bone(target,'LeftArm'),[0,0,88]);
+  assert.deepEqual(bone(hold,'RightArm'),[0,0,-88]);
+  assert.deepEqual(bone(finish,'LeftArm'),bone(start,'LeftArm'));
+  assert.deepEqual(bone(finish,'RightArm'),bone(start,'RightArm'));
   assert.ok(descent.root.positionOffset[1]<start.root.positionOffset[1]);
   assert.ok(target.root.positionOffset[1]<descent.root.positionOffset[1]);
   assert.deepEqual(bone(target,'LeftUpLeg'),[78,0,2]);
   assert.deepEqual(bone(target,'LeftLeg'),[-95,0,0]);
-  assert.deepEqual(bone(target,'LeftArm'),[0,0,-88]);
-  assert.deepEqual(bone(target,'RightArm'),[0,0,88]);
   assert.deepEqual(hold.root.positionOffset,target.root.positionOffset);
-  assert.deepEqual(finish.root.positionOffset,start.root.positionOffset);
-  assert.deepEqual(bone(finish,'LeftArm'),bone(start,'LeftArm'));
-  assert.deepEqual(bone(finish,'RightArm'),bone(start,'RightArm'));
+  const semantic=out.spec.semanticPosePolicy;
+  assert.equal(semantic.mode,'target-rig-body-relative');
+  assert.equal(semantic.targets.filter(x=>x.type==='bone_direction_reference').length,2);
+  assert.equal(semantic.targets.filter(x=>x.type==='hand_plane_faces_reference').length,2);
+  for(const item of semantic.targets){assert.deepEqual(item.activePhaseIds,['descent','target','hold','ascent']);}
+  for(const item of semantic.targets.filter(x=>x.type==='bone_direction_reference')){assert.equal(item.referenceBone,'Neck');assert.equal(item.referenceChildBone,'Head');}
 });
 
 test('body-surface policy is present only when the description declares body-surface support',()=>{
@@ -51,5 +56,7 @@ test('floor archetypes no longer teleport back to standing on exit',()=>{
 test('generator fails closed for missing or unsupported generation plan',()=>{assert.equal(Generator.generate(requestFor('mountain'),null).code,'GEN_PLAN_MISSING');const bad={...byPlan.get('mountain'),archetype:'not-real'};assert.equal(Generator.generate(requestFor('mountain'),bad).code,'GEN_ARCHETYPE_UNSUPPORTED');});
 
 test('generator remains archetype-driven rather than keyed to exercise IDs',()=>{assert.deepEqual([...Generator.ARCHETYPES].sort(),['bilateral-squat-overhead-hold','inverted-v-four-point','neutral-standing-hold','prone-spinal-extension','supine-hip-extension','wide-split-stance-lateral-reach'].sort());const source=fs.readFileSync(path.join(__dirname,'../public/motion/motion-description-to-spec-generator.js'),'utf8');for(const id of expected)assert.doesNotMatch(source,new RegExp(`exerciseId\\s*===?\\s*["']${id}["']`));});
+
+test('Motion Lab installs semantic direction compiler before runtime playback',()=>{const source=fs.readFileSync(path.join(__dirname,'../motion-lab/motion-lab-bootstrap.js'),'utf8');const clip=source.indexOf('motion_spec_clip');const semantic=source.indexOf('motion_spec_semantic_direction_policy');const runtime=source.indexOf('motion_lab_runtime');assert.ok(clip>=0);assert.ok(semantic>clip);assert.ok(runtime>semantic);assert.match(source,/PocketPTMotionSpecSemanticDirectionPolicy\?\.install/);assert.match(source,/__semanticDirectionPolicyInstalled/);});
 
 test('Yoga Motion Lab intake runs generator -> supports -> Coach -> compile -> playable boundaries',()=>{const source=fs.readFileSync(path.join(__dirname,'../public/motion/yoga-motion-description-intake.js'),'utf8');assert.match(source,/Create Motion Draft/);assert.match(source,/runtime\.loadAvatar\(profiles\.profiles\.personalized\)/);assert.match(source,/runtime\.loadMotionSpec\(generated\.contract\)/);for(const id of ['handoff','resources','description','template','request','plan','generator','supports','coach','compile','playback'])assert.match(source,new RegExp(`stage\\(["']${id}["']`));});
