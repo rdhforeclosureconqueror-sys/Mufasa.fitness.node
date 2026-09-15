@@ -4,8 +4,8 @@
   if(typeof module==="object"&&module.exports)module.exports=api;else root.PocketPTMotionDescriptionGenerator=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(supportPolicy){
   "use strict";
-  const VERSION="1.3.0-chair-tpose-normalization";
-  const BONES=Object.freeze({hips:"Hips",spine:"Spine",spine1:"Spine1",spine2:"Spine2",neck:"Neck",head:"Head",lArm:"LeftArm",lFore:"LeftForeArm",lHand:"LeftHand",rArm:"RightArm",rFore:"RightForeArm",rHand:"RightHand",lThigh:"LeftUpLeg",lLeg:"LeftLeg",lFoot:"LeftFoot",rThigh:"RightUpLeg",rLeg:"RightLeg",rFoot:"RightFoot"});
+  const VERSION="1.4.0-chair-semantic-ear-line";
+  const BONES=Object.freeze({hips:"Hips",spine:"Spine",spine1:"Spine1",spine2:"Spine2",neck:"Neck",head:"Head",lArm:"LeftArm",lFore:"LeftForeArm",lHand:"LeftHand",lMiddle:"LeftHandMiddle1",lIndex:"LeftHandIndex1",lPinky:"LeftHandPinky1",rArm:"RightArm",rFore:"RightForeArm",rHand:"RightHand",rMiddle:"RightHandMiddle1",rIndex:"RightHandIndex1",rPinky:"RightHandPinky1",lThigh:"LeftUpLeg",lLeg:"LeftLeg",lFoot:"LeftFoot",rThigh:"RightUpLeg",rLeg:"RightLeg",rFoot:"RightFoot"});
   const v=x=>Object.freeze(x.slice());
   const target=(bone,e)=>Object.freeze({bone,rotationOffsetEulerDegrees:v(e)});
   function phase(id,t,root,targets,contacts=[]){return Object.freeze({id,kind:"generated",normalizedTime:t,interpolation:"quaternion_slerp",root:Object.freeze({positionOffset:v(root.pos||[0,0,0]),positionUnit:"avatar_height",rotationOffsetEulerDegrees:v(root.rot||[0,0,0])}),boneTargets:Object.freeze(targets),contacts:Object.freeze(contacts.slice())});}
@@ -16,10 +16,22 @@
   function threePhase(plan,targetTargets,targetRoot={pos:[0,0,0],rot:[0,0,0]}){const x=timing(plan),base=baseTargets();return {duration:x.duration,phases:[phase("start",0,{pos:[0,0,0],rot:[0,0,0]},base),phase("target",x.targetTime,targetRoot,targetTargets),phase("hold",x.holdTime,targetRoot,targetTargets),phase("finish",1,{pos:[0,0,0],rot:[0,0,0]},base)]};}
   function chairPhases(plan){
     const x=timing(plan),stand=neutralStandingTargets();
-    const mid=replace(stand,{[BONES.spine]:[4,0,0],[BONES.spine1]:[2,0,0],[BONES.lThigh]:[42,0,2],[BONES.rThigh]:[42,0,-2],[BONES.lLeg]:[-55,0,0],[BONES.rLeg]:[-55,0,0],[BONES.lFoot]:[18,0,0],[BONES.rFoot]:[18,0,0],[BONES.lArm]:[0,0,0],[BONES.rArm]:[0,0,0]});
-    const bottom=replace(stand,{[BONES.spine]:[12,0,0],[BONES.spine1]:[5,0,0],[BONES.lThigh]:[78,0,2],[BONES.rThigh]:[78,0,-2],[BONES.lLeg]:[-95,0,0],[BONES.rLeg]:[-95,0,0],[BONES.lFoot]:[28,0,0],[BONES.rFoot]:[28,0,0],[BONES.lArm]:[0,0,-88],[BONES.rArm]:[0,0,88]});
+    const mid=replace(stand,{[BONES.spine]:[4,0,0],[BONES.spine1]:[2,0,0],[BONES.lThigh]:[42,0,2],[BONES.rThigh]:[42,0,-2],[BONES.lLeg]:[-55,0,0],[BONES.rLeg]:[-55,0,0],[BONES.lFoot]:[18,0,0],[BONES.rFoot]:[18,0,0]});
+    const bottom=replace(stand,{[BONES.spine]:[12,0,0],[BONES.spine1]:[5,0,0],[BONES.lThigh]:[78,0,2],[BONES.rThigh]:[78,0,-2],[BONES.lLeg]:[-95,0,0],[BONES.rLeg]:[-95,0,0],[BONES.lFoot]:[28,0,0],[BONES.rFoot]:[28,0,0]});
     const descentTime=Math.max(.08,x.targetTime*.5),ascentTime=x.holdTime+(1-x.holdTime)*.5;
-    return {duration:x.duration,phases:[
+    const activePhaseIds=Object.freeze(["descent","target","hold","ascent"]);
+    const semanticPosePolicy=Object.freeze({
+      mode:"target-rig-body-relative",
+      coordinateSpace:"phase-relative-world",
+      targets:Object.freeze([
+        Object.freeze({id:"chair_left_upper_arm_ear_line",type:"bone_direction_reference",bone:BONES.lArm,childBone:BONES.lFore,referenceBone:BONES.neck,referenceChildBone:BONES.head,activePhaseIds}),
+        Object.freeze({id:"chair_right_upper_arm_ear_line",type:"bone_direction_reference",bone:BONES.rArm,childBone:BONES.rFore,referenceBone:BONES.neck,referenceChildBone:BONES.head,activePhaseIds}),
+        Object.freeze({id:"chair_left_palm_in",type:"hand_plane_faces_reference",bone:BONES.lHand,childBone:BONES.lMiddle,planePointA:BONES.lIndex,planePointB:BONES.lPinky,referenceBone:BONES.head,normalSign:1,activePhaseIds}),
+        Object.freeze({id:"chair_right_palm_in",type:"hand_plane_faces_reference",bone:BONES.rHand,childBone:BONES.rMiddle,planePointA:BONES.rPinky,planePointB:BONES.rIndex,referenceBone:BONES.head,normalSign:1,activePhaseIds})
+      ]),
+      rule:"During loaded Chair phases, solve each upper arm beside the ear line on the actual Coach rig and face palms inward. Start/finish retain neutral arms-down standing."
+    });
+    return {duration:x.duration,semanticPosePolicy,phases:[
       phase("start",0,{pos:[0,0,0],rot:[0,0,0]},stand),
       phase("descent",descentTime,{pos:[0,-.11,-.04],rot:[5,0,0]},mid),
       phase("target",x.targetTime,{pos:[0,-.22,-.05],rot:[10,0,0]},bottom),
@@ -42,7 +54,7 @@
     const check=validateRequest(request,plan);if(!check.valid)return Object.freeze({status:"failed",code:check.errors[0],diagnostics:Object.freeze({errors:check.errors})});
     const built=ARCHETYPES[plan.archetype](plan),support=supportPolicy.compile(plan,built.phases);
     if(support.status!=="ready")return Object.freeze({status:"failed",code:support.code||"GEN_SUPPORT_POLICY_FAILED",diagnostics:support.diagnostics||null});
-    const spec=Object.freeze({schemaVersion:1,exerciseId:request.exerciseId,motionId:`generated/yoga/${request.exerciseId}/v1`,displayName:`${request.displayName} — Generated Draft`,version:1,status:"development-test-only",durationSeconds:built.duration,loop:false,skeleton:Object.freeze({id:"avaturn-native-v1",rootBone:BONES.hips,targetSkeletonProfile:"avaturn-native-v1",rotationSpace:"rest_relative_local"}),coachRetarget:Object.freeze({targetAvatarProfileId:"avaturn-personalized-candidate",targetSkeletonProfile:"avaturn-native-v1",source:"motion-description-generator-v1"}),generationMetadata:Object.freeze({generatorVersion:VERSION,generatedDraft:true,archetype:plan.archetype,semanticRequirements:Object.freeze((plan.semanticRequirements||[]).slice()),descriptionAuthority:true,humanVisualAcceptanceRequired:true,supportOperatorVersion:supportPolicy.VERSION}),groundingPolicy:support.groundingPolicy,surfaceSupportPolicy:support.surfaceSupportPolicy,phases:support.phases});
+    const spec=Object.freeze({schemaVersion:1,exerciseId:request.exerciseId,motionId:`generated/yoga/${request.exerciseId}/v1`,displayName:`${request.displayName} — Generated Draft`,version:1,status:"development-test-only",durationSeconds:built.duration,loop:false,skeleton:Object.freeze({id:"avaturn-native-v1",rootBone:BONES.hips,targetSkeletonProfile:"avaturn-native-v1",rotationSpace:"rest_relative_local"}),coachRetarget:Object.freeze({targetAvatarProfileId:"avaturn-personalized-candidate",targetSkeletonProfile:"avaturn-native-v1",source:"motion-description-generator-v1"}),generationMetadata:Object.freeze({generatorVersion:VERSION,generatedDraft:true,archetype:plan.archetype,semanticRequirements:Object.freeze((plan.semanticRequirements||[]).slice()),descriptionAuthority:true,humanVisualAcceptanceRequired:true,supportOperatorVersion:supportPolicy.VERSION}),...(built.semanticPosePolicy?{semanticPosePolicy:built.semanticPosePolicy}:{}),groundingPolicy:support.groundingPolicy,surfaceSupportPolicy:support.surfaceSupportPolicy,phases:support.phases});
     const contract=Object.freeze({spec,validate(candidate){const errors=[];if(!candidate?.motionId)errors.push("motionId required");if(!Array.isArray(candidate?.phases)||candidate.phases.length<2)errors.push("phases required");if(candidate?.skeleton?.targetSkeletonProfile!=="avaturn-native-v1")errors.push("Coach target required");if(candidate?.groundingPolicy?.enforceContactAnchors&&!candidate.groundingPolicy.anchorPhaseId)errors.push("contact anchor phase required");if(candidate?.surfaceSupportPolicy?.constraints?.length&&!candidate.surfaceSupportPolicy.anchorPhaseId)errors.push("surface anchor phase required");return Object.freeze({valid:errors.length===0,errors:Object.freeze(errors)});}});
     return Object.freeze({status:"ready",spec,contract,diagnostics:Object.freeze({generatorVersion:VERSION,exerciseId:request.exerciseId,archetype:plan.archetype,phaseCount:spec.phases.length,durationSeconds:spec.durationSeconds,semanticRequirements:Object.freeze((plan.semanticRequirements||[]).slice()),supports:Object.freeze((plan.supports||[]).slice()),supportOperators:support.diagnostics,contactSolvingDeferred:false,endpointContactSolvingApplied:support.diagnostics.endpointContactSolvingApplied,bodySurfaceSolvingApplied:support.diagnostics.bodySurfaceSolvingApplied,surfaceSupportSolvingDeferred:false,firstDeferredCapability:null})});
   }
