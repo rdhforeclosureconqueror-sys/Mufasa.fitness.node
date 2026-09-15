@@ -149,7 +149,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/arena-push-up.js
           git add -f "$PREVIEW_ROOT/index.html" "$PREVIEW_ROOT/index.js" "$PREVIEW_ROOT/index.pck" "$PREVIEW_ROOT/index.wasm" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/pocketpt-world-build.json"
-          git diff --cached --check
+          # Generated Godot HTML may intentionally contain trailing whitespace/newlines.
+          # Protect hand-authored text without mutating the hash-verified producer files.
+          git diff --cached --check -- public/arena-push-up.js "$PREVIEW_ROOT/pocketpt-world-build.json"
           if ! git diff --cached --quiet; then
             git commit -m "Stage avatar-safe underwater Make 10 preview [skip ci]"
             git push origin HEAD:"${TARGET_BRANCH}"
