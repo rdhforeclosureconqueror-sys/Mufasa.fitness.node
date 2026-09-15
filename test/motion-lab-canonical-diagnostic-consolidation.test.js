@@ -45,6 +45,8 @@ test('canonical diagnostic includes focused Yoga demo semantic and playback trut
   assert.match(consolidator, /Playback state \/ phase \/ time/);
   assert.match(consolidator, /Owner visual acceptance: REQUIRED/);
   assert.match(consolidator, /pocketpt:motion-spec-generated/);
+  assert.match(consolidator, /trackTargets = new Set/);
+  assert.match(consolidator, /avatarTargets\.set\(node\.name, node\.uuid \|\| node\.name\)/);
 });
 
 test('bootstrap loads and installs the consolidator after Motion Lab runtime', () => {
