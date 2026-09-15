@@ -27,7 +27,10 @@
     "timing": "Entry duration, hold, exit duration and repetitions.",
     "transitionIn": "Ordered phase intent for entering the target shape.",
     "transitionOut": "Ordered phase intent for returning or continuing.",
-    "visualAcceptance": "Human checkpoints that must pass before the motion is canonical."
+    "visualAcceptance": "Human checkpoints that must pass before the motion is canonical.",
+    "movementClassification": "Optional machine-readable movement family. Classify support pattern, lower-body pattern, trunk pattern, arm-path pattern, and head/gaze pattern so multiple exercises can reuse the same movement logic.",
+    "directionalRules": "Optional machine-readable direction contract. State how major segments should travel in body-relative language and explicitly list prohibited trajectories such as an arm sweeping behind the torso when the intended path is forward or lateral."
   },
+  "classificationRule": "Classifications describe reusable movement mechanics, not pose names. Examples: stationary-lunge lower body, opposed lateral arm reach, forward four-point support line, prone spinal extension, or rib-side press. Do not encode avatar-specific Euler rotations in descriptions.",
   "generationRule": "Description semantics are authoritative. Target-rig bone names, rest pose, local axes, IK, contact solving and interpolation are Motion Lab responsibilities. Generated drafts remain development-only until visual acceptance."
 }
