@@ -54,6 +54,7 @@ test('wrapped generator records reusable split-stance operators and preserves se
   assert.ok(ids.includes('arm:opposed-lateral-shoulder-axis'));
   assert.ok(out.spec.semanticPosePolicy.targets.length>=2);
   assert.equal(out.contract.spec,out.spec);
+  assert.equal(out.contract.validate(out.spec).valid,true);
 });
 
 test('non split-stance descriptions pass through unchanged',()=>{
@@ -63,9 +64,18 @@ test('non split-stance descriptions pass through unchanged',()=>{
   assert.equal(applied.spec,chair.spec);
 });
 
-test('Motion Lab gate loads and installs the lower-body geometry policy before observation',()=>{
+test('Motion Lab prepares the geometry policy before the first Yoga generator call',()=>{
   const gate=fs.readFileSync(path.join(__dirname,'../public/motion/generator-operator-observability-gate.js'),'utf8');
+  const intake=fs.readFileSync(path.join(__dirname,'../public/motion/yoga-motion-description-intake.js'),'utf8');
   assert.match(gate,/motion-description-lower-body-geometry-policy\.js/);
-  assert.match(gate,/policy\?\.install\?\.\(root\)/);
+  assert.match(gate,/async function prepareGenerator/);
+  assert.match(gate,/policy\.install\(root\)/);
+  assert.match(gate,/__lowerBodyGeometryPolicyInstalled/);
   assert.match(gate,/installObservability/);
+  const prepare=intake.indexOf('gate.prepareGenerator');
+  const generate=intake.indexOf('generator.generate');
+  assert.ok(prepare>=0,'Yoga intake must prepare the generator');
+  assert.ok(generate>prepare,'geometry policy must install before the first generator.generate call');
+  assert.match(intake,/lowerBodyPattern==="front-knee-bent-rear-leg-straight"/);
+  assert.match(intake,/lower_body_geometry_policy_not_installed/);
 });
