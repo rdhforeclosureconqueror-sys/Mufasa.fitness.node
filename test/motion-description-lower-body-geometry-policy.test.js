@@ -45,6 +45,15 @@ test('policy selects front side from generated knee bend instead of pose identit
   assert.equal(Policy.detectFrontSide(swapped),'right');
 });
 
+test('ambiguous knee geometry fails closed instead of arbitrarily choosing a front leg',()=>{
+  const base=Generator.generate(requestFor('warrior-ii'),byPlan.get('warrior-ii'));
+  const ambiguous={...base.spec,phases:base.spec.phases.map(phase=>phase.id!=='target'?phase:{...phase,boneTargets:phase.boneTargets.map(item=>item.bone==='LeftLeg'||item.bone==='RightLeg'?{...item,rotationOffsetEulerDegrees:[-30,0,0]}:item)})};
+  assert.equal(Policy.detectFrontSide(ambiguous),null);
+  const applied=Policy.apply(ambiguous);
+  assert.equal(applied.status,'failed');
+  assert.equal(applied.code,'LOWER_BODY_GEOMETRY_FRONT_SIDE_AMBIGUOUS');
+});
+
 test('wrapped generator records reusable split-stance operators and preserves semantic arm policy',()=>{
   const wrapped=Policy.wrapGenerator(Generator);
   const out=wrapped.generate(requestFor('warrior-ii'),byPlan.get('warrior-ii'));
