@@ -80,12 +80,12 @@ jobs:
           p = Path('public/arena-push-up.js')
           s = p.read_text()
           needle = "  const exitArena = document.getElementById('exitArena');\n"
-          insert = needle + "  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';\n  const gameEntryPath = underwaterPreview ? '/game/underwater-learning-preview/index.html' : '/game/push-up-arena/index.html';\n"
+          insert = needle + "  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';\n  const previewGameEntryPath = '/game/underwater-learning-preview/index.html';\n"
           if 'const underwaterPreview =' not in s:
               if needle not in s: raise SystemExit('arena preview insertion point missing')
               s = s.replace(needle, insert, 1)
           old = "    game.src = '/game/push-up-arena/index.html';"
-          new = "    game.src = gameEntryPath;"
+          new = "    game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html';"
           if old in s:
               s = s.replace(old, new, 1)
           elif new not in s:
@@ -93,8 +93,8 @@ jobs:
           p.write_text(s)
           PY
           grep -F "underwaterPreview" public/arena-push-up.js
-          grep -F "'/game/underwater-learning-preview/index.html'" public/arena-push-up.js
-          grep -F "'/game/push-up-arena/index.html'" public/arena-push-up.js
+          grep -F "previewGameEntryPath = '/game/underwater-learning-preview/index.html'" public/arena-push-up.js
+          grep -F "game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html'" public/arena-push-up.js
 
       - name: Write preview manifest
         shell: bash
@@ -131,7 +131,11 @@ jobs:
           const fs = require('fs');
           const s = fs.readFileSync('public/arena-push-up.js','utf8');
           if (!s.includes("new URLSearchParams(location.search).get('preview') === 'underwater'")) throw new Error('preview query gate missing');
-          if (!s.includes("underwaterPreview ? '/game/underwater-learning-preview/index.html' : '/game/push-up-arena/index.html'")) throw new Error('default arena isolation missing');
+          if (!s.includes("const previewGameEntryPath = '/game/underwater-learning-preview/index.html'")) throw new Error('preview package path missing');
+          if (!s.includes("game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html'")) throw new Error('default arena isolation missing');
+          const bootstrap = s.indexOf('/api/game/bootstrap');
+          const productionGodot = s.indexOf('/game/push-up-arena/index.html');
+          if (productionGodot <= bootstrap) throw new Error('production Godot path moved before authenticated bootstrap');
           const manifest = JSON.parse(fs.readFileSync('public/game/underwater-learning-preview/pocketpt-world-build.json','utf8'));
           if (manifest.godotSourceCommit !== process.env.GODOT_SOURCE_COMMIT) throw new Error('preview provenance mismatch');
           if (manifest.productionArenaUntouched !== true) throw new Error('production isolation marker missing');
