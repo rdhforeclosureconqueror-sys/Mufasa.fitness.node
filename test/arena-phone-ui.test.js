@@ -70,7 +70,7 @@ test('real coordinator rotates from captured references to retry, and explicit r
   const f=fixture(t);await startCalibration(f);f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/calibration complete/);
   assert.equal(f.timers.size,0);f.events.get('orientationchange')();
-  assert.equal(f.nodes.get('arenaRestartCalibration').hidden,false);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Capture paused/);
+  assert.equal(f.nodes.get('arenaRestartCalibration').hidden,false);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.equal(f.nodes.get('arenaBodyStatus').dataset.visible,'false');
   await f.nodes.get('arenaRestartCalibration').fire('click');
   assert.equal(f.doc.activeElement.id,'arenaReturnToGym');f.hold('TOP');
@@ -79,9 +79,9 @@ test('real coordinator rotates from captured references to retry, and explicit r
   assert.equal(f.marks.some(([id,status])=>['START_POSITION','REP_DETECTOR','TIMER'].includes(id)&&status==='PASS'),false);
 });
 
-test('coordinator deadlines show retry and camera switching starts fresh capture', async t => {
-  const f=fixture(t);await startCalibration(f);f.hold('TOP');f.advance(30001);
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/Capture paused/);
+test('coordinator deadlines give fast retry feedback and camera switching starts fresh capture', async t => {
+  const f=fixture(t);await startCalibration(f);f.hold('TOP');f.advance(Calibration.PHASE_TIMEOUT_MS + 1);
+  assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.deepEqual(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1),['POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT']);
   f.nodes.get('arenaCameraSelect').value='different-device';await f.nodes.get('arenaCameraSelect').fire('change');
   f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent,/TOP:/);
