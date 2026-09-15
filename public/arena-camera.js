@@ -6,10 +6,9 @@
   'use strict';
   const JOINTS = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
   // Framing/calibration is deliberately more tolerant than authoritative
-  // scoring. Three-second stability and explicit form gates provide the
-  // calibration safety net; the reviewed scoring profile keeps its own .75
-  // confidence requirement for official rep evidence.
-  const CALIBRATION_CONFIDENCE_CAP = .5;
+  // scoring. The setup reference only needs a believable side-view snapshot;
+  // official rep evidence still uses the stricter scoring confidence below.
+  const CALIBRATION_CONFIDENCE_CAP = .4;
   function visible(frame, minimumConfidence) {
     return Number.isFinite(minimumConfidence) && minimumConfidence > 0 && minimumConfidence <= 1 && ['left','right'].includes(frame?.side) &&
       JOINTS.every(name => {
@@ -60,8 +59,6 @@
       const cancelPromise = new Promise((_, reject) => {op.rejectCancel = reject;});
       const live = () => current === op && !op.cancelled;
       const check = () => {if (!live()) throw aborted();};
-      // CameraController remains the stream owner. Guard unresolved permission
-      // requests so a late grant after exit cannot mount or leave a camera on.
       const mediaDevices = {
         async getUserMedia(constraints) {
           check(); const stream = await native.getUserMedia(constraints);
@@ -113,9 +110,6 @@
           const bodyVisible = visible(frame, calibrationConfidence);
           const enriched = frame ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight, calibrationUsable: bodyVisible} : null;
           onVisibility(bodyVisible);
-          // Never hide MoveNet evidence merely because the stricter form gate is
-          // not satisfied. The UI needs the raw packet to show the member which
-          // joint or segment is preventing calibration.
           onPose(enriched, calibrationConfidence, source.posePacket || null, {bodyVisible, scoringConfidence});
           root.clearTimeout(op.staleTimer);
           op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, calibrationConfidence, null, {bodyVisible:false, scoringConfidence});}}, 1500);
@@ -132,7 +126,7 @@
           onStatus(permission ? 'CAMERA_PERMISSION' : op.phase, 'FAIL', permission ? 'CAMERA_DENIED' : 'CAMERA_START_FAILED');
           stop();
         }
-        throw aborted(); // Do not leak browser/device/error strings into reports.
+        throw aborted();
       }
     }
     function resetTracking() {current?.capture?.resetTracking(); onVisibility(false);}

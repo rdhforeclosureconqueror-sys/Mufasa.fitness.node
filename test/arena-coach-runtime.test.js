@@ -32,10 +32,12 @@ test('Arena page preloads CoachRuntime before live motion and keeps body/form st
   assert.match(html, /@media\(max-width:600px\)[\s\S]*\.camera-stage\{width:calc\(100% - 16px\)/);
 });
 
-test('Arena phone calibration explains the red-green form contract', () => {
+test('Arena phone calibration explains the red-green form contract and keeps spoken setup cues intact', () => {
   const source = fs.readFileSync(path.join(__dirname, '../public/arena-phone-ui.js'), 'utf8');
-  assert.match(source, /green = in range/);
+  assert.match(source, /green = usable/);
   assert.match(source, /align shoulder · hip · ankle/);
-  assert.match(source, /straighten arm/);
-  assert.match(source, /set arm\/shoulder near 90°/);
+  assert.match(source, /straighten arm a little more/);
+  assert.match(source, /set arm\/shoulder closer to 90°/);
+  assert.match(source, /Didn't get it/);
+  assert.match(source, /interruptible:false/);
 });

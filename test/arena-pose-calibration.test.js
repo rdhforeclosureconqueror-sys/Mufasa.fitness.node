@@ -22,6 +22,9 @@ function create(options = {}) {
 function hold(calibration, kind, start = 0, patch = value => value, confidence = .75) {
   for (let index = 0; index < 11; index++) calibration.observe(patch(frame(kind, start + index * 300, index % 2 ? .001 : 0)), confidence);
 }
+function quickHold(calibration, kind, start = 0, confidence = .4) {
+  for (let index = 0; index < 6; index++) calibration.observe(frame(kind, start + index * 220, index % 2 ? .001 : 0), confidence);
+}
 
 test('captures stable personal TOP and BOTTOM geometry and confirms TOP return', () => {
   const stages = [], calibration = create({onChange: state => stages.push(state.stage)});
@@ -36,11 +39,30 @@ test('captures stable personal TOP and BOTTOM geometry and confirms TOP return',
   assert.equal(calibration.classify(frame('BOTTOM', 10000), .75), 'BOTTOM');
 });
 
-test('does not capture an unchanged or unstable pose as BOTTOM', () => {
-  const calibration = create(); calibration.start(); hold(calibration, 'TOP');
-  hold(calibration, 'TOP', 3300); assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
-  for (let index = 0; index < 16; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 6600 + index * 100), .75);
+test('quick capture locks a valid pose in about one second instead of requiring a three-second plank hold', () => {
+  const calibration = create(); calibration.start(); quickHold(calibration, 'TOP');
+  assert.equal(Calibration.STABLE_MS, 1000);
   assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+});
+
+test('timeout preserves already captured references and retry resumes the failed stage', () => {
+  const calibration = create(); calibration.start(); quickHold(calibration, 'TOP');
+  assert.equal(calibration.snapshot().topCaptured, true);
+  calibration.invalidate('TIMEOUT');
+  assert.deepEqual(calibration.snapshot(), {stage:'NEEDS_RETRY', reason:'TIMEOUT', failedStage:'CAPTURE_BOTTOM', topCaptured:true, bottomCaptured:false, calibrated:false});
+  assert.equal(calibration.retry(), true);
+  assert.deepEqual(calibration.snapshot(), {stage:'CAPTURE_BOTTOM', reason:null, failedStage:null, topCaptured:true, bottomCaptured:false, calibrated:false});
+});
+
+test('does not capture an unchanged or unstable pose as BOTTOM before the fast attempt times out', () => {
+  const calibration = create(); calibration.start(); quickHold(calibration, 'TOP');
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  for (let index = 0; index < 8; index++) calibration.observe(frame('TOP', 1400 + index * 200), .4);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().bottomCaptured, false);
+  for (let index = 0; index < 8; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 3000 + index * 200), .4);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().bottomCaptured, false);
 });
 
 test('rejects unusable frames and exposes no pose geometry in public state', () => {
@@ -60,41 +82,41 @@ test('calibration visibility can stay usable when the stricter scoring tracker i
     value.analysisUsable = false;
     value.trackingState = 'DEGRADED';
     value.calibrationUsable = true;
-    for (const point of Object.values(value.sequenceLandmarks)) point.confidence = .55;
+    for (const point of Object.values(value.sequenceLandmarks)) point.confidence = .45;
     return value;
-  }, .5);
+  }, .4);
   assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
 });
 
 test('top setup guidance rejects bent arms, bad shoulder angle and broken shoulder-hip-ankle line', () => {
   const good = frame('TOP', 1000);
-  const accepted = Calibration.evaluateFrame(good, .5, 'CAPTURE_TOP');
+  const accepted = Calibration.evaluateFrame(good, .4, 'CAPTURE_TOP');
   assert.equal(accepted.allPass, true);
   assert.equal(accepted.checks.elbowExtension, true);
   assert.equal(accepted.checks.shoulderStack, true);
   assert.equal(accepted.checks.bodyLine, true);
 
   const bent = frame('BOTTOM', 1000);
-  const bentTop = Calibration.evaluateFrame(bent, .5, 'CAPTURE_TOP');
+  const bentTop = Calibration.evaluateFrame(bent, .4, 'CAPTURE_TOP');
   assert.equal(bentTop.checks.elbowExtension, false);
 
   const shoulder = frame('TOP', 1000);
   shoulder.sequenceLandmarks.elbow = {x:.2,y:.2,confidence:.95};
   shoulder.sequenceLandmarks.wrist = {x:.3,y:.3,confidence:.95};
-  const shoulderEval = Calibration.evaluateFrame(shoulder, .5, 'CAPTURE_TOP');
+  const shoulderEval = Calibration.evaluateFrame(shoulder, .4, 'CAPTURE_TOP');
   assert.equal(shoulderEval.checks.shoulderStack, false);
 
   const sag = frame('TOP', 1000);
   sag.sequenceLandmarks.hip.x = .22;
-  const sagEval = Calibration.evaluateFrame(sag, .5, 'CAPTURE_TOP');
+  const sagEval = Calibration.evaluateFrame(sag, .4, 'CAPTURE_TOP');
   assert.equal(sagEval.checks.bodyLine, false);
 });
 
 test('bottom guidance requires depth while preserving shoulder-hip-ankle alignment', () => {
-  const bottom = Calibration.evaluateFrame(frame('BOTTOM', 1000), .5, 'CAPTURE_BOTTOM');
+  const bottom = Calibration.evaluateFrame(frame('BOTTOM', 1000), .4, 'CAPTURE_BOTTOM');
   assert.equal(bottom.allPass, true);
-  const shallow = Calibration.evaluateFrame(frame('TOP', 1000), .5, 'CAPTURE_BOTTOM');
+  const shallow = Calibration.evaluateFrame(frame('TOP', 1000), .4, 'CAPTURE_BOTTOM');
   assert.equal(shallow.checks.elbowDepth, false);
   const sag = frame('BOTTOM', 1000); sag.sequenceLandmarks.hip.x = .22;
-  assert.equal(Calibration.evaluateFrame(sag, .5, 'CAPTURE_BOTTOM').checks.bodyLine, false);
+  assert.equal(Calibration.evaluateFrame(sag, .4, 'CAPTURE_BOTTOM').checks.bodyLine, false);
 });

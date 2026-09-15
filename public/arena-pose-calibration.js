@@ -6,24 +6,24 @@
   'use strict';
   const NAMES = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
   const MIN_SAMPLES = 4;
-  const STABLE_MS = 3000;
-  const MAX_GAP_MS = 350;
-  const PHASE_TIMEOUT_MS = 30000;
-  const MAX_AGE_MS = 1500;
-  const MAX_STABILITY_DEGREES = 7;
-  const MIN_POSE_SEPARATION_DEGREES = 20;
-  const MAX_BOTTOM_ELBOW_DEGREES = 95;
+  // Calibration is a quick setup snapshot, not the competition judge. A member
+  // should not have to hold a tiring plank for several seconds just to enter the
+  // challenge. Official rep scoring keeps its own stricter rules downstream.
+  const STABLE_MS = 1000;
+  const MAX_GAP_MS = 400;
+  const PHASE_TIMEOUT_MS = 4500;
+  const MAX_AGE_MS = 2000;
+  const MAX_STABILITY_DEGREES = 12;
+  const MIN_POSE_SEPARATION_DEGREES = 14;
+  const MAX_BOTTOM_ELBOW_DEGREES = 105;
 
-  // Calibration guidance is intentionally separate from the authoritative
-  // competition profile. The member gets immediate setup feedback here while
-  // the reviewed scoring rules remain the only source of official rep credit.
-  // These values are measured from a smoothed side-view hold, so the grace is
-  // small but not so small that normal 2-D pose jitter makes a valid setup
-  // impossible to capture.
-  const TOP_ELBOW_MIN_DEGREES = 160;
+  // Temporary calibration grace while we collect real-device evidence. These
+  // values only decide whether TOP/BOTTOM references can be captured; they do
+  // not award official repetitions.
+  const TOP_ELBOW_MIN_DEGREES = 150;
   const TOP_SHOULDER_TARGET_DEGREES = 90;
-  const TOP_SHOULDER_GRACE_DEGREES = 12;
-  const BODY_ALIGNMENT_GRACE_DEGREES = 10;
+  const TOP_SHOULDER_GRACE_DEGREES = 20;
+  const BODY_ALIGNMENT_GRACE_DEGREES = 15;
 
   function angle(a, b, c) {
     const ab = {x: a.x - b.x, y: a.y - b.y}, cb = {x: c.x - b.x, y: c.y - b.y};
@@ -52,8 +52,6 @@
     const status = requiredPointStatus(frame, minimumConfidence);
     if (!NAMES.every(name => status[name].visible)) return null;
     const points = frame.sequenceLandmarks || {};
-    // Restore one common coordinate scale before measuring angles. Rendering
-    // transforms (contain/crop/mirror/CSS pixels) never enter this calculation.
     const p = Object.fromEntries(NAMES.map(name => [name, {x: points[name].x * width, y: points[name].y * height}]));
     const vector = [angle(p.wrist, p.elbow, p.shoulder), angle(p.elbow, p.shoulder, p.hip), angle(p.shoulder, p.hip, p.ankle)];
     return vector.every(Number.isFinite) ? vector : null;
@@ -115,10 +113,14 @@
     function clearLoss() {clearTimer(lossTimer); lossTimer = null; lossGeneration++;}
     function clearDeadline() {clearTimer(timer); timer = null; deadline = null; generation++;}
     function erase() {samples = []; top = bottom = tolerance = source = lastTimestamp = null; clearDeadline(); clearLoss();}
+    function clearAttemptOnly() {samples = []; clearDeadline(); clearLoss();}
     function reset() {erase(); stage = 'IDLE'; reason = failedStage = null; emit();}
     function invalidate(code = 'SOURCE_CHANGED') {
       if (stage === 'IDLE' || stage === 'NEEDS_RETRY') return;
-      failedStage = stage; erase(); reason = ['SOURCE_CHANGED','TIMEOUT','TRACKING_LOST'].includes(code) ? code : 'SOURCE_CHANGED';
+      failedStage = stage;
+      const preserveCapturedReferences = ['TIMEOUT','TRACKING_LOST'].includes(code) && ['CAPTURE_BOTTOM','CONFIRM_TOP'].includes(stage);
+      if (preserveCapturedReferences) clearAttemptOnly(); else erase();
+      reason = ['SOURCE_CHANGED','TIMEOUT','TRACKING_LOST'].includes(code) ? code : 'SOURCE_CHANGED';
       stage = 'NEEDS_RETRY'; emit();
     }
     function advance(next) {
@@ -131,6 +133,16 @@
       emit();
     }
     function start() {erase(); reason = failedStage = null; advance('CAPTURE_TOP');}
+    function retry() {
+      if (stage !== 'NEEDS_RETRY') return false;
+      let next = failedStage;
+      if (next === 'CAPTURE_BOTTOM' && !top) next = 'CAPTURE_TOP';
+      if (next === 'CONFIRM_TOP' && (!top || !bottom)) next = top ? 'CAPTURE_BOTTOM' : 'CAPTURE_TOP';
+      if (!['CAPTURE_TOP','CAPTURE_BOTTOM','CONFIRM_TOP'].includes(next)) next = 'CAPTURE_TOP';
+      reason = failedStage = null;
+      advance(next);
+      return true;
+    }
     function fresh(frame) {return Number.isFinite(frame?.timestamp) && frame.timestamp >= 0 && now() - frame.timestamp <= MAX_AGE_MS && frame.timestamp - now() <= 250;}
     function sameSource(frame) {return !source || (frame.side === source.side && frame.sourceWidth === source.width && frame.sourceHeight === source.height);}
     function evaluate(frame, minimumConfidence) {
@@ -152,8 +164,6 @@
       if (lastTimestamp !== null && frame.timestamp - lastTimestamp > MAX_GAP_MS) samples = [];
       lastTimestamp = frame.timestamp;
       if (stage === 'CALIBRATED') return false;
-      // A time window works at both low and high inference rates. Coalescing
-      // above ~60 Hz bounds memory without shortening the required hold.
       if (samples.length && frame.timestamp - samples.at(-1).at < 16) return false;
       samples.push({at: frame.timestamp, vector});
       while (samples.length > 2 && samples[1].at <= frame.timestamp - STABLE_MS) samples.shift();
@@ -163,10 +173,10 @@
       if (!form?.allPass) return false;
       if (stage === 'CAPTURE_TOP') {top = candidate; advance('CAPTURE_BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
-        if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 3)) return false;
+        if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) return false;
         bottom = candidate;
         const separation = distance(top.center, bottom.center);
-        tolerance = Math.max(8, Math.min(separation * .35, Math.max(top.spread, bottom.spread) * 3 + 8));
+        tolerance = Math.max(10, Math.min(separation * .4, Math.max(top.spread, bottom.spread) * 3 + 10));
         advance('CONFIRM_TOP'); return true;
       }
       const topDistance = distance(candidate.center, top.center), bottomDistance = distance(candidate.center, bottom.center);
@@ -182,8 +192,8 @@
       if (bottomDistance <= tolerance && bottomDistance < topDistance) return 'BOTTOM';
       return 'BETWEEN';
     }
-    return {start, reset, invalidate, observe, classify, evaluate, snapshot};
+    return {start, retry, reset, invalidate, observe, classify, evaluate, snapshot};
   }
-  return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, STABLE_MS, MAX_BOTTOM_ELBOW_DEGREES,
+  return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
     TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});
 });

@@ -44,7 +44,7 @@ test('camera does not request permission until explicit start and reuses canonic
   await f.camera.start(); assert.equal(f.video.srcObject, f.stream); assert.equal(f.stats().starts, 1);
   assert.equal(f.video.muted, true); assert.equal(f.video.playsInline, true);
   f.capture().options.onFrame(frame()); assert.equal(f.visibility.at(-1), true);
-  assert.equal(f.poses.at(-1)[0].trackingState, 'LOCKED'); assert.equal(f.poses.at(-1)[1], .5);
+  assert.equal(f.poses.at(-1)[0].trackingState, 'LOCKED'); assert.equal(f.poses.at(-1)[1], .4);
   assert.equal(f.poses.at(-1)[0].sourceWidth, 640); assert.equal(f.poses.at(-1)[0].sourceHeight, 480);
   assert.equal(f.poses.at(-1)[0].calibrationUsable, true);
   [...f.timers.values()].find(timer => timer.delay === 1500).fn(); assert.equal(f.visibility.at(-1), false); assert.equal(f.poses.at(-1)[0], null);
