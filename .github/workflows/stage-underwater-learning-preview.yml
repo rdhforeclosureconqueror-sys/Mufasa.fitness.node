@@ -18,7 +18,7 @@ concurrency:
 jobs:
   stage-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       TARGET_BRANCH: preview/underwater-learning-world
       GODOT_SOURCE_COMMIT: d381d4da21d55c9d0291483a67794f7f9cc5bfb9
@@ -29,6 +29,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Fetch generated Godot candidate
         shell: bash
@@ -62,6 +71,31 @@ jobs:
           cp "$CANDIDATE/index.wasm" "$PREVIEW_ROOT/index.wasm"
           cp "$CANDIDATE/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt"
 
+      - name: Add opt-in preview switch without changing default arena
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/arena-push-up.js')
+          s = p.read_text()
+          needle = "  const exitArena = document.getElementById('exitArena');\n"
+          insert = needle + "  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';\n  const gameEntryPath = underwaterPreview ? '/game/underwater-learning-preview/index.html' : '/game/push-up-arena/index.html';\n"
+          if 'const underwaterPreview =' not in s:
+              if needle not in s: raise SystemExit('arena preview insertion point missing')
+              s = s.replace(needle, insert, 1)
+          old = "    game.src = '/game/push-up-arena/index.html';"
+          new = "    game.src = gameEntryPath;"
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('arena iframe assignment point missing')
+          p.write_text(s)
+          PY
+          grep -F "underwaterPreview" public/arena-push-up.js
+          grep -F "'/game/underwater-learning-preview/index.html'" public/arena-push-up.js
+          grep -F "'/game/push-up-arena/index.html'" public/arena-push-up.js
+
       - name: Write preview manifest
         shell: bash
         run: |
@@ -82,9 +116,25 @@ jobs:
             avatarStartupContract: 'load-after-avatar-ready',
             lesson: 'MAKE_10_TREASURE_HUNT',
             swimAnimation: 'PENDING',
-            note: 'Private underwater learning preview. The normal /game/push-up-arena package remains unchanged.'
+            previewQuery: '/arena/push-up?preview=underwater',
+            note: 'Private underwater learning preview. Without ?preview=underwater the arena still loads the normal production Godot package.'
           };
           fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
+          NODE
+
+      - name: Protect default arena and preview opt-in behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test test/arena-diagnostics.test.js test/arena-phone-flow.test.js test/arena-phone-ui.test.js test/world-bridge-pocketpt-finish.test.js
+          node - <<'NODE'
+          const fs = require('fs');
+          const s = fs.readFileSync('public/arena-push-up.js','utf8');
+          if (!s.includes("new URLSearchParams(location.search).get('preview') === 'underwater'")) throw new Error('preview query gate missing');
+          if (!s.includes("underwaterPreview ? '/game/underwater-learning-preview/index.html' : '/game/push-up-arena/index.html'")) throw new Error('default arena isolation missing');
+          const manifest = JSON.parse(fs.readFileSync('public/game/underwater-learning-preview/pocketpt-world-build.json','utf8'));
+          if (manifest.godotSourceCommit !== process.env.GODOT_SOURCE_COMMIT) throw new Error('preview provenance mismatch');
+          if (manifest.productionArenaUntouched !== true) throw new Error('production isolation marker missing');
           NODE
 
       - name: Commit isolated preview package
@@ -93,6 +143,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/arena-push-up.js
           git add -f "$PREVIEW_ROOT/index.html" "$PREVIEW_ROOT/index.js" "$PREVIEW_ROOT/index.pck" "$PREVIEW_ROOT/index.wasm" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/pocketpt-world-build.json"
           git diff --cached --check
           if ! git diff --cached --quiet; then
