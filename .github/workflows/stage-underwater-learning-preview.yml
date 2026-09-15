@@ -1,0 +1,101 @@
+name: Stage Underwater Learning Preview
+
+on:
+  push:
+    branches:
+      - preview/underwater-learning-world
+    paths:
+      - .github/workflows/stage-underwater-learning-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage-underwater-learning-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stage-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: preview/underwater-learning-world
+      GODOT_SOURCE_COMMIT: d381d4da21d55c9d0291483a67794f7f9cc5bfb9
+      GODOT_GENERATED_BRANCH: generated/web-candidate
+      PREVIEW_ROOT: public/game/underwater-learning-preview
+    steps:
+      - name: Checkout web preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Fetch generated Godot candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/mufasagodot-candidate
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            --branch "${GODOT_GENERATED_BRANCH}" \
+            https://github.com/rdhforeclosureconqueror-sys/mufasagodot.git \
+            /tmp/mufasagodot-candidate
+          git -C /tmp/mufasagodot-candidate sparse-checkout init --cone
+          git -C /tmp/mufasagodot-candidate sparse-checkout set build/ci-web
+          git -C /tmp/mufasagodot-candidate checkout --detach "${GODOT_GENERATED_BRANCH}"
+          git -C /tmp/mufasagodot-candidate rev-parse HEAD > /tmp/GODOT_CANDIDATE_COMMIT
+
+      - name: Verify provenance and stage isolated preview package
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATE=/tmp/mufasagodot-candidate/build/ci-web
+          for file in index.html index.js index.pck index.wasm BUILD_PROVENANCE.txt; do test -s "$CANDIDATE/$file"; done
+          grep -Fx "godot_source_commit=${GODOT_SOURCE_COMMIT}" "$CANDIDATE/BUILD_PROVENANCE.txt"
+          (
+            cd /tmp/mufasagodot-candidate
+            grep -E '^[0-9a-f]{64}  build/ci-web/(index.html|index.js|index.pck|index.wasm)$' build/ci-web/BUILD_PROVENANCE.txt | sha256sum -c -
+          )
+          mkdir -p "$PREVIEW_ROOT"
+          cp "$CANDIDATE/index.html" "$PREVIEW_ROOT/index.html"
+          cp "$CANDIDATE/index.js" "$PREVIEW_ROOT/index.js"
+          cp "$CANDIDATE/index.pck" "$PREVIEW_ROOT/index.pck"
+          cp "$CANDIDATE/index.wasm" "$PREVIEW_ROOT/index.wasm"
+          cp "$CANDIDATE/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt"
+
+      - name: Write preview manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = process.env.PREVIEW_ROOT;
+          const candidateCommit = fs.readFileSync('/tmp/GODOT_CANDIDATE_COMMIT','utf8').trim();
+          const manifest = {
+            protocolVersion: 1,
+            buildId: `underwater-make10-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}`,
+            godotVersion: '4.5.1',
+            godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
+            godotCandidateCommit: candidateCommit,
+            deploymentMode: 'isolated-private-preview',
+            productionArenaUntouched: true,
+            avatarStartupContract: 'load-after-avatar-ready',
+            lesson: 'MAKE_10_TREASURE_HUNT',
+            swimAnimation: 'PENDING',
+            note: 'Private underwater learning preview. The normal /game/push-up-arena package remains unchanged.'
+          };
+          fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
+          NODE
+
+      - name: Commit isolated preview package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f "$PREVIEW_ROOT/index.html" "$PREVIEW_ROOT/index.js" "$PREVIEW_ROOT/index.pck" "$PREVIEW_ROOT/index.wasm" "$PREVIEW_ROOT/BUILD_PROVENANCE.txt" "$PREVIEW_ROOT/pocketpt-world-build.json"
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "Stage avatar-safe underwater Make 10 preview [skip ci]"
+            git push origin HEAD:"${TARGET_BRANCH}"
+          fi
