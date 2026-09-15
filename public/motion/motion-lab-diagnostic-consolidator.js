@@ -108,7 +108,16 @@
     const targetDistinct = Boolean(target && (changedBones.length || rootPositionChanged || rootRotationChanged));
 
     const tracks = Array.isArray(session?.sessionClip?.tracks) ? session.sessionClip.tracks : [];
-    const changedBoneTracks = changedBones.filter(bone => tracks.some(track => String(track?.name || '').startsWith(`${bone}.`)));
+    const trackTargets = new Set(tracks.map(track => String(track?.name || '').split('.')[0]).filter(Boolean));
+    const avatarTargets = new Map();
+    session?.avatar?.traverse?.(node => {
+      if (!node?.name || avatarTargets.has(node.name)) return;
+      avatarTargets.set(node.name, node.uuid || node.name);
+    });
+    const changedBoneTracks = changedBones.filter(bone => {
+      const targetName = avatarTargets.get(bone);
+      return Boolean(targetName && trackTargets.has(targetName));
+    });
     const missingChangedBoneTracks = changedBones.filter(bone => !changedBoneTracks.includes(bone));
     const playback = session?.playbackDiagnostics?.() || {};
     const currentPhase = session?.currentMotionPhase?.() || null;
