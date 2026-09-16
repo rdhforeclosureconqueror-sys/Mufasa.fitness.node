@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 25
     env:
       TARGET_BRANCH: preview/underwater-learning-world
-      GODOT_SOURCE_COMMIT: 2b66e98292e9e55814985337f204eef4a2d5fd1d
+      GODOT_SOURCE_COMMIT: c1bbd51a9f1597a944acc15f092cf6ff2e39252b
       GODOT_GENERATED_BRANCH: generated/web-candidate
       PREVIEW_ROOT: public/game/underwater-learning-preview
     steps:
@@ -107,17 +107,17 @@ jobs:
           const candidateCommit = fs.readFileSync('/tmp/GODOT_CANDIDATE_COMMIT','utf8').trim();
           const manifest = {
             protocolVersion: 1,
-            buildId: `underwater-make10-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}`,
+            buildId: `underwater-vowel-a-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}`,
             godotVersion: '4.5.1',
             godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
             godotCandidateCommit: candidateCommit,
             deploymentMode: 'isolated-private-preview',
             productionArenaUntouched: true,
             avatarStartupContract: 'load-after-avatar-ready',
-            lesson: 'MAKE_10_TREASURE_HUNT',
+            lesson: 'PHONICS_A_LONG_SHORT',
             swimAnimation: 'PENDING',
             previewQuery: '/arena/push-up?preview=underwater',
-            note: 'Private underwater learning preview. Without ?preview=underwater the arena still loads the normal production Godot package.'
+            note: 'Private underwater vowel treasure preview. Without ?preview=underwater the arena still loads the normal production Godot package.'
           };
           fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
           NODE
@@ -139,6 +139,7 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync('public/game/underwater-learning-preview/pocketpt-world-build.json','utf8'));
           if (manifest.godotSourceCommit !== process.env.GODOT_SOURCE_COMMIT) throw new Error('preview provenance mismatch');
           if (manifest.productionArenaUntouched !== true) throw new Error('production isolation marker missing');
+          if (manifest.lesson !== 'PHONICS_A_LONG_SHORT') throw new Error('phonics lesson marker missing');
           NODE
 
       - name: Commit isolated preview package
@@ -153,6 +154,6 @@ jobs:
           # Protect hand-authored text without mutating the hash-verified producer files.
           git diff --cached --check -- public/arena-push-up.js "$PREVIEW_ROOT/pocketpt-world-build.json"
           if ! git diff --cached --quiet; then
-            git commit -m "Stage avatar-safe underwater Make 10 preview [skip ci]"
+            git commit -m "Stage avatar-safe underwater vowel treasure preview [skip ci]"
             git push origin HEAD:"${TARGET_BRANCH}"
           fi
