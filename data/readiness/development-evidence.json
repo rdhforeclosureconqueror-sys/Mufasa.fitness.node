@@ -2593,6 +2593,23 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-16T18:41:21.746Z"
+    },
+    {
+      "operationId": "3e21e575-d7b4-42d8-834e-00d563761739",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "implementation",
+      "taskId": "warrior-ii-foot-gaze-semantics",
+      "files": [
+        "public/motion/motion-description-to-spec-generator.js",
+        "public/motion/motion-spec-clip.js",
+        "public/motion/motion-spec-semantic-direction-policy.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Focused Warrior II geometry, semantic direction, and phase-scope tests 29/29 pass. Avaturn target/hold now solve lead foot toward lead hand, rear foot across body with 15-degree inward turn, and head gaze toward lead hand; human visual acceptance remains required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-16T19:37:30.276Z"
     }
   ]
 }

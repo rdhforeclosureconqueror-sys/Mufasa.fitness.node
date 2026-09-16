@@ -5,7 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "1.3.0-phase-scoped-targets";
+  const VERSION = "1.4.0-body-relative-gaze";
 
   function normalizedBoneKey(name) {
     return String(name || "").toLowerCase().replace(/^mixamorig[:_]?/, "").replace(/[^a-z0-9]/g, "");
@@ -74,13 +74,32 @@
     return Object.freeze({ status:"ready", diagnostics:Object.freeze({ id:target.id || null, type:target.type, bone:hand.name, twistDegrees:THREE.MathUtils.radToDeg(signed), beforeAngleDegrees, residualDegrees:THREE.MathUtils.radToDeg(solvedPalmNormal.angleTo(solvedInward)), palmReference:refMatch.object.name, palmNormalConvention:"negative-mirrored-index-pinky-cross" }) });
   }
 
+  function orientBoneYawTowardReference(THREE, avatar, target) {
+    const boneMatch = resolveNode(avatar, target?.bone), aMatch = resolveNode(avatar, target?.forwardPointA), bMatch = resolveNode(avatar, target?.forwardPointB), targetMatch = resolveNode(avatar, target?.targetReferenceBone), upAMatch = resolveNode(avatar, target?.upReferenceBone), upBMatch = resolveNode(avatar, target?.upReferenceChildBone);
+    if ([boneMatch,aMatch,bMatch,targetMatch,upAMatch,upBMatch].some(match => match.status !== "ready")) return Object.freeze({ status:"failed", code:"semantic_gaze_target_unbound" });
+    const bone = boneMatch.object; avatar.updateMatrixWorld?.(true);
+    const origin = bone.getWorldPosition(new THREE.Vector3()), up = upBMatch.object.getWorldPosition(new THREE.Vector3()).sub(upAMatch.object.getWorldPosition(new THREE.Vector3())).normalize();
+    let current = aMatch.object.getWorldPosition(new THREE.Vector3()).add(bMatch.object.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5).sub(origin);
+    let wanted = targetMatch.object.getWorldPosition(new THREE.Vector3()).sub(origin);
+    current.addScaledVector(up,-current.dot(up)); wanted.addScaledVector(up,-wanted.dot(up));
+    if (!(current.lengthSq()>0&&wanted.lengthSq()>0)) return Object.freeze({ status:"failed", code:"semantic_gaze_direction_degenerate" });
+    current.normalize(); wanted.normalize();
+    const signed = Math.atan2(up.dot(current.clone().cross(wanted)),current.dot(wanted)), beforeAngleDegrees = THREE.MathUtils.radToDeg(Math.abs(signed));
+    const delta = new THREE.Quaternion().setFromAxisAngle(up,signed), desiredWorld = delta.multiply(bone.getWorldQuaternion(new THREE.Quaternion())), parentWorld = bone.parent?.getWorldQuaternion ? bone.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
+    bone.quaternion.copy(parentWorld.clone().invert().multiply(desiredWorld)); avatar.updateMatrixWorld?.(true);
+    const solvedOrigin = bone.getWorldPosition(new THREE.Vector3()), solvedUp = upBMatch.object.getWorldPosition(new THREE.Vector3()).sub(upAMatch.object.getWorldPosition(new THREE.Vector3())).normalize();
+    let solved = aMatch.object.getWorldPosition(new THREE.Vector3()).add(bMatch.object.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5).sub(solvedOrigin), solvedWanted = targetMatch.object.getWorldPosition(new THREE.Vector3()).sub(solvedOrigin);
+    solved.addScaledVector(solvedUp,-solved.dot(solvedUp)).normalize(); solvedWanted.addScaledVector(solvedUp,-solvedWanted.dot(solvedUp)).normalize();
+    return Object.freeze({ status:"ready", diagnostics:Object.freeze({ id:target.id||null, type:target.type, bone:bone.name, targetReference:targetMatch.object.name, yawDegrees:THREE.MathUtils.radToDeg(signed), beforeAngleDegrees, residualDegrees:THREE.MathUtils.radToDeg(solved.angleTo(solvedWanted)) }) });
+  }
+
   function buildPhaseSpecificSpec(THREE, spec, avatar) {
     const semanticTargets = Array.isArray(spec?.semanticPosePolicy?.targets) ? spec.semanticPosePolicy.targets : [];
     if (!semanticTargets.length) return Object.freeze({ status:"ready", spec, diagnostics:Object.freeze({ phaseSpecific:false, targetCount:0, solvedPhaseCount:0, phaseRecords:Object.freeze([]) }) });
     if (!Array.isArray(spec?.phases) || !spec?.skeleton?.rootBone) return Object.freeze({ status:"failed", code:"semantic_phase_contract_invalid" });
     const referencedNames = new Set([spec.skeleton.rootBone]);
     for (const phase of spec.phases) for (const target of phase.boneTargets || []) referencedNames.add(target.bone);
-    for (const target of semanticTargets) for (const key of ["bone","childBone","referenceBone","referenceChildBone","planePointA","planePointB"]) if (target?.[key]) referencedNames.add(target[key]);
+    for (const target of semanticTargets) for (const key of ["bone","childBone","referenceBone","referenceChildBone","planePointA","planePointB","forwardPointA","forwardPointB","targetReferenceBone","upReferenceBone","upReferenceChildBone"]) if (target?.[key]) referencedNames.add(target[key]);
     const nodes = new Map(); for (const name of referencedNames) { const match = resolveNode(avatar, name); if (match.status !== "ready") return Object.freeze({ status:"failed", code:match.code, diagnostics:Object.freeze({ requestedBone:name }) }); nodes.set(name, match.object); }
     avatar.updateMatrixWorld?.(true); const bounds = new THREE.Box3().setFromObject(avatar), size = bounds.getSize(new THREE.Vector3()), scale = Number.isFinite(size.y) && size.y > 0 ? size.y : 1;
     const rootNode = nodes.get(spec.skeleton.rootBone), restRootPosition = rootNode.position.clone(), restRootWorld = rootNode.getWorldPosition(new THREE.Vector3()), restQuaternions = new Map(); for (const [name,node] of nodes.entries()) restQuaternions.set(name,node.quaternion.clone());
@@ -97,7 +116,7 @@
           const activePhaseIds=Array.isArray(target.activePhaseIds)?target.activePhaseIds:null;
           if(activePhaseIds && !activePhaseIds.includes(phase.id)) continue;
           let solved;
-          if(target.type==="bone_direction_world"||target.type==="bone_direction_reference")solved=orientBoneToDirection(THREE,avatar,target);else if(target.type==="hand_plane_faces_reference")solved=orientPalmTowardReference(THREE,avatar,target);else return Object.freeze({status:"failed",code:"semantic_target_type_unsupported",diagnostics:Object.freeze({targetType:target.type||null})});
+          if(target.type==="bone_direction_world"||target.type==="bone_direction_reference")solved=orientBoneToDirection(THREE,avatar,target);else if(target.type==="hand_plane_faces_reference")solved=orientPalmTowardReference(THREE,avatar,target);else if(target.type==="bone_yaw_toward_reference")solved=orientBoneYawTowardReference(THREE,avatar,target);else return Object.freeze({status:"failed",code:"semantic_target_type_unsupported",diagnostics:Object.freeze({targetType:target.type||null})});
           if(solved.status!=="ready")return solved;const bone=nodes.get(target.bone);replacements.set(target.bone,solvedOffsetDegrees(target.bone,bone.quaternion));phaseRecords.push(Object.freeze({...solved.diagnostics,phaseId:phase.id}));solvedPhaseIds.add(phase.id);
         }
         const originalTargets=Array.isArray(phase.boneTargets)?phase.boneTargets:[],replaced=new Set(),boneTargets=originalTargets.map(item=>{if(!replacements.has(item.bone))return item;replaced.add(item.bone);return Object.freeze({...item,rotationOffsetEulerDegrees:replacements.get(item.bone)});});
@@ -115,5 +134,5 @@
     return Object.freeze({ ...baseCompiler, __semanticDirectionPolicyInstalled:true, semanticDirectionPolicyVersion:VERSION, compile:function(THREE,spec,avatar){const targets=Array.isArray(spec?.semanticPosePolicy?.targets)?spec.semanticPosePolicy.targets:[];if(!targets.length)return originalCompile(THREE,spec,avatar);const prepared=buildPhaseSpecificSpec(THREE,spec,avatar);if(prepared.status!=="ready")return prepared;const compiled=originalCompile(THREE,prepared.spec,avatar);if(compiled?.status!=="ready")return compiled;return Object.freeze({...compiled,diagnostics:Object.freeze({...(compiled.diagnostics||{}),semanticDirectionPolicyApplied:true,semanticDirectionPolicyVersion:VERSION,semanticDirectionTargetCount:prepared.diagnostics.targetCount,semanticDirectionSolvedPhaseCount:prepared.diagnostics.solvedPhaseCount,semanticDirectionSolveMode:"phase-specific-body-relative",semanticDirectionTargets:prepared.diagnostics.phaseRecords})});} });
   }
 
-  return Object.freeze({ VERSION, normalizedBoneKey, resolveNode, orientBoneToDirection, orientPalmTowardReference, buildPhaseSpecificSpec, install });
+  return Object.freeze({ VERSION, normalizedBoneKey, resolveNode, orientBoneToDirection, orientPalmTowardReference, orientBoneYawTowardReference, buildPhaseSpecificSpec, install });
 });
