@@ -89,4 +89,7 @@ test('Motion Lab intake exposes explicit first-boundary diagnostics through play
   assert.match(intake, /DESCRIPTION_RESOURCES_UNAVAILABLE/);
   assert.match(intake, /pocketpt:motion-generation-request/);
   assert.match(intake, /pocketpt:motion-description-ready/);
+  assert.match(intake, /compileFailureDetail/);
+  assert.match(intake, /firstFailedSemanticConstraint/);
+  assert.match(intake, /new draft rejected; no previous motion is playing/);
 });

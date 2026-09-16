@@ -102,8 +102,13 @@
     if(out.status==="ready"){
       state.motion={...out.diagnostics,avatarProfileId:state.avatar.avatarProfileId,animationSource:"development-motion-spec",bindingMode:coachCompatible?"CANONICAL / COACH-RETARGETED":"DIRECT / LOADER-NORMALIZED",skeletonProfile:contract?.spec?.skeleton?.targetSkeletonProfile||contract?.spec?.skeleton?.id||null,coachRetarget:contract?.spec?.coachRetarget||null};state.playback="ready";
       viewerStatus("Renderer active — "+(contract.spec.displayName||contract.spec.motionId)+" loaded. Press Play to inspect it.");
-    }else viewerStatus("Motion could not be loaded ("+(out.code||"motion_compile_failed")+").");
-    set("animation_clip",out.status==="ready"&&out.diagnostics?.unboundTargetCount===0?"pass":"fail",t,out.code,out.status==="ready"?out.diagnostics.trackCount+" tracks; "+out.diagnostics.unboundTargetCount+" unbound targets":out.diagnostics?.unboundTargets?.join(", "));
+    }else{
+      var failedSpatial=out.diagnostics?.lowerBodySpatialDiagnostics||out.diagnostics||{},failedConstraint=failedSpatial.firstFailedSemanticConstraint||out.diagnostics?.firstFailingBoundary?.constraint||null;
+      state.motion={...out.diagnostics,avatarProfileId:state.avatar.avatarProfileId,animationSource:"rejected-development-motion-spec",firstFailingBoundary:failedConstraint||out.code||"motion_compile_failed"};state.playback="stopped";
+      viewerStatus("NEW DRAFT NOT LOADED — previous motion cleared. "+(out.code||"motion_compile_failed")+(failedConstraint?"; first constraint: "+failedConstraint:""));
+    }
+    var failureMessage=out.diagnostics?.unboundTargets?.join(", ")||out.diagnostics?.lowerBodySpatialDiagnostics?.firstFailedSemanticConstraint||out.diagnostics?.firstFailedSemanticConstraint||out.diagnostics?.firstFailingBoundary?.constraint;
+    set("animation_clip",out.status==="ready"&&out.diagnostics?.unboundTargetCount===0?"pass":"fail",t,out.code,out.status==="ready"?out.diagnostics.trackCount+" tracks; "+out.diagnostics.unboundTargetCount+" unbound targets":failureMessage);
     render();return out;
   }
   function loadPushUp(){return loadMotionSpec(env.PocketPTPushUpMotionSpec);}

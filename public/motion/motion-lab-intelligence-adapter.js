@@ -96,7 +96,7 @@
         toPoint(desiredAnkle),
         chain.length1,
         chain.length2,
-        { bendHint: toPoint(knee) }
+        { bendHint: chain.bendHint ? toPoint(chain.bendHint) : toPoint(knee) }
       );
       if (solve.status !== 'SOLVED') {
         return Object.freeze({
@@ -174,6 +174,7 @@
         length2: chain.length2,
         chainResidualWorldUnits: chainResidual,
         contactResidualWorldUnits: contactResidual,
+        guidedBendHintApplied: Boolean(chain.bendHint),
         firstFailure: null
       })
     });
