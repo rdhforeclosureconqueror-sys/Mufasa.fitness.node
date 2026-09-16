@@ -40,20 +40,41 @@
       "displayName": "Warrior II",
       "source": {"domain":"yoga","sessionId":"beginner-flow","poseId":"warrior-ii"},
       "movementClassification": {
-        "movementFamily": "standing-split-stance",
-        "reuseFamilies": ["stationary-lunge-lower-body","standing-lateral-reach"],
-        "supportPattern": "dual-foot-grounded",
-        "lowerBodyPattern": "front-knee-bent-rear-leg-straight",
-        "trunkPattern": "upright-side-open",
+        "movementFamily": "standing-asymmetric-wide-lunge",
+        "reuseFamilies": [
+          "stationary-lunge-lower-body",
+          "standing-lateral-reach"
+        ],
+        "supportPattern": "dual-foot-grounded-wide-base",
+        "stancePattern": "heel-to-heel-width-relative-to-leg-length",
+        "stanceWidthLegLengthRatio": {
+          "preferred": 1.35,
+          "minimum": 1.2,
+          "maximum": 1.5
+        },
+        "leadLeg": "left",
+        "lowerBodyPattern": "lead-knee-deep-bend-trailing-leg-straight",
+        "leadKneeAngleDegrees": {
+          "preferred": 90,
+          "minimum": 80,
+          "maximum": 105
+        },
+        "leadKneeAlignment": "knee-stacked-over-ankle",
+        "leadThighTarget": "near-parallel-to-ground",
+        "trailingKneePattern": "extended-without-hyperextension",
+        "pelvisPattern": "lower-between-feet-side-open",
+        "leadFootPattern": "points-toward-lead-hand",
+        "trailingFootPattern": "turned-in-10-to-25-degrees",
+        "trunkPattern": "upright-centered-between-hips",
         "armPathPattern": "opposed-lateral-reach-from-shoulders",
-        "headPattern": "rotate-toward-front-hand"
+        "headPattern": "rotate-toward-lead-hand"
       },
       "directionalRules": {
         "lowerBody": ["front hip and knee flex as in the standing portion of a lunge","rear knee remains long and does not descend toward the floor","pelvis remains centered between the two planted feet"],
         "trunk": ["chest opens toward the long side of the stance","torso remains tall instead of pitching over the front thigh"],
         "arms": ["both arms travel laterally outward from their own shoulders","front arm reaches in the same general direction as the front foot","rear arm reaches in the opposite direction","arms finish approximately horizontal at shoulder height"],
         "head": ["head rotates toward the front arm and gaze continues over the front fingertips"],
-        "prohibitedTrajectories": ["rear knee dropping toward the floor","either arm sweeping behind the torso before reaching shoulder height","arms crossing the chest or head","torso folding forward over the front thigh"]
+        "prohibitedTrajectories": ["feet stopping at ordinary shoulder-width stance", "both legs abducting symmetrically into a straddle", "both knees remaining straight in the target pose", "rear knee dropping toward the floor", "lead knee stopping substantially behind the lead ankle", "lead knee traveling beyond the lead toes", "lead knee collapsing toward the body centerline", "pelvis remaining at standing height", "torso leaning over the lead thigh", "either foot sliding after target contact is established", "either arm sweeping behind the torso"]
       },
       "startState": "Begin standing tall with both feet under the body and arms relaxed; prepare to step into a wide split stance.",
       "targetShape": "A stationary-lunge-style lower body with the front knee bent and the rear leg straight, combined with an upright side-open torso and two straight arms reaching in opposite directions at shoulder height.",

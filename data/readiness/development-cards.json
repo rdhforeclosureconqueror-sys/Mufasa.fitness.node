@@ -154,6 +154,20 @@
       "createdAt": "2026-09-14T17:26:19.687Z",
       "source": "readiness:update",
       "taskId": "multiplayer-first-failure-diagnostics"
+    },
+    {
+      "id": "avatar-development-body-relative-wide-lunge",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Body-relative asymmetric wide-lunge motion operator",
+      "category": "MOTION GENERATION",
+      "description": "Add reusable avatar-proportion-aware asymmetric wide-lunge semantics, support/IK solving, diagnostics, and validation; use Warrior II as a development draft without canonical promotion.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-16T16:50:10.147Z",
+      "source": "readiness:update",
+      "taskId": "warrior-ii-body-relative-wide-lunge"
     }
   ]
 }
