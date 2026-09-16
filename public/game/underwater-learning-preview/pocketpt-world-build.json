@@ -1,9 +1,9 @@
 {
   "protocolVersion": 1,
-  "buildId": "underwater-make10-d381d4d",
+  "buildId": "underwater-make10-2b66e98",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "d381d4da21d55c9d0291483a67794f7f9cc5bfb9",
-  "godotCandidateCommit": "18900dbb916a0995f47d7c3169bd02dacd707563",
+  "godotSourceCommit": "2b66e98292e9e55814985337f204eef4a2d5fd1d",
+  "godotCandidateCommit": "4a3f825ddcd5c5798aaa0f443e5ef7e3af2fd6f5",
   "deploymentMode": "isolated-private-preview",
   "productionArenaUntouched": true,
   "avatarStartupContract": "load-after-avatar-ready",
