@@ -2545,6 +2545,54 @@
       "prNumber": null,
       "commitSha": "7dcc93f",
       "timestamp": "2026-09-16T16:55:42.395Z"
+    },
+    {
+      "operationId": "fbe48ece-9f41-4203-bc89-e6dc7673c2d3",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "implementation",
+      "taskId": "warrior-ii-wide-lunge-runtime-repair",
+      "files": [],
+      "automated": null,
+      "evidence": "Repair PR 834 live Avaturn compile failure: guide both knee bend planes, derive stance from hip breadth plus leg geometry, and expose exact rejected-draft failure.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-16T18:34:58.633Z"
+    },
+    {
+      "operationId": "59636a92-77ab-48c8-a4a7-e3d3937fb7ce",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "implementation",
+      "taskId": "warrior-ii-wide-lunge-runtime-repair",
+      "files": [],
+      "automated": null,
+      "evidence": "Current: validate corrected Warrior II operator on shipped personalized Avaturn asset; human visual acceptance remains required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-16T18:34:58.818Z"
+    },
+    {
+      "operationId": "fd163361-ccc2-43f2-a93b-e81ddbccb4ce",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "implementation",
+      "taskId": "warrior-ii-wide-lunge-runtime-repair",
+      "files": [
+        "public/motion/lower-body-spatial-policy.js",
+        "public/motion/motion-description-to-spec-generator.js",
+        "public/motion/motion-lab-intelligence-adapter.js",
+        "public/motion/motion-lab-intelligence-diagnostics.js",
+        "public/motion/motion-spec-clip.js",
+        "public/motion/yoga-motion-description-intake.js",
+        "public/motion/yoga/beginner-flow-generation-plans.v1.json",
+        "public/motion/yoga/beginner-flow-motion-descriptions.v1.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Focused tests 34/34 pass. Shipped Avaturn asset compiles with stance ratio 1.598, lead knee 90.000 degrees, rear knee 170.000 degrees, knee-over-ankle error below 0.000001, and both feet grounded. Human visual acceptance remains required.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-16T18:41:21.746Z"
     }
   ]
 }

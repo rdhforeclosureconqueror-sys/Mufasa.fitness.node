@@ -108,6 +108,8 @@
       `Avatar height: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.avatarHeight)}`,
       `Leg lengths (L/R): ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leftLegLength)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.rightLegLength)}`,
       `Stance ratio requested: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.requestedStanceWidthRatio)}`,
+      `Stance ratio required/resolved: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.requiredStanceWidthRatio)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.resolvedStanceWidthRatio)}`,
+      `Pelvis width along stance: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.pelvisWidthAlongStance)}`,
       `Stance width resolved/actual: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.resolvedStanceWidth)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.actualHeelToHeelDistance)}`,
       `Lead leg: ${snapshot.lowerBodySpatialDiagnostics?.leadLeg || '—'}`,
       `Lead knee requested/measured: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leadKneeAngleRequestedDegrees)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leadKneeAngleMeasuredDegrees)}`,

@@ -47,10 +47,10 @@
         ],
         "supportPattern": "dual-foot-grounded-wide-base",
         "stancePattern": "heel-to-heel-width-relative-to-leg-length",
-        "stanceWidthLegLengthRatio": {
-          "preferred": 1.35,
-          "minimum": 1.2,
-          "maximum": 1.5
+    "stanceWidthLegLengthRatio": {
+      "preferred": 1.55,
+      "minimum": 1.35,
+      "maximum": 1.7
         },
         "leadLeg": "left",
         "lowerBodyPattern": "lead-knee-deep-bend-trailing-leg-straight",
@@ -61,7 +61,12 @@
         },
         "leadKneeAlignment": "knee-stacked-over-ankle",
         "leadThighTarget": "near-parallel-to-ground",
-        "trailingKneePattern": "extended-without-hyperextension",
+    "trailingKneePattern": "extended-without-hyperextension",
+    "trailingKneeAngleDegrees": {
+      "preferred": 170,
+      "minimum": 160,
+      "maximum": 179
+    },
         "pelvisPattern": "lower-between-feet-side-open",
         "leadFootPattern": "points-toward-lead-hand",
         "trailingFootPattern": "turned-in-10-to-25-degrees",
@@ -81,7 +86,7 @@
       "segmentRelationships": ["front knee stacks toward the front ankle and tracks with the front toes","rear knee stays extended and rear leg remains long","pelvis stays between both planted feet","torso stays upright while chest opens to the side","left and right arms form one long shoulder-height line through the shoulders","head turns independently toward the front hand"],
       "supports": ["front foot planted","rear foot planted"],
       "trajectory": ["step feet wide apart","orient the front foot toward the front end and the rear foot at a stable outward angle","bend the front knee using stationary-lunge mechanics while keeping the rear knee straight","open pelvis and chest toward the long side","sweep both arms laterally outward from the shoulders until they reach shoulder height","turn head toward the front hand"],
-      "orientation": ["front toes point toward the front end","rear foot stays angled and fully grounded","palms face down or near-neutral toward the floor","arms point in opposite horizontal directions","gaze follows the front fingertips"],
+      "orientation": ["front toes point toward the front end","rear foot stays angled and fully grounded","palms face floor or stay near-neutral toward the floor","arms point in opposite horizontal directions","gaze follows the front fingertips"],
       "timing": {"entrySeconds":2.5,"holdSeconds":3,"exitSeconds":2.5,"repetitions":1},
       "transitionIn": ["standing","wide split stance","front/rear foot orientation","front knee bends while rear leg stays long","torso opens to side","arms move laterally outward to shoulder height","head turns over front hand"],
       "transitionOut": ["straighten front knee","lower arms laterally toward sides without sweeping behind body","turn feet toward neutral","step back to standing"],
