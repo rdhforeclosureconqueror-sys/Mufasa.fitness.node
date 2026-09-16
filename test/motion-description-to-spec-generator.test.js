@@ -16,7 +16,7 @@ test('Beginner Full-Body Flow has exactly six reusable generation plans',()=>{as
 
 test('Warrior II, Downward Dog, and Cobra descriptions classify reusable movement mechanics instead of rig rotations',()=>{
   const cases={
-    'warrior-ii':{family:'standing-split-stance',arm:'opposed-lateral-reach-from-shoulders',reuse:'stationary-lunge-lower-body'},
+    'warrior-ii':{family:'standing-asymmetric-wide-lunge',arm:'opposed-lateral-reach-from-shoulders',reuse:'stationary-lunge-lower-body'},
     'downward-dog':{family:'four-point-inverted-hip-hinge',arm:'forward-support-line-from-shoulders',reuse:'four-point-support'},
     'cobra':{family:'prone-spinal-extension',arm:'hands-fixed-elbows-track-back-beside-ribs',reuse:'spinal-extension'}
   };
@@ -102,7 +102,7 @@ test('Motion Lab installs semantic direction compiler before runtime playback',(
 test('Yoga Motion Lab intake runs generator -> supports -> Coach -> compile -> playable boundaries',()=>{const source=fs.readFileSync(path.join(__dirname,'../public/motion/yoga-motion-description-intake.js'),'utf8');assert.match(source,/Create Motion Draft/);assert.match(source,/runtime\.loadAvatar\(profiles\.profiles\.personalized\)/);assert.match(source,/runtime\.loadMotionSpec\(generated\.contract\)/);for(const id of ['handoff','resources','description','template','request','plan','generator','supports','coach','compile','playback'])assert.match(source,new RegExp(`stage\\(["']${id}["']`));});
 
 test('all six descriptions now resolve to reusable movement families',()=>{
-  const families={mountain:'neutral-standing',chair:'bilateral-squat','warrior-ii':'standing-split-stance','downward-dog':'four-point-inverted-hip-hinge',cobra:'prone-spinal-extension',bridge:'supine-hip-extension'};
+  const families={mountain:'neutral-standing',chair:'bilateral-squat','warrior-ii':'standing-asymmetric-wide-lunge','downward-dog':'four-point-inverted-hip-hinge',cobra:'prone-spinal-extension',bridge:'supine-hip-extension'};
   for(const [id,family] of Object.entries(families)){
     const out=Generator.classifyDescription(byDescription.get(id));
     assert.ok(out.classification,id);

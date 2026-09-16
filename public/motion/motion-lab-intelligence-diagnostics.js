@@ -9,7 +9,7 @@
     declaredGroundingContacts: null, contactPhasesDeclared: null, contactPhasesValidated: null,
     rootContactCorrection: NOT_RUN, maxRootCorrectionWorldUnits: null, maxContactResidualWorldUnits: null,
     maxChainResidualWorldUnits: null, firstFailingPhase: null, firstFailingBoundary: null,
-    code: null, phaseConstraintDiagnostics: Object.freeze([]), updatedAt: null
+    code: null, lowerBodySpatialDiagnostics: null, phaseConstraintDiagnostics: Object.freeze([]), updatedAt: null
   });
 
   function numericMax(values) {
@@ -73,6 +73,7 @@
       firstFailingPhase: diagnostics.phaseId || chainFailure?.phaseId || phaseFailure?.phaseId || null,
       firstFailingBoundary: firstBoundary,
       code: result?.code || null,
+      lowerBodySpatialDiagnostics: diagnostics.lowerBodySpatialDiagnostics || null,
       phaseConstraintDiagnostics: Object.freeze(observedPhases),
       updatedAt: new Date().toISOString()
     });
@@ -103,6 +104,18 @@
       `Max root correction: ${formatNumber(snapshot.maxRootCorrectionWorldUnits)}`,
       `Max contact residual: ${formatNumber(snapshot.maxContactResidualWorldUnits)}`,
       `Max chain residual: ${formatNumber(snapshot.maxChainResidualWorldUnits)}`,
+      `Lower-body operator: ${snapshot.lowerBodySpatialDiagnostics?.operator || 'NOT APPLICABLE'}`,
+      `Avatar height: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.avatarHeight)}`,
+      `Leg lengths (L/R): ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leftLegLength)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.rightLegLength)}`,
+      `Stance ratio requested: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.requestedStanceWidthRatio)}`,
+      `Stance width resolved/actual: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.resolvedStanceWidth)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.actualHeelToHeelDistance)}`,
+      `Lead leg: ${snapshot.lowerBodySpatialDiagnostics?.leadLeg || '—'}`,
+      `Lead knee requested/measured: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leadKneeAngleRequestedDegrees)} / ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leadKneeAngleMeasuredDegrees)}`,
+      `Knee/ankle horizontal error: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.leadKneeToAnkleHorizontalError)}`,
+      `Trailing knee angle: ${formatNumber(snapshot.lowerBodySpatialDiagnostics?.trailingKneeAngleDegrees)}`,
+      `Foot contacts (L/R): ${snapshot.lowerBodySpatialDiagnostics ? `${snapshot.lowerBodySpatialDiagnostics.leftFootContact} / ${snapshot.lowerBodySpatialDiagnostics.rightFootContact}` : '—'}`,
+      `Pelvis height source: ${snapshot.lowerBodySpatialDiagnostics?.pelvisHeightSource || '—'}`,
+      `First failed semantic constraint: ${snapshot.lowerBodySpatialDiagnostics?.firstFailedSemanticConstraint || 'NONE'}`,
       'Per-phase diagnostics:'
     ];
     if (!snapshot.phaseConstraintDiagnostics.length) lines.push('  none');
@@ -170,7 +183,7 @@
     const wrapped = Object.freeze({
       ...compiler,
       compile(THREE, spec, avatar) {
-        publish({ ...snapshot, compileStatus: 'RUNNING', motionId: spec?.motionId || null, exerciseId: spec?.exerciseId || null, generatedIK: spec?.groundingPolicy?.enforceGeneratedIK ? 'RUNNING' : 'NOT APPLICABLE', generatedIKChainCount: spec?.groundingPolicy?.kinematicChains?.length || 0, postSolveTracksCaptured: false, declaredGroundingContacts: Array.isArray(spec?.groundingPolicy?.contacts) ? spec.groundingPolicy.contacts.length : 0, contactPhasesDeclared: contactPhaseCount(spec), contactPhasesValidated: 0, firstFailingPhase: null, firstFailingBoundary: null, code: null, phaseConstraintDiagnostics: Object.freeze([]), updatedAt: new Date().toISOString() });
+        publish({ ...snapshot, compileStatus: 'RUNNING', motionId: spec?.motionId || null, exerciseId: spec?.exerciseId || null, generatedIK: spec?.groundingPolicy?.enforceGeneratedIK ? 'RUNNING' : 'NOT APPLICABLE', generatedIKChainCount: spec?.groundingPolicy?.kinematicChains?.length || 0, postSolveTracksCaptured: false, declaredGroundingContacts: Array.isArray(spec?.groundingPolicy?.contacts) ? spec.groundingPolicy.contacts.length : 0, contactPhasesDeclared: contactPhaseCount(spec), contactPhasesValidated: 0, firstFailingPhase: null, firstFailingBoundary: null, code: null, lowerBodySpatialDiagnostics: null, phaseConstraintDiagnostics: Object.freeze([]), updatedAt: new Date().toISOString() });
         try { const result = originalCompile(THREE, spec, avatar); publish(summarize(spec, result)); return result; }
         catch (error) {
           publish(Object.freeze({ ...snapshot, compileStatus: 'FAIL', sharedIntelligenceCore: 'NOT REACHED', intelligenceAdapter: 'NOT REACHED', kinematicValidation: 'NOT REACHED', contactLock: 'NOT REACHED', generatedIK: spec?.groundingPolicy?.enforceGeneratedIK ? 'NOT REACHED' : 'NOT APPLICABLE', rootContactCorrection: 'NOT REACHED', firstFailingBoundary: error?.code || 'compiler_exception', code: error?.code || 'compiler_exception', updatedAt: new Date().toISOString() }));

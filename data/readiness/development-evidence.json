@@ -2484,6 +2484,67 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-14T21:04:05.602Z"
+    },
+    {
+      "operationId": "529acd5f-003e-4c81-ab7e-7884a2b2de79",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "card_creation",
+      "taskId": "warrior-ii-body-relative-wide-lunge",
+      "files": [],
+      "automated": null,
+      "evidence": "Add reusable avatar-proportion-aware asymmetric wide-lunge semantics, support/IK solving, diagnostics, and validation; use Warrior II as a development draft without canonical promotion.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-16T16:50:10.147Z"
+    },
+    {
+      "operationId": "85e6af15-ec73-4c0c-8671-18ff44248162",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/motion/lower-body-spatial-policy.js",
+        "public/motion/motion-description-to-spec-generator.js",
+        "public/motion/motion-spec-clip.js",
+        "public/motion/motion-lab-intelligence-diagnostics.js",
+        "public/motion/yoga/beginner-flow-motion-descriptions.v1.json",
+        "public/motion/yoga/beginner-flow-generation-plans.v1.json",
+        "motion-lab/motion-lab-bootstrap.js",
+        "test/lower-body-spatial-policy.test.js",
+        "test/motion-description-to-spec-generator.test.js",
+        "test/motion-lab.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented reusable effective-leg-length asymmetric wide-lunge policy with runtime IK/contact anchoring, lead-side mirroring, fail-closed semantic checks, and diagnostics. Focused motion tests pass 34/34; combined route suite 44/45 with one pre-existing unrelated Safari handoff assertion mismatch. Frontend build blocked by missing VITE_GOOGLE_MAPS_BROWSER_API_KEY. No browser, physical-device, or human visual/movement approval performed; Warrior II remains development-test-only.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-16T16:55:28.227Z"
+    },
+    {
+      "operationId": "784d045a-a1b0-461e-8e86-b2c98b0531e3",
+      "board": "avatar",
+      "cardId": "avatar-development-body-relative-wide-lunge",
+      "sourceType": "implementation_commit",
+      "taskId": null,
+      "files": [
+        "public/motion/lower-body-spatial-policy.js",
+        "public/motion/motion-description-to-spec-generator.js",
+        "public/motion/motion-spec-clip.js",
+        "public/motion/motion-lab-intelligence-diagnostics.js",
+        "public/motion/yoga/beginner-flow-motion-descriptions.v1.json",
+        "public/motion/yoga/beginner-flow-generation-plans.v1.json",
+        "motion-lab/motion-lab-bootstrap.js",
+        "test/lower-body-spatial-policy.test.js",
+        "test/motion-description-to-spec-generator.test.js",
+        "test/motion-lab.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 7dcc93f. Machine implementation complete; development draft remains pending human Motion Lab visual/movement acceptance and is not canonical.",
+      "prNumber": null,
+      "commitSha": "7dcc93f",
+      "timestamp": "2026-09-16T16:55:42.395Z"
     }
   ]
 }

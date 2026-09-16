@@ -6,12 +6,59 @@
     {"exerciseId":"mountain","archetype":"neutral-standing-hold","supports":["left_foot","right_foot"],"semanticRequirements":["bilateral_grounding","neutral_stack","palms_in"],"parameters":{"entrySeconds":1.5,"holdSeconds":3,"exitSeconds":1.0}},
     {"exerciseId":"chair","archetype":"bilateral-squat-overhead-hold","supports":["left_foot","right_foot"],"semanticRequirements":["bilateral_grounding","generated_leg_ik","arms_by_ears","palms_face_each_other"],"parameters":{"depth":"moderate","entrySeconds":2,"holdSeconds":3,"exitSeconds":2}},
     {
-      "exerciseId":"warrior-ii",
-      "archetype":"wide-split-stance-lateral-reach",
-      "supports":["left_foot","right_foot"],
-      "movementClassification":{"movementFamily":"standing-split-stance","supportPattern":"dual-foot-grounded","lowerBodyPattern":"front-knee-bent-rear-leg-straight","trunkPattern":"upright-side-open","armPathPattern":"opposed-lateral-reach-from-shoulders","headPattern":"rotate-toward-front-hand"},
-      "semanticRequirements":["dual_foot_grounding","stationary_lunge_lower_body","front_knee_track","rear_leg_stays_long","torso_side_open","arms_travel_laterally_from_shoulders","arms_horizontal_opposed","no_posterior_arm_sweep","palms_down","gaze_front_hand"],
-      "parameters":{"entrySeconds":2.5,"holdSeconds":3,"exitSeconds":2.5}
+          "exerciseId": "warrior-ii",
+          "archetype": "wide-split-stance-lateral-reach",
+          "supports": [
+                "left_foot",
+                "right_foot"
+          ],
+          "movementClassification": {
+                "movementFamily": "standing-asymmetric-wide-lunge",
+                "supportPattern": "dual-foot-grounded-wide-base",
+                "stancePattern": "heel-to-heel-width-relative-to-leg-length",
+                "stanceWidthLegLengthRatio": {
+                      "preferred": 1.35,
+                      "minimum": 1.2,
+                      "maximum": 1.5
+                },
+                "leadLeg": "left",
+                "lowerBodyPattern": "lead-knee-deep-bend-trailing-leg-straight",
+                "leadKneeAngleDegrees": {
+                      "preferred": 90,
+                      "minimum": 80,
+                      "maximum": 105
+                },
+                "leadKneeAlignment": "knee-stacked-over-ankle",
+                "leadThighTarget": "near-parallel-to-ground",
+                "trailingKneePattern": "extended-without-hyperextension",
+                "pelvisPattern": "lower-between-feet-side-open",
+                "leadFootPattern": "points-toward-lead-hand",
+                "trailingFootPattern": "turned-in-10-to-25-degrees",
+                "trunkPattern": "upright-centered-between-hips",
+                "armPathPattern": "opposed-lateral-reach-from-shoulders",
+                "headPattern": "rotate-toward-lead-hand"
+          },
+          "semanticRequirements": [
+                "stance_width_scales_from_leg_length",
+                "stance_is_asymmetric_wide_lunge_not_symmetric_straddle",
+                "both_feet_remain_grounded",
+                "lead_knee_bends_to_approximately_90_degrees",
+                "lead_knee_stacks_over_lead_ankle",
+                "lead_thigh_approaches_parallel_to_ground",
+                "lead_knee_tracks_toward_lead_toes",
+                "trailing_leg_remains_long_and_straight",
+                "pelvis_lowers_between_feet",
+                "pelvis_and_chest_remain_side_open",
+                "torso_remains_upright",
+                "arms_extend_horizontally_in_opposite_directions",
+                "gaze_turns_toward_lead_hand",
+                "no_posterior_arm_sweep"
+          ],
+          "parameters": {
+                "entrySeconds": 2.5,
+                "holdSeconds": 3,
+                "exitSeconds": 2.5
+          }
     },
     {
       "exerciseId":"downward-dog",
