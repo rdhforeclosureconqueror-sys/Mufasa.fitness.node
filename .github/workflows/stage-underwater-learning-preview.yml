@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 25
     env:
       TARGET_BRANCH: preview/underwater-learning-world
-      GODOT_SOURCE_COMMIT: d381d4da21d55c9d0291483a67794f7f9cc5bfb9
+      GODOT_SOURCE_COMMIT: 2b66e98292e9e55814985337f204eef4a2d5fd1d
       GODOT_GENERATED_BRANCH: generated/web-candidate
       PREVIEW_ROOT: public/game/underwater-learning-preview
     steps:
