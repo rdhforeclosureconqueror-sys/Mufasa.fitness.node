@@ -60,3 +60,26 @@ test('foundation keeps one camera, detector, scheduler and event pipeline', () =
   assert.doesNotMatch(recorder,/getUserMedia|estimatePoses\(/);
   assert.match(recorder,/event\?\.detail\?\.poseObservation \|\| event\?\.detail\?\.posePacket/);
 });
+
+test('MediaPipe adapter preserves 33 landmarks, explicit confidence and estimated world evidence', () => {
+  const points=contract.MEDIAPIPE_33.map((_,index)=>({x:index/100,y:index/120,z:-index/200,visibility:.8,presence:.7}));
+  const world=contract.MEDIAPIPE_33.map((_,index)=>({x:index/10,y:index/20,z:index/30,visibility:.75}));
+  const observation=contract.fromMediaPipe({landmarks:[points],worldLandmarks:[world]},{width:640,height:480,timestamp:1700000001000});
+  assert.equal(Object.keys(observation.landmarks).length,33);
+  assert.equal(observation.model.detector,'MediaPipe');
+  assert.equal(observation.landmarks.left_heel.visibility,.8);
+  assert.equal(observation.landmarks.left_heel.presence,.7);
+  assert.equal(observation.landmarks.left_heel.provenance,contract.PROVENANCE.OBSERVED_MODEL);
+  assert.equal(observation.worldLandmarks.left_heel.estimated,true);
+  assert.equal(observation.worldCoordinates.measuredDepth,false);
+  assert.equal(observation.authority.worldDepthIsEstimated,true);
+  assert.equal(contract.validate(observation).firstFailure,'NONE');
+  assert.equal(contract.projectLegacy17(observation).length,17);
+});
+
+test('MediaPipe missing person remains a valid lost-evidence observation', () => {
+  const observation=contract.fromMediaPipe({landmarks:[],worldLandmarks:[]},{width:320,height:240});
+  assert.equal(observation.landmarks.nose.provenance,contract.PROVENANCE.LOST);
+  assert.equal(observation.confidence.detector,0);
+  assert.equal(contract.validate(observation).firstFailure,'NONE');
+});

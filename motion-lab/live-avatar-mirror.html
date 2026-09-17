@@ -3,14 +3,19 @@
 <title>PocketPT Live Avatar Mirror — Right Arm Lab</title><link rel="stylesheet" href="/dev/live-avatar-mirror.css"></head>
 <body><main><header><p>DEVELOPMENT ONLY · PHASE 1B</p><h1>Live Avatar Mirror — Right Upper Arm</h1></header>
 <section class="stages"><article><h2>Camera + MoveNet landmarks</h2><div id="cameraStage" class="stage"><video id="camera" muted playsinline></video><canvas id="landmarks"></canvas></div></article><article><h2>Avaturn avatar</h2><div id="avatarStage" class="stage"></div></article></section>
-<section class="controls"><button id="start" type="button">Start camera and mirror</button><button id="stop" type="button" disabled>Stop and restore arm</button></section>
+<section class="controls"><button id="start" type="button">Start camera and mirror</button><button id="stop" type="button" disabled>Stop and restore arm</button><button id="copyMirrorDebug" type="button">Copy Mirror Debug</button></section>
 <section class="status" aria-live="polite"><h2>Scientific status</h2><dl>
 <div><dt>MoveNet</dt><dd id="moveNetState">WAITING</dd></div><div><dt>Body detected</dt><dd id="bodyState">NO</dd></div>
 <div><dt>Right shoulder confidence</dt><dd id="shoulderConfidence">0%</dd></div><div><dt>Right elbow confidence</dt><dd id="elbowConfidence">0%</dd></div>
 <div><dt>Avatar</dt><dd id="avatarState">WAITING</dd></div><div><dt>Avatar profile</dt><dd>avaturn-personalized-candidate</dd></div>
 <div><dt>Skeleton profile</dt><dd>avaturn-native-v1</dd></div><div><dt>Mirror state</dt><dd id="mirrorState">WAITING</dd></div>
 <div><dt>Upper-arm direction</dt><dd id="direction">—</dd></div><div><dt>Runtime ownership</dt><dd id="ownership">0 sessions · 0 RAF · 0 canvas</dd></div>
-</dl><p id="error" role="alert"></p></section></main>
+</dl><h2>Retarget first-failure trace</h2><dl>
+<div><dt>Calibration state</dt><dd id="calibrationState">WAITING</dd></div><div><dt>Retarget gate</dt><dd id="retargetGate">CLOSED</dd></div>
+<div><dt>Pose frames received</dt><dd id="poseFramesReceived">0</dd></div><div><dt>Frames blocked by calibration</dt><dd id="calibrationBlockedFrames">0</dd></div>
+<div><dt>Retarget frames executed</dt><dd id="retargetFramesExecuted">0</dd></div><div><dt>Changed bones</dt><dd id="changedBones">none</dd></div>
+<div><dt>First failing boundary</dt><dd id="firstFailingBoundary">POSE_FRAME_NOT_RECEIVED</dd></div><div><dt>Next action</dt><dd id="mirrorNextAction">Start the camera.</dd></div>
+</dl><pre id="mirrorDebugReport">Mirror diagnostics not started.</pre><p id="error" role="alert"></p></section></main>
 <script src="/runtime-state.js"></script><script>window.RuntimeState?.initHeadRuntime?.();</script>
 <script src="/pose-runtime.js"></script><script src="/exercise-metadata.js"></script><script src="/push-up-challenge.js"></script>
 <script src="/motion/shared3d-loader.js"></script><script src="/motion/disposable-motion-session.js"></script><script src="/motion/avatar-profiles.js"></script>

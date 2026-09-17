@@ -182,6 +182,34 @@
       "createdAt": "2026-09-17T16:24:14.964Z",
       "source": "readiness:update",
       "taskId": "pose-observation-v2-foundation"
+    },
+    {
+      "id": "avatar-development-mediapipe-pose-engine-test-lab",
+      "board": "avatar",
+      "canonical": false,
+      "title": "MediaPipe Pose Engine Test Lab candidate",
+      "category": "MOTION INTELLIGENCE",
+      "description": "Add a protected detector-comparison lab that runs MoveNet and MediaPipe Pose Landmarker against one camera source, adapts both into PoseObservationV2, preserves MoveNet as production default, and exposes first-failure and evidence-quality diagnostics.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-17T17:53:20.647Z",
+      "source": "readiness:update",
+      "taskId": "mediapipe-pose-engine-test-lab"
+    },
+    {
+      "id": "avatar-development-live-mirror-calibration-diagnostics-repair",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Live mirror calibration diagnostics repair",
+      "category": "MIRROR MOTION",
+      "description": "Repair two live-avatar-mirror regression failures by making the calibration gate explicit, testing authorized retarget behavior separately from calibration behavior, and exposing ordered first-failure diagnostics in the protected live mirror lab.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-17T17:57:51.438Z",
+      "source": "readiness:update",
+      "taskId": "live-mirror-calibration-diagnostics-repair"
     }
   ]
 }
