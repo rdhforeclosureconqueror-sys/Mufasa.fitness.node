@@ -2610,6 +2610,85 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-16T19:37:30.276Z"
+    },
+    {
+      "operationId": "d43e2a6b-ba27-4b55-8e47-7dece00aed12",
+      "board": "avatar",
+      "cardId": "avatar-development-pose-observation-v2-foundation",
+      "sourceType": "card_creation",
+      "taskId": "pose-observation-v2-foundation",
+      "files": [],
+      "automated": null,
+      "evidence": "PR 1 detector-neutral observation contract, MoveNet adapter, legacy 17-joint projection, generic normalization, capture export metadata, validation and authority-leakage diagnostics.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T16:24:14.964Z"
+    },
+    {
+      "operationId": "d3335a79-2b89-46d2-a959-13f04f4ffdaf",
+      "board": "avatar",
+      "cardId": "avatar-development-pose-observation-v2-foundation",
+      "sourceType": "implementation",
+      "taskId": "pose-observation-v2-foundation",
+      "files": [],
+      "automated": null,
+      "evidence": "Started bounded PR 1 audit and implementation.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T16:24:15.633Z"
+    },
+    {
+      "operationId": "59d173a0-1158-4e82-96b9-91e04f245fd6",
+      "board": "avatar",
+      "cardId": "avatar-development-pose-observation-v2-foundation",
+      "sourceType": "implementation",
+      "taskId": "pose-observation-v2-foundation",
+      "files": [],
+      "automated": null,
+      "evidence": "Selected PR 1 detector-neutral foundation as CURRENT.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T16:24:16.274Z"
+    },
+    {
+      "operationId": "ed50614d-f711-4b14-9b82-575587349953",
+      "board": "avatar",
+      "cardId": "avatar-development-pose-observation-v2-foundation",
+      "sourceType": "implementation",
+      "taskId": "pose-observation-v2-foundation",
+      "files": [
+        "public/motion/pose-observation-v2.js",
+        "public/motion/normalized-pose.js",
+        "public/motion/movement-recorder.js",
+        "public/pose-runtime.js",
+        "public/workout.html",
+        "test/pose-observation-v2.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented PR 1 detector-neutral PoseObservationV2, MoveNet adapter, scoring-safe legacy projection, generic normalization alias, capture export metadata, first-failure validation, and single-owner authority regression coverage. Focused tests 23/23 PASS; browser and physical iPhone/human acceptance remain not recorded.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T16:33:31.632Z"
+    },
+    {
+      "operationId": "48562e08-84be-4f89-9034-ff8882513c2b",
+      "board": "avatar",
+      "cardId": "avatar-development-pose-observation-v2-foundation",
+      "sourceType": "implementation",
+      "taskId": "pose-observation-v2-foundation",
+      "files": [
+        "public/motion/pose-observation-v2.js",
+        "public/motion/normalized-pose.js",
+        "public/motion/movement-recorder.js",
+        "public/pose-runtime.js",
+        "public/workout.html",
+        "test/pose-observation-v2.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 44808b3. Focused contract, compatibility, recorder, route/role and authority-owner tests PASS. Full npm test was attempted but the repository-wide suite has unrelated pre-existing failures and was interrupted after extended execution; desktop camera and physical iPhone acceptance were not performed.",
+      "prNumber": null,
+      "commitSha": "44808b3",
+      "timestamp": "2026-09-17T16:37:17.009Z"
     }
   ]
 }

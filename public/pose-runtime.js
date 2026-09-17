@@ -753,6 +753,10 @@
         const inferenceCompletedAt = global.performance?.now?.() ?? Date.now();
         const pose = Array.isArray(poses) && poses.length ? poses[0] : null;
         const posePacket = normalizePosePacket(pose, video);
+        const poseObservation = global.PocketPTPoseObservationV2?.fromMoveNet?.(posePacket, {
+          engineVersion: global.tf?.version?.tfjs || '4.22.0',
+          modelVersion: '2.1.3'
+        }) || null;
         state.loopFrameCount += 1;
         state.framesSuccessful += 1;
         state.lastInferenceMs = Math.round(inferenceMs * 10) / 10;
@@ -789,12 +793,12 @@
         global.__lastPoseFrame = posePacket;
         const dispatchStartedAt = global.performance?.now?.() ?? Date.now();
         try {
-          global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poses } }));
+          global.dispatchEvent?.(new CustomEvent('pose-runtime:frame', { detail: { pose, posePacket, poseObservation, poses } }));
           state.poseEventDispatchCount += 1;
           state.lastPoseEventAt = new Date().toISOString();
         } catch (_) {}
         state.lastEventDispatchMs = Math.round(((global.performance?.now?.() ?? Date.now()) - dispatchStartedAt) * 10) / 10;
-        if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poses, inferenceMs });
+        if (typeof onPoseFrame === 'function') onPoseFrame({ pose, posePacket, poseObservation, poses, inferenceMs });
       } catch (err) {
         const message = err?.message || String(err || 'pose_loop_failed');
         if (/disconnected|source element|camera/i.test(message)) { displayTracker.reset(); state.latestDisplayPose = null; state.displayTrackerGeneration = 0; }

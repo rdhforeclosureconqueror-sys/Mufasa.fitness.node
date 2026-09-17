@@ -30,11 +30,17 @@
   }
 
   function point(joint) {
-    if (!joint) return null;
+    if (!joint || joint.provenance === 'LOST') return null;
     return Object.freeze({
       x: number(joint.x),
       y: number(joint.y),
-      confidence: number(joint.confidence)
+      confidence: number(joint.confidence),
+      visibility: joint.visibility == null ? null : number(joint.visibility),
+      presence: joint.presence == null ? null : number(joint.presence),
+      detectorConfidence: number(joint.detectorConfidence, joint.confidence),
+      trackingConfidence: number(joint.trackingConfidence, joint.confidence),
+      provenance: joint.provenance || 'OBSERVED_MODEL',
+      authoritative: joint.authoritative !== false
     });
   }
 
@@ -64,7 +70,7 @@
 
   function compactFrame(frame, relativeMs) {
     const joints = {};
-    for (const name of RECORDED_JOINTS) joints[name] = point(frame?.joints?.[name]);
+    for (const name of RECORDED_JOINTS) joints[name] = point(frame?.jointEvidence?.[name] ? { ...frame.joints?.[name], ...frame.jointEvidence[name], confidence:frame.joints?.[name]?.confidence } : frame?.joints?.[name]);
     const visibleJointCount = Object.values(joints).filter((joint) => joint && joint.confidence >= MIN_CONFIDENCE).length;
     const bodyHeight = number(frame?.landmarks?.bodyHeightNormalized);
     const overallConfidence = number(frame?.confidence?.overall, frame?.confidence?.bodyDetected ? 1 : 0);
@@ -102,8 +108,8 @@
   }
 
   function normalizePacket(posePacket, cameraState = {}) {
-    if (!posePacket || typeof normalized?.fromMoveNetPosePacket !== 'function') return null;
-    return normalized.fromMoveNetPosePacket(posePacket, {
+    if (!posePacket || typeof normalized?.fromPosePacket !== 'function') return null;
+    return normalized.fromPosePacket(posePacket, {
       cameraFacing: cameraState.facingMode || 'user',
       previewMirrored: cameraState.isMirrored !== false
     });
@@ -136,6 +142,7 @@
       this.timer = null;
       this.meta = null;
       this.latest = null;
+      this.captureContract = null;
       this.listeners = new Set();
       this.onPoseFrame = (event) => this.handlePoseFrame(event);
       this.eventTarget?.addEventListener?.('pose-runtime:frame', this.onPoseFrame);
@@ -170,6 +177,7 @@
       const duration = Math.max(1000, Math.min(MAX_DURATION_MS, number(durationMs, 5000)));
       this.frames = [];
       this.latest = null;
+      this.captureContract = null;
       this.startedAt = this.now();
       this.lastAcceptedAt = null;
       this.meta = Object.freeze({
@@ -200,8 +208,14 @@
       this.lastPoseAt = at;
       if (this.state !== 'RECORDING') return false;
       if (this.lastAcceptedAt != null && at - this.lastAcceptedAt < MIN_FRAME_INTERVAL_MS) return false;
-      const frame = normalizePacket(event?.detail?.posePacket, this.cameraState() || {});
+      const frame = normalizePacket(event?.detail?.poseObservation || event?.detail?.posePacket, this.cameraState() || {});
       if (!frame) return false;
+      this.captureContract ||= Object.freeze({
+        engine: frame.source?.engine || Object.freeze({ id:'tensorflow-js', version:'unknown' }),
+        model: Object.freeze({ id:frame.source?.detector || 'MoveNet.SinglePose.Lightning', version:frame.source?.packageVersion || 'unknown' }),
+        schema: frame.source?.schema || Object.freeze({ id:'legacy-normalized-pose', version:1 }),
+        ruleset: frame.source?.ruleset || Object.freeze({ id:'pose-authority-v1', version:1 })
+      });
       this.frames.push(compactFrame(frame, at - this.startedAt));
       this.lastAcceptedAt = at;
       this.notify();
@@ -221,6 +235,12 @@
         rawVideoStored: false,
         threeDimensionalBoneRotations: false,
         handDetail: 'wrist-only; no finger skeleton',
+        contract: this.captureContract || Object.freeze({
+          engine: Object.freeze({ id:'tensorflow-js', version:'unknown' }),
+          model: Object.freeze({ id:'MoveNet.SinglePose.Lightning', version:'2.1.3' }),
+          schema: Object.freeze({ id:'com.mufasa.fitnode.pose-observation', version:2 }),
+          ruleset: Object.freeze({ id:'pose-authority-v1', version:1 })
+        }),
         startedAt: new Date(this.startedAt).toISOString(),
         endedAt: new Date(endedAt).toISOString(),
         stopReason: reason,
@@ -242,6 +262,7 @@
       this.lastAcceptedAt = null;
       this.meta = null;
       this.latest = null;
+      this.captureContract = null;
       this.state = 'IDLE';
       this.notify();
     }
