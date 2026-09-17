@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 25
     env:
       TARGET_BRANCH: preview/underwater-learning-world
-      GODOT_SOURCE_COMMIT: c1bbd51a9f1597a944acc15f092cf6ff2e39252b
+      GODOT_SOURCE_COMMIT: 27e7db3c3b35b12fa4d3c70a969e298a44161591
       GODOT_GENERATED_BRANCH: generated/web-candidate
       PREVIEW_ROOT: public/game/underwater-learning-preview
     steps:
@@ -115,7 +115,7 @@ jobs:
             productionArenaUntouched: true,
             avatarStartupContract: 'load-after-avatar-ready',
             lesson: 'PHONICS_A_LONG_SHORT',
-            swimAnimation: 'PENDING',
+            swimAnimation: 'AVAILABLE',
             previewQuery: '/arena/push-up?preview=underwater',
             note: 'Private underwater vowel treasure preview. Without ?preview=underwater the arena still loads the normal production Godot package.'
           };
@@ -140,6 +140,7 @@ jobs:
           if (manifest.godotSourceCommit !== process.env.GODOT_SOURCE_COMMIT) throw new Error('preview provenance mismatch');
           if (manifest.productionArenaUntouched !== true) throw new Error('production isolation marker missing');
           if (manifest.lesson !== 'PHONICS_A_LONG_SHORT') throw new Error('phonics lesson marker missing');
+          if (manifest.swimAnimation !== 'AVAILABLE') throw new Error('swim animation marker missing');
           NODE
 
       - name: Commit isolated preview package
