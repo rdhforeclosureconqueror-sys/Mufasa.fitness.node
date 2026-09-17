@@ -62,6 +62,6 @@ test('production ownership remains singular and has no mobile blanket CPU forcin
     assert.doesNotMatch(html, /tf\.setBackend/);
     assert.match(html, /PoseRuntime\.initMoveNetDetector/);
   }
-  assert.equal((source.match(/pose-runtime:frame', \{ detail: \{ pose, posePacket, poses \} \}/g) || []).length, 1);
+  assert.equal((source.match(/pose-runtime:frame', \{ detail: \{ pose, posePacket, poseObservation, poses \} \}/g) || []).length, 1);
   assert.doesNotMatch(source, /navigator\.mediaDevices\.getUserMedia\s*\(|createElement\(['"]video/);
 });
