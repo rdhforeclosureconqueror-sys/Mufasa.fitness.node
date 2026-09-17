@@ -168,6 +168,20 @@
       "createdAt": "2026-09-16T16:50:10.147Z",
       "source": "readiness:update",
       "taskId": "warrior-ii-body-relative-wide-lunge"
+    },
+    {
+      "id": "avatar-development-pose-observation-v2-foundation",
+      "board": "avatar",
+      "canonical": false,
+      "title": "PoseObservationV2 detector-neutral foundation",
+      "category": "MOTION INTELLIGENCE",
+      "description": "PR 1 detector-neutral observation contract, MoveNet adapter, legacy 17-joint projection, generic normalization, capture export metadata, validation and authority-leakage diagnostics.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-17T16:24:14.964Z",
+      "source": "readiness:update",
+      "taskId": "pose-observation-v2-foundation"
     }
   ]
 }

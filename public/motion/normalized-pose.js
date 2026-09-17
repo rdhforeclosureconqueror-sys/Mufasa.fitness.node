@@ -1,8 +1,9 @@
 (function (root, factory) {
-  const api = factory();
+  const contract = typeof module === "object" && module.exports ? require('./pose-observation-v2') : root.PocketPTPoseObservationV2;
+  const api = factory(contract);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PocketPTNormalizedPose = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (contract) {
   "use strict";
 
   const SCHEMA_VERSION = 1;
@@ -42,30 +43,41 @@
   function distancePixels(a, b, width, height) {
     return a && b ? Math.hypot((b.x-a.x)*width, (b.y-a.y)*height) : null;
   }
-  function fromMoveNetPosePacket(posePacket, options = {}) {
+  function fromPosePacket(posePacket, options = {}) {
+    const observation = posePacket?.schema?.version === 2 ? posePacket : contract?.fromMoveNet?.(posePacket, options);
+    const validation = contract?.validate?.(observation);
+    if (validation && !validation.ok) throw new TypeError(`${validation.firstFailure}: ${validation.detail}`);
     const width = Number(posePacket?.video?.width || options.width || 0);
     const height = Number(posePacket?.video?.height || options.height || 0);
-    const joints = Object.fromEntries(JOINT_NAMES.map(name => [name, normalizedPoint(pointByName(posePacket, name), width, height)]));
-    const directions = Object.fromEntries(Object.entries(SEGMENTS).map(([name, [a, b]]) => [name, segmentDirection(joints[a], joints[b], width, height)]));
-    const shoulderLine = segmentDirection(joints.left_shoulder, joints.right_shoulder, width, height);
-    const hipLine = segmentDirection(joints.left_hip, joints.right_hip, width, height);
+    const resolvedWidth = observation?.frame?.width || width;
+    const resolvedHeight = observation?.frame?.height || height;
+    const joints = Object.fromEntries(JOINT_NAMES.map(name => {
+      const point = observation?.landmarks?.[name];
+      return [name, point && point.provenance !== 'LOST' ? Object.freeze({ x: point.x, y: point.y, z: point.z, confidence: point.detectorConfidence }) : normalizedPoint(pointByName(posePacket, name), width, height)];
+    }));
+    const jointEvidence = Object.freeze(Object.fromEntries(JOINT_NAMES.map(name => [name, observation?.landmarks?.[name] || null])));
+    const directions = Object.fromEntries(Object.entries(SEGMENTS).map(([name, [a, b]]) => [name, segmentDirection(joints[a], joints[b], resolvedWidth, resolvedHeight)]));
+    const shoulderLine = segmentDirection(joints.left_shoulder, joints.right_shoulder, resolvedWidth, resolvedHeight);
+    const hipLine = segmentDirection(joints.left_hip, joints.right_hip, resolvedWidth, resolvedHeight);
     const shoulderCenter=midpoint(joints.left_shoulder,joints.right_shoulder),hipCenter=midpoint(joints.left_hip,joints.right_hip),ankleCenter=midpoint(joints.left_ankle,joints.right_ankle);
-    const bodyCenter=midpoint(shoulderCenter,hipCenter),torsoAxis=segmentDirection(shoulderCenter,hipCenter,width,height),bodyAxis=torsoAxis;
+    const bodyCenter=midpoint(shoulderCenter,hipCenter),torsoAxis=segmentDirection(shoulderCenter,hipCenter,resolvedWidth,resolvedHeight),bodyAxis=torsoAxis;
     const estimatedFootBaseline=ankleCenter?Object.freeze({y:ankleCenter.y,z:null,confidence:ankleCenter.confidence}):null;
     const landmarks=Object.freeze({shoulderCenter,hipCenter,bodyCenter,ankleCenter,estimatedFootBaseline,shoulderLine,hipLine,torsoAxis,bodyAxis,
-      bodyHeightPixels:distancePixels(shoulderCenter,ankleCenter,width,height),bodyHeightNormalized:distancePixels(shoulderCenter,ankleCenter,1,1),shoulderWidthPixels:distancePixels(joints.left_shoulder,joints.right_shoulder,width,height),hipWidthPixels:distancePixels(joints.left_hip,joints.right_hip,width,height)});
+      bodyHeightPixels:distancePixels(shoulderCenter,ankleCenter,resolvedWidth,resolvedHeight),bodyHeightNormalized:distancePixels(shoulderCenter,ankleCenter,1,1),shoulderWidthPixels:distancePixels(joints.left_shoulder,joints.right_shoulder,resolvedWidth,resolvedHeight),hipWidthPixels:distancePixels(joints.left_hip,joints.right_hip,resolvedWidth,resolvedHeight)});
     const confidences = Object.values(joints).filter(Boolean).map(joint => joint.confidence);
-    const overall = Number.isFinite(posePacket?.pose?.score) ? Math.max(0, Math.min(1, Number(posePacket.pose.score))) : confidences.length ? Math.min(...confidences) : 0;
+    const overall = Number.isFinite(observation?.confidence?.detector) ? observation.confidence.detector : Number.isFinite(posePacket?.pose?.score) ? Math.max(0, Math.min(1, Number(posePacket.pose.score))) : confidences.length ? Math.min(...confidences) : 0;
     return Object.freeze({
-      schemaVersion: SCHEMA_VERSION, videoWidth: width, videoHeight: height, timestamp: Number(posePacket?.at || options.timestamp || Date.now()),
+      schemaVersion: SCHEMA_VERSION, poseObservationSchemaVersion: observation?.schema?.version || null, videoWidth: resolvedWidth, videoHeight: resolvedHeight, timestamp: Number(observation?.frame?.timestamp || posePacket?.at || options.timestamp || Date.now()),
       confidence: Object.freeze({ overall, bodyDetected: confidences.some(value => value >= 0.3) }),
-      joints: Object.freeze(joints), directions: Object.freeze({ ...directions, shoulderLine, hipLine, torsoAxis, bodyAxis }), landmarks,
+      joints: Object.freeze(joints), jointEvidence, directions: Object.freeze({ ...directions, shoulderLine, hipLine, torsoAxis, bodyAxis }), landmarks,
       // Compatibility aliases for the original one-arm proof consumers.
       rightShoulder: joints.right_shoulder, rightElbow: joints.right_elbow, rightUpperArmDirection: directions.rightUpperArm,
       coordinates: Object.freeze({ space: "mirrored-image-normalized", origin: "top-left", xAxis: "image-right", yAxis: "anatomical-up", zAxis: "unsupported", depth: "2d-only" }),
-      source: Object.freeze({ detector: "MoveNet.SinglePose.Lightning", packageVersion: "2.1.3", flipHorizontal: true, cameraFacing: options.cameraFacing || "unknown", previewMirrored: Boolean(options.previewMirrored) })
+      source: Object.freeze({ detector: observation?.model?.id || "MoveNet.SinglePose.Lightning", packageVersion: observation?.model?.version || "2.1.3", engine: observation?.engine || null, schema: observation?.schema || null, ruleset: observation?.ruleset || null, flipHorizontal: true, cameraFacing: options.cameraFacing || "unknown", previewMirrored: Boolean(options.previewMirrored) })
     });
   }
 
-  return Object.freeze({ SCHEMA_VERSION, MIN_SEGMENT_LENGTH, fromMoveNetPosePacket });
+  const fromMoveNetPosePacket = fromPosePacket;
+
+  return Object.freeze({ SCHEMA_VERSION, MIN_SEGMENT_LENGTH, fromPosePacket, fromMoveNetPosePacket });
 });
