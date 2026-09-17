@@ -1,14 +1,14 @@
 {
   "protocolVersion": 1,
-  "buildId": "underwater-vowel-a-c1bbd51",
+  "buildId": "underwater-vowel-a-27e7db3",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "c1bbd51a9f1597a944acc15f092cf6ff2e39252b",
-  "godotCandidateCommit": "6631078d34224acd99ff20b3c6acab06bf667473",
+  "godotSourceCommit": "27e7db3c3b35b12fa4d3c70a969e298a44161591",
+  "godotCandidateCommit": "40ee8e595e2aa1110c5540d30d37beba35ce767c",
   "deploymentMode": "isolated-private-preview",
   "productionArenaUntouched": true,
   "avatarStartupContract": "load-after-avatar-ready",
   "lesson": "PHONICS_A_LONG_SHORT",
-  "swimAnimation": "PENDING",
+  "swimAnimation": "AVAILABLE",
   "previewQuery": "/arena/push-up?preview=underwater",
   "note": "Private underwater vowel treasure preview. Without ?preview=underwater the arena still loads the normal production Godot package."
 }
