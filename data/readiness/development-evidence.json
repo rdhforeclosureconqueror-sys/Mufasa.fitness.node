@@ -2689,6 +2689,118 @@
       "prNumber": null,
       "commitSha": "44808b3",
       "timestamp": "2026-09-17T16:37:17.009Z"
+    },
+    {
+      "operationId": "be161534-8f51-438c-90ca-5a2699a0e896",
+      "board": "avatar",
+      "cardId": "avatar-development-mediapipe-pose-engine-test-lab",
+      "sourceType": "card_creation",
+      "taskId": "mediapipe-pose-engine-test-lab",
+      "files": [],
+      "automated": null,
+      "evidence": "Add a protected detector-comparison lab that runs MoveNet and MediaPipe Pose Landmarker against one camera source, adapts both into PoseObservationV2, preserves MoveNet as production default, and exposes first-failure and evidence-quality diagnostics.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T17:53:20.647Z"
+    },
+    {
+      "operationId": "2f92c33c-e225-4a30-9be4-1d8856d9b489",
+      "board": "avatar",
+      "cardId": "avatar-development-mediapipe-pose-engine-test-lab",
+      "sourceType": "implementation",
+      "taskId": "mediapipe-pose-engine-test-lab",
+      "files": [
+        "public/motion/pose-observation-v2.js",
+        "public/motion/pose-engine-comparison.js",
+        "motion-lab/pose-engine-test-lab.html",
+        "motion-lab/pose-engine-test-lab.css",
+        "motion-lab/pose-engine-test-lab.js",
+        "motion-lab/index.html",
+        "server.js",
+        "test/pose-observation-v2.test.js",
+        "test/pose-engine-test-lab.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented protected candidate lab with one camera/scheduler, parallel MoveNet and MediaPipe evidence comparison, 33-landmark plus estimated-world adapter, scoring-safe legacy projection, and ordered first-failure diagnostics. Focused 26/26 PASS; Motion Lab route suite 26/27 with one pre-existing Safari handoff assertion mismatch unrelated to this change. Real browser camera, iPhone, movement quality and production detector selection remain unverified; MoveNet remains production default.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T17:56:48.093Z"
+    },
+    {
+      "operationId": "5a229841-a41f-4640-93c1-a14c4ed98f06",
+      "board": "avatar",
+      "cardId": "avatar-development-mediapipe-pose-engine-test-lab",
+      "sourceType": "implementation",
+      "taskId": "mediapipe-pose-engine-test-lab",
+      "files": [
+        "public/motion/pose-observation-v2.js",
+        "public/motion/pose-engine-comparison.js",
+        "motion-lab/pose-engine-test-lab.html",
+        "motion-lab/pose-engine-test-lab.css",
+        "motion-lab/pose-engine-test-lab.js",
+        "motion-lab/index.html",
+        "server.js",
+        "test/pose-observation-v2.test.js",
+        "test/pose-engine-test-lab.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit ac08e8f. Protected test-only comparison lab complete; production MoveNet selection is unchanged. Focused contract/comparison/runtime suite 26/26 PASS, lint/diff/readiness PASS. Existing Motion Lab suite remains 26/27 because its pre-existing Safari handoff test expects an older exact origin-check expression. No real camera, browser GPU, physical iPhone, visual movement, performance or human acceptance is claimed.",
+      "prNumber": null,
+      "commitSha": "ac08e8f14f61f17c144a6833214cfa35cc0901ff",
+      "timestamp": "2026-09-17T17:57:14.053Z"
+    },
+    {
+      "operationId": "d10b749c-0c18-431e-be34-be24d568285e",
+      "board": "avatar",
+      "cardId": "avatar-development-live-mirror-calibration-diagnostics-repair",
+      "sourceType": "card_creation",
+      "taskId": "live-mirror-calibration-diagnostics-repair",
+      "files": [],
+      "automated": null,
+      "evidence": "Repair two live-avatar-mirror regression failures by making the calibration gate explicit, testing authorized retarget behavior separately from calibration behavior, and exposing ordered first-failure diagnostics in the protected live mirror lab.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T17:57:51.438Z"
+    },
+    {
+      "operationId": "d03cb832-7f18-4167-aab6-0911508f23b2",
+      "board": "avatar",
+      "cardId": "avatar-development-live-mirror-calibration-diagnostics-repair",
+      "sourceType": "implementation",
+      "taskId": "live-mirror-calibration-diagnostics-repair",
+      "files": [
+        "public/motion/live-avatar-mirror.js",
+        "motion-lab/live-avatar-mirror.html",
+        "motion-lab/live-avatar-mirror.css",
+        "motion-lab/live-avatar-mirror.js",
+        "test/live-avatar-mirror.test.js",
+        "test/live-avatar-mirror-debug-panel.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Made the calibration-to-retarget gate observable and repaired the two live-avatar-mirror regression assertions so they explicitly test authorized retargeting rather than bypassing the required base calibration. Added a protected first-failure panel and copyable debug report. Focused mirror/solver/wiring suite passes except one pre-existing asynchronous calibration speech timing assertion outside this change; no browser camera, physical-device, visual-motion, or human acceptance is claimed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T18:02:20.853Z"
+    },
+    {
+      "operationId": "29f15d0a-cc20-4f05-9626-f9953ffe805d",
+      "board": "avatar",
+      "cardId": "avatar-development-live-mirror-calibration-diagnostics-repair",
+      "sourceType": "implementation",
+      "taskId": "live-mirror-calibration-diagnostics-repair",
+      "files": [
+        "public/motion/live-avatar-mirror.js",
+        "motion-lab/live-avatar-mirror.html",
+        "motion-lab/live-avatar-mirror.css",
+        "motion-lab/live-avatar-mirror.js",
+        "test/live-avatar-mirror.test.js",
+        "test/live-avatar-mirror-debug-panel.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 829182d. Calibration-gated mirror retargeting now reports the first failing boundary and the protected live mirror lab shows/copies calibration state, gate state, received frames, blocked frames, retarget frames, changed bones, and next action. The two original mirror regression tests pass when retarget is explicitly authorized; focused 57/57 suite passes. One unrelated legacy calibration speech timing assertion remains outside this change. No browser camera, physical-device, visual-motion or human acceptance is claimed.",
+      "prNumber": null,
+      "commitSha": "829182d",
+      "timestamp": "2026-09-17T18:16:40.488Z"
     }
   ]
 }

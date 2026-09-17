@@ -22,6 +22,11 @@
     PROVENANCE.LOST
   ]);
   const LEGACY_17 = Object.freeze(['nose','left_eye','right_eye','left_ear','right_ear','left_shoulder','right_shoulder','left_elbow','right_elbow','left_wrist','right_wrist','left_hip','right_hip','left_knee','right_knee','left_ankle','right_ankle']);
+  const MEDIAPIPE_33 = Object.freeze([
+    'nose','left_eye_inner','left_eye','left_eye_outer','right_eye_inner','right_eye','right_eye_outer','left_ear','right_ear','mouth_left','mouth_right',
+    'left_shoulder','right_shoulder','left_elbow','right_elbow','left_wrist','right_wrist','left_pinky','right_pinky','left_index','right_index','left_thumb','right_thumb',
+    'left_hip','right_hip','left_knee','right_knee','left_ankle','right_ankle','left_heel','right_heel','left_foot_index','right_foot_index'
+  ]);
 
   const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
   const finiteOrNull = value => Number.isFinite(Number(value)) ? Number(value) : null;
@@ -70,6 +75,49 @@
       authority: Object.freeze({ scoringEligibleProvenance: Object.freeze([PROVENANCE.OBSERVED_MODEL]), derivedLandmarksArePresentationOnly: true })
     });
   }
+  function mediaPipeLandmark(point) {
+    if (!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) {
+      return Object.freeze({ x:null, y:null, z:null, visibility:null, presence:null, detectorConfidence:0, trackingConfidence:0, provenance:PROVENANCE.LOST, authoritative:false });
+    }
+    const visibility = finiteOrNull(point.visibility);
+    const presence = finiteOrNull(point.presence);
+    const detectorConfidence = clamp(visibility ?? presence ?? 1);
+    return Object.freeze({
+      x:Number(point.x), y:Number(point.y), z:finiteOrNull(point.z), visibility, presence,
+      detectorConfidence, trackingConfidence:detectorConfidence,
+      provenance:PROVENANCE.OBSERVED_MODEL, authoritative:true
+    });
+  }
+  function mediaPipeWorldLandmark(point) {
+    if (!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y)) || !Number.isFinite(Number(point.z))) return null;
+    return Object.freeze({
+      x:Number(point.x), y:Number(point.y), z:Number(point.z),
+      visibility:finiteOrNull(point.visibility), presence:finiteOrNull(point.presence),
+      estimated:true, measuredDepth:false
+    });
+  }
+  function fromMediaPipe(result, options = {}) {
+    const width = Number(options.width || options.videoWidth || 0);
+    const height = Number(options.height || options.videoHeight || 0);
+    const imagePoints = Array.isArray(result?.landmarks?.[0]) ? result.landmarks[0] : Array.isArray(result?.landmarks) && !Array.isArray(result.landmarks[0]) ? result.landmarks : [];
+    const worldPoints = Array.isArray(result?.worldLandmarks?.[0]) ? result.worldLandmarks[0] : Array.isArray(result?.worldLandmarks) && !Array.isArray(result.worldLandmarks[0]) ? result.worldLandmarks : [];
+    const landmarks = Object.freeze(Object.fromEntries(MEDIAPIPE_33.map((name,index)=>[name,mediaPipeLandmark(imagePoints[index])])));
+    const worldLandmarks = Object.freeze(Object.fromEntries(MEDIAPIPE_33.map((name,index)=>[name,mediaPipeWorldLandmark(worldPoints[index])]).filter(([,point])=>Boolean(point))));
+    const confidences = Object.values(landmarks).filter(point=>point.provenance===PROVENANCE.OBSERVED_MODEL).map(point=>point.detectorConfidence);
+    const detectorConfidence = confidences.length ? confidences.reduce((sum,value)=>sum+value,0)/confidences.length : 0;
+    return Object.freeze({
+      schema:Object.freeze({id:SCHEMA_ID,version:SCHEMA_VERSION}),
+      frame:Object.freeze({timestamp:Number(options.timestamp || Date.now()),width,height}),
+      engine:Object.freeze({id:'mediapipe-tasks-vision',version:String(options.engineVersion || '0.10.22')}),
+      model:Object.freeze({id:String(options.modelId || 'PoseLandmarker.Lite'),version:String(options.modelVersion || '1'),detector:'MediaPipe'}),
+      ruleset:Object.freeze({id:RULESET_VERSION,version:1}),
+      coordinates:Object.freeze({space:'image-normalized',origin:'top-left',xAxis:'image-right',yAxis:'image-down',depth:'model-estimated-relative'}),
+      worldCoordinates:Object.freeze({space:'model-estimated-world',unit:'meter-like-model-output',measuredDepth:false,fitnessEvidenceOnly:true}),
+      landmarks, worldLandmarks,
+      confidence:Object.freeze({detector:detectorConfidence,tracking:detectorConfidence}),
+      authority:Object.freeze({scoringEligibleProvenance:Object.freeze([PROVENANCE.OBSERVED_MODEL]),derivedLandmarksArePresentationOnly:true,worldDepthIsEstimated:true})
+    });
+  }
   function validate(observation) {
     const fail = (boundary, detail) => Object.freeze({ ok: false, firstFailure: boundary, detail });
     if (!observation || typeof observation !== 'object') return fail('POSE_OBSERVATION_MISSING', 'PoseObservationV2 object is required.');
@@ -98,5 +146,5 @@
     const leak = (points || []).find(point => point?.authoritative && NON_AUTHORITATIVE.has(point.provenance));
     return leak ? Object.freeze({ ok:false, firstFailure:'AUTHORITY_LEAKAGE', detail:`${leak.name || 'landmark'} uses ${leak.provenance}.` }) : Object.freeze({ ok:true, firstFailure:'NONE' });
   }
-  return Object.freeze({ SCHEMA_ID, SCHEMA_VERSION, RULESET_VERSION, PROVENANCE, LEGACY_17, fromMoveNet, validate, projectLegacy17, assertAuthoritativeProjection });
+  return Object.freeze({ SCHEMA_ID, SCHEMA_VERSION, RULESET_VERSION, PROVENANCE, LEGACY_17, MEDIAPIPE_33, fromMoveNet, fromMediaPipe, validate, projectLegacy17, assertAuthoritativeProjection });
 });

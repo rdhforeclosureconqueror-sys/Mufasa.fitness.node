@@ -1,7 +1,7 @@
 (function initLiveAvatarMirrorLab(global) {
   "use strict";
   const $ = id => global.document.getElementById(id), video = $("camera"), cameraStage = $("cameraStage"), canvas = $("landmarks"), context = canvas.getContext("2d");
-  const startButton = $("start"), stopButton = $("stop");
+  const startButton = $("start"), stopButton = $("stop"), copyButton = $("copyMirrorDebug");
   let camera = null, detector = null, poseLoop = null, session = null, mirror = null, lastRenderAt = null, resizeObserver = null;
   const connections = [[5,7],[7,9],[6,8],[8,10],[5,6],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
   const set = (id, value) => { $(id).textContent = value; };
@@ -19,13 +19,19 @@
     set("bodyState",frame.confidence.bodyDetected?"YES":"NO");set("shoulderConfidence",percent(frame.rightShoulder?.confidence));set("elbowConfidence",percent(frame.rightElbow?.confidence));set("mirrorState",diagnostics.state);
     const d=frame.rightUpperArmDirection;set("direction",d?`x ${d.x.toFixed(3)} · y ${d.y.toFixed(3)} · z 0 (camera plane)`:"—");
   }
+  function renderMirrorDiagnostics() {
+    const diagnostics=mirror?.diagnostics?.()||{firstFailingBoundary:"POSE_FRAME_NOT_RECEIVED",retargetGate:"CLOSED",nextAction:"Start the camera and wait for the first canonical pose frame.",calibrationState:"WAITING",poseFramesReceived:0,calibrationBlockedFrames:0,retargetFramesExecuted:0,changedBones:[]};
+    set("calibrationState",diagnostics.calibrationState||"WAITING");set("retargetGate",diagnostics.retargetGate||"CLOSED");set("poseFramesReceived",diagnostics.poseFramesReceived||0);set("calibrationBlockedFrames",diagnostics.calibrationBlockedFrames||0);set("retargetFramesExecuted",diagnostics.retargetFramesExecuted||0);set("changedBones",diagnostics.changedBones?.join(", ")||"none");set("firstFailingBoundary",diagnostics.firstFailingBoundary||"UNKNOWN");set("mirrorNextAction",diagnostics.nextAction||"Review diagnostics.");
+    const report={at:new Date().toISOString(),firstFailingBoundary:diagnostics.firstFailingBoundary,retargetGate:diagnostics.retargetGate,nextAction:diagnostics.nextAction,calibrationState:diagnostics.calibrationState,poseFramesReceived:diagnostics.poseFramesReceived,calibrationBlockedFrames:diagnostics.calibrationBlockedFrames,retargetFramesExecuted:diagnostics.retargetFramesExecuted,solverState:diagnostics.solverState,changedBones:diagnostics.changedBones,fullRigMapped:diagnostics.fullRigMapped,missingSegments:diagnostics.missingSegments};
+    $("mirrorDebugReport").textContent=JSON.stringify(report,null,2);global.__liveAvatarMirrorLabDiagnostics=report;return report;
+  }
   async function start() {
     startButton.disabled=true;$("error").textContent="";
     try {
       set("moveNetState","INITIALIZING");await global.__ensurePoseRuntime?.();await global.tf.ready();detector=await global.PoseRuntime.initMoveNetDetector();set("moveNetState","READY");
       camera=new global.PushUpChallenge.CameraController({video});await camera.initial();cameraStage.classList.toggle("mirrored",camera.isMirrored);resize();
       set("avatarState","LOADING");let mirrorRef=null;
-      session=global.PocketPTDisposableMotionSession.createMotionSession({showProbe:false,onFrame:active=>{const now=performance.now(),dt=lastRenderAt==null?0:(now-lastRenderAt)/1000;lastRenderAt=now;mirrorRef?.update(dt,Date.now());ownership();}});
+      session=global.PocketPTDisposableMotionSession.createMotionSession({showProbe:false,onFrame:active=>{const now=performance.now(),dt=lastRenderAt==null?0:(now-lastRenderAt)/1000;lastRenderAt=now;mirrorRef?.update(dt,Date.now());ownership();renderMirrorDiagnostics();}});
       const started=await session.start($("avatarStage"));if(started.status!=="ready")throw new Error(started.code);const loaded=await session.loadAvatar(global.PocketPTAvatarProfiles.profiles.personalized);if(loaded.status!=="ready")throw new Error(loaded.code);
       mirror=mirrorRef=new global.PocketPTLiveAvatarMirror.LiveAvatarMirror({eventTarget:global,session,cameraState:()=>({facingMode:camera.selectedFacingMode,isMirrored:camera.isMirrored}),onPose:poseStatus});set("avatarState","READY");
       poseLoop=global.PoseRuntime.startPoseLoop({detector,video,isRunning:()=>Boolean(poseLoop),onPoseFrame:({posePacket})=>draw(posePacket),onError:error=>{$("error").textContent=String(error?.message||error);set("moveNetState","ERROR");}});
@@ -34,8 +40,8 @@
   }
   function stop() {
     poseLoop?.stop();poseLoop=null;mirror?.dispose();mirror=null;session?.dispose();session=null;camera?.stop();camera=null;detector?.dispose?.();detector=null;lastRenderAt=null;
-    context.clearRect(0,0,canvas.width,canvas.height);set("mirrorState","WAITING");set("bodyState","NO");stopButton.disabled=true;startButton.disabled=false;ownership();
+    context.clearRect(0,0,canvas.width,canvas.height);set("mirrorState","WAITING");set("bodyState","NO");stopButton.disabled=true;startButton.disabled=false;ownership();renderMirrorDiagnostics();
   }
-  startButton.addEventListener("click",start);stopButton.addEventListener("click",stop);resizeObserver=new ResizeObserver(resize);resizeObserver.observe(cameraStage);
-  global.addEventListener("pagehide",()=>{stop();resizeObserver.disconnect();},{once:true});resize();ownership();
+  startButton.addEventListener("click",start);stopButton.addEventListener("click",stop);copyButton.addEventListener("click",async()=>{try{await global.navigator?.clipboard?.writeText?.(JSON.stringify(renderMirrorDiagnostics(),null,2));}catch(_){}});resizeObserver=new ResizeObserver(resize);resizeObserver.observe(cameraStage);
+  global.addEventListener("pagehide",()=>{stop();resizeObserver.disconnect();},{once:true});resize();ownership();renderMirrorDiagnostics();
 })(window);

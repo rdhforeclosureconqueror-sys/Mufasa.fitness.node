@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PocketPT Pose Engine Test Lab</title>
+  <link rel="stylesheet" href="/dev/motion-lab.css">
+  <link rel="stylesheet" href="/dev/pose-engine-test-lab.css">
+</head>
+<body><main>
+  <header>
+    <p class="eyebrow">PROTECTED EXPERIMENT · PRODUCTION DEFAULT UNCHANGED</p>
+    <h1>POSE ENGINE TEST LAB</h1>
+    <p>Compare the current MoveNet baseline with a MediaPipe Pose Landmarker candidate against one camera source. This page cannot select the production detector or write scoring results.</p>
+  </header>
+  <section class="controls" aria-label="Pose engine controls">
+    <button id="loadEngines">Load Both Engines</button>
+    <button id="startCamera" disabled>Start Camera</button>
+    <button id="startComparison" disabled>Start Comparison</button>
+    <button id="stopComparison" disabled>Stop</button>
+    <button id="copyPoseReport">Copy Report</button>
+  </section>
+  <section class="pose-grid">
+    <div class="camera-card"><h2>Shared camera source</h2><video id="poseLabVideo" playsinline muted></video><canvas id="poseLabOverlay"></canvas><p id="cameraStatus" role="status">Camera not started.</p></div>
+    <div><h2>First-failure panel</h2><div id="firstFailure" class="pose-status waiting">Waiting for engine load.</div><div id="poseChecks" class="pose-checks"></div></div>
+  </section>
+  <section class="pose-grid">
+    <article><h2>MoveNet · production baseline</h2><dl id="moveNetEvidence"></dl></article>
+    <article><h2>MediaPipe · candidate only</h2><dl id="mediaPipeEvidence"></dl><p class="measurement">MediaPipe Z/world coordinates are model-estimated, not measured depth.</p></article>
+  </section>
+  <section><h2>Comparison report</h2><pre id="poseReport">Not run.</pre></section>
+  <section><h2>Acceptance boundary</h2><p class="measurement">This lab measures contract validity, landmark coverage and runtime timing. It does not approve movement quality, physical-device performance, scoring accuracy, or a production detector change.</p></section>
+</main>
+<script src="/runtime-state.js"></script>
+<script src="/pose-runtime.js"></script>
+<script src="/dev/motion-lab-assets/pose-observation-v2.js"></script>
+<script src="/dev/motion-lab-assets/pose-engine-comparison.js"></script>
+<script src="/dev/pose-engine-test-lab.js"></script>
+</body></html>
