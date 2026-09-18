@@ -310,7 +310,7 @@ test('bootstrap validation distinguishes identity, experience, expiry and avatar
 async function launch(options = {}) {
   const events = new Map();
   const documentEvents = new Map();
-  const nodes = new Map(['status', 'message', 'game', 'exitArena', 'bridgeDebugBoard', 'bridgeDebugToggle'].map(id => [id, {id, style: {}, textContent: ''}]));
+  const nodes = new Map(['status', 'message', 'game', 'exitArena', 'bridgeDebugBoard', 'bridgeDebugToggle', 'underwaterTools', 'underwaterVowelSelect'].map(id => [id, {id, style: {}, textContent: '', hidden: true, value: '', events: {}, addEventListener(name, callback) {this.events[name] = callback;}}]));
   const game = nodes.get('game');
   const outgoing = [];
   game.contentWindow = {postMessage: (data, origin) => outgoing.push({data, origin})};
@@ -321,7 +321,7 @@ async function launch(options = {}) {
   let model;
   let open = false;
   let clock = CLOCK;
-  const location = {origin: 'https://arena.example', pathname: '/arena/push-up', search: options.search || '', hash: options.hash || '', assign: value => {location.assigned = value;}, reload: () => {location.reloaded = true;}};
+  const location = {origin: 'https://arena.example', href: `https://arena.example/arena/push-up${options.search || ''}`, pathname: '/arena/push-up', search: options.search || '', hash: options.hash || '', assign: value => {location.assigned = value;}, reload: () => {location.reloaded = true;}};
   const context = {
     document: {getElementById: id => nodes.get(id), title: 'Arena', hidden: false, addEventListener: (name, cb) => documentEvents.set(name, cb)},
     location, history: {replaceState: () => {location.hash = ''; calls.push({url: 'fragment-cleared'});}}, navigator: {},
@@ -375,6 +375,19 @@ test('underwater launcher forwards each supported vowel into the Godot iframe', 
     const app = await launch({search: `?preview=underwater&vowel=${vowel}`});
     assert.equal(app.game.src, `/game/underwater-learning-preview/index.html?vowel=${vowel}`);
   }
+});
+
+test('underwater selector is shown only in preview and navigates between allowlisted vowel lessons', async () => {
+  const app = await launch({search: '?preview=underwater&vowel=A'});
+  const tools = app.nodes.get('underwaterTools');
+  const select = app.nodes.get('underwaterVowelSelect');
+  assert.equal(tools.hidden, false);
+  assert.equal(select.value, 'A');
+  select.value = 'E';
+  select.events.change();
+  assert.equal(app.location.assigned, '/arena/push-up?preview=underwater&vowel=E');
+  const production = await launch();
+  assert.equal(production.nodes.get('underwaterTools').hidden, true);
 });
 
 test('underwater launcher defaults missing or invalid vowel selections to A', async () => {
