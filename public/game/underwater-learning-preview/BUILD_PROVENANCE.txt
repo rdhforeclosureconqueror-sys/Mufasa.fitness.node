@@ -1,9 +1,9 @@
-godot_source_commit=ba217b18dc369f2f9bed6508751eb2ecae20997a
+godot_source_commit=a0175a719424c35ec7e143539d11a616730de061
 godot_version=4.5.1
 preset=Web
-generated_at=2026-09-17T23:51:02Z
+generated_at=2026-09-18T03:39:03Z
 
-a5bcdd680df3147300dd0c98f05d9d06c67a02ffb683cb601dfb00286b72cbf9  build/ci-web/index.html
+714c9c16913dd05deca5831887dcb6893014aaead3cf2c6dbd1b009242323206  build/ci-web/index.html
 8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f  build/ci-web/index.js
-43b63e4aa11922656b142aaab4885a4228224ef88925fe281ba23568579a5cd1  build/ci-web/index.pck
+21adc5cf16f96e22e52eddd3d5af4693abc082a020164c5d1dbad78dee33ec6b  build/ci-web/index.pck
 6498359ba889796a0d95a2f71113ac184badc0f2d84cf28f4103c7e399d2d547  build/ci-web/index.wasm
