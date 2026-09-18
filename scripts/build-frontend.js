@@ -18,6 +18,8 @@ function injectRuntimeConfig(html,cacheToken){
   if(/data-pocketpt-runtime-config|\/runtime-config\.js(?:\?|["'])/i.test(html))return html;
   const tag=`  <script src="/runtime-config.js?v=${encodeURIComponent(cacheToken)}" data-pocketpt-runtime-config="true"></script>`;
   if(!html.includes("</head>"))throw new Error("Workout shell is missing </head> for runtime-config bootstrap injection");
+  const formEngineTag='  <script src="/form-engine.js"></script>';
+  if(html.includes(formEngineTag))return html.replace(formEngineTag,`${tag}\n${formEngineTag}`);
   return html.replace("</head>",`${tag}\n</head>`);
 }
 
