@@ -5,8 +5,11 @@
   const message = document.getElementById('message');
   const game = document.getElementById('game');
   const exitArena = document.getElementById('exitArena');
-  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';
-  const previewGameEntryPath = '/game/underwater-learning-preview/index.html';
+  const arenaSearchParams = new URLSearchParams(location.search);
+  const underwaterPreview = arenaSearchParams.get('preview') === 'underwater';
+  const requestedUnderwaterVowel = (arenaSearchParams.get('vowel') || 'A').trim().toUpperCase();
+  const underwaterVowel = ['A', 'E', 'I', 'O', 'U'].includes(requestedUnderwaterVowel) ? requestedUnderwaterVowel : 'A';
+  const previewGameEntryPath = `/game/underwater-learning-preview/index.html?vowel=${encodeURIComponent(underwaterVowel)}`;
   if (!diagnostics) {
     message.textContent = 'Arena diagnostics could not load. Reload this page.';
     return;
