@@ -31,6 +31,20 @@ test('comparison reports ordered first failure and keeps MoveNet as production d
   assert.equal(report.mediaPipe.evidence.landmarkCount,33);
   assert.equal(report.mediaPipe.evidence.detailedHandsFeetObserved,10);
   assert.equal(report.mediaPipe.evidence.worldDepthMeasured,false);
+  assert.equal(report.coordinateOrientation,'camera-image-unflipped');
+});
+
+test('inference failure invalidates cached success and becomes the first reported failure',()=>{
+  const state=comparison.createComparisonState();
+  state.setCamera(true);state.setReady('moveNet',true);state.setReady('mediaPipe',true);state.setRunning(true);
+  state.record('moveNet',moveNetObservation(),12);state.record('mediaPipe',mediaPipeObservation(),18);
+  state.fail('moveNet',new Error('GPU inference failed'));
+  const report=state.snapshot();
+  assert.equal(report.firstFailure.id,'movenet_model');
+  assert.match(report.firstFailure.detail,/GPU inference failed/);
+  assert.equal(report.moveNet.healthy,false);
+  assert.equal(report.moveNet.evidence,null);
+  assert.match(report.checks.find(item=>item.id==='movenet_frame').detail,/GPU inference failed/);
 });
 
 test('Pose Engine Test Lab is protected, isolated and cannot switch production detector',()=>{
@@ -51,4 +65,7 @@ test('production pose runtime remains MoveNet-only while candidate stays in prot
   assert.doesNotMatch(production,/PoseLandmarker|mediapipe-tasks-vision/);
   assert.match(lab,/PoseLandmarker\.createFromOptions/);
   assert.match(lab,/one shared camera source/i);
+  assert.match(lab,/flipHorizontal:false/);
+  assert.doesNotMatch(lab,/flipHorizontal:true/);
+  assert.match(lab,/camera-image-unflipped/);
 });

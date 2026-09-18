@@ -12,7 +12,7 @@
   ]);
 
   function blankEngine(id) {
-    return { id, ready:false, frames:0, failures:0, lastInferenceMs:null, inferenceSamples:[], lastObservation:null, lastError:null };
+    return { id, ready:false, healthy:true, frames:0, failures:0, lastInferenceMs:null, inferenceSamples:[], lastObservation:null, lastError:null };
   }
   function average(values) { return values.length ? values.reduce((sum,value)=>sum+value,0)/values.length : null; }
   function percentile(values, fraction) {
@@ -38,21 +38,21 @@
     function setReady(engineId,ready=true){state[engineId].ready=Boolean(ready);state.lastUpdatedAt=new Date().toISOString();}
     function setCamera(ready){state.cameraReady=Boolean(ready);state.lastUpdatedAt=new Date().toISOString();}
     function setRunning(running){state.running=Boolean(running);state.lastUpdatedAt=new Date().toISOString();}
-    function record(engineId,observation,inferenceMs){const engine=state[engineId];if(!engine)throw new TypeError(`unknown comparison engine: ${engineId}`);const validation=contract.validate(observation);if(!validation.ok){engine.failures+=1;engine.lastError=`${validation.firstFailure}: ${validation.detail}`;return validation;}engine.frames+=1;engine.lastObservation=observation;engine.lastInferenceMs=Number(inferenceMs)||0;engine.inferenceSamples.push(engine.lastInferenceMs);if(engine.inferenceSamples.length>180)engine.inferenceSamples.shift();engine.lastError=null;state.lastUpdatedAt=new Date().toISOString();return validation;}
-    function fail(engineId,error){const engine=state[engineId];if(engine){engine.failures+=1;engine.lastError=String(error?.message||error||'unknown_error');}state.lastUpdatedAt=new Date().toISOString();}
+    function record(engineId,observation,inferenceMs){const engine=state[engineId];if(!engine)throw new TypeError(`unknown comparison engine: ${engineId}`);const validation=contract.validate(observation);if(!validation.ok){engine.failures+=1;engine.healthy=false;engine.lastObservation=null;engine.lastError=`${validation.firstFailure}: ${validation.detail}`;state.lastUpdatedAt=new Date().toISOString();return validation;}engine.frames+=1;engine.lastObservation=observation;engine.lastInferenceMs=Number(inferenceMs)||0;engine.inferenceSamples.push(engine.lastInferenceMs);if(engine.inferenceSamples.length>180)engine.inferenceSamples.shift();engine.healthy=true;engine.lastError=null;state.lastUpdatedAt=new Date().toISOString();return validation;}
+    function fail(engineId,error){const engine=state[engineId];if(engine){engine.failures+=1;engine.healthy=false;engine.lastObservation=null;engine.lastError=String(error?.message||error||'unknown_error');}state.lastUpdatedAt=new Date().toISOString();}
     function checks(){const move=state.moveNet.lastObservation,media=state.mediaPipe.lastObservation,moveValidation=move?contract.validate(move):null,mediaValidation=media?contract.validate(media):null;const projection=media?contract.projectLegacy17(media):null,authority=projection?contract.assertAuthoritativeProjection(projection):null;return Object.freeze([
       {id:'contract',ok:state.contractReady,detail:`PoseObservationV${contract?.SCHEMA_VERSION||'missing'}`},
       {id:'camera',ok:state.cameraReady,detail:state.cameraReady?'one lab camera source ready':'camera not started'},
-      {id:'movenet_model',ok:state.moveNet.ready,detail:state.moveNet.lastError||'MoveNet production baseline candidate'},
-      {id:'mediapipe_model',ok:state.mediaPipe.ready,detail:state.mediaPipe.lastError||'MediaPipe experimental candidate'},
-      {id:'movenet_frame',ok:state.moveNet.frames>0,detail:`${state.moveNet.frames} valid frame(s)`},
-      {id:'mediapipe_frame',ok:state.mediaPipe.frames>0,detail:`${state.mediaPipe.frames} valid frame(s)`},
+      {id:'movenet_model',ok:state.moveNet.ready&&state.moveNet.healthy,detail:state.moveNet.lastError||'MoveNet production baseline candidate'},
+      {id:'mediapipe_model',ok:state.mediaPipe.ready&&state.mediaPipe.healthy,detail:state.mediaPipe.lastError||'MediaPipe experimental candidate'},
+      {id:'movenet_frame',ok:state.moveNet.frames>0&&state.moveNet.healthy,detail:state.moveNet.lastError||`${state.moveNet.frames} valid frame(s)`},
+      {id:'mediapipe_frame',ok:state.mediaPipe.frames>0&&state.mediaPipe.healthy,detail:state.mediaPipe.lastError||`${state.mediaPipe.frames} valid frame(s)`},
       {id:'movenet_contract',ok:moveValidation?.ok===true,detail:moveValidation?.detail||'waiting for MoveNet frame'},
       {id:'mediapipe_contract',ok:mediaValidation?.ok===true,detail:mediaValidation?.detail||'waiting for MediaPipe frame'},
       {id:'legacy_projection',ok:Boolean(projection?.length===17),detail:projection?`${projection.length}/17 compatibility joints projected`:'waiting for MediaPipe frame'},
       {id:'authority_boundary',ok:authority?.ok===true,detail:authority?.detail||authority?.firstFailure||'waiting for compatibility projection'}
     ]);}
-    function snapshot(){const all=checks(),firstFailure=CHECK_ORDER.map(id=>all.find(item=>item.id===id)).find(item=>item&&!item.ok)||null;const engineSnapshot=engine=>Object.freeze({ready:engine.ready,frames:engine.frames,failures:engine.failures,lastInferenceMs:engine.lastInferenceMs,averageInferenceMs:average(engine.inferenceSamples),p95InferenceMs:percentile(engine.inferenceSamples,.95),lastError:engine.lastError,evidence:engine.lastObservation?evidenceSummary(engine.lastObservation):null});return Object.freeze({schemaVersion:1,productionDefault:'MoveNet',candidate:'MediaPipe Pose Landmarker',productionDefaultChanged:false,cameraOwners:state.cameraReady?1:0,schedulerOwners:state.running?1:0,running:state.running,checks:all,firstFailure:firstFailure?Object.freeze({id:firstFailure.id,detail:firstFailure.detail}):null,moveNet:engineSnapshot(state.moveNet),mediaPipe:engineSnapshot(state.mediaPipe),updatedAt:state.lastUpdatedAt});}
+    function snapshot(){const all=checks(),firstFailure=CHECK_ORDER.map(id=>all.find(item=>item.id===id)).find(item=>item&&!item.ok)||null;const engineSnapshot=engine=>Object.freeze({ready:engine.ready,healthy:engine.healthy,frames:engine.frames,failures:engine.failures,lastInferenceMs:engine.lastInferenceMs,averageInferenceMs:average(engine.inferenceSamples),p95InferenceMs:percentile(engine.inferenceSamples,.95),lastError:engine.lastError,evidence:engine.lastObservation?evidenceSummary(engine.lastObservation):null});return Object.freeze({schemaVersion:1,productionDefault:'MoveNet',candidate:'MediaPipe Pose Landmarker',productionDefaultChanged:false,coordinateOrientation:'camera-image-unflipped',cameraOwners:state.cameraReady?1:0,schedulerOwners:state.running?1:0,running:state.running,checks:all,firstFailure:firstFailure?Object.freeze({id:firstFailure.id,detail:firstFailure.detail}):null,moveNet:engineSnapshot(state.moveNet),mediaPipe:engineSnapshot(state.mediaPipe),updatedAt:state.lastUpdatedAt});}
     return Object.freeze({setReady,setCamera,setRunning,record,fail,checks,snapshot});
   }
 

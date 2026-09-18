@@ -212,18 +212,18 @@
       "taskId": "live-mirror-calibration-diagnostics-repair"
     },
     {
-      "id": "avatar-development-underwater-vowel-engine-route",
+      "id": "avatar-development-pose-engine-post-840-repairs",
       "board": "avatar",
       "canonical": false,
-      "title": "Underwater vowel engine route selector",
-      "category": "EDUCATIONAL WORLD",
-      "description": "Route A/E/I/O/U selections through the authenticated underwater preview shell into one shared Godot vowel engine while preserving the default push-up arena. Human visual approval remains required for final wall art and presentation.",
+      "title": "Pose Engine post-merge diagnostics repairs",
+      "category": "MOTION INTELLIGENCE",
+      "description": "Repair stale inference diagnostics, readiness evidence commit references, lost-tracking first-failure reporting, and detector coordinate orientation in the protected MoveNet-vs-MediaPipe test lab.",
       "priority": "HIGH",
       "dependsOn": [],
       "humanRequired": true,
-      "createdAt": "2026-09-17T22:42:01.506Z",
+      "createdAt": "2026-09-18T01:09:28.787Z",
       "source": "readiness:update",
-      "taskId": "underwater-vowel-engine-route"
+      "taskId": "pose-engine-post-840-repairs"
     }
   ]
 }

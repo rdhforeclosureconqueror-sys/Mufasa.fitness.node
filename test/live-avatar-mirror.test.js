@@ -1,5 +1,5 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),THREE=require("three");
-const {LiveAvatarMirror}=require("../public/motion/live-avatar-mirror");
+const {LiveAvatarMirror,deriveMirrorRetargetBoundary}=require("../public/motion/live-avatar-mirror");
 function setup(){const avatar=new THREE.Group(),names=["RightShoulder","RightArm","RightForeArm","RightHand"],bones=names.map(name=>Object.assign(new THREE.Bone(),{name}));avatar.add(bones[0]);bones[0].add(bones[1]);bones[1].add(bones[2]);bones[2].add(bones[3]);bones[2].position.y=.25;avatar.updateMatrixWorld(true);return{avatar,bones};}
 class Events{constructor(){this.listeners=new Map()}addEventListener(n,f){this.listeners.set(n,f)}removeEventListener(n,f){if(this.listeners.get(n)===f)this.listeners.delete(n)}emit(detail){this.listeners.get("pose-runtime:frame")?.({detail})}}
 test("subscribes once, consumes existing pose events, and restores/unsubscribes on disposal",()=>{const e=new Events(),r=setup(),session={THREE,avatar:r.avatar,unloadMotionCalls:0,unloadMotion(){this.unloadMotionCalls++}},original=r.bones[1].quaternion.clone();const mirror=new LiveAvatarMirror({eventTarget:e,session});assert.equal(e.listeners.size,1);assert.equal(session.unloadMotionCalls,1);
@@ -27,3 +27,10 @@ test("sequential MoveNet frames drive the full bilateral rendered hierarchy and 
 test("calibration gate reports the first blocked boundary instead of silently withholding retargeting",()=>{const e=new Events(),r=setup(),session={THREE,avatar:r.avatar,unloadMotion(){}};const mirror=new LiveAvatarMirror({eventTarget:e,session});const keypoints=[{name:"right_shoulder",x:10,y:50,score:.9},{name:"right_elbow",x:40,y:20,score:.9}],posePacket={at:1000,video:{width:100,height:100},pose:{keypoints},keypoints};e.emit({posePacket});mirror.update(.1,1000);const proof=mirror.diagnostics();assert.equal(proof.firstFailingBoundary,"CALIBRATION_NOT_READY");assert.equal(proof.retargetGate,"CLOSED");assert.equal(proof.calibrationBlockedFrames,1);assert.equal(proof.retargetFramesExecuted,0);assert.match(proof.nextAction,/Complete full-body base calibration/);mirror.dispose();});
 
 test("lost tracking never hides the canvas or detaches the model",()=>{const e=new Events(),r=setup(),scene=new THREE.Scene(),canvas={style:{display:"block",visibility:"visible"}},session={THREE,avatar:r.avatar,scene,canvas,unloadMotion(){}};scene.add(r.avatar);const mirror=new LiveAvatarMirror({eventTarget:e,session,solverOptions:{holdMs:1}});mirror.solver.lastGoodAt=1;mirror.update(.1,100);const proof=mirror.diagnostics();assert.equal(proof.solverState,"LOST");assert.equal(proof.avatarCanvasDisplay,"block");assert.equal(proof.avatarCanvasVisibility,"visible");assert.equal(proof.avatarModelVisible,true);assert.equal(proof.avatarModelAttachedToScene,true);assert.equal(r.avatar.parent,scene);mirror.dispose();});
+
+test("lost tracking after retargeting is the first failing boundary",()=>{
+  const proof=deriveMirrorRetargetBoundary({poseFramesReceived:4,retargetFramesExecuted:2,calibration:{captureEnabled:()=>true},solver:{diagnostics:()=>({solverState:"LOST",fullRigMapped:"YES"})}});
+  assert.equal(proof.firstFailingBoundary,"TRACKING_LOST");
+  assert.equal(proof.retargetGate,"OPEN");
+  assert.match(proof.nextAction,/reacquisition/);
+});
