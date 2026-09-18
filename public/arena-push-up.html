@@ -49,7 +49,11 @@
     .stage{min-height:260px}
     #bridgeDebugToggle{position:fixed;right:8px;top:max(72px,calc(64px + env(safe-area-inset-top)));bottom:auto;margin:0;padding:6px 8px;font-size:10px;opacity:.72}
     .phone-panel{padding:14px max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));background:#10131a;border-top:1px solid #3d4655}
-    .phone-panel h2{font-size:20px;margin:0 0 6px;color:#ffd35a}\n    .underwater-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#081923;border-bottom:1px solid #2d6170}\n    .underwater-tools label{font-weight:800;color:#74ecdf}\n    .underwater-tools select{min-height:44px;background:#102b38;color:#fff;border:1px solid #4aa5b5;border-radius:10px;padding:8px 12px;font-weight:800}\n    .underwater-tools small{color:#b9dce3}
+    .phone-panel h2{font-size:20px;margin:0 0 6px;color:#ffd35a}
+    .underwater-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#081923;border-bottom:1px solid #2d6170}
+    .underwater-tools label{font-weight:800;color:#74ecdf}
+    .underwater-tools select{min-height:44px;background:#102b38;color:#fff;border:1px solid #4aa5b5;border-radius:10px;padding:8px 12px;font-weight:800}
+    .underwater-tools small{color:#b9dce3}
     .phone-panel p{margin:6px 0 12px;line-height:1.45;color:#dae0eb;max-width:760px}
     .phone-actions{display:flex;gap:8px;flex-wrap:wrap}
     .phone-panel button,.phone-panel select{min-height:48px;background:#253047;color:#fff;border:1px solid #546581;border-radius:10px;padding:12px 16px;font-size:14px}
@@ -100,7 +104,14 @@
 </head>
 <body>
   <header><h1>UNLEASH THE BEAST — PUSH-UP ARENA</h1><a id="exitArena" data-arena-exit class="exit" href="/push-up-challenge.html">Exit Arena</a></header>
-  <section id="underwaterTools" class="underwater-tools" hidden aria-label="Underwater vowel lesson selector">\n    <label for="underwaterVowelSelect">Underwater vowel</label>\n    <select id="underwaterVowelSelect" aria-label="Choose underwater vowel lesson">\n      <option value="A">A</option><option value="E">E</option><option value="I">I</option><option value="O">O</option><option value="U">U</option>\n    </select>\n    <small>Switch lessons without leaving the underwater world.</small>\n  </section>\n  <main class="stage">
+  <section id="underwaterTools" class="underwater-tools" hidden aria-label="Underwater vowel lesson selector">
+    <label for="underwaterVowelSelect">Underwater vowel</label>
+    <select id="underwaterVowelSelect" aria-label="Choose underwater vowel lesson">
+      <option value="A">A</option><option value="E">E</option><option value="I">I</option><option value="O">O</option><option value="U">U</option>
+    </select>
+    <small>Switch lessons without leaving the underwater world.</small>
+  </section>
+  <main class="stage">
     <div id="status" class="status"><div class="card"><h2>Connecting to MileleFit…</h2><p id="message">Securing your arena session.</p></div></div>
     <iframe id="game" class="game" title="Unleash the Beast Godot arena" allow="fullscreen; gamepad"></iframe>
     <section id="arenaCameraStage" class="camera-stage" hidden aria-label="Camera framing preview">
