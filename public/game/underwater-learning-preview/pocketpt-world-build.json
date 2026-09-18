@@ -1,9 +1,9 @@
 {
   "protocolVersion": 1,
-  "buildId": "underwater-vowels-ba217b1",
+  "buildId": "underwater-vowels-a0175a7",
   "godotVersion": "4.5.1",
-  "godotSourceCommit": "ba217b18dc369f2f9bed6508751eb2ecae20997a",
-  "godotCandidateCommit": "25c17ed1b09dac598818327dbc7917f8bf99bdcc",
+  "godotSourceCommit": "a0175a719424c35ec7e143539d11a616730de061",
+  "godotCandidateCommit": "bfebd812136e5ccbc386577fe655f89aaab24b20",
   "deploymentMode": "isolated-private-preview",
   "productionArenaUntouched": true,
   "avatarStartupContract": "load-after-avatar-ready",
