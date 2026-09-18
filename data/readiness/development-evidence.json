@@ -2833,7 +2833,7 @@
       "automated": "PASS",
       "evidence": "Focused repair tests 12/12 PASS; lint and readiness validation PASS. Fixed stale inference failure masking, post-retarget LOST boundary, shared unflipped detector coordinates, and PR #840 evidence resolution. No browser camera, GPU, physical-device or human visual acceptance claimed.",
       "prNumber": null,
-      "commitSha": "9c0be0214c8765eabb15849051916480672aee4d",
+      "commitSha": "54cdfde2e9dea518dfe0a91c7d9f61aaf4217311",
       "timestamp": "2026-09-18T01:11:54.758Z"
     }
   ]
