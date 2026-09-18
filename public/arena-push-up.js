@@ -5,25 +5,11 @@
   const message = document.getElementById('message');
   const game = document.getElementById('game');
   const exitArena = document.getElementById('exitArena');
-  const underwaterTools = document.getElementById('underwaterTools');
-  const underwaterVowelSelect = document.getElementById('underwaterVowelSelect');
   const arenaSearchParams = new URLSearchParams(location.search);
   const underwaterPreview = arenaSearchParams.get('preview') === 'underwater';
   const requestedUnderwaterVowel = (arenaSearchParams.get('vowel') || 'A').trim().toUpperCase();
   const underwaterVowel = ['A', 'E', 'I', 'O', 'U'].includes(requestedUnderwaterVowel) ? requestedUnderwaterVowel : 'A';
   const previewGameEntryPath = `/game/underwater-learning-preview/index.html?vowel=${encodeURIComponent(underwaterVowel)}`;
-  if (underwaterPreview && underwaterTools && underwaterVowelSelect) {
-    underwaterTools.hidden = false;
-    underwaterVowelSelect.value = underwaterVowel;
-    underwaterVowelSelect.addEventListener('change', () => {
-      const nextVowel = underwaterVowelSelect.value;
-      if (!['A', 'E', 'I', 'O', 'U'].includes(nextVowel) || nextVowel === underwaterVowel) return;
-      const next = new URL(location.href);
-      next.searchParams.set('preview', 'underwater');
-      next.searchParams.set('vowel', nextVowel);
-      location.assign(next.pathname + next.search);
-    });
-  }
   if (!diagnostics) {
     message.textContent = 'Arena diagnostics could not load. Reload this page.';
     return;
