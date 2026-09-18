@@ -321,7 +321,7 @@ async function launch(options = {}) {
   let model;
   let open = false;
   let clock = CLOCK;
-  const location = {origin: 'https://arena.example', pathname: '/arena/push-up', search: '', hash: options.hash || '', assign: value => {location.assigned = value;}, reload: () => {location.reloaded = true;}};
+  const location = {origin: 'https://arena.example', pathname: '/arena/push-up', search: options.search || '', hash: options.hash || '', assign: value => {location.assigned = value;}, reload: () => {location.reloaded = true;}};
   const context = {
     document: {getElementById: id => nodes.get(id), title: 'Arena', hidden: false, addEventListener: (name, cb) => documentEvents.set(name, cb)},
     location, history: {replaceState: () => {location.hash = ''; calls.push({url: 'fragment-cleared'});}}, navigator: {},
@@ -369,6 +369,24 @@ test('actual launcher preserves ticket exchange ordering, no-store cookie auth a
     assert.equal(call.init.headers.Authorization, undefined);
   }
   assert.equal(app.model.report().includes('one-use-private'), false);
+});
+test('underwater launcher forwards each supported vowel into the Godot iframe', async () => {
+  for (const vowel of ['A', 'E', 'I', 'O', 'U']) {
+    const app = await launch({search: `?preview=underwater&vowel=${vowel}`});
+    assert.equal(app.game.src, `/game/underwater-learning-preview/index.html?vowel=${vowel}`);
+  }
+});
+
+test('underwater launcher defaults missing or invalid vowel selections to A', async () => {
+  for (const search of ['?preview=underwater', '?preview=underwater&vowel=Y', '?preview=underwater&vowel=']) {
+    const app = await launch({search});
+    assert.equal(app.game.src, '/game/underwater-learning-preview/index.html?vowel=A');
+  }
+});
+
+test('vowel query alone can never replace the production push-up arena', async () => {
+  const app = await launch({search: '?vowel=U'});
+  assert.equal(app.game.src, '/game/push-up-arena/index.html');
 });
 
 test('actual launcher retains early READY after iframe load and rejects another same-origin window', async () => {

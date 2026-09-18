@@ -2801,6 +2801,36 @@
       "prNumber": null,
       "commitSha": "829182d",
       "timestamp": "2026-09-17T18:16:40.488Z"
+    },
+    {
+      "operationId": "3b52a53b-f61f-43ab-9f69-8e449219b3eb",
+      "board": "avatar",
+      "cardId": "avatar-development-underwater-vowel-engine-route",
+      "sourceType": "card_creation",
+      "taskId": "underwater-vowel-engine-route",
+      "files": [],
+      "automated": null,
+      "evidence": "Route A/E/I/O/U selections through the authenticated underwater preview shell into one shared Godot vowel engine while preserving the default push-up arena. Human visual approval remains required for final wall art and presentation.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T22:42:01.506Z"
+    },
+    {
+      "operationId": "7887d997-7707-43c5-86ac-ebb6074b4929",
+      "board": "avatar",
+      "cardId": "avatar-development-underwater-vowel-engine-route",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/arena-push-up.js",
+        "test/arena-diagnostics.test.js",
+        ".github/workflows/stage-underwater-learning-preview.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Machine verification PASS: authenticated arena shell forwards allowlisted A/E/I/O/U selections only for ?preview=underwater, defaults invalid or missing selections to A, preserves the production push-up iframe without the preview gate, and updates future underwater staging checks. Final wall art and visual quality remain human-required and are not approved by this evidence.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-17T22:45:08.249Z"
     }
   ]
 }

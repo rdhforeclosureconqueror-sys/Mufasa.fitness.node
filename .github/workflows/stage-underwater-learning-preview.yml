@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 25
     env:
       TARGET_BRANCH: preview/underwater-learning-world
-      GODOT_SOURCE_COMMIT: 27e7db3c3b35b12fa4d3c70a969e298a44161591
+      GODOT_SOURCE_COMMIT: ba217b18dc369f2f9bed6508751eb2ecae20997a
       GODOT_GENERATED_BRANCH: generated/web-candidate
       PREVIEW_ROOT: public/game/underwater-learning-preview
     steps:
@@ -80,10 +80,13 @@ jobs:
           p = Path('public/arena-push-up.js')
           s = p.read_text()
           needle = "  const exitArena = document.getElementById('exitArena');\n"
-          insert = needle + "  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';\n  const previewGameEntryPath = '/game/underwater-learning-preview/index.html';\n"
-          if 'const underwaterPreview =' not in s:
+          legacy_preview_block = "  const underwaterPreview = new URLSearchParams(location.search).get('preview') === 'underwater';\n  const previewGameEntryPath = '/game/underwater-learning-preview/index.html';"
+          vowel_preview_block = "  const arenaSearchParams = new URLSearchParams(location.search);\n  const underwaterPreview = arenaSearchParams.get('preview') === 'underwater';\n  const requestedUnderwaterVowel = (arenaSearchParams.get('vowel') || 'A').trim().toUpperCase();\n  const underwaterVowel = ['A', 'E', 'I', 'O', 'U'].includes(requestedUnderwaterVowel) ? requestedUnderwaterVowel : 'A';\n  const previewGameEntryPath = `/game/underwater-learning-preview/index.html?vowel=${encodeURIComponent(underwaterVowel)}`;"
+          if legacy_preview_block in s:
+              s = s.replace(legacy_preview_block, vowel_preview_block, 1)
+          elif 'const requestedUnderwaterVowel =' not in s:
               if needle not in s: raise SystemExit('arena preview insertion point missing')
-              s = s.replace(needle, insert, 1)
+              s = s.replace(needle, needle + vowel_preview_block + "\n", 1)
           old = "    game.src = '/game/push-up-arena/index.html';"
           new = "    game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html';"
           if old in s:
@@ -93,7 +96,9 @@ jobs:
           p.write_text(s)
           PY
           grep -F "underwaterPreview" public/arena-push-up.js
-          grep -F "previewGameEntryPath = '/game/underwater-learning-preview/index.html'" public/arena-push-up.js
+          grep -F "requestedUnderwaterVowel" public/arena-push-up.js
+          grep -F "['A', 'E', 'I', 'O', 'U'].includes(requestedUnderwaterVowel)" public/arena-push-up.js
+          grep -F "index.html?vowel=" public/arena-push-up.js
           grep -F "game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html'" public/arena-push-up.js
 
       - name: Write preview manifest
@@ -107,17 +112,20 @@ jobs:
           const candidateCommit = fs.readFileSync('/tmp/GODOT_CANDIDATE_COMMIT','utf8').trim();
           const manifest = {
             protocolVersion: 1,
-            buildId: `underwater-vowel-a-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}`,
+            buildId: `underwater-vowels-${process.env.GODOT_SOURCE_COMMIT.slice(0,7)}`,
             godotVersion: '4.5.1',
             godotSourceCommit: process.env.GODOT_SOURCE_COMMIT,
             godotCandidateCommit: candidateCommit,
             deploymentMode: 'isolated-private-preview',
             productionArenaUntouched: true,
             avatarStartupContract: 'load-after-avatar-ready',
+            engine: 'UNDERWATER_VOWEL_ENGINE_V1',
             lesson: 'PHONICS_A_LONG_SHORT',
+            defaultVowel: 'A',
+            supportedVowels: ['A', 'E', 'I', 'O', 'U'],
             swimAnimation: 'AVAILABLE',
-            previewQuery: '/arena/push-up?preview=underwater',
-            note: 'Private underwater vowel treasure preview. Without ?preview=underwater the arena still loads the normal production Godot package.'
+            previewQuery: '/arena/push-up?preview=underwater&vowel=A',
+            note: 'Private underwater vowel engine preview. The vowel query selects A/E/I/O/U while the default arena remains unchanged without ?preview=underwater.'
           };
           fs.writeFileSync(path.join(root,'pocketpt-world-build.json'), JSON.stringify(manifest,null,2)+'\n');
           NODE
@@ -130,8 +138,9 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const s = fs.readFileSync('public/arena-push-up.js','utf8');
-          if (!s.includes("new URLSearchParams(location.search).get('preview') === 'underwater'")) throw new Error('preview query gate missing');
-          if (!s.includes("const previewGameEntryPath = '/game/underwater-learning-preview/index.html'")) throw new Error('preview package path missing');
+          if (!s.includes("arenaSearchParams.get('preview') === 'underwater'")) throw new Error('preview query gate missing');
+          if (!s.includes("['A', 'E', 'I', 'O', 'U'].includes(requestedUnderwaterVowel)")) throw new Error('vowel allowlist missing');
+          if (!s.includes("index.html?vowel=${encodeURIComponent(underwaterVowel)}")) throw new Error('vowel iframe forwarding missing');
           if (!s.includes("game.src = underwaterPreview ? previewGameEntryPath : '/game/push-up-arena/index.html'")) throw new Error('default arena isolation missing');
           const bootstrap = s.indexOf('/api/game/bootstrap');
           const productionGodot = s.indexOf('/game/push-up-arena/index.html');
@@ -139,7 +148,10 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync('public/game/underwater-learning-preview/pocketpt-world-build.json','utf8'));
           if (manifest.godotSourceCommit !== process.env.GODOT_SOURCE_COMMIT) throw new Error('preview provenance mismatch');
           if (manifest.productionArenaUntouched !== true) throw new Error('production isolation marker missing');
-          if (manifest.lesson !== 'PHONICS_A_LONG_SHORT') throw new Error('phonics lesson marker missing');
+          if (manifest.engine !== 'UNDERWATER_VOWEL_ENGINE_V1') throw new Error('vowel engine marker missing');
+          if (manifest.lesson !== 'PHONICS_A_LONG_SHORT') throw new Error('default phonics lesson marker missing');
+          if (manifest.defaultVowel !== 'A') throw new Error('default vowel marker missing');
+          if (JSON.stringify(manifest.supportedVowels) !== JSON.stringify(['A','E','I','O','U'])) throw new Error('supported vowels marker missing');
           if (manifest.swimAnimation !== 'AVAILABLE') throw new Error('swim animation marker missing');
           NODE
 
