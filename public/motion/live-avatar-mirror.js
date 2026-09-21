@@ -97,6 +97,7 @@
     if (!poseFramesReceived) return Object.freeze({ firstFailingBoundary:"POSE_FRAME_NOT_RECEIVED", retargetGate:"CLOSED", nextAction:"Start the camera and wait for the first canonical pose frame." });
     if (!calibration?.captureEnabled?.()) return Object.freeze({ firstFailingBoundary:"CALIBRATION_NOT_READY", retargetGate:"CLOSED", nextAction:`Complete full-body base calibration (current: ${calibration?.diagnostics?.().calibrationState||"UNKNOWN"}).` });
     const solverDiagnostics=solver?.diagnostics?.()||{};
+    if (solverDiagnostics.solverState==="LOST" && retargetFramesExecuted>0) return Object.freeze({ firstFailingBoundary:"TRACKING_LOST", retargetGate:"OPEN", nextAction:"Tracking was lost after retargeting began; return to full-body view and wait for reacquisition." });
     if (solverDiagnostics.fullRigMapped==="NO") return Object.freeze({ firstFailingBoundary:"AVATAR_RIG_INCOMPLETE", retargetGate:"OPEN", nextAction:`Map missing segments: ${(solverDiagnostics.missingSegments||[]).join(", ")||"unknown"}.` });
     if (solverDiagnostics.solverState==="WAITING") return Object.freeze({ firstFailingBoundary:"SOLVER_WAITING_FOR_VALID_JOINTS", retargetGate:"OPEN", nextAction:"Keep the full body visible with confident shoulder, hip, knee and ankle landmarks." });
     if (!retargetFramesExecuted) return Object.freeze({ firstFailingBoundary:"RETARGET_NOT_EXECUTED", retargetGate:"OPEN", nextAction:"Advance the avatar render update after a valid pose frame." });
