@@ -308,9 +308,16 @@
           await queueArenaSpeech('I am not waiting for a position right now. Say reset to restart calibration.', 'arena-command');
           return true;
         }
-        await queueArenaSpeech('Capturing position. Three. Two. One.', 'arena-command');
-        if (!calibration.beginReadyCapture?.()) return true;
+        // Commit the command transition immediately. TTS is feedback, not the
+        // authority for whether READY takes effect.
+        if (!calibration.beginReadyCapture?.()) {
+          markReset(`READY_COMMAND_REJECTED_${before}`, 'FAIL');
+          return true;
+        }
+        markReset(`READY_COMMAND_ACCEPTED_${before}`, 'PASS');
         markReset(`READY_CAPTURE_STARTED_${calibration.snapshot().stage}`, 'PASS');
+        queueArenaSpeech('Capturing position. Three. Two. One.', 'arena-command')
+          .finally(() => ensureArenaListening('post_ready_speech'));
         return true;
       }
       if (['capture','capture top','top capture'].includes(words)) {
