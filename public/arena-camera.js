@@ -9,13 +9,20 @@
   // scoring. The setup reference only needs a believable side-view snapshot;
   // official rep evidence still uses the stricter scoring confidence below.
   const CALIBRATION_CONFIDENCE_CAP = .4;
+  function visibilityEvidence(frame, minimumConfidence) {
+    const side = ['left','right'].includes(frame?.side) ? frame.side : null;
+    const joints = Object.fromEntries(JOINTS.map(name => {
+      const p = frame?.sequenceLandmarks?.[name];
+      const confidence = Number.isFinite(p?.confidence) ? Number(p.confidence) : 0;
+      const usable = Boolean(side && p && !p.cached && !p.displayOnly && Number.isFinite(p.x) && Number.isFinite(p.y) &&
+        p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1 && Number.isFinite(confidence) && confidence >= minimumConfidence);
+      return [name, {usable, confidence:Number(confidence.toFixed(3)), inFrame:Boolean(p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1)}];
+    }));
+    return {visible:Boolean(side && JOINTS.every(name => joints[name].usable)), side, minimumConfidence, joints,
+      missing:JOINTS.filter(name => !joints[name].usable)};
+  }
   function visible(frame, minimumConfidence) {
-    return Number.isFinite(minimumConfidence) && minimumConfidence > 0 && minimumConfidence <= 1 && ['left','right'].includes(frame?.side) &&
-      JOINTS.every(name => {
-        const p = frame?.sequenceLandmarks?.[name];
-        return p && !p.cached && !p.displayOnly && Number.isFinite(p.x) && Number.isFinite(p.y) &&
-          p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1 && Number.isFinite(p.confidence) && p.confidence >= minimumConfidence;
-      });
+    return Number.isFinite(minimumConfidence) && minimumConfidence > 0 && minimumConfidence <= 1 && visibilityEvidence(frame, minimumConfidence).visible;
   }
   function create({root = window, video, onVisibility = () => {}, onPose = () => {}, onStatus = () => {}, onDevices = () => {}, onFailure = () => {}}) {
     let current = null, detectorTask = null, retiredDetector = Promise.resolve();
@@ -107,7 +114,11 @@
         const calibrationConfidence = Math.min(Number.isFinite(scoringConfidence) ? scoringConfidence : .75, CALIBRATION_CONFIDENCE_CAP);
         op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame, source = {}) {
           if (!live()) return;
-          const bodyVisible = visible(frame, calibrationConfidence);
+          const evidence = visibilityEvidence(frame, calibrationConfidence);
+          const bodyVisible = evidence.visible;
+          onStatus('BODY_VISIBILITY', bodyVisible ? 'PASS' : 'WAITING',
+            bodyVisible ? `SIDE_CHAIN_VISIBLE_${String(evidence.side || 'unknown').toUpperCase()}`
+              : `SIDE_CHAIN_WAITING_${evidence.side || 'none'}_MISSING_${evidence.missing.join('_') || 'unknown'}_CONF_${JOINTS.map(name => `${name}:${evidence.joints[name].confidence}`).join(',')}`);
           // Arena visibility is exercise-specific. Do not let the generic
           // standing/full-body PoseRuntime TOO_FAR classification override a
           // valid horizontal side chain on the floor.
@@ -135,5 +146,5 @@
     function resetTracking() {current?.capture?.resetTracking(); onVisibility(false);}
     return {start, stop, resetTracking, dispose: disposeSession};
   }
-  return Object.freeze({create, visible, CALIBRATION_CONFIDENCE_CAP});
+  return Object.freeze({create, visible, visibilityEvidence, CALIBRATION_CONFIDENCE_CAP});
 });
