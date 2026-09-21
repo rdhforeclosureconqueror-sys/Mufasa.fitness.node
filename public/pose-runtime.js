@@ -356,6 +356,7 @@
     state.speechApiAvailable = Boolean(coach?.speak || global.speechSynthesis);
     state.voiceFeedbackEnabled = Boolean(coach?.speak && !coachState.muted && coachState.audioUnlocked);
     const next = semanticVisibilityState();
+    if (global.__POCKETPT_ARENA_EXERCISE_VOICE__ === true) { state.speechSuppressedReason = 'ARENA_EXERCISE_VOICE_OWNER'; return; }
     if (next === 'NO_PERSON') {
       state.noPersonSince ||= now;
       if (now - state.noPersonSince < 1500) { state.speechSuppressedReason = 'NO_PERSON_DEBOUNCE'; return; }
