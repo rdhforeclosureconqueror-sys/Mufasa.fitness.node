@@ -118,7 +118,7 @@
     function clearAttemptOnly() {samples = []; clearDeadline(); clearLoss();}
     function reset() {erase(); stage = 'IDLE'; reason = failedStage = null; emit();}
     function invalidate(code = 'SOURCE_CHANGED') {
-      if (stage === 'IDLE' || stage === 'NEEDS_RETRY') return;
+      if (stage === 'IDLE' || stage === 'NEEDS_RETRY' || stage.startsWith('WAIT_')) return;
       failedStage = stage;
       const preserveCapturedReferences = ['TIMEOUT','TRACKING_LOST'].includes(code) && ['CAPTURE_BOTTOM','CONFIRM_TOP'].includes(stage);
       if (preserveCapturedReferences) clearAttemptOnly(); else erase();
