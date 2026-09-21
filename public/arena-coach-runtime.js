@@ -3,7 +3,7 @@
 
   const VOICE_URL = '/api/game/speak';
   let arenaCommandHandler = null;
-  let previousDispatcher = null;
+  let fallbackAskCoach = null;
 
   function configure() {
     const runtime = root.CoachRuntime;
@@ -24,14 +24,14 @@
     if (!runtime?.configure) return null;
     arenaCommandHandler = handler;
     const before = runtime.getState?.() || {};
-    previousDispatcher = previousDispatcher || null;
+    fallbackAskCoach ||= typeof root.askCoach === 'function' ? root.askCoach : null;
     // configure is idempotent; the arena owns only a narrow command dispatcher.
     // General coach Q&A remains the fallback when the arena does not consume it.
     runtime.configure({deps:{voiceUrl:VOICE_URL, dispatchCommand: async (command, meta) => {
       if (arenaCommandHandler && await arenaCommandHandler(command, meta)) return {ok:true, arenaCommand:true};
-      if (typeof previousDispatcher === 'function') return previousDispatcher(command, meta);
+      if (typeof fallbackAskCoach === 'function') return fallbackAskCoach(command, meta);
       return false;
-    }}});
+    }, bareCommandMatcher: command => /^(reset|restart|start over|restart everything|ready|i am ready|im ready|start|go|begin)$/.test(String(command || '').trim().toLowerCase())}});
     return {dispose(){ arenaCommandHandler = null; }};
   }
 
