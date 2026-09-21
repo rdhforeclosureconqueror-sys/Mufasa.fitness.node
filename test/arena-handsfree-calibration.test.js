@@ -55,3 +55,12 @@ test('arena recognizes explicit manual TOP and BOTTOM capture commands with spok
   assert.match(ui, /Capture bottom failed/);
   assert.match(coach, /capture top\|top capture\|capture bottom\|bottom capture/);
 });
+
+
+test('arena owns setup speech so generic full-body pose announcements cannot starve capture commands', () => {
+  const ui = read('public/arena-phone-ui.js');
+  const pose = read('public/pose-runtime.js');
+  assert.match(ui, /__POCKETPT_ARENA_EXERCISE_VOICE__ = true/);
+  assert.match(ui, /__POCKETPT_ARENA_EXERCISE_VOICE__ = false/);
+  assert.match(pose, /ARENA_EXERCISE_VOICE_OWNER/);
+});
