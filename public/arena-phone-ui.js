@@ -4,17 +4,20 @@
     const doc = root.document, $ = id => doc.getElementById(id);
     const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo'), overlay = $('arenaPoseOverlay');
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
-    let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null;
+    let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
+    let challengeArmed = false;
     const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
       liveMotion?.setExerciseCalibration(progress.calibrated);
       const cue = {
-        CAPTURE_TOP:'Top position. Hold. One, two, three.',
-        CAPTURE_BOTTOM:'Bottom position. Hold. One, two, three.',
-        CONFIRM_TOP:'Back to top. Hold. One, two, three.',
-        NEEDS_RETRY:"Didn't get it. Relax for a second, then tap Restart pose capture."
+        CAPTURE_TOP:'I can see you. Capturing your top position. Hold.',
+        CAPTURE_BOTTOM:'Top captured. Lower into your bottom position and hold.',
+        CONFIRM_TOP:'Bottom captured. Return to the top position and hold.',
+        CALIBRATED:'Top and bottom captured. When you are ready, say start.',
+        NEEDS_RETRY:"Didn't get it. Say reset to restart the pose capture."
       }[progress.stage];
       if (cue) root.CoachRuntime?.speak?.(cue, 'arena-calibration', {owner:'avatar_calibration', interruptible:false, timerNeutral:true});
+      challengeArmed = progress.stage === 'CALIBRATED';
     }});
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
@@ -191,9 +194,47 @@
       previousState = state.state;
     }
     flow = root.PocketPTArenaPhoneFlow.create({send, mark, onChange: render, stopCamera});
+    function restartPoseCapture({restartCamera = false} = {}) {
+      challengeArmed = false;
+      camera.resetTracking();
+      calibration.reset();
+      if (restartCamera) {
+        stopCamera();
+        flow.setup();
+        return enableCamera();
+      }
+      if (!flow.snapshot().previewOnly) calibration.start();
+      return true;
+    }
+    async function handleArenaVoiceCommand(command) {
+      const words = String(command || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim();
+      if (['reset','restart','start over','restart everything'].includes(words)) {
+        await root.CoachRuntime?.speak?.('Resetting. Get into a side-view push-up top position. Say ready when you are in position.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        return restartPoseCapture({restartCamera:false});
+      }
+      if (['ready','i am ready','im ready'].includes(words)) {
+        challengeArmed = false;
+        if (!flow.snapshot().cameraView) {
+          if (flow.setup()) await enableCamera();
+        } else {
+          camera.resetTracking();
+          calibration.reset();
+          if (!flow.snapshot().previewOnly) calibration.start();
+        }
+        await root.CoachRuntime?.speak?.('Get into your push-up top position in a side view. I am scanning now.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        return true;
+      }
+      if (['start','go','begin'].includes(words) && challengeArmed) {
+        await root.CoachRuntime?.speak?.('Three. Two. One. Go.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        root.dispatchEvent?.(new CustomEvent('pocketpt:pushup-start-requested', {detail:{source:'voice'}}));
+        return true;
+      }
+      return false;
+    }
     liveMotion = root.PocketPTArenaLiveMotion?.create({send: (event, payload) => flow.liveMocap(event, payload), mark,
       onRestReady: () => {if (!flow.snapshot().previewOnly && calibration.snapshot().stage === 'IDLE') calibration.start();}});
     mark('MIRROR_MOTION_INPUT', liveMotion ? 'WAITING' : 'FAIL', liveMotion ? 'MIRROR_INPUT_WAITING' : 'MIRROR_RUNTIME_MISSING');
+    challengeVoice = root.PocketPTArenaCoachRuntime?.installCommandHandler?.(handleArenaVoiceCommand) || null;
     render(flow.snapshot());
     async function enableCamera(deviceId = '') {
       if (deviceId) {stopCamera(); flow.cameraError();}
@@ -247,7 +288,7 @@
       accept: data => flow.accept(data),
       suspend() {releasePointer(); flow.suspend();},
       reset() {releasePointer(); scope = null; flow.reset();},
-      close() {releasePointer(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}
+      close() {releasePointer(); challengeVoice?.dispose?.(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}
     };
   }
   root.PocketPTArenaPhoneUI = Object.freeze({mount});
