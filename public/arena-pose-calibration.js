@@ -134,7 +134,18 @@
       }
       emit();
     }
-    function start() {erase(); reason = failedStage = null; advance('CAPTURE_TOP');}
+    function waitForReady(target = 'TOP') {
+      clearAttemptOnly(); reason = failedStage = null;
+      const normalized = String(target || 'TOP').toUpperCase();
+      stage = normalized === 'BOTTOM' ? 'WAIT_BOTTOM_READY' : normalized === 'CONFIRM_TOP' ? 'WAIT_TOP_CONFIRM_READY' : 'WAIT_TOP_READY';
+      emit(); return true;
+    }
+    function beginReadyCapture() {
+      const next = stage === 'WAIT_BOTTOM_READY' ? 'CAPTURE_BOTTOM' : stage === 'WAIT_TOP_CONFIRM_READY' ? 'CONFIRM_TOP' : stage === 'WAIT_TOP_READY' ? 'CAPTURE_TOP' : null;
+      if (!next) return false;
+      advance(next); return true;
+    }
+    function start() {erase(); reason = failedStage = null; waitForReady('TOP');}
     function retry() {
       if (stage !== 'NEEDS_RETRY') return false;
       let next = failedStage;
@@ -173,13 +184,13 @@
       if (!candidate) return false;
       const form = formFromVector(candidate.center, stage);
       if (!form?.allPass) return false;
-      if (stage === 'CAPTURE_TOP') {top = candidate; advance('CAPTURE_BOTTOM'); return true;}
+      if (stage === 'CAPTURE_TOP') {top = candidate; waitForReady('BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
         if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) return false;
         bottom = candidate;
         const separation = distance(top.center, bottom.center);
         tolerance = Math.max(10, Math.min(separation * .4, Math.max(top.spread, bottom.spread) * 3 + 10));
-        advance('CONFIRM_TOP'); return true;
+        waitForReady('CONFIRM_TOP'); return true;
       }
       const topDistance = distance(candidate.center, top.center), bottomDistance = distance(candidate.center, bottom.center);
       if (topDistance <= tolerance && topDistance < bottomDistance) {advance('CALIBRATED'); return true;}
@@ -203,7 +214,7 @@
           return {ok:true, captured:'TOP_CONFIRM', stage};
         }
         erase(); reason=failedStage=null; top=candidate; source={side:frame.side,width:frame.sourceWidth,height:frame.sourceHeight};
-        advance('CAPTURE_BOTTOM');
+        waitForReady('BOTTOM');
         return {ok:true, captured:'TOP', stage};
       }
       if (!top) return {ok:false, reason:'TOP_REQUIRED'};
@@ -212,7 +223,7 @@
       bottom=candidate;
       const separation=distance(top.center,bottom.center);
       tolerance=Math.max(10,Math.min(separation*.4,18));
-      advance('CONFIRM_TOP');
+      waitForReady('CONFIRM_TOP');
       return {ok:true, captured:'BOTTOM', stage};
     }
     function classify(frame, minimumConfidence) {
@@ -224,7 +235,7 @@
       if (bottomDistance <= tolerance && bottomDistance < topDistance) return 'BOTTOM';
       return 'BETWEEN';
     }
-    return {start, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot};
+    return {start, waitForReady, beginReadyCapture, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot};
   }
   return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
     TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});
