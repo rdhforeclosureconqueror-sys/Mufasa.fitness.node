@@ -254,9 +254,15 @@
         mark?.('COACH_VOICE', 'FAIL', `ARENA_${reason.toUpperCase()}_LISTENER_UNAVAILABLE`);
         return false;
       }
-      if (!runtime.getState?.().listening) runtime.startListening();
-      const listening = Boolean(runtime.getState?.().listening);
-      mark?.('COACH_VOICE', listening ? 'PASS' : 'FAIL', listening ? `ARENA_${reason.toUpperCase()}_LISTENER_ACTIVE` : `ARENA_${reason.toUpperCase()}_LISTENER_NOT_ACTIVE`);
+      const before = runtime.getState?.() || {};
+      const startResult = before.listening ? {ok:true, listening:true, alreadyActive:true} : runtime.startListening();
+      const after = runtime.getState?.() || {};
+      // "listening" is intent; lastMicError is the evidence that recognition
+      // actually failed to start/restart. Do not report PASS from the flag alone.
+      const listening = Boolean(after.listening && startResult?.ok !== false && !after.lastMicError);
+      mark?.('COACH_VOICE', listening ? 'PASS' : 'FAIL', listening
+        ? `ARENA_${reason.toUpperCase()}_LISTENER_ACTIVE`
+        : `ARENA_${reason.toUpperCase()}_LISTENER_FAILED_${String(after.lastMicError || startResult?.reason || 'unknown').toUpperCase()}`);
       return listening;
     }
     function restartPoseCapture({restartCamera = false, source = 'unknown'} = {}) {
