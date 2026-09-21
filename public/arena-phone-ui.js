@@ -41,7 +41,8 @@
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
       onPose(frame, confidence, posePacket) {
         drawPose(posePacket, frame, confidence);
-        if (!flow?.snapshot().previewOnly && liveMotion?.diagnostics().calibrationReady) calibration.observe(frame, confidence);
+        const motionState = liveMotion?.diagnostics?.() || {};
+        if (!flow?.snapshot().previewOnly && (motionState.calibrationReady || motionState.requireRestBase === false)) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
         if (challengeEngine?.state === 'active' && frame) challengeEngine.observe(frame);
       },
@@ -197,14 +198,14 @@
       $('arenaThrillerAction').hidden = !state.canMove;
       $('arenaThrillerAction').disabled = !state.canMove;
       const cameraStatus = {
-        BODY_VISIBLE: 'Required joints visible · green = usable · red = adjust',
+        BODY_VISIBLE: 'Side-view chain found · shoulder · elbow · wrist · hip · ankle · green = usable',
         CALIBRATING_TOP: 'TOP: get mostly green · hold briefly · snap',
         CALIBRATING_BOTTOM: 'BOTTOM: lower · get mostly green · hold briefly · snap',
         CONFIRMING_TOP: 'Back to TOP · hold briefly · snap',
         CALIBRATED: 'TOP ✓ · BOTTOM ✓ · calibration complete',
         CALIBRATION_RETRY: "Didn't get it · rest for a second · captured poses are kept when possible"
       }[state.state];
-      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for a clear full-body view · red joints need attention';
+      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for one clear side-view chain · shoulder · elbow · wrist · hip · ankle';
       $('arenaBodyStatus').dataset.visible = String(Boolean(cameraStatus) && state.state !== 'CALIBRATION_RETRY');
       $('arenaBodyStatus').dataset.form = state.state === 'CALIBRATED' ? 'pass' : 'neutral';
       if (pointer && !state.canMove) releasePointer();
@@ -257,7 +258,7 @@
       }
       return false;
     }
-    liveMotion = root.PocketPTArenaLiveMotion?.create({send: (event, payload) => flow.liveMocap(event, payload), mark,
+    liveMotion = root.PocketPTArenaLiveMotion?.create({send: (event, payload) => flow.liveMocap(event, payload), mark, requireRestBase:false,
       onRestReady: () => {if (!flow.snapshot().previewOnly && calibration.snapshot().stage === 'IDLE') calibration.start();}});
     mark('MIRROR_MOTION_INPUT', liveMotion ? 'WAITING' : 'FAIL', liveMotion ? 'MIRROR_INPUT_WAITING' : 'MIRROR_RUNTIME_MISSING');
     challengeVoice = root.PocketPTArenaCoachRuntime?.installCommandHandler?.(handleArenaVoiceCommand) || null;
@@ -269,6 +270,11 @@
       const generation = ++cameraOperation;
       try {
         await liveMotion?.activateVoice?.();
+        // Arena commands must remain audible hands-free during floor setup.
+        // The legacy Mirror Motion calibration acquired exclusive speech by
+        // stopping recognition; resume recognition immediately for this direct
+        // TOP/BOTTOM calibration flow.
+        if (!root.CoachRuntime?.getState?.().listening) root.CoachRuntime?.startListening?.();
         await camera.start(deviceId);
         if (generation === cameraOperation) flow.cameraActive();
       }

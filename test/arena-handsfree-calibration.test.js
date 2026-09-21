@@ -31,3 +31,15 @@ test('calibration remains a single-side chain and uses a short setup hold', () =
   assert.match(source, /bodyLine/);
   assert.match(source, /elbowDepth/);
 });
+
+
+test('push-up arena bypasses standing rest-base calibration and keeps recognition live', () => {
+  const ui = read('public/arena-phone-ui.js');
+  const live = read('public/arena-live-motion-adapter.js');
+  assert.match(ui, /requireRestBase:false/);
+  assert.match(ui, /CoachRuntime\?\.startListening/);
+  assert.match(ui, /motionState\.calibrationReady \|\| motionState\.requireRestBase === false/);
+  assert.match(live, /requireRestBase = true/);
+  assert.match(live, /PUSHUP_DIRECT_CALIBRATION/);
+  assert.match(live, /onRestReady\(\)/);
+});

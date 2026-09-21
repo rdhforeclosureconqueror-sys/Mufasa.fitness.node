@@ -108,6 +108,9 @@
         op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame, source = {}) {
           if (!live()) return;
           const bodyVisible = visible(frame, calibrationConfidence);
+          // Arena visibility is exercise-specific. Do not let the generic
+          // standing/full-body PoseRuntime TOO_FAR classification override a
+          // valid horizontal side chain on the floor.
           const enriched = frame ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight, calibrationUsable: bodyVisible} : null;
           onVisibility(bodyVisible);
           onPose(enriched, calibrationConfidence, source.posePacket || null, {bodyVisible, scoringConfidence});

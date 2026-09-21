@@ -102,7 +102,7 @@ test('camera check outside mat setup cannot collect references or expose restart
   const f=fixture(t);await f.nodes.get('arenaSetupCamera').fire('click');await f.nodes.get('arenaEnableCamera').fire('click');
   f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
   assert.equal(f.nodes.get('arenaRestartCalibration').hidden,true);assert.equal(f.timers.size,0);
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/Required joints visible/);
+  assert.match(f.nodes.get('arenaBodyStatus').textContent,/Side-view chain found/);
 });
 
 test('joystick pointer drag sends a 360 vector and release stops movement', async t => {

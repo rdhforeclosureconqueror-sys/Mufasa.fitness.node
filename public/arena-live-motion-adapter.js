@@ -163,7 +163,7 @@
   }
 
   function create({send = () => null, mark = () => {}, now = () => Date.now(), randomUUID = () => root.crypto.randomUUID(),
-    calibrationOptions = {}, speak, processPose = null, onRestReady = () => {}} = {}) {
+    calibrationOptions = {}, speak, processPose = null, onRestReady = () => {}, requireRestBase = true} = {}) {
     if (!normalized?.fromMoveNetPosePacket || !mirror?.AvatarMirrorCalibration) return null;
     let sessionId = null, frameSequence = 0, baseline = null, released = true, inputFrames = 0, outputFrames = 0;
     let canonicalFrames = 0, processor = typeof processPose === 'function' ? processPose : null, foundationError = null, exerciseCalibrated = false, restNotified = false;
@@ -200,6 +200,15 @@
       mark('MIRROR_MOTION_INPUT', 'PASS', 'MIRROR_INPUT_OBSERVED');
       if (!processor) {
         ensureFoundation().catch(() => {});
+        return false;
+      }
+      if (!requireRestBase) {
+        // Push-Up Arena calibrates directly from the athlete's floor TOP/BOTTOM
+        // positions. Standing-neutral Mirror Motion rest calibration is not a
+        // prerequisite for recognizing or scoring the exercise.
+        mark('REST_BASE_CAPTURE', 'SKIP', 'PUSHUP_DIRECT_CALIBRATION');
+        mark('MIRROR_MOTION_READY', 'SKIP', 'PUSHUP_DIRECT_CALIBRATION');
+        if (!restNotified) {restNotified = true; onRestReady();}
         return false;
       }
       try {
@@ -257,7 +266,7 @@
     }
     function diagnostics() {
       return Object.freeze({version: VERSION, inputFrames, canonicalFrames, outputFrames, sessionId, frameSequence,
-        foundationReady: Boolean(processor), foundationError: foundationError ? String(foundationError.message || foundationError) : null,
+        foundationReady: Boolean(processor), requireRestBase, foundationError: foundationError ? String(foundationError.message || foundationError) : null,
         exerciseCalibrated, ...calibration.diagnostics()});
     }
     return Object.freeze({observe, release, reset, diagnostics, activateVoice, ensureFoundation, setExerciseCalibration});

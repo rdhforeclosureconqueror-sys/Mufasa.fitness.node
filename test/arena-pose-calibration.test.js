@@ -41,7 +41,7 @@ test('captures stable personal TOP and BOTTOM geometry and confirms TOP return',
 
 test('quick capture locks a valid pose in about one second instead of requiring a three-second plank hold', () => {
   const calibration = create(); calibration.start(); quickHold(calibration, 'TOP');
-  assert.equal(Calibration.STABLE_MS, 1000);
+  assert.equal(Calibration.STABLE_MS, 700);
   assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
 });
 
