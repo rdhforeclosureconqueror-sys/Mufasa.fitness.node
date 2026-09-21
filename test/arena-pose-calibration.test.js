@@ -49,10 +49,11 @@ test('quick capture locks a valid pose in about one second instead of requiring 
 test('timeout preserves already captured references and retry resumes the failed stage', () => {
   const calibration = create(); calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
   assert.equal(calibration.snapshot().topCaptured, true);
+  calibration.beginReadyCapture();
   calibration.invalidate('TIMEOUT');
-  assert.deepEqual(calibration.snapshot(), {stage:'NEEDS_RETRY', reason:'TIMEOUT', failedStage:'WAIT_BOTTOM_READY', topCaptured:true, bottomCaptured:false, calibrated:false});
+  assert.deepEqual(calibration.snapshot(), {stage:'NEEDS_RETRY', reason:'TIMEOUT', failedStage:'CAPTURE_BOTTOM', topCaptured:true, bottomCaptured:false, calibrated:false});
   assert.equal(calibration.retry(), true);
-  assert.deepEqual(calibration.snapshot(), {stage:'WAIT_TOP_READY', reason:null, failedStage:null, topCaptured:false, bottomCaptured:false, calibrated:false});
+  assert.deepEqual(calibration.snapshot(), {stage:'WAIT_BOTTOM_READY', reason:null, failedStage:null, topCaptured:true, bottomCaptured:false, calibrated:false});
 });
 
 test('does not capture an unchanged or unstable pose as BOTTOM before the fast attempt times out', () => {
@@ -146,7 +147,7 @@ test('calibration waits indefinitely for READY without starting a capture timeou
   calibration.start();
   assert.equal(calibration.snapshot().stage, 'WAIT_TOP_READY');
   calibration.invalidate('TIMEOUT');
-  assert.equal(calibration.snapshot().stage, 'NEEDS_RETRY');
+  assert.equal(calibration.snapshot().stage, 'WAIT_TOP_READY');
 });
 
 test('successful capture returns to a READY gate before the next position', () => {
