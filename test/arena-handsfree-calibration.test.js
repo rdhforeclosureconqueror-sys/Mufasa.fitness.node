@@ -86,6 +86,9 @@ test('reset recovery restarts calibration before speech and restores listening',
   assert.match(ui, /WAITING_FOR_FRESH_POSE/);
   assert.match(ui, /FRESH_POSE_REACQUIRED/);
   assert.match(ui, /ensureArenaListening\('post_reset_speech'\)/);
+  assert.match(ui, /startResult\?\.ok !== false/);
+  assert.match(ui, /!after\.lastMicError/);
+  assert.match(ui, /LISTENER_FAILED_/);
   const resetBranch = ui.slice(ui.indexOf("if (['reset','restart','start over','restart everything']"));
   assert.ok(resetBranch.indexOf('restartPoseCapture') < resetBranch.indexOf("queueArenaSpeech('Reset complete"));
   assert.match(coach, /__POCKETPT_ARENA_LAST_RESET_TRANSCRIPT__/);
