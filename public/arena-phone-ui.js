@@ -8,6 +8,22 @@
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
     let challengeArmed = false, challengeEngine = null, challengeTimer = null, latestPoseFrame = null, latestPoseConfidence = .4;
+    let arenaSpeechTail = Promise.resolve();
+    function queueArenaSpeech(text, source = 'arena-calibration', options = {}) {
+      if (!text) return arenaSpeechTail;
+      arenaSpeechTail = arenaSpeechTail.catch(() => {}).then(async () => {
+        const runtime = root.CoachRuntime;
+        if (!runtime?.speak) return {ok:false, reason:'coach_runtime_missing'};
+        // Do not let CoachRuntime's speech_in_progress guard silently discard
+        // state-transition cues. Wait for the current response to finish, then
+        // deliver this Arena-owned cue in order.
+        while (runtime.getState?.().activeSpeech) {
+          await new Promise(resolve => root.setTimeout(resolve, 50));
+        }
+        return runtime.speak(text, source, {owner:'arena_voice_command', interruptible:false, timerNeutral:true, ...options});
+      });
+      return arenaSpeechTail;
+    }
     function ensureChallengeEngine() {
       if (challengeEngine) return challengeEngine;
       const api = root.PushUpChallenge;
@@ -36,14 +52,18 @@
         CALIBRATED:'Top and bottom captured. When you are ready, say start.',
         NEEDS_RETRY:"Didn't get it. Say reset to restart the pose capture."
       }[progress.stage];
-      if (cue) root.CoachRuntime?.speak?.(cue, 'arena-calibration', {owner:'avatar_calibration', interruptible:false, timerNeutral:true});
+      if (cue) queueArenaSpeech(cue, 'arena-calibration', {owner:'avatar_calibration'});
       challengeArmed = progress.stage === 'CALIBRATED';
     }});
     const camera = root.PocketPTArenaCamera.create({root, video,
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
       onPose(frame, confidence, posePacket) {
         drawPose(posePacket, frame, confidence);
-        if (frame) { latestPoseFrame = frame; latestPoseConfidence = Number.isFinite(confidence) ? confidence : .4; }
+        if (frame) {
+          latestPoseFrame = frame; latestPoseConfidence = Number.isFinite(confidence) ? confidence : .4;
+          const evaluation = calibration.evaluate?.(frame, latestPoseConfidence);
+          updatePoseStatus(evaluation);
+        }
         const motionState = liveMotion?.diagnostics?.() || {};
         if (!flow?.snapshot().previewOnly && (motionState.calibrationReady || motionState.requireRestBase === false)) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
@@ -232,7 +252,7 @@
     async function handleArenaVoiceCommand(command) {
       const words = String(command || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim();
       if (['reset','restart','start over','restart everything'].includes(words)) {
-        await root.CoachRuntime?.speak?.('Resetting. Get into a side-view push-up top position. Say ready when you are in position.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        await queueArenaSpeech('Resetting. Get into a side-view push-up top position. Say ready when you are in position.', 'arena-command');
         return restartPoseCapture({restartCamera:false});
       }
       if (['ready','i am ready','im ready'].includes(words)) {
@@ -244,25 +264,25 @@
           calibration.reset();
           if (!flow.snapshot().previewOnly) calibration.start();
         }
-        await root.CoachRuntime?.speak?.('Get into your push-up top position in a side view. I am scanning now.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        await queueArenaSpeech('Get into your push-up top position in a side view. I am scanning now.', 'arena-command');
         return true;
       }
       if (['capture','capture top','top capture'].includes(words)) {
         const result = calibration.manualCapture?.(latestPoseFrame, Math.min(.4, latestPoseConfidence || .4), 'TOP') || {ok:false, reason:'CAPTURE_UNAVAILABLE'};
         const confirming = result.captured === 'TOP_CONFIRM';
-        await root.CoachRuntime?.speak?.(result.ok ? (confirming ? 'Capture top successful. Calibration complete. When you are ready, say start.' : 'Capture top successful. Lower into your bottom position, then say capture bottom.') : `Capture top failed. ${result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your top position and try capture top again.'}`, 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        await queueArenaSpeech(result.ok ? (confirming ? 'Capture top successful. Calibration complete. When you are ready, say start.' : 'Capture top successful. Lower into your bottom position, then say capture bottom.') : `Capture top failed. ${result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your top position and try capture top again.'}`, 'arena-command');
         return true;
       }
       if (['capture bottom','bottom capture'].includes(words)) {
         const result = calibration.manualCapture?.(latestPoseFrame, Math.min(.4, latestPoseConfidence || .4), 'BOTTOM') || {ok:false, reason:'CAPTURE_UNAVAILABLE'};
-        await root.CoachRuntime?.speak?.(result.ok ? 'Capture bottom successful. Return to your top position, then say capture top.' : `Capture bottom failed. ${result.reason === 'TOP_REQUIRED' ? 'Capture top first.' : result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your bottom position and try capture bottom again.'}`, 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        await queueArenaSpeech(result.ok ? 'Capture bottom successful. Return to your top position, then say capture top.' : `Capture bottom failed. ${result.reason === 'TOP_REQUIRED' ? 'Capture top first.' : result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your bottom position and try capture bottom again.'}`, 'arena-command');
         return true;
       }
       if (['start','go','begin'].includes(words) && challengeArmed) {
-        await root.CoachRuntime?.speak?.('Three. Two. One. Go.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+        await queueArenaSpeech('Three. Two. One. Go.', 'arena-command');
         const engine = ensureChallengeEngine();
         if (!engine) {
-          await root.CoachRuntime?.speak?.('The challenge engine is not ready. Say reset and try again.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+          await queueArenaSpeech('The challenge engine is not ready. Say reset and try again.', 'arena-command');
           return true;
         }
         engine.start('challenge', {requiredViewEstablished:true});
