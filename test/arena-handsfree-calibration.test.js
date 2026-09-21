@@ -38,6 +38,7 @@ test('push-up arena bypasses standing rest-base calibration and keeps recognitio
   const live = read('public/arena-live-motion-adapter.js');
   assert.match(ui, /requireRestBase:false/);
   assert.match(ui, /CoachRuntime\?\.startListening/);
+  assert.match(ui, /motionState\.calibrationReady \|\| motionState\.requireRestBase === false/);
   assert.match(live, /requireRestBase = true/);
   assert.match(live, /PUSHUP_DIRECT_CALIBRATION/);
   assert.match(live, /onRestReady\(\)/);
