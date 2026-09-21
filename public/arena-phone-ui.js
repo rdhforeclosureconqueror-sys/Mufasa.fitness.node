@@ -3,6 +3,8 @@
   function mount({game, mark, send}) {
     const doc = root.document, $ = id => doc.getElementById(id);
     const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo'), overlay = $('arenaPoseOverlay');
+    const voiceConfig = root.PocketPTArenaCoachRuntime?.voiceConfig?.() || {};
+    mark?.('COACH_VOICE', voiceConfig.ok ? 'PASS' : 'FAIL', voiceConfig.ok ? 'ARENA_COACH_VOICE_CONFIGURED' : 'ARENA_COACH_VOICE_URL_MISSING');
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
     let challengeArmed = false, challengeEngine = null, challengeTimer = null, latestPoseFrame = null, latestPoseConfidence = .4;

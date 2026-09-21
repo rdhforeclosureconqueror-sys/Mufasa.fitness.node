@@ -4,18 +4,27 @@
   const VOICE_URL = '/api/game/speak';
   let arenaCommandHandler = null;
   let fallbackAskCoach = null;
+  let voiceConfigured = false;
+
+  function voiceConfig() {
+    const runtime = root.CoachRuntime;
+    const state = runtime?.getState?.() || {};
+    return {ok:Boolean(runtime && typeof runtime.speak === 'function' && state.configured && voiceConfigured), voiceUrl:VOICE_URL, configured:Boolean(state.configured), voiceConfigured};
+  }
 
   function configure() {
     const runtime = root.CoachRuntime;
     if (!runtime || typeof runtime.configure !== 'function') {
       return {ok:false, reason:'coach_runtime_unavailable'};
     }
-    const before = runtime.getState?.() || {};
-    if (!before.configured) {
-      runtime.configure({deps:{voiceUrl:VOICE_URL}});
-    }
+    // Always apply the Arena route. CoachRuntime.configure() explicitly accepts
+    // a late voiceUrl update after its one-shot initialization, so skipping this
+    // call when another page/runtime configured CoachRuntime first can leave the
+    // Arena with no speech backend.
+    runtime.configure({deps:{voiceUrl:VOICE_URL}});
     const after = runtime.getState?.() || {};
-    return {ok:Boolean(after.configured), configured:Boolean(after.configured), voiceUrl:VOICE_URL};
+    voiceConfigured = Boolean(after.configured);
+    return {ok:Boolean(after.configured && voiceConfigured), configured:Boolean(after.configured), voiceUrl:VOICE_URL, voiceConfigured};
   }
 
   function installCommandHandler(handler) {
@@ -35,6 +44,6 @@
     return {dispose(){ arenaCommandHandler = null; }};
   }
 
-  root.PocketPTArenaCoachRuntime = Object.freeze({VOICE_URL, configure, installCommandHandler});
+  root.PocketPTArenaCoachRuntime = Object.freeze({VOICE_URL, voiceConfig, configure, installCommandHandler});
   configure();
 })(typeof window !== 'undefined' ? window : globalThis);
