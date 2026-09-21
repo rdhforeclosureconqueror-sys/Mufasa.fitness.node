@@ -5,6 +5,12 @@
   let arenaCommandHandler = null;
   let fallbackAskCoach = null;
 
+  function voiceConfig() {
+    const runtime = root.CoachRuntime;
+    const state = runtime?.getState?.() || {};
+    return {ok:Boolean(runtime && typeof runtime.speak === 'function' && VOICE_URL), voiceUrl:VOICE_URL, configured:Boolean(state.configured)};
+  }
+
   function configure() {
     const runtime = root.CoachRuntime;
     if (!runtime || typeof runtime.configure !== 'function') {
@@ -35,6 +41,6 @@
     return {dispose(){ arenaCommandHandler = null; }};
   }
 
-  root.PocketPTArenaCoachRuntime = Object.freeze({VOICE_URL, configure, installCommandHandler});
+  root.PocketPTArenaCoachRuntime = Object.freeze({VOICE_URL, voiceConfig, configure, installCommandHandler});
   configure();
 })(typeof window !== 'undefined' ? window : globalThis);
