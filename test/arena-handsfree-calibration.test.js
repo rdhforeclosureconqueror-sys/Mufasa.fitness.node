@@ -75,3 +75,18 @@ test('arena serializes calibration speech instead of dropping cues during active
   assert.match(ui, /ARENA_SPEECH_\$\{String\(result\.reason/);
   assert.doesNotMatch(ui, /if \(cue\) root\.CoachRuntime\?\.speak/);
 });
+
+
+test('reset recovery restarts calibration before speech and restores listening', () => {
+  const ui = read('public/arena-phone-ui.js');
+  const coach = read('public/arena-coach-runtime.js');
+  assert.match(ui, /RESET_COMMAND_MATCHED_/);
+  assert.match(ui, /restartPoseCapture\(\{restartCamera:false, source:'voice'\}\)/);
+  assert.match(ui, /CALIBRATION_STARTED_/);
+  assert.match(ui, /WAITING_FOR_FRESH_POSE/);
+  assert.match(ui, /FRESH_POSE_REACQUIRED/);
+  assert.match(ui, /ensureArenaListening\('post_reset_speech'\)/);
+  const resetBranch = ui.slice(ui.indexOf("if (['reset','restart','start over','restart everything']"));
+  assert.ok(resetBranch.indexOf('restartPoseCapture') < resetBranch.indexOf("queueArenaSpeech('Reset complete"));
+  assert.match(coach, /__POCKETPT_ARENA_LAST_RESET_TRANSCRIPT__/);
+});
