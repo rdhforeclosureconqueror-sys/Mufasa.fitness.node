@@ -17,7 +17,8 @@ function create(options = {}) {
   const calibration = Calibration.create({...options, now: () => time});
   return {...calibration,
     observe(value, confidence) {time = value.timestamp; return calibration.observe(value, confidence);},
-    classify(value, confidence) {time = value.timestamp; return calibration.classify(value, confidence);}};
+    classify(value, confidence) {time = value.timestamp; return calibration.classify(value, confidence);},
+    manualCapture(value, confidence, requested) {time = value?.timestamp ?? time; return calibration.manualCapture(value, confidence, requested);}};
 }
 function hold(calibration, kind, start = 0, patch = value => value, confidence = .75) {
   for (let index = 0; index < 11; index++) calibration.observe(patch(frame(kind, start + index * 300, index % 2 ? .001 : 0)), confidence);
@@ -119,4 +120,22 @@ test('bottom guidance requires depth while preserving shoulder-hip-ankle alignme
   assert.equal(shallow.checks.elbowDepth, false);
   const sag = frame('BOTTOM', 1000); sag.sequenceLandmarks.hip.x = .22;
   assert.equal(Calibration.evaluateFrame(sag, .4, 'CAPTURE_BOTTOM').checks.bodyLine, false);
+});
+
+test('manual voice capture can lock TOP and BOTTOM from a fresh five-joint frame without waiting for auto form acceptance', () => {
+  const calibration = create(); calibration.start();
+  const top = frame('TOP', 1000); top.calibrationUsable = false; top.analysisUsable = false; top.trackingState = 'DEGRADED';
+  assert.deepEqual(calibration.manualCapture(top, .4, 'TOP'), {ok:true, captured:'TOP', stage:'CAPTURE_BOTTOM'});
+  const bottom = frame('BOTTOM', 1100); bottom.calibrationUsable = false; bottom.analysisUsable = false; bottom.trackingState = 'DEGRADED';
+  assert.deepEqual(calibration.manualCapture(bottom, .4, 'BOTTOM'), {ok:true, captured:'BOTTOM', stage:'CONFIRM_TOP'});
+  const confirm = frame('TOP', 1200); confirm.calibrationUsable = false; confirm.analysisUsable = false; confirm.trackingState = 'DEGRADED';
+  assert.deepEqual(calibration.manualCapture(confirm, .4, 'TOP'), {ok:true, captured:'TOP_CONFIRM', stage:'CALIBRATED'});
+  assert.equal(calibration.snapshot().calibrated, true);
+});
+
+test('manual capture fails closed when the current frame lacks the required side chain', () => {
+  const calibration = create(); calibration.start();
+  const bad = frame('TOP', 1000); bad.sequenceLandmarks.wrist = null;
+  assert.deepEqual(calibration.manualCapture(bad, .4, 'TOP'), {ok:false, reason:'REQUIRED_JOINTS_MISSING'});
+  assert.equal(calibration.snapshot().topCaptured, false);
 });

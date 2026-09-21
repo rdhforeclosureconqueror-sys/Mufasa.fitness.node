@@ -47,8 +47,8 @@
       return [name, {visible, confidence: Number.isFinite(point?.confidence) ? Number(point.confidence) : 0}];
     }));
   }
-  function signature(frame, minimumConfidence) {
-    if (!Number.isFinite(minimumConfidence) || minimumConfidence <= 0 || minimumConfidence > 1 || !frameEligible(frame)) return null;
+  function signature(frame, minimumConfidence, {manual = false} = {}) {
+    if (!Number.isFinite(minimumConfidence) || minimumConfidence <= 0 || minimumConfidence > 1 || (!manual && !frameEligible(frame))) return null;
     const {sourceWidth: width, sourceHeight: height} = frame;
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
     const status = requiredPointStatus(frame, minimumConfidence);
@@ -185,6 +185,36 @@
       if (topDistance <= tolerance && topDistance < bottomDistance) {advance('CALIBRATED'); return true;}
       return false;
     }
+    function manualCapture(frame, minimumConfidence, requested = '') {
+      const target = String(requested || '').toUpperCase();
+      if (!['TOP','BOTTOM'].includes(target)) return {ok:false, reason:'UNKNOWN_CAPTURE'};
+      if (!fresh(frame) || !['left','right'].includes(frame?.side)) return {ok:false, reason:'NO_FRESH_POSE'};
+      const vector = signature(frame, minimumConfidence, {manual:true});
+      if (!vector) return {ok:false, reason:'REQUIRED_JOINTS_MISSING'};
+      if (source && !sameSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
+      source ||= {side:frame.side,width:frame.sourceWidth,height:frame.sourceHeight};
+      const candidate = {center:vector, spread:0, manual:true};
+      if (target === 'TOP') {
+        if (stage === 'CONFIRM_TOP' && top && bottom) {
+          const separation = distance(top.center, bottom.center);
+          tolerance ||= Math.max(10, Math.min(separation * .4, 18));
+          if (distance(candidate.center, top.center) > Math.max(tolerance, 18)) return {ok:false, reason:'TOP_DOES_NOT_MATCH'};
+          clearDeadline(); stage='CALIBRATED'; samples=[]; reason=failedStage=null; emit();
+          return {ok:true, captured:'TOP_CONFIRM', stage};
+        }
+        erase(); reason=failedStage=null; top=candidate; source={side:frame.side,width:frame.sourceWidth,height:frame.sourceHeight};
+        advance('CAPTURE_BOTTOM');
+        return {ok:true, captured:'TOP', stage};
+      }
+      if (!top) return {ok:false, reason:'TOP_REQUIRED'};
+      if (!sameSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
+      if (distance(candidate.center, top.center) < MIN_POSE_SEPARATION_DEGREES) return {ok:false, reason:'BOTTOM_TOO_SIMILAR'};
+      bottom=candidate;
+      const separation=distance(top.center,bottom.center);
+      tolerance=Math.max(10,Math.min(separation*.4,18));
+      advance('CONFIRM_TOP');
+      return {ok:true, captured:'BOTTOM', stage};
+    }
     function classify(frame, minimumConfidence) {
       if (stage !== 'CALIBRATED') return 'UNAVAILABLE';
       const vector = fresh(frame) && sameSource(frame) ? signature(frame, minimumConfidence) : null;
@@ -194,7 +224,7 @@
       if (bottomDistance <= tolerance && bottomDistance < topDistance) return 'BOTTOM';
       return 'BETWEEN';
     }
-    return {start, retry, reset, invalidate, observe, classify, evaluate, snapshot};
+    return {start, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot};
   }
   return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
     TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});
