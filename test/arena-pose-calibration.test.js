@@ -17,7 +17,8 @@ function create(options = {}) {
   const calibration = Calibration.create({...options, now: () => time});
   return {...calibration,
     observe(value, confidence) {time = value.timestamp; return calibration.observe(value, confidence);},
-    classify(value, confidence) {time = value.timestamp; return calibration.classify(value, confidence);}};
+    classify(value, confidence) {time = value.timestamp; return calibration.classify(value, confidence);},
+    manualCapture(value, confidence, requested) {time = value?.timestamp ?? time; return calibration.manualCapture(value, confidence, requested);}};
 }
 function hold(calibration, kind, start = 0, patch = value => value, confidence = .75) {
   for (let index = 0; index < 11; index++) calibration.observe(patch(frame(kind, start + index * 300, index % 2 ? .001 : 0)), confidence);
