@@ -2831,6 +2831,28 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-17T22:45:08.249Z"
+    },
+    {
+      "operationId": "pushup-handsfree-20260921",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "pushup-arena-v1",
+      "files": [
+        "public/coach-runtime.js",
+        "public/arena-coach-runtime.js",
+        "public/arena-phone-ui.js",
+        "public/arena-phone-flow.js",
+        "public/arena-pose-calibration.js",
+        "public/arena-push-up.html",
+        "test/arena-handsfree-calibration.test.js",
+        "docs/review-handoffs/pushup-handsfree-calibration-20260921.md"
+      ],
+      "automated": "PASS",
+      "evidence": "PR #849 hands-free side-view calibration repair: bare RESET/READY/START voice routing, protected uninterrupted coach speech, one-side push-up kinetic-chain calibration, authoritative ExerciseSessionEngine challenge start with 60-second timer, and focused contract tests. Physical desktop/iPhone acceptance remains human-required.",
+      "prNumber": 849,
+      "commitSha": "d01781bf3cb477602d604a25e19b53ec5eae1c5e",
+      "timestamp": "2026-09-21T19:00:00.000Z"
     }
   ]
 }
