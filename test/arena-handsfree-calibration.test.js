@@ -71,5 +71,7 @@ test('arena serializes calibration speech instead of dropping cues during active
   assert.match(ui, /function queueArenaSpeech/);
   assert.match(ui, /while \(runtime\.getState\?\.\(\)\.activeSpeech\)/);
   assert.match(ui, /queueArenaSpeech\(cue, 'arena-calibration'/);
+  assert.match(ui, /ARENA_SPEECH_DRAIN_TIMEOUT/);
+  assert.match(ui, /ARENA_SPEECH_\$\{String\(result\.reason/);
   assert.doesNotMatch(ui, /if \(cue\) root\.CoachRuntime\?\.speak/);
 });
