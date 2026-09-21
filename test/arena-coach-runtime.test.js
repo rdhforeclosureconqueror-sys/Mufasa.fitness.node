@@ -12,7 +12,8 @@ test('Arena configures the canonical CoachRuntime to use the arena-session speec
   const root = {
     CoachRuntime: {
       configure(value) { config = value; runtimeState.configured = true; return {...runtimeState}; },
-      getState() { return {...runtimeState}; }
+      getState() { return {...runtimeState}; },
+      speak() {}
     }
   };
   root.window = root;
@@ -20,6 +21,7 @@ test('Arena configures the canonical CoachRuntime to use the arena-session speec
   vm.runInNewContext(source, root);
   assert.equal(config.deps.voiceUrl, '/api/game/speak');
   assert.equal(root.PocketPTArenaCoachRuntime.configure().ok, true);
+  assert.deepEqual(root.PocketPTArenaCoachRuntime.voiceConfig(), {ok:true, voiceUrl:'/api/game/speak', configured:true});
 });
 
 test('Arena page preloads CoachRuntime before live motion and keeps body/form status out of the video area', () => {
@@ -40,4 +42,10 @@ test('Arena phone calibration explains the red-green form contract and keeps spo
   assert.match(source, /set arm\/shoulder closer to 90°/);
   assert.match(source, /Didn't get it/);
   assert.match(source, /interruptible:false/);
+});
+
+test('Arena phone diagnostics fail closed on missing coach voice configuration instead of reporting no first failure', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/arena-phone-ui.js'), 'utf8');
+  assert.match(source, /mark\?\.\('COACH_VOICE', voiceConfig\.ok \? 'PASS' : 'FAIL'/);
+  assert.match(source, /ARENA_COACH_VOICE_URL_MISSING/);
 });
