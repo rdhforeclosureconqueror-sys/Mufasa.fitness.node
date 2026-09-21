@@ -153,7 +153,7 @@
       if (next === 'CONFIRM_TOP' && (!top || !bottom)) next = top ? 'CAPTURE_BOTTOM' : 'CAPTURE_TOP';
       if (!['CAPTURE_TOP','CAPTURE_BOTTOM','CONFIRM_TOP'].includes(next)) next = 'CAPTURE_TOP';
       reason = failedStage = null;
-      advance(next);
+      waitForReady(next === 'CAPTURE_BOTTOM' ? 'BOTTOM' : next === 'CONFIRM_TOP' ? 'CONFIRM_TOP' : 'TOP');
       return true;
     }
     function fresh(frame) {return Number.isFinite(frame?.timestamp) && frame.timestamp >= 0 && now() - frame.timestamp <= MAX_AGE_MS && frame.timestamp - now() <= 250;}
