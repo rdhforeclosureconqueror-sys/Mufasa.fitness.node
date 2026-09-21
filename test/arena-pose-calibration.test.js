@@ -30,12 +30,12 @@ function quickHold(calibration, kind, start = 0, confidence = .4) {
 test('captures stable personal TOP and BOTTOM geometry and confirms TOP return', () => {
   const stages = [], calibration = create({onChange: state => stages.push(state.stage)});
   calibration.start(); calibration.beginReadyCapture(); hold(calibration, 'TOP');
-  assert.deepEqual(calibration.snapshot(), {stage: 'CAPTURE_BOTTOM', reason: null, failedStage: null, topCaptured: true, bottomCaptured: false, calibrated: false});
+  assert.deepEqual(calibration.snapshot(), {stage: 'WAIT_BOTTOM_READY', reason: null, failedStage: null, topCaptured: true, bottomCaptured: false, calibrated: false});
   calibration.beginReadyCapture(); hold(calibration, 'BOTTOM', 3300);
-  assert.deepEqual(calibration.snapshot(), {stage: 'CONFIRM_TOP', reason: null, failedStage: null, topCaptured: true, bottomCaptured: true, calibrated: false});
+  assert.deepEqual(calibration.snapshot(), {stage: 'WAIT_TOP_CONFIRM_READY', reason: null, failedStage: null, topCaptured: true, bottomCaptured: true, calibrated: false});
   calibration.beginReadyCapture(); hold(calibration, 'TOP', 6600);
   assert.equal(calibration.snapshot().calibrated, true);
-  assert.deepEqual(stages, ['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED']);
+  assert.deepEqual(stages, ['WAIT_TOP_READY','CAPTURE_TOP','WAIT_BOTTOM_READY','CAPTURE_BOTTOM','WAIT_TOP_CONFIRM_READY','CONFIRM_TOP','CALIBRATED']);
   assert.equal(calibration.classify(frame('TOP', 9900), .75), 'TOP');
   assert.equal(calibration.classify(frame('BOTTOM', 10000), .75), 'BOTTOM');
 });
@@ -43,26 +43,26 @@ test('captures stable personal TOP and BOTTOM geometry and confirms TOP return',
 test('quick capture locks a valid pose in about one second instead of requiring a three-second plank hold', () => {
   const calibration = create(); calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
   assert.equal(Calibration.STABLE_MS, 700);
-  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
 });
 
 test('timeout preserves already captured references and retry resumes the failed stage', () => {
   const calibration = create(); calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
   assert.equal(calibration.snapshot().topCaptured, true);
   calibration.invalidate('TIMEOUT');
-  assert.deepEqual(calibration.snapshot(), {stage:'NEEDS_RETRY', reason:'TIMEOUT', failedStage:'CAPTURE_BOTTOM', topCaptured:true, bottomCaptured:false, calibrated:false});
+  assert.deepEqual(calibration.snapshot(), {stage:'NEEDS_RETRY', reason:'TIMEOUT', failedStage:'WAIT_BOTTOM_READY', topCaptured:true, bottomCaptured:false, calibrated:false});
   assert.equal(calibration.retry(), true);
-  assert.deepEqual(calibration.snapshot(), {stage:'CAPTURE_BOTTOM', reason:null, failedStage:null, topCaptured:true, bottomCaptured:false, calibrated:false});
+  assert.deepEqual(calibration.snapshot(), {stage:'WAIT_TOP_READY', reason:null, failedStage:null, topCaptured:false, bottomCaptured:false, calibrated:false});
 });
 
 test('does not capture an unchanged or unstable pose as BOTTOM before the fast attempt times out', () => {
   const calibration = create(); calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
-  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
   for (let index = 0; index < 8; index++) calibration.observe(frame('TOP', 1400 + index * 200), .4);
-  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
   assert.equal(calibration.snapshot().bottomCaptured, false);
   for (let index = 0; index < 8; index++) calibration.observe(frame(index % 2 ? 'TOP' : 'BOTTOM', 3000 + index * 200), .4);
-  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
   assert.equal(calibration.snapshot().bottomCaptured, false);
 });
 
@@ -86,7 +86,7 @@ test('calibration visibility can stay usable when the stricter scoring tracker i
     for (const point of Object.values(value.sequenceLandmarks)) point.confidence = .45;
     return value;
   }, .4);
-  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
 });
 
 test('top setup guidance rejects bent arms, bad shoulder angle and broken shoulder-hip-ankle line', () => {
@@ -125,9 +125,9 @@ test('bottom guidance requires depth while preserving shoulder-hip-ankle alignme
 test('manual voice capture can lock TOP and BOTTOM from a fresh five-joint frame without waiting for auto form acceptance', () => {
   const calibration = create(); calibration.start();
   const top = frame('TOP', 1000); top.calibrationUsable = false; top.analysisUsable = false; top.trackingState = 'DEGRADED';
-  assert.deepEqual(calibration.manualCapture(top, .4, 'TOP'), {ok:true, captured:'TOP', stage:'CAPTURE_BOTTOM'});
+  assert.deepEqual(calibration.manualCapture(top, .4, 'TOP'), {ok:true, captured:'TOP', stage:'WAIT_BOTTOM_READY'});
   const bottom = frame('BOTTOM', 1100); bottom.calibrationUsable = false; bottom.analysisUsable = false; bottom.trackingState = 'DEGRADED';
-  assert.deepEqual(calibration.manualCapture(bottom, .4, 'BOTTOM'), {ok:true, captured:'BOTTOM', stage:'CONFIRM_TOP'});
+  assert.deepEqual(calibration.manualCapture(bottom, .4, 'BOTTOM'), {ok:true, captured:'BOTTOM', stage:'WAIT_TOP_CONFIRM_READY'});
   const confirm = frame('TOP', 1200); confirm.calibrationUsable = false; confirm.analysisUsable = false; confirm.trackingState = 'DEGRADED';
   assert.deepEqual(calibration.manualCapture(confirm, .4, 'TOP'), {ok:true, captured:'TOP_CONFIRM', stage:'CALIBRATED'});
   assert.equal(calibration.snapshot().calibrated, true);
