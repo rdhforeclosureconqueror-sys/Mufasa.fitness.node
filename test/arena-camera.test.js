@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {create, visible} = require('../public/arena-camera');
+const {create, visible, visibilityEvidence} = require('../public/arena-camera');
 const {CameraController} = require('../public/push-up-challenge');
 const frame = () => ({side:'left', analysisUsable: true, trackingState: 'LOCKED', sequenceLandmarks: Object.fromEntries(['shoulder', 'elbow', 'wrist', 'hip', 'ankle'].map(name => [name, {x: .5, y: .5, confidence: .9}]))});
 const deferred = () => {let resolve, reject; const promise = new Promise((a, b) => {resolve = a; reject = b;}); return {promise, resolve, reject};};
@@ -139,4 +139,16 @@ test('session exit disposes a detector that finishes loading after cancellation'
   const rejected = assert.rejects(f.camera.start()); await flush();
   f.camera.dispose(); await rejected; model.resolve({dispose: () => disposed++}); await flush();
   assert.equal(disposed, 1); assert.equal(f.stats().starts, 0);
+});
+
+test('visibility evidence reports the exact unusable side-chain joint and confidence', () => {
+  const weak = frame();
+  weak.sequenceLandmarks.wrist.confidence = .23;
+  const evidence = visibilityEvidence(weak, .4);
+  assert.equal(evidence.visible, false);
+  assert.equal(evidence.side, weak.side);
+  assert.deepEqual(evidence.missing, ['wrist']);
+  assert.equal(evidence.joints.wrist.confidence, .23);
+  assert.equal(evidence.joints.wrist.usable, false);
+  assert.equal(evidence.joints.shoulder.usable, true);
 });
