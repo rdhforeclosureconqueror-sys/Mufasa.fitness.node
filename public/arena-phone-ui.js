@@ -17,10 +17,17 @@
         // Do not let CoachRuntime's speech_in_progress guard silently discard
         // state-transition cues. Wait for the current response to finish, then
         // deliver this Arena-owned cue in order.
+        const waitStartedAt = Date.now();
         while (runtime.getState?.().activeSpeech) {
+          if (Date.now() - waitStartedAt >= 10000) {
+            mark?.('COACH_VOICE', 'FAIL', 'ARENA_SPEECH_DRAIN_TIMEOUT');
+            return {ok:false, reason:'speech_drain_timeout'};
+          }
           await new Promise(resolve => root.setTimeout(resolve, 50));
         }
-        return runtime.speak(text, source, {owner:'arena_voice_command', interruptible:false, timerNeutral:true, ...options});
+        const result = await runtime.speak(text, source, {owner:'arena_voice_command', interruptible:false, timerNeutral:true, ...options});
+        if (result?.ok === false) mark?.('COACH_VOICE', 'FAIL', `ARENA_SPEECH_${String(result.reason || 'FAILED').toUpperCase()}`);
+        return result;
       });
       return arenaSpeechTail;
     }
