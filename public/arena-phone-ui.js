@@ -149,7 +149,7 @@
       }
       updatePoseStatus(evaluation);
     }
-    function stopCamera() {cameraOperation++; liveMotion?.release('CAMERA_STOPPED'); camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
+    function stopCamera() {cameraOperation++; root.__POCKETPT_ARENA_EXERCISE_VOICE__ = false; liveMotion?.release('CAMERA_STOPPED'); camera.stop(); calibration.reset(); $('arenaCameraChoice').hidden = true;}
     function releasePointer() {
       const held = pointer; pointer = null;
       if (held?.element.hasPointerCapture?.(held.id)) held.element.releasePointerCapture(held.id);
@@ -281,6 +281,7 @@
       $('arenaReturnToGym').focus();
       const generation = ++cameraOperation;
       try {
+        root.__POCKETPT_ARENA_EXERCISE_VOICE__ = true;
         await liveMotion?.activateVoice?.();
         // Arena commands must remain audible hands-free during floor setup.
         // The legacy Mirror Motion calibration acquired exclusive speech by
@@ -290,7 +291,7 @@
         await camera.start(deviceId);
         if (generation === cameraOperation) flow.cameraActive();
       }
-      catch (_) {if (generation === cameraOperation) flow.cameraError();}
+      catch (_) {root.__POCKETPT_ARENA_EXERCISE_VOICE__ = false; if (generation === cameraOperation) flow.cameraError();}
     }
     $('arenaGoToMat').addEventListener('click', () => {if (flow.approach()) $('arenaStopApproach').focus();});
     $('arenaStopApproach').addEventListener('click', () => {flow.cancelApproach(); $('arenaGoToMat').focus();});
