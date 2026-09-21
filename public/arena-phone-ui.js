@@ -41,7 +41,8 @@
       onVisibility: visible => flow?.visibility(visible), onStatus: mark,
       onPose(frame, confidence, posePacket) {
         drawPose(posePacket, frame, confidence);
-        if (!flow?.snapshot().previewOnly && liveMotion?.diagnostics().calibrationReady) calibration.observe(frame, confidence);
+        const motionState = liveMotion?.diagnostics?.() || {};
+        if (!flow?.snapshot().previewOnly && (motionState.calibrationReady || motionState.requireRestBase === false)) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
         if (challengeEngine?.state === 'active' && frame) challengeEngine.observe(frame);
       },
@@ -197,7 +198,7 @@
       $('arenaThrillerAction').hidden = !state.canMove;
       $('arenaThrillerAction').disabled = !state.canMove;
       const cameraStatus = {
-        BODY_VISIBLE: 'Side-view chain found · shoulder · elbow · wrist · hip · ankle',
+        BODY_VISIBLE: 'Side-view chain found · shoulder · elbow · wrist · hip · ankle · green = usable',
         CALIBRATING_TOP: 'TOP: get mostly green · hold briefly · snap',
         CALIBRATING_BOTTOM: 'BOTTOM: lower · get mostly green · hold briefly · snap',
         CONFIRMING_TOP: 'Back to TOP · hold briefly · snap',
