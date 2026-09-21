@@ -93,3 +93,18 @@ test('reset recovery restarts calibration before speech and restores listening',
   assert.ok(resetBranch.indexOf('restartPoseCapture') < resetBranch.indexOf("queueArenaSpeech('Reset complete"));
   assert.match(coach, /__POCKETPT_ARENA_LAST_RESET_TRANSCRIPT__/);
 });
+
+
+test('athlete READY gates every three-second calibration capture', () => {
+  const ui = read('public/arena-phone-ui.js');
+  const calibration = read('public/arena-pose-calibration.js');
+  assert.match(calibration, /WAIT_TOP_READY/);
+  assert.match(calibration, /WAIT_BOTTOM_READY/);
+  assert.match(calibration, /WAIT_TOP_CONFIRM_READY/);
+  assert.match(calibration, /function beginReadyCapture/);
+  assert.match(ui, /Capturing position\. Three\. Two\. One\./);
+  assert.match(ui, /calibration\.beginReadyCapture/);
+  assert.match(ui, /Get into your top push-up position\. Say ready when you are ready\./);
+  assert.match(ui, /Top position captured\. Lower into your bottom position\. Say ready when you are ready\./);
+  assert.match(ui, /Bottom position captured\. Return to your top position\. Say ready when you are ready\./);
+});
