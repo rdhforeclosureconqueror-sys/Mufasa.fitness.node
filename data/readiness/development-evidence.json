@@ -2744,9 +2744,9 @@
         "test/pose-engine-test-lab.test.js"
       ],
       "automated": "PASS",
-      "evidence": "Implementation commit ac08e8f. Protected test-only comparison lab complete; production MoveNet selection is unchanged. Focused contract/comparison/runtime suite 26/26 PASS, lint/diff/readiness PASS. Existing Motion Lab suite remains 26/27 because its pre-existing Safari handoff test expects an older exact origin-check expression. No real camera, browser GPU, physical iPhone, visual movement, performance or human acceptance is claimed.",
-      "prNumber": null,
-      "commitSha": "ac08e8f14f61f17c144a6833214cfa35cc0901ff",
+      "evidence": "Implementation from PR #840, resolved to merge commit 542ccf1. Protected test-only comparison lab complete; production MoveNet selection is unchanged. Focused contract/comparison/runtime suite 26/26 PASS, lint/diff/readiness PASS. Existing Motion Lab suite remains 26/27 because its pre-existing Safari handoff test expects an older exact origin-check expression. No real camera, browser GPU, physical iPhone, visual movement, performance or human acceptance is claimed.",
+      "prNumber": 840,
+      "commitSha": "542ccf137d09dd82d02a1521c961e7f7fa75efbb",
       "timestamp": "2026-09-17T17:57:14.053Z"
     },
     {
@@ -2797,40 +2797,44 @@
         "test/live-avatar-mirror-debug-panel.test.js"
       ],
       "automated": "PASS",
-      "evidence": "Implementation commit 829182d. Calibration-gated mirror retargeting now reports the first failing boundary and the protected live mirror lab shows/copies calibration state, gate state, received frames, blocked frames, retarget frames, changed bones, and next action. The two original mirror regression tests pass when retarget is explicitly authorized; focused 57/57 suite passes. One unrelated legacy calibration speech timing assertion remains outside this change. No browser camera, physical-device, visual-motion or human acceptance is claimed.",
-      "prNumber": null,
-      "commitSha": "829182d",
+      "evidence": "Implementation from PR #840, resolved to merge commit 542ccf1. Calibration-gated mirror retargeting now reports the first failing boundary and the protected live mirror lab shows/copies calibration state, gate state, received frames, blocked frames, retarget frames, changed bones, and next action. The two original mirror regression tests pass when retarget is explicitly authorized; focused 57/57 suite passes. One unrelated legacy calibration speech timing assertion remains outside this change. No browser camera, physical-device, visual-motion or human acceptance is claimed.",
+      "prNumber": 840,
+      "commitSha": "542ccf137d09dd82d02a1521c961e7f7fa75efbb",
       "timestamp": "2026-09-17T18:16:40.488Z"
     },
     {
-      "operationId": "3b52a53b-f61f-43ab-9f69-8e449219b3eb",
+      "operationId": "e9a45b76-ad83-4173-b7fb-da225effbd25",
       "board": "avatar",
-      "cardId": "avatar-development-underwater-vowel-engine-route",
+      "cardId": "avatar-development-pose-engine-post-840-repairs",
       "sourceType": "card_creation",
-      "taskId": "underwater-vowel-engine-route",
+      "taskId": "pose-engine-post-840-repairs",
       "files": [],
       "automated": null,
-      "evidence": "Route A/E/I/O/U selections through the authenticated underwater preview shell into one shared Godot vowel engine while preserving the default push-up arena. Human visual approval remains required for final wall art and presentation.",
+      "evidence": "Repair stale inference diagnostics, readiness evidence commit references, lost-tracking first-failure reporting, and detector coordinate orientation in the protected MoveNet-vs-MediaPipe test lab.",
       "prNumber": null,
       "commitSha": null,
-      "timestamp": "2026-09-17T22:42:01.506Z"
+      "timestamp": "2026-09-18T01:09:28.787Z"
     },
     {
-      "operationId": "7887d997-7707-43c5-86ac-ebb6074b4929",
+      "operationId": "e8d8f1f7-f268-4da2-9344-847b84b3d487",
       "board": "avatar",
-      "cardId": "avatar-development-underwater-vowel-engine-route",
+      "cardId": "avatar-development-pose-engine-post-840-repairs",
       "sourceType": "implementation",
-      "taskId": null,
+      "taskId": "pose-engine-post-840-repairs",
       "files": [
-        "public/arena-push-up.js",
-        "test/arena-diagnostics.test.js",
-        ".github/workflows/stage-underwater-learning-preview.yml"
+        "public/motion/pose-engine-comparison.js",
+        "public/motion/live-avatar-mirror.js",
+        "motion-lab/pose-engine-test-lab.js",
+        "test/pose-engine-test-lab.test.js",
+        "test/live-avatar-mirror.test.js",
+        "test/readiness-evidence-integrity.test.js",
+        "data/readiness/development-evidence.json"
       ],
       "automated": "PASS",
-      "evidence": "Machine verification PASS: authenticated arena shell forwards allowlisted A/E/I/O/U selections only for ?preview=underwater, defaults invalid or missing selections to A, preserves the production push-up iframe without the preview gate, and updates future underwater staging checks. Final wall art and visual quality remain human-required and are not approved by this evidence.",
+      "evidence": "Focused repair tests 12/12 PASS; lint and readiness validation PASS. Fixed stale inference failure masking, post-retarget LOST boundary, shared unflipped detector coordinates, and PR #840 evidence resolution. No browser camera, GPU, physical-device or human visual acceptance claimed.",
       "prNumber": null,
-      "commitSha": null,
-      "timestamp": "2026-09-17T22:45:08.249Z"
+      "commitSha": "54cdfde2e9dea518dfe0a91c7d9f61aaf4217311",
+      "timestamp": "2026-09-18T01:11:54.758Z"
     },
     {
       "operationId": "pushup-handsfree-20260921",
