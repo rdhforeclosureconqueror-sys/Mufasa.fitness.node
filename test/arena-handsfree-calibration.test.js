@@ -43,3 +43,15 @@ test('push-up arena bypasses standing rest-base calibration and keeps recognitio
   assert.match(live, /PUSHUP_DIRECT_CALIBRATION/);
   assert.match(live, /onRestReady\(\)/);
 });
+
+
+test('arena recognizes explicit manual TOP and BOTTOM capture commands with spoken success or failure', () => {
+  const ui = read('public/arena-phone-ui.js');
+  const coach = read('public/arena-coach-runtime.js');
+  assert.match(ui, /manualCapture\?\.\(latestPoseFrame/);
+  assert.match(ui, /Capture top successful/);
+  assert.match(ui, /Capture top failed/);
+  assert.match(ui, /Capture bottom successful/);
+  assert.match(ui, /Capture bottom failed/);
+  assert.match(coach, /capture top\|top capture\|capture bottom\|bottom capture/);
+});
