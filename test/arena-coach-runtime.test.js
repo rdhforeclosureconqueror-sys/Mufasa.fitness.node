@@ -21,7 +21,26 @@ test('Arena configures the canonical CoachRuntime to use the arena-session speec
   vm.runInNewContext(source, root);
   assert.equal(config.deps.voiceUrl, '/api/game/speak');
   assert.equal(root.PocketPTArenaCoachRuntime.configure().ok, true);
-  assert.deepEqual(root.PocketPTArenaCoachRuntime.voiceConfig(), {ok:true, voiceUrl:'/api/game/speak', configured:true});
+  assert.deepEqual(root.PocketPTArenaCoachRuntime.voiceConfig(), {ok:true, voiceUrl:'/api/game/speak', configured:true, voiceConfigured:true});
+});
+
+
+test('Arena reapplies its speech route when CoachRuntime was configured before the Arena loads', () => {
+  const calls = [];
+  const runtimeState = {configured:true, muted:false};
+  const root = {
+    CoachRuntime: {
+      configure(value) { calls.push(value); return {...runtimeState}; },
+      getState() { return {...runtimeState}; },
+      speak() {}
+    }
+  };
+  root.window = root;
+  const source = fs.readFileSync(path.join(__dirname, '../public/arena-coach-runtime.js'), 'utf8');
+  vm.runInNewContext(source, root);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].deps.voiceUrl, '/api/game/speak');
+  assert.equal(root.PocketPTArenaCoachRuntime.voiceConfig().ok, true);
 });
 
 test('Arena page preloads CoachRuntime before live motion and keeps body/form status out of the video area', () => {
