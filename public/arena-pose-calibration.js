@@ -4,12 +4,14 @@
   else root.PocketPTArenaPoseCalibration = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
+  // Side-view push-up setup needs one trustworthy kinetic chain, not every
+  // bilateral landmark. The camera adapter selects the stronger visible side.
   const NAMES = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
   const MIN_SAMPLES = 4;
   // Calibration is a quick setup snapshot, not the competition judge. A member
   // should not have to hold a tiring plank for several seconds just to enter the
   // challenge. Official rep scoring keeps its own stricter rules downstream.
-  const STABLE_MS = 1000;
+  const STABLE_MS = 700;
   const MAX_GAP_MS = 400;
   const PHASE_TIMEOUT_MS = 4500;
   const MAX_AGE_MS = 2000;

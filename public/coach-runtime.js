@@ -737,7 +737,7 @@
 
     const lower = transcript.toLowerCase();
     const intent = classifySpeechIntent(transcript);
-    if (activeSpeech && state.conversationActive) {
+    if (activeSpeech) {
       if (intent === "exit") {
         cancelActiveSpeech("conversation-exit", { force: true });
         endConversation("user-exit");
@@ -757,7 +757,12 @@
       return;
     }
     const hasWakePhrase = lower.includes("mufasa") || lower.includes("coach");
-    if (!hasWakePhrase && !state.conversationActive) return;
+    if (!hasWakePhrase && !state.conversationActive) {
+      if (typeof deps.bareCommandMatcher === "function" && deps.bareCommandMatcher(lower)) {
+        dispatchCoachCommand(lower, transcript);
+      }
+      return;
+    }
     if (hasWakePhrase) {
       setConversationState("WAKE_DETECTED", "wake-phrase");
       touchConversation("wake-phrase");
@@ -934,6 +939,12 @@
 
   function configure(config = {}) {
     if (state.configured) {
+      // Runtime configuration is normally one-shot, but a focused experience
+      // may attach a narrow command dispatcher after the shared voice runtime
+      // has already initialized. Do not rebuild recognition/audio ownership.
+      if (config.deps?.dispatchCommand) deps.dispatchCommand = config.deps.dispatchCommand;
+      if (config.deps?.bareCommandMatcher) deps.bareCommandMatcher = config.deps.bareCommandMatcher;
+      if (config.deps?.voiceUrl) deps.voiceUrl = config.deps.voiceUrl;
       if (new URLSearchParams(global.location?.search || '').get('debugWorkoutPerformance') === '1') console.info('[WORKOUT_PERF] duplicate voice runtime initialization ignored');
       return snapshot();
     }
