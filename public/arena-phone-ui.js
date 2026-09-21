@@ -53,11 +53,11 @@
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
       liveMotion?.setExerciseCalibration(progress.calibrated);
       const cue = {
-        CAPTURE_TOP:'I can see you. Capturing your top position. Hold.',
-        CAPTURE_BOTTOM:'Top captured. Lower into your bottom position and hold.',
-        CONFIRM_TOP:'Bottom captured. Return to the top position and hold.',
+        WAIT_TOP_READY:'Get into your top push-up position. Say ready when you are ready.',
+        WAIT_BOTTOM_READY:'Top position captured. Lower into your bottom position. Say ready when you are ready.',
+        WAIT_TOP_CONFIRM_READY:'Bottom position captured. Return to your top position. Say ready when you are ready.',
         CALIBRATED:'Top and bottom captured. When you are ready, say start.',
-        NEEDS_RETRY:"Didn't get it. Say reset to restart the pose capture."
+        NEEDS_RETRY:"Didn't get it. Say reset to return to the ready position."
       }[progress.stage];
       if (cue) queueArenaSpeech(cue, 'arena-calibration', {owner:'avatar_calibration'});
       challengeArmed = progress.stage === 'CALIBRATED';
@@ -68,7 +68,7 @@
         drawPose(posePacket, frame, confidence);
         if (frame) {
           latestPoseFrame = frame; latestPoseConfidence = Number.isFinite(confidence) ? confidence : .4;
-          if (calibration.snapshot().stage === 'CAPTURE_TOP') markReset('FRESH_POSE_REACQUIRED', 'PASS');
+          if (['CAPTURE_TOP','CAPTURE_BOTTOM','CONFIRM_TOP'].includes(calibration.snapshot().stage)) markReset('FRESH_POSE_REACQUIRED', 'PASS');
           const evaluation = calibration.evaluate?.(frame, latestPoseConfidence);
           updatePoseStatus(evaluation);
         }
@@ -281,7 +281,7 @@
       }
       if (!flow.snapshot().previewOnly) {
         calibration.start();
-        markReset(`CALIBRATION_STARTED_${calibration.snapshot().stage}`);
+        markReset(`CALIBRATION_WAITING_${calibration.snapshot().stage}`);
       }
       ensureArenaListening('reset');
       markReset('WAITING_FOR_FRESH_POSE', 'WAITING');
@@ -302,12 +302,15 @@
         challengeArmed = false;
         if (!flow.snapshot().cameraView) {
           if (flow.setup()) await enableCamera();
-        } else {
-          camera.resetTracking();
-          calibration.reset();
-          if (!flow.snapshot().previewOnly) calibration.start();
         }
-        await queueArenaSpeech('Get into your push-up top position in a side view. I am scanning now.', 'arena-command');
+        const before = calibration.snapshot().stage;
+        if (!['WAIT_TOP_READY','WAIT_BOTTOM_READY','WAIT_TOP_CONFIRM_READY'].includes(before)) {
+          await queueArenaSpeech('I am not waiting for a position right now. Say reset to restart calibration.', 'arena-command');
+          return true;
+        }
+        await queueArenaSpeech('Capturing position. Three. Two. One.', 'arena-command');
+        if (!calibration.beginReadyCapture?.()) return true;
+        markReset(`READY_CAPTURE_STARTED_${calibration.snapshot().stage}`, 'PASS');
         return true;
       }
       if (['capture','capture top','top capture'].includes(words)) {
