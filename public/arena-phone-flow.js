@@ -7,8 +7,8 @@
   const VERSION = 1;
   const DIRECTIONS = new Set(['MOVE_LEFT', 'MOVE_RIGHT', 'MOVE_FORWARD', 'MOVE_BACKWARD']);
   const LOCOMOTION_MODES = new Set(['WALK', 'RUN']);
-  const TRACKING_STATES = ['CAMERA_POSITIONING', 'BODY_VISIBLE', 'CALIBRATING_TOP', 'CALIBRATING_BOTTOM', 'CONFIRMING_TOP', 'CALIBRATED', 'CALIBRATION_RETRY'];
-  const CALIBRATION_STATES = {CAPTURE_TOP: 'CALIBRATING_TOP', CAPTURE_BOTTOM: 'CALIBRATING_BOTTOM', CONFIRM_TOP: 'CONFIRMING_TOP', CALIBRATED: 'CALIBRATED', NEEDS_RETRY: 'CALIBRATION_RETRY'};
+  const TRACKING_STATES = ['CAMERA_POSITIONING', 'BODY_VISIBLE', 'WAIT_TOP_READY', 'CALIBRATING_TOP', 'WAIT_BOTTOM_READY', 'CALIBRATING_BOTTOM', 'WAIT_TOP_CONFIRM_READY', 'CONFIRMING_TOP', 'CALIBRATED', 'CALIBRATION_RETRY'];
+  const CALIBRATION_STATES = {WAIT_TOP_READY:'WAIT_TOP_READY', CAPTURE_TOP:'CALIBRATING_TOP', WAIT_BOTTOM_READY:'WAIT_BOTTOM_READY', CAPTURE_BOTTOM:'CALIBRATING_BOTTOM', WAIT_TOP_CONFIRM_READY:'WAIT_TOP_CONFIRM_READY', CONFIRM_TOP:'CONFIRMING_TOP', CALIBRATED:'CALIBRATED', NEEDS_RETRY:'CALIBRATION_RETRY'};
   const COPY = Object.freeze({
     CONNECTING: ['Enter the Lion’s Den', 'Connecting your gym session…'],
     NEGOTIATING: ['Choose your controls', 'Checking the controls available in this gym…'],
@@ -19,7 +19,10 @@
     CAMERA_SETUP: ['Set your phone down', 'Place it on a stable surface at your side. Keep your shoulders, elbows, wrists, hips and ankles in view. Enable your camera before stepping back.'],
     CAMERA_STARTING: ['Opening your camera', 'Allow camera access if prompted. You can cancel and return to the gym.'],
     CAMERA_POSITIONING: ['Get into push-up position', 'Turn sideways to the camera and hold the TOP of your push-up. Keep one shoulder, elbow, wrist, hip and ankle visible.'],
-    BODY_VISIBLE: ['Side view found', 'I have the push-up chain I need. Capturing your TOP position next.'],
+    BODY_VISIBLE: ['Side view found', 'I have the push-up chain I need. Get into your TOP position and say ready when you are ready.'],
+    WAIT_TOP_READY: ['Ready when you are', 'Get into your TOP position. Say ready when you want me to capture it.'],
+    WAIT_BOTTOM_READY: ['TOP captured', 'Lower into your BOTTOM position. Say ready when you want me to capture it.'],
+    WAIT_TOP_CONFIRM_READY: ['BOTTOM captured', 'Return to TOP. Say ready when you want me to confirm it.'],
     CALIBRATING_TOP: ['Hold your TOP position', 'Keep still while PocketPT learns what your personal up position looks like.'],
     CALIBRATING_BOTTOM: ['TOP captured — now lower', 'Move into your normal bottom position and hold still for the BOTTOM capture.'],
     CONFIRMING_TOP: ['BOTTOM captured — return to TOP', 'Press back to your captured TOP position to confirm the full cycle.'],
@@ -187,10 +190,14 @@
     }
     function reportCalibration() {
       if (previewOnly || ['IDLE', 'NEEDS_RETRY'].includes(calibrationStage)) return;
-      const top = calibrationStage !== 'CAPTURE_TOP', bottom = ['CONFIRM_TOP','CALIBRATED'].includes(calibrationStage);
-      mark('POSE_TOP_CALIBRATION', top ? 'PASS' : 'RUNNING', top ? 'POSE_TOP_CAPTURED' : 'POSE_TOP_CAPTURING');
-      mark('POSE_BOTTOM_CALIBRATION', bottom ? 'PASS' : top ? 'RUNNING' : 'WAITING', bottom ? 'POSE_BOTTOM_CAPTURED' : top ? 'POSE_BOTTOM_CAPTURING' : 'POSE_BOTTOM_WAITING');
-      mark('POSE_CYCLE_CALIBRATION', calibrationStage === 'CALIBRATED' ? 'PASS' : bottom ? 'RUNNING' : 'WAITING', calibrationStage === 'CALIBRATED' ? 'POSE_CYCLE_CAPTURED' : 'POSE_CYCLE_WAITING');
+      const top = ['WAIT_BOTTOM_READY','CAPTURE_BOTTOM','WAIT_TOP_CONFIRM_READY','CONFIRM_TOP','CALIBRATED'].includes(calibrationStage);
+      const bottom = ['WAIT_TOP_CONFIRM_READY','CONFIRM_TOP','CALIBRATED'].includes(calibrationStage);
+      const topCapturing = calibrationStage === 'CAPTURE_TOP';
+      const bottomCapturing = calibrationStage === 'CAPTURE_BOTTOM';
+      const confirming = calibrationStage === 'CONFIRM_TOP';
+      mark('POSE_TOP_CALIBRATION', top ? 'PASS' : topCapturing ? 'RUNNING' : 'WAITING', top ? 'POSE_TOP_CAPTURED' : topCapturing ? 'POSE_TOP_CAPTURING' : 'POSE_TOP_WAITING_READY');
+      mark('POSE_BOTTOM_CALIBRATION', bottom ? 'PASS' : bottomCapturing ? 'RUNNING' : 'WAITING', bottom ? 'POSE_BOTTOM_CAPTURED' : bottomCapturing ? 'POSE_BOTTOM_CAPTURING' : 'POSE_BOTTOM_WAITING_READY');
+      mark('POSE_CYCLE_CALIBRATION', calibrationStage === 'CALIBRATED' ? 'PASS' : confirming ? 'RUNNING' : 'WAITING', calibrationStage === 'CALIBRATED' ? 'POSE_CYCLE_CAPTURED' : confirming ? 'POSE_CYCLE_CONFIRMING' : 'POSE_CYCLE_WAITING_READY');
       mark('START_POSITION', 'NOT_CONNECTED', calibrationStage === 'CALIBRATED' ? 'PERSONAL_GATES_READY' : 'START_RULES_PENDING');
     }
     function calibration(next, reason, failedStage) {
@@ -200,14 +207,18 @@
         for (const id of ['POSE_TOP_CALIBRATION','POSE_BOTTOM_CALIBRATION','POSE_CYCLE_CALIBRATION']) mark(id, 'WAITING', 'CALIBRATION_RESET');
         mark('START_POSITION', 'NOT_CONNECTED', 'START_RULES_PENDING');
         if (next === 'NEEDS_RETRY') {
-          const id = {CAPTURE_TOP:'POSE_TOP_CALIBRATION',CAPTURE_BOTTOM:'POSE_BOTTOM_CALIBRATION',CONFIRM_TOP:'POSE_CYCLE_CALIBRATION',CALIBRATED:'POSE_CYCLE_CALIBRATION'}[failedStage] || 'POSE_TOP_CALIBRATION';
+          const id = {CAPTURE_TOP:'POSE_TOP_CALIBRATION',CAPTURE_BOTTOM:'POSE_BOTTOM_CALIBRATION',CONFIRM_TOP:'POSE_CYCLE_CALIBRATION'}[failedStage] || 'POSE_TOP_CALIBRATION';
           mark(id, reason === 'TIMEOUT' ? 'FAIL' : 'WAITING', reason === 'TIMEOUT' ? 'CALIBRATION_TIMEOUT' : 'CALIBRATION_RESET');
           if (TRACKING_STATES.includes(state)) change('CALIBRATION_RETRY');
         }
         return true;
       }
-      const expected = {IDLE: 'CAPTURE_TOP', CAPTURE_TOP: 'CAPTURE_BOTTOM', CAPTURE_BOTTOM: 'CONFIRM_TOP', CONFIRM_TOP: 'CALIBRATED'}[calibrationStage];
-      if (next !== 'CAPTURE_TOP' && next !== expected) return false;
+      const expected = {
+        IDLE:'WAIT_TOP_READY', WAIT_TOP_READY:'CAPTURE_TOP', CAPTURE_TOP:'WAIT_BOTTOM_READY',
+        WAIT_BOTTOM_READY:'CAPTURE_BOTTOM', CAPTURE_BOTTOM:'WAIT_TOP_CONFIRM_READY',
+        WAIT_TOP_CONFIRM_READY:'CONFIRM_TOP', CONFIRM_TOP:'CALIBRATED'
+      }[calibrationStage];
+      if (next !== 'WAIT_TOP_READY' && next !== expected) return false;
       calibrationStage = next;
       reportCalibration();
       if (TRACKING_STATES.includes(state)) change(bodyVisible ? CALIBRATION_STATES[next] : 'CAMERA_POSITIONING');
