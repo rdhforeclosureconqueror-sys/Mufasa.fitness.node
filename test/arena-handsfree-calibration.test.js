@@ -64,3 +64,14 @@ test('arena owns setup speech so generic full-body pose announcements cannot sta
   assert.match(ui, /__POCKETPT_ARENA_EXERCISE_VOICE__ = false/);
   assert.match(pose, /ARENA_EXERCISE_VOICE_OWNER/);
 });
+
+
+test('arena serializes calibration speech instead of dropping cues during active speech', () => {
+  const ui = read('public/arena-phone-ui.js');
+  assert.match(ui, /function queueArenaSpeech/);
+  assert.match(ui, /while \(runtime\.getState\?\.\(\)\.activeSpeech\)/);
+  assert.match(ui, /queueArenaSpeech\(cue, 'arena-calibration'/);
+  assert.match(ui, /ARENA_SPEECH_DRAIN_TIMEOUT/);
+  assert.match(ui, /ARENA_SPEECH_\$\{String\(result\.reason/);
+  assert.doesNotMatch(ui, /if \(cue\) root\.CoachRuntime\?\.speak/);
+});
