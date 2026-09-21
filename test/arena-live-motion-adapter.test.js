@@ -65,3 +65,17 @@ test('production adapter names the complete canonical Phase 2-18 foundation and 
   assert.match(scripts,/mirror-motion-camera-review/);
   assert.match(scripts,/mirror-motion-camera-activation/);
 });
+
+
+test('floor calibration selects the complete five-joint side instead of the scoring three-joint winner', () => {
+  const capture = new PoseCaptureEngine({profile, setTimer:null});
+  const kp = (name,x,y,score)=>({name,x,y,score});
+  const pose={keypoints:[
+    kp('left_shoulder',20,30,.99),kp('left_elbow',30,30,.20),kp('left_wrist',40,30,.20),kp('left_hip',50,32,.99),kp('left_ankle',80,34,.99),
+    kp('right_shoulder',20,60,.80),kp('right_elbow',30,60,.80),kp('right_wrist',40,60,.80),kp('right_hip',50,62,.80),kp('right_ankle',80,64,.80)
+  ]};
+  const frame=capture.transform(pose,{width:100,height:100},1000);
+  assert.equal(frame.side,'right');
+  assert.equal(frame.sequenceLandmarks.elbow.confidence,.8);
+  assert.equal(frame.sequenceLandmarks.wrist.confidence,.8);
+});

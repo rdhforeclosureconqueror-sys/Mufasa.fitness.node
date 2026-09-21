@@ -165,14 +165,25 @@
     transform(pose, dimensions, timestamp = Date.now()) {
       const threshold = this.profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
       const tracked=this.sideTracker.select(pose?.keypoints||[],threshold);
-      const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})).filter(Boolean), dimensions.width, dimensions.height);
       const byName=new Map((pose?.keypoints||[]).map(point=>[point.name||point.part,point]));
-      const sequenceLandmarks=Object.fromEntries(SEQUENCE_LANDMARK_NAMES.map(name=>{const point=byName.get(`${tracked.side}_${name}`);return[name,point&&finite(point.x)&&finite(point.y)?{x:Number(point.x)/dimensions.width,y:Number(point.y)/dimensions.height,confidence:Math.max(0,Math.min(1,Number(point.score||0)))}:null];}));
+      // Authoritative scoring keeps the existing shoulder/hip/ankle SideTracker.
+      // Floor calibration needs the stronger complete kinetic chain instead:
+      // shoulder/elbow/wrist/hip/ankle. A side that wins the 3-joint score can
+      // still have an occluded wrist/elbow and make BODY_VISIBILITY wait forever.
+      const calibrationSide=SIDES.map(side=>{
+        const points=SEQUENCE_LANDMARK_NAMES.map(name=>byName.get(`${side}_${name}`));
+        const usableCount=points.filter(point=>finite(point?.x)&&finite(point?.y)&&Number(point?.score||0)>=.4).length;
+        const confidence=points.reduce((sum,point)=>sum+Number(point?.score||0),0)/SEQUENCE_LANDMARK_NAMES.length;
+        return {side,usableCount,confidence};
+      }).sort((a,b)=>b.usableCount-a.usableCount||b.confidence-a.confidence)[0];
+      const selectedSide=calibrationSide?.usableCount===SEQUENCE_LANDMARK_NAMES.length?calibrationSide.side:(tracked?.side||calibrationSide?.side);
+      const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})).filter(Boolean), dimensions.width, dimensions.height);
+      const sequenceLandmarks=Object.fromEntries(SEQUENCE_LANDMARK_NAMES.map(name=>{const point=byName.get(`${selectedSide}_${name}`);return[name,point&&finite(point.x)&&finite(point.y)?{x:Number(point.x)/dimensions.width,y:Number(point.y)/dimensions.height,confidence:Math.max(0,Math.min(1,Number(point.score||0)))}:null];}));
       const confidences = LANDMARK_NAMES.map(name => normalized.landmarks[name]?.confidence || 0);
       const frameConfidence = Math.min(...confidences);
       let usable=confidences.every(score => score >= threshold)&&LANDMARK_NAMES.every(name=>{const p=normalized.landmarks[name];return p&&p.x>=.02&&p.x<=.98&&p.y>=.02&&p.y<=.98;});
       const torso=this.torsoReference(normalized.landmarks);if(usable&&!this.acceptPerson(torso))usable=false;const continuity=this.continuity.update(normalized.landmarks,threshold,timestamp);const landmarks=usable?this.smoother.apply(continuity.analysis):continuity.analysis;const trackingState=this.tracking.update(usable,timestamp);if(usable)this.lastSuccessfulPoseAt=timestamp;
-      return {timestamp,side:tracked?.side||normalized.side,landmarks,sequenceLandmarks,displayLandmarks:continuity.display,landmarkDiagnostics:continuity.diagnostics,frameConfidence,usable,analysisUsable:usable,displayTrackable:Object.values(continuity.display).some(Boolean),sessionComparable:usable,trackingState,poseReady:trackingState===TRACKING_STATES.LOCKED,recoveredThisFrame:this.tracking.recoveredThisFrame,torsoCenter:torso?.center||this.personLock?.center||null,torsoScale:torso?.scale||this.personLock?.scale||null};
+      return {timestamp,side:selectedSide||tracked?.side||normalized.side,landmarks,sequenceLandmarks,displayLandmarks:continuity.display,landmarkDiagnostics:continuity.diagnostics,frameConfidence,usable,analysisUsable:usable,displayTrackable:Object.values(continuity.display).some(Boolean),sessionComparable:usable,trackingState,poseReady:trackingState===TRACKING_STATES.LOCKED,recoveredThisFrame:this.tracking.recoveredThisFrame,torsoCenter:torso?.center||this.personLock?.center||null,torsoScale:torso?.scale||this.personLock?.scale||null};
     }
     torsoReference(landmarks){const shoulder=landmarks.shoulder,hip=landmarks.hip;if(!shoulder||!hip)return null;return{center:{x:(shoulder.x+hip.x)/2,y:(shoulder.y+hip.y)/2},scale:Math.max(.001,Math.hypot(shoulder.x-hip.x,shoulder.y-hip.y))};}
     acceptPerson(torso){if(!torso)return false;if(!this.personLock){this.personLock=torso;return true;}const distance=Math.hypot(torso.center.x-this.personLock.center.x,torso.center.y-this.personLock.center.y),ratio=torso.scale/this.personLock.scale;if(distance>Math.max(.25,this.personLock.scale*2.5)||ratio<.45||ratio>2.2)return false;this.personLock=torso;return true;}
