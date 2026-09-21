@@ -22,7 +22,7 @@ Make the first physical Push-Up Challenge setup hands-free after camera activati
 - Coach says calibration is complete and waits.
 - Say START.
 - Coach completes the uninterrupted countdown: 3, 2, 1, go.
-- Challenge-start request is emitted. This PR does not claim that downstream authoritative 60-second scoring has been fully wired to that event; reviewer must verify that boundary.
+- START creates the existing authoritative PushUpChallenge ExerciseSessionEngine in challenge mode, feeds live frames into it, and arms a 60-second finish timer. The DOM event remains telemetry/integration signaling rather than the session owner.
 
 ## Voice behavior to review
 - Shared CoachRuntime remains the sole speech/recognition owner.
@@ -48,7 +48,7 @@ Make the first physical Push-Up Challenge setup hands-free after camera activati
 6. Confirm TOP/BOTTOM form gates still use elbow angle and shoulder→hip→ankle alignment; no scoring threshold was weakened.
 7. Confirm lost tracking/reacquisition does not falsely advance calibration.
 8. Confirm camera reset/retry does not leak streams/detectors.
-9. Confirm the emitted pocketpt:pushup-start-requested event is consumed by the authoritative challenge owner; if not, mark that as the next blocking change rather than claiming end-to-end start.
+9. Confirm START creates ExerciseSessionEngine, starts challenge mode only after CALIBRATED, feeds live frames while active, and finishes at the 60-second timer.
 10. Physical acceptance: desktop + iPhone, side view, five deliberate setup cycles, explicit RESET mid-capture, READY after reset, START after calibration, and STOP during a spoken cue.
 
 ## Non-goals
