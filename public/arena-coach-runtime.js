@@ -37,6 +37,10 @@
     // configure is idempotent; the arena owns only a narrow command dispatcher.
     // General coach Q&A remains the fallback when the arena does not consume it.
     runtime.configure({deps:{voiceUrl:VOICE_URL, dispatchCommand: async (command, meta) => {
+      const normalized = String(command || '').trim().toLowerCase();
+      if (/^(reset|restart|start over|restart everything)$/.test(normalized)) {
+        root.__POCKETPT_ARENA_LAST_RESET_TRANSCRIPT__ = {command:normalized, at:Date.now()};
+      }
       if (arenaCommandHandler && await arenaCommandHandler(command, meta)) return {ok:true, arenaCommand:true};
       if (typeof fallbackAskCoach === 'function') return fallbackAskCoach(command, meta);
       return false;

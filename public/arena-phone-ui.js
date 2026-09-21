@@ -68,6 +68,7 @@
         drawPose(posePacket, frame, confidence);
         if (frame) {
           latestPoseFrame = frame; latestPoseConfidence = Number.isFinite(confidence) ? confidence : .4;
+          if (calibration.snapshot().stage === 'CAPTURE_TOP') markReset('FRESH_POSE_REACQUIRED', 'PASS');
           const evaluation = calibration.evaluate?.(frame, latestPoseConfidence);
           updatePoseStatus(evaluation);
         }
@@ -244,23 +245,58 @@
       previousState = state.state;
     }
     flow = root.PocketPTArenaPhoneFlow.create({send, mark, onChange: render, stopCamera});
-    function restartPoseCapture({restartCamera = false} = {}) {
+    function markReset(stage, state = 'RUNNING', detail = stage) {
+      mark?.('POSE_RESET_RECOVERY', state, detail);
+    }
+    function ensureArenaListening(reason = 'reset') {
+      const runtime = root.CoachRuntime;
+      if (!runtime?.startListening) {
+        mark?.('COACH_VOICE', 'FAIL', `ARENA_${reason.toUpperCase()}_LISTENER_UNAVAILABLE`);
+        return false;
+      }
+      const before = runtime.getState?.() || {};
+      const startResult = before.listening ? {ok:true, listening:true, alreadyActive:true} : runtime.startListening();
+      const after = runtime.getState?.() || {};
+      // "listening" is intent; lastMicError is the evidence that recognition
+      // actually failed to start/restart. Do not report PASS from the flag alone.
+      const listening = Boolean(after.listening && startResult?.ok !== false && !after.lastMicError);
+      mark?.('COACH_VOICE', listening ? 'PASS' : 'FAIL', listening
+        ? `ARENA_${reason.toUpperCase()}_LISTENER_ACTIVE`
+        : `ARENA_${reason.toUpperCase()}_LISTENER_FAILED_${String(after.lastMicError || startResult?.reason || 'unknown').toUpperCase()}`);
+      return listening;
+    }
+    function restartPoseCapture({restartCamera = false, source = 'unknown'} = {}) {
       challengeArmed = false;
+      markReset(`RESET_HANDLER_ENTERED_${source.toUpperCase()}`);
       camera.resetTracking();
+      latestPoseFrame = null;
+      markReset('TRACKING_RESET');
       calibration.reset();
+      markReset('CALIBRATION_RESET');
       if (restartCamera) {
         stopCamera();
         flow.setup();
+        markReset('CAMERA_RESTART_REQUESTED');
         return enableCamera();
       }
-      if (!flow.snapshot().previewOnly) calibration.start();
+      if (!flow.snapshot().previewOnly) {
+        calibration.start();
+        markReset(`CALIBRATION_STARTED_${calibration.snapshot().stage}`);
+      }
+      ensureArenaListening('reset');
+      markReset('WAITING_FOR_FRESH_POSE', 'WAITING');
       return true;
     }
     async function handleArenaVoiceCommand(command) {
       const words = String(command || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim();
       if (['reset','restart','start over','restart everything'].includes(words)) {
-        await queueArenaSpeech('Resetting. Get into a side-view push-up top position. Say ready when you are in position.', 'arena-command');
-        return restartPoseCapture({restartCamera:false});
+        markReset(`RESET_COMMAND_MATCHED_${words.replace(/ /g, '_').toUpperCase()}`);
+        // Reset state before speaking. Waiting for TTS first can leave the Arena
+        // stranded in NEEDS_RETRY if speech/backend delivery stalls.
+        const restarted = restartPoseCapture({restartCamera:false, source:'voice'});
+        await queueArenaSpeech('Reset complete. I am looking for your top position again. Hold your side-view push-up position.', 'arena-command');
+        ensureArenaListening('post_reset_speech');
+        return restarted;
       }
       if (['ready','i am ready','im ready'].includes(words)) {
         challengeArmed = false;
