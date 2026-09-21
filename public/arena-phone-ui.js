@@ -5,7 +5,25 @@
     const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo'), overlay = $('arenaPoseOverlay');
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
-    let challengeArmed = false;
+    let challengeArmed = false, challengeEngine = null, challengeTimer = null;
+    function ensureChallengeEngine() {
+      if (challengeEngine) return challengeEngine;
+      const api = root.PushUpChallenge;
+      if (!api?.ExerciseSessionEngine || !root.ExerciseMetadata) return null;
+      const profile = api.getPushUpProfile();
+      const recorder = new api.PerformanceRecorder({profile});
+      const repetitions = new api.RepetitionEventEngine();
+      challengeEngine = new api.ExerciseSessionEngine({profile, recorder, repetitions});
+      return challengeEngine;
+    }
+    function finishChallenge(reason = 'timer') {
+      if (challengeTimer) root.clearTimeout(challengeTimer);
+      challengeTimer = null;
+      if (challengeEngine?.state !== 'active') return null;
+      const session = challengeEngine.finish();
+      root.dispatchEvent?.(new CustomEvent('pocketpt:pushup-challenge-finished', {detail:{reason, session}}));
+      return session;
+    }
     const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
       liveMotion?.setExerciseCalibration(progress.calibrated);
@@ -25,6 +43,7 @@
         drawPose(posePacket, frame, confidence);
         if (!flow?.snapshot().previewOnly && liveMotion?.diagnostics().calibrationReady) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
+        if (challengeEngine?.state === 'active' && frame) challengeEngine.observe(frame);
       },
       onFailure: () => flow?.cameraError(),
       onDevices(devices, selected) {
@@ -226,7 +245,14 @@
       }
       if (['start','go','begin'].includes(words) && challengeArmed) {
         await root.CoachRuntime?.speak?.('Three. Two. One. Go.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
-        root.dispatchEvent?.(new CustomEvent('pocketpt:pushup-start-requested', {detail:{source:'voice'}}));
+        const engine = ensureChallengeEngine();
+        if (!engine) {
+          await root.CoachRuntime?.speak?.('The challenge engine is not ready. Say reset and try again.', 'arena-command', {owner:'arena_voice_command', interruptible:false, timerNeutral:true});
+          return true;
+        }
+        engine.start('challenge', {requiredViewEstablished:true});
+        challengeTimer = root.setTimeout(() => finishChallenge('sixty-second-timer'), 60000);
+        root.dispatchEvent?.(new CustomEvent('pocketpt:pushup-start-requested', {detail:{source:'voice', authoritativeOwner:'ExerciseSessionEngine'}}));
         return true;
       }
       return false;
@@ -288,7 +314,7 @@
       accept: data => flow.accept(data),
       suspend() {releasePointer(); flow.suspend();},
       reset() {releasePointer(); scope = null; flow.reset();},
-      close() {releasePointer(); challengeVoice?.dispose?.(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}
+      close() {releasePointer(); finishChallenge('arena-close'); challengeVoice?.dispose?.(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}
     };
   }
   root.PocketPTArenaPhoneUI = Object.freeze({mount});
