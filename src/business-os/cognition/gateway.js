@@ -4,7 +4,7 @@ const C=require("./contracts");
 const {STAGES,deriveDiagnostics}=require("./diagnostics");
 const hash=value=>crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const matchesType=(value,type)=>type==="array"?Array.isArray(value):type==="null"?value===null:typeof value===type;
+const matchesType=(value,type)=>type==="array"?Array.isArray(value):type==="null"?value===null:type==="object"?value!==null&&!Array.isArray(value)&&typeof value==="object":typeof value===type;
 function validateSchema(value,schema,path="$"){
  if(schema.type&&!matchesType(value,schema.type))return `${path}:expected_${schema.type}`;
  if(schema.enum&&!schema.enum.includes(value))return `${path}:not_in_enum`;
@@ -25,13 +25,14 @@ function selectModel(request,profiles,health={},policyVersion="model-selection/1
  eligible.sort((a,b)=>(a.priority??100)-(b.priority??100)||a.id.localeCompare(b.id));
  return C.ModelSelectionDecision({id:`selection-${request.id}`,requestId:request.id,selectedProfileId:eligible[0]?.id||null,eligibleProfileIds:eligible.map(x=>x.id),reasonCodes:eligible.length?["CAPABILITY_POLICY_MATCH"]:["NO_ELIGIBLE_MODEL"],policyVersion});
 }
-function createModelGateway({profiles=[],adapters={},authorize,clock=()=>new Date(),id=()=>crypto.randomUUID(),maxAttempts=2,timeoutMs=1000,selectionPolicyVersion="model-selection/1",health={},audit=()=>{},recordEvidence=()=>null}={}){
+function createModelGateway({profiles=[],adapters={},authorize,isKillSwitchActive=()=>false,clock=()=>new Date(),id=()=>crypto.randomUUID(),maxAttempts=2,timeoutMs=1000,selectionPolicyVersion="model-selection/1",health={},audit=()=>{},recordEvidence=()=>null}={}){
  const invocations=[];
  const now=()=>clock().toISOString();
  const fail=(request,stage,code,attempts=[],error)=>{const outcomes={};for(const name of STAGES.slice(0,STAGES.indexOf(stage)))outcomes[name]={status:"PASS",reason:`${name.toLowerCase()}_passed`};outcomes[stage]={status:"FAIL",reason:code};const diagnostics=deriveDiagnostics(outcomes,now());audit({type:"COGNITIVE_INVOCATION",outcome:"FAILED",requestId:request.id,code,correlationId:request.correlationId});return C.GatewayResult({ok:false,requestId:request.id,invocations:attempts,error:error||C.ProviderError({code,message:code,retryable:false}),diagnostics})};
  async function invoke(values){
   let request;try{request=C.CognitiveRequest(values)}catch(error){return fail({id:values.id||"invalid",correlationId:values.correlationId},"COGNITIVE_REQUEST","INVALID_REQUEST",[],normalizeError(Object.assign(error,{code:"INVALID_REQUEST"})))}
   const permission=await authorize?.(request);if(!permission?.allowed)return fail(request,"INVOCATION_AUTHORITY",permission?.code||"MISSING_AUTHORITY");
+  const killSwitchActive=await isKillSwitchActive(request);if(killSwitchActive)return fail(request,"INVOCATION_AUTHORITY","KILL_SWITCH_ACTIVE");
   const selection=selectModel(request,profiles,health,selectionPolicyVersion);if(!selection.selectedProfileId){const otherwiseEligible=profiles.some(p=>p.enabled&&request.requiredCapabilities.every(c=>p.capabilities.includes(c))&&(!request.requiredStructuredOutput||p.structuredOutput));const budgetBlocked=otherwiseEligible&&request.budgetCeiling&&profiles.some(p=>p.enabled&&p.maxEstimatedCost>request.budgetCeiling);return fail(request,"MODEL_SELECTION",budgetBlocked?"BUDGET_EXCEEDED":"NO_ELIGIBLE_MODEL")}
   const candidates=selection.eligibleProfileIds.map(pid=>profiles.find(p=>p.id===pid));let lastError;
   if(!candidates.some(profile=>adapters[profile.provider]))return fail(request,"PROVIDER_ADAPTER","UNKNOWN_PROVIDER_ERROR",[],C.ProviderError({code:"UNKNOWN_PROVIDER_ERROR",message:"adapter_not_registered",retryable:false}));
