@@ -846,7 +846,7 @@
     return recognition;
   }
 
-  function scheduleRecognitionResume(reason = "resume") {
+  function scheduleRecognitionResume(reason = "resume", attempt = 0) {
     if (!state.listening || activeSpeech || recognitionActive || !recognition) return false;
     if (recognitionResumeTimer != null) global.clearTimeout?.(recognitionResumeTimer);
     recognitionResumeTimer = global.setTimeout?.(() => {
@@ -861,11 +861,11 @@
         // InvalidState can mean Safari has not fully released the prior turn.
         // Retry once through the normal end/speech lifecycle instead of
         // permanently disabling the athlete's microphone.
-        if (/invalidstate|already started/i.test(normalized)) {
-          trace("recognition", "resume-deferred", { reason, error: normalized });
+        if (/invalidstate|already started/i.test(normalized) && attempt < 3) {
+          trace("recognition", "resume-deferred", { reason, error: normalized, attempt: attempt + 1 });
           recognitionResumeTimer = global.setTimeout?.(() => {
             recognitionResumeTimer = null;
-            scheduleRecognitionResume("deferred-retry");
+            scheduleRecognitionResume("deferred-retry", attempt + 1);
           }, 200) ?? null;
           return;
         }
