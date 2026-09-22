@@ -224,6 +224,20 @@
       "createdAt": "2026-09-18T01:09:28.787Z",
       "source": "readiness:update",
       "taskId": "pose-engine-post-840-repairs"
+    },
+    {
+      "id": "phase-0-heritage-baseline",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 0 heritage audit and baseline",
+      "category": "ARCHITECTURE",
+      "description": "Complete the headquarters architecture baseline, heritage extraction matrix, ADRs, contract candidates, Phase 0 diagnostics, and Phase 1 gate without implementing the constitutional kernel.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-22T17:26:22.413Z",
+      "source": "readiness:update",
+      "taskId": "phase-0-heritage-baseline"
     }
   ]
 }
