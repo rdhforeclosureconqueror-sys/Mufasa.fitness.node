@@ -2875,7 +2875,7 @@
       "automated": null,
       "evidence": "PR #857 repairs the READY/TTS ordering boundary and adds follow-through hardening for repeated READY utterances, iPhone/Safari recognition restart after coach speech, explicit Arena START ownership, manual TOP confirmation, 60-second challenge cues, and cache-busted mobile assets. Codex reported 53/53 focused tests, lint, readiness validation, and git diff checks in its task environment, but those task-only commits were not present on the GitHub PR branch and those automated results are therefore not claimed as verification of this final branch. Physical iPhone/Safari microphone, TTS, MoveNet framing, rep counting, timer, and end-user acceptance remain pending.",
       "prNumber": 857,
-      "commitSha": "b7855e3400ac29a615d8c628e4eae8fb5712aaaa",
+      "commitSha": "e67fc2cbdf557230febd7fc75dcdbe3d2ee67777",
       "timestamp": "2026-09-22T15:00:00.000Z"
     }
   ]
