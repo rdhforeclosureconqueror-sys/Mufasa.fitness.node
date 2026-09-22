@@ -270,6 +270,22 @@
       "createdAt": "2026-09-22T20:19:00.524Z",
       "source": "readiness:update",
       "taskId": "phase-2-model-gateway-cognitive-core"
+    },
+    {
+      "id": "phase-3-memory-knowledge-context",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 3 memory knowledge and context",
+      "category": "ARCHITECTURE",
+      "description": "Implement domain-neutral organizational memory types, governed knowledge claims, permission-aware bounded context assembly, Phase 2 handoff, deterministic certification, and dependency-aware Phase 3 diagnostics without Phase 4 functionality.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-2-model-gateway-cognitive-core"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-22T21:58:07.187Z",
+      "source": "readiness:update",
+      "taskId": "phase-3-memory-knowledge-context"
     }
   ]
 }
