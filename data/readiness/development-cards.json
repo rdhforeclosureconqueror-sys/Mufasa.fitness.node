@@ -238,6 +238,22 @@
       "createdAt": "2026-09-22T17:26:22.413Z",
       "source": "readiness:update",
       "taskId": "phase-0-heritage-baseline"
+    },
+    {
+      "id": "phase-1-constitutional-kernel",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 1 constitutional kernel",
+      "category": "ARCHITECTURE",
+      "description": "Define and implement versioned domain-neutral constitutional contracts, governed synthetic execution, adversarial verification, dependency-aware diagnostics, and Phase 1 gate evidence without Phase 2 systems.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-0-heritage-baseline"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-22T19:42:26.830Z",
+      "source": "readiness:update",
+      "taskId": "phase-1-constitutional-kernel"
     }
   ]
 }
