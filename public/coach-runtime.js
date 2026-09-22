@@ -38,6 +38,7 @@
   let conversationTimer = null;
   let conversationWarningTimer = null;
   let recognitionActive = false;
+  let recognitionResumeTimer = null;
   let utteranceSequence = 0;
   let activeSpeech = null;
   const lifecycleTrace = [];
@@ -535,6 +536,7 @@
       speechOwner: response.owner, utteranceId: response.id, cancellationReason: response.cancelReason || null
     });
     releaseLocks(response.source, response.timerNeutral);
+    scheduleRecognitionResume("speech-finished");
   }
 
   async function speakWithBackend(text, source, response) {
@@ -731,7 +733,9 @@
     trace("stt", "result", { resultIndex: event?.resultIndex ?? null, resultCount: event?.results?.length ?? 0 });
     const results = event?.results;
     const transcript = results?.[results.length - 1]?.[0]?.transcript?.trim?.() || "";
-    if (!transcript || transcript === state.lastTranscript) return;
+    if (!transcript) return;
+    // Each final recognition result is a new athlete utterance. Do not suppress
+    // a later READY merely because its text matches an earlier READY.
     state.lastTranscript = transcript;
     log("recognition", "transcript classified", { classification: "recognized_transcript" });
 
@@ -803,6 +807,7 @@
     });
     recognition.onstart = (event) => {
       recognitionActive = true;
+      state.lastMicError = null;
       traceRecognitionEvent("start")(event);
     };
     recognition.onaudiostart = traceRecognitionEvent("audiostart");
@@ -816,6 +821,14 @@
     recognition.onerror = (event) => {
       const exactError = event?.error || normalizeReason(event);
       trace("stt", "error", { error: exactError, message: event?.message || null });
+      // Safari commonly ends a recognition turn with no-speech/aborted while
+      // coach audio owns the speaker. These are recoverable lifecycle events,
+      // not permission/device failures.
+      if (["no-speech", "aborted"].includes(exactError) && state.listening) {
+        state.lastMicError = null;
+        trace("recognition", "transient-error-recoverable", { error: exactError });
+        return;
+      }
       setMicFailure(exactError, "speech-recognition-error");
     };
     recognition.onend = () => {
@@ -823,18 +836,43 @@
       trace("stt", "end");
       log("recognition", "ended", { listening: state.listening });
       if (!state.listening) return;
-      if (activeSpeech) trace("recognition", "recognition.resume_requested", { speechOwner: activeSpeech.owner, utteranceId: activeSpeech.id });
-      try {
-        if (recognitionActive) return;
-        recognition.start();
-        trace("recognition", "recognition.resumed");
-        log("recognition", "restarted");
-      } catch (err) {
-        setMicFailure(normalizeReason(err), "speech-recognition-restart");
+      if (activeSpeech) {
+        trace("recognition", "recognition.resume_deferred_for_speech", { speechOwner: activeSpeech.owner, utteranceId: activeSpeech.id });
+        return;
       }
+      scheduleRecognitionResume("recognition-ended");
     };
     log("recognition", "created", { lang: recognition.lang, continuous: recognition.continuous });
     return recognition;
+  }
+
+  function scheduleRecognitionResume(reason = "resume", attempt = 0) {
+    if (!state.listening || activeSpeech || recognitionActive || !recognition) return false;
+    if (recognitionResumeTimer != null) global.clearTimeout?.(recognitionResumeTimer);
+    recognitionResumeTimer = global.setTimeout?.(() => {
+      recognitionResumeTimer = null;
+      if (!state.listening || activeSpeech || recognitionActive || !recognition) return;
+      try {
+        recognition.start();
+        trace("recognition", "recognition.resumed", { reason });
+        log("recognition", "restarted", { reason });
+      } catch (err) {
+        const normalized = normalizeReason(err);
+        // InvalidState can mean Safari has not fully released the prior turn.
+        // Retry once through the normal end/speech lifecycle instead of
+        // permanently disabling the athlete's microphone.
+        if (/invalidstate|already started/i.test(normalized) && attempt < 3) {
+          trace("recognition", "resume-deferred", { reason, error: normalized, attempt: attempt + 1 });
+          recognitionResumeTimer = global.setTimeout?.(() => {
+            recognitionResumeTimer = null;
+            scheduleRecognitionResume("deferred-retry", attempt + 1);
+          }, 200) ?? null;
+          return;
+        }
+        setMicFailure(normalized, "speech-recognition-restart");
+      }
+    }, 120) ?? null;
+    return true;
   }
 
   function startListening() {
@@ -986,7 +1024,7 @@
   }
 
   function snapshot() {
-    return { ...state };
+    return { ...state, recognitionActive };
   }
 
   global.CoachRuntime = {

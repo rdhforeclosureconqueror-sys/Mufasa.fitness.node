@@ -206,7 +206,7 @@
       source ||= {side:frame.side,width:frame.sourceWidth,height:frame.sourceHeight};
       const candidate = {center:vector, spread:0, manual:true};
       if (target === 'TOP') {
-        if (stage === 'CONFIRM_TOP' && top && bottom) {
+        if (['WAIT_TOP_CONFIRM_READY','CONFIRM_TOP'].includes(stage) && top && bottom) {
           const separation = distance(top.center, bottom.center);
           tolerance ||= Math.max(10, Math.min(separation * .4, 18));
           if (distance(candidate.center, top.center) > Math.max(tolerance, 18)) return {ok:false, reason:'TOP_DOES_NOT_MATCH'};

@@ -108,3 +108,14 @@ test('athlete READY gates every three-second calibration capture', () => {
   assert.match(ui, /Top position captured\. Lower into your bottom position\. Say ready when you are ready\./);
   assert.match(ui, /Bottom position captured\. Return to your top position\. Say ready when you are ready\./);
 });
+
+
+test('READY changes calibration state before coach TTS and restores listening after speech', () => {
+  const ui = read('public/arena-phone-ui.js');
+  const coach = read('public/arena-coach-runtime.js');
+  const ready = ui.slice(ui.indexOf("if (['ready','i am ready','im ready']"), ui.indexOf("if (['capture','capture top'"));
+  assert.ok(ready.indexOf('calibration.beginReadyCapture') < ready.indexOf("queueArenaSpeech('Capturing position"));
+  assert.match(ready, /READY_COMMAND_ACCEPTED_/);
+  assert.match(ready, /post_ready_speech/);
+  assert.match(coach, /__POCKETPT_ARENA_LAST_READY_TRANSCRIPT__/);
+});

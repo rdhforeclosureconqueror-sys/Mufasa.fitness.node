@@ -2857,6 +2857,26 @@
       "prNumber": 849,
       "commitSha": "d01781bf3cb477602d604a25e19b53ec5eae1c5e",
       "timestamp": "2026-09-21T19:00:00.000Z"
+    },
+    {
+      "operationId": "pushup-ready-voice-lifecycle-20260922",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": "pushup-arena-v1",
+      "files": [
+        "public/coach-runtime.js",
+        "public/arena-coach-runtime.js",
+        "public/arena-phone-ui.js",
+        "public/arena-pose-calibration.js",
+        "public/arena-push-up.html",
+        "test/arena-phone-ui.test.js"
+      ],
+      "automated": null,
+      "evidence": "PR #857 repairs the READY/TTS ordering boundary and adds follow-through hardening for repeated READY utterances, iPhone/Safari recognition restart after coach speech, explicit Arena START ownership, manual TOP confirmation, 60-second challenge cues, and cache-busted mobile assets. Codex reported 53/53 focused tests, lint, readiness validation, and git diff checks in its task environment, but those task-only commits were not present on the GitHub PR branch and those automated results are therefore not claimed as verification of this final branch. Physical iPhone/Safari microphone, TTS, MoveNet framing, rep counting, timer, and end-user acceptance remain pending.",
+      "prNumber": 857,
+      "commitSha": "e67fc2cbdf557230febd7fc75dcdbe3d2ee67777",
+      "timestamp": "2026-09-22T15:00:00.000Z"
     }
   ]
 }

@@ -7,7 +7,7 @@
     mark?.('COACH_VOICE', voiceConfig.ok ? 'PASS' : 'FAIL', voiceConfig.ok ? 'ARENA_COACH_VOICE_CONFIGURED' : 'ARENA_COACH_VOICE_URL_MISSING');
     if (!panel || !root.PocketPTArenaPhoneFlow || !root.PocketPTArenaCamera || !root.PocketPTArenaPoseCalibration) return null;
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
-    let challengeArmed = false, challengeEngine = null, challengeTimer = null, latestPoseFrame = null, latestPoseConfidence = .4;
+    let challengeArmed = false, challengeEngine = null, challengeTimer = null, challengeCueTimers = [], latestPoseFrame = null, latestPoseConfidence = .4;
     let arenaSpeechTail = Promise.resolve();
     function queueArenaSpeech(text, source = 'arena-calibration', options = {}) {
       if (!text) return arenaSpeechTail;
@@ -44,10 +44,19 @@
     function finishChallenge(reason = 'timer') {
       if (challengeTimer) root.clearTimeout(challengeTimer);
       challengeTimer = null;
+      challengeCueTimers.forEach(timer => root.clearTimeout(timer));
+      challengeCueTimers = [];
       if (challengeEngine?.state !== 'active') return null;
       const session = challengeEngine.finish();
       root.dispatchEvent?.(new CustomEvent('pocketpt:pushup-challenge-finished', {detail:{reason, session}}));
       return session;
+    }
+    function armChallengeTimeCues() {
+      challengeCueTimers.forEach(timer => root.clearTimeout(timer));
+      challengeCueTimers = [
+        root.setTimeout(() => { if (challengeEngine?.state === 'active') queueArenaSpeech('Thirty seconds.', 'arena-timer'); }, 30000),
+        root.setTimeout(() => { if (challengeEngine?.state === 'active') queueArenaSpeech('Ten seconds remaining.', 'arena-timer'); }, 50000)
+      ];
     }
     const calibration = root.PocketPTArenaPoseCalibration.create({onChange: progress => {
       flow?.calibration(progress.stage, progress.reason, progress.failedStage);
@@ -75,7 +84,11 @@
         const motionState = liveMotion?.diagnostics?.() || {};
         if (!flow?.snapshot().previewOnly && (motionState.calibrationReady || motionState.requireRestBase === false)) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
-        if (challengeEngine?.state === 'active' && frame) challengeEngine.observe(frame);
+        if (challengeEngine?.state === 'active' && frame) {
+          const result = challengeEngine.observe(frame);
+          const rep = result?.legacyEvent?.index;
+          if (Number.isInteger(rep) && rep > 0 && rep % 5 === 0) queueArenaSpeech(String(rep), 'arena-rep');
+        }
       },
       onFailure: () => flow?.cameraError(),
       onDevices(devices, selected) {
@@ -294,7 +307,7 @@
         // Reset state before speaking. Waiting for TTS first can leave the Arena
         // stranded in NEEDS_RETRY if speech/backend delivery stalls.
         const restarted = restartPoseCapture({restartCamera:false, source:'voice'});
-        await queueArenaSpeech('Reset complete. I am looking for your top position again. Hold your side-view push-up position.', 'arena-command');
+        await queueArenaSpeech('Reset complete. Get into your top push-up position and say ready when you are ready.', 'arena-command');
         ensureArenaListening('post_reset_speech');
         return restarted;
       }
@@ -308,9 +321,16 @@
           await queueArenaSpeech('I am not waiting for a position right now. Say reset to restart calibration.', 'arena-command');
           return true;
         }
-        await queueArenaSpeech('Capturing position. Three. Two. One.', 'arena-command');
-        if (!calibration.beginReadyCapture?.()) return true;
+        // Commit the command transition immediately. TTS is feedback, not the
+        // authority for whether READY takes effect.
+        if (!calibration.beginReadyCapture?.()) {
+          markReset(`READY_COMMAND_REJECTED_${before}`, 'FAIL');
+          return true;
+        }
+        markReset(`READY_COMMAND_ACCEPTED_${before}`, 'PASS');
         markReset(`READY_CAPTURE_STARTED_${calibration.snapshot().stage}`, 'PASS');
+        queueArenaSpeech('Capturing position. Three. Two. One.', 'arena-command')
+          .finally(() => ensureArenaListening('post_ready_speech'));
         return true;
       }
       if (['capture','capture top','top capture'].includes(words)) {
@@ -324,16 +344,29 @@
         await queueArenaSpeech(result.ok ? 'Capture bottom successful. Return to your top position, then say capture top.' : `Capture bottom failed. ${result.reason === 'TOP_REQUIRED' ? 'Capture top first.' : result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your bottom position and try capture bottom again.'}`, 'arena-command');
         return true;
       }
-      if (['start','go','begin'].includes(words) && challengeArmed) {
+      if (['start','go','begin'].includes(words)) {
+        if (!challengeArmed) {
+          markReset('START_COMMAND_REJECTED_NOT_CALIBRATED', 'FAIL');
+          queueArenaSpeech('The challenge is not calibrated yet. Finish top and bottom capture first.', 'arena-command')
+            .finally(() => ensureArenaListening('post_start_rejection'));
+          return true;
+        }
+        markReset('START_COMMAND_ACCEPTED', 'PASS');
         await queueArenaSpeech('Three. Two. One. Go.', 'arena-command');
         const engine = ensureChallengeEngine();
         if (!engine) {
+          markReset('START_COMMAND_REJECTED_ENGINE_UNAVAILABLE', 'FAIL');
           await queueArenaSpeech('The challenge engine is not ready. Say reset and try again.', 'arena-command');
           return true;
         }
         engine.start('challenge', {requiredViewEstablished:true});
+        armChallengeTimeCues();
         challengeTimer = root.setTimeout(() => finishChallenge('sixty-second-timer'), 60000);
         root.dispatchEvent?.(new CustomEvent('pocketpt:pushup-start-requested', {detail:{source:'voice', authoritativeOwner:'ExerciseSessionEngine'}}));
+        return true;
+      }
+      if (words === 'stop') {
+        if (challengeEngine?.state === 'active') finishChallenge('voice-stop');
         return true;
       }
       return false;
