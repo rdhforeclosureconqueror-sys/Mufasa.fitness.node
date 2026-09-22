@@ -2877,6 +2877,88 @@
       "prNumber": 857,
       "commitSha": "e67fc2cbdf557230febd7fc75dcdbe3d2ee67777",
       "timestamp": "2026-09-22T15:00:00.000Z"
+    },
+    {
+      "operationId": "0966affa-b84d-4a2d-b554-115504c88c22",
+      "board": "launch",
+      "cardId": "phase-0-heritage-baseline",
+      "sourceType": "card_creation",
+      "taskId": "phase-0-heritage-baseline",
+      "files": [],
+      "automated": null,
+      "evidence": "Complete the headquarters architecture baseline, heritage extraction matrix, ADRs, contract candidates, Phase 0 diagnostics, and Phase 1 gate without implementing the constitutional kernel.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-22T17:26:22.413Z"
+    },
+    {
+      "operationId": "9e2a584d-7f8c-4954-850f-b53f333db34c",
+      "board": "launch",
+      "cardId": "phase-0-heritage-baseline",
+      "sourceType": "implementation",
+      "taskId": "phase-0-heritage-baseline",
+      "files": [
+        "docs/architecture/ai-business-os/PHASE_0_BASELINE_AND_GATE.md",
+        "docs/architecture/ai-business-os/HERITAGE_EXTRACTION_MATRIX.md",
+        "docs/architecture/ai-business-os/PHASE_0_CONTRACT_CANDIDATES.md",
+        "docs/architecture/ai-business-os/adrs/0001-headquarters-and-canonical-readiness.md",
+        "docs/architecture/ai-business-os/adrs/0002-modular-domains-and-contract-first-extraction.md",
+        "docs/architecture/ai-business-os/adrs/0003-constitutional-action-boundary.md",
+        "docs/architecture/ai-business-os/adrs/0004-evidence-provenance-and-learning-policy-separation.md",
+        "docs/architecture/ai-business-os/adrs/0005-dependency-aware-first-failure.md",
+        "docs/architecture/ai-business-os/adrs/0006-human-authority-non-self-promotion.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Phase 0 architecture baseline complete: CONDITIONAL GO. Heritage matrix, contract candidates, six ADRs, risks, acceptance traceability, FIRST FAILURE law, and Phase 1 allow/prohibit gate documented. Automated documentation marker check PASS; targeted readiness/FIRST FAILURE suite PASS (27/27); readiness validation PASS. Browser/production/physical-device QA are NOT_APPLICABLE because this is documentation/readiness evidence only. Authorized human architecture/gate acceptance remains REQUIRED and unverified. Earliest future boundary VERIFIED_GENERIC_REUSE_CONTRACTS is NOT_RUN; direct extraction and kernel certification are BLOCKED pending Phase 1 verification.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-22T17:31:42.743Z"
+    },
+    {
+      "operationId": "93332f7c-1194-43c5-96b6-3fe524d6da53",
+      "board": "launch",
+      "cardId": "phase-0-heritage-baseline",
+      "sourceType": "implementation",
+      "taskId": "phase-0-heritage-baseline",
+      "files": [
+        "docs/architecture/ai-business-os/PHASE_0_BASELINE_AND_GATE.md",
+        "docs/architecture/ai-business-os/HERITAGE_EXTRACTION_MATRIX.md",
+        "docs/architecture/ai-business-os/PHASE_0_CONTRACT_CANDIDATES.md",
+        "docs/architecture/ai-business-os/adrs/0001-headquarters-and-canonical-readiness.md",
+        "docs/architecture/ai-business-os/adrs/0002-modular-domains-and-contract-first-extraction.md",
+        "docs/architecture/ai-business-os/adrs/0003-constitutional-action-boundary.md",
+        "docs/architecture/ai-business-os/adrs/0004-evidence-provenance-and-learning-policy-separation.md",
+        "docs/architecture/ai-business-os/adrs/0005-dependency-aware-first-failure.md",
+        "docs/architecture/ai-business-os/adrs/0006-human-authority-non-self-promotion.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation/documentation commit ddda1828fccea6ce8d83b339c28622cd7f23e540 records the complete Phase 0 CONDITIONAL GO package. Human gate acceptance remains required and unverified; no browser, production, or physical-device QA is applicable to this documentation-only change.",
+      "prNumber": null,
+      "commitSha": "ddda1828fccea6ce8d83b339c28622cd7f23e540",
+      "timestamp": "2026-09-22T17:32:09.769Z"
+    },
+    {
+      "operationId": "caae7280-8dfa-49e4-b23e-20d40bf4f6ca",
+      "board": "launch",
+      "cardId": "phase-0-heritage-baseline",
+      "sourceType": "human_verification_request",
+      "taskId": "phase-0-heritage-baseline",
+      "files": [
+        "docs/architecture/ai-business-os/PHASE_0_BASELINE_AND_GATE.md",
+        "docs/architecture/ai-business-os/HERITAGE_EXTRACTION_MATRIX.md",
+        "docs/architecture/ai-business-os/PHASE_0_CONTRACT_CANDIDATES.md",
+        "docs/architecture/ai-business-os/adrs/0001-headquarters-and-canonical-readiness.md",
+        "docs/architecture/ai-business-os/adrs/0002-modular-domains-and-contract-first-extraction.md",
+        "docs/architecture/ai-business-os/adrs/0003-constitutional-action-boundary.md",
+        "docs/architecture/ai-business-os/adrs/0004-evidence-provenance-and-learning-policy-separation.md",
+        "docs/architecture/ai-business-os/adrs/0005-dependency-aware-first-failure.md",
+        "docs/architecture/ai-business-os/adrs/0006-human-authority-non-self-promotion.md"
+      ],
+      "automated": null,
+      "evidence": "Authorized architecture owner review requested for the Phase 0 CONDITIONAL GO, ADR set, heritage classifications, and Phase 1 scope. Machine evidence does not satisfy this acceptance.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-22T17:32:10.394Z"
     }
   ]
 }
