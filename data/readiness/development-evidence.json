@@ -3030,6 +3030,65 @@
       "prNumber": null,
       "commitSha": "0b4adf2",
       "timestamp": "2026-09-22T19:51:39.733Z"
+    },
+    {
+      "operationId": "28009124-b741-456d-8b14-1479bab8488e",
+      "board": "launch",
+      "cardId": "phase-2-model-gateway-cognitive-core",
+      "sourceType": "card_creation",
+      "taskId": "phase-2-model-gateway-cognitive-core",
+      "files": [],
+      "automated": null,
+      "evidence": "Implement the canonical governed model gateway, versioned cognition contracts, deterministic provider certification, bounded selection/retry/fallback/validation, minimum cognitive primitives, and Phase 2 diagnostics without Phase 3 systems.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-22T20:19:00.524Z"
+    },
+    {
+      "operationId": "6746bd8d-8221-4ac7-8d46-3d27d3d52aca",
+      "board": "launch",
+      "cardId": "phase-2-model-gateway-cognitive-core",
+      "sourceType": "automated_verification",
+      "taskId": "phase-2-model-gateway-cognitive-core",
+      "files": [
+        "src/business-os/cognition/contracts.js",
+        "src/business-os/cognition/diagnostics.js",
+        "src/business-os/cognition/fake-adapter.js",
+        "src/business-os/cognition/gateway.js",
+        "src/business-os/cognition/core.js",
+        "src/business-os/cognition/phase2-readiness.js",
+        "test/ai-business-os-phase2-cognition.test.js",
+        "docs/architecture/ai-business-os/PHASE_2_MODEL_GATEWAY_AND_COGNITIVE_CORE.md",
+        "docs/architecture/ai-business-os/adrs/0008-canonical-model-gateway-and-advisory-cognition.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Phase 2 focused certification: 46/46 Phase 1+2 tests pass; lint and canonical readiness validation pass. No browser/production/physical-device QA applies to this server-side architecture increment. Human architectural acceptance remains pending and was not machine-approved. Full repository suite was sampled and showed unrelated pre-existing UI/motion failures, then stopped due to its breadth; Phase 2 focused suite is green.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-22T20:25:43.340Z"
+    },
+    {
+      "operationId": "256448f5-6a7a-46d5-9da5-5e34a5b1f400",
+      "board": "launch",
+      "cardId": "phase-2-model-gateway-cognitive-core",
+      "sourceType": "implementation",
+      "taskId": "phase-2-model-gateway-cognitive-core",
+      "files": [
+        "src/business-os/cognition/contracts.js",
+        "src/business-os/cognition/diagnostics.js",
+        "src/business-os/cognition/fake-adapter.js",
+        "src/business-os/cognition/gateway.js",
+        "src/business-os/cognition/core.js",
+        "src/business-os/cognition/phase2-readiness.js",
+        "test/ai-business-os-phase2-cognition.test.js",
+        "docs/architecture/ai-business-os/PHASE_2_MODEL_GATEWAY_AND_COGNITIVE_CORE.md",
+        "docs/architecture/ai-business-os/adrs/0008-canonical-model-gateway-and-advisory-cognition.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit 7d38da1; focused automated certification PASS; browser and physical-device QA are not applicable; human architectural acceptance remains pending.",
+      "prNumber": null,
+      "commitSha": "7d38da1",
+      "timestamp": "2026-09-22T20:26:06.899Z"
     }
   ]
 }
