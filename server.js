@@ -131,6 +131,7 @@ const { createGarveyLaunchHandler } = require("./src/youth-fitness/integration/g
 const { createGuidedExperienceService } = require("./src/services/guidedExperienceService");
 const { createLaunchReadinessService } = require("./src/services/launchReadinessService");
 const { createControlledLiveService } = require("./src/business-os/real-world/controlled-live");
+const { createCommandCenterService } = require("./src/business-os/command/service");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -530,6 +531,7 @@ function createApp(options = {}) {
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json"), canonicalMatrixPath: path.join(__dirname, "data", "launch", "feature-readiness-matrix.v1.json") });
   const controlledLiveService = createControlledLiveService({ filePath: options.controlledLivePath || path.join(OPS_DIR, "controlled-live-organism.json"), priceIdProvider:()=>process.env.STRIPE_PRICE_ID });
+  const commandCenterService = createCommandCenterService({ controlledLiveService, readinessService:launchReadinessService });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
@@ -2487,6 +2489,12 @@ function createApp(options = {}) {
   const liveAdmin=[requireAuth,permission(authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT)];
   const liveActor=req=>({userId:req.auth.userId,role:req.authz.role});
   app.get("/api/admin/business-os/controlled-live", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.snapshot()));
+  const commandRead=[requireAuth,permission(authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY)];
+  app.get("/command-center", ...commandRead, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"command-center.html")));
+  app.get("/command-center.html", ...commandRead, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"command-center.html")));
+  app.get("/api/admin/business-os/command", ...commandRead, (req,res)=>ok(res,req.requestId,commandCenterService.summary()));
+  app.get("/api/admin/business-os/command/diagnostics", ...commandRead, (req,res)=>ok(res,req.requestId,commandCenterService.diagnostics()));
+  app.post("/api/admin/business-os/command/intelligence", createRateLimiter({windowMs:60_000,max:30}), ...commandRead, asyncHandler(async(req,res)=>ok(res,req.requestId,await commandCenterService.converse({actor:{userId:req.auth.userId,role:req.authz.role},question:req.body?.question,mode:req.body?.mode,screenContext:req.body?.screenContext}))));
   app.get("/admin-controlled-live.html", ...liveAdmin, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-controlled-live.html")));
   app.post("/api/admin/business-os/controlled-live", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.create({participantUserId:req.body?.participantUserId,challengeId:req.body?.challengeId}),201));
   app.post("/api/admin/business-os/controlled-live/authorize", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.authorize({actor:liveActor(req),validUntil:req.body?.validUntil})));

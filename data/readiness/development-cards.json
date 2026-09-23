@@ -394,6 +394,22 @@
       "createdAt": "2026-09-23T13:25:38.449Z",
       "source": "readiness:update",
       "taskId": "phase-9b-a-controlled-live-organism"
+    },
+    {
+      "id": "launch-development-command-center-command-intelligence",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS command center and command intelligence",
+      "category": "AI BUSINESS OS",
+      "description": "Build the authenticated owner cockpit and governed conversational interface over canonical Business OS state, with truthful diagnostics, missions, economics, readiness, controlled-live status, and human acceptance gates without executing Test A.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-phase-9b-a-controlled-live-organism"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T15:52:08.666Z",
+      "source": "readiness:update",
+      "taskId": "command-center-command-intelligence"
     }
   ]
 }
