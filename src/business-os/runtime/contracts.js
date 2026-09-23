@@ -1,0 +1,20 @@
+"use strict";
+const CONTRACT_VERSION="ai-business-os.agent-runtime/1.0.0";
+const RUNTIME_STATES=Object.freeze(["CREATED","INITIALIZING","READY","OBSERVING","CONTEXTUALIZING","REASONING","PLANNING","AWAITING_AUTHORIZATION","EXECUTING","VERIFYING","REPLANNING","AWAITING_HUMAN","PAUSED","STOPPING","COMPLETED","FAILED","TERMINATED"]);
+const MISSION_STATUSES=Object.freeze(["DRAFT","ACTIVE","PAUSED","COMPLETED","STOPPED","FAILED","TERMINATED"]);
+const AGENT_STATUSES=Object.freeze(["ACTIVE","PAUSED","DISABLED"]);
+const GOAL_STATUSES=Object.freeze(["QUEUED","ACTIVE","COMPLETED","STOPPED","FAILED"]);
+const NEXT_ACTIONS=Object.freeze(["CONTINUE","RETRY","REPLAN","ESCALATE","PAUSE","STOP","COMPLETE"]);
+const FAILURE_TYPES=Object.freeze(["COGNITIVE_FAILURE","CONTEXT_FAILURE","MEMORY_FAILURE","PLAN_FAILURE","AUTHORITY_FAILURE","POLICY_FAILURE","CAPABILITY_FAILURE","TOOL_FAILURE","VERIFICATION_FAILURE","BUDGET_FAILURE","RISK_FAILURE","HUMAN_DEPENDENCY","STATE_FAILURE","RUNTIME_FAILURE"]);
+function record(kind,values,required){for(const key of required)if(values[key]===undefined||values[key]===null||values[key]==="")throw new Error(`invalid_${kind}:${key}`);return Object.freeze({contractVersion:CONTRACT_VERSION,kind,...values})}
+const define=(kind,required)=>values=>record(kind,values||{},required);
+const RoleConfiguration=define("RoleConfiguration",["id","organizationId","version","missionTypes","contextProfile","memoryProfile","knowledgeProfile","allowedCapabilityRefs","allowedToolRefs","autonomyCeiling","riskCeiling","budgetDefaults","reportingRequirements","status"]);
+const AgentIdentity=define("AgentIdentity",["id","organizationId","runtimeVersion","roleConfigurationRef","actorRef","authorityRefs","policyRefs","allowedCapabilityRefs","allowedToolRefs","memoryAccessProfile","knowledgeAccessProfile","contextProfile","autonomyLevel","budgetEnvelope","riskEnvelope","reportingRequirements","status","createdAt","updatedAt","configurationVersion"]);
+const Mission=define("Mission",["id","organizationId","missionType","objective","successCriteria","failureCriteria","allowedScope","prohibitedScope","priority","budget","riskBoundary","autonomyCeiling","requiredReporting","escalationRules","stopConditions","status","version","evidenceRefs","createdAt","updatedAt"]);
+const AgentRun=define("AgentRun",["id","agentId","missionId","goalId","organizationId","correlationId","causationId","startedAt","currentState","stateVersion","attemptCounters","budget","risk","evidenceRefs","memoryRefs","escalations"]);
+const RuntimeTransition=define("RuntimeTransition",["id","runId","from","to","reason","evidenceRefs","actorRef","at","sequence"]);
+const RuntimeObservation=define("RuntimeObservation",["id","runId","classification","sourceRefs","facts","observedAt"]);
+const NextActionDecision=define("NextActionDecision",["id","runId","action","reason","evidenceRefs","decidedAt"]);
+const HumanEscalation=define("HumanEscalation",["id","runId","attemptedObjective","reason","evidenceRefs","decisionRequired","missingAuthorityRefs","boundaryTriggers","options","noResponseBehavior","createdAt","status"]);
+const RunReport=define("RunReport",["id","runId","agentId","missionId","goalId","organizationId","state","contextPackageRefs","cognitiveResultRefs","planRefs","capabilityRefs","toolRefs","authorityRefs","policyRefs","evidenceRefs","memoryRefs","transitions","attempts","budget","risk","escalations","uncertainties","outcomeReason","generatedAt"]);
+module.exports={CONTRACT_VERSION,RUNTIME_STATES,MISSION_STATUSES,AGENT_STATUSES,GOAL_STATUSES,NEXT_ACTIONS,FAILURE_TYPES,RoleConfiguration,AgentIdentity,Mission,AgentRun,RuntimeTransition,RuntimeObservation,NextActionDecision,HumanEscalation,RunReport};
