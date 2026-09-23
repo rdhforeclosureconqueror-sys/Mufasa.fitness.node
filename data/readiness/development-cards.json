@@ -410,6 +410,22 @@
       "createdAt": "2026-09-23T15:52:08.666Z",
       "source": "readiness:update",
       "taskId": "command-center-command-intelligence"
+    },
+    {
+      "id": "launch-development-scout-platinum-upgrade",
+      "board": "launch",
+      "canonical": false,
+      "title": "Scout Platinum Upgrade",
+      "category": "AI BUSINESS OS",
+      "description": "Upgrade SMART_SCOUT on the shared governed Business OS runtime with canonical evidence contracts, approved read-only source boundaries, transparent assessment, feedback, diagnostics, Academy scenarios, and truthful staged certification without autonomous acquisition or side effects.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-7-brain-academy-certification"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T20:06:56.387Z",
+      "source": "readiness:update",
+      "taskId": "scout-platinum-upgrade"
     }
   ]
 }
