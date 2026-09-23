@@ -6,7 +6,7 @@ const compatible=(expected,actual)=>expected?.type===actual?.type&&JSON.stringif
 function createExecutionController({registry,kernel,contextEngine=null,memorySystem=null,adapters={},verifiers={},clock=()=>new Date(),id=()=>crypto.randomUUID()}={}){
  const attempts=[],invocations=[],results=[],observations=[],verifications=[],replans=[],idempotency=new Map();
  const now=()=>clock().toISOString();
- const diagnostic=(stage,code,passed=[])=>{const outcomes={};for(const name of passed)outcomes[name]={status:"PASS"};outcomes[stage]={status:"FAIL",reason:code};return deriveDiagnostics(outcomes,now())};
+ const diagnostic=(stage,code,passed=[])=>{const outcomes={};for(const name of STAGES.slice(0,STAGES.indexOf(stage)))outcomes[name]={status:passed.includes(name)?"PASS":"NOT_APPLICABLE"};outcomes[stage]={status:"FAIL",reason:code};return deriveDiagnostics(outcomes,now())};
  const fail=(stage,code,extra={})=>({ok:false,code,nextAction:extra.nextAction||("AUTHORITY POLICY KILL_SWITCH COST_RISK".includes(stage)?"STOP":"REPLAN"),...extra,diagnostics:diagnostic(stage,code)});
  function validate(goal,plan,step,actor,budget){
   if(!goal?.objective||goal.organizationId!==actor.organizationId)return fail("GOAL","INVALID_GOAL");
