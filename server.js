@@ -531,7 +531,7 @@ function createApp(options = {}) {
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json"), canonicalMatrixPath: path.join(__dirname, "data", "launch", "feature-readiness-matrix.v1.json") });
   const controlledLiveService = createControlledLiveService({ filePath: options.controlledLivePath || path.join(OPS_DIR, "controlled-live-organism.json"), priceIdProvider:()=>process.env.STRIPE_PRICE_ID });
-  const commandCenterService = createCommandCenterService({ controlledLiveService, readinessService:launchReadinessService });
+  const commandCenterService = createCommandCenterService({ controlledLiveService, readinessService:launchReadinessService, modelGateway: options.commandModelGateway || null });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
