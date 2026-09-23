@@ -132,6 +132,7 @@ const { createGuidedExperienceService } = require("./src/services/guidedExperien
 const { createLaunchReadinessService } = require("./src/services/launchReadinessService");
 const { createControlledLiveService } = require("./src/business-os/real-world/controlled-live");
 const { createCommandCenterService } = require("./src/business-os/command/service");
+const { createProductionCommandBrain } = require("./src/business-os/command/brain");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -531,7 +532,24 @@ function createApp(options = {}) {
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json"), canonicalMatrixPath: path.join(__dirname, "data", "launch", "feature-readiness-matrix.v1.json") });
   const controlledLiveService = createControlledLiveService({ filePath: options.controlledLivePath || path.join(OPS_DIR, "controlled-live-organism.json"), priceIdProvider:()=>process.env.STRIPE_PRICE_ID });
-  const commandCenterService = createCommandCenterService({ controlledLiveService, readinessService:launchReadinessService, modelGateway: options.commandModelGateway || null });
+  const commandBrain = options.commandBrain || createProductionCommandBrain({
+    env: process.env,
+    fetchImpl: options.fetch || global.fetch,
+    audit: event => auditLog.appendEvent({ ...event, source: "ai-business-os-command-brain" })
+  });
+  const readinessCard = cardId => Object.values(launchReadinessService.snapshot().boards || {}).flat().find(card => card.id === cardId) || null;
+  const commandCenterService = createCommandCenterService({
+    controlledLiveService,
+    readinessService: launchReadinessService,
+    brain: commandBrain,
+    modelGateway: options.commandModelGateway || null,
+    organizationReader: options.organizationReader || (() => ({ status: "NO_ACTIVITY_OBSERVED", objectives: [], work: [], artifacts: [], events: [], roles: [] })),
+    academyReader: options.academyReader || (() => {
+      const card = readinessCard("phase-7-brain-academy-certification");
+      if (!card) return { status: "NOT_RUN", brainStatus: "UNKNOWN", memoryStatus: "UNKNOWN", runId: null };
+      return { status: card.automated === "PASS" ? (card.humanVerified ? "PASS" : "PENDING_HUMAN") : (card.automated || "NOT_RUN"), brainStatus: card.automated === "PASS" ? "CERTIFIED_MACHINE_EVIDENCE" : "UNKNOWN", memoryStatus: card.automated === "PASS" ? "CERTIFIED_MACHINE_EVIDENCE" : "UNKNOWN", runId: card.implementationRef || null, cardId: card.id };
+    })
+  });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
@@ -2494,7 +2512,7 @@ function createApp(options = {}) {
   app.get("/command-center.html", ...commandRead, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"command-center.html")));
   app.get("/api/admin/business-os/command", ...commandRead, (req,res)=>ok(res,req.requestId,commandCenterService.summary()));
   app.get("/api/admin/business-os/command/diagnostics", ...commandRead, (req,res)=>ok(res,req.requestId,commandCenterService.diagnostics()));
-  app.post("/api/admin/business-os/command/intelligence", createRateLimiter({windowMs:60_000,max:30}), ...commandRead, asyncHandler(async(req,res)=>ok(res,req.requestId,await commandCenterService.converse({actor:{userId:req.auth.userId,role:req.authz.role},question:req.body?.question,mode:req.body?.mode,screenContext:req.body?.screenContext}))));
+  app.post("/api/admin/business-os/command/intelligence", createRateLimiter({windowMs:60_000,max:30}), ...commandRead, asyncHandler(async(req,res)=>ok(res,req.requestId,await commandCenterService.converse({actor:{userId:req.auth.userId,role:req.authz.role,organizationId:req.auth.organizationId||process.env.AI_BUSINESS_OS_ORGANIZATION_ID||"mufasa-fitness"},question:req.body?.question,mode:req.body?.mode,screenContext:req.body?.screenContext,conversationId:req.body?.conversationId}))));
   app.get("/admin-controlled-live.html", ...liveAdmin, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-controlled-live.html")));
   app.post("/api/admin/business-os/controlled-live", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.create({participantUserId:req.body?.participantUserId,challengeId:req.body?.challengeId}),201));
   app.post("/api/admin/business-os/controlled-live/authorize", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.authorize({actor:liveActor(req),validUntil:req.body?.validUntil})));
