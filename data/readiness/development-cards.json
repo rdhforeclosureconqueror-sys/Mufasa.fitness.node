@@ -316,6 +316,22 @@
       "createdAt": "2026-09-23T02:02:17.407Z",
       "source": "phase-5-handoff",
       "taskId": "phase-5-shared-agent-runtime"
+    },
+    {
+      "id": "phase-6-organizational-intelligence",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 6 organizational intelligence roles",
+      "category": "ARCHITECTURE",
+      "description": "Implement nine shared-runtime role configurations, governed organizational work and artifact coordination, independent QA, proposal-only Learning, bounded Manager, diagnostics, and synthetic/adversarial certification without Phase 7.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-5-shared-agent-runtime"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T03:42:15.626Z",
+      "source": "readiness:update",
+      "taskId": "phase-6-organizational-intelligence"
     }
   ]
 }
