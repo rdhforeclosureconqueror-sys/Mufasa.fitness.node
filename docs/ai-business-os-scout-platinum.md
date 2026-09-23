@@ -25,7 +25,7 @@ Missing authorization can never be `OPERATIONAL`. Provider acceptance and tool s
 
 ## Read-only capability boundary
 
-The existing execution registry receives ten narrow capabilities and nine tools for approved source reads, Search Console/GA4 summaries, product/capability readiness, outcome feedback, approved research imports, append-only observations/candidates, and governed Analyst handoff. All use `OBSERVE` or `RECOMMEND`, zero acquisition spend, low risk, constitutional authority, explicit policy, verification, evidence, audit, diagnostics, and kill-switch applicability.
+The execution registry defines ten narrow capability contracts and nine tool contracts. They are registered as unavailable and design-stage by default; each becomes selectable only when its implementation, configuration, and verification evidence are explicitly supplied. Their boundaries remain `OBSERVE` or `RECOMMEND`, zero acquisition spend, low risk, constitutional authority, explicit policy, verification, evidence, audit, diagnostics, and kill-switch applicability.
 
 ## Diagnostics and certification truth
 
@@ -35,7 +35,7 @@ Scout diagnostics are ordered:
 
 The earliest causal failure is retained and downstream checks become `BLOCKED`; `NOT_APPLICABLE` remains distinct. The initial truthful FIRST FAILURE for Search Console and GA4 is `SOURCE_AUTHORIZED / HUMAN_CONFIGURATION_REQUIRED`.
 
-The 24 deterministic/adversarial scenarios certify architecture behavior only. The independent gates are `SCOUT_PLATINUM_ARCHITECTURE_READY`, `SCOUT_APPROVED_SOURCE_CONFIGURED`, `SCOUT_LIVE_SOURCE_VERIFIED`, `SCOUT_OUTCOME_FEEDBACK_VERIFIED`, and `SCOUT_PLATINUM_CERTIFIED`. At this commit architecture may pass, but live-source, closed-loop feedback, authenticated human acceptance, and final Platinum certification remain blocked. Mocks, configuration alone, synthetic evidence, and controlled Test A cannot satisfy those gates.
+The 24 deterministic/adversarial records are canonical Academy scenario specifications. They do not certify behavior until the canonical Academy runner executes every registered executor, evaluates every assertion, and records evidence. The independent gates are `SCOUT_PLATINUM_ARCHITECTURE_READY`, `SCOUT_APPROVED_SOURCE_CONFIGURED`, `SCOUT_LIVE_SOURCE_VERIFIED`, `SCOUT_OUTCOME_FEEDBACK_VERIFIED`, and `SCOUT_PLATINUM_CERTIFIED`. At this commit architecture certification, live-source verification, closed-loop feedback, authenticated human acceptance, and final Platinum certification remain blocked. Definitions, mocks, booleans, and evidence-reference strings cannot satisfy these gates. Mocks, configuration alone, synthetic evidence, and controlled Test A cannot satisfy those gates.
 
 ## Coordinator precondition audit
 
