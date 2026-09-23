@@ -332,6 +332,22 @@
       "createdAt": "2026-09-23T03:42:15.626Z",
       "source": "readiness:update",
       "taskId": "phase-6-organizational-intelligence"
+    },
+    {
+      "id": "phase-7-brain-academy-certification",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 7 Brain Academy and certification",
+      "category": "ARCHITECTURE",
+      "description": "Implement the permanent evidence-based Brain Academy, data-driven scenario registry, adversarial and role/component certification, bounded reflection evaluation, regression baselines, certification matrix/report, architecture-complete gate, diagnostics, and readiness integration without Phase 8 organism simulation.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-6-organizational-intelligence"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T04:55:50.551Z",
+      "source": "phase-7-handoff",
+      "taskId": "phase-7-brain-academy-certification"
     }
   ]
 }
