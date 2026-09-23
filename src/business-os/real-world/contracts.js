@@ -1,0 +1,26 @@
+"use strict";
+const CONTRACT_VERSION="ai-business-os.real-world-airlock/1.0.0";
+const ACTION_CLASSES=Object.freeze({OBSERVE:0,PREPARE:1,HUMAN_APPROVED_EXECUTE:2,PREAUTHORIZED_BOUNDED_EXECUTE:3,PROHIBITED:4});
+const KILL_SWITCH_DOMAINS=Object.freeze(["ALL_EXTERNAL_ACTIONS","OUTBOUND_CONTACT","PUBLICATION","PAYMENTS","PURCHASES","REFUNDS","PRODUCTION","DELIVERY"]);
+const EXECUTION_STATES=Object.freeze(["PREPARED","DRY_RUN","PROVIDER_ACCEPTED","VERIFIED","EXECUTION_UNKNOWN","FAILED","PROHIBITED"]);
+const PAYMENT_STATES=Object.freeze(["PAYMENT_REQUEST_PREPARED","PAYMENT_REQUEST_CREATED","PAYMENT_PENDING","PAYMENT_AUTHORIZED","PAYMENT_SETTLED","PAYMENT_FAILED","PAYMENT_REFUNDED"]);
+const DELIVERY_STATES=Object.freeze(["DELIVERY_PREPARED","DELIVERY_SENT","PROVIDER_ACCEPTED","DELIVERY_CONFIRMED","CUSTOMER_ACCEPTED"]);
+const ECONOMIC_STATES=Object.freeze(["PROJECTED","QUOTED","REQUESTED","PENDING","SETTLED","REFUNDED","FEE","FULFILLMENT_COST"]);
+const FAILURE_CLASSES=Object.freeze(["BRAIN_FAILURE","AUTHORITY_FAILURE","POLICY_FAILURE","APPROVAL_FAILURE","ADAPTER_FAILURE","EXTERNAL_SERVICE_FAILURE","EXECUTION_UNKNOWN","IDENTITY_FAILURE","CONTACT_ELIGIBILITY_FAILURE","PAYMENT_FAILURE","PAYMENT_AMBIGUITY","PRODUCTION_FAILURE","QA_FAILURE","DELIVERY_FAILURE","CUSTOMER_RESULT","MARKET_RESULT","ECONOMIC_UNCERTAINTY","MEASUREMENT_FAILURE","SECURITY_BOUNDARY_FAILURE","PRIVACY_BOUNDARY_FAILURE","HARNESS_FAILURE"]);
+function record(kind,v,required){for(const key of required)if(v?.[key]===undefined||v[key]===null||v[key]==="")throw new Error(`invalid_${kind}:${key}`);return Object.freeze({contractVersion:CONTRACT_VERSION,kind,...v})}
+const define=(kind,required)=>v=>record(kind,v,required);
+const ExternalIdentity=define("ExternalIdentity",["id","organizationId","type","externalRefs","verificationStatus"]);
+const ExternalResource=define("ExternalResource",["id","organizationId","type","adapterRef","externalId"]);
+const ExternalObservation=define("ExternalObservation",["id","organizationId","adapterRef","observedAt","ingestedAt","evidenceRef","untrustedData"]);
+const ExternalActionRequest=define("ExternalActionRequest",["id","organizationId","actorRef","actionType","actionClass","resourceScope","customerRef","payload","payloadHash","idempotencyKey","requestedAt"]);
+const ExternalActionAuthorization=define("ExternalActionAuthorization",["id","requestRef","actorRef","grantRef","policyVersion","decision","evaluatedAt"]);
+const ExternalApproval=define("ExternalApproval",["id","approverIdentity","requestRef","actionType","scope","payloadHash","customerScope","maximumAmount","currency","expiresAt","usage","policyVersion","authorityGrant","approvedAt","revoked","evidenceRefs"]);
+const ExternalActionReceipt=define("ExternalActionReceipt",["id","requestRef","adapterRef","mode","executionState","recordedAt","idempotencyKey"]);
+const ExternalVerification=define("ExternalVerification",["id","receiptRef","status","evidenceRefs","verifiedAt"]);
+const ExternalEvidence=define("ExternalEvidence",["id","organizationId","sourceAdapter","externalResourceId","observedAt","ingestedAt","rawStatus","normalizedInterpretation","verificationStatus","correlation","redaction","confidence"]);
+const ExternalObligation=define("ExternalObligation",["id","organizationId","customerRef","offerId","offerVersion","scope","price","paymentState","acceptanceCriteria","deadline","productionState","qaState","deliveryState","refundTerms","evidenceRefs","status"]);
+const ExternalEconomicEvent=define("ExternalEconomicEvent",["id","organizationId","classification","amount","currency","evidenceRef","occurredAt"]);
+const ExternalFailure=define("ExternalFailure",["id","classification","stage","reason","evidenceRefs","occurredAt"]);
+const RealWorldRun=define("RealWorldRun",["id","mode","planRef","startedAt"]);
+const RealWorldReport=define("RealWorldReport",["runRef","mode","actualLiveSideEffects","receipts","evidence","diagnostics","gate"]);
+module.exports={CONTRACT_VERSION,ACTION_CLASSES,KILL_SWITCH_DOMAINS,EXECUTION_STATES,PAYMENT_STATES,DELIVERY_STATES,ECONOMIC_STATES,FAILURE_CLASSES,ExternalIdentity,ExternalResource,ExternalObservation,ExternalActionRequest,ExternalActionAuthorization,ExternalApproval,ExternalActionReceipt,ExternalVerification,ExternalEvidence,ExternalObligation,ExternalEconomicEvent,ExternalFailure,RealWorldRun,RealWorldReport};

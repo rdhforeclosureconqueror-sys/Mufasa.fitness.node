@@ -364,6 +364,22 @@
       "createdAt": "2026-09-23T05:41:58.083Z",
       "source": "phase-8-handoff",
       "taskId": "phase-8-closed-world-organism-simulation"
+    },
+    {
+      "id": "phase-9a-thin-body-real-world-organism",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 9A thin-body real-world organism",
+      "category": "ARCHITECTURE",
+      "description": "Implement the governed real-world airlock, dry-run body, external evidence and economic seams, durable obligations, adversarial certification, diagnostics, and live-test plan without any Phase 9B side effect or Phase 10 work.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-8-closed-world-organism-simulation"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T12:28:37.904Z",
+      "source": "phase-9-handoff",
+      "taskId": "phase-9a-thin-body-real-world-organism"
     }
   ]
 }
