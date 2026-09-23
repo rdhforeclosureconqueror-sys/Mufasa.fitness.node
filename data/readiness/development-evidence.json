@@ -3450,6 +3450,93 @@
       "prNumber": null,
       "commitSha": "93824f7",
       "timestamp": "2026-09-23T05:04:52.917Z"
+    },
+    {
+      "operationId": "8e38d877-e6e4-46c8-b784-21338b13eb09",
+      "board": "launch",
+      "cardId": "phase-8-closed-world-organism-simulation",
+      "sourceType": "card_creation",
+      "taskId": "phase-8-closed-world-organism-simulation",
+      "files": [],
+      "automated": null,
+      "evidence": "Implement deterministic closed-world simulation, synthetic economic truth, complete organizational cycles, replay, organism Academy evaluation, diagnostics, scenarios, tests, documentation, and the distinct Phase 8 gate without Phase 9 or real-world side effects.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T05:41:58.083Z"
+    },
+    {
+      "operationId": "cdff8044-66fb-412d-b793-b220e6d17231",
+      "board": "launch",
+      "cardId": "phase-8-closed-world-organism-simulation",
+      "sourceType": "implementation",
+      "taskId": "phase-8-closed-world-organism-simulation",
+      "files": [],
+      "automated": null,
+      "evidence": "Phase 8 implementation authorized; human Phase 0-7 gates remain unchanged.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T05:41:58.283Z"
+    },
+    {
+      "operationId": "f6b10947-85e5-499a-8346-73160cb5482e",
+      "board": "launch",
+      "cardId": "phase-8-closed-world-organism-simulation",
+      "sourceType": "implementation",
+      "taskId": "phase-8-closed-world-organism-simulation",
+      "files": [],
+      "automated": null,
+      "evidence": "Selected CURRENT for Phase 8 implementation.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T05:41:58.471Z"
+    },
+    {
+      "operationId": "76506236-d34b-4e76-aceb-364916bc1d53",
+      "board": "launch",
+      "cardId": "phase-8-closed-world-organism-simulation",
+      "sourceType": "implementation",
+      "taskId": "phase-8-closed-world-organism-simulation",
+      "files": [
+        "src/business-os/simulation/academy-adapter.js",
+        "src/business-os/simulation/clock.js",
+        "src/business-os/simulation/contracts.js",
+        "src/business-os/simulation/diagnostics.js",
+        "src/business-os/simulation/index.js",
+        "src/business-os/simulation/ledger.js",
+        "src/business-os/simulation/phase8-readiness.js",
+        "src/business-os/simulation/random.js",
+        "src/business-os/simulation/runner.js",
+        "src/business-os/simulation/scenarios.js",
+        "src/business-os/simulation/world.js",
+        "test/ai-business-os-phase8-simulation.test.js",
+        "docs/architecture/ai-business-os/PHASE_8_CLOSED_WORLD_ORGANISM_SIMULATION.md",
+        "docs/architecture/ai-business-os/adrs/0014-world-owns-consequences-brain-owns-decisions.md",
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Phase 8 machine implementation complete: 10/10 focused tests and 155/155 Phase 1-8 focused regressions PASS; lint PASS; readiness validation PASS. Full npm test exposed unrelated pre-existing Extraction OS, movement calibration, Arena, readiness-matrix, and motion-phase failures and was interrupted after hanging mirror-motion-phase2. No browser, production, physical-device, real-customer, or real-money QA applies. Human architectural/scenario/behavior acceptance remains PENDING_HUMAN. CLOSED_WORLD_ORGANISM_VALIDATED is machine PASS; overall Phase 8 gate CONDITIONAL_GO; Phase 9 is not authorized.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T05:53:54.574Z"
+    },
+    {
+      "operationId": "1ee48d3e-5083-4351-acf3-a45e53608e17",
+      "board": "launch",
+      "cardId": "phase-8-closed-world-organism-simulation",
+      "sourceType": "implementation_reference",
+      "taskId": "phase-8-closed-world-organism-simulation",
+      "files": [
+        "src/business-os/simulation",
+        "docs/architecture/ai-business-os/PHASE_8_CLOSED_WORLD_ORGANISM_SIMULATION.md",
+        "docs/architecture/ai-business-os/adrs/0014-world-owns-consequences-brain-owns-decisions.md",
+        "test/ai-business-os-phase8-simulation.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation committed on phase-8-closed-world-organism-simulation at 8512f58; draft PR metadata prepared through make_pr (tool returned no PR number). Human acceptance remains pending and Phase 9 remains unauthorized.",
+      "prNumber": null,
+      "commitSha": "8512f58",
+      "timestamp": "2026-09-23T05:54:39.002Z"
     }
   ]
 }
