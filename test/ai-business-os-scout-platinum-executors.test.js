@@ -56,8 +56,10 @@ test("official Google read result creates canonical health and live evidence wit
  assert.equal(JSON.stringify(evidence).includes("top-secret-token"),false);
 });
 
+test("hand-authored or synthetic provider-shaped records cannot satisfy live evidence provenance",()=>{\n const forged={status:"READ",records:[{aggregate:true}],evidenceRefs:["ga4:forged"],providerMetadata:{observedAt:"2030-01-01T00:00:00.000Z"}};\n assert.throws(()=>Scout.verifiedGoogleEvidence({organizationId:"org",sourceId:"GA4",readResult:forged,clock:fixed}),/verified_google_read_required/);\n});\n
 test("complete canonical external evidence can certify only with explicit human acceptance",async()=>{
- const read={status:"READ",records:[{aggregate:true}],evidenceRefs:["ga4:verified-record"],providerMetadata:{observedAt:"2030-01-01T00:00:00.000Z"}};
+ const source=Scout.createGoogleAnalyticsSource({organizationId:"org",fetchImpl:async()=>({ok:true,status:200,json:async()=>({rowCount:1,rows:[{dimensionValues:[{value:"Organic Search"}],metricValues:[{value:"4"}]}]})}),accessToken:"test-token",propertyId:"123",authorizationVerified:true,resourceVerified:true,clock:fixed});
+ const read=await source.read({});
  const external=Scout.verifiedGoogleEvidence({organizationId:"org",sourceId:"GA4",readResult:read,clock:fixed});
  const withoutHuman=await Scout.buildScoutCertificationReport({sourceHealth:[external.health],liveEvidence:[external.liveEvidence],outcomeFeedback:[feedback()],clock:fixed,id:()=>"run:1"});
  assert.equal(withoutHuman.readiness.gates.SCOUT_PLATINUM_CERTIFIED,"BLOCKED");
@@ -67,7 +69,8 @@ test("complete canonical external evidence can certify only with explicit human 
 });
 
 test("human acceptance requires an authenticated admin and all prior gates",async()=>{
- const read={status:"READ",records:[{aggregate:true}],evidenceRefs:["ga4:verified-record"],providerMetadata:{observedAt:"2030-01-01T00:00:00.000Z"}};
+ const source=Scout.createGoogleAnalyticsSource({organizationId:"org",fetchImpl:async()=>({ok:true,status:200,json:async()=>({rowCount:1,rows:[{dimensionValues:[{value:"Organic Search"}],metricValues:[{value:"4"}]}]})}),accessToken:"test-token",propertyId:"123",authorizationVerified:true,resourceVerified:true,clock:fixed});
+ const read=await source.read({});
  const external=Scout.verifiedGoogleEvidence({organizationId:"org",sourceId:"GA4",readResult:read,clock:fixed});
  const prior=await Scout.buildScoutCertificationReport({sourceHealth:[external.health],liveEvidence:[external.liveEvidence],outcomeFeedback:[feedback()],clock:fixed,id:()=>"run:1"});
  assert.throws(()=>Scout.createScoutHumanAcceptance({organizationId:"org",actor:{userId:"agent",role:"admin",authenticationEvidenceRefs:[]},authorityRef:"grant:1",evidenceRefs:["review:1"],readiness:prior.readiness,clock:fixed}),/authentication_evidence/);
