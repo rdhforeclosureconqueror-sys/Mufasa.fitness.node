@@ -1,2 +1,2 @@
 "use strict";
-module.exports={...require("./contracts"),...require("./policy"),...require("./sources"),...require("./adapters"),...require("./assessment"),...require("./diagnostics"),...require("./readiness"),...require("./tools"),...require("./academy")};
+module.exports={...require("./contracts"),...require("./policy"),...require("./sources"),...require("./adapters"),...require("./google-sources"),...require("./outcome-feedback"),...require("./human-acceptance"),...require("./assessment"),...require("./decision"),...require("./diagnostics"),...require("./readiness"),...require("./tools"),...require("./academy"),...require("./academy-executors"),...require("./certification")};
