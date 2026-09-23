@@ -20,7 +20,7 @@ The Command Center is the authenticated owner cockpit over the same constitution
 
 ## State architecture
 
-`createCommandCenterService` is an anti-corruption/read-model layer. It accepts canonical readers; it owns no operational database. The initial production wiring reads controlled-live state and launch readiness. Organization and Academy adapters are explicit seams and report empty/`UNKNOWN` until authoritative runtime readers are wired. This prevents fixture or certification data from being misrepresented as live company state.
+`createCommandCenterService` is an anti-corruption/read-model layer. It accepts canonical readers; it owns no operational database. Production wiring reads controlled-live state, launch readiness, the Phase 7 readiness card, and the explicit Phase 6 organization seam. With no durable Phase 6 activity source configured, that seam reports `NO_ACTIVITY_OBSERVED`; with no Academy run/card it reports `NOT_RUN`. This prevents fixture or certification data from being misrepresented as live company state.
 
 Organism indicators include Brain, Constitution, Memory, Organization, Academy, Airlock, Autonomy, and Live Organism. Constitution is reported as enforcing because the server route remains behind the installed authorization boundary; all other claims require source evidence or show `UNKNOWN`. Live Organism is dormant unless the controlled-live service returns valid authorization.
 
@@ -30,21 +30,43 @@ Economic truth separates quoted, requested, pending, settled, refunded, fees, fu
 
 ## Command tools and conversation
 
-The versioned `command-intelligence/1.0.0` interface registers bounded read tools for command summary, human actions, organism, missions/work, FIRST FAILURE, diagnostics, readiness, Brain/Academy, authority, kill switches, controlled live, evidence/audit, economics, learning/reflection, roles, activity, and evidence search. Tool selection is question- and screen-context-driven; the entire database is never inserted into a prompt.
+The versioned `command-intelligence/2.0.0` interface registers bounded read tools for command summary, human actions, organism, missions/work, FIRST FAILURE, diagnostics, readiness, Brain/Academy, authority, kill switches, controlled live, evidence/audit, economics, learning/reflection, roles, activity, and evidence search. The canonical Cognitive Core interprets the complete information need and selects names from this allow-list; there is no production keyword router and the entire database is never inserted into a prompt.
 
-Answers return grounding tool names, uncertainty, safe provider/model telemetry, latency, usage/cost when available, fallback state, and request reference. Hidden chain-of-thought is neither requested nor returned. External text is treated as data and rendered through `textContent` or HTML escaping. Secret-shaped content is redacted server-side.
+Answers retain intent, context references, tool calls, evidence references, relevant facts/inferences/unknowns/recommendations/authority requirements, safe provider/model telemetry, latency, usage/cost when available, metacognitive result, fallback state, and request/timestamp references. Hidden chain-of-thought is neither requested nor returned or stored. External text and retrieved evidence are explicitly untrusted data and rendered through `textContent` or HTML escaping. Secret-shaped content is redacted server-side.
 
 Explain modes change requested depth only: Executive, Plain Language, Technical, and Deep Dive. They do not change retrieved facts. The current view and selected mission/subsystem reference accompany each request.
 
 ## Authorization and security
 
-Read routes require authenticated observability permission. Existing controlled-live authorization and kill-switch routes retain enforcement permission. Command Intelligence has no write tool. A “do it” request returns a structured, non-authoritative action card and leaves authorization unchanged. Customer data is not available without a scoped canonical reader. No key or credential enters browser code, diagnostics, or raw records.
+Read routes require authenticated observability permission. Existing controlled-live authorization and kill-switch routes retain enforcement permission. Command Intelligence has no write tool. Action language is understood semantically but remains a non-authoritative recommendation or authority requirement and leaves authorization unchanged. Customer data is not available without a scoped canonical reader. No key or credential enters browser code, diagnostics, or raw records.
 
 ## Live updates and failure model
 
 Bounded 15-second polling is used because it is sufficient and adds no realtime infrastructure. The UI displays the last observed timestamp. Poll failure visibly degrades the sync state.
 
-Cockpit diagnostics use the ordered chain: Authentication → Command State Load → Organism Status → Mission Load → Activity Load → Diagnostic Load → Command Intelligence Context → Model Gateway → Tool Invocation → Response Grounding → Live Update → Render → Human Action Presentation. Stages not actually exercised are `NOT_RUN`, never fabricated as pass. FIRST FAILURE is explicitly a diagnostic starting point, not claimed root cause.
+Cockpit diagnostics use the ordered chain: Authentication → Command State Load → Organism Status → Mission Load → Activity Load → Diagnostic Load → Command Intelligence Context → Model Gateway → Tool Invocation → Response Grounding → Live Update → Render → Human Action Presentation. Stages not actually exercised are `NOT_RUN`, never fabricated as pass. FIRST FAILURE distinguishes browser connectivity, gateway, context, intent, tool selection/authority, evidence/Organization/Academy/memory retrieval, reasoning, grounding, and action-authorization boundaries. FIRST FAILURE is explicitly a diagnostic starting point, not claimed root cause.
+
+## Architecture audit and integration map
+
+| Responsibility | Canonical component reused | Implemented seam |
+| --- | --- | --- |
+| constitutional/model controls | Phase 1 authority doctrine and Phase 2 `createModelGateway` | `COMMAND_READ_ONLY` admission, model kill switch, invocation audit, provider/model policy |
+| reasoning/metacognition | Phase 2 `createCognitiveCore` and `CognitiveResult` | semantic intent and grounded-response cognitive operations; outputs remain non-authoritative |
+| context/continuity | Phase 3 `createMemorySystem` and `createContextEngine` | organization/user-scoped, permission-tagged, 24-hour bounded working memory containing safe decision summaries |
+| information-needs planning/tools | Phase 4 governed capability pattern | Brain-selected allow-listed readers; invalid selections fail closed |
+| action execution | Phase 4/5 runtime and Phase 6 organization | no second executor and no Command write tools; future Work must use the existing runtime |
+| organization | Phase 6 coordinator read contract | objectives, Work, roles, artifacts, and events adapter; true absence is `NO_ACTIVITY_OBSERVED` |
+| Academy | Phase 7 Academy/readiness | latest canonical evidence; no run is `NOT_RUN`; machine state cannot become human acceptance |
+| controlled live | Phase 9 controlled-live service | direct read-only Test A, authority, kill-switch, evidence, economics, learning, and audit readers |
+| readiness/diagnostics | canonical readiness and FIRST FAILURE | direct snapshots and ordered pipeline diagnostics |
+
+The audit found missing production construction of the Model Gateway/Cognitive Core, semantic information-needs planning, Phase 3 continuity, response provenance, and explicit Organization/Academy production adapters. Those seams are connected without adding a Brain, state store, execution engine, or authorization store.
+
+Production constructs the canonical gateway only when `COMMAND_INTELLIGENCE_MODEL` and server-only `OPENAI_API_KEY` are configured. Model configuration, provider, context, or reasoning failure is visibly `DETERMINISTIC_FALLBACK`: deterministic canonical status may still be shown, but it is never represented as Brain reasoning.
+
+## CTQs
+
+Regression controls measure semantic intent coverage, evidence grounding, continuity, fallback truthfulness, FIRST FAILURE correctness, and owner-question resolution. Unauthorized authority creation, cross-organization leakage, fabricated evidence, fabricated human approval, and silent fallback masquerading have a zero-tolerance limit. Tool success is not business success; controlled Test A evidence is not independent market or economic validation.
 
 ## Mobile and accessibility
 
