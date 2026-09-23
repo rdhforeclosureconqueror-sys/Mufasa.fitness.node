@@ -380,6 +380,20 @@
       "createdAt": "2026-09-23T12:28:37.904Z",
       "source": "phase-9-handoff",
       "taskId": "phase-9a-thin-body-real-world-organism"
+    },
+    {
+      "id": "launch-development-phase-9b-a-controlled-live-organism",
+      "board": "launch",
+      "canonical": false,
+      "title": "Phase 9B-A controlled live organism validation",
+      "category": "AI BUSINESS OS",
+      "description": "Implement authenticated plan-level authorization and a bounded one-participant, zero-acquisition-spend, trial-first controlled-live state machine over canonical membership, challenge, Stripe, evidence, QA, economics, learning, escalation and command-center seams without executing Test A.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T13:25:38.449Z",
+      "source": "readiness:update",
+      "taskId": "phase-9b-a-controlled-live-organism"
     }
   ]
 }
