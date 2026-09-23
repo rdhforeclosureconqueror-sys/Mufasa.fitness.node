@@ -21,7 +21,7 @@ function createAcademyRunner({registry,executors={},clock=()=>new Date(),id=()=>
    const human=scenario.humanRequiredCriteria?.length>0,failed=assertions.some(a=>a.status==="FAIL"),uncertain=assertions.some(a=>a.status==="INCONCLUSIVE");
    let verdict=failed?"FAIL":uncertain?"INCONCLUSIVE":human?"PENDING_HUMAN":"PASS";
    if(verdict==="PASS"&&observations.some(o=>!o.evidenceRefs.length))verdict="INCONCLUSIVE";
-   outcomes.ASSERTION_EVALUATION={status:failed?"FAIL":"PASS",reason:failed?"invariant_failed":"assertions_evaluated",evidence:assertions.flatMap(a=>a.observationRefs)};
+   outcomes.ASSERTION_EVALUATION={status:failed?"FAIL":uncertain?"NOT_RUN":"PASS",reason:failed?"invariant_failed":uncertain?"assertion_inconclusive":"assertions_evaluated",evidence:assertions.flatMap(a=>a.observationRefs)};
    const classification=failed?C.FailureClassification({category:raw.failureClass||"COGNITIVE_FAILURE",owner:raw.failureOwner||scenario.components[0],reason:"assertion_failed"}):null;
    outcomes.FAILURE_CLASSIFICATION={status:"PASS",reason:classification?classification.category:"no_executed_failure",evidence:[]};
    for(const stage of ["CERTIFICATION_RECORDING","REGRESSION_COMPARISON","REPORTING"])outcomes[stage]={status:"PASS",reason:`${stage.toLowerCase()}_complete`,evidence:[]};
