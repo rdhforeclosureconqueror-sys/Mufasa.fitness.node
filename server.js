@@ -130,6 +130,7 @@ const { createYouthCsrf } = require("./src/youth-fitness/runtime/csrf");
 const { createGarveyLaunchHandler } = require("./src/youth-fitness/integration/garveyLaunch");
 const { createGuidedExperienceService } = require("./src/services/guidedExperienceService");
 const { createLaunchReadinessService } = require("./src/services/launchReadinessService");
+const { createControlledLiveService } = require("./src/business-os/real-world/controlled-live");
 
 const ENFORCEABLE_ACTIONS = Object.freeze([
   "profile",
@@ -528,6 +529,7 @@ function createApp(options = {}) {
   const userDataService = createUserDataService({ userStore });
   const journeyIntakeService = createJourneyIntakeService({ userStore });
   const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json"), canonicalMatrixPath: path.join(__dirname, "data", "launch", "feature-readiness-matrix.v1.json") });
+  const controlledLiveService = createControlledLiveService({ filePath: options.controlledLivePath || path.join(OPS_DIR, "controlled-live-organism.json"), priceIdProvider:()=>process.env.STRIPE_PRICE_ID });
   const generatedWorkoutService = createGeneratedWorkoutService({ userStore, userDataService });
   const generatedWorkoutProgressionService = createGeneratedWorkoutProgressionService({ userStore });
   const trainingAdaptationService = createTrainingAdaptationService({ userStore });
@@ -2482,6 +2484,14 @@ function createApp(options = {}) {
   app.patch("/api/me/guided-experience", requireAuth, (req,res)=>ok(res,req.requestId,guidedExperienceService.update(req.auth.userId,req.body||{})));
   app.get("/api/admin/launch-readiness", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY), (req,res)=>ok(res,req.requestId,launchReadinessService.snapshot()));
   app.patch("/api/admin/launch-readiness/:board/:cardId", requireAuth, permission(authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT), (req,res)=>ok(res,req.requestId,launchReadinessService.update(req.params.board,req.params.cardId,{...(req.body||{}),actorType:"human"})));
+  const liveAdmin=[requireAuth,permission(authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT)];
+  const liveActor=req=>({userId:req.auth.userId,role:req.authz.role});
+  app.get("/api/admin/business-os/controlled-live", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.snapshot()));
+  app.get("/admin-controlled-live.html", ...liveAdmin, (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-controlled-live.html")));
+  app.post("/api/admin/business-os/controlled-live", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.create({participantUserId:req.body?.participantUserId,challengeId:req.body?.challengeId}),201));
+  app.post("/api/admin/business-os/controlled-live/authorize", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.authorize({actor:liveActor(req),validUntil:req.body?.validUntil})));
+  app.post("/api/admin/business-os/controlled-live/revoke", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.revoke({actor:liveActor(req),reason:req.body?.reason})));
+  app.post("/api/admin/business-os/controlled-live/kill-switch", ...liveAdmin, (req,res)=>ok(res,req.requestId,controlledLiveService.kill({actor:liveActor(req),domain:req.body?.domain,active:req.body?.active!==false})));
   const crmActor = req => ({ userId:req.auth.userId, role:req.authz.role });
   app.get("/admin/members.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-members.html")));
   app.get("/admin/client.html", (_req,res)=>res.sendFile(path.join(PUBLIC_DIR,"admin-client.html")));
