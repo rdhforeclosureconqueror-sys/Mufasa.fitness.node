@@ -1,0 +1,24 @@
+"use strict";
+const CONTRACT_VERSION="ai-business-os.execution/1.0.0";
+const AUTONOMY_LEVELS=Object.freeze(["OBSERVE","RECOMMEND","PREPARE","EXECUTE_APPROVED","BOUNDED_AUTONOMOUS"]);
+const VERIFICATION_STATUSES=Object.freeze(["VERIFIED_SUCCESS","VERIFIED_FAILURE","UNVERIFIED","AMBIGUOUS","PARTIAL"]);
+const STEP_STATUSES=Object.freeze(["PENDING","READY","RUNNING","RETRY","BLOCKED","ESCALATED","STOPPED","COMPLETED","FAILED"]);
+const NEXT_ACTIONS=Object.freeze(["CONTINUE","RETRY","REPLAN","ESCALATE","STOP","COMPLETE"]);
+function record(kind,v,required){for(const key of required)if(v[key]===undefined||v[key]===null||v[key]==="")throw new Error(`invalid_${kind}:${key}`);return Object.freeze({contractVersion:CONTRACT_VERSION,kind,...v})}
+const define=(kind,required)=>v=>record(kind,v||{},required);
+const Tool=define("Tool",["id","organizationId","name","version","description","inputSchema","outputSchema","risk","cost","timeoutMs","retryPolicy","idempotency","authorityRequirements","policyRequirements","sideEffect","reversibility","limitations","status","verificationRequirements","supportedCapabilityIds","autonomyLevels","killSwitchApplicable","schemaVersion"]);
+const Capability=define("Capability",["id","organizationId","name","version","description","requiredInputs","producedOutputs","requiredToolIds","optionalToolIds","validationStatus","limitations","risk","estimatedCost","estimatedDurationMs","autonomyLevel","humanRequiredSteps","authorityRequirements","policyRequirements","status","schemaVersion"]);
+const Goal=define("Goal",["id","organizationId","objective","requestedAutonomy","createdAt","correlationId"]);
+const Plan=define("Plan",["id","goalId","organizationId","steps","status","createdAt","version"]);
+const PlanStep=define("PlanStep",["id","objective","dependencyIds","capabilityId","toolId","inputs","expectedOutput","successCriteria","verificationMethod","authorityRef","policyRef","estimatedCost","risk","timeoutMs","retryPolicy","idempotencyKey","failureBehavior","humanApprovalRequired","status"]);
+const StepDependency=define("StepDependency",["stepId","dependsOnStepId","requiredStatus"]);
+const ExecutionAttempt=define("ExecutionAttempt",["id","planId","stepId","toolId","attempt","status","startedAt","correlationId"]);
+const ToolInvocation=define("ToolInvocation",["id","attemptId","toolId","inputHash","idempotencyKey","startedAt","status"]);
+const ToolResult=define("ToolResult",["id","invocationId","toolId","status","receivedAt"]);
+const Observation=define("Observation",["id","toolResultId","classification","observedAt","evidenceRefs"]);
+const VerificationResult=define("VerificationResult",["id","observationId","status","method","verifiedAt","evidenceRefs"]);
+const PlanOutcome=define("PlanOutcome",["planId","status","stepOutcomes","decidedAt"]);
+const Escalation=define("Escalation",["id","planId","stepId","reason","requiredAuthority","createdAt"]);
+const StopCondition=define("StopCondition",["code","triggered","reason"]);
+const ReplanDecision=define("ReplanDecision",["planId","stepId","decision","reason","createdAt"]);
+module.exports={CONTRACT_VERSION,AUTONOMY_LEVELS,VERIFICATION_STATUSES,STEP_STATUSES,NEXT_ACTIONS,Tool,Capability,Goal,Plan,PlanStep,StepDependency,ExecutionAttempt,ToolInvocation,ToolResult,Observation,VerificationResult,PlanOutcome,Escalation,StopCondition,ReplanDecision};

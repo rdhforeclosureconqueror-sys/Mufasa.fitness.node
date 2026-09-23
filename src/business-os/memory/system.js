@@ -8,7 +8,8 @@ function safePayload(value){if(value===null||typeof value!=="object")return valu
 function createMemorySystem({clock=()=>new Date(),id=()=>crypto.randomUUID(),freshnessPolicies={VOLATILE:60_000,STANDARD:86_400_000,STABLE:null}}={}){
  const memories=new Map(),claims=new Map(),relations=new Map(),index=new Map();
  const now=()=>clock().toISOString(),fail=(stage,reason)=>{const outcomes={};for(const name of STAGES.slice(0,STAGES.indexOf(stage)))outcomes[name]={status:"PASS"};outcomes[stage]={status:"FAIL",reason};return {ok:false,code:reason,diagnostics:deriveDiagnostics(outcomes,now())}};
- const sameOrganization=(record,actor)=>Boolean(actor?.organizationId)&&record.organizationId===actor.organizationId;\n const canRead=(record,actor)=>sameOrganization(record,actor)&&(record.permissionTags.includes("PUBLIC")||record.permissionTags.includes(`ACTOR:${actor.id}`)||(actor.permissionTags||[]).some(tag=>record.permissionTags.includes(tag)));
+ const sameOrganization=(record,actor)=>Boolean(actor?.organizationId)&&record.organizationId===actor.organizationId;
+ const canRead=(record,actor)=>sameOrganization(record,actor)&&(record.permissionTags.includes("PUBLIC")||record.permissionTags.includes(`ACTOR:${actor.id}`)||(actor.permissionTags||[]).some(tag=>record.permissionTags.includes(tag)));
  const freshness=(record,at=clock())=>{const limit=record.freshnessPolicyMs!==undefined?record.freshnessPolicyMs:freshnessPolicies[record.freshnessClass||"STANDARD"];const base=new Date(record.observedAt||record.createdAt);return limit===null||at-base<=limit};
  const reindex=record=>{for(const ref of [...(record.subjectRefs||[]),...(record.workRefs||[])]){if(!index.has(ref))index.set(ref,new Set());index.get(ref).add(record.id)}};
  function writeMemory(values){
@@ -26,6 +27,7 @@ function createMemorySystem({clock=()=>new Date(),id=()=>crypto.randomUUID(),fre
  function tombstone(memoryId){const original=memories.get(memoryId);if(!original)throw new Error("memory_not_found");const tomb=C.MemoryRecord({...original,status:"TOMBSTONED",content:null,contentHash:original.contentHash||crypto.createHash("sha256").update(JSON.stringify(original.content)).digest("hex"),tombstonedAt:now()});memories.set(memoryId,tomb);return tomb}
  function retrieve({actor,subjectRefs=[],workRefs=[],memoryTypes=[],scope,taskRef,requireFresh=false,tags=[],includeHistorical=false}){
   const redactions=[];let rows=[...memories.values()].filter(r=>r.status!=="TOMBSTONED"&&(includeHistorical||!["ARCHIVED","SUPERSEDED","EXPIRED"].includes(r.status)));
+  rows=rows.filter(r=>sameOrganization(r,actor));
   rows=rows.filter(r=>{const allowed=canRead(r,actor);if(!allowed)redactions.push({recordId:r.id,reason:"PERMISSION_DENIED",payloadExposed:false});return allowed});
   rows=rows.filter(r=>!scope||r.scope===scope).filter(r=>!memoryTypes.length||memoryTypes.includes(r.memoryType)).filter(r=>!subjectRefs.length||subjectRefs.some(x=>(r.subjectRefs||[]).includes(x))).filter(r=>!workRefs.length||workRefs.some(x=>(r.workRefs||[]).includes(x))).filter(r=>!tags.length||tags.every(x=>(r.tags||[]).includes(x)));
   rows=rows.filter(r=>r.memoryType!=="WORKING"||r.taskRef===taskRef);

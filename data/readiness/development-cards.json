@@ -286,6 +286,22 @@
       "createdAt": "2026-09-22T21:58:07.187Z",
       "source": "readiness:update",
       "taskId": "phase-3-memory-knowledge-context"
+    },
+    {
+      "id": "phase-4-tool-capability-planning-execution",
+      "board": "launch",
+      "canonical": false,
+      "title": "AI Business OS Phase 4 tool capability planning and execution",
+      "category": "ARCHITECTURE",
+      "description": "Implement domain-neutral tool and capability registries, governed planning/execution, observation and verification, bounded recovery, Phase 1-3 integration, deterministic certification, and Phase 4 diagnostics without Phase 5 runtime.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-3-memory-knowledge-context"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-23T00:14:40.810Z",
+      "source": "readiness:update",
+      "taskId": "phase-4-tool-capability-planning-execution"
     }
   ]
 }

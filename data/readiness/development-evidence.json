@@ -3159,6 +3159,87 @@
       "prNumber": null,
       "commitSha": "88393c7",
       "timestamp": "2026-09-22T22:06:15.986Z"
+    },
+    {
+      "operationId": "fdcdb90f-f0f3-4e61-bdfe-bc5f0bba7793",
+      "board": "launch",
+      "cardId": "phase-4-tool-capability-planning-execution",
+      "sourceType": "card_creation",
+      "taskId": "phase-4-tool-capability-planning-execution",
+      "files": [],
+      "automated": null,
+      "evidence": "Implement domain-neutral tool and capability registries, governed planning/execution, observation and verification, bounded recovery, Phase 1-3 integration, deterministic certification, and Phase 4 diagnostics without Phase 5 runtime.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T00:14:40.810Z"
+    },
+    {
+      "operationId": "bcb183af-558b-4306-bad2-b6c340024016",
+      "board": "launch",
+      "cardId": "phase-4-tool-capability-planning-execution",
+      "sourceType": "certification",
+      "taskId": "phase-4-tool-capability-planning-execution",
+      "files": [
+        "src/business-os/execution/contracts.js",
+        "src/business-os/execution/registry.js",
+        "src/business-os/execution/planner.js",
+        "src/business-os/execution/controller.js",
+        "src/business-os/execution/diagnostics.js",
+        "src/business-os/execution/synthetic-tools.js",
+        "src/business-os/execution/phase4-readiness.js",
+        "src/business-os/kernel/kernel.js",
+        "src/business-os/memory/system.js",
+        "test/ai-business-os-phase4-execution.test.js",
+        "docs/architecture/ai-business-os/PHASE_4_TOOL_CAPABILITY_PLANNING_EXECUTION.md",
+        "docs/architecture/ai-business-os/adrs/0010-tool-execution-is-not-verified-outcome.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Phase 4 deterministic certification complete: 19/19 Phase 4 tests and focused Phase 1-4 suite 89/89 PASS; lint PASS; readiness validation PASS. Strong recovery scenario records permanent primary-tool failure evidence, selects only a registered compatible substitute, rechecks constitutional authority/policy, independently verifies recovery, and completes truthfully. FIRST FAILURE: none in scoped certification. Full npm test was sampled and stopped after numerous unrelated pre-existing UI/motion failures; Phase 4 tests remained green. Browser, production, commercial, and physical-device QA are not applicable to this in-memory synthetic architecture increment. Known limits: single-process/in-memory adapters and no distributed durability or live tools. Human architectural acceptance remains required. Phase 4 gate: CONDITIONAL GO; Phase 5 must not start before authorized review.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T00:25:50.280Z"
+    },
+    {
+      "operationId": "aa089954-be78-4e4a-9a3c-97c45b4fbc09",
+      "board": "launch",
+      "cardId": "phase-4-tool-capability-planning-execution",
+      "sourceType": "implementation",
+      "taskId": "phase-4-tool-capability-planning-execution",
+      "files": [
+        "docs/architecture/ai-business-os/PHASE_4_TOOL_CAPABILITY_PLANNING_EXECUTION.md",
+        "docs/architecture/ai-business-os/adrs/0010-tool-execution-is-not-verified-outcome.md"
+      ],
+      "automated": null,
+      "evidence": "Independent authenticated-admin review requested for Tool-versus-Capability separation, constitutional rechecks, outcome verification semantics, tenant isolation, recovery lineage, and the Phase 4 gate. Machine evidence does not approve this criterion.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-23T00:25:50.876Z"
+    },
+    {
+      "operationId": "3fb518cf-5bd6-4e74-af93-f0b6703c4694",
+      "board": "launch",
+      "cardId": "phase-4-tool-capability-planning-execution",
+      "sourceType": "implementation",
+      "taskId": "phase-4-tool-capability-planning-execution",
+      "files": [
+        "src/business-os/execution/contracts.js",
+        "src/business-os/execution/registry.js",
+        "src/business-os/execution/planner.js",
+        "src/business-os/execution/controller.js",
+        "src/business-os/execution/diagnostics.js",
+        "src/business-os/execution/synthetic-tools.js",
+        "src/business-os/execution/phase4-readiness.js",
+        "src/business-os/kernel/kernel.js",
+        "src/business-os/memory/system.js",
+        "test/ai-business-os-phase4-execution.test.js",
+        "docs/architecture/ai-business-os/PHASE_4_TOOL_CAPABILITY_PLANNING_EXECUTION.md",
+        "docs/architecture/ai-business-os/adrs/0010-tool-execution-is-not-verified-outcome.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit a7c2ba4 contains the Phase 4 contracts, organization-scoped registries, canonical context/cognition planning seam, constitutional authorization seam, governed execution/recovery loop, observation and independent verification, evidence/memory lineage, diagnostics, documentation, ADR, and deterministic certification. Human acceptance remains pending; gate remains CONDITIONAL GO.",
+      "prNumber": null,
+      "commitSha": "a7c2ba4",
+      "timestamp": "2026-09-23T00:26:22.689Z"
     }
   ]
 }
