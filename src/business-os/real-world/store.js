@@ -1,0 +1,3 @@
+"use strict";
+function createRealWorldStore(snapshot={}){const data={requests:new Map(snapshot.requests||[]),receipts:new Map(snapshot.receipts||[]),approvals:new Map(snapshot.approvals||[]),evidence:new Map(snapshot.evidence||[]),customers:new Map(snapshot.customers||[]),offers:new Map(snapshot.offers||[]),obligations:new Map(snapshot.obligations||[]),economicEvents:new Map(snapshot.economicEvents||[]),idempotency:new Map(snapshot.idempotency||[]),killSwitches:new Map(snapshot.killSwitches||[])};const exportSnapshot=()=>Object.fromEntries(Object.entries(data).map(([k,v])=>[k,[...v.entries()]]));return Object.freeze({data,exportSnapshot})}
+module.exports={createRealWorldStore};
