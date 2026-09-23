@@ -7,6 +7,8 @@ const {ScoutSourceHealth,ScoutLiveEvidence}=require("./contracts");
 const SEARCH_SCOPE="https://www.googleapis.com/auth/webmasters.readonly";
 const ANALYTICS_SCOPE="https://www.googleapis.com/auth/analytics.readonly";
 const hash=value=>crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const VERIFIED_PROVIDER_READS=new WeakSet();
+const markVerifiedProviderRead=result=>{if(result&&typeof result==="object"&&result.status==="READ")VERIFIED_PROVIDER_READS.add(result);return result};
 const requireText=(value,name)=>{if(typeof value!=="string"||!value.trim())throw new Error(`${name}_required`);return value.trim()};
 
 function googleConfigurationFromEnv(env=process.env){
@@ -35,7 +37,8 @@ function createGoogleSearchConsoleSource({organizationId,fetchImpl=globalThis.fe
   const payload=await response.json(),observedAt=clock().toISOString(),recordRef=`gsc:${hash(payload)}`;
   return {status:"READ",records:payload.rows||[],evidenceRefs:[recordRef],providerMetadata:{observedAt,rowCount:(payload.rows||[]).length,responseAggregationType:payload.responseAggregationType||null}};
  };
- return createSearchConsoleAdapter({configuration:{authorizationVerified,resourceVerified},reader});
+ const adapter=createSearchConsoleAdapter({configuration:{authorizationVerified,resourceVerified},reader});
+ return Object.freeze({...adapter,read:async request=>markVerifiedProviderRead(await adapter.read(request))});
 }
 
 function createGoogleAnalyticsSource({organizationId,fetchImpl=globalThis.fetch,accessToken,propertyId,authorizationVerified=false,resourceVerified=false,clock=()=>new Date()}={}){
@@ -47,12 +50,13 @@ function createGoogleAnalyticsSource({organizationId,fetchImpl=globalThis.fetch,
   const payload=await response.json(),observedAt=clock().toISOString(),recordRef=`ga4:${hash(payload)}`;
   return {status:"READ",records:payload.rows||[],evidenceRefs:[recordRef],providerMetadata:{observedAt,rowCount:Number(payload.rowCount||0),metadata:payload.metadata||null}};
  };
- return createGA4Adapter({configuration:{authorizationVerified,resourceVerified},reader});
+ const adapter=createGA4Adapter({configuration:{authorizationVerified,resourceVerified},reader});
+ return Object.freeze({...adapter,read:async request=>markVerifiedProviderRead(await adapter.read(request))});
 }
 
 function verifiedGoogleEvidence({organizationId,sourceId,sourceVersion="1.0.0",readResult,clock=()=>new Date()}={}){
  if(!["GOOGLE_SEARCH_CONSOLE","GA4"].includes(sourceId))throw new Error("unsupported_google_scout_source");
- if(readResult?.status!=="READ"||!Array.isArray(readResult.evidenceRefs)||!readResult.evidenceRefs.length)throw new Error("verified_google_read_required");
+ if(!VERIFIED_PROVIDER_READS.has(readResult)||readResult?.status!=="READ"||!Array.isArray(readResult.evidenceRefs)||!readResult.evidenceRefs.length)throw new Error("verified_google_read_required");
  const observedAt=readResult.providerMetadata?.observedAt||clock().toISOString(),sourceRecordRef=readResult.evidenceRefs[0];
  return Object.freeze({
   health:ScoutSourceHealth({id:`health:${sourceId}:${hash(sourceRecordRef).slice(0,12)}`,organizationId,sourceId,sourceVersion,status:"OPERATIONAL",authorizationState:"VERIFIED",lastSuccessfulRead:observedAt,lastVerifiedRecord:sourceRecordRef,freshness:"FRESH",rateLimitState:"CLEAR",paginationCompleteness:"COMPLETE",errorState:"NONE",firstFailure:"NONE",humanActionRequired:false,knownLimitations:["Provider records establish observed traffic or behavior, not purchase causality."],evidenceRefs:readResult.evidenceRefs,observedAt,version:1}),
