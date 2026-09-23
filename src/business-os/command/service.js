@@ -11,7 +11,8 @@ const lifecycle=value=>({CREATED:"BACKLOG",ELIGIBLE:"READY",ASSIGNED:"READY",RUN
 function createCommandCenterService({controlledLiveService,readinessService=null,organizationReader=null,academyReader=null,modelGateway=null,clock=()=>new Date(),id=()=>crypto.randomUUID()}={}){
  if(!controlledLiveService)throw new Error("controlled_live_source_required");
  const now=()=>clock().toISOString();
- const live=()=>controlledLiveService.snapshot();\n const commandModelAvailable=()=>typeof modelGateway==="function";
+ const live=()=>controlledLiveService.snapshot();
+ const commandModelAvailable=()=>typeof modelGateway==="function";
  const readiness=()=>readinessService?.snapshot?.()||{boards:{},source:"UNAVAILABLE"};
  const org=()=>organizationReader?.()||{objectives:[],work:[],artifacts:[],events:[]};
  function missions(){const o=org(),work=o.work||[];return (o.objectives||[]).map(objective=>{const items=work.filter(x=>x.objectiveRef===objective.id);return {id:objective.id,title:objective.objective,why:objective.scope||null,status:state(objective.status),priority:state(objective.priority),successCriteria:objective.successCriteria||[],stage:items.some(x=>x.state==="BLOCKED"||x.state==="FAILED")?"BLOCKED":items.length&&items.every(x=>x.state==="COMPLETED")?"COMPLETE":items.some(x=>x.state==="RUNNING")?"ACTIVE":"BACKLOG",work:items.map(mapWork),evidenceRefs:objective.evidenceRefs||[],nextGate:null,humanAction:null}})}
