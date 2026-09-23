@@ -13,6 +13,7 @@
     "lint": "node scripts/selfcheck.js",
     "readiness:validate": "node scripts/validate-readiness-contract.js",
     "readiness:update": "node scripts/readiness-update.js",
+    "scout:certify": "node scripts/scout-platinum-certify.js",
     "test": "node --test",
     "pilot:nonsecurity-checks": "node scripts/pilot-nonsecurity-checks.js",
     "performance:audit": "node scripts/performance-audit.js",
