@@ -3,6 +3,7 @@ const STAGES=Object.freeze(["MEMORY_WRITE","PROVENANCE_VALIDATION","PERMISSION_C
 function deriveDiagnostics(outcomes,at=new Date().toISOString()){
  let blocked=false,firstFailure=null;
  const checks=STAGES.map((id,order)=>{const supplied=outcomes[id];let status="NOT_RUN",reason="not_run";if(blocked){status="BLOCKED";reason=`blocked_by:${firstFailure.checkId}`}else if(supplied){status=supplied.status;reason=supplied.reason||id.toLowerCase();if(status==="FAIL"){blocked=true;firstFailure=Object.freeze({checkId:id,reason,derivedAt:at})}}return Object.freeze({id,status,reason,order,dependencies:order?[STAGES[order-1]]:[],evidence:supplied?.evidence||[]})});
- return Object.freeze({checks:Object.freeze(checks),firstFailure,exitGate:firstFailure?"NO_GO":"PASS"});
+ const complete=checks.every(x=>["PASS","NOT_APPLICABLE"].includes(x.status));
+ return Object.freeze({checks:Object.freeze(checks),firstFailure,exitGate:firstFailure?"NO_GO":complete?"PASS":"INCOMPLETE"});
 }
 module.exports={STAGES,deriveDiagnostics};
