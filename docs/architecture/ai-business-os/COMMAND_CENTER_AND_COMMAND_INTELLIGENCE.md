@@ -28,9 +28,17 @@ Mission cards map canonical lifecycle states to `BACKLOG`, `READY`, `ACTIVE`, `B
 
 Economic truth separates quoted, requested, pending, settled, refunded, fees, fulfillment cost, and net observed contribution. Null is presented as `UNKNOWN`; settled defaults to observed zero, never the $50 ceiling.
 
+## Owner-facing personality and worker separation
+
+Command Intelligence is the **top-level owner-facing mentor, executive assistant, advisory board, and wise-counsel interface**. It is intentionally distinct from the lower organizational worker/agent runtime. The worker layer performs governed Work and produces attributable reports/artifacts; Command Intelligence reads governed evidence, interprets what happened, surfaces disagreements and unknowns, mentors the owner, and recommends what deserves attention next. Advice does not itself authorize execution.
+
+Its versioned personality is `maat-council-personality/1.0.0`. The specialist lenses are Clarke (history), Ben-Jochannan (origins/inherited belief), Malcolm X (strategic diagnosis), Garvey (institution building), Payton (economics/ownership), Ali (embodiment/performance), and Thoth (systems architecture). Ma'at is not treated as an eighth competing voice: it is the governing standard for truth, justice, proportion, reciprocity, right order, human dignity, sustainability, and continuity. The router uses the minimum relevant specialties and preserves material disagreement instead of averaging it away.
+
+This is a modern AI reasoning architecture, not a claim that the historical people or ancient Egyptian concepts constituted an AI system. Historical inspiration remains subordinate to current evidence, constitutional controls, safety, law, and canonical state. The assistant does not theatrically impersonate the figures.
+
 ## Command tools and conversation
 
-The versioned `command-intelligence/2.0.0` interface registers bounded read tools for command summary, human actions, organism, missions/work, FIRST FAILURE, diagnostics, readiness, Brain/Academy, authority, kill switches, controlled live, evidence/audit, economics, learning/reflection, roles, activity, and evidence search. The canonical Cognitive Core interprets the complete information need and selects names from this allow-list; there is no production keyword router and the entire database is never inserted into a prompt.
+The versioned `command-intelligence/3.0.0` interface registers bounded read tools for command summary, human actions, organism, missions/work, FIRST FAILURE, diagnostics, readiness, Brain/Academy, authority, kill switches, controlled live, evidence/audit, economics, learning/reflection, roles, activity, and evidence search. The canonical Cognitive Core interprets the complete information need and selects names from this allow-list; there is no production keyword router and the entire database is never inserted into a prompt.
 
 Answers retain intent, context references, tool calls, evidence references, relevant facts/inferences/unknowns/recommendations/authority requirements, safe provider/model telemetry, latency, usage/cost when available, metacognitive result, fallback state, and request/timestamp references. Hidden chain-of-thought is neither requested nor returned or stored. External text and retrieved evidence are explicitly untrusted data and rendered through `textContent` or HTML escaping. Secret-shaped content is redacted server-side.
 
