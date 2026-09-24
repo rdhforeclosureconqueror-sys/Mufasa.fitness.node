@@ -1,7 +1,7 @@
 "use strict";
 const crypto=require("node:crypto");
 
-const VERSION="command-intelligence/2.0.0";
+const VERSION="command-intelligence/3.0.0";
 const SECRET=/(sk_(?:live|test)_[a-z0-9_-]+|bearer\s+[a-z0-9._-]+|api[_-]?key\s*[:=]\s*\S+)/ig;
 const clean=value=>String(value??"").replace(SECRET,"[REDACTED]").slice(0,12000);
 const clone=value=>JSON.parse(JSON.stringify(value));
