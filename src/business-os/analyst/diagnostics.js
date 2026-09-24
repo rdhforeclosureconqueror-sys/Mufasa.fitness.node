@@ -1,0 +1,4 @@
+"use strict";
+const STAGES=Object.freeze(["MISSION","AUTHORITY","INPUT_EVIDENCE","PROVENANCE","FRESHNESS","PRIVACY","CONTRADICTION_CHECK","PRODUCT_READINESS","ANALYSIS","DISPOSITION","ARTIFACT_VALIDATED","HANDOFF","REPORTING"]);
+function deriveAnalystDiagnostics(outcomes={},at=new Date().toISOString()){let firstFailure=null,blocked=false;const checks=STAGES.map((id,order)=>{const supplied=outcomes[id]||{};let status=supplied.status||"NOT_RUN",reason=supplied.reason||"not_run";if(blocked&&status!=="NOT_APPLICABLE"){status="BLOCKED";reason=`blocked_by:${firstFailure.checkId}`}else if(status==="FAIL"){firstFailure={checkId:id,reason,derivedAt:at};blocked=true}return Object.freeze({id,order,status,reason,evidence:supplied.evidence||[]})});return Object.freeze({checks,firstFailure,gate:firstFailure?"NO_GO":checks.every(x=>["PASS","NOT_APPLICABLE"].includes(x.status))?"PASS":"INCOMPLETE"})}
+module.exports={STAGES,deriveAnalystDiagnostics};

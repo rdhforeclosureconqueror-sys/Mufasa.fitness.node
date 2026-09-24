@@ -9,6 +9,7 @@ function deriveDiagnostics(outcomes,at){
   else if(!failed){status="NOT_RUN";reason="not_run"}
   return Object.freeze({id,status,reason,order,dependencies:order?[STAGES[order-1]]:[],evidence:supplied?.evidence||[]});
  });
- return Object.freeze({checks,firstFailure,exitGate:firstFailure?"NO_GO":"PASS"});
+ const complete=checks.every(x=>["PASS","NOT_APPLICABLE"].includes(x.status));
+ return Object.freeze({checks,firstFailure,exitGate:firstFailure?"NO_GO":complete?"PASS":"INCOMPLETE"});
 }
 module.exports={STAGES,deriveDiagnostics};
