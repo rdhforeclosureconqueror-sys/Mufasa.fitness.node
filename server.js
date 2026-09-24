@@ -533,7 +533,7 @@ function createApp(options = {}) {
   const launchReadinessService = createLaunchReadinessService({ filePath: path.join(OPS_DIR, "launch-readiness.json"), canonicalMatrixPath: path.join(__dirname, "data", "launch", "feature-readiness-matrix.v1.json") });
   const controlledLiveService = createControlledLiveService({ filePath: options.controlledLivePath || path.join(OPS_DIR, "controlled-live-organism.json"), priceIdProvider:()=>process.env.STRIPE_PRICE_ID });
   const commandBrain = options.commandBrain || createProductionCommandBrain({
-    env: process.env,
+    env,
     fetchImpl: options.fetch || global.fetch,
     audit: event => auditLog.appendEvent({ ...event, source: "ai-business-os-command-brain" })
   });
