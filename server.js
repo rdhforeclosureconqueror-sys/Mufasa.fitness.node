@@ -537,6 +537,7 @@ function createApp(options = {}) {
     fetchImpl: options.fetch || global.fetch,
     audit: event => auditLog.appendEvent({ ...event, source: "ai-business-os-command-brain" })
   });
+  console.info("[command-brain] startup", { available: commandBrain.available === true, unavailableReason: commandBrain.unavailableReason || null, modelConfigured: Boolean(env.COMMAND_INTELLIGENCE_MODEL || env.OPENAI_COMMAND_MODEL || env.AI_COACH_MODEL || env.DIAGNOSTIC_SUMMARIZER_MODEL || env.OPENAI_DIAGNOSTIC_MODEL), credentialConfigured: Boolean(env.OPENAI_API_KEY), explicitlyDisabled: env.COMMAND_INTELLIGENCE_ENABLED === "false" });
   const readinessCard = cardId => Object.values(launchReadinessService.snapshot().boards || {}).flat().find(card => card.id === cardId) || null;
   const commandCenterService = createCommandCenterService({
     controlledLiveService,
