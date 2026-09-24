@@ -1,0 +1,9 @@
+"use strict";
+const {createScenarioRegistry}=require("../academy/registry");
+const {createAcademyRunner}=require("../academy/runner");
+const {ANALYST_PLATINUM_SCENARIOS,registerAnalystPlatinumScenarios}=require("./academy");
+const {analyzeOpportunity}=require("./assessment");
+function executeAnalystPlatinumScenario({scenario,clock=()=>new Date()}){const evaluation=analyzeOpportunity(scenario.initialState),slug=scenario.id.replace("analyst.platinum.","");return {observations:[{id:`observation.analyst.platinum.${slug}`,type:"STRUCTURED_BEHAVIOR",source:"SMART_ANALYST_PRODUCTION_ASSESSMENT_ENGINE",value:{disposition:evaluation.disposition,score:evaluation.score,reasoning:evaluation.reasoning,openQuestions:evaluation.openQuestions,historicalEvidenceRewritten:evaluation.historicalEvidenceRewritten},evidenceRefs:[...new Set([...(scenario.fixture.inputEvidence||[]),...evaluation.evidenceRefs,`analyst-policy:${evaluation.policyRef}`])],observedAt:clock().toISOString()}],executionEvidenceRefs:[`analyst-executor:${slug}`,`analyst-policy:${evaluation.policyRef}`],roleConfigurationVersions:["SMART_ANALYST@1"],toolCapabilityVersions:[],limitations:["Deterministic architecture evidence; not live market, economic, or human acceptance evidence."]}}
+function createAnalystPlatinumExecutors(){return Object.freeze(Object.fromEntries(ANALYST_PLATINUM_SCENARIOS.map(x=>[x.executorRef,context=>executeAnalystPlatinumScenario(context)])))}
+async function runAnalystPlatinumArchitecture({clock=()=>new Date(),id,brainVersion="SMART_ANALYST@1"}={}){const registry=createScenarioRegistry();registerAnalystPlatinumScenarios(registry);return createAcademyRunner({registry,executors:createAnalystPlatinumExecutors(),clock,id,brainVersion}).run()}
+module.exports={executeAnalystPlatinumScenario,createAnalystPlatinumExecutors,runAnalystPlatinumArchitecture};
