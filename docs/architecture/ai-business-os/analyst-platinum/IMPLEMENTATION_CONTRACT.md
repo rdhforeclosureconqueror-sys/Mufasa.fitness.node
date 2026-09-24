@@ -17,10 +17,10 @@
 |---|---|---|
 | A0 | Baseline gaps reproduced and guarded | Empty tool configuration, empty analysis acceptance, and false diagnostic PASS have regression tests. |
 | A1 | Contracts and constitutional policy exist | Versioned assessment/evidence/acceptance records and bounded policy. |
-| A2 | Shared role and tool configuration is real | Seven narrow capabilities and tools, unavailable unless explicitly enabled. |
+| A2 | Shared role and tool configuration is truthful | Seven narrow capability/tool definitions are registered as `DESIGNED`/`UNAVAILABLE`; no execution adapter is claimed or installed. |
 | A3 | Production analysis is meaningful | Evidence scoring, uncertainty, contradictions, negative controls, history, and dispositions. |
-| A4 | Runtime and coordinator handoff are connected | Runtime invoker returns attributable `AnalystAssessment` work artifacts. |
+| A4 | Runtime and coordinator handoff are connected | A constitutional grant authorizes a real role-registry assignment; `createOrganizationalCoordinator` executes it and validates the resulting `AnalystAssessment` work artifact. |
 | A5 | Academy scenarios are executable | 42 registered canonical scenarios invoke the production assessment engine. |
 | A6 | Internal integration is evidenced | Shared-role, registry, runtime artifact, and Academy tests pass. |
-| A7 | Acceptance is authenticated | Admin boundary validates auth evidence and prerequisite gates; no machine self-approval. |
+| A7 | Acceptance is authenticated | Injected application-boundary verifiers validate identity and scoped authority; caller-supplied roles and reference strings are ignored. |
 | A8 | Readiness and handoff are truthful | Architecture may pass while external live and human gates remain blocked. |

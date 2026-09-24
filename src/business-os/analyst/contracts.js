@@ -6,5 +6,5 @@ function record(kind,value,required){for(const key of required)if(value?.[key]==
 const AnalystAssessment=value=>record("AnalystAssessment",value,["id","organizationId","candidateRef","evidenceRefs","analysis","disposition","confidence","limitations","provenance","version"]);
 const AnalystEvidenceRequest=value=>record("AnalystEvidenceRequest",value,["id","organizationId","candidateRef","questions","reason","status","version"]);
 const AnalystLiveEvidence=value=>record("AnalystLiveEvidence",value,["id","organizationId","sourceRef","verificationState","evidenceClassification","evidenceRefs","provenance","version"]);
-const AnalystHumanAcceptance=value=>record("AnalystHumanAcceptance",value,["id","organizationId","actorType","actorId","authorityRef","authenticationEvidenceRefs","recordedBy","scope","status","acceptedAt","evidenceRefs","version"]);
+const AnalystHumanAcceptance=value=>record("AnalystHumanAcceptance",value,["id","organizationId","actorType","actorId","authorityRef","authenticationEvidenceRefs","identityVerificationRef","authorityVerificationRef","recordedBy","scope","status","acceptedAt","evidenceRefs","version"]);
 module.exports={CONTRACT_VERSION,DISPOSITIONS,EVIDENCE_CLASSES,AnalystAssessment,AnalystEvidenceRequest,AnalystLiveEvidence,AnalystHumanAcceptance};
