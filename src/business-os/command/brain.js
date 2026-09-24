@@ -28,7 +28,7 @@ function createOpenAiCommandAdapter({apiKey,fetchImpl=global.fetch}={}){
 function createProductionCommandBrain({env=process.env,fetchImpl=global.fetch,modelGateway=null,memorySystem=null,contextEngine=null,clock=()=>new Date(),id=()=>crypto.randomUUID(),audit=()=>{}}={}){
  const organizationId=env.AI_BUSINESS_OS_ORGANIZATION_ID||"mufasa-fitness";
  const allowedOrganizationId=organizationId;
- const model=env.COMMAND_INTELLIGENCE_MODEL||env.OPENAI_COMMAND_MODEL||"";
+ const model=env.COMMAND_INTELLIGENCE_MODEL||env.OPENAI_COMMAND_MODEL||env.AI_COACH_MODEL||env.DIAGNOSTIC_SUMMARIZER_MODEL||env.OPENAI_DIAGNOSTIC_MODEL||"";
  const explicitlyDisabled=env.COMMAND_INTELLIGENCE_ENABLED==="false",enabled=!explicitlyDisabled&&Boolean(model&&env.OPENAI_API_KEY);
  const memory=memorySystem||createMemorySystem({clock,id});
  const context=contextEngine||createContextEngine({memorySystem:memory,clock,id});
