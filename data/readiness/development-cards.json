@@ -426,6 +426,180 @@
       "createdAt": "2026-09-23T20:06:56.387Z",
       "source": "readiness:update",
       "taskId": "scout-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-plan",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum phase plan and Codex handoff",
+      "category": "AI BUSINESS OS",
+      "description": "Prepare repository-backed A0-A8 build contract, evidence model, executable acceptance specifications, and Codex handoff. Planning completion does not certify Analyst implementation or live operation.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:05:36.837Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-plan"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a0",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A0: Baseline and reuse map",
+      "category": "AI BUSINESS OS",
+      "description": "Record current-main baseline, reproduce Analyst gaps, map shared components, and preserve protected behavior.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-plan"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:25.178Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A1: Assessment contract and truthful diagnostics",
+      "category": "AI BUSINESS OS",
+      "description": "Implement validated AnalystAssessment and repair shared diagnostics so required unrun checks cannot pass.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a0"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:25.707Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a2",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A2: Evidence desk and governed tools",
+      "category": "AI BUSINESS OS",
+      "description": "Wire canonical scoped readers, evidence packets, registered tools, and the real shared-runtime path.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a1"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:26.220Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a3",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A3: Deterministic measurement",
+      "category": "AI BUSINESS OS",
+      "description": "Implement reproducible funnel counts, windows, maturity, comparability, and uncertainty.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a2"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:26.735Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a4",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A4: Gold judgment",
+      "category": "AI BUSINESS OS",
+      "description": "Implement evidence-grounded dispositions and production-path Gold acceptance cases.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a3"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:27.255Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a5",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A5: Cross-system diagnosis",
+      "category": "AI BUSINESS OS",
+      "description": "Link customer-journey evidence to versioned product, payment, delivery and measurement diagnostics.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a4"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:27.780Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a6",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A6: Comparisons and outcome calibration",
+      "category": "AI BUSINESS OS",
+      "description": "Implement comparable cohorts, immutable expectations, historical feedback, and drift reports.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a5"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:28.265Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a7",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A7: Academy and certification",
+      "category": "AI BUSINESS OS",
+      "description": "Complete 42 real production-path cases, negative controls, certification and independent model-quality protocol.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a6"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:28.763Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-a8",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum A8: Command reporting and acceptance wiring",
+      "category": "AI BUSINESS OS",
+      "description": "Expose truthful authenticated reports and wire complete server/UI human-acceptance integration.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a7"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-24T18:12:29.256Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
+    },
+    {
+      "id": "launch-development-analyst-platinum-live",
+      "board": "launch",
+      "canonical": false,
+      "title": "Smart Analyst Platinum LIVE: Live verification and human acceptance",
+      "category": "AI BUSINESS OS",
+      "description": "Owner configures sources and authorizes real use; collect model-quality, independent outcomes, review and authenticated human acceptance.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-analyst-platinum-a8"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-24T18:12:29.770Z",
+      "source": "readiness:update",
+      "taskId": "analyst-platinum-upgrade"
     }
   ]
 }
