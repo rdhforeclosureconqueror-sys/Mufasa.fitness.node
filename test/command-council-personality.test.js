@@ -44,3 +44,10 @@ test("Council registry exposes aliases and prevents personality substitution",()
   assert.match(prompt,/Never invent an unregistered seat/i);
   assert.match(prompt,/bounded reasoning lens/i);
 });
+
+
+test("Council routing contract requires complete multi-seat reports",()=>{
+  const prompt=commandCouncilSystemInstructions();
+  assert.match(prompt,/all personalities or all perspectives/i);
+  assert.match(prompt,/each installed specialist seat distinctly/i);
+});
