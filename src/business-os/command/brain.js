@@ -7,8 +7,8 @@ const {createMemorySystem}=require("../memory/system");
 const {createContextEngine}=require("../memory/context-engine");
 const {commandCouncilSystemInstructions,COMMAND_COUNCIL_PERSONALITY_VERSION}=require("./personality");
 
-const INTENT_SCHEMA={type:"object",required:["intent","informationNeeds","toolNames"],properties:{intent:{type:"string"},informationNeeds:{type:"array",items:{type:"string"}},toolNames:{type:"array",items:{type:"string"}},contextReferences:{type:"array",items:{type:"string"}},actionRequested:{type:"boolean"},limitations:{type:"array",items:{type:"string"}}},additionalProperties:false};
-const RESPONSE_SCHEMA={type:"object",required:["answer","facts","inferences","unknowns","recommendations","authorityRequirements"],properties:{answer:{type:"string"},facts:{type:"array",items:{type:"string"}},inferences:{type:"array",items:{type:"string"}},unknowns:{type:"array",items:{type:"string"}},recommendations:{type:"array",items:{type:"string"}},authorityRequirements:{type:"array",items:{type:"string"}},assumptions:{type:"array",items:{type:"string"}},limitations:{type:"array",items:{type:"string"}}},additionalProperties:false};
+const INTENT_SCHEMA={type:"object",required:["intent","informationNeeds","toolNames","contextReferences","actionRequested","limitations"],properties:{intent:{type:"string"},informationNeeds:{type:"array",items:{type:"string"}},toolNames:{type:"array",items:{type:"string"}},contextReferences:{type:"array",items:{type:"string"}},actionRequested:{type:"boolean"},limitations:{type:"array",items:{type:"string"}}},additionalProperties:false};
+const RESPONSE_SCHEMA={type:"object",required:["answer","facts","inferences","unknowns","recommendations","authorityRequirements","assumptions","limitations"],properties:{answer:{type:"string"},facts:{type:"array",items:{type:"string"}},inferences:{type:"array",items:{type:"string"}},unknowns:{type:"array",items:{type:"string"}},recommendations:{type:"array",items:{type:"string"}},authorityRequirements:{type:"array",items:{type:"string"}},assumptions:{type:"array",items:{type:"string"}},limitations:{type:"array",items:{type:"string"}}},additionalProperties:false};
 const PROMPT_VERSION="command-intelligence-grounded/3.0.0",CONFIG_VERSION="command-intelligence/3.0.0";
 const safe=value=>JSON.parse(JSON.stringify(value));
 
@@ -28,7 +28,7 @@ function createOpenAiCommandAdapter({apiKey,fetchImpl=global.fetch}={}){
 function createProductionCommandBrain({env=process.env,fetchImpl=global.fetch,modelGateway=null,memorySystem=null,contextEngine=null,clock=()=>new Date(),id=()=>crypto.randomUUID(),audit=()=>{}}={}){
  const organizationId=env.AI_BUSINESS_OS_ORGANIZATION_ID||"mufasa-fitness";
  const allowedOrganizationId=organizationId;
- const model=env.COMMAND_INTELLIGENCE_MODEL||env.OPENAI_COMMAND_MODEL||env.AI_COACH_MODEL||env.DIAGNOSTIC_SUMMARIZER_MODEL||env.OPENAI_DIAGNOSTIC_MODEL||(bridgeUrl?"gpt-4o-mini":"");
+ const model=env.COMMAND_INTELLIGENCE_MODEL||env.OPENAI_COMMAND_MODEL||env.AI_COACH_MODEL||env.DIAGNOSTIC_SUMMARIZER_MODEL||env.OPENAI_DIAGNOSTIC_MODEL||"gpt-4o-mini";
  const explicitlyDisabled=env.COMMAND_INTELLIGENCE_ENABLED==="false",enabled=!explicitlyDisabled&&Boolean(model&&env.OPENAI_API_KEY);
  const memory=memorySystem||createMemorySystem({clock,id});
  const context=contextEngine||createContextEngine({memorySystem:memory,clock,id});
