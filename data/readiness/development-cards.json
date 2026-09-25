@@ -456,6 +456,20 @@
       "createdAt": "2026-09-25T13:22:46.244Z",
       "source": "PR #887 implementation plan",
       "taskId": "experiment-manager"
+    },
+    {
+      "id": "launch-development-economics-foundation",
+      "board": "launch",
+      "canonical": false,
+      "title": "Economics ECO-0 and ECO-1 foundation",
+      "category": "Business OS",
+      "description": "Repair unknown-cost contribution reporting and define versioned economic inputs on the canonical EconomicAssessment contract. Gold/Platinum workflow and live/human certification remain future phases.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-25T19:51:13.034Z",
+      "source": "readiness:update",
+      "taskId": "economics-foundation"
     }
   ]
 }
