@@ -9,7 +9,7 @@ const {
 }=require("../src/business-os/command/personality");
 
 test("Command Intelligence personality is owner-facing counsel, not the worker agent",()=>{
-  assert.equal(COMMAND_COUNCIL_PERSONALITY_VERSION,"maat-council-personality/1.0.0");
+  assert.equal(COMMAND_COUNCIL_PERSONALITY_VERSION,"maat-council-personality/1.1.0");
   const prompt=commandCouncilSystemInstructions();
   assert.match(prompt,/owner-facing mentor/i);
   assert.match(prompt,/worker\/agent/i);
@@ -33,4 +33,14 @@ test("Council personality preserves reality feedback and explicit Ma'at mode",()
   assert.match(prompt,/REALITY: test the result/i);
   assert.match(prompt,/FEEDBACK: report, learn, and correct/i);
   assert.match(prompt,/THE MATTER, TRUTH, JUSTICE, BALANCE, RECIPROCITY, ORDER, CONSEQUENCE, COUNCIL TENSION, SYNTHESIS, FEEDBACK/i);
+});
+
+
+test("Council registry exposes aliases and prevents personality substitution",()=>{
+  const prompt=commandCouncilSystemInstructions();
+  assert.match(prompt,/MALCOLM_X:.*malcolm x/i);
+  assert.match(prompt,/ALI:.*muhammad ali/i);
+  assert.match(prompt,/all personalities or all perspectives/i);
+  assert.match(prompt,/Never invent an unregistered seat/i);
+  assert.match(prompt,/bounded reasoning lens/i);
 });
