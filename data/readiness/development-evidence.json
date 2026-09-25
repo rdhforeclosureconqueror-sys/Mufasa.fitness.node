@@ -4139,6 +4139,76 @@
       "prNumber": 888,
       "commitSha": null,
       "timestamp": "2026-09-25T15:32:52.365Z"
+    },
+    {
+      "operationId": "3983b940-753a-4f7e-8849-7d5249d3d57b",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "experiment-manager-proposal-reasoning",
+      "files": [],
+      "automated": null,
+      "evidence": "Starting Phase EM-1: deterministic AnalystAssessment to bounded ExperimentProposal reasoning.",
+      "prNumber": 888,
+      "commitSha": null,
+      "timestamp": "2026-09-25T16:28:25.237Z"
+    },
+    {
+      "operationId": "2a5c3cbd-943f-4ac7-8c8a-05d655177ff7",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "experiment-manager-proposal-reasoning",
+      "files": [],
+      "automated": null,
+      "evidence": "select recorded",
+      "prNumber": 888,
+      "commitSha": null,
+      "timestamp": "2026-09-25T16:28:25.413Z"
+    },
+    {
+      "operationId": "f6c7a756-dac8-4ed7-a117-4c8d28fe02d5",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "automated_test",
+      "taskId": "experiment-manager-proposal-reasoning",
+      "files": [
+        "src/business-os/experiment-manager/proposal-reasoning.js",
+        "src/business-os/experiment-manager/integration.js",
+        "src/business-os/experiment-manager/academy.js",
+        "src/business-os/experiment-manager/index.js",
+        "test/ai-business-os-experiment-manager-proposal.test.js",
+        "test/ai-business-os-experiment-manager.test.js",
+        "docs/architecture/ai-business-os/experiment-manager/README.md",
+        "docs/architecture/ai-business-os/experiment-manager/CODEX_HANDOFF.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Phase EM-1 complete: validated AnalystAssessment now produces a bounded ExperimentProposal with evidence, confidence, provenance, customer/offer/channel/window context, product/capability readiness and authority requirements. Weak, contradictory, incomplete, mismatched and unsupported inputs fail closed. Canonical Academy now includes the Analyst-to-proposal path. 170 targeted/regression checks passed, zero failures; lint, syntax and diff checks passed. Human/live/economic acceptance remains required.",
+      "prNumber": 889,
+      "commitSha": "b16ba3900980d2dcce6262e5cf2aeb002898f9b7",
+      "timestamp": "2026-09-25T16:32:30.383Z"
+    },
+    {
+      "operationId": "0e924121-996b-4e64-b1f9-c6b92d2d1886",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "validation",
+      "taskId": "experiment-manager-proposal-reasoning",
+      "files": [
+        "src/business-os/experiment-manager/proposal-reasoning.js",
+        "src/business-os/experiment-manager/integration.js",
+        "src/business-os/experiment-manager/academy.js",
+        "src/business-os/experiment-manager/index.js",
+        "test/ai-business-os-experiment-manager-proposal.test.js",
+        "test/ai-business-os-experiment-manager.test.js",
+        "docs/architecture/ai-business-os/experiment-manager/README.md",
+        "docs/architecture/ai-business-os/experiment-manager/CODEX_HANDOFF.md"
+      ],
+      "automated": "PASS",
+      "evidence": "PR #889 final tree: EM-1 Analyst-to-proposal reasoning verified. 170 targeted/regression checks passed, zero failures; 28 Academy scenarios passed; lint, syntax, diff and readiness checks passed. Human/live/economic acceptance remains required.",
+      "prNumber": 889,
+      "commitSha": "e7c7489554e8974af62ef70c332d3dbd8a13f956",
+      "timestamp": "2026-09-25T16:33:49.174Z"
     }
   ]
 }

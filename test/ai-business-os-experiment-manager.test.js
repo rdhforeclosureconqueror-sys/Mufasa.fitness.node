@@ -6,18 +6,21 @@ const {createRoleConfigurationRegistry} = require("../src/business-os/organizati
 const {createOrganizationalCoordinator} = require("../src/business-os/organization/coordinator");
 const {createScenarioRegistry} = require("../src/business-os/academy/registry");
 const {createAcademyRunner} = require("../src/business-os/academy/runner");
+const {createAnalystAssessment} = require("../src/business-os/analyst/assessment");
 
 function coordinatorFixture() {
   const f = createExperimentFixture(), roles = createRoleConfigurationRegistry({organizationId: f.organizationId});
   roles.registerDefaults();
   f.kernel.issueGrant({id: "role-grant", issuerActorId: "issuer", subjectActorId: "agent", actionScopes: ["organization.assign"], resourceScopes: [`organization:${f.organizationId}`], constraints: {}});
   const invoker = E.createExperimentRuntimeInvoker({manager: f.manager, kernel: f.kernel, clock: f.clock});
+  const assessment = createAnalystAssessment({organizationId: f.organizationId, candidateRef: "candidate:fixture", inputArtifactRefs: ["analyst:fixture"], evidence: [{classification: "VERIFIED_OUTCOME", evidenceRefs: ["evidence:fixture"]}], problemEvidence: .9, productFit: .9, readiness: .9, outcomeStrength: .9, confidence: .9, productReadiness: "OPERATIONAL"});
+  const context = {candidateRef: "candidate:fixture", question: "Will the fixture complete?", hypothesis: "The bounded fixture completes.", variable: "fixture", successMetric: "completion", failureMetric: "rejection", audience: "synthetic_subjects", offer: "internal_fixture", channel: "academy", window: "one_run", productReadiness: "OPERATIONAL", capabilityReadiness: "OPERATIONAL", costCeiling: 0, minimumUsefulEvidence: 1, riskCeiling: "LOW", boundary: "INTERNAL", stopConditions: ["technical_failure"], requiredAuthorityRefs: ["role-grant"]};
   let n = 0;
   const coordinator = createOrganizationalCoordinator({organizationId: f.organizationId, roleRegistry: roles, runtimeInvoker: invoker, kernel: f.kernel, clock: f.clock, id: () => `role:${++n}`});
   coordinator.objective({id: "objective", organizationId: f.organizationId, objective: "test", successCriteria: ["attribution"], priority: "HIGH", scope: ["internal"], budget: {currency: "USD", maxCost: 10}, riskBoundary: "LOW", authorityRefs: ["role-grant"], evidenceRefs: ["analyst:fixture"], status: "ACTIVE"});
   function work(id, extra = {}) { return coordinator.createWork({id, organizationId: f.organizationId, objectiveRef: "objective", missionType: "DESIGN_EXPERIMENT", eligibleRoleIds: ["EXPERIMENT_MANAGER"], inputArtifactRefs: ["analyst:fixture"], dependencyWorkRefs: [], authorityRefs: ["role-grant"], policyRefs: ["EXPERIMENT_MANAGER_POLICY_V1"], budget: {currency: "USD", maxCost: 10}, riskBoundary: "LOW", correlationId: id, causationId: "objective", idempotencyKey: id, ...extra}); }
   const assign = id => coordinator.assign(id, {roleId: "EXPERIMENT_MANAGER", actorRef: "agent", authorityRefs: ["role-grant"]});
-  return {...f, roles, invoker, coordinator, work, assign};
+  return {...f, roles, invoker, coordinator, work, assign, assessment, context};
 }
 
 test("shared role stays a configuration with live adapters unavailable", () => {
@@ -160,14 +163,14 @@ test("coordinator rejects missing authority, wrong mission, and forged attributi
 });
 test("coordinator execution rejects over-budget design before recording it", async () => {
   const f = coordinatorFixture(), work = f.work("over-budget"), assignment = f.assign(work.id);
-  await assert.rejects(f.coordinator.execute(assignment.id, {...f.input, id: "oversized", costCeiling: 11}), /budget_exceeded/);
+  await assert.rejects(f.coordinator.execute(assignment.id, {assessment: f.assessment, context: {...f.context, costCeiling: 11}}), /budget_exceeded/);
   assert.equal(f.manager.getProposal("oversized", 1), null);
   assert.equal(f.coordinator.getWork(work.id).state, "FAILED");
 });
 test("coordinator rechecks grant revocation at execution", async () => {
   const f = coordinatorFixture(), work = f.work("revoked"), assignment = f.assign(work.id);
   f.kernel.revokeGrant("role-grant", "issuer");
-  await assert.rejects(f.coordinator.execute(assignment.id, {...f.input, id: "revoked"}), /runtime_authority_required/);
+  await assert.rejects(f.coordinator.execute(assignment.id, {assessment: f.assessment, context: f.context}), /runtime_authority_required/);
 });
 test("interpretation rejects unrecorded results and unrelated work", async () => {
   const f = coordinatorFixture(), work = f.work("interpret", {missionType: "INTERPRET_EXPERIMENT", inputArtifactRefs: ["unrelated"]}), assignment = f.assign(work.id);

@@ -4,6 +4,8 @@ const {createKernelApprovalAuthority, APPROVAL_ACTION} = require("./approval");
 const {createConstitutionalKernel} = require("../kernel/kernel");
 const {createRoleConfigurationRegistry} = require("../organization/roles");
 const {createOrganizationalCoordinator} = require("../organization/coordinator");
+const {buildExperimentProposal} = require("./proposal-reasoning");
+const {createAnalystAssessment} = require("../analyst/assessment");
 const verifiedIntegration = new WeakSet();
 const freeze = value => { if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
 const scopeMatches = (allowed, actual) => allowed.includes(actual) || allowed.some(x => x.endsWith("*") && actual.startsWith(x.slice(0, -1)));
@@ -21,10 +23,11 @@ function createExperimentRuntimeInvoker({manager, kernel, clock = () => new Date
     })) throw new Error("experiment_runtime_authority_required");
     let artifacts;
     if (work.missionType === "DESIGN_EXPERIMENT") {
-      const evidenceRefs = input.evidenceRefs || work.inputArtifactRefs;
-      if (!evidenceRefs?.length || !evidenceRefs.every(ref => work.inputArtifactRefs.includes(ref))) throw new Error("experiment_input_provenance_required");
-      if (!Number.isFinite(work.budget?.maxCost) || !Number.isFinite(input.costCeiling) || input.costCeiling > work.budget.maxCost) throw new Error("experiment_budget_exceeded");
-      const p = manager.propose({...input, id: input.id || `proposal:${work.id}`, organizationId: work.organizationId, workId: work.id, motivatingEvidenceRefs: evidenceRefs, requiredAuthorityRefs: work.authorityRefs, riskCeiling: work.riskBoundary});
+      if (!input.assessment) throw new Error("analyst_assessment_required");
+      if (!input.assessment.provenance?.inputArtifactRefs?.every(ref => work.inputArtifactRefs.includes(ref))) throw new Error("experiment_input_provenance_required");
+      if (!Number.isFinite(work.budget?.maxCost) || !Number.isFinite(input.context?.costCeiling) || input.context.costCeiling > work.budget.maxCost) throw new Error("experiment_budget_exceeded");
+      const built = buildExperimentProposal({manager, assessment: input.assessment, context: {...input.context, workId: work.id, requiredAuthorityRefs: work.authorityRefs, riskCeiling: work.riskBoundary, boundary: input.context.boundary || "INTERNAL"}, id: input.id || `proposal:${work.id}`, version: input.version || 1});
+      const p = built.proposal;
       artifacts = [{id: `artifact:${p.id}:${p.version}`, artifactType: "ExperimentProposal", proposal: p, costCeiling: p.costCeiling, sourceEvidenceRefs: p.motivatingEvidenceRefs}];
     } else {
       const candidate = input.result || manager.getResult(input.runRef);
@@ -58,7 +61,8 @@ async function verifyExperimentManagerIntegration({clock = () => new Date("2035-
   const createWork = (workId, missionType, inputArtifactRefs, dependencyWorkRefs = []) => coordinator.createWork({id: workId, organizationId, objectiveRef: "objective:experiment", missionType, eligibleRoleIds: ["EXPERIMENT_MANAGER"], inputArtifactRefs, dependencyWorkRefs, authorityRefs: [grantRef], policyRefs: ["EXPERIMENT_MANAGER_POLICY_V1"], budget: {currency: "USD", maxCost: 0}, riskBoundary: "LOW", correlationId: "experiment", causationId: "objective:experiment", idempotencyKey: `create:${workId}`});
   const design = createWork("work:experiment", "DESIGN_EXPERIMENT", ["analyst:fixture"]);
   const assignment = coordinator.assign(design.id, {roleId: "EXPERIMENT_MANAGER", actorRef: actorId, authorityRefs: [grantRef]});
-  const execution = await coordinator.execute(assignment.id, {question: "Does the fixture complete?", hypothesis: "The bounded fixture completes", variable: "fixture", successMetric: "completion", failureMetric: "rejection", minimumUsefulEvidence: 1, costCeiling: 0, boundary: "INTERNAL", stopConditions: ["technical_failure"]});
+  const assessment = createAnalystAssessment({organizationId, candidateRef: "candidate:fixture", inputArtifactRefs: ["analyst:fixture"], evidence: [{classification: "VERIFIED_OUTCOME", evidenceRefs: ["evidence:fixture"]}], problemEvidence: 0.9, productFit: 0.9, readiness: 0.9, outcomeStrength: 0.9, confidence: 0.9, productReadiness: "OPERATIONAL"});
+  const execution = await coordinator.execute(assignment.id, {assessment, context: {candidateRef: "candidate:fixture", question: "Will the bounded fixture complete?", hypothesis: "The bounded fixture completes.", variable: "fixture", successMetric: "completion", failureMetric: "rejection", audience: "synthetic_subjects", offer: "internal_fixture", channel: "academy", window: "one_run", capabilityReadiness: "OPERATIONAL", productReadiness: "OPERATIONAL", costCeiling: 0, minimumUsefulEvidence: 1, riskCeiling: "LOW", boundary: "INTERNAL", stopConditions: ["technical_failure"], requiredAuthorityRefs: [grantRef]}});
   const artifact = coordinator.getArtifact(execution.artifactRefs[0]);
   const approval = manager.approve({proposalId: artifact.proposal.id, proposalVersion: 1, budgetCeiling: 0}, session);
   const run = manager.start({proposalId: artifact.proposal.id, proposalVersion: 1, approvalRef: approval.id, budget: 0, boundary: "INTERNAL", idempotencyKey: "integration-run"});
