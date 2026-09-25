@@ -1,0 +1,3 @@
+"use strict";
+function experimentManagerReadiness({academyResults=[],integrationEvidence=[]}={}){const architecture=academyResults.length>0&&academyResults.every(x=>x.verdict==="PASS"),integration=integrationEvidence.some(x=>x?.status==="PASS"&&x.sharedRuntime&&x.coordinator);return Object.freeze({gates:{EXPERIMENT_MANAGER_ARCHITECTURE_READY:architecture?"PASS":"FAIL",EXPERIMENT_MANAGER_INTERNAL_INTEGRATION_VERIFIED:integration?"PASS":"FAIL",EXPERIMENT_MANAGER_LIVE_ENABLED:"FAIL",EXPERIMENT_MANAGER_HUMAN_ACCEPTED:"FAIL"},architectureReady:architecture&&integration,certified:false,liveEnabled:false,limitations:["Academy is architecture evidence only.","Human acceptance and live enablement remain unavailable."]})}
+module.exports={experimentManagerReadiness};

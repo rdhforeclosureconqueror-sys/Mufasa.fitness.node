@@ -58,7 +58,8 @@
     "motion:validate": "node scripts/motion/validate-motion-fixture.js",
     "motion:build:push-up": "node scripts/motion/build-motion-fixture.js motion-sources/avaturn-push-up.source.json",
     "motion:validate:push-up": "node scripts/motion/validate-motion-fixture.js motion-sources/avaturn-push-up.source.json public/motion/assets/exercises/push-up/avaturn-push-up-animation.glb",
-    "analyst:certify": "node scripts/analyst-platinum-certify.js"
+    "analyst:certify": "node scripts/analyst-platinum-certify.js",
+    "test:experiment-manager": "node --test test/ai-business-os-experiment-manager.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

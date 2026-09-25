@@ -4002,6 +4002,85 @@
       "prNumber": 883,
       "commitSha": "36f3089f162943262eabefa08e62e6be05e7541d",
       "timestamp": "2026-09-24T19:47:36.347Z"
+    },
+    {
+      "operationId": "1451ce83-5cf7-4255-8692-bb877adad661",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "card_creation",
+      "taskId": "experiment-manager",
+      "files": [],
+      "automated": null,
+      "evidence": "Implement Experiment Manager phases E0-E8 on the shared governed runtime with immutable proposals, approval and budget enforcement, truthful measurement and classification, coordinator integration, Academy evidence, and no live side effects.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T13:22:46.244Z"
+    },
+    {
+      "operationId": "acf8d2a8-1315-43b1-827c-167dd24cbf13",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "experiment-manager",
+      "files": [],
+      "automated": null,
+      "evidence": "Started Experiment Manager E0-E8 implementation from main baseline.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T13:22:46.814Z"
+    },
+    {
+      "operationId": "372d0c93-5136-4c36-8e38-14e8291a8f02",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "experiment-manager",
+      "files": [],
+      "automated": null,
+      "evidence": "Selected Experiment Manager as CURRENT implementation task.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T13:22:47.429Z"
+    },
+    {
+      "operationId": "2444c411-29c0-4c56-8c91-0ea757054cef",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "automated_test",
+      "taskId": "experiment-manager",
+      "files": [
+        "src/business-os/organization/roles.js",
+        "src/business-os/experiment-manager/contracts.js",
+        "src/business-os/experiment-manager/policy.js",
+        "src/business-os/experiment-manager/manager.js",
+        "src/business-os/experiment-manager/integration.js",
+        "src/business-os/experiment-manager/tools.js",
+        "src/business-os/experiment-manager/readiness.js",
+        "src/business-os/experiment-manager/index.js",
+        "test/ai-business-os-experiment-manager.test.js",
+        "docs/architecture/ai-business-os/experiment-manager/README.md",
+        "docs/architecture/ai-business-os/experiment-manager/IMPLEMENTATION_CONTRACT.md",
+        "docs/architecture/ai-business-os/experiment-manager/CODEX_HANDOFF.md",
+        "package.json"
+      ],
+      "automated": "PASS",
+      "evidence": "E0-E8 implementation complete. Targeted Experiment Manager tests 9/9 PASS; Phase 6, Phase 8, and Analyst regression tests 55/55 PASS; readiness validation PASS. No browser or production QA was required for this architecture-only change. No physical-device acceptance performed. Human acceptance remains required and was not self-approved. Full npm test has numerous unrelated baseline failures and was interrupted after continued failures.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T13:27:25.498Z"
+    },
+    {
+      "operationId": "8b01543a-f40d-47ee-8f33-0fce24031da0",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "experiment-manager",
+      "files": [],
+      "automated": "PASS",
+      "evidence": "Implementation committed as efad7fed2663f1d35c25861d1e8e9b131d6cb58c. Draft PR requested; human acceptance remains pending and no live or physical-device claim is made.",
+      "prNumber": null,
+      "commitSha": "efad7fed2663f1d35c25861d1e8e9b131d6cb58c",
+      "timestamp": "2026-09-25T13:27:37.439Z"
     }
   ]
 }

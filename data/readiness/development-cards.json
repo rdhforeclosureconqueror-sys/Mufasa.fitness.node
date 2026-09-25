@@ -440,6 +440,22 @@
       "createdAt": "2026-09-24T18:45:18.280Z",
       "source": "PR #882 implementation assignment",
       "taskId": "analyst-platinum"
+    },
+    {
+      "id": "launch-development-experiment-manager",
+      "board": "launch",
+      "canonical": false,
+      "title": "Experiment Manager architecture",
+      "category": "AI BUSINESS OS",
+      "description": "Implement Experiment Manager phases E0-E8 on the shared governed runtime with immutable proposals, approval and budget enforcement, truthful measurement and classification, coordinator integration, Academy evidence, and no live side effects.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-7-brain-academy-certification"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-25T13:22:46.244Z",
+      "source": "PR #887 implementation plan",
+      "taskId": "experiment-manager"
     }
   ]
 }
