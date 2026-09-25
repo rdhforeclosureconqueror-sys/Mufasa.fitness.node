@@ -10,9 +10,11 @@ const refs = values => Array.isArray(values) && values.every(x => typeof x === "
 const money = value => Number.isFinite(value) && value >= 0 && Number.isSafeInteger(Math.round(value * 100)) && Math.abs(value * 100 - Math.round(value * 100)) < 1e-7;
 const cents = value => Math.round(value * 100);
 
-function createExperimentManager({organizationId, clock = () => new Date(), approvalAuthority} = {}) {
+function createExperimentManager({organizationId, clock = () => new Date(), approvalAuthority, repository} = {}) {
   if (!organizationId) throw new Error("organization_required");
   const proposals = new Map(), approvals = new Map(), runs = new Map(), runKeys = new Map(), measurements = new Map(), results = new Map();
+  if (repository && (repository.organizationId !== organizationId || typeof repository.transaction !== "function")) throw new Error("experiment_repository_scope_mismatch");
+  const tables = {proposals, approvals, runs, runKeys, measurements, results};
   const now = () => clock().toISOString();
   function getProposal(id, version) {
     const p = proposals.get(`${id}@${version}`);
@@ -154,7 +156,22 @@ function createExperimentManager({organizationId, clock = () => new Date(), appr
     if (!stored || result.organizationId !== organizationId || !isDeepStrictEqual(result, stored)) throw new Error("stored_experiment_result_required");
     return clone(stored);
   }
-  return Object.freeze({organizationId, propose, approve, start, pause, resume, stop, cancel, triggerStop, measure, complete, validateResult,
-    getProposal: (id, version) => clone(proposals.get(`${id}@${version}`) || null), getRun: id => clone(runs.get(id) || null), getResult: id => clone(results.get(id) || null)});
+  const api = {organizationId, propose, approve, start, pause, resume, stop, cancel, triggerStop, measure, complete, validateResult,
+    getProposal: (id, version) => clone(proposals.get(`${id}@${version}`) || null), getRun: id => clone(runs.get(id) || null), getResult: id => clone(results.get(id) || null)};
+  if (repository) {
+    for (const [name, operation] of Object.entries(api)) {
+      if (typeof operation !== "function") continue;
+      api[name] = (...args) => repository.transaction(state => {
+        for (const [key, map] of Object.entries(tables)) {
+          map.clear();
+          for (const [id, value] of state.tables[key]) map.set(id, value);
+        }
+        const result = operation(...args);
+        for (const [key, map] of Object.entries(tables)) state.tables[key] = [...map.entries()];
+        return result;
+      }, {readOnly: name.startsWith("get") || name === "validateResult"});
+    }
+  }
+  return Object.freeze(api);
 }
 module.exports = {createExperimentManager};
