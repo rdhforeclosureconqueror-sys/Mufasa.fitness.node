@@ -3,12 +3,15 @@ const {createScenarioRegistry} = require("../academy/registry");
 const {createAcademyRunner} = require("../academy/runner");
 const {createExperimentFixture} = require("./academy-fixtures");
 const {createExperimentManager} = require("./manager");
+const {createAnalystAssessment} = require("../analyst/assessment");
+const {buildExperimentProposal} = require("./proposal-reasoning");
 const {verifyExperimentManagerIntegration, isVerifiedIntegrationEvidence} = require("./integration");
 const {PROHIBITED_ACTIONS} = require("./policy");
 const verifiedReports = new WeakSet();
 const freeze = value => { if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
 const rejected = fn => { try { fn(); return null; } catch (error) { return error.message; } };
 const cases = [
+  ["analyst-to-proposal", "PROPOSAL_READY", () => { const f = createExperimentFixture(); const assessment = createAnalystAssessment({organizationId: f.organizationId, candidateRef: "candidate:fixture", inputArtifactRefs: ["analyst:fixture"], evidence: [{classification: "VERIFIED_OUTCOME", evidenceRefs: ["evidence:fixture"]}], problemEvidence: .9, productFit: .9, readiness: .9, outcomeStrength: .9, confidence: .9, productReadiness: "OPERATIONAL"}); return buildExperimentProposal({manager: f.manager, assessment, context: {candidateRef: "candidate:fixture", question: "Will the fixture complete?", hypothesis: "The fixture completes.", variable: "fixture", successMetric: "completion", failureMetric: "rejection", audience: "synthetic_subjects", offer: "internal_fixture", channel: "academy", window: "one_run", productReadiness: "OPERATIONAL", capabilityReadiness: "OPERATIONAL", costCeiling: 0, minimumUsefulEvidence: 1, riskCeiling: "LOW", boundary: "INTERNAL", stopConditions: ["technical_failure"], requiredAuthorityRefs: ["grant:experiment"]}}).status; }],
   ["bounded-proposal", "REVIEW_REQUIRED", () => createExperimentFixture().p.status],
   ["missing-evidence", "proposal_evidence_required:motivatingEvidenceRefs", () => rejected(() => createExperimentFixture({proposal: {motivatingEvidenceRefs: []}}))],
   ["missing-hypothesis", "proposal_field_required:hypothesis", () => rejected(() => createExperimentFixture({proposal: {hypothesis: ""}}))],
