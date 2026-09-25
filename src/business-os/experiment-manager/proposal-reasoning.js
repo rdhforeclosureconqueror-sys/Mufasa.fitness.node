@@ -1,5 +1,5 @@
 "use strict";
-const {DISPOSITIONS} = require("../analyst/contracts");
+const {DISPOSITIONS, CONTRACT_VERSION} = require("../analyst/contracts");
 
 const refs = value => Array.isArray(value) && value.length > 0 && value.every(x => typeof x === "string" && x.trim());
 const text = value => typeof value === "string" && value.trim().length > 0;
@@ -7,24 +7,32 @@ const list = value => Array.isArray(value) && value.every(text);
 
 function validateAnalystAssessment({assessment, organizationId} = {}) {
   if (!assessment || assessment.kind !== "AnalystAssessment") throw new Error("analyst_assessment_required");
-  if (assessment.organizationId !== organizationId) throw new Error("analyst_assessment_scope_mismatch");
+  if (assessment.contractVersion !== CONTRACT_VERSION) throw new Error("analyst_contract_version_invalid");
+  if (!text(assessment.id) || !text(assessment.candidateRef)) throw new Error("analyst_identity_required");
+  if (!text(organizationId) || assessment.organizationId !== organizationId) throw new Error("analyst_assessment_scope_mismatch");
   if (!Number.isSafeInteger(assessment.version) || assessment.version < 1) throw new Error("analyst_assessment_version_invalid");
   if (!DISPOSITIONS.includes(assessment.disposition)) throw new Error("analyst_disposition_invalid");
   if (assessment.disposition !== "ADVANCE_TO_EXPERIMENT") throw new Error(`analyst_disposition_blocks_experiment:${assessment.disposition}`);
   if (!refs(assessment.evidenceRefs)) throw new Error("analyst_evidence_required");
-  if (!assessment.analysis || !Number.isFinite(assessment.analysis.score) || assessment.analysis.score < 55) throw new Error("analyst_strength_insufficient");
-  if (!Array.isArray(assessment.analysis.reasoning) || !assessment.analysis.reasoning.length) throw new Error("analyst_reasoning_required");
-  if (Array.isArray(assessment.analysis.openQuestions) && assessment.analysis.openQuestions.length) throw new Error("analyst_open_questions_require_evidence");
-  if (!Number.isFinite(assessment.confidence) || assessment.confidence < 0.55) throw new Error("analyst_confidence_insufficient");
-  if (assessment.historicalEvidenceRewritten === true) throw new Error("analyst_historical_evidence_rewritten");
-  if (!assessment.provenance || !text(assessment.provenance.policyRef) || !refs(assessment.provenance.inputArtifactRefs)) throw new Error("analyst_provenance_required");
+  if (!assessment.analysis || !Number.isFinite(assessment.analysis.score) || assessment.analysis.score < 55 || assessment.analysis.score > 100) throw new Error("analyst_strength_insufficient");
+  if (!refs(assessment.analysis.reasoning)) throw new Error("analyst_reasoning_required");
+  if (!list(assessment.analysis.openQuestions) || assessment.analysis.openQuestions.length) throw new Error("analyst_open_questions_require_evidence");
+  if (!Number.isFinite(assessment.confidence) || assessment.confidence < 0.55 || assessment.confidence > 1) throw new Error("analyst_confidence_insufficient");
+  if (assessment.historicalEvidenceRewritten !== false) throw new Error("analyst_historical_evidence_rewritten");
+  if (!assessment.provenance || assessment.provenance.policyRef !== "ANALYST_REASONING_POLICY_V1" || !refs(assessment.provenance.inputArtifactRefs)) throw new Error("analyst_provenance_required");
+  if (!list(assessment.limitations)) throw new Error("analyst_limitations_invalid");
   return assessment;
 }
 
 function requireContext(context = {}) {
+  if (!context || typeof context !== "object" || Array.isArray(context)) throw new Error("experiment_context_invalid");
+  for (const field of ["confounders", "limitations", "diagnosticMetrics", "capabilityRefs", "evidencePlan"]) {
+    if (context[field] !== undefined && !list(context[field])) throw new Error(`experiment_context_invalid:${field}`);
+  }
+  if (context.evidencePlan !== undefined && !context.evidencePlan.length) throw new Error("experiment_evidence_plan_required");
   const required = ["candidateRef", "question", "hypothesis", "variable", "successMetric", "failureMetric", "audience", "offer", "channel", "window", "riskCeiling", "boundary"];
   for (const field of required) if (!text(context[field])) throw new Error(`experiment_context_required:${field}`);
-  if (context.successMetric === context.failureMetric) throw new Error("distinct_outcome_metrics_required");
+  if (context.successMetric.trim() === context.failureMetric.trim()) throw new Error("distinct_outcome_metrics_required");
   if (!Number.isFinite(context.costCeiling) || context.costCeiling < 0) throw new Error("experiment_cost_required");
   if (!Number.isSafeInteger(context.minimumUsefulEvidence) || context.minimumUsefulEvidence < 1) throw new Error("minimum_useful_evidence_required");
   if (!list(context.stopConditions) || !context.stopConditions.length) throw new Error("experiment_stop_conditions_required");

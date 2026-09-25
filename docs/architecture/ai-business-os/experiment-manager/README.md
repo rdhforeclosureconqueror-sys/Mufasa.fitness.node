@@ -10,7 +10,7 @@ The full target remains [IMPLEMENTATION_CONTRACT.md](IMPLEMENTATION_CONTRACT.md)
 | --- | --- | --- |
 | E0 Baseline/contracts | INTERNAL_PASS | Existing roles, coordinator, proposal/result contracts, Economics and Learning ownership retained. |
 | E1 Policy/records | PARTIAL | Proposal, approval, run, measurement and result records exist; durable decision records remain outstanding. |
-| E2 Proposal reasoning | INTERNAL_PASS | A validated `AnalystAssessment` now produces a bounded proposal only when evidence, confidence, product readiness, capability readiness, audience, offer, channel, window, metrics, budget and authority context are complete. Weak, contradictory, stale, mismatched or unsupported inputs are rejected. Further domain-specific reasoning can extend this builder. |
+| E2 Proposal reasoning | INTERNAL_PASS | A validated `AnalystAssessment` now produces a bounded proposal only when evidence, confidence, product readiness, capability readiness, audience, offer, channel, window, metrics, budget and authority context are complete. Weak, contradictory, malformed, mismatched or unsupported inputs are rejected. Further domain-specific reasoning can extend this builder. |
 | E3 Lifecycle/governance | PARTIAL | Immutable revisions, authenticated approval adapter, cumulative budgets, replay protection, pause/resume/stop/cancel and transition history pass. Preparation/QA/archive states and durable restart recovery remain outstanding. |
 | E4 Coordinator integration | INTERNAL_PASS | Both design and interpretation execute through real kernel grants, roles, assignment and coordinator artifact validation. Negative tests reject missing/revoked authority, wrong mission, forged actor, scope mismatch and over-budget design. |
 | E5 Measurement/results | PARTIAL | Missing/zero, unique samples, observation windows, minimum evidence, contradiction and failure classification pass. General metric definitions, statistical windows and real source verification remain outstanding. |
@@ -50,6 +50,8 @@ This evidence boundary is intentionally process-local. A future durable evidence
 
 `buildExperimentProposal({manager, assessment, context})` is the controlled bridge from the Platinum Analyst to the Experiment Manager. The assessment must be a canonical `AnalystAssessment` with `ADVANCE_TO_EXPERIMENT`, score at least 55, confidence at least 0.55, attributable evidence, provenance, no open questions, no rewritten history, and no unresolved contradiction. Context must identify the candidate, audience, offer, channel, time window, hypothesis, variable, success/failure metrics, budget, risk, boundary, stop rules, authority and operational product/capability readiness.
 
+Validation checks the supported contract and policy versions, assessment identity, bounded scores/confidence, and well-formed question and context lists. This validates record structure; it does not authenticate external evidence sources or establish evidence freshness.
+
 The builder preserves the Analyst assessment reference, version, score, confidence, evidence plan and limitations inside the proposal. It does not approve or start the experiment. Approval remains a human-owned governance step.
 
 ## Verification
@@ -60,6 +62,6 @@ node --test test/ai-business-os-experiment-manager.test.js test/ai-business-os-p
 npm run readiness:validate
 ```
 
-Review repair plus EM-1: 51 Experiment Manager and proposal reasoning tests (including 28 Academy scenario subtests), 170 total targeted/regression checks, zero failures. No browser, physical-device, live campaign, payment or human acceptance was performed. The full repository test suite was not rerun for this repair; the original draft's broad-suite failure report is not a passing gate.
+Review repair plus EM-1: 53 Experiment Manager and proposal reasoning tests (including 28 Academy scenario subtests), 172 total targeted/regression checks, zero failures. No browser, physical-device, live campaign, payment or human acceptance was performed. The full repository test suite was not rerun for this repair; the original draft's broad-suite failure report is not a passing gate.
 
 State is in memory and tools remain definition-only/unavailable. Do not connect external execution until durable state, real authentication, independent QA and the remaining target requirements are implemented and verified.

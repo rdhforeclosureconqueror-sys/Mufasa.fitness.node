@@ -53,3 +53,29 @@ test("EM-1 coordinator design requires the Analyst assessment path", async () =>
   const fake = {kind: "AnalystAssessment", organizationId: "org", id: "fake", candidateRef: "candidate:push-up", version: 1, evidenceRefs: ["evidence:conversion"], analysis: {score: 90, reasoning: ["supported"], openQuestions: []}, disposition: "ADVANCE_TO_EXPERIMENT", confidence: .9, limitations: [], provenance: {policyRef: "ANALYST_REASONING_POLICY_V1", inputArtifactRefs: ["analyst:assessment"]}, historicalEvidenceRewritten: false};
   await assert.rejects(async () => Experiment.createExperimentRuntimeInvoker({manager: m, kernel: {repository: {data: {actors: new Map(), grants: new Map()}}}})({work: {id: "work", organizationId: "org", missionType: "DESIGN_EXPERIMENT", authorityRefs: [], budget: {maxCost: 0}}, assignment: {roleId: "EXPERIMENT_MANAGER", roleVersion: 1, organizationId: "org", workId: "work", status: "ACTIVE", actorRef: "agent"}, role: {id: "EXPERIMENT_MANAGER", version: 1}, input: {assessment: fake, context}}), /experiment_runtime_authority_required/);
 });
+
+test("EM-1 rejects malformed assessment records before recording a proposal", () => {
+  for (const patch of [
+    {id: ""}, {candidateRef: ""}, {contractVersion: "unknown"},
+    {confidence: 2}, {analysis: {score: 101, reasoning: ["ok"], openQuestions: []}},
+    {analysis: {score: 90, reasoning: [null], openQuestions: []}},
+    {analysis: {score: 90, reasoning: ["ok"]}},
+    {historicalEvidenceRewritten: undefined}, {limitations: "not-a-list"},
+    {provenance: {policyRef: "unknown", inputArtifactRefs: ["analyst:assessment"]}},
+  ]) {
+    const m = manager(), a = {...assessment(), ...patch};
+    assert.throws(() => Experiment.buildExperimentProposal({manager: m, assessment: a, context}), /analyst_/);
+    assert.equal(m.getProposal(`experiment-proposal:${a.id}`, 1), null);
+  }
+});
+
+test("EM-1 rejects malformed optional context and empty evidence plans", () => {
+  for (const patch of [
+    {limitations: "text"}, {confounders: [null]}, {capabilityRefs: "capability"},
+    {diagnosticMetrics: {}}, {evidencePlan: []},
+    {failureMetric: " challenge_completion "},
+  ]) {
+    assert.throws(() => Experiment.buildExperimentProposal({manager: manager(), assessment: assessment(), context: {...context, ...patch}}),
+      /experiment_context_invalid|experiment_evidence_plan_required|distinct_outcome_metrics_required/);
+  }
+});
