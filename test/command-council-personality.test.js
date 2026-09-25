@@ -51,3 +51,10 @@ test("Council routing contract requires complete multi-seat reports",()=>{
   assert.match(prompt,/all personalities or all perspectives/i);
   assert.match(prompt,/each installed specialist seat distinctly/i);
 });
+
+
+test("Council instructions preserve evidence discipline",()=>{
+  const prompt=commandCouncilSystemInstructions();
+  assert.match(prompt,/truth overrides personality/i);
+  assert.match(prompt,/known fact, inference, unknown/i);
+});
