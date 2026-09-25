@@ -4252,6 +4252,51 @@
       "prNumber": 889,
       "commitSha": null,
       "timestamp": "2026-09-25T18:54:20.174Z"
+    },
+    {
+      "operationId": "f36ab0bc-a58f-42d1-84f1-f3ff5f68cb2c",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "em2-durable",
+      "files": [],
+      "automated": null,
+      "evidence": "EM-2 durable internal lifecycle repository and restart recovery",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T18:57:37.591Z"
+    },
+    {
+      "operationId": "02bfee27-be8d-4b1c-8172-3d29fcb5f365",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "implementation",
+      "taskId": "em2-durable",
+      "files": [],
+      "automated": null,
+      "evidence": "select recorded",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T18:57:37.763Z"
+    },
+    {
+      "operationId": "c253fe80-1adf-4c43-b5d2-d6178369764b",
+      "board": "launch",
+      "cardId": "launch-development-experiment-manager",
+      "sourceType": "automated_test",
+      "taskId": "em2-durable",
+      "files": [
+        "src/business-os/experiment-manager/repository.js",
+        "src/business-os/experiment-manager/manager.js",
+        "src/business-os/experiment-manager/index.js",
+        "test/ai-business-os-experiment-manager-durable.test.js",
+        "docs/architecture/ai-business-os/experiment-manager/README.md"
+      ],
+      "automated": "PASS",
+      "evidence": "EM-2 local durable adapter: 176 checks passed including fresh-process recovery, shared reservations, replay, rollback, locking, corruption and revoked authority. Lint and diff passed. Opt-in single-host adapter; application wiring, distributed storage and human/live/economic certification remain pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-25T18:59:21.590Z"
     }
   ]
 }
