@@ -95,12 +95,14 @@ test('cancelled or timed-out mat commands reject late arrival without starting s
 test('camera setup locks movement, uses visibility only, and never arms a countdown', () => {
   const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
   assert.equal(f.flow.snapshot().previewOnly, false); assert.equal(f.sent.some(packet => packet.action === 'PUSH_UP_START'), false);
-  assert.equal(f.flow.calibration('CAPTURE_TOP'), true);
+  assert.equal(f.flow.calibration('WAIT_TOP_READY'), true);
   assert.equal(f.flow.cameraStarting(), true); f.flow.cameraActive(); f.flow.visibility(true);
+  assert.equal(f.flow.snapshot().state, 'WAIT_TOP_READY');
+  assert.equal(f.flow.calibration('CAPTURE_TOP'), true);
   assert.equal(f.flow.snapshot().state, 'CALIBRATING_TOP'); assert.equal(f.flow.hold('MOVE_FORWARD'), false);
   assert.equal(f.flow.approach(), false); assert.equal(f.flow.snapshot().context, 'CAMERA_SETUP');
-  f.flow.calibration('CAPTURE_BOTTOM'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_BOTTOM');
-  f.flow.calibration('CONFIRM_TOP'); assert.equal(f.flow.snapshot().state, 'CONFIRMING_TOP');
+  f.flow.calibration('WAIT_BOTTOM_READY'); f.flow.calibration('CAPTURE_BOTTOM'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_BOTTOM');
+  f.flow.calibration('WAIT_TOP_CONFIRM_READY'); f.flow.calibration('CONFIRM_TOP'); assert.equal(f.flow.snapshot().state, 'CONFIRMING_TOP');
   f.flow.calibration('CALIBRATED'); assert.equal(f.flow.snapshot().state, 'CALIBRATED');
   f.advance(65000); assert.equal(f.flow.snapshot().state, 'CALIBRATED');
   assert.equal(f.marks.some(([id, status]) => ['START_POSITION', 'READY_GESTURE', 'REP_DETECTOR', 'TIMER', 'SCORE_PERSISTENCE'].includes(id) && status === 'PASS'), false);
@@ -110,7 +112,7 @@ test('camera setup locks movement, uses visibility only, and never arms a countd
 test('personal pose calibration records gates but cannot mark official start or rep checks as passed', () => {
   const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
   f.flow.cameraStarting(); f.flow.cameraActive(); f.flow.visibility(true);
-  for (const stage of ['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED']) assert.equal(f.flow.calibration(stage), true);
+  for (const stage of ['WAIT_TOP_READY','CAPTURE_TOP','WAIT_BOTTOM_READY','CAPTURE_BOTTOM','WAIT_TOP_CONFIRM_READY','CONFIRM_TOP','CALIBRATED']) assert.equal(f.flow.calibration(stage), true);
   assert.ok(f.marks.some(([id, status]) => id === 'POSE_TOP_CALIBRATION' && status === 'PASS'));
   assert.ok(f.marks.some(([id, status]) => id === 'POSE_BOTTOM_CALIBRATION' && status === 'PASS'));
   assert.ok(f.marks.some(([id, status]) => id === 'POSE_CYCLE_CALIBRATION' && status === 'PASS'));
@@ -121,13 +123,13 @@ test('personal pose calibration records gates but cannot mark official start or 
 test('timeout identifies the acquisition phase and recovery cannot revive cleared references', () => {
   const f = fixture(); f.capabilities(); f.flow.approach(); f.reply('AT_MAT'); f.flow.setup();
   f.flow.cameraStarting(); f.flow.cameraActive(); f.flow.visibility(true);
-  f.flow.calibration('CAPTURE_TOP'); f.flow.calibration('CAPTURE_BOTTOM');
+  f.flow.calibration('WAIT_TOP_READY'); f.flow.calibration('CAPTURE_TOP'); f.flow.calibration('WAIT_BOTTOM_READY'); f.flow.calibration('CAPTURE_BOTTOM');
   f.flow.calibration('NEEDS_RETRY', 'TIMEOUT', 'CAPTURE_BOTTOM');
   assert.equal(f.flow.snapshot().state, 'CALIBRATION_RETRY'); assert.equal(f.flow.snapshot().canRestartCalibration, true);
   assert.deepEqual(f.marks.filter(x => x[0] === 'POSE_BOTTOM_CALIBRATION').at(-1), ['POSE_BOTTOM_CALIBRATION', 'FAIL', 'CALIBRATION_TIMEOUT']);
   f.flow.visibility(false); f.flow.visibility(true); assert.equal(f.flow.snapshot().state, 'CALIBRATION_RETRY');
   assert.equal(f.flow.calibration('CALIBRATED'), false);
-  f.flow.calibration('CAPTURE_TOP'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_TOP');
+  f.flow.calibration('WAIT_TOP_READY'); f.flow.calibration('CAPTURE_TOP'); assert.equal(f.flow.snapshot().state, 'CALIBRATING_TOP');
   assert.equal(f.marks.filter(x => x[0] === 'POSE_TOP_CALIBRATION').at(-1)[1], 'RUNNING');
   assert.equal(f.marks.filter(x => x[0] === 'POSE_BOTTOM_CALIBRATION').at(-1)[1], 'WAITING');
 });

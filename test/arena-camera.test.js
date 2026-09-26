@@ -51,14 +51,14 @@ test('camera does not request permission until explicit start and reuses canonic
   f.camera.stop(); assert.equal(f.video.srcObject, null); assert.equal(f.stats().captureStops, 1); assert.equal(f.timers.size, 0);
 });
 
-test('low-confidence required joint stays visible to the overlay instead of erasing the pose packet', async () => {
+test('low-confidence support joint does not block calibration visibility or erase the pose packet', async () => {
   const f = fixture(); await f.camera.start();
   const weak = frame(); weak.analysisUsable = false; weak.trackingState = 'DEGRADED'; weak.sequenceLandmarks.ankle.confidence = .3;
   const packet = {video:{width:640,height:480},keypoints:[{name:'left_ankle',x:300,y:400,score:.3}]};
   f.capture().options.onFrame(weak, {posePacket:packet});
-  assert.equal(f.visibility.at(-1), false);
+  assert.equal(f.visibility.at(-1), true);
   assert.ok(f.poses.at(-1)[0]);
-  assert.equal(f.poses.at(-1)[0].calibrationUsable, false);
+  assert.equal(f.poses.at(-1)[0].calibrationUsable, true);
   assert.equal(f.poses.at(-1)[2], packet);
 });
 
@@ -151,4 +151,14 @@ test('visibility evidence reports the exact unusable side-chain joint and confid
   assert.equal(evidence.joints.wrist.confidence, .23);
   assert.equal(evidence.joints.wrist.usable, false);
   assert.equal(evidence.joints.shoulder.usable, true);
+});
+
+test('visibility treats ankle as supporting evidence while keeping the core side chain mandatory', () => {
+  const cropped = frame(); cropped.sequenceLandmarks.ankle = null;
+  const evidence = visibilityEvidence(cropped, .4);
+  assert.equal(evidence.visible, true);
+  assert.deepEqual(evidence.missing, []);
+  assert.deepEqual(evidence.supportMissing, ['ankle']);
+  const coreMissing = frame(); coreMissing.sequenceLandmarks.hip = null;
+  assert.equal(visibilityEvidence(coreMissing, .4).visible, false);
 });

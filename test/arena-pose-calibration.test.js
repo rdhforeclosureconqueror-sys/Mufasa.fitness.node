@@ -90,7 +90,7 @@ test('calibration visibility can stay usable when the stricter scoring tracker i
   assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
 });
 
-test('top setup guidance rejects bent arms, bad shoulder angle and broken shoulder-hip-ankle line', () => {
+test('top setup guidance rejects bent arms and bad shoulder angle without making body-line tracking a calibration blocker', () => {
   const good = frame('TOP', 1000);
   const accepted = Calibration.evaluateFrame(good, .4, 'CAPTURE_TOP');
   assert.equal(accepted.allPass, true);
@@ -108,19 +108,20 @@ test('top setup guidance rejects bent arms, bad shoulder angle and broken should
   const shoulderEval = Calibration.evaluateFrame(shoulder, .4, 'CAPTURE_TOP');
   assert.equal(shoulderEval.checks.shoulderStack, false);
 
-  const sag = frame('TOP', 1000);
-  sag.sequenceLandmarks.hip.x = .22;
-  const sagEval = Calibration.evaluateFrame(sag, .4, 'CAPTURE_TOP');
-  assert.equal(sagEval.checks.bodyLine, false);
+  const cropped = frame('TOP', 1000);
+  cropped.sequenceLandmarks.ankle = null;
+  const croppedEval = Calibration.evaluateFrame(cropped, .4, 'CAPTURE_TOP');
+  assert.equal(croppedEval.allPass, true);
+  assert.equal(croppedEval.checks.bodyLine, true);
 });
 
-test('bottom guidance requires depth while preserving shoulder-hip-ankle alignment', () => {
+test('bottom guidance requires depth while allowing support-joint loss during personal calibration', () => {
   const bottom = Calibration.evaluateFrame(frame('BOTTOM', 1000), .4, 'CAPTURE_BOTTOM');
   assert.equal(bottom.allPass, true);
   const shallow = Calibration.evaluateFrame(frame('TOP', 1000), .4, 'CAPTURE_BOTTOM');
   assert.equal(shallow.checks.elbowDepth, false);
-  const sag = frame('BOTTOM', 1000); sag.sequenceLandmarks.hip.x = .22;
-  assert.equal(Calibration.evaluateFrame(sag, .4, 'CAPTURE_BOTTOM').checks.bodyLine, false);
+  const cropped = frame('BOTTOM', 1000); cropped.sequenceLandmarks.ankle = null;
+  assert.equal(Calibration.evaluateFrame(cropped, .4, 'CAPTURE_BOTTOM').allPass, true);
 });
 
 test('manual voice capture can lock TOP and BOTTOM from a fresh five-joint frame without waiting for auto form acceptance', () => {
@@ -159,4 +160,20 @@ test('successful capture returns to a READY gate before the next position', () =
   assert.equal(calibration.beginReadyCapture(), true);
   quickHold(calibration, 'BOTTOM', 2000);
   assert.equal(calibration.snapshot().stage, 'WAIT_TOP_CONFIRM_READY');
+});
+
+test('personal TOP/BOTTOM calibration and classification survive ankle loss at the phone-frame edge', () => {
+  const calibration = create();
+  const withoutAnkle = value => { value.sequenceLandmarks.ankle = null; return value; };
+  calibration.start(); calibration.beginReadyCapture();
+  hold(calibration, 'TOP', 0, withoutAnkle, .4);
+  assert.equal(calibration.snapshot().stage, 'WAIT_BOTTOM_READY');
+  calibration.beginReadyCapture();
+  hold(calibration, 'BOTTOM', 3300, withoutAnkle, .4);
+  assert.equal(calibration.snapshot().stage, 'WAIT_TOP_CONFIRM_READY');
+  calibration.beginReadyCapture();
+  hold(calibration, 'TOP', 6600, withoutAnkle, .4);
+  assert.equal(calibration.snapshot().calibrated, true);
+  assert.equal(calibration.classify(withoutAnkle(frame('TOP', 9900)), .4), 'TOP');
+  assert.equal(calibration.classify(withoutAnkle(frame('BOTTOM', 10000)), .4), 'BOTTOM');
 });

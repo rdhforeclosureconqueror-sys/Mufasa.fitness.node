@@ -6,7 +6,9 @@
   'use strict';
   // Side-view push-up setup needs one trustworthy kinetic chain, not every
   // bilateral landmark. The camera adapter selects the stronger visible side.
-  const NAMES = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
+  const CORE_NAMES = ['shoulder', 'elbow', 'wrist', 'hip'];
+  const SUPPORT_NAMES = ['ankle'];
+  const NAMES = [...CORE_NAMES, ...SUPPORT_NAMES];
   const MIN_SAMPLES = 4;
   // Calibration is a quick setup snapshot, not the competition judge. A member
   // should not have to hold a tiring plank for several seconds just to enter the
@@ -52,10 +54,13 @@
     const {sourceWidth: width, sourceHeight: height} = frame;
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
     const status = requiredPointStatus(frame, minimumConfidence);
-    if (!NAMES.every(name => status[name].visible)) return null;
+    if (!CORE_NAMES.every(name => status[name].visible)) return null;
     const points = frame.sequenceLandmarks || {};
-    const p = Object.fromEntries(NAMES.map(name => [name, {x: points[name].x * width, y: points[name].y * height}]));
-    const vector = [angle(p.wrist, p.elbow, p.shoulder), angle(p.elbow, p.shoulder, p.hip), angle(p.shoulder, p.hip, p.ankle)];
+    const p = Object.fromEntries(CORE_NAMES.map(name => [name, {x: points[name].x * width, y: points[name].y * height}]));
+    // Personal pose matching deliberately uses the upper-body chain only.
+    // An ankle that leaves the phone frame must not erase a valid TOP/BOTTOM
+    // reference. Official scoring remains owned by the stricter rep judge.
+    const vector = [angle(p.wrist, p.elbow, p.shoulder), angle(p.elbow, p.shoulder, p.hip)];
     return vector.every(Number.isFinite) ? vector : null;
   }
   function distance(a, b) {
@@ -72,10 +77,12 @@
     return spread <= MAX_STABILITY_DEGREES ? {center, spread} : null;
   }
   function formFromVector(vector, stage) {
-    if (!Array.isArray(vector) || vector.length !== 3 || !vector.every(Number.isFinite)) return null;
-    const [elbowAngle, shoulderAngle, bodyAngle] = vector;
-    const bodyDeviation = Math.abs(180 - bodyAngle);
-    const bodyLine = bodyDeviation <= BODY_ALIGNMENT_GRACE_DEGREES;
+    if (!Array.isArray(vector) || vector.length !== 2 || !vector.every(Number.isFinite)) return null;
+    const [elbowAngle, shoulderAngle] = vector;
+    const bodyAngle = null, bodyDeviation = null;
+    // Body-line enforcement belongs to authoritative scoring. Calibration only
+    // learns the athlete's own repeatable TOP and BOTTOM signal gates.
+    const bodyLine = true;
     if (stage === 'CAPTURE_BOTTOM') {
       const checks = {elbowDepth: elbowAngle <= MAX_BOTTOM_ELBOW_DEGREES, bodyLine};
       return {angles: {elbow: elbowAngle, shoulder: shoulderAngle, body: bodyAngle, bodyDeviation}, checks,
@@ -98,7 +105,7 @@
         usable: false,
         stage,
         side: frame?.side || null,
-        missing: NAMES.filter(name => !status[name]?.visible),
+        missing: CORE_NAMES.filter(name => !status[name]?.visible),
         checks: {}, angles: null, allPass: false
       };
     }
@@ -237,6 +244,6 @@
     }
     return {start, waitForReady, beginReadyCapture, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot};
   }
-  return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
+  return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, CORE_NAMES, SUPPORT_NAMES, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
     TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});
 });

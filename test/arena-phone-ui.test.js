@@ -65,22 +65,31 @@ async function startCalibration(f) {
   await f.nodes.get('arenaSetupCamera').fire('click');
   await f.nodes.get('arenaEnableCamera').fire('click');
 }
+async function readyAndHold(f, kind) {
+  f.ui.voice('ready');
+  f.hold(kind);
+}
+async function completeCalibration(f) {
+  await readyAndHold(f, 'TOP');
+  await readyAndHold(f, 'BOTTOM');
+  await readyAndHold(f, 'TOP');
+}
 
 test('real coordinator rotates from captured references to retry, and explicit restart clears all gates', async t => {
-  const f=fixture(t);await startCalibration(f);f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
+  const f=fixture(t);await startCalibration(f);await completeCalibration(f);
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/calibration complete/);
   assert.equal(f.timers.size,0);f.events.get('orientationchange')();
   assert.equal(f.nodes.get('arenaRestartCalibration').hidden,false);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.equal(f.nodes.get('arenaBodyStatus').dataset.visible,'false');
   await f.nodes.get('arenaRestartCalibration').fire('click');
-  assert.equal(f.doc.activeElement.id,'arenaReturnToGym');f.hold('TOP');
+  assert.equal(f.doc.activeElement.id,'arenaReturnToGym');await readyAndHold(f,'TOP');
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/BOTTOM:/);
   assert.equal(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1)[1],'RUNNING');
   assert.equal(f.marks.some(([id,status])=>['START_POSITION','REP_DETECTOR','TIMER'].includes(id)&&status==='PASS'),false);
 });
 
 test('coordinator deadlines give fast retry feedback and camera switching starts fresh capture', async t => {
-  const f=fixture(t);await startCalibration(f);f.hold('TOP');f.advance(Calibration.PHASE_TIMEOUT_MS + 1);
+  const f=fixture(t);await startCalibration(f);f.ui.voice('ready');f.hold('TOP');f.ui.voice('ready');f.advance(Calibration.PHASE_TIMEOUT_MS + 1);
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.deepEqual(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1),['POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT']);
   f.nodes.get('arenaCameraSelect').value='different-device';await f.nodes.get('arenaCameraSelect').fire('change');
@@ -90,7 +99,7 @@ test('coordinator deadlines give fast retry feedback and camera switching starts
 
 test('suspend, reset, exit and return erase references and pending capture timers', async t => {
   for (const action of ['suspend','reset','close','return']) {
-    const f=fixture(t);await startCalibration(f);f.hold('TOP');
+    const f=fixture(t);await startCalibration(f);await readyAndHold(f,'TOP');f.ui.voice('ready');
     assert.equal(f.timers.size,1);
     if(action==='return')await f.nodes.get('arenaReturnToGym').fire('click');else f.ui[action]();
     assert.equal(f.timers.size,0,action);f.advance(60000);
