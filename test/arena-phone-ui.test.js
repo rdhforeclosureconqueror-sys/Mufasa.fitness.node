@@ -66,7 +66,7 @@ async function startCalibration(f) {
   await f.nodes.get('arenaEnableCamera').fire('click');
 }
 async function readyAndHold(f, kind) {
-  await f.nodes.get('arenaReadyCalibration').fire('click');
+  f.ui.voice('ready');
   f.hold(kind);
 }
 async function completeCalibration(f) {
@@ -89,7 +89,7 @@ test('real coordinator rotates from captured references to retry, and explicit r
 });
 
 test('coordinator deadlines give fast retry feedback and camera switching starts fresh capture', async t => {
-  const f=fixture(t);await startCalibration(f);await f.nodes.get('arenaReadyCalibration').fire('click');f.hold('TOP');await f.nodes.get('arenaReadyCalibration').fire('click');f.advance(Calibration.PHASE_TIMEOUT_MS + 1);
+  const f=fixture(t);await startCalibration(f);f.ui.voice('ready');f.hold('TOP');f.ui.voice('ready');f.advance(Calibration.PHASE_TIMEOUT_MS + 1);
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.deepEqual(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1),['POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT']);
   f.nodes.get('arenaCameraSelect').value='different-device';await f.nodes.get('arenaCameraSelect').fire('change');
@@ -99,7 +99,7 @@ test('coordinator deadlines give fast retry feedback and camera switching starts
 
 test('suspend, reset, exit and return erase references and pending capture timers', async t => {
   for (const action of ['suspend','reset','close','return']) {
-    const f=fixture(t);await startCalibration(f);await readyAndHold(f,'TOP');await f.nodes.get('arenaReadyCalibration').fire('click');
+    const f=fixture(t);await startCalibration(f);await readyAndHold(f,'TOP');f.ui.voice('ready');
     assert.equal(f.timers.size,1);
     if(action==='return')await f.nodes.get('arenaReturnToGym').fire('click');else f.ui[action]();
     assert.equal(f.timers.size,0,action);f.advance(60000);
