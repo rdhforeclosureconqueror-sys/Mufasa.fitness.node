@@ -4401,6 +4401,65 @@
       "prNumber": 891,
       "commitSha": "11fb9d6a5c33afe5982235e973e44022a3f45f9a",
       "timestamp": "2026-09-25T20:01:25.569Z"
+    },
+    {
+      "operationId": "2e125015-dcbf-4e2e-bcfa-b4e02fa57baa",
+      "board": "launch",
+      "cardId": "launch-development-command-council-grounding-voice",
+      "sourceType": "card_creation",
+      "taskId": "command-council-grounding-voice",
+      "files": [],
+      "automated": null,
+      "evidence": "Enforce claim-level canonical evidence grounding for Full Council responses and add governed AI voice playback controls with bounded diagnostics.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-26T00:10:11.447Z"
+    },
+    {
+      "operationId": "06b39498-8f34-49b6-8784-f505d363440a",
+      "board": "launch",
+      "cardId": "launch-development-command-council-grounding-voice",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/business-os/command/architecture-evidence.js",
+        "src/business-os/command/brain.js",
+        "src/business-os/command/service.js",
+        "public/command-voice-runtime.js",
+        "public/command-center.js",
+        "public/command-center.html",
+        "public/command-center.css",
+        "test/command-council-grounding-voice.test.js",
+        "test/ai-business-os-command-center.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented post-reasoning claim grounding with exact canonical quote/reference validation, safe downgrade and COUNCIL_CLAIM_GROUNDING_FAILURE fail-close; architecture/runtime dossier separation; reused authenticated /api/speak AI provider path with per-response Play/Pause/Resume/Stop, cancellation and visible voice FIRST FAILURE. Focused 30 tests PASS; lint PASS. Full suite was run and exposed unrelated pre-existing failures in Extraction OS, pose calibration, Arena and underwater tests. Browser/audio provider and owner UX/voice quality acceptance remain required; no physical-device acceptance recorded.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-09-26T00:16:26.751Z"
+    },
+    {
+      "operationId": "2b55ba91-9aae-48a5-a48a-ebef843e4dbe",
+      "board": "launch",
+      "cardId": "launch-development-command-council-grounding-voice",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/business-os/command/architecture-evidence.js",
+        "src/business-os/command/brain.js",
+        "src/business-os/command/service.js",
+        "public/command-voice-runtime.js",
+        "public/command-center.js",
+        "public/command-center.html",
+        "public/command-center.css",
+        "test/command-council-grounding-voice.test.js",
+        "test/ai-business-os-command-center.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit e663a0f. Automated focused Council grounding and voice lifecycle suite: 30/30 PASS. Browser/provider playback and owner UX/voice-quality acceptance remain human-required and unverified.",
+      "prNumber": null,
+      "commitSha": "e663a0f",
+      "timestamp": "2026-09-26T00:16:42.863Z"
     }
   ]
 }
