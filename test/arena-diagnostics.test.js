@@ -377,17 +377,13 @@ test('underwater launcher forwards each supported vowel into the Godot iframe', 
   }
 });
 
-test('underwater selector is shown only in preview and navigates between allowlisted vowel lessons', async () => {
+test('legacy outer-shell underwater selector stays removed while preview routing remains available', async () => {
   const app = await launch({search: '?preview=underwater&vowel=A'});
-  const tools = app.nodes.get('underwaterTools');
-  const select = app.nodes.get('underwaterVowelSelect');
-  assert.equal(tools.hidden, false);
-  assert.equal(select.value, 'A');
-  select.value = 'E';
-  select.events.change();
-  assert.equal(app.location.assigned, '/arena/push-up?preview=underwater&vowel=E');
+  assert.equal(app.game.src, '/game/underwater-learning-preview/index.html?vowel=A');
+  assert.equal(app.nodes.get('underwaterTools').hidden, true);
+  assert.equal(app.nodes.get('underwaterVowelSelect').events.change, undefined);
   const production = await launch();
-  assert.equal(production.nodes.get('underwaterTools').hidden, true);
+  assert.equal(production.game.src, '/game/push-up-arena/index.html');
 });
 
 test('underwater launcher defaults missing or invalid vowel selections to A', async () => {
