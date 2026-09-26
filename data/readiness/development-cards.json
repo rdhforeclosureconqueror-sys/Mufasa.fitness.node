@@ -470,6 +470,20 @@
       "createdAt": "2026-09-25T19:51:13.034Z",
       "source": "readiness:update",
       "taskId": "economics-foundation"
+    },
+    {
+      "id": "launch-development-command-council-grounding-voice",
+      "board": "launch",
+      "canonical": false,
+      "title": "Command Council claim grounding and response voice",
+      "category": "COMMAND INTELLIGENCE",
+      "description": "Enforce claim-level canonical evidence grounding for Full Council responses and add governed AI voice playback controls with bounded diagnostics.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-09-26T00:10:11.447Z",
+      "source": "readiness:update",
+      "taskId": "command-council-grounding-voice"
     }
   ]
 }
