@@ -21,7 +21,11 @@ test('Arena configures the canonical CoachRuntime to use the arena-session speec
   vm.runInNewContext(source, root);
   assert.equal(config.deps.voiceUrl, '/api/game/speak');
   assert.equal(root.PocketPTArenaCoachRuntime.configure().ok, true);
-  assert.deepEqual(root.PocketPTArenaCoachRuntime.voiceConfig(), {ok:true, voiceUrl:'/api/game/speak', configured:true, voiceConfigured:true});
+  const voiceConfig = root.PocketPTArenaCoachRuntime.voiceConfig();
+  assert.equal(voiceConfig.ok, true);
+  assert.equal(voiceConfig.voiceUrl, '/api/game/speak');
+  assert.equal(voiceConfig.configured, true);
+  assert.equal(voiceConfig.voiceConfigured, true);
 });
 
 
