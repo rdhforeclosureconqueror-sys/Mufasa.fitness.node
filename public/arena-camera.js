@@ -4,7 +4,9 @@
   else root.PocketPTArenaCamera = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
-  const JOINTS = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
+  const CORE_JOINTS = ['shoulder', 'elbow', 'wrist', 'hip'];
+  const SUPPORT_JOINTS = ['ankle'];
+  const JOINTS = [...CORE_JOINTS, ...SUPPORT_JOINTS];
   // Framing/calibration is deliberately more tolerant than authoritative
   // scoring. The setup reference only needs a believable side-view snapshot;
   // official rep evidence still uses the stricter scoring confidence below.
@@ -18,8 +20,12 @@
         p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1 && Number.isFinite(confidence) && confidence >= minimumConfidence);
       return [name, {usable, confidence:Number(confidence.toFixed(3)), inFrame:Boolean(p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1)}];
     }));
-    return {visible:Boolean(side && JOINTS.every(name => joints[name].usable)), side, minimumConfidence, joints,
-      missing:JOINTS.filter(name => !joints[name].usable)};
+    // Framing follows the same tolerant contract as personal pose calibration:
+    // shoulder/elbow/wrist/hip are required; ankle is supporting evidence only.
+    // Losing a foot at the edge of a phone frame must not block setup.
+    return {visible:Boolean(side && CORE_JOINTS.every(name => joints[name].usable)), side, minimumConfidence, joints,
+      missing:CORE_JOINTS.filter(name => !joints[name].usable),
+      supportMissing:SUPPORT_JOINTS.filter(name => !joints[name].usable)};
   }
   function visible(frame, minimumConfidence) {
     return Number.isFinite(minimumConfidence) && minimumConfidence > 0 && minimumConfidence <= 1 && visibilityEvidence(frame, minimumConfidence).visible;
@@ -146,5 +152,5 @@
     function resetTracking() {current?.capture?.resetTracking(); onVisibility(false);}
     return {start, stop, resetTracking, dispose: disposeSession};
   }
-  return Object.freeze({create, visible, visibilityEvidence, CALIBRATION_CONFIDENCE_CAP});
+  return Object.freeze({create, visible, visibilityEvidence, CORE_JOINTS, SUPPORT_JOINTS, CALIBRATION_CONFIDENCE_CAP});
 });
