@@ -58,3 +58,10 @@ test("Council instructions preserve evidence discipline",()=>{
   assert.match(prompt,/truth overrides personality/i);
   assert.match(prompt,/known fact, inference, unknown/i);
 });
+
+
+test("Council doctrine separates evidence from interpretation",()=>{
+  const prompt=commandCouncilSystemInstructions();
+  assert.match(prompt,/Separate known fact, inference, unknown, recommendation/i);
+  assert.match(prompt,/Truth overrides personality/i);
+});
