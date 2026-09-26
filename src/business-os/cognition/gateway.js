@@ -14,6 +14,8 @@ function validateSchema(value,schema,path="$"){
   if(schema.additionalProperties===false)for(const key of Object.keys(value))if(!schema.properties?.[key])return `${path}.${key}:additional_property`;
  }
  if(schema.type==="array")for(let i=0;i<value.length;i++){const error=validateSchema(value[i],schema.items||{},`${path}[${i}]`);if(error)return error}
+ if(schema.anyOf){const errors=schema.anyOf.map(candidate=>validateSchema(value,candidate,path));if(errors.every(Boolean))return `${path}:no_anyOf_match`;}
+ if(schema.oneOf){const matches=schema.oneOf.filter(candidate=>!validateSchema(value,candidate,path)).length;if(matches!==1)return `${path}:oneOf_match_count_${matches}`;}
  return null;
 }
 function normalizeError(error){
