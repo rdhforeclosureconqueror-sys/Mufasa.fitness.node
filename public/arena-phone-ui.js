@@ -390,7 +390,17 @@
         // TOP/BOTTOM calibration flow.
         if (!root.CoachRuntime?.getState?.().listening) root.CoachRuntime?.startListening?.();
         await camera.start(deviceId);
-        if (generation === cameraOperation) flow.cameraActive();
+        if (generation === cameraOperation) {
+          flow.cameraActive();
+          ensureArenaListening('camera_ready');
+          mark?.('COACH_VOICE', 'RUNNING', 'ARENA_CAMERA_READY_CUE');
+          const cueResult = await queueArenaSpeech('Step back so I can see your full body. Say ready when you are ready.', 'arena-camera-ready', {owner:'arena_voice_command'});
+          if (cueResult?.ok === false) mark?.('COACH_VOICE', 'FAIL', 'ARENA_CAMERA_READY_CUE_FAILED');
+          else mark?.('COACH_VOICE', 'PASS', 'ARENA_CAMERA_READY_CUE_SPOKEN');
+          // Speech synthesis can pause recognition on iOS. Re-arm the READY listener
+          // after the audible setup cue finishes so the next owner utterance is captured.
+          ensureArenaListening('camera_ready_after_cue');
+        }
       }
       catch (_) {root.__POCKETPT_ARENA_EXERCISE_VOICE__ = false; if (generation === cameraOperation) flow.cameraError();}
     }
