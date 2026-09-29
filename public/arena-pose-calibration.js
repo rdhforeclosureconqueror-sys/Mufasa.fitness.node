@@ -15,11 +15,18 @@
   // challenge. Official rep scoring keeps its own stricter rules downstream.
   const STABLE_MS = 700;
   const MAX_GAP_MS = 400;
-  const PHASE_TIMEOUT_MS = 4500;
+  // READY starts capture immediately, while the spoken 3-2-1 cue is feedback.
+  // Give a floor transition enough room for speech latency + settling + the
+  // required stable hold; 4.5s caused valid BOTTOM attempts to time out just
+  // as the member reached depth on physical phones.
+  const PHASE_TIMEOUT_MS = 9000;
   const MAX_AGE_MS = 2000;
   const MAX_STABILITY_DEGREES = 12;
   const MIN_POSE_SEPARATION_DEGREES = 14;
-  const MAX_BOTTOM_ELBOW_DEGREES = 105;
+  // Calibration learns the member's repeatable BOTTOM; authoritative scoring
+  // owns the strict depth rule. Keep this permissive enough to capture a
+  // clearly distinct bent-arm reference on a phone without certifying a rep.
+  const MAX_BOTTOM_ELBOW_DEGREES = 125;
 
   // Temporary calibration grace while we collect real-device evidence. These
   // values only decide whether TOP/BOTTOM references can be captured; they do
@@ -209,7 +216,7 @@
       captureRejectReason = null;
       if (stage === 'CAPTURE_TOP') {top = candidate; waitForReady('BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
-        if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) return false;
+        if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) {captureRejectReason = 'BOTTOM_TOO_SIMILAR'; return false;}
         bottom = candidate;
         const separation = distance(top.center, bottom.center);
         tolerance = Math.max(10, Math.min(separation * .4, Math.max(top.spread, bottom.spread) * 3 + 10));
@@ -217,6 +224,7 @@
       }
       const topDistance = distance(candidate.center, top.center), bottomDistance = distance(candidate.center, bottom.center);
       if (topDistance <= tolerance && topDistance < bottomDistance) {advance('CALIBRATED'); return true;}
+      captureRejectReason = 'TOP_CONFIRM_DOES_NOT_MATCH';
       return false;
     }
     function manualCapture(frame, minimumConfidence, requested = '') {
