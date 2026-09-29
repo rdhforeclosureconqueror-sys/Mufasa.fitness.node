@@ -10,7 +10,7 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'arena-pre-r
 const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'arena-push-up.html'), 'utf8');
 
 test('pre-READY trace is isolated from the proven arena launcher', () => {
-  assert.match(html, /arena-pre-ready-trace\.js\?v=20260914-pre-ready-v1[\s\S]*arena-push-up\.js\?v=20260903-arena-diagnostics-v1/);
+  assert.match(html, /arena-pre-ready-trace\.js\?v=20260914-pre-ready-v1[\s\S]*arena-push-up\.js\?v=20260929-physical-calibration-v2/);
   assert.doesNotMatch(source, /GODOT_HANDSHAKE/);
   assert.doesNotMatch(source, /phone\?\.connect|PocketPTArenaPhoneUI/);
 });
