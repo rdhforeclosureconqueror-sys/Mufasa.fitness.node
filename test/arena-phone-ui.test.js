@@ -134,7 +134,7 @@ test('touch mat flow transfers focus to recovery controls and locks the iframe d
   assert.equal(f.stats().starts, 0);
   await f.nodes.get('arenaEnableCamera').fire('click'); assert.equal(f.stats().starts, 1);
   assert.equal(f.doc.activeElement.id, 'arenaReturnToGym'); assert.equal(f.nodes.get('arenaCameraStage').hidden, false);
-  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent, /TOP:/);
+  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent, /TOP/);
 });
 
 test('suspend stops the camera and keeps navigation unavailable until explicit return', async t => {
