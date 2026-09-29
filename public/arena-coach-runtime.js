@@ -5,7 +5,7 @@
   let arenaCommandHandler = null;
   let fallbackAskCoach = null;
   let voiceConfigured = false;
-  const normalizeArenaCommand = command => String(command || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const normalizeArenaCommand = command => String(command || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
   const ARENA_COMMAND = /^(reset|restart|start over|restart everything|ready|i am ready|im ready|capture|capture top|top capture|capture bottom|bottom capture|start|go|begin)$/;
 
   function voiceConfig() {
@@ -47,7 +47,13 @@
       if (/^(ready|i am ready|im ready)$/.test(normalized)) {
         root.__POCKETPT_ARENA_LAST_READY_TRANSCRIPT__ = {command:normalized, at:Date.now()};
       }
-      if (arenaCommandHandler && await arenaCommandHandler(normalized, meta)) return {ok:true, arenaCommand:true};
+      const deterministic = ARENA_COMMAND.test(normalized);
+      if (deterministic) {
+        const handled = Boolean(arenaCommandHandler && await arenaCommandHandler(normalized, meta));
+        // A deterministic exercise command is Arena authority. Even if the UI
+        // handler is temporarily unavailable, never reinterpret it as coach chat.
+        return {ok:handled, arenaCommand:true, reason:handled ? null : 'arena_handler_unavailable'};
+      }
       if (typeof fallbackAskCoach === 'function') return fallbackAskCoach(command, meta);
       return false;
     }, bareCommandMatcher: command => ARENA_COMMAND.test(normalizeArenaCommand(command))}});

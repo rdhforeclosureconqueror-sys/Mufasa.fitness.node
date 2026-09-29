@@ -31,7 +31,7 @@
     return Number.isFinite(minimumConfidence) && minimumConfidence > 0 && minimumConfidence <= 1 && visibilityEvidence(frame, minimumConfidence).visible;
   }
   function create({root = window, video, onVisibility = () => {}, onPose = () => {}, onStatus = () => {}, onDevices = () => {}, onFailure = () => {}}) {
-    let current = null, detectorTask = null, retiredDetector = Promise.resolve();
+    let current = null, detectorTask = null, retiredDetector = Promise.resolve(), moveNetFrameCount = 0, arenaPoseFrameCount = 0, lastPoseAt = null, lastVisibilityEvidence = null;
     const aborted = () => Object.assign(new Error('Camera operation cancelled'), {name: 'AbortError'});
     function stopTracks(stream) {stream?.getTracks?.().forEach(track => track.stop());}
     function dispose(op) {
@@ -120,7 +120,9 @@
         const calibrationConfidence = Math.min(Number.isFinite(scoringConfidence) ? scoringConfidence : .75, CALIBRATION_CONFIDENCE_CAP);
         op.capture = new root.PushUpChallenge.PoseCaptureEngine({profile, onFrame(frame, source = {}) {
           if (!live()) return;
+          moveNetFrameCount++;
           const evidence = visibilityEvidence(frame, calibrationConfidence);
+          lastVisibilityEvidence = evidence;
           const bodyVisible = evidence.visible;
           onStatus('BODY_VISIBILITY', bodyVisible ? 'PASS' : 'WAITING',
             bodyVisible ? `SIDE_CHAIN_VISIBLE_${String(evidence.side || 'unknown').toUpperCase()}`
@@ -129,8 +131,9 @@
           // standing/full-body PoseRuntime TOO_FAR classification override a
           // valid horizontal side chain on the floor.
           const enriched = frame ? {...frame, sourceWidth: video.videoWidth, sourceHeight: video.videoHeight, calibrationUsable: bodyVisible} : null;
+          if (enriched) {arenaPoseFrameCount++; lastPoseAt = Date.now();}
           onVisibility(bodyVisible);
-          onPose(enriched, calibrationConfidence, source.posePacket || null, {bodyVisible, scoringConfidence});
+          onPose(enriched, calibrationConfidence, source.posePacket || null, {bodyVisible, scoringConfidence, moveNetFrameCount, arenaPoseFrameCount, evidence});
           root.clearTimeout(op.staleTimer);
           op.staleTimer = root.setTimeout(() => {if (live()) {onVisibility(false); onPose(null, calibrationConfidence, null, {bodyVisible:false, scoringConfidence});}}, 1500);
         }});
@@ -150,7 +153,8 @@
       }
     }
     function resetTracking() {current?.capture?.resetTracking(); onVisibility(false);}
-    return {start, stop, resetTracking, dispose: disposeSession};
+    function diagnostics(now = Date.now()) {return {latestPoseAgeMs:lastPoseAt == null ? null : Math.max(0, now-lastPoseAt), moveNetFrameCount, arenaPoseFrameCount, lastVisibilityEvidence};}
+    return {start, stop, resetTracking, dispose: disposeSession, diagnostics};
   }
   return Object.freeze({create, visible, visibilityEvidence, CORE_JOINTS, SUPPORT_JOINTS, CALIBRATION_CONFIDENCE_CAP});
 });

@@ -164,6 +164,7 @@
     let closed = false;
     let multiplayerSequence = 0;
     let multiplayer = {...MULTIPLAYER_DEFAULT};
+    let runtimeEvidence = {};
     function mark(id, status, code) {
       if (!state.has(id) || !STATES.has(status) || !Object.hasOwn(DETAILS, code)) return false;
       if (!['PASS', 'SKIP'].includes(status)) {
@@ -206,12 +207,15 @@
     }
     function report() {
       const info = summary();
+      const evidenceNames = ['latestPoseAgeMs','moveNetFrameCount','arenaPoseFrameCount','calibrationFrameCount','selectedSide','usableCoreJoints','missingCoreJoints','supportMissing','calibrationStage','lastReadyTranscript','readyCommandMatched','readyHandlerEntered','beginReadyCaptureResult','captureAttemptCount','captureRejectReason','stablePoseDurationMs','topReferenceStored','lastBackendRequestPurpose'];
+      const evidenceLines = evidenceNames.map(name => `${name}: ${Array.isArray(runtimeEvidence[name]) ? runtimeEvidence[name].join(',') || 'NONE' : runtimeEvidence[name] ?? 'NOT_REPORTED'}`);
       return ['PocketPT Push-Up Arena Diagnostics', `Panel: ${VERSION}`, 'Page: /arena/push-up',
         `FIRST FAILURE: ${info.firstFailure ? info.firstFailure.id : 'none observed'}`,
         `NEXT UNVERIFIED: ${info.next ? info.next.id : 'none'}`,
         'PASS means observed technical evidence for this launch, not visual or exercise-quality approval.', '',
-        ...snapshot().map(row => `${row.status} | ${row.id} | ${row.label} | ${row.owner}\n${row.blockedBy ? `Waiting on ${row.blockedBy}. ` : ''}${row.detail}\nNext: ${row.next}${row.at ? `\nObserved: ${row.at}` : ''}`), '', multiplayerReport()].join('\n');
+        ...snapshot().map(row => `${row.status} | ${row.id} | ${row.label} | ${row.owner}\n${row.blockedBy ? `Waiting on ${row.blockedBy}. ` : ''}${row.detail}\nNext: ${row.next}${row.at ? `\nObserved: ${row.at}` : ''}`), '', 'PHYSICAL CALIBRATION FIRST-FAILURE EVIDENCE', ...evidenceLines, '', multiplayerReport()].join('\n');
     }
+    function setEvidence(value) {runtimeEvidence = value && typeof value === 'object' ? {...value} : {}; onChange(); return true;}
     function resetGame(nextRequestId) {
       requestId = nextRequestId;
       lastSequence = 0;
@@ -266,7 +270,7 @@
       return true;
     }
     function close() { closed = true; requestId = null; }
-    return {mark, snapshot, summary, report, resetGame, setFallback, acceptRuntime, acceptMultiplayer, multiplayerSnapshot, multiplayerReport, close};
+    return {mark, snapshot, summary, report, setEvidence, resetGame, setFallback, acceptRuntime, acceptMultiplayer, multiplayerSnapshot, multiplayerReport, close};
   }
 
   function isGameMessage(event, frame, origin) {

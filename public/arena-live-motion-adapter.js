@@ -208,6 +208,9 @@
         // prerequisite for recognizing or scoring the exercise.
         mark('REST_BASE_CAPTURE', 'SKIP', 'PUSHUP_DIRECT_CALIBRATION');
         mark('MIRROR_MOTION_READY', 'SKIP', 'PUSHUP_DIRECT_CALIBRATION');
+        // Count/process the live packet before bypassing rest calibration so
+        // diagnostics do not falsely report zero Phase 2+ input frames.
+        try { processor(posePacket); canonicalFrames++; } catch (_) { mark('MIRROR_MOTION_READY', 'FAIL', 'MIRROR_PROCESSING_FAILED'); return false; }
         if (!restNotified) {restNotified = true; onRestReady();}
         return false;
       }

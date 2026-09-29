@@ -26,7 +26,8 @@ test('active coach speech ignores non-stop recognition regardless of conversatio
 
 test('calibration remains a single-side chain and uses a short setup hold', () => {
   const source = read('public/arena-pose-calibration.js');
-  assert.match(source, /const NAMES = \['shoulder', 'elbow', 'wrist', 'hip', 'ankle'\]/);
+  assert.match(source, /const CORE_NAMES = \['shoulder', 'elbow', 'wrist', 'hip'\]/);
+  assert.match(source, /const SUPPORT_NAMES = \['ankle'\]/);
   assert.match(source, /const STABLE_MS = 700/);
   assert.match(source, /bodyLine/);
   assert.match(source, /elbowDepth/);
@@ -82,7 +83,7 @@ test('reset recovery restarts calibration before speech and restores listening',
   const coach = read('public/arena-coach-runtime.js');
   assert.match(ui, /RESET_COMMAND_MATCHED_/);
   assert.match(ui, /restartPoseCapture\(\{restartCamera:false, source:'voice'\}\)/);
-  assert.match(ui, /CALIBRATION_STARTED_/);
+  assert.match(ui, /CALIBRATION_WAITING_/);
   assert.match(ui, /WAITING_FOR_FRESH_POSE/);
   assert.match(ui, /FRESH_POSE_REACQUIRED/);
   assert.match(ui, /ensureArenaListening\('post_reset_speech'\)/);

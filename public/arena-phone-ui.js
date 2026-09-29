@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  function mount({game, mark, send}) {
+  function mount({game, mark, send, evidence = () => {}}) {
     const doc = root.document, $ = id => doc.getElementById(id);
     const panel = $('arenaPhonePanel'), video = $('arenaCameraVideo'), overlay = $('arenaPoseOverlay');
     const voiceConfig = root.PocketPTArenaCoachRuntime?.voiceConfig?.() || {};
@@ -9,6 +9,14 @@
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
     let challengeArmed = false, challengeEngine = null, challengeTimer = null, challengeCueTimers = [], latestPoseFrame = null, latestPoseConfidence = .4;
     let arenaSpeechTail = Promise.resolve();
+    const trace = {lastReadyTranscript:null, readyCommandMatched:false, readyHandlerEntered:false, beginReadyCaptureResult:null};
+    function publishEvidence() {
+      const cameraState = camera?.diagnostics?.() || {}, calibrationState = calibration?.diagnostics?.() || calibration?.snapshot?.() || {};
+      evidence({...cameraState, ...calibrationState, calibrationStage:calibrationState.stage,
+        lastReadyTranscript:trace.lastReadyTranscript, readyCommandMatched:trace.readyCommandMatched,
+        readyHandlerEntered:trace.readyHandlerEntered, beginReadyCaptureResult:trace.beginReadyCaptureResult,
+        lastBackendRequestPurpose:root.CoachRuntime?.getState?.().lastBackendRequestPurpose || null});
+    }
     function queueArenaSpeech(text, source = 'arena-calibration', options = {}) {
       if (!text) return arenaSpeechTail;
       arenaSpeechTail = arenaSpeechTail.catch(() => {}).then(async () => {
@@ -84,6 +92,7 @@
         const motionState = liveMotion?.diagnostics?.() || {};
         if (!flow?.snapshot().previewOnly && (motionState.calibrationReady || motionState.requireRestBase === false)) calibration.observe(frame, confidence);
         liveMotion?.observe(posePacket);
+        publishEvidence();
         if (challengeEngine?.state === 'active' && frame) {
           const result = challengeEngine.observe(frame);
           const rep = result?.legacyEvent?.index;
@@ -312,6 +321,7 @@
         return restarted;
       }
       if (['ready','i am ready','im ready'].includes(words)) {
+        trace.lastReadyTranscript = String(command || ''); trace.readyCommandMatched = true; trace.readyHandlerEntered = true; publishEvidence();
         challengeArmed = false;
         if (!flow.snapshot().cameraView) {
           if (flow.setup()) await enableCamera();
@@ -323,12 +333,14 @@
         }
         // Commit the command transition immediately. TTS is feedback, not the
         // authority for whether READY takes effect.
-        if (!calibration.beginReadyCapture?.()) {
+        const began = Boolean(calibration.beginReadyCapture?.()); trace.beginReadyCaptureResult = began; publishEvidence();
+        if (!began) {
           markReset(`READY_COMMAND_REJECTED_${before}`, 'FAIL');
           return true;
         }
         markReset(`READY_COMMAND_ACCEPTED_${before}`, 'PASS');
         markReset(`READY_CAPTURE_STARTED_${calibration.snapshot().stage}`, 'PASS');
+        publishEvidence();
         queueArenaSpeech('Capturing position. Three. Two. One.', 'arena-command')
           .finally(() => ensureArenaListening('post_ready_speech'));
         return true;
@@ -443,6 +455,9 @@
     return {
       connect() {if (!scope) {scope = root.crypto.randomUUID(); flow.connect(scope);}},
       accept: data => flow.accept(data),
+      // Test/diagnostic seam: invoke the exact local command handler used by
+      // speech recognition without routing through coach chat or TTS.
+      voice: command => handleArenaVoiceCommand(command),
       suspend() {releasePointer(); flow.suspend();},
       reset() {releasePointer(); scope = null; flow.reset();},
       close() {releasePointer(); finishChallenge('arena-close'); challengeVoice?.dispose?.(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}

@@ -54,7 +54,7 @@ test('Arena page preloads CoachRuntime before live motion and keeps body/form st
   assert.match(html, /\.camera-stage video\{[^}]*height:calc\(100% - 64px\)/);
   assert.match(html, /#arenaBodyStatus\{[^}]*bottom:0[^}]*min-height:64px/);
   assert.match(html, /#arenaBodyStatus\[data-form="fail"\]\{color:#ff7588\}/);
-  assert.match(html, /@media\(max-width:600px\)[\s\S]*\.camera-stage\{width:calc\(100% - 16px\)/);
+  assert.match(html, /@media\(max-width:600px\)[\s\S]*\.camera-stage\{[^}]*width:calc\(100% - 16px\)/);
 });
 
 test('Arena phone calibration explains the red-green form contract and keeps spoken setup cues intact', () => {
@@ -79,4 +79,19 @@ test('Arena bare READY grammar normalizes punctuation before any backend fallbac
   assert.match(source, /normalizeArenaCommand/);
   assert.match(source, /ARENA_COMMAND\.test\(normalizeArenaCommand\(command\)\)/);
   assert.match(source, /arenaCommandHandler\(normalized, meta\)/);
+});
+
+test('READY transcript variations are Arena-authoritative and never reach coach chat', async () => {
+  let configured, coachCalls = 0, handled = [];
+  const root = {askCoach: async () => {coachCalls++;}, CoachRuntime:{configure(value){configured=value;},getState:()=>({configured:true}),speak(){}}};
+  root.window=root;
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../public/arena-coach-runtime.js'),'utf8'),root);
+  root.PocketPTArenaCoachRuntime.installCommandHandler(async command => (handled.push(command), true));
+  for (const transcript of ['READY!', 'Ready.', "I'm ready", 'I am ready?']) {
+    assert.equal(configured.deps.bareCommandMatcher(transcript), true);
+    const result = await configured.deps.dispatchCommand(transcript, {});
+    assert.equal(result.arenaCommand, true);
+  }
+  assert.deepEqual(handled, ['ready','ready','im ready','i am ready']);
+  assert.equal(coachCalls, 0);
 });

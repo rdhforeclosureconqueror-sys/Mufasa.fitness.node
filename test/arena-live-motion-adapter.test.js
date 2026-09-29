@@ -66,6 +66,17 @@ test('production adapter names the complete canonical Phase 2-18 foundation and 
   assert.match(scripts,/mirror-motion-camera-activation/);
 });
 
+test('push-up direct calibration processes live frames without a standing rest pose', () => {
+  let processed = 0;
+  const adapter = adapterApi.create({requireRestBase:false, processPose:value => {processed++; return value;}, mark:()=>{}});
+  assert.equal(adapter.observe(packet(1000)), false);
+  const diagnostic = adapter.diagnostics();
+  assert.equal(diagnostic.requireRestBase, false);
+  assert.equal(diagnostic.inputFrames, 1);
+  assert.equal(diagnostic.canonicalFrames, 1);
+  assert.equal(processed, 1);
+});
+
 
 test('floor calibration selects a complete four-joint core side even when that ankle is cropped', () => {
   const capture = new PoseCaptureEngine({profile, setTimer:null});

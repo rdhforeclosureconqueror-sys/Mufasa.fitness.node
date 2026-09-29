@@ -31,7 +31,7 @@
   const timers = new Map();
   const requests = new Set();
   const mark = (id, state, code) => model.mark(id, state, code);
-  const phone = window.PocketPTArenaPhoneUI?.mount({game, mark, send: data => {
+  const phone = window.PocketPTArenaPhoneUI?.mount({game, mark, evidence: value => model.setEvidence?.(value), send: data => {
     const stopping = data.action === 'STOP' || (data.action === 'SET_CONTEXT' && data.context === 'LOCKED');
     if (frameStarted && readyReceived && !disposed && !leaving && (Date.now() < expiresAt || stopping)) game.contentWindow.postMessage(data, location.origin);
   }});
