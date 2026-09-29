@@ -177,3 +177,24 @@ test('personal TOP/BOTTOM calibration and classification survive ankle loss at t
   assert.equal(calibration.classify(withoutAnkle(frame('TOP', 9900)), .4), 'TOP');
   assert.equal(calibration.classify(withoutAnkle(frame('BOTTOM', 10000)), .4), 'BOTTOM');
 });
+
+test('first-failure diagnostics expose the exact READY capture and frame rejection boundary', () => {
+  const calibration = create();
+  calibration.start();
+  assert.equal(calibration.beginReadyCapture(), true);
+  const bad = frame('TOP', 1000); bad.sequenceLandmarks.wrist = null;
+  calibration.observe(bad, .4);
+  let diagnostic = calibration.diagnostics();
+  assert.equal(diagnostic.calibrationStage, undefined);
+  assert.equal(diagnostic.stage, 'CAPTURE_TOP');
+  assert.equal(diagnostic.calibrationFrameCount, 1);
+  assert.equal(diagnostic.captureAttemptCount, 1);
+  assert.equal(diagnostic.selectedSide, 'left');
+  assert.deepEqual(diagnostic.usableCoreJoints, ['shoulder','elbow','hip']);
+  assert.deepEqual(diagnostic.missingCoreJoints, ['wrist']);
+  assert.match(diagnostic.captureRejectReason, /MISSING_CORE_WRIST/);
+  quickHold(calibration, 'TOP', 1200);
+  diagnostic = calibration.diagnostics();
+  assert.equal(diagnostic.topReferenceStored, true);
+  assert.equal(diagnostic.stage, 'WAIT_BOTTOM_READY');
+});

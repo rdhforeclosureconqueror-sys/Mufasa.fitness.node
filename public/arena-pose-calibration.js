@@ -116,14 +116,18 @@
   function create({now = () => Date.now(), onChange = () => {}, setTimer = setTimeout, clearTimer = clearTimeout} = {}) {
     let stage = 'IDLE', samples = [], top = null, bottom = null, tolerance = null;
     let source = null, lastTimestamp = null, reason = null, failedStage = null, deadline = null, timer = null, generation = 0;
-    let lossTimer = null, lossGeneration = 0;
+    let lossTimer = null, lossGeneration = 0, calibrationFrameCount = 0, captureAttemptCount = 0;
+    let captureRejectReason = null, stablePoseDurationMs = 0, selectedSide = null, usableCoreJoints = [], missingCoreJoints = CORE_NAMES.slice(), supportMissing = SUPPORT_NAMES.slice();
     function snapshot() {return {stage, reason, failedStage, topCaptured: Boolean(top), bottomCaptured: Boolean(bottom), calibrated: stage === 'CALIBRATED'};}
+    function diagnostics() {return {...snapshot(),
+      calibrationFrameCount, selectedSide, usableCoreJoints:usableCoreJoints.slice(), missingCoreJoints:missingCoreJoints.slice(), supportMissing:supportMissing.slice(),
+      captureAttemptCount, captureRejectReason, stablePoseDurationMs, topReferenceStored:Boolean(top)};}
     function emit() {onChange(snapshot());}
     function clearLoss() {clearTimer(lossTimer); lossTimer = null; lossGeneration++;}
     function clearDeadline() {clearTimer(timer); timer = null; deadline = null; generation++;}
     function erase() {samples = []; top = bottom = tolerance = source = lastTimestamp = null; clearDeadline(); clearLoss();}
     function clearAttemptOnly() {samples = []; clearDeadline(); clearLoss();}
-    function reset() {erase(); stage = 'IDLE'; reason = failedStage = null; emit();}
+    function reset() {erase(); stage = 'IDLE'; reason = failedStage = captureRejectReason = null; calibrationFrameCount = captureAttemptCount = stablePoseDurationMs = 0; selectedSide = null; usableCoreJoints = []; missingCoreJoints = CORE_NAMES.slice(); supportMissing = SUPPORT_NAMES.slice(); emit();}
     function invalidate(code = 'SOURCE_CHANGED') {
       if (stage === 'IDLE' || stage === 'NEEDS_RETRY' || stage.startsWith('WAIT_')) return;
       failedStage = stage;
@@ -149,7 +153,9 @@
     }
     function beginReadyCapture() {
       const next = stage === 'WAIT_BOTTOM_READY' ? 'CAPTURE_BOTTOM' : stage === 'WAIT_TOP_CONFIRM_READY' ? 'CONFIRM_TOP' : stage === 'WAIT_TOP_READY' ? 'CAPTURE_TOP' : null;
-      if (!next) return false;
+      captureAttemptCount++;
+      if (!next) {captureRejectReason = `NOT_WAITING_${stage}`; emit(); return false;}
+      captureRejectReason = null;
       advance(next); return true;
     }
     function start() {erase(); reason = failedStage = null; waitForReady('TOP');}
@@ -171,15 +177,23 @@
     }
     function observe(frame, minimumConfidence) {
       if (!['CAPTURE_TOP', 'CAPTURE_BOTTOM', 'CONFIRM_TOP', 'CALIBRATED'].includes(stage)) return false;
+      calibrationFrameCount++;
+      const pointStatus = requiredPointStatus(frame, minimumConfidence);
+      selectedSide = frame?.side || null;
+      usableCoreJoints = CORE_NAMES.filter(name => pointStatus[name]?.visible);
+      missingCoreJoints = CORE_NAMES.filter(name => !pointStatus[name]?.visible);
+      supportMissing = SUPPORT_NAMES.filter(name => !pointStatus[name]?.visible);
       if (deadline !== null && now() >= deadline) {invalidate('TIMEOUT'); return false;}
       const vector = fresh(frame) && ['left','right'].includes(frame.side) ? signature(frame, minimumConfidence) : null;
       if (!vector) {
+        captureRejectReason = !fresh(frame) ? 'NO_FRESH_POSE' : missingCoreJoints.length ? `MISSING_CORE_${missingCoreJoints.join('_').toUpperCase()}` : 'FRAME_NOT_CALIBRATION_USABLE';
+        stablePoseDurationMs = 0;
         samples = [];
         if (top && lossTimer === null) {const token = ++lossGeneration; lossTimer = setTimer(() => {if (token === lossGeneration) invalidate('TRACKING_LOST');}, MAX_AGE_MS); lossTimer?.unref?.();}
         return false;
       }
-      if (!sameSource(frame)) {invalidate('SOURCE_CHANGED'); return false;}
-      if (lastTimestamp !== null && frame.timestamp <= lastTimestamp) {samples = []; return false;}
+      if (!sameSource(frame)) {captureRejectReason = 'SOURCE_CHANGED'; invalidate('SOURCE_CHANGED'); return false;}
+      if (lastTimestamp !== null && frame.timestamp <= lastTimestamp) {samples = []; stablePoseDurationMs = 0; captureRejectReason = 'NON_MONOTONIC_FRAME'; return false;}
       clearLoss(); source ||= {side: frame.side, width: frame.sourceWidth, height: frame.sourceHeight};
       if (lastTimestamp !== null && frame.timestamp - lastTimestamp > MAX_GAP_MS) samples = [];
       lastTimestamp = frame.timestamp;
@@ -187,10 +201,12 @@
       if (samples.length && frame.timestamp - samples.at(-1).at < 16) return false;
       samples.push({at: frame.timestamp, vector});
       while (samples.length > 2 && samples[1].at <= frame.timestamp - STABLE_MS) samples.shift();
+      stablePoseDurationMs = samples.length ? frame.timestamp - samples[0].at : 0;
       const candidate = stable(samples);
-      if (!candidate) return false;
+      if (!candidate) {captureRejectReason = stablePoseDurationMs < STABLE_MS ? 'STABLE_HOLD_PENDING' : 'POSE_UNSTABLE'; return false;}
       const form = formFromVector(candidate.center, stage);
-      if (!form?.allPass) return false;
+      if (!form?.allPass) {captureRejectReason = Object.entries(form?.checks || {}).find(([,pass]) => !pass)?.[0]?.replace(/[A-Z]/g, value => `_${value}`).toUpperCase() || 'FORM_REJECTED'; return false;}
+      captureRejectReason = null;
       if (stage === 'CAPTURE_TOP') {top = candidate; waitForReady('BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
         if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) return false;
@@ -242,7 +258,7 @@
       if (bottomDistance <= tolerance && bottomDistance < topDistance) return 'BOTTOM';
       return 'BETWEEN';
     }
-    return {start, waitForReady, beginReadyCapture, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot};
+    return {start, waitForReady, beginReadyCapture, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot, diagnostics};
   }
   return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, CORE_NAMES, SUPPORT_NAMES, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
     TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});

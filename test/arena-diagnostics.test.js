@@ -189,6 +189,17 @@ test('copied reports contain only allowlisted details, never arbitrary runtime p
   assert.match(report, /FIRST FAILURE/);
 });
 
+test('physical calibration report exposes every camera-to-TOP first-failure boundary', () => {
+  const model = diagnostics.create();
+  const evidence = {latestPoseAgeMs:12,moveNetFrameCount:20,arenaPoseFrameCount:19,calibrationFrameCount:8,selectedSide:'left',usableCoreJoints:['shoulder','elbow','wrist','hip'],missingCoreJoints:[],supportMissing:['ankle'],calibrationStage:'CAPTURE_TOP',lastReadyTranscript:'Ready.',readyCommandMatched:true,readyHandlerEntered:true,beginReadyCaptureResult:true,captureAttemptCount:1,captureRejectReason:'STABLE_HOLD_PENDING',stablePoseDurationMs:440,topReferenceStored:false,lastBackendRequestPurpose:null};
+  assert.equal(model.setEvidence(evidence), true);
+  const report = model.report();
+  for (const key of Object.keys(evidence)) assert.match(report, new RegExp(`${key}:`));
+  assert.match(report, /usableCoreJoints: shoulder,elbow,wrist,hip/);
+  assert.match(report, /supportMissing: ankle/);
+  assert.match(report, /captureRejectReason: STABLE_HOLD_PENDING/);
+});
+
 function panel(navigator) {
   const nodes = [];
   const document = {activeElement: null, createElement(tag) {

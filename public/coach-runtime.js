@@ -15,6 +15,7 @@
     lastStatus: "Coach ready",
     lastVoiceError: null,
     lastBackendError: null,
+    lastBackendRequestPurpose: null,
     lastSource: null,
     listening: false,
     lastMicError: null,
@@ -310,6 +311,7 @@
   }
 
   async function callCoachBackend(question, options = {}) {
+    state.lastBackendRequestPurpose = "coach_chat";
     const url = getChatUrl();
     if (!url) throw new Error("coach_chat_url_missing");
     if (typeof global.fetch !== "function") throw new Error("fetch_unavailable");
@@ -540,6 +542,7 @@
   }
 
   async function speakWithBackend(text, source, response) {
+    state.lastBackendRequestPurpose = `tts:${source || "unknown"}`;
     if (global.__workoutPerformance) global.__workoutPerformance.voiceRequests += 1;
     const url = deps.voiceUrl;
     if (!url) throw new Error("/api/speak url missing");
