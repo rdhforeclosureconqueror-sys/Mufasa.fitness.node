@@ -455,6 +455,9 @@
     return {
       connect() {if (!scope) {scope = root.crypto.randomUUID(); flow.connect(scope);}},
       accept: data => flow.accept(data),
+      // Test/diagnostic seam: invoke the exact local command handler used by
+      // speech recognition without routing through coach chat or TTS.
+      voice: command => handleArenaVoiceCommand(command),
       suspend() {releasePointer(); flow.suspend();},
       reset() {releasePointer(); scope = null; flow.reset();},
       close() {releasePointer(); finishChallenge('arena-close'); challengeVoice?.dispose?.(); liveMotion?.reset(); scope = null; flow.close(); camera.dispose?.();}
