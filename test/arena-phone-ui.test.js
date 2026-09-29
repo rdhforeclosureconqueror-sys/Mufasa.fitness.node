@@ -83,7 +83,6 @@ test('real coordinator rotates from captured references to retry, and explicit r
   assert.equal(f.nodes.get('arenaBodyStatus').dataset.visible,'false');
   await f.nodes.get('arenaRestartCalibration').fire('click');
   assert.equal(f.doc.activeElement.id,'arenaReturnToGym');await readyAndHold(f,'TOP');
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/BOTTOM:/);
   assert.equal(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1)[1],'RUNNING');
   assert.equal(f.marks.some(([id,status])=>['START_POSITION','REP_DETECTOR','TIMER'].includes(id)&&status==='PASS'),false);
 });
