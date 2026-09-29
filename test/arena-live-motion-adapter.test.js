@@ -67,6 +67,22 @@ test('production adapter names the complete canonical Phase 2-18 foundation and 
 });
 
 
+test('floor calibration selects a complete four-joint core side even when that ankle is cropped', () => {
+  const capture = new PoseCaptureEngine({profile, setTimer:null});
+  const kp = (name,x,y,score)=>({name,x,y,score});
+  const pose={keypoints:[
+    kp('left_shoulder',20,30,.95),kp('left_elbow',30,30,.95),kp('left_wrist',40,30,.95),kp('left_hip',50,32,.95),kp('left_ankle',80,34,.10),
+    kp('right_shoulder',20,60,.80),kp('right_elbow',30,60,.20),kp('right_wrist',40,60,.20),kp('right_hip',50,62,.80),kp('right_ankle',80,64,.95)
+  ]};
+  const frame=capture.transform(pose,{width:100,height:100},1000);
+  assert.equal(frame.side,'left');
+  assert.equal(frame.sequenceLandmarks.shoulder.confidence,.95);
+  assert.equal(frame.sequenceLandmarks.elbow.confidence,.95);
+  assert.equal(frame.sequenceLandmarks.wrist.confidence,.95);
+  assert.equal(frame.sequenceLandmarks.hip.confidence,.95);
+  assert.equal(frame.sequenceLandmarks.ankle.confidence,.10);
+});
+
 test('floor calibration selects the complete five-joint side instead of the scoring three-joint winner', () => {
   const capture = new PoseCaptureEngine({profile, setTimer:null});
   const kp = (name,x,y,score)=>({name,x,y,score});
