@@ -198,3 +198,13 @@ test('first-failure diagnostics expose the exact READY capture and frame rejecti
   assert.equal(diagnostic.topReferenceStored, true);
   assert.equal(diagnostic.stage, 'WAIT_BOTTOM_READY');
 });
+
+
+test('BOTTOM calibration allows physical transition latency and a distinct bent-arm personal reference', () => {
+  assert.equal(Calibration.PHASE_TIMEOUT_MS, 9000);
+  assert.equal(Calibration.MAX_BOTTOM_ELBOW_DEGREES, 125);
+  const bottom = Calibration.formFromVector([120, 90], 'CAPTURE_BOTTOM');
+  assert.equal(bottom.allPass, true);
+  const tooHigh = Calibration.formFromVector([130, 90], 'CAPTURE_BOTTOM');
+  assert.equal(tooHigh.allPass, false);
+});
