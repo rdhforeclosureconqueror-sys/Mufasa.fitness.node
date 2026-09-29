@@ -11,6 +11,7 @@
   const POSE_MODEL_VERSION = '2.1.3';
   const LANDMARK_NAMES = ['shoulder', 'hip', 'ankle'];
   const SEQUENCE_LANDMARK_NAMES = ['shoulder', 'elbow', 'wrist', 'hip', 'ankle'];
+  const CALIBRATION_CORE_LANDMARK_NAMES = ['shoulder', 'elbow', 'wrist', 'hip'];
   const SIDES = ['left', 'right'];
   const CONNECTIONS = [['shoulder', 'hip'], ['hip', 'ankle']];
   const TRACKING_STATES = Object.freeze({ SEARCHING:'SEARCHING', STABILIZING:'STABILIZING', LOCKED:'LOCKED', DEGRADED:'DEGRADED', RECOVERING:'RECOVERING', LOST:'LOST' });
@@ -167,16 +168,19 @@
       const tracked=this.sideTracker.select(pose?.keypoints||[],threshold);
       const byName=new Map((pose?.keypoints||[]).map(point=>[point.name||point.part,point]));
       // Authoritative scoring keeps the existing shoulder/hip/ankle SideTracker.
-      // Floor calibration needs the stronger complete kinetic chain instead:
-      // shoulder/elbow/wrist/hip/ankle. A side that wins the 3-joint score can
-      // still have an occluded wrist/elbow and make BODY_VISIBILITY wait forever.
+      // Calibration and BODY_VISIBILITY use the same four-joint contract:
+      // shoulder/elbow/wrist/hip. An ankle is useful scoring/mirroring evidence,
+      // but must not decide which side supplies the personal TOP/BOTTOM template.
+      // Previously side selection still demanded all five sequence landmarks,
+      // contradicting arena-camera's tolerant four-joint gate and allowing a
+      // weak/cropped ankle to select the wrong side and stall BODY_VISIBILITY.
       const calibrationSide=SIDES.map(side=>{
-        const points=SEQUENCE_LANDMARK_NAMES.map(name=>byName.get(`${side}_${name}`));
+        const points=CALIBRATION_CORE_LANDMARK_NAMES.map(name=>byName.get(`${side}_${name}`));
         const usableCount=points.filter(point=>finite(point?.x)&&finite(point?.y)&&Number(point?.score||0)>=.4).length;
-        const confidence=points.reduce((sum,point)=>sum+Number(point?.score||0),0)/SEQUENCE_LANDMARK_NAMES.length;
+        const confidence=points.reduce((sum,point)=>sum+Number(point?.score||0),0)/CALIBRATION_CORE_LANDMARK_NAMES.length;
         return {side,usableCount,confidence};
       }).sort((a,b)=>b.usableCount-a.usableCount||b.confidence-a.confidence)[0];
-      const selectedSide=calibrationSide?.usableCount===SEQUENCE_LANDMARK_NAMES.length?calibrationSide.side:(tracked?.side||calibrationSide?.side);
+      const selectedSide=calibrationSide?.usableCount===CALIBRATION_CORE_LANDMARK_NAMES.length?calibrationSide.side:(tracked?.side||calibrationSide?.side);
       const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})).filter(Boolean), dimensions.width, dimensions.height);
       const sequenceLandmarks=Object.fromEntries(SEQUENCE_LANDMARK_NAMES.map(name=>{const point=byName.get(`${selectedSide}_${name}`);return[name,point&&finite(point.x)&&finite(point.y)?{x:Number(point.x)/dimensions.width,y:Number(point.y)/dimensions.height,confidence:Math.max(0,Math.min(1,Number(point.score||0)))}:null];}));
       const confidences = LANDMARK_NAMES.map(name => normalized.landmarks[name]?.confidence || 0);
