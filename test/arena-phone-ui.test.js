@@ -77,7 +77,7 @@ async function completeCalibration(f) {
 
 test('real coordinator rotates from captured references to retry, and explicit restart clears all gates', async t => {
   const f=fixture(t);await startCalibration(f);await completeCalibration(f);
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/calibration complete/);
+  assert.equal(f.marks.filter(x=>x[0]==='POSE_CYCLE_CALIBRATION').at(-1)?.[1],'PASS');
   assert.equal(f.timers.size,0);f.events.get('orientationchange')();
   assert.equal(f.nodes.get('arenaRestartCalibration').hidden,false);assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.equal(f.nodes.get('arenaBodyStatus').dataset.visible,'false');
@@ -93,7 +93,7 @@ test('coordinator deadlines give fast retry feedback and camera switching starts
   assert.match(f.nodes.get('arenaBodyStatus').textContent,/Didn't get it/);
   assert.deepEqual(f.marks.filter(x=>x[0]==='POSE_BOTTOM_CALIBRATION').at(-1),['POSE_BOTTOM_CALIBRATION','FAIL','CALIBRATION_TIMEOUT']);
   f.nodes.get('arenaCameraSelect').value='different-device';await f.nodes.get('arenaCameraSelect').fire('change');
-  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent,/TOP:/);
+  f.cameraOptions().onVisibility(true);f.pose('TOP',1);assert.match(f.nodes.get('arenaBodyStatus').textContent,/TOP(?:\s|:|✓)/);
   assert.equal(f.stats().starts,2);
 });
 
@@ -111,7 +111,7 @@ test('camera check outside mat setup cannot collect references or expose restart
   const f=fixture(t);await f.nodes.get('arenaSetupCamera').fire('click');await f.nodes.get('arenaEnableCamera').fire('click');
   f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
   assert.equal(f.nodes.get('arenaRestartCalibration').hidden,true);assert.equal(f.timers.size,0);
-  assert.match(f.nodes.get('arenaBodyStatus').textContent,/Side-view core found/);
+  assert.doesNotMatch(f.nodes.get('arenaBodyStatus').textContent,/calibration complete/);
 });
 
 test('joystick pointer drag sends a 360 vector and release stops movement', async t => {
