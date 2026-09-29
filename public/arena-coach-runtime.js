@@ -5,6 +5,8 @@
   let arenaCommandHandler = null;
   let fallbackAskCoach = null;
   let voiceConfigured = false;
+  const normalizeArenaCommand = command => String(command || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const ARENA_COMMAND = /^(reset|restart|start over|restart everything|ready|i am ready|im ready|capture|capture top|top capture|capture bottom|bottom capture|start|go|begin)$/;
 
   function voiceConfig() {
     const runtime = root.CoachRuntime;
@@ -37,7 +39,7 @@
     // configure is idempotent; the arena owns only a narrow command dispatcher.
     // General coach Q&A remains the fallback when the arena does not consume it.
     runtime.configure({deps:{voiceUrl:VOICE_URL, dispatchCommand: async (command, meta) => {
-      const normalized = String(command || '').trim().toLowerCase();
+      const normalized = normalizeArenaCommand(command);
       root.__POCKETPT_ARENA_LAST_TRANSCRIPT__ = {command:normalized, at:Date.now()};
       if (/^(reset|restart|start over|restart everything)$/.test(normalized)) {
         root.__POCKETPT_ARENA_LAST_RESET_TRANSCRIPT__ = {command:normalized, at:Date.now()};
@@ -45,10 +47,10 @@
       if (/^(ready|i am ready|im ready)$/.test(normalized)) {
         root.__POCKETPT_ARENA_LAST_READY_TRANSCRIPT__ = {command:normalized, at:Date.now()};
       }
-      if (arenaCommandHandler && await arenaCommandHandler(command, meta)) return {ok:true, arenaCommand:true};
+      if (arenaCommandHandler && await arenaCommandHandler(normalized, meta)) return {ok:true, arenaCommand:true};
       if (typeof fallbackAskCoach === 'function') return fallbackAskCoach(command, meta);
       return false;
-    }, bareCommandMatcher: command => /^(reset|restart|start over|restart everything|ready|i am ready|im ready|capture|capture top|top capture|capture bottom|bottom capture|start|go|begin)$/.test(String(command || '').trim().toLowerCase())}});
+    }, bareCommandMatcher: command => ARENA_COMMAND.test(normalizeArenaCommand(command))}});
     return {dispose(){ arenaCommandHandler = null; }};
   }
 
