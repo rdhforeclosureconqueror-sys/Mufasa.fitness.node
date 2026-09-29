@@ -242,14 +242,14 @@
       $('arenaThrillerAction').hidden = !state.canMove;
       $('arenaThrillerAction').disabled = !state.canMove;
       const cameraStatus = {
-        BODY_VISIBLE: 'Side-view chain found · shoulder · elbow · wrist · hip · ankle · green = usable',
+        BODY_VISIBLE: 'Side-view core found · shoulder · elbow · wrist · hip · green = usable',
         CALIBRATING_TOP: 'TOP: get mostly green · hold briefly · snap',
         CALIBRATING_BOTTOM: 'BOTTOM: lower · get mostly green · hold briefly · snap',
         CONFIRMING_TOP: 'Back to TOP · hold briefly · snap',
         CALIBRATED: 'TOP ✓ · BOTTOM ✓ · calibration complete',
         CALIBRATION_RETRY: "Didn't get it · rest for a second · captured poses are kept when possible"
       }[state.state];
-      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for one clear side-view chain · shoulder · elbow · wrist · hip · ankle';
+      $('arenaBodyStatus').textContent = cameraStatus || 'Waiting for one clear side view · shoulder · elbow · wrist · hip';
       $('arenaBodyStatus').dataset.visible = String(Boolean(cameraStatus) && state.state !== 'CALIBRATION_RETRY');
       $('arenaBodyStatus').dataset.form = state.state === 'CALIBRATED' ? 'pass' : 'neutral';
       if (pointer && !state.canMove) releasePointer();
@@ -336,12 +336,12 @@
       if (['capture','capture top','top capture'].includes(words)) {
         const result = calibration.manualCapture?.(latestPoseFrame, Math.min(.4, latestPoseConfidence || .4), 'TOP') || {ok:false, reason:'CAPTURE_UNAVAILABLE'};
         const confirming = result.captured === 'TOP_CONFIRM';
-        await queueArenaSpeech(result.ok ? (confirming ? 'Capture top successful. Calibration complete. When you are ready, say start.' : 'Capture top successful. Lower into your bottom position, then say capture bottom.') : `Capture top failed. ${result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your top position and try capture top again.'}`, 'arena-command');
+        await queueArenaSpeech(result.ok ? (confirming ? 'Capture top successful. Calibration complete. When you are ready, say start.' : 'Capture top successful. Lower into your bottom position, then say capture bottom.') : `Capture top failed. ${result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, and hip on one side.' : 'Hold your top position and try capture top again.'}`, 'arena-command');
         return true;
       }
       if (['capture bottom','bottom capture'].includes(words)) {
         const result = calibration.manualCapture?.(latestPoseFrame, Math.min(.4, latestPoseConfidence || .4), 'BOTTOM') || {ok:false, reason:'CAPTURE_UNAVAILABLE'};
-        await queueArenaSpeech(result.ok ? 'Capture bottom successful. Return to your top position, then say capture top.' : `Capture bottom failed. ${result.reason === 'TOP_REQUIRED' ? 'Capture top first.' : result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, hip, and ankle on one side.' : 'Hold your bottom position and try capture bottom again.'}`, 'arena-command');
+        await queueArenaSpeech(result.ok ? 'Capture bottom successful. Return to your top position, then say capture top.' : `Capture bottom failed. ${result.reason === 'TOP_REQUIRED' ? 'Capture top first.' : result.reason === 'REQUIRED_JOINTS_MISSING' || result.reason === 'NO_FRESH_POSE' ? 'I need a fresh shoulder, elbow, wrist, and hip on one side.' : 'Hold your bottom position and try capture bottom again.'}`, 'arena-command');
         return true;
       }
       if (['start','go','begin'].includes(words)) {
@@ -394,7 +394,8 @@
           flow.cameraActive();
           ensureArenaListening('camera_ready');
           mark?.('COACH_VOICE', 'RUNNING', 'ARENA_CAMERA_READY_CUE');
-          const cueResult = await queueArenaSpeech('Step back so I can see your full body. Say ready when you are ready.', 'arena-camera-ready', {owner:'arena_voice_command'});
+          if (!flow.snapshot().previewOnly && calibration.snapshot().stage === 'IDLE') calibration.start();
+          const cueResult = await queueArenaSpeech('Set the phone to a clear side view so I can see your shoulder, elbow, wrist, and hip. Get into your top push-up position and say ready when you are ready.', 'arena-camera-ready', {owner:'arena_voice_command'});
           if (cueResult?.ok === false) mark?.('COACH_VOICE', 'FAIL', 'ARENA_CAMERA_READY_CUE_FAILED');
           else mark?.('COACH_VOICE', 'PASS', 'ARENA_CAMERA_READY_CUE_SPOKEN');
           // Speech synthesis can pause recognition on iOS. Re-arm the READY listener
