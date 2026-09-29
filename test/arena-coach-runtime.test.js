@@ -72,3 +72,11 @@ test('Arena phone diagnostics fail closed on missing coach voice configuration i
   assert.match(source, /mark\?\.\('COACH_VOICE', voiceConfig\.ok \? 'PASS' : 'FAIL'/);
   assert.match(source, /ARENA_COACH_VOICE_URL_MISSING/);
 });
+
+
+test('Arena bare READY grammar normalizes punctuation before any backend fallback', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/arena-coach-runtime.js'), 'utf8');
+  assert.match(source, /normalizeArenaCommand/);
+  assert.match(source, /ARENA_COMMAND\.test\(normalizeArenaCommand\(command\)\)/);
+  assert.match(source, /arenaCommandHandler\(normalized, meta\)/);
+});
