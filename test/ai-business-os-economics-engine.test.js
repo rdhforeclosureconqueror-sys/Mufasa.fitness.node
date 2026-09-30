@@ -42,7 +42,7 @@ test("unknown is never zero and partial knowledge reports a bounded subtotal", (
 
 test("missing cost differs from evidenced zero and required coverage is explicit", () => {
   const requiredCostCategories=["PAYMENT_FEE","FULFILLMENT_COST"];
-  const base=[input("REVENUE",1000),input("PAYMENT_FEE",0)];
+  const base=[input("REVENUE",1000),input("REFUND",0),input("DISCOUNT",0),input("PAYMENT_FEE",0)];
   const missing=calculate(base,{requiredCostCategories});
   assert.equal(missing.metrics.contribution.status,"UNKNOWN");
   assert.ok(missing.metrics.contribution.missingInputs.includes("category:FULFILLMENT_COST"));
@@ -97,7 +97,7 @@ test("mixed currency/scope, malformed numbers, duplicates, versions, and overflo
   assert.throws(()=>calculate([input("REVENUE",1),input("REVENUE",2)]),/duplicate_input/);
   assert.throws(()=>E.calculateEconomicAssessment({engineVersion:"economics-v3",workId:"work",financialInputs:[input("REVENUE",1)]},{clock}),/engine_version/);
   const large=Number.MAX_SAFE_INTEGER;
-  const result=calculate([input("REVENUE",large),input("REFUND",large),input("FULFILLMENT_COST",large)],{requiredCostCategories:["FULFILLMENT_COST"],units:1});
+  const result=calculate([input("REVENUE",large),input("REFUND",large),input("DISCOUNT",0),input("FULFILLMENT_COST",large)],{requiredCostCategories:["FULFILLMENT_COST"],units:1});
   assert.equal(result.metrics.netRevenue.value,0);
   assert.equal(result.metrics.contribution.value,-large);
   assert.throws(()=>calculate([input("REVENUE",large),input("REFUND",large),input("REFUND",large,{id:"refund:2",source:{system:"FIXTURE",recordRef:"refund:2",observedAt:"2035-02-01T00:00:00.000Z"}})]),/revenue_total_overflow/);

@@ -500,6 +500,22 @@
       "createdAt": "2026-09-30T17:09:28.327Z",
       "source": "ECO-2 implementation assignment",
       "taskId": "economics-eco2"
+    },
+    {
+      "id": "launch-development-economics-eco3",
+      "board": "launch",
+      "canonical": false,
+      "title": "Economics ECO-3 evidence provenance and input trust",
+      "category": "Business OS",
+      "description": "Implement deterministic economic evidence preflight using canonical Business OS evidence records, including classification support, freshness, supersession, contradiction and scope isolation, provenance snapshots and metric-to-source traceability without ECO-4+.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco2"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-09-30T18:11:25.814Z",
+      "source": "ECO-3 implementation assignment",
+      "taskId": "economics-eco3"
     }
   ]
 }

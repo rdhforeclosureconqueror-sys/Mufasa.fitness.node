@@ -1,2 +1,2 @@
 "use strict";
-module.exports = {...require("./contracts"), ...require("./contribution"), ...require("./engine")};
+module.exports = {...require("./contracts"), ...require("./contribution"), ...require("./engine"), ...require("./provenance")};
