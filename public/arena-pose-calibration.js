@@ -195,7 +195,10 @@
     // that frame and wait for the established side; only dimensions identify a
     // real source replacement that invalidates stored references.
     function sameCameraSource(frame) {return !source || (frame.sourceWidth === source.width && frame.sourceHeight === source.height);}
-    function sameCalibrationSide(frame) {return !source || frame.side === source.side;}
+    // Personal references are angle geometry, so left/right is not source
+    // identity. The adapter already applies hysteresis before emitting a side.
+    // If the TOP-side hip becomes occluded at BOTTOM, a stable opposite-side
+    // chain may continue calibration instead of timing out forever.
     function evaluate(frame, minimumConfidence) {
       const evaluationStage = stage === 'CAPTURE_BOTTOM' ? 'CAPTURE_BOTTOM' : (stage === 'CONFIRM_TOP' ? 'CONFIRM_TOP' : 'CAPTURE_TOP');
       return evaluateFrame(frame, minimumConfidence, evaluationStage);
@@ -219,12 +222,7 @@
         return false;
       }
       if (!sameCameraSource(frame)) {captureRejectReason = 'SOURCE_CHANGED'; recordEvent('SOURCE_CHANGED'); invalidate('SOURCE_CHANGED'); return false;}
-      if (!sameCalibrationSide(frame)) {
-        captureRejectReason = `CALIBRATION_SIDE_LOCKED_${source.side.toUpperCase()}`;
-        recordEvent('BOTTOM_FRAME_REJECTED', captureRejectReason);
-        samples = []; stablePoseDurationMs = 0; trackingInterruptedAt ??= now();
-        return false;
-      }
+      if (source && frame.side !== source.side) recordEvent('CALIBRATION_SIDE_CHANGED', `${source.side.toUpperCase()}_TO_${frame.side.toUpperCase()}`);
       if (lastTimestamp !== null && frame.timestamp <= lastTimestamp) {samples = []; stablePoseDurationMs = 0; captureRejectReason = 'NON_MONOTONIC_FRAME'; return false;}
       if (trackingInterruptedAt !== null) {recordEvent('TRACKING_REACQUIRED', `${Math.max(0, now() - trackingInterruptedAt)}ms`); trackingInterruptedAt = null;}
       source ||= {side: frame.side, width: frame.sourceWidth, height: frame.sourceHeight};
@@ -260,7 +258,7 @@
       const vector = signature(frame, minimumConfidence, {manual:true});
       if (!vector) return {ok:false, reason:'REQUIRED_JOINTS_MISSING'};
       if (source && !sameCameraSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
-      if (source && !sameCalibrationSide(frame)) return {ok:false, reason:`CALIBRATION_SIDE_LOCKED_${source.side.toUpperCase()}`};
+      if (source && frame.side !== source.side) recordEvent('CALIBRATION_SIDE_CHANGED', `${source.side.toUpperCase()}_TO_${frame.side.toUpperCase()}`);
       source ||= {side:frame.side,width:frame.sourceWidth,height:frame.sourceHeight};
       const candidate = {center:vector, spread:0, manual:true};
       if (target === 'TOP') {
@@ -277,7 +275,7 @@
       }
       if (!top) return {ok:false, reason:'TOP_REQUIRED'};
       if (!sameCameraSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
-      if (!sameCalibrationSide(frame)) return {ok:false, reason:`CALIBRATION_SIDE_LOCKED_${source.side.toUpperCase()}`};
+      if (source && frame.side !== source.side) recordEvent('CALIBRATION_SIDE_CHANGED', `${source.side.toUpperCase()}_TO_${frame.side.toUpperCase()}`);
       if (distance(candidate.center, top.center) < MIN_POSE_SEPARATION_DEGREES) return {ok:false, reason:'BOTTOM_TOO_SIMILAR'};
       bottom=candidate;
       const separation=distance(top.center,bottom.center);
@@ -287,7 +285,7 @@
     }
     function classify(frame, minimumConfidence) {
       if (stage !== 'CALIBRATED') return 'UNAVAILABLE';
-      const vector = fresh(frame) && sameCameraSource(frame) && sameCalibrationSide(frame) ? signature(frame, minimumConfidence) : null;
+      const vector = fresh(frame) && sameCameraSource(frame) ? signature(frame, minimumConfidence) : null;
       if (!vector) return 'UNUSABLE';
       const topDistance = distance(vector, top.center), bottomDistance = distance(vector, bottom.center);
       if (topDistance <= tolerance && topDistance < bottomDistance) return 'TOP';
