@@ -111,3 +111,26 @@ test("same canonical input and engine version replays deterministically independ
   const replay=E.calculateEconomicAssessment(JSON.parse(JSON.stringify(request)),{clock});
   assert.deepEqual(replay,first);
 });
+
+
+test("unknown refunds and discounts make net revenue and contribution unknown", () => {
+  for (const category of ["REFUND","DISCOUNT"]) {
+    const values=complete().map(x=>x.category===category?input(category,null):x);
+    const result=calculate(values,{units:100,newCustomers:10});
+    assert.equal(result.metrics.netRevenue.value,null);
+    assert.equal(result.metrics.netRevenue.status,"UNKNOWN");
+    assert.equal(result.metrics.contribution.value,null);
+    assert.equal(result.grossContribution.classification,"UNKNOWN");
+  }
+});
+
+test("unknown acquisition cost never becomes zero CAC or zero-spend ROAS", () => {
+  const values=complete().map(x=>x.category==="ACQUISITION_COST"?input("ACQUISITION_COST",null):x);
+  const result=calculate(values,{units:100,newCustomers:10});
+  assert.equal(result.metrics.cac.value,null);
+  assert.equal(result.metrics.cac.status,"UNKNOWN");
+  assert.ok(result.metrics.cac.missingInputs.includes("input:ACQUISITION_COST"));
+  assert.equal(result.metrics.roas.value,null);
+  assert.equal(result.metrics.roas.status,"UNKNOWN");
+  assert.ok(result.metrics.roas.missingInputs.includes("input:ACQUISITION_COST"));
+});
