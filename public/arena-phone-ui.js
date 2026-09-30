@@ -436,8 +436,11 @@
     $('arenaEnableCamera').addEventListener('click', () => enableCamera());
     $('arenaRestartCalibration').addEventListener('click', () => {
       if (!flow.snapshot().canRestartCalibration) return;
-      camera.resetTracking();
+      // Match voice RESET semantics: restart calibration without destroying a
+      // healthy MoveNet/side-tracker session. Camera replacement/orientation
+      // changes remain the owners of camera.resetTracking().
       if (!calibration.retry?.()) calibration.start();
+      ensureArenaListening('restart_button');
       $('arenaReturnToGym').focus();
     });
     $('arenaReturnToGym').addEventListener('click', () => {if (flow.returnToGym()) (flow.snapshot().state === 'RETURNING' ? $('arenaPhoneMessage') : $('arenaSetupCamera')).focus();});
