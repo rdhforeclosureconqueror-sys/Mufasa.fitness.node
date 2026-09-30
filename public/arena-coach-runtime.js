@@ -6,7 +6,7 @@
   let fallbackAskCoach = null;
   let voiceConfigured = false;
   const normalizeArenaCommand = command => String(command || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-  const ARENA_COMMAND = /^(reset|restart|start over|restart everything|ready|i am ready|im ready|capture|capture top|top capture|capture bottom|bottom capture|start|go|begin)$/;
+  const ARENA_COMMAND = /^(reset|restart|start over|restart everything|ready|i am ready|im ready|capture|capture top|top capture|capture bottom|bottom capture|start|go|begin|stop)$/;
 
   function voiceConfig() {
     const runtime = root.CoachRuntime;

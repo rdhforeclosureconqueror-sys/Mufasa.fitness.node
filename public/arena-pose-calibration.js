@@ -21,6 +21,7 @@
   // as the member reached depth on physical phones.
   const PHASE_TIMEOUT_MS = 9000;
   const MAX_AGE_MS = 2000;
+  const TRACE_LIMIT = 80;
   const MAX_STABILITY_DEGREES = 12;
   const MIN_POSE_SEPARATION_DEGREES = 14;
   // Calibration learns the member's repeatable BOTTOM; authoritative scoring
@@ -123,18 +124,28 @@
   function create({now = () => Date.now(), onChange = () => {}, setTimer = setTimeout, clearTimer = clearTimeout} = {}) {
     let stage = 'IDLE', samples = [], top = null, bottom = null, tolerance = null;
     let source = null, lastTimestamp = null, reason = null, failedStage = null, deadline = null, timer = null, generation = 0;
-    let lossTimer = null, lossGeneration = 0, calibrationFrameCount = 0, captureAttemptCount = 0;
+    let calibrationFrameCount = 0, captureAttemptCount = 0;
     let captureRejectReason = null, stablePoseDurationMs = 0, selectedSide = null, usableCoreJoints = [], missingCoreJoints = CORE_NAMES.slice(), supportMissing = SUPPORT_NAMES.slice();
+    let attemptTrace = [], trackingInterruptedAt = null;
     function snapshot() {return {stage, reason, failedStage, topCaptured: Boolean(top), bottomCaptured: Boolean(bottom), calibrated: stage === 'CALIBRATED'};}
     function diagnostics() {return {...snapshot(),
       calibrationFrameCount, selectedSide, usableCoreJoints:usableCoreJoints.slice(), missingCoreJoints:missingCoreJoints.slice(), supportMissing:supportMissing.slice(),
-      captureAttemptCount, captureRejectReason, stablePoseDurationMs, topReferenceStored:Boolean(top)};}
+      captureAttemptCount, captureRejectReason, stablePoseDurationMs, topReferenceStored:Boolean(top),
+      attemptTrace:attemptTrace.map(item => ({...item}))};}
+    function recordEvent(event, detail = null) {
+      const entry = {event:String(event || 'UNKNOWN'), at:now()};
+      if (detail != null && detail !== '') entry.detail = String(detail);
+      const previous = attemptTrace.at(-1);
+      if (previous?.event === entry.event && previous?.detail === entry.detail) return entry;
+      attemptTrace.push(entry);
+      if (attemptTrace.length > TRACE_LIMIT) attemptTrace.splice(0, attemptTrace.length - TRACE_LIMIT);
+      return entry;
+    }
     function emit() {onChange(snapshot());}
-    function clearLoss() {clearTimer(lossTimer); lossTimer = null; lossGeneration++;}
     function clearDeadline() {clearTimer(timer); timer = null; deadline = null; generation++;}
-    function erase() {samples = []; top = bottom = tolerance = source = lastTimestamp = null; clearDeadline(); clearLoss();}
-    function clearAttemptOnly() {samples = []; clearDeadline(); clearLoss();}
-    function reset() {erase(); stage = 'IDLE'; reason = failedStage = captureRejectReason = null; calibrationFrameCount = captureAttemptCount = stablePoseDurationMs = 0; selectedSide = null; usableCoreJoints = []; missingCoreJoints = CORE_NAMES.slice(); supportMissing = SUPPORT_NAMES.slice(); emit();}
+    function erase() {samples = []; top = bottom = tolerance = source = lastTimestamp = null; clearDeadline();}
+    function clearAttemptOnly() {samples = []; clearDeadline();}
+    function reset() {erase(); stage = 'IDLE'; reason = failedStage = captureRejectReason = null; calibrationFrameCount = captureAttemptCount = stablePoseDurationMs = 0; selectedSide = null; usableCoreJoints = []; missingCoreJoints = CORE_NAMES.slice(); supportMissing = SUPPORT_NAMES.slice(); trackingInterruptedAt = null; recordEvent('CALIBRATION_RESET'); emit();}
     function invalidate(code = 'SOURCE_CHANGED') {
       if (stage === 'IDLE' || stage === 'NEEDS_RETRY' || stage.startsWith('WAIT_')) return;
       failedStage = stage;
@@ -161,8 +172,10 @@
     function beginReadyCapture() {
       const next = stage === 'WAIT_BOTTOM_READY' ? 'CAPTURE_BOTTOM' : stage === 'WAIT_TOP_CONFIRM_READY' ? 'CONFIRM_TOP' : stage === 'WAIT_TOP_READY' ? 'CAPTURE_TOP' : null;
       captureAttemptCount++;
-      if (!next) {captureRejectReason = `NOT_WAITING_${stage}`; emit(); return false;}
+      if (!next) {captureRejectReason = `NOT_WAITING_${stage}`; recordEvent('READY_REJECTED', captureRejectReason); emit(); return false;}
       captureRejectReason = null;
+      recordEvent(next === 'CAPTURE_TOP' ? 'TOP_READY_RECEIVED' : next === 'CAPTURE_BOTTOM' ? 'BOTTOM_READY_RECEIVED' : 'TOP_CONFIRM_READY_RECEIVED');
+      recordEvent(`${next}_STARTED`);
       advance(next); return true;
     }
     function start() {erase(); reason = failedStage = null; waitForReady('TOP');}
@@ -177,7 +190,15 @@
       return true;
     }
     function fresh(frame) {return Number.isFinite(frame?.timestamp) && frame.timestamp >= 0 && now() - frame.timestamp <= MAX_AGE_MS && frame.timestamp - now() <= 250;}
-    function sameSource(frame) {return !source || (frame.side === source.side && frame.sourceWidth === source.width && frame.sourceHeight === source.height);}
+    // Side is a calibration identity, not a camera/source identity. A competing
+    // side may briefly win MoveNet confidence during a floor transition. Reject
+    // that frame and wait for the established side; only dimensions identify a
+    // real source replacement that invalidates stored references.
+    function sameCameraSource(frame) {return !source || (frame.sourceWidth === source.width && frame.sourceHeight === source.height);}
+    // Personal references are angle geometry, so left/right is not source
+    // identity. The adapter already applies hysteresis before emitting a side.
+    // If the TOP-side hip becomes occluded at BOTTOM, a stable opposite-side
+    // chain may continue calibration instead of timing out forever.
     function evaluate(frame, minimumConfidence) {
       const evaluationStage = stage === 'CAPTURE_BOTTOM' ? 'CAPTURE_BOTTOM' : (stage === 'CONFIRM_TOP' ? 'CONFIRM_TOP' : 'CAPTURE_TOP');
       return evaluateFrame(frame, minimumConfidence, evaluationStage);
@@ -194,14 +215,17 @@
       const vector = fresh(frame) && ['left','right'].includes(frame.side) ? signature(frame, minimumConfidence) : null;
       if (!vector) {
         captureRejectReason = !fresh(frame) ? 'NO_FRESH_POSE' : missingCoreJoints.length ? `MISSING_CORE_${missingCoreJoints.join('_').toUpperCase()}` : 'FRAME_NOT_CALIBRATION_USABLE';
+        recordEvent(stage === 'CAPTURE_BOTTOM' ? 'BOTTOM_FRAME_REJECTED' : stage === 'CONFIRM_TOP' ? 'TOP_CONFIRM_FRAME_REJECTED' : 'TOP_FRAME_REJECTED', captureRejectReason);
         stablePoseDurationMs = 0;
         samples = [];
-        if (top && lossTimer === null) {const token = ++lossGeneration; lossTimer = setTimer(() => {if (token === lossGeneration) invalidate('TRACKING_LOST');}, MAX_AGE_MS); lossTimer?.unref?.();}
+        trackingInterruptedAt ??= now();
         return false;
       }
-      if (!sameSource(frame)) {captureRejectReason = 'SOURCE_CHANGED'; invalidate('SOURCE_CHANGED'); return false;}
+      if (!sameCameraSource(frame)) {captureRejectReason = 'SOURCE_CHANGED'; recordEvent('SOURCE_CHANGED'); invalidate('SOURCE_CHANGED'); return false;}
+      if (source && frame.side !== source.side) recordEvent('CALIBRATION_SIDE_CHANGED', `${source.side.toUpperCase()}_TO_${frame.side.toUpperCase()}`);
       if (lastTimestamp !== null && frame.timestamp <= lastTimestamp) {samples = []; stablePoseDurationMs = 0; captureRejectReason = 'NON_MONOTONIC_FRAME'; return false;}
-      clearLoss(); source ||= {side: frame.side, width: frame.sourceWidth, height: frame.sourceHeight};
+      if (trackingInterruptedAt !== null) {recordEvent('TRACKING_REACQUIRED', `${Math.max(0, now() - trackingInterruptedAt)}ms`); trackingInterruptedAt = null;}
+      source ||= {side: frame.side, width: frame.sourceWidth, height: frame.sourceHeight};
       if (lastTimestamp !== null && frame.timestamp - lastTimestamp > MAX_GAP_MS) samples = [];
       lastTimestamp = frame.timestamp;
       if (stage === 'CALIBRATED') return false;
@@ -212,15 +236,15 @@
       const candidate = stable(samples);
       if (!candidate) {captureRejectReason = stablePoseDurationMs < STABLE_MS ? 'STABLE_HOLD_PENDING' : 'POSE_UNSTABLE'; return false;}
       const form = formFromVector(candidate.center, stage);
-      if (!form?.allPass) {captureRejectReason = Object.entries(form?.checks || {}).find(([,pass]) => !pass)?.[0]?.replace(/[A-Z]/g, value => `_${value}`).toUpperCase() || 'FORM_REJECTED'; return false;}
+      if (!form?.allPass) {captureRejectReason = Object.entries(form?.checks || {}).find(([,pass]) => !pass)?.[0]?.replace(/[A-Z]/g, value => `_${value}`).toUpperCase() || 'FORM_REJECTED'; recordEvent(stage === 'CAPTURE_BOTTOM' ? 'BOTTOM_FRAME_REJECTED' : 'TOP_FRAME_REJECTED', captureRejectReason); return false;}
       captureRejectReason = null;
-      if (stage === 'CAPTURE_TOP') {top = candidate; waitForReady('BOTTOM'); return true;}
+      if (stage === 'CAPTURE_TOP') {top = candidate; recordEvent('TOP_CAPTURED'); waitForReady('BOTTOM'); return true;}
       if (stage === 'CAPTURE_BOTTOM') {
-        if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) {captureRejectReason = 'BOTTOM_TOO_SIMILAR'; return false;}
+        if (distance(candidate.center, top.center) < Math.max(MIN_POSE_SEPARATION_DEGREES, top.spread * 2)) {captureRejectReason = 'BOTTOM_TOO_SIMILAR'; recordEvent('BOTTOM_FRAME_REJECTED', captureRejectReason); return false;}
         bottom = candidate;
         const separation = distance(top.center, bottom.center);
         tolerance = Math.max(10, Math.min(separation * .4, Math.max(top.spread, bottom.spread) * 3 + 10));
-        waitForReady('CONFIRM_TOP'); return true;
+        recordEvent('BOTTOM_CAPTURED'); waitForReady('CONFIRM_TOP'); return true;
       }
       const topDistance = distance(candidate.center, top.center), bottomDistance = distance(candidate.center, bottom.center);
       if (topDistance <= tolerance && topDistance < bottomDistance) {advance('CALIBRATED'); return true;}
@@ -233,7 +257,8 @@
       if (!fresh(frame) || !['left','right'].includes(frame?.side)) return {ok:false, reason:'NO_FRESH_POSE'};
       const vector = signature(frame, minimumConfidence, {manual:true});
       if (!vector) return {ok:false, reason:'REQUIRED_JOINTS_MISSING'};
-      if (source && !sameSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
+      if (source && !sameCameraSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
+      if (source && frame.side !== source.side) recordEvent('CALIBRATION_SIDE_CHANGED', `${source.side.toUpperCase()}_TO_${frame.side.toUpperCase()}`);
       source ||= {side:frame.side,width:frame.sourceWidth,height:frame.sourceHeight};
       const candidate = {center:vector, spread:0, manual:true};
       if (target === 'TOP') {
@@ -249,7 +274,8 @@
         return {ok:true, captured:'TOP', stage};
       }
       if (!top) return {ok:false, reason:'TOP_REQUIRED'};
-      if (!sameSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
+      if (!sameCameraSource(frame)) return {ok:false, reason:'SOURCE_CHANGED'};
+      if (source && frame.side !== source.side) recordEvent('CALIBRATION_SIDE_CHANGED', `${source.side.toUpperCase()}_TO_${frame.side.toUpperCase()}`);
       if (distance(candidate.center, top.center) < MIN_POSE_SEPARATION_DEGREES) return {ok:false, reason:'BOTTOM_TOO_SIMILAR'};
       bottom=candidate;
       const separation=distance(top.center,bottom.center);
@@ -259,14 +285,14 @@
     }
     function classify(frame, minimumConfidence) {
       if (stage !== 'CALIBRATED') return 'UNAVAILABLE';
-      const vector = fresh(frame) && sameSource(frame) ? signature(frame, minimumConfidence) : null;
+      const vector = fresh(frame) && sameCameraSource(frame) ? signature(frame, minimumConfidence) : null;
       if (!vector) return 'UNUSABLE';
       const topDistance = distance(vector, top.center), bottomDistance = distance(vector, bottom.center);
       if (topDistance <= tolerance && topDistance < bottomDistance) return 'TOP';
       if (bottomDistance <= tolerance && bottomDistance < topDistance) return 'BOTTOM';
       return 'BETWEEN';
     }
-    return {start, waitForReady, beginReadyCapture, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot, diagnostics};
+    return {start, waitForReady, beginReadyCapture, retry, reset, invalidate, observe, manualCapture, classify, evaluate, snapshot, diagnostics, recordEvent};
   }
   return Object.freeze({create, signature, distance, evaluateFrame, formFromVector, CORE_NAMES, SUPPORT_NAMES, STABLE_MS, PHASE_TIMEOUT_MS, MAX_BOTTOM_ELBOW_DEGREES,
     TOP_ELBOW_MIN_DEGREES, TOP_SHOULDER_TARGET_DEGREES, TOP_SHOULDER_GRACE_DEGREES, BODY_ALIGNMENT_GRACE_DEGREES});

@@ -9,13 +9,19 @@
     let scope = null, pointer = null, cameraOperation = 0, flow, previousState = null, liveMotion = null, challengeVoice = null;
     let challengeArmed = false, challengeEngine = null, challengeTimer = null, challengeCueTimers = [], latestPoseFrame = null, latestPoseConfidence = .4;
     let arenaSpeechTail = Promise.resolve();
+    let lastRecordedBackendPurpose = null;
     const trace = {lastReadyTranscript:null, readyCommandMatched:false, readyHandlerEntered:false, beginReadyCaptureResult:null};
     function publishEvidence() {
       const cameraState = camera?.diagnostics?.() || {}, calibrationState = calibration?.diagnostics?.() || calibration?.snapshot?.() || {};
+      const backendPurpose = root.CoachRuntime?.getState?.().lastBackendRequestPurpose || null;
+      if (backendPurpose && backendPurpose !== lastRecordedBackendPurpose) {
+        calibration?.recordEvent?.('BACKEND_REQUEST_ATTEMPTED', backendPurpose);
+        lastRecordedBackendPurpose = backendPurpose;
+      }
       evidence({...cameraState, ...calibrationState, calibrationStage:calibrationState.stage,
         lastReadyTranscript:trace.lastReadyTranscript, readyCommandMatched:trace.readyCommandMatched,
         readyHandlerEntered:trace.readyHandlerEntered, beginReadyCaptureResult:trace.beginReadyCaptureResult,
-        lastBackendRequestPurpose:root.CoachRuntime?.getState?.().lastBackendRequestPurpose || null});
+        lastBackendRequestPurpose:backendPurpose});
     }
     function queueArenaSpeech(text, source = 'arena-calibration', options = {}) {
       if (!text) return arenaSpeechTail;
@@ -290,9 +296,11 @@
     function restartPoseCapture({restartCamera = false, source = 'unknown'} = {}) {
       challengeArmed = false;
       markReset(`RESET_HANDLER_ENTERED_${source.toUpperCase()}`);
-      camera.resetTracking();
       latestPoseFrame = null;
-      markReset('TRACKING_RESET');
+      // A calibration reset is not a camera/tracker reset. Keeping the active
+      // MoveNet lock avoids manufacturing BODY_VISIBILITY loss and side churn.
+      // Camera replacement still owns an explicit tracking reset below.
+      markReset('TRACKING_PRESERVED');
       calibration.reset();
       markReset('CALIBRATION_RESET');
       if (restartCamera) {
@@ -312,6 +320,7 @@
     async function handleArenaVoiceCommand(command) {
       const words = String(command || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim();
       if (['reset','restart','start over','restart everything'].includes(words)) {
+        calibration.recordEvent?.('RESET_RECEIVED');
         markReset(`RESET_COMMAND_MATCHED_${words.replace(/ /g, '_').toUpperCase()}`);
         // Reset state before speaking. Waiting for TTS first can leave the Arena
         // stranded in NEEDS_RETRY if speech/backend delivery stalls.
@@ -321,6 +330,7 @@
         return restarted;
       }
       if (['ready','i am ready','im ready'].includes(words)) {
+        calibration.recordEvent?.(calibration.diagnostics?.().attemptTrace?.some(item => item.event === 'CALIBRATION_RESET') ? 'READY_RECEIVED_AFTER_RESET' : 'READY_RECEIVED');
         trace.lastReadyTranscript = String(command || ''); trace.readyCommandMatched = true; trace.readyHandlerEntered = true; publishEvidence();
         challengeArmed = false;
         if (!flow.snapshot().cameraView) {
@@ -334,6 +344,7 @@
         // Commit the command transition immediately. TTS is feedback, not the
         // authority for whether READY takes effect.
         const began = Boolean(calibration.beginReadyCapture?.()); trace.beginReadyCaptureResult = began; publishEvidence();
+        calibration.recordEvent?.('READY_HANDLED_LOCALLY', began ? calibration.snapshot().stage : before);
         if (!began) {
           markReset(`READY_COMMAND_REJECTED_${before}`, 'FAIL');
           return true;
@@ -425,8 +436,11 @@
     $('arenaEnableCamera').addEventListener('click', () => enableCamera());
     $('arenaRestartCalibration').addEventListener('click', () => {
       if (!flow.snapshot().canRestartCalibration) return;
-      camera.resetTracking();
+      // Match voice RESET semantics: restart calibration without destroying a
+      // healthy MoveNet/side-tracker session. Camera replacement/orientation
+      // changes remain the owners of camera.resetTracking().
       if (!calibration.retry?.()) calibration.start();
+      ensureArenaListening('restart_button');
       $('arenaReturnToGym').focus();
     });
     $('arenaReturnToGym').addEventListener('click', () => {if (flow.returnToGym()) (flow.snapshot().state === 'RETURNING' ? $('arenaPhoneMessage') : $('arenaSetupCamera')).focus();});
