@@ -275,15 +275,21 @@ decision and Experiment Manager approval, the exact proposal version, run, and
 result, plus organization and work identity. The actual assessment is a distinct
 artifact produced by `calculateEvidenceBackedAssessment`: ECO-3 validates source
 trust and temporal scope before the existing ECO-2 engine performs arithmetic.
+The stored run reference includes a digest of the terminal execution record, and
+the stored result reference includes its canonical version and digest. Approval
+proposal digest/version, authorized ceiling, and the run reservation are checked
+against those exact records rather than accepted as caller labels.
 
 Only canonical ECO-2 metrics present on both assessments are compared. Currency,
 per-unit, unit-count, and basis-point values remain safe integers. Absolute
 variance is `actual - expected`; relative variance is deterministically rounded
 to basis points and is `NOT_APPLICABLE` when expected is zero. `UNKNOWN`,
 `INVALID`, `NOT_APPLICABLE`, and `PARTIAL` remain explicit rather than becoming
-zero. Direction metadata makes higher revenue/contribution/ROAS/ROI favorable
-and lower costs/refunds/CAC/break-even units favorable. Equality alone is
-`ON_PLAN`; ECO-4B invents no tolerance.
+zero. A partial numeric variance is emitted only when both sides omit the same
+dependency lineage; unlike partial quantities remain explicitly partial without
+a numeric variance. Direction metadata makes higher revenue, contribution,
+ROAS, and ROI favorable and lower costs, refunds, CAC, and break-even units
+favorable. Equality alone is `ON_PLAN`; ECO-4B invents no tolerance.
 
 Reporting windows must match exactly. ECO-3 permits evidence observed inside a
 historical window and recorded later when it is still within the assessment's
@@ -292,8 +298,10 @@ evidence cannot enter the actual assessment. Stored reconciliation identities
 are immutable, so later evidence requires a new explicitly versioned artifact
 rather than rewriting history.
 
-Authorized amount, reserved amount, and trusted actual known cost are reported
-separately. Reconciliation neither releases a reservation nor settles money;
+Authorized amount and reserved amount are reported separately and bound to the
+approval and run. Actual spend remains `null` unless a future canonical spend
+fact is added; `totalKnownCost` is never mislabeled as spend. Reconciliation
+neither releases a reservation nor settles money;
 the Experiment Manager's reservation-release adapter remains an operational gap.
 Experimental classification is retained unchanged and is never translated into
 profitability. Variance describes what changed, not why. No Scout/Learning
