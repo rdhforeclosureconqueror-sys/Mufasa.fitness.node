@@ -95,3 +95,21 @@ test("evidence ordering and serialized replay are deterministic", () => {
   const first=validate(values,records), second=validate([...values].reverse(),[...records].reverse());
   assert.deepEqual(second,first); assert.deepEqual(JSON.parse(JSON.stringify(first)),first);
 });
+
+
+test("future recordedAt evidence fails the as-of audit", () => {
+  assert.throws(()=>validate([input("REVENUE",1)],[evidence("REVENUE",1,{recordedAt:"2035-02-03T00:00:00.000Z"})]),/future_recording/);
+});
+
+test("metric source lineage contains only inputs relevant to that metric", () => {
+  const values=[input("REVENUE",1000),input("REFUND",0),input("DISCOUNT",0),input("ACQUISITION_COST",100),input("FULFILLMENT_COST",0)];
+  const records=values.map(value=>evidence(value.category,value.amountMinor,{source:{type:"PAYMENT_PROCESSOR",system:"FIXTURE",recordRef:`record:${value.category}`,availability:"AVAILABLE"}}));
+  const policies=values.map(value=>({id:`historical:${value.category}`,category:value.category,sourceType:"PAYMENT_PROCESSOR",mode:"HISTORICAL"}));
+  const result=E.calculateEvidenceBackedAssessment({workId:"work",financialInputs:values,coverage:{requiredCostCategories:["ACQUISITION_COST","FULFILLMENT_COST"],newCustomers:2}},{clock:()=>asOf,asOf,evidenceRecords:records,freshnessPolicies:policies});
+  const cac=result.calculationLineage.find(line=>line.metric==="cac");
+  assert.deepEqual(cac.sourceTrace.map(x=>x.inputId),["input:ACQUISITION_COST"]);
+  const gross=result.calculationLineage.find(line=>line.metric==="grossRevenue");
+  assert.deepEqual(gross.sourceTrace.map(x=>x.inputId),["input:REVENUE"]);
+  const cash=result.calculationLineage.find(line=>line.metric==="cashRequirement");
+  assert.deepEqual(cash.sourceTrace,[]);
+});
