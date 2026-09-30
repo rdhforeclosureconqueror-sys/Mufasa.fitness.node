@@ -516,6 +516,22 @@
       "createdAt": "2026-09-30T18:11:25.814Z",
       "source": "ECO-3 implementation assignment",
       "taskId": "economics-eco3"
+    },
+    {
+      "id": "launch-development-economics-eco4a",
+      "board": "launch",
+      "canonical": false,
+      "title": "Economics ECO-4A governed organizational workflow",
+      "category": "Business OS",
+      "description": "Connect canonical Scout, Analyst, Experiment Manager, Economics, governance decision, and execution-authorization artifacts in a deterministic version-bound fail-closed workflow without ECO-4B reconciliation or live execution.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco3"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-30T19:12:10.883Z",
+      "source": "ECO-4A implementation assignment",
+      "taskId": "economics-eco4a"
     }
   ]
 }

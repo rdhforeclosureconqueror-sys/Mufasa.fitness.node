@@ -115,7 +115,8 @@ certification must not depend on fabricating a profitable campaign.
 | ECO-1 | Canonical economic inputs and assessment extension | Schema, isolation, provenance and compatibility tests | Implemented; automated validation |
 | ECO-2 | Deterministic assessment engine | Independently calculated fixtures; known/estimated/unknown coverage; rounding, cost allocation, labor, break-even and CAC | PASS (automated) |
 | ECO-3 | Evidence, provenance and input trust | Canonical evidence registration, deterministic preflight, source health/freshness/supersession/conflict checks and reproducible evidence snapshots | PASS (automated) |
-| ECO-4 | Coordinator and Command Center Gold workflow | ExperimentResult -> EconomicAssessment -> Sales/Manager/Learning through actual runtime paths | Not built |
+| ECO-4A | Governed organizational workflow | OpportunityCandidate -> AnalystAssessment -> ExperimentProposal -> EconomicAssessment -> human GovernedDecision -> execution preflight | PASS (automated; human acceptance pending) |
+| ECO-4B | Outcome reconciliation | Forecast -> execution result -> actual economics -> variance | Not built |
 | ECO-5 | Platinum decision support | Scenario/portfolio/capacity/cash models and forecast calibration with explicit uncertainty | Not built |
 | ECO-6 | Independent certification | Executable Academy, independent review, live evidence and authenticated owner acceptance | Not run |
 
@@ -221,6 +222,48 @@ Economics is not Gold or Platinum. ECO-4A must connect the governed Scout →
 Analyst → Experiment Manager → Economics → decision workflow. ECO-4B must add
 forecast-to-actual outcome reconciliation. ECO-5 decision intelligence and ECO-6
 independent/live/human certification remain unresolved.
+
+## ECO-4A governed organizational workflow
+
+ECO-4A reuses the organization layer's `OrganizationalWorkItem` and
+`WorkArtifact` identity rather than introducing an Economics case store. The
+four departmental artifacts share an organization and work ID. Every downstream
+artifact carries an immutable reference to the immediately preceding artifact,
+including its type, ID, version, SHA-256 content digest, organization and work.
+The full chain remains reconstructable without copying upstream payloads.
+
+The deterministic organizational state machine permits discovery, analysis,
+proposal, economic review, decision and readiness transitions plus explicit
+evidence, revision, rejection, pause, expiration and cancellation states. State
+skips are rejected. The execution preflight accepts artifacts in any order but
+canonicalizes them before evaluation; it performs no execution and uses no LLM.
+
+For economically exposed experiments, `CONTINUE` means only that Economics
+permits governance consideration. A separate `GovernedDecision`, made under
+explicit human authority and scoped to experiment execution, must approve the
+exact proposal, assessment and ancestry digests. Missing, unknown, conflicted,
+superseded, cancelled, expired, cross-organization, cross-work, wrongly
+attributed, mutated or ambiguously duplicated inputs fail closed. A new proposal
+or assessment version therefore leaves the historical decision auditable while
+making it invalid for current execution.
+
+ECO-4A does not execute an experiment, reconcile outcomes, add scenario or
+portfolio analysis, authorize autonomous spending, or claim human acceptance.
+Command Center can consume the existing organization work/artifact projections;
+no parallel UI state or broad redesign is introduced.
+
+### ECO-4A certification statement
+
+- **ECO-0: PASS**
+- **ECO-1: PASS**
+- **ECO-2: PASS**
+- **ECO-3: PASS**
+- **ECO-4A: PASS** (repository automated evidence; independent human review pending)
+- **Overall Economics: PRE-GOLD**
+
+The exact remaining Gold gap is ECO-4B: bind an authorized experiment's
+forecast to its execution result and actual economics, then calculate and retain
+deterministic variance. Gold and Platinum are not certified by this change.
 
 ### ECO-2 certification statement
 
