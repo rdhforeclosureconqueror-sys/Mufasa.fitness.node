@@ -225,19 +225,19 @@ test('temporary hip dropout during BOTTOM capture pauses then reacquires without
     ['TOP_CAPTURED','BOTTOM_FRAME_REJECTED','TRACKING_REACQUIRED','BOTTOM_CAPTURED']);
 });
 
-test('captured TOP locks calibration side and opposite-side confidence does not invalidate it', () => {
+test('captured TOP survives a stable opposite-side BOTTOM chain', () => {
   const calibration = create();
   calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
   calibration.beginReadyCapture();
-  const other = frame('BOTTOM', 2200); other.side = 'right';
-  calibration.observe(other, .4);
-  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
-  assert.equal(calibration.snapshot().topCaptured, true);
-  assert.match(calibration.diagnostics().captureRejectReason, /CALIBRATION_SIDE_LOCKED_LEFT/);
-  quickHold(calibration, 'BOTTOM', 2400);
+  for (let timestamp = 2200; timestamp <= 3200; timestamp += 100) {
+    const other = frame('BOTTOM', timestamp); other.side = 'right';
+    calibration.observe(other, .4);
+  }
   assert.equal(calibration.snapshot().stage, 'WAIT_TOP_CONFIRM_READY');
+  assert.equal(calibration.snapshot().topCaptured, true);
+  assert.equal(calibration.snapshot().bottomCaptured, true);
+  assert.ok(calibration.diagnostics().attemptTrace.some(item => item.event === 'CALIBRATION_SIDE_CHANGED'));
 });
-
 test('recoverable BODY_VISIBILITY loss does not erase references or force retry', () => {
   const calibration = create();
   calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
