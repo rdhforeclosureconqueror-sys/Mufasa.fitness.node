@@ -5,7 +5,7 @@ the business should examine next. It is the existing `ECONOMICS` role in the
 shared runtime. Its industry analogue is commercial finance / FP&A.
 
 Gold and Platinum are project acceptance standards, not external credentials.
-The role is currently Foundation / Pre-Gold. ECO-0 through ECO-2 are implemented.
+The role is currently Foundation / Pre-Gold. ECO-0 through ECO-3 are implemented.
 No provider, live campaign, bank transfer, or human acceptance is activated.
 
 ## Existing assets and ownership
@@ -114,7 +114,7 @@ certification must not depend on fabricating a profitable campaign.
 | ECO-0 | Fix missing-cost calculation and old cached projections | Runtime and saved-record negative controls | Implemented; automated validation |
 | ECO-1 | Canonical economic inputs and assessment extension | Schema, isolation, provenance and compatibility tests | Implemented; automated validation |
 | ECO-2 | Deterministic assessment engine | Independently calculated fixtures; known/estimated/unknown coverage; rounding, cost allocation, labor, break-even and CAC | PASS (automated) |
-| ECO-3 | Verified source adapters and reconciliation | Actual fees/refunds/spend/delivery/labor mapped to source records, source health and freshness, duplicate/delayed-event tests | Not built |
+| ECO-3 | Evidence, provenance and input trust | Canonical evidence registration, deterministic preflight, source health/freshness/supersession/conflict checks and reproducible evidence snapshots | PASS (automated) |
 | ECO-4 | Coordinator and Command Center Gold workflow | ExperimentResult -> EconomicAssessment -> Sales/Manager/Learning through actual runtime paths | Not built |
 | ECO-5 | Platinum decision support | Scenario/portfolio/capacity/cash models and forecast calibration with explicit uncertainty | Not built |
 | ECO-6 | Independent certification | Executable Academy, independent review, live evidence and authenticated owner acceptance | Not run |
@@ -162,17 +162,76 @@ Organization contract. It does not add an LLM arithmetic path, provider adapter,
 new payment ledger, coordinator executor, persistence model, or Command Center
 projection. Those remain later-phase work.
 
+## ECO-3 evidence, provenance and input trust
+
+ECO-3 reuses the constitutional kernel's canonical `EvidenceRecord` rather than
+creating an Economics-only evidence store. `EconomicEvidenceRecord` is a strict,
+versioned profile of that record. It adds vendor-neutral source type/system and
+record identity, availability, observation time, economic scope, claim value and
+classification, payload hash, record version and explicit supersession. It does
+not authenticate a provider connection or copy an external provider payload.
+
+`validateEconomicProvenance` is the deterministic boundary between proposed
+facts and ECO-2. It resolves every known input reference against the supplied
+canonical evidence registry and fails closed for absent/unavailable evidence,
+wrong organization/product/campaign/currency/period, mismatched claim/source,
+future or malformed timestamps, unsupported source types, duplicate evidence or
+source versions, changed payload hashes, superseded versions and unsupported
+classification. ACTUAL requires an `OBSERVED_FACT` carrying an ACTUAL economic
+claim. Evidence attached to an estimate cannot promote it to ACTUAL. ESTIMATED
+still requires explicit assumptions and estimated evidence. UNKNOWN has a null
+amount and may have no evidence: the system does not fabricate a gap record.
+
+Freshness is policy-driven, not universal. An explicit `EXPIRING` policy supplies
+a deterministic maximum age for facts such as a current price estimate. An
+explicit `HISTORICAL` policy recognizes a completed reporting period, so an old
+transaction remains historically valid. With no applicable policy, freshness is
+visibly `UNKNOWN`; it is never silently called current. Supported states are
+CURRENT, STALE, HISTORICAL and UNKNOWN. Stale evidence is rejected by the
+authoritative preflight.
+
+The validator examines all registered evidence describing the same category and
+scope. Differing values or classifications produce a structured `CONFLICTED`
+error containing both claims and source references; ECO-3 never selects a winner.
+Explicit supersession and a later version of the same source record are also
+rejected. Governance or a corrected input must resolve either condition.
+
+`calculateEvidenceBackedAssessment` runs preflight first, invokes the unchanged
+`economics-v2.0.0` arithmetic engine only with accepted inputs, then freezes the
+evidence snapshot, registry digest, applied policy references and input trust/
+freshness/source trace into the canonical `Organization.EconomicAssessment`.
+Each metric lineage record carries the input-to-evidence trace. Later registry
+changes therefore do not rewrite what supported a historical assessment.
+
+This phase adds no vendor adapter, evidence research, database, attribution
+model, coordinator workflow, forecast reconciliation, scenario engine, budget
+optimization or autonomous conflict resolution. Kernel evidence persistence is
+still repository-adapter dependent; the default kernel repository is in-memory.
+
+### ECO-3 certification statement
+
+**CURRENT CERTIFICATION: Foundation / Pre-Gold**
+
+- **ECO-0: PASS**
+- **ECO-1: PASS**
+- **ECO-2: PASS**
+- **ECO-3: PASS** (repository automated evidence only; not provider, live, or human acceptance)
+
+Economics is not Gold or Platinum. ECO-4A must connect the governed Scout →
+Analyst → Experiment Manager → Economics → decision workflow. ECO-4B must add
+forecast-to-actual outcome reconciliation. ECO-5 decision intelligence and ECO-6
+independent/live/human certification remain unresolved.
+
 ### ECO-2 certification statement
 
 **CURRENT CERTIFICATION: Foundation / Pre-Gold**
 
 **ECO-2: PASS** (repository automated evidence only; not human acceptance)
 
-ECO-3 must add evidence trust, freshness and source adapters/reconciliation;
-ECO-4 must complete the governed organizational workflow and independent Gold
-review. ECO-5 scenario/forecast/learning intelligence and ECO-6 adversarial,
-live, and authorized human certification remain unresolved. Economics is not
-Gold or Platinum.
+ECO-4 must complete governed organizational workflow and outcome reconciliation
+before independent Gold review. ECO-5 scenario/forecast/learning intelligence
+and ECO-6 independent, live, and authorized human certification remain
+unresolved. Economics is not Gold or Platinum.
 
 ## Verification and known baseline
 

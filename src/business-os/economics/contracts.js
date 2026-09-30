@@ -32,7 +32,8 @@ function validateInput(value) {
   else requireThat(Number.isSafeInteger(value.amountMinor) && value.amountMinor >= 0, "amountMinor");
   requireThat(list(value.assumptions), "assumptions");
   if (value.classification === "ESTIMATED") requireThat(value.assumptions.length > 0, "estimate_assumptions");
-  requireThat(list(value.evidenceRefs) && value.evidenceRefs.length > 0, "evidenceRefs");
+  requireThat(list(value.evidenceRefs), "evidenceRefs");
+  if (value.classification !== "UNKNOWN") requireThat(value.evidenceRefs.length > 0, "evidenceRefs");
   requireThat(object(value.source) && text(value.source.system) && text(value.source.recordRef) && timestamp(value.source.observedAt), "source");
   return value;
 }
