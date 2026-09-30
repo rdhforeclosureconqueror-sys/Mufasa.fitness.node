@@ -208,3 +208,62 @@ test('BOTTOM calibration allows physical transition latency and a distinct bent-
   const tooHigh = Calibration.formFromVector([130, 90], 'CAPTURE_BOTTOM');
   assert.equal(tooHigh.allPass, false);
 });
+
+test('temporary hip dropout during BOTTOM capture pauses then reacquires without erasing TOP', () => {
+  const calibration = create();
+  calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
+  calibration.beginReadyCapture();
+  const dropout = frame('BOTTOM', 2200); dropout.calibrationUsable = false; dropout.sequenceLandmarks.hip.confidence = .1;
+  calibration.observe(dropout, .4);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().topCaptured, true);
+  quickHold(calibration, 'BOTTOM', 2400);
+  assert.equal(calibration.snapshot().stage, 'WAIT_TOP_CONFIRM_READY');
+  assert.equal(calibration.snapshot().topCaptured, true);
+  assert.deepEqual(calibration.diagnostics().attemptTrace.map(item => item.event).filter(event =>
+    ['TOP_CAPTURED','BOTTOM_FRAME_REJECTED','TRACKING_REACQUIRED','BOTTOM_CAPTURED'].includes(event)),
+    ['TOP_CAPTURED','BOTTOM_FRAME_REJECTED','TRACKING_REACQUIRED','BOTTOM_CAPTURED']);
+});
+
+test('captured TOP locks calibration side and opposite-side confidence does not invalidate it', () => {
+  const calibration = create();
+  calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
+  calibration.beginReadyCapture();
+  const other = frame('BOTTOM', 2200); other.side = 'right';
+  calibration.observe(other, .4);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().topCaptured, true);
+  assert.match(calibration.diagnostics().captureRejectReason, /CALIBRATION_SIDE_LOCKED_LEFT/);
+  quickHold(calibration, 'BOTTOM', 2400);
+  assert.equal(calibration.snapshot().stage, 'WAIT_TOP_CONFIRM_READY');
+});
+
+test('recoverable BODY_VISIBILITY loss does not erase references or force retry', () => {
+  const calibration = create();
+  calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
+  calibration.beginReadyCapture();
+  for (let index = 0; index < 3; index++) {
+    const lost = frame('BOTTOM', 2200 + index * 100); lost.calibrationUsable = false; lost.analysisUsable = false;
+    for (const point of Object.values(lost.sequenceLandmarks)) if (point) point.confidence = 0;
+    calibration.observe(lost, .4);
+  }
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_BOTTOM');
+  assert.equal(calibration.snapshot().topCaptured, true);
+  quickHold(calibration, 'BOTTOM', 2400);
+  assert.equal(calibration.snapshot().bottomCaptured, true);
+});
+
+test('reset after BOTTOM failure cancels the old attempt and READY starts exactly one new TOP capture', () => {
+  const calibration = create();
+  calibration.start(); calibration.beginReadyCapture(); quickHold(calibration, 'TOP');
+  calibration.beginReadyCapture(); calibration.invalidate('TIMEOUT');
+  calibration.recordEvent('RESET_RECEIVED'); calibration.reset(); calibration.start();
+  assert.equal(calibration.snapshot().stage, 'WAIT_TOP_READY');
+  assert.equal(calibration.snapshot().topCaptured, false);
+  assert.equal(calibration.beginReadyCapture(), true);
+  assert.equal(calibration.beginReadyCapture(), false);
+  assert.equal(calibration.snapshot().stage, 'CAPTURE_TOP');
+  assert.equal(calibration.diagnostics().captureAttemptCount, 2);
+  assert.deepEqual(calibration.diagnostics().attemptTrace.slice(-3).map(item => item.event),
+    ['TOP_READY_RECEIVED','CAPTURE_TOP_STARTED','READY_REJECTED']);
+});

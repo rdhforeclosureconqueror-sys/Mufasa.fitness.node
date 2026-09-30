@@ -102,9 +102,9 @@
   }
 
   class SideTracker {
-    constructor({sideSwitchConfidenceMargin=.15,sideSwitchRequiredFrames=3,initialSideRequiredFrames=3}={}){Object.assign(this,{sideSwitchConfidenceMargin,sideSwitchRequiredFrames,initialSideRequiredFrames});this.reset();}
+    constructor({sideSwitchConfidenceMargin=.15,sideSwitchRequiredFrames=3,initialSideRequiredFrames=3,landmarkNames=LANDMARK_NAMES}={}){Object.assign(this,{sideSwitchConfidenceMargin,sideSwitchRequiredFrames,initialSideRequiredFrames,landmarkNames});this.reset();}
     reset(){this.activeSide=null;this.candidate=null;this.streak=0;}
-    select(keypoints,threshold){const candidates=SIDES.map(side=>{const points=LANDMARK_NAMES.map(name=>(keypoints||[]).find(p=>(p.name||p.part)===`${side}_${name}`));return{side,points,score:points.reduce((s,p)=>s+Number(p?.score||0),0)/LANDMARK_NAMES.length,usable:points.every(p=>Number(p?.score||0)>=threshold)};});const best=candidates.sort((a,b)=>b.score-a.score)[0];if(!this.activeSide){if(best.usable&&this.candidate===best.side)this.streak++;else{this.candidate=best.usable?best.side:null;this.streak=best.usable?1:0;}if(this.streak>=this.initialSideRequiredFrames){this.activeSide=best.side;this.streak=0;}return this.activeSide?candidates.find(x=>x.side===this.activeSide):best;}const current=candidates.find(x=>x.side===this.activeSide),alternative=candidates.find(x=>x.side!==this.activeSide);if(!current.usable&&alternative.usable||alternative.usable&&alternative.score>=current.score+this.sideSwitchConfidenceMargin){this.streak=this.candidate===alternative.side?this.streak+1:1;this.candidate=alternative.side;if(this.streak>=this.sideSwitchRequiredFrames){this.activeSide=alternative.side;this.streak=0;}}else{this.candidate=null;this.streak=0;}return candidates.find(x=>x.side===this.activeSide);}
+    select(keypoints,threshold){const candidates=SIDES.map(side=>{const points=this.landmarkNames.map(name=>(keypoints||[]).find(p=>(p.name||p.part)===`${side}_${name}`));return{side,points,score:points.reduce((s,p)=>s+Number(p?.score||0),0)/this.landmarkNames.length,usable:points.every(p=>Number(p?.score||0)>=threshold)};});const best=candidates.sort((a,b)=>b.score-a.score)[0];if(!this.activeSide){if(best.usable&&this.candidate===best.side)this.streak++;else{this.candidate=best.usable?best.side:null;this.streak=best.usable?1:0;}if(this.streak>=this.initialSideRequiredFrames){this.activeSide=best.side;this.streak=0;}return this.activeSide?candidates.find(x=>x.side===this.activeSide):best;}const current=candidates.find(x=>x.side===this.activeSide),alternative=candidates.find(x=>x.side!==this.activeSide);if(!current.usable&&alternative.usable||alternative.usable&&alternative.score>=current.score+this.sideSwitchConfidenceMargin){this.streak=this.candidate===alternative.side?this.streak+1:1;this.candidate=alternative.side;if(this.streak>=this.sideSwitchRequiredFrames){this.activeSide=alternative.side;this.streak=0;}}else{this.candidate=null;this.streak=0;}return candidates.find(x=>x.side===this.activeSide);}
   }
 
   class TrackingStateMachine {
@@ -161,7 +161,7 @@
 
   class PoseCaptureEngine {
     constructor({ profile, onFrame = () => {}, onStatus=()=>{}, poseRuntime = global.PoseRuntime, trackingOptions={}, now=()=>Date.now(), setTimer=global.setInterval?.bind(global), clearTimer=global.clearInterval?.bind(global) } = {}) {
-      this.profile=profile;this.onFrame=onFrame;this.onStatus=onStatus;this.poseRuntime=poseRuntime;this.trackingOptions=trackingOptions;this.now=now;this.setTimer=setTimer;this.clearTimer=clearTimer;this.loop=null;this.video=null;this.detector=null;this.inferenceInProgress=false;this.sideTracker=new SideTracker();this.smoother=new LandmarkSmoother();this.tracking=new TrackingStateMachine(trackingOptions);this.stability=this.tracking;this.continuity=new LandmarkContinuity(trackingOptions);this.personLock=null;this.lastInferenceStartedAt=null;this.lastInferenceCompletedAt=null;this.lastSuccessfulPoseAt=null;this.consecutiveInferenceErrors=0;this.poseLoopRestartCount=0;this.restartAttempts=0;this.watchdogTimer=null;this.inferenceSamples=[];
+      this.profile=profile;this.onFrame=onFrame;this.onStatus=onStatus;this.poseRuntime=poseRuntime;this.trackingOptions=trackingOptions;this.now=now;this.setTimer=setTimer;this.clearTimer=clearTimer;this.loop=null;this.video=null;this.detector=null;this.inferenceInProgress=false;this.sideTracker=new SideTracker();this.calibrationSideTracker=new SideTracker({landmarkNames:CALIBRATION_CORE_LANDMARK_NAMES,sideSwitchRequiredFrames:5});this.smoother=new LandmarkSmoother();this.tracking=new TrackingStateMachine(trackingOptions);this.stability=this.tracking;this.continuity=new LandmarkContinuity(trackingOptions);this.personLock=null;this.lastInferenceStartedAt=null;this.lastInferenceCompletedAt=null;this.lastSuccessfulPoseAt=null;this.consecutiveInferenceErrors=0;this.poseLoopRestartCount=0;this.restartAttempts=0;this.watchdogTimer=null;this.inferenceSamples=[];
     }
     transform(pose, dimensions, timestamp = Date.now()) {
       const threshold = this.profile.poseAnalysis.rules[0].minimumLandmarkConfidence;
@@ -174,13 +174,8 @@
       // Previously side selection still demanded all five sequence landmarks,
       // contradicting arena-camera's tolerant four-joint gate and allowing a
       // weak/cropped ankle to select the wrong side and stall BODY_VISIBILITY.
-      const calibrationSide=SIDES.map(side=>{
-        const points=CALIBRATION_CORE_LANDMARK_NAMES.map(name=>byName.get(`${side}_${name}`));
-        const usableCount=points.filter(point=>finite(point?.x)&&finite(point?.y)&&Number(point?.score||0)>=.4).length;
-        const confidence=points.reduce((sum,point)=>sum+Number(point?.score||0),0)/CALIBRATION_CORE_LANDMARK_NAMES.length;
-        return {side,usableCount,confidence};
-      }).sort((a,b)=>b.usableCount-a.usableCount||b.confidence-a.confidence)[0];
-      const selectedSide=calibrationSide?.usableCount===CALIBRATION_CORE_LANDMARK_NAMES.length?calibrationSide.side:(tracked?.side||calibrationSide?.side);
+      const calibrationSide=this.calibrationSideTracker.select(pose?.keypoints||[],.4);
+      const selectedSide=calibrationSide?.usable?calibrationSide.side:(tracked?.side||calibrationSide?.side);
       const normalized = normalizeLandmarks((tracked?.points||[]).map((point,index)=>point&&({...point,name:`${tracked.side}_${LANDMARK_NAMES[index]}`})).filter(Boolean), dimensions.width, dimensions.height);
       const sequenceLandmarks=Object.fromEntries(SEQUENCE_LANDMARK_NAMES.map(name=>{const point=byName.get(`${selectedSide}_${name}`);return[name,point&&finite(point.x)&&finite(point.y)?{x:Number(point.x)/dimensions.width,y:Number(point.y)/dimensions.height,confidence:Math.max(0,Math.min(1,Number(point.score||0)))}:null];}));
       const confidences = LANDMARK_NAMES.map(name => normalized.landmarks[name]?.confidence || 0);
@@ -199,7 +194,7 @@
     startWatchdog(){if(this.watchdogTimer||!this.setTimer)return;this.watchdogTimer=this.setTimer(()=>this.watchdogTick(this.now()),500);this.watchdogTimer?.unref?.();}
     watchdogTick(now=this.now()){if(!this.loop||this.inferenceInProgress)return false;const reference=this.lastInferenceCompletedAt||this.lastInferenceStartedAt;if(reference==null||now-reference<2500)return false;if(this.restartAttempts>=3){this.onStatus('Pose tracking needs attention. Finish Session remains available.');return false;}const old=this.loop;this.loop=null;old.stop?.();this.restartAttempts++;this.poseLoopRestartCount++;this.lastInferenceCompletedAt=now;this.onStatus('Pose tracking paused — restarting safely…');this.startLoop();return true;}
     stop(){this.loop?.stop?.();this.loop=null;if(this.watchdogTimer!=null)this.clearTimer?.(this.watchdogTimer);this.watchdogTimer=null;this.resetTracking();}
-    resetTracking(){this.inferenceInProgress=false;this.sideTracker.reset();this.smoother.reset();this.tracking.reset();this.continuity.reset();this.personLock=null;this.restartAttempts=0;}
+    resetTracking(){this.inferenceInProgress=false;this.sideTracker.reset();this.calibrationSideTracker.reset();this.smoother.reset();this.tracking.reset();this.continuity.reset();this.personLock=null;this.restartAttempts=0;}
     diagnostics(){return{trackingState:this.tracking.state,lastSuccessfulPoseAt:this.lastSuccessfulPoseAt,currentDropoutDurationMs:this.tracking.currentDropoutMs,longestDropoutDurationMs:this.tracking.longestDropoutMs,usableFrameStreak:this.tracking.usableFrameStreak,unusableFrameStreak:this.tracking.unusableFrameStreak,recoveryFrameStreak:this.tracking.recoveryFrameStreak,activeSide:this.sideTracker.activeSide,torsoCenter:this.personLock?.center||null,lastInferenceStartedAt:this.lastInferenceStartedAt,lastInferenceCompletedAt:this.lastInferenceCompletedAt,averageInferenceMs:this.inferenceSamples.length?this.inferenceSamples.reduce((a,b)=>a+b,0)/this.inferenceSamples.length:null,inferenceSampleCount:this.inferenceSamples.length,consecutiveInferenceErrors:this.consecutiveInferenceErrors,poseLoopRestartCount:this.poseLoopRestartCount,landmarks:this.continuity.history};}
   }
 

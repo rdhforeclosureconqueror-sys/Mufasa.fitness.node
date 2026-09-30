@@ -95,3 +95,24 @@ test('READY transcript variations are Arena-authoritative and never reach coach 
   assert.deepEqual(handled, ['ready','ready','im ready','i am ready']);
   assert.equal(coachCalls, 0);
 });
+
+test('all reserved exercise commands remain local across missing handlers and repeated resets', async () => {
+  let configured, coachCalls = 0, handled = [];
+  const root = {askCoach: async () => {coachCalls++;}, CoachRuntime:{configure(value){configured=value;},getState:()=>({configured:true}),speak(){}}};
+  root.window=root;
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../public/arena-coach-runtime.js'),'utf8'),root);
+  const registration = root.PocketPTArenaCoachRuntime.installCommandHandler(async command => (handled.push(command), true));
+  const reserved = ['ready','reset','restart','start over','capture','capture top','capture bottom','start','go','begin','stop'];
+  for (const command of reserved) assert.equal(configured.deps.bareCommandMatcher(command), true, command);
+  registration.dispose();
+  const missing = await configured.deps.dispatchCommand('ready', {});
+  assert.equal(missing.arenaCommand, true);
+  assert.equal(missing.reason, 'arena_handler_unavailable');
+  root.PocketPTArenaCoachRuntime.installCommandHandler(async command => (handled.push(command), true));
+  for (const command of ['reset','reset','ready','capture bottom','stop']) {
+    const result = await configured.deps.dispatchCommand(command, {});
+    assert.equal(result.arenaCommand, true);
+  }
+  assert.deepEqual(handled, ['reset','reset','ready','capture bottom','stop']);
+  assert.equal(coachCalls, 0);
+});

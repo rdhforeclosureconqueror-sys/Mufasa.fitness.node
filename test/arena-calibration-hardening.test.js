@@ -16,6 +16,7 @@ function fixture() {
     setTimer(fn, delay) {timers.set(++id,{fn,at:time+delay});return id;}, clearTimer: key => timers.delete(key)});
   function at(next) {time=next; for (const [key,timer] of [...timers]) if(timer.at<=time){timers.delete(key);timer.fn();}}
   function hold(kind, fps = 30, duration = 1200) {
+    if (calibration.snapshot().stage.startsWith('WAIT_')) calibration.beginReadyCapture();
     const start=time; for(let i=0;i<=Math.ceil(duration*fps/1000);i++){at(start+i*1000/fps);calibration.observe(pose(kind,time),.75);}
     at(time+20);
   }
@@ -23,8 +24,8 @@ function fixture() {
 }
 for (const fps of [5,10,15,30,60,120]) test(`stable TOP/BOTTOM/TOP capture works at ${fps} pose frames per second`,()=>{
   const f=fixture();f.calibration.start();f.hold('TOP',fps);
-  assert.equal(f.calibration.snapshot().stage,'CAPTURE_BOTTOM');f.hold('BOTTOM',fps);
-  assert.equal(f.calibration.snapshot().stage,'CONFIRM_TOP');f.hold('TOP',fps);
+  assert.equal(f.calibration.snapshot().stage,'WAIT_BOTTOM_READY');f.hold('BOTTOM',fps);
+  assert.equal(f.calibration.snapshot().stage,'WAIT_TOP_CONFIRM_READY');f.hold('TOP',fps);
   assert.equal(f.calibration.snapshot().stage,'CALIBRATED');assert.equal(f.timers.size,0);
 });
 test('angles use source dimensions, not independently normalized x and y',()=>{
@@ -35,10 +36,10 @@ test('angles use source dimensions, not independently normalized x and y',()=>{
 });
 test('duplicate, backward, stale, future and out-of-frame samples cannot capture',()=>{
   for(const variant of ['duplicate','backward','stale','future','outside']) {
-    const f=fixture();f.calibration.start();
+    const f=fixture();f.calibration.start();f.calibration.beginReadyCapture();
     for(let i=0;i<50;i++){f.at(i*100);const p=pose('TOP',f.now());
       if(variant==='duplicate')p.timestamp=0;if(variant==='backward')p.timestamp=-i;
-      if(variant==='stale')p.timestamp-=2000;if(variant==='future')p.timestamp+=2000;
+      if(variant==='stale')p.timestamp-=2100;if(variant==='future')p.timestamp+=2000;
       if(variant==='outside')p.sequenceLandmarks.elbow.x=2;
       f.calibration.observe(p,.75);
     }
@@ -46,7 +47,7 @@ test('duplicate, backward, stale, future and out-of-frame samples cannot capture
   }
 });
 test('tracking interruptions cannot join two short holds into one stable capture',()=>{
-  const f=fixture();f.calibration.start();
+  const f=fixture();f.calibration.start();f.calibration.beginReadyCapture();
   for(let i=0;i<6;i++){f.at(i*50);f.calibration.observe(pose('TOP',f.now()),.75);}
   f.at(300);f.calibration.observe(null,.75);
   for(let i=0;i<6;i++){f.at(350+i*50);f.calibration.observe(pose('TOP',f.now()),.75);}
@@ -54,47 +55,48 @@ test('tracking interruptions cannot join two short holds into one stable capture
 });
 test('every acquisition phase has a deadline and only explicit restart can recover',()=>{
   for(const phase of ['CAPTURE_TOP','CAPTURE_BOTTOM','CONFIRM_TOP']){
-    const f=fixture();f.calibration.start();if(phase!=='CAPTURE_TOP')f.hold('TOP');if(phase==='CONFIRM_TOP')f.hold('BOTTOM');
+    const f=fixture();f.calibration.start();if(phase!=='CAPTURE_TOP')f.hold('TOP');if(phase==='CONFIRM_TOP')f.hold('BOTTOM');f.calibration.beginReadyCapture();
     assert.equal(f.calibration.snapshot().stage,phase);f.at(f.now()+30001);
     assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');assert.equal(f.calibration.snapshot().reason,'TIMEOUT');
-    assert.equal(f.calibration.snapshot().topCaptured,false);f.hold('TOP');assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');
-    f.calibration.start();f.hold('TOP');assert.equal(f.calibration.snapshot().stage,'CAPTURE_BOTTOM');f.calibration.reset();assert.equal(f.timers.size,0);
+    assert.equal(f.calibration.snapshot().topCaptured,phase==='CAPTURE_TOP'?false:true);f.hold('TOP');assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');
+    f.calibration.start();f.hold('TOP');assert.equal(f.calibration.snapshot().stage,'WAIT_BOTTOM_READY');f.calibration.reset();assert.equal(f.timers.size,0);
   }
 });
-test('camera format or tracked-side change discards captured references',()=>{
-  for(const change of [{sourceWidth:1280},{side:'right'}]){
-    const f=fixture();f.calibration.start();f.hold('TOP');f.at(f.now()+100);
-    f.calibration.observe({...pose('BOTTOM',f.now()),...change},.75);
-    assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');assert.equal(f.calibration.snapshot().reason,'SOURCE_CHANGED');
-    assert.equal(f.calibration.snapshot().topCaptured,false);assert.equal(f.timers.size,0);
-  }
+test('camera format change invalidates references while tracked-side churn is recoverable',()=>{
+  const changed=fixture();changed.calibration.start();changed.hold('TOP');changed.calibration.beginReadyCapture();changed.at(changed.now()+100);
+  changed.calibration.observe({...pose('BOTTOM',changed.now()),sourceWidth:1280},.75);
+  assert.equal(changed.calibration.snapshot().stage,'NEEDS_RETRY');assert.equal(changed.calibration.snapshot().reason,'SOURCE_CHANGED');
+  assert.equal(changed.calibration.snapshot().topCaptured,false);assert.equal(changed.timers.size,0);
+  const side=fixture();side.calibration.start();side.hold('TOP');side.calibration.beginReadyCapture();side.at(side.now()+100);
+  side.calibration.observe(pose('BOTTOM',side.now(),640,480,'right'),.75);
+  assert.equal(side.calibration.snapshot().stage,'CAPTURE_BOTTOM');assert.equal(side.calibration.snapshot().topCaptured,true);
 });
 test('invalidate/reset clear templates and late timeout callbacks cannot corrupt a restart',()=>{
-  const f=fixture();f.calibration.start();const late=[...f.timers.values()][0].fn;
-  f.hold('TOP');f.calibration.invalidate();assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');
-  f.calibration.start();late();assert.equal(f.calibration.snapshot().stage,'CAPTURE_TOP');
+  const f=fixture();f.calibration.start();f.calibration.beginReadyCapture();const late=[...f.timers.values()][0].fn;
+  f.hold('TOP');f.calibration.beginReadyCapture();f.calibration.invalidate();assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');
+  f.calibration.start();f.calibration.beginReadyCapture();late();assert.equal(f.calibration.snapshot().stage,'CAPTURE_TOP');
   f.calibration.reset();assert.equal(f.calibration.snapshot().stage,'IDLE');assert.equal(f.timers.size,0);
 });
-test('sustained tracking loss clears references but a brief dropout preserves them',()=>{
+test('tracking loss pauses capture and preserves references until the bounded phase deadline',()=>{
   const f=fixture();f.calibration.start();f.hold('TOP');
   f.calibration.observe(null,.75);f.at(f.now()+500);f.calibration.observe(pose('BOTTOM',f.now()),.75);
   assert.equal(f.calibration.snapshot().topCaptured,true);
   f.hold('BOTTOM');f.hold('TOP');assert.equal(f.calibration.snapshot().calibrated,true);
   f.calibration.observe(null,.75);f.at(f.now()+1501);
-  assert.equal(f.calibration.snapshot().reason,'TRACKING_LOST');
-  assert.equal(f.calibration.snapshot().topCaptured,false);assert.equal(f.timers.size,0);
+  assert.equal(f.calibration.snapshot().reason,null);
+  assert.equal(f.calibration.snapshot().topCaptured,true);
 });
 test('calibrated references reject stale classification and are erased by source changes',()=>{
   const f=fixture();f.calibration.start();f.hold('TOP');f.hold('BOTTOM');f.hold('TOP');
   assert.equal(f.calibration.classify(pose('TOP',f.now()),.75),'TOP');
-  assert.equal(f.calibration.classify(pose('TOP',f.now()-2000),.75),'UNUSABLE');
+  assert.equal(f.calibration.classify(pose('TOP',f.now()-2001),.75),'UNUSABLE');
   assert.equal(f.calibration.classify(pose('TOP',f.now(),640,480,'right'),.75),'UNUSABLE');
-  f.at(f.now()+100);f.calibration.observe(pose('TOP',f.now(),640,480,'right'),.75);
+  f.at(f.now()+100);f.calibration.observe(pose('TOP',f.now(),1280,480,'left'),.75);
   assert.equal(f.calibration.snapshot().stage,'NEEDS_RETRY');
 });
 test('a long sampling gap resets the hold even without an explicit unusable frame',()=>{
-  const f=fixture();f.calibration.start();
-  for(const time of [0,100,200,600,700,800]){f.at(time);f.calibration.observe(pose('TOP',time),.75);}
+  const f=fixture();f.calibration.start();f.calibration.beginReadyCapture();
+  for(const time of [0,100,200,601,701,801]){f.at(time);f.calibration.observe(pose('TOP',time),.75);}
   assert.equal(f.calibration.snapshot().topCaptured,false);
   f.hold('TOP');assert.equal(f.calibration.snapshot().topCaptured,true);
 });

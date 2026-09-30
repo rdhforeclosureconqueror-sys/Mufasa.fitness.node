@@ -207,7 +207,7 @@
     }
     function report() {
       const info = summary();
-      const evidenceNames = ['latestPoseAgeMs','moveNetFrameCount','arenaPoseFrameCount','calibrationFrameCount','selectedSide','usableCoreJoints','missingCoreJoints','supportMissing','calibrationStage','lastReadyTranscript','readyCommandMatched','readyHandlerEntered','beginReadyCaptureResult','captureAttemptCount','captureRejectReason','stablePoseDurationMs','topReferenceStored','lastBackendRequestPurpose'];
+      const evidenceNames = ['latestPoseAgeMs','moveNetFrameCount','arenaPoseFrameCount','calibrationFrameCount','selectedSide','usableCoreJoints','missingCoreJoints','supportMissing','calibrationStage','lastReadyTranscript','readyCommandMatched','readyHandlerEntered','beginReadyCaptureResult','captureAttemptCount','captureRejectReason','stablePoseDurationMs','topReferenceStored','attemptTrace','lastBackendRequestPurpose'];
       const evidenceLines = evidenceNames.map(name => `${name}: ${Array.isArray(runtimeEvidence[name]) ? runtimeEvidence[name].join(',') || 'NONE' : runtimeEvidence[name] ?? 'NOT_REPORTED'}`);
       return ['PocketPT Push-Up Arena Diagnostics', `Panel: ${VERSION}`, 'Page: /arena/push-up',
         `FIRST FAILURE: ${info.firstFailure ? info.firstFailure.id : 'none observed'}`,
