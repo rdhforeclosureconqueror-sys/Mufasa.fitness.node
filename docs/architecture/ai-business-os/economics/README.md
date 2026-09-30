@@ -116,7 +116,7 @@ certification must not depend on fabricating a profitable campaign.
 | ECO-2 | Deterministic assessment engine | Independently calculated fixtures; known/estimated/unknown coverage; rounding, cost allocation, labor, break-even and CAC | PASS (automated) |
 | ECO-3 | Evidence, provenance and input trust | Canonical evidence registration, deterministic preflight, source health/freshness/supersession/conflict checks and reproducible evidence snapshots | PASS (automated) |
 | ECO-4A | Governed organizational workflow | OpportunityCandidate -> AnalystAssessment -> ExperimentProposal -> EconomicAssessment -> human GovernedDecision -> execution preflight | PASS (automated; human acceptance pending) |
-| ECO-4B | Outcome reconciliation | Forecast -> execution result -> actual economics -> variance | Not built |
+| ECO-4B | Outcome reconciliation | Approved assessment -> authorized run/result -> evidence-backed actual assessment -> deterministic variance | PASS (automated; independent review pending) |
 | ECO-5 | Platinum decision support | Scenario/portfolio/capacity/cash models and forecast calibration with explicit uncertainty | Not built |
 | ECO-6 | Independent certification | Executable Academy, independent review, live evidence and authenticated owner acceptance | Not run |
 
@@ -261,9 +261,58 @@ no parallel UI state or broad redesign is introduced.
 - **ECO-4A: PASS** (repository automated evidence; independent human review pending)
 - **Overall Economics: PRE-GOLD**
 
-The exact remaining Gold gap is ECO-4B: bind an authorized experiment's
-forecast to its execution result and actual economics, then calculate and retain
-deterministic variance. Gold and Platinum are not certified by this change.
+ECO-4B closes the automated pre-Gold implementation gap described by ECO-4A.
+Final Gold and Platinum remain uncertified pending independent review and the
+separate human/live requirements below.
+
+## ECO-4B forecast-to-actual reconciliation
+
+ECO-4B adds the canonical `EconomicReconciliation`; it does not add another
+`ExperimentResult`, `EconomicAssessment`, financial engine, case store, or
+ledger. The approved ECO-4A `ArtifactReference` is the immutable baseline. A
+reconciliation verifies its proposal and assessment digests, the human governed
+decision and Experiment Manager approval, the exact proposal version, run, and
+result, plus organization and work identity. The actual assessment is a distinct
+artifact produced by `calculateEvidenceBackedAssessment`: ECO-3 validates source
+trust and temporal scope before the existing ECO-2 engine performs arithmetic.
+
+Only canonical ECO-2 metrics present on both assessments are compared. Currency,
+per-unit, unit-count, and basis-point values remain safe integers. Absolute
+variance is `actual - expected`; relative variance is deterministically rounded
+to basis points and is `NOT_APPLICABLE` when expected is zero. `UNKNOWN`,
+`INVALID`, `NOT_APPLICABLE`, and `PARTIAL` remain explicit rather than becoming
+zero. Direction metadata makes higher revenue/contribution/ROAS/ROI favorable
+and lower costs/refunds/CAC/break-even units favorable. Equality alone is
+`ON_PLAN`; ECO-4B invents no tolerance.
+
+Reporting windows must match exactly. ECO-3 permits evidence observed inside a
+historical window and recorded later when it is still within the assessment's
+`asOf`; stale, conflicting, unavailable, superseded, wrong-scope, or future-as-of
+evidence cannot enter the actual assessment. Stored reconciliation identities
+are immutable, so later evidence requires a new explicitly versioned artifact
+rather than rewriting history.
+
+Authorized amount, reserved amount, and trusted actual known cost are reported
+separately. Reconciliation neither releases a reservation nor settles money;
+the Experiment Manager's reservation-release adapter remains an operational gap.
+Experimental classification is retained unchanged and is never translated into
+profitability. Variance describes what changed, not why. No Scout/Learning
+weights, forecast calibration, scenario intelligence, or allocation policy are
+modified.
+
+### ECO-4B certification statement
+
+- **ECO-0: PASS**
+- **ECO-1: PASS**
+- **ECO-2: PASS**
+- **ECO-3: PASS**
+- **ECO-4A: PASS**
+- **ECO-4B: PASS** (repository automated evidence; independent review pending)
+- **Overall Economics: GOLD CANDIDATE — AUTOMATED EVIDENCE COMPLETE**
+
+This is not final Gold certification and is not Platinum. Independent review,
+human acceptance, live financial evidence, and stronger ECO-6 certification
+remain outstanding.
 
 ### ECO-2 certification statement
 

@@ -532,6 +532,22 @@
       "createdAt": "2026-09-30T19:12:10.883Z",
       "source": "ECO-4A implementation assignment",
       "taskId": "economics-eco4a"
+    },
+    {
+      "id": "launch-development-economics-eco4b",
+      "board": "launch",
+      "canonical": false,
+      "title": "Economics ECO-4B forecast-to-actual reconciliation",
+      "category": "Business OS",
+      "description": "Bind an approved immutable economic baseline to an authorized experiment run, canonical experiment result, ECO-3 evidence-backed actual EconomicAssessment, and deterministic metric variance without ECO-5 or ECO-6.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco4a"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-30T21:17:15.898Z",
+      "source": "ECO-4B implementation assignment",
+      "taskId": "economics-eco4b"
     }
   ]
 }
