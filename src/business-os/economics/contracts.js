@@ -128,10 +128,15 @@ function validateEconomicAssessment(value) {
 
 function EconomicReconciliation(value = {}) {
   requireThat(value.kind === undefined || value.kind === "EconomicReconciliation", "reconciliation_kind");
-  for (const field of ["id","organizationId","workId","proposalRef","runRef","experimentResultRef","baselineEconomicAssessmentRef","actualEconomicAssessmentRef","decisionRef","reportingPeriod","metricComparisons","status","limitations","createdAt","version","engineVersion","policyVersion"]) requireThat(value[field] !== undefined, `reconciliation_${field}`);
+  for (const field of ["id","organizationId","workId","proposalRef","runRef","experimentResultRef","baselineEconomicAssessmentRef","actualEconomicAssessmentRef","decisionRef","reportingPeriod","asOf","metricComparisons","status","limitations","createdAt","version","engineVersion","policyVersion"]) requireThat(value[field] !== undefined, `reconciliation_${field}`);
+  for (const field of ["id","organizationId","workId","decisionRef","engineVersion","policyVersion"]) requireThat(text(value[field]), `reconciliation_${field}`);
+  period(value.reportingPeriod);
+  requireThat(timestamp(value.asOf) && timestamp(value.createdAt), "reconciliation_timestamp");
   requireThat(Number.isSafeInteger(value.version) && value.version > 0, "reconciliation_version");
   requireThat(RECONCILIATION_STATUSES.includes(value.status), "reconciliation_status");
-  requireThat(Array.isArray(value.metricComparisons) && value.metricComparisons.every(item => item && text(item.metric) && COMPARISON_STATUSES.includes(item.comparisonStatus)), "metric_comparisons");
+  requireThat(object(value.runRef) && text(value.runRef.runId) && text(value.runRef.digest) && text(value.runRef.status) && text(value.runRef.proposalRef) && Number.isSafeInteger(value.runRef.proposalVersion), "reconciliation_run_ref");
+  for (const ref of [value.proposalRef,value.experimentResultRef,value.baselineEconomicAssessmentRef,value.actualEconomicAssessmentRef]) requireThat(object(ref) && text(ref.artifactType) && text(ref.artifactId) && Number.isSafeInteger(ref.version) && ref.version > 0 && text(ref.digest) && ref.organizationId === value.organizationId && ref.workId === value.workId, "reconciliation_artifact_ref");
+  requireThat(Array.isArray(value.metricComparisons) && value.metricComparisons.every(item => item && text(item.metric) && text(item.direction) && COMPARISON_STATUSES.includes(item.comparisonStatus) && object(item.expected) && object(item.actual) && object(item.absoluteVariance) && object(item.relativeVariance)), "metric_comparisons");
   requireThat(Array.isArray(value.limitations) && value.limitations.every(text), "reconciliation_limitations");
   return Object.freeze(structuredClone({...value,kind:"EconomicReconciliation",contractVersion:ECONOMICS_SCHEMA_VERSION}));
 }
