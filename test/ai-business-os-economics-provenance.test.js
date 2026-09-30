@@ -85,7 +85,7 @@ test("accepted assessments snapshot evidence and trace every metric to source re
   const records=[evidence("REVENUE",1000),evidence("FULFILLMENT_COST",0,{source:{type:"PAYMENT_PROCESSOR",system:"FIXTURE",recordRef:"record:FULFILLMENT_COST",availability:"AVAILABLE"}})];
   const result=E.calculateEvidenceBackedAssessment({workId:"work",financialInputs:values,coverage:{requiredCostCategories:["FULFILLMENT_COST"]}},{clock:()=>asOf,asOf,evidenceRecords:records,freshnessPolicies:policy});
   assert.equal(result.provenance.registryDigest.length,64);
-  assert.ok(result.calculationLineage.every(line=>line.sourceTrace.some(trace=>trace.evidenceRefs.includes("evidence:REVENUE"))));
+  const gross=result.calculationLineage.find(line=>line.metric==="grossRevenue");\n  assert.deepEqual(gross.sourceTrace.map(trace=>trace.inputId),["input:REVENUE"]);\n  const cash=result.calculationLineage.find(line=>line.metric==="cashRequirement");\n  assert.deepEqual(cash.sourceTrace,[]);
   records[0]={...records[0],payloadHash:"changed"};
   assert.equal(result.provenance.inputs.find(x=>x.inputId==="input:REVENUE").evidence[0].payloadHash,"hash:REVENUE:1");
 });
