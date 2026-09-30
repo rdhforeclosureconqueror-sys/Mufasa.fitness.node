@@ -484,6 +484,22 @@
       "createdAt": "2026-09-26T00:10:11.447Z",
       "source": "readiness:update",
       "taskId": "command-council-grounding-voice"
+    },
+    {
+      "id": "launch-development-economics-eco2",
+      "board": "launch",
+      "canonical": false,
+      "title": "Economics ECO-2 deterministic engine",
+      "category": "Business OS",
+      "description": "Implement the canonical deterministic Economics assessment engine with integer-safe arithmetic, partial-knowledge semantics, calculation lineage, replay certification, and ECO-0/ECO-1 regression protection without ECO-3+ workflow or certification scope.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-foundation"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-30T17:09:28.327Z",
+      "source": "ECO-2 implementation assignment",
+      "taskId": "economics-eco2"
     }
   ]
 }
