@@ -5,7 +5,7 @@ the business should examine next. It is the existing `ECONOMICS` role in the
 shared runtime. Its industry analogue is commercial finance / FP&A.
 
 Gold and Platinum are project acceptance standards, not external credentials.
-The role is currently below Gold. This change implements only ECO-0 and ECO-1.
+The role is currently Foundation / Pre-Gold. ECO-0 through ECO-2 are implemented.
 No provider, live campaign, bank transfer, or human acceptance is activated.
 
 ## Existing assets and ownership
@@ -113,7 +113,7 @@ certification must not depend on fabricating a profitable campaign.
 | --- | --- | --- | --- |
 | ECO-0 | Fix missing-cost calculation and old cached projections | Runtime and saved-record negative controls | Implemented; automated validation |
 | ECO-1 | Canonical economic inputs and assessment extension | Schema, isolation, provenance and compatibility tests | Implemented; automated validation |
-| ECO-2 | Deterministic assessment engine | Independently calculated fixtures; known/estimated/unknown coverage; rounding, cost allocation, labor, break-even and CAC | Not built |
+| ECO-2 | Deterministic assessment engine | Independently calculated fixtures; known/estimated/unknown coverage; rounding, cost allocation, labor, break-even and CAC | PASS (automated) |
 | ECO-3 | Verified source adapters and reconciliation | Actual fees/refunds/spend/delivery/labor mapped to source records, source health and freshness, duplicate/delayed-event tests | Not built |
 | ECO-4 | Coordinator and Command Center Gold workflow | ExperimentResult -> EconomicAssessment -> Sales/Manager/Learning through actual runtime paths | Not built |
 | ECO-5 | Platinum decision support | Scenario/portfolio/capacity/cash models and forecast calibration with explicit uncertainty | Not built |
@@ -122,6 +122,57 @@ certification must not depend on fabricating a profitable campaign.
 Every phase must reuse canonical state, update the readiness CLI evidence and
 retain its own code-ready / live-verified / human-accepted status. Phase names or
 scenario definitions cannot substitute for executed evidence.
+
+## ECO-2 deterministic engine
+
+`calculateEconomicAssessment` is the sole ECO-2 authoritative arithmetic path.
+It validates and canonicalizes `EconomicInput` snapshots, sorts them by identity,
+uses checked integer-minor-unit/BigInt aggregation, and emits the existing
+`Organization.EconomicAssessment`. The engine version is
+`economics-v2.0.0`; the deterministic assessment identifier hashes the canonical
+inputs, coverage policy, and engine version. A caller may supply a timestamp,
+but timestamps are metadata and do not alter economic content.
+
+The engine derives gross revenue, refunds, discounts, net revenue, known
+variable/fixed/allocated costs, total known cost, contribution before unknown
+costs, true contribution, contribution margin, unit metrics, break-even units,
+CAC, ROAS, and ROI. Cash requirement remains explicitly unknown because ECO-2
+has no cash-timing contract. Ratios use integer basis points; money uses integer
+minor currency units. Fixed and percentage payment-fee schedules use BigInt and
+deterministic half-up rounding. An input fee and a fee schedule cannot coexist,
+preventing double counting.
+
+Every metric carries status, value/unit, formula identifier, inputs, missing
+inputs, engine version, and calculation timestamp; the assessment also retains
+a normalized lineage array. `CALCULATED`, `PARTIAL`, `UNKNOWN`, `INVALID`, and
+`NOT_APPLICABLE` remain distinct. Missing required cost categories and explicit
+unknown records make true contribution/margin/ROI unknown, while the known-cost
+subtotal and contribution-before-unknown-costs remain usable. Estimated inputs
+produce partial metrics and never become observed facts.
+
+The coverage policy declares required cost categories plus optional unit and
+new-customer denominators. It is part of deterministic input. Zero denominators
+are not applicable; absent denominators are unknown. Nonpositive unit
+contribution cannot yield a finite break-even value. Mixed scopes/currencies,
+duplicates, malformed numbers, unsupported engine versions, unsafe totals, and
+fee double counting fail closed.
+
+The engine is compatible with Scout's canonical assessment consumer and the
+Organization contract. It does not add an LLM arithmetic path, provider adapter,
+new payment ledger, coordinator executor, persistence model, or Command Center
+projection. Those remain later-phase work.
+
+### ECO-2 certification statement
+
+**CURRENT CERTIFICATION: Foundation / Pre-Gold**
+
+**ECO-2: PASS** (repository automated evidence only; not human acceptance)
+
+ECO-3 must add evidence trust, freshness and source adapters/reconciliation;
+ECO-4 must complete the governed organizational workflow and independent Gold
+review. ECO-5 scenario/forecast/learning intelligence and ECO-6 adversarial,
+live, and authorized human certification remain unresolved. Economics is not
+Gold or Platinum.
 
 ## Verification and known baseline
 

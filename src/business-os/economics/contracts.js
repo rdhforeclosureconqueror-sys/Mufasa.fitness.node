@@ -2,7 +2,8 @@
 const {usdCents} = require("./contribution");
 const ECONOMICS_SCHEMA_VERSION = "ai-business-os.economics/1.0.0";
 const INPUT_CLASSIFICATIONS = Object.freeze(["ACTUAL", "ESTIMATED", "UNKNOWN"]);
-const INPUT_CATEGORIES = Object.freeze(["REVENUE", "REFUND", "ACQUISITION_COST", "PAYMENT_FEE", "FULFILLMENT_COST", "LABOR_COST", "FIXED_COST", "TRANSFER"]);
+const INPUT_CATEGORIES = Object.freeze(["REVENUE", "REFUND", "DISCOUNT", "ACQUISITION_COST", "PAYMENT_FEE", "FULFILLMENT_COST", "VARIABLE_COST", "LABOR_COST", "FIXED_COST", "ALLOCATED_COST", "TRANSFER"]);
+const METRIC_STATUSES = Object.freeze(["CALCULATED", "PARTIAL", "UNKNOWN", "INVALID", "NOT_APPLICABLE"]);
 const text = value => typeof value === "string" && value.trim().length > 0;
 const list = value => Array.isArray(value) && value.every(text);
 const object = value => value && typeof value === "object" && !Array.isArray(value);
@@ -78,20 +79,39 @@ function validateEconomicAssessment(value) {
     requireThat(object(item) && allowed.includes(item.classification), key);
     if (item.classification === "UNKNOWN") requireThat(item.amount === null, `${key}_unknown_amount`);
     else {
-      requireThat(typeof item.amount === "number" && usdCents(key === "grossContribution" ? Math.abs(item.amount) : item.amount) !== null, `${key}_amount`);
+      requireThat(typeof item.amount === "number" && usdCents(["grossContribution", "actualValue"].includes(key) ? Math.abs(item.amount) : item.amount) !== null, `${key}_amount`);
       if (item.classification === "ESTIMATED") requireThat(list(item.assumptions) && item.assumptions.length > 0, `${key}_assumptions`);
     }
   }
   requireThat(["CONTINUE", "REVISE", "PAUSE", "REJECT", "NEEDS_MORE_EVIDENCE", "ESCALATE"].includes(value.disposition), "disposition");
   requireThat(["LOW", "MEDIUM", "HIGH", "UNKNOWN"].includes(value.riskExposure), "riskExposure");
   requireThat(Array.isArray(value.sensitivity), "sensitivity");
+  if (Object.hasOwn(value, "engineVersion") || Object.hasOwn(value, "metrics") || Object.hasOwn(value, "calculationLineage")) {
+    requireThat(text(value.engineVersion), "engineVersion");
+    requireThat(object(value.metrics) && Array.isArray(value.calculationLineage), "calculation_output");
+    for (const [name, metric] of Object.entries(value.metrics)) {
+      requireThat(text(name) && object(metric) && METRIC_STATUSES.includes(metric.status), `metric:${name}`);
+      requireThat(metric.value === null || Number.isSafeInteger(metric.value), `metric_value:${name}`);
+      requireThat(text(metric.unit), `metric_unit:${name}`);
+      if (["UNKNOWN", "INVALID", "NOT_APPLICABLE"].includes(metric.status)) requireThat(metric.value === null, `metric_null:${name}`);
+    }
+    const names = new Set(Object.keys(value.metrics));
+    for (const item of value.calculationLineage) {
+      requireThat(object(item) && names.has(item.metric) && item.status === value.metrics[item.metric].status, "lineage_metric");
+      requireThat(text(item.formula) && item.engineVersion === value.engineVersion && timestamp(item.calculatedAt), "lineage_identity");
+      requireThat(object(item.inputs) && list(item.missingInputs), "lineage_inputs");
+    }
+  }
   if (value.actualValue.classification === "OBSERVED") {
     requireThat(value.financialInputs.some(x => x.category === "REVENUE" && x.classification === "ACTUAL"), "actual_revenue_required");
   }
-  if (value.grossContribution.classification === "OBSERVED") {
+  if (value.grossContribution.classification === "OBSERVED" && !value.engineVersion) {
     for (const category of ["REVENUE", "REFUND", "ACQUISITION_COST", "PAYMENT_FEE", "FULFILLMENT_COST"]) {
       requireThat(value.financialInputs.some(x => x.category === category && x.classification === "ACTUAL"), `contribution_coverage:${category}`);
     }
+  }
+  if (value.engineVersion && value.grossContribution.classification !== "UNKNOWN") {
+    requireThat(value.metrics.contribution.value === Math.round(value.grossContribution.amount * 100), "engine_contribution_mismatch");
   }
   if (value.unknownCosts.length || value.financialInputs.some(x => x.classification === "UNKNOWN" && x.category !== "TRANSFER")) {
     requireThat(value.grossContribution.classification === "UNKNOWN", "incomplete_contribution");
@@ -103,4 +123,4 @@ function validateEconomicAssessment(value) {
   return freeze(structuredClone(value));
 }
 
-module.exports = {ECONOMICS_SCHEMA_VERSION, INPUT_CLASSIFICATIONS, INPUT_CATEGORIES, EconomicInput, validateEconomicAssessment};
+module.exports = {ECONOMICS_SCHEMA_VERSION, INPUT_CLASSIFICATIONS, INPUT_CATEGORIES, METRIC_STATUSES, EconomicInput, validateEconomicAssessment};
