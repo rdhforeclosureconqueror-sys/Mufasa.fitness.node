@@ -88,6 +88,7 @@ function validateEconomicProvenance({financialInputs, evidenceRecords, asOf, fre
       requireThat(record.source.system === input.source.system && record.source.recordRef === input.source.recordRef, `source_mismatch:${record.id}`);
       requireThat(input.source.recordVersion === record.version && input.source.payloadHash === record.payloadHash, `evidence_version_mismatch:${record.id}`);
       requireThat(Date.parse(record.observedAt) <= Date.parse(asOf), `future_observation:${record.id}`);
+      requireThat(Date.parse(record.recordedAt) <= Date.parse(asOf), `future_recording:${record.id}`);
       requireThat(record.supersededBy === null && !records.some(other => other.source.system === record.source.system && other.source.recordRef === record.source.recordRef && other.version > record.version), `superseded:${record.id}`);
       if (input.classification === "ACTUAL") requireThat(record.evidenceType === "OBSERVED_FACT" && record.claim.classification === "ACTUAL", `actual_not_observed:${record.id}`);
       if (input.classification === "ESTIMATED") requireThat(record.claim.classification === "ESTIMATED", `estimate_classification:${record.id}`);
@@ -106,13 +107,42 @@ function validateEconomicProvenance({financialInputs, evidenceRecords, asOf, fre
   return freeze({version:ECONOMIC_EVIDENCE_VERSION,asOf,policyRefs:freshnessPolicies.map(x=>x.id).sort(),inputs:results,conflicts,registryDigest:digest(records)});
 }
 
+const METRIC_INPUT_CATEGORIES = Object.freeze({
+  grossRevenue:["REVENUE"], refunds:["REFUND"], discounts:["DISCOUNT"],
+  netRevenue:["REVENUE","REFUND","DISCOUNT"],
+  knownVariableCost:["ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST"],
+  knownFixedCost:["FIXED_COST","ALLOCATED_COST"],
+  totalKnownCost:["ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  contributionBeforeUnknownCosts:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  contribution:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  contributionMargin:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  unitRevenue:["REVENUE","REFUND","DISCOUNT"],
+  unitCost:["ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  unitContribution:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  breakEvenUnits:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  cac:["ACQUISITION_COST"],
+  roas:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST"],
+  roi:["REVENUE","REFUND","DISCOUNT","ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST","VARIABLE_COST","LABOR_COST","FIXED_COST","ALLOCATED_COST"],
+  cashRequirement:[]
+});
+
 function calculateEvidenceBackedAssessment(request = {}, options = {}) {
   const asOf = options.asOf || options.clock?.();
   const provenance = validateEconomicProvenance({financialInputs:request.financialInputs,evidenceRecords:options.evidenceRecords,asOf,freshnessPolicies:options.freshnessPolicies || []});
   const assessment = calculateEconomicAssessment(request,{clock:options.clock});
   const enriched = structuredClone(assessment);
   enriched.provenance = provenance;
-  enriched.calculationLineage = enriched.calculationLineage.map(item => ({...item,sourceTrace:provenance.inputs.map(input=>({inputId:input.inputId,trustState:input.trustState,freshnessState:input.freshnessState,evidenceRefs:input.evidence.map(x=>x.evidenceRef)}))}));
+  const canonicalInputs = request.financialInputs.map(EconomicInput);
+  const provenanceById = new Map(provenance.inputs.map(input => [input.inputId,input]));
+  enriched.calculationLineage = enriched.calculationLineage.map(item => {
+    const categories = METRIC_INPUT_CATEGORIES[item.metric] || [];
+    const relevantIds = canonicalInputs.filter(input => categories.includes(input.category)).map(input => input.id).sort();
+    const sourceTrace = relevantIds.map(inputId => {
+      const input = provenanceById.get(inputId);
+      return {inputId,trustState:input.trustState,freshnessState:input.freshnessState,evidenceRefs:input.evidence.map(x=>x.evidenceRef)};
+    });
+    return {...item,sourceTrace};
+  });
   return EconomicAssessment(enriched);
 }
 
