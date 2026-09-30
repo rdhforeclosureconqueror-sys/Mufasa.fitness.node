@@ -100,3 +100,20 @@ test('a long sampling gap resets the hold even without an explicit unusable fram
   assert.equal(f.calibration.snapshot().topCaptured,false);
   f.hold('TOP');assert.equal(f.calibration.snapshot().topCaptured,true);
 });
+
+
+test('personal calibration completes when BOTTOM is only usable on the opposite stable side', () => {
+  const f=fixture();
+  f.calibration.start();
+  f.hold('TOP',30,1200);
+  assert.equal(f.calibration.snapshot().stage,'WAIT_BOTTOM_READY');
+  f.calibration.beginReadyCapture();
+  const start=f.now();
+  for(let i=0;i<=36;i++){f.at(start+i*1000/30);f.calibration.observe(pose('BOTTOM',f.now(),640,480,'right'),.75);}
+  assert.equal(f.calibration.snapshot().stage,'WAIT_TOP_CONFIRM_READY');
+  f.calibration.beginReadyCapture();
+  const confirm=f.now();
+  for(let i=0;i<=36;i++){f.at(confirm+i*1000/30);f.calibration.observe(pose('TOP',f.now(),640,480,'right'),.75);}
+  assert.equal(f.calibration.snapshot().stage,'CALIBRATED');
+  assert.ok(f.calibration.diagnostics().attemptTrace.some(item=>item.event==='CALIBRATION_SIDE_CHANGED'));
+});
