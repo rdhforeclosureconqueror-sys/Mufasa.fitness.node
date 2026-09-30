@@ -50,9 +50,10 @@ with repeated BOTTOM failure.
 
 * The four-joint Arena side selector now has independent temporal hysteresis;
   authoritative scoring thresholds and rep judging are unchanged.
-* Captured TOP locks the calibration side. Opposite-side frames are recoverable
-  rejections, not source changes. Only source dimensions changing invalidate
-  camera identity and captured references.
+* TOP/BOTTOM personal references use side-agnostic angle geometry after the
+  adapter's hysteretic side selection. A stable opposite-side chain may continue
+  calibration when the original side becomes occluded. Only source dimensions
+  changing invalidate camera identity and captured references.
 * Missing core frames clear only the current stability accumulation. Reacquired
   frames continue the same BOTTOM capture attempt; the existing bounded phase
   deadline remains the timeout authority.
@@ -81,8 +82,8 @@ is retained, while remaining bounded.
 3. State immediately becomes `CAPTURE_TOP`; cue playback is optional feedback.
 4. TOP is stored and state becomes `WAIT_BOTTOM_READY`.
 5. Athlete lowers and says READY; state immediately becomes `CAPTURE_BOTTOM`.
-6. A brief hip/core dropout or opposite-side advantage clears only the current
-   stability samples. TOP remains stored. The same side is reacquired and a new
+6. A brief hip/core dropout clears only the current stability samples. TOP remains
+   stored. Once either side provides a stable hysteretic four-joint chain, a new
    700 ms stable interval is accumulated.
 7. BOTTOM is stored, then a final READY captures TOP_CONFIRM and reaches
    `CALIBRATED`.
