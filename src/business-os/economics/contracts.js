@@ -4,6 +4,8 @@ const ECONOMICS_SCHEMA_VERSION = "ai-business-os.economics/1.0.0";
 const INPUT_CLASSIFICATIONS = Object.freeze(["ACTUAL", "ESTIMATED", "UNKNOWN"]);
 const INPUT_CATEGORIES = Object.freeze(["REVENUE", "REFUND", "DISCOUNT", "ACQUISITION_COST", "PAYMENT_FEE", "FULFILLMENT_COST", "VARIABLE_COST", "LABOR_COST", "FIXED_COST", "ALLOCATED_COST", "TRANSFER"]);
 const METRIC_STATUSES = Object.freeze(["CALCULATED", "PARTIAL", "UNKNOWN", "INVALID", "NOT_APPLICABLE"]);
+const RECONCILIATION_STATUSES = Object.freeze(["RECONCILED", "PARTIALLY_RECONCILED", "INSUFFICIENT_ACTUALS", "NON_COMPARABLE", "INVALID"]);
+const COMPARISON_STATUSES = Object.freeze(["FAVORABLE", "UNFAVORABLE", "ON_PLAN", "PARTIAL", "UNKNOWN", "NOT_APPLICABLE", "INVALID"]);
 const text = value => typeof value === "string" && value.trim().length > 0;
 const list = value => Array.isArray(value) && value.every(text);
 const object = value => value && typeof value === "object" && !Array.isArray(value);
@@ -124,4 +126,13 @@ function validateEconomicAssessment(value) {
   return freeze(structuredClone(value));
 }
 
-module.exports = {ECONOMICS_SCHEMA_VERSION, INPUT_CLASSIFICATIONS, INPUT_CATEGORIES, METRIC_STATUSES, EconomicInput, validateEconomicAssessment};
+function EconomicReconciliation(value = {}) {
+  requireThat(value.kind === undefined || value.kind === "EconomicReconciliation", "reconciliation_kind");
+  for (const field of ["id","organizationId","workId","proposalRef","runRef","experimentResultRef","baselineEconomicAssessmentRef","actualEconomicAssessmentRef","decisionRef","reportingPeriod","metricComparisons","status","limitations","createdAt","version","engineVersion","policyVersion"]) requireThat(value[field] !== undefined, `reconciliation_${field}`);
+  requireThat(Number.isSafeInteger(value.version) && value.version > 0, "reconciliation_version");
+  requireThat(RECONCILIATION_STATUSES.includes(value.status), "reconciliation_status");
+  requireThat(Array.isArray(value.metricComparisons) && value.metricComparisons.every(item => item && text(item.metric) && COMPARISON_STATUSES.includes(item.comparisonStatus)), "metric_comparisons");
+  requireThat(Array.isArray(value.limitations) && value.limitations.every(text), "reconciliation_limitations");
+  return Object.freeze(structuredClone({...value,kind:"EconomicReconciliation",contractVersion:ECONOMICS_SCHEMA_VERSION}));
+}
+module.exports = {ECONOMICS_SCHEMA_VERSION, INPUT_CLASSIFICATIONS, INPUT_CATEGORIES, METRIC_STATUSES, RECONCILIATION_STATUSES, COMPARISON_STATUSES, EconomicInput, validateEconomicAssessment, EconomicReconciliation};
