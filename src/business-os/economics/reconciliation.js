@@ -4,7 +4,6 @@ const {isDeepStrictEqual} = require("node:util");
 const {EconomicReconciliation, METRIC_STATUSES} = require("./contracts");
 const {ECONOMICS_ENGINE_VERSION} = require("./engine");
 const {reference} = require("../organization/economic-workflow");
-const {proposalDigest} = require("../experiment-manager/approval");
 
 const RECONCILIATION_POLICY_VERSION = "economics-reconciliation-v1.0.0";
 const DIRECTIONS = Object.freeze({grossRevenue:"HIGHER_IS_BETTER",refunds:"LOWER_IS_BETTER",discounts:"LOWER_IS_BETTER",netRevenue:"HIGHER_IS_BETTER",knownVariableCost:"LOWER_IS_BETTER",knownFixedCost:"LOWER_IS_BETTER",totalKnownCost:"LOWER_IS_BETTER",contribution:"HIGHER_IS_BETTER",contributionMargin:"HIGHER_IS_BETTER",unitRevenue:"HIGHER_IS_BETTER",unitCost:"LOWER_IS_BETTER",unitContribution:"HIGHER_IS_BETTER",breakEvenUnits:"LOWER_IS_BETTER",cac:"LOWER_IS_BETTER",roas:"HIGHER_IS_BETTER",roi:"HIGHER_IS_BETTER"});
