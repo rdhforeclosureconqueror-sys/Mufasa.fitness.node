@@ -1,7 +1,7 @@
 "use strict";
 const crypto=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
-const {SCENARIO_MODEL_VERSION,SCENARIO_POLICY_VERSION,SCENARIO_TRANSFORMATIONS,baselineReference,createEconomicScenarioResult}=require("./scenario");
+const {SCENARIO_MODEL_VERSION,SCENARIO_POLICY_VERSION,SCENARIO_TRANSFORMATIONS,baselineReference,deriveScenarioOverride,createEconomicScenarioResult}=require("./scenario");
 const {ECONOMICS_ENGINE_VERSION}=require("./engine");
 
 const SENSITIVITY_MODEL_VERSION="economics-sensitivity-v1.0.0";
@@ -14,7 +14,9 @@ const requireThat=(condition,code)=>{if(!condition)fail(code)};
 const canonical=x=>Array.isArray(x)?x.map(canonical):object(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
 const digest=x=>crypto.createHash("sha256").update(JSON.stringify(canonical(x))).digest("hex").slice(0,24);
 const samePeriod=(a,b)=>a?.start===b?.start&&a?.end===b?.end;
-const numeric=m=>m&&Number.isSafeInteger(m.value)&&["CALCULATED","PARTIAL"].includes(m.status);
+const numeric=m=>m&&Number.isSafeInteger(m.value)&&(m.status==="CALCULATED"||(m.status==="PARTIAL"&&(m.missingInputs||[]).length===0));
+const numericPoint=p=>p&&Number.isSafeInteger(p.value)&&(p.status==="CALCULATED"||(p.status==="PARTIAL"&&(p.missingInputs||[]).length===0));
+const ratioBasisPoints=(numerator,denominator)=>{if(!Number.isSafeInteger(numerator)||!Number.isSafeInteger(denominator)||denominator===0)return null;const negative=(numerator<0)!==(denominator<0),n=BigInt(Math.abs(numerator))*10000n,d=BigInt(Math.abs(denominator)),v=(n+d/2n)/d;return v>BigInt(Number.MAX_SAFE_INTEGER)?null:Number(negative?-v:v)};
 
 function axis(value,name){
   requireThat(object(value)&&text(value.targetInputId)&&text(value.category),`${name}_target`);
@@ -40,7 +42,7 @@ function SensitivityStudy(value={}){
   requireThat(value.scenarioModelVersion===SCENARIO_MODEL_VERSION,"scenario_version");
   requireThat(value.policyVersion===SENSITIVITY_POLICY_VERSION,"policy_version");
   requireThat(value.currency==="USD","currency");
-  requireThat(text(value.createdAt)&&new Date(value.createdAt).toISOString()===value.createdAt,"createdAt");
+  requireThat(text(value.createdAt)&&Number.isFinite(Date.parse(value.createdAt))&&new Date(value.createdAt).toISOString()===value.createdAt,"createdAt");
   requireThat(text(value.reportingPeriod?.start)&&text(value.reportingPeriod?.end)&&Date.parse(value.reportingPeriod.start)<Date.parse(value.reportingPeriod.end),"reporting_period");
   requireThat(object(value.baselineAssessmentRef),"baseline_ref");
   const r=value.baselineAssessmentRef;
@@ -54,27 +56,21 @@ function SensitivityStudy(value={}){
   return freeze(structuredClone({...value,kind:"EconomicSensitivityStudy",sensitivityModelVersion:SENSITIVITY_MODEL_VERSION,axes,thresholds:[...(value.thresholds||[])].sort((a,b)=>a.value-b.value||a.label.localeCompare(b.label)),limitations:[...(value.limitations||[])].sort()}));
 }
 function makeOverride(input,axis,amount){
-  let scenarioAmountMinor=null;
-  if(axis.transformationType==="ABSOLUTE_REPLACEMENT")scenarioAmountMinor=amount;
-  else if(input.classification!=="UNKNOWN"){
-    const n=axis.transformationType==="ABSOLUTE_DELTA"?BigInt(input.amountMinor)+BigInt(amount):BigInt(input.amountMinor)+(BigInt(input.amountMinor)*BigInt(amount)<0n?-((-BigInt(input.amountMinor)*BigInt(amount)+5000n)/10000n):(BigInt(input.amountMinor)*BigInt(amount)+5000n)/10000n);
-    if(n>=0n&&n<=BigInt(Number.MAX_SAFE_INTEGER))scenarioAmountMinor=Number(n);
-  }
-  requireThat(scenarioAmountMinor!==null||input.classification==="UNKNOWN",`unsafe_transformation:${input.id}`);
-  return {targetInputId:input.id,category:input.category,originalClassification:input.classification,originalAmountMinor:input.amountMinor,scenarioClassification:scenarioAmountMinor===null?"UNKNOWN":"ESTIMATED",scenarioAmountMinor,transformationType:axis.transformationType,transformationAmount:amount,unit:axis.transformationType==="PERCENTAGE_DELTA"?"BASIS_POINTS":"MINOR_CURRENCY",reason:`Sensitivity study ${axis.targetInputId} at ${amount}.`,baselineProvenance:{inputId:input.id,evidenceRefs:input.evidenceRefs}};
+  try{return deriveScenarioOverride(input,{transformationType:axis.transformationType,transformationAmount:amount,reason:`Sensitivity study ${axis.targetInputId} at ${amount}.`})}
+  catch{fail(`unsafe_transformation:${input.id}`)}
 }
 function scenarioDefinition(study,overrides,key){return{id:`sensitivity-scenario:${digest({study:identity(study),key})}`,organizationId:study.organizationId,workId:study.workId,productRef:study.productRef,campaignRef:study.campaignRef,name:`${study.name}: ${key}`,description:"Deterministic sensitivity point derived by ECO-5B through ECO-5A.",version:1,baselineAssessmentRef:study.baselineAssessmentRef,engineVersion:study.engineVersion,policyVersion:SCENARIO_POLICY_VERSION,reportingPeriod:study.reportingPeriod,currency:study.currency,type:"CUSTOM",assumptions:overrides.map(x=>x.reason),overrides,createdAt:study.createdAt,createdBy:study.createdBy,status:"DEFINED"}}
 function identity(study){return {baselineAssessmentRef:study.baselineAssessmentRef,engineVersion:study.engineVersion,scenarioModelVersion:study.scenarioModelVersion,policyVersion:study.policyVersion,targetMetric:study.targetMetric,type:study.type,axes:study.axes,thresholds:study.thresholds}}
 function resultPoint(study,scenarioResult,coordinates,baselineMetric){
   const target=scenarioResult.assessment.metrics[study.targetMetric];
-  requireThat(target,"unsupported_target_metric");
-  const valid=numeric(target)&&numeric(baselineMetric);
-  const absoluteChange=valid?target.value-baselineMetric.value:null;
-  const relativeChange=valid&&baselineMetric.value!==0?Number((BigInt(absoluteChange)*10000n)/BigInt(Math.abs(baselineMetric.value))):null;
-  return {coordinates,scenarioRef:{id:scenarioResult.scenario.id,version:scenarioResult.scenario.version,assessmentId:scenarioResult.assessment.id},status:target.status,value:target.value,unit:target.unit,missingInputs:[...(target.missingInputs||[])],changeFromBaseline:{status:valid?(target.status==="PARTIAL"||baselineMetric.status==="PARTIAL"?"PARTIAL":"CALCULATED"):target.status,absolute: absoluteChange,relativeBasisPoints:relativeChange,direction:absoluteChange===null?"UNRESOLVED":absoluteChange>0?"INCREASE":absoluteChange<0?"DECREASE":"UNCHANGED"},scenarioResult};
+  const comparison=scenarioResult.comparisons.find(x=>x.metric===study.targetMetric);
+  requireThat(target&&comparison,"unsupported_target_metric");
+  const absoluteChange=comparison.absoluteDelta.value;
+  const relativeChange=comparison.relativeDelta.value;
+  return {coordinates,scenarioRef:{id:scenarioResult.scenario.id,version:scenarioResult.scenario.version,assessmentId:scenarioResult.assessment.id},status:target.status,value:target.value,unit:target.unit,missingInputs:[...(target.missingInputs||[])],changeFromBaseline:{status:comparison.absoluteDelta.status,absolute:absoluteChange,relativeStatus:comparison.relativeDelta.status,relativeBasisPoints:relativeChange,direction:absoluteChange===null?"UNRESOLVED":absoluteChange>0?"INCREASE":absoluteChange<0?"DECREASE":"UNCHANGED"},scenarioResult};
 }
-function summarize(points,baselineMetric){const valid=points.filter(x=>Number.isSafeInteger(x.value));if(!valid.length)return{status:"UNKNOWN",minimum:null,maximum:null,absoluteSpread:null,relativeSpreadBasisPoints:null};const values=valid.map(x=>x.value),minimum=Math.min(...values),maximum=Math.max(...values),spread=maximum-minimum;return{status:valid.some(x=>x.status==="PARTIAL")?"PARTIAL":"CALCULATED",minimum,maximum,absoluteSpread:spread,relativeSpreadBasisPoints:numeric(baselineMetric)&&baselineMetric.value!==0?Number(BigInt(spread)*10000n/BigInt(Math.abs(baselineMetric.value))):null};}
-function breakpoints(points,thresholds){const ordered=[...points].sort((a,b)=>a.coordinates[0].value-b.coordinates[0].value),out=[];for(const t of thresholds){for(const p of ordered)if(Number.isSafeInteger(p.value)&&p.value===t.value)out.push({label:t.label,threshold:t.value,type:"EXACT_TESTED_POINT",point:p.coordinates});for(let i=1;i<ordered.length;i++){const a=ordered[i-1],b=ordered[i];if(!Number.isSafeInteger(a.value)||!Number.isSafeInteger(b.value)||a.value===t.value||b.value===t.value)continue;if((a.value<t.value&&b.value>t.value)||(a.value>t.value&&b.value<t.value))out.push({label:t.label,threshold:t.value,type:"BETWEEN_TESTED_POINTS",from:{coordinates:a.coordinates,value:a.value},to:{coordinates:b.coordinates,value:b.value},exactCrossing:null})}}return out;}
+function summarize(points,baselineMetric){const valid=points.filter(numericPoint);if(!valid.length)return{status:"UNKNOWN",minimum:null,maximum:null,absoluteSpread:null,relativeSpreadBasisPoints:null};const values=valid.map(x=>x.value),minimum=Math.min(...values),maximum=Math.max(...values),spread=maximum-minimum;return{status:valid.some(x=>x.status==="PARTIAL")?"PARTIAL":"CALCULATED",minimum,maximum,absoluteSpread:spread,relativeSpreadBasisPoints:numeric(baselineMetric)?ratioBasisPoints(spread,baselineMetric.value):null};}
+function breakpoints(points,thresholds){const ordered=[...points].sort((a,b)=>a.coordinates[0].value-b.coordinates[0].value),out=[];for(const t of thresholds){for(const p of ordered)if(numericPoint(p)&&p.value===t.value)out.push({label:t.label,threshold:t.value,type:"EXACT_TESTED_POINT",point:p.coordinates});for(let i=1;i<ordered.length;i++){const a=ordered[i-1],b=ordered[i];if(!numericPoint(a)||!numericPoint(b)||a.value===t.value||b.value===t.value)continue;if((a.value<t.value&&b.value>t.value)||(a.value>t.value&&b.value<t.value))out.push({label:t.label,threshold:t.value,type:"BETWEEN_TESTED_POINTS",from:{coordinates:a.coordinates,value:a.value},to:{coordinates:b.coordinates,value:b.value},exactCrossing:null})}}return out;}
 function runSensitivityStudy({study:definition,baselineAssessment,coverage={}}={}){
   const study=SensitivityStudy(definition),baseline=structuredClone(baselineAssessment);
   requireThat(isDeepStrictEqual(baselineReference(baseline),study.baselineAssessmentRef),"baseline_binding");
