@@ -53,6 +53,7 @@ function SensitivityStudy(value={}){
   requireThat(axes.length===(value.type==="ONE_WAY"?1:2),"axis_count");
   requireThat(new Set(axes.map(x=>x.targetInputId)).size===axes.length,"duplicate_axis_target");
   requireThat(Array.isArray(value.thresholds||[])&&(value.thresholds||[]).every(x=>object(x)&&text(x.label)&&Number.isSafeInteger(x.value)),"thresholds");
+  requireThat(Array.isArray(value.limitations||[])&&(value.limitations||[]).every(text),"limitations");
   return freeze(structuredClone({...value,kind:"EconomicSensitivityStudy",sensitivityModelVersion:SENSITIVITY_MODEL_VERSION,axes,thresholds:[...(value.thresholds||[])].sort((a,b)=>a.value-b.value||a.label.localeCompare(b.label)),limitations:[...(value.limitations||[])].sort()}));
 }
 function makeOverride(input,axis,amount){
@@ -60,7 +61,7 @@ function makeOverride(input,axis,amount){
   catch{fail(`unsafe_transformation:${input.id}`)}
 }
 function scenarioDefinition(study,overrides,key){return{id:`sensitivity-scenario:${digest({study:identity(study),key})}`,organizationId:study.organizationId,workId:study.workId,productRef:study.productRef,campaignRef:study.campaignRef,name:`${study.name}: ${key}`,description:"Deterministic sensitivity point derived by ECO-5B through ECO-5A.",version:1,baselineAssessmentRef:study.baselineAssessmentRef,engineVersion:study.engineVersion,policyVersion:SCENARIO_POLICY_VERSION,reportingPeriod:study.reportingPeriod,currency:study.currency,type:"CUSTOM",assumptions:overrides.map(x=>x.reason),overrides,createdAt:study.createdAt,createdBy:study.createdBy,status:"DEFINED"}}
-function identity(study){return {baselineAssessmentRef:study.baselineAssessmentRef,engineVersion:study.engineVersion,scenarioModelVersion:study.scenarioModelVersion,policyVersion:study.policyVersion,targetMetric:study.targetMetric,type:study.type,axes:study.axes,thresholds:study.thresholds}}
+function identity(study){return {id:study.id,version:study.version,baselineAssessmentRef:study.baselineAssessmentRef,engineVersion:study.engineVersion,scenarioModelVersion:study.scenarioModelVersion,policyVersion:study.policyVersion,targetMetric:study.targetMetric,type:study.type,axes:study.axes,thresholds:study.thresholds}}
 function resultPoint(study,scenarioResult,coordinates,baselineMetric){
   const target=scenarioResult.assessment.metrics[study.targetMetric];
   const comparison=scenarioResult.comparisons.find(x=>x.metric===study.targetMetric);
