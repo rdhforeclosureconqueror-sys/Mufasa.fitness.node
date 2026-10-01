@@ -612,6 +612,22 @@
       "createdAt": "2026-10-01T03:21:11.972Z",
       "source": "ECO-5C implementation assignment",
       "taskId": "economics-eco5c"
+    },
+    {
+      "id": "launch-development-economics-eco5d",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-5D historical economic calibration",
+      "category": "ECONOMICS",
+      "description": "Implement deterministic immutable historical expectation-versus-authoritative-actual calibration observations and explicit comparable-cohort descriptive profiles over ECO-4B, without forecasting, correction, recommendation, probability, causality, authorization, or execution.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco5c"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-01T04:03:09.122Z",
+      "source": "readiness:update",
+      "taskId": "economics-eco5d"
     }
   ]
 }

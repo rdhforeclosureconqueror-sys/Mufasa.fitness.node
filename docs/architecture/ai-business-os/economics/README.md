@@ -130,7 +130,97 @@ scenario definitions cannot substitute for executed evidence.
 - ECO-5B sensitivity and bounded uncertainty analysis: implemented.
 - ECO-5C capital allocation analysis: implemented (automated repository evidence;
   not authorization, human acceptance, Platinum certification, or ECO-6).
-- ECO-5D historical calibration and ECO-5E portfolio economics: not implemented.
+- ECO-5D historical economic calibration: implemented (automated repository
+  evidence; descriptive history only, not forecasting or automatic correction).
+- ECO-5E portfolio economics: not implemented.
+
+## ECO-5D historical economic calibration
+
+ECO-4B reconciliation answers what happened in one completed run compared with
+its authorized expectation. ECO-5D consumes that exact reconciliation and asks
+how explicitly comparable expectations behaved across repeated completed
+observations. **RECONCILIATION IS NOT CALIBRATION. CALIBRATION IS NOT
+FORECASTING.** The layer does not reproduce ECO-4B variance logic, accept a raw
+caller-supplied actual, or create another Economics engine.
+
+An `EconomicCalibrationObservation` binds one supported monetary metric to the
+exact sealed forecast and actual `EconomicAssessment` artifacts, their IDs,
+versions and digests, the exact reconciliation digest, its experiment/run/result
+lineage, the approving `GovernedDecision`, organization, work, product,
+campaign, USD currency, reporting period, engine/model/policy versions, and the
+relevant timestamps. The selected expectation must be the baseline designated
+by the human-authorized ECO-4A decision and consumed by ECO-4B before the actual
+became authoritative. A downside, upside, custom, or numerically close scenario
+cannot be substituted after the outcome. **A CLOSE HISTORICAL SCENARIO IS NOT
+THE FORECAST UNLESS IT WAS DESIGNATED BEFORE THE OUTCOME.** Assessment,
+provenance, designation, actual-authority, and reconciliation chronology are
+validated; incompatible or mutated lineage fails closed.
+
+The conservative v1 metric set is `grossRevenue`, `refunds`, `discounts`,
+`netRevenue`, `knownVariableCost`, `knownFixedCost`, `totalKnownCost`,
+`contributionBeforeUnknownCosts`, and `contribution`. Ratios, ROI, ROAS, CAC,
+margins, unit metrics and break-even values are not calibrated or averaged.
+All authoritative arithmetic uses integers and checked `BigInt`. The declared
+sign convention never varies by metric:
+
+    signedError = expected - actual
+    absoluteError = abs(signedError)
+    relativeErrorBasisPoints = round-half-up(signedError * 10,000 / abs(actual))
+
+A positive signed error means expected was above actual, a negative error means
+expected was below actual, and zero is an exact match. If actual is zero,
+relative error is `NOT_APPLICABLE`; the absolute error remains available. The
+implementation never substitutes one for a zero denominator and never uses
+binary floating-point money or percentages.
+
+`CALCULATED`, `PARTIAL`, `UNKNOWN`, `INVALID`, and `NOT_APPLICABLE` retain their
+distinct meanings. Only two `CALCULATED` metric values produce error arithmetic.
+A missing expectation remains non-comparable even when an actual later exists.
+**EXPECTED IS NOT ACTUAL. UNKNOWN IS NOT ZERO. PARTIAL IS NOT COMPLETE. INVALID
+IS NOT UNKNOWN.** No later outcome mutates, fills, relabels, or improves the
+original expectation.
+
+Comparable observations expose only `EXPECTED_ABOVE_ACTUAL`,
+`EXPECTED_BELOW_ACTUAL`, or `EXACT_MATCH`; other observations are explicitly
+`NOT_COMPARABLE`. These are numerical directions, not GOOD/BAD or
+accurate/inaccurate judgments. Calibration measures a historical difference;
+**CALIBRATION IS NOT CAUSALITY** and does not attribute a miss to marketing,
+pricing, a person, a model, or an assumption.
+
+An `EconomicCalibrationProfile` requires an explicit cohort definition:
+organization, metric, currency, exact product/campaign scope, expectation type,
+engine version, exact reporting-period duration semantics, and a deterministic
+as-of time. Changing the cohort changes profile identity. V1 refuses mismatched
+scope, duration, metric, currency or engine version rather than deciding what is
+“similar enough.” Observation ordering is canonical, exact duplicate identities
+are rejected, and no large-error observation silently disappears as an outlier.
+
+Every profile displays total, comparable, non-comparable, and valid percentage-
+denominator sample counts. It reports expected-above, expected-below and exact-
+match counts plus mean signed error, mean/minimum/maximum absolute error, and
+MAPE in integer basis points. Every statistic states its own observation count.
+Zero-actual observations are excluded from MAPE and are not treated as zero
+percentage error. Means use deterministic integer half-up rounding. **SAMPLE
+SIZE MUST BE VISIBLE. OUTLIERS MUST NOT DISAPPEAR SILENTLY.** These descriptive
+facts can expose directional history, but do not pronounce a model “biased” or
+apply universal confidence thresholds.
+
+Observation and profile IDs/digests cover canonical exact lineage, cohort,
+versions, and sorted observation references. Reordered inputs replay identically.
+Repositories reject duplicate observation identity and return defensive copies.
+Source inputs, assessments, evidence, decisions, approvals, runs, results,
+reconciliations, scenarios, sensitivities, and capital-allocation artifacts are
+never mutated.
+
+The governance boundary is absolute: **HISTORICAL ERROR IS NOT FUTURE
+PROBABILITY. HISTORICAL CALIBRATION DOES NOT AUTOMATICALLY CHANGE FUTURE
+ASSUMPTIONS.** ECO-5D creates no forecast, scenario, probability, confidence or
+prediction interval, Monte Carlo distribution, causal conclusion,
+recommendation, retraining, assumption adjustment, ranking, allocation,
+reservation, authorization, experiment, or spend. It does not modify Scout,
+Analyst, Experiment Manager, Learning, prices, budgets, CAC, revenue assumptions,
+or sensitivity ranges. Historical calibration produces evidence only. ECO-5E,
+ECO-6, live acceptance, and Economics Platinum certification remain separate.
 
 ## ECO-2 deterministic engine
 
