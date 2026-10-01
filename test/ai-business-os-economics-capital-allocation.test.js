@@ -30,3 +30,5 @@ test("all supplied source artifacts and unrelated historical/governance state re
 
 
 test("portfolio aggregation preserves INVALID instead of softening it to UNKNOWN",()=>{const invalid=structuredClone(a);invalid.id="assessment:invalid";invalid.productRef="product:invalid";invalid.metrics.contribution.status="INVALID";invalid.metrics.contribution.value=null;invalid.metrics.contribution.missingInputs=[];const c={...candidate("invalid",invalid,1),economicAssessmentRef:E.capitalAllocationAssessmentReference(invalid)};const result=run({candidates:[c],assessments:[invalid]});const profile=result.feasibleAlternatives.find(x=>x.includedCandidateIds.length===1).economicProfile;assert.equal(profile.metrics.contribution.status,"INVALID");assert.equal(profile.metrics.contribution.value,null);assert.equal(profile.status,"INVALID")});
+
+test("baseline economics cannot carry ambiguous scenario lineage",()=>{const fake={scenarioId:"scenario:unused",version:1,digest:"x",scenarioModelVersion:E.SCENARIO_MODEL_VERSION,baselineAssessmentRef:E.baselineReference(a)};assert.throws(()=>run({candidates:[candidate("a",a,1,{scenarioRef:fake})]}),/baseline_scenario_ambiguity/)})
