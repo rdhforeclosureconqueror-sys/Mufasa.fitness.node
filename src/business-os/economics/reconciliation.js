@@ -41,7 +41,7 @@ function compare(metric, expected, actual) {
   else result.comparisonStatus=(DIRECTIONS[metric]==="HIGHER_IS_BETTER"?variance>0:variance<0)?"FAVORABLE":"UNFAVORABLE";
   return result;
 }
-function createEconomicReconciliation(input={}, {clock=()=>new Date().toISOString()}={}) {
+function createEconomicReconciliation(input={}, {clock=()=>new Date().toISOString(), validateExperimentResult}={}) {
   const {organizationId,workId,proposalArtifact,baselineArtifact,baselineAssessment,decision,approval,run,experimentResult,actualArtifact,actualAssessment,authorizedAmountMinor,reservedAmountMinor}=input;
   for(const value of [proposalArtifact,baselineArtifact,baselineAssessment,decision,approval,run,experimentResult,actualArtifact,actualAssessment])requireThat(value&&typeof value==="object","required_artifact");
   requireThat([proposalArtifact,baselineArtifact,baselineAssessment,decision,approval,run,experimentResult,actualArtifact,actualAssessment].every(x=>x.organizationId===organizationId),"organization_mismatch");
@@ -50,8 +50,12 @@ function createEconomicReconciliation(input={}, {clock=()=>new Date().toISOStrin
   requireThat(sealed(proposalArtifact)&&sealed(baselineArtifact)&&sealed(actualArtifact),"artifact_digest");
   requireThat(exactRef(decision.experimentProposalRef,proposalArtifact,"ExperimentProposal")&&exactRef(decision.economicAssessmentRef,baselineArtifact,"EconomicAssessment"),"decision_lineage");
   requireThat(decision.kind==="GovernedDecision"&&decision.result==="APPROVE"&&decision.authorityType==="HUMAN"&&decision.authorizationScope==="EXPERIMENT_EXECUTION","decision_not_authorizing");
-  requireThat(approval.kind==="ExperimentApproval"&&approval.status==="APPROVED"&&approval.actorType==="HUMAN"&&approval.organizationId===organizationId&&approval.decisionRef===decision.id&&approval.proposalRef===proposalArtifact.id&&approval.proposalVersion===proposalArtifact.version&&approval.proposalDigest===proposalDigest(proposalArtifact),"approval_lineage");
+  requireThat(typeof proposalArtifact.managerProposalDigest==="string"&&proposalArtifact.managerProposalDigest.length===64,"manager_proposal_digest");
+  requireThat(approval.kind==="ExperimentApproval"&&approval.status==="APPROVED"&&approval.actorType==="HUMAN"&&approval.organizationId===organizationId&&approval.decisionRef===decision.id&&approval.proposalRef===proposalArtifact.id&&approval.proposalVersion===proposalArtifact.version&&approval.proposalDigest===proposalArtifact.managerProposalDigest,"approval_lineage");
   requireThat(run.kind==="ExperimentRun"&&run.approvalRef===approval.id&&run.proposalRef===proposalArtifact.id&&run.proposalVersion===proposalArtifact.version&&["COMPLETED","STOPPED"].includes(run.status),"run_lineage");
+  requireThat(typeof validateExperimentResult==="function","experiment_result_validator_required");
+  let authoritativeResult;try{authoritativeResult=validateExperimentResult(structuredClone(experimentResult));}catch{fail("experiment_result_not_authoritative");}
+  requireThat(authoritativeResult&&isDeepStrictEqual(authoritativeResult,experimentResult),"experiment_result_not_authoritative");
   requireThat(experimentResult.kind==="ExperimentResult"&&experimentResult.runRef===run.id&&experimentResult.proposalRef===run.proposalRef&&experimentResult.proposalVersion===run.proposalVersion,"result_lineage");
   requireThat(["SUPPORTED","NOT_SUPPORTED","INCONCLUSIVE","TECHNICAL_FAILURE","POLICY_BLOCKED"].includes(experimentResult.resultClass),"result_class");
   requireThat(baselineArtifact.status!=="SUPERSEDED"&&actualArtifact.status!=="SUPERSEDED","superseded_assessment");
