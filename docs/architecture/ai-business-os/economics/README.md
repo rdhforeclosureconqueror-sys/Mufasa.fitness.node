@@ -490,3 +490,76 @@ historical calibration, portfolio economics, optimization, Monte Carlo methods,
 and Platinum certification. Gold architecture is complete; the final post-fix
 Gold certification rerun remains deferred. ECO-5A does not rewrite or imply
 completion of that historical certification evidence.
+
+## ECO-5B sensitivity and bounded uncertainty analysis
+
+ECO-5B answers how strongly a selected, existing ECO-2 metric responds across
+an explicitly supplied set of assumptions, where a requested economic threshold
+appears within those tested points, and what caller-declared uncertainty remains.
+The production chain is deliberately layered:
+
+```text
+exact immutable baseline -> EconomicSensitivityStudy -> canonical points
+  -> ECO-5A EconomicScenario -> ECO-2 EconomicAssessment
+  -> status-aware EconomicSensitivityResult
+```
+
+The sensitivity engine does not reproduce scenario transformations or financial
+formulas. It declares each point as an ECO-5A-compatible absolute replacement,
+signed absolute delta, or signed basis-point delta. ECO-5A derives hypothetical
+inputs, and the authoritative ECO-2 engine calculates the target metric. One-way
+studies declare exactly one target. The bounded two-way form declares exactly
+two different targets and evaluates their Cartesian product; hidden additional
+overrides and duplicate axis targets are rejected.
+
+`EconomicSensitivityStudy` binds its organization, work, product, campaign,
+currency, reporting period, baseline assessment ID/version/digest, engine and
+scenario versions, target input(s), target metric, points, thresholds, creator,
+and creation time. Points and axes are canonicalized, duplicate points are
+rejected, and equivalent reordered definitions replay with the same digest and
+result. A different range or target metric has a different study identity.
+
+Results retain every ECO-5A scenario and assessment reference, coordinate,
+metric value/unit/status, missing dependencies, and status-aware change from
+the baseline. `CALCULATED`, `PARTIAL`, `UNKNOWN`, `INVALID`, and
+`NOT_APPLICABLE` are not flattened into a numeric series. UNKNOWN relative
+perturbations remain UNKNOWN; an explicit replacement may create only an
+ESTIMATED scenario assumption. **Unknown is not zero. Hypothetical is not
+observed.** No unresolved point is interpolated.
+
+For valid numeric points, one-way analysis reports the tested minimum, maximum,
+absolute spread, relative spread when the baseline denominator is nonzero, and
+point-by-point direction/change. Driver comparison requires the same exact
+baseline and target metric and preserves each transformation and tested range.
+Its ordering describes only those ranges; it is not a universal importance
+score, recommendation, or priority decision.
+
+Callers may request integer thresholds such as zero contribution, margin, or
+ROI. An exactly tested threshold is reported as exact. A sign change between two
+tested points is reported only as `BETWEEN_TESTED_POINTS`, with both endpoints
+and no invented crossing value. Two-way matrices do not infer continuous
+surfaces or thresholds between cells.
+
+Bounded uncertainty is optional, explicit context on an axis: a rationale and
+zero or more ECO-3 evidence references explain the caller-supplied plausible
+range. It does not infer uncertainty merely because evidence is absent, change
+evidence trust, or convert an estimate into an actual. **Range is not
+probability**: there are no distributions, likelihood rankings, confidence
+intervals, expected-value weights, random sampling, or Monte Carlo simulation.
+
+The boundaries are categorical:
+
+* **Sensitivity is not Scenario Modeling** — ECO-5B orchestrates ECO-5A.
+* **Sensitivity is not Prediction** — a point is an if/then model result.
+* **Sensitivity is not Causality** — model response does not prove real-world effect.
+* **Sensitivity is not Authorization** — favorable conditions grant no execution,
+  spending, scaling, or ExperimentRun permission.
+* **Sensitivity is not Optimization** — there is no goal seek, automatic search,
+  capital allocation, or autonomous prioritization.
+* **Sensitivity is not evidence promotion** — hypothetical is not observed and
+  uncertainty context is not an actual fact.
+
+ECO-5B adds no ECO-5C capital allocation, ECO-5D historical calibration, ECO-5E
+portfolio economics, or ECO-6 certification. It does not modify Scout or
+Learning. Completion means ECO-5B is implemented with repository automated
+evidence; it does not mean Economics is Platinum certified.
