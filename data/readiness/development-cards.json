@@ -548,6 +548,22 @@
       "createdAt": "2026-09-30T21:17:15.898Z",
       "source": "ECO-4B implementation assignment",
       "taskId": "economics-eco4b"
+    },
+    {
+      "id": "launch-development-economics-gold-certification",
+      "board": "launch",
+      "canonical": false,
+      "title": "Economics ECO-GOLD independent certification",
+      "category": "Business OS",
+      "description": "Independently certify the complete synthetic Scout-to-reconciliation Economics Gold chain against production contracts, role/governance boundaries, provenance, unknown semantics, determinism, immutability, and adversarial attacks without ECO-5 or live/human claims.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco4b"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-09-30T23:59:07.560Z",
+      "source": "ECO-GOLD independent certification assignment",
+      "taskId": "economics-gold-certification"
     }
   ]
 }
