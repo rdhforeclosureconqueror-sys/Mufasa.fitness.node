@@ -86,7 +86,7 @@ function createEconomicScenarioResult({scenario:definition,baselineAssessment,co
     const baselineMetric=baseline.metrics[metric], scenarioMetric=assessment.metrics[metric];
     // Reconciliation treats unlike PARTIAL dependencies as historically non-comparable. A scenario is
     // intentionally hypothetical, so its numeric estimate remains comparable while retaining PARTIAL status.
-    const normalized=item=>item.status==="PARTIAL"?{...item,status:"CALCULATED",missingInputs:[]}:item;
+    const normalized=item=>item.status==="PARTIAL"&&(item.missingInputs||[]).length===0?{...item,status:"CALCULATED",missingInputs:[]}:item;
     const compared=compareEconomicMetric(metric,normalized(baselineMetric),normalized(scenarioMetric));
     const hypotheticalPartial=baselineMetric.status==="PARTIAL"||scenarioMetric.status==="PARTIAL";
     const absoluteDelta=hypotheticalPartial&&compared.absoluteVariance.value!==null?{...compared.absoluteVariance,status:"PARTIAL"}:compared.absoluteVariance;
