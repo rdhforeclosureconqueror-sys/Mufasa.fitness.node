@@ -41,6 +41,7 @@ function createEconomicCalibrationObservation(input={}){
   requireThat(exactRef(reconciliation.baselineEconomicAssessmentRef,baselineArtifact)&&exactRef(reconciliation.actualEconomicAssessmentRef,actualArtifact),"reconciliation_assessment_binding");
   requireThat(reconciliation.id===input.reconciliationRef?.artifactId&&reconciliation.version===input.reconciliationRef?.version&&digest(reconciliation)===input.reconciliationRef?.digest,"reconciliation_binding");
   requireThat(decision.kind==="GovernedDecision"&&decision.id===reconciliation.decisionRef&&decision.result==="APPROVE"&&decision.authorityType==="HUMAN"&&decision.authorizationScope==="EXPERIMENT_EXECUTION"&&exactRef(decision.economicAssessmentRef,baselineArtifact),"operative_expectation");
+  requireThat(reconciliation.decisionDigest===digest(decision)&&reconciliation.expectationDesignatedAt===decision.decidedAt,"decision_binding");
   requireThat(baselineArtifact.status!=="SUPERSEDED"&&actualArtifact.status!=="SUPERSEDED","superseded_assessment");
   requireThat(baselineAssessment.engineVersion===ECONOMICS_ENGINE_VERSION&&actualAssessment.engineVersion===ECONOMICS_ENGINE_VERSION&&reconciliation.engineVersion===ECONOMICS_ENGINE_VERSION,"engine_version");
   requireThat([baselineAssessment,actualAssessment,reconciliation,baselineArtifact,actualArtifact,decision].every(x=>x.organizationId===reconciliation.organizationId),"organization_mismatch");
