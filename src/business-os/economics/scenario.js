@@ -59,14 +59,22 @@ function baselineReference(assessment){
   return freeze({assessmentId:assessment.id,version:assessment.version,digest:economicArtifactDigest(assessment),engineVersion:assessment.engineVersion,organizationId:assessment.organizationId,workId:assessment.workId,productRef:assessment.productRef,campaignRef:assessment.campaignRef,currency:assessment.currency,reportingPeriod:assessment.reportingPeriod});
 }
 
+function deriveScenarioOverride(input, {transformationType,transformationAmount,reason}){
+  requireThat(object(input)&&text(input.id)&&text(input.category), "override_input");
+  requireThat(TRANSFORMATIONS.includes(transformationType)&&Number.isSafeInteger(transformationAmount)&&text(reason), "override_transformation");
+  let amount=null, classification="UNKNOWN";
+  if(transformationType==="ABSOLUTE_REPLACEMENT") { requireThat(transformationAmount>=0, "replacement"); amount=transformationAmount; }
+  else if(input.classification!=="UNKNOWN") amount=transformationType==="ABSOLUTE_DELTA"?safeAdd(input.amountMinor,transformationAmount):applyBps(input.amountMinor,transformationAmount);
+  requireThat(amount!==null||input.classification==="UNKNOWN", `unsafe_transformation:${input.id}`);
+  if(amount!==null) classification="ESTIMATED";
+  return freeze({targetInputId:input.id,category:input.category,originalClassification:input.classification,originalAmountMinor:input.amountMinor,scenarioClassification:classification,scenarioAmountMinor:amount,transformationType,transformationAmount,unit:transformationType==="PERCENTAGE_DELTA"?"BASIS_POINTS":"MINOR_CURRENCY",reason,baselineProvenance:{inputId:input.id,evidenceRefs:[...input.evidenceRefs]}});
+}
+
 function applyOverride(input, override, scenario){
   requireThat(override.category===input.category&&override.originalClassification===input.classification&&override.originalAmountMinor===input.amountMinor, `baseline_input_mismatch:${input.id}`);
   requireThat(isDeepStrictEqual([...override.baselineProvenance.evidenceRefs].sort(),[...input.evidenceRefs].sort()), `baseline_provenance_mismatch:${input.id}`);
-  let amount=null, classification="UNKNOWN";
-  if(override.transformationType==="ABSOLUTE_REPLACEMENT") amount=override.transformationAmount;
-  else if(input.classification!=="UNKNOWN") amount=override.transformationType==="ABSOLUTE_DELTA"?safeAdd(input.amountMinor,override.transformationAmount):applyBps(input.amountMinor,override.transformationAmount);
-  requireThat(amount!==null||input.classification==="UNKNOWN", `unsafe_transformation:${input.id}`);
-  if(amount!==null) classification="ESTIMATED";
+  const derived=deriveScenarioOverride(input,{transformationType:override.transformationType,transformationAmount:override.transformationAmount,reason:override.reason});
+  const amount=derived.scenarioAmountMinor, classification=derived.scenarioClassification;
   requireThat(amount===override.scenarioAmountMinor&&classification===override.scenarioClassification, `declared_result_mismatch:${input.id}`);
   const assumptionRef=`scenario:${scenario.id}:v${scenario.version}:${input.id}`;
   return EconomicInput({...input,id:assumptionRef,version:scenario.version,classification,amountMinor:amount,assumptions:[...input.assumptions,override.reason],evidenceRefs:classification==="UNKNOWN"?[]:[assumptionRef],source:{system:"SCENARIO_ASSUMPTION",recordRef:assumptionRef,recordVersion:scenario.version,payloadHash:economicArtifactDigest({scenarioId:scenario.id,scenarioVersion:scenario.version,override}),observedAt:scenario.createdAt}});
@@ -97,4 +105,4 @@ function createEconomicScenarioResult({scenario:definition,baselineAssessment,co
   return freeze({kind:"EconomicScenarioResult",scenarioModelVersion:SCENARIO_MODEL_VERSION,policyVersion:scenario.policyVersion,scenario,baselineAssessmentRef:scenario.baselineAssessmentRef,scenarioInputs,assessment,comparisons,limitations:["Conditional decision support only; this scenario is not a forecast, actual, prediction, recommendation, authorization, or permission to execute.","Hypothetical inputs are not ECO-3 observed evidence and cannot alter reconciliation history."]});
 }
 
-module.exports={SCENARIO_MODEL_VERSION,SCENARIO_POLICY_VERSION,SCENARIO_TRANSFORMATIONS:TRANSFORMATIONS,EconomicScenario,baselineReference,createEconomicScenarioResult};
+module.exports={SCENARIO_MODEL_VERSION,SCENARIO_POLICY_VERSION,SCENARIO_TRANSFORMATIONS:TRANSFORMATIONS,EconomicScenario,baselineReference,deriveScenarioOverride,createEconomicScenarioResult};
