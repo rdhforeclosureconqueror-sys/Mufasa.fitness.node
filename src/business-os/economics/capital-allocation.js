@@ -50,6 +50,7 @@ function CapitalAllocationStudy(value={}){
     requireThat(c.scenarioRef===null||object(c.scenarioRef),`scenario_ref:${c.id}`);
     requireThat(c.sensitivityRef===null||object(c.sensitivityRef),`sensitivity_ref:${c.id}`);
     requireThat(c.economicsSource!=="SCENARIO"||c.scenarioRef,`scenario_required:${c.id}`);
+    requireThat(c.economicsSource!=="BASELINE"||c.scenarioRef===null,`baseline_scenario_ambiguity:${c.id}`);
     return structuredClone(c);
   }).sort((a,b)=>a.id.localeCompare(b.id));
   requireThat(Array.isArray(value.constraints),"constraints");
