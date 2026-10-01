@@ -5132,6 +5132,55 @@
       "prNumber": null,
       "commitSha": "aa60341",
       "timestamp": "2026-10-01T02:10:58.390Z"
+    },
+    {
+      "operationId": "7c23fbf8-0de5-4190-b9c6-6c4b2fce73c8",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5c",
+      "sourceType": "card_creation",
+      "taskId": "economics-eco5c",
+      "files": [],
+      "automated": null,
+      "evidence": "Implement deterministic artifact-bound modeled capital allocation feasibility and economic profiles over ECO-2/ECO-5A/ECO-5B with explicit constraints, bounded enumeration, governance boundaries, documentation and adversarial tests; exclude authorization, ranking, optimization, spending, ECO-5D through ECO-6.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-01T03:21:11.972Z"
+    },
+    {
+      "operationId": "9c9aeea4-97ad-468b-8228-4956e209ba7c",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5c",
+      "sourceType": "implementation",
+      "taskId": "economics-eco5c",
+      "files": [
+        "src/business-os/economics/capital-allocation.js",
+        "src/business-os/economics/index.js",
+        "test/ai-business-os-economics-capital-allocation.test.js",
+        "docs/architecture/ai-business-os/economics/README.md"
+      ],
+      "automated": "PASS",
+      "evidence": "ECO-5C implemented with exact artifact binding, USD integer-minor-unit all-or-nothing allocations, six explicit constraint types, exhaustive deterministic enumeration bounded to 12 candidates/4096 combinations, conservative additive-only economics, descriptive scenario/sensitivity context, immutability and null action authorities. Focused suite PASS 16/16; ECO-5A PASS 11/11; ECO-5B PASS 14/14; ECO-2 PASS 11/11; ECO-3 PASS 14/14; ECO-4A PASS 10/10; ECO-4B PASS 14/14; Experiment Manager PASS 46/46; lint PASS. Economics broad suite 146/147 with pre-existing time-sensitive Gold replay fixture failure invalid_economic_reconciliation:experiment_result_not_authoritative; Gold remains deferred and no Platinum/ECO-6 claim. Browser/production/physical-device QA not applicable to this non-UI decision-support layer; no human acceptance claimed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-01T03:25:51.478Z"
+    },
+    {
+      "operationId": "11305481-967b-4ec6-b4b9-6865e8d631dc",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5c",
+      "sourceType": "implementation_reference",
+      "taskId": "economics-eco5c",
+      "files": [
+        "src/business-os/economics/capital-allocation.js",
+        "src/business-os/economics/index.js",
+        "test/ai-business-os-economics-capital-allocation.test.js",
+        "docs/architecture/ai-business-os/economics/README.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation committed at de414f0. Draft PR metadata created with title Draft: ECO-5C capital allocation analysis; make_pr returned no numeric PR identifier. Do not merge. No human, production, or physical-device acceptance claimed.",
+      "prNumber": null,
+      "commitSha": "de414f0",
+      "timestamp": "2026-10-01T03:26:19.194Z"
     }
   ]
 }

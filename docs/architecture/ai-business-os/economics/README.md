@@ -124,6 +124,14 @@ Every phase must reuse canonical state, update the readiness CLI evidence and
 retain its own code-ready / live-verified / human-accepted status. Phase names or
 scenario definitions cannot substitute for executed evidence.
 
+### ECO-5 decision-support progress
+
+- ECO-5A deterministic scenario modeling: implemented.
+- ECO-5B sensitivity and bounded uncertainty analysis: implemented.
+- ECO-5C capital allocation analysis: implemented (automated repository evidence;
+  not authorization, human acceptance, Platinum certification, or ECO-6).
+- ECO-5D historical calibration and ECO-5E portfolio economics: not implemented.
+
 ## ECO-2 deterministic engine
 
 `calculateEconomicAssessment` is the sole ECO-2 authoritative arithmetic path.
@@ -162,6 +170,70 @@ The engine is compatible with Scout's canonical assessment consumer and the
 Organization contract. It does not add an LLM arithmetic path, provider adapter,
 new payment ledger, coordinator executor, persistence model, or Command Center
 projection. Those remain later-phase work.
+
+## ECO-5C capital allocation analysis
+
+ECO-5C answers a scarce-capital question that scenario analysis alone cannot:
+given an explicit finite pool, exact candidate artifacts, and explicit
+constraints, which modeled all-or-nothing combinations are feasible and what
+economic facts do those combinations preserve? It is a deterministic
+orchestration layer over ECO-2, not a second calculation engine. A
+`CapitalAllocationStudy` binds each candidate to an exact assessment ID,
+version, digest, engine version, organization, work, product, campaign,
+currency, and reporting period. Required modeled capital is explicit integer
+minor currency; it is never inferred from ROI, cash requirement, revenue,
+authorization, a bank balance, or an unknown value.
+
+The v1 funding model is deliberately **ALL_OR_NOTHING** and USD-only. The engine
+enumerates every combination for at most 12 candidates (4,096 combinations),
+canonicalizes candidates and constraints, and never samples, ranks, recommends,
+or optimizes. One candidate beyond the bound fails closed. Supported constraints
+are total available capital, required candidate, mutual exclusion, dependency,
+and candidate minimum/maximum commitment. Under all-or-nothing funding, minimum
+and maximum constraints validate the candidate's single fixed commitment; they
+do not create fractional funding. Unknown targets, self-dependencies and cycles
+fail closed. Every rejected combination retains constraint diagnostics, and an
+unsatisfiable study returns `INFEASIBLE` rather than fabricating an allocation.
+An empty candidate set has one technically feasible empty combination, but is
+explicitly `NO_CANDIDATES`; its economics are not applicable, not a zero-value
+success.
+
+Each feasible alternative reports modeled capital committed, modeled capital
+remaining, and (when available capital is nonzero) integer-basis-point modeled
+utilization. Compatible ECO-2 monetary metrics are added with checked BigInt
+arithmetic. UNKNOWN anywhere remains UNKNOWN, and PARTIAL remains PARTIAL.
+Ratios, percentages, unit economics, CAC, ROI, ROAS, margins, and break-even
+units are listed as non-aggregated: they are neither summed nor blindly
+averaged. USD and exact reporting-period compatibility are mandatory; there is
+no currency conversion or cross-period aggregation.
+
+An explicitly selected ECO-5A result may supply hypothetical candidate economics
+only after its full result digest and baseline lineage validate. Baseline use is
+otherwise the default, and the source is labeled on every candidate profile.
+ECO-5B results are likewise exact-lineage bound and retained as descriptive
+tested-range context only. No probability, preference, penalty, risk-adjusted
+return, score, or hidden ranking is derived. Source assessments, scenario
+results, sensitivity results, reconciliation history, actuals, decisions,
+approvals, runs, and evidence are never mutated.
+
+The governance boundary is absolute:
+
+- **AVAILABLE is not AUTHORIZED.**
+- **MODELED ALLOCATION is not RESERVED.**
+- **MODELED ALLOCATION is not SPENT.**
+- **FEASIBLE is not APPROVED.**
+- **HIGHER ROI is not automatically BETTER.**
+- **UNKNOWN is not ZERO; PARTIAL is not COMPLETE.**
+- **RANGE is not PROBABILITY; SENSITIVITY is not PREFERENCE.**
+- **MODEL ECONOMICS is not CAUSALITY or prediction.**
+- **CAPITAL ALLOCATION ANALYSIS is not CAPITAL ALLOCATION AUTHORITY.**
+
+Results therefore expose null authorization, reservation, spend, and execution
+fields and create no approval, run, payment, budget change, workflow transition,
+Scout/Learning action, project start, or scaling action. A human governance layer
+must make any subsequent decision. ECO-5C implementation does not claim
+Economics Platinum, ECO-5D/ECO-5E completion, live verification, or ECO-6
+certification.
 
 ## ECO-3 evidence, provenance and input trust
 
