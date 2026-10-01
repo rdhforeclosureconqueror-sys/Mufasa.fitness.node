@@ -37,7 +37,7 @@ function organizationalChain(managerProposal, baseline) {
   const opportunity=Workflow.sealArtifact({...opportunityContract,artifactType:"OpportunityCandidate",workId:WORK,producingRoleId:"SMART_SCOUT"});
   const analystContract=Analyst.AnalystAssessment({id:"analyst:gold",organizationId:ORG,candidateRef:opportunity.id,evidenceRefs:["scout:evidence:gold"],analysis:{judgment:"SUFFICIENT_TO_TEST_NOT_PROFITABILITY"},disposition:"ADVANCE_TO_EXPERIMENT",confidence:0.72,limitations:["Profitability is not proven."],provenance:{synthetic:true},version:1});
   const analyst=Workflow.sealArtifact({...analystContract,artifactType:"AnalystAssessment",workId:WORK,producingRoleId:"SMART_ANALYST",status:"ACCEPTED",upstreamRefs:[Workflow.reference(opportunity)]});
-  const proposal=Workflow.sealArtifact({...managerProposal,artifactType:"ExperimentProposal",producingRoleId:"EXPERIMENT_MANAGER",upstreamRefs:[Workflow.reference(analyst)]});
+  const proposal=Workflow.sealArtifact({...managerProposal,artifactType:"ExperimentProposal",producingRoleId:"EXPERIMENT_MANAGER",managerProposalDigest:Experiment.proposalDigest(managerProposal),upstreamRefs:[Workflow.reference(analyst)]});
   const economic=Workflow.sealArtifact({id:"economic-artifact:forecast",artifactType:"EconomicAssessment",organizationId:ORG,workId:WORK,version:1,assessmentId:baseline.id,assessmentDigest:Economics.economicArtifactDigest(baseline),producingRoleId:"ECONOMICS",status:"ACCEPTED",createdAt:AS_OF,disposition:baseline.disposition,provenanceStatus:"TRUSTED",upstreamRefs:[Workflow.reference(proposal)]});
   return {opportunityContract,analystContract,opportunity,analyst,proposal,economic,artifacts:[opportunity,analyst,proposal,economic]};
 }
@@ -45,21 +45,22 @@ function governed(chain, id="governed:gold") {
   const refs=chain.artifacts.map(Workflow.reference);
   return Workflow.createGovernedDecision({id,organizationId:ORG,workId:WORK,decisionType:"AUTHORIZE_EXPERIMENT",result:"APPROVE",economicAssessmentRef:refs[3],experimentProposalRef:refs[2],chainRefs:refs,decidedAt:AS_OF,decisionMakerRef:"human:owner",authorityRef:"approval-grant",authorityType:"HUMAN",authorizationScope:"EXPERIMENT_EXECUTION",conditions:["USD 500 ceiling"],reason:"Human review of exact synthetic chain",version:1});
 }
-function terminalExperiment() {
+function terminalExperiment(resultClass="SUPPORTED") {
   const f=createExperimentFixture({proposal:{costCeiling:500},grant:{constraints:{budgetCeiling:500}}});
   const approval=f.manager.approve({...f.approvalInput,budgetCeiling:500},f.session);
   const run=f.manager.start({proposalId:f.p.id,proposalVersion:1,approvalRef:approval.id,budget:500,boundary:"INTERNAL",idempotencyKey:"gold-run"});
-  f.manager.measure({runRef:run.id,metric:"conversion",value:1,sampleRef:"gold:sample",evidenceRefs:["gold:experiment-evidence"]});
+  if(resultClass==="SUPPORTED") f.manager.measure({runRef:run.id,metric:"conversion",value:1,sampleRef:"gold:sample",evidenceRefs:["gold:experiment-evidence"]});
+  else if(resultClass==="NOT_SUPPORTED") f.manager.measure({runRef:run.id,metric:"rejection",value:1,sampleRef:"gold:sample",evidenceRefs:["gold:experiment-evidence"]});
   const result=f.manager.complete({runRef:run.id,evidenceRefs:["gold:experiment-evidence"]});
   return {...f,approval,run:f.manager.getRun(run.id),result};
 }
 function reconciliationFixture({resultClass="SUPPORTED",baseline=assessment("forecast",forecastValues),actual=assessment("actual",actualValues)}={}) {
-  const x=terminalExperiment(), chain=organizationalChain(x.p,baseline), decision=governed(chain,x.approval.decisionRef);
+  const x=terminalExperiment(resultClass), chain=organizationalChain(x.p,baseline), decision=governed(chain,x.approval.decisionRef);
   const actualArtifact=Workflow.sealArtifact({id:"economic-artifact:actual",artifactType:"EconomicAssessment",organizationId:ORG,workId:WORK,version:1,assessmentId:actual.id,assessmentDigest:Economics.economicArtifactDigest(actual),producingRoleId:"ECONOMICS",status:"ACCEPTED",createdAt:AS_OF});
-  const result=resultClass===x.result.resultClass?x.result:Experiment.ExperimentResult({...x.result,resultClass});
+  const result=x.result;
   return {organizationId:ORG,workId:WORK,proposalArtifact:chain.proposal,baselineArtifact:chain.economic,baselineAssessment:baseline,decision,approval:x.approval,run:x.run,experimentResult:result,actualArtifact,actualAssessment:actual,authorizedAmountMinor:50000,reservedAmountMinor:50000,asOf:AS_OF,chain,x};
 }
-const reconcile=f=>Economics.createEconomicReconciliation(f,{clock:()=>CREATED});
+const reconcile=f=>Economics.createEconomicReconciliation(f,{clock:()=>CREATED,validateExperimentResult:result=>f.x.manager.validateResult(result)});
 const reconciliationInput=f=>Object.fromEntries(["organizationId","workId","proposalArtifact","baselineArtifact","baselineAssessment","decision","approval","run","experimentResult","actualArtifact","actualAssessment","authorizedAmountMinor","reservedAmountMinor","asOf"].map(key=>[key,structuredClone(f[key])]));
 const metric=(r,name)=>r.metricComparisons.find(item=>item.metric===name);
 
@@ -73,16 +74,12 @@ test("synthetic production contracts preserve departmental ownership through gov
   assert.equal(decision.authorityType,"HUMAN");
 });
 
-test("GOLD BLOCKER: the production ExperimentApproval is not bound to the workflow proposal artifact",()=>{
-  const f=reconciliationFixture();
-  assert.notEqual(f.approval.proposalDigest,Experiment.proposalDigest(f.proposalArtifact));
-  assert.throws(()=>reconcile(f),/invalid_economic_reconciliation:approval_lineage/);
-});
+test("production ExperimentApproval binds to the exact manager proposal represented by the sealed workflow artifact",()=>{const f=reconciliationFixture();assert.equal(f.approval.proposalDigest,f.proposalArtifact.managerProposalDigest);assert.doesNotThrow(()=>reconcile(f));});
 
 test("forecast, evidence-backed actual, and deterministic variance work when supplied an exact canonical approval",()=>{
   const f=reconciliationFixture();
   // Isolate ECO-4B arithmetic from the independently asserted production-chain blocker above.
-  f.approval=Experiment.ExperimentApproval({...f.approval,proposalDigest:Experiment.proposalDigest(f.proposalArtifact)});
+  
   const r=reconcile(f), revenue=metric(r,"grossRevenue");
   assert.deepEqual([revenue.expected.value,revenue.actual.value,revenue.absoluteVariance.value,revenue.relativeVariance.value],[90000,62000,-28000,-3111]);
   assert.deepEqual(revenue.actual,["CALCULATED",62000,"MINOR_CURRENCY",[]].reduce((o,v,i)=>(o[["status","value","unit","missingInputs"][i]]=v,o),{}));
@@ -106,11 +103,11 @@ test("UNKNOWN is never zero, unlike partial dependencies do not fabricate varian
 });
 
 test("budget, reservation, economic spend, settlement, experiment outcome, and economic outcome remain independent",()=>{
-  const f=reconciliationFixture();f.approval=Experiment.ExperimentApproval({...f.approval,proposalDigest:Experiment.proposalDigest(f.proposalArtifact)});
+  const f=reconciliationFixture();
   const supported=reconcile(f);
   assert.deepEqual(supported.budget,{authorizedAmountMinor:50000,reservedAmountMinor:50000,actualSpendMinor:null,unusedAuthorizationMinor:null});
   assert.equal(metric(supported,"grossRevenue").comparisonStatus,"UNFAVORABLE");
-  const unsupported={...f,experimentResult:Experiment.ExperimentResult({...f.experimentResult,resultClass:"NOT_SUPPORTED"})};
+  const unsupported=reconciliationFixture({resultClass:"NOT_SUPPORTED"});
   const positiveActual=assessment("actual-positive",{...actualValues,REVENUE:100000});unsupported.actualAssessment=positiveActual;unsupported.actualArtifact=Workflow.sealArtifact({...f.actualArtifact,assessmentId:positiveActual.id,assessmentDigest:Economics.economicArtifactDigest(positiveActual),digest:undefined});
   const r=reconcile(unsupported);
   assert.deepEqual([r.experimentResultClass,metric(r,"contribution").comparisonStatus],["NOT_SUPPORTED","FAVORABLE"]);
@@ -120,7 +117,7 @@ test("budget, reservation, economic spend, settlement, experiment outcome, and e
 test("replay, input ordering, immutable records, and timestamp metadata are deterministic",()=>{
   const a=assessment("ordered",actualValues), b=assessment("ordered",actualValues,{reverse:true});
   assert.deepEqual(a,b);
-  const f=reconciliationFixture({baseline:a,actual:b});f.approval=Experiment.ExperimentApproval({...f.approval,proposalDigest:Experiment.proposalDigest(f.proposalArtifact)});
+  const f=reconciliationFixture({baseline:a,actual:b});
   const first=reconcile(f), replay=reconcile(reconciliationInput(f));assert.deepEqual(first,replay);
   const repo=new Economics.EconomicReconciliationRepository();repo.save(first);const copy=repo.get(first.id);copy.status="INVALID";assert.deepEqual(repo.get(first.id),first);assert.throws(()=>repo.save(first),/duplicate_reconciliation_identity/);
   assert.notEqual(Economics.calculateEconomicAssessment({id:"timestamp-a",workId:WORK,financialInputs:a.financialInputs,coverage:{requiredCostCategories:["ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST"],newCustomers:10}},{clock:()=>AS_OF}).createdAt,CREATED);
@@ -150,8 +147,8 @@ test("adversarial ECO-GOLD matrix fails closed at production boundaries",async t
     ["wrong actual EconomicAssessment",f=>f.actualArtifact={...f.actualArtifact,assessmentId:"other"}], ["mutated actual assessment",f=>f.actualAssessment={...f.actualAssessment,id:"other"}], ["cross-org evidence injection",f=>f.actualAssessment={...f.actualAssessment,organizationId:"other"}], ["cross-work injection",f=>f.actualAssessment={...f.actualAssessment,workId:"other"}],
     ["wrong reporting period",f=>f.actualAssessment={...f.actualAssessment,reportingPeriod:{...PERIOD,end:"2035-03-01T00:00:00.000Z"}}], ["future evidence contamination",f=>f.asOf="2035-02-01T00:00:00.000Z"], ["reconciliation mutation",f=>f.actualArtifact={...f.actualArtifact,digest:"tampered"}]
   ];
-  for(const [name,mutate] of reconciliationMutations)await t.test(name,()=>{const f=reconciliationFixture();f.approval=Experiment.ExperimentApproval({...f.approval,proposalDigest:Experiment.proposalDigest(f.proposalArtifact)});mutate(f);assert.throws(()=>reconcile(f),/invalid_economic_reconciliation/);});
-  await t.test("GOLD BLOCKER: mutated ExperimentResult is accepted without repository validation",()=>{const f=reconciliationFixture();f.approval=Experiment.ExperimentApproval({...f.approval,proposalDigest:Experiment.proposalDigest(f.proposalArtifact)});const original=reconcile(f);f.experimentResult={...f.experimentResult,resultClass:"INCONCLUSIVE"};const mutated=reconcile(f);assert.equal(mutated.experimentResultClass,"INCONCLUSIVE");assert.notEqual(mutated.id,original.id);assert.throws(()=>f.x.manager.validateResult(f.experimentResult),/stored_experiment_result_required/);});
+  for(const [name,mutate] of reconciliationMutations)await t.test(name,()=>{const f=reconciliationFixture();mutate(f);assert.throws(()=>reconcile(f),/invalid_economic_reconciliation/);});
+  await t.test("mutated ExperimentResult is rejected by authoritative Experiment Manager validation",()=>{const f=reconciliationFixture();const original=reconcile(f);f.experimentResult={...f.experimentResult,resultClass:"INCONCLUSIVE"};assert.throws(()=>reconcile(f),/experiment_result_not_authoritative/);assert.equal(original.experimentResultClass,"SUPPORTED");});
   await t.test("proposal mutation and proposal version are immutable in Experiment Manager",()=>{const x=createExperimentFixture();assert.throws(()=>x.manager.propose({...x.input,id:x.p.id}),/immutable/);assert.throws(()=>x.manager.start({proposalId:x.p.id,proposalVersion:2,approvalRef:"none",budget:1,boundary:"INTERNAL",idempotencyKey:"x"}),/proposal_not_found/);});
   await t.test("Experiment Manager cannot declare profitability",()=>{const x=terminalExperiment();assert.equal(x.result.profit,undefined);assert.equal(x.result.economicSuccess,undefined);});
   for(const [name,flag,expected] of [["technical experiment failure","technicalFailure","TECHNICAL_FAILURE"],["policy-blocked experiment result","policyBlocked","POLICY_BLOCKED"]])await t.test(name,()=>{const x=createExperimentFixture({proposal:{costCeiling:500},grant:{constraints:{budgetCeiling:500}}});const {run}=x.start();const result=x.manager.complete({runRef:run.id,[flag]:true,evidenceRefs:["failure:evidence"]});assert.equal(result.resultClass,expected);});
