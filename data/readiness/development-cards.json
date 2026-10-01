@@ -564,6 +564,22 @@
       "createdAt": "2026-09-30T23:59:07.560Z",
       "source": "ECO-GOLD independent certification assignment",
       "taskId": "economics-gold-certification"
+    },
+    {
+      "id": "launch-development-economics-eco5a",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-5A deterministic scenario modeling",
+      "category": "AI BUSINESS OS ECONOMICS",
+      "description": "Implement deterministic baseline-bound hypothetical economic scenarios by deriving immutable EconomicInput snapshots and reusing ECO-2, with explicit overrides, comparison, scope isolation, replay, documentation, and tests; exclude ECO-5B through ECO-6.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-gold-certification"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-01T00:38:00.413Z",
+      "source": "readiness:update",
+      "taskId": "economics-eco5a"
     }
   ]
 }

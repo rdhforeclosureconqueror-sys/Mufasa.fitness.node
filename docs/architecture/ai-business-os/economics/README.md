@@ -431,3 +431,62 @@ Brain path references undefined bridgeUrl. Track those separately; neither is
 a passing gate. The new Economics tests exercise Command Center economic output
 directly, including saved-state recovery. No browser/device/live financial QA
 or human acceptance is claimed by these machine tests.
+
+## ECO-5A deterministic scenario modeling
+
+ECO-5A answers: **if these explicitly stated assumptions were true, what would
+the economics become?** It is decision support, not a second calculator:
+
+```text
+immutable EconomicAssessment / EconomicInput baseline
+  -> explicit EconomicScenario overrides
+  -> derived hypothetical EconomicInput snapshots
+  -> existing ECO-2 calculateEconomicAssessment engine
+  -> EconomicScenarioResult and baseline-versus-hypothetical comparisons
+```
+
+`EconomicScenario` binds organization, work, product, campaign, currency,
+reporting period, ECO-2 engine version, policy version, and the exact baseline
+assessment ID/version/digest. A changed baseline cannot silently attach.
+`BASELINE`, `DOWNSIDE`, `UPSIDE`, and `CUSTOM` are labels only: no percentages
+are implied and each change must be supplied explicitly.
+
+Every override records its target/category, original and derived classification
+and value, transformation and amount, unit, reason, and baseline evidence
+relationship. ECO-5A supports absolute replacement, signed absolute delta in
+minor units, and signed percentage delta in basis points. Integer/BigInt
+arithmetic uses deterministic half-up rounding. Negative results, unsafe
+integers, duplicate/conflicting targets, and mismatched declared results fail
+closed. Overrides are sorted by target; independent reorderings replay
+identically, and all changes are applied before one ECO-2 calculation.
+
+UNKNOWN is never zero. A delta or percentage against UNKNOWN remains UNKNOWN;
+only an explicit replacement creates a value. Every changed numeric input is
+`ESTIMATED` with `SCENARIO_ASSUMPTION` metadata, never `ACTUAL`, and is not ECO-3
+observed evidence. Baseline inputs, evidence, assessments, approved forecasts,
+actuals, and reconciliation history remain immutable.
+
+Scenario comparison is distinct from ECO-4B reconciliation: it names
+`baseline` and `scenario` sides, not `expected` and `actual`, and reports
+absolute/relative deltas with metric directionality. `FAVORABLE`,
+`UNFAVORABLE`, `UNCHANGED`, `UNKNOWN`, `NOT_APPLICABLE`, and `INVALID` are
+interpretations, not autonomous decisions. Results retain the scenario, exact
+baseline reference, derived inputs, ECO-2 assessment, and limitations for
+deterministic serialization and replay.
+
+The boundaries are categorical:
+
+* **Scenario != Forecast** — it is not the current expectation and cannot
+  replace an approved baseline.
+* **Scenario != Actual** — it is not observed evidence and cannot alter
+  reconciliation history.
+* **Scenario != Prediction** — ECO-5A has no probability, distribution, or
+  confidence interval.
+* **Scenario != Authorization** — favorable economics is not approval, budget,
+  spending authority, scaling permission, or a recommendation.
+
+ECO-5A excludes sensitivity/uncertainty analysis, capital allocation,
+historical calibration, portfolio economics, optimization, Monte Carlo methods,
+and Platinum certification. Gold architecture is complete; the final post-fix
+Gold certification rerun remains deferred. ECO-5A does not rewrite or imply
+completion of that historical certification evidence.
