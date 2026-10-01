@@ -580,6 +580,22 @@
       "createdAt": "2026-10-01T00:38:00.413Z",
       "source": "readiness:update",
       "taskId": "economics-eco5a"
+    },
+    {
+      "id": "launch-development-economics-eco5b",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-5B sensitivity and bounded uncertainty analysis",
+      "category": "AI BUSINESS OS ECONOMICS",
+      "description": "Implement deterministic baseline-bound one-way and bounded two-way sensitivity analysis by orchestrating ECO-5A and ECO-2, with contextual driver comparison, bounded uncertainty, breakpoint reporting, scope isolation, documentation and adversarial tests; exclude ECO-5C through ECO-6.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco5a"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-01T02:06:45.896Z",
+      "source": "ECO-5B implementation assignment",
+      "taskId": "economics-eco5b"
     }
   ]
 }
