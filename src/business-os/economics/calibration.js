@@ -47,7 +47,7 @@ function createEconomicCalibrationObservation(input={}){
   requireThat([baselineAssessment,actualAssessment,reconciliation,baselineArtifact,actualArtifact,decision].every(x=>x.workId===reconciliation.workId),"work_mismatch");
   requireThat(baselineAssessment.productRef===actualAssessment.productRef&&baselineAssessment.campaignRef===actualAssessment.campaignRef,"product_campaign_mismatch");
   requireThat(baselineAssessment.currency===actualAssessment.currency&&samePeriod(baselineAssessment.reportingPeriod,actualAssessment.reportingPeriod)&&samePeriod(reconciliation.reportingPeriod,actualAssessment.reportingPeriod),"currency_or_period_mismatch");
-  const expectationAt=input.expectationDesignatedAt||decision.decidedAt,actualAt=actualAssessment.provenance?.asOf,createdAt=reconciliation.createdAt;
+  const expectationAt=decision.decidedAt,actualAt=actualAssessment.provenance?.asOf,createdAt=reconciliation.createdAt;
   requireThat(timestamps(expectationAt,actualAt,reconciliation.asOf,reconciliation.createdAt,createdAt),"timestamp");
   requireThat(Date.parse(expectationAt)<Date.parse(actualAt),"expectation_not_before_actual");
   requireThat(Date.parse(baselineAssessment.createdAt)<=Date.parse(expectationAt)&&Date.parse(baselineAssessment.provenance?.asOf)<=Date.parse(expectationAt)&&Date.parse(baselineArtifact.createdAt)<=Date.parse(expectationAt)&&Date.parse(actualAt)<=Date.parse(reconciliation.asOf)&&Date.parse(reconciliation.asOf)<=Date.parse(reconciliation.createdAt),"temporal_lineage");
