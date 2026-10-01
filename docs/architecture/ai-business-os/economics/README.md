@@ -322,6 +322,88 @@ This is not final Gold certification and is not Platinum. Independent review,
 human acceptance, live financial evidence, and stronger ECO-6 certification
 remain outstanding.
 
+## ECO-GOLD independent certification (2026-09-30)
+
+**ECO-GOLD: BLOCKED**
+
+The independent automated certification ran against repository base
+`36df527b281b3456160f2684e1b911acf8d922a9`, engine
+`economics-v2.0.0`, and reconciliation policy
+`economics-reconciliation-v1.0.0`. The dedicated production-path suite is
+`test/ai-business-os-economics-gold-certification.test.js`: 43 tests pass,
+including a named synthetic end-to-end fixture and negative controls. A passing
+test process is not a Gold PASS: two tests deliberately prove current production
+integration gaps that prevent the complete chain from being certified.
+
+### Certified layers and evidence
+
+- Production Scout `OpportunityCandidate`, Analyst `AnalystAssessment`,
+  Experiment Manager proposal/run/result, Economics inputs/assessments,
+  organizational artifacts, human `GovernedDecision`, ECO-3 provenance, ECO-2
+  arithmetic, and ECO-4B reconciliation are exercised directly. No Economics,
+  hashing, governance, provenance, or reconciliation implementation is copied
+  into the suite.
+- The organizational pre-execution chain reaches `READY_FOR_EXECUTION` only
+  with the four correct producing roles and an exact human decision. Scout may
+  not substitute for Analyst; Economics and Experiment Manager cannot authorize;
+  a recommendation or experiment result does not declare profitability.
+- The synthetic forecast revenue is 90,000 minor units, the evidence-backed
+  actual is 62,000, absolute variance is -28,000, and deterministic relative
+  variance is -3,111 basis points. Actual revenue traces through its calculated
+  metric and `EconomicInput` to `EconomicEvidenceRecord` source evidence.
+- UNKNOWN forecast CAC, UNKNOWN actual fulfillment cost, missing values on both
+  sides, unequal/equal PARTIAL dependencies, and a zero forecast denominator
+  retain canonical UNKNOWN/PARTIAL/NOT_APPLICABLE states without zero,
+  Infinity, or fabricated percentages.
+- Authorized budget (50,000 minor units), reserved budget (50,000), actual
+  economic costs, actual spend (`null`), and settlement remain separate.
+  `SUPPORTED` with unfavorable revenue and `NOT_SUPPORTED` with favorable
+  contribution remain independent facts.
+- Equivalent and reordered economic inputs replay identically; reconciliation
+  replay and repository clone isolation are deterministic. Duplicate
+  reconciliation identity is rejected. Calculation timestamps remain metadata,
+  while economic assessment identity derives from canonical economic content.
+- The adversarial suite covers organization/work/role/ancestry isolation;
+  proposal, decision, baseline, run, result, and actual-assessment substitutions;
+  version, status, budget, reporting-period, future/stale/conflicting/duplicate
+  evidence; UNKNOWN/PARTIAL/zero semantics; replay/order; technical failure,
+  inconclusive, and policy-blocked outcomes.
+
+### Gold blockers
+
+1. **ExperimentApproval does not bind the governed workflow proposal artifact.**
+   `ExperimentManager.approve` hashes its stored `ExperimentProposal`. ECO-4A
+   separately seals that proposal into a `WorkArtifact` by adding artifact role,
+   ancestry, and digest fields. ECO-4B requires the approval digest to equal the
+   sealed artifact digest. The two production digests therefore differ, so a
+   real Experiment Manager approval fails reconciliation at `approval_lineage`.
+   Existing ECO-4B unit fixtures bypass this seam by constructing an approval
+   directly from the artifact. Severity: Gold-blocking governance/provenance
+   integration. Smallest appropriate remediation: define one canonical,
+   versioned proposal-artifact approval handoff and make Experiment Manager
+   approve/check that exact immutable reference; do not relax digest matching.
+2. **Reconciliation does not validate ExperimentResult against Experiment
+   Manager storage.** A caller can change a structurally valid result's
+   `resultClass`; reconciliation hashes the supplied mutation into a new identity
+   and accepts it. `ExperimentManager.validateResult` correctly rejects the same
+   object, but ECO-4B never invokes an authoritative validator/repository.
+   Severity: Gold-blocking historical-integrity gap. Smallest appropriate
+   remediation: require reconciliation orchestration to resolve and validate the
+   immutable stored result (and terminal run) before calling the pure arithmetic
+   constructor. Do not trust a caller-supplied result merely because it hashes.
+
+Because those gaps break the required
+`GovernedDecision -> ExperimentApproval -> ExperimentRun -> ExperimentResult -> EconomicReconciliation`
+binding, the complete Gold chain is not proven. Fixing it requires a reviewed
+production integration contract, not weaker certification assertions, and is
+not attempted in this certification-only change.
+
+Live payment/provider evidence, production execution, settlement, physical
+device QA, visual/UX acceptance, and authenticated human acceptance were not
+performed and are not claimed. The earlier ECO-0 through ECO-4B phase evidence
+remains historical phase evidence; it does not override this independent Gold
+result.
+
 ### ECO-2 certification statement
 
 **CURRENT CERTIFICATION: Foundation / Pre-Gold**
