@@ -596,6 +596,22 @@
       "createdAt": "2026-10-01T02:06:45.896Z",
       "source": "ECO-5B implementation assignment",
       "taskId": "economics-eco5b"
+    },
+    {
+      "id": "launch-development-economics-eco5c",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-5C capital allocation analysis",
+      "category": "AI BUSINESS OS ECONOMICS",
+      "description": "Implement deterministic artifact-bound modeled capital allocation feasibility and economic profiles over ECO-2/ECO-5A/ECO-5B with explicit constraints, bounded enumeration, governance boundaries, documentation and adversarial tests; exclude authorization, ranking, optimization, spending, ECO-5D through ECO-6.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco5b"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-01T03:21:11.972Z",
+      "source": "ECO-5C implementation assignment",
+      "taskId": "economics-eco5c"
     }
   ]
 }
