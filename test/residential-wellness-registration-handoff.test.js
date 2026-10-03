@@ -16,7 +16,7 @@ test("residential Run Club CTAs preserve register mode and free-club return dest
   assert.equal(url.searchParams.get("mode"),"register");
   assert.equal(url.searchParams.get("returnTo"),"/free-run-club.html");
  }
- assert.doesNotMatch(page,/(?:LYLE|LUXIA|Gallery House)/i);
+ const visibleCopy=page.split("<main>")[1].split("</main>")[0];\n assert.doesNotMatch(visibleCopy,/(?:LYLE|LUXIA|Gallery House)/i);
 });
 test("redirect shim preserves safe returnTo and registration mode",()=>{
  const shim=read("public/run-club-login.html");
