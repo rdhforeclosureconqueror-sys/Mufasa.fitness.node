@@ -1,2 +1,2 @@
 "use strict";
-module.exports = {...require("./contracts"), ...require("./contribution"), ...require("./engine"), ...require("./provenance"), ...require("./reconciliation"), ...require("./scenario"), ...require("./sensitivity"), ...require("./capital-allocation"), ...require("./calibration")};
+module.exports = {...require("./contracts"), ...require("./contribution"), ...require("./engine"), ...require("./provenance"), ...require("./reconciliation"), ...require("./scenario"), ...require("./sensitivity"), ...require("./capital-allocation"), ...require("./calibration"), ...require("./portfolio")};
