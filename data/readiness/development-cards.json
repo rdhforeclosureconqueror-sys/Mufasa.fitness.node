@@ -628,6 +628,22 @@
       "createdAt": "2026-10-01T04:03:09.122Z",
       "source": "readiness:update",
       "taskId": "economics-eco5d"
+    },
+    {
+      "id": "launch-development-economics-eco5e",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-5E cross-product portfolio economics",
+      "category": "ECONOMICS",
+      "description": "Implement deterministic leaf-first portfolio economic visibility over exact compatible non-overlapping ECO-2/ECO-5A artifacts, with coverage, known aggregates, descriptive composition, exact lineage, and no ranking, optimization, allocation, authorization, accounting consolidation, or ECO-6 certification.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco5d"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-03T22:18:17.431Z",
+      "source": "ECO-5E implementation assignment",
+      "taskId": "economics-eco5e"
     }
   ]
 }
