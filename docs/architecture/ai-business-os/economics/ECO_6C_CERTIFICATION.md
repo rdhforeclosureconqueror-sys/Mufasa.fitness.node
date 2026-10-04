@@ -31,7 +31,7 @@ Before changes, the Economics and Experiment Manager regression command passed *
 
 The dedicated suite directly certifies:
 
-- same-ID payload changes, incorrect digest, cross-organization/work substitution, duplicate and reordered chain membership, wrong upstream binding, and mutation resistance;
+- same-ID payload changes, incorrect digest, cross-organization/work substitution, duplicate chain membership, wrong upstream binding, and mutation resistance; the organization authorizer intentionally accepts reordered complete chain references, which the test documents rather than treating order as a security boundary;
 - incorrect evidence digest/version, wrong artifact/evidence binding, organization/product/campaign substitution, wrong source record, claim mismatch, and caller-forged source declarations;
 - UNKNOWN-as-zero, invalid negative/overflow/unsupported-currency inputs, and preservation of PARTIAL, INVALID, NOT_APPLICABLE, zero-denominator, and relative-precision semantics;
 - AI-for-human substitution, modified/reused decisions, forged approvals, post-approval budget increase, and absence of spend/authorization in descriptive outputs;
@@ -52,7 +52,7 @@ Mandatory cases already executable in focused production regressions were intent
 | duplicate/overlapping/parent-child members, mixed compatibility, tampered digests, incomplete coverage, invalid/NA/negative/zero/shared-cost/ratio attacks | `ai-business-os-economics-portfolio.test.js` |
 | authenticated approval, cumulative budget, forged identity/session, boundary mismatch, incomplete/contradictory/false-success results | `ai-business-os-experiment-manager.test.js` canonical Academy and focused manager tests |
 
-No mandatory attack is certified solely from prose or historical results: all listed focused tests were newly executed in this certification run.
+The dedicated suite executes eight test groups, not a distinct new test for every attack named in the matrix. The remaining attack families are mapped to existing focused tests, which Codex reports it re-executed in this certification run; the documentation does not independently establish exhaustive threat coverage.
 
 ## Qualified-status outcomes
 
