@@ -660,6 +660,22 @@
       "createdAt": "2026-10-04T05:26:27.002Z",
       "source": "ECO-6A certification assignment",
       "taskId": "economics-eco6a"
+    },
+    {
+      "id": "launch-development-economics-eco6b",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-6B economics end-to-end integration certification",
+      "category": "ECONOMICS",
+      "description": "Certify the authoritative cross-role Business OS economics workflow end to end, including governance, result authority, reconciliation, calibration, portfolio integration, adversarial containment, and deterministic replay; exclude ECO-6C through ECO-6E.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco6a"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-04T20:13:08.578Z",
+      "source": "ECO-6B certification assignment",
+      "taskId": "economics-eco6b"
     }
   ]
 }
