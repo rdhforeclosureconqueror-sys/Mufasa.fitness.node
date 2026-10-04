@@ -24,7 +24,7 @@ This certification executes one canonical, synthetic, internal Business OS workf
 | Scenario modeling | Explicit hypothetical `createEconomicScenarioResult` (`src/business-os/economics/scenario.js`); scenario output is not needed by the canonical actual-outcome chain |
 | Portfolio economics | Explicit leaf membership via `runEconomicPortfolioStudy` (`src/business-os/economics/portfolio.js`) |
 
-The organizational chain authorizer and Experiment Manager have distinct approval boundaries. The integration fixture therefore provides a bounded approval-authority adapter that verifies the exact human `GovernedDecision`, proposal digest, actor type, and budget. It is not an unconditional-success validator. No production orchestration architecture was added.
+The organizational chain authorizer and Experiment Manager have distinct approval boundaries. The integration fixture therefore provides a bounded approval-authority adapter that checks the human decision ID and approval result, proposal digest, actor type, and budget. The separate organizational chain authorizer validates the governed decision against sealed artifact references; the test adapter alone does not prove authenticated session identity or cryptographically bind the complete decision digest. It is not an unconditional-success validator. No production orchestration architecture was added.
 
 ## Canonical workflow executed
 
@@ -62,7 +62,7 @@ The dedicated suite contains seven integration cases:
 1. Canonical governed chain through reconciliation and calibration.
 2. Governance and unauthorized-execution containment.
 3. Experiment Manager result authority: serialized/forged, same-ID mutation, cross-organization, wrong-run, wrong-proposal, and missing-validator attacks.
-4. Cross-role substitution: modified decision lineage, approval/run mismatch, cross-organization, cross-work, currency, reporting-period, stale provenance, and modified reconciliation.
+4. Cross-role substitution: approval/run mismatch, cross-organization, cross-work, currency, reporting-period, stale provenance, and modified reconciliation. Same-ID decision-digest tampering and conflicted evidence are covered in the existing focused suites, not claimed as additional cases in this dedicated test.
 5. Semantic separation of EXPECTED, ACTUAL, UNKNOWN, PARTIAL, INVALID, and NOT_APPLICABLE.
 6. Two-unit explicit actual portfolio, exact assessment digests, deterministic ordering, additive aggregation, ratio exclusion, duplicate prevention, digest tamper rejection, and absence of authority.
 7. Full deterministic replay of economic artifacts, decisions, approval/run/result identity, reconciliation, and calibration.
@@ -106,4 +106,4 @@ None. Existing production contracts supported the certification. Only the dedica
 
 `ECO_6B_PASS`
 
-The executable evidence demonstrates that Economics participates in the actual governed Business OS boundaries from opportunity through authoritative observed outcome, reconciliation, calibration, and explicit portfolio analysis. Exact identity and authority are preserved, failure modes close safely, and economic intelligence never becomes spending authority.
+The executable synthetic evidence demonstrates that Economics participates through the actual production contracts at the governed Business OS boundaries from opportunity through authoritative observed outcome, reconciliation, calibration, and explicit portfolio analysis. Exact identity and authority are preserved, failure modes close safely, and economic intelligence never becomes spending authority.
