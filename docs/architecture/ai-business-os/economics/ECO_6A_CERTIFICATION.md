@@ -16,7 +16,7 @@ human acceptance.
 | --- | --- |
 | Assignment starting main SHA | `a535b3c987e7140a11dd10c008a22b5b809de4af` |
 | Audited local starting HEAD | `a535b3c987e7140a11dd10c008a22b5b809de4af` |
-| Final implementation reference | `9006d6f1bcf2dd473181257b42dd37570f060e7a` |
+| Codex-reported local implementation reference (not found in GitHub) | `9006d6f1bcf2dd473181257b42dd37570f060e7a` |\n| Uploaded PR #924 implementation head verified in GitHub | `8450ca0eec43a4836e8e95efac7136c8894ac249` |
 | Execution date | 2026-10-04 UTC |
 | Runtime | Node.js `v24.15.0`; npm `11.4.2` |
 | Host | Linux `6.18.44`, x86_64 |
@@ -28,7 +28,7 @@ refs/heads/main` could not traverse the execution environment's network tunnel
 (`CONNECT tunnel failed, response 403`). Consequently, this record certifies the
 provided local repository snapshot and does not claim a fresh remote-main fetch.
 
-## Production inventory and contracts
+The Codex-reported local implementation reference was not resolvable through GitHub's commit API during independent review. The published PR head is independently verified; the execution counts below remain Codex-reported local runs, not independently rerun GitHub CI (no check runs were available on the PR head).\n\n## Production inventory and contracts
 
 Production code, rather than historical PR descriptions, was treated as truth.
 The public Economics entry point re-exports the following implemented layers:
