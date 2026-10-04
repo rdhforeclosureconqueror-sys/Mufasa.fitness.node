@@ -15,7 +15,7 @@ human acceptance, or the factual truth of caller-supplied evidence.
   repository `HEAD`: `a5625c17e667dfb056923d21d6c29486901069b7`.
 - A network fetch could not be performed because this checkout has no configured
   Git remote. The local starting commit exactly matched the assigned SHA.
-- Implementation commit: `dfb12835ae9eb2ade890b882d46f48a571def945`.
+- Codex-reported local implementation commit: `dfb12835ae9eb2ade890b882d46f48a571def945` (not resolvable via GitHub commit API at independent review). Published PR head at review: `0feff85eea9a04591d8ed4925b7f541eba3a8bec`. The test counts below are Codex-reported local execution, not GitHub-hosted CI; GitHub reported zero check runs on that PR head.
 - Inspected production contracts: `contracts.js`, `engine.js`, `contribution.js`,
   `provenance.js`, `reconciliation.js`, `scenario.js`, `sensitivity.js`,
   `capital-allocation.js`, `calibration.js`, `portfolio.js`, and the Economics
@@ -101,7 +101,7 @@ references, duplicate declared economic units, and duplicate product/campaign
 period scope. January is never combined with Q1. Exact source digest binding
 rejects changed economic content under an old member reference.
 
-`ACTUAL` portfolios require trusted accepted actual/unknown provenance.
+`ACTUAL` portfolios require accepted actual/unknown provenance under the production contract. In this suite the provenance is explicitly constructed as trusted fixture data; it does not authenticate an independent external source.
 `EXPECTED_BASELINE` requires estimated input evidence and cannot join `ACTUAL`.
 `SCENARIO` uses separate exact scenario-result lineage and labels every member
 `MEMBER_HYPOTHETICAL_ONLY`; a forged scenario digest is rejected. Scenario income
@@ -179,5 +179,5 @@ Final required results:
 - `npm run readiness:validate` — passed: readiness contract valid, 4 changed
   files and 2 current evidence entries.
 
-The final counts above are updated from newly executed commands before delivery;
+The final counts above were reported from Codex's newly executed commands before delivery;
 historical documentation is not represented as current execution.
