@@ -60,7 +60,7 @@ function reconciliationFixture({resultClass="SUPPORTED",baseline=assessment("for
   const result=x.result;
   return {organizationId:ORG,workId:WORK,proposalArtifact:chain.proposal,baselineArtifact:chain.economic,baselineAssessment:baseline,decision,approval:x.approval,run:x.run,experimentResult:result,actualArtifact,actualAssessment:actual,authorizedAmountMinor:50000,reservedAmountMinor:50000,asOf:AS_OF,chain,x};
 }
-const reconcile=f=>Economics.createEconomicReconciliation(f,{clock:()=>CREATED,validateExperimentResult:result=>f.x.manager.validateResult(result)});
+const reconcile=(f,manager=f.x?.manager)=>Economics.createEconomicReconciliation(f,{clock:()=>CREATED,validateExperimentResult:result=>manager.validateResult(result)});
 const reconciliationInput=f=>Object.fromEntries(["organizationId","workId","proposalArtifact","baselineArtifact","baselineAssessment","decision","approval","run","experimentResult","actualArtifact","actualAssessment","authorizedAmountMinor","reservedAmountMinor","asOf"].map(key=>[key,structuredClone(f[key])]));
 const metric=(r,name)=>r.metricComparisons.find(item=>item.metric===name);
 
@@ -118,7 +118,7 @@ test("replay, input ordering, immutable records, and timestamp metadata are dete
   const a=assessment("ordered",actualValues), b=assessment("ordered",actualValues,{reverse:true});
   assert.deepEqual(a,b);
   const f=reconciliationFixture({baseline:a,actual:b});
-  const first=reconcile(f), replay=reconcile(reconciliationInput(f));assert.deepEqual(first,replay);
+  const first=reconcile(f), replay=reconcile(reconciliationInput(f),f.x.manager);assert.deepEqual(first,replay);
   const repo=new Economics.EconomicReconciliationRepository();repo.save(first);const copy=repo.get(first.id);copy.status="INVALID";assert.deepEqual(repo.get(first.id),first);assert.throws(()=>repo.save(first),/duplicate_reconciliation_identity/);
   assert.notEqual(Economics.calculateEconomicAssessment({id:"timestamp-a",workId:WORK,financialInputs:a.financialInputs,coverage:{requiredCostCategories:["ACQUISITION_COST","PAYMENT_FEE","FULFILLMENT_COST"],newCustomers:10}},{clock:()=>AS_OF}).createdAt,CREATED);
 });
