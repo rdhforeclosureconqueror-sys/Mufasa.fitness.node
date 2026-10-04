@@ -644,6 +644,22 @@
       "createdAt": "2026-10-03T22:18:17.431Z",
       "source": "ECO-5E implementation assignment",
       "taskId": "economics-eco5e"
+    },
+    {
+      "id": "launch-development-economics-eco6a",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-6A economics foundation regression certification",
+      "category": "ECONOMICS",
+      "description": "Independently execute and audit the integrated ECO-2 through ECO-5E Economics foundation, minimally repair contractual regressions if necessary, and record reproducible ECO-6A certification evidence without claiming ECO-6B+ or human acceptance.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco5e"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-04T05:26:27.002Z",
+      "source": "ECO-6A certification assignment",
+      "taskId": "economics-eco6a"
     }
   ]
 }
