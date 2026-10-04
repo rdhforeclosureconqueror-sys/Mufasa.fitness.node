@@ -676,6 +676,22 @@
       "createdAt": "2026-10-04T20:13:08.578Z",
       "source": "ECO-6B certification assignment",
       "taskId": "economics-eco6b"
+    },
+    {
+      "id": "launch-development-economics-eco6c",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-6C economics adversarial and fail-closed certification",
+      "category": "ECONOMICS",
+      "description": "Independently certify adversarial, fail-closed behavior across Economics and authoritative Business OS boundaries, adding only minimal production corrections where executable attacks prove a defect; exclude ECO-6D/E, new integrations, UI, orchestration, and autonomous authority.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco6b"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-04T20:41:32.528Z",
+      "source": "ECO-6C certification assignment",
+      "taskId": "economics-eco6c"
     }
   ]
 }
