@@ -692,6 +692,22 @@
       "createdAt": "2026-10-04T20:41:32.528Z",
       "source": "ECO-6C certification assignment",
       "taskId": "economics-eco6c"
+    },
+    {
+      "id": "launch-development-economics-eco6d",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-6D portfolio and economic truthfulness certification",
+      "category": "ECONOMICS",
+      "description": "Independently certify deterministic, mathematically truthful and appropriately qualified multi-unit portfolio economics across ECO-2 through ECO-5E, with minimal defect repair only where executable evidence requires it; exclude ECO-6E and new financial authority.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco6c"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-04T23:27:24.077Z",
+      "source": "ECO-6D certification assignment",
+      "taskId": "economics-eco6d"
     }
   ]
 }

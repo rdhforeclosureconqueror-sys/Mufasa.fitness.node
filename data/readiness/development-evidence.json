@@ -5559,6 +5559,51 @@
       "prNumber": null,
       "commitSha": "119bf14163012da13c8cddad696fb7a360123a01",
       "timestamp": "2026-10-04T20:45:02.398Z"
+    },
+    {
+      "operationId": "61299626-0c07-4349-b52e-13f50a1fd07f",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco6d",
+      "sourceType": "card_creation",
+      "taskId": "economics-eco6d",
+      "files": [],
+      "automated": null,
+      "evidence": "Independently certify deterministic, mathematically truthful and appropriately qualified multi-unit portfolio economics across ECO-2 through ECO-5E, with minimal defect repair only where executable evidence requires it; exclude ECO-6E and new financial authority.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-04T23:27:24.077Z"
+    },
+    {
+      "operationId": "c34687f3-0892-444c-8d0d-bc324edc1031",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco6d",
+      "sourceType": "certification",
+      "taskId": "economics-eco6d",
+      "files": [
+        "test/ai-business-os-economics-portfolio-truthfulness-certification.test.js",
+        "docs/architecture/ai-business-os/economics/ECO_6D_CERTIFICATION.md"
+      ],
+      "automated": "PASS",
+      "evidence": "ECO-6D executable certification PASS: dedicated 11/11; Economics plus Experiment Manager 253/253; broader Business OS 511/511; lint and git diff check pass. Three-unit integer portfolio proves exact lineage, unknown-vs-zero, status propagation, additive safe arithmetic, qualified concentration, view separation, deterministic scenario/sensitivity replay, descriptive capital feasibility, and non-modifying calibration. No production defect reproduced. Remaining limitations: USD-only, no portfolio ratios, and declared upstream scope cannot independently prove real-world shared-cost or parent/child disjointness; no browser/physical/human QA is applicable to this non-UI machine certification.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-04T23:30:57.401Z"
+    },
+    {
+      "operationId": "7adab121-277b-4eea-962e-12ff51768d51",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco6d",
+      "sourceType": "implementation",
+      "taskId": "economics-eco6d",
+      "files": [
+        "test/ai-business-os-economics-portfolio-truthfulness-certification.test.js",
+        "docs/architecture/ai-business-os/economics/ECO_6D_CERTIFICATION.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation commit dfb12835ae9eb2ade890b882d46f48a571def945 contains the ECO-6D certification suite and decision record. Automated evidence: 11 dedicated, 253 combined Economics/Experiment Manager, and 511 Business OS tests passed with zero failures/skips; lint, readiness validation, and diff check passed. Draft PR reference will be attached when allocated.",
+      "prNumber": null,
+      "commitSha": "dfb12835ae9eb2ade890b882d46f48a571def945",
+      "timestamp": "2026-10-04T23:31:24.140Z"
     }
   ]
 }
