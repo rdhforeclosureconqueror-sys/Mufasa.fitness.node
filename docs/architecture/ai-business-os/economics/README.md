@@ -132,7 +132,112 @@ scenario definitions cannot substitute for executed evidence.
   not authorization, human acceptance, Platinum certification, or ECO-6).
 - ECO-5D historical economic calibration: implemented (automated repository
   evidence; descriptive history only, not forecasting or automatic correction).
-- ECO-5E portfolio economics: not implemented.
+- ECO-5E cross-product portfolio economics: implemented (automated repository
+  evidence; visibility only, not allocation, authority, accounting consolidation,
+  Platinum certification, or ECO-6).
+
+## ECO-5E cross-product portfolio economics
+
+ECO-5E answers one bounded question: across exact, explicitly declared,
+compatible, non-overlapping economic members, what resolved portfolio economics
+are known, what remains unresolved, and how is the known composition distributed?
+It consumes authoritative ECO-2 assessments and exact supported ECO-5A/ECO-5D
+lineage. It is not another assessment calculator. ECO-5C asks which declared
+capital combinations are feasible; ECO-5E only describes a declared portfolio.
+It neither chooses members nor recommends or funds one.
+
+`EconomicPortfolioDefinition` is the canonical, versioned declaration. It binds
+portfolio identity, organization and optional common work scope, homogeneous
+economic view, USD currency, exact reporting period, engine and policy versions,
+created time, limitations, and a canonically sorted member set. **PORTFOLIO
+MEMBERSHIP MUST BE EXPLICIT.** There is no discovery, fuzzy grouping, or generated
+business structure. Changing membership, an assessment reference/version/digest,
+view, currency, reporting period, or policy changes the portfolio digest. Caller
+ordering does not. The initial model is leaf-first: PRODUCT, OFFER, SERVICE,
+CAMPAIGN, or ECONOMIC_UNIT members are accepted; nested portfolios and subtotals
+are rejected.
+
+Each member declares its stable economic-unit identity and exact organization,
+work, product, campaign, currency, period, engine, view, and immutable assessment
+reference. IDs, versions, digests, engine versions, all scope dimensions, and
+source content bind exactly. Reusing an assessment under another member ID,
+repeating a declared economic-unit/period identity, duplicating a member ID, or
+supplying a subtotal fails closed. This conservative contract cannot prove that
+arbitrary overlapping units are independent, so unsupported hierarchy is not
+accepted. **PORTFOLIO MEMBERS MUST NOT BE DOUBLE COUNTED.**
+
+One definition has exactly one economic view. `ACTUAL` requires authoritative
+accepted actual provenance and does not relabel estimates. `EXPECTED_BASELINE`
+requires expectation-bearing estimated inputs. `SCENARIO` binds each member to
+the exact ECO-5A scenario artifact and its exact derived assessment. Scenario
+labels across members do not establish common assumptions; the result calls each
+one a member-level hypothesis only. **ACTUAL IS NOT EXPECTED. EXPECTED IS NOT
+SCENARIO. SCENARIO IS NOT ACTUAL.** Mixed views are rejected rather than blended.
+
+V1 requires one exact organization boundary, currency, reporting interval,
+economic view, and ECO-2 engine version. It performs no conversion, proration,
+annualization, normalization, extrapolation, or cross-version interpretation.
+**USD + EUR IS NOT A VALID MONETARY SUM WITHOUT GOVERNED FX CONVERSION. JANUARY
++ Q1 CAN DOUBLE COUNT JANUARY.** Incompatible currency or periods therefore fail
+closed.
+
+The additive metric set reuses ECO-2 meanings: gross revenue, refunds, discounts,
+net revenue, known variable cost, known fixed cost (including only upstream
+governed allocated cost), total known cost, contribution before unknown costs,
+and contribution. Aggregation uses checked `BigInt` minor-currency arithmetic and
+rejects unsafe output. It does not duplicate ECO-2 formulas. Break-even units,
+CAC, contribution margin, ROAS, ROI, and unit revenue/cost/contribution remain
+explicitly non-aggregated. They are neither summed nor averaged. **A PORTFOLIO
+RATIO IS NOT THE AVERAGE OF CHILD RATIOS.** A future ratio would require an
+authoritative numerator-and-denominator path; v1 invents none.
+
+Every aggregate metric names its value `knownResolvedValue` and reports declared,
+resolved, unresolved, invalid, and not-applicable member counts plus canonical
+unresolved member IDs. An empty portfolio is `NOT_APPLICABLE`, never an operated
+portfolio with zero revenue. A one-member portfolio is valid. Resolved values may
+still exist beside unresolved members, but the status stays `PARTIAL`; an invalid
+member makes the aggregate `INVALID`. **UNKNOWN IS NOT ZERO. PARTIAL IS NOT
+COMPLETE. INVALID IS NOT UNKNOWN. NOT_APPLICABLE IS NOT ZERO. KNOWN AGGREGATE IS
+NOT NECESSARILY COMPLETE TOTAL.** Counts and statuses are evidence; ECO-5E creates
+no confidence score or universal completeness tier.
+
+Composition is deliberately simple. Each resolved member's integer-basis-point
+gross-revenue share uses the exact `KNOWN_RESOLVED_GROSS_REVENUE` denominator and
+retains member/status lineage. It does not claim a share of the unknown total.
+Half-up integer rounding is deterministic. If that known denominator is zero or
+absent, composition is `NOT_APPLICABLE`; division and invented percentages do not
+occur. Shares are descriptive facts, not ranks, concentration-risk thresholds,
+winners, priorities, scores, or recommendations.
+
+Shared cost handling remains upstream. If an ECO-2 assessment contains a governed
+`ALLOCATED_COST`, its known fixed cost is consumed as supplied. Otherwise ECO-5E
+does not divide shared cost equally, by revenue, customers, or any AI policy.
+**A SHARED COST MUST NOT BE INVENTED INTO MEMBER ALLOCATIONS.** Accordingly,
+**PORTFOLIO ECONOMICS IS NOT ACCOUNTING CONSOLIDATION**: it provides no GAAP, tax,
+legal-entity or ledger consolidation, intercompany elimination, statements, or
+audit opinion.
+
+Exact ECO-5D calibration profiles may be attached as descriptive member context.
+Their identity, digest, model, organization, product/campaign, currency, and
+engine lineage are validated. They never adjust an assessment or create corrected,
+risk-adjusted, or confidence-adjusted values. **CALIBRATION EVIDENCE DOES NOT
+AUTOMATICALLY CHANGE PORTFOLIO ECONOMICS.** ECO-5B sensitivity stays member-level
+context outside this bounded rollup; ECO-5E does not average sensitivity, infer
+shared drivers/causality, or emit a risk score.
+
+The result freezes canonical member references, metric profiles, composition,
+scenario/calibration context, limitations, versions, created time, portfolio
+digest, and its own deterministic digest. Exact definition and artifact inputs
+replay identically regardless of input order. Definitions, assessments,
+provenance, decisions, experiments, reconciliations, scenarios, sensitivity,
+capital-allocation and calibration artifacts remain unchanged.
+
+The result has explicit null authorization, reservation, spend, and execution
+fields. It cannot select or change membership, rank products, optimize objectives,
+allocate capital, alter ECO-5C results, approve experiments, change prices or
+campaigns, start/stop products, reserve funds, or spend. **PORTFOLIO VISIBILITY IS
+NOT PORTFOLIO AUTHORITY.** ECO-5E automated implementation is not Economics
+Platinum, human/live acceptance, or ECO-6 certification.
 
 ## ECO-5D historical economic calibration
 
