@@ -724,6 +724,22 @@
       "createdAt": "2026-10-05T00:40:46.169Z",
       "source": "ECO-6E platinum certification assignment",
       "taskId": "economics-eco6e"
+    },
+    {
+      "id": "launch-development-sales-0-audit",
+      "board": "launch",
+      "canonical": false,
+      "title": "Sales SALES-0 architecture and gap audit",
+      "category": "AI BUSINESS OS SALES",
+      "description": "Audit the reusable Sales role architecture against proposed Gold and Platinum targets, benchmark mature commercial systems, define authority boundaries and a bounded roadmap without implementing commercial execution capability.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "phase-6-organizational-intelligence"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-05T02:18:51.732Z",
+      "source": "SALES-0 architecture audit assignment",
+      "taskId": "sales-0"
     }
   ]
 }
