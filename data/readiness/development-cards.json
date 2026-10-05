@@ -708,6 +708,22 @@
       "createdAt": "2026-10-04T23:27:24.077Z",
       "source": "ECO-6D certification assignment",
       "taskId": "economics-eco6d"
+    },
+    {
+      "id": "launch-development-economics-eco6e",
+      "board": "launch",
+      "canonical": false,
+      "title": "ECO-6E final Economics platinum certification",
+      "category": "ECONOMICS",
+      "description": "Independently consolidate and reproduce ECO-2 through ECO-6D technical evidence, audit readiness and authority boundaries, publish the ECO-6E platinum acceptance decision and limitations register, and introduce no new financial capability.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-economics-eco6d"
+      ],
+      "humanRequired": false,
+      "createdAt": "2026-10-05T00:40:46.169Z",
+      "source": "ECO-6E platinum certification assignment",
+      "taskId": "economics-eco6e"
     }
   ]
 }
