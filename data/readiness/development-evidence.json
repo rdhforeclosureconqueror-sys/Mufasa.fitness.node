@@ -5679,9 +5679,9 @@
         "data/readiness/development-evidence.json"
       ],
       "automated": "PASS",
-      "evidence": "ECO-6E report and readiness implementation committed at 2ba090987bc3da9176715e1cd08238191ab88c98. Draft PR metadata created with title 'Draft: ECO-6E final Economics platinum certification'; make_pr returned no numeric PR identifier or URL. DO NOT MERGE. Automated results and all scope limitations remain as recorded; no human or live-production acceptance claimed.",
-      "prNumber": null,
-      "commitSha": "2ba090987bc3da9176715e1cd08238191ab88c98",
+      "evidence": "Codex reported a local implementation commit 2ba090987bc3da9176715e1cd08238191ab88c98, which independent review could not resolve in GitHub. Published ECO-6E PR #928 was verified at head 9f6edf8040e309934c97940c91013d053d1c46a3 before review corrections. The final PR/merge commit is verified separately. Codex-reported automated results and synthetic/backend scope limitations remain recorded; no hosted CI, live-production, or human acceptance claimed.",
+      "prNumber": 928,
+      "commitSha": null,
       "timestamp": "2026-10-05T00:43:46.019Z"
     }
   ]
