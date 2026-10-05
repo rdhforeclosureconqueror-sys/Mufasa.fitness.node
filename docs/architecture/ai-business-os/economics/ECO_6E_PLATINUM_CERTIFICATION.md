@@ -15,7 +15,7 @@ tax correctness, or human business acceptance.
 | --- | --- |
 | Assignment starting `main` SHA | `231e6916eb8006081230eb977a727e91144b8f4f` |
 | Checked-out baseline SHA | `231e6916eb8006081230eb977a727e91144b8f4f` |
-| Final PR head | The Git commit containing this report and readiness evidence; recorded in the draft PR and delivery report |
+| Published GitHub PR | [#928](https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/928); reviewed head changes are recorded in GitHub PR history |
 | Execution date | 2026-10-05 UTC |
 | Runtime | Node.js `v24.15.0`; npm `11.4.2` |
 | Host | Linux `6.18.44`, x86_64, container host `5511b6bbcc98` |
@@ -25,7 +25,7 @@ The checkout had no configured Git remote. An independent lookup of
 `git ls-remote https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node.git refs/heads/main`
 failed with `CONNECT tunnel failed, response 403`. Consequently, this
 certification does not claim a fresh remote fetch: it binds the exact supplied
-starting SHA, which was also the checked-out SHA. The complete local history
+starting SHA, which was also the checked-out SHA. Independent GitHub review verified remote `main` at `231e6916eb8006081230eb977a727e91144b8f4f`, matching the checked-out baseline. GitHub reported zero hosted check runs on the original PR head; all test counts below are Codex-reported executable local results, not independently re-executed by the reviewer. The complete local history
 contains ECO-6A, ECO-6B, ECO-6C, and ECO-6D at `0c0cf59`, `35ca5c0`, `a5625c1`,
 and `231e691`, respectively.
 
