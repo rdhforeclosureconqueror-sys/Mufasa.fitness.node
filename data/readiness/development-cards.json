@@ -738,6 +738,38 @@
       "createdAt": "2026-10-06T18:43:00.000Z",
       "source": "readiness:update",
       "taskId": "residential-wellness-intake-v1"
+    },
+    {
+      "id": "launch-development-residential-community-hub-v1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Residential Community Hub V1",
+      "category": "MARKETING & REGISTRATION",
+      "description": "Implement the authenticated post-signup Milele Fit Community Hub with proposed-event calendar, confirmed-event RSVP boundary, 24-hour expiring member-only chat, wellness-interest summary, community stats, diagnostics, and regression coverage. Browser/mobile and human UX acceptance remain separate gates.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-residential-wellness-intake-v1"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-10-06T21:50:00.000Z",
+      "source": "readiness:update",
+      "taskId": "residential-community-hub-v1"
+    },
+    {
+      "id": "launch-development-residential-community-hub-v1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Residential Community Hub V1",
+      "category": "MARKETING & REGISTRATION",
+      "description": "Authenticated post-signup Community Hub with proposed-event calendar, confirmed-event RSVP boundary, 24-hour expiring member-only chat, wellness-interest summary, community stats, diagnostics, and regression coverage. Browser/mobile and human UX acceptance remain separate gates.",
+      "priority": "HIGH",
+      "dependsOn": [
+        "launch-development-residential-wellness-intake-v1"
+      ],
+      "humanRequired": true,
+      "createdAt": "2026-10-06T21:50:00.000Z",
+      "source": "readiness:update",
+      "taskId": "residential-community-hub-v1"
     }
   ]
 }

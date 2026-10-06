@@ -5705,6 +5705,28 @@
       "prNumber": 930,
       "commitSha": null,
       "timestamp": "2026-10-06T18:43:00.000Z"
+    },
+    {
+      "operationId": "residential-community-hub-v1-pr932",
+      "board": "launch",
+      "cardId": "launch-development-residential-community-hub-v1",
+      "sourceType": "implementation",
+      "taskId": "residential-community-hub-v1",
+      "files": [
+        "public/community-hub.html",
+        "public/community-hub.js",
+        "public/residential-wellness.html",
+        "public/login.js",
+        "src/services/residentialCommunityService.js",
+        "src/routes/residentialCommunityRoutes.js",
+        "world-bridge-server.js",
+        "test/residential-community-hub-v1.test.js"
+      ],
+      "automated": "PARTIAL_PASS",
+      "evidence": "PR #932 reviewed. Chat reads require joined membership; expired chat records are persisted out when observed; proposed events are labeled and cannot accept RSVP until confirmed. Initial-head Living Lobby and Arena Phone Voice workflows passed. New-head CI, browser/mobile, live-production, and human UX acceptance remain open.",
+      "prNumber": 932,
+      "commitSha": null,
+      "timestamp": "2026-10-06T21:50:00.000Z"
     }
   ]
 }
