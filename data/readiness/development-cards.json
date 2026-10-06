@@ -724,6 +724,20 @@
       "createdAt": "2026-10-05T00:40:46.169Z",
       "source": "ECO-6E platinum certification assignment",
       "taskId": "economics-eco6e"
+    },
+    {
+      "id": "launch-development-residential-wellness-intake-v1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Residential wellness intake and NFC attribution V1",
+      "category": "MARKETING & REGISTRATION",
+      "description": "Implement the authenticated Milele Fit residential wellness intake, multi-interest capture, explicit communication/community consent, opaque allowlisted NFC campaign attribution, landing-page handoff, diagnostics, and regression coverage. Browser, physical NFC, and human UX acceptance remain separate gates.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-10-06T18:43:00.000Z",
+      "source": "readiness:update",
+      "taskId": "residential-wellness-intake-v1"
     }
   ]
 }
