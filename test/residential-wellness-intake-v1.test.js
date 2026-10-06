@@ -23,3 +23,14 @@ test("registration may return to residential wellness intake",()=>{
  const s=read("public/login.js");
  assert.match(s,/requestedReturn\.startsWith\("\/residential-wellness\.html"\)/);
 });
+test("residential wellness client sends canonical bearer auth",()=>{
+ const page=read("public/residential-wellness.html"),client=read("public/residential-wellness.js");
+ assert.match(page,/auth-state-runtime\.js/);
+ assert.match(client,/AuthStateRuntime\?\.getAuthToken/);
+ assert.match(client,/authorization:`Bearer \$\{token\}`/);
+});
+test("service-specific CTA intent is preselected",()=>{
+ const client=read("public/residential-wellness.js");
+ assert.match(client,/q\.get\("interest"\)/);
+ assert.match(client,/pre\.checked=true/);
+});
