@@ -9,6 +9,8 @@ const { createFreeRunClubCommunityService } = require("./src/services/freeRunClu
 const { installFreeRunClubCommunityRoutes } = require("./src/routes/freeRunClubCommunityRoutes");
 const { createResidentialWellnessService } = require("./src/services/residentialWellnessService");
 const { installResidentialWellnessRoutes } = require("./src/routes/residentialWellnessRoutes");
+const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
+const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { createClientTransformationService } = require("./src/services/clientTransformationService");
@@ -66,6 +68,13 @@ function installResidentialWellness(app, options = {}) {
   return app.locals.pocketPTResidentialWellness;
 }
 
+function installResidentialCommunity(app, options = {}) {
+  const userStore=createCanonicalUserStore(options),service=createResidentialCommunityService({userStore});
+  installResidentialCommunityRoutes({app,requireAuth,service});
+  app.use((err,req,res,next)=>{if(!String(req.path||"").startsWith("/api/me/residential-community"))return next(err);if(res.headersSent)return next(err);return res.status(Number.isInteger(err?.status)?err.status:400).json({ok:false,requestId:req.requestId||null,error:{code:"RESIDENTIAL_COMMUNITY_REQUEST_FAILED",message:err?.message||"Community request failed"}})});
+  app.locals.pocketPTResidentialCommunity={userStore,service};return app.locals.pocketPTResidentialCommunity;
+}
+
 function installPrivateCoaching(app, options = {}) {
   const userStore = createCanonicalUserStore(options);
   const service = createPrivateCoachingQuoteService({ userStore });
@@ -121,6 +130,7 @@ function createWorldBridgeApp(options = {}) {
   installDeploymentIdentity(app, options);
   installFreeRunClub(app, options);
   installResidentialWellness(app, options);
+  installResidentialCommunity(app, options);
   installPrivateCoaching(app, options);
   installClientTransformation(app, options);
   installPrivateClientGettingStarted(app, options);
@@ -165,4 +175,4 @@ if (require.main === module) {
   server.listen(PORT, () => console.log(`✅ mufasa-fitness-node + PocketPTWorldProtocol v1 + Living Lobby + membership tiers + Free Run Club + Private Coaching + Transformation Profile + Getting Started + Gym Mapping listening on :${PORT}`));
 }
 
-module.exports = { createWorldBridgeApp, createWorldBridgeHttpServer, installDeploymentIdentity, installFreeRunClub, installResidentialWellness, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted, installGymMapping };
+module.exports = { createWorldBridgeApp, createWorldBridgeHttpServer, installDeploymentIdentity, installFreeRunClub, installResidentialWellness, installResidentialCommunity, installPrivateCoaching, installClientTransformation, installPrivateClientGettingStarted, installGymMapping };
