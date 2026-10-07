@@ -23,7 +23,7 @@ const QUICK_BANK=Object.freeze([
  {id:"SAQ08",class:"ID",prompt:"How connected do you feel to meaning, purpose, nature, ancestry, or something larger than yourself?",options:[
   o("Disconnected","SP","GR",1,-1),o("I miss that connection","SP","CO",1,-1),o("I feel some connection, but it comes and goes","CL","SP",0.4,0),o("I feel meaningfully connected","SP","CL",0,0)]},
  {id:"SAQ09",class:"ST",prompt:"When pressure rises, what happens first?",options:[
-  o("My body gets tense or restless","GR","AG",1,1),o("My emotions become harder to manage","EF","GR",1,1),o("I shut down or lose energy","AG","EF",1,-1),o("I get stuck in my head","CL","EX",1,1)]},
+  o("My body gets tense or restless","GR","AG",1,1),o("My emotions become harder to manage","EF","GR",1,1),o("I shut down or lose energy","AG","EX",1,-1),o("I get stuck in my head","CL","EX",1,1)]},
  {id:"SAQ10",class:"DS",prompt:"What would you most like to feel after a sound session?",options:[
   o("Calm, safe, and grounded","GR","CL",1,-1),o("Lighter and more emotionally open","EF","CO",1,0),o("Clear, energized, and ready to move","AG","CL",1,0),o("Connected, expressive, and spiritually restored","SP","EX",1,0)]},
 ]);
