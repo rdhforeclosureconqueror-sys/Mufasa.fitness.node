@@ -11,6 +11,7 @@ const { createResidentialWellnessService } = require("./src/services/residential
 const { installResidentialWellnessRoutes } = require("./src/routes/residentialWellnessRoutes");
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
 const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
+const { installSoundAssessmentRoutes } = require("./src/routes/soundAssessmentRoutes");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { createClientTransformationService } = require("./src/services/clientTransformationService");
@@ -131,6 +132,7 @@ function createWorldBridgeApp(options = {}) {
   installFreeRunClub(app, options);
   installResidentialWellness(app, options);
   installResidentialCommunity(app, options);
+  installSoundAssessmentRoutes({app});
   installPrivateCoaching(app, options);
   installClientTransformation(app, options);
   installPrivateClientGettingStarted(app, options);

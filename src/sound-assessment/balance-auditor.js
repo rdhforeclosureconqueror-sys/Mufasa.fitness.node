@@ -30,7 +30,7 @@ function positionalAnswers(bank,index){
 }
 function seededRandomAnswers(bank,seed){
  let x=(seed>>>0)||1;const out={};
- for(const q of bank){x=(1664525*x+1013904223)>>>0;out[q.id]=Math.floor((x/0x100000000)*q.options.length);}
+ for(const q of bank){x=(x+0x6D2B79F5)>>>0;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);const u=((t^(t>>>14))>>>0)/0x100000000;out[q.id]=Math.floor(u*q.options.length);}
  return out;
 }
 function winners(normalized){
@@ -56,6 +56,6 @@ function auditBalance(bankInput,{randomRuns=128,maxOpportunityRatio=2,maxPositio
  const sims=simulate(bank,randomRuns);if(!sims.ok)return sims;
  const randomShare=Object.fromEntries(DIMENSION_KEYS.map(d=>[d,sims.value.random.wins[d]/randomRuns]));
  if(Math.max(...Object.values(randomShare))>maxRandomWinShare)return {ok:false,diagnostic:{STATUS:"FAIL",FIRST_FAILURE:"SA_WEIGHT_DOMINANCE",STAGE:"NORMALIZE",DETAIL:"Random-response simulation shows excessive winner concentration.",randomWinShare:randomShare}};
- return {ok:true,report:{STATUS:"PASS",FIRST_FAILURE:"NONE",STAGE:"NORMALIZE",DETAIL:"Balance audit passed configured structural gates.",questionCount:bank.length,dimensionOpportunity:opportunity,opportunityRatio:max/min,mapping,positionAudit:position,simulations:sims.value,randomWinShare}};
+ return {ok:true,report:{STATUS:"PASS",FIRST_FAILURE:"NONE",STAGE:"NORMALIZE",DETAIL:"Balance audit passed configured structural gates.",questionCount:bank.length,dimensionOpportunity:opportunity,opportunityRatio:max/min,mapping,positionAudit:position,simulations:sims.value,randomWinShare:randomShare}};
 }
 module.exports={optionPositionAudit,mappingAudit,positionalAnswers,seededRandomAnswers,winners,simulate,auditBalance,spread};

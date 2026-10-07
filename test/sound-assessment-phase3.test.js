@@ -4,7 +4,7 @@ const A=require("../src/sound-assessment/balance-auditor");
 const dims=["GR","EF","AG","CO","EX","CL","SP"];
 function balancedBank(){
  const bank=[];
- for(let q=0;q<7;q++)bank.push({id:`q${q}`,class:"ID",options:dims.map((d,i)=>({primary_dimension:d,secondary_dimension:dims[(i+q+1)%7],direction_value:1,activation_value:0}))});
+ for(let q=0;q<7;q++)bank.push({id:`q${q}`,class:"ID",options:dims.map((d,i)=>({primary_dimension:dims[(i+q)%7],secondary_dimension:dims[(i+q+1)%7],direction_value:1,activation_value:0}))});
  return bank;
 }
 test("balanced fixture passes structural and simulation gates",()=>{const r=A.auditBalance(balancedBank(),{randomRuns:64});assert.equal(r.ok,true);assert.equal(r.report.FIRST_FAILURE,"NONE");assert.equal(r.report.questionCount,7);});
