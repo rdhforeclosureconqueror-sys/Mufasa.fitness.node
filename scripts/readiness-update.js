@@ -8,11 +8,22 @@ function atomicJson(file,value){fs.mkdirSync(path.dirname(file),{recursive:true}
 function restore(file,backup){if(backup===null)fs.rmSync(file,{force:true});else{fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,backup)}}
 function run(argv=process.argv.slice(2),env=process.env){
  const o=parse(argv);if(!o.board||!o.action)throw new Error("Usage: readiness:update --board <board> --action create|start|select|evidence|block|unblock [--card id]");
- const allowed=new Set(["create","start","select","evidence","block","unblock","request-human"]);if(!allowed.has(o.action)){if(/^human[-_]verify$/.test(o.action))throw new Error("Human verification must be recorded through an authenticated authorized admin interaction.");throw new Error(`unsupported_action:${o.action}`)}
+ const allowed=new Set(["create","start","select","evidence","block","unblock","request-human","repair-duplicates"]);if(!allowed.has(o.action)){if(/^human[-_]verify$/.test(o.action))throw new Error("Human verification must be recorded through an authenticated authorized admin interaction.");throw new Error(`unsupported_action:${o.action}`)}
  if(o.actorType||o["actor-type"]||o.actor||o.humanVerified||o["human-verified"])throw new Error("Readiness CLI is machine-authority only; actor and human verification inputs are forbidden.");
- if(o.action!=="create"&&!o.card)throw new Error("--card is required");
+ if(o.action!=="create"&&o.action!=="repair-duplicates"&&!o.card)throw new Error("--card is required");
  const opsFile=env.READINESS_OPS_FILE||path.join(env.OPS_DIR||path.join(root,"data","ops"),"launch-readiness.json"),auditFile=env.READINESS_EVIDENCE_FILE||path.join(root,"data/readiness/development-evidence.json"),definitionsFile=env.READINESS_DEVELOPMENT_CARDS_FILE||path.join(root,"data/readiness/development-cards.json");
  const opsBackup=fs.existsSync(opsFile)?fs.readFileSync(opsFile):null,auditBackup=fs.existsSync(auditFile)?fs.readFileSync(auditFile):null,definitionsBackup=fs.existsSync(definitionsFile)?fs.readFileSync(definitionsFile):null;
+ if(o.action==="repair-duplicates"){
+  const definitions=fs.existsSync(definitionsFile)?JSON.parse(fs.readFileSync(definitionsFile,"utf8")):{version:1,cards:[]};
+  if(definitions.version!==1||!Array.isArray(definitions.cards))throw new Error("invalid_development_cards_store");
+  const seen=new Set(),duplicates=[],cards=[];
+  for(const card of definitions.cards){if(seen.has(card.id)){duplicates.push(card.id);continue}seen.add(card.id);cards.push(card)}
+  if(!duplicates.length)return {repaired:false,duplicates:[]};
+  atomicJson(definitionsFile,{...definitions,cards});
+  const audit=fs.existsSync(auditFile)?JSON.parse(fs.readFileSync(auditFile,"utf8")):{version:1,entries:[]};audit.entries=Array.isArray(audit.entries)?audit.entries:[];
+  const entry={operationId:crypto.randomUUID(),board:o.board,cardId:null,sourceType:"readiness_store_repair",taskId:o.task||o.taskId||null,files:["data/readiness/development-cards.json"],automated:"PASS",evidence:o.note||`Removed duplicate development-card definitions, retaining the first definition for: ${[...new Set(duplicates)].join(", ")}`,prNumber:o.pr?Number(o.pr):null,commitSha:o.commit||null,timestamp:new Date().toISOString()};
+  audit.entries.push(entry);atomicJson(auditFile,audit);return {repaired:true,duplicates:[...new Set(duplicates)],auditEntry:entry};
+ }
  const service=createLaunchReadinessService({filePath:opsFile,canonicalMatrixPath:env.READINESS_MATRIX_FILE||path.join(root,"data/launch/feature-readiness-matrix.v1.json"),developmentCardsPath:definitionsFile});
  const files=safeFiles(o.files),dependsOn=safeFiles(o.dependsOn),timestamp=new Date().toISOString(),taskId=o.task||o.taskId||null;
  try{
