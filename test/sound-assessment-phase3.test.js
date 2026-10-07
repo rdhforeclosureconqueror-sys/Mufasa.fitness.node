@@ -24,3 +24,8 @@ test("random tie wins are fractionally allocated and sum to run count",()=>{
  const total=Object.values(r.value.random.wins).reduce((a,b)=>a+b,0);assert.ok(Math.abs(total-32)<1e-9);
 });
 test("invalid random run count fails closed",()=>{const r=A.simulate(balancedBank(),0);assert.equal(r.ok,false);assert.equal(r.diagnostic.FIRST_FAILURE,"SA_BANK_SCHEMA");});
+
+test("seeded four-option simulations do not collapse to one modulo cycle",()=>{
+ const seen=new Set();for(let seed=1;seed<=32;seed++){const a=A.seededRandomAnswers(balancedBank(),seed);seen.add(Object.values(a).join(","));}
+ assert.ok(seen.size>4);
+});
