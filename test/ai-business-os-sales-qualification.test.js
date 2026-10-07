@@ -1,0 +1,13 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),S=require("../src/business-os/sales");
+const H="a".repeat(64),ref=()=>({artifactType:"QualificationInput",artifactId:"qi-1",version:1,digest:H,organizationId:"org-1",workId:"work-1"});
+const c=(id,status,evidenceRefs=status==="UNKNOWN"?[]:["ev-"+id])=>({id,question:id,status,evidenceRefs});
+const run=(criteria,missingEvidence=[])=>S.assessQualification({id:"qa-1",organizationId:"org-1",workId:"work-1",qualificationInputRef:ref(),criteria,missingEvidence,limitations:[],version:1});
+test("all supported criteria qualify",()=>assert.equal(run([c("need","SATISFIED"),c("fit","SATISFIED")]).disposition,"QUALIFIED"));
+test("unsatisfied criterion disqualifies",()=>assert.equal(run([c("need","SATISFIED"),c("fit","UNSATISFIED")]).disposition,"DISQUALIFIED"));
+test("unknown criterion requests evidence and cannot silently qualify",()=>{assert.equal(run([c("need","UNKNOWN")],["Need evidence"]).disposition,"NEEDS_MORE_EVIDENCE");assert.throws(()=>run([c("need","UNKNOWN")]),/needs_evidence_requires_unknown/)});
+test("contradiction escalates ahead of other outcomes",()=>assert.equal(run([c("need","UNSATISFIED"),c("authority","CONTRADICTED")]).disposition,"ESCALATE"));
+test("decisive statuses require evidence and unknown cannot carry decisive evidence",()=>{assert.throws(()=>c("x","SATISFIED",[])&&run([c("x","SATISFIED",[])]),/decisive_evidence_required/);assert.throws(()=>run([c("x","UNKNOWN",["ev"])]),/unknown_has_no_decisive_evidence/)});
+test("assessment rejects duplicate criteria and cross-scope input",()=>{assert.throws(()=>run([c("x","SATISFIED"),c("x","SATISFIED")]),/duplicate_criterion/);assert.throws(()=>S.assessQualification({id:"qa",organizationId:"org-1",workId:"work-1",qualificationInputRef:{...ref(),organizationId:"other"},criteria:[c("x","SATISFIED")]}),/input_scope/)});
+test("manual assessment cannot promote unknown or unsupported evidence to qualified",()=>assert.throws(()=>S.QualificationAssessment({id:"qa",organizationId:"org-1",workId:"work-1",version:1,qualificationInputRef:ref(),criteria:[c("x","UNKNOWN")],disposition:"QUALIFIED",limitations:[],missingEvidence:["x"]}),/qualified_requires_complete_support/));
+test("qualification is deterministic and immutable",()=>{const a=run([c("x","SATISFIED")]),b=run([c("x","SATISFIED")]);assert.deepEqual(a,b);assert(Object.isFrozen(a));assert(Object.isFrozen(a.criteria[0]))});
