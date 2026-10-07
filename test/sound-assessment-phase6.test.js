@@ -1,0 +1,15 @@
+"use strict";
+const test=require("node:test");const assert=require("node:assert/strict");
+const {DEEP_BANK,DEEP_BANK_VERSION,scoreDeepAssessment}=require("../src/sound-assessment/deep-bank");
+const {normalizeBank}=require("../src/sound-assessment/scoring");
+const {auditBalance}=require("../src/sound-assessment/balance-auditor");
+test("Deep bank is versioned and exactly 25 unique items",()=>{assert.match(DEEP_BANK_VERSION,/phase6/);assert.equal(DEEP_BANK.length,25);assert.equal(new Set(DEEP_BANK.map(q=>q.id)).size,25);});
+test("Deep bank stays four-choice and customer-readable",()=>{for(const q of DEEP_BANK){assert.equal(q.options.length,4);assert.ok(q.prompt.length<=140);for(const x of q.options)assert.ok(x.text.length<=100);}});
+test("Deep bank normalizes and covers all seven dimensions",()=>{assert.equal(normalizeBank(DEEP_BANK).ok,true);const d=new Set(DEEP_BANK.flatMap(q=>q.options.flatMap(o=>[o.primary_dimension,o.secondary_dimension])));assert.deepEqual([...d].sort(),["AG","CL","CO","EF","EX","GR","SP"]);});
+test("reverse pairs are reciprocal",()=>{const by=Object.fromEntries(DEEP_BANK.map(q=>[q.id,q]));for(const q of DEEP_BANK.filter(q=>q.reverse_pair_id)){assert.equal(by[q.reverse_pair_id]?.reverse_pair_id,q.id);}});
+test("desired-state evidence exists and references known items",()=>{const by=new Set(DEEP_BANK.map(q=>q.id));const ds=DEEP_BANK.filter(q=>q.class==="DS");assert.ok(ds.length>=3);for(const q of ds)assert.ok(by.has(q.desired_pair_id));});
+test("activation evidence includes under regulated and over states",()=>{const v=DEEP_BANK.flatMap(q=>q.options.map(o=>o.activation_value));assert.ok(v.some(x=>x<0));assert.ok(v.some(x=>x===0));assert.ok(v.some(x=>x>0));});
+test("Deep bank passes structural balance audit",()=>{const r=auditBalance(DEEP_BANK,{randomRuns:256,maxOpportunityRatio:2.5,maxPositionShare:.55,maxRandomWinShare:.5});assert.equal(r.ok,true,r.diagnostic?.DETAIL);});
+test("Deep scoring is deterministic and identifies mode/version",()=>{const a=Object.fromEntries(DEEP_BANK.map((q,i)=>[q.id,i%4]));const x=scoreDeepAssessment(a),y=scoreDeepAssessment(a);assert.equal(x.ok,true);assert.deepEqual(x,y);assert.equal(x.result.mode,"deep");assert.equal(x.result.bankVersion,DEEP_BANK_VERSION);});
+
+test("reverse-pair endpoints are oppositely oriented for consistency scoring",()=>{const by=Object.fromEntries(DEEP_BANK.map(q=>[q.id,q]));for(const q of DEEP_BANK.filter(q=>q.reverse_pair_id)){const p=by[q.reverse_pair_id];assert.ok(p);const a=q.options.map(x=>x.direction_value),b=p.options.map(x=>x.direction_value);assert.ok(a[0]===0||b[3]===0||Math.abs(a[0]-b[3])<=.25);}});
