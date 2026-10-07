@@ -5,7 +5,7 @@ const {DEEP_BANK,DEEP_BANK_VERSION}=require("../sound-assessment/deep-bank");
 const {buildQuickInterpretation,buildDeepInterpretation}=require("../sound-assessment/interpretation");
 function publicBank(bank,mode,version){return {mode,bankVersion:version,questions:bank.map(q=>({id:q.id,prompt:q.prompt,options:q.options.map(o=>o.text)}))};}
 function publicResult(result,mode){
- const out={mode,primary:result.primary,secondary:result.secondary,summary:result.summary,sections:result.sections,confidence:result.confidence,cta:result.cta||null};
+ const out={mode,primary:result.primary,secondary:result.secondary,summary:result.summary,sections:result.sections,confidence:result.confidence,cta:result.cta||null,soundPreview:result.soundPreview||null};
  if(result.soundFoundation)out.soundFoundation={name:result.soundFoundation.publicName,bowls:result.soundFoundation.bowls,direction:result.soundFoundation.experientialDirection,accentNotes:result.soundFoundation.accentNotes,pulse:result.soundFoundation.pulse,bijaMantra:result.soundFoundation.bijaMantra,closing:result.soundFoundation.closing};
  return out;
 }
