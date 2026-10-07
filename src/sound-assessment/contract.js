@@ -40,6 +40,13 @@ function soundAssessmentBootDiagnostic(env = process.env) {
     scoringVersion: SOUND_ASSESSMENT_CONTRACT.scoringVersion,
     recipeVersion: SOUND_ASSESSMENT_CONTRACT.recipeVersion,
     enabled,
+    assessmentMode: null,
+    bankVersion: null,
+    questionCount: 0,
+    answeredCount: 0,
+    missingMappings: [],
+    dimensionOpportunity: {},
+    confidenceInputs: {},
   });
 }
 
