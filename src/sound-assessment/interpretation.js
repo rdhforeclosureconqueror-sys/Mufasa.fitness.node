@@ -32,5 +32,5 @@ function interpret(scored,{mode="quick"}={}){
  cta:quick?{title:"Want to know what's underneath the pattern?",preview:"Your Quick Assessment identified a possible direction. The Full Sound Assessment checks related answers from multiple angles, compares patterns for consistency, and looks more closely at your current state and how you want to feel.",actionLabel:"Take the Full Assessment"}:null};
 }
 function buildQuickInterpretation(answers){const x=scoreQuickAssessment(answers);if(!x.ok)return x;return {ok:true,result:interpret(x.result,{mode:"quick"})};}
-function buildDeepInterpretation(answers){const x=scoreDeepAssessment(answers);if(!x.ok)return x;const interpretation=interpret(x.result,{mode:"deep"}),recipe=selectSoundStrategy(x.result);return recipe.ok?{ok:true,result:{...interpretation,soundFoundation:recipe.result}}:recipe;}
+function buildDeepInterpretation(answers){const x=scoreDeepAssessment(answers);if(!x.ok)return x;const interpretation=interpret(x.result,{mode:"deep"}),recipe=selectSoundStrategy(x.result,{desiredDimensions:(x.result.desiredState||[]).map(d=>d.dimension)});return recipe.ok?{ok:true,result:{...interpretation,soundFoundation:recipe.result}}:recipe;}
 module.exports={INTERACTIONS,interaction,interpret,buildQuickInterpretation,buildDeepInterpretation};
