@@ -33,3 +33,13 @@ test("all 21 pairs have distinct curated public names and non-generic cautions",
   assert.equal(PAIR_LIBRARY.find(p=>p.id==="SA_PAIR_A_B").anchorSuitability,"LOW");
   assert.equal(PAIR_LIBRARY.find(p=>p.id==="SA_PAIR_C_G").publicName,"Grounded Truth");
 });
+
+test("validator fails closed for non-array and unknown canonical mappings",()=>{
+  assert.equal(validatePairLibrary(null).STATUS,"FAIL");
+  const bad=PAIR_LIBRARY.map(p=>({...p,bowls:[...p.bowls],dimensions:[...p.dimensions]}));
+  bad[0].bowls[0]="Z";
+  assert.equal(validatePairLibrary(bad).STATUS,"FAIL");
+  const badDimension=PAIR_LIBRARY.map(p=>({...p,bowls:[...p.bowls],dimensions:[...p.dimensions]}));
+  badDimension[0].dimensions[0]="UNKNOWN";
+  assert.equal(validatePairLibrary(badDimension).STATUS,"FAIL");
+});
