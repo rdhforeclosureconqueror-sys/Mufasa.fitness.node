@@ -29,6 +29,7 @@ jobs:
         shell: bash
         run: |
           CARD=launch-development-sound-assessment-v1
+          npm run readiness:update -- --board launch --action repair-duplicates --task sound-assessment-v1 --pr 947 --commit "${{ github.event.pull_request.head.sha }}" --note "Canonical readiness store repair: remove duplicate development-card IDs while retaining the first definition."
           if ! grep -q "\"id\": \"$CARD\"" data/readiness/development-cards.json; then
             npm run readiness:update -- --board launch --action create --card "$CARD" --title "Sound Assessment V1" --category "APARTMENT WELLNESS" --description "Implement and integrate the Quick and Deep Sound Assessment, customer interpretation, curated sound foundation, live walkthrough, diagnostics, and regression evidence. Human mobile/UX acceptance remains owner-controlled." --priority HIGH --humanRequired true --task sound-assessment-v1 --source "sound assessment implementation"
             npm run readiness:update -- --board launch --action start --card "$CARD" --task sound-assessment-v1 --note "Sound Assessment implementation tracked through Phase 7 live integration."
