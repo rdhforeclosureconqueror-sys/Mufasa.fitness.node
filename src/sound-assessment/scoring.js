@@ -41,9 +41,9 @@ function contribution(option,qClass){
  return result;
 }
 function scoreRaw(bank,answers){
- const raw=Object.fromEntries(DIMENSION_KEYS.map(k=>[k,0]));let activationRaw=0,answeredCount=0;
- for(const q of bank){const idx=answers?.[q.id];if(!Number.isInteger(idx)||idx<0||idx>=q.options.length)continue;answeredCount++;const o=q.options[idx];for(const [k,v] of Object.entries(contribution(o,q.class)))raw[k]+=v;activationRaw+=o.activation_value*QUESTION_CLASS_MULTIPLIERS[q.class];}
- return {raw,activationRaw,answeredCount};
+ const raw=Object.fromEntries(DIMENSION_KEYS.map(k=>[k,0]));let activationRaw=0,activationWeight=0,answeredCount=0;
+ for(const q of bank){const idx=answers?.[q.id];if(!Number.isInteger(idx)||idx<0||idx>=q.options.length)continue;answeredCount++;const o=q.options[idx];for(const [k,v] of Object.entries(contribution(o,q.class)))raw[k]+=v;activationRaw+=o.activation_value*QUESTION_CLASS_MULTIPLIERS[q.class];activationWeight+=QUESTION_CLASS_MULTIPLIERS[q.class];}
+ return {raw,activationRaw,activationWeight,answeredCount};
 }
 function computeMaxPossible(bank){
  const max=Object.fromEntries(DIMENSION_KEYS.map(k=>[k,0]));
@@ -60,21 +60,21 @@ function contradictionConsistency(bank,answers){
  for(const q of bank) if(q.reverse_pair_id){const a=answers?.[q.id];if(Number.isInteger(a)){const arr=pairs.get(q.reverse_pair_id)||[];arr.push({q,index:a});pairs.set(q.reverse_pair_id,arr);}}
  let checked=0,contradictions=0;
  for(const arr of pairs.values()) if(arr.length===2){checked++;const [a,b]=arr;const maxA=a.q.options.length-1,maxB=b.q.options.length-1;const pa=maxA? a.index/maxA:0,pb=maxB? b.index/maxB:0;if(Math.abs(pa-(1-pb))>0.5)contradictions++;}
- const consistency=checked?100-(contradictions/checked*100):100;
+ const consistency=checked?100-(contradictions/checked*100):null;
  return {consistency,checkedPairs:checked,contradictions};
 }
 function completionQuality(answered,total){return total?Math.max(0,Math.min(100,answered/total*100)):0;}
-function confidenceScore(completion,consistency){return Math.round((completion*.6+consistency*.4)*100)/100;}
-function activationState(raw,answered){
- if(!answered)return {state:"REGULATED",score:0};
- const avg=raw/answered;
+function confidenceScore(completion,consistency){const evidence=consistency==null?completion:completion*.6+consistency*.4;return Math.round(evidence*100)/100;}
+function activationState(raw,weight){
+ if(!(weight>0))return {state:"REGULATED",score:0};
+ const avg=raw/weight;
  return {state:avg>0.5?"OVERACTIVATED":avg<-.5?"UNDERACTIVATED":"REGULATED",score:avg};
 }
 
 function scoreAssessment(bankInput,answers={}){
  const n=normalizeBank(bankInput);if(!n.ok)return n;const bank=n.value;
  const scored=scoreRaw(bank,answers),max=computeMaxPossible(bank),norm=normalizeByMax(scored.raw,max);if(!norm.ok)return norm;
- const contradiction=contradictionConsistency(bank,answers),completion=completionQuality(scored.answeredCount,bank.length),confidence=confidenceScore(completion,contradiction.consistency),activation=activationState(scored.activationRaw,scored.answeredCount);
+ const contradiction=contradictionConsistency(bank,answers),completion=completionQuality(scored.answeredCount,bank.length),confidence=confidenceScore(completion,contradiction.consistency),activation=activationState(scored.activationRaw,scored.activationWeight);
  return {ok:true,result:{dimension_raw:scored.raw,dimension_max_possible:max,dimension_normalized:norm.value,activation,contradiction,consistency:contradiction.consistency,completion,confidence,answeredCount:scored.answeredCount,questionCount:bank.length},diagnostic:pass("NORMALIZE","Scoring kernel completed through normalized state outputs.",{questionCount:bank.length,answeredCount:scored.answeredCount,dimensionOpportunity:max,confidenceInputs:{completion,consistency:contradiction.consistency}})};
 }
 module.exports={QUESTION_CLASS_MULTIPLIERS,PRIMARY_WEIGHT,SECONDARY_WEIGHT,normalizeQuestion,normalizeBank,scoreRaw,computeMaxPossible,normalizeByMax,contradictionConsistency,completionQuality,confidenceScore,activationState,scoreAssessment};
