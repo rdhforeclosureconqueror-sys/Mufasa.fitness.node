@@ -50,11 +50,16 @@ const PAIR_LIBRARY=Object.freeze(Object.entries(CURATED).map(([key,c])=>{
 }));
 
 function validatePairLibrary(library=PAIR_LIBRARY){
+ if(!Array.isArray(library)) return {STATUS:"FAIL",FIRST_FAILURE:"SA_PAIR_MISSING",STAGE:"PAIR_LIBRARY",DETAIL:"Pair library must be an array."};
+ const canonicalNotes=new Set(BOWLS.map(x=>x.note));
+ const canonicalDimensions=new Set(BOWLS.map(x=>x.dimension));
  const required=["id","publicName","interval","symbolism","experientialDirection","underactivationUse","overactivationUse","anchorSuitability","accentSuitability","transitionSuitability","cautions","suggestedPulse","bijaMantra","closingGroundingSequence","shortCustomerDescription","practitionerInterpretation"];
  const ids=new Set(),combos=new Set(),names=new Set();
  for(const pair of library){
   if(!pair||!Array.isArray(pair.bowls)||!Array.isArray(pair.dimensions)||pair.bowls.length!==2||pair.dimensions.length!==2||required.some(k=>!pair[k]))
    return {STATUS:"FAIL",FIRST_FAILURE:"SA_PAIR_MISSING",STAGE:"PAIR_LIBRARY",DETAIL:"Pair record missing required curated content."};
+  if(pair.bowls.some(x=>!canonicalNotes.has(x))||pair.dimensions.some(x=>!canonicalDimensions.has(x)))
+   return {STATUS:"FAIL",FIRST_FAILURE:"SA_PAIR_MISSING",STAGE:"PAIR_LIBRARY",DETAIL:"Pair record contains unknown bowl note or dimension."};
   const combo=[...pair.bowls].sort().join("-");
   if(ids.has(pair.id)||combos.has(combo)||names.has(pair.publicName))
    return {STATUS:"FAIL",FIRST_FAILURE:"SA_PAIR_MISSING",STAGE:"PAIR_LIBRARY",DETAIL:"Duplicate pair ID, name, or unordered bowl combination."};
