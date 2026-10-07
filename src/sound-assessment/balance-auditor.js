@@ -30,7 +30,7 @@ function positionalAnswers(bank,index){
 }
 function seededRandomAnswers(bank,seed){
  let x=(seed>>>0)||1;const out={};
- for(const q of bank){x=(1664525*x+1013904223)>>>0;out[q.id]=x%q.options.length;}
+ for(const q of bank){x=(1664525*x+1013904223)>>>0;out[q.id]=Math.floor((x/0x100000000)*q.options.length);}
  return out;
 }
 function winners(normalized){
