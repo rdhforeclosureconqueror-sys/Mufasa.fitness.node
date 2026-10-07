@@ -30,5 +30,14 @@ Q("SAD23","ST","What happens to your breathing and body when stress lingers?",[o
 Q("SAD24","DS","Which change would feel most valuable over the next few days?",[o("Feeling more settled in myself","GR","CL",1,-1),o("Letting emotions move instead of carrying them","EF","EX",1,0),o("Having more usable energy and confidence","AG","CO",1,0),o("Feeling clearer, connected, and purposeful","SP","CL",1,0)],{desired_pair_id:"SAD10"}),
 Q("SAD25","DS","If this session worked well for you, what would you notice first afterward?",[o("My body feels quieter and safer","GR","CO",1,-1),o("My chest or emotions feel lighter","EF","CO",1,0),o("My mind feels clearer and I can move forward","CL","AG",1,0),o("I feel more connected to myself and what matters","SP","EX",1,0)],{desired_pair_id:"SAD10"})
 ]);
-function scoreDeepAssessment(answers={}){const r=scoreAssessment(DEEP_BANK,answers);if(!r.ok)return r;return {...r,result:{...r.result,bankVersion:DEEP_BANK_VERSION,mode:"deep"}};}
-module.exports={DEEP_BANK_VERSION,DEEP_BANK,scoreDeepAssessment};
+function desiredStateEvidence(answers={}){
+ const desired=DEEP_BANK.filter(q=>q.class==="DS"),scores={GR:0,EF:0,AG:0,CO:0,EX:0,CL:0,SP:0};
+ for(const q of desired){const i=answers[q.id];if(!Number.isInteger(i)||!q.options[i])continue;const o=q.options[i];if(o.primary_dimension)scores[o.primary_dimension]+=2;if(o.secondary_dimension)scores[o.secondary_dimension]+=1;}
+ return Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([dimension,score])=>({dimension,score})).filter(x=>x.score>0);
+}
+function scoreDeepAssessment(answers={}){
+ const current=DEEP_BANK.filter(q=>q.class!=="DS"),r=scoreAssessment(current,answers);if(!r.ok)return r;
+ const desired=desiredStateEvidence(answers),answeredTotal=Object.keys(answers).filter(id=>DEEP_BANK.some(q=>q.id===id)&&Number.isInteger(answers[id])).length;
+ return {...r,result:{...r.result,bankVersion:DEEP_BANK_VERSION,mode:"deep",desiredState:desired,answeredCountTotal:answeredTotal,questionCountTotal:DEEP_BANK.length}};
+}
+module.exports={DEEP_BANK_VERSION,DEEP_BANK,desiredStateEvidence,scoreDeepAssessment};
