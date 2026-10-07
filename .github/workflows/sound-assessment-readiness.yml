@@ -1,0 +1,47 @@
+name: Sound Assessment readiness evidence
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/sound-assessment/**'
+      - 'src/routes/soundAssessmentRoutes.js'
+      - 'public/sound-assessment.*'
+      - 'world-bridge-server.js'
+      - '.github/workflows/sound-assessment-readiness.yml'
+permissions:
+  contents: write
+jobs:
+  evidence:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Focused Sound Assessment tests
+        run: node --test test/sound-assessment-*.test.js
+      - name: Create or refresh readiness evidence
+        shell: bash
+        run: |
+          CARD=launch-development-sound-assessment-v1
+          if ! grep -q "\"id\": \"$CARD\"" data/readiness/development-cards.json; then
+            npm run readiness:update -- --board launch --action create --card "$CARD" --title "Sound Assessment V1" --category "APARTMENT WELLNESS" --description "Implement and integrate the Quick and Deep Sound Assessment, customer interpretation, curated sound foundation, live walkthrough, diagnostics, and regression evidence. Human mobile/UX acceptance remains owner-controlled." --priority HIGH --humanRequired true --task sound-assessment-v1 --source "sound assessment implementation"
+            npm run readiness:update -- --board launch --action start --card "$CARD" --task sound-assessment-v1 --note "Sound Assessment implementation tracked through Phase 7 live integration."
+            npm run readiness:update -- --board launch --action select --card "$CARD" --task sound-assessment-v1 --note "Selected Sound Assessment V1 as CURRENT implementation task."
+          fi
+          npm run readiness:update -- --board launch --action evidence --card "$CARD" --task sound-assessment-v1 --files "src/sound-assessment/contract.js,src/sound-assessment/domain.js,src/sound-assessment/pair-library.js,src/sound-assessment/scoring.js,src/sound-assessment/balance-auditor.js,src/sound-assessment/quick-bank.js,src/sound-assessment/quick-result.js,src/sound-assessment/deep-bank.js,src/sound-assessment/interpretation.js,src/sound-assessment/recipe-engine.js,src/routes/soundAssessmentRoutes.js,public/sound-assessment.html,public/sound-assessment.js,world-bridge-server.js" --result PASS --pr 947 --commit "${{ github.event.pull_request.head.sha }}" --codeComplete true --sourceType implementation --note "Sound Assessment Phases 0-7 plus real live-UI integration. Focused automated Sound Assessment suite passed in GitHub Actions. Previous owner mobile walkthrough accepted questionnaire flow but rejected placeholder result usefulness; Phase 7 replaces that result layer. New real-engine mobile/UX acceptance remains required and is not self-approved."
+          npm run readiness:validate
+      - name: Commit CLI-generated repository evidence
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/readiness/development-cards.json data/readiness/development-evidence.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(readiness): record Sound Assessment V1 evidence"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
