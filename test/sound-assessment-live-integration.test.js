@@ -7,3 +7,5 @@ test("live client renders real Read more sections from API payload",()=>{const f
 
 test("public answer validation rejects stale or out-of-range choices",()=>{const {validateAnswers}=require("../src/routes/soundAssessmentRoutes");assert.match(validateAnswers(QUICK_BANK,{SAQ01:999}),/Invalid answer/);assert.match(validateAnswers(QUICK_BANK,{UNKNOWN:0}),/Invalid answer/);assert.equal(validateAnswers(QUICK_BANK,{SAQ01:0}),null);});
 test("render path re-enables Next after Quick submission",()=>{const fs=require("node:fs"),j=fs.readFileSync(require("node:path").join(__dirname,"../public/sound-assessment.js"),"utf8");assert.match(j,/function render\(\)\{\$\("#next"\)\.disabled=false/);});
+
+test("production static client targets canonical backend service",()=>{const fs=require("node:fs"),j=fs.readFileSync(require("node:path").join(__dirname,"../public/sound-assessment.js"),"utf8");assert.match(j,/mufasa-fitness-node\.onrender\.com/);assert.match(j,/fetch\(api\("\/api\/sound-assessment\/bank/);assert.match(j,/fetch\(api\("\/api\/sound-assessment\/result/);});

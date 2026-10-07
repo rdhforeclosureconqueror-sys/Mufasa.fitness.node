@@ -1,7 +1,9 @@
 (()=>{"use strict";
+const API_BASE=location.hostname==="mufasafitsite.onrender.com"?"https://mufasa-fitness-node.onrender.com":"";
+const api=path=>API_BASE+path;
 const $=s=>document.querySelector(s),intro=$("#intro"),box=$("#assessment"),result=$("#result"),qEl=$("#question"),count=$("#count"),bar=$("#bar"),err=$("#error"),modeEl=$("#mode");let mode="quick",i=0,answers={},bank=null;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-async function loadBank(nextMode){const r=await fetch("/api/sound-assessment/bank/"+nextMode,{cache:"no-store"}),j=await r.json();if(!r.ok||!j.ok)throw new Error("Assessment could not be loaded.");mode=nextMode;bank=j.data;i=0;answers={};modeEl.textContent=mode==="quick"?"Quick Assessment":"Full Sound Assessment";}
+async function loadBank(nextMode){const r=await fetch(api("/api/sound-assessment/bank/"+nextMode),{cache:"no-store"}),j=await r.json();if(!r.ok||!j.ok)throw new Error("Assessment could not be loaded.");mode=nextMode;bank=j.data;i=0;answers={};modeEl.textContent=mode==="quick"?"Quick Assessment":"Full Sound Assessment";}
 function render(){$("#next").disabled=false;const q=bank.questions[i];count.textContent=(i+1)+" / "+bank.questions.length;bar.style.width=((i+1)/bank.questions.length*100)+"%";qEl.innerHTML="<h2>"+esc(q.prompt)+"</h2>"+q.options.map((x,n)=>'<button class="choice '+(answers[q.id]===n?"selected":"")+'" data-n="'+n+'">'+esc(x)+"</button>").join("");qEl.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{answers[q.id]=+b.dataset.n;render()});$("#back").disabled=i===0;$("#next").textContent=i===bank.questions.length-1?"See my results":"Next";err.textContent=""}
 function sections(items){return items.map(x=>'<div class="section"><button><strong>'+esc(x.title)+'</strong><p class="preview">'+esc(x.preview)+' <u>'+esc(x.actionLabel||"Read more")+'</u></p><div class="detail">'+esc(x.detail)+'</div></button></div>').join("")}
 function wireSections(){result.querySelectorAll(".section").forEach(s=>s.querySelector("button").onclick=()=>s.classList.toggle("open"))}
@@ -11,7 +13,7 @@ function renderResult(d){const foundation=d.soundFoundation?'<div class="card"><
  if($("#deep"))$("#deep").onclick=async()=>{try{result.classList.add("hidden");box.classList.remove("hidden");await loadBank("deep");render()}catch(e){result.classList.remove("hidden");box.classList.add("hidden");alert(e.message)}};
  if($("#again"))$("#again").onclick=()=>location.reload();
 }
-async function submit(){const r=await fetch("/api/sound-assessment/result/"+mode,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answers})}),j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error?.message||"Your result could not be created.");box.classList.add("hidden");result.classList.remove("hidden");renderResult(j.data)}
+async function submit(){const r=await fetch(api("/api/sound-assessment/result/"+mode),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answers})}),j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error?.message||"Your result could not be created.");box.classList.add("hidden");result.classList.remove("hidden");renderResult(j.data)}
 $("#start").onclick=async()=>{try{$("#start").disabled=true;await loadBank("quick");intro.classList.add("hidden");box.classList.remove("hidden");render()}catch(e){$("#start").disabled=false;alert(e.message)}};
 $("#back").onclick=()=>{if(i>0){i--;render()}};
 $("#next").onclick=async()=>{const q=bank.questions[i];if(answers[q.id]==null){err.textContent="Choose the answer that fits you best before continuing.";return}if(i<bank.questions.length-1){i++;render();return}try{$("#next").disabled=true;await submit()}catch(e){err.textContent=e.message;$("#next").disabled=false}};
