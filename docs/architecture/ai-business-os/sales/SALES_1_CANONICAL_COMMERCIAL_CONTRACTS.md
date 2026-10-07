@@ -20,6 +20,6 @@ These contracts preserve: opportunity ≠ qualified opportunity; proposal ≠ ap
 
 ## Acceptance
 
-The dedicated test suite covers deterministic immutable references, organization/work scope rejection, exact opportunity digest binding, authority-flag rejection and mutation-sensitive artifact digests.
+The dedicated test suite covers deterministic immutable references, organization/work scope rejection, typed CustomerNeed/CommercialOpportunity references, SHA-256 digest shape and exact opportunity binding, duplicate-need rejection, authority-flag rejection, conflicting kind/schema rejection, non-canonical/cyclic-value rejection, and mutation-sensitive artifact digests.\n\nReview hardening deliberately restricts `artifactRef` to canonical Sales artifacts carrying this Sales schema version; arbitrary caller objects cannot be promoted into canonical Sales references.
 
-This PR establishes SALES-1 contract foundations only. **Sales Gold and Platinum remain unachieved.**
+Review note: this environment can inspect and modify GitHub but does not execute the Node test suite itself. Test results must therefore come from hosted CI or a later executable runner; source-level test presence is not represented as executed evidence.\n\nThis PR establishes SALES-1 contract foundations only. **Sales Gold and Platinum remain unachieved.**
