@@ -30,7 +30,9 @@ const QUICK_BANK=Object.freeze([
 
 function capQuickConfidence(score){return Math.min(QUICK_CONFIDENCE_CEILING,Math.max(0,Number(score)||0));}
 function scoreQuickAssessment(answers={}){
- const scored=scoreAssessment(QUICK_BANK,answers);if(!scored.ok)return scored;
- return {...scored,result:{...scored.result,confidence:capQuickConfidence(scored.result.confidence),confidenceCeiling:QUICK_CONFIDENCE_CEILING,bankVersion:QUICK_BANK_VERSION,mode:"quick"}};
+ const current=QUICK_BANK.filter(q=>q.class!=="DS"),scored=scoreAssessment(current,answers);if(!scored.ok)return scored;
+ const desiredQuestion=QUICK_BANK.find(q=>q.class==="DS"),desiredIndex=answers[desiredQuestion.id],desiredOption=Number.isInteger(desiredIndex)?desiredQuestion.options[desiredIndex]:null;
+ const answeredTotal=Object.keys(answers).filter(id=>QUICK_BANK.some(q=>q.id===id)&&Number.isInteger(answers[id])).length;
+ return {...scored,result:{...scored.result,confidence:capQuickConfidence(scored.result.confidence),confidenceCeiling:QUICK_CONFIDENCE_CEILING,bankVersion:QUICK_BANK_VERSION,mode:"quick",desiredState:desiredOption?{primary:desiredOption.primary_dimension,secondary:desiredOption.secondary_dimension}:null,answeredCountTotal:answeredTotal,questionCountTotal:QUICK_BANK.length}};
 }
 module.exports={QUICK_BANK_VERSION,QUICK_CONFIDENCE_CEILING,QUICK_BANK,capQuickConfidence,scoreQuickAssessment};
