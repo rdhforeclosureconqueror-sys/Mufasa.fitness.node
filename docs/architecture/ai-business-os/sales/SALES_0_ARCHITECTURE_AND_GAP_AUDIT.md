@@ -57,14 +57,14 @@ Sales cannot independently create customer consent, real customer contact, payme
 
 The benchmark was refreshed against current authoritative public documentation during this audit.
 
-Microsoft Dynamics 365 models a lead/opportunity sales cycle, then quote, accepted quote/order and fulfillment/invoice transitions. Quotes have explicit draft/active/closed lifecycle and revision behavior; quote/order line items preserve currency/price-list relationships. Salesforce documents quotes as proposed prices associated with opportunities/products, with multiple quotes and synchronization behavior. These patterns support four architecture principles for this Business OS:
+Microsoft Dynamics 365 documents opportunity → quote → accepted quote/order → fulfillment/invoice transitions. Quotes have explicit draft/active/closed states and revision IDs; quote line items share currency constraints with the quote. Salesforce documents multiple quotes per opportunity, while only one quote can be synchronized to an opportunity at a time. These patterns support four architecture principles for this Business OS:
 
 1. **Separate lifecycle artifacts.** Opportunity, quote/proposal, acceptance/order and fulfillment should not be one mutable status blob.
 2. **Version commercial commitments.** Draft/revision/activation semantics prevent an edited proposal from being confused with the version a customer accepted.
 3. **Bind line items to pricing/economic evidence.** Commercial arithmetic must retain currency, product/service and price lineage.
 4. **Treat state transitions as authority-bearing events.** A quote becoming an obligation requires evidence/authority distinct from Sales reasoning.
 
-We should borrow these contract principles, not their UI or CRM-specific implementation. Live CRM mutation, customer communication, legal acceptance, payments and fulfillment remain external authority boundaries.
+We should borrow these contract principles, not their UI or CRM-specific implementation. Live CRM mutation, customer communication, legal acceptance, payments and fulfillment remain external authority boundaries.\n\nAuthoritative benchmark sources checked for this audit:\n\n- Microsoft Learn — Manage quote, order, and invoice: https://learn.microsoft.com/en-us/dynamics365/sales/sales-transactions\n- Microsoft Learn — Create or edit quotes: https://learn.microsoft.com/en-us/dynamics365/sales/create-edit-quote-sales\n- Microsoft Learn — Create or edit sales orders: https://learn.microsoft.com/en-us/dynamics365/sales/create-edit-order-sales\n- Salesforce Help — How Quote Syncing Works: https://help.salesforce.com/s/articleView?id=sales.quotes_synch_overview.htm&type=5\n
 
 ## Gold definition
 
