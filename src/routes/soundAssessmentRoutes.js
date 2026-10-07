@@ -22,3 +22,4 @@ function installSoundAssessmentRoutes({app}){
  app.use("/api/sound-assessment",router);return router;
 }
 module.exports={installSoundAssessmentRoutes,publicBank,publicResult,validateAnswers};
+
