@@ -10,6 +10,8 @@ function selectSoundStrategy(scored,{desiredDimensions=[]}={}){
  const ranked=rank(scored?.dimension_normalized);if(ranked.length<2)return {ok:false,diagnostic:{STATUS:"FAIL",FIRST_FAILURE:"SA_RECIPE_UNRESOLVED",STAGE:"RECIPE",DETAIL:"At least two normalized dimensions are required."}};
  const [primary,secondary]=[ranked[0][0],ranked[1][0]];const activation=scored?.activation?.state||"REGULATED";
  let anchor=primary,partner=secondary,reasons=["PRIMARY_STATE","SECONDARY_STATE"];
+ const desired=desiredDimensions.find(d=>d&&d!==primary);
+ if(desired&&activation==="REGULATED"&&ranked.find(([d])=>d===desired)?.[1]>=ranked[1][1]*0.65){partner=desired;reasons.push("DESIRED_STATE_ALIGNMENT");}
  if(activation==="OVERACTIVATED"&&primary!==GROUND){anchor=GROUND;partner=primary;reasons.unshift("GROUND_BEFORE_EXPANSION");}
  else if(activation==="UNDERACTIVATED"&&primary===GROUND&&secondary==="AG"){anchor=GROUND;partner="AG";reasons.unshift("GENTLE_ACTIVATION");}
  if(anchor===partner)partner=secondary===anchor?(desiredDimensions.find(x=>x!==anchor)||"CO"):secondary;
