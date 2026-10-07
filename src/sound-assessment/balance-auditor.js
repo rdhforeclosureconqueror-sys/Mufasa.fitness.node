@@ -24,7 +24,10 @@ function mappingAudit(bank){
  }
  return {primary,secondary,weighted};
 }
-function positionalAnswers(bank,index){return Object.fromEntries(bank.map(q=>[q.id,Math.min(index,q.options.length-1)]));}
+function positionalAnswers(bank,index){
+ if(!Number.isInteger(index)||index<0||bank.some(q=>index>=q.options.length)) return null;
+ return Object.fromEntries(bank.map(q=>[q.id,index]));
+}
 function seededRandomAnswers(bank,seed){
  let x=(seed>>>0)||1;const out={};
  for(const q of bank){x=(1664525*x+1013904223)>>>0;out[q.id]=x%q.options.length;}
@@ -34,12 +37,13 @@ function winners(normalized){
  const max=Math.max(...Object.values(normalized));return DIMENSION_KEYS.filter(d=>Math.abs(normalized[d]-max)<1e-9);
 }
 function simulate(bank,randomRuns=128){
+ if(!Number.isInteger(randomRuns)||randomRuns<1)return {ok:false,diagnostic:{STATUS:"FAIL",FIRST_FAILURE:"SA_BANK_SCHEMA",STAGE:"BANK_SCHEMA",DETAIL:"randomRuns must be a positive integer."}};
  const positional={};
- const maxOptions=Math.max(...bank.map(q=>q.options.length));
- for(let i=0;i<maxOptions;i++){const r=scoreAssessment(bank,positionalAnswers(bank,i));if(!r.ok)return r;positional[String(i)]={scores:r.result.dimension_normalized,winners:winners(r.result.dimension_normalized)};}
+ const minOptions=Math.min(...bank.map(q=>q.options.length));
+ for(let i=0;i<minOptions;i++){const answers=positionalAnswers(bank,i);const r=scoreAssessment(bank,answers);if(!r.ok)return r;positional[String(i)]={scores:r.result.dimension_normalized,winners:winners(r.result.dimension_normalized)};}
  const randomWins=blank(),randomMean=blank();
- for(let seed=1;seed<=randomRuns;seed++){const r=scoreAssessment(bank,seededRandomAnswers(bank,seed));if(!r.ok)return r;for(const d of DIMENSION_KEYS)randomMean[d]+=r.result.dimension_normalized[d]/randomRuns;for(const d of winners(r.result.dimension_normalized))randomWins[d]++;}
- return {ok:true,value:{positional,random:{runs:randomRuns,wins:randomWins,mean:randomMean}}};
+ for(let seed=1;seed<=randomRuns;seed++){const r=scoreAssessment(bank,seededRandomAnswers(bank,seed));if(!r.ok)return r;for(const d of DIMENSION_KEYS)randomMean[d]+=r.result.dimension_normalized[d]/randomRuns;const ws=winners(r.result.dimension_normalized);for(const d of ws)randomWins[d]+=1/ws.length;}
+ return {ok:true,value:{positional,positionalCoverage:minOptions,random:{runs:randomRuns,wins:randomWins,mean:randomMean}}};
 }
 function auditBalance(bankInput,{randomRuns=128,maxOpportunityRatio=2,maxPositionShare=.5,maxRandomWinShare=.45}={}){
  const n=normalizeBank(bankInput);if(!n.ok)return n;const bank=n.value;
