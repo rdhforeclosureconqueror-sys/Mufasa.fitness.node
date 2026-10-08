@@ -768,6 +768,20 @@
       "createdAt": "2026-10-07T21:14:37.024Z",
       "source": "sound assessment implementation",
       "taskId": "sound-assessment-v1"
+    },
+    {
+      "id": "launch-development-mindfulness-journey-wiring-v1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Wire Journey Within story and affirmation UI",
+      "category": "mindfulness",
+      "description": "Connect story and affirmation library scripts to mindfulness.html",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-10-08T16:05:53.908Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
