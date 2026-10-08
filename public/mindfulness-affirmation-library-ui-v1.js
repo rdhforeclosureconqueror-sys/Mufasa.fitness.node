@@ -8,7 +8,7 @@ function render(){
  const items=data.sets[selected]||[];out.replaceChildren();
  const title=document.createElement('h3');title.textContent=selected;out.append(title);
  if(!items.length){out.append('No affirmations available.');return}
- index=(index+items.length)%items.length;
+ index=((index%items.length)+items.length)%items.length;
  const wrap=document.createElement('div');wrap.className='affirmation-browser';
  const prev=document.createElement('button');prev.type='button';prev.textContent='←';prev.setAttribute('aria-label','Previous affirmation');
  const message=document.createElement('p');message.textContent=items[index];message.setAttribute('aria-live','polite');
