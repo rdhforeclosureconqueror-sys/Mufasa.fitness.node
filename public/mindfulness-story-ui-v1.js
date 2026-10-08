@@ -1,0 +1,1 @@
+fetch('/mindfulness-weekly-stories-v1.json').then(r=>r.json()).then(d=>{const n=new Date();const w=Math.floor((Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())-Date.UTC(2026,9,4))/604800000)%8+1;const s=d.stories.find(x=>x.week===w);if(s){document.getElementById('story-title').textContent=s.title;document.getElementById('story-body').textContent=s.story}});
