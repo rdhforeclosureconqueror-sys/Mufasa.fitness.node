@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "editorialStatus": "pilot educational material",
+  "chakras": [
+    {
+      "weekday": 0,
+      "name": "Root",
+      "sanskrit": "Muladhara",
+      "element": "Earth",
+      "location": "Base of spine",
+      "context": "Traditionally associated with foundations, belonging and steadiness.",
+      "practice": "Notice the points of contact between your feet and the floor. Let your breathing remain natural."
+    },
+    {
+      "weekday": 1,
+      "name": "Sacral",
+      "sanskrit": "Svadhisthana",
+      "element": "Water",
+      "location": "Lower abdomen",
+      "context": "Often associated with creativity, emotional experience and the capacity for enjoyment.",
+      "practice": "Notice a sensation or emotion without needing to label it good or bad."
+    },
+    {
+      "weekday": 2,
+      "name": "Solar Plexus",
+      "sanskrit": "Manipura",
+      "element": "Fire",
+      "location": "Upper abdomen",
+      "context": "Traditionally linked to purposeful action, confidence and personal agency.",
+      "practice": "Name one small decision you can make with intention today."
+    },
+    {
+      "weekday": 3,
+      "name": "Heart",
+      "sanskrit": "Anahata",
+      "element": "Air",
+      "location": "Center of chest",
+      "context": "Often associated with compassion, connection and care, including healthy boundaries.",
+      "practice": "Pause and offer yourself one kind, realistic sentence."
+    },
+    {
+      "weekday": 4,
+      "name": "Throat",
+      "sanskrit": "Vishuddha",
+      "element": "Space / ether",
+      "location": "Throat",
+      "context": "Associated in many modern chakra teachings with communication and expression.",
+      "practice": "Notice what you want to say, then choose a clear and kind way to say it."
+    },
+    {
+      "weekday": 5,
+      "name": "Third Eye",
+      "sanskrit": "Ajna",
+      "element": "Light (modern association)",
+      "location": "Between the eyebrows",
+      "context": "Often used as a symbol of insight, discernment and inward attention.",
+      "practice": "Notice one thought, then ask whether it is a fact or an interpretation."
+    },
+    {
+      "weekday": 6,
+      "name": "Crown",
+      "sanskrit": "Sahasrara",
+      "element": "Beyond elements (varies by tradition)",
+      "location": "Crown of head",
+      "context": "Associated with spiritual meaning and connection in some traditions.",
+      "practice": "Sit quietly for a moment and consider what gives your actions meaning."
+    }
+  ],
+  "weeklyThemes": [
+    "Notice",
+    "Name",
+    "Explore",
+    "Practice",
+    "Reflect",
+    "Apply",
+    "Connect",
+    "Integrate"
+  ]
+}
