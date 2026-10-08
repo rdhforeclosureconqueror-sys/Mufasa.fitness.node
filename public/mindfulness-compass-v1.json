@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "editorialStatus": "modern chakra reflection framework; not a medical diagnostic tool",
+  "introduction": "In contemporary chakra-balancing traditions, underactive, balanced and overactive are reflective descriptions of patterns, not medical conditions or measurements. Different lineages interpret them differently.",
+  "chakras": [
+    {
+      "name": "Root",
+      "underactive": [
+        "Difficulty feeling settled",
+        "Persistent worry about basic security",
+        "Feeling disconnected from daily routines",
+        "Avoiding practical responsibilities",
+        "Struggling to feel at home"
+      ],
+      "balanced": [
+        "Feeling supported",
+        "Attending to practical needs",
+        "Steady routines",
+        "Comfort with rest",
+        "Grounded presence"
+      ],
+      "overactive": [
+        "Rigid attachment to routines",
+        "Excessive focus on possessions",
+        "Difficulty tolerating change",
+        "Controlling behavior around safety",
+        "Clinging to certainty"
+      ],
+      "practices": [
+        "Stand with feet supported and notice contact with the ground",
+        "Choose one small practical task and complete it",
+        "Name three things supporting you today"
+      ]
+    },
+    {
+      "name": "Sacral",
+      "underactive": [
+        "Holding back emotions",
+        "Difficulty making space for pleasure",
+        "Creative hesitation",
+        "Disconnection from preferences",
+        "Difficulty embracing change"
+      ],
+      "balanced": [
+        "Emotional openness",
+        "Healthy enjoyment",
+        "Creative expression",
+        "Respectful relationships",
+        "Flexibility"
+      ],
+      "overactive": [
+        "Impulsive pleasure-seeking",
+        "Difficulty respecting boundaries",
+        "Emotional reactivity",
+        "Constant search for stimulation",
+        "Over-identification with desire"
+      ],
+      "practices": [
+        "Move gently to music you enjoy",
+        "Name a feeling without judging it",
+        "Make something playful for five minutes"
+      ]
+    },
+    {
+      "name": "Solar Plexus",
+      "underactive": [
+        "Second-guessing decisions",
+        "Avoiding initiative",
+        "Difficulty setting goals",
+        "Minimizing achievements",
+        "Giving away personal agency"
+      ],
+      "balanced": [
+        "Purposeful action",
+        "Confidence with humility",
+        "Healthy boundaries",
+        "Personal responsibility",
+        "Ability to choose"
+      ],
+      "overactive": [
+        "Need to control outcomes",
+        "Over-competitiveness",
+        "Dismissal of others' input",
+        "Rigid perfectionism",
+        "Pushing without rest"
+      ],
+      "practices": [
+        "Make one manageable decision",
+        "Notice a recent act of courage",
+        "Practice a kind but firm boundary"
+      ]
+    },
+    {
+      "name": "Heart",
+      "underactive": [
+        "Difficulty receiving care",
+        "Holding onto resentment",
+        "Withdrawing from connection",
+        "Harsh self-judgment",
+        "Fear of vulnerability"
+      ],
+      "balanced": [
+        "Compassion",
+        "Mutual care",
+        "Healthy boundaries",
+        "Capacity to forgive",
+        "Connection with self and others"
+      ],
+      "overactive": [
+        "Over-giving without limits",
+        "People-pleasing",
+        "Taking responsibility for everyone's feelings",
+        "Difficulty saying no",
+        "Losing oneself in relationships"
+      ],
+      "practices": [
+        "Offer yourself one compassionate sentence",
+        "Express gratitude to someone",
+        "Practice saying a gentle no"
+      ]
+    },
+    {
+      "name": "Throat",
+      "underactive": [
+        "Hesitating to speak",
+        "Hiding personal needs",
+        "Fear of disagreement",
+        "Suppressing feelings",
+        "Avoiding boundaries"
+      ],
+      "balanced": [
+        "Clear expression",
+        "Honest communication",
+        "Attentive listening",
+        "Respectful disagreement",
+        "Healthy boundaries"
+      ],
+      "overactive": [
+        "Dominating conversations",
+        "Interrupting others",
+        "Speaking impulsively",
+        "Using harsh words",
+        "Difficulty listening"
+      ],
+      "practices": [
+        "Speak one honest sentence kindly",
+        "Listen without interrupting for one conversation",
+        "Hum gently for 30 seconds if comfortable"
+      ]
+    },
+    {
+      "name": "Third Eye",
+      "underactive": [
+        "Avoiding reflection",
+        "Ignoring patterns",
+        "Difficulty trusting considered judgment",
+        "Reacting without pausing",
+        "Feeling disconnected from values"
+      ],
+      "balanced": [
+        "Discernment",
+        "Thoughtful reflection",
+        "Openness to learning",
+        "Perspective-taking",
+        "Self-awareness"
+      ],
+      "overactive": [
+        "Overanalyzing every choice",
+        "Treating assumptions as certainty",
+        "Excessive suspicion",
+        "Getting lost in imagined outcomes",
+        "Dismissing feedback"
+      ],
+      "practices": [
+        "Write down a thought and one alternative interpretation",
+        "Pause before making a judgment",
+        "Spend one quiet minute noticing thoughts"
+      ]
+    },
+    {
+      "name": "Crown",
+      "underactive": [
+        "Feeling disconnected from meaning",
+        "Neglecting personal values",
+        "Difficulty making time for reflection",
+        "Feeling isolated from community",
+        "Losing sight of purpose"
+      ],
+      "balanced": [
+        "Sense of meaning",
+        "Humility",
+        "Connection",
+        "Gratitude",
+        "Living by values"
+      ],
+      "overactive": [
+        "Using spirituality to avoid responsibilities",
+        "Claiming absolute certainty",
+        "Dismissing other perspectives",
+        "Neglecting practical needs",
+        "Feeling superior through spiritual identity"
+      ],
+      "practices": [
+        "Reflect on a value that matters today",
+        "Sit quietly for one minute",
+        "Take one action aligned with your values"
+      ]
+    }
+  ]
+}
