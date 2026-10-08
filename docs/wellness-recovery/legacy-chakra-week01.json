@@ -1,0 +1,48 @@
+{
+  "source": "DiscordBotfitness chakra affirmation section",
+  "reviewStatus": "needs editorial review",
+  "items": [
+    {
+      "day": 1,
+      "chakra": "Root",
+      "sourceId": 1,
+      "text": "My Root chakra pays rent on time now — I am safe, supported, and grounded in real life, not just in quotes."
+    },
+    {
+      "day": 2,
+      "chakra": "Sacral",
+      "sourceId": 2,
+      "text": "My Sacral chakra said ‘we’re done being dry’ — I allow joy, creativity, and healthy pleasure to flow through me."
+    },
+    {
+      "day": 3,
+      "chakra": "Solar Plexus",
+      "sourceId": 3,
+      "text": "My Solar Plexus is tired of dimmer switches — I give myself permission to shine confidently and take up space."
+    },
+    {
+      "day": 4,
+      "chakra": "Heart",
+      "sourceId": 4,
+      "text": "My Heart chakra not accepting low-vibration bookings — I attract and choose love that respects and uplifts me."
+    },
+    {
+      "day": 5,
+      "chakra": "Throat",
+      "sourceId": 5,
+      "text": "My Throat chakra is done whispering truth — I speak clearly, kindly, and confidently for myself."
+    },
+    {
+      "day": 6,
+      "chakra": "Third Eye",
+      "sourceId": 6,
+      "text": "My Third Eye refuses to be on airplane mode — I trust my intuition and inner vision to guide my choices."
+    },
+    {
+      "day": 7,
+      "chakra": "Crown",
+      "sourceId": 7,
+      "text": "My Crown chakra upgraded the Wi-Fi — I am connected to divine wisdom, guidance, and protection at all times."
+    }
+  ]
+}

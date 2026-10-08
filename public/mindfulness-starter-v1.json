@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "editorial starter; not verbatim legacy content",
+  "days": [
+    {
+      "chakra": "Root",
+      "affirmation": "I can find steadiness in the present moment.",
+      "teaching": "In the traditional chakra framework, the root represents grounding, safety, and stability.",
+      "reflection": "What helps you feel supported today?"
+    },
+    {
+      "chakra": "Sacral",
+      "affirmation": "I make room for creativity and healthy enjoyment.",
+      "teaching": "The sacral chakra symbolizes emotion, creativity, and enjoyment in some yoga traditions.",
+      "reflection": "Where did you notice joy or creativity today?"
+    },
+    {
+      "chakra": "Solar Plexus",
+      "affirmation": "I can take one intentional step today.",
+      "teaching": "The solar plexus chakra is traditionally associated with confidence and personal agency.",
+      "reflection": "What small decision did you make intentionally?"
+    },
+    {
+      "chakra": "Heart",
+      "affirmation": "I can practice compassion with healthy boundaries.",
+      "teaching": "The heart chakra is a symbol of compassion and connection in chakra traditions.",
+      "reflection": "How did you show care for yourself or someone else?"
+    },
+    {
+      "chakra": "Throat",
+      "affirmation": "I can express myself with clarity and care.",
+      "teaching": "The throat chakra symbolizes communication and authentic expression.",
+      "reflection": "What did you communicate clearly today?"
+    },
+    {
+      "chakra": "Third Eye",
+      "affirmation": "I can pause and examine my assumptions.",
+      "teaching": "The third-eye chakra is associated with reflection and insight in traditional teachings.",
+      "reflection": "What did you notice about your thoughts today?"
+    },
+    {
+      "chakra": "Crown",
+      "affirmation": "I can connect my actions to what matters to me.",
+      "teaching": "The crown chakra symbolizes spiritual meaning and connection in chakra traditions.",
+      "reflection": "What gave your day meaning?"
+    }
+  ]
+}
