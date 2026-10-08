@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "days": [
+    {
+      "weekday": 0,
+      "chakra": "Root",
+      "theme": "Grounding and stability"
+    },
+    {
+      "weekday": 1,
+      "chakra": "Sacral",
+      "theme": "Emotion and creativity"
+    },
+    {
+      "weekday": 2,
+      "chakra": "Solar Plexus",
+      "theme": "Confidence and agency"
+    },
+    {
+      "weekday": 3,
+      "chakra": "Heart",
+      "theme": "Compassion and connection"
+    },
+    {
+      "weekday": 4,
+      "chakra": "Throat",
+      "theme": "Expression and honesty"
+    },
+    {
+      "weekday": 5,
+      "chakra": "Third Eye",
+      "theme": "Reflection and insight"
+    },
+    {
+      "weekday": 6,
+      "chakra": "Crown",
+      "theme": "Meaning and spiritual connection"
+    }
+  ],
+  "status": "schedule only; source lessons require reviewed import"
+}
