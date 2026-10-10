@@ -3,12 +3,8 @@ const crypto=require("crypto");
 const DAY_MS=24*60*60*1000;
 const clean=(v,max=500)=>String(v==null?"":v).trim().slice(0,max);
 const iso=v=>new Date(v).toISOString();
-const DEFAULT_EVENTS=Object.freeze([
- {eventId:"addison-run-walk-2026-10-10",title:"Addison Run & Walk Club",type:"run_walk",startAt:"2026-10-10T09:00:00-05:00",location:"Addison Circle Park",status:"proposed",priceCents:0,description:"A friendly community run and walk. All fitness levels welcome."},
- {eventId:"mobility-2026-10-14",title:"Community Mobility & Stretching",type:"mobility",startAt:"2026-10-14T18:30:00-05:00",location:"Addison · location pending",status:"proposed",priceCents:0,description:"A community mobility and recovery session."},
- {eventId:"yoga-2026-10-25",title:"Community Yoga",type:"yoga",startAt:"2026-10-25T10:00:00-05:00",location:"Addison · location pending",status:"proposed",priceCents:1500,description:"An inclusive group yoga flow for all levels."},
- {eventId:"sunset-reset-2026-11-01",title:"Sunset Reset Sound Bath",type:"sound_bath",startAt:"2026-11-01T18:00:00-06:00",location:"Property venue pending approval",status:"proposed",priceCents:2000,description:"A guided poolside relaxation experience with breathwork and crystal singing bowls."}
-]);
+// Events must be explicitly confirmed and published; do not present seeded demonstrations as real sessions.
+const DEFAULT_EVENTS=Object.freeze([]);
 function createResidentialCommunityService({userStore,clock=()=>Date.now()}){
  if(!userStore)throw Error("Community Hub requires canonical userStore");
  const ensure=user=>{user.residentialCommunity||={schemaVersion:1,rsvps:[],messages:[]};user.residentialCommunity.rsvps||=[];user.residentialCommunity.messages||=[];user.residentialCommunity.messages=user.residentialCommunity.messages.filter(m=>Date.parse(m.expiresAt)>clock());return user.residentialCommunity};
