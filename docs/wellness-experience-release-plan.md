@@ -18,3 +18,10 @@ Before merge record base and merge SHAs. If serious regression, revert merge com
 
 ## Status
 The initial service module is a foundation only. It is not yet wired into routes, event records, UI, email, or trial entitlements. Do not present it as live.
+
+## Super-admin event notifications (confirmed 2026-10-10)
+- Recipient: `rdhforeclosureconqueror@gmail.com` (super-admin).
+- Check-in and reflection alerts must be dispatched only after durable write, and must not contain raw survey responses or sensitive wellness details. Include event identifier, check-in identifier, time, and a secure admin-dashboard link; avoid sending participant PII in notification subject.
+- Sender transport is **not configured or verified** in the current audit. A recipient address is not an SMTP credential. Fail closed for notification setup, but do not lose the persisted submission if delivery fails. Expose delivery status in admin diagnostics.
+- Admin dashboard proposed location: Administration → Event Check-Ins. Must require authenticated super-admin or narrowly authorized event owner, and enforce server-side access.
+- No payments or partner workspace in this release.
