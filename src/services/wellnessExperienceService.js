@@ -1,0 +1,15 @@
+"use strict";
+const crypto=require("crypto");
+const clean=(x,n=500)=>String(x??"").trim().slice(0,n);
+const OPTIONS={stress:["1","2","3","4","5"],reason:["stress","energy","connection","curious","other"],arrival:["1","2","3","4","5"],goal:["relax","energy","connection","learn","open"],outcome:["exceeded","met","partial","unmet","unsure"],after:["1","2","3","4","5"],connection:["1","2","3","4","5"],returnIntent:["yes","maybe","no"]};
+function createWellnessExperienceService({userStore,clock=()=>Date.now(),events={}}){
+ if(!userStore)throw Error("User store required");
+ const getEvent=id=>{const e=events[clean(id,80)];if(!e||e.status!=="confirmed")throw Error("Event is not open for check-in");return e};
+ const validate=(value,key)=>{const v=clean(value,40);if(!OPTIONS[key].includes(v))throw Error("Invalid "+key);return v};
+ function checkin(userId,eventId,input){const event=getEvent(eventId);let result;userStore.updateUser(userId,u=>{u.wellnessExperiences||={};if(u.wellnessExperiences[eventId]?.before)throw Error("Already checked in");result={id:crypto.randomUUID(),eventId,createdAt:new Date(clock()).toISOString(),before:{stress:validate(input.stress,"stress"),reason:validate(input.reason,"reason"),arrival:validate(input.arrival,"arrival"),goal:validate(input.goal,"goal")},after:null};u.wellnessExperiences[eventId]=result;return u});return result}
+ function reflect(userId,eventId,input){getEvent(eventId);let result;userStore.updateUser(userId,u=>{const record=u.wellnessExperiences?.[eventId];if(!record?.before)throw Error("Check in first");if(record.after)throw Error("Reflection already submitted");record.after={outcome:validate(input.outcome,"outcome"),after:validate(input.after,"after"),connection:validate(input.connection,"connection"),returnIntent:validate(input.returnIntent,"returnIntent"),improvement:clean(input.improvement,1000),shareWithCoHost:input.shareWithCoHost===true,submittedAt:new Date(clock()).toISOString()};result=record;return u});return result}
+ function mine(userId,eventId){getEvent(eventId);return userStore.loadUser(userId)?.wellnessExperiences?.[eventId]||null}
+ function summary(requesterId,eventId){const event=getEvent(eventId);if(requesterId!==event.ownerId&&!event.coHostIds?.includes(requesterId))throw Error("Not authorized");const rows=userStore.listUsers().map(u=>u.wellnessExperiences?.[eventId]).filter(Boolean);const completed=rows.filter(r=>r.after);const aggregate=(arr)=>arr.length?Math.round(arr.reduce((a,b)=>a+Number(b),0)/arr.length*100)/100:null;return {eventId,checkins:rows.length,reflections:completed.length,averageRelaxationBefore:aggregate(completed.map(r=>r.before.arrival)),averageRelaxationAfter:aggregate(completed.map(r=>r.after.after)),outcomes:Object.fromEntries(OPTIONS.outcome.map(v=>[v,completed.filter(r=>r.after.outcome===v).length])),comments:requesterId===event.ownerId?completed.map(r=>r.after.improvement).filter(Boolean):completed.filter(r=>r.after.shareWithCoHost).map(r=>r.after.improvement).filter(Boolean)}}
+ return{checkin,reflect,mine,summary};
+}
+module.exports={createWellnessExperienceService};
