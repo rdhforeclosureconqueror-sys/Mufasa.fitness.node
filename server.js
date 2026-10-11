@@ -3451,6 +3451,8 @@ function createApp(options = {}) {
   // Event guest intake is available only when a host activates a specific event.
   const eventCheckinStore = require("./src/services/eventCheckinStore").createEventCheckinStore({ dataDir: DATA_DIR });
   const eventNotificationQueue = require("./src/services/eventNotificationQueue").createEventNotificationQueue({ dataDir: DATA_DIR });
+  const emailWorker = require("./src/services/eventNotificationWorker").createEventNotificationWorker({ dataDir: DATA_DIR });
+  if (emailWorker.configured()) setInterval(() => emailWorker.runOnce().catch(console.error), 60000).unref();
   const eventCheckinLimit = createRateLimiter({ name: "event-checkin", windowMs: 60000, max: 8 });
   app.get("/api/event-checkin/status", (_req, res) => res.json({ ok: true, active: Boolean(process.env.WELLNESS_ACTIVE_EVENT) }));
   app.post("/api/event-checkin", eventCheckinLimit, (req, res) => {
