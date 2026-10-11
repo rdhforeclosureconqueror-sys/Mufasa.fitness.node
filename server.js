@@ -3448,6 +3448,27 @@ function createApp(options = {}) {
   }));
 
 
+  // Event guest intake is available only when a host activates a specific event.
+  const eventCheckinStore = require("./src/services/eventCheckinStore").createEventCheckinStore({ dataDir: DATA_DIR });
+  const eventCheckinLimit = createRateLimiter({ name: "event-checkin", windowMs: 60000, max: 8 });
+  app.get("/api/event-checkin/status", (_req, res) => res.json({ ok: true, active: Boolean(process.env.WELLNESS_ACTIVE_EVENT) }));
+  app.post("/api/event-checkin", eventCheckinLimit, (req, res) => {
+    if (!process.env.WELLNESS_ACTIVE_EVENT) return res.status(503).json({ ok: false, error: "Event check-in is closed" });
+    try {
+      const data = eventCheckinStore.checkin({ ...req.body, event: process.env.WELLNESS_ACTIVE_EVENT });
+      return res.status(201).json({ ok: true, data });
+    } catch (error) { return res.status(400).json({ ok: false, error: "Invalid check-in information" }); }
+  });
+  app.post("/api/event-checkin/reflection", eventCheckinLimit, (req, res) => {
+    try { return res.json({ ok: true, data: eventCheckinStore.reflect(req.body || {}) }); }
+    catch (error) { return res.status(400).json({ ok: false, error: "Invalid or completed reflection" }); }
+  });
+  app.get("/api/admin/event-checkins", requireAuth, (req, res) => {
+    if (req.authz?.role !== "super_admin") return res.status(403).json({ ok: false, error: "Super-admin access required" });
+    res.set("Cache-Control", "private, no-store");
+    return res.json({ ok: true, data: eventCheckinStore.roster() });
+  });
+
   // ---- Static assets ----
   app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));
 
