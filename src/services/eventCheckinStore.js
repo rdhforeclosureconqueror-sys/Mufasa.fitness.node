@@ -27,7 +27,7 @@ function createEventCheckinStore({dataDir,clock=Date.now}){
   const record=read(id);
   if(!record||!record.after||typeof token!=="string"||token.length!==48||typeof email!=="string")return false;
   const hash=crypto.createHash("sha256").update(token).digest("hex");
-  return record.tokenHash===hash&&record.email===email.trim().toLowerCase();
+  return crypto.timingSafeEqual(Buffer.from(record.tokenHash,"hex"),Buffer.from(hash,"hex"))&&record.email===email.trim().toLowerCase();
  }
  function roster(){if(!fs.existsSync(dir))return[];return fs.readdirSync(dir).filter(f=>/^[a-f0-9]{32}\.json$/.test(f)).map(f=>{const {tokenHash,...entry}=JSON.parse(fs.readFileSync(path.join(dir,f),"utf8"));return entry})}
  return{checkin,reflect,verifyCompletion,roster};
