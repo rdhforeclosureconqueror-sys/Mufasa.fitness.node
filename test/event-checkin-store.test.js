@@ -13,6 +13,9 @@ test("guest check-in persists and reflection token is single-use",()=>{
   assert.throws(()=>store.reflect({...pass,token:"invalid",after:"Calm"}));
   assert.deepEqual(store.reflect({...pass,after:"Calm"}),{complete:true});
   assert.equal(store.roster()[0].after.response,"Calm");
+  assert.equal(store.verifyCompletion({...pass,email:"guest@example.com"}),true);
+  assert.equal(store.verifyCompletion({...pass,email:"other@example.com"}),false);
+  assert.equal(store.verifyCompletion({...pass,token:"wrong",email:"guest@example.com"}),false);
   assert.throws(()=>store.reflect({...pass,after:"Again"}));
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
