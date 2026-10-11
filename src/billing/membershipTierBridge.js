@@ -36,21 +36,6 @@ function createMembershipTierBridge(options = {}) {
     membershipService.updateMembership(userId,{status:"trialing",plan:"courtesy_trial",trialStart:now,trialEnd:endsAt,stripeCustomerId:null,stripeSubscriptionId:null,stripePriceId:null});
     return courtesyTrial(userId);
   }
-  // Event reward uses the existing one-time courtesy entitlement.
-  function redeemEventTrial(userId, completion, verifiedEmail) {
-    const { createEventCheckinStore } = require("../services/eventCheckinStore");
-    const store = createEventCheckinStore({ dataDir });
-    if (!verifiedEmail || !completion || typeof completion !== "object" || !store.verifyCompletion({ id: completion.id, token: completion.token, email: verifiedEmail })) {
-      return { ok: false, code: "EVENT_COMPLETION_NOT_VERIFIED" };
-    }
-    const existing = courtesyTrial(userId);
-    if (existing.accepted) return { ok: false, code: "TRIAL_ALREADY_USED" };
-    const membership = membershipService.getMembership(userId);
-    if (membership.hasAccess || membership.stripeSubscriptionId) {
-      return { ok: false, code: "MEMBERSHIP_ALREADY_EXISTS" };
-    }
-    return { ok: true, trial: acceptCourtesyTrial(userId) };
-  }
   function effectiveTier(userId){
     const trial=courtesyTrial(userId);let membership=expireCourtesyMembershipIfNeeded(userId,trial);const paidPlanId=resolvePlanIdFromStripePrice(membership.stripePriceId,env);
     if(membership.plan!=="courtesy_trial"&&membership.hasAccess)return{planId:paidPlanId,status:membership.status,hasAccess:true,source:"membership",trial,stripePriceIdKnown:Boolean(membership.stripePriceId),legacyOrUnmapped:Boolean(membership.stripePriceId&&!paidPlanId)};
@@ -62,7 +47,6 @@ function createMembershipTierBridge(options = {}) {
     app.get("/api/billing/plans",(req,res)=>{res.set("Cache-Control","no-store");return res.status(200).json({ok:true,data:getPublicBillingPlan(env),requestId:req.requestId||null});});
     app.get("/api/me/trial-access",requireCanonicalAuth,(req,res)=>{const trial=courtesyTrial(req.auth.userId);expireCourtesyMembershipIfNeeded(req.auth.userId,trial);res.set("Cache-Control","private, no-store");return res.status(200).json({ok:true,data:trial,requestId:req.requestId||null});});
     app.post("/api/me/trial-access/accept",requireCanonicalAuth,(req,res)=>{const trial=acceptCourtesyTrial(req.auth.userId);res.set("Cache-Control","private, no-store");return res.status(trial.active?201:200).json({ok:true,data:trial,requestId:req.requestId||null});});
-    app.post("/api/me/event-trial/redeem",requireCanonicalAuth,(req,res)=>{const result=redeemEventTrial(req.auth.userId,req.body||{},req.auth.email);return res.status(result.ok?200:409).json(result)});
     app.get("/api/me/membership-tier",requireCanonicalAuth,(req,res)=>{res.set("Cache-Control","private, no-store");return res.status(200).json({ok:true,data:effectiveTier(req.auth.userId),requestId:req.requestId||null});});
     app.post("/api/billing/tier-checkout-session",requireCanonicalAuth,async(req,res)=>{try{rejectRawPaymentCredentialFields(req.body);const trial=courtesyTrial(req.auth.userId);expireCourtesyMembershipIfNeeded(req.auth.userId,trial);if(!trial.accepted)return res.status(409).json({ok:false,requestId:req.requestId||null,error:{code:"TRIAL_NOT_STARTED",message:"Start the 7-day PocketPT trial before selecting a paid membership."}});if(trial.active)return res.status(409).json({ok:false,requestId:req.requestId||null,error:{code:"TRIAL_STILL_ACTIVE",message:"Your 7-day PocketPT trial is still active. Choose a membership when the trial ends."}});const checkoutConfig=validateCheckoutConfig(env,req.body?.planId),returnUrl=resolveMembershipReturnUrl({env,req,planId:checkoutConfig.planId}),checkout=await membershipService.createCheckoutSession({userId:req.auth.userId,email:req.auth.email,secretKey:checkoutConfig.secretKey,priceId:checkoutConfig.priceId,returnUrl});return res.status(checkout.duplicateProtected?200:201).json({ok:true,data:{...checkout,selectedPlanId:checkoutConfig.planId,selectedPlan:{id:checkoutConfig.plan.id,name:checkoutConfig.plan.name,priceLabel:checkoutConfig.plan.priceLabel,interval:checkoutConfig.plan.interval}},requestId:req.requestId||null});}catch(error){return sendBridgeError(res,req,error);}});
   }
