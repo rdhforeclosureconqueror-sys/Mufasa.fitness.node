@@ -3448,6 +3448,23 @@ function createApp(options = {}) {
   }));
 
 
+  // Event-day guest check-in: separate from paid subscriptions and seven-day trials.
+  const guestEventStore = require("./src/services/guestEventCheckinStore").createGuestCheckinStore({ dataDir: DATA_DIR });
+  const guestCheckinLimit = createRateLimiter({ name: "guest-event-checkin", max: 12, windowMs: 60_000 });
+  app.post("/api/public/event-checkins", guestCheckinLimit, (req,res) => {
+    try { const result=guestEventStore.checkin(req.body||{}); res.status(201).json({ok:true,...result}); }
+    catch(e){res.status(e.status||500).json({ok:false,error:e.status?e.message:"Unable to save check-in"});}
+  });
+  app.post("/api/public/event-checkins/:id/reflection", guestCheckinLimit, (req,res) => {
+    try {res.json(guestEventStore.reflect(req.params.id,req.body?.token,req.body||{}));}
+    catch(e){res.status(e.status||500).json({ok:false,error:e.status?e.message:"Unable to save reflection"});}
+  });
+  app.get("/api/admin/event-checkins", requireAuth, (req,res) => {
+    if (!["super_admin","superadmin"].includes(String(req.authz?.role||"").toLowerCase())) return res.status(403).json({ok:false,error:"Super-admin access required"});
+    try {res.json({ok:true,attendees:guestEventStore.list()});}
+    catch(e){res.status(500).json({ok:false,error:"Unable to load attendees"});}
+  });
+
   // ---- Static assets ----
   app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));
 
