@@ -2,6 +2,7 @@
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
 function createEventCheckinStore({dataDir,clock=Date.now}){
  const dir=path.join(dataDir,"event-checkins");
+ // Event responses are stored on the configured persistent volume; never log reflection tokens.
  const validId=id=>/^[a-f0-9]{32}$/.test(id||"");
  const file=id=>path.join(dir,id+".json");
  function read(id){return validId(id)&&fs.existsSync(file(id))?JSON.parse(fs.readFileSync(file(id),"utf8")):null}
