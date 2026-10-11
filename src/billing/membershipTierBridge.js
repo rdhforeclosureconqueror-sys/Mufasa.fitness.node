@@ -40,7 +40,7 @@ function createMembershipTierBridge(options = {}) {
   function redeemEventTrial(userId, completion, verifiedEmail) {
     const { createEventCheckinStore } = require("../services/eventCheckinStore");
     const store = createEventCheckinStore({ dataDir });
-    if (!verifiedEmail || !store.verifyCompletion({ ...completion, email: verifiedEmail })) {
+    if (!verifiedEmail || !completion || typeof completion !== "object" || !store.verifyCompletion({ id: completion.id, token: completion.token, email: verifiedEmail })) {
       return { ok: false, code: "EVENT_COMPLETION_NOT_VERIFIED" };
     }
     const existing = courtesyTrial(userId);
