@@ -23,7 +23,13 @@ function createEventCheckinStore({dataDir,clock=Date.now}){
   if(typeof after!=="string"||!after.trim()||after.length>1000)throw Error("Invalid reflection");
   record.after={response:after.trim(),createdAt:clock()};write(record);return{complete:true};
  }
+ function verifyCompletion({id,token,email}){
+  const record=read(id);
+  if(!record||!record.after||typeof token!=="string"||token.length!==48||typeof email!=="string")return false;
+  const hash=crypto.createHash("sha256").update(token).digest("hex");
+  return record.tokenHash===hash&&record.email===email.trim().toLowerCase();
+ }
  function roster(){if(!fs.existsSync(dir))return[];return fs.readdirSync(dir).filter(f=>/^[a-f0-9]{32}\.json$/.test(f)).map(f=>{const {tokenHash,...entry}=JSON.parse(fs.readFileSync(path.join(dir,f),"utf8"));return entry})}
- return{checkin,reflect,roster};
+ return{checkin,reflect,verifyCompletion,roster};
 }
 module.exports={createEventCheckinStore};
