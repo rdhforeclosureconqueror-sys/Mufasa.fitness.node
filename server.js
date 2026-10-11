@@ -3453,7 +3453,7 @@ function createApp(options = {}) {
   const eventCheckinLimit = createRateLimiter({ name: "event-checkin", windowMs: 60000, max: 8 });
   app.get("/api/event-checkin/status", (_req, res) => res.json({ ok: true, active: Boolean(process.env.WELLNESS_ACTIVE_EVENT) }));
   app.post("/api/event-checkin", eventCheckinLimit, (req, res) => {
-    if (!process.env.WELLNESS_ACTIVE_EVENT) return res.status(503).json({ ok: false, error: "Event check-in is closed" });
+    if (!/^[a-z0-9-]{3,64}$/.test(process.env.WELLNESS_ACTIVE_EVENT || "")) return res.status(503).json({ ok: false, error: "Event check-in is closed" });
     try {
       const data = eventCheckinStore.checkin({ ...req.body, event: process.env.WELLNESS_ACTIVE_EVENT });
       return res.status(201).json({ ok: true, data });
