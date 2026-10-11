@@ -21,6 +21,7 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts
       - run: node --check server.js
+      - run: node -e "require('./src/billing/membershipTierBridge').createMembershipTierBridge({env:{NODE_ENV:'test'},dataDir:require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(),'tier-bridge-smoke-'))})"
       - run: node --check public/event-checkin.js
       - run: node --check public/admin-event-checkins.js
       - run: node --check src/services/eventNotificationWorker.js
