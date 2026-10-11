@@ -3452,9 +3452,9 @@ function createApp(options = {}) {
   const eventCheckinStore = require("./src/services/eventCheckinStore").createEventCheckinStore({ dataDir: DATA_DIR });
   const eventNotificationQueue = require("./src/services/eventNotificationQueue").createEventNotificationQueue({ dataDir: DATA_DIR });
   const emailWorker = require("./src/services/eventNotificationWorker").createEventNotificationWorker({ dataDir: DATA_DIR });
-  if (emailWorker.configured()) setInterval(() => emailWorker.runOnce().catch(console.error), 60000).unref();
+  if (emailWorker.configured()) { emailWorker.runOnce().catch(() => console.error("Event email delivery failed")); setInterval(() => emailWorker.runOnce().catch(() => console.error("Event email delivery failed")), 60000).unref(); }
   const eventCheckinLimit = createRateLimiter({ name: "event-checkin", windowMs: 60000, max: 8 });
-  app.get("/api/event-checkin/status", (_req, res) => res.json({ ok: true, active: Boolean(process.env.WELLNESS_ACTIVE_EVENT) }));
+  app.get("/api/event-checkin/status", (_req, res) => res.json({ ok: true, active: /^[a-z0-9-]{3,64}$/.test(process.env.WELLNESS_ACTIVE_EVENT || "") }));
   app.post("/api/event-checkin", eventCheckinLimit, (req, res) => {
     if (!/^[a-z0-9-]{3,64}$/.test(process.env.WELLNESS_ACTIVE_EVENT || "")) return res.status(503).json({ ok: false, error: "Event check-in is closed" });
     try {
