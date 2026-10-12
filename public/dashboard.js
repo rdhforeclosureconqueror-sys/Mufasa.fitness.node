@@ -62,7 +62,7 @@
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = !hasObservabilityAccess;
     if (motionLabNav) motionLabNav.hidden = !hasObservabilityAccess;
     if (clientManagementCard) clientManagementCard.hidden = !hasObservabilityAccess;
-    if (eventCheckinsDashboardLink) eventCheckinsDashboardLink.hidden = !roles.includes("super_admin");
+    if (eventCheckinsDashboardLink) eventCheckinsDashboardLink.hidden = !(roles.includes("admin") || roles.includes("super_admin"));
     if (developmentLaunchCard) developmentLaunchCard.hidden = !hasObservabilityAccess;
   }
 
