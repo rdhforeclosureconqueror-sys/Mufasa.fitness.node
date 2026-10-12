@@ -1,0 +1,25 @@
+(()=>{"use strict";
+const $=id=>document.getElementById(id);
+const origin=window.MAAT_BACKEND_ORIGIN||"https://mufasa-fitness-node.onrender.com";
+let selected=null,items=[];
+const safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function token(){return window.AuthStateRuntime?.getAuthToken?.();}
+async function api(path,options={}){
+ const t=token();if(!t)throw Object.assign(Error("Sign in required"),{status:401});
+ const res=await fetch(origin+path,{...options,credentials:"include",headers:{"content-type":"application/json",authorization:"Bearer "+t,...options.headers}});
+ const body=await res.json().catch(()=>({}));
+ if(!res.ok)throw Object.assign(Error(body.error?.message||"Request failed"),{status:res.status});
+ return body.data||body;
+}
+const localTime=value=>{const d=new Date(value);const pad=n=>String(n).padStart(2,"0");return Number.isFinite(d.getTime())?d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes()):"";};
+function clear(){selected=null;$("eventForm").reset();$("formTitle").textContent="Create an event";$("save").textContent="Save Draft";$("formStatus").textContent="";}
+function edit(event){selected=event.eventId;$("formTitle").textContent="Edit "+event.title;$("save").textContent="Save Changes";for(const key of ["title","type","location","capacity"])$(key).value=event[key];$("startAt").value=localTime(event.startAt);$("endAt").value=localTime(event.endAt);$("formStatus").textContent="Editing "+event.status+" event";window.scrollTo({top:0,behavior:"smooth"});}
+function render(){const target=$("events");if(!items.length){target.textContent="No events created yet. Your first event begins as a private draft.";return;}target.innerHTML=items.map(e=>'<article class="event"><strong>'+safe(e.title)+'</strong> · '+safe(e.status)+'<p class="muted">'+safe(new Date(e.startAt).toLocaleString())+' · '+safe(e.location)+' · Capacity '+safe(e.capacity)+'</p><button type="button" class="secondary" data-edit="'+safe(e.eventId)+'">Edit</button>'+(e.status==="draft"?'<button type="button" data-publish="'+safe(e.eventId)+'">Confirm & Publish</button>':"")+(e.status!=="cancelled"?'<button type="button" class="secondary" data-cancel="'+safe(e.eventId)+'">Cancel Event</button>':"")+'</article>').join("");}
+async function load(){const data=await api("/api/admin/community/events");items=data.events||[];items.sort((a,b)=>Date.parse(a.startAt)-Date.parse(b.startAt));render();}
+async function init(){try{await window.AuthStateRuntime?.whenReady?.();await load();$("gate").hidden=true;$("workspace").hidden=false;}catch(error){$("gateStatus").textContent=error.status===403?"This workspace is for admins and super admins only.":error.status===401?"Sign in to access Event Studio.":error.message;if(error.status===401){const a=document.createElement("a");a.href="/login.html?returnTo="+encodeURIComponent(location.pathname);a.textContent="Sign in →";$("gate").append(a);}}}
+$("eventForm").addEventListener("submit",async event=>{event.preventDefault();const button=$("save");button.disabled=true;$("formStatus").textContent="Saving…";try{const input={title:$("title").value.trim(),type:$("type").value,location:$("location").value.trim(),capacity:Number($("capacity").value),startAt:new Date($("startAt").value).toISOString(),endAt:new Date($("endAt").value).toISOString()};if(Date.parse(input.endAt)<=Date.parse(input.startAt))throw Error("End time must be after start time.");const endpoint=selected?"/api/admin/community/events/"+encodeURIComponent(selected):"/api/admin/community/events";await api(endpoint,{method:selected?"PATCH":"POST",body:JSON.stringify(input)});$("formStatus").textContent=selected?"Changes saved.":"Draft saved privately. Publish it from the event library when confirmed.";await load();if(!selected)clear();}catch(error){$("formStatus").textContent=error.message;}finally{button.disabled=false;}});
+$("reset").addEventListener("click",clear);
+$("refresh").addEventListener("click",()=>load().catch(e=>$("formStatus").textContent=e.message));
+$("events").addEventListener("click",async event=>{const button=event.target.closest("button");if(!button)return;const id=button.dataset.edit||button.dataset.publish||button.dataset.cancel;const entry=items.find(e=>e.eventId===id);if(!entry)return;if(button.dataset.edit){edit(entry);return;}const publish=Boolean(button.dataset.publish);if(!confirm(publish?"Confirm this event is real, scheduled, and ready to appear publicly?":"Cancel this event? It will disappear from the public calendar."))return;button.disabled=true;try{await api("/api/admin/community/events/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({status:publish?"confirmed":"cancelled"})});await load();$("formStatus").textContent=publish?"Event published.":"Event cancelled.";}catch(e){$("formStatus").textContent=e.message;}finally{button.disabled=false;}});
+init();
+})();
