@@ -3,7 +3,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const status=document.getElementById("status"),rows=document.getElementById("rows");
 async function load(){
  try{
-  const readiness=await window.AuthStateRuntime?.whenReady?.();
+  const readiness=await window.AuthNavigation.requireUser({returnTo:location.pathname+location.search});
   if(!readiness?.ok){status.textContent="Sign in required: "+(readiness?.reason||"no verified session");return;}
   const auth=window.AuthStateRuntime?.getCanonicalAuthState?.();
   const roles=auth?.user?.roles||(auth?.user?.role?[auth.user.role]:[]);
