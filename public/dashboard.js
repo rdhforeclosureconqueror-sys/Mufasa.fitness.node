@@ -26,6 +26,7 @@
   const refreshDiagnosticBtn = document.getElementById("refreshDiagnosticBtn");
   const runClubDiagnosticsNav = document.getElementById("runClubDiagnosticsNav");
   const clientManagementCard = document.getElementById("clientManagementCard");
+  const eventCheckinsDashboardLink = document.getElementById("eventCheckinsDashboardLink");
   const motionLabNav = document.getElementById("motionLabNav");
   const motionLabLaunchStatus = document.getElementById("motionLabLaunchStatus");
   const pilotReadinessStatus = document.getElementById("pilotReadinessStatus");
@@ -61,6 +62,7 @@
     if (runClubDiagnosticsNav) runClubDiagnosticsNav.hidden = !hasObservabilityAccess;
     if (motionLabNav) motionLabNav.hidden = !hasObservabilityAccess;
     if (clientManagementCard) clientManagementCard.hidden = !hasObservabilityAccess;
+    if (eventCheckinsDashboardLink) eventCheckinsDashboardLink.hidden = !roles.includes("super_admin");
     if (developmentLaunchCard) developmentLaunchCard.hidden = !hasObservabilityAccess;
   }
 
