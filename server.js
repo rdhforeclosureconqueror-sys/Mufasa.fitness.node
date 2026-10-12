@@ -3468,7 +3468,7 @@ function createApp(options = {}) {
     catch (error) { return res.status(400).json({ ok: false, error: "Invalid or completed reflection" }); }
   });
   app.get("/api/admin/event-checkins", requireAuth, (req, res) => {
-    if (!["super_admin", "admin"].includes(req.authz?.role)) return res.status(403).json({ ok: false, error: "Administrator access required" });
+    if (req.authz?.role !== "super_admin") return res.status(403).json({ ok: false, error: "Super-admin access required" });
     res.set("Cache-Control", "private, no-store");
     return res.json({ ok: true, data: eventCheckinStore.roster() });
   });
