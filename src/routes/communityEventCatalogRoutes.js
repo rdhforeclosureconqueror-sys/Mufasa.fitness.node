@@ -6,7 +6,12 @@ const { ok } = require("../lib/apiResponse");
 
 // Routes are installed only when a durable catalog is explicitly configured.
 // Co-hosts are not platform admins and cannot use these endpoints.
-function requireEventAdmin(req,_res,next) {\n if (!req.auth?.userId) throw new ApiError("UNAUTHENTICATED","Authentication required",401);\n if (!["admin","super_admin"].includes(req.authz?.role)) throw new ApiError("FORBIDDEN","Administrator access required",403);\n next();\n}\nfunction installCommunityEventCatalogRoutes({ app, requireAuth, catalog }) {
+function requireEventAdmin(req,_res,next) {
+ if (!req.auth?.userId) throw new ApiError("UNAUTHENTICATED","Authentication required",401);
+ if (!["admin","super_admin"].includes(req.authz?.role)) throw new ApiError("FORBIDDEN","Administrator access required",403);
+ next();
+}
+function installCommunityEventCatalogRoutes({ app, requireAuth, catalog }) {
  if (!app || !requireAuth || !catalog) throw new Error("Event catalog route dependencies required");
  const write = createRateLimiter({ name:"community-event-catalog-write", windowMs:60_000, max:15 });
  app.get("/api/community/events",asyncHandler(async(req,res)=>{
