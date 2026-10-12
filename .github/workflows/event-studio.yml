@@ -4,6 +4,7 @@ on:
     paths:
       - 'public/event-studio.html'
       - 'public/event-studio.js'
+      - 'test/event-studio-reset.test.js'
       - 'public/community-hub.html'
       - 'public/community-hub.js'
       - '.github/workflows/event-studio.yml'
@@ -20,4 +21,5 @@ jobs:
           node-version: '22'
       - run: node --check public/event-studio.js
       - run: node --check public/community-hub.js
+      - run: node --test test/event-studio-reset.test.js
       - run: node --test test/community-event-catalog.test.js test/community-event-catalog-auth.test.js test/community-event-rsvp-integration.test.js
