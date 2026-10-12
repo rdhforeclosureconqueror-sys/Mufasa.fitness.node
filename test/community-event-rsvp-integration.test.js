@@ -13,7 +13,7 @@ test("confirmed events enforce capacity, duplicate registration, and cancellatio
   const catalog=createEventCatalog({filePath:path.join(dir,"catalog.json"),clock});
   const event=catalog.create({title:"Yoga",location:"Dallas",type:"yoga",capacity:1,startAt:"2026-11-01T12:00:00Z",endAt:"2026-11-01T13:00:00Z"},"admin");
   const records=new Map(["a","b"].map(id=>[id,{userId:id,residentialWellness:{communicationConsent:true}}]));
-  const userStore={loadUser:id=>structuredClone(records.get(id)),listUsers:()=>[...records.values()].map(structuredClone),updateUser:(id,fn)=>{const value=fn(structuredClone(records.get(id)));records.set(id,value);return value;}};
+  const userStore={loadUser:id=>structuredClone(records.get(id)),listUsers:()=>[...records.values()].map(value=>structuredClone(value)),updateUser:(id,fn)=>{const value=fn(structuredClone(records.get(id)));records.set(id,value);return value;}};
   const service=createResidentialCommunityService({userStore,eventCatalog:catalog,clock});
   assert.equal(service.dashboard("a").events.length,0);
   catalog.update(event.eventId,{status:"confirmed"},"admin");
