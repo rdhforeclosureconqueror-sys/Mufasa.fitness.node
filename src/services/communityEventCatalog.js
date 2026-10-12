@@ -40,12 +40,15 @@ function createEventCatalog({ filePath, clock = () => Date.now() }) {
   function create(input, actorId) {
     if (!actorId) throw new Error("Actor required");
     const fields = validate(input);
+    return withRegistrationLock(() => {
     const data = read();
     const event = { eventId: "evt_" + crypto.randomUUID(), ...fields, status: "draft", createdBy: String(actorId), createdAt: new Date(clock()).toISOString(), updatedAt: new Date(clock()).toISOString() };
     data.events.push(event); save(data); return { ...event };
+    });
   }
   function update(eventId, patch, actorId) {
     if (!actorId) throw new Error("Actor required");
+    return withRegistrationLock(() => {
     const data = read(), index = data.events.findIndex(e => e.eventId === eventId);
     if (index < 0) throw new Error("Event not found");
     const old = data.events[index];
@@ -56,6 +59,7 @@ function createEventCatalog({ filePath, clock = () => Date.now() }) {
     if (status === "confirmed" && Date.parse(fields.startAt) <= clock()) throw new Error("Cannot publish past event");
     const next = { ...old, ...fields, status, updatedAt: new Date(clock()).toISOString(), updatedBy: String(actorId) };
     data.events[index] = next; save(data); return { ...next };
+    });
   }
   // Exclusive filesystem lock serializes reservations across workers sharing one disk.
   // Fail closed on contention or stale locks; never delete a lock held by another worker.
