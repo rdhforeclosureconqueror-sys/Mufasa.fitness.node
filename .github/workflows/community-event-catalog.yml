@@ -1,0 +1,28 @@
+name: Community Event Catalog
+on:
+  pull_request:
+    paths:
+      - 'src/services/communityEventCatalog.js'
+      - 'src/routes/communityEventCatalogRoutes.js'
+      - 'test/community-event-catalog*.test.js'
+      - 'test/community-event-rsvp-integration.test.js'
+      - 'src/services/residentialCommunityService.js'
+      - 'world-bridge-server.js'
+      - '.github/workflows/community-event-catalog.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check src/services/communityEventCatalog.js
+      - run: node --check src/routes/communityEventCatalogRoutes.js
+      - run: node --check src/services/residentialCommunityService.js
+      - run: node --check world-bridge-server.js
+      - run: node --test test/community-event-catalog.test.js test/community-event-catalog-auth.test.js test/community-event-rsvp-integration.test.js
