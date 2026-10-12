@@ -57,6 +57,25 @@ function createEventCatalog({ filePath, clock = () => Date.now() }) {
     const next = { ...old, ...fields, status, updatedAt: new Date(clock()).toISOString(), updatedBy: String(actorId) };
     data.events[index] = next; save(data); return { ...next };
   }
-  return { list, create, update };
+  // Exclusive filesystem lock serializes reservations across workers sharing one disk.
+  // Fail closed on contention or stale locks; never delete a lock held by another worker.
+  function withRegistrationLock(fn) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    const lockPath = filePath + ".registration.lock";
+    let fd;
+    try {
+      fd = fs.openSync(lockPath, "wx", 0o600);
+    } catch (error) {
+      if (error.code === "EEXIST") {
+        const busy = new Error("Registration temporarily busy; retry");
+        busy.status = 503;
+        throw busy;
+      }
+      throw error;
+    }
+    try { return fn(); }
+    finally { fs.closeSync(fd); fs.unlinkSync(lockPath); }
+  }
+  return { list, create, update, withRegistrationLock };
 }
 module.exports = { createEventCatalog };
