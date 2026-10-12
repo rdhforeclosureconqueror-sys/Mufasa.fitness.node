@@ -11,6 +11,8 @@ const { createResidentialWellnessService } = require("./src/services/residential
 const { installResidentialWellnessRoutes } = require("./src/routes/residentialWellnessRoutes");
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
 const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
+const { createEventCatalog } = require("./src/services/communityEventCatalog");
+const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installSoundAssessmentRoutes } = require("./src/routes/soundAssessmentRoutes");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
@@ -70,7 +72,12 @@ function installResidentialWellness(app, options = {}) {
 }
 
 function installResidentialCommunity(app, options = {}) {
-  const userStore=createCanonicalUserStore(options),service=createResidentialCommunityService({userStore});
+  const userStore=createCanonicalUserStore(options);
+  const env=options.env||process.env;
+  const dataDir=path.resolve(options.dataDir||env.POCKET_PT_DATA_DIR||path.join(options.rootDir||process.cwd(),"data"));
+  const eventCatalog=createEventCatalog({filePath:path.join(dataDir,"community-events","catalog.json")});
+  const service=createResidentialCommunityService({userStore,eventCatalog});
+  installCommunityEventCatalogRoutes({app,requireAuth,catalog:eventCatalog});
   installResidentialCommunityRoutes({app,requireAuth,service});
   app.use((err,req,res,next)=>{if(!String(req.path||"").startsWith("/api/me/residential-community"))return next(err);if(res.headersSent)return next(err);return res.status(Number.isInteger(err?.status)?err.status:400).json({ok:false,requestId:req.requestId||null,error:{code:"RESIDENTIAL_COMMUNITY_REQUEST_FAILED",message:err?.message||"Community request failed"}})});
   app.locals.pocketPTResidentialCommunity={userStore,service};return app.locals.pocketPTResidentialCommunity;
