@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts
-      - run: node --test test/event-admin-navigation.test.js test/event-admin-auth-init.test.js test/event-admin-auth-handoff.test.js
+      - run: node --test test/event-admin-navigation.test.js test/event-admin-auth-init.test.js test/event-admin-auth-handoff.test.js test/event-admin-authoritative-role.test.js
       - run: node --check server.js
       - run: node -e "require('./src/billing/membershipTierBridge').createMembershipTierBridge({env:{NODE_ENV:'test'},dataDir:require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(),'tier-bridge-smoke-'))})"
       - run: node --check public/event-checkin.js
