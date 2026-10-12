@@ -6,4 +6,5 @@ test("event attendee navigation is available to administrators in the existing d
  assert.match(html,/id="clientManagementCard"/);
  assert.match(html,/id="eventCheckinsDashboardLink"[^>]*href="\\/admin-event-checkins\\.html"[^>]*hidden/);
  assert.ok(js.includes('eventCheckinsDashboardLink.hidden = !(roles.includes("admin") || roles.includes("super_admin"))'));
+ assert.ok(!js.includes('eventCheckinsDashboardLink.hidden = !roles.includes("super_admin")'));
 });
