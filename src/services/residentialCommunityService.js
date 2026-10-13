@@ -19,7 +19,9 @@ function createResidentialCommunityService({userStore,eventCatalog=null,clock=()
     if(!event||event.status!=="confirmed"||Date.parse(event.startAt)<=clock())throw Error("Event registration unavailable");
     const current=userStore.loadUser(userId);
     if(!member(current))throw Error("Join Community Wellness first");
-    const already=current.residentialCommunity?.rsvps?.some(r=>r.eventId===event.eventId&&r.status==="going");
+    const existing=current.residentialCommunity?.rsvps?.find(r=>r.eventId===event.eventId&&r.status==="going");
+    if(!attending&&existing?.checkedInAt)throw Error("Checked-in attendance cannot be cancelled; contact an administrator");
+    const already=Boolean(existing);
     if(attending&&!already){
       const occupied=userStore.listUsers().filter(u=>u.residentialCommunity?.rsvps?.some(r=>r.eventId===event.eventId&&r.status==="going")).length;
       if(occupied>=event.capacity){const error=Error("Event is full");error.status=409;throw error;}
