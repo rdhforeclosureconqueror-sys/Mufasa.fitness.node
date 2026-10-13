@@ -24,6 +24,7 @@ test("attendance check-in requires RSVP and is idempotent",()=>{
  const first=svc.checkIn(e.eventId,"a");
  assert.equal(first.checkedInAt,svc.checkIn(e.eventId,"a").checkedInAt);
  assert.equal(svc.attendance(e.eventId).attendees[0].checkedInAt,first.checkedInAt);
+ assert.throws(()=>svc.rsvp("a",e.eventId,false),/cannot be cancelled/);
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
 test("Event Studio attendance buttons are included in event click dispatch",()=>{
