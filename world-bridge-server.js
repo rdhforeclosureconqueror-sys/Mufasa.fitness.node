@@ -93,7 +93,7 @@ function installResidentialCommunity(app, options = {}) {
         }
         const reserved=userStore.listUsers().filter(u=>u.residentialCommunity?.rsvps?.some(r=>r.eventId===event.eventId&&r.status==="going")).length;
         if(reserved+guestRoster.length>=event.capacity){const error=Error("Event is full");error.status=409;throw error;}
-        return guestCheckins.checkin({event:event.eventId,name:req.body?.name,email:req.body?.email,before:req.body?.before||""});
+        return guestCheckins.checkin({event:event.eventId,name:req.body?.name,email:req.body?.email,before:req.body?.before||"",attributionConsent:req.body?.attributionConsent===true,attribution:req.body?.attribution});
       });
       return res.status(201).json({ok:true,data});
     }catch(error){return res.status(Number.isInteger(error.status)?error.status:400).json({ok:false,error:{message:error.message}});}
