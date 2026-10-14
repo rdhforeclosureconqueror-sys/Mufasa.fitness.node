@@ -4,11 +4,12 @@ function createEventCheckinStore({dataDir,clock=Date.now}){
  const dir=path.join(dataDir,"event-checkins");
  // Event responses are stored on the configured persistent volume; never log reflection tokens.
  const validId=id=>/^[a-f0-9]{32}$/.test(id||"");
+ const validEvent=id=>/^(?:[a-z0-9-]{3,64}|evt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.test(id||"");
  const file=id=>path.join(dir,id+".json");
  function read(id){return validId(id)&&fs.existsSync(file(id))?JSON.parse(fs.readFileSync(file(id),"utf8")):null}
  function write(record){fs.mkdirSync(dir,{recursive:true});const target=file(record.id),tmp=target+"."+process.pid+".tmp";fs.writeFileSync(tmp,JSON.stringify(record));fs.renameSync(tmp,target)}
  function checkin({event,name,email,before}){
-  if(!/^[a-z0-9-]{3,64}$/.test(event||""))throw Error("Invalid event");
+  if(!validEvent(event))throw Error("Invalid event");
   if(typeof name!=="string"||name.trim().length<2||name.length>100)throw Error("Invalid name");
   if(typeof email!=="string"||email.length>254||!/^\S+@\S+\.\S+$/.test(email))throw Error("Invalid email");
   if(typeof before!=="string"||before.length>500)throw Error("Invalid response");
