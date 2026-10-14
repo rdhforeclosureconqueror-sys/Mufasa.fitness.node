@@ -1,0 +1,25 @@
+name: Wellness campaign attribution
+on:
+  pull_request:
+    paths:
+      - 'public/quick-connect.html'
+      - 'public/wellness-campaign-links.js'
+      - 'test/wellness-campaign-links.test.js'
+      - '.github/workflows/wellness-campaign-attribution.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/quick-connect.html'
+      - 'public/wellness-campaign-links.js'
+      - 'test/wellness-campaign-links.test.js'
+      - '.github/workflows/wellness-campaign-attribution.yml'
+jobs:
+  attribution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check public/wellness-campaign-links.js
+      - run: node --test test/wellness-campaign-links.test.js
