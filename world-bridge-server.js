@@ -78,8 +78,8 @@ function installResidentialCommunity(app, options = {}) {
   const env=options.env||process.env;
   const dataDir=path.resolve(options.dataDir||env.POCKET_PT_DATA_DIR||path.join(options.rootDir||process.cwd(),"data"));
   const eventCatalog=createEventCatalog({filePath:path.join(dataDir,"community-events","catalog.json")});
-  const service=createResidentialCommunityService({userStore,eventCatalog});
   const guestCheckins=createEventCheckinStore({dataDir});
+  const service=createResidentialCommunityService({userStore,eventCatalog,guestCheckins});
   const guestWrite=createRateLimiter({name:"catalog-guest-checkin",windowMs:60000,max:8});
   app.post("/api/community/events/:eventId/guest-check-in",guestWrite,(req,res)=>{
     try {
