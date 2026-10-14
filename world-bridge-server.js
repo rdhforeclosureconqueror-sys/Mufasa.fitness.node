@@ -12,6 +12,8 @@ const { installResidentialWellnessRoutes } = require("./src/routes/residentialWe
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
 const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
 const { createEventCatalog } = require("./src/services/communityEventCatalog");
+const { createEventCheckinStore } = require("./src/services/eventCheckinStore");
+const { createRateLimiter } = require("./src/middleware/rateLimit");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installSoundAssessmentRoutes } = require("./src/routes/soundAssessmentRoutes");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
@@ -76,7 +78,34 @@ function installResidentialCommunity(app, options = {}) {
   const env=options.env||process.env;
   const dataDir=path.resolve(options.dataDir||env.POCKET_PT_DATA_DIR||path.join(options.rootDir||process.cwd(),"data"));
   const eventCatalog=createEventCatalog({filePath:path.join(dataDir,"community-events","catalog.json")});
-  const service=createResidentialCommunityService({userStore,eventCatalog});
+  const guestCheckins=createEventCheckinStore({dataDir});
+  const service=createResidentialCommunityService({userStore,eventCatalog,guestCheckins});
+  const guestWrite=createRateLimiter({name:"catalog-guest-checkin",windowMs:60000,max:8});
+  app.post("/api/community/events/:eventId/guest-check-in",guestWrite,(req,res)=>{
+    try {
+      const event=eventCatalog.list({publicOnly:true}).find(e=>e.eventId===req.params.eventId && Date.parse(e.startAt)<=Date.now());
+      if(!event)return res.status(404).json({ok:false,error:{message:"Event check-in is not currently available"}});
+      const data=eventCatalog.withRegistrationLock(()=>{
+        const guestRoster=guestCheckins.roster().filter(r=>r.event===event.eventId);
+        const email=String(req.body?.email||"").trim().toLowerCase();
+        if(guestRoster.some(r=>r.email===email)){
+          const error=Error("This email is already checked in for the event");error.status=409;throw error;
+        }
+        const reserved=userStore.listUsers().filter(u=>u.residentialCommunity?.rsvps?.some(r=>r.eventId===event.eventId&&r.status==="going")).length;
+        if(reserved+guestRoster.length>=event.capacity){const error=Error("Event is full");error.status=409;throw error;}
+        return guestCheckins.checkin({event:event.eventId,name:req.body?.name,email:req.body?.email,before:req.body?.before||""});
+      });
+      return res.status(201).json({ok:true,data});
+    }catch(error){return res.status(Number.isInteger(error.status)?error.status:400).json({ok:false,error:{message:error.message}});}
+  });
+  app.get("/api/admin/community/events/:eventId/guest-attendance",requireAuth,(req,res)=>{
+    if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({ok:false,error:{message:"Administrator access required"}});
+    const event=eventCatalog.list().find(e=>e.eventId===req.params.eventId);
+    if(!event)return res.status(404).json({ok:false,error:{message:"Event not found"}});
+    const guests=guestCheckins.roster().filter(r=>r.event===event.eventId);
+    res.set("Cache-Control","private, no-store");
+    return res.json({ok:true,data:{eventId:event.eventId,checkedIn:guests.length,guests}});
+  });
   installCommunityEventCatalogRoutes({app,requireAuth,catalog:eventCatalog});
   installResidentialCommunityRoutes({app,requireAuth,service});
   app.use((err,req,res,next)=>{if(!String(req.path||"").startsWith("/api/me/residential-community"))return next(err);if(res.headersSent)return next(err);return res.status(Number.isInteger(err?.status)?err.status:400).json({ok:false,requestId:req.requestId||null,error:{code:"RESIDENTIAL_COMMUNITY_REQUEST_FAILED",message:err?.message||"Community request failed"}})});

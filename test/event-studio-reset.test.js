@@ -11,4 +11,4 @@ test("Event Studio never shadows native form.reset with named controls",()=>{
  assert.match(js,/HTMLFormElement\.prototype\.reset\.call\(\$\("eventForm"\)\)/);
  assert.match(js,/\$\("newEventBtn"\)\.addEventListener/);
 });
-test("Event Studio references cache-busted fixed script",()=>assert.match(html,/event-studio\.js\?v=3/));
+test("Event Studio references cache-busted fixed script",()=>assert.match(html,/event-studio\.js\?v=4/));

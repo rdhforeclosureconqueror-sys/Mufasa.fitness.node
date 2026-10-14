@@ -29,5 +29,5 @@ test("attendance check-in requires RSVP and is idempotent",()=>{
 });
 test("Event Studio attendance buttons are included in event click dispatch",()=>{
  const js=fs.readFileSync(path.join(__dirname,"../public/event-studio.js"),"utf8");
- assert.match(js,/button\.dataset\.edit\|\|button\.dataset\.attendance\|\|button\.dataset\.publish/);
+ assert.match(js,/button\.dataset\.edit\|\|button\.dataset\.attendance\|\|button\.dataset\.guestLink\|\|button\.dataset\.publish/);
 });
