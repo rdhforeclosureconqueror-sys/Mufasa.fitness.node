@@ -1,6 +1,6 @@
 "use strict";
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
-function createEventCheckinStore({dataDir,clock=Date.now}){
+const CAMPAIGN_PATTERN=/^[a-z0-9_-]{1,64}$/;\nconst validCampaign=v=>typeof v==="string"&&CAMPAIGN_PATTERN.test(v)?v:null;\nfunction createEventCheckinStore({dataDir,clock=Date.now}){
  const dir=path.join(dataDir,"event-checkins");
  // Event responses are stored on the configured persistent volume; never log reflection tokens.
  const validId=id=>/^[a-f0-9]{32}$/.test(id||"");
@@ -8,13 +8,13 @@ function createEventCheckinStore({dataDir,clock=Date.now}){
  const file=id=>path.join(dir,id+".json");
  function read(id){return validId(id)&&fs.existsSync(file(id))?JSON.parse(fs.readFileSync(file(id),"utf8")):null}
  function write(record){fs.mkdirSync(dir,{recursive:true});const target=file(record.id),tmp=target+"."+process.pid+".tmp";fs.writeFileSync(tmp,JSON.stringify(record));fs.renameSync(tmp,target)}
- function checkin({event,name,email,before}){
+ function checkin({event,name,email,before,attribution,attributionConsent=false}){
   if(!validEvent(event))throw Error("Invalid event");
   if(typeof name!=="string"||name.trim().length<2||name.length>100)throw Error("Invalid name");
   if(typeof email!=="string"||email.length>254||!/^\S+@\S+\.\S+$/.test(email))throw Error("Invalid email");
   if(typeof before!=="string"||before.length>500)throw Error("Invalid response");
   const id=crypto.randomBytes(16).toString("hex"),token=crypto.randomBytes(24).toString("hex");
-  write({id,event,name:name.trim(),email:email.trim().toLowerCase(),before,createdAt:clock(),tokenHash:crypto.createHash("sha256").update(token).digest("hex"),after:null});
+  const campaign=attributionConsent===true&&attribution&&typeof attribution==="object"?{utm_source:validCampaign(attribution.utm_source),utm_medium:validCampaign(attribution.utm_medium),utm_campaign:validCampaign(attribution.utm_campaign)}:null;\n  const safeCampaign=campaign&&Object.values(campaign).some(Boolean)?campaign:null;\n  write({id,event,name:name.trim(),email:email.trim().toLowerCase(),before,attribution:safeCampaign,createdAt:clock(),tokenHash:crypto.createHash("sha256").update(token).digest("hex"),after:null});
   return{id,token};
  }
  function reflect({id,token,after}){
