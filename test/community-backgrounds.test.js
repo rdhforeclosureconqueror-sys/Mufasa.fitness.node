@@ -1,0 +1,7 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
+const read=name=>fs.readFileSync(path.join(__dirname,"../public",name),"utf8");
+const pages=["community-hub.html","community-trial-offer.html","quick-connect.html","apartment-wellness.html","residential-wellness.html","wellness-check-in.html","sound-assessment.html","private-sessions.html"];
+test("all community pages use one manifest and background engine",()=>{for(const page of pages){const html=read(page);for(const asset of ["community-backgrounds.css","community-backgrounds.manifest.js","community-backgrounds.js"])assert.ok(html.includes(asset),page+" missing "+asset);}assert.ok(read("private-sessions.html").includes('communityBackground="off"'));});
+test("manifest has multiple approved local photos",()=>{const context={window:{}};vm.runInNewContext(read("community-backgrounds.manifest.js"),context);assert.ok(context.window.MileleCommunityBackgrounds.length>=3);for(const image of context.window.MileleCommunityBackgrounds)assert.ok(image.startsWith("/"));});
+test("background engine preloads and retains solid fallback",()=>{const js=read("community-backgrounds.js");assert.ok(js.includes("img.onload"));assert.ok(js.includes("img.onerror"));assert.ok(js.includes("sessionStorage"));assert.ok(js.includes('root.dataset.communityBackground==="off"'));});
