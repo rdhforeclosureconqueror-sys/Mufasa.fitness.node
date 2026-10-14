@@ -1,0 +1,8 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
+const read=p=>fs.readFileSync(path.join(__dirname,"../public",p),"utf8");
+test("dashboard embeds awareness journey and removes Eight Limbs content scripts",()=>{const html=read("mindfulness.html");assert.ok(html.includes('id="daily-snapshot"'));assert.ok(html.includes('id="awareness-experience"'));assert.ok(html.includes('awareness-experience-v2.js'));assert.ok(!html.includes('mindfulness-limbs-ui-v1.js'));assert.ok(!html.includes('mindfulness-story-ui-v1.js'));});
+test("both journey pages share the same content engine",()=>{assert.ok(read("awareness-journey.html").includes('awareness-experience-v2.js'));assert.ok(read("mindfulness.html").includes('awareness-experience-v2.js'));});
+test("day one teaches 4-2-4 attention and reflections",()=>{const js=read("awareness-experience-v2.js");for(const s of ['Meet Your Attention','60-second guided practice','inhale for four counts','pause for two','exhale for four','When you noticed','I am aware'])assert.ok(js.toLowerCase().includes(s.toLowerCase()),s);});
+test("seven days gradually transfer affirmation authorship",()=>{const js=read("awareness-experience-v2.js");assert.ok(js.includes('7-supplied.length'));assert.ok(js.includes("input.placeholder='write what resonates with you'"));assert.ok(js.includes("const lessons=["));});
+test("chakra details are opened and existing library remains",()=>{assert.ok(read("mindfulness-interactive-v1.js").includes('more.open=true'));assert.ok(read("mindfulness-interactive-v1.js").includes('practices.open=true'));assert.ok(read("mindfulness.html").includes('id="library"'));});
