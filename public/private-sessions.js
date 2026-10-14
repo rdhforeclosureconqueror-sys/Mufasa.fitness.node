@@ -47,7 +47,7 @@ form.addEventListener("submit",async e=>{
   e.preventDefault();
   const f=new FormData(form),services=selectedServices();
   if(!services.length){const domChecked=serviceInputs().filter(input=>input.checked).length,serialized=f.getAll("services").length;status.textContent=`Choose at least one coaching service. Browser debug: tracked ${serviceState.size}, checked ${domChecked}, serialized ${serialized}.`;form.querySelector('input[name="services"]')?.focus();return;}
-  const body={services,locationPreference:f.get("locationPreference"),sessionsPerWeek:Number(f.get("sessionsPerWeek")),paymentPreference:f.get("paymentPreference"),systemInterest:f.get("systemInterest"),budgetRange:f.get("budgetRange"),notes:f.get("notes")};
+  const body={services,locationPreference:f.get("locationPreference"),sessionsPerWeek:Number(f.get("sessionsPerWeek")),paymentPreference:f.get("paymentPreference"),systemInterest:f.get("systemInterest"),budgetRange:f.get("budgetRange"),contactPhone:f.get("contactPhone"),preferredSchedule:f.get("preferredSchedule"),notes:f.get("notes")};
   status.textContent="Sending your request…";submit.disabled=true;
   try{await submitQuote(body);status.textContent="Request sent ✓ Opening your PocketPT dashboard…";if(communityMode){location.replace("/community-hub.html?source=private-session-request");}else{queueDashboardGuide();location.replace("/dashboard.html?source=private-sessions");}}
   catch(err){submit.disabled=false;if(err.message!=="Sign in required")status.textContent=err.message;}
