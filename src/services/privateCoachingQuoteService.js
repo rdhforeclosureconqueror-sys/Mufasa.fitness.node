@@ -20,7 +20,8 @@ function createPrivateCoachingQuoteService({ userStore, clock = () => Date.now()
     if(!ALLOWED_PAYMENT.has(paymentPreference)) throw validationError("Choose how you prefer to pay","PRIVATE_COACHING_PAYMENT_INVALID",{received:paymentPreference});
     const budgetRange=clean(input.budgetRange);
     if(!ALLOWED_BUDGETS.has(budgetRange)) throw validationError("Choose a budget range","PRIVATE_COACHING_BUDGET_INVALID",{received:budgetRange});
-    return { services, locationPreference, sessionsPerWeek, paymentPreference, budgetRange,
+    const contactPhone=clean(input.contactPhone,40);const preferredSchedule=clean(input.preferredSchedule,160);if(contactPhone&&!/^[+()\d .-]{7,40}$/.test(contactPhone))throw validationError("Enter a valid contact phone number","PRIVATE_COACHING_PHONE_INVALID");
+    return { services, locationPreference, sessionsPerWeek, paymentPreference, budgetRange, contactPhone:contactPhone||null,preferredSchedule:preferredSchedule||null,
       systemInterest:["yes","maybe","no"].includes(clean(input.systemInterest))?clean(input.systemInterest):"maybe",
       notes:clean(input.notes,1200)||null,
       quoteStatus:"requested", pricingPresented:false, paymentRequired:false,
