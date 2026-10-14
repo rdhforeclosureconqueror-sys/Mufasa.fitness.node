@@ -42,3 +42,29 @@ Dallas/Addison/DFW yoga communities, meditation circles, breathwork/pranayama ev
 
 ## Guardrails
 No production changes, scraping restricted sources, contacting prospects, self-approval, customer-data export, spending or marketing certification from this audit. Preserve existing Community Wellness behavior. Require review before merge.
+
+## Executed source-level audit — 2026-10-14
+Baseline: main `7ddeea05dcae49191d4fd2feddb158f5886fff31`. Inspection only; no runtime test or deployed secret inspection.
+
+| Boundary | Observed code | Status / first failure |
+|---|---|---|
+| NFC entry | `public/quick-connect.html` routes to wellness, check-in, assessment, private sessions | PRESENT; no `utm_source`, campaign or event ID propagated on these links. FIRST FAILURE for source-specific funnel attribution is NFC entry → destination context. |
+| Event catalog | `src/routes/communityEventCatalogRoutes.js` public GET, admin/super_admin protected write | PRESENT; routes installed only when durable catalog configured. Live persistence configuration UNVERIFIED. |
+| Event check-in | `public/event-checkin.js` uses eventId query param or active event, guest-check-in and reflection endpoints | PRESENT; check-in page is not reached with eventId from generic NFC landing. Source attribution not forwarded to check-in payload. |
+| Google discovery/measurement | `src/business-os/scout/google-sources.js` official read-only Search Console and GA4 adapters | PRESENT; requires token, property IDs and human-verified configuration; real provider reads UNVERIFIED. |
+| Sales | `docs/architecture/ai-business-os/sales/SALES_0_ARCHITECTURE_AND_GAP_AUDIT.md` describes synthetic handoff, and later SALES-1/2 PRs exist | Commercial source-to-opportunity-to-conversion integration UNVERIFIED. |
+| Operator marketing | `docs/EXTRACTION_OS_POCKET_PT_V1.md` says planning fields use browser localStorage | Not canonical server-side marketing evidence. |
+
+### First failure and recommended first implementation
+**FIRST FAILURE (source-code trace): NFC campaign identity is not captured or carried across the Quick Connect navigation.** This does not prove that GA4 or other analytics have no independent tracking; it means this specific first-party funnel cannot reliably attribute an event check-in to the NFC source from the inspected code.
+
+Propose WELLNESS-1 as a backward-compatible, privacy-minimizing attribution contract: approved `campaignId` and `channel` allowlist, optional `eventId`, server-issued anonymous visit/session identifier, consent-aware collection, safe propagation to approved destinations, and aggregate-only admin reporting. Never claim a tap is a unique person or a booking. Preserve all existing links and guest check-in behavior. Test malformed parameters, spoofed event IDs, deduplication, opt-out, mobile navigation and first failure diagnostics.
+
+### Unverified before production acceptance
+- Whether real NFC tags currently point at Quick Connect or a different route.
+- Production frontend/backend commit parity, persistent event catalog, deployed GA4/Search Console configuration and actual read results.
+- Complete RSVP and check-in backend linkage, permission and consent semantics.
+- Baseline conversion denominators and real participant outcomes.
+- Test execution, CI checks and manual mobile NFC acceptance.
+
+No certification or production enablement follows from this audit.
