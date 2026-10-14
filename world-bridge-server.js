@@ -85,9 +85,18 @@ function installResidentialCommunity(app, options = {}) {
     try {
       const event=eventCatalog.list({publicOnly:true}).find(e=>e.eventId===req.params.eventId && Date.parse(e.startAt)<=Date.now());
       if(!event)return res.status(404).json({ok:false,error:{message:"Event check-in is not currently available"}});
-      const data=guestCheckins.checkin({event:event.eventId,name:req.body?.name,email:req.body?.email,before:req.body?.before||""});
+      const data=eventCatalog.withRegistrationLock(()=>{
+        const guestRoster=guestCheckins.roster().filter(r=>r.event===event.eventId);
+        const email=String(req.body?.email||"").trim().toLowerCase();
+        if(guestRoster.some(r=>r.email===email)){
+          const error=Error("This email is already checked in for the event");error.status=409;throw error;
+        }
+        const reserved=userStore.listUsers().filter(u=>u.residentialCommunity?.rsvps?.some(r=>r.eventId===event.eventId&&r.status==="going")).length;
+        if(reserved+guestRoster.length>=event.capacity){const error=Error("Event is full");error.status=409;throw error;}
+        return guestCheckins.checkin({event:event.eventId,name:req.body?.name,email:req.body?.email,before:req.body?.before||""});
+      });
       return res.status(201).json({ok:true,data});
-    }catch(error){return res.status(400).json({ok:false,error:{message:error.message}});}
+    }catch(error){return res.status(Number.isInteger(error.status)?error.status:400).json({ok:false,error:{message:error.message}});}
   });
   app.get("/api/admin/community/events/:eventId/guest-attendance",requireAuth,(req,res)=>{
     if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({ok:false,error:{message:"Administrator access required"}});
