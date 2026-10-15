@@ -1,10 +1,10 @@
 name: Record Acceptance Lab Phase 3 readiness
 on:
-  push:
-    branches:
-      - feature/acceptance-lab-scenario-integrity-mobile
+  pull_request:
     paths:
       - '.github/workflows/acceptance-lab-phase3-readiness.yml'
+      - 'data/readiness/development-cards.json'
+      - 'data/readiness/development-evidence.json'
 permissions:
   contents: write
 jobs:
@@ -22,7 +22,7 @@ jobs:
         env:
           OPS_DIR: ${{ runner.temp }}/acceptance-lab-ops
         run: |
-          npm run readiness:update -- --board launch --action create --card launch-development-acceptance-lab-phase3 --title "Acceptance Lab Phase 3 scenario integrity and mobile diagnostics" --category quality --description "Exact first-failure checks and mobile report layout; human iPhone acceptance pending" --priority high --humanRequired true --task acceptance-lab-phase3
+          npm run readiness:update -- --board launch --action create --card launch-development-acceptance-lab-phase3 --title "Acceptance Lab Phase 3 scenario integrity and mobile diagnostics" --category QUALITY --description "Exact first-failure checks and mobile report layout; human iPhone acceptance pending" --priority HIGH --humanRequired true --task acceptance-lab-phase3
           npm run readiness:update -- --board launch --action evidence --card launch-development-acceptance-lab-phase3 --task acceptance-lab-phase3 --pr 1026 --files scripts/business-os-acceptance-lab.js,public/admin-acceptance-lab.html,test/business-os-acceptance-scenario-integrity.test.js,.github/workflows/business-os-acceptance-integrity.yml --result PASS --note "Automated PR checks passed; exact rejection boundaries and mobile CSS covered. Production browser and physical iPhone human acceptance NOT verified. Rollback: revert Phase 3 squash commit on a reviewed rollback branch and redeploy frontend and backend."
           npm run readiness:validate
       - name: Commit repository-backed readiness evidence
