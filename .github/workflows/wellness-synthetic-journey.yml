@@ -9,6 +9,8 @@ on:
       - 'test/wellness-admin-synthetic-integration.test.js'
       - 'test/wellness-phase4-http-auth.test.js'
       - 'test/wellness-phase4-event-http-journey.test.js'
+      - 'test/wellness-staging-preflight.test.js'
+      - 'scripts/wellness-staging-preflight.js'
       - 'src/services/communityEventCatalog.js'
       - 'src/services/residentialCommunityService.js'
       - 'src/services/eventCheckinStore.js'
@@ -26,5 +28,6 @@ jobs:
       - run: node --check scripts/wellness-synthetic-journey.js
       - run: node --check public/wellness-synthetic-admin-runner.js
       - run: node scripts/wellness-synthetic-journey.js
+      - run: node --test test/wellness-staging-preflight.test.js
       - run: node --test test/wellness-admin-synthetic-integration.test.js test/wellness-phase4-http-auth.test.js test/wellness-phase4-event-http-journey.test.js
       - run: node --test test/community-event-rsvp-integration.test.js test/community-event-attendance.test.js test/community-event-guest-link.test.js test/event-checkin-store.test.js
