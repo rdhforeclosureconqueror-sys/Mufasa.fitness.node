@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..', 'public');
 const live = process.argv.includes('--live');
-const origin = process.env.WELLNESS_BASE_URL || 'https://mufasafitsite.onrender.com';
+const origin = process.env.WELLNESS_BASE_URL || null;
+if (live && (!origin || !/^https?:\/\//.test(origin))) { console.error('Set WELLNESS_BASE_URL to an explicit staging or production origin for --live'); process.exit(2); }
 const journeys = [
   { id:'nfc-explore', steps:['/quick-connect.html','/apartment-wellness.html'] },
   { id:'nfc-checkin', steps:['/quick-connect.html','/wellness-check-in.html','/event-checkin.js'] },
@@ -26,7 +27,7 @@ async function check(step, previous) {
   const file = path.join(root, step.slice(1));
   if (!fs.existsSync(file)) return {ok:false,reason:'MISSING_LOCAL_FILE'};
   const body = fs.readFileSync(file,'utf8');
-  if (previous === '/quick-connect.html' && routeLinks[step] && !body) return {ok:false,reason:'EMPTY_FILE'};
+  if (!body.trim()) return {ok:false,reason:'EMPTY_FILE'};
   if (previous === '/quick-connect.html' && !fs.readFileSync(path.join(root,'quick-connect.html'),'utf8').includes('href="'+step)) {
     if (step !== '/private-sessions.html') return {ok:false,reason:'LINK_NOT_PRESENT'};
     if (!fs.readFileSync(path.join(root,'quick-connect.html'),'utf8').includes('/private-sessions.html?')) return {ok:false,reason:'LINK_NOT_PRESENT'};
