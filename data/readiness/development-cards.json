@@ -782,6 +782,20 @@
       "createdAt": "2026-10-08T16:05:53.908Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-acceptance-lab-phase3",
+      "board": "launch",
+      "canonical": false,
+      "title": "Acceptance Lab Phase 3 scenario integrity and mobile diagnostics",
+      "category": "QUALITY",
+      "description": "Exact first-failure checks and mobile report layout; human iPhone acceptance pending",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-10-15T06:09:31.624Z",
+      "source": "readiness:update",
+      "taskId": "acceptance-lab-phase3"
     }
   ]
 }
