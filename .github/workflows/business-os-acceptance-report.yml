@@ -1,0 +1,17 @@
+name: Business OS acceptance reporting
+on:
+  pull_request:
+    paths:
+      - 'scripts/business-os-acceptance-*.js'
+      - 'test/business-os-acceptance-*.test.js'
+      - '.github/workflows/business-os-acceptance-report.yml'
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/business-os-acceptance-lab.test.js test/business-os-acceptance-report.test.js
+      - run: node scripts/business-os-acceptance-report.js
