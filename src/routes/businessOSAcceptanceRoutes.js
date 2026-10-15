@@ -2,6 +2,7 @@
 const express=require("express");
 const {scenarios}=require("../../scripts/business-os-acceptance-lab");
 const {execute}=require("../../scripts/business-os-acceptance-report");
+const {run:runWellness}=require("../../scripts/wellness-synthetic-journey");
 function requireLabAdmin(req,res,next){
  if(!req.auth?.userId)return res.status(401).json({ok:false,error:{code:"UNAUTHENTICATED"}});
  if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({ok:false,error:{code:"FORBIDDEN"}});
@@ -21,6 +22,12 @@ function installBusinessOSAcceptanceRoutes({app,requireAuth}){
    const report=execute({scenarioIds:body.scenarioIds,commitSha:process.env.RENDER_GIT_COMMIT||process.env.GITHUB_SHA||"UNKNOWN",deployment:"SERVER_SIMULATION"});
    return res.json({ok:true,report});
   }catch(error){return res.status(422).json({ok:false,error:{code:"INVALID_SCENARIO",firstFailure:error.message}})}
+ });
+ router.post("/wellness/run",express.json({limit:"1kb"}),(req,res)=>{
+  if(!req.is("application/json"))return res.status(415).json({ok:false,error:{code:"JSON_REQUIRED"}});
+  if(!req.body||typeof req.body!=="object"||Array.isArray(req.body)||Object.keys(req.body).length)return res.status(400).json({ok:false,error:{code:"INVALID_REQUEST"}});
+  try{return res.json({ok:true,report:runWellness()})}
+  catch(error){return res.status(500).json({ok:false,error:{code:"WELLNESS_HARNESS_ERROR",firstFailure:error.message}})}
  });
  app.use("/api/admin/business-os/acceptance",router);
  return router;
