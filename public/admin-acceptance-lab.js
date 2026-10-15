@@ -29,7 +29,7 @@
     if(!data||!Array.isArray(data.results))throw Error("Invalid report received");
     summary.textContent=(data.passed?"PASS":"FAIL")+" · "+data.results.filter(x=>x.passed).length+"/"+data.total+" passed · Commit "+data.commitSha;
     summary.className=data.passed?"pass":"fail";report.textContent=JSON.stringify(data,null,2);report.hidden=false;copy.hidden=false;
-    status.textContent="Simulation complete. No production changes performed.";
+    status.textContent="Simulation complete. No production changes performed.";window.dispatchEvent(new CustomEvent("milele-acceptance-result",{detail:{type:"business",passed:data.passed,count:data.results.filter(x=>x.passed).length,total:data.total,firstFailure:data.results.find(x=>!x.passed)?.id||null}}));
    }catch(e){summary.textContent="Unable to run: "+e.message;summary.className="fail";status.textContent="Verification unavailable";}
    finally{run.disabled=false}
   });

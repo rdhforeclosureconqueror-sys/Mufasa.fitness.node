@@ -43,6 +43,7 @@
   const report={kind:"WellnessBrowserRouteReport",mode:"READ_ONLY_BROWSER_HTTP",timestamp:new Date().toISOString(),results,limitations:["No NFC hardware interaction","No client registration, RSVP, check-in submission, payment, or database write","Passing route checks do not certify end-to-end customer workflows"]};
   output.textContent=JSON.stringify(report,null,2);output.hidden=false;
   const failures=results.filter(x=>x.status==="FAIL");status.textContent=failures.length?failures.length+" of "+results.length+" route journeys failed; inspect firstFailure below.":results.length+" route journeys reachable. Customer-action tests remain unimplemented.";
+  window.dispatchEvent(new CustomEvent("milele-acceptance-result",{detail:{type:"routes",passed:failures.length===0,count:results.length-failures.length,total:results.length,firstFailure:results.find(x=>x.firstFailure)?.id||null}}));
   button.disabled=false;
  });
 })();
