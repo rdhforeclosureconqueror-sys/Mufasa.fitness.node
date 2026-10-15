@@ -1,0 +1,26 @@
+name: Wellness campaign report
+on:
+  pull_request:
+    paths:
+      - 'src/services/wellnessCampaignReport.js'
+      - 'world-bridge-server.js'
+      - 'test/wellness-campaign-report.test.js'
+      - '.github/workflows/wellness-campaign-report.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/services/wellnessCampaignReport.js'
+      - 'world-bridge-server.js'
+      - 'test/wellness-campaign-report.test.js'
+      - '.github/workflows/wellness-campaign-report.yml'
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check world-bridge-server.js
+      - run: node --check src/services/wellnessCampaignReport.js
+      - run: node --test test/wellness-campaign-report.test.js test/wellness-guest-attribution.test.js test/community-event-guest-link.test.js
