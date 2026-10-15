@@ -1,0 +1,8 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),S=require("../src/business-os/sales");
+const H="a".repeat(64);
+const q=()=>S.QualificationAssessment({id:"q",organizationId:"org",workId:"work",version:1,qualificationInputRef:{artifactType:"QualificationInput",artifactId:"qi",digest:H,version:1,organizationId:"org",workId:"work"},criteria:[{id:"need",question:"need",status:"SATISFIED",evidenceRefs:["ev1"]}],disposition:"QUALIFIED",limitations:[],missingEvidence:[]});
+const proposal=()=>S.proposeOffer({id:"offer",organizationId:"org",workId:"work",opportunityId:"opp",qualification:q(),capabilities:[{id:"c",organizationId:"org",workId:"work",version:1,serviceId:"yoga",description:"Yoga",status:"SUPPORTED",evidenceRefs:["credential"],limitations:[]}]});
+test("economic binding rejects missing or forged economics",()=>{assert.throws(()=>S.EconomicOfferBinding({id:"binding",proposal:proposal()}),/economic_assessment/);assert.throws(()=>S.EconomicOfferBinding({id:"binding",proposal:proposal(),economicAssessment:{kind:"EconomicAssessment",organizationId:"org",workId:"work",disposition:"CONTINUE"}}),/invalid_economics/)});
+test("approval request rejects unverified binding",()=>assert.throws(()=>S.ApprovalRequest({id:"request",proposal:proposal(),binding:{kind:"EconomicOfferBinding",status:"EVIDENCE_BOUND",organizationId:"org",workId:"work"}}),/proposal_digest/));
+test("approval request cannot be synthesized from arbitrary evidence",()=>assert.throws(()=>S.ApprovalRequest({id:"request",proposal:proposal(),binding:{kind:"EconomicOfferBinding",status:"PROPOSED"}}),/binding/));
