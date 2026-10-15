@@ -1,0 +1,17 @@
+name: SALES-4 economics governance
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/sales/**'
+      - 'test/ai-business-os-sales-*.test.js'
+      - '.github/workflows/sales-4-governance.yml'
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/business-os/sales/governance.js
+      - run: node --test test/ai-business-os-sales-qualification.test.js test/ai-business-os-sales-offers.test.js test/ai-business-os-sales-governance.test.js
