@@ -1,0 +1,23 @@
+name: SALES-2 qualification
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/sales/**'
+      - 'test/ai-business-os-sales-qualification.test.js'
+      - '.github/workflows/sales-2-qualification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/business-os/sales/**'
+      - 'test/ai-business-os-sales-qualification.test.js'
+      - '.github/workflows/sales-2-qualification.yml'
+jobs:
+  qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/business-os/sales/qualification.js
+      - run: node --test test/ai-business-os-sales-qualification.test.js
