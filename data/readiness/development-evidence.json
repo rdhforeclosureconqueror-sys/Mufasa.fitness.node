@@ -6008,6 +6008,37 @@
       "prNumber": 997,
       "commitSha": "7d956b759ce332352fb9f60b5c24757c6ed13052",
       "timestamp": "2026-10-14T00:20:15.313Z"
+    },
+    {
+      "operationId": "ae428136-5d79-4339-af05-70456ffba06e",
+      "board": "launch",
+      "cardId": "launch-development-acceptance-lab-phase3",
+      "sourceType": "card_creation",
+      "taskId": "acceptance-lab-phase3",
+      "files": [],
+      "automated": null,
+      "evidence": "Exact first-failure checks and mobile report layout; human iPhone acceptance pending",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-15T06:09:31.624Z"
+    },
+    {
+      "operationId": "bbe740ab-2f29-4881-bae4-82922f82d1ee",
+      "board": "launch",
+      "cardId": "launch-development-acceptance-lab-phase3",
+      "sourceType": "implementation",
+      "taskId": "acceptance-lab-phase3",
+      "files": [
+        "scripts/business-os-acceptance-lab.js",
+        "public/admin-acceptance-lab.html",
+        "test/business-os-acceptance-scenario-integrity.test.js",
+        ".github/workflows/business-os-acceptance-integrity.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated PR checks passed; exact rejection boundaries and mobile CSS covered. Production browser and physical iPhone human acceptance NOT verified. Rollback: revert Phase 3 squash commit on a reviewed rollback branch and redeploy frontend and backend.",
+      "prNumber": 1026,
+      "commitSha": null,
+      "timestamp": "2026-10-15T06:09:31.779Z"
     }
   ]
 }
