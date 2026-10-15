@@ -1,0 +1,31 @@
+name: Wellness guest attribution
+on:
+  pull_request:
+    paths:
+      - 'src/services/eventCheckinStore.js'
+      - 'world-bridge-server.js'
+      - 'public/wellness-check-in.html'
+      - 'public/event-checkin.js'
+      - 'test/wellness-guest-attribution.test.js'
+      - '.github/workflows/wellness-guest-attribution.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/services/eventCheckinStore.js'
+      - 'world-bridge-server.js'
+      - 'public/wellness-check-in.html'
+      - 'public/event-checkin.js'
+      - 'test/wellness-guest-attribution.test.js'
+      - '.github/workflows/wellness-guest-attribution.yml'
+jobs:
+  guest-attribution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/services/eventCheckinStore.js
+      - run: node --check public/event-checkin.js
+      - run: node --check world-bridge-server.js
+      - run: node --test test/wellness-guest-attribution.test.js test/community-event-guest-link.test.js test/community-event-attendance.test.js
