@@ -7,7 +7,12 @@
   const readiness=await window.AuthNavigation.requireUser({returnTo:location.pathname+location.search});
   if(!readiness?.ok){status.textContent="Sign in required.";return}
   if(!window.AuthStateRuntime?.getAuthToken?.()){status.textContent="No verified authentication token.";return}
-  const response=await window.MaatApiClient.request(endpoint+"/scenarios");
+  let response=await window.MaatApiClient.request(endpoint+"/scenarios");
+  // Retry a read-only GET once after a transport failure; never retry writes.
+  if(!response.ok && response.diagnostics?.status==null && response.diagnostics?.dispatched===true){
+   status.textContent="Scenario library connection interrupted. Retrying read-only request…";
+   response=await window.MaatApiClient.request(endpoint+"/scenarios");
+  }
   if(!response.ok)throw Error(failure(response));
   const scenarios=response.payload?.scenarios;
   if(!Array.isArray(scenarios)||!scenarios.length)throw Error("No scenarios available");
