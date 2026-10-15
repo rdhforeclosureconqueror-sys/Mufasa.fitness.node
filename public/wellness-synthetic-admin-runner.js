@@ -19,7 +19,7 @@
    if(!data||!Array.isArray(data.checks))throw Error("Invalid synthetic report");
    const passed=data.checks.filter(x=>x.status==="PASS").length;
    status.textContent=(data.passed?"PASS":"FAIL")+" · "+passed+"/"+data.checks.length+" checks passed"+(data.firstFailure?" · First failure: "+data.firstFailure.id:"");
-   report.textContent=JSON.stringify(data,null,2);report.hidden=false;
+   report.textContent=JSON.stringify(data,null,2);report.hidden=false;window.dispatchEvent(new CustomEvent("milele-acceptance-result",{detail:{type:"synthetic",passed:data.passed,count:passed,total:data.checks.length,firstFailure:data.firstFailure?.id||data.firstFailure||null}}));
   }catch(error){status.textContent="Unable to run: "+error.message}
   finally{button.disabled=false}
  });
