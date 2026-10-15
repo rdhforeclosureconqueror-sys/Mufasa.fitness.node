@@ -14,7 +14,7 @@
   button.disabled=true;report.hidden=true;status.textContent="Running isolated synthetic journey…";
   try{
    const response=await window.MaatApiClient.request("/api/admin/business-os/acceptance/wellness/run",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
-   if(!response.ok)throw Error(response.payload?.error?.firstFailure||response.payload?.error?.code||"Request failed");
+   if(!response.ok)throw Error(window.MileleAcceptanceDiagnostics?.describe(response)||response.error?.message||"Request failed");
    const data=response.payload?.report;
    if(!data||!Array.isArray(data.checks))throw Error("Invalid synthetic report");
    const passed=data.checks.filter(x=>x.status==="PASS").length;

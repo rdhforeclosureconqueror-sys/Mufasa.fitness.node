@@ -2,7 +2,7 @@
 (async function(){
  const status=document.getElementById("status"),list=document.getElementById("scenarios"),run=document.getElementById("run"),summary=document.getElementById("summary"),report=document.getElementById("report"),copy=document.getElementById("copy");
  const endpoint="/api/admin/business-os/acceptance";
- function failure(result){return result?.payload?.error?.firstFailure||result?.payload?.error?.code||result?.error?.message||"Request failed";}
+ function failure(result){return window.MileleAcceptanceDiagnostics?.describe(result)||result?.error?.message||"Request failed";}
  try{
   const readiness=await window.AuthNavigation.requireUser({returnTo:location.pathname+location.search});
   if(!readiness?.ok){status.textContent="Sign in required.";return}

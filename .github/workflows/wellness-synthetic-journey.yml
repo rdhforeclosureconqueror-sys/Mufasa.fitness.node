@@ -6,6 +6,8 @@ on:
       - 'src/routes/businessOSAcceptanceRoutes.js'
       - 'public/admin-acceptance-lab.html'
       - 'public/acceptance-progress.js'
+      - 'public/acceptance-api-diagnostics.js'
+      - 'test/acceptance-api-diagnostics.test.js'
       - 'public/admin-acceptance-lab.js'
       - 'public/wellness-browser-route-runner.js'
       - 'test/acceptance-progress-dashboard.test.js'
@@ -32,6 +34,7 @@ jobs:
       - run: node --check scripts/wellness-synthetic-journey.js
       - run: node --check public/wellness-synthetic-admin-runner.js
       - run: node scripts/wellness-synthetic-journey.js
+      - run: node --test test/acceptance-api-diagnostics.test.js
       - run: node --test test/acceptance-progress-dashboard.test.js
       - run: node --test test/wellness-staging-preflight.test.js
       - run: node --test test/wellness-admin-synthetic-integration.test.js test/wellness-phase4-http-auth.test.js test/wellness-phase4-event-http-journey.test.js
