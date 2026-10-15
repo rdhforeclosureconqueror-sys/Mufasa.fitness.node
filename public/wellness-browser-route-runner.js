@@ -8,8 +8,8 @@
  {id:"WJ-004",name:"Check-in entry",steps:["/quick-connect.html","/wellness-check-in.html","/event-checkin.js"]},
  {id:"WJ-005",name:"Assessment entry",steps:["/quick-connect.html","/sound-assessment.html"]},
  {id:"WJ-006",name:"Private session entry",steps:["/quick-connect.html","/private-sessions.html"]},
- {id:"WJ-027",name:"Run Club discovery",steps:["/community-hub.html","/free-run-club.html"]},
- {id:"WJ-035",name:"Residential wellness discovery",steps:["/apartment-wellness.html","/residential-wellness.html"]}
+ {id:"DISCOVERY-RUN-CLUB",name:"Run Club discovery",steps:["/community-hub.html","/free-run-club.html"]},
+ {id:"DISCOVERY-RESIDENTIAL",name:"Residential wellness discovery",steps:["/apartment-wellness.html","/residential-wellness.html"]}
  ];
  const timeout=9000;
  async function check(step,previous){
@@ -21,7 +21,6 @@
    if(!new URL(response.url,location.origin).pathname.endsWith(step))return {step,status:"FAIL",reason:"UNEXPECTED_REDIRECT",finalUrl:new URL(response.url).pathname};
    const text=await response.text();
    if(!text.trim())return {step,status:"FAIL",reason:"EMPTY_RESPONSE"};
-   if(previous==="/quick-connect.html" && !text) return {step,status:"FAIL",reason:"EMPTY_RESPONSE"};
    if(previous==="/quick-connect.html"){
     const entry=await fetch("/quick-connect.html",{credentials:"same-origin",cache:"no-store"});
     if(!entry.ok)return {step,status:"FAIL",reason:"ENTRY_UNAVAILABLE"};
