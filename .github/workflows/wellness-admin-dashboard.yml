@@ -1,0 +1,27 @@
+name: Wellness admin dashboard
+on:
+  pull_request:
+    paths:
+      - 'public/admin-wellness-campaigns.html'
+      - 'public/admin-wellness-campaigns.js'
+      - 'public/event-studio.html'
+      - 'test/wellness-admin-dashboard.test.js'
+      - '.github/workflows/wellness-admin-dashboard.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/admin-wellness-campaigns.html'
+      - 'public/admin-wellness-campaigns.js'
+      - 'public/event-studio.html'
+      - 'test/wellness-admin-dashboard.test.js'
+      - '.github/workflows/wellness-admin-dashboard.yml'
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check public/admin-wellness-campaigns.js
+      - run: node --test test/wellness-admin-dashboard.test.js test/wellness-campaign-report.test.js test/event-studio-reset.test.js
