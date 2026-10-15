@@ -28,7 +28,7 @@
     const linked=Array.from(doc.querySelectorAll("a[href]")).some(a=>{try{return new URL(a.getAttribute("href"),location.origin).pathname===step}catch{return false}});
     if(!linked)return {step,status:"FAIL",reason:"ENTRY_LINK_MISSING"};
    }
-   if(step.endsWith(".html") && !/<html[\\s>]/i.test(text))return {step,status:"FAIL",reason:"NOT_HTML"};
+   if(step.endsWith(".html") && !/<html[\s>]/i.test(text))return {step,status:"FAIL",reason:"NOT_HTML"};
    return {step,status:"PASS_ROUTE_ONLY",reason:"HTTP_AND_LINK_OK"};
   }catch(e){return {step,status:"FAIL",reason:e.name==="AbortError"?"TIMEOUT":"NETWORK_ERROR"}}
   finally{clearTimeout(timer)}
