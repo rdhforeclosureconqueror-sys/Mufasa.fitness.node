@@ -17,6 +17,7 @@ const { aggregateGuestCampaigns } = require("./src/services/wellnessCampaignRepo
 const { createRateLimiter } = require("./src/middleware/rateLimit");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installSoundAssessmentRoutes } = require("./src/routes/soundAssessmentRoutes");
+const { installBusinessOSAcceptanceRoutes } = require("./src/routes/businessOSAcceptanceRoutes");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { createClientTransformationService } = require("./src/services/clientTransformationService");
@@ -177,6 +178,7 @@ function createWorldBridgeApp(options = {}) {
   installResidentialWellness(app, options);
   installResidentialCommunity(app, options);
   installSoundAssessmentRoutes({app});
+  installBusinessOSAcceptanceRoutes({app,requireAuth});
   installPrivateCoaching(app, options);
   installClientTransformation(app, options);
   installPrivateClientGettingStarted(app, options);
