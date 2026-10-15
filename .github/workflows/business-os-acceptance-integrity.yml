@@ -1,0 +1,17 @@
+name: Acceptance Lab scenario integrity
+on:
+  pull_request:
+    paths:
+      - 'scripts/business-os-acceptance-lab.js'
+      - 'public/admin-acceptance-lab.html'
+      - 'test/business-os-acceptance-scenario-integrity.test.js'
+      - '.github/workflows/business-os-acceptance-integrity.yml'
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/business-os-acceptance-lab.test.js test/business-os-acceptance-report.test.js test/business-os-acceptance-scenario-integrity.test.js
