@@ -1,0 +1,33 @@
+name: Record Acceptance Lab Phase 3 readiness
+on:
+  push:
+    branches:
+      - feature/acceptance-lab-scenario-integrity-mobile
+    paths:
+      - '.github/workflows/acceptance-lab-phase3-readiness.yml'
+permissions:
+  contents: write
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/acceptance-lab-scenario-integrity-mobile
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create readiness card and record machine evidence
+        env:
+          OPS_DIR: ${{ runner.temp }}/acceptance-lab-ops
+        run: |
+          npm run readiness:update -- --board launch --action create --card launch-development-acceptance-lab-phase3 --title "Acceptance Lab Phase 3 scenario integrity and mobile diagnostics" --category quality --description "Exact first-failure checks and mobile report layout; human iPhone acceptance pending" --priority high --humanRequired true --task acceptance-lab-phase3
+          npm run readiness:update -- --board launch --action evidence --card launch-development-acceptance-lab-phase3 --task acceptance-lab-phase3 --pr 1026 --files scripts/business-os-acceptance-lab.js,public/admin-acceptance-lab.html,test/business-os-acceptance-scenario-integrity.test.js,.github/workflows/business-os-acceptance-integrity.yml --result PASS --note "Automated PR checks passed; exact rejection boundaries and mobile CSS covered. Production browser and physical iPhone human acceptance NOT verified. Rollback: revert Phase 3 squash commit on a reviewed rollback branch and redeploy frontend and backend."
+          npm run readiness:validate
+      - name: Commit repository-backed readiness evidence
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/readiness/development-cards.json data/readiness/development-evidence.json
+          git diff --cached --quiet || (git commit -m "chore(readiness): record Acceptance Lab Phase 3 evidence" && git push origin HEAD:feature/acceptance-lab-scenario-integrity-mobile)
