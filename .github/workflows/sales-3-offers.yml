@@ -1,0 +1,23 @@
+name: SALES-3 capability and offers
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/sales/**'
+      - 'test/ai-business-os-sales-offers.test.js'
+      - '.github/workflows/sales-3-offers.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/business-os/sales/**'
+      - 'test/ai-business-os-sales-offers.test.js'
+      - '.github/workflows/sales-3-offers.yml'
+jobs:
+  offers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/business-os/sales/offers.js
+      - run: node --test test/ai-business-os-sales-offers.test.js test/ai-business-os-sales-qualification.test.js
