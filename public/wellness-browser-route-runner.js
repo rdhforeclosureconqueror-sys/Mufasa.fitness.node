@@ -8,7 +8,7 @@
  {id:"WJ-004",name:"Check-in entry",steps:["/quick-connect.html","/wellness-check-in.html","/event-checkin.js"]},
  {id:"WJ-005",name:"Assessment entry",steps:["/quick-connect.html","/sound-assessment.html"]},
  {id:"WJ-006",name:"Private session entry",steps:["/quick-connect.html","/private-sessions.html"]},
- {id:"DISCOVERY-RUN-CLUB",name:"Run Club discovery",steps:["/community-hub.html","/free-run-club.html"]},
+ {id:"WJ-028",name:"Run Club discovery",steps:["/community-hub.html","/free-run-club.html"]},
  {id:"DISCOVERY-RESIDENTIAL",name:"Residential wellness discovery",steps:["/apartment-wellness.html","/residential-wellness.html"]}
  ];
  const timeout=9000;
