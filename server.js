@@ -21,6 +21,7 @@ const { createClientMessagingStore } = require("./src/repositories/clientMessagi
 const { createClientCrmService } = require("./src/services/clientCrmService");
 const { createEventCatalog } = require("./src/services/communityEventCatalog");
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
+const { createResidentialWellnessService } = require("./src/services/residentialWellnessService");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
 const { createChallengeParticipantService } = require("./src/services/challengeParticipantService");
@@ -3479,6 +3480,12 @@ function createApp(options = {}) {
 
   // Durable community event catalog and residential participation share the canonical bearer auth middleware.
   const communityEventCatalog = createEventCatalog({ filePath: path.join(DATA_DIR, "community-events", "catalog.json") });
+  const residentialWellnessService = createResidentialWellnessService({ userStore });
+  app.put("/api/me/residential-wellness", requireAuth, asyncHandler(async (req, res) => {
+    const profile = residentialWellnessService.save(req.auth.userId, req.body || {});
+    res.set("Cache-Control", "private, no-store");
+    return ok(res, req.requestId, { profile });
+  }));
   const residentialCommunityService = createResidentialCommunityService({ userStore, eventCatalog: communityEventCatalog });
   installCommunityEventCatalogRoutes({ app, requireAuth, catalog: communityEventCatalog });
   installResidentialCommunityRoutes({ app, requireAuth, service: residentialCommunityService });
