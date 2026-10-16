@@ -3,6 +3,7 @@ const express=require("express");
 const {scenarios}=require("../../scripts/business-os-acceptance-lab");
 const {execute}=require("../../scripts/business-os-acceptance-report");
 const {run:runWellness}=require("../../scripts/wellness-synthetic-journey");
+const {runIsolatedHttpJourney}=require("../../scripts/acceptance-isolated-http-runner");
 const {assessLiveJourneyPreflight}=require("../services/liveJourneySafetyContract");
 const {evaluateFullJourney}=require("../services/fullProductionJourneyEvidence");
 function requireLabAdmin(req,res,next){
@@ -24,6 +25,12 @@ function installBusinessOSAcceptanceRoutes({app,requireAuth}){
    const report=execute({scenarioIds:body.scenarioIds,commitSha:process.env.RENDER_GIT_COMMIT||process.env.GITHUB_SHA||"UNKNOWN",deployment:"SERVER_SIMULATION"});
    return res.json({ok:true,report});
   }catch(error){return res.status(422).json({ok:false,error:{code:"INVALID_SCENARIO",firstFailure:error.message}})}
+ });
+ router.post("/isolated-http/run",express.json({limit:"1kb"}),async(req,res)=>{
+  if(!req.is("application/json"))return res.status(415).json({ok:false,error:{code:"JSON_REQUIRED"}});
+  if(!req.body||Object.keys(req.body).length!==1||req.body.confirm!=="RUN_ISOLATED_HTTP_ONLY")return res.status(400).json({ok:false,error:{code:"EXPLICIT_ISOLATED_CONFIRMATION_REQUIRED"}});
+  const report=await runIsolatedHttpJourney();
+  return res.status(report.passed?200:422).json({ok:report.passed,report});
  });
  router.get("/live/full-journey/status",(_req,res)=>res.json({ok:true,report:evaluateFullJourney()}));
  router.get("/live/preflight",(_req,res)=>res.json({ok:true,report:assessLiveJourneyPreflight({adminAuthorized:true})}));
