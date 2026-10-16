@@ -37,6 +37,10 @@ test("real application HTTP registration, bearer auth, admin CRM read, and isola
  assert.equal(published.status,200,JSON.stringify(published.payload));
  const publicEvents=await call(base,"/api/community/events");assert.equal(publicEvents.status,200);
  assert.ok(publicEvents.payload.data.events.some(e=>e.eventId===eventId));
+ const beforeJoin=await call(base,"/api/me/residential-community",{token});assert.equal(beforeJoin.status,403);
+ const missingConsent=await call(base,"/api/me/residential-wellness",{method:"PUT",token,body:{interests:["yoga"],communicationConsent:false}});assert.notEqual(missingConsent.status,200);
+ const joined=await call(base,"/api/me/residential-wellness",{method:"PUT",token,body:{interests:["yoga"],communicationConsent:true}});
+ assert.equal(joined.status,200,JSON.stringify(joined.payload));assert.equal(joined.payload.data.profile.communicationConsent,true);
  const rsvp=await call(base,"/api/me/residential-community/rsvp/"+eventId,{method:"PUT",token,body:{attending:true}});
  assert.equal(rsvp.status,200,JSON.stringify(rsvp.payload));
  const deniedCheckin=await call(base,"/api/admin/community/events/"+eventId+"/attendance/"+id+"/check-in",{method:"POST",token});
