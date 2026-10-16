@@ -5,7 +5,8 @@ test("progress panel distinguishes session checks from CI and staging certificat
  const html=read("admin-acceptance-lab.html"),script=read("acceptance-progress.js");
  assert.match(html,/id="acceptance-progress-list"/);
  assert.match(html,/id="acceptance-first-failure"/);
- assert.match(html,/Real signup, CRM sync and staging browser E2E: not certified/);
+ assert.match(html,/Full authenticated HTTP customer journey: verified in isolated repository CI/);
+ assert.match(html,/Production browser E2E and cleanup of production test records: not certified/);
  assert.match(html,/acceptance-progress\.js/);
  assert.match(script,/Not run in this session/);
  assert.match(script,/milele-acceptance-result/);
