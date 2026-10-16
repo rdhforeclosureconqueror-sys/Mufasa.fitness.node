@@ -15,6 +15,7 @@ on:
       - 'test/wellness-admin-synthetic-integration.test.js'
       - 'test/wellness-phase4-http-auth.test.js'
       - 'test/wellness-phase4-event-http-journey.test.js'
+      - 'test/acceptance-real-auth-http-lifecycle.test.js'
       - 'test/wellness-staging-preflight.test.js'
       - 'scripts/wellness-staging-preflight.js'
       - 'src/services/communityEventCatalog.js'
@@ -38,4 +39,5 @@ jobs:
       - run: node --test test/acceptance-progress-dashboard.test.js
       - run: node --test test/wellness-staging-preflight.test.js
       - run: node --test test/wellness-admin-synthetic-integration.test.js test/wellness-phase4-http-auth.test.js test/wellness-phase4-event-http-journey.test.js
+      - run: node --test test/acceptance-real-auth-http-lifecycle.test.js
       - run: node --test test/community-event-rsvp-integration.test.js test/community-event-attendance.test.js test/community-event-guest-link.test.js test/event-checkin-store.test.js
