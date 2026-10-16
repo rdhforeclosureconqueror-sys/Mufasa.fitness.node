@@ -1,0 +1,17 @@
+name: Full journey dashboard
+on:
+  pull_request:
+    paths:
+      - 'public/full-journey-status-runner.js'
+      - 'public/admin-acceptance-lab.html'
+      - 'test/full-journey-dashboard.test.js'
+      - '.github/workflows/full-journey-dashboard.yml'
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/full-journey-dashboard.test.js test/full-production-journey-evidence.test.js
