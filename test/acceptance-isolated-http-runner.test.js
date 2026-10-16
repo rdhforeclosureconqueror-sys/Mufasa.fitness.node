@@ -7,6 +7,8 @@ test("isolated HTTP runner uses bounded child process and real app HTTP test",()
  assert.match(runner,/timeout:30000/);
  assert.match(runner,/acceptance-real-auth-http-lifecycle\.test\.js/);
  assert.match(runner,/productionBrowserCertified:false/);
+ assert.match(runner,/cleanupVerified:passed/);
+ assert.match(runner,/cleanupVerified:false/);
  assert.doesNotMatch(runner,/\.\.\.process\.env/);
  assert.match(runner,/env:\{NODE_ENV:"test",PORT:"0"/);
 });

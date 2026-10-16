@@ -11,10 +11,14 @@ test("real application HTTP registration, bearer auth, admin CRM read, and isola
  Object.assign(process.env,{AUTH_TOKEN_SECRET:"acceptance-real-auth-secret-32-characters",PILOT_LOGIN_PASSWORD:"isolated-admin-password",LOGIN_SEED_EMAIL:"isolated-admin@example.invalid",AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS:"pilot_admin"});
  t.after(()=>{for(const [k,v]of Object.entries(prior)){if(v==null)delete process.env[k];else process.env[k]=v;}});
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"milele-real-auth-http-"));
- t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+
  const server=createApp({dataDir:dir}).listen(0,"127.0.0.1");
- await new Promise(resolve=>server.once("listening",resolve));
- t.after(()=>new Promise(resolve=>server.close(resolve)));
+ t.after(async()=>{
+  try{if(server.listening)await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
+  finally{fs.rmSync(dir,{recursive:true,force:true});}
+  assert.equal(fs.existsSync(dir),false,"isolated HTTP test directory must be deleted");
+ });
+ await new Promise((resolve,reject)=>{server.once("listening",resolve);server.once("error",reject);});
  const base="http://127.0.0.1:"+server.address().port;
  const email="milele-acceptance-"+crypto.randomBytes(12).toString("hex")+"@example.invalid";
  const password=crypto.randomBytes(24).toString("hex");
@@ -54,5 +58,5 @@ test("real application HTTP registration, bearer auth, admin CRM read, and isola
  const duplicate=await call(base,"/api/auth/register",{method:"POST",body:{name:"Duplicate",email,password}});
  assert.equal(duplicate.status,409);
  assert.ok(fs.existsSync(path.join(dir,"users",id+".json")));
- // All records are stored beneath the unique OS temporary directory, never production.
+ // Teardown closes the local HTTP listener, removes every test-owned record, and asserts deletion.
 });
