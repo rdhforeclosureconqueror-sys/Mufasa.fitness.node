@@ -13,12 +13,12 @@ test("real application HTTP registration, bearer auth, admin CRM read, and isola
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"milele-real-auth-http-"));
 
  const server=createApp({dataDir:dir}).listen(0,"127.0.0.1");
- await new Promise(resolve=>server.once("listening",resolve));
  t.after(async()=>{
-  try{await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
+  try{if(server.listening)await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
   finally{fs.rmSync(dir,{recursive:true,force:true});}
   assert.equal(fs.existsSync(dir),false,"isolated HTTP test directory must be deleted");
  });
+ await new Promise((resolve,reject)=>{server.once("listening",resolve);server.once("error",reject);});
  const base="http://127.0.0.1:"+server.address().port;
  const email="milele-acceptance-"+crypto.randomBytes(12).toString("hex")+"@example.invalid";
  const password=crypto.randomBytes(24).toString("hex");
