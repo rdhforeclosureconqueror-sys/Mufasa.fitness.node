@@ -1,7 +1,7 @@
 "use strict";
 // Same-origin, read-only production HTTP probes. No test customers or mutations.
 const TARGETS=[
- {id:"public-campaign",path:"/wellness-quick-connect.html",expected:[200]},
+ {id:"public-campaign",path:"/admin-acceptance-lab.html",expected:[200]},
  {id:"admin-preflight-unauthenticated",path:"/api/admin/business-os/acceptance/live/preflight",expected:[401,403]}
 ];
 function evaluateProbe(id,status){
