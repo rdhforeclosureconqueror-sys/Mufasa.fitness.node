@@ -7,6 +7,8 @@ test("isolated HTTP runner uses bounded child process and real app HTTP test",()
  assert.match(runner,/timeout:30000/);
  assert.match(runner,/acceptance-real-auth-http-lifecycle\.test\.js/);
  assert.match(runner,/productionBrowserCertified:false/);
+ assert.doesNotMatch(runner,/\.\.\.process\.env/);
+ assert.match(runner,/env:\{NODE_ENV:"test",PORT:"0"/);
 });
 test("admin route requires explicit confirmation and UI never claims production E2E",()=>{
  const route=read("src/routes/businessOSAcceptanceRoutes.js"),html=read("public/admin-acceptance-lab.html");
