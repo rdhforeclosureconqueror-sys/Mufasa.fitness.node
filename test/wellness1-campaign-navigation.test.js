@@ -25,3 +25,13 @@ test('check-in uses explicit attribution consent',()=>{
  assert.match(js,/attributionConsent:new FormData\(beforeEl\)\.get\("attributionConsent"\)==="yes"/);
  assert.match(js,/guest-check-in/);
 });
+
+test('residential campaign code survives NFC Quick Connect navigation',()=>{
+ const links=run('?campaign=LYLE-OCT26&utm_source=nfc');
+ for(const href of links){const u=new URL(href,'https://example.test');assert.equal(u.searchParams.get('campaign'),'LYLE-OCT26');assert.equal(u.searchParams.get('utm_source'),'nfc')}
+});
+test('unsafe or repeated residential campaign codes are dropped',()=>{
+ for(const query of ['?campaign=bad%20code','?campaign=LYLE-OCT26&campaign=other','?campaign=https://evil.example']){
+  for(const href of run(query))assert.equal(new URL(href,'https://example.test').searchParams.has('campaign'),false)
+ }
+});
