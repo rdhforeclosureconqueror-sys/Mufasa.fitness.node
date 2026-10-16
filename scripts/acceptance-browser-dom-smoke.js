@@ -20,7 +20,14 @@ const pages=["/quick-connect.html","/apartment-wellness.html","/residential-well
    try{
     const response=await page.goto(base+route,{waitUntil:"domcontentloaded",timeout:12000});
     assert.equal(response?.status(),200,"Page HTTP status");
-    assert.equal(new URL(page.url()).pathname,route,"Unexpected redirect");
+    const finalPath=new URL(page.url()).pathname;
+    const authRedirect=route==="/residential-wellness.html"||route==="/admin-acceptance-lab.html";
+    if(authRedirect&&finalPath==="/login.html"){
+     assert.equal(await page.locator("body").count(),1,"Missing login page body");
+     checks.push({route,status:"PASS_AUTH_REDIRECT",destination:finalPath});
+     continue;
+    }
+    assert.equal(finalPath,route,"Unexpected redirect");
     assert.equal(await page.locator("body").count(),1,"Missing rendered body");
     checks.push({route,status:"PASS_BROWSER_DOM"});
    }catch(error){
