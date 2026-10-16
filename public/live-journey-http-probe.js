@@ -9,10 +9,13 @@
    {id:"test-center-page",path:"/admin-acceptance-lab.html",expected:[200]},
    {id:"unauthenticated-admin-boundary",path:"/api/admin/business-os/acceptance/live/preflight",expected:[401,403]}
   ];
+  const api=window.MaatApiClient;
   for(const target of targets){
    try{
-    const response=await fetch(target.path,{method:"GET",credentials:"omit",cache:"no-store",redirect:"manual",headers:{"Accept":"application/json"}});
-    checks.push({id:target.id,status:target.expected.includes(response.status)?"PASS":"FAIL",httpStatus:response.status,expected:target.expected});
+    if(target.id==="unauthenticated-admin-boundary"&&(!api||typeof api.resolve!=="function"))throw Error("Canonical backend URL resolver unavailable");
+    const url=target.id==="unauthenticated-admin-boundary"?api.resolve(target.path):target.path;
+    const response=await fetch(url,{method:"GET",credentials:"omit",cache:"no-store",redirect:"manual",headers:{"Accept":"application/json"}});
+    checks.push({id:target.id,status:target.expected.includes(response.status)?"PASS":"FAIL",httpStatus:response.status,expected:target.expected,targetOrigin:new URL(url,location.href).origin});
    }catch(error){checks.push({id:target.id,status:"FAIL",reason:String(error.message||error)})}
   }
   const firstFailure=checks.find(x=>x.status==="FAIL")||null;

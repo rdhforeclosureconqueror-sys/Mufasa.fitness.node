@@ -6,6 +6,7 @@ on:
       - 'public/admin-acceptance-lab.html'
       - 'src/services/liveJourneyHttpProbe.js'
       - 'test/live-journey-http-probe.test.js'
+      - 'test/live-http-probe-backend-origin.test.js'
       - '.github/workflows/live-http-probe.yml'
 jobs:
   probe-contract:
@@ -15,4 +16,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test test/live-journey-http-probe.test.js test/live-journey-safety-contract.test.js
+      - run: node --test test/live-journey-http-probe.test.js test/live-http-probe-backend-origin.test.js test/live-journey-safety-contract.test.js
