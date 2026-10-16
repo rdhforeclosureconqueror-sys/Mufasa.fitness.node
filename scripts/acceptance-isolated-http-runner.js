@@ -10,7 +10,7 @@ async function runIsolatedHttpJourney(){
   const {stdout}=await execFileAsync(process.execPath,["--test","--test-reporter=tap",TEST_FILE],{
    cwd:path.resolve(__dirname,".."),
    timeout:30000,maxBuffer:512*1024,
-   env:{...process.env,NODE_ENV:"test",PORT:"0"}
+   env:{NODE_ENV:"test",PORT:"0",PATH:process.env.PATH||"/usr/bin:/bin",HOME:process.env.HOME||"/tmp",TMPDIR:process.env.TMPDIR||"/tmp"}
   });
   const tests=Number(stdout.match(/^# tests (\d+)/m)?.[1]||0);
   const failures=Number(stdout.match(/^# fail (\d+)/m)?.[1]||0);
