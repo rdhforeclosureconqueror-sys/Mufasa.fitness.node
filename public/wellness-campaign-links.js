@@ -1,7 +1,7 @@
 (()=>{"use strict";
   // Navigation-only attribution. No cookies, persistent identifiers, analytics calls or PII.
   const input=new URLSearchParams(window.location.search);
-  const allow={utm_source:/^[a-z0-9_-]{1,40}$/,utm_medium:/^[a-z0-9_-]{1,40}$/,utm_campaign:/^[a-z0-9_-]{1,64}$/,eventId:/^[a-zA-Z0-9_-]{1,80}$/};
+  const allow={utm_source:/^[a-z0-9_-]{1,40}$/,utm_medium:/^[a-z0-9_-]{1,40}$/,utm_campaign:/^[a-z0-9_-]{1,64}$/,eventId:/^(?:[a-z0-9-]{3,64}|evt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/};
   const safe=new URLSearchParams();
   for(const [key,pattern] of Object.entries(allow)){
     const values=input.getAll(key);
