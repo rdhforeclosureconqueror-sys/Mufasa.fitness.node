@@ -1,0 +1,16 @@
+name: Live journey safety contract
+on:
+  pull_request:
+    paths:
+      - 'src/services/liveJourneySafetyContract.js'
+      - 'test/live-journey-safety-contract.test.js'
+      - '.github/workflows/live-journey-safety.yml'
+jobs:
+  fail-closed-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/live-journey-safety-contract.test.js
