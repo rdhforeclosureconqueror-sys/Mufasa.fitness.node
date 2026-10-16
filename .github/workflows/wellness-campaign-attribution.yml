@@ -4,6 +4,8 @@ on:
     paths:
       - 'public/quick-connect.html'
       - 'public/wellness-campaign-links.js'
+      - 'public/event-checkin.js'
+      - 'test/wellness-campaign-checkin-boundary.test.js'
       - 'test/wellness-campaign-links.test.js'
       - '.github/workflows/wellness-campaign-attribution.yml'
   push:
@@ -11,6 +13,8 @@ on:
     paths:
       - 'public/quick-connect.html'
       - 'public/wellness-campaign-links.js'
+      - 'public/event-checkin.js'
+      - 'test/wellness-campaign-checkin-boundary.test.js'
       - 'test/wellness-campaign-links.test.js'
       - '.github/workflows/wellness-campaign-attribution.yml'
 jobs:
@@ -22,4 +26,5 @@ jobs:
         with:
           node-version: '22'
       - run: node --check public/wellness-campaign-links.js
-      - run: node --test test/wellness-campaign-links.test.js
+      - run: node --check public/event-checkin.js
+      - run: node --test test/wellness-campaign-links.test.js test/wellness-campaign-checkin-boundary.test.js

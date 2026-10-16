@@ -14,9 +14,9 @@ test("Quick Connect loads campaign propagation without replacing existing destin
  assert.deepEqual(links(""),["/apartment-wellness.html","/wellness-check-in.html","/sound-assessment.html","/private-sessions.html?source=community"]);
 });
 test("approved attribution and event context propagate to four wellness actions",()=>{
- const output=links("?utm_source=nfc&utm_medium=community&utm_campaign=yoga_oct&eventId=evt_123");
+ const output=links("?utm_source=nfc&utm_medium=community&utm_campaign=yoga_oct&eventId=event-123");
  assert.equal(output.length,4);
- for(const link of output){const u=new URL(link,"https://example.test");assert.equal(u.searchParams.get("utm_source"),"nfc");assert.equal(u.searchParams.get("utm_campaign"),"yoga_oct");assert.equal(u.searchParams.get("eventId"),"evt_123");}
+ for(const link of output){const u=new URL(link,"https://example.test");assert.equal(u.searchParams.get("utm_source"),"nfc");assert.equal(u.searchParams.get("utm_campaign"),"yoga_oct");assert.equal(u.searchParams.get("eventId"),"event-123");}
  assert.equal(new URL(output[3],"https://example.test").searchParams.get("source"),"community");
 });
 test("rejects duplicate, oversized, or injected attribution parameters",()=>{

@@ -1,0 +1,31 @@
+name: Record Wellness attribution readiness
+on:
+  push:
+    branches:
+      - feature/wellness-attribution-boundary-tests-20261016
+    paths:
+      - '.github/workflows/wellness-attribution-readiness.yml'
+permissions:
+  contents: write
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/wellness-attribution-boundary-tests-20261016
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record canonical machine evidence
+        run: |
+          npm run readiness:update -- --board launch --action create --card launch-development-wellness-attribution-boundary --title "WELLNESS-1 NFC attribution check-in boundary" --category QUALITY --description "Validate event and campaign context across NFC to guest check-in; human mobile acceptance pending" --priority HIGH --humanRequired true --task wellness-attribution-boundary
+          npm run readiness:update -- --board launch --action evidence --card launch-development-wellness-attribution-boundary --task wellness-attribution-boundary --pr 1038 --files public/wellness-campaign-links.js,public/event-checkin.js,test/wellness-campaign-checkin-boundary.test.js,.github/workflows/wellness-campaign-attribution.yml --result PASS --note "Machine-only implementation evidence; CI status must be checked independently. Human production NFC and check-in acceptance pending. Rollback: revert reviewed squash commit and redeploy."
+          npm run readiness:validate
+      - name: Commit readiness audit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/readiness/development-cards.json data/readiness/development-evidence.json
+          git diff --cached --quiet || (git commit -m "chore(readiness): record wellness attribution evidence" && git push origin HEAD:feature/wellness-attribution-boundary-tests-20261016)
