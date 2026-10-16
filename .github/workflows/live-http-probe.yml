@@ -1,0 +1,18 @@
+name: Live HTTP probe checks
+on:
+  pull_request:
+    paths:
+      - 'public/live-journey-http-probe.js'
+      - 'public/admin-acceptance-lab.html'
+      - 'src/services/liveJourneyHttpProbe.js'
+      - 'test/live-journey-http-probe.test.js'
+      - '.github/workflows/live-http-probe.yml'
+jobs:
+  probe-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/live-journey-http-probe.test.js test/live-journey-safety-contract.test.js
