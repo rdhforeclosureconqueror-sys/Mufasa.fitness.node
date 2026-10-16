@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'scripts/wellness-synthetic-journey.js'
+      - 'scripts/acceptance-isolated-http-runner.js'
+      - 'public/isolated-http-journey-runner.js'
+      - 'test/acceptance-isolated-http-runner.test.js'
       - 'src/routes/businessOSAcceptanceRoutes.js'
       - 'public/admin-acceptance-lab.html'
       - 'public/acceptance-progress.js'
@@ -42,5 +45,5 @@ jobs:
       - run: node --test test/acceptance-progress-dashboard.test.js
       - run: node --test test/wellness-staging-preflight.test.js
       - run: node --test test/wellness-admin-synthetic-integration.test.js test/wellness-phase4-http-auth.test.js test/wellness-phase4-event-http-journey.test.js
-      - run: node --test test/acceptance-real-auth-http-lifecycle.test.js
+      - run: node --test test/acceptance-real-auth-http-lifecycle.test.js test/acceptance-isolated-http-runner.test.js
       - run: node --test test/community-event-rsvp-integration.test.js test/community-event-attendance.test.js test/community-event-guest-link.test.js test/event-checkin-store.test.js
