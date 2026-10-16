@@ -1,0 +1,28 @@
+name: Isolated Chromium browser acceptance
+on:
+  pull_request:
+    paths:
+      - 'scripts/acceptance-browser-dom-smoke.js'
+      - '.github/workflows/isolated-browser-acceptance.yml'
+      - 'public/quick-connect.html'
+      - 'public/apartment-wellness.html'
+      - 'public/residential-wellness.html'
+      - 'public/community-hub.html'
+      - 'public/free-run-club.html'
+      - 'public/wellness-check-in.html'
+      - 'public/admin-acceptance-lab.html'
+      - 'server.js'
+  workflow_dispatch:
+jobs:
+  chromium-local-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/acceptance-browser-dom-smoke.js
