@@ -1,12 +1,15 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),express=require("express");
 const {createEventCatalog}=require("../src/services/communityEventCatalog");
+const {createAuthCredentialStore}=require("../src/repositories/authCredentialStore");
+const {createClientCrmService}=require("../src/services/clientCrmService");
 const {createResidentialCommunityService}=require("../src/services/residentialCommunityService");
 const {installCommunityEventCatalogRoutes}=require("../src/routes/communityEventCatalogRoutes");
 const {installResidentialCommunityRoutes}=require("../src/routes/residentialCommunityRoutes");
 async function withIsolatedApp(run){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"milele-phase4-http-"));
  const users=new Map([["member",{userId:"member",displayName:"Test Member",residentialWellness:{communicationConsent:true}}],["other",{userId:"other",displayName:"Other Member",residentialWellness:{communicationConsent:true}}]]);
+ const credentials=createAuthCredentialStore({filePath:path.join(dir,"credentials.json")});
  const store={loadUser:id=>users.has(id)?structuredClone(users.get(id)):null,listUsers:()=>Array.from(users.values(),v=>structuredClone(v)),updateUser:(id,fn)=>{const next=fn(structuredClone(users.get(id)));users.set(id,next);return next}};
  const clock=()=>Date.parse("2026-10-15T12:00:00Z");
  const catalog=createEventCatalog({filePath:path.join(dir,"events.json"),clock});
@@ -26,7 +29,7 @@ async function withIsolatedApp(run){
    const res=await fetch(origin+url,{method,headers,...(body!==undefined?{body:JSON.stringify(body)}:{})});
    return {status:res.status,body:await res.json()};
   };
-  await run({request,users,catalog});
+  await run({request,users,catalog,credentials,store});
  }finally{await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));fs.rmSync(dir,{recursive:true,force:true})}
 }
 test("Phase 4: admin publishes event; member discovers, RSVPs; admin checks in; member and admin read persisted state",async()=>{
@@ -58,5 +61,36 @@ test("Phase 4: admin publishes event; member discovers, RSVPs; admin checks in; 
   const after=await request("GET",attendanceUrl,"admin");assert.equal(after.body.data.attendees[0].checkedInAt,checked.body.data.checkIn.checkedInAt);
   const memberAfter=await request("GET","/api/me/residential-community","member");assert.ok(memberAfter.body.data.rsvps.some(r=>r.eventId===id&&r.checkedInAt));
   assert.equal((await request("POST",attendanceUrl+"/other/check-in","admin")).status>=400,true);
+ });
+});
+
+test("Integrated isolated identity → authenticated HTTP event → CRM service verification",async()=>{
+ await withIsolatedApp(async({request,users,credentials,store})=>{
+  const email="journey@example.invalid",password="isolated-test-only-secret";
+  const account=credentials.create({email,name:"Synthetic Journey",password,accessTier:"free"});
+  assert.ok(account?.id);
+  assert.equal(credentials.verify(credentials.findByEmail(email),password),true);
+  assert.equal(credentials.verify(credentials.findByEmail(email),"incorrect"),false);
+  users.set(account.id,{userId:account.id,profile:{email,displayName:"Synthetic Journey"},residentialWellness:{communicationConsent:true}});
+  const crm=createClientCrmService({userStore:store,authCredentialStore:credentials,
+   membershipService:{getMembership:()=>({status:"inactive"})},trainerWorkspaceStore:{hasActiveAccess:()=>false},
+   messagingStore:{listForUser:()=>[],listMessages:()=>[]},authorizationResolver:{resolveRole:()=>({role:"user"})}});
+  const admin={userId:"staff",role:"admin"};
+  assert.equal(crm.directory(admin,{search:email}).members[0].userId,account.id);
+  const input={title:"Isolated Journey Yoga",location:"Test Park",type:"yoga",capacity:2,startAt:"2026-11-14T15:00:00Z",endAt:"2026-11-14T16:00:00Z"};
+  const created=await request("POST","/api/admin/community/events","admin",input);
+  assert.equal(created.status,201,JSON.stringify(created.body));
+  const id=created.body.data.event.eventId;
+  assert.equal((await request("PATCH","/api/admin/community/events/"+id,"admin",{status:"confirmed"})).status,200);
+  assert.equal((await request("PUT","/api/me/residential-community/rsvp/"+id,account.id,{attending:true})).status,200);
+  const check=await request("POST","/api/admin/community/events/"+id+"/attendance/"+account.id+"/check-in","admin");
+  assert.equal(check.status,200,JSON.stringify(check.body));
+  const persisted=await request("GET","/api/me/residential-community",account.id);
+  assert.ok(persisted.body.data.rsvps.some(x=>x.eventId===id&&x.checkedInAt));
+  const attendance=await request("GET","/api/admin/community/events/"+id+"/attendance","admin");
+  assert.equal(attendance.body.data.registered,1);
+  assert.equal(attendance.body.data.attendees[0].userId,account.id);
+  assert.equal(crm.overview(admin,account.id).summary.email,email);
+  assert.equal((await request("GET","/api/admin/community/events/"+id+"/attendance",account.id)).status,403);
  });
 });
