@@ -1,0 +1,17 @@
+name: Full customer journey evidence gates
+on:
+  pull_request:
+    paths:
+      - 'src/services/fullProductionJourneyEvidence.js'
+      - 'src/routes/businessOSAcceptanceRoutes.js'
+      - 'test/full-production-journey-evidence.test.js'
+      - '.github/workflows/full-journey-evidence.yml'
+jobs:
+  evidence-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/full-production-journey-evidence.test.js test/live-journey-safety-contract.test.js
