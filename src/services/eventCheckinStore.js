@@ -34,7 +34,16 @@ function createEventCheckinStore({dataDir,clock=Date.now}){
   const hash=crypto.createHash("sha256").update(token).digest("hex");
   return crypto.timingSafeEqual(Buffer.from(record.tokenHash,"hex"),Buffer.from(hash,"hex"))&&record.email===email.trim().toLowerCase();
  }
+ function claim({id,token,userId}){
+  const record=read(id);
+  if(!record||typeof token!=="string"||token.length!==48||typeof userId!=="string"||!userId.trim())throw Error("Invalid claim");
+  const hash=crypto.createHash("sha256").update(token).digest("hex");
+  if(!crypto.timingSafeEqual(Buffer.from(record.tokenHash,"hex"),Buffer.from(hash,"hex")))throw Error("Invalid claim");
+  if(record.claimedBy&&record.claimedBy!==userId)throw Error("Check-in already claimed");
+  if(!record.claimedBy){record.claimedBy=userId;record.claimedAt=clock();write(record);}
+  return {id:record.id,eventId:record.event,claimedAt:record.claimedAt,attribution:record.attribution};
+ }
  function roster(){if(!fs.existsSync(dir))return[];return fs.readdirSync(dir).filter(f=>/^[a-f0-9]{32}\.json$/.test(f)).map(f=>{const {tokenHash,...entry}=JSON.parse(fs.readFileSync(path.join(dir,f),"utf8"));return entry})}
- return{checkin,reflect,verifyCompletion,roster};
+ return{checkin,reflect,verifyCompletion,claim,roster};
 }
 module.exports={createEventCheckinStore};
