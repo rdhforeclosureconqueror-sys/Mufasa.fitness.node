@@ -4,6 +4,7 @@ on:
     paths:
       - 'scripts/acceptance-browser-dom-smoke.js'
       - 'scripts/acceptance-browser-authenticated.js'
+      - 'scripts/acceptance-browser-registration-form.js'
       - '.github/workflows/isolated-browser-acceptance.yml'
       - 'public/quick-connect.html'
       - 'public/apartment-wellness.html'
@@ -28,3 +29,4 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/acceptance-browser-dom-smoke.js
       - run: node scripts/acceptance-browser-authenticated.js
+      - run: node scripts/acceptance-browser-registration-form.js
