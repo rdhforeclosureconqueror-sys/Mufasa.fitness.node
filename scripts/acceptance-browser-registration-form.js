@@ -66,7 +66,7 @@ const checks=[];
   const adminPage=await browser.newPage({serviceWorkers:"block"});
   await adminPage.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
   await adminPage.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
-  await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});});
+  await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});await adminPage.waitForURL(url=>url.pathname==="/dashboard.html",{timeout:12000});});
   await step("crm-readback-after-real-registration",async()=>{
    const result=await adminPage.evaluate(async memberEmail=>{
     const token=window.AuthStateRuntime?.getAuthToken?.();
