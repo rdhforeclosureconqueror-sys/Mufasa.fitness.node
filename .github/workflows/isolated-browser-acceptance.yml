@@ -7,6 +7,7 @@ on:
       - 'scripts/acceptance-browser-registration-form.js'
       - '.github/workflows/isolated-browser-acceptance.yml'
       - 'public/quick-connect.html'
+      - 'public/login.js'
       - 'public/apartment-wellness.html'
       - 'public/residential-wellness.html'
       - 'public/community-hub.html'

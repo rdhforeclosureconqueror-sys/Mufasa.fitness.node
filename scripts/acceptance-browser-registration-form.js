@@ -35,6 +35,15 @@ const checks=[];
   await step("submit-registration-form",async()=>{await page.locator("#submit").click();try{await page.waitForURL(url=>url.pathname==="/free-run-club.html",{timeout:15000});}catch(error){const evidence=await page.evaluate(()=>({path:location.pathname,status:document.querySelector("#status")?.textContent,diagnostic:window.__MAAT_LOGIN_DIAGNOSTIC__||null,endpoint:window.MaatApiClient?.resolve?.("/api/auth/register")||null}));throw Error("Registration did not navigate: "+JSON.stringify(evidence)+"; "+error.message);}});
   let customerId;
   await step("verify-authenticated-session",async()=>{await page.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await page.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),{timeout:8000});const result=await page.evaluate(async()=>{const token=window.AuthStateRuntime?.getAuthToken?.();if(!token)return {status:0};const response=await fetch("/api/auth/me",{headers:{authorization:"Bearer "+token}});return {status:response.status,payload:await response.json()};});assert.equal(result.status,200,JSON.stringify(result));assert.equal(result.payload.user.email,email);customerId=result.payload.user.id;assert.ok(customerId);});
+  await step("verify-run-club-entry-context",async()=>{
+   const result=await page.evaluate(async()=>{
+    const token=window.AuthStateRuntime?.getAuthToken?.();
+    const response=await fetch("/api/auth/me",{headers:{authorization:"Bearer "+token}});
+    return {status:response.status,payload:await response.json()};
+   });
+   assert.equal(result.status,200,JSON.stringify(result));
+   assert.equal(result.payload.user.accessTier,"free_run_club",JSON.stringify(result.payload));
+  });
   await step("open-wellness-consent",async()=>{await page.goto(base+"/residential-wellness.html",{waitUntil:"domcontentloaded"});await page.locator("#wellnessForm").waitFor({state:"visible",timeout:8000});});
   await step("submit-wellness-consent",async()=>{await page.locator('[name="interest"][value="yoga"]').check();await page.locator("#communicationConsent").check();await page.locator("#communityInviteConsent").check();await page.locator("#submit").click();try{await page.locator("#success").waitFor({state:"visible",timeout:10000});}catch(error){const evidence=await page.evaluate(()=>({url:location.href,status:document.querySelector("#status")?.textContent,authenticated:Boolean(window.AuthStateRuntime?.getAuthToken?.()),apiOrigin:window.MAAT_BACKEND_ORIGIN,formPresent:Boolean(document.querySelector("#wellnessForm"))}));throw Error("Wellness form failed: "+JSON.stringify(evidence)+"; "+error.message);}assert.match(await page.locator("#summary").innerText(),/Yoga/);});
   let eventId;
@@ -57,7 +66,7 @@ const checks=[];
   const adminPage=await browser.newPage({serviceWorkers:"block"});
   await adminPage.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
   await adminPage.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
-  await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});});
+  await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});await adminPage.waitForURL(url=>url.pathname==="/dashboard.html",{timeout:12000});});
   await step("crm-readback-after-real-registration",async()=>{
    const result=await adminPage.evaluate(async memberEmail=>{
     const token=window.AuthStateRuntime?.getAuthToken?.();
