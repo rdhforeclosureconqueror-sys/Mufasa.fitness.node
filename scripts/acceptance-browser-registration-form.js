@@ -64,7 +64,7 @@ const checks=[];
    await adminPage.waitForFunction(async id=>{const token=window.AuthStateRuntime?.getAuthToken?.();if(!token)return false;const response=await fetch("/api/admin/community/events/"+encodeURIComponent(id)+"/attendance",{headers:{authorization:"Bearer "+token}});if(!response.ok)return false;const payload=await response.json();return Boolean(payload.data?.attendees?.some(a=>a.checkedInAt));},eventId,{timeout:12000});
    const receipt=await adminPage.evaluate(async id=>{const token=window.AuthStateRuntime?.getAuthToken?.();const response=await fetch("/api/admin/community/events/"+encodeURIComponent(id)+"/attendance",{headers:{authorization:"Bearer "+token}});return {status:response.status,data:await response.json()};},eventId);
    assert.equal(receipt.status,200,JSON.stringify(receipt));
-   assert.ok(receipt.data.data.attendees.some(a=>a.checkedInAt),JSON.stringify({attendees:receipt.data.data.attendees,dialogs,formStatus:await adminPage.locator("#formStatus").innerText()}));
+   assert.ok(receipt.data.data.attendees.some(a=>a.checkedInAt),JSON.stringify({attendees:receipt.data.data.attendees,dialogs,formStatus:await adminPage.locator("#formStatus").innerText(),guestEndpoint:await adminPage.evaluate(async id=>{const token=window.AuthStateRuntime?.getAuthToken?.();const response=await fetch("/api/admin/community/events/"+id+"/guest-attendance",{headers:{authorization:"Bearer "+token}});return {status:response.status,body:await response.text()};},eventId)}));
    assert.ok(dialogs.some(d=>d.type==="prompt")&&dialogs.some(d=>d.type==="confirm")&&dialogs.some(d=>d.type==="alert"),JSON.stringify(dialogs));
   });
  }catch(error){firstFailure=firstFailure||{id:"setup",reason:String(error.message).slice(0,260)}}
