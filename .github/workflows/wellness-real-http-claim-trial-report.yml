@@ -1,0 +1,19 @@
+name: Wellness real HTTP claim trial report
+on:
+  pull_request:
+    paths:
+      - 'test/wellness-real-http-claim-trial-report.test.js'
+      - '.github/workflows/wellness-real-http-claim-trial-report.yml'
+  workflow_dispatch:
+jobs:
+  isolated-real-http:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test test/wellness-real-http-claim-trial-report.test.js
