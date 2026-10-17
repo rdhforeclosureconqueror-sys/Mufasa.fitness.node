@@ -21,7 +21,7 @@ const pages=["/quick-connect.html","/apartment-wellness.html","/residential-well
     const response=await page.goto(base+route,{waitUntil:"domcontentloaded",timeout:12000});
     assert.equal(response?.status(),200,"Page HTTP status");
     const finalPath=new URL(page.url()).pathname;
-    const authRedirect=route==="/residential-wellness.html"||route==="/admin-acceptance-lab.html";
+    const authRedirect=["/residential-wellness.html","/community-hub.html","/admin-acceptance-lab.html"].includes(route);
     if(authRedirect&&finalPath==="/login.html"){
      assert.equal(await page.locator("body").count(),1,"Missing login page body");
      checks.push({route,status:"PASS_AUTH_REDIRECT",destination:finalPath});
