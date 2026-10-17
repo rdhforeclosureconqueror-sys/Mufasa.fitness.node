@@ -100,6 +100,18 @@ function installResidentialCommunity(app, options = {}) {
       return res.status(201).json({ok:true,data});
     }catch(error){return res.status(Number.isInteger(error.status)?error.status:400).json({ok:false,error:{message:error.message}});}
   });
+  app.post("/api/me/community/guest-check-in/claim",requireAuth,(req,res)=>{
+    try{
+      const claimed=guestCheckins.claim({id:req.body?.id,token:req.body?.token,userId:req.auth.userId});
+      userStore.updateUser(req.auth.userId,user=>{
+        const claims=Array.isArray(user.wellnessEventClaims)?user.wellnessEventClaims:[];
+        if(!claims.some(entry=>entry.id===claimed.id))user.wellnessEventClaims=[...claims,claimed];
+        return user;
+      });
+      res.set("Cache-Control","private, no-store");
+      return res.json({ok:true,data:{id:claimed.id,eventId:claimed.eventId,claimedAt:claimed.claimedAt}});
+    }catch(error){return res.status(400).json({ok:false,error:{message:"Unable to verify guest check-in claim"}});}
+  });
   app.get("/api/admin/community/events/:eventId/guest-attendance",requireAuth,(req,res)=>{
     if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({ok:false,error:{message:"Administrator access required"}});
     const event=eventCatalog.list().find(e=>e.eventId===req.params.eventId);
