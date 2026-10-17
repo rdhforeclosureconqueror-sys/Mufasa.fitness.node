@@ -3502,7 +3502,9 @@ function createApp(options = {}) {
     userStore.updateUser(req.auth.userId,user=>{
       if(user.trialAccess?.acceptedAt){trial=user.trialAccess;return user;}
       const now=Date.now();
-      trial={acceptedAt:new Date(now).toISOString(),expiresAt:new Date(now+7*86400000).toISOString(),paymentRequired:false};
+      const verifiedClaims=Array.isArray(user.wellnessEventClaims)?user.wellnessEventClaims:[];
+      const latestClaim=verifiedClaims.filter(entry=>entry&&typeof entry.eventId==="string"&&typeof entry.id==="string"&&Number.isFinite(entry.claimedAt)).sort((a,b)=>b.claimedAt-a.claimedAt)[0]||null;
+      trial={acceptedAt:new Date(now).toISOString(),expiresAt:new Date(now+7*86400000).toISOString(),paymentRequired:false,...(latestClaim?{origin:{kind:"verified-event-check-in",eventId:latestClaim.eventId,checkInId:latestClaim.id,claimedAt:new Date(latestClaim.claimedAt).toISOString()}}:{})};
       user.trialAccess=trial;
       return user;
     });
