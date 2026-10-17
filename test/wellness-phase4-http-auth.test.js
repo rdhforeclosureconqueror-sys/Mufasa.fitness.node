@@ -45,7 +45,7 @@ test("Phase 4 HTTP: admin and super_admin can run disposable wellness journey",a
    assert.equal(result.payload.ok,true);
    assert.equal(result.payload.report.mode,"ISOLATED_TEMP_STORAGE_NO_PRODUCTION_SIDE_EFFECTS");
    assert.equal(result.payload.report.passed,true);
-   assert.equal(result.payload.report.checks.length,9);
+   assert.equal(result.payload.report.checks.length,12);
    assert.equal(result.payload.report.firstFailure,null);
   }
  });
