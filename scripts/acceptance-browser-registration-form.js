@@ -18,6 +18,9 @@ const checks=[];
   browser=await chromium.launch({headless:true});
   const base="http://127.0.0.1:"+server.address().port;
   const page=await browser.newPage({serviceWorkers:"block"});
+  // Residential wellness reads MAAT_BACKEND_ORIGIN directly and does not load runtime-config.js.
+  // Seed the isolated API origin on every new document before application scripts execute.
+  await page.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
   // Keep browser registration local: production runtime config points at Render.
   await page.route("**/runtime-config.js*",async route=>{
    const response=await route.fetch();
