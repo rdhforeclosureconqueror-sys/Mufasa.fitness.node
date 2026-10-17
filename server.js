@@ -22,6 +22,8 @@ const { createClientCrmService } = require("./src/services/clientCrmService");
 const { createEventCatalog } = require("./src/services/communityEventCatalog");
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
 const { createResidentialWellnessService } = require("./src/services/residentialWellnessService");
+const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
+const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
 const { createChallengeParticipantService } = require("./src/services/challengeParticipantService");
@@ -3490,6 +3492,28 @@ function createApp(options = {}) {
   const residentialCommunityService = createResidentialCommunityService({ userStore, eventCatalog: communityEventCatalog });
   installCommunityEventCatalogRoutes({ app, requireAuth, catalog: communityEventCatalog });
   installResidentialCommunityRoutes({ app, requireAuth, service: residentialCommunityService });
+
+  const privateCoachingQuoteService = createPrivateCoachingQuoteService({ userStore });
+  installPrivateCoachingQuoteRoutes({ app, requireAuth, service: privateCoachingQuoteService });
+
+  app.post("/api/me/trial-access/accept", requireAuth, asyncHandler(async (req,res)=>{
+    if(req.body?.accepted!==true)throw new ApiError("TRIAL_CONSENT_REQUIRED","Explicit trial consent is required",422);
+    let trial;
+    userStore.updateUser(req.auth.userId,user=>{
+      if(user.trialAccess?.acceptedAt){trial=user.trialAccess;return user;}
+      const now=Date.now();
+      trial={acceptedAt:new Date(now).toISOString(),expiresAt:new Date(now+7*86400000).toISOString(),paymentRequired:false};
+      user.trialAccess=trial;
+      return user;
+    });
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,{trial:{...trial,status:Date.parse(trial.expiresAt)>Date.now()?"trialing":"expired"}});
+  }));
+  app.get("/api/me/trial-access",requireAuth,asyncHandler(async(req,res)=>{
+    const trial=userStore.loadUser(req.auth.userId).trialAccess||null;
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,{trial:trial?{...trial,status:Date.parse(trial.expiresAt)>Date.now()?"trialing":"expired"}:null});
+  }));
 
   // ---- Static assets ----
   app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));

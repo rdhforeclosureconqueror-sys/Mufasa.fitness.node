@@ -46,6 +46,32 @@ const checks=[];
   });
   await step("open-wellness-consent",async()=>{await page.goto(base+"/residential-wellness.html",{waitUntil:"domcontentloaded"});await page.locator("#wellnessForm").waitFor({state:"visible",timeout:8000});});
   await step("submit-wellness-consent",async()=>{await page.locator('[name="interest"][value="yoga"]').check();await page.locator("#communicationConsent").check();await page.locator("#communityInviteConsent").check();await page.locator("#submit").click();try{await page.locator("#success").waitFor({state:"visible",timeout:10000});}catch(error){const evidence=await page.evaluate(()=>({url:location.href,status:document.querySelector("#status")?.textContent,authenticated:Boolean(window.AuthStateRuntime?.getAuthToken?.()),apiOrigin:window.MAAT_BACKEND_ORIGIN,formPresent:Boolean(document.querySelector("#wellnessForm"))}));throw Error("Wellness form failed: "+JSON.stringify(evidence)+"; "+error.message);}assert.match(await page.locator("#summary").innerText(),/Yoga/);});
+  await step("open-private-session-form",async()=>{
+   await page.goto(base+"/private-sessions.html?source=community",{waitUntil:"domcontentloaded"});
+   await page.locator("#quoteForm").waitFor({state:"visible",timeout:12000});
+  });
+  await step("submit-private-session-request",async()=>{
+   await page.locator('input[name="services"][value="yoga"]').check();
+   await page.locator('[name="locationPreference"]').selectOption("outside");
+   await page.locator('[name="sessionsPerWeek"]').selectOption("1");
+   await page.locator('[name="paymentPreference"]').selectOption("per_session");
+   await page.locator('[name="budgetRange"]').selectOption("under_200");
+   await page.locator('[name="preferredSchedule"]').fill("Saturday morning");
+   await page.locator("#submitQuote").click();
+   try{await page.waitForURL(url=>url.pathname==="/community-trial-offer.html",{timeout:12000,waitUntil:"domcontentloaded"});}catch(error){const evidence=await page.evaluate(()=>({url:location.href,status:document.querySelector("#status")?.textContent,formVisible:!document.querySelector("#quoteForm")?.hidden,apiOrigin:window.MAAT_BACKEND_ORIGIN}));throw Error("Private session did not reach trial: "+JSON.stringify(evidence)+"; "+error.message);}
+   const result=await page.evaluate(async()=>{
+    const token=window.AuthStateRuntime?.getAuthToken?.();
+    const response=await fetch("/api/me/private-coaching/quote",{headers:{authorization:"Bearer "+token}});
+    return {status:response.status,payload:await response.json()};
+   });
+   assert.equal(result.status,200,JSON.stringify(result));
+   assert.ok(JSON.stringify(result.payload).includes("yoga"),JSON.stringify(result.payload));
+  });
+  await step("activate-seven-day-trial",async()=>{
+   await page.locator("#agree").check();
+   await page.locator("#accept").click();
+   await page.waitForURL(url=>url.pathname==="/community-hub.html"&&url.searchParams.get("trial")==="accepted",{timeout:15000});
+  });
   let eventId;
   await step("seed-isolated-confirmed-event",async()=>{
    const result=await page.evaluate(async()=>{
