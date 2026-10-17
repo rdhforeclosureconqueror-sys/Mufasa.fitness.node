@@ -1,0 +1,20 @@
+name: Wellness admin conversion UI
+on:
+  pull_request:
+    paths:
+      - 'public/admin-event-checkins.html'
+      - 'public/admin-event-conversions.js'
+      - 'test/wellness-admin-conversions-ui.test.js'
+      - '.github/workflows/wellness-admin-conversions-ui.yml'
+  workflow_dispatch:
+jobs:
+  admin-conversions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/wellness-admin-conversions-ui.test.js test/wellness-event-conversions.test.js
