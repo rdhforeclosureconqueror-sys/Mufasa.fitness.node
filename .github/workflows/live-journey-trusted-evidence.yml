@@ -1,0 +1,21 @@
+name: Live journey trusted evidence gate
+on:
+  pull_request:
+    paths:
+      - 'src/services/liveJourneyExecutionGate.js'
+      - 'src/services/liveJourneySafeguardEvidence.js'
+      - 'src/services/liveJourneySafetyContract.js'
+      - 'test/live-journey-execution-gate.test.js'
+      - 'test/live-journey-safeguard-evidence.test.js'
+      - '.github/workflows/live-journey-trusted-evidence.yml'
+  workflow_dispatch:
+jobs:
+  trusted-evidence-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/live-journey-execution-gate.test.js test/live-journey-safeguard-evidence.test.js
