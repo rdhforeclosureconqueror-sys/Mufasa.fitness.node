@@ -30,7 +30,7 @@ const checks=[];
   const email="dom-"+crypto.randomBytes(12).toString("hex")+"@example.invalid";
   const password=crypto.randomBytes(24).toString("hex");
   async function step(id,fn){try{await fn();checks.push({id,status:"PASS_BROWSER_DOM"});}catch(error){firstFailure={id,reason:String(error.message).slice(0,260)};checks.push({id,status:"FAIL",reason:firstFailure.reason});throw error;}}
-  await step("open-registration",async()=>{await page.goto(base+"/login.html?mode=register&returnTo=%2Ffree-run-club.html",{waitUntil:"domcontentloaded"});await assert.doesNotReject(()=>page.locator("#name").waitFor({state:"visible",timeout:8000}));assert.equal(await page.locator("#title").innerText(),"Create Account");});
+  await step("open-registration",async()=>{await page.goto(base+"/login.html?mode=register&returnTo=%2Ffree-run-club.html&utm_source=community&utm_medium=qr&utm_campaign=run_club_launch",{waitUntil:"domcontentloaded"});await assert.doesNotReject(()=>page.locator("#name").waitFor({state:"visible",timeout:8000}));assert.equal(await page.locator("#title").innerText(),"Create Account");});
   await step("fill-registration-form",async()=>{await page.locator("#name").fill("Isolated DOM Member");await page.locator("#email").fill(email);await page.locator("#password").fill(password);});
   await step("submit-registration-form",async()=>{await page.locator("#submit").click();try{await page.waitForURL(url=>url.pathname==="/free-run-club.html",{timeout:15000});}catch(error){const evidence=await page.evaluate(()=>({path:location.pathname,status:document.querySelector("#status")?.textContent,diagnostic:window.__MAAT_LOGIN_DIAGNOSTIC__||null,endpoint:window.MaatApiClient?.resolve?.("/api/auth/register")||null}));throw Error("Registration did not navigate: "+JSON.stringify(evidence)+"; "+error.message);}});
   let customerId;
@@ -74,7 +74,7 @@ const checks=[];
     return {status:response.status,payload:await response.json()};
    },email);
    assert.equal(result.status,200,JSON.stringify(result));
-   assert.ok(result.payload.data?.members?.some(member=>member.userId===customerId),JSON.stringify(result.payload));
+   assert.ok(result.payload.data?.members?.some(member=>member.userId===customerId&&member.registrationAttribution?.utm_source==="community"&&member.registrationAttribution?.utm_medium==="qr"&&member.registrationAttribution?.utm_campaign==="run_club_launch"),JSON.stringify(result.payload));
   });
   await step("open-admin-attendance",async()=>{await adminPage.goto(base+"/event-studio.html",{waitUntil:"domcontentloaded"});await adminPage.locator('[data-attendance="'+eventId+'"]').waitFor({state:"visible",timeout:12000});});
   await step("check-in-through-real-admin-control",async()=>{
