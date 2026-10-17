@@ -36,6 +36,23 @@ const checks=[];
   await step("verify-authenticated-session",async()=>{await page.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await page.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),{timeout:8000});const result=await page.evaluate(async()=>{const token=window.AuthStateRuntime?.getAuthToken?.();if(!token)return {status:0};const response=await fetch("/api/auth/me",{headers:{authorization:"Bearer "+token}});return {status:response.status,payload:await response.json()};});assert.equal(result.status,200,JSON.stringify(result));assert.equal(result.payload.user.email,email);});
   await step("open-wellness-consent",async()=>{await page.goto(base+"/residential-wellness.html",{waitUntil:"domcontentloaded"});await page.locator("#wellnessForm").waitFor({state:"visible",timeout:8000});});
   await step("submit-wellness-consent",async()=>{await page.locator('[name="interest"][value="yoga"]').check();await page.locator("#communicationConsent").check();await page.locator("#communityInviteConsent").check();await page.locator("#submit").click();try{await page.locator("#success").waitFor({state:"visible",timeout:10000});}catch(error){const evidence=await page.evaluate(()=>({url:location.href,status:document.querySelector("#status")?.textContent,authenticated:Boolean(window.AuthStateRuntime?.getAuthToken?.()),apiOrigin:window.MAAT_BACKEND_ORIGIN,formPresent:Boolean(document.querySelector("#wellnessForm"))}));throw Error("Wellness form failed: "+JSON.stringify(evidence)+"; "+error.message);}assert.match(await page.locator("#summary").innerText(),/Yoga/);});
+  let eventId;
+  await step("seed-isolated-confirmed-event",async()=>{
+   const result=await page.evaluate(async()=>{
+    const call=async(url,method,token,body)=>{const response=await fetch(url,{method,headers:{authorization:"Bearer "+token,...(body?{"content-type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});return {status:response.status,data:await response.json()};};
+    const login=await call("/api/auth/login","POST","",{email:"isolated-dom-admin@example.invalid",password:"isolated-dom-admin-password"});
+    if(login.status!==200)throw Error("isolated admin login "+JSON.stringify(login));
+    const created=await call("/api/admin/community/events","POST",login.data.token,{title:"Isolated DOM Yoga RSVP",location:"Test Park",type:"yoga",capacity:3,startAt:"2026-11-14T15:00:00Z",endAt:"2026-11-14T16:00:00Z"});
+    if(created.status!==201)throw Error("isolated event create "+JSON.stringify(created));
+    const id=created.data.data.event.eventId;
+    const published=await call("/api/admin/community/events/"+id,"PATCH",login.data.token,{status:"confirmed"});
+    if(published.status!==200)throw Error("isolated event publish "+JSON.stringify(published));
+    return id;
+   });
+   eventId=result;assert.ok(eventId);
+  });
+  await step("open-community-event",async()=>{await page.goto(base+"/community-hub.html",{waitUntil:"domcontentloaded"});await page.locator('[data-rsvp="'+eventId+'"]').waitFor({state:"visible",timeout:12000});});
+  await step("click-real-rsvp-button",async()=>{await page.locator('[data-rsvp="'+eventId+'"]').click();await page.locator('[data-rsvp="'+eventId+'"][data-going="true"]').waitFor({state:"visible",timeout:12000});assert.match(await page.locator('[data-rsvp="'+eventId+'"]').innerText(),/Cancel RSVP/);});
  }catch(error){firstFailure=firstFailure||{id:"setup",reason:String(error.message).slice(0,260)}}
  finally{
   if(browser)await browser.close();
