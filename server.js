@@ -2103,7 +2103,7 @@ function createApp(options = {}) {
 
     const requestedContext = String(req.body?.entryContext || "").trim().toLowerCase();
     const accessTier = requestedContext === "run_club" ? "free_run_club" : "free";
-    const record = authCredentialStore.create({ email, name, password, accessTier });
+    const record = authCredentialStore.create({ email, name, password, accessTier, attribution: req.body?.attribution });
     if (!record) return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
     const userId = record.id;
     userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier } }));
