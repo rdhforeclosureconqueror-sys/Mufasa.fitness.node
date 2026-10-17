@@ -22,6 +22,8 @@ const { createClientCrmService } = require("./src/services/clientCrmService");
 const { createEventCatalog } = require("./src/services/communityEventCatalog");
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
 const { createResidentialWellnessService } = require("./src/services/residentialWellnessService");
+const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
+const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installResidentialCommunityRoutes } = require("./src/routes/residentialCommunityRoutes");
 const { createChallengeParticipantService } = require("./src/services/challengeParticipantService");
@@ -3490,6 +3492,9 @@ function createApp(options = {}) {
   const residentialCommunityService = createResidentialCommunityService({ userStore, eventCatalog: communityEventCatalog });
   installCommunityEventCatalogRoutes({ app, requireAuth, catalog: communityEventCatalog });
   installResidentialCommunityRoutes({ app, requireAuth, service: residentialCommunityService });
+
+  const privateCoachingQuoteService = createPrivateCoachingQuoteService({ userStore });
+  installPrivateCoachingQuoteRoutes({ app, requireAuth, service: privateCoachingQuoteService });
 
   // ---- Static assets ----
   app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));
