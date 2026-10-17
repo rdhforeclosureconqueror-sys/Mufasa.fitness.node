@@ -1,0 +1,20 @@
+name: Wellness event trial copy
+on:
+  pull_request:
+    paths:
+      - 'public/community-trial-offer.html'
+      - 'public/community-trial-offer.js'
+      - 'test/wellness-event-trial-copy.test.js'
+      - '.github/workflows/wellness-event-trial-copy.yml'
+  workflow_dispatch:
+jobs:
+  event-copy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/wellness-event-trial-copy.test.js
