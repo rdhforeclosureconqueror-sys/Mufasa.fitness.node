@@ -57,6 +57,15 @@ const checks=[];
   await adminPage.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
   await adminPage.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
   await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});});
+  await step("crm-readback-after-real-registration",async()=>{
+   const result=await adminPage.evaluate(async memberEmail=>{
+    const token=window.AuthStateRuntime?.getAuthToken?.();
+    const response=await fetch("/api/admin/members?search="+encodeURIComponent(memberEmail),{headers:{authorization:"Bearer "+token}});
+    return {status:response.status,payload:await response.json()};
+   },email);
+   assert.equal(result.status,200,JSON.stringify(result));
+   assert.ok(result.payload.data?.members?.some(member=>member.email===email||member.user?.email===email),JSON.stringify(result.payload));
+  });
   await step("open-admin-attendance",async()=>{await adminPage.goto(base+"/event-studio.html",{waitUntil:"domcontentloaded"});await adminPage.locator('[data-attendance="'+eventId+'"]').waitFor({state:"visible",timeout:12000});});
   await step("check-in-through-real-admin-control",async()=>{
    const dialogs=[];adminPage.on("dialog",async dialog=>{dialogs.push({type:dialog.type(),message:dialog.message()});if(dialog.type()==="prompt")await dialog.accept("1");else await dialog.accept();});
