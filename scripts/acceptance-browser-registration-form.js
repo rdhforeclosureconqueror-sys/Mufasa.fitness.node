@@ -53,6 +53,20 @@ const checks=[];
   });
   await step("open-community-event",async()=>{await page.goto(base+"/community-hub.html",{waitUntil:"domcontentloaded"});await page.locator('[data-rsvp="'+eventId+'"]').waitFor({state:"visible",timeout:12000});});
   await step("click-real-rsvp-button",async()=>{await page.locator('[data-rsvp="'+eventId+'"]').click();await page.locator('[data-rsvp="'+eventId+'"][data-going="true"]').waitFor({state:"visible",timeout:12000});assert.match(await page.locator('[data-rsvp="'+eventId+'"]').innerText(),/Cancel RSVP/);});
+  const adminPage=await browser.newPage({serviceWorkers:"block"});
+  await adminPage.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
+  await adminPage.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
+  await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});});
+  await step("open-admin-attendance",async()=>{await adminPage.goto(base+"/event-studio.html",{waitUntil:"domcontentloaded"});await adminPage.locator('[data-attendance="'+eventId+'"]').waitFor({state:"visible",timeout:12000});});
+  await step("check-in-through-real-admin-control",async()=>{
+   const dialogs=[];adminPage.on("dialog",async dialog=>{dialogs.push({type:dialog.type(),message:dialog.message()});if(dialog.type()==="prompt")await dialog.accept("1");else await dialog.accept();});
+   await adminPage.locator('[data-attendance="'+eventId+'"]').click();
+   await adminPage.waitForFunction(()=>document.querySelector("#formStatus")?.textContent.includes("checked in")||false,null,{timeout:2000}).catch(()=>{});
+   const receipt=await adminPage.evaluate(async id=>{const token=window.AuthStateRuntime?.getAuthToken?.();const response=await fetch("/api/admin/community/events/"+encodeURIComponent(id)+"/attendance",{headers:{authorization:"Bearer "+token}});return {status:response.status,data:await response.json()};},eventId);
+   assert.equal(receipt.status,200,JSON.stringify(receipt));
+   assert.ok(receipt.data.data.attendees.some(a=>a.checkedInAt),JSON.stringify(receipt));
+   assert.ok(dialogs.some(d=>d.type==="prompt")&&dialogs.some(d=>d.type==="confirm")&&dialogs.some(d=>d.type==="alert"),JSON.stringify(dialogs));
+  });
  }catch(error){firstFailure=firstFailure||{id:"setup",reason:String(error.message).slice(0,260)}}
  finally{
   if(browser)await browser.close();
