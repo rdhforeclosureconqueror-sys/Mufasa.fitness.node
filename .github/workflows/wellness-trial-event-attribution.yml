@@ -1,0 +1,19 @@
+name: Wellness trial event attribution
+on:
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'test/wellness-trial-event-attribution.test.js'
+      - '.github/workflows/wellness-trial-event-attribution.yml'
+  workflow_dispatch:
+jobs:
+  verified-trial-origin:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/wellness-trial-event-attribution.test.js test/wellness-guest-claim.test.js
