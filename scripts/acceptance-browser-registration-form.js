@@ -58,7 +58,7 @@ const checks=[];
    await page.locator('[name="budgetRange"]').selectOption("under_200");
    await page.locator('[name="preferredSchedule"]').fill("Saturday morning");
    await page.locator("#submitQuote").click();
-   await page.waitForURL(url=>url.pathname==="/community-trial-offer.html",{timeout:15000});
+   try{await page.waitForURL(url=>url.pathname==="/community-trial-offer.html",{timeout:12000,waitUntil:"domcontentloaded"});}catch(error){const evidence=await page.evaluate(()=>({url:location.href,status:document.querySelector("#status")?.textContent,formVisible:!document.querySelector("#quoteForm")?.hidden,apiOrigin:window.MAAT_BACKEND_ORIGIN}));throw Error("Private session did not reach trial: "+JSON.stringify(evidence)+"; "+error.message);}
    const result=await page.evaluate(async()=>{
     const token=window.AuthStateRuntime?.getAuthToken?.();
     const response=await fetch("/api/me/private-coaching/quote",{headers:{authorization:"Bearer "+token}});
