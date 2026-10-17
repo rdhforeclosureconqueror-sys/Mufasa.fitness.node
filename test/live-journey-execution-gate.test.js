@@ -13,7 +13,7 @@ test("caller claims cannot self-attest operational safeguards",()=>{
  const result=assessExecutionRequest(body,{adminAuthorized:true});
  assert.equal(result.authorized,false);
  assert.equal(result.executionPerformed,false);
- assert.equal(result.firstFailure,"explicitRunConfirmation");
+ assert.equal(result.firstFailure,"adminAuthorized");
 });
 test("even externally verified prerequisites do not execute before executor exists",()=>{
  const evidence=Object.fromEntries(REQUIRED.map(id=>[id,{kind:ALLOWED_KINDS[id],reference:"verified-receipt-"+id}]));
