@@ -1,0 +1,22 @@
+name: Wellness event browser claim trial
+on:
+  pull_request:
+    paths:
+      - 'scripts/acceptance-browser-event-claim-trial.js'
+      - '.github/workflows/wellness-event-browser-claim-trial.yml'
+  workflow_dispatch:
+jobs:
+  browser-event-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/acceptance-browser-event-claim-trial.js
