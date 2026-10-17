@@ -18,6 +18,12 @@ const checks=[];
   browser=await chromium.launch({headless:true});
   const base="http://127.0.0.1:"+server.address().port;
   const page=await browser.newPage({serviceWorkers:"block"});
+  // Keep browser registration local: production runtime config points at Render.
+  await page.route("**/runtime-config.js*",async route=>{
+   const response=await route.fetch();
+   const body=(await response.text()).replace("https://mufasa-fitness-node.onrender.com",base);
+   await route.fulfill({response,body,contentType:"application/javascript"});
+  });
   const email="dom-"+crypto.randomBytes(12).toString("hex")+"@example.invalid";
   const password=crypto.randomBytes(24).toString("hex");
   async function step(id,fn){try{await fn();checks.push({id,status:"PASS_BROWSER_DOM"});}catch(error){firstFailure={id,reason:String(error.message).slice(0,260)};checks.push({id,status:"FAIL",reason:firstFailure.reason});throw error;}}
