@@ -59,9 +59,9 @@ const checks=[];
   await step("admin-login-real-form",async()=>{await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});await adminPage.locator("#email").fill("isolated-dom-admin@example.invalid");await adminPage.locator("#password").fill("isolated-dom-admin-password");await adminPage.locator("#submit").click();await adminPage.waitForFunction(()=>Boolean(window.AuthStateRuntime?.getAuthToken?.()),null,{timeout:12000});});
   await step("open-admin-attendance",async()=>{await adminPage.goto(base+"/event-studio.html",{waitUntil:"domcontentloaded"});await adminPage.locator('[data-attendance="'+eventId+'"]').waitFor({state:"visible",timeout:12000});});
   await step("check-in-through-real-admin-control",async()=>{
-   const dialogs=[];adminPage.on("dialog",async dialog=>{dialogs.push({type:dialog.type(),message:dialog.message()});if(dialog.type()==="prompt")await dialog.accept("1");else await dialog.accept();if(dialog.type()==="alert")await adminPage.evaluate(()=>{window.__attendanceAlertSeen=true;}).catch(()=>{});});
+   const dialogs=[];adminPage.on("dialog",async dialog=>{dialogs.push({type:dialog.type(),message:dialog.message()});if(dialog.type()==="prompt")await dialog.accept("1");else await dialog.accept();});
    await adminPage.locator('[data-attendance="'+eventId+'"]').click();
-   await adminPage.waitForFunction(()=>Boolean(window.__attendanceAlertSeen),null,{timeout:12000});
+   await adminPage.waitForFunction(async id=>{const token=window.AuthStateRuntime?.getAuthToken?.();if(!token)return false;const response=await fetch("/api/admin/community/events/"+encodeURIComponent(id)+"/attendance",{headers:{authorization:"Bearer "+token}});if(!response.ok)return false;const payload=await response.json();return Boolean(payload.data?.attendees?.some(a=>a.checkedInAt));},eventId,{timeout:12000});
    const receipt=await adminPage.evaluate(async id=>{const token=window.AuthStateRuntime?.getAuthToken?.();const response=await fetch("/api/admin/community/events/"+encodeURIComponent(id)+"/attendance",{headers:{authorization:"Bearer "+token}});return {status:response.status,data:await response.json()};},eventId);
    assert.equal(receipt.status,200,JSON.stringify(receipt));
    assert.ok(receipt.data.data.attendees.some(a=>a.checkedInAt),JSON.stringify(receipt));
