@@ -2103,10 +2103,11 @@ function createApp(options = {}) {
 
     const requestedContext = String(req.body?.entryContext || "").trim().toLowerCase();
     const accessTier = requestedContext === "run_club" ? "free_run_club" : "free";
+    const attribution = Object.fromEntries(["utm_source","utm_medium","utm_campaign"].map(key=>[key,String(req.body?.[key]||"").trim().slice(0,120)]).filter(([,value])=>/^[a-zA-Z0-9_.-]{1,120}$/.test(value)));
     const record = authCredentialStore.create({ email, name, password, accessTier });
     if (!record) return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
     const userId = record.id;
-    userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier } }));
+    userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier }, acquisition: attribution }));
 
     const token = authTokenLib.issueUserToken({
       userId,
