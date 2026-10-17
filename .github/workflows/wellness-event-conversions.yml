@@ -1,0 +1,20 @@
+name: Wellness event conversion report
+on:
+  pull_request:
+    paths:
+      - 'src/services/wellnessEventConversions.js'
+      - 'world-bridge-server.js'
+      - 'test/wellness-event-conversions.test.js'
+      - '.github/workflows/wellness-event-conversions.yml'
+  workflow_dispatch:
+jobs:
+  conversions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/wellness-event-conversions.test.js test/wellness-trial-event-attribution.test.js

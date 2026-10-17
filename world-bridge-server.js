@@ -14,6 +14,7 @@ const { installResidentialCommunityRoutes } = require("./src/routes/residentialC
 const { createEventCatalog } = require("./src/services/communityEventCatalog");
 const { createEventCheckinStore } = require("./src/services/eventCheckinStore");
 const { aggregateGuestCampaigns } = require("./src/services/wellnessCampaignReport");
+const { aggregateEventConversions } = require("./src/services/wellnessEventConversions");
 const { createRateLimiter } = require("./src/middleware/rateLimit");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
 const { installSoundAssessmentRoutes } = require("./src/routes/soundAssessmentRoutes");
@@ -126,6 +127,13 @@ function installResidentialCommunity(app, options = {}) {
     if(!event)return res.status(404).json({ok:false,error:{message:"Event not found"}});
     res.set("Cache-Control","private, no-store");
     return res.json({ok:true,data:aggregateGuestCampaigns(guestCheckins.roster(),event.eventId)});
+  });
+  app.get("/api/admin/community/events/:eventId/conversions",requireAuth,(req,res)=>{
+    if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({ok:false,error:{message:"Administrator access required"}});
+    const event=eventCatalog.list().find(e=>e.eventId===req.params.eventId);
+    if(!event)return res.status(404).json({ok:false,error:{message:"Event not found"}});
+    res.set("Cache-Control","private, no-store");
+    return res.json({ok:true,data:aggregateEventConversions(guestCheckins.roster(),userStore.listUsers(),event.eventId)});
   });
   installCommunityEventCatalogRoutes({app,requireAuth,catalog:eventCatalog});
   installResidentialCommunityRoutes({app,requireAuth,service});
