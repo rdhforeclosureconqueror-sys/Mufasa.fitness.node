@@ -6,6 +6,7 @@ const {run:runWellness}=require("../../scripts/wellness-synthetic-journey");
 const {runIsolatedHttpJourney}=require("../../scripts/acceptance-isolated-http-runner");
 const {assessLiveJourneyPreflight}=require("../services/liveJourneySafetyContract");
 const {evaluateFullJourney}=require("../services/fullProductionJourneyEvidence");
+const {assessExecutionRequest}=require("../services/liveJourneyExecutionGate");
 function requireLabAdmin(req,res,next){
  if(!req.auth?.userId)return res.status(401).json({ok:false,error:{code:"UNAUTHENTICATED"}});
  if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({ok:false,error:{code:"FORBIDDEN"}});
@@ -33,6 +34,11 @@ function installBusinessOSAcceptanceRoutes({app,requireAuth}){
   return res.status(report.passed?200:422).json({ok:report.passed,report});
  });
  router.get("/live/full-journey/status",(_req,res)=>res.json({ok:true,report:evaluateFullJourney()}));
+ router.post("/live/execute",express.json({limit:"2kb"}),(req,res)=>{
+  if(!req.is("application/json"))return res.status(415).json({ok:false,error:{code:"JSON_REQUIRED"}});
+  const report=assessExecutionRequest(req.body,{adminAuthorized:true});
+  return res.status(409).json({ok:false,report});
+ });
  router.get("/live/preflight",(_req,res)=>res.json({ok:true,report:assessLiveJourneyPreflight({adminAuthorized:true})}));
  router.post("/wellness/run",express.json({limit:"1kb"}),(req,res)=>{
   if(!req.is("application/json"))return res.status(415).json({ok:false,error:{code:"JSON_REQUIRED"}});
