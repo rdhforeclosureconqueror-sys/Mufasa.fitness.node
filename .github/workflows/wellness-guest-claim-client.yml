@@ -1,0 +1,22 @@
+name: Wellness guest claim client
+on:
+  pull_request:
+    paths:
+      - 'public/wellness-claim.js'
+      - 'public/wellness-claim.html'
+      - 'public/event-checkin.js'
+      - 'public/wellness-check-in.html'
+      - 'test/wellness-guest-claim-client.test.js'
+      - '.github/workflows/wellness-guest-claim-client.yml'
+  workflow_dispatch:
+jobs:
+  guest-claim-client:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/wellness-guest-claim-client.test.js
