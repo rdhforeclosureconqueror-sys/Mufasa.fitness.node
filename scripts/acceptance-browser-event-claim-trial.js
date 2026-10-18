@@ -87,6 +87,20 @@ let server,browser,firstFailure=null;const checks=[];
   assert.equal(result.status,200,JSON.stringify(result));
   assert.equal(result.payload.data?.trial?.origin?.eventId,eventId,JSON.stringify(result));
  });
+ await step("admin-conversion-dashboard-dom",async()=>{
+  const adminPage=await browser.newPage({serviceWorkers:"block"});
+  try{
+   await adminPage.addInitScript(({origin,authToken})=>{window.MAAT_BACKEND_ORIGIN=origin;localStorage.setItem("auth_token",authToken);},{origin:base,authToken:adminToken});
+   await adminPage.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replaceAll("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
+   await adminPage.goto(base+"/event-studio.html",{waitUntil:"domcontentloaded"});
+   const button=adminPage.locator('[data-conversions="'+eventId+'"]');
+   await button.waitFor({state:"visible",timeout:12000});
+   await button.click();
+   const output=adminPage.locator('[data-conversions-report]');
+   await output.waitFor({state:"visible",timeout:12000});
+   await assert.match(await output.innerText(),/Guest check-ins: 1 · Linked accounts: 1 · Trial activations: 1 · Trial conversion: 100% of linked accounts · Paid memberships: Not integrated/);
+  }finally{await adminPage.close();}
+ });
  await step("admin-event-conversions",async()=>{
   const report=await call("/api/admin/community/events/"+encodeURIComponent(eventId)+"/conversions","GET",adminToken);
   assert.equal(report.status,200,JSON.stringify(report));
