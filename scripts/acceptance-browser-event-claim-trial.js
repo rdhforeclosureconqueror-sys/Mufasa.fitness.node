@@ -120,7 +120,10 @@ let server,browser,firstFailure=null;const checks=[];
  await step("nutrition-button-inventory-dom",async()=>{
   const expected=["scanPanel","searchPanel","naturalPanel","recentPanel","customPanel"];
   for(const id of expected){
-   await page.locator('[data-open="'+id+'"]').click();
+   const button=page.locator('[data-open="'+id+'"]');
+   try {await button.click({timeout:6000});}
+   catch(error){const detail=await button.evaluate(el=>({rect:(()=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}})(),hidden:el.hidden,display:getComputedStyle(el).display,visibility:getComputedStyle(el).visibility,ancestorHidden:Boolean(el.closest("[hidden]")),elementAtCenter:(()=>{const r=el.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,350)})()}));throw new Error("Nutrition panel click "+id+": "+JSON.stringify(detail)+"; "+error.message);}
+
    assert.equal(await page.locator("#"+id).evaluate(el=>el.classList.contains("active")),true,"Panel button "+id);
   }
   for(const id of ["weeklyThisWeek","weeklyGroceryBuilder","weeklyPantry","weeklyMissions","weeklyReview"]){
