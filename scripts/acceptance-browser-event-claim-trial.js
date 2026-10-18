@@ -112,6 +112,32 @@ let server,browser,firstFailure=null;const checks=[];
   assert.equal(entries.status,200,JSON.stringify(entries));
   assert.ok(entries.payload.data?.entries?.some(e=>e.foodName==="Isolated browser oatmeal"),"Saved meal must persist in member journal");
  });
+ await step("nutrition-button-inventory-dom",async()=>{
+  const expected=["scanPanel","searchPanel","naturalPanel","recentPanel","customPanel"];
+  for(const id of expected){
+   await page.locator('[data-open="'+id+'"]').click();
+   assert.equal(await page.locator("#"+id).evaluate(el=>el.classList.contains("active")),true,"Panel button "+id);
+  }
+  for(const id of ["weeklyThisWeek","weeklyGroceryBuilder","weeklyPantry","weeklyMissions","weeklyReview"]){
+   await page.locator('[data-weekly-tab="'+id+'"]').click();
+   assert.equal(await page.locator("#"+id).isVisible(),true,"Weekly tab "+id);
+  }
+  const buttons=await page.locator("#journalShell button").count();
+  assert.ok(buttons>=22,"Nutrition buttons unexpectedly missing: "+buttons);
+ });
+ await step("nutrition-refresh-and-recent-buttons-dom",async()=>{
+  await page.locator("#refreshBtn").click();
+  await page.locator('[data-open="recentPanel"]').click();
+  await page.locator("#loadRecentBtn").click();
+  await page.locator("#recentList").getByText("Isolated browser oatmeal").waitFor({state:"visible",timeout:12000});
+ });
+ await step("nutrition-weekly-plan-and-review-buttons-dom",async()=>{
+  await page.locator("#createWeeklyPlanBtn").click();
+  await page.locator("#weeklyOverview").getByText(/week|plan|grocery/i).first().waitFor({state:"visible",timeout:12000});
+  await page.locator('[data-weekly-tab="weeklyReview"]').click();
+  await page.locator("#loadWeeklyReviewBtn").click();
+  await page.locator("#weeklyReviewPanel .summary").waitFor({state:"visible",timeout:12000});
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
