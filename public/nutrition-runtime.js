@@ -139,11 +139,23 @@
   }
 
   function validUpcEan(code) {
-    if (!/^(?:\\d{8}|\\d{12}|\\d{13})$/.test(code)) return false;
+    if (!/^(?:\d{8}|\d{12}|\d{13})$/.test(code)) return false;
     const digits = [...code].map(Number);
     const check = digits.pop();
     const sum = digits.reduce((total, digit, index) => total + digit * ((digits.length - index) % 2 ? 3 : 1), 0);
-    return (10 - sum % 10) % 10 === check;
+    if ((10 - sum % 10) % 10 === check) return true;
+    if (code.length !== 8 || code[0] !== "0" && code[0] !== "1") return false;
+    const ns = code[0], body = code.slice(1, 7), last = body[5];
+    let manufacturer, product;
+    if ("012".includes(last)) { manufacturer = body.slice(0, 2) + last + "00"; product = "00" + body.slice(2, 5); }
+    else if (last === "3") { manufacturer = body.slice(0, 3) + "00"; product = "000" + body.slice(3, 5); }
+    else if (last === "4") { manufacturer = body.slice(0, 4) + "0"; product = "0000" + body[4]; }
+    else { manufacturer = body.slice(0, 5); product = "0000" + last; }
+    const expanded = ns + manufacturer + product + code[7];
+    const expandedDigits = [...expanded].map(Number);
+    const expandedCheck = expandedDigits.pop();
+    const expandedSum = expandedDigits.reduce((total, digit, index) => total + digit * ((expandedDigits.length - index) % 2 ? 3 : 1), 0);
+    return (10 - expandedSum % 10) % 10 === expandedCheck;
   }
   async function readBarcodeNumbers() {
     const video = $("scannerVideo");
