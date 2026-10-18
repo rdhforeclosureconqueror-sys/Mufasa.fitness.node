@@ -83,16 +83,12 @@ let server,browser,firstFailure=null;const checks=[];
   await page.waitForURL(url=>url.pathname==="/community-hub.html"&&url.searchParams.get("trial")==="accepted",{timeout:15000});
  });
  await step("community-nutrition-navigation-dom",async()=>{
-  // New trial members may be routed to interest intake before their community profile exists.
-  // Both the intake and established Community Hub expose the same nutrition journal.
-  await page.waitForLoadState("domcontentloaded");
-  if(new URL(page.url()).pathname==="/residential-wellness.html"){
-   await page.locator('a[href="/nutrition.html"]').first().waitFor({state:"visible",timeout:12000});
-   await page.locator('a[href="/nutrition.html"]').first().click();
-  }else{
-   await page.locator('a.tile[href="/nutrition.html"]').first().waitFor({state:"visible",timeout:12000});
-   await page.locator('a.tile[href="/nutrition.html"]').first().click();
-  }
+  // Trial offer redirect may settle before the community page is fully ready.
+  await page.goto(base+"/community-hub.html",{waitUntil:"domcontentloaded"});
+  const nutrition=page.locator('a[href="/nutrition.html"]').first();
+  try {await nutrition.waitFor({state:"visible",timeout:12000});}
+  catch(error){throw new Error("Nutrition entry not visible; url="+page.url()+"; links="+JSON.stringify(await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute("href")).slice(0,30)))+"; original="+error.message);}
+  await nutrition.click();
   await page.waitForURL(url=>url.pathname==="/nutrition.html",{timeout:12000});
   await page.locator("#journalShell").waitFor({state:"visible",timeout:15000});
  });
