@@ -228,7 +228,7 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#weeklyPantryList .weekly-card").first().waitFor({state:"visible",timeout:12000});
  });
  await step("nutrition-generate-missions-button-dom",async()=>{
-  await page.locator('[data-weekly-tab="weeklyMissions"]').click();
+  await page.locator('[data-weekly-tab="weeklyThisWeek"]').click();
   await page.locator("#generateWeeklyMissionsBtn").click();
   await page.locator("#weeklyMissionList").waitFor({state:"visible",timeout:12000});
   assert.ok((await page.locator("#weeklyMissionList").innerText()).trim().length>0,"Mission panel must show missions or a useful empty state");
