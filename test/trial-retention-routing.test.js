@@ -6,6 +6,6 @@ const path = require("node:path");
 
 test("accepted courtesy trial opens Nutrition by default without forcing Retention Journey", () => {
   const source = fs.readFileSync(path.join(__dirname, "..", "public", "trial.js"), "utf8");
-  assert.match(source, /retention-journey-start\.html\?firstRun=1&trial=started/);
+  assert.match(source, /:"\/nutrition\.html"/);\n  assert.doesNotMatch(source, /retention-journey-start\.html\?firstRun/);
   assert.doesNotMatch(source, /trial=started&tour=dashboard/);
 });
