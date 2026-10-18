@@ -91,7 +91,7 @@
   }
   async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup unavailable. Try food search or custom entry."; } }
   async function startScanner() {
-    if (state.scannerBusy || state.stream || state.zxingControls) return;
+    if (state.scannerBusy || state.stream || state.zxingControls || state.zxingReader) return;
     stopScanner();
     const generation = state.scanGeneration;
     state.scannerBusy = true;
@@ -134,7 +134,7 @@
     if (state.nativeDetector && state.stream) {
       try { const codes = await state.nativeDetector.detect($("scannerVideo")); if (codes[0]) { await handleDetected(codes[0].rawValue); return; } } catch (_) {}
     }
-    if (state.zxingControls || state.stream) { $("barcodeStatus").textContent = "Scanning automatically. Adjust distance, lighting, and barcode angle. If it still cannot read, tap Try Again."; return; }
+    if (state.zxingControls || state.stream) { $("barcodeStatus").textContent = "Scanning automatically. Adjust distance, lighting, and barcode angle."; return; }
     await startScanner();
   }
   async function handleDetected(raw) { const barcode = String(raw || "").replace(/\D/g, ""); const now = Date.now(); if (!/^\d{6,14}$/.test(barcode)) return; if (state.lastBarcode === barcode && now - state.lastScanAt < 2500) return; state.lastBarcode = barcode; state.lastScanAt = now; stopScanner(); await lookupBarcode(barcode); }
