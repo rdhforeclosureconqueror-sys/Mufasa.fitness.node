@@ -89,7 +89,7 @@
       container.innerHTML = '<p class="notice">Saved to your private food journal.</p>'; await refreshNutritionAndWeekly();
     };
   }
-  async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup unavailable. Try food search or custom entry."; } }
+  async function lookupBarcode(code) { $("manualBarcode").value = String(code || ""); $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup failed (" + (error.status || "network") + "). Check your connection or try food search. The scanned digits are still available for retry."; } }
   async function startScanner() {
     if (state.scannerBusy || state.stream || state.zxingControls || state.zxingReader) return;
     stopScanner();
@@ -119,7 +119,7 @@
       state.zxingReader = reader;
       video.hidden = false;
       const controls = await reader.decodeFromVideoDevice(undefined, video, (result, error) => {
-        if (result?.getText) void handleDetected(result.getText());
+        if (result?.getText && generation === state.scanGeneration) void handleDetected(result.getText());
       });
       if (state.zxingReader !== reader || generation !== state.scanGeneration) { controls?.stop?.(); return; }
       state.zxingControls = controls;
@@ -201,8 +201,8 @@
       } else {
         $("barcodeStatus").textContent = "Could not confidently read a valid UPC/EAN. Move closer, improve lighting, or type the printed digits manually.";
       }
-    } catch (_) {
-      $("barcodeStatus").textContent = "Number recognition unavailable. Please enter the printed barcode digits manually.";
+    } catch (error) {
+      $("barcodeStatus").textContent = "Number recognition failed (" + (error?.message || "camera or OCR library error") + "). Enter the printed digits manually.";
     } finally { button.disabled = false; }
   }
   async function handleDetected(raw) { const barcode = String(raw || "").replace(/\D/g, ""); const now = Date.now(); if (!/^\d{6,14}$/.test(barcode)) return; if (state.lastBarcode === barcode && now - state.lastScanAt < 2500) return; state.lastBarcode = barcode; state.lastScanAt = now; stopScanner(); await lookupBarcode(barcode); }
