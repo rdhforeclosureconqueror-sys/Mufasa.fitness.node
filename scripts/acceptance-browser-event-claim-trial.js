@@ -90,7 +90,11 @@ let server,browser,firstFailure=null;const checks=[];
   catch(error){throw new Error("Nutrition entry not visible; url="+page.url()+"; links="+JSON.stringify(await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute("href")).slice(0,30)))+"; original="+error.message);}
   await nutrition.click();
   await page.waitForURL(url=>url.pathname==="/nutrition.html",{timeout:12000});
-  await page.locator("#journalShell").waitFor({state:"visible",timeout:15000});
+  try {await page.locator("#journalShell").waitFor({state:"visible",timeout:15000});}
+  catch(error){
+   const state=await page.evaluate(()=>({url:location.href,authWall:document.querySelector("#authWall")?.hidden,sessionStatus:document.querySelector("#sessionStatus")?.hidden,message:document.querySelector("#sessionStatusMessage")?.textContent,hasToken:Boolean(window.AuthStateRuntime?.getAuthToken?.()),authRuntime:Boolean(window.AuthStateRuntime),journalHidden:document.querySelector("#journalShell")?.hidden}));
+   throw new Error("Nutrition journal auth first failure: "+JSON.stringify(state)+"; "+error.message);
+  }
  });
  await step("nutrition-save-custom-food-dom",async()=>{
   await page.locator('[data-open="customPanel"]').click();
