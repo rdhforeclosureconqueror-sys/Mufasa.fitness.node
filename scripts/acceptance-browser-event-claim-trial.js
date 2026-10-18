@@ -241,6 +241,15 @@ let server,browser,firstFailure=null;const checks=[];
   await mission.locator("[data-manual-mission]").click();
   await page.waitForFunction(previous=>{const el=document.querySelector("#weeklyMissionList .weekly-card");return el&&el.innerText!==previous},before,{timeout:12000});
  });
+ await step("nutrition-remaining-grocery-states-dom",async()=>{
+  await page.locator('[data-weekly-tab="weeklyGroceryBuilder"]').click();
+  const first=page.locator("#weeklyGroceryOptions [data-option]").first();
+  await first.locator("xpath=ancestor::details").evaluate(el=>{el.open=true;});
+  for(const state of ["selectedForShopping","acquired","unavailable"]){
+   await page.locator("#weeklyGroceryOptions [data-option]").first().locator('[data-grocery-state="'+state+'"]').click();
+   await page.waitForFunction(key=>document.querySelector('#weeklyGroceryOptions [data-option] [data-grocery-state="'+key+'"]')?.getAttribute("aria-pressed")==="true",state,{timeout:12000});
+  }
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
