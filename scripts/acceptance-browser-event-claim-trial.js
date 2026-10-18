@@ -56,7 +56,8 @@ let server,browser,firstFailure=null;const checks=[];
   await page.waitForURL(url=>url.pathname==="/community-hub.html"&&url.searchParams.get("trial")==="accepted",{timeout:15000});
  });
  await step("persisted-trial-attribution",async()=>{
-  const result=await page.evaluate(async()=>{const token=window.AuthStateRuntime?.getAuthToken?.();const r=await fetch("/api/me/trial-access",{headers:{authorization:"Bearer "+token}});return {status:r.status,payload:await r.json()}});
+  await page.waitForLoadState("load");
+  const result=await page.evaluate(async()=>{const ready=await window.AuthStateRuntime?.whenReady?.();if(!ready?.ok)return {status:0,reason:"auth_not_ready"};const token=window.AuthStateRuntime?.getAuthToken?.();const r=await fetch("/api/me/trial-access",{headers:{authorization:"Bearer "+token}});return {status:r.status,payload:await r.json()}});
   assert.equal(result.status,200,JSON.stringify(result));
   assert.equal(result.payload.data?.trial?.origin?.eventId,eventId,JSON.stringify(result));
  });
