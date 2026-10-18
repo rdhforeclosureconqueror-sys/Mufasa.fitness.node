@@ -18,7 +18,27 @@ if(source==="community-signup"){
  if(intro)intro.textContent="Explore your wellness community and try PocketPT free for seven days.";
  if(footnote)footnote.textContent="After seven days, full-system access pauses unless you choose a membership. No credit card required.";
 }
-agree.addEventListener("change",()=>{accept.disabled=!agree.checked;});
+async function checkExistingAccess(){
+ try{
+  const ready=await window.AuthStateRuntime?.whenReady?.();
+  if(!ready?.ok)return;
+  const request=window.MaatApiClient?.request;
+  if(!request)return;
+  const [membership,trial]=await Promise.all([
+   request("/api/me/membership-tier"),request("/api/me/trial-access")
+  ]);
+  if(membership?.ok && (membership.payload?.data||membership.payload)?.hasAccess){location.replace(hub+"&trial=already-member");return;}
+  const trialInfo=(trial?.payload?.data||trial?.payload)?.trial;
+  if(trial?.ok&&trialInfo?.status==="trialing"){location.replace(hub+"&trial=already-active");return;}
+  if(trial?.ok&&trialInfo?.status==="expired"){
+   agree.disabled=true;accept.disabled=false;accept.textContent="View memberships";
+   status.textContent="Your seven-day trial has ended. Your free community access continues.";
+   accept.onclick=event=>{event.preventDefault();event.stopImmediatePropagation();location.assign("/membership.html");};
+  }
+ }catch(error){status.textContent="You can continue with the free community or choose the trial."}
+}
+checkExistingAccess();
+agree.addEventListener("change",()=>{if(!agree.disabled)accept.disabled=!agree.checked;});
 skip.addEventListener("click",()=>location.replace(hub+"&trial=declined"));
 accept.addEventListener("click",async()=>{
  if(!agree.checked)return;
