@@ -130,6 +130,12 @@ let server,browser,firstFailure=null;const checks=[];
    await page.locator('[data-weekly-tab="'+id+'"]').click();
    assert.equal(await page.locator("#"+id).isVisible(),true,"Weekly tab "+id);
   }
+  // An onboarding tour can legitimately cover controls until dismissed.
+  const guide=page.locator("#pptGuideBody");
+  if(await guide.isVisible().catch(()=>false)){
+   const overlay=await guide.evaluate(el=>el.closest('[role="dialog"]')?.outerHTML.slice(0,2500)||el.parentElement?.parentElement?.outerHTML.slice(0,2500));
+   throw new Error("Nutrition onboarding tour blocks controls; overlay="+overlay);
+  }
   const buttons=await page.locator("#journalShell button").count();
   assert.ok(buttons>=22,"Nutrition buttons unexpectedly missing: "+buttons);
  });
