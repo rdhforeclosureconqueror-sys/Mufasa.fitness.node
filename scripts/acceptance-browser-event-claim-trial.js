@@ -118,6 +118,12 @@ let server,browser,firstFailure=null;const checks=[];
   assert.ok(entries.payload.data?.entries?.some(e=>e.foodName==="Isolated browser oatmeal"),"Saved meal must persist in member journal");
  });
  await step("nutrition-button-inventory-dom",async()=>{
+  // An onboarding tour can legitimately cover controls until dismissed.
+  const guide=page.locator("#pptGuideBody");
+  if(await guide.isVisible().catch(()=>false)){
+   const overlay=await guide.evaluate(el=>el.closest('[role="dialog"]')?.outerHTML.slice(0,2500)||el.parentElement?.parentElement?.outerHTML.slice(0,2500));
+   throw new Error("Nutrition onboarding tour blocks controls; overlay="+overlay);
+  }
   const expected=["scanPanel","searchPanel","naturalPanel","recentPanel","customPanel"];
   for(const id of expected){
    const button=page.locator('[data-open="'+id+'"]');
@@ -129,12 +135,6 @@ let server,browser,firstFailure=null;const checks=[];
   for(const id of ["weeklyThisWeek","weeklyGroceryBuilder","weeklyPantry","weeklyMissions","weeklyReview"]){
    await page.locator('[data-weekly-tab="'+id+'"]').click();
    assert.equal(await page.locator("#"+id).isVisible(),true,"Weekly tab "+id);
-  }
-  // An onboarding tour can legitimately cover controls until dismissed.
-  const guide=page.locator("#pptGuideBody");
-  if(await guide.isVisible().catch(()=>false)){
-   const overlay=await guide.evaluate(el=>el.closest('[role="dialog"]')?.outerHTML.slice(0,2500)||el.parentElement?.parentElement?.outerHTML.slice(0,2500));
-   throw new Error("Nutrition onboarding tour blocks controls; overlay="+overlay);
   }
   const buttons=await page.locator("#journalShell button").count();
   assert.ok(buttons>=22,"Nutrition buttons unexpectedly missing: "+buttons);
