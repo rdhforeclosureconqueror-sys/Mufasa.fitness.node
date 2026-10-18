@@ -2,12 +2,12 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
 const html=fs.readFileSync(path.join(__dirname,"../public/nutrition.html"),"utf8");
 const runtime=fs.readFileSync(path.join(__dirname,"../public/nutrition-runtime.js"),"utf8");
-const ids=["saveMealBtn","refreshBtn","createWeeklyPlanBtn","generateWeeklyMissionsBtn","addCustomGroceryBtn","loadWeeklyReviewBtn","startScanBtn","stopScanBtn","lookupBarcodeBtn","foodSearchBtn","draftBtn","loadRecentBtn"];
+const ids=["saveMealBtn","refreshBtn","createWeeklyPlanBtn","generateWeeklyMissionsBtn","addCustomGroceryBtn","loadWeeklyReviewBtn","startScanBtn","stopScanBtn","readNumbersBtn","lookupBarcodeBtn","foodSearchBtn","draftBtn","loadRecentBtn"];
 const panels=["scanPanel","searchPanel","naturalPanel","recentPanel","customPanel"];
 const weekly=["weeklyThisWeek","weeklyGroceryBuilder","weeklyPantry","weeklyMissions","weeklyReview"];
 test("all static nutrition buttons have inventoried actions",()=>{
  const tags=[...html.matchAll(/<button\b[^>]*>/g)].map(m=>m[0]);
- assert.equal(tags.length,22,"New buttons require explicit inventory updates");
+ assert.equal(tags.length,23,"New buttons require explicit inventory updates");
  for(const tag of tags){
   const id=tag.match(/\bid="([^"]+)"/)?.[1];
   const panel=tag.match(/\bdata-open="([^"]+)"/)?.[1];
