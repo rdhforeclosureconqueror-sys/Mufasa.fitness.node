@@ -31,10 +31,14 @@ test("nutrition requires accepted unexpired trial or paid membership",async t=>{
  assert.equal((await request(endpoint,token)).status,200,"accepted trial unlocks journal");
  assert.equal((await request("/api/nutrition/barcodes/012345678901",token)).status!==402,true,"barcode lookup entitlement unlocked");
  const userPath=path.join(root,"data","users","nutrition_trial_gate_user.json");
- // Test expired entitlement using the same persisted user store location when available.
- const files=[];function scan(dir){if(!fs.existsSync(dir))return;for(const item of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(item.isDirectory())scan(full);else if(item.name.endsWith(".json"))files.push(full);}}scan(root);
- let changed=false;
- for(const file of files){try{const value=JSON.parse(fs.readFileSync(file,"utf8"));if(value&&value.trialAccess?.acceptedAt){value.trialAccess.expiresAt="2000-01-01T00:00:00.000Z";fs.writeFileSync(file,JSON.stringify(value));changed=true;}}catch{}}
- if(changed)assert.equal((await request(endpoint,token)).status,402,"expired trial blocked");
- else t.diagnostic("Persisted user file layout not discovered; expiration must be tested in a separate fixture");
+ assert.equal(fs.existsSync(userPath),true,"trial record persisted");
+ const record=JSON.parse(fs.readFileSync(userPath,"utf8"));
+ record.trialAccess.expiresAt="2000-01-01T00:00:00.000Z";
+ fs.writeFileSync(userPath,JSON.stringify(record));
+ assert.equal((await request(endpoint,token)).status,402,"expired trial blocked");
+ assert.equal((await request("/api/me/trial-access/accept",token,"POST",{accepted:true})).json.data.trial.status,"expired","reacceptance cannot restart trial");
+ assert.equal((await request(endpoint,token)).status,402,"expired trial stays locked after reacceptance");
+ record.membership={status:"active",plan:"basic"};
+ fs.writeFileSync(userPath,JSON.stringify(record));
+ assert.equal((await request(endpoint,token)).status,200,"paid membership restores access");
 });
