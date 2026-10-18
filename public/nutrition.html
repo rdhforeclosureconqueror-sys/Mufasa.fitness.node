@@ -15,7 +15,7 @@
 <body>
   <header>
     <div><strong>Pocket PT Nutrition Journal</strong><div class="muted">Private account-based food logging</div></div>
-    <nav aria-label="Nutrition navigation"><a href="/workout.html">Workout</a> <a href="/dashboard.html">Dashboard</a> <a href="/community-hub.html">Community Wellness</a> <a href="/">Home</a></nav>
+    <nav aria-label="Nutrition navigation"><a href="/community-hub.html">← Community Hub</a> <a href="/community-hub.html#optionalRetentionJourney">My Wellness Journey</a></nav>
   </header>
   <main id="nutritionApp">
     <section id="authWall" class="card auth-wall" hidden>
@@ -68,7 +68,7 @@
 
       <section class="mobile-stack">
         <div class="card">
-          <div id="scanPanel" class="panel active"><h2>Scan Barcode</h2><p class="notice">Camera access requires HTTPS in production. Product information may be incomplete. Review before saving.</p><video id="scannerVideo" playsinline muted hidden></video><div class="tabs"><button class="btn primary" id="startScanBtn">Start camera scan</button><button class="btn" id="stopScanBtn">Stop scanner</button></div><label>Manual barcode fallback</label><input id="manualBarcode" inputmode="numeric" placeholder="Enter UPC or EAN" /><button class="btn" id="lookupBarcodeBtn">Lookup barcode</button><div id="barcodeStatus" class="muted"></div><div id="productReview" class="review" hidden></div></div>
+          <div id="scanPanel" class="panel active"><h2>Scan Barcode</h2><p class="notice">Allow camera access when prompted. Hold a UPC/EAN barcode steady in the frame, or enter it manually. Review product information before saving.</p><video id="scannerVideo" playsinline muted hidden></video><div class="tabs"><button class="btn primary" id="startScanBtn">Start camera scan</button><button class="btn" id="stopScanBtn">Stop scanner</button></div><label>Manual barcode fallback</label><input id="manualBarcode" inputmode="numeric" placeholder="Enter UPC or EAN" /><button class="btn" id="lookupBarcodeBtn">Lookup barcode</button><div id="barcodeStatus" class="muted"></div><div id="productReview" class="review" hidden></div></div>
           <div id="searchPanel" class="panel"><h2>Search Foods</h2><label>Food search</label><input id="foodSearchInput" placeholder="banana, scrambled eggs, chicken breast" /><button class="btn primary" id="foodSearchBtn">Search USDA foods</button><div id="foodResults"></div></div>
           <div id="naturalPanel" class="panel"><h2>Tell Pocket PT what you ate</h2><textarea id="naturalText" rows="4" placeholder="I ate two scrambled eggs, two slices of wheat toast, and a banana."></textarea><button class="btn primary" id="draftBtn">Create review draft</button><div id="draftReview"></div></div>
           <div id="recentPanel" class="panel"><h2>Repeat Recent Meal</h2><button class="btn" id="loadRecentBtn">Load recent foods and saved meals</button><div id="recentList"></div><div id="mealList"></div></div>
