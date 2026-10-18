@@ -138,6 +138,23 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#loadWeeklyReviewBtn").click();
   await page.locator("#weeklyReviewPanel .summary").waitFor({state:"visible",timeout:12000});
  });
+ await step("nutrition-custom-entry-delete-button-dom",async()=>{
+  const row=page.locator("#entriesList .row").filter({hasText:"Isolated browser oatmeal"}).first();
+  await row.locator("[data-delete]").click();
+  await row.waitFor({state:"detached",timeout:12000});
+ });
+ await step("nutrition-custom-entry-edit-button-dom",async()=>{
+  await page.locator('[data-open="customPanel"]').click();
+  await page.locator('[data-c="foodName"]').fill("Edit button fixture");
+  await page.locator('[data-c="calories"]').fill("95");
+  await page.locator("#customSaveBtn").click();
+  const row=page.locator("#entriesList .row").filter({hasText:"Edit button fixture"}).first();
+  await row.waitFor({state:"visible",timeout:12000});
+  page.once("dialog",dialog=>dialog.accept("Edited fixture food"));
+  page.once("dialog",dialog=>dialog.accept("1"));
+  await row.locator("[data-edit]").click();
+  await page.locator("#entriesList").getByText("Edited fixture food").waitFor({state:"visible",timeout:12000});
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
