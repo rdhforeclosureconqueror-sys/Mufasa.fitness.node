@@ -18,10 +18,11 @@ let server,browser,firstFailure=null;const checks=[];
  await page.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replaceAll("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
  async function step(id,fn){try{await fn();checks.push({id,status:"PASS_BROWSER_DOM"});}catch(error){firstFailure={id,reason:String(error.message).slice(0,300)};checks.push({id,status:"FAIL",reason:firstFailure.reason});throw error;}}
  const email="event-dom-"+crypto.randomBytes(8).toString("hex")+"@example.invalid",password=crypto.randomBytes(18).toString("hex");
- let eventId,pass,memberToken;
+ let eventId,pass,memberToken,adminToken;
  async function call(route,method="GET",token,body){const response=await fetch(base+route,{method,headers:{...(token?{authorization:"Bearer "+token}:{}),...(body?{"content-type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});return{status:response.status,payload:await response.json()};}
  await step("admin-create-event",async()=>{
   const admin=await call("/api/auth/login","POST",null,{email:"isolated-event-admin@example.invalid",password:"isolated-event-admin-password"});assert.equal(admin.status,200,JSON.stringify(admin.payload));
+  adminToken=admin.payload.token;
   const created=await call("/api/admin/community/events","POST",admin.payload.token,{title:"Isolated Yoga",location:"Test Studio",type:"yoga",capacity:4,startAt:"2026-11-14T15:00:00Z",endAt:"2026-11-14T16:00:00Z"});
   assert.equal(created.status,201,JSON.stringify(created.payload));eventId=created.payload.data.event.eventId;
   assert.equal((await call("/api/admin/community/events/"+eventId,"PATCH",admin.payload.token,{status:"confirmed"})).status,200);
@@ -85,6 +86,13 @@ let server,browser,firstFailure=null;const checks=[];
   const result=await call("/api/me/trial-access","GET",memberToken);
   assert.equal(result.status,200,JSON.stringify(result));
   assert.equal(result.payload.data?.trial?.origin?.eventId,eventId,JSON.stringify(result));
+ });
+ await step("admin-event-conversions",async()=>{
+  const report=await call("/api/admin/community/events/"+encodeURIComponent(eventId)+"/conversions","GET",adminToken);
+  assert.equal(report.status,200,JSON.stringify(report));
+  assert.deepEqual({checkedIn:report.payload.data?.checkedIn,linkedAccounts:report.payload.data?.linkedAccounts,trialActivations:report.payload.data?.trialActivations,conversionRate:report.payload.data?.conversionRate,conversionRateBasis:report.payload.data?.conversionRateBasis,membershipConversions:report.payload.data?.membershipConversions},{checkedIn:1,linkedAccounts:1,trialActivations:1,conversionRate:100,conversionRateBasis:"linkedAccounts",membershipConversions:null},JSON.stringify(report));
+  const memberView=await call("/api/admin/community/events/"+encodeURIComponent(eventId)+"/conversions","GET",memberToken);
+  assert.equal(memberView.status,403,JSON.stringify(memberView));
  });
  }catch(error){firstFailure=firstFailure||{id:"setup",reason:String(error.message).slice(0,300)};}
  finally{if(browser)await browser.close();if(server?.listening)await new Promise(resolve=>server.close(resolve));fs.rmSync(dir,{recursive:true,force:true});for(const [k,v]of Object.entries(old)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
