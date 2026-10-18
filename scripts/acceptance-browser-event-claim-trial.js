@@ -165,10 +165,12 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#customSaveBtn").click();
   const row=page.locator("#entriesList .row").filter({hasText:"Edit button fixture"}).first();
   await row.waitFor({state:"visible",timeout:12000});
-  page.once("dialog",dialog=>dialog.accept("Edited fixture food"));
-  page.once("dialog",dialog=>dialog.accept("1"));
-  await row.locator("[data-edit]").click();
-  await page.locator("#entriesList").getByText("Edited fixture food").waitFor({state:"visible",timeout:12000});
+  const editPrompts=["Edited fixture food","1"];
+  const onEditDialog=dialog=>{const response=editPrompts.shift();void dialog.accept(response===undefined?undefined:response).catch(()=>{});};
+  page.on("dialog",onEditDialog);
+  try {await row.locator("[data-edit]").click();
+  await page.locator("#entriesList").getByText("Edited fixture food").waitFor({state:"visible",timeout:12000});}
+  finally {page.off("dialog",onEditDialog);}
  });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
