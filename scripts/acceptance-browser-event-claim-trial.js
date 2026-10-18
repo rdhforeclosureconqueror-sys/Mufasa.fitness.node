@@ -233,6 +233,14 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#weeklyMissionList").waitFor({state:"visible",timeout:12000});
   assert.ok((await page.locator("#weeklyMissionList").innerText()).trim().length>0,"Mission panel must show missions or a useful empty state");
  });
+ await step("nutrition-manual-mission-progress-dom",async()=>{
+  await page.locator('[data-weekly-tab="weeklyMissions"]').click();
+  const mission=page.locator("#weeklyMissionList .weekly-card").filter({has:page.locator("[data-manual-mission]")}).first();
+  await mission.waitFor({state:"visible",timeout:12000});
+  const before=await mission.innerText();
+  await mission.locator("[data-manual-mission]").click();
+  await page.waitForFunction(previous=>{const el=document.querySelector("#weeklyMissionList .weekly-card");return el&&el.innerText!==previous},before,{timeout:12000});
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
