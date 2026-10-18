@@ -216,6 +216,23 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#addCustomGroceryBtn").click();
   await page.locator("#weeklyGroceryOptions").getByText("Chromium grocery fixture").waitFor({state:"visible",timeout:12000});
  });
+ await step("nutrition-grocery-status-buttons-dom",async()=>{
+  await page.locator('[data-weekly-tab="weeklyGroceryBuilder"]').click();
+  const option=page.locator("#weeklyGroceryOptions [data-option]").first();
+  await option.waitFor({state:"attached",timeout:12000});
+  const details=option.locator("xpath=ancestor::details");
+  await details.evaluate(el=>{el.open=true;});
+  await option.locator('[data-grocery-state="alreadyAtHome"]').click();
+  await page.waitForFunction(()=>document.querySelector("#weeklyGroceryOptions [data-option] [data-grocery-state='alreadyAtHome']")?.getAttribute("aria-pressed")==="true",null,{timeout:12000});
+  await page.locator('[data-weekly-tab="weeklyPantry"]').click();
+  await page.locator("#weeklyPantryList .weekly-card").first().waitFor({state:"visible",timeout:12000});
+ });
+ await step("nutrition-generate-missions-button-dom",async()=>{
+  await page.locator('[data-weekly-tab="weeklyMissions"]').click();
+  await page.locator("#generateWeeklyMissionsBtn").click();
+  await page.locator("#weeklyMissionList").waitFor({state:"visible",timeout:12000});
+  assert.ok((await page.locator("#weeklyMissionList").innerText()).trim().length>0,"Mission panel must show missions or a useful empty state");
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
