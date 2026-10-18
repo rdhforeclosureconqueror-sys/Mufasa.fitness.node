@@ -1,0 +1,44 @@
+"use strict";
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const os=require("node:os");
+const path=require("node:path");
+const {createApp}=require("../server");
+
+test("nutrition requires accepted unexpired trial or paid membership",async t=>{
+ const previous={};
+ for(const [k,v] of Object.entries({NODE_ENV:"test",MEMBERSHIP_GATE_TEST_ENFORCED:"true",PILOT_LOGIN_PASSWORD:"trial-test-password",AUTH_TEST_LOGIN_FIXTURE_ENABLED:"true"})){previous[k]=process.env[k];process.env[k]=v;}
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),"nutrition-trial-entitlement-"));
+ fs.mkdirSync(path.join(root,"public","exercise-db"),{recursive:true});
+ fs.writeFileSync(path.join(root,"public","exercise-db","index.json"),"[]");
+ const app=createApp({rootDir:root});
+ const server=app.listen(0);
+ await new Promise(resolve=>server.once("listening",resolve));
+ t.after(async()=>{await new Promise(resolve=>server.close(resolve));fs.rmSync(root,{recursive:true,force:true});for(const [k,v] of Object.entries(previous)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+ const base="http://127.0.0.1:"+server.address().port;
+ const request=async(route,token,method="GET",body)=>{const response=await fetch(base+route,{method,headers:{"content-type":"application/json",...(token?{authorization:"Bearer "+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,json:await response.json()};};
+ const login=await request("/api/auth/login",null,"POST",{email:"trial-gate@example.test",password:"trial-test-password",testUserId:"nutrition_trial_gate_user"});
+ assert.equal(login.status,200,JSON.stringify(login.json));
+ const token=login.json.token;
+ const endpoint="/api/me/nutrition/entries";
+ assert.equal((await request(endpoint)).status,401,"anonymous access blocked");
+ assert.equal((await request(endpoint,token)).status,402,"free member blocked");
+ assert.equal((await request("/api/me/trial-access/accept",token,"POST",{accepted:false})).status,422,"consent required");
+ assert.equal((await request(endpoint,token)).status,402,"declined trial remains blocked");
+ const accepted=await request("/api/me/trial-access/accept",token,"POST",{accepted:true});
+ assert.equal(accepted.status,200,JSON.stringify(accepted.json));
+ assert.equal((await request(endpoint,token)).status,200,"accepted trial unlocks journal");
+ assert.equal((await request("/api/nutrition/barcodes/012345678901",token)).status!==402,true,"barcode lookup entitlement unlocked");
+ const userPath=path.join(root,"data","users","nutrition_trial_gate_user.json");
+ assert.equal(fs.existsSync(userPath),true,"trial record persisted");
+ const record=JSON.parse(fs.readFileSync(userPath,"utf8"));
+ record.trialAccess.expiresAt="2000-01-01T00:00:00.000Z";
+ fs.writeFileSync(userPath,JSON.stringify(record));
+ assert.equal((await request(endpoint,token)).status,402,"expired trial blocked");
+ assert.equal((await request("/api/me/trial-access/accept",token,"POST",{accepted:true})).json.data.trial.status,"expired","reacceptance cannot restart trial");
+ assert.equal((await request(endpoint,token)).status,402,"expired trial stays locked after reacceptance");
+ record.membership={status:"active",plan:"basic"};
+ fs.writeFileSync(userPath,JSON.stringify(record));
+ assert.equal((await request(endpoint,token)).status,200,"paid membership restores access");
+});

@@ -24,6 +24,22 @@
     if (retryLink) retryLink.hidden = retry === false;
     setVisible("sessionStatus");
   }
+  function showMembershipGate() {
+    const status = $("sessionStatus");
+    const message = $("sessionStatusMessage");
+    const retry = $("sessionRetryLink");
+    if (message) message.textContent = "Nutrition Journal is included with your seven-day free trial or an active fitness membership. Your saved entries are preserved.";
+    if (retry) { retry.hidden = false; retry.href = "/trial.html"; retry.textContent = "Start trial or view access"; }
+    if (status && !status.querySelector("#nutritionMembershipLink")) {
+      const link = document.createElement("a");
+      link.id = "nutritionMembershipLink";
+      link.href = "/membership.html";
+      link.className = "btn";
+      link.textContent = "View memberships";
+      status.appendChild(link);
+    }
+    setVisible("sessionStatus");
+  }
   function showJournal() { setVisible("journalShell"); }
   async function requireSession() {
     showSessionStatus("Checking your signed-in member session…", false);
@@ -43,15 +59,18 @@
               if (error?.status === 401 || error?.status === 403) return showAuthWall();
               return showSessionStatus("Nutrition Journal could not reach the member session service. Your sign-in was not cleared; please retry in a moment.");
             }
+          } else {
+            return showAuthWall();
           }
-          return showAuthWall();
+        } else {
+          state.token = auth.token || state.token;
         }
-        state.token = auth.token || state.token;
       } else {
         await api("/api/auth/me");
       }
       showJournal(); await refreshAll(); await loadWeekly();
     } catch (error) {
+      if (error?.status === 402) return showMembershipGate();
       if (error?.status === 401 || error?.status === 403 || error?.code === "MISSING_AUTH_TOKEN") return showAuthWall();
       showSessionStatus("Nutrition Journal loaded your session but could not load journal data. Please retry in a moment.");
     }

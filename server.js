@@ -604,6 +604,14 @@ function createApp(options = {}) {
       req.membershipEntitlement = { hasAccess: true, bypass: false, membership };
       return next();
     }
+    // Community trials are explicitly accepted without a payment method and stored
+    // separately from Stripe subscriptions. Never restart an expired trial here.
+    const trial = userStore.loadUser(req.auth.userId).trialAccess;
+    const trialExpiry = Date.parse(trial?.expiresAt || "");
+    if (trial?.acceptedAt && Number.isFinite(trialExpiry) && trialExpiry > Date.now()) {
+      req.membershipEntitlement = { hasAccess: true, bypass: false, reason: "accepted_community_trial", expiresAt: trial.expiresAt };
+      return next();
+    }
     return _res.status(402).json({
       code: "membership_required",
       message: "Start your 7-day free trial to continue.",

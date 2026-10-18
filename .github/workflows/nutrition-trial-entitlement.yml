@@ -1,0 +1,23 @@
+name: Nutrition trial entitlement
+on:
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'src/repositories/userStore.js'
+      - 'src/services/membershipService.js'
+      - 'test/nutrition-trial-entitlement.test.js'
+      - '.github/workflows/nutrition-trial-entitlement.yml'
+  workflow_dispatch:
+jobs:
+  nutrition-trial-entitlement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify free, accepted, expired and paid Nutrition entitlements
+        run: node --test test/nutrition-trial-entitlement.test.js
