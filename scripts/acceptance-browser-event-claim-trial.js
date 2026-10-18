@@ -146,6 +146,7 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#recentList").getByText("Isolated browser oatmeal").waitFor({state:"visible",timeout:12000});
  });
  await step("nutrition-weekly-plan-and-review-buttons-dom",async()=>{
+  await page.locator('[data-weekly-tab="weeklyThisWeek"]').click();
   await page.locator("#createWeeklyPlanBtn").click();
   await page.locator("#weeklyOverview").getByText(/week|plan|grocery/i).first().waitFor({state:"visible",timeout:12000});
   await page.locator('[data-weekly-tab="weeklyReview"]').click();
