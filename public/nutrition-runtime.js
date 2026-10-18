@@ -64,7 +64,13 @@
   async function startScanner() {
     const video = $("scannerVideo"); video.hidden = false; $("barcodeStatus").textContent = "Starting scanner…";
     if (!navigator.mediaDevices?.getUserMedia) { $("barcodeStatus").textContent = "Camera is unavailable. Enter barcode manually."; return; }
-    state.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    try {
+      state.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    } catch (error) {
+      video.hidden = true;
+      $("barcodeStatus").textContent = "Camera access unavailable or denied. Enter a UPC/EAN barcode manually.";
+      return;
+    }
     video.srcObject = state.stream; await video.play();
     const formats = ["upc_a", "upc_e", "ean_8", "ean_13"];
     if ("BarcodeDetector" in window) {
