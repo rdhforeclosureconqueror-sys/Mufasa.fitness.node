@@ -60,7 +60,7 @@
       container.innerHTML = '<p class="notice">Saved to your private food journal.</p>'; await refreshNutritionAndWeekly();
     };
   }
-  async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); }
+  async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup unavailable. Try food search or custom entry."; } }
   async function startScanner() {
     const video = $("scannerVideo"); video.hidden = false; $("barcodeStatus").textContent = "Starting scanner…";
     if (!navigator.mediaDevices?.getUserMedia) { $("barcodeStatus").textContent = "Camera is unavailable. Enter barcode manually."; return; }
