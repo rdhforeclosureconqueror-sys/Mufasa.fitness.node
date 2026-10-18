@@ -1,0 +1,22 @@
+name: Community optional retention routing
+on:
+  pull_request:
+    paths:
+      - 'public/community-hub.html'
+      - 'public/retention-journey-start.html'
+      - 'public/retention-journey-start.js'
+      - 'public/trial.js'
+      - 'test/community-optional-retention-routing.test.js'
+      - 'test/trial-retention-routing.test.js'
+      - '.github/workflows/community-optional-retention-routing.yml'
+  workflow_dispatch:
+jobs:
+  community-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/community-optional-retention-routing.test.js test/trial-retention-routing.test.js
