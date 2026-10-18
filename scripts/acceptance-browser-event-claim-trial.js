@@ -199,6 +199,23 @@ let server,browser,firstFailure=null;const checks=[];
   await page.waitForFunction(()=>{const el=document.querySelector("#foodResults");return el&&el.textContent&&!/^Searching…?$/.test(el.textContent.trim())},{timeout:12000});
   assert.ok((await page.locator("#foodResults").innerText()).trim().length>0,"Food search must display a result or actionable error");
  });
+ await step("nutrition-save-and-replay-meal-dom",async()=>{
+  await page.locator("#entriesList .row").filter({hasText:"Edited fixture food"}).locator("[data-select]").check();
+  page.once("dialog",dialog=>{void dialog.accept("Chromium saved meal").catch(()=>{});});
+  await page.locator("#saveMealBtn").click();
+  await page.locator('[data-open="recentPanel"]').click();
+  await page.locator("#loadRecentBtn").click();
+  const meal=page.locator("#mealList .row").filter({hasText:"Chromium saved meal"});
+  await meal.waitFor({state:"visible",timeout:12000});
+  await meal.locator("[data-meal]").click();
+  await page.waitForFunction(()=>[...document.querySelectorAll("#entriesList .row")].filter(e=>e.textContent.includes("Edited fixture food")).length>=2,null,{timeout:12000});
+ });
+ await step("nutrition-custom-grocery-button-dom",async()=>{
+  await page.locator('[data-weekly-tab="weeklyGroceryBuilder"]').click();
+  await page.locator("#customGroceryName").fill("Chromium grocery fixture");
+  await page.locator("#addCustomGroceryBtn").click();
+  await page.locator("#weeklyGroceryOptions").getByText("Chromium grocery fixture").waitFor({state:"visible",timeout:12000});
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
