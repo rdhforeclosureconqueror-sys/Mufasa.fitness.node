@@ -137,6 +137,62 @@
     if (state.zxingControls || state.stream) { $("barcodeStatus").textContent = "Scanning automatically. Adjust distance, lighting, and barcode angle."; return; }
     await startScanner();
   }
+
+  function validUpcEan(code) {
+    if (!/^(?:\\d{8}|\\d{12}|\\d{13})$/.test(code)) return false;
+    const digits = [...code].map(Number);
+    const check = digits.pop();
+    const sum = digits.reduce((total, digit, index) => total + digit * ((digits.length - index) % 2 ? 3 : 1), 0);
+    return (10 - sum % 10) % 10 === check;
+  }
+  async function readBarcodeNumbers() {
+    const video = $("scannerVideo");
+    if (!video || video.readyState < 2 || !video.videoWidth) {
+      $("barcodeStatus").textContent = "Start the camera first, then try reading the printed numbers.";
+      await startScanner();
+      return;
+    }
+    const button = $("readNumbersBtn");
+    button.disabled = true;
+    $("barcodeStatus").textContent = "Reading printed barcode numbers from the camera…";
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
+      const worker = await createWorker("eng");
+      let text = "";
+      try {
+        await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1" });
+        const result = await worker.recognize(canvas);
+        text = result.data.text || "";
+      } finally { await worker.terminate(); }
+      const lines = text.split(/\\n/).map((line) => line.replace(/\\D/g, ""));
+      const candidates = [...lines, text.replace(/\\D/g, "")].filter(Boolean);
+      let code = candidates.find((value) => validUpcEan(value));
+      if (!code) {
+        for (const value of candidates) {
+          for (const length of [12, 13, 8]) {
+            for (let i = 0; i + length <= value.length; i++) {
+              const candidate = value.slice(i, i + length);
+              if (validUpcEan(candidate)) { code = candidate; break; }
+            }
+            if (code) break;
+          }
+          if (code) break;
+        }
+      }
+      if (code) {
+        $("manualBarcode").value = code;
+        $("barcodeStatus").textContent = "Possible barcode " + code + " read from the label. Confirm the digits, then tap Lookup barcode.";
+      } else {
+        $("barcodeStatus").textContent = "Could not confidently read a valid UPC/EAN. Move closer, improve lighting, or type the printed digits manually.";
+      }
+    } catch (_) {
+      $("barcodeStatus").textContent = "Number recognition unavailable. Please enter the printed barcode digits manually.";
+    } finally { button.disabled = false; }
+  }
   async function handleDetected(raw) { const barcode = String(raw || "").replace(/\D/g, ""); const now = Date.now(); if (!/^\d{6,14}$/.test(barcode)) return; if (state.lastBarcode === barcode && now - state.lastScanAt < 2500) return; state.lastBarcode = barcode; state.lastScanAt = now; stopScanner(); await lookupBarcode(barcode); }
   function stopScanner() { state.scanGeneration += 1; state.nativeDetector = null; state.scannerBusy = false; if (state.scanTimer) clearTimeout(state.scanTimer); state.scanTimer = null; if (state.zxingControls?.stop) state.zxingControls.stop(); state.zxingControls = null; if (state.zxingReader?.reset) state.zxingReader.reset(); state.zxingReader = null; if (state.stream) state.stream.getTracks().forEach((track) => track.stop()); state.stream = null; const v = $("scannerVideo"); if (v) { v.pause(); v.srcObject = null; v.hidden = true; } }
   async function searchFoods() { const q = $("foodSearchInput").value; const out = $("foodResults"); out.innerHTML = "Searching…"; try { const data = await api(`/api/nutrition/foods/search?q=${encodeURIComponent(q)}&limit=10`); out.innerHTML = data.results.map((food) => `<div class="row"><div class="row-main"><strong>${escapeHtml(food.foodName)}</strong><div class="muted">${escapeHtml(food.brand || food.dataType || "USDA")} ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</div></div><button class="btn" data-fdc="${food.fdcId}">Review</button></div>`).join("") || "No foods found."; out.querySelectorAll("[data-fdc]").forEach((btn) => btn.onclick = async () => bindReview(out, await api(`/api/nutrition/foods/${btn.dataset.fdc}`))); } catch (e) { out.textContent = e.message; } }
@@ -168,7 +224,7 @@
   async function loadWeeklyReview() { if (!currentPlanId()) return; const r = await api(`/api/me/nutrition/weekly-plans/${currentPlanId()}/review`); $("weeklyReviewPanel").innerHTML = `<div class="summary"><div class="metric"><strong>${r.nutritionTotals.calories}</strong><span>logged calories</span></div><div class="metric"><strong>${r.nutritionTotals.proteinGrams}g</strong><span>protein</span></div><div class="metric"><strong>${r.categoriesIncluded.length}</strong><span>categories</span></div><div class="metric"><strong>${r.foodsLogged.length}</strong><span>foods logged</span></div></div><p class="notice">${escapeHtml(r.feedback)}</p>`; }
 
   function escapeHtml(v) { return String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-  document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
+  document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("readNumbersBtn").onclick = readBarcodeNumbers; $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
   window.addEventListener("pagehide", stopScanner);
   window.NutritionRuntime = { startScanner, captureOrRetry, stopScanner, handleDetected, lookupBarcode, requireSession, authToken, backendUrl };
 })();
