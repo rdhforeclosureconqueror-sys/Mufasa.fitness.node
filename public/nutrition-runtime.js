@@ -33,7 +33,17 @@
       if (window.AuthStateRuntime?.refreshAuthStatus) {
         const auth = await window.AuthStateRuntime.refreshAuthStatus({ token: state.token, reason: "nutrition:requireSession" });
         if (!auth?.ok) {
-          if (auth?.reason === "auth_unavailable") return showSessionStatus("Nutrition Journal could not reach the member session service. Your sign-in was not cleared; please retry in a moment.");
+          if (auth?.reason === "auth_unavailable") {
+            // The shared auth client can fail before reaching the configured nutrition backend.
+            // Validate the existing bearer token directly against the configured backend as a
+            // recovery path; never treat a failed request as authenticated.
+            try {
+              await api("/api/auth/me");
+            } catch (error) {
+              if (error?.status === 401 || error?.status === 403) return showAuthWall();
+              return showSessionStatus("Nutrition Journal could not reach the member session service. Your sign-in was not cleared; please retry in a moment.");
+            }
+          }
           return showAuthWall();
         }
         state.token = auth.token || state.token;
