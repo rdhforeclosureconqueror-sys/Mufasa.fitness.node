@@ -2,7 +2,7 @@
 // Real Chromium DOM interactions with disposable backend storage; no production traffic.
 const {chromium}=require("playwright"),assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),crypto=require("node:crypto");
 const {createWorldBridgeApp}=require("../world-bridge-server");
-const {createEventCheckinStore}=require("../src/services/eventCheckinStore");
+
 const keys=["NODE_ENV","AUTH_TOKEN_SECRET","PILOT_LOGIN_PASSWORD","LOGIN_SEED_EMAIL","AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS"];
 const old=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
 Object.assign(process.env,{NODE_ENV:"test",AUTH_TOKEN_SECRET:"isolated-browser-event-secret-32-characters",PILOT_LOGIN_PASSWORD:"isolated-event-admin-password",LOGIN_SEED_EMAIL:"isolated-event-admin@example.invalid",AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS:"pilot_admin"});
@@ -26,13 +26,38 @@ let server,browser,firstFailure=null;const checks=[];
   assert.equal(created.status,201,JSON.stringify(created.payload));eventId=created.payload.data.event.eventId;
   assert.equal((await call("/api/admin/community/events/"+eventId,"PATCH",admin.payload.token,{status:"confirmed"})).status,200);
  });
- await step("guest-reflection-seed",async()=>{
-  // Public check-in is time-gated; create a genuine signed pass using the production store.
-  const store=createEventCheckinStore({dataDir:dir});pass=store.checkin({event:eventId,name:"Browser Guest",email,before:"Ready"});store.reflect({...pass,after:"Restored"});
+ await step("open-public-checkin",async()=>{
+  // Make the disposable confirmed event active without modifying the system clock or production records.
+  const catalogPath=path.join(dir,"community-events","catalog.json");
+  const catalog=JSON.parse(fs.readFileSync(catalogPath,"utf8"));
+  const event=catalog.events.find(e=>e.eventId===eventId);
+  assert.ok(event,"Disposable event must exist");
+  event.startAt=new Date(Date.now()-60000).toISOString();
+  event.endAt=new Date(Date.now()+3600000).toISOString();
+  fs.writeFileSync(catalogPath,JSON.stringify(catalog));
+  await page.goto(base+"/wellness-check-in.html?eventId="+encodeURIComponent(eventId)+"&utm_source=tiktok",{waitUntil:"domcontentloaded"});
+  await page.locator("#before").waitFor({state:"visible",timeout:12000});
+ });
+ await step("guest-checkin-dom",async()=>{
+  await page.locator('#before [name="name"]').fill("Browser Guest");
+  await page.locator('#before [name="email"]').fill(email);
+  await page.locator('#before [name="before"]').fill("Ready");
+  await page.locator('#before [name="attributionConsent"]').check();
+  await page.locator('#before button').click();
+  await page.locator("#after").waitFor({state:"visible",timeout:12000});
+  pass=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("event-pass")||"null"));
+  assert.ok(pass?.id&&pass?.token,"Expected signed guest check-in pass");
+ });
+ await step("guest-reflection-dom",async()=>{
+  await page.locator('#after [name="after"]').fill("Restored");
+  await page.locator('#after button').click();
+  await page.locator("#claim-link").waitFor({state:"visible",timeout:12000});
+  const saved=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("event-claim-pass")||"null"));
+  assert.equal(saved?.id,pass.id);
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem("event-pass")),null);
  });
  await step("open-event-claim",async()=>{
   await page.goto(base+"/wellness-claim.html",{waitUntil:"domcontentloaded"});
-  await page.evaluate(pass=>sessionStorage.setItem("event-claim-pass",JSON.stringify(pass)),pass);
   await page.locator("#claim").click();
   await page.waitForURL(url=>url.pathname==="/login.html",{timeout:12000});
  });
@@ -63,6 +88,6 @@ let server,browser,firstFailure=null;const checks=[];
  });
  }catch(error){firstFailure=firstFailure||{id:"setup",reason:String(error.message).slice(0,300)};}
  finally{if(browser)await browser.close();if(server?.listening)await new Promise(resolve=>server.close(resolve));fs.rmSync(dir,{recursive:true,force:true});for(const [k,v]of Object.entries(old)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
- const report={kind:"WellnessBrowserEventTrialReport",mode:"ISOLATED_LOCAL_BROWSER",passed:!firstFailure,firstFailure,checks,cleanupVerified:!fs.existsSync(dir),limitations:["Guest check-in and reflection seeded through production store because public route is time-gated","No production browser/customer traffic or payment processing"]};
+ const report={kind:"WellnessBrowserEventTrialReport",mode:"ISOLATED_LOCAL_BROWSER",passed:!firstFailure,firstFailure,checks,cleanupVerified:!fs.existsSync(dir),limitations:["Disposable event activation changes only temporary local catalog storage","No production browser/customer traffic or payment processing"]};
  console.log(JSON.stringify(report,null,2));if(!report.passed||!report.cleanupVerified)process.exitCode=1;
 })();
