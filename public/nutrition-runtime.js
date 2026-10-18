@@ -1,7 +1,7 @@
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const state = { weekly: { plan: null, groceryItems: [], pantry: [], missions: [], options: [], categories: [] }, token: null, entries: [], selectedEntryIds: new Set(), stream: null, scanTimer: null, lastBarcode: null, lastScanAt: 0, zxingReader: null };
+  const state = { weekly: { plan: null, groceryItems: [], pantry: [], missions: [], options: [], categories: [] }, token: null, entries: [], selectedEntryIds: new Set(), stream: null, scanTimer: null, lastBarcode: null, lastScanAt: 0, zxingReader: null, scannerBusy: false };
   function today() { return new Date().toISOString().slice(0, 10); }
   function authToken() { return window.AuthStateRuntime?.getAuthToken?.() || null; }
   function backendUrl(path) {
@@ -91,7 +91,9 @@
   }
   async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup unavailable. Try food search or custom entry."; } }
   async function startScanner() {
+    if (state.scannerBusy) return;
     stopScanner();
+    state.scannerBusy = true;
     const video = $("scannerVideo");
     $("barcodeStatus").textContent = "Starting barcode scanner…";
     if (!navigator.mediaDevices?.getUserMedia) { $("barcodeStatus").textContent = "Camera unavailable. Enter a UPC/EAN manually."; return; }
@@ -122,10 +124,10 @@
     } catch (error) {
       stopScanner();
       $("barcodeStatus").textContent = "Scanner could not start. Check camera permission and connection, or enter the barcode manually.";
-    }
+    } finally { state.scannerBusy = false; }
   }
   async function handleDetected(raw) { const barcode = String(raw || "").replace(/\D/g, ""); const now = Date.now(); if (!/^\d{6,14}$/.test(barcode)) return; if (state.lastBarcode === barcode && now - state.lastScanAt < 2500) return; state.lastBarcode = barcode; state.lastScanAt = now; stopScanner(); await lookupBarcode(barcode); }
-  function stopScanner() { if (state.scanTimer) clearTimeout(state.scanTimer); state.scanTimer = null; if (state.zxingControls?.stop) state.zxingControls.stop(); state.zxingControls = null; if (state.zxingReader?.reset) state.zxingReader.reset(); state.zxingReader = null; if (state.stream) state.stream.getTracks().forEach((track) => track.stop()); state.stream = null; const v = $("scannerVideo"); if (v) { v.pause(); v.srcObject = null; v.hidden = true; } }
+  function stopScanner() { state.scannerBusy = false; if (state.scanTimer) clearTimeout(state.scanTimer); state.scanTimer = null; if (state.zxingControls?.stop) state.zxingControls.stop(); state.zxingControls = null; if (state.zxingReader?.reset) state.zxingReader.reset(); state.zxingReader = null; if (state.stream) state.stream.getTracks().forEach((track) => track.stop()); state.stream = null; const v = $("scannerVideo"); if (v) { v.pause(); v.srcObject = null; v.hidden = true; } }
   async function searchFoods() { const q = $("foodSearchInput").value; const out = $("foodResults"); out.innerHTML = "Searching…"; try { const data = await api(`/api/nutrition/foods/search?q=${encodeURIComponent(q)}&limit=10`); out.innerHTML = data.results.map((food) => `<div class="row"><div class="row-main"><strong>${escapeHtml(food.foodName)}</strong><div class="muted">${escapeHtml(food.brand || food.dataType || "USDA")} ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</div></div><button class="btn" data-fdc="${food.fdcId}">Review</button></div>`).join("") || "No foods found."; out.querySelectorAll("[data-fdc]").forEach((btn) => btn.onclick = async () => bindReview(out, await api(`/api/nutrition/foods/${btn.dataset.fdc}`))); } catch (e) { out.textContent = e.message; } }
   function renderCustomForm() { $("customForm").innerHTML = `<label>Food name</label><input data-c="foodName"><label>Calories</label><input data-c="calories" type="number"><label>Protein g</label><input data-c="proteinGrams" type="number"><label>Carbs g</label><input data-c="carbohydrateGrams" type="number"><label>Fat g</label><input data-c="fatGrams" type="number"><label>Fiber g</label><input data-c="fiberGrams" type="number"><label>Sodium mg</label><input data-c="sodiumMilligrams" type="number"><label>Meal</label>${mealTypeSelect()}<button class="btn primary" id="customSaveBtn">Save custom food</button>`; $("customSaveBtn").onclick = async () => { const payload = { source: "custom", localDate: $("journalDate").value, amount: 1, unit: "serving", isEstimated: false }; document.querySelectorAll("[data-c]").forEach((el) => payload[el.dataset.c] = el.type === "number" ? Number(el.value || 0) : el.value); payload.mealType = $("customForm").querySelector('[data-field="mealType"]').value; await api("/api/me/nutrition/entries", { method: "POST", body: JSON.stringify(payload) }); await refreshNutritionAndWeekly(); }; }
   async function createDraft() { const out = $("draftReview"); out.innerHTML = "Creating draft…"; const draft = await api("/api/nutrition/drafts/natural-language", { method: "POST", body: JSON.stringify({ text: $("naturalText").value }) }); out.innerHTML = `<p class="notice">${escapeHtml(draft.message)}</p>` + draft.candidates.map((c) => `<div class="row"><div><strong>${escapeHtml(c.phrase)}</strong><div class="muted">Search: ${escapeHtml(c.searchQuery)}</div>${c.possibleClarifications.map((q) => `<span class="pill estimated">${escapeHtml(q)}</span>`).join("")}</div><button class="btn" data-search="${escapeHtml(c.searchQuery)}">Search this</button></div>`).join(""); out.querySelectorAll("[data-search]").forEach((b) => b.onclick = () => { setPanel("searchPanel"); $("foodSearchInput").value = b.dataset.search; searchFoods(); }); }
