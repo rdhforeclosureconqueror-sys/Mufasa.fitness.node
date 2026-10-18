@@ -118,11 +118,11 @@ let server,browser,firstFailure=null;const checks=[];
   assert.ok(entries.payload.data?.entries?.some(e=>e.foodName==="Isolated browser oatmeal"),"Saved meal must persist in member journal");
  });
  await step("nutrition-button-inventory-dom",async()=>{
-  // An onboarding tour can legitimately cover controls until dismissed.
-  const guide=page.locator("#pptGuideBody");
-  if(await guide.isVisible().catch(()=>false)){
-   const overlay=await guide.evaluate(el=>el.closest('[role="dialog"]')?.outerHTML.slice(0,2500)||el.parentElement?.parentElement?.outerHTML.slice(0,2500));
-   throw new Error("Nutrition onboarding tour blocks controls; overlay="+overlay);
+  // Close the first-visit tour through its real customer-facing control.
+  const tourClose=page.getByRole("button",{name:"Close guided tour"});
+  if(await tourClose.isVisible().catch(()=>false)){
+   await tourClose.click();
+   await page.locator('[role="dialog"].ppt-guide-card').waitFor({state:"hidden",timeout:5000});
   }
   const expected=["scanPanel","searchPanel","naturalPanel","recentPanel","customPanel"];
   for(const id of expected){
