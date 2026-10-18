@@ -43,10 +43,12 @@
               if (error?.status === 401 || error?.status === 403) return showAuthWall();
               return showSessionStatus("Nutrition Journal could not reach the member session service. Your sign-in was not cleared; please retry in a moment.");
             }
+          } else {
+            return showAuthWall();
           }
-          return showAuthWall();
+        } else {
+          state.token = auth.token || state.token;
         }
-        state.token = auth.token || state.token;
       } else {
         await api("/api/auth/me");
       }
