@@ -246,6 +246,7 @@ let server,browser,firstFailure=null;const checks=[];
   const first=page.locator("#weeklyGroceryOptions [data-option]").first();
   await first.locator("xpath=ancestor::details").evaluate(el=>{el.open=true;});
   for(const state of ["selectedForShopping","acquired","unavailable"]){
+   await page.locator("#weeklyGroceryOptions [data-option]").first().locator("xpath=ancestor::details").evaluate(el=>{el.open=true;});
    await page.locator("#weeklyGroceryOptions [data-option]").first().locator('[data-grocery-state="'+state+'"]').click();
    await page.waitForFunction(key=>document.querySelector('#weeklyGroceryOptions [data-option] [data-grocery-state="'+key+'"]')?.getAttribute("aria-pressed")==="true",state,{timeout:12000});
   }
