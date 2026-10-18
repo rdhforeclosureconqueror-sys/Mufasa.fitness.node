@@ -75,7 +75,7 @@
       showSessionStatus("Nutrition Journal loaded your session but could not load journal data. Please retry in a moment.");
     }
   }
-  function setPanel(id) { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === id)); }
+  function setPanel(id) { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === id)); if (id === "scanPanel") { void startScanner(); } else { stopScanner(); } }
   function mealTypeSelect(value = "snack") { return `<select data-field="mealType"><option ${value === "breakfast" ? "selected" : ""}>breakfast</option><option ${value === "lunch" ? "selected" : ""}>lunch</option><option ${value === "dinner" ? "selected" : ""}>dinner</option><option ${value === "snack" ? "selected" : ""}>snack</option><option ${value === "other" ? "selected" : ""}>other</option></select>`; }
   function reviewHtml(food, source) {
     const calc = food.calculatedServing || {};
