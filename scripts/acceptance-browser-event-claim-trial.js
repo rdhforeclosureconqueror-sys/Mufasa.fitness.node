@@ -82,6 +82,36 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#accept").click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html"&&url.searchParams.get("trial")==="accepted",{timeout:15000});
  });
+ await step("community-nutrition-navigation-dom",async()=>{
+  await page.locator('a.tile[href="/nutrition.html"]').first().waitFor({state:"visible",timeout:12000});
+  await page.locator('a.tile[href="/nutrition.html"]').first().click();
+  await page.waitForURL(url=>url.pathname==="/nutrition.html",{timeout:12000});
+  await page.locator("#journalShell").waitFor({state:"visible",timeout:15000});
+ });
+ await step("nutrition-save-custom-food-dom",async()=>{
+  await page.locator('[data-open="customPanel"]').click();
+  await page.locator('[data-c="foodName"]').fill("Isolated browser oatmeal");
+  await page.locator('[data-c="calories"]').fill("150");
+  await page.locator('[data-c="proteinGrams"]').fill("5");
+  await page.locator('[data-c="carbohydrateGrams"]').fill("27");
+  await page.locator('[data-c="fatGrams"]').fill("3");
+  await page.locator("#customSaveBtn").click();
+  await page.locator("#entriesList").getByText("Isolated browser oatmeal").waitFor({state:"visible",timeout:15000});
+ });
+ await step("nutrition-reload-persistence-dom",async()=>{
+  const date=await page.locator("#journalDate").inputValue();
+  await page.reload({waitUntil:"domcontentloaded"});
+  await page.locator("#journalShell").waitFor({state:"visible",timeout:15000});
+  assert.equal(await page.locator("#journalDate").inputValue(),date);
+  await page.locator("#entriesList").getByText("Isolated browser oatmeal").waitFor({state:"visible",timeout:15000});
+  const entries=await call("/api/me/nutrition/entries?date="+encodeURIComponent(date),"GET",memberToken);
+  assert.equal(entries.status,200,JSON.stringify(entries));
+  assert.ok(entries.payload.data?.entries?.some(e=>e.foodName==="Isolated browser oatmeal"),"Saved meal must persist in member journal");
+ });
+ await step("nutrition-return-to-community-dom",async()=>{
+  await page.locator('a[href="/community-hub.html"]').first().click();
+  await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
+ });
  await step("persisted-trial-attribution",async()=>{
   const result=await call("/api/me/trial-access","GET",memberToken);
   assert.equal(result.status,200,JSON.stringify(result));
