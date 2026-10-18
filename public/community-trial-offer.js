@@ -1,11 +1,15 @@
 (()=>{"use strict";
 const agree=document.getElementById("agree"),accept=document.getElementById("accept"),skip=document.getElementById("skip"),status=document.getElementById("status");
 const params=new URLSearchParams(location.search);
-const allowedSources=new Set(["private-session-request","rooftop-yoga","event-check-in"]);
+const allowedSources=new Set(["private-session-request","rooftop-yoga","event-check-in","community-signup"]);
 const source=allowedSources.has(params.get("source"))?params.get("source"):"private-session-request";
 const hub="/community-hub.html?source="+encodeURIComponent(source);
 const title=document.getElementById("offer-title"),intro=document.getElementById("offer-intro"),footnote=document.getElementById("offer-footnote");
-if(source==="event-check-in"){
+if(source==="community-signup"){
+ if(title)title.textContent="Welcome to Milele Fit!";
+ if(intro)intro.textContent="Your free community account is ready. Would you like to unlock Nutrition and fitness tools with a seven-day free trial?";
+ if(footnote)footnote.textContent="Your community membership stays free. Nutrition is included during the trial and in fitness memberships starting at $9.99/month. No credit card required for the trial.";
+}else if(source==="event-check-in"){
  if(title)title.textContent="Thank you for joining our wellness event!";
  if(intro)intro.textContent="Your event check-in is linked to your account. Would you like to explore PocketPT free for seven days?";
  if(footnote)footnote.textContent="After seven days, full-system access pauses unless you choose a membership. Your event participation does not require a paid membership.";
