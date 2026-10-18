@@ -6,12 +6,12 @@ const ids=["saveMealBtn","refreshBtn","createWeeklyPlanBtn","generateWeeklyMissi
 const panels=["scanPanel","searchPanel","naturalPanel","recentPanel","customPanel"];
 const weekly=["weeklyThisWeek","weeklyGroceryBuilder","weeklyPantry","weeklyMissions","weeklyReview"];
 test("all static nutrition buttons have inventoried actions",()=>{
- const tags=[...html.matchAll(/<button\\b[^>]*>/g)].map(m=>m[0]);
+ const tags=[...html.matchAll(/<button\b[^>]*>/g)].map(m=>m[0]);
  assert.equal(tags.length,22,"New buttons require explicit inventory updates");
  for(const tag of tags){
-  const id=tag.match(/\\bid="([^"]+)"/)?.[1];
-  const panel=tag.match(/\\bdata-open="([^"]+)"/)?.[1];
-  const tab=tag.match(/\\bdata-weekly-tab="([^"]+)"/)?.[1];
+  const id=tag.match(/\bid="([^"]+)"/)?.[1];
+  const panel=tag.match(/\bdata-open="([^"]+)"/)?.[1];
+  const tab=tag.match(/\bdata-weekly-tab="([^"]+)"/)?.[1];
   assert.ok(id||panel||tab,"Missing button action: "+tag);
   if(id){assert.ok(ids.includes(id),"Unknown button: "+id);assert.ok(runtime.includes('$("#'+id+'")')||runtime.includes('$("'+id+'")'),"Missing handler: "+id);}
   if(panel){assert.ok(panels.includes(panel),"Unknown panel: "+panel);assert.ok(html.includes('id="'+panel+'"'),"Missing panel: "+panel);}
