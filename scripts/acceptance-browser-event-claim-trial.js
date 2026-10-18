@@ -18,7 +18,7 @@ let server,browser,firstFailure=null;const checks=[];
  await page.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replaceAll("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
  async function step(id,fn){try{await fn();checks.push({id,status:"PASS_BROWSER_DOM"});}catch(error){firstFailure={id,reason:String(error.message).slice(0,300)};checks.push({id,status:"FAIL",reason:firstFailure.reason});throw error;}}
  const email="event-dom-"+crypto.randomBytes(8).toString("hex")+"@example.invalid",password=crypto.randomBytes(18).toString("hex");
- let eventId,pass;
+ let eventId,pass,memberToken;
  async function call(route,method="GET",token,body){const response=await fetch(base+route,{method,headers:{...(token?{authorization:"Bearer "+token}:{}),...(body?{"content-type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});return{status:response.status,payload:await response.json()};}
  await step("admin-create-event",async()=>{
   const admin=await call("/api/auth/login","POST",null,{email:"isolated-event-admin@example.invalid",password:"isolated-event-admin-password"});assert.equal(admin.status,200,JSON.stringify(admin.payload));
@@ -50,14 +50,14 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#offer-title").waitFor({state:"visible"});
   assert.match(await page.locator("#offer-title").innerText(),/wellness event/);
   assert.equal(await page.locator("#accept").isDisabled(),true);
+  memberToken=await page.evaluate(()=>window.AuthStateRuntime?.getAuthToken?.());assert.ok(memberToken,"Expected authenticated member token before trial acceptance");
   await page.locator("#agree").check();
   assert.equal(await page.locator("#accept").isEnabled(),true);
   await page.locator("#accept").click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html"&&url.searchParams.get("trial")==="accepted",{timeout:15000});
  });
  await step("persisted-trial-attribution",async()=>{
-  await page.waitForLoadState("load");
-  const result=await page.evaluate(async()=>{const ready=await window.AuthStateRuntime?.whenReady?.();if(!ready?.ok)return {status:0,reason:"auth_not_ready"};const token=window.AuthStateRuntime?.getAuthToken?.();const r=await fetch("/api/me/trial-access",{headers:{authorization:"Bearer "+token}});return {status:r.status,payload:await r.json()}});
+  const result=await call("/api/me/trial-access","GET",memberToken);
   assert.equal(result.status,200,JSON.stringify(result));
   assert.equal(result.payload.data?.trial?.origin?.eventId,eventId,JSON.stringify(result));
  });
