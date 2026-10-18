@@ -1,0 +1,18 @@
+name: Nutrition iOS scanner routing
+on:
+  pull_request:
+    paths:
+      - 'public/nutrition.html'
+      - 'public/nutrition-runtime.js'
+      - 'test/nutrition-ios-scanner-navigation.test.js'
+      - '.github/workflows/nutrition-ios-scanner.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/nutrition-ios-scanner-navigation.test.js test/community-nutrition-bridge.test.js
