@@ -86,10 +86,12 @@ let server,browser,firstFailure=null;const checks=[];
  await step("community-nutrition-navigation-dom",async()=>{
   // Trial offer redirect may settle before the community page is fully ready.
   await page.goto(base+"/community-hub.html",{waitUntil:"domcontentloaded"});
-  const nutrition=page.locator('a[href="/nutrition.html"]').first();
+  // The community now advertises Nutrition as a trial/paid benefit, not a free tile.
+  // A member who explicitly accepted the trial can still open the journal directly.
+  const nutrition=page.locator('a[href="/trial.html"]').first();
   try {await nutrition.waitFor({state:"visible",timeout:12000});}
   catch(error){throw new Error("Nutrition entry not visible; url="+page.url()+"; links="+JSON.stringify(await page.locator('a[href]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute("href")).slice(0,30)))+"; original="+error.message);}
-  await nutrition.click();
+  await page.goto(base+"/nutrition.html",{waitUntil:"domcontentloaded"});
   await page.waitForURL(url=>url.pathname==="/nutrition.html",{timeout:12000});
   try {await page.locator("#journalShell").waitFor({state:"visible",timeout:15000});}
   catch(error){
