@@ -90,8 +90,13 @@ let server,browser,firstFailure=null;const checks=[];
  await step("admin-conversion-dashboard-dom",async()=>{
   const adminPage=await browser.newPage({serviceWorkers:"block"});
   try{
-   await adminPage.addInitScript(({origin,authToken})=>{window.MAAT_BACKEND_ORIGIN=origin;localStorage.setItem("auth_token",authToken);},{origin:base,authToken:adminToken});
+   await adminPage.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
    await adminPage.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replaceAll("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
+   await adminPage.goto(base+"/login.html",{waitUntil:"domcontentloaded"});
+   await adminPage.locator("#email").fill("isolated-event-admin@example.invalid");
+   await adminPage.locator("#password").fill("isolated-event-admin-password");
+   await adminPage.locator("#submit").click();
+   await adminPage.waitForURL(url=>url.pathname!=="/login.html",{timeout:15000});
    await adminPage.goto(base+"/event-studio.html",{waitUntil:"domcontentloaded"});
    const button=adminPage.locator('[data-conversions="'+eventId+'"]');
    await button.waitFor({state:"visible",timeout:12000});
