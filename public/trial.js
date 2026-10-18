@@ -2,7 +2,7 @@
 const agree=document.getElementById("agree"),start=document.getElementById("start"),status=document.getElementById("status");
 const api=async(path,options={})=>{const r=await window.MaatApiClient.request(path,options);if(!r.ok)throw new Error(r.payload?.error?.message||r.error?.message||"Request failed");return r.payload?.data||r.payload;};
 const params=new URLSearchParams(location.search);
-const destination=params.get("returnTo")?.startsWith("/")&&!params.get("returnTo")?.startsWith("//")?params.get("returnTo"):"/retention-journey-start.html?firstRun=1&trial=started";
+const destination=params.get("returnTo")?.startsWith("/")&&!params.get("returnTo")?.startsWith("//")?params.get("returnTo") :"/nutrition.html";
 let mode="trial";
 function membershipMode(){mode="membership";agree.disabled=true;start.disabled=false;start.textContent="Choose membership";status.textContent="Your seven-day trial has ended. Your saved Nutrition data remains available when you subscribe.";}
 agree.onchange=()=>{if(mode==="trial")start.disabled=!agree.checked;};
