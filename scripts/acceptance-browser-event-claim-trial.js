@@ -185,6 +185,20 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#draftBtn").click();
   await page.locator("#draftReview").locator("[data-search]").first().waitFor({state:"visible",timeout:12000});
  });
+ await step("nutrition-manual-barcode-lookup-dom",async()=>{
+  await page.locator('[data-open="scanPanel"]').click();
+  await page.locator("#manualBarcode").fill("0000000000000");
+  await page.locator("#lookupBarcodeBtn").click();
+  await page.waitForFunction(()=>{const text=document.querySelector("#barcodeStatus")?.textContent||"";return text.length>0&&!/Looking up barcode/i.test(text)},{timeout:12000});
+  assert.match(await page.locator("#barcodeStatus").innerText(),/not found|detected|product|barcode/i);
+ });
+ await step("nutrition-food-search-button-dom",async()=>{
+  await page.locator('[data-open="searchPanel"]').click();
+  await page.locator("#foodSearchInput").fill("banana");
+  await page.locator("#foodSearchBtn").click();
+  await page.waitForFunction(()=>{const el=document.querySelector("#foodResults");return el&&el.textContent&&!/^Searching…?$/.test(el.textContent.trim())},{timeout:12000});
+  assert.ok((await page.locator("#foodResults").innerText()).trim().length>0,"Food search must display a result or actionable error");
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
