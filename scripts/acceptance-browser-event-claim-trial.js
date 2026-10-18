@@ -56,8 +56,9 @@ let server,browser,firstFailure=null;const checks=[];
   await page.waitForURL(url=>url.pathname==="/community-hub.html"&&url.searchParams.get("trial")==="accepted",{timeout:15000});
  });
  await step("persisted-trial-attribution",async()=>{
-  const user=await page.evaluate(async()=>{const token=window.AuthStateRuntime?.getAuthToken?.();const r=await fetch("/api/auth/me",{headers:{authorization:"Bearer "+token}});return r.json()});
-  assert.equal(user.user.trialAccess?.origin?.eventId,eventId,JSON.stringify(user));
+  const result=await page.evaluate(async()=>{const token=window.AuthStateRuntime?.getAuthToken?.();const r=await fetch("/api/me/trial-access",{headers:{authorization:"Bearer "+token}});return {status:r.status,payload:await r.json()}});
+  assert.equal(result.status,200,JSON.stringify(result));
+  assert.equal(result.payload.data?.trial?.origin?.eventId,eventId,JSON.stringify(result));
  });
  }catch(error){firstFailure=firstFailure||{id:"setup",reason:String(error.message).slice(0,300)};}
  finally{if(browser)await browser.close();if(server?.listening)await new Promise(resolve=>server.close(resolve));fs.rmSync(dir,{recursive:true,force:true});for(const [k,v]of Object.entries(old)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
