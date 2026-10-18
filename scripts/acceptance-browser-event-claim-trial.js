@@ -15,6 +15,7 @@ let server,browser,firstFailure=null;const checks=[];
  browser=await chromium.launch({headless:true});
  const page=await browser.newPage({serviceWorkers:"block"});
  await page.addInitScript(origin=>{window.MAAT_BACKEND_ORIGIN=origin;},base);
+ await page.route("**/nutrition.html",async route=>{const response=await route.fetch();const body=(await response.text()).replace('backendOrigin: "https://mufasa-fitness-node.onrender.com"','backendOrigin: "'+base+'"');await route.fulfill({response,body,contentType:"text/html"});});
  await page.route("**/runtime-config.js*",async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replaceAll("https://mufasa-fitness-node.onrender.com",base),contentType:"application/javascript"});});
  async function step(id,fn){try{await fn();checks.push({id,status:"PASS_BROWSER_DOM"});}catch(error){firstFailure={id,reason:String(error.message).slice(0,300)};checks.push({id,status:"FAIL",reason:firstFailure.reason});throw error;}}
  const email="event-dom-"+crypto.randomBytes(8).toString("hex")+"@example.invalid",password=crypto.randomBytes(18).toString("hex");
