@@ -12,7 +12,7 @@ test("Wellness intake leads to existing nutrition journal",()=>{
 });
 test("Nutrition journal returns to community and uses canonical login return",()=>{
  const html=read("public/nutrition.html");
- assert.match(html,/href="\/community-hub\.html">Community Wellness<\/a>/);
+ assert.match(html,/href="\/community-hub\.html">← Community Hub<\/a>/);
  assert.match(html,/href="\/login\.html\?returnTo=%2Fnutrition\.html">Sign in to Nutrition<\/a>/);
  assert.match(html,/nutrition-runtime\.js/);
  assert.match(read("public/nutrition-runtime.js"),/AuthStateRuntime\?\.getAuthToken/);
