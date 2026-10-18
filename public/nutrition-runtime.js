@@ -180,8 +180,8 @@
         const result = await worker.recognize(canvas);
         text = result.data.text || "";
       } finally { await worker.terminate(); }
-      const lines = text.split(/\\n/).map((line) => line.replace(/\\D/g, ""));
-      const candidates = [...lines, text.replace(/\\D/g, "")].filter(Boolean);
+      const lines = text.split(/\n/).map((line) => line.replace(/\D/g, ""));
+      const candidates = [...lines, text.replace(/\D/g, "")].filter(Boolean);
       let code = candidates.find((value) => validUpcEan(value));
       if (!code) {
         for (const value of candidates) {
