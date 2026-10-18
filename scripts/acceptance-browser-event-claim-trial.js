@@ -172,6 +172,19 @@ let server,browser,firstFailure=null;const checks=[];
   await page.locator("#entriesList").getByText("Edited fixture food").waitFor({state:"visible",timeout:12000});}
   finally {page.off("dialog",onEditDialog);}
  });
+ await step("nutrition-scanner-camera-denied-dom",async()=>{
+  await page.locator('[data-open="scanPanel"]').click();
+  await page.context().clearPermissions();
+  await page.locator("#startScanBtn").click();
+  await page.locator("#barcodeStatus").getByText(/camera|denied|unavailable|permission|fallback/i).waitFor({state:"visible",timeout:8000});
+  await page.locator("#stopScanBtn").click();
+ });
+ await step("nutrition-natural-language-draft-dom",async()=>{
+  await page.locator('[data-open="naturalPanel"]').click();
+  await page.locator("#naturalText").fill("Two scrambled eggs and a banana");
+  await page.locator("#draftBtn").click();
+  await page.locator("#draftReview").locator("[data-search]").first().waitFor({state:"visible",timeout:12000});
+ });
  await step("nutrition-return-to-community-dom",async()=>{
   await page.locator('a[href="/community-hub.html"]').first().click();
   await page.waitForURL(url=>url.pathname==="/community-hub.html",{timeout:12000});
