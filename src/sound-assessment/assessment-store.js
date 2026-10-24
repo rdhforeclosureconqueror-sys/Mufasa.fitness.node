@@ -7,7 +7,7 @@ function createAssessmentStore(filePath=process.env.SOUND_ASSESSMENT_STORE_PATH|
   const row={id,createdAt,...record};
   const fd=fs.openSync(filePath,"a",0o600);
   try{
-   const data=Buffer.from(JSON.stringify(row)+"\\n");
+   const data=Buffer.from(JSON.stringify(row)+"\n");
    let offset=0;
    while(offset<data.length){
     const written=fs.writeSync(fd,data,offset,data.length-offset);
