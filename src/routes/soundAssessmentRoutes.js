@@ -3,6 +3,7 @@ const express=require("express");
 const {QUICK_BANK,QUICK_BANK_VERSION}=require("../sound-assessment/quick-bank");
 const {DEEP_BANK,DEEP_BANK_VERSION}=require("../sound-assessment/deep-bank");
 const {buildQuickInterpretation,buildDeepInterpretation}=require("../sound-assessment/interpretation");
+const {createAssessmentStore}=require("../sound-assessment/assessment-store");
 function publicBank(bank,mode,version){return {mode,bankVersion:version,questions:bank.map(q=>({id:q.id,prompt:q.prompt,options:q.options.map(o=>o.text)}))};}
 function publicResult(result,mode){
  const out={mode,primary:result.primary,secondary:result.secondary,summary:result.summary,sections:result.sections,confidence:result.confidence,cta:result.cta||null,soundPreview:result.soundPreview||null};
@@ -12,15 +13,17 @@ function publicResult(result,mode){
 function validateAnswers(bank,answers){
  if(!answers||typeof answers!=="object"||Array.isArray(answers))return "Answers must be an object.";
  const ids=new Set(bank.map(q=>q.id));
+ if(Object.keys(answers).length!==bank.length)return "Every question must be answered.";
  for(const [id,index] of Object.entries(answers)){const q=bank.find(x=>x.id===id);if(!ids.has(id)||!q||!Number.isInteger(index)||index<0||index>=q.options.length)return `Invalid answer for ${id}.`;}
  return null;
 }
-function installSoundAssessmentRoutes({app}){
+function installSoundAssessmentRoutes({app,store=createAssessmentStore()}){
  const router=express.Router();
  router.get("/bank/:mode",(req,res)=>{const deep=req.params.mode==="deep";if(!deep&&req.params.mode!=="quick")return res.status(404).json({ok:false,error:{code:"SA_MODE_INVALID"}});return res.json({ok:true,data:deep?publicBank(DEEP_BANK,"deep",DEEP_BANK_VERSION):publicBank(QUICK_BANK,"quick",QUICK_BANK_VERSION)});});
- router.post("/result/:mode",express.json({limit:"32kb"}),(req,res)=>{const deep=req.params.mode==="deep";if(!deep&&req.params.mode!=="quick")return res.status(404).json({ok:false,error:{code:"SA_MODE_INVALID"}});const bank=deep?DEEP_BANK:QUICK_BANK,answers=req.body?.answers||{},invalid=validateAnswers(bank,answers);if(invalid)return res.status(422).json({ok:false,error:{code:"SA_ANSWER_INVALID",message:invalid}});const built=deep?buildDeepInterpretation(answers):buildQuickInterpretation(answers);if(!built.ok)return res.status(422).json({ok:false,error:{code:built.diagnostic?.FIRST_FAILURE||"SA_RESULT_FAILED",message:built.diagnostic?.DETAIL||"Unable to build sound profile."}});return res.json({ok:true,data:publicResult(built.result,deep?"deep":"quick")});});
+ router.post("/result/:mode",express.json({limit:"32kb"}),(req,res)=>{const deep=req.params.mode==="deep";if(!deep&&req.params.mode!=="quick")return res.status(404).json({ok:false,error:{code:"SA_MODE_INVALID"}});const bank=deep?DEEP_BANK:QUICK_BANK,answers=req.body?.answers||{},invalid=validateAnswers(bank,answers);if(invalid)return res.status(422).json({ok:false,error:{code:"SA_ANSWER_INVALID",message:invalid}});const built=deep?buildDeepInterpretation(answers):buildQuickInterpretation(answers);if(!built.ok)return res.status(422).json({ok:false,error:{code:built.diagnostic?.FIRST_FAILURE||"SA_RESULT_FAILED",message:built.diagnostic?.DETAIL||"Unable to build sound profile."}});
+ let saved;try{saved=store.save({mode:deep?"deep":"quick",bankVersion:deep?DEEP_BANK_VERSION:QUICK_BANK_VERSION,answers,result:publicResult(built.result,deep?"deep":"quick")});}catch(error){console.error("[sound-assessment] FIRST_FAILURE=PERSISTENCE",error.code||error.message);return res.status(503).json({ok:false,error:{code:"SA_PERSISTENCE_FAILED",message:"Unable to securely save your assessment. Please try again."}});}
+ return res.json({ok:true,data:{...publicResult(built.result,deep?"deep":"quick"),assessmentId:saved.id,savedAt:saved.createdAt}});
+ });
  app.use("/api/sound-assessment",router);return router;
 }
 module.exports={installSoundAssessmentRoutes,publicBank,publicResult,validateAnswers};
-
-
