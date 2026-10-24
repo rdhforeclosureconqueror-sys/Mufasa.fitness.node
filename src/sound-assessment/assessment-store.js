@@ -6,7 +6,16 @@ function createAssessmentStore(filePath=process.env.SOUND_ASSESSMENT_STORE_PATH|
   const id=crypto.randomUUID(),createdAt=new Date().toISOString();
   const row={id,createdAt,...record};
   const fd=fs.openSync(filePath,"a",0o600);
-  try{fs.writeSync(fd,JSON.stringify(row)+"\n");fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+  try{
+   const data=Buffer.from(JSON.stringify(row)+"\\n");
+   let offset=0;
+   while(offset<data.length){
+    const written=fs.writeSync(fd,data,offset,data.length-offset);
+    if(written<=0)throw new Error("ASSESSMENT_SHORT_WRITE");
+    offset+=written;
+   }
+   fs.fsyncSync(fd);
+  }finally{fs.closeSync(fd);}
   return {id,createdAt};
  }
  return {save};
