@@ -13,8 +13,9 @@ function publicResult(result,mode){
 function validateAnswers(bank,answers){
  if(!answers||typeof answers!=="object"||Array.isArray(answers))return "Answers must be an object.";
  const ids=new Set(bank.map(q=>q.id));
- if(Object.keys(answers).length!==bank.length)return "Every question must be answered.";
+
  for(const [id,index] of Object.entries(answers)){const q=bank.find(x=>x.id===id);if(!ids.has(id)||!q||!Number.isInteger(index)||index<0||index>=q.options.length)return `Invalid answer for ${id}.`;}
+ if(Object.keys(answers).length!==bank.length)return "Every question must be answered.";
  return null;
 }
 function installSoundAssessmentRoutes({app,store=createAssessmentStore()}){
