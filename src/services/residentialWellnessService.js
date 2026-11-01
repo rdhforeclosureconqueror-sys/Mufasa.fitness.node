@@ -1,6 +1,6 @@
 "use strict";
 
-const INTERESTS = Object.freeze(["run_walk","yoga","sound_bath","meditation_breathwork","mobility","personal_training","general_wellness"]);
+const INTERESTS = Object.freeze(["run_walk","yoga","sound_bath","meditation_breathwork","pac_community","mobility","personal_training","general_wellness"]);
 const CAMPAIGNS = Object.freeze({ "LYLE-OCT26": { channel:"nfc", market:"addison", label:"Residential NFC pilot" } });
 const iso = value => new Date(value).toISOString();
 const clean = (value,max=160) => String(value == null ? "" : value).trim().slice(0,max);

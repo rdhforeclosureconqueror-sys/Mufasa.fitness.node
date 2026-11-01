@@ -22,3 +22,9 @@ test("residential wellness save accepts injected deterministic clock",()=>{
  const profile=service.save("u1",{interests:["yoga"],communicationConsent:true});
  assert.equal(profile.createdAt,"2026-10-06T19:45:00.000Z");
 });
+test("PAC Community selection is persisted with wellness interests",()=>{
+ const userStore=store(),service=createResidentialWellnessService({userStore});
+ const profile=service.save("u1",{interests:["pac_community"],communicationConsent:true});
+ assert.deepEqual(profile.interests,["pac_community"]);
+ assert.deepEqual(userStore.loadUser("u1").residentialWellness.interests,["pac_community"]);
+});

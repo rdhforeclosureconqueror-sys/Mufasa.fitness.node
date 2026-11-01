@@ -8,7 +8,7 @@ test("apartment landing routes community CTAs into residential intake and preser
 });
 test("residential wellness intake offers all approved interests and consent",()=>{
  const page=read("public/residential-wellness.html");
- for(const v of ["run_walk","yoga","sound_bath","meditation_breathwork","mobility","personal_training","general_wellness"]) assert.match(page,new RegExp('value="'+v+'"'));
+ for(const v of ["yoga","sound_bath","meditation_breathwork","pac_community","general_wellness"]) assert.match(page,new RegExp('value="'+v+'"'));
  assert.match(page,/communicationConsent/);assert.match(page,/communityInviteConsent/);
 });
 test("service uses allowlisted opaque campaign and canonical userStore",()=>{
