@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Eight Limbs + Adinkra | Milele Fit</title>
+    <style>
+      :root {
+        --bg: #11120f;
+        --panel: #202119;
+        --gold: #e5c77d;
+        --text: #f7f0e2;
+        --muted: #d2c8b7;
+        --line: #74613d;
+        --green: #b8d89a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(
+          circle at top right,
+          #44361d,
+          var(--bg) 54%
+        );
+        color: var(--text);
+        font:
+          16px/1.62 system-ui,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: auto;
+        padding: 24px 18px 70px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .brand,
+      .eyebrow {
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .brand {
+        font-size: 0.9rem;
+      }
+      a {
+        color: var(--gold);
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: Georgia, serif;
+        font-weight: 400;
+        line-height: 1.15;
+      }
+      h1 {
+        font-size: clamp(2.4rem, 8vw, 4.6rem);
+        margin: 0.3em 0;
+      }
+      h2 {
+        font-size: 1.8rem;
+        margin: 0.3em 0;
+      }
+      .card {
+        background: rgba(32, 33, 25, 0.94);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 22px;
+        margin: 20px 0;
+      }
+      .hero {
+        padding: 28px;
+        background: linear-gradient(
+          135deg,
+          rgba(49, 43, 24, 0.98),
+          rgba(28, 32, 24, 0.98)
+        );
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .button {
+        display: inline-block;
+        border: 1px solid var(--gold);
+        border-radius: 28px;
+        padding: 11px 16px;
+        background: var(--gold);
+        color: #17140e;
+        text-decoration: none;
+        font-weight: 800;
+        margin: 5px 6px 5px 0;
+      }
+      .button.secondary {
+        background: transparent;
+        color: var(--text);
+      }
+      .week-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+      .week {
+        border: 1px solid #615536;
+        border-radius: 15px;
+        padding: 17px;
+        background: #171811;
+      }
+      .week .number {
+        color: var(--gold);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+      }
+      .symbol {
+        color: var(--green);
+        font-weight: 800;
+        margin: 6px 0;
+      }
+      .lesson {
+        margin: 10px 0;
+        color: var(--muted);
+      }
+      details {
+        border-top: 1px solid #5a4d32;
+        padding: 14px 0;
+      }
+      summary {
+        cursor: pointer;
+        color: var(--gold);
+        font-weight: 800;
+      }
+      .today {
+        border-color: #d9b95e;
+        box-shadow: 0 0 0 1px rgba(229, 199, 125, 0.2);
+      }
+      .today-label {
+        color: var(--green);
+        font-weight: 800;
+      }
+      .practice {
+        border-top: 1px solid #5a4d32;
+        border-bottom: 1px solid #5a4d32;
+        margin: 18px 0;
+        padding: 14px 0;
+      }
+      .fine {
+        font-size: 0.9rem;
+      }
+      @media (max-width: 650px) {
+        .week-grid {
+          grid-template-columns: 1fr;
+        }
+        .hero {
+          padding: 22px;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="/community-backgrounds.css?v=20261014-v1" />
+    <script src="/community-backgrounds.manifest.js?v=20261014-v1"></script>
+    <script src="/community-backgrounds.js?v=20261014-v1"></script>
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <span class="brand">Milele Fit · Community Pathway</span
+        ><a href="/community-hub.html">← Community Hub</a>
+      </header>
+      <section class="card hero">
+        <p class="eyebrow">Eight weeks · one shared practice</p>
+        <h1>Eight Limbs + Adinkra</h1>
+        <p>
+          Yoga gives us a path for practice. Akan Adinkra symbols give us a
+          visual language for values, memory, resilience and community.
+          Together, this is an eight-week circle for moving, breathing,
+          reflecting and growing with intention.
+        </p>
+        <p class="muted">
+          Built for the Pan-African Connection community and open to every
+          member of Milele Fit. Come as you are; begin with the week you are in.
+        </p>
+        <p>
+          <a class="button" href="#today">Start this week’s practice</a
+          ><a class="button secondary" href="/awareness-journey.html"
+            >Try the free 7-day Awareness Journey</a
+          >
+        </p>
+      </section>
+      <section class="card" id="today">
+        <p class="eyebrow">This week</p>
+        <div id="todayContent">
+          <p class="muted">Loading the current practice…</p>
+        </div>
+      </section>
+      <section class="card">
+        <p class="eyebrow">The eight-week map</p>
+        <h2>Practice a limb. Carry a symbol.</h2>
+        <p class="muted">
+          Each pairing is a present-day teaching bridge created for this
+          program. It honors both traditions without claiming that classical
+          yoga and Akan Adinkra have the same origin or meaning.
+        </p>
+        <div class="week-grid" id="weeks" aria-live="polite"></div>
+      </section>
+      <section class="card">
+        <p class="eyebrow">How each class works</p>
+        <h2>Gather · move · breathe · reflect · return</h2>
+        <p>
+          Each session introduces the limb and symbol, offers accessible
+          movement and breath, makes room for sound or stillness, then closes
+          with a reflection that can travel into the week. The daily practice
+          above comes directly from the existing 56-day Mindfulness curriculum.
+        </p>
+        <details>
+          <summary>What are the Eight Limbs?</summary>
+          <p>
+            The Eight Limbs are a yoga framework: Yama (how we relate), Niyama
+            (personal practices), Asana (posture), Pranayama (breath practice),
+            Pratyahara (turning inward), Dharana (focused attention), Dhyana
+            (meditation), and Samadhi (integration or connection).
+          </p>
+        </details>
+        <details>
+          <summary>What are Adinkra symbols?</summary>
+          <p>
+            Adinkra are visual symbols associated with Akan peoples, especially
+            in present-day Ghana and Côte d’Ivoire. Their meanings carry through
+            language, art, cloth and community practice. We name the specific
+            program meaning we are working with rather than flattening a symbol
+            into a decoration.
+          </p>
+        </details>
+        <p>
+          <a
+            class="button secondary"
+            href="/private-sessions.html?source=community"
+            >Request a private yoga, meditation or sound session →</a
+          >
+        </p>
+      </section>
+      <p class="muted fine">
+        Practice comfortably and choose options that fit your body. Breath
+        practices here are gentle and unforced; pause if you feel dizzy,
+        distressed or short of breath.
+      </p>
+    </main>
+    <script src="/eight-limbs-adinkra.js?v=20261101-v1"></script>
+  </body>
+</html>
