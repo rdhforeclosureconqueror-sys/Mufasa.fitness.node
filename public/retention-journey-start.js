@@ -1,24 +1,182 @@
-(function(){"use strict";
-const routes={
- private:{title:"Private Sessions",copy:"Tell us what kind of one-on-one coaching you want. This is a quote request, not a checkout, and Pocket PT will not calculate or display your price.",choices:[["request_private","Continue to private coaching request"]]},
- runclub:{title:"Free Run Club",copy:"This is the free Pocket PT running community, separate from paid Stepping Into Greatness. Complete a runner profile, choose what the club may show, then enter the 24-hour community board.",choices:[["join_run_club","Continue to Free Run Club"]]},
- everyday:{title:"Everyday fitness",copy:"Pick the result closest to what you want. Your Retention Journey will still ask the shared health, safety, schedule and training questions.",choices:[["lose","Lose up to about 20 lb"],["gain","Gain up to about 20 lb"],["tone","Tone / recomposition"],["fitness","Strength & general fitness"]]},
- transformation:{title:"Major transformation",copy:"Choose the direction of your transformation so your trainer can understand your starting goal immediately.",choices:[["major_loss","Major weight loss"],["major_gain","Major weight gain / mass"],["recomp","Major body recomposition"],["lifestyle","Lifestyle reset"]]},
- athlete:{title:"Athlete development",copy:"The existing Athlete Performance section will ask your sport, current level and performance priorities. Rugby continues into the existing rugby supplement.",choices:[["athlete","Continue as an athlete"]]},
- wellness:{title:"Yoga, meditation & breathwork",copy:"Choose your main mind-and-body emphasis. Your existing Yoga & Wellness section will then ask experience, intentions, practice preferences and mobility limitations.",choices:[["yoga","Yoga / mobility"],["meditation","Meditation / stress management"],["breathwork","Pranayama / breathwork"],["recovery","Recovery / balance"]]}
-};
-const communityMode=new URLSearchParams(location.search).get("source")==="community-hub";\nconst pathwayFor=r=>r==="athlete"?"athlete_performance":r==="wellness"?"yoga_wellness":"general_fitness";
-const goals={lose:["Lose up to about 20 lb","lose_body_fat",-20],gain:["Gain up to about 20 lb","gain_weight",20],tone:["Tone and improve body composition","body_recomposition",null],fitness:["Build strength and general fitness","general_health",null],major_loss:["Major weight-loss transformation","lose_body_fat",null],major_gain:["Major weight-gain transformation","gain_weight",null],recomp:["Major body recomposition","body_recomposition",null],lifestyle:["Lifestyle transformation","general_health",null]};
-const $=s=>document.querySelector(s),detail=$("#detail"),grid=$("#pathways"),status=$("#status");
-function show(route){const cfg=routes[route];grid.hidden=true;detail.hidden=false;$("#detailTitle").textContent=cfg.title;$("#detailCopy").textContent=cfg.copy;$("#choices").innerHTML="";for(const [key,label] of cfg.choices){const b=document.createElement("button");b.className="choice";b.textContent=label;b.onclick=()=>save(route,key);$("#choices").appendChild(b);}status.textContent="";}
-async function save(route,choice){
- if(route==="private"){location.replace(communityMode?"/private-sessions.html?source=community":"/private-sessions.html?firstRun=1");return;}
- if(route==="runclub"){location.replace(communityMode?"/community-hub.html?journey=runclub":"/free-run-club.html?firstRun=1");return;}
- status.textContent="Saving your Retention Journey starting point…";const pathway=pathwayFor(route);const payload={currentStep:"identity_profile",pathwaySelection:{selected:[pathway],primary:pathway}};
- if(pathway==="general_fitness"){const g=goals[choice];payload.generalFitness={enabled:true,weightChangeGoal:g[1]};payload.goals={primaryGoal:g[0]};if(g[2]!=null)payload.generalFitness.desiredWeightChange=g[2];}
- if(pathway==="athlete_performance")payload.athletePerformance={enabled:true};
- if(pathway==="yoga_wellness"){payload.yogaWellness={enabled:true};const intent={yoga:"mobility",meditation:"stress_management",breathwork:"breathing",recovery:"recovery"}[choice];payload.yogaWellness.primaryIntentions=[intent];}
- try{const res=await fetch("/api/me/retention/intake",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});if(res.status===401){const returnTo=encodeURIComponent(location.pathname+location.search);location.replace("/login.html?returnTo="+returnTo);return;}if(!res.ok){const body=await res.json().catch(()=>({}));throw new Error(body.message||"Could not save your Retention Journey selection.");}status.textContent=communityMode?"Saved. Returning to your Community Hub…":"Saved. Opening your Retention Journey…";location.replace(communityMode?"/community-hub.html?journey=completed":"/workout.html?journey=1");}catch(err){status.textContent=err.message||"Could not save your selection. Please try again.";}}
-document.querySelectorAll("[data-route]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.route)));$("#back").addEventListener("click",()=>{detail.hidden=true;grid.hidden=false;});
-const requested=new URLSearchParams(location.search).get("path");if(routes[requested])show(requested);
+(function () {
+  "use strict";
+  const routes = {
+    private: {
+      title: "Private Sessions",
+      copy: "Tell us what kind of one-on-one coaching you want. This is a quote request, not a checkout, and Pocket PT will not calculate or display your price.",
+      choices: [["request_private", "Continue to private coaching request"]],
+    },
+    runclub: {
+      title: "Free Run Club",
+      copy: "This is the free Pocket PT running community, separate from paid Stepping Into Greatness. Complete a runner profile, choose what the club may show, then enter the 24-hour community board.",
+      choices: [["join_run_club", "Continue to Free Run Club"]],
+    },
+    eightlimbs: {
+      title: "Eight Limbs + Adinkra",
+      copy: "This is an eight-week community pathway for yoga, meditation, breathwork and reflection. Each week pairs one yoga limb with an Akan Adinkra teaching bridge; the pairings are made for this program and do not claim that the traditions are the same.",
+      choices: [
+        ["explore_eight_limbs", "Open the Eight Limbs + Adinkra circle"],
+      ],
+    },
+    everyday: {
+      title: "Everyday fitness",
+      copy: "Pick the result closest to what you want. Your Retention Journey will still ask the shared health, safety, schedule and training questions.",
+      choices: [
+        ["lose", "Lose up to about 20 lb"],
+        ["gain", "Gain up to about 20 lb"],
+        ["tone", "Tone / recomposition"],
+        ["fitness", "Strength & general fitness"],
+      ],
+    },
+    transformation: {
+      title: "Major transformation",
+      copy: "Choose the direction of your transformation so your trainer can understand your starting goal immediately.",
+      choices: [
+        ["major_loss", "Major weight loss"],
+        ["major_gain", "Major weight gain / mass"],
+        ["recomp", "Major body recomposition"],
+        ["lifestyle", "Lifestyle reset"],
+      ],
+    },
+    athlete: {
+      title: "Athlete development",
+      copy: "The existing Athlete Performance section will ask your sport, current level and performance priorities. Rugby continues into the existing rugby supplement.",
+      choices: [["athlete", "Continue as an athlete"]],
+    },
+    wellness: {
+      title: "Yoga, meditation & breathwork",
+      copy: "Choose your main mind-and-body emphasis. Your existing Yoga & Wellness section will then ask experience, intentions, practice preferences and mobility limitations.",
+      choices: [
+        ["yoga", "Yoga / mobility"],
+        ["meditation", "Meditation / stress management"],
+        ["breathwork", "Pranayama / breathwork"],
+        ["recovery", "Recovery / balance"],
+      ],
+    },
+  };
+  const communityMode =
+    new URLSearchParams(location.search).get("source") === "community-hub";
+  const pathwayFor = (r) =>
+    r === "athlete"
+      ? "athlete_performance"
+      : r === "wellness"
+        ? "yoga_wellness"
+        : "general_fitness";
+  const goals = {
+    lose: ["Lose up to about 20 lb", "lose_body_fat", -20],
+    gain: ["Gain up to about 20 lb", "gain_weight", 20],
+    tone: ["Tone and improve body composition", "body_recomposition", null],
+    fitness: ["Build strength and general fitness", "general_health", null],
+    major_loss: ["Major weight-loss transformation", "lose_body_fat", null],
+    major_gain: ["Major weight-gain transformation", "gain_weight", null],
+    recomp: ["Major body recomposition", "body_recomposition", null],
+    lifestyle: ["Lifestyle transformation", "general_health", null],
+  };
+  const $ = (s) => document.querySelector(s),
+    detail = $("#detail"),
+    grid = $("#pathways"),
+    status = $("#status");
+  function show(route) {
+    const cfg = routes[route];
+    grid.hidden = true;
+    detail.hidden = false;
+    $("#detailTitle").textContent = cfg.title;
+    $("#detailCopy").textContent = cfg.copy;
+    $("#choices").innerHTML = "";
+    for (const [key, label] of cfg.choices) {
+      const b = document.createElement("button");
+      b.className = "choice";
+      b.textContent = label;
+      b.onclick = () => save(route, key);
+      $("#choices").appendChild(b);
+    }
+    status.textContent = "";
+  }
+  async function save(route, choice) {
+    if (route === "private") {
+      location.replace(
+        communityMode
+          ? "/private-sessions.html?source=community"
+          : "/private-sessions.html?firstRun=1",
+      );
+      return;
+    }
+    if (route === "runclub") {
+      location.replace(
+        communityMode
+          ? "/community-hub.html?journey=runclub"
+          : "/free-run-club.html?firstRun=1",
+      );
+      return;
+    }
+    if (route === "eightlimbs") {
+      location.replace("/eight-limbs-adinkra.html?source=retention-journey");
+      return;
+    }
+    status.textContent = "Saving your Retention Journey starting point…";
+    const pathway = pathwayFor(route);
+    const payload = {
+      currentStep: "identity_profile",
+      pathwaySelection: { selected: [pathway], primary: pathway },
+    };
+    if (pathway === "general_fitness") {
+      const g = goals[choice];
+      payload.generalFitness = { enabled: true, weightChangeGoal: g[1] };
+      payload.goals = { primaryGoal: g[0] };
+      if (g[2] != null) payload.generalFitness.desiredWeightChange = g[2];
+    }
+    if (pathway === "athlete_performance")
+      payload.athletePerformance = { enabled: true };
+    if (pathway === "yoga_wellness") {
+      payload.yogaWellness = { enabled: true };
+      const intent = {
+        yoga: "mobility",
+        meditation: "stress_management",
+        breathwork: "breathing",
+        recovery: "recovery",
+      }[choice];
+      payload.yogaWellness.primaryIntentions = [intent];
+    }
+    try {
+      const res = await fetch("/api/me/retention/intake", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) {
+        const returnTo = encodeURIComponent(
+          location.pathname + location.search,
+        );
+        location.replace("/login.html?returnTo=" + returnTo);
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          body.message || "Could not save your Retention Journey selection.",
+        );
+      }
+      status.textContent = communityMode
+        ? "Saved. Returning to your Community Hub…"
+        : "Saved. Opening your Retention Journey…";
+      location.replace(
+        communityMode
+          ? "/community-hub.html?journey=completed"
+          : "/workout.html?journey=1",
+      );
+    } catch (err) {
+      status.textContent =
+        err.message || "Could not save your selection. Please try again.";
+    }
+  }
+  document
+    .querySelectorAll("[data-route]")
+    .forEach((b) => b.addEventListener("click", () => show(b.dataset.route)));
+  $("#back").addEventListener("click", () => {
+    detail.hidden = true;
+    grid.hidden = false;
+  });
+  const requested = new URLSearchParams(location.search).get("path");
+  if (routes[requested]) show(requested);
 })();
