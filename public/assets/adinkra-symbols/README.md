@@ -1,5 +1,7 @@
 # PAC Community weekly Adinkra symbols
 
+`adinkra-reference-sheet.jpg` is the approved short-term PAC Community visual reference. The dashboard shows it beside the active weekly teaching until individual symbol files are supplied.
+
 Add one SVG (preferred) or PNG file for each weekly PAC Community card here.
 The Mindfulness Dashboard automatically uses these exact filenames:
 
