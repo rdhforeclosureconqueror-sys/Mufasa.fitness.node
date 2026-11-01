@@ -40,6 +40,7 @@ test("community path uses the existing Eight Limbs curriculum and weekly stories
   const js = read("eight-limbs-adinkra.js");
   assert.match(js, /mindfulness-limbs-v1\.json/);
   assert.match(js, /mindfulness-weekly-stories-v1\.json/);
-  assert.match(js, /Continue in the Mindfulness Dashboard/);
+  assert.match(js, /Start today in the Mindfulness Dashboard/);
+  assert.match(js, /mindfulness\.html\?community=pac#pac-community-today/);
   assert.match(read("eight-limbs-adinkra.html"), /existing 56-day Mindfulness curriculum/);
 });
