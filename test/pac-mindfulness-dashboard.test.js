@@ -15,6 +15,8 @@ test("PAC dashboard maps all eight weeks to an Adinkra weekly asset slot",()=>{
  const dashboard=read("mindfulness-snapshot-v1.js"),symbols=read("mindfulness-chakra-symbols-v1.js"),assets=read("assets/adinkra-symbols/README.md");
  for(const value of ["Mpatapo","Sankofa","Aya","Nkonsonkonson","Akofena","Nyame Nti","Adinkrahene","Funtunfunefu Denkyemfunefu"]) assert.match(dashboard,new RegExp(value));
  assert.match(dashboard,/assets\/adinkra-symbols/);
+ assert.match(dashboard,/adinkra-reference-sheet\.jpg/);
+ assert.ok(fs.statSync(path.join(__dirname,"..","public","assets","adinkra-symbols","adinkra-reference-sheet.jpg")).size>100000);
  assert.match(symbols,/snapshot&&!pacMode/);
  assert.match(assets,/week-01-mpatapo\.svg/);
  assert.match(assets,/week-08-funtunfunefu-denkyemfunefu\.svg/);
