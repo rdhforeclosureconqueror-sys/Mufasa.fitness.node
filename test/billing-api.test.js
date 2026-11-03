@@ -586,6 +586,6 @@ test("admin can save and retrieve sanitized billing evidence", async (t) => {
     assert.equal(read.res.status, 200);
     assert.equal(read.json?.data?.reports?.[0]?.id, write.json?.data?.id);
     assert.equal(JSON.stringify(read.json).includes("secret-not-stored"), false);
-    assert.ok(fs.existsSync(path.join(tmpRoot, "data", "ops", "diagnostic-reports.ndjson")));
+    assert.ok(fs.existsSync(path.join(tmpRoot, "data", "ops", "billing-preflight-reports.ndjson")));
   });
 });

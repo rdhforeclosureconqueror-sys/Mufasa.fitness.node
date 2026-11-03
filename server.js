@@ -429,6 +429,7 @@ function createApp(options = {}) {
   if (!fs.existsSync(OPS_DIR)) fs.mkdirSync(OPS_DIR, { recursive: true });
   if (avatarFeatureEnabled && !fs.existsSync(AVATAR_UPLOAD_DIR)) fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
   const diagnosticStore = createDiagnosticStore({ filePath: DIAGNOSTIC_REPORT_PATH });
+  const billingEvidenceStore = createDiagnosticStore({ filePath: path.join(OPS_DIR, "billing-preflight-reports.ndjson") });
   const clientEvidenceService = createClientEvidenceService();
   let latestLaunchHealth = null;
   const latestExternalChecks = { aiCoach:null, diagnosticSummarizer:null, stripe:null };
@@ -1583,7 +1584,9 @@ function createApp(options = {}) {
         payload: { type: "billing_read_only_preflight", passed: !firstFailure,
           firstFailure: firstFailure?.id || null, checks: sanitized }
       });
-      diagnosticStore.append(report);
+      billingEvidenceStore.append(report);
+      const saved = billingEvidenceStore.recent(1)[0];
+      if (!saved || saved.id !== report.id) return res.status(500).json({ ok: false, error: { code: "BILLING_EVIDENCE_READBACK_FAILED" } });
       return ok(res, req.requestId, { id: report.id, timestamp: report.timestamp, ...report.payload }, 201);
     }
   );
@@ -1594,7 +1597,9 @@ function createApp(options = {}) {
     billingReportGuard,
     (req, res) => {
       const limit = Math.max(1, Math.min(20, Number(req.query.limit) || 10));
-      const reports = diagnosticStore.recent(100).filter(report => report.source === "billing_preflight").slice(0, limit)
+      const reports = [...billingEvidenceStore.recent(limit), ...diagnosticStore.recent(10000).filter(report => report.source === "billing_preflight")]
+        .filter((report, index, all) => all.findIndex(item => item.id === report.id) === index)
+        .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp))).slice(0, limit)
         .map(report => ({ id: report.id, timestamp: report.timestamp, ...report.payload }));
       return ok(res, req.requestId, { reports }, 200);
     }
