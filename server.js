@@ -1551,10 +1551,17 @@ function createApp(options = {}) {
     }
   );
 
+  const billingReportGuard = (req, res, next) => {
+    if (!["admin", "super_admin"].includes(req.authz?.role)) {
+      return res.status(403).json({ ok: false, error: { code: "FORBIDDEN" } });
+    }
+    return next();
+  };
   // Billing preflight reports contain only endpoint status evidence, never credentials.
   app.post(
     "/api/admin/diagnostics/billing-preflight",
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    billingReportGuard,
     (req, res) => {
       const body = req.body;
       const checks = body?.checks;
@@ -1584,6 +1591,7 @@ function createApp(options = {}) {
   app.get(
     "/api/admin/diagnostics/billing-preflight",
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    billingReportGuard,
     (req, res) => {
       const limit = Math.max(1, Math.min(20, Number(req.query.limit) || 10));
       const reports = diagnosticStore.recent(100).filter(report => report.source === "billing_preflight").slice(0, limit)
