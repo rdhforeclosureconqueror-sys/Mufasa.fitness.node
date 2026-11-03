@@ -565,3 +565,27 @@ test("billing preflight evidence rejects ordinary authenticated users", async (t
     assert.equal(read.res.status, 403);
   });
 });
+
+test("admin can save and retrieve sanitized billing evidence", async (t) => {
+  enableTestLoginFixture(t);
+  setEnv(t, { AUTHZ_ADMIN_USER_IDS: "billing_report_admin" });
+  await withServer(t, {}, async ({ baseUrl, tmpRoot }) => {
+    const token = await loginFixtureToken(baseUrl, "billing_report_admin");
+    const headers = { authorization: "Bearer " + token };
+    const sample = { type: "billing_read_only_preflight", checks: [
+      { id: "billing-plan-public", status: "PASS", httpStatus: 200, endpoint: "secret-not-stored" },
+      { id: "membership-requires-auth", status: "PASS", httpStatus: 401 },
+      { id: "checkout-post-requires-auth", status: "FAIL", httpStatus: 500 },
+      { id: "legacy-checkout-post-requires-auth", status: "PASS", httpStatus: 401 }
+    ] };
+    const write = await post(baseUrl, "/api/admin/diagnostics/billing-preflight", sample, headers);
+    assert.equal(write.res.status, 201);
+    assert.equal(write.json?.data?.passed, false);
+    assert.equal(write.json?.data?.firstFailure, "checkout-post-requires-auth");
+    const read = await get(baseUrl, "/api/admin/diagnostics/billing-preflight", headers);
+    assert.equal(read.res.status, 200);
+    assert.equal(read.json?.data?.reports?.[0]?.id, write.json?.data?.id);
+    assert.equal(JSON.stringify(read.json).includes("secret-not-stored"), false);
+    assert.ok(fs.existsSync(path.join(tmpRoot, "data", "ops", "diagnostic-reports.ndjson")));
+  });
+});
