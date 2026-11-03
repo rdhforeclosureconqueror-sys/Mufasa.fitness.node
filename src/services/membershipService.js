@@ -359,7 +359,10 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
     if (Date.now() < endsAt) {
       throw new ApiError("TRIAL_STILL_ACTIVE", "Paid checkout is available after your seven-day trial expires.", 409);
     }
-    const membership = getMembership(userId);
+    let membership = getMembership(userId);
+    if (membership.plan === "courtesy_trial" && membership.status === "trialing") {
+      membership = updateMembership(userId, { status: "inactive", plan: "free", trialEnd: endsAt });
+    }
     if (isDuplicateProtectedStatus(membership.status)) {
       return {
         duplicateProtected: true,
