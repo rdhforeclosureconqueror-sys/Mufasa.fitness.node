@@ -101,6 +101,37 @@ function baseBillingEnv(t) {
   });
 }
 
+test("checkout requires completed courtesy trial on legacy and current routes", async (t) => {
+  enableTestLoginFixture(t);
+  baseBillingEnv(t);
+  let stripeCalls = 0;
+  const stripeClient = {
+    async createCustomer() { stripeCalls++; return { id: "cus_guard" }; },
+    async createCheckoutSession() { stripeCalls++; return { client_secret: "cs_guard" }; }
+  };
+  await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
+    const token = await loginFixtureToken(baseUrl, "billing_guard");
+    const headers = { authorization: "Bearer " + token };
+    const routes = ["/api/billing/checkout-session", "/api/billing/create-checkout-session"];
+    for (const route of routes) {
+      const result = await post(baseUrl, route, {}, headers);
+      assert.equal(result.res.status, 409);
+      assert.equal(result.json?.error?.code, "TRIAL_NOT_STARTED");
+    }
+    setCourtesyTrial(tmpRoot, "billing_guard");
+    const file = path.join(tmpRoot, "data", "users", "billing_guard.json");
+    const user = JSON.parse(fs.readFileSync(file, "utf8"));
+    user.courtesyTrial.endsAt = Date.now() + 86400000;
+    fs.writeFileSync(file, JSON.stringify(user));
+    for (const route of routes) {
+      const result = await post(baseUrl, route, {}, headers);
+      assert.equal(result.res.status, 409);
+      assert.equal(result.json?.error?.code, "TRIAL_STILL_ACTIVE");
+    }
+    assert.equal(stripeCalls, 0);
+  });
+});
+
 test("unauthenticated GET /api/me/membership returns 401", async (t) => {
   await withServer(t, {}, async ({ baseUrl }) => {
     const { res, json } = await get(baseUrl, "/api/me/membership");
