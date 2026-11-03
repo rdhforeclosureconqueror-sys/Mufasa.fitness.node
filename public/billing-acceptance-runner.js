@@ -20,6 +20,31 @@
     status.textContent = "Authentication unavailable: " + error.message;
     return;
   }
+  const historyButton = document.getElementById("billing-history-refresh");
+  const historyStatus = document.getElementById("billing-history-status");
+  const historyOutput = document.getElementById("billing-history-report");
+  if (historyButton && historyStatus && historyOutput) {
+    historyButton.addEventListener("click", async () => {
+      historyButton.disabled = true;
+      historyStatus.textContent = "Loading saved billing reports…";
+      try {
+        const response = await fetch(window.MaatApiClient.resolve("/api/admin/diagnostics/billing-preflight?limit=10"), {
+          headers: { Authorization: "Bearer " + window.AuthStateRuntime.getAuthToken() },
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const payload = await response.json();
+        const reports = payload?.data?.reports || [];
+        historyOutput.textContent = JSON.stringify(reports, null, 2);
+        historyOutput.hidden = false;
+        historyStatus.textContent = reports.length + " saved billing report(s).";
+      } catch (error) {
+        historyStatus.textContent = "Could not load reports: " + String(error.message || error);
+      } finally {
+        historyButton.disabled = false;
+      }
+    });
+  }
   button.addEventListener("click", async () => {
     button.disabled = true;
     output.hidden = true;
