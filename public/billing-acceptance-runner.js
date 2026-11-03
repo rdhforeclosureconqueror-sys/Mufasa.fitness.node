@@ -56,9 +56,24 @@
         "Report is displayed locally; no server-side persistence is claimed"
       ]
     };
+    // Persist only sanitized status evidence. The backend independently enforces admin permissions.
+    try {
+      const token = window.AuthStateRuntime?.getAuthToken?.();
+      const endpoint = window.MaatApiClient.resolve("/api/admin/diagnostics/billing-preflight");
+      const saved = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ type: report.type, checks: report.checks.map(({ id, status, httpStatus }) => ({ id, status, httpStatus })) })
+      });
+      if (!saved.ok) throw new Error("HTTP " + saved.status);
+      const payload = await saved.json();
+      report.savedEvidence = { id: payload?.data?.id || null, timestamp: payload?.data?.timestamp || null };
+    } catch (error) {
+      report.savedEvidence = { status: "NOT_SAVED", reason: String(error.message || error) };
+    }
     output.textContent = JSON.stringify(report, null, 2);
     output.hidden = false;
-    status.textContent = (report.passed ? "PASS" : "FAIL") + " · " + checks.filter(c => c.status === "PASS").length + "/" + checks.length + " · " + (report.firstFailure ? "First failure: " + report.firstFailure : "No failures");
+    status.textContent = (report.passed ? "PASS" : "FAIL") + " · " + checks.filter(c => c.status === "PASS").length + "/" + checks.length + " · " + (report.firstFailure ? "First failure: " + report.firstFailure : "No failures") + (report.savedEvidence?.id ? " · Saved" : " · Not saved");
     window.dispatchEvent(new CustomEvent("milele-acceptance-result", {
       detail: { type: "billing", passed: report.passed, count: checks.filter(c => c.status === "PASS").length, total: checks.length, firstFailure: report.firstFailure }
     }));
