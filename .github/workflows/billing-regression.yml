@@ -1,0 +1,32 @@
+name: Billing Regression (Isolated)
+
+on:
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'src/services/membershipService.js'
+      - 'test/billing-api.test.js'
+      - '.github/workflows/billing-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'server.js'
+      - 'src/services/membershipService.js'
+      - 'test/billing-api.test.js'
+      - '.github/workflows/billing-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  billing-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run isolated billing API regression suite
+        run: node --test test/billing-api.test.js
