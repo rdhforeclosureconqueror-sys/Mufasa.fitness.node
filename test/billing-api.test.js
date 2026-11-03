@@ -589,3 +589,73 @@ test("admin can save and retrieve sanitized billing evidence", async (t) => {
     assert.ok(fs.existsSync(path.join(tmpRoot, "data", "ops", "billing-preflight-reports.ndjson")));
   });
 });
+
+test("isolated courtesy trial to paid membership journey requires explicit opt-in and signed webhook", async (t) => {
+  enableTestLoginFixture(t);
+  baseBillingEnv(t);
+  const sessions = [];
+  const stripeClient = {
+    async createCustomer() { return { id: "cus_isolated_journey" }; },
+    async createCheckoutSession(args) {
+      sessions.push(args);
+      return { client_secret: "cs_isolated_journey" };
+    }
+  };
+  await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
+    const userId = "billing_journey_isolated";
+    const token = await loginFixtureToken(baseUrl, userId);
+    const headers = { authorization: "Bearer " + token };
+    const before = await get(baseUrl, "/api/me/membership", headers);
+    assert.equal(before.json?.data?.hasAccess, false);
+
+    const noConsent = await post(baseUrl, "/api/billing/checkout-session", {}, headers);
+    assert.equal(noConsent.res.status, 409);
+    assert.equal(noConsent.json?.error?.code, "TRIAL_NOT_STARTED");
+    assert.equal(sessions.length, 0);
+
+    setCourtesyTrial(tmpRoot, userId);
+    const activeFile = path.join(tmpRoot, "data", "users", userId + ".json");
+    const active = JSON.parse(fs.readFileSync(activeFile, "utf8"));
+    active.courtesyTrial.endsAt = Date.now() + 86400000;
+    fs.writeFileSync(activeFile, JSON.stringify(active));
+    const during = await post(baseUrl, "/api/billing/checkout-session", {}, headers);
+    assert.equal(during.res.status, 409);
+    assert.equal(during.json?.error?.code, "TRIAL_STILL_ACTIVE");
+    assert.equal(sessions.length, 0);
+
+    setCourtesyTrial(tmpRoot, userId);
+    const expired = await get(baseUrl, "/api/me/membership", headers);
+    assert.equal(expired.json?.data?.hasAccess, false);
+    assert.equal(sessions.length, 0);
+    const optIn = await post(baseUrl, "/api/billing/checkout-session", {}, headers);
+    assert.equal(optIn.res.status, 201);
+    assert.equal(sessions.length, 1);
+    assert.equal(sessions[0].trialPeriodDays, 0);
+    assert.equal(sessions[0].paymentMethodCollection, "always");
+
+    const returnOnly = await get(baseUrl, "/api/me/membership?checkout=return", headers);
+    assert.equal(returnOnly.json?.data?.hasAccess, false);
+
+    const event = JSON.stringify({
+      id: "evt_isolated_journey_paid",
+      type: "checkout.session.completed",
+      data: { object: {
+        customer: "cus_isolated_journey", subscription: "sub_isolated_journey",
+        client_reference_id: userId, payment_status: "paid",
+        metadata: { userId }
+      } }
+    });
+    const webhook = await post(baseUrl, "/api/billing/webhook", event, {
+      "stripe-signature": stripeSignature(event, "whsec_test_secret")
+    });
+    assert.equal(webhook.res.status, 200);
+    const after = await get(baseUrl, "/api/me/membership", headers);
+    assert.equal(after.json?.data?.status, "active");
+    assert.equal(after.json?.data?.hasAccess, true);
+    const duplicate = await post(baseUrl, "/api/billing/webhook", event, {
+      "stripe-signature": stripeSignature(event, "whsec_test_secret")
+    });
+    assert.equal(duplicate.json?.data?.duplicate, true);
+    assert.equal(sessions.length, 1);
+  });
+});
