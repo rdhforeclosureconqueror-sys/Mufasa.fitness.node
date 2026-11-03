@@ -1551,6 +1551,55 @@ function createApp(options = {}) {
     }
   );
 
+  const billingReportGuard = (req, res, next) => {
+    if (!["admin", "super_admin"].includes(req.authz?.role)) {
+      return res.status(403).json({ ok: false, error: { code: "FORBIDDEN" } });
+    }
+    return next();
+  };
+  // Billing preflight reports contain only endpoint status evidence, never credentials.
+  app.post(
+    "/api/admin/diagnostics/billing-preflight",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    billingReportGuard,
+    (req, res) => {
+      const body = req.body;
+      const checks = body?.checks;
+      const valid = body?.type === "billing_read_only_preflight"
+        && Array.isArray(checks) && checks.length === 4
+        && checks.every(check => check && typeof check.id === "string"
+          && /^[a-z-]{1,64}$/.test(check.id)
+          && ["PASS", "FAIL"].includes(check.status)
+          && (check.httpStatus === undefined || (Number.isInteger(check.httpStatus) && check.httpStatus >= 100 && check.httpStatus <= 599)));
+      if (!valid) return res.status(422).json({ ok: false, error: { code: "INVALID_BILLING_PREFLIGHT" } });
+      const sanitized = checks.map(check => ({
+        id: check.id, status: check.status,
+        httpStatus: Number.isInteger(check.httpStatus) ? check.httpStatus : null
+      }));
+      const firstFailure = sanitized.find(check => check.status === "FAIL");
+      const report = diagnosticStore.createReport({
+        source: "billing_preflight",
+        route: "/api/admin/diagnostics/billing-preflight",
+        payload: { type: "billing_read_only_preflight", passed: !firstFailure,
+          firstFailure: firstFailure?.id || null, checks: sanitized }
+      });
+      diagnosticStore.append(report);
+      return ok(res, req.requestId, { id: report.id, timestamp: report.timestamp, ...report.payload }, 201);
+    }
+  );
+
+  app.get(
+    "/api/admin/diagnostics/billing-preflight",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    billingReportGuard,
+    (req, res) => {
+      const limit = Math.max(1, Math.min(20, Number(req.query.limit) || 10));
+      const reports = diagnosticStore.recent(100).filter(report => report.source === "billing_preflight").slice(0, limit)
+        .map(report => ({ id: report.id, timestamp: report.timestamp, ...report.payload }));
+      return ok(res, req.requestId, { reports }, 200);
+    }
+  );
+
   app.get(
     "/api/admin/diagnostics/recent",
     requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),

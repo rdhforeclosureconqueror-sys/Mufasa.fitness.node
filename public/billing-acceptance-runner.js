@@ -20,6 +20,31 @@
     status.textContent = "Authentication unavailable: " + error.message;
     return;
   }
+  const historyButton = document.getElementById("billing-history-refresh");
+  const historyStatus = document.getElementById("billing-history-status");
+  const historyOutput = document.getElementById("billing-history-report");
+  if (historyButton && historyStatus && historyOutput) {
+    historyButton.addEventListener("click", async () => {
+      historyButton.disabled = true;
+      historyStatus.textContent = "Loading saved billing reports…";
+      try {
+        const response = await fetch(window.MaatApiClient.resolve("/api/admin/diagnostics/billing-preflight?limit=10"), {
+          headers: { Authorization: "Bearer " + window.AuthStateRuntime.getAuthToken() },
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const payload = await response.json();
+        const reports = payload?.data?.reports || [];
+        historyOutput.textContent = JSON.stringify(reports, null, 2);
+        historyOutput.hidden = false;
+        historyStatus.textContent = reports.length + " saved billing report(s).";
+      } catch (error) {
+        historyStatus.textContent = "Could not load reports: " + String(error.message || error);
+      } finally {
+        historyButton.disabled = false;
+      }
+    });
+  }
   button.addEventListener("click", async () => {
     button.disabled = true;
     output.hidden = true;
@@ -53,12 +78,27 @@
         "No trial was accepted or expired in this check",
         "No Stripe Checkout Session was created",
         "No webhook delivery or paid conversion was verified",
-        "Report is displayed locally; no server-side persistence is claimed"
+        "Server storage is attempted; see savedEvidence for the result"
       ]
     };
+    // Persist only sanitized status evidence. The backend independently enforces admin permissions.
+    try {
+      const token = window.AuthStateRuntime?.getAuthToken?.();
+      const endpoint = window.MaatApiClient.resolve("/api/admin/diagnostics/billing-preflight");
+      const saved = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ type: report.type, checks: report.checks.map(({ id, status, httpStatus }) => ({ id, status, httpStatus })) })
+      });
+      if (!saved.ok) throw new Error("HTTP " + saved.status);
+      const payload = await saved.json();
+      report.savedEvidence = { id: payload?.data?.id || null, timestamp: payload?.data?.timestamp || null };
+    } catch (error) {
+      report.savedEvidence = { status: "NOT_SAVED", reason: String(error.message || error) };
+    }
     output.textContent = JSON.stringify(report, null, 2);
     output.hidden = false;
-    status.textContent = (report.passed ? "PASS" : "FAIL") + " · " + checks.filter(c => c.status === "PASS").length + "/" + checks.length + " · " + (report.firstFailure ? "First failure: " + report.firstFailure : "No failures");
+    status.textContent = (report.passed ? "PASS" : "FAIL") + " · " + checks.filter(c => c.status === "PASS").length + "/" + checks.length + " · " + (report.firstFailure ? "First failure: " + report.firstFailure : "No failures") + (report.savedEvidence?.id ? " · Saved" : " · Not saved");
     window.dispatchEvent(new CustomEvent("milele-acceptance-result", {
       detail: { type: "billing", passed: report.passed, count: checks.filter(c => c.status === "PASS").length, total: checks.length, firstFailure: report.firstFailure }
     }));
