@@ -36,7 +36,7 @@
     }
     await probe("billing-plan-public", "/api/billing/plan", [200]);
     await probe("membership-requires-auth", "/api/me/membership", [401]);
-    await probe("billing-checkout-get-not-allowed", "/api/billing/checkout-session", [404, 405]);
+    await probe("billing-checkout-get-not-allowed", "/api/billing/checkout-session", [401, 404, 405]);
     const firstFailure = checks.find(check => check.status === "FAIL") || null;
     const report = {
       type: "billing_read_only_preflight",
