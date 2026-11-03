@@ -210,12 +210,17 @@ test("embedded checkout uses server-side STRIPE_PRICE_ID and returns only client
   await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
     const token = await loginFixtureToken(baseUrl, "billing_checkout_user");
     setCourtesyTrial(tmpRoot, "billing_checkout_user");
+    const courtesyPath = path.join(tmpRoot, "data", "users", "billing_checkout_user.json");
+    const courtesyUser = JSON.parse(fs.readFileSync(courtesyPath, "utf8"));
+    courtesyUser.membership = { userId: "billing_checkout_user", status: "trialing", plan: "courtesy_trial" };
+    fs.writeFileSync(courtesyPath, JSON.stringify(courtesyUser));
     const { res, json } = await post(baseUrl, "/api/billing/checkout-session", { priceId: "price_attacker_supplied" }, { authorization: `Bearer ${token}` });
     assert.equal(res.status, 201);
     assert.equal(json?.ok, true);
     assert.equal(json?.data?.id, undefined);
     assert.equal(json?.data?.clientSecret, "cs_test_secret_123");
     assert.equal(json?.data?.url, undefined);
+    assert.equal(json?.data?.membership?.status, "inactive");
     assert.equal(observedCheckout.priceId, "price_server_only");
     assert.equal(observedCheckout.userId, "billing_checkout_user");
     assert.equal(observedCheckout.returnUrl, "https://mufasafitsite.onrender.com/membership.html?checkout=return");
