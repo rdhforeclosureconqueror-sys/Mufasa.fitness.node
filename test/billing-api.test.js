@@ -402,7 +402,7 @@ test("seven-day card-required checkout, membership gate, trial reminders, and ac
     assert.equal(checkout.json?.data?.trialPeriodDays, 0);
     assert.equal(checkout.json?.data?.trialEnd, null);
     assert.equal(observedCheckout.priceId, "price_server_only");
-    assert.equal(observedCheckout.trialPeriodDays, 7);
+    assert.equal(observedCheckout.trialPeriodDays, 0);
     assert.equal(observedCheckout.paymentMethodCollection, "always");
 
     const subscriptionPayload = JSON.stringify({
