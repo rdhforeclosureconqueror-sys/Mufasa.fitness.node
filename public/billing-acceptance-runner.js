@@ -27,11 +27,12 @@
     const checks = [];
     async function probe(id, path, expected) {
       try {
-        const response = await fetch(path, { method: "GET", credentials: "same-origin", cache: "no-store" });
+        const url = window.MaatApiClient.resolve(path);
+        const response = await fetch(url, { method: "GET", credentials: "omit", cache: "no-store" });
         const passed = expected.includes(response.status);
-        checks.push({ id, status: passed ? "PASS" : "FAIL", httpStatus: response.status, expected });
+        checks.push({ id, status: passed ? "PASS" : "FAIL", httpStatus: response.status, expected, endpoint: url });
       } catch (error) {
-        checks.push({ id, status: "FAIL", error: String(error.message || error) });
+        checks.push({ id, status: "FAIL", error: String(error.message || error), endpoint: window.MaatApiClient.resolve(path) });
       }
     }
     await probe("billing-plan-public", "/api/billing/plan", [200]);
@@ -42,6 +43,7 @@
       type: "billing_read_only_preflight",
       timestamp: new Date().toISOString(),
       url: location.origin,
+      backendOrigin: window.MaatApiClient.origin(),
       passed: !firstFailure,
       firstFailure: firstFailure?.id || null,
       checks,
