@@ -1,19 +1,6 @@
 "use strict";
 
-test("billing preflight evidence endpoints reject unauthenticated access", async (t) => {
-  await withServer(t, {}, async ({ baseUrl }) => {
-    const sample = { type: "billing_read_only_preflight", checks: [
-      { id: "billing-plan-public", status: "PASS", httpStatus: 200 },
-      { id: "membership-requires-auth", status: "PASS", httpStatus: 401 },
-      { id: "checkout-post-requires-auth", status: "PASS", httpStatus: 401 },
-      { id: "legacy-checkout-post-requires-auth", status: "PASS", httpStatus: 401 }
-    ] };
-    const write = await post(baseUrl, "/api/admin/diagnostics/billing-preflight", sample);
-    const read = await get(baseUrl, "/api/admin/diagnostics/billing-preflight");
-    assert.equal(write.res.status, 401);
-    assert.equal(read.res.status, 401);
-  });
-});
+
 
 
 
@@ -543,5 +530,20 @@ test("seven-day card-required checkout, membership gate, trial reminders, and ac
     const user = JSON.parse(fs.readFileSync(path.join(tmpRoot, "data", "users", "billing_trial_member.json"), "utf8"));
     assert.equal(user.membership.hasAccess, false);
     assert.equal(user.membership.status, "canceled");
+  });
+});
+
+test("billing preflight evidence endpoints reject unauthenticated access", async (t) => {
+  await withServer(t, {}, async ({ baseUrl }) => {
+    const sample = { type: "billing_read_only_preflight", checks: [
+      { id: "billing-plan-public", status: "PASS", httpStatus: 200 },
+      { id: "membership-requires-auth", status: "PASS", httpStatus: 401 },
+      { id: "checkout-post-requires-auth", status: "PASS", httpStatus: 401 },
+      { id: "legacy-checkout-post-requires-auth", status: "PASS", httpStatus: 401 }
+    ] };
+    const write = await post(baseUrl, "/api/admin/diagnostics/billing-preflight", sample);
+    const read = await get(baseUrl, "/api/admin/diagnostics/billing-preflight");
+    assert.equal(write.res.status, 401);
+    assert.equal(read.res.status, 401);
   });
 });
