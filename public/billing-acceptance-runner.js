@@ -53,7 +53,7 @@
         "No trial was accepted or expired in this check",
         "No Stripe Checkout Session was created",
         "No webhook delivery or paid conversion was verified",
-        "Report is displayed locally; no server-side persistence is claimed"
+        "Server storage is attempted; see savedEvidence for the result"
       ]
     };
     // Persist only sanitized status evidence. The backend independently enforces admin permissions.
