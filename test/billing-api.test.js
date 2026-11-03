@@ -196,7 +196,7 @@ test("public billing plan returns backend configured official price label", asyn
   await withServer(t, {}, async ({ baseUrl }) => {
     const { res, json } = await get(baseUrl, "/api/billing/plan");
     assert.equal(res.status, 200);
-    assert.equal(json?.data?.name, "Pocket PT Monthly Membership");
+    assert.equal(json?.data?.name, "PocketPT Performance");
     assert.equal(json?.data?.priceLabel, "$29 / month");
     assert.equal(json?.data?.interval, "month");
   });
@@ -453,7 +453,7 @@ test("membership page uses Stripe Embedded Checkout and does not include raw car
   assert.match(html, /https:\/\/js\.stripe\.com\/v3\//);
   assert.match(html, /embedded-checkout/);
   assert.match(js, /initEmbeddedCheckout/);
-  assert.match(js, /\/api\/billing\/checkout-session/);
+  assert.match(js, /\/api\/billing\/tier-checkout-session/);
   assert.doesNotMatch(html, /name=["'](?:card|number|cvc|cvv|exp|expiration)/i);
   assert.doesNotMatch(js, /cardNumber|card_number|securityCode|exp_month|exp_year/i);
   assert.doesNotMatch(html + js, /sk_live_|sk_test_|whsec_/);
