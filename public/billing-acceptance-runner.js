@@ -25,10 +25,10 @@
     output.hidden = true;
     status.textContent = "Checking billing endpoints…";
     const checks = [];
-    async function probe(id, path, expected) {
+    async function probe(id, path, expected, method = "GET") {
       try {
         const url = window.MaatApiClient.resolve(path);
-        const response = await fetch(url, { method: "GET", credentials: "omit", cache: "no-store" });
+        const response = await fetch(url, { method, credentials: "omit", cache: "no-store" });
         const passed = expected.includes(response.status);
         checks.push({ id, status: passed ? "PASS" : "FAIL", httpStatus: response.status, expected, endpoint: url });
       } catch (error) {
@@ -37,7 +37,8 @@
     }
     await probe("billing-plan-public", "/api/billing/plan", [200]);
     await probe("membership-requires-auth", "/api/me/membership", [401]);
-    await probe("billing-checkout-get-not-allowed", "/api/billing/checkout-session", [401, 404, 405]);
+    await probe("checkout-post-requires-auth", "/api/billing/checkout-session", [401], "POST");
+    await probe("legacy-checkout-post-requires-auth", "/api/billing/create-checkout-session", [401], "POST");
     const firstFailure = checks.find(check => check.status === "FAIL") || null;
     const report = {
       type: "billing_read_only_preflight",
@@ -48,6 +49,7 @@
       firstFailure: firstFailure?.id || null,
       checks,
       limitations: [
+        "Unauthenticated POST checks send no body or payment details and must not create checkout sessions",
         "No trial was accepted or expired in this check",
         "No Stripe Checkout Session was created",
         "No webhook delivery or paid conversion was verified",
