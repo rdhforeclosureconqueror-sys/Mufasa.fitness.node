@@ -132,6 +132,37 @@ test("checkout requires completed courtesy trial on legacy and current routes", 
   });
 });
 
+test("expired courtesy trial allows opt-in checkout on both routes without restarting Stripe trial", async (t) => {
+  enableTestLoginFixture(t);
+  baseBillingEnv(t);
+  const sessions = [];
+  const stripeClient = {
+    async createCustomer() { return { id: "cus_expired_courtesy" }; },
+    async createCheckoutSession(args) {
+      sessions.push(args);
+      return { client_secret: "cs_expired_courtesy" };
+    }
+  };
+  await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
+    const token = await loginFixtureToken(baseUrl, "billing_expired_courtesy");
+    setCourtesyTrial(tmpRoot, "billing_expired_courtesy");
+    const headers = { authorization: "Bearer " + token };
+    for (const route of ["/api/billing/checkout-session", "/api/billing/create-checkout-session"]) {
+      const result = await post(baseUrl, route, {}, headers);
+      assert.equal(result.res.status, 201, route);
+      assert.equal(result.json?.data?.clientSecret, "cs_expired_courtesy");
+      assert.equal(result.json?.data?.trialPeriodDays, 0);
+      assert.equal(result.json?.data?.trialEnd, null);
+    }
+    assert.equal(sessions.length, 2);
+    for (const session of sessions) {
+      assert.equal(session.priceId, "price_server_only");
+      assert.equal(session.trialPeriodDays, 0);
+      assert.equal(session.paymentMethodCollection, "always");
+    }
+  });
+});
+
 test("unauthenticated GET /api/me/membership returns 401", async (t) => {
   await withServer(t, {}, async ({ baseUrl }) => {
     const { res, json } = await get(baseUrl, "/api/me/membership");
