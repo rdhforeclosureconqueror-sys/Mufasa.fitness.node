@@ -75,6 +75,14 @@ async function loginFixtureToken(baseUrl, testUserId) {
   return json.token;
 }
 
+function setCourtesyTrial(root, id) {
+  const file = path.join(root, "data", "users", id + ".json");
+  fs.mkdirSync(path.dirname(file), {recursive:true});
+  const u = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : {userId:id};
+  const now = Date.now();
+  u.courtesyTrial = {acceptedAt:now-691200000, startedAt:now-691200000, endsAt:now-86400000};
+  fs.writeFileSync(file, JSON.stringify(u));
+}
 function stripeSignature(payload, secret, timestamp = Math.floor(Date.now() / 1000)) {
   const signedPayload = `${timestamp}.${payload}`;
   const signature = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");
@@ -92,6 +100,37 @@ function baseBillingEnv(t) {
     MEMBERSHIP_GATE_TEST_ENFORCED: "true"
   });
 }
+
+test("checkout requires completed courtesy trial on legacy and current routes", async (t) => {
+  enableTestLoginFixture(t);
+  baseBillingEnv(t);
+  let stripeCalls = 0;
+  const stripeClient = {
+    async createCustomer() { stripeCalls++; return { id: "cus_guard" }; },
+    async createCheckoutSession() { stripeCalls++; return { client_secret: "cs_guard" }; }
+  };
+  await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
+    const token = await loginFixtureToken(baseUrl, "billing_guard");
+    const headers = { authorization: "Bearer " + token };
+    const routes = ["/api/billing/checkout-session", "/api/billing/create-checkout-session"];
+    for (const route of routes) {
+      const result = await post(baseUrl, route, {}, headers);
+      assert.equal(result.res.status, 409);
+      assert.equal(result.json?.error?.code, "TRIAL_NOT_STARTED");
+    }
+    setCourtesyTrial(tmpRoot, "billing_guard");
+    const file = path.join(tmpRoot, "data", "users", "billing_guard.json");
+    const user = JSON.parse(fs.readFileSync(file, "utf8"));
+    user.courtesyTrial.endsAt = Date.now() + 86400000;
+    fs.writeFileSync(file, JSON.stringify(user));
+    for (const route of routes) {
+      const result = await post(baseUrl, route, {}, headers);
+      assert.equal(result.res.status, 409);
+      assert.equal(result.json?.error?.code, "TRIAL_STILL_ACTIVE");
+    }
+    assert.equal(stripeCalls, 0);
+  });
+});
 
 test("unauthenticated GET /api/me/membership returns 401", async (t) => {
   await withServer(t, {}, async ({ baseUrl }) => {
@@ -170,12 +209,18 @@ test("embedded checkout uses server-side STRIPE_PRICE_ID and returns only client
   };
   await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
     const token = await loginFixtureToken(baseUrl, "billing_checkout_user");
+    setCourtesyTrial(tmpRoot, "billing_checkout_user");
+    const courtesyPath = path.join(tmpRoot, "data", "users", "billing_checkout_user.json");
+    const courtesyUser = JSON.parse(fs.readFileSync(courtesyPath, "utf8"));
+    courtesyUser.membership = { userId: "billing_checkout_user", status: "trialing", plan: "courtesy_trial" };
+    fs.writeFileSync(courtesyPath, JSON.stringify(courtesyUser));
     const { res, json } = await post(baseUrl, "/api/billing/checkout-session", { priceId: "price_attacker_supplied" }, { authorization: `Bearer ${token}` });
     assert.equal(res.status, 201);
     assert.equal(json?.ok, true);
     assert.equal(json?.data?.id, undefined);
     assert.equal(json?.data?.clientSecret, "cs_test_secret_123");
     assert.equal(json?.data?.url, undefined);
+    assert.equal(json?.data?.membership?.status, "inactive");
     assert.equal(observedCheckout.priceId, "price_server_only");
     assert.equal(observedCheckout.userId, "billing_checkout_user");
     assert.equal(observedCheckout.returnUrl, "https://mufasafitsite.onrender.com/membership.html?checkout=return");
@@ -208,8 +253,9 @@ test("legacy checkout route now serves embedded checkout without redirect url", 
     async createCustomer() { return { id: "cus_legacy_123" }; },
     async createCheckoutSession() { return { id: "cs_legacy_123", client_secret: "cs_legacy_secret" }; }
   };
-  await withServer(t, { stripeClient }, async ({ baseUrl }) => {
+  await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
     const token = await loginFixtureToken(baseUrl, "billing_legacy_user");
+    setCourtesyTrial(tmpRoot, "billing_legacy_user");
     const { res, json } = await post(baseUrl, "/api/billing/create-checkout-session", {}, { authorization: `Bearer ${token}` });
     assert.equal(res.status, 201);
     assert.equal(json?.data?.clientSecret, "cs_legacy_secret");
@@ -230,6 +276,7 @@ test("duplicate subscriptions are prevented for active, trialing, past_due, and 
     for (const status of statuses) {
       const userId = `billing_dup_${status}`;
       const token = await loginFixtureToken(baseUrl, userId);
+      setCourtesyTrial(tmpRoot, userId);
       const userPath = path.join(tmpRoot, "data", "users", `${userId}.json`);
       fs.mkdirSync(path.dirname(userPath), { recursive: true });
       const user = fs.existsSync(userPath) ? JSON.parse(fs.readFileSync(userPath, "utf8")) : { userId };
@@ -391,6 +438,7 @@ test("seven-day card-required checkout, membership gate, trial reminders, and ac
   };
   await withServer(t, { stripeClient }, async ({ baseUrl, tmpRoot }) => {
     const memberToken = await loginFixtureToken(baseUrl, "billing_trial_member");
+    setCourtesyTrial(tmpRoot, "billing_trial_member");
     const blocked = await get(baseUrl, "/api/progress/dashboard", { authorization: `Bearer ${memberToken}` });
     assert.equal(blocked.res.status, 402);
     assert.equal(blocked.json?.code, "membership_required");
@@ -399,10 +447,10 @@ test("seven-day card-required checkout, membership gate, trial reminders, and ac
     const checkout = await post(baseUrl, "/api/billing/checkout-session", { priceId: "price_bad", trialPeriodDays: 30 }, { authorization: `Bearer ${memberToken}` });
     assert.equal(checkout.res.status, 201);
     assert.equal(checkout.json?.data?.clientSecret, "cs_trial_secret");
-    assert.equal(checkout.json?.data?.trialPeriodDays, 7);
-    assert.ok(Number.isFinite(checkout.json?.data?.trialEnd));
+    assert.equal(checkout.json?.data?.trialPeriodDays, 0);
+    assert.equal(checkout.json?.data?.trialEnd, null);
     assert.equal(observedCheckout.priceId, "price_server_only");
-    assert.equal(observedCheckout.trialPeriodDays, 7);
+    assert.equal(observedCheckout.trialPeriodDays, 0);
     assert.equal(observedCheckout.paymentMethodCollection, "always");
 
     const subscriptionPayload = JSON.stringify({
