@@ -351,6 +351,14 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
   }
 
   async function createCheckoutSession({ userId, email = null, secretKey, priceId, returnUrl }) {
+    const courtesyTrial = userStore.loadUser(userId)?.courtesyTrial;
+    const endsAt = Number(courtesyTrial?.endsAt);
+    if (!courtesyTrial?.acceptedAt || !Number.isFinite(endsAt) || endsAt <= 0) {
+      throw new ApiError("TRIAL_NOT_STARTED", "Start the seven-day no-card trial before paid checkout.", 409);
+    }
+    if (Date.now() < endsAt) {
+      throw new ApiError("TRIAL_STILL_ACTIVE", "Paid checkout is available after your seven-day trial expires.", 409);
+    }
     const membership = getMembership(userId);
     if (isDuplicateProtectedStatus(membership.status)) {
       return {
