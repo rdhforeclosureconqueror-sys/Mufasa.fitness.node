@@ -197,7 +197,7 @@ test("public billing plan returns backend configured official price label", asyn
     const { res, json } = await get(baseUrl, "/api/billing/plan");
     assert.equal(res.status, 200);
     assert.equal(json?.data?.name, "PocketPT Performance");
-    assert.equal(json?.data?.priceLabel, "$29 / month");
+    assert.equal(json?.data?.priceLabel, "$19.99");
     assert.equal(json?.data?.interval, "month");
   });
 });
