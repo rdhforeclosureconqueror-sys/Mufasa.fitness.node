@@ -659,3 +659,33 @@ test("isolated courtesy trial to paid membership journey requires explicit opt-i
     assert.equal(sessions.length, 1);
   });
 });
+
+test("webhook rejects stale and tampered signatures without changing membership", async (t) => {
+  enableTestLoginFixture(t);
+  setEnv(t, { STRIPE_SECRET_KEY: "sk_test_webhook", STRIPE_WEBHOOK_SECRET: "whsec_test_secret" });
+  await withServer(t, {}, async ({ baseUrl }) => {
+    const userId = "billing_webhook_security";
+    const token = await loginFixtureToken(baseUrl, userId);
+    const headers = { authorization: "Bearer " + token };
+    const payload = JSON.stringify({
+      id: "evt_webhook_security",
+      type: "checkout.session.completed",
+      data: { object: { customer: "cus_security", subscription: "sub_security",
+        client_reference_id: userId, payment_status: "paid", metadata: { userId } } }
+    });
+    const stale = await post(baseUrl, "/api/billing/webhook", payload, {
+      "stripe-signature": stripeSignature(payload, "whsec_test_secret", Math.floor(Date.now() / 1000) - 3600)
+    });
+    assert.equal(stale.res.status, 400);
+    assert.equal(stale.json?.error?.code, "STRIPE_WEBHOOK_SIGNATURE_INVALID");
+    const tampered = await post(baseUrl, "/api/billing/webhook", payload.replace('"paid"', '"unpaid"'), {
+      "stripe-signature": stripeSignature(payload, "whsec_test_secret")
+    });
+    assert.equal(tampered.res.status, 400);
+    assert.equal(tampered.json?.error?.code, "STRIPE_WEBHOOK_SIGNATURE_INVALID");
+    const after = await get(baseUrl, "/api/me/membership", headers);
+    assert.equal(after.res.status, 200);
+    assert.equal(after.json?.data?.hasAccess, false);
+    assert.equal(after.json?.data?.status, "inactive");
+  });
+});
