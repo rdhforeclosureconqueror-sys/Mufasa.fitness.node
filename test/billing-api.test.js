@@ -547,3 +547,21 @@ test("billing preflight evidence endpoints reject unauthenticated access", async
     assert.equal(read.res.status, 401);
   });
 });
+
+test("billing preflight evidence rejects ordinary authenticated users", async (t) => {
+  enableTestLoginFixture(t);
+  await withServer(t, {}, async ({ baseUrl }) => {
+    const token = await loginFixtureToken(baseUrl, "billing_report_regular");
+    const headers = { authorization: "Bearer " + token };
+    const sample = { type: "billing_read_only_preflight", checks: [
+      { id: "billing-plan-public", status: "PASS", httpStatus: 200 },
+      { id: "membership-requires-auth", status: "PASS", httpStatus: 401 },
+      { id: "checkout-post-requires-auth", status: "PASS", httpStatus: 401 },
+      { id: "legacy-checkout-post-requires-auth", status: "PASS", httpStatus: 401 }
+    ] };
+    const write = await post(baseUrl, "/api/admin/diagnostics/billing-preflight", sample, headers);
+    const read = await get(baseUrl, "/api/admin/diagnostics/billing-preflight", headers);
+    assert.equal(write.res.status, 403);
+    assert.equal(read.res.status, 403);
+  });
+});
