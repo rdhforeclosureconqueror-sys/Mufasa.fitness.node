@@ -5,7 +5,7 @@ const { ApiError } = require("../lib/apiResponse");
 
 const ACCESS_GRANTED_STATUSES = new Set(["active", "trialing"]);
 const DUPLICATE_PROTECTED_STATUSES = new Set(["active", "trialing", "past_due", "incomplete"]);
-const TRIAL_PERIOD_DAYS = 7;
+const TRIAL_PERIOD_DAYS = 0;
 const INACTIVE_SUBSCRIPTION_STATUSES = new Set(["canceled", "incomplete_expired", "unpaid", "paused"]);
 const BILLING_PLAN = "stripe_embedded_subscription";
 const SAFE_WEBHOOK_EVENT_MEMORY = 20;
@@ -169,7 +169,6 @@ function createFetchStripeClient({ fetchImpl = global.fetch } = {}) {
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { userId, authenticatedEmail: email || undefined, stripePriceId: priceId },
       subscription_data: {
-        trial_period_days: TRIAL_PERIOD_DAYS,
         metadata: { userId, authenticatedEmail: email || undefined, stripePriceId: priceId }
       }
     }, { idempotencyKey });
@@ -369,12 +368,12 @@ function createMembershipService({ userStore, stripeClient = createFetchStripeCl
       email: sanitizeEmail(email),
       customerId,
       returnUrl,
-      trialPeriodDays: TRIAL_PERIOD_DAYS,
+      trialPeriodDays: 0,
       paymentMethodCollection: "always",
       idempotencyKey: `pocket-pt-embedded-checkout-${userId}-${priceId}`
     });
 
-    const trialEnd = normalizeTimestamp(session?.subscription?.trial_end) || (nowTimestamp() + TRIAL_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+    const trialEnd = normalizeTimestamp(session?.subscription?.trial_end);
     return {
       clientSecret: session?.client_secret || session?.clientSecret || null,
       duplicateProtected: false,
