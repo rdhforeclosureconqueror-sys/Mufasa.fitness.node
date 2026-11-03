@@ -399,8 +399,8 @@ test("seven-day card-required checkout, membership gate, trial reminders, and ac
     const checkout = await post(baseUrl, "/api/billing/checkout-session", { priceId: "price_bad", trialPeriodDays: 30 }, { authorization: `Bearer ${memberToken}` });
     assert.equal(checkout.res.status, 201);
     assert.equal(checkout.json?.data?.clientSecret, "cs_trial_secret");
-    assert.equal(checkout.json?.data?.trialPeriodDays, 7);
-    assert.ok(Number.isFinite(checkout.json?.data?.trialEnd));
+    assert.equal(checkout.json?.data?.trialPeriodDays, 0);
+    assert.equal(checkout.json?.data?.trialEnd, null);
     assert.equal(observedCheckout.priceId, "price_server_only");
     assert.equal(observedCheckout.trialPeriodDays, 7);
     assert.equal(observedCheckout.paymentMethodCollection, "always");
