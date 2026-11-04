@@ -1,7 +1,7 @@
 # Eight Pillars — Lesson-first story production standard
 
 ## Source of truth and scope
-The **lesson**, not the story, is the reusable curriculum unit. Each of eight weeks has one major Adinkra anchor, seven supporting daily symbol lessons, and a complementary weekly yoga limb. The original Akan meanings must not be changed to fit a story. The pairing with the Eight Limbs is Milele Fit's contemporary educational bridge, not an asserted historical equivalence.
+The **lesson**, not the story, is the reusable curriculum unit. Each of eight weeks has one major Adinkra anchor, seven supporting daily symbol lessons, with no required yoga-limb connection. The original Akan meanings must not be changed to fit a story. This African-centered curriculum is independent of the Eight Limbs of Yoga. Wellness activities can be optional but must not dictate symbol meanings or lessons.
 
 **Status:** Editorial specification. The eight reconstructed story drafts currently in the repository are **not approved full manuscripts**. The existing live PAC Eight Limbs page and the newer African Wisdom pillar index use different week-to-symbol mappings. Do not silently merge these tracks or overwrite the original Eight Limbs curriculum. Verify the approved Adinkra PDF and weekly mapping before publication.
 
@@ -12,7 +12,7 @@ Each day must have:
 3. Principle: one clear takeaway consistent with that meaning.
 4. Child-friendly explanation and adult explanation.
 5. Concrete example of a decision, conflict, or behavior.
-6. Practical application or guided practice, with an appropriate yoga/breath/meditation connection.
+6. Practical application or guided practice grounded in the daily principle (not a required yoga, breath, or meditation connection).
 7. Affirmation.
 8. Awareness challenge or action to try that day.
 9. Reflection question and optional journal prompt.
@@ -33,7 +33,7 @@ Each day must have:
 
 ## Teacher facilitation contract
 **Hook → explain → discuss → embody → reflect → take-home action.**
-Weekly class: introduce anchor symbol and its verified meaning, distinguish the yoga limb's tradition, read/listen to the weekly story, discuss the seven supporting lessons, embody through appropriate movement/breath/stillness, invite reflection, and assign a small action. Do not force all 56 lessons into one class.
+Weekly class: introduce the anchor symbol and its verified meaning, read/listen to the weekly story, discuss the seven supporting lessons, practice the principle through a relatable activity, invite reflection, and assign a small action. Optional wellness practices may be offered separately. Do not force all 56 lessons into one class.
 
 ## Story review checklist
 - [ ] Weekly anchor meaning verified against the approved reference.
