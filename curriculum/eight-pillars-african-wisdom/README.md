@@ -26,7 +26,7 @@ An original eight-week, 56-day wellness education journey grounded in Akan Adink
 
 ## Import status
 
-**Index and editorial policy created; story manuscript files not yet imported.** Retrieve the exact approved story texts from the conversation artifacts before creating the eight files. Do not substitute abbreviated summaries for full stories.
+**Eight reconstructed, abbreviated REVIEW DRAFTS are staged in `stories/`.** They are not the original approved full-length manuscripts, and they must not be published or narrated as final. Compare with original chat writing blocks, restore the full 9–11 minute narratives, validate seven daily Adinkra connections and closing reflections, and approve each before release.
 
 ## Existing integration
 
