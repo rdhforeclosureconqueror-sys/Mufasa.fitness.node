@@ -92,7 +92,7 @@
       ? `<div class="practice"><p class="eyebrow">Today’s practice · Day ${day}</p><p><strong>${escapeHtml(lesson.lesson)}</strong></p><p><strong>Try:</strong> ${escapeHtml(lesson.action)}</p><p><strong>Reflect:</strong> ${escapeHtml(lesson.question)}</p></div>`
       : `<p class="muted">The daily practice is loading from the Mindfulness curriculum.</p>`;
     const storyBlock = story
-      ? `<details><summary>${escapeHtml(story.title)} · this week’s story</summary><p>${escapeHtml(story.story)}</p></details>`
+      ? `<milele-narration title="${escapeHtml(story.title)}"><div data-transcript><p>${escapeHtml(story.story)}</p></div></milele-narration>`
       : "";
     document.querySelector("#todayContent").innerHTML =
       `<p class="today-label">WEEK ${index + 1} · ${current.limb.toUpperCase()}</p><h2>${current.limb} + ${current.symbol}</h2><p class="symbol">${current.symbol} · ${current.meaning}</p><p>${current.bridge}</p><p><strong>Weekly reflection:</strong> ${current.focus}</p>${lessonBlock}${storyBlock}<p><a class="button" href="/mindfulness.html?community=pac#pac-community-today">Start today in the Mindfulness Dashboard →</a><a class="button secondary" href="/awareness-journey.html">Take today’s awareness practice →</a></p>`;
