@@ -12,7 +12,7 @@
     const token = state.token || authToken();
     const res = await fetch(backendUrl(path), { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}), ...(token ? { authorization: `Bearer ${token}` } : {}) } });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok || json.ok === false) { const err = new Error(json.error?.message || json.error || "Request failed"); err.status = res.status; err.payload = json; throw err; }
+    if (!res.ok || json.ok === false) { const err = new Error((typeof json.error?.message === "string" && json.error.message) || (typeof json.error === "string" && json.error) || `HTTP ${res.status}`); err.status = res.status; err.payload = json; throw err; }
     return json.data || json;
   }
   function setVisible(id) { ["authWall", "sessionStatus", "journalShell"].forEach((key) => { const el = $(key); if (el) el.hidden = key !== id; }); }
@@ -115,22 +115,26 @@
   }
   async function lookupBarcode(code) {
     const status = $("barcodeStatus");
+    state.pendingBarcode = String(code);
     status.textContent = "Looking up barcode…";
     try {
       const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`);
       if (!product.found) {
+        state.pendingBarcode = null;
         status.textContent = product.message || "Product not found. Try search or custom entry.";
         return false;
       }
       bindReview($("productReview"), product);
       state.lastSuccessfulBarcode = String(product.barcode || code);
+      state.pendingBarcode = null;
       status.textContent = "✓ Barcode captured — product found! Review the food details below before saving.";
       status.setAttribute("role", "status");
       $("startScanBtn").textContent = "Scan another barcode";
       return true;
     } catch (error) {
-      status.textContent = "Barcode lookup unavailable. Try food search or custom entry.";
-      recordScanFailure("product-lookup", error);
+      const reason = error?.status === 401 || error?.status === 403 ? "Sign-in expired or access denied" : error?.status === 402 ? "Membership or trial access required" : error?.status === 503 || error?.status === 502 ? "Food database temporarily unavailable" : error?.status ? `Food lookup returned HTTP ${error.status}` : "Network or backend connection failed";
+      status.textContent = `${reason}. Tap Capture / Try Again to retry this barcode, or use food search.`;
+      recordScanFailure("product-lookup", `${reason}: ${error?.message || "Request failed"}`);
       return false;
     }
   }
@@ -155,7 +159,7 @@
     try {
       const response = await api("/api/nutrition/barcodes/5449000000996");
       check("Food barcode lookup route", Boolean(response && typeof response.found === "boolean"), "Expected barcode lookup response");
-    } catch (error) { check("Food barcode lookup route", false, error.message); }
+    } catch (error) { check("Food barcode lookup route", false, `${error?.status ? `HTTP ${error.status}: ` : "Network error: "}${error?.message || "Request failed"}`); }
     if (output) output.textContent = checks.join("\n") + "\n" + (firstScanFailure ? "FIRST FAILURE: " + firstScanFailure.stage : "Code routes passed. Next: scan a real barcode with the camera.");
   }
   async function startScanner() {
@@ -213,6 +217,12 @@
       $("productReview").innerHTML = "";
       $("startScanBtn").textContent = "Capture / Try Again";
       await startScanner();
+      return;
+    }
+    if (state.pendingBarcode) {
+      const barcode = state.pendingBarcode;
+      state.pendingBarcode = null;
+      await lookupBarcode(barcode);
       return;
     }
     if (state.scannerBusy) { $("barcodeStatus").textContent = "Scanner is starting. Hold the barcode inside the guide."; return; }
