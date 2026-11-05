@@ -90,6 +90,30 @@
     };
   }
   async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup unavailable. Try food search or custom entry."; } }
+  let firstScanFailure = null;
+  function recordScanFailure(stage, error, terminal = true) {
+    if (!firstScanFailure) firstScanFailure = { stage, detail: String(error?.message || error || "Unknown failure"), at: new Date().toISOString() };
+    const panel = $("barcodeDiagnostics");
+    if (panel) panel.textContent = "First failure: " + firstScanFailure.stage + " — " + firstScanFailure.detail + (terminal ? "" : " (fallback attempted)");
+  }
+  async function checkBarcodeRoute() {
+    const output = $("barcodeDiagnostics");
+    firstScanFailure = null;
+    const checks = [];
+    const check = (name, pass, detail = "") => { checks.push((pass ? "PASS " : "FAIL ") + name + (detail ? ": " + detail : "")); if (!pass && !firstScanFailure) recordScanFailure(name, detail); };
+    check("Secure camera context", window.isSecureContext, window.isSecureContext ? "" : "HTTPS required");
+    check("Camera API", Boolean(navigator.mediaDevices?.getUserMedia), "Camera availability on this device");
+    check("Scanner video element", Boolean($("scannerVideo")));
+    try {
+      const mod = await import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm");
+      check("ZXing decoder module", typeof mod.BrowserMultiFormatReader === "function");
+    } catch (error) { check("ZXing decoder module", false, error.message); }
+    try {
+      const response = await api("/api/nutrition/barcodes/5449000000996");
+      check("Food barcode lookup route", Boolean(response && typeof response.found === "boolean"), "Expected barcode lookup response");
+    } catch (error) { check("Food barcode lookup route", false, error.message); }
+    if (output) output.textContent = checks.join("\\n") + "\\n" + (firstScanFailure ? "FIRST FAILURE: " + firstScanFailure.stage : "Code routes passed. Next: scan a real barcode with the camera.");
+  }
   async function startScanner() {
     if (state.scannerBusy || state.stream || state.zxingControls || state.zxingReader) return;
     stopScanner();
@@ -109,7 +133,15 @@
           $("barcodeStatus").textContent = "Camera ready. Hold the barcode steady inside the frame.";
           const tick = async () => { if (!state.stream || generation !== state.scanGeneration) return; try { const codes = await detector.detect(video); if (codes[0]) { await handleDetected(codes[0].rawValue); return; } } catch (_) { $("barcodeStatus").textContent = "Native scan failed. Stop and retry, or enter barcode manually."; } if (state.stream) state.scanTimer = setTimeout(tick, 250); };
           tick(); return;
-        } catch (_) { stopScanner(); }
+        } catch (nativeError) {
+          // Release the native stream without invalidating this scan generation.
+          // stopScanner() increments scanGeneration and used to silently cancel ZXing fallback.
+          state.stream?.getTracks().forEach((track) => track.stop());
+          state.stream = null;
+          state.nativeDetector = null;
+          video.srcObject = null;
+          recordScanFailure("native-detector", nativeError, false);
+        }
       }
       // ZXing owns the camera stream in fallback mode. Do not open a second getUserMedia stream.
       $("barcodeStatus").textContent = "Loading iPhone-compatible barcode scanner…";
@@ -125,6 +157,7 @@
       state.zxingControls = controls;
       $("barcodeStatus").textContent = "Camera ready. Point at a UPC/EAN barcode and hold steady.";
     } catch (error) {
+      recordScanFailure("scanner-start", error);
       stopScanner();
       $("barcodeStatus").textContent = "Scanner could not start. Check camera permission and connection, or enter the barcode manually.";
     } finally { if (generation === state.scanGeneration) state.scannerBusy = false; }
@@ -236,7 +269,7 @@
   async function loadWeeklyReview() { if (!currentPlanId()) return; const r = await api(`/api/me/nutrition/weekly-plans/${currentPlanId()}/review`); $("weeklyReviewPanel").innerHTML = `<div class="summary"><div class="metric"><strong>${r.nutritionTotals.calories}</strong><span>logged calories</span></div><div class="metric"><strong>${r.nutritionTotals.proteinGrams}g</strong><span>protein</span></div><div class="metric"><strong>${r.categoriesIncluded.length}</strong><span>categories</span></div><div class="metric"><strong>${r.foodsLogged.length}</strong><span>foods logged</span></div></div><p class="notice">${escapeHtml(r.feedback)}</p>`; }
 
   function escapeHtml(v) { return String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-  document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("readNumbersBtn").onclick = readBarcodeNumbers; $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
+  document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; $("barcodeCheckBtn").onclick = checkBarcodeRoute; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("readNumbersBtn").onclick = readBarcodeNumbers; $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
   window.addEventListener("pagehide", stopScanner);
-  window.NutritionRuntime = { startScanner, captureOrRetry, stopScanner, handleDetected, lookupBarcode, requireSession, authToken, backendUrl };
+  window.NutritionRuntime = { checkBarcodeRoute, startScanner, captureOrRetry, stopScanner, handleDetected, lookupBarcode, requireSession, authToken, backendUrl };
 })();
