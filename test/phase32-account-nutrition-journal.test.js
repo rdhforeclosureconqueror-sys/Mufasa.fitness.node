@@ -249,7 +249,7 @@ test("Phase 32 frontend exposes authenticated nutrition flow and scanner compati
   assert.match(html, /nutrition journal/i);
   assert.match(html, /A\. Scan Barcode/);
   assert.match(html, /B\. Search Foods/);
-  assert.match(html, /C\. Tell Pocket PT What I Ate/);
+  assert.match(html, /C\. Tell Milele Fit What I Ate/);
   assert.match(html, /D\. Repeat Recent Meal/);
   assert.match(html, /Add Custom Food/);
   assert.match(html, /Save as Meal/);
