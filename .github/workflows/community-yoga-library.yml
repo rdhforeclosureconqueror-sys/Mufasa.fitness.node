@@ -1,0 +1,23 @@
+name: Community Yoga Library
+on:
+  pull_request:
+    paths:
+      - 'public/community-yoga-library.html'
+      - 'public/community-yoga-library.js'
+      - 'public/community-hub.html'
+      - 'data/yoga/sessions.v1.json'
+      - 'data/yoga/poses.v1.json'
+      - 'test/community-yoga-library.test.js'
+      - '.github/workflows/community-yoga-library.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: node --check public/community-yoga-library.js
+      - name: Verify community yoga flow and hub link
+        run: node --test test/community-yoga-library.test.js
