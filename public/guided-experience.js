@@ -6,21 +6,21 @@
   const PENDING_KEY = "pocketpt.pendingTour.v1";
   const tours = {
     introduction: [
-      { target: ".maat-nav-brand", title: "Welcome to Pocket PT", body: "Pocket PT brings your training, movement, nutrition, progress, and coaching tools together in one place. We’ll show you where to start and how to find the tools you’ll use most." },
-      { target: '[data-tour="intake-start"]', route: "/workout.html#retentionFlowRoot", title: "Start here — complete your Intake", body: "Your Intake gives Pocket PT the information it needs to personalize your experience around your goals, training history, schedule, available equipment, and preferences. It usually takes about 3–5 minutes." }
+      { target: ".maat-nav-brand", title: "Welcome to Milele Fit", body: "Milele Fit brings your training, movement, nutrition, progress, and coaching tools together in one place. We’ll show you where to start and how to find the tools you’ll use most." },
+      { target: '[data-tour="intake-start"]', route: "/workout.html#retentionFlowRoot", title: "Start here — complete your Intake", body: "Your Intake gives Milele Fit the information it needs to personalize your experience around your goals, training history, schedule, available equipment, and preferences. It usually takes about 3–5 minutes." }
     ],
     dashboard: [
-      { target: '[data-tour="dashboard-home"]', title: "Your Pocket PT home", body: "This is your Pocket PT home. It brings your next actions and progress together." },
-      { target: '[data-tour="profile"]', title: "Your profile and Intake", body: "Start with your Intake so Pocket PT can tailor your experience. It usually takes about 3–5 minutes." },
+      { target: '[data-tour="dashboard-home"]', title: "Your Milele Fit home", body: "This is your Milele Fit home. It brings your next actions and progress together." },
+      { target: '[data-tour="profile"]', title: "Your profile and Intake", body: "Start with your Intake so Milele Fit can tailor your experience. It usually takes about 3–5 minutes." },
       { target: '[data-tour="weekly-plan"]', title: "My Program", body: "Review your personalized program and see the next action that fits your plan." },
       { target: '[data-tour="dashboard-navigation"]', title: "Find your tools", body: "Use these links to train, explore exercises, choose Yoga sessions, and review Progress & Rewards." },
-      { target: '[data-tour="progress-summary"]', title: "Progress & Rewards", body: "See saved activity, progress, streaks, and rewards earned through your Pocket PT experience." }
+      { target: '[data-tour="progress-summary"]', title: "Progress & Rewards", body: "See saved activity, progress, streaks, and rewards earned through your Milele Fit experience." }
     ],
     intake: [
-      { target: '[data-tour="intake-start"]', title: "Your Pocket PT Intake", body: "Your Intake helps Pocket PT personalize your experience. Start or continue here; most members finish in about 3–5 minutes." },
+      { target: '[data-tour="intake-start"]', title: "Your Milele Fit Intake", body: "Your Intake helps Milele Fit personalize your experience. Start or continue here; most members finish in about 3–5 minutes." },
       { target: '[data-tour="intake-wizard"], #retentionFlowRoot', title: "Follow your Intake journey", body: "The Intake shows one section at a time. Your answers are saved as you continue, so the next section always matches where you are in the journey." },
       { target: '[data-tour="intake-current-section"], #retentionFlowRoot', title: "Complete the section in front of you", body: "Answer the visible questions at your own pace. Later sections appear only after you save and continue." },
-      { target: '[data-tour="intake-actions"], #retentionFlowRoot', title: "Save and continue", body: "Use Save & Continue to move forward, or Return later to keep your place. Review and submit at the end; Pocket PT does not diagnose or provide medical treatment." }
+      { target: '[data-tour="intake-actions"], #retentionFlowRoot', title: "Save and continue", body: "Use Save & Continue to move forward, or Return later to keep your place. Review and submit at the end; Milele Fit does not diagnose or provide medical treatment." }
     ],
     training: [
       { target: '[data-tour="weekly-plan"]', title: "Your training area", body: "Review your plan, choose today’s workout, or resume a session you already started." },
@@ -47,20 +47,20 @@
     nutrition: [
       { target: '[data-tour="nutrition-scan"]', title: "Scan a packaged food", body: "Scan a supported UPC or EAN barcode, then review the product information before saving it." },
       { target: '[data-tour="nutrition-search"]', title: "Search common foods", body: "Search USDA and common-food results, then choose and review the closest match." },
-      { target: '[data-tour="nutrition-natural-language"]', title: "Describe what you ate", body: "Tell Pocket PT what you ate to create a draft. Review and confirm the details before adding it to your journal." },
+      { target: '[data-tour="nutrition-natural-language"]', title: "Describe what you ate", body: "Tell Milele Fit what you ate to create a draft. Review and confirm the details before adding it to your journal." },
       { target: '[data-tour="nutrition-recent"]', title: "Repeat recent or saved meals", body: "Quickly reuse a recent food or a meal you previously saved." },
       { target: '[data-tour="nutrition-custom"]', title: "Add or save your own", body: "Add a custom food or save a group of entries as a reusable meal." },
       { target: '[data-tour="nutrition-summary"]', title: "Review today", body: "Check today’s journal and summary, refresh it after changes, and edit entries when needed." },
       { target: '[data-tour="weekly-plan"]', optional: true, title: "Plan your week", body: "Build a practical weekly food plan, grocery options, and daily missions when those tools are useful to you." }
     ],
-    "run-club": [{ target: "main", title: "Run Club", body: "This is the free Stepping Into Greatness Run Club entry page. Learn how it works here, then choose Start free or Start your first run when you are ready. If Pocket PT needs you to sign in, the sign-in flow should return you to the member Run Club instead of dropping you at the dashboard." }],
+    "run-club": [{ target: "main", title: "Run Club", body: "This is the free Stepping Into Greatness Run Club entry page. Learn how it works here, then choose Start free or Start your first run when you are ready. If Milele Fit needs you to sign in, the sign-in flow should return you to the member Run Club instead of dropping you at the dashboard." }],
     progress: [{ target: '[data-tour="progress-summary"]', title: "Progress & Rewards", body: "Review your saved workout history, progress, streaks, rewards, and the next action available to you." }],
     avatar: [
       { target: '[data-tour="avatar-controls"]', title: "Step 1 — Open Avatar Setup", body: "Tap Create Avatar to open the Avatar Setup window. This starts the process; your avatar is not created in a single tap." },
       { target: '[data-tour="avatar-controls"]', title: "Step 2 — Create your avatar in Avaturn", body: "Inside Avatar Setup, tap Open Avaturn Creator. Create and customize your avatar there, then export or download the .glb file to your device." },
-      { target: '[data-tour="avatar-controls"]', title: "Step 3 — Return and choose the file", body: "Come back to Pocket PT after the .glb file is saved. Reopen Avatar Setup if needed, tap Choose File, and select the .glb file you exported from Avaturn." },
-      { target: '[data-tour="avatar-controls"]', title: "Step 4 — Upload Avatar", body: "After the file is selected, tap Upload Avatar (.glb). Keep this page open while Pocket PT validates the file and saves it to your profile." },
-      { target: '[data-tour="avatar-controls"]', title: "Step 5 — Confirm and close", body: "Wait until Pocket PT confirms the saved avatar is available. Once the saved avatar is confirmed, close Avatar Setup. Your personalized avatar can then be used by supported Pocket PT experiences." }
+      { target: '[data-tour="avatar-controls"]', title: "Step 3 — Return and choose the file", body: "Come back to Milele Fit after the .glb file is saved. Reopen Avatar Setup if needed, tap Choose File, and select the .glb file you exported from Avaturn." },
+      { target: '[data-tour="avatar-controls"]', title: "Step 4 — Upload Avatar", body: "After the file is selected, tap Upload Avatar (.glb). Keep this page open while Milele Fit validates the file and saves it to your profile." },
+      { target: '[data-tour="avatar-controls"]', title: "Step 5 — Confirm and close", body: "Wait until Milele Fit confirms the saved avatar is available. Once the saved avatar is confirmed, close Avatar Setup. Your personalized avatar can then be used by supported Milele Fit experiences." }
     ]
   };
   const tourRoutes = Object.freeze({
