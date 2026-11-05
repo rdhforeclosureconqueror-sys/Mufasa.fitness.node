@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "scope": "Historical teachings attributed to Alfredo Bowman; not a clinical treatment database.",
+  "sources": [
+    {
+      "id": "official-guide",
+      "title": "Dr. Sebi Nutritional Guide",
+      "url": "https://drsebis.com/pages/nutritional-guide",
+      "kind": "official_site",
+      "verified_transcript": false
+    },
+    {
+      "id": "official-philosophy",
+      "title": "African Bio-Mineral Balance",
+      "url": "https://drsebis.com/pages/african-bio-mineral-balance",
+      "kind": "official_site",
+      "verified_transcript": false
+    },
+    {
+      "id": "lecture-volume-1",
+      "title": "Dr. Sebi Speaks Vol. 1",
+      "url": "https://drsebis.com/products/dr-sebi-speaks-vol-1-dvd",
+      "kind": "lecture_listing",
+      "verified_transcript": false
+    },
+    {
+      "id": "historical-formulas",
+      "title": "Cell Food Ingredients compilation",
+      "url": "https://advocatesfordrsebi.org/cell-food-ingredients/",
+      "kind": "secondary_compilation",
+      "verified_transcript": false
+    },
+    {
+      "id": "1988-order",
+      "title": "1988 New York consent judgment",
+      "url": "https://www.casewatch.net/ag/ny/usha/consent_1988.pdf",
+      "kind": "court_document",
+      "verified_transcript": false
+    }
+  ],
+  "teachings": []
+}
