@@ -80,6 +80,22 @@
   input,select,textarea{background:rgba(3,17,29,.76);border-color:rgba(102,216,232,.38)}
   #barcodeDiagnostics{background:rgba(3,17,29,.72);border-color:rgba(97,226,187,.45)}
   @media(max-width:700px){.card{background:linear-gradient(150deg,rgba(5,24,32,.73),rgba(5,20,33,.81));backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}.hero>.card:first-child{background:linear-gradient(150deg,rgba(5,26,33,.7),rgba(5,20,34,.79))}.method{background:linear-gradient(145deg,rgba(9,42,49,.78),rgba(5,27,42,.85))}}
+
+  /* Visible community garden hero and curved, lighter futuristic surfaces */
+  .garden-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:end;min-height:clamp(245px,34vw,385px);margin:0 0 20px;border-radius:36px 36px 58px 36px;border:1px solid rgba(255,225,154,.65);background:linear-gradient(90deg,rgba(3,18,29,.65),rgba(3,18,29,.08) 75%),url("/assets/nutrition/2667231B-8894-4C6C-BA86-A7DE4658E147.png") center 44%/cover no-repeat;box-shadow:0 22px 48px rgba(0,0,0,.35),0 0 0 3px rgba(97,226,187,.13);scroll-margin-top:16px}
+  .garden-hero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(3,18,28,.68),transparent 66%)}
+  .garden-hero-content{position:relative;padding:26px 30px;max-width:650px;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+  .garden-hero-kicker{font-size:.76rem;font-weight:850;letter-spacing:.17em;color:#a2ffdf}
+  .garden-hero h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.06;margin:12px 0;color:#fff}
+  .garden-hero p{margin:0 0 16px;color:#f4fff8;font-weight:650}
+  .garden-hero-link{display:inline-block;border:1px solid rgba(255,225,154,.8);border-radius:99px;padding:9px 16px;background:rgba(3,26,34,.68);color:#fff2c6;font-weight:750}
+  #nutritionMethods{scroll-margin-top:20px}
+  .card{border-radius:32px 32px 42px 32px}
+  .hero>.card:first-child{background:linear-gradient(145deg,rgba(5,26,32,.55),rgba(5,21,33,.72))}
+  .method{border-radius:24px 24px 32px 24px}
+  .metric,.review,.weekly-card,.row{border-radius:22px}
+  header{background:rgba(4,20,27,.54)}
+  @media(max-width:700px){.garden-hero{min-height:260px;border-radius:26px 26px 42px 26px;background-position:56% center;margin-bottom:14px}.garden-hero-content{padding:21px 20px}.garden-hero h1{font-size:2.1rem}.garden-hero p{font-size:.89rem}.card{border-radius:26px 26px 34px 26px}.method{border-radius:20px 20px 27px 20px}header{background:rgba(4,20,27,.62)}}
 </style>
 <link rel="stylesheet" href="/global-nav.css?v=20260824-global-nav-production-repair-v3">
 </head>
@@ -100,8 +116,16 @@
       <a class="btn primary" id="sessionRetryLink" href="/nutrition.html">Try again</a>
     </section>
     <section id="journalShell" hidden>
+      <section class="garden-hero" aria-label="Community Nutrition — Eating with Intention">
+        <div class="garden-hero-content">
+          <span class="garden-hero-kicker">MILELE FIT · COMMUNITY NUTRITION</span>
+          <h1>Eating with Intention</h1>
+          <p>Grow your awareness. Nourish your community.</p>
+          <a href="#nutritionMethods" class="garden-hero-link">Explore your Nutrition Lab ↓</a>
+        </div>
+      </section>
       <div class="hero">
-        <div class="card">
+        <div class="card" id="nutritionMethods">
           <span class="section-eyebrow">Milele Fit · Fuel your wellness</span><h1>Fuel your body. Understand your nutrition.</h1>
           <p class="muted">Use barcode lookup, USDA common-food search, natural-language drafts, recent foods, saved meals, or custom foods. Confirm every entry before it is saved.</p>
           <div class="grid" aria-label="Food logging methods">
