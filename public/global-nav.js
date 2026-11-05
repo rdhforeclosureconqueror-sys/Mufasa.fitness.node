@@ -235,7 +235,7 @@
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&diagnostics.state==="open")setOpen(false)});
     global.addEventListener("auth:changed",applyAuthEvent);render();inspect();
     if(!document.querySelector('link[href^="/guided-experience.css"]')){const style=document.createElement("link");style.rel="stylesheet";style.href="/guided-experience.css?v=1";document.head.append(style)}
-    if(!document.querySelector('script[src^="/guided-experience.js"]')){const script=document.createElement("script");script.src="/guided-experience.js?v=1";script.defer=true;document.head.append(script)}
+    if(!document.querySelector('script[src^="/guided-experience.js"]')){const script=document.createElement("script");script.src="/guided-experience.js?v=20261105-milelefit-brand";script.defer=true;document.head.append(script)}
     const readiness=global.AuthStateRuntime?.whenReady?.();
     if(readiness?.then)readiness.then(applyReadiness).catch(()=>applyReadiness({reason:"auth_unavailable"}));
   }
