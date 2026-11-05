@@ -57,6 +57,29 @@
   .review{background:rgba(9,29,39,.88)}
   .row,.weekly-card{background:rgba(8,28,40,.78)}
   @media(max-width:700px){body::before{background-position:center 24%;background-size:auto 100%}.card{background:linear-gradient(155deg,rgba(6,23,36,.86),rgba(4,16,29,.92))}header{background:rgba(4,16,27,.83)}}
+
+  /* Garden palette: foliage jade, water cyan, sunset copper, warm sunlight */
+  :root{--garden-jade:#61e2bb;--garden-water:#66d8e8;--garden-sunset:#f2a76c;--garden-sun:#ffe19a}
+  .card{background:linear-gradient(145deg,rgba(5,24,31,.67),rgba(5,20,33,.76));border:1px solid rgba(97,226,187,.55);box-shadow:0 16px 42px rgba(0,0,0,.33),inset 0 1px 0 rgba(255,225,154,.13);backdrop-filter:blur(11px) saturate(125%);-webkit-backdrop-filter:blur(11px) saturate(125%)}
+  .card:before{background:linear-gradient(90deg,transparent,rgba(242,167,108,.7) 22%,rgba(102,216,232,.68) 70%,transparent)}
+  .hero>.card:first-child{background:linear-gradient(145deg,rgba(5,26,32,.65),rgba(5,21,33,.76));border-color:rgba(97,226,187,.65)}
+  .hero>.card:last-child{border-color:rgba(242,167,108,.55)}
+  .card h1,.card h2,.card h3{color:#f6fffd;text-shadow:0 2px 12px rgba(0,8,15,.7)}
+  .card p,.card .muted,.card label{color:#d4e4e9;text-shadow:0 1px 5px rgba(0,8,15,.45)}
+  .section-eyebrow{color:#83f4cf;text-shadow:0 0 12px rgba(97,226,187,.25)}
+  .method{background:linear-gradient(150deg,rgba(9,45,51,.73),rgba(5,27,41,.8));border:1px solid rgba(102,216,232,.55);box-shadow:inset 0 1px rgba(255,255,255,.08)}
+  .method.green{border-color:rgba(97,226,187,.75)}
+  .method.primary{background:linear-gradient(135deg,#ffe19a,#f7d77b);border-color:#fff0b9;box-shadow:0 5px 20px rgba(255,210,117,.16)}
+  .metric{background:rgba(5,27,39,.68);border-color:rgba(102,216,232,.48)}
+  .metric:nth-child(3n+2){border-color:rgba(97,226,187,.5)}.metric:nth-child(3n){border-color:rgba(242,167,108,.45)}
+  .review{background:rgba(7,28,37,.78);border-color:rgba(255,225,154,.72)}
+  .row,.weekly-card{background:rgba(5,26,38,.69);border-color:rgba(102,216,232,.42)}
+  .scanner-frame{border-color:rgba(97,226,187,.75);box-shadow:0 0 0 1px rgba(102,216,232,.2),0 0 24px rgba(102,216,232,.14)}
+  .scanner-target{border-color:rgba(255,225,154,.72)}
+  .btn:not(.primary),nav[aria-label="Nutrition navigation"] a{background:rgba(7,29,42,.64);border-color:rgba(102,216,232,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  input,select,textarea{background:rgba(3,17,29,.76);border-color:rgba(102,216,232,.38)}
+  #barcodeDiagnostics{background:rgba(3,17,29,.72);border-color:rgba(97,226,187,.45)}
+  @media(max-width:700px){.card{background:linear-gradient(150deg,rgba(5,24,32,.73),rgba(5,20,33,.81));backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}.hero>.card:first-child{background:linear-gradient(150deg,rgba(5,26,33,.7),rgba(5,20,34,.79))}.method{background:linear-gradient(145deg,rgba(9,42,49,.78),rgba(5,27,42,.85))}}
 </style>
 <link rel="stylesheet" href="/global-nav.css?v=20260824-global-nav-production-repair-v3">
 </head>
