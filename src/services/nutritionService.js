@@ -281,19 +281,25 @@ function createProviderClient({ fetchImpl = global.fetch, env = process.env } = 
       if (hit && Date.now() - hit.ts < cacheTtlMs) return clone(hit.value);
     }
     if (typeof fetchImpl !== "function") throw new ApiError("PROVIDER_UNAVAILABLE", "Provider fetch is unavailable", 503);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetchImpl(url, { ...options, signal: controller.signal });
-      if (!response.ok) throw new ApiError("PROVIDER_UNAVAILABLE", "Nutrition provider is unavailable", 503);
-      const value = await response.json();
-      if (cacheTtlMs > 0) cache.set(key, { ts: Date.now(), value: clone(value) });
-      return value;
-    } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError("PROVIDER_UNAVAILABLE", "Nutrition provider is unavailable", 503);
-    } finally {
-      clearTimeout(timeout);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetchImpl(url, { ...options, signal: controller.signal });
+        if (!response.ok) {
+          if (response.status === 404) return { status: 0, product: null };
+          if (attempt === 0 && (response.status === 429 || response.status >= 500)) continue;
+          throw new ApiError("PROVIDER_UNAVAILABLE", "Nutrition provider returned HTTP " + response.status, 503);
+        }
+        const value = await response.json();
+        if (cacheTtlMs > 0) cache.set(key, { ts: Date.now(), value: clone(value) });
+        return value;
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        if (attempt === 1) throw new ApiError("PROVIDER_UNAVAILABLE", error?.name === "AbortError" ? "Nutrition provider timed out" : "Nutrition provider connection failed", 503);
+      } finally {
+        clearTimeout(timeout);
+      }
     }
   }
   async function lookupBarcode(rawBarcode) {
