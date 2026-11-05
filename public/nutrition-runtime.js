@@ -77,16 +77,30 @@
   }
   function setPanel(id) { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === id)); if (id === "scanPanel") { void startScanner(); } else { stopScanner(); } }
   function mealTypeSelect(value = "snack") { return `<select data-field="mealType"><option ${value === "breakfast" ? "selected" : ""}>breakfast</option><option ${value === "lunch" ? "selected" : ""}>lunch</option><option ${value === "dinner" ? "selected" : ""}>dinner</option><option ${value === "snack" ? "selected" : ""}>snack</option><option ${value === "other" ? "selected" : ""}>other</option></select>`; }
+  function formatReviewNutrient(value, suffix = "") { return value === null || value === undefined || value === "" || !Number.isFinite(Number(value)) ? "—" : `${Number(value)}${suffix}`; }
   function reviewHtml(food, source) {
     const calc = food.calculatedServing || {};
-    return `<h3>${escapeHtml(food.foodName || "Food")}</h3><p class="muted">${escapeHtml(food.brand || "")} <span class="pill">${source}</span> ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</p><p>${escapeHtml(food.notice || food.estimateReason || "Review serving before saving.")}</p><label>Meal</label>${mealTypeSelect()}<label>Amount</label><input data-field="amount" type="number" min="0" step="0.1" value="1"><label>Unit</label><select data-field="unit"><option>serving</option><option>g</option><option>oz</option><option>cup</option><option>piece</option></select><label>Notes</label><input data-field="notes" placeholder="Optional notes"><div class="summary"><div class="metric"><strong>${calc.calories ?? food.nutrients?.per100g?.calories ?? 0}</strong><span>cal</span></div><div class="metric"><strong>${calc.proteinGrams ?? food.nutrients?.per100g?.proteinGrams ?? 0}g</strong><span>protein</span></div><div class="metric"><strong>${calc.carbohydrateGrams ?? food.nutrients?.per100g?.carbohydrateGrams ?? 0}g</strong><span>carbs</span></div><div class="metric"><strong>${calc.fatGrams ?? food.nutrients?.per100g?.fatGrams ?? 0}g</strong><span>fat</span></div></div><button class="btn primary" data-log-review>Confirm and log</button>`;
+    return `<h3>${escapeHtml(food.foodName || "Food")}</h3><p class="muted">${escapeHtml(food.brand || "")} <span class="pill">${source}</span> ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</p><p>${escapeHtml(food.notice || food.estimateReason || "Review serving before saving.")}</p><label>Meal</label>${mealTypeSelect()}<label>Amount</label><input data-field="amount" type="number" min="0" step="0.1" value="1"><label>Unit</label><select data-field="unit"><option>serving</option><option>g</option><option>oz</option><option>cup</option><option>piece</option></select><label>Notes</label><input data-field="notes" placeholder="Optional notes"><div class="summary"><div class="metric"><strong>${formatReviewNutrient(calc.calories ?? food.nutrients?.per100g?.calories, "")}</strong><span>cal</span></div><div class="metric"><strong>${formatReviewNutrient(calc.proteinGrams ?? food.nutrients?.per100g?.proteinGrams, "g")}g</strong><span>protein</span></div><div class="metric"><strong>${formatReviewNutrient(calc.carbohydrateGrams ?? food.nutrients?.per100g?.carbohydrateGrams, "g")}g</strong><span>carbs</span></div><div class="metric"><strong>${formatReviewNutrient(calc.fatGrams ?? food.nutrients?.per100g?.fatGrams, "g")}g</strong><span>fat</span></div></div><button class="btn primary" data-log-review>Confirm and log</button>`;
   }
   function bindReview(container, food) {
     container.hidden = false; container.innerHTML = reviewHtml(food, food.source || "custom");
     container.querySelector("[data-log-review]").onclick = async () => {
+      const saveButton = container.querySelector("[data-log-review]");
+      if (saveButton.disabled) return;
+      saveButton.disabled = true;
+      saveButton.textContent = "Saving food…";
+      try {
       const payload = { foodName: food.foodName, brand: food.brand, source: food.source || "custom", sourceId: food.sourceId, barcode: food.barcode, localDate: $("journalDate").value, mealType: container.querySelector('[data-field="mealType"]').value, amount: Number(container.querySelector('[data-field="amount"]').value || 1), unit: container.querySelector('[data-field="unit"]').value, servingQuantity: food.servingQuantity, servingUnit: food.servingUnit, servingsConsumed: container.querySelector('[data-field="unit"]').value === "serving" ? Number(container.querySelector('[data-field="amount"]').value || 1) : null, nutrients: food.nutrients, ingredients: food.ingredients, allergens: food.allergens, isEstimated: food.isEstimated, estimateReason: food.estimateReason, notes: container.querySelector('[data-field="notes"]').value };
       await api("/api/me/nutrition/entries", { method: "POST", body: JSON.stringify(payload) });
       container.innerHTML = '<p class="notice">Saved to your private food journal.</p>'; await refreshNutritionAndWeekly();
+      } catch (error) {
+        saveButton.disabled = false;
+        saveButton.textContent = "Confirm and log";
+        const message = document.createElement("p");
+        message.className = "notice";
+        message.textContent = "Could not save this entry. Please retry. " + (error?.message || "");
+        saveButton.after(message);
+      }
     };
   }
   async function lookupBarcode(code) {
