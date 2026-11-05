@@ -156,6 +156,14 @@
       const mod = await import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm");
       check("ZXing decoder module", typeof mod.BrowserMultiFormatReader === "function");
     } catch (error) { check("ZXing decoder module", false, error.message); }
+    const origin = backendUrl("/api/auth/me");
+    check("Backend URL", /^https:\/\//.test(origin), new URL(origin, window.location.href).origin);
+    try {
+      const auth = await api("/api/auth/me");
+      check("Authenticated backend connection", Boolean(auth));
+    } catch (error) {
+      check("Authenticated backend connection", false, `${error?.status ? "HTTP " + error.status : "Network failure"}: ${error?.message || "Request failed"}`);
+    }
     try {
       const response = await api("/api/nutrition/barcodes/5449000000996");
       check("Food barcode lookup route", Boolean(response && typeof response.found === "boolean"), "Expected barcode lookup response");
