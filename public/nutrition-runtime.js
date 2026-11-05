@@ -215,7 +215,12 @@
     } catch (error) {
       recordScanFailure("scanner-start", error);
       stopScanner();
-      $("barcodeStatus").textContent = "Scanner could not start. Check camera permission and connection, or enter the barcode manually.";
+      const kind = error?.name || "";
+      $("barcodeStatus").textContent = kind === "NotAllowedError" || kind === "PermissionDeniedError"
+        ? "Camera access was blocked. In Safari, open website settings and allow Camera, then tap Capture / Try Again."
+        : kind === "NotReadableError" || kind === "AbortError"
+          ? "Camera is busy or still releasing. Close other camera views, then tap Capture / Try Again."
+          : "Scanner could not start. Tap Capture / Try Again, or enter the UPC/EAN manually.";
     } finally { if (generation === state.scanGeneration) state.scannerBusy = false; }
   }
   async function captureOrRetry() {
@@ -349,6 +354,13 @@
 
   function escapeHtml(v) { return String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
   document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; $("barcodeCheckBtn").onclick = checkBarcodeRoute; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("readNumbersBtn").onclick = readBarcodeNumbers; $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
+  // iOS Safari can suspend the page without pagehide; release camera on background.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && (state.stream || state.zxingReader || state.zxingControls)) {
+      stopScanner();
+      $("barcodeStatus").textContent = "Camera paused when you left the page. Tap Capture / Try Again to restart.";
+    }
+  });
   window.addEventListener("pagehide", stopScanner);
   window.NutritionRuntime = { checkBarcodeRoute, startScanner, captureOrRetry, stopScanner, handleDetected, lookupBarcode, requireSession, authToken, backendUrl };
 })();
