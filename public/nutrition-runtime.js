@@ -112,7 +112,7 @@
       const response = await api("/api/nutrition/barcodes/5449000000996");
       check("Food barcode lookup route", Boolean(response && typeof response.found === "boolean"), "Expected barcode lookup response");
     } catch (error) { check("Food barcode lookup route", false, error.message); }
-    if (output) output.textContent = checks.join("\\n") + "\\n" + (firstScanFailure ? "FIRST FAILURE: " + firstScanFailure.stage : "Code routes passed. Next: scan a real barcode with the camera.");
+    if (output) output.textContent = checks.join("\n") + "\n" + (firstScanFailure ? "FIRST FAILURE: " + firstScanFailure.stage : "Code routes passed. Next: scan a real barcode with the camera.");
   }
   async function startScanner() {
     if (state.scannerBusy || state.stream || state.zxingControls || state.zxingReader) return;
