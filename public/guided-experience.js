@@ -1,6 +1,6 @@
 (function installPocketPtGuide(global) {
   "use strict";
-  if (global.MileleFitGuide) return;
+  if (global.PocketPTGuide) return;
 
   const TARGET_TIMEOUT_MS = 5000;
   const PENDING_KEY = "pocketpt.pendingTour.v1";
@@ -119,5 +119,5 @@
     document.addEventListener("click", async event => { const layer = event.target.closest(".ppt-guide-layer"); if (event.target.closest(".ppt-guide-close")) { active ? await finish("dismiss") : remove(); return; } const action = event.target.closest("[data-guide]")?.dataset.guide; if (action === "back" && active) { active.index--; await show(); } if (action === "next" && active) { if (active.index === active.steps.length - 1) await finish("complete"); else { active.index++; await show(); } } if (action === "retry" && active) await show(); if (action === "skip") await finish("dismiss"); const id = event.target.closest("[data-tour-id]")?.dataset.tourId; if (id) { remove(); start(id, { manual: true }); } if (event.target.closest("[data-pocketpt-guides]")) openHelp(); if (event.target.closest("[data-prompt-dismiss]")) { await api("PATCH", { promptKey: layer.dataset.promptKey, action: "dismiss-prompt" }); remove(); } if (event.target.closest("[data-prompt-disable]")) { await api("PATCH", { proactiveDisabled: true }); remove(); } if (event.target.closest("[data-prompt-guide]")) { const id = layer.dataset.tourId, route = layer.dataset.route; remove(); if (route && !routeMatches(route)) navigateForTour(id, route); else start(id, { manual: true }); } });
     document.addEventListener("change", event => { if (event.target.matches("[data-guide-disable]")) api("PATCH", { proactiveDisabled: event.target.checked }); }); global.addEventListener("pocketpt:guide-context", event => { const id = event.detail?.tourId; if (id && !active) start(id, { manual: Boolean(event.detail?.manual) }); }); autoOrchestrate();
   }
-  global.MileleFitGuide = { initialize, start, showJourney, openHelp, dispose: remove, waitForTarget, tours, tourRoutes, contexts, get active() { return active; } }; initialize();
+  global.PocketPTGuide = { initialize, start, showJourney, openHelp, dispose: remove, waitForTarget, tours, tourRoutes, contexts, get active() { return active; } }; initialize();
 })(window);
