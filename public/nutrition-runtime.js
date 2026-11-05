@@ -89,7 +89,27 @@
       container.innerHTML = '<p class="notice">Saved to your private food journal.</p>'; await refreshNutritionAndWeekly();
     };
   }
-  async function lookupBarcode(code) { $("barcodeStatus").textContent = "Looking up barcode…"; try { const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`); if (!product.found) { $("barcodeStatus").textContent = product.message || "Product not found. Try search or custom entry."; return; } $("barcodeStatus").textContent = `Detected ${product.barcode}`; bindReview($("productReview"), product); } catch (error) { $("barcodeStatus").textContent = "Barcode lookup unavailable. Try food search or custom entry."; } }
+  async function lookupBarcode(code) {
+    const status = $("barcodeStatus");
+    status.textContent = "Looking up barcode…";
+    try {
+      const product = await api(`/api/nutrition/barcodes/${encodeURIComponent(code)}`);
+      if (!product.found) {
+        status.textContent = product.message || "Product not found. Try search or custom entry.";
+        return false;
+      }
+      bindReview($("productReview"), product);
+      state.lastSuccessfulBarcode = String(product.barcode || code);
+      status.textContent = "✓ Barcode captured — product found! Review the food details below before saving.";
+      status.setAttribute("role", "status");
+      $("startScanBtn").textContent = "Scan another barcode";
+      return true;
+    } catch (error) {
+      status.textContent = "Barcode lookup unavailable. Try food search or custom entry.";
+      recordScanFailure("product-lookup", error);
+      return false;
+    }
+  }
   let firstScanFailure = null;
   function recordScanFailure(stage, error, terminal = true) {
     if (!firstScanFailure) firstScanFailure = { stage, detail: String(error?.message || error || "Unknown failure"), at: new Date().toISOString() };
@@ -163,6 +183,14 @@
     } finally { if (generation === state.scanGeneration) state.scannerBusy = false; }
   }
   async function captureOrRetry() {
+    if (state.lastSuccessfulBarcode && !$("productReview").hidden) {
+      state.lastSuccessfulBarcode = null;
+      $("productReview").hidden = true;
+      $("productReview").innerHTML = "";
+      $("startScanBtn").textContent = "Capture / Try Again";
+      await startScanner();
+      return;
+    }
     if (state.scannerBusy) { $("barcodeStatus").textContent = "Scanner is starting. Hold the barcode inside the guide."; return; }
     if (state.nativeDetector && state.stream) {
       try { const codes = await state.nativeDetector.detect($("scannerVideo")); if (codes[0]) { await handleDetected(codes[0].rawValue); return; } } catch (_) {}
@@ -238,7 +266,16 @@
       $("barcodeStatus").textContent = "Number recognition unavailable. Please enter the printed barcode digits manually.";
     } finally { button.disabled = false; }
   }
-  async function handleDetected(raw) { const barcode = String(raw || "").replace(/\D/g, ""); const now = Date.now(); if (!/^\d{6,14}$/.test(barcode)) return; if (state.lastBarcode === barcode && now - state.lastScanAt < 2500) return; state.lastBarcode = barcode; state.lastScanAt = now; stopScanner(); await lookupBarcode(barcode); }
+  async function handleDetected(raw) {
+    const barcode = String(raw || "").replace(/\D/g, "");
+    const now = Date.now();
+    if (!/^\d{6,14}$/.test(barcode) || state.lastSuccessfulBarcode || (state.lastBarcode === barcode && now - state.lastScanAt < 2500)) return;
+    state.lastBarcode = barcode;
+    state.lastScanAt = now;
+    stopScanner();
+    $("barcodeStatus").textContent = "✓ Barcode captured! Looking up your food…";
+    await lookupBarcode(barcode);
+  }
   function stopScanner() { state.scanGeneration += 1; state.nativeDetector = null; state.scannerBusy = false; if (state.scanTimer) clearTimeout(state.scanTimer); state.scanTimer = null; if (state.zxingControls?.stop) state.zxingControls.stop(); state.zxingControls = null; if (state.zxingReader?.reset) state.zxingReader.reset(); state.zxingReader = null; if (state.stream) state.stream.getTracks().forEach((track) => track.stop()); state.stream = null; const v = $("scannerVideo"); if (v) { v.pause(); v.srcObject = null; v.hidden = true; } }
   async function searchFoods() { const q = $("foodSearchInput").value; const out = $("foodResults"); out.innerHTML = "Searching…"; try { const data = await api(`/api/nutrition/foods/search?q=${encodeURIComponent(q)}&limit=10`); out.innerHTML = data.results.map((food) => `<div class="row"><div class="row-main"><strong>${escapeHtml(food.foodName)}</strong><div class="muted">${escapeHtml(food.brand || food.dataType || "USDA")} ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</div></div><button class="btn" data-fdc="${food.fdcId}">Review</button></div>`).join("") || "No foods found."; out.querySelectorAll("[data-fdc]").forEach((btn) => btn.onclick = async () => bindReview(out, await api(`/api/nutrition/foods/${btn.dataset.fdc}`))); } catch (e) { out.textContent = e.message; } }
   function renderCustomForm() { $("customForm").innerHTML = `<label>Food name</label><input data-c="foodName"><label>Calories</label><input data-c="calories" type="number"><label>Protein g</label><input data-c="proteinGrams" type="number"><label>Carbs g</label><input data-c="carbohydrateGrams" type="number"><label>Fat g</label><input data-c="fatGrams" type="number"><label>Fiber g</label><input data-c="fiberGrams" type="number"><label>Sodium mg</label><input data-c="sodiumMilligrams" type="number"><label>Meal</label>${mealTypeSelect()}<button class="btn primary" id="customSaveBtn">Save custom food</button>`; $("customSaveBtn").onclick = async () => { const payload = { source: "custom", localDate: $("journalDate").value, amount: 1, unit: "serving", isEstimated: false }; document.querySelectorAll("[data-c]").forEach((el) => payload[el.dataset.c] = el.type === "number" ? Number(el.value || 0) : el.value); payload.mealType = $("customForm").querySelector('[data-field="mealType"]').value; await api("/api/me/nutrition/entries", { method: "POST", body: JSON.stringify(payload) }); await refreshNutritionAndWeekly(); }; }
