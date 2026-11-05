@@ -12,7 +12,7 @@ test("Community yoga is instruction-first and keeps GIF slots unpublished",()=>{
  const html=read("public/community-yoga-library.html"),js=read("public/community-yoga-library.js");
  assert.match(html,/community-yoga-library\.js/);
  assert.match(html,/id="poseMedia"/);
- assert.match(js,/"mountain":"\/media\/yoga\/09F2979D-D684-46DE-9005-163F31E9AFE1\.gif"/);
+ assert.match(js,/"mountain":"\/media\/yoga\/C4242DFA-B6B5-4FDD-9CE6-CA5D679413DB\.gif"/);
  assert.doesNotMatch(html,/three\.module|MoveNet|motion-lab/);
 });
 test("Community yoga catalog matches canonical sessions and pose IDs",()=>{
