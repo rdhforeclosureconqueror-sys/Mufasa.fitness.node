@@ -92,7 +92,17 @@
       try {
       const payload = { foodName: food.foodName, brand: food.brand, source: food.source || "custom", sourceId: food.sourceId, barcode: food.barcode, localDate: $("journalDate").value, mealType: container.querySelector('[data-field="mealType"]').value, amount: Number(container.querySelector('[data-field="amount"]').value || 1), unit: container.querySelector('[data-field="unit"]').value, servingQuantity: food.servingQuantity, servingUnit: food.servingUnit, servingsConsumed: container.querySelector('[data-field="unit"]').value === "serving" ? Number(container.querySelector('[data-field="amount"]').value || 1) : null, nutrients: food.nutrients, ingredients: food.ingredients, allergens: food.allergens, isEstimated: food.isEstimated, estimateReason: food.estimateReason, notes: container.querySelector('[data-field="notes"]').value };
       await api("/api/me/nutrition/entries", { method: "POST", body: JSON.stringify(payload) });
-      container.innerHTML = '<p class="notice">Saved to your private food journal.</p>'; await refreshNutritionAndWeekly();
+      // A successful POST is final. Never re-enable Save if the subsequent refresh fails.
+      container.innerHTML = '<p class="notice" role="status">✓ Food saved to your private journal. Updating today’s totals…</p>';
+      state.lastSuccessfulBarcode = null;
+      $("startScanBtn").textContent = "Scan another barcode";
+      try {
+        await refreshNutritionAndWeekly();
+        container.innerHTML = '<p class="notice" role="status">✓ Food saved! Today’s entries and totals updated.</p>';
+      } catch (refreshError) {
+        container.innerHTML = '<p class="notice" role="status">✓ Food saved, but today’s totals could not refresh. Tap Refresh Today to reload them. Do not save this food again.</p>';
+        recordScanFailure("journal-refresh", refreshError);
+      }
       } catch (error) {
         saveButton.disabled = false;
         saveButton.textContent = "Confirm and log";
