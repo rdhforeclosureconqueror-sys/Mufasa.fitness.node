@@ -143,6 +143,7 @@
     }
   }
   let firstScanFailure = null;
+  let lastPhotoScan = "Not tested in this session";
   function recordScanFailure(stage, error, terminal = true) {
     if (!firstScanFailure) firstScanFailure = { stage, detail: String(error?.message || error || "Unknown failure"), at: new Date().toISOString() };
     const panel = $("barcodeDiagnostics");
@@ -172,7 +173,7 @@
       const response = await api("/api/nutrition/barcodes/5449000000996");
       check("Food barcode lookup route", Boolean(response && typeof response.found === "boolean"), "Expected barcode lookup response");
     } catch (error) { check("Food barcode lookup route", false, `${error?.status ? `HTTP ${error.status}: ` : "Network error: "}${error?.message || "Request failed"}`); }
-    if (output) output.textContent = checks.join("\n") + "\n" + (firstScanFailure ? "FIRST FAILURE: " + firstScanFailure.stage : "Code routes passed. Next: scan a real barcode with the camera.");
+    if (output) output.textContent = "SYSTEM READINESS (not an actual barcode scan):\n" + checks.join("\n") + "\n" + (firstScanFailure ? "READINESS FAILURE: " + firstScanFailure.stage : "Readiness checks passed; barcode recognition NOT verified.") + "\n\nLAST PHOTO SCAN: " + lastPhotoScan;
   }
   async function startScanner() {
     if (state.scannerBusy || state.stream || state.zxingControls || state.zxingReader) return;
@@ -363,6 +364,7 @@
         canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
       }
       // Prefer decoding actual bars over guessing numbers from unrelated package text.
+      lastPhotoScan = "IN PROGRESS";
       let detected = "";
       let detectionMethod = "";
       const methods = [];
@@ -421,11 +423,13 @@
         methods.push("ocr:" + (candidates.size === 1 ? "matched" : candidates.size ? "ambiguous" : "none"));
       }
       if (detected) {
+        lastPhotoScan = "PASS: " + detectionMethod + " suggested " + detected + " (awaiting confirmation)";
         $("manualBarcode").value = detected;
         $("barcodeStatus").textContent = "Possible UPC/EAN (" + detectionMethod + "): " + detected + ". Compare every digit with the package, then tap Lookup barcode. No lookup will run until you confirm.";
         // Keep photo available so the member can adjust the crop if the digits are wrong.
       } else {
-        recordScanFailure("barcode-photo-selection", "Native / ZXing / OCR did not find one reliable UPC/EAN: " + methods.join(", "));
+        lastPhotoScan = "FAIL: " + methods.join(", ");
+        recordScanFailure("barcode-photo-selection", lastPhotoScan);
         $("barcodeStatus").textContent = "No reliable barcode number found. Take a close-up showing only the barcode and its printed digits, or enter the number manually. Nothing was looked up.";
       }
     } catch (error) {
