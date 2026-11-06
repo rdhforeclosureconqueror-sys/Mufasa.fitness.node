@@ -5,6 +5,7 @@ const path = require("path");
 const { createApp } = require("./server");
 const { requireAuth } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
+const { installRugbyProfileRoutes } = require("./src/routes/rugbyProfileRoutes");
 const { createFreeRunClubCommunityService } = require("./src/services/freeRunClubCommunityService");
 const { installFreeRunClubCommunityRoutes } = require("./src/routes/freeRunClubCommunityRoutes");
 const { createResidentialWellnessService } = require("./src/services/residentialWellnessService");
@@ -194,6 +195,7 @@ function installGymMapping(app, options = {}) {
 function createWorldBridgeApp(options = {}) {
   const app = createApp(options);
   installDeploymentIdentity(app, options);
+  installRugbyProfileRoutes({app,requireAuth,userStore:createCanonicalUserStore(options)});
   installFreeRunClub(app, options);
   installResidentialWellness(app, options);
   installResidentialCommunity(app, options);
