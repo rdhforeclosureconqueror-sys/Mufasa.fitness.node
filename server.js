@@ -2540,6 +2540,47 @@ function createApp(options = {}) {
   app.post("/api/me/greatness/trail-contributions/:contributionId/reports", requireAuth, createRateLimiter({name:"trail-contribution-report",windowMs:3600000,max:20}), asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.report(req.auth.userId,req.params.contributionId,req.body?.reason),201)));
   app.get("/api/greatness/trails/:trailId/gallery", asyncHandler(async(req,res)=>ok(res,req.requestId,trailContributionService.gallery(req.params.trailId,req.query.sort))));
   const requireTrailAdmin = (req, _res, next) => ["super_admin", "admin"].includes(req.authz?.role || req.auth?.role) ? next() : next(new ApiError("FORBIDDEN", "Trail route management requires an admin role", 403));
+  // Privacy-conscious aggregate Quick Connect analytics: no IP, email or persistent browser ID.
+  const quickConnectAnalyticsPath = path.join(OPS_DIR, "quick-connect-analytics.json");
+  const quickConnectEvents = new Set(["view", "explore", "check_in", "assessment", "private_session"]);
+  const quickConnectLimit = createRateLimiter({ name: "quick-connect-analytics", max: 80, windowMs: 60_000 });
+  app.post("/api/analytics/quick-connect", quickConnectLimit, (req, res) => {
+    const event = String(req.body?.event || "");
+    if (!quickConnectEvents.has(event)) return res.status(400).json({ ok: false, error: "Invalid event" });
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      let data = { days: {} };
+      if (fs.existsSync(quickConnectAnalyticsPath)) {
+        const stored = JSON.parse(fs.readFileSync(quickConnectAnalyticsPath, "utf8"));
+        if (stored && typeof stored.days === "object" && !Array.isArray(stored.days)) data = stored;
+      }
+      const day = data.days[today] || {};
+      day[event] = Math.max(0, Number(day[event]) || 0) + 1;
+      data.days[today] = day;
+      const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+      for (const key of Object.keys(data.days)) if (key < cutoff) delete data.days[key];
+      fs.mkdirSync(path.dirname(quickConnectAnalyticsPath), { recursive: true });
+      const temp = quickConnectAnalyticsPath + "." + process.pid + ".tmp";
+      fs.writeFileSync(temp, JSON.stringify(data), { mode: 0o600 });
+      fs.renameSync(temp, quickConnectAnalyticsPath);
+      return res.status(202).json({ ok: true });
+    } catch (error) {
+      console.warn("[quick-connect-analytics]", error?.message || "storage failure");
+      return res.status(503).json({ ok: false, error: "Analytics unavailable" });
+    }
+  });
+  app.get("/api/admin/analytics/quick-connect", requireAuth, requireTrailAdmin, (_req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    try {
+      const data = fs.existsSync(quickConnectAnalyticsPath) ? JSON.parse(fs.readFileSync(quickConnectAnalyticsPath, "utf8")) : { days: {} };
+      const days = Object.entries(data.days || {}).sort(([a], [b]) => b.localeCompare(a)).slice(0, 90).map(([date, counts]) => ({ date, ...counts }));
+      return res.json({ ok: true, days, totals: days.reduce((acc, day) => {
+        for (const event of quickConnectEvents) acc[event] = (acc[event] || 0) + (Number(day[event]) || 0);
+        return acc;
+      }, {}) });
+    } catch (_error) { return res.status(503).json({ ok: false, error: "Analytics unavailable" }); }
+  });
+
   app.get("/api/admin/diagnostics/greatness/most-recent-completed", requireAuth, requireTrailAdmin, asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
     return ok(res,req.requestId,steppingService.mostRecentCompletedDiagnostic());
