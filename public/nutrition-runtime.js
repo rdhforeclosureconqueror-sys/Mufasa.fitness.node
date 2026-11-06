@@ -375,15 +375,28 @@
       if (!detected) {
         const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
         const worker = await createWorker("eng");
-        let text = "";
+        const candidates = new Set();
         try {
-          await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1" });
-          text = (await worker.recognize(canvas)).data.text || "";
+          await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1", tessedit_pageseg_mode: "6" });
+          // Try both the complete selected barcode area and the lower digit strip.
+          // A small amount of text elsewhere in the crop cannot be stitched into a UPC.
+          const strips = [canvas];
+          const lower = document.createElement("canvas");
+          lower.width = canvas.width;
+          lower.height = Math.max(1, Math.round(canvas.height * 0.48));
+          lower.getContext("2d").drawImage(canvas, 0, canvas.height - lower.height, canvas.width, lower.height, 0, 0, lower.width, lower.height);
+          strips.push(lower);
+          for (const source of strips) {
+            const result = await worker.recognize(source);
+            const lines = (result.data.text || "").split(/\r?\n/);
+            for (const line of lines) {
+              if (!/^[\d\s-]+$/.test(line.trim())) continue;
+              const digits = line.replace(/\D/g, "");
+              if (validUpcEan(digits)) candidates.add(digits);
+            }
+          }
         } finally { await worker.terminate(); }
-        // Never concatenate all visible numbers or carve valid substrings out of unrelated text.
-        // Require a whole OCR line that contains only a plausible printed barcode.
-        const codes = [...new Set(text.split(/\r?\n/).map((line) => line.trim()).filter((line) => /^[\d\s-]+$/.test(line)).map((line) => line.replace(/\D/g, "")).filter((value) => validUpcEan(value)))];
-        if (codes.length === 1) detected = codes[0];
+        if (candidates.size === 1) detected = [...candidates][0];
       }
       if (detected) {
         $("manualBarcode").value = detected;
