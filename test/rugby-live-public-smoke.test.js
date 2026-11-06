@@ -7,3 +7,11 @@ test('public Rugby HQ page and diagnostics asset are reachable',async()=>{
   assert.equal(response.status,200,path);
  }
 });
+
+test('live Rugby HQ private reads reject anonymous requests',async()=>{
+ const base='https://mufasa-fitness-node.onrender.com';
+ for(const path of ['/api/me/rugby/profile','/api/me/rugby/assessments','/api/me/rugby/checkins']){
+  const response=await fetch(base+path,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(20000)});
+  assert.equal(response.status,401,path+' must reject requests without a session');
+ }
+});
