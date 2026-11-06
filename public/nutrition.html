@@ -154,6 +154,13 @@
           <a class="btn method" href="https://drsebis.com/products/dr-sebi-speaks-vol-1-dvd" target="_blank" rel="noopener noreferrer"><strong>Dr. Sebi Speaks, Vol. 1</strong><br><span>Lecture resource · recording listing</span></a>
           <a class="btn method" href="https://advocatesfordrsebi.org/cell-food-ingredients/" target="_blank" rel="noopener noreferrer"><strong>Historical ingredients</strong><br><span>Formula compilation · independent secondary source</span></a>
         </div>
+        <div class="review" aria-label="Historical source explorer">
+          <h3>Ask the historical source library</h3>
+          <label for="botanicalQuestion">What would you like to explore?</label>
+          <input id="botanicalQuestion" type="search" maxlength="300" placeholder="e.g., What did he teach about minerals?" autocomplete="off">
+          <button class="btn primary" id="botanicalSearchBtn" type="button">Find original sources</button>
+          <div id="botanicalSearchResults" class="muted" role="status" aria-live="polite">Search by subject to find relevant source documents. Verified lecture quotations are not yet indexed.</div>
+        </div>
         <p class="muted">These links document a historical approach; they do not establish that a botanical product treats or cures a disease. The source library does not replace prescribed treatment.</p>
       </section>
 
@@ -196,6 +203,7 @@
   <script src="/runtime-state.js?v=20260506"></script>
   <script src="/auth-state-runtime.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
   <script src="/nutrition-runtime.js?v=20261105-missing-nutrients"></script>
+  <script src="/botanical-wisdom-explorer.js?v=20261105-1" defer></script>
 <script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body>
 </html>
