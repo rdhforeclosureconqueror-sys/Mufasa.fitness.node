@@ -18,7 +18,8 @@ async function refresh(){
 function init(){
  if(!global.MaatApiClient?.request){message('profile-status','Rugby records are temporarily unavailable.');return;}
  const profile=document.getElementById('rugby-profile'),assessment=document.getElementById('rugby-assessment');
- assessment.elements.date.value=new Date().toISOString().slice(0,10);
+ const unit=document.getElementById('rugby-assessment-unit');const updateUnit=()=>{unit.textContent=assessment.elements.type.value==='ankle_knee_to_wall'?'cm':'seconds';};assessment.elements.type.addEventListener('change',updateUnit);updateUnit();
+ const today=new Date();assessment.elements.date.value=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  profile.addEventListener('submit',async event=>{
   event.preventDefault();const button=profile.querySelector('button');button.disabled=true;
   try{const result=await api('/api/me/rugby/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({club:profile.elements.club.value,position:profile.elements.position.value})});if(!result.ok)throw Error('Profile save failed');const verified=await api('/api/me/rugby/profile');if(!verified.ok||verified.payload?.data?.club!==profile.elements.club.value.trim()||verified.payload?.data?.position!==profile.elements.position.value.trim())throw Error('Profile readback failed');message('profile-status','PASS: Profile saved and verified by reloading it from your account.');}
