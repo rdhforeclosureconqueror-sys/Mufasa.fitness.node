@@ -82,25 +82,46 @@
   // Scores reflect Milele Fit preferences, NOT disease risk or medical safety.
   function mileleFoodStandard(food) {
     const raw = typeof food.ingredients === "string" ? food.ingredients : (food.ingredients?.text || food.ingredients?.ingredients_text || "");
-    const ingredients = String(raw).toLowerCase();
-    if (ingredients.trim().length < 12) return '<section class="notice" aria-label="Milele Fit Food Standard"><strong>Milele Fit Food Standard: Not rated</strong><p>Ingredient information is missing or incomplete. No approval or score is assigned. Check the package ingredient list.</p></section>';
+    const ingredients = String(raw).toLowerCase().trim();
+    const nova = Number(food.novaGroup || food.nova_group || 0);
+    const labels = Array.isArray(food.labelsTags) ? food.labelsTags : [];
+    const additives = Array.isArray(food.additivesTags) ? food.additivesTags : [];
+    const analysis = Array.isArray(food.ingredientsAnalysisTags) ? food.ingredientsAnalysisTags : [];
+    const hasIngredients = ingredients.length >= 12;
+    const hasNova = [1,2,3,4].includes(nova);
+    const labelNames = {"en:organic":"Organic", "en:usda-organic":"USDA Organic", "en:no-gmos":"Non-GMO", "en:non-gmo-project":"Non-GMO Project", "en:vegan":"Vegan", "en:no-gluten":"Gluten-free", "en:no-artificial-flavors":"No artificial flavors"};
+    const claimed = [...new Set(labels.filter(x => labelNames[x]).map(x => labelNames[x]))];
     const rules = [
       [/high.fructose corn syrup/i, 1.5, "High-fructose corn syrup"],
       [/\b(?:red 40|red no\.? 40|yellow 5|yellow no\.? 5|yellow 6|yellow no\.? 6|blue 1|blue no\.? 1|blue 2|blue no\.? 2)\b/i, 1, "Specified synthetic food dye"],
       [/\b(?:sodium benzoate|potassium sorbate|bha|bht|tbhq)\b/i, 1, "Specified preservative"],
       [/\b(?:sugar|cane sugar|brown sugar|corn syrup|glucose syrup|dextrose)\b/i, 1, "Added sugar ingredient"]
     ];
-    const findings = rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label}));
-    const nova = Number(food.nova_group || food.novaGroup || 0);
-    if (nova === 4) findings.push({points: 2, label: "NOVA 4 ultra-processed classification"});
-    const additiveTags = Array.isArray(food.additivesTags) ? food.additivesTags : [];
-    const labelTags = Array.isArray(food.labelsTags) ? food.labelsTags : [];
-    const analysisTags = Array.isArray(food.ingredientsAnalysisTags) ? food.ingredientsAnalysisTags : [];
-    const context = [nova ? "NOVA processing group: " + nova : "NOVA processing group: unknown", additiveTags.length ? "Reported additive codes: " + additiveTags.map(escapeHtml).join(", ") : "Additive tags: not supplied", labelTags.length ? "Reported label tags: " + labelTags.map(escapeHtml).join(", ") : "Label certifications: not verified", analysisTags.length ? "Ingredient analysis tags: " + analysisTags.map(escapeHtml).join(", ") : "GMO status: not verified"].join("<br>");
-    const deductions = findings.reduce((sum, f) => sum + f.points, 0);
-    const score = Math.max(1, 10 - deductions);
-    const list = findings.length ? findings.map(f => '<li>' + escapeHtml(f.label) + ': −' + f.points + '</li>').join("") : "<li>No specified deduction triggers identified in available ingredients.</li>";
-    return '<section class="notice" aria-label="Milele Fit Food Standard"><h4>Milele Fit Food Standard · v1</h4><p><strong>Provisional ' + score.toFixed(1) + '/10</strong> · Not yet Milele Fit Approved</p><p>This is our ingredient-preference score, not a medical health or cancer-risk rating.</p><details><summary>Why this score?</summary><ul>' + list + '</ul><p>Starting score: 10. This version screens selected sugars, dyes, preservatives and NOVA 4 when provided. Dr. Sebi food-guide alignment and GMO claims are not yet verified or scored. No deduction does not mean an ingredient is proven safe or a food is approved.</p><p>' + context + '</p></details></section>';
+    const findings = hasIngredients ? rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label})) : [];
+    if (nova === 4) findings.push({points:2,label:"NOVA 4 ultra-processed classification"});
+    const total = findings.reduce((sum,f) => sum + f.points,0);
+    const score = Math.max(1,10-total);
+    const complete = hasIngredients && hasNova;
+    const deductions = findings.length ? findings.map(f=>"<li>"+escapeHtml(f.label)+" <strong>−"+f.points+"</strong></li>").join("") : "<li>No selected deduction triggers identified in available data.</li>";
+    const positive = claimed.length ? claimed.map(x=>"<li>"+escapeHtml(x)+" — database-reported label claim; not independently verified</li>").join("") : "<li>No qualifying label claims supplied.</li>";
+    const gaps = ["Dr. Sebi food-guide alignment not evaluated", "GMO status not independently verified", "Full nutrition balance not scored"];
+    if(!hasIngredients) gaps.unshift("Ingredient list missing or incomplete");
+    if(!hasNova) gaps.unshift("NOVA processing category missing");
+    const status = complete ? "Preliminary ingredient score" : "Score withheld — incomplete information";
+    const headline = complete ? score.toFixed(1)+"/10" : "Not rated";
+    const pill = '<span style="display:inline-block;padding:5px 11px;border-radius:999px;border:1px solid #579c89;font-size:.78rem;letter-spacing:.02em">Not yet Milele Fit Approved</span>';
+    return '<section class="notice" aria-label="Milele Fit Food Standard" style="padding:18px;border-radius:20px">' +
+      '<div style="font-size:.78rem;letter-spacing:.08em;opacity:.8;font-weight:700">MILELE FIT FOOD STANDARD · V2</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0"><strong style="font-size:clamp(1.7rem,7vw,2.3rem);line-height:1.1">'+headline+'</strong>'+pill+'</div>' +
+      '<p style="margin:4px 0 12px">'+status+'. Based on Milele Fit preferences, not a medical safety or cancer-risk rating.</p>' +
+      '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0">' +
+      '<div style="padding:10px;border:1px solid #396b6b;border-radius:12px"><small>PROCESSING</small><div><strong>'+(hasNova?"NOVA "+nova:"Unknown")+'</strong></div></div>' +
+      '<div style="padding:10px;border:1px solid #396b6b;border-radius:12px"><small>DEDUCTIONS</small><div><strong>−'+total.toFixed(1)+' points</strong></div></div></div>' +
+      '<details><summary>Why this score? · '+findings.length+' findings</summary><ul>'+deductions+'</ul><p>Starts at 10. Scores remain preliminary until the full Milele Fit rubric is complete.</p></details>' +
+      '<details><summary>Positive findings · '+claimed.length+' reported claims</summary><ul>'+positive+'</ul></details>' +
+      '<details><summary>What still needs review? · '+gaps.length+' items</summary><ul>'+gaps.map(x=>"<li>"+escapeHtml(x)+"</li>").join("")+'</ul></details>' +
+      '<details><summary>Additional ingredient data</summary><p>Additive codes: '+(additives.length?additives.map(escapeHtml).join(", "):"Not supplied")+'</p><p>Ingredient analysis: '+(analysis.length?analysis.map(x=>escapeHtml(String(x).replace(/^en:/,"").replace(/-/g," "))).join(", "):"Not supplied")+'</p><p>Claims are sourced from product database entries and are not independently verified.</p></details>' +
+      '</section>';
   }
   function reviewHtml(food, source) {
     const calc = food.calculatedServing || {};
