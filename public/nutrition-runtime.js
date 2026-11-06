@@ -86,9 +86,9 @@
     if (ingredients.trim().length < 12) return '<section class="notice" aria-label="Milele Fit Food Standard"><strong>Milele Fit Food Standard: Not rated</strong><p>Ingredient information is missing or incomplete. No approval or score is assigned. Check the package ingredient list.</p></section>';
     const rules = [
       [/high.fructose corn syrup/i, 1.5, "High-fructose corn syrup"],
-      [/\\b(?:red 40|red no\\.? 40|yellow 5|yellow no\\.? 5|yellow 6|yellow no\\.? 6|blue 1|blue no\\.? 1|blue 2|blue no\\.? 2)\\b/i, 1, "Specified synthetic food dye"],
-      [/\\b(?:sodium benzoate|potassium sorbate|bha|bht|tbhq)\\b/i, 1, "Specified preservative"],
-      [/\\b(?:sugar|cane sugar|brown sugar|corn syrup|glucose syrup|dextrose)\\b/i, 1, "Added sugar ingredient"]
+      [/\b(?:red 40|red no\.? 40|yellow 5|yellow no\.? 5|yellow 6|yellow no\.? 6|blue 1|blue no\.? 1|blue 2|blue no\.? 2)\b/i, 1, "Specified synthetic food dye"],
+      [/\b(?:sodium benzoate|potassium sorbate|bha|bht|tbhq)\b/i, 1, "Specified preservative"],
+      [/\b(?:sugar|cane sugar|brown sugar|corn syrup|glucose syrup|dextrose)\b/i, 1, "Added sugar ingredient"]
     ];
     const findings = rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label}));
     const nova = Number(food.nova_group || food.novaGroup || 0);
