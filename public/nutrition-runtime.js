@@ -78,13 +78,33 @@
   function setPanel(id) { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === id)); if (id === "scanPanel") { void startScanner(); } else { stopScanner(); } }
   function mealTypeSelect(value = "snack") { return `<select data-field="mealType"><option ${value === "breakfast" ? "selected" : ""}>breakfast</option><option ${value === "lunch" ? "selected" : ""}>lunch</option><option ${value === "dinner" ? "selected" : ""}>dinner</option><option ${value === "snack" ? "selected" : ""}>snack</option><option ${value === "other" ? "selected" : ""}>other</option></select>`; }
   function formatReviewNutrient(value, suffix = "") { return value === null || value === undefined || value === "" || !Number.isFinite(Number(value)) ? "—" : `${Number(value)}${suffix}`; }
+  // Milele Fit Food Standard v1: transparent, conservative ingredient-screening rubric.
+  // Scores reflect Milele Fit preferences, NOT disease risk or medical safety.
+  function mileleFoodStandard(food) {
+    const raw = typeof food.ingredients === "string" ? food.ingredients : (food.ingredients?.text || food.ingredients?.ingredients_text || "");
+    const ingredients = String(raw).toLowerCase();
+    if (ingredients.trim().length < 12) return '<section class="notice" aria-label="Milele Fit Food Standard"><strong>Milele Fit Food Standard: Not rated</strong><p>Ingredient information is missing or incomplete. No approval or score is assigned. Check the package ingredient list.</p></section>';
+    const rules = [
+      [/high.fructose corn syrup/i, 1.5, "High-fructose corn syrup"],
+      [/\\b(?:red 40|red no\\.? 40|yellow 5|yellow no\\.? 5|yellow 6|yellow no\\.? 6|blue 1|blue no\\.? 1|blue 2|blue no\\.? 2)\\b/i, 1, "Specified synthetic food dye"],
+      [/\\b(?:sodium benzoate|potassium sorbate|bha|bht|tbhq)\\b/i, 1, "Specified preservative"],
+      [/\\b(?:sugar|cane sugar|brown sugar|corn syrup|glucose syrup|dextrose)\\b/i, 1, "Added sugar ingredient"]
+    ];
+    const findings = rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label}));
+    const nova = Number(food.nova_group || food.novaGroup || 0);
+    if (nova === 4) findings.push({points: 2, label: "NOVA 4 ultra-processed classification"});
+    const deductions = findings.reduce((sum, f) => sum + f.points, 0);
+    const score = Math.max(1, 10 - deductions);
+    const list = findings.length ? findings.map(f => '<li>' + escapeHtml(f.label) + ': −' + f.points + '</li>').join("") : "<li>No specified deduction triggers identified in available ingredients.</li>";
+    return '<section class="notice" aria-label="Milele Fit Food Standard"><h4>Milele Fit Food Standard · v1</h4><p><strong>Provisional ' + score.toFixed(1) + '/10</strong> · Not yet Milele Fit Approved</p><p>This is our ingredient-preference score, not a medical health or cancer-risk rating.</p><details><summary>Why this score?</summary><ul>' + list + '</ul><p>Starting score: 10. This version screens selected sugars, dyes, preservatives and NOVA 4 when provided. Dr. Sebi food-guide alignment, GMO claims, and missing data are not yet verified or scored. No deduction does not mean an ingredient is proven safe or a food is approved.</p></details></section>';
+  }
   function reviewHtml(food, source) {
     const calc = food.calculatedServing || {};
     const nutrientKeys = ["calories", "proteinGrams", "carbohydrateGrams", "fatGrams"];
     const per100g = food.nutrients?.per100g || {};
     const missingNutrition = nutrientKeys.every((key) => calc[key] == null && per100g[key] == null);
     const missingNotice = missingNutrition ? '<p class="notice" role="status">Nutrition facts were not supplied for this product. The barcode identifies the food, but calories and macros are unknown—not zero. Check the package label before logging.</p>' : "";
-    return `<h3>${escapeHtml(food.foodName || "Food")}</h3><p class="muted">${escapeHtml(food.brand || "")} <span class="pill">${source}</span> ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</p><p>${escapeHtml(food.notice || food.estimateReason || "Review serving before saving.")}</p>${missingNotice}<label>Meal</label>${mealTypeSelect()}<label>Amount</label><input data-field="amount" type="number" min="0" step="0.1" value="1"><label>Unit</label><select data-field="unit"><option>serving</option><option>g</option><option>oz</option><option>cup</option><option>piece</option></select><label>Notes</label><input data-field="notes" placeholder="Optional notes"><div class="summary"><div class="metric"><strong>${formatReviewNutrient(calc.calories ?? food.nutrients?.per100g?.calories, "")}</strong><span>cal</span></div><div class="metric"><strong>${formatReviewNutrient(calc.proteinGrams ?? food.nutrients?.per100g?.proteinGrams, "g")}</strong><span>protein</span></div><div class="metric"><strong>${formatReviewNutrient(calc.carbohydrateGrams ?? food.nutrients?.per100g?.carbohydrateGrams, "g")}</strong><span>carbs</span></div><div class="metric"><strong>${formatReviewNutrient(calc.fatGrams ?? food.nutrients?.per100g?.fatGrams, "g")}</strong><span>fat</span></div></div><button class="btn primary" data-log-review>Confirm and log</button>`;
+    return `<h3>${escapeHtml(food.foodName || "Food")}</h3><p class="muted">${escapeHtml(food.brand || "")} <span class="pill">${source}</span> ${food.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</p><p>${escapeHtml(food.notice || food.estimateReason || "Review serving before saving.")}</p>${missingNotice}${source === "open_food_facts" ? mileleFoodStandard(food) : ""}<label>Meal</label>${mealTypeSelect()}<label>Amount</label><input data-field="amount" type="number" min="0" step="0.1" value="1"><label>Unit</label><select data-field="unit"><option>serving</option><option>g</option><option>oz</option><option>cup</option><option>piece</option></select><label>Notes</label><input data-field="notes" placeholder="Optional notes"><div class="summary"><div class="metric"><strong>${formatReviewNutrient(calc.calories ?? food.nutrients?.per100g?.calories, "")}</strong><span>cal</span></div><div class="metric"><strong>${formatReviewNutrient(calc.proteinGrams ?? food.nutrients?.per100g?.proteinGrams, "g")}</strong><span>protein</span></div><div class="metric"><strong>${formatReviewNutrient(calc.carbohydrateGrams ?? food.nutrients?.per100g?.carbohydrateGrams, "g")}</strong><span>carbs</span></div><div class="metric"><strong>${formatReviewNutrient(calc.fatGrams ?? food.nutrients?.per100g?.fatGrams, "g")}</strong><span>fat</span></div></div><button class="btn primary" data-log-review>Confirm and log</button>`;
   }
   function bindReview(container, food) {
     container.hidden = false; container.innerHTML = reviewHtml(food, food.source || "custom");
