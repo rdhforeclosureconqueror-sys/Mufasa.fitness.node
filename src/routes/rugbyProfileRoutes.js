@@ -15,7 +15,9 @@ function installRugbyProfileRoutes({app,requireAuth,userStore}) {
   let input;
   try{input=validateCheckin(req.body);}catch(error){return res.status(400).json({ok:false,error:{message:error.message}});}
   // No club match schedule has been verified for this player yet. Do not assume a match-free week.
-  const plan=makePlan({week:input.week,today:input.date,readiness:input.readiness,injuryConcern:input.injuryConcern,teamHighLoad:input.teamHighLoad,matchDates:[]});
+  const plan=makePlan({week:input.week,today:input.date,readiness:input.readiness,injuryConcern:input.injuryConcern,teamHighLoad:true,matchDates:[]});
+  plan.scheduleStatus='unverified';
+  plan.saq=input.injuryConcern||input.readiness==='pain'?'No SAQ activity until appropriately evaluated.':'Match schedule is not verified. No additional SAQ recommended until team workload and upcoming matches are confirmed.';
   const entry={...input,plan,recordedAt:new Date().toISOString()};
   try{userStore.updateUser(req.auth.userId,user=>{
    const existing=user.rugbyCheckins||[];
