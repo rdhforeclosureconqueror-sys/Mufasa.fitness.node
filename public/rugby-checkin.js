@@ -16,8 +16,8 @@ function init(){
    const mobility=document.createElement('p');mobility.textContent='Recovery: '+plan.mobility;
    const saq=document.createElement('p');saq.textContent='SAQ: '+plan.saq;
    guidance.append(title,mobility,saq);
-   status.textContent='Daily check-in saved. Match schedule not yet verified.';
-  }catch(_){status.textContent='Check-in could not be saved. Please retry.';}
+   const verified=await global.MaatApiClient.request('/api/me/rugby/checkins');if(!verified.ok||!verified.payload?.data?.some(item=>item.date===date&&item.readiness===form.elements.readiness.value))throw Error('Check-in readback failed');status.textContent='PASS: Daily check-in saved and verified by reloading your account. Match schedule not yet verified.';
+  }catch(_){status.textContent='FIRST FAILURE: Check-in save or readback could not be verified. Please retry.';}
   finally{button.disabled=false;}
  });
 }
