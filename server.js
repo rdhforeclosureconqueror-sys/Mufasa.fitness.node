@@ -2173,7 +2173,7 @@ function createApp(options = {}) {
     const userId = record.id;
     userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier }, acquisition: attribution }));
     // Notify only on newly created accounts, never on ordinary sign-in.
-    // Do not delay or fail registration if the email provider is unavailable.
+    // Email delivery failures do not fail registration; the provider call has a short timeout.
     try {
       const from = process.env.PRIVATE_SESSION_EMAIL_FROM || process.env.EVENT_EMAIL_FROM;
       if (process.env.RESEND_API_KEY && from) {
