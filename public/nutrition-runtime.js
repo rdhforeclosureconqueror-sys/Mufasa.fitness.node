@@ -377,21 +377,23 @@
         const worker = await createWorker("eng");
         const candidates = new Set();
         try {
-          await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1", tessedit_pageseg_mode: "6" });
-          // Try both the complete selected barcode area and the lower digit strip.
-          // A small amount of text elsewhere in the crop cannot be stitched into a UPC.
-          const strips = [canvas];
-          const lower = document.createElement("canvas");
-          lower.width = canvas.width;
-          lower.height = Math.max(1, Math.round(canvas.height * 0.48));
-          lower.getContext("2d").drawImage(canvas, 0, canvas.height - lower.height, canvas.width, lower.height, 0, 0, lower.width, lower.height);
-          strips.push(lower);
-          for (const source of strips) {
-            const result = await worker.recognize(source);
-            const lines = (result.data.text || "").split(/\r?\n/);
-            for (const line of lines) {
-              if (!/^[\d\s-]+$/.test(line.trim())) continue;
-              const digits = line.replace(/\D/g, "");
+          await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1", tessedit_pageseg_mode: "7" });
+          // UPC digits are often printed below the bars with guard digits separated.
+          // Read multiple narrow horizontal bands to avoid confusing the bars with digits.
+          for (const [top, bottom] of [[0.58, 1], [0.68, 0.94], [0.74, 1], [0, 1]]) {
+            const strip = document.createElement("canvas");
+            strip.width = Math.min(3000, Math.max(900, canvas.width * 2));
+            strip.height = Math.max(80, Math.round(canvas.height * (bottom - top) * strip.width / canvas.width));
+            const ctx = strip.getContext("2d");
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, strip.width, strip.height);
+            ctx.filter = "grayscale(1) contrast(1.8)";
+            ctx.drawImage(canvas, 0, Math.floor(canvas.height * top), canvas.width, Math.max(1, Math.floor(canvas.height * (bottom - top))), 0, 0, strip.width, strip.height);
+            const result = await worker.recognize(strip);
+            for (const line of (result.data.text || "").split(/\r?\n/)) {
+              const raw = line.trim();
+              if (!/^[\d\s|.,:'-]+$/.test(raw)) continue;
+              const digits = raw.replace(/\D/g, "");
               if (validUpcEan(digits)) candidates.add(digits);
             }
           }
