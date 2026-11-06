@@ -1,0 +1,28 @@
+name: Botanical Wisdom acceptance
+on:
+  pull_request:
+    paths:
+      - 'public/botanical-wisdom-explorer.js'
+      - 'public/nutrition.html'
+      - 'src/botanical-wisdom/**'
+      - 'test/botanical*.test.js'
+      - '.github/workflows/botanical-wisdom.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/botanical-wisdom-explorer.js'
+      - 'public/nutrition.html'
+      - 'src/botanical-wisdom/**'
+      - 'test/botanical*.test.js'
+      - '.github/workflows/botanical-wisdom.yml'
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Test historical source safety and Nutrition Lab explorer
+        run: node --test test/botanical-wisdom.test.js test/botanical-explorer-acceptance.test.js
