@@ -269,9 +269,55 @@
     const expandedSum = expandedDigits.reduce((total, digit, index) => total + digit * ((expandedDigits.length - index) % 2 ? 3 : 1), 0);
     return (10 - expandedSum % 10) % 10 === expandedCheck;
   }
+  let barcodeCropImage = null;
+  function barcodeCropRect(width, height) {
+    const size = Number($("barcodeCropSize").value) / 100;
+    const w = Math.max(1, Math.round(width * size));
+    const h = Math.max(1, Math.min(height, Math.round(w * 0.52)));
+    const x = Math.round((width - w) * Number($("barcodeCropX").value) / 100);
+    const y = Math.round((height - h) * Number($("barcodeCropY").value) / 100);
+    return { x, y, w, h };
+  }
+  function drawBarcodeCrop() {
+    if (!barcodeCropImage) return;
+    const canvas = $("barcodeCropCanvas");
+    const max = 1200, scale = Math.min(1, max / Math.max(barcodeCropImage.width, barcodeCropImage.height));
+    canvas.width = Math.round(barcodeCropImage.width * scale);
+    canvas.height = Math.round(barcodeCropImage.height * scale);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(barcodeCropImage, 0, 0, canvas.width, canvas.height);
+    const r = barcodeCropRect(canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(0,0,0,.45)";
+    ctx.fillRect(0, 0, canvas.width, r.y);
+    ctx.fillRect(0, r.y + r.h, canvas.width, canvas.height - r.y - r.h);
+    ctx.fillRect(0, r.y, r.x, r.h);
+    ctx.fillRect(r.x + r.w, r.y, canvas.width - r.x - r.w, r.h);
+    ctx.strokeStyle = "#ffdc70";
+    ctx.lineWidth = Math.max(3, canvas.width / 180);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+  }
+  async function loadBarcodeCropPhoto() {
+    const file = $("barcodePhoto").files?.[0];
+    if (!file) return;
+    if (barcodeCropImage) barcodeCropImage.close();
+    barcodeCropImage = null;
+    try {
+      barcodeCropImage = await createImageBitmap(file);
+      $("barcodeCropPanel").hidden = false;
+      $("barcodeCropX").value = "50";
+      $("barcodeCropY").value = "50";
+      $("barcodeCropSize").value = "65";
+      drawBarcodeCrop();
+      $("barcodeStatus").textContent = "Move the yellow box over the barcode and all printed digits, then tap Read selected area.";
+    } catch (error) {
+      recordScanFailure("barcode-photo-load", error);
+      $("barcodeStatus").textContent = "Could not open this photo. Try another image.";
+    }
+  }
   async function readBarcodeNumbers() {
     const video = $("scannerVideo");
     const photo = $("barcodePhoto")?.files?.[0];
+    const useCrop = !!(photo && barcodeCropImage);
     if (!photo && (!video || video.readyState < 2 || !video.videoWidth)) {
       $("barcodeStatus").textContent = "Start the camera first, then try reading the printed numbers.";
       await startScanner();
@@ -282,7 +328,13 @@
     $("barcodeStatus").textContent = photo ? "Reading printed barcode numbers from your photo…" : "Reading printed barcode numbers from the camera…";
     try {
       const canvas = document.createElement("canvas");
-      if (photo) {
+      if (useCrop) {
+        const r = barcodeCropRect(barcodeCropImage.width, barcodeCropImage.height);
+        const scale = Math.min(1, 2400 / Math.max(r.w, r.h));
+        canvas.width = Math.max(1, Math.round(r.w * scale));
+        canvas.height = Math.max(1, Math.round(r.h * scale));
+        canvas.getContext("2d").drawImage(barcodeCropImage, r.x, r.y, r.w, r.h, 0, 0, canvas.width, canvas.height);
+      } else if (photo) {
         const bitmap = await createImageBitmap(photo);
         try {
           const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
@@ -321,7 +373,7 @@
       if (detected) {
         $("manualBarcode").value = detected;
         $("barcodeStatus").textContent = "Possible UPC/EAN: " + detected + ". Compare every digit with the package, then tap Lookup barcode. No lookup will run until you confirm.";
-        if (photo) $("barcodePhoto").value = "";
+        // Keep photo available so the member can adjust the crop if the digits are wrong.
       } else {
         recordScanFailure("barcode-photo-selection", "No unique full-line valid UPC/EAN or decoded barcode found");
         $("barcodeStatus").textContent = "No reliable barcode number found. Take a close-up showing only the barcode and its printed digits, or enter the number manually. Nothing was looked up.";
@@ -419,7 +471,7 @@
   async function loadWeeklyReview() { if (!currentPlanId()) return; const r = await api(`/api/me/nutrition/weekly-plans/${currentPlanId()}/review`); $("weeklyReviewPanel").innerHTML = `<div class="summary"><div class="metric"><strong>${r.nutritionTotals.calories}</strong><span>logged calories</span></div><div class="metric"><strong>${r.nutritionTotals.proteinGrams}g</strong><span>protein</span></div><div class="metric"><strong>${r.categoriesIncluded.length}</strong><span>categories</span></div><div class="metric"><strong>${r.foodsLogged.length}</strong><span>foods logged</span></div></div><p class="notice">${escapeHtml(r.feedback)}</p>`; }
 
   function escapeHtml(v) { return String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-  document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; $("barcodeCheckBtn").onclick = checkBarcodeRoute; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("readNumbersBtn").onclick = readBarcodeNumbers; $("barcodePhoto").addEventListener("change", () => { if ($("barcodePhoto").files?.length) readBarcodeNumbers(); }); $("nutritionFactsPhoto").addEventListener("change", readNutritionFactsPhoto); $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
+  document.addEventListener("DOMContentLoaded", () => { $("journalDate").value = today(); document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => setPanel(b.dataset.open)); $("startScanBtn").onclick = captureOrRetry; $("barcodeCheckBtn").onclick = checkBarcodeRoute; if ("IntersectionObserver" in window) { const scanObserver = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.1)) { scanObserver.disconnect(); if (!$("scanPanel").hidden && $("scanPanel").classList.contains("active")) void startScanner(); } }, { threshold: 0.1 }); scanObserver.observe($("scanPanel")); } $("stopScanBtn").onclick = stopScanner; $("readNumbersBtn").onclick = readBarcodeNumbers; $("barcodePhoto").addEventListener("change", loadBarcodeCropPhoto); ["barcodeCropX", "barcodeCropY", "barcodeCropSize"].forEach((id) => $(id).addEventListener("input", drawBarcodeCrop)); $("barcodeCropRead").onclick = readBarcodeNumbers; $("nutritionFactsPhoto").addEventListener("change", readNutritionFactsPhoto); $("lookupBarcodeBtn").onclick = () => lookupBarcode($("manualBarcode").value); $("foodSearchBtn").onclick = searchFoods; $("draftBtn").onclick = createDraft; $("refreshBtn").onclick = refreshAll; $("loadRecentBtn").onclick = loadRecent; $("saveMealBtn").onclick = saveMeal; $("journalDate").onchange = refreshAll; renderCustomForm(); document.querySelectorAll("[data-weekly-tab]").forEach((b) => b.onclick = () => showWeeklyTab(b.dataset.weeklyTab)); if ($("createWeeklyPlanBtn")) $("createWeeklyPlanBtn").onclick = createWeeklyPlan; if ($("generateWeeklyMissionsBtn")) $("generateWeeklyMissionsBtn").onclick = generateWeeklyMissions; if ($("addCustomGroceryBtn")) $("addCustomGroceryBtn").onclick = addCustomGrocery; if ($("loadWeeklyReviewBtn")) $("loadWeeklyReviewBtn").onclick = loadWeeklyReview; requireSession(); });
   // iOS Safari can suspend the page without pagehide; release camera on background.
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && (state.stream || state.zxingReader || state.zxingControls)) {
