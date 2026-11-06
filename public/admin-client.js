@@ -26,24 +26,25 @@
     visit(intake,"",0);
     return found;
   }
-  function showOverview(data,intakeData,assessmentData) {
+  function showOverview(data,intakeData,assessmentData,communityData) {
     const s=data.summary||{}, history=healthItems(intakeData?.intake), assessments=assessmentData?.assessments||[], workouts=data.recentWorkouts||[];
     const done=workouts.filter(w=>w.status==="completed"||w.completedAt);
     const recent=done.filter(w=>w.completedAt && Date.now()-Date.parse(w.completedAt)<30*86400000);
     const lastFour=done.slice(-4).reverse();
+    const community=communityData||{};
     const health=history.length ? history.map(([key,value])=>card(title(key),value)).join("") : card("Health history","Not provided — no health or injury information found in the current intake record. Ask the member before training.");
     content.innerHTML='<section class="panel"><h2>1. Health & training safety</h2><p class="muted">Member-reported intake only; not a verified medical record.</p><div class="cards">'+health+'</div></section>'+
-      '<section class="panel"><h2>2. Community & membership</h2><div class="cards">'+card("Member",s.displayName)+card("Joined",s.joinedAt)+card("Entry source",s.challengeParticipant?.entryContext||s.acquisition?.utm_source)+card("Program",s.activeProgram?.title)+card("Community / challenge",s.challengeParticipant?.challengeTitle||s.activeChallenge?.title)+card("Membership",s.payment?.status)+'</div></section>'+
+      '<section class="panel"><h2>2. Community & membership</h2><div class="cards">'+card("Member",s.displayName)+card("Joined",s.joinedAt)+card("Entry source",s.challengeParticipant?.entryContext||s.acquisition?.utm_source)+card("Program",s.activeProgram?.title)+card("Community / challenge",s.challengeParticipant?.challengeTitle||s.activeChallenge?.title)+card("Membership",s.payment?.status)+card("Community enrollment",community.communityProfileStatus||"Not available")+card("Event registrations",communityData?community.registeredEvents:"Not available")+card("Confirmed attendance",communityData?community.attendedEvents:"Not available")+card("Last event attendance",community.lastAttendanceAt)+'</div>'+(community.rsvps?.length?'<h3>Recent community events</h3>'+community.rsvps.slice(-8).reverse().map(r=>card("Event "+(r.eventId||""),(r.checkedInAt?"Checked in "+r.checkedInAt:r.status||"Registered"))).join(""):'<p class="muted">No account-linked community events found.</p>')+'</section>'+
       '<section class="panel"><h2>3. Assessments</h2>'+card("Assessment status",s.assessmentStatus)+card("Assessment records",assessments.length)+ (assessments.length?'<p>Open the Assessments tab for full records.</p>':'<p class="muted">No assessment records found.</p>')+'</section>'+
       '<section class="panel"><h2>4. Consistency & workouts</h2><div class="cards">'+card("Workouts in last 30 days (system total)",s.workoutsLast30Days)+card("Recent completed sessions (up to 20)",done.length)+card("Recent completed sessions in 30 days (up to 20)",recent.length)+card("Last active",s.lastActiveAt)+'</div><h3>Recent completed sessions</h3>'+(lastFour.length?lastFour.map(w=>card("Workout",w.completedAt)).join(""):'<p class="muted">No completed workouts found in recent records.</p>')+'</section>'+
       '<section class="panel"><h2>5. Progress & rewards</h2><p>Private XP and points evaluation is not enabled. No score is inferred from missing data.</p></section>';
   }
   async function overview() {
     const id=routeId(clientId);
-    const results=await Promise.allSettled([api('/api/admin/clients/'+id+'/overview'),api('/api/admin/clients/'+id+'/intake'),api('/api/admin/clients/'+id+'/assessments')]);
+    const results=await Promise.allSettled([api('/api/admin/clients/'+id+'/overview'),api('/api/admin/clients/'+id+'/intake'),api('/api/admin/clients/'+id+'/assessments'),api('/api/admin/clients/'+id+'/community')]);
     if(results[0].status!=="fulfilled")throw results[0].reason;
-    showOverview(results[0].value,results[1].status==="fulfilled"?results[1].value:null,results[2].status==="fulfilled"?results[2].value:null);
-    if(results[1].status!=="fulfilled"||results[2].status!=="fulfilled"){const note=document.createElement("p");note.className="muted";note.textContent="Some protected intake or assessment records could not be loaded; missing information is not confirmation of no medical history.";content.prepend(note);}
+    showOverview(results[0].value,results[1].status==="fulfilled"?results[1].value:null,results[2].status==="fulfilled"?results[2].value:null,results[3].status==="fulfilled"?results[3].value:null);
+    if(results[1].status!=="fulfilled"||results[2].status!=="fulfilled"||results[3].status!=="fulfilled"){const note=document.createElement("p");note.className="muted";note.textContent="Some protected intake, assessment or community records could not be loaded; missing information is not confirmation of no medical history.";content.prepend(note);}
   }
   async function messages() {
     const conversation = await api(`/api/admin/clients/${routeId(clientId)}/conversation`, { method: "POST", body: {} }, "conversation.find_or_create"), conversationId = String(conversation.id);
