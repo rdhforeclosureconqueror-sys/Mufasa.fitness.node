@@ -2177,7 +2177,7 @@ function createApp(options = {}) {
     try {
       const from = process.env.PRIVATE_SESSION_EMAIL_FROM || process.env.EVENT_EMAIL_FROM;
       if (process.env.RESEND_API_KEY && from) {
-        const safe = value => String(value ?? "").replace(/[\\r\\n\\x00-\\x1f]/g, " ").slice(0, 160);
+        const safe = value => String(value ?? "").replace(/[\r\n\x00-\x1f]/g, " ").slice(0, 160);
         const lines = [
           "A new Milele Fit account was created.",
           "Name: " + safe(name),
@@ -2199,7 +2199,7 @@ function createApp(options = {}) {
             from,
             to: ["rdhforeclosureconqueror@gmail.com"],
             subject: "Milele Fit — New community account",
-            text: lines.join("\\n")
+            text: lines.join("\n")
           }),
           signal: AbortSignal.timeout(4500)
         });
