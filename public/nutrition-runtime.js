@@ -295,36 +295,36 @@
         canvas.height = video.videoHeight;
         canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
       }
-      const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
-      const worker = await createWorker("eng");
-      let text = "";
-      try {
-        await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1" });
-        const result = await worker.recognize(canvas);
-        text = result.data.text || "";
-      } finally { await worker.terminate(); }
-      const lines = text.split(/\n/).map((line) => line.replace(/\D/g, ""));
-      const candidates = [...lines, text.replace(/\D/g, "")].filter(Boolean);
-      let code = candidates.find((value) => validUpcEan(value));
-      if (!code) {
-        for (const value of candidates) {
-          for (const length of [12, 13, 8]) {
-            for (let i = 0; i + length <= value.length; i++) {
-              const candidate = value.slice(i, i + length);
-              if (validUpcEan(candidate)) { code = candidate; break; }
-            }
-            if (code) break;
-          }
-          if (code) break;
-        }
+      // Prefer decoding actual bars over guessing numbers from unrelated package text.
+      let detected = "";
+      if ("BarcodeDetector" in window) {
+        try {
+          const detector = new BarcodeDetector({ formats: ["upc_a", "ean_13", "ean_8", "upc_e"] });
+          const hits = await detector.detect(canvas);
+          const codes = [...new Set(hits.map((hit) => String(hit.rawValue || "").replace(/\D/g, "")).filter((value) => validUpcEan(value)))];
+          if (codes.length === 1) detected = codes[0];
+        } catch (_) { /* OCR fallback below */ }
       }
-      if (code) {
-        $("manualBarcode").value = code;
-        $("barcodeStatus").textContent = "Printed digits recognized: " + code + ". Looking up product…";
-        await lookupBarcode(code);
+      if (!detected) {
+        const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
+        const worker = await createWorker("eng");
+        let text = "";
+        try {
+          await worker.setParameters({ tessedit_char_whitelist: "0123456789", preserve_interword_spaces: "1" });
+          text = (await worker.recognize(canvas)).data.text || "";
+        } finally { await worker.terminate(); }
+        // Never concatenate all visible numbers or carve valid substrings out of unrelated text.
+        // Require a whole OCR line that contains only a plausible printed barcode.
+        const codes = [...new Set(text.split(/\r?\n/).map((line) => line.trim()).filter((line) => /^[\d\s-]+$/.test(line)).map((line) => line.replace(/\D/g, "")).filter((value) => validUpcEan(value)))];
+        if (codes.length === 1) detected = codes[0];
+      }
+      if (detected) {
+        $("manualBarcode").value = detected;
+        $("barcodeStatus").textContent = "Possible UPC/EAN: " + detected + ". Compare every digit with the package, then tap Lookup barcode. No lookup will run until you confirm.";
         if (photo) $("barcodePhoto").value = "";
       } else {
-        $("barcodeStatus").textContent = "Could not confidently read a valid UPC/EAN. Move closer, improve lighting, or type the printed digits manually.";
+        recordScanFailure("barcode-photo-selection", "No unique full-line valid UPC/EAN or decoded barcode found");
+        $("barcodeStatus").textContent = "No reliable barcode number found. Take a close-up showing only the barcode and its printed digits, or enter the number manually. Nothing was looked up.";
       }
     } catch (error) {
       recordScanFailure("photo-number-ocr", error);
