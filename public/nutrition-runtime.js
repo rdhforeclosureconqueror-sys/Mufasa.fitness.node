@@ -279,7 +279,7 @@
     }
     const button = $("readNumbersBtn");
     button.disabled = true;
-    $("barcodeStatus").textContent = "Reading printed barcode numbers from the camera…";
+    $("barcodeStatus").textContent = photo ? "Reading printed barcode numbers from your photo…" : "Reading printed barcode numbers from the camera…";
     try {
       const canvas = document.createElement("canvas");
       if (photo) {
@@ -322,6 +322,7 @@
         $("manualBarcode").value = code;
         $("barcodeStatus").textContent = "Printed digits recognized: " + code + ". Looking up product…";
         await lookupBarcode(code);
+        if (photo) $("barcodePhoto").value = "";
       } else {
         $("barcodeStatus").textContent = "Could not confidently read a valid UPC/EAN. Move closer, improve lighting, or type the printed digits manually.";
       }
@@ -360,6 +361,7 @@
         ["Protein", /protein\s*[:]?\s*(\d+(?:\.\d+)?\s*g)/i]
       ];
       const matches = patterns.map(([name, re]) => [name, raw.match(re)?.[1]?.trim()]).filter(([, value]) => value);
+      if (!matches.length) recordScanFailure("nutrition-facts-extraction", "OCR completed but no recognizable nutrition fields were found");
       output.replaceChildren();
       const heading = document.createElement("strong");
       heading.textContent = matches.length ? "Recognized values — verify against your label:" : "No reliable nutrition values recognized.";
