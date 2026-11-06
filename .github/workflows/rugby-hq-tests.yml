@@ -23,5 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run rugby tests
-        run: node --test test/rugby-*.test.js
+      - name: Run rugby contract tests
+        run: node --test test/rugby-acceptance-contract.test.js test/rugby-assessment-validation.test.js test/rugby-checkin-validation.test.js test/rugby-inseason-plan.test.js test/rugby-profile-validation.test.js
+      - name: Smoke test live Rugby HQ assets
+        run: node --test test/rugby-live-public-smoke.test.js
