@@ -2569,6 +2569,10 @@ function createApp(options = {}) {
       return res.status(503).json({ ok: false, error: "Analytics unavailable" });
     }
   });
+  app.get("/api/admin/analytics/registrations", requireAuth, requireTrailAdmin, (_req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    const accounts = authCredentialStore.listIdentities();\n    const today = new Date().toISOString().slice(0, 10);\n    const last30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);\n    return res.json({ ok: true, total: accounts.length, today: accounts.filter(a => String(a.createdAt).startsWith(today)).length, last30Days: accounts.filter(a => String(a.createdAt) >= last30).length });
+  });
   app.get("/api/admin/analytics/quick-connect", requireAuth, requireTrailAdmin, (_req, res) => {
     res.set("Cache-Control", "private, no-store");
     try {
