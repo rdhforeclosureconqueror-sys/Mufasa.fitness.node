@@ -301,7 +301,7 @@
         try {
           const detector = new BarcodeDetector({ formats: ["upc_a", "ean_13", "ean_8", "upc_e"] });
           const hits = await detector.detect(canvas);
-          const codes = [...new Set(hits.map((hit) => String(hit.rawValue || "").replace(/\\D/g, "")).filter((value) => validUpcEan(value)))];
+          const codes = [...new Set(hits.map((hit) => String(hit.rawValue || "").replace(/\D/g, "")).filter((value) => validUpcEan(value)))];
           if (codes.length === 1) detected = codes[0];
         } catch (_) { /* OCR fallback below */ }
       }
@@ -315,7 +315,7 @@
         } finally { await worker.terminate(); }
         // Never concatenate all visible numbers or carve valid substrings out of unrelated text.
         // Require a whole OCR line that contains only a plausible printed barcode.
-        const codes = [...new Set(text.split(/\\r?\\n/).map((line) => line.trim()).filter((line) => /^[\\d\\s-]+$/.test(line)).map((line) => line.replace(/\\D/g, "")).filter((value) => validUpcEan(value)))];
+        const codes = [...new Set(text.split(/\r?\n/).map((line) => line.trim()).filter((line) => /^[\d\s-]+$/.test(line)).map((line) => line.replace(/\D/g, "")).filter((value) => validUpcEan(value)))];
         if (codes.length === 1) detected = codes[0];
       }
       if (detected) {
