@@ -32,11 +32,28 @@ function createClientCrmService({ userStore, authCredentialStore, membershipServ
       note:"Only account-linked residential community attendance is included. Unclaimed guest check-ins and standalone sound assessments are not attributed to this profile."
     };
   }
+  function coachingTimeline(actor,id) {
+    assertStaff(actor,id);
+    const u=user(id), events=[];
+    const push=(type,at,label)=>{if(!at)return;const time=Date.parse(at);if(Number.isFinite(time))events.push({type,at:new Date(time).toISOString(),label:String(label||type).slice(0,120)});};
+    const created=summary(u).joinedAt;
+    push("account_created",created,"Account created");
+    for(const session of Object.values(u.sessions||{}))if(session.completedAt||session.endedAt)push("workout_completed",session.completedAt||session.endedAt,"Workout completed");
+    for(const assessment of [...(u.assessments||[]),...(u.ohsa||[])])if(assessment.completedAt)push("assessment_completed",assessment.completedAt,"Assessment completed: "+String(assessment.type||assessment.name||"Assessment"));
+    for(const r of u.residentialCommunity?.rsvps||[]){
+      if(r.checkedInAt)push("community_attended",r.checkedInAt,"Attended community event "+String(r.eventId||""));
+      else if(r.status==="going"&&r.updatedAt)push("community_registered",r.updatedAt,"Registered for community event "+String(r.eventId||""));
+    }
+    if(u.journeyProfile?.submittedAt)push("intake_completed",u.journeyProfile.submittedAt,"Coaching intake submitted");
+    events.sort((a,b)=>b.at.localeCompare(a.at));
+    const last30=events.filter(e=>e.at>=new Date(clock()-30*DAY).toISOString());
+    return {events:events.slice(0,100),totalEvents:events.length,last30Days:{workouts:last30.filter(e=>e.type==="workout_completed").length,assessments:last30.filter(e=>e.type==="assessment_completed").length,communityAttendance:last30.filter(e=>e.type==="community_attended").length},sources:["account","workouts","assessments","account-linked community RSVP and attendance"],note:"Only account-linked activity is shown. Unclaimed guest check-ins and independent sound assessments are excluded until explicitly verified."};
+  }
   function intake(actor,id){assertStaff(actor,id);const u=user(id);return {intake:u.journeyIntake||u.retention?.intake||u.journeyProfile||null};}
   function assessments(actor,id){assertStaff(actor,id);const u=user(id);return {assessments:[...(u.assessments||[]),...(u.ohsa||[])]};}
   function conversation(actor,clientId,create=false){if(actor.userId!==clientId)assertStaff(actor,clientId);if(actor.userId===clientId){const c=messagingStore.listForUser(clientId)[0];return c||null;}return messagingStore.conversationFor(clientId,actor.userId,create);}
   function viewMessages(actor,conversationId){const c=messagingStore.getConversation(conversationId);if(!c||!(c.clientUserId===actor.userId||c.participantStaffIds.includes(actor.userId)))throw new ApiError("CONVERSATION_NOT_FOUND","Conversation not found",404);messagingStore.markRead(c.id,actor.userId);return {conversation:c,messages:messagingStore.listMessages(c.id)};}
   function send(actor,conversationId,body){const c=messagingStore.getConversation(conversationId);if(!c||!(c.clientUserId===actor.userId||c.participantStaffIds.includes(actor.userId)))throw new ApiError("CONVERSATION_NOT_FOUND","Conversation not found",404);const text=typeof body==="string"?body.trim():"";if(!text||text.length>MESSAGE_MAX_LENGTH)throw new ApiError("INVALID_MESSAGE",`Message must be 1-${MESSAGE_MAX_LENGTH} characters`,422);return messagingStore.addMessage(c.id,actor.userId,text);}
-  return {directory,overview,intake,assessments,communityActivity,assertStaff,conversation,viewMessages,send,MESSAGE_MAX_LENGTH};
+  return {directory,overview,intake,assessments,communityActivity,coachingTimeline,assertStaff,conversation,viewMessages,send,MESSAGE_MAX_LENGTH};
 }
 module.exports={createClientCrmService,MESSAGE_MAX_LENGTH};
