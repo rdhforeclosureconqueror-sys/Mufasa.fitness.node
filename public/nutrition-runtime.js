@@ -271,7 +271,8 @@
   }
   async function readBarcodeNumbers() {
     const video = $("scannerVideo");
-    if (!video || video.readyState < 2 || !video.videoWidth) {
+    const photo = $("barcodePhoto")?.files?.[0];
+    if (!photo && (!video || video.readyState < 2 || !video.videoWidth)) {
       $("barcodeStatus").textContent = "Start the camera first, then try reading the printed numbers.";
       await startScanner();
       return;
@@ -281,9 +282,19 @@
     $("barcodeStatus").textContent = "Reading printed barcode numbers from the camera…";
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      if (photo) {
+        const bitmap = await createImageBitmap(photo);
+        try {
+          const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+          canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+          canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+          canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        } finally { bitmap.close(); }
+      } else {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
       const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
       const worker = await createWorker("eng");
       let text = "";
@@ -309,13 +320,62 @@
       }
       if (code) {
         $("manualBarcode").value = code;
-        $("barcodeStatus").textContent = "Possible barcode " + code + " read from the label. Confirm the digits, then tap Lookup barcode.";
+        $("barcodeStatus").textContent = "Printed digits recognized: " + code + ". Looking up product…";
+        await lookupBarcode(code);
       } else {
         $("barcodeStatus").textContent = "Could not confidently read a valid UPC/EAN. Move closer, improve lighting, or type the printed digits manually.";
       }
-    } catch (_) {
+    } catch (error) {
+      recordScanFailure("photo-number-ocr", error);
       $("barcodeStatus").textContent = "Number recognition unavailable. Please enter the printed barcode digits manually.";
     } finally { button.disabled = false; }
+  }
+  async function readNutritionFactsPhoto() {
+    const file = $("nutritionFactsPhoto")?.files?.[0];
+    const output = $("nutritionFactsResult");
+    if (!file || !output) return;
+    output.textContent = "Reading Nutrition Facts photo…";
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      try {
+        const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      } finally { bitmap.close(); }
+      const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
+      const worker = await createWorker("eng");
+      let raw = "";
+      try { raw = (await worker.recognize(canvas)).data.text || ""; }
+      finally { await worker.terminate(); }
+      const patterns = [
+        ["Serving size", /serving size\s*[:]?\s*([^\n]+)/i],
+        ["Calories", /calories\s*[:]?\s*(\d+)/i],
+        ["Total fat", /total fat\s*[:]?\s*(\d+(?:\.\d+)?\s*g)/i],
+        ["Sodium", /sodium\s*[:]?\s*(\d+(?:\.\d+)?\s*mg)/i],
+        ["Carbohydrates", /total carbohydrate[s]?\s*[:]?\s*(\d+(?:\.\d+)?\s*g)/i],
+        ["Fiber", /dietary fiber\s*[:]?\s*(\d+(?:\.\d+)?\s*g)/i],
+        ["Sugars", /total sugars\s*[:]?\s*(\d+(?:\.\d+)?\s*g)/i],
+        ["Protein", /protein\s*[:]?\s*(\d+(?:\.\d+)?\s*g)/i]
+      ];
+      const matches = patterns.map(([name, re]) => [name, raw.match(re)?.[1]?.trim()]).filter(([, value]) => value);
+      output.replaceChildren();
+      const heading = document.createElement("strong");
+      heading.textContent = matches.length ? "Recognized values — verify against your label:" : "No reliable nutrition values recognized.";
+      output.append(heading);
+      for (const [name, value] of matches) {
+        const line = document.createElement("p");
+        line.textContent = name + ": " + value;
+        output.append(line);
+      }
+      const note = document.createElement("p");
+      note.textContent = "These values are OCR estimates, not verified food records. Check serving size, units, and every number before manually adding a custom food. Unreadable values are unknown, not zero.";
+      output.append(note);
+    } catch (error) {
+      recordScanFailure("nutrition-facts-ocr", error);
+      output.textContent = "Could not read this photo. Try brighter lighting and a flat, sharp label.";
+    }
   }
   async function handleDetected(raw) {
     const barcode = String(raw || "").replace(/\D/g, "");
