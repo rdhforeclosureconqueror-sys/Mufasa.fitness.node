@@ -21,13 +21,13 @@ function init(){
  assessment.elements.date.value=new Date().toISOString().slice(0,10);
  profile.addEventListener('submit',async event=>{
   event.preventDefault();const button=profile.querySelector('button');button.disabled=true;
-  try{const result=await api('/api/me/rugby/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({club:profile.elements.club.value,position:profile.elements.position.value})});if(!result.ok)throw Error('Profile save failed');message('profile-status','Profile saved.');}
-  catch(_){message('profile-status','Could not save profile. Please try again.');}finally{button.disabled=false;}
+  try{const result=await api('/api/me/rugby/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({club:profile.elements.club.value,position:profile.elements.position.value})});if(!result.ok)throw Error('Profile save failed');const verified=await api('/api/me/rugby/profile');if(!verified.ok||verified.payload?.data?.club!==profile.elements.club.value.trim()||verified.payload?.data?.position!==profile.elements.position.value.trim())throw Error('Profile readback failed');message('profile-status','PASS: Profile saved and verified by reloading it from your account.');}
+  catch(_){message('profile-status','FIRST FAILURE: Profile save or readback could not be verified. Please retry.');}finally{button.disabled=false;}
  });
  assessment.addEventListener('submit',async event=>{
   event.preventDefault();const button=assessment.querySelector('button');button.disabled=true;
-  try{const result=await api('/api/me/rugby/assessments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:assessment.elements.type.value,value:Number(assessment.elements.value.value),date:assessment.elements.date.value})});if(!result.ok)throw Error('Assessment save failed');message('assessment-status','Assessment saved.');await refresh();}
-  catch(_){message('assessment-status','Could not save assessment. Please check the measurement and date.');}finally{button.disabled=false;}
+  try{const result=await api('/api/me/rugby/assessments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:assessment.elements.type.value,value:Number(assessment.elements.value.value),date:assessment.elements.date.value})});if(!result.ok)throw Error('Assessment save failed');const id=result.payload?.data?.id;const verified=await api('/api/me/rugby/assessments');if(!id||!verified.ok||!verified.payload?.data?.some(item=>item.id===id))throw Error('Assessment readback failed');message('assessment-status','PASS: Assessment saved and verified by reloading your history.');await refresh();}
+  catch(_){message('assessment-status','FIRST FAILURE: Assessment save or readback could not be verified. Please check the measurement and date.');}finally{button.disabled=false;}
  });
  refresh().catch(()=>{message('profile-status','Could not load saved profile.');message('assessment-status','Could not load assessment history.');});
 }
