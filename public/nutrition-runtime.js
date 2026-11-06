@@ -364,13 +364,32 @@
       }
       // Prefer decoding actual bars over guessing numbers from unrelated package text.
       let detected = "";
+      let detectionMethod = "";
+      const methods = [];
+      const normalize = (value) => String(value || "").replace(/\D/g, "");
+      const uniqueValid = (values) => [...new Set(values.map(normalize).filter(validUpcEan))];
       if ("BarcodeDetector" in window) {
         try {
           const detector = new BarcodeDetector({ formats: ["upc_a", "ean_13", "ean_8", "upc_e"] });
           const hits = await detector.detect(canvas);
           const codes = [...new Set(hits.map((hit) => String(hit.rawValue || "").replace(/\D/g, "")).filter((value) => validUpcEan(value)))];
-          if (codes.length === 1) detected = codes[0];
-        } catch (_) { /* OCR fallback below */ }
+          if (codes.length === 1) { detected = codes[0]; detectionMethod = "native bars"; }
+          methods.push("native:" + (codes.length === 1 ? "matched" : codes.length ? "ambiguous" : "none"));
+        } catch (error) { methods.push("native:error"); recordScanFailure("barcode-photo-native", error, false); }
+      }
+      if (!detected) {
+        try {
+          // Reuse the same ZXing browser package already used for the live camera.
+          const mod = await import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm");
+          const reader = new mod.BrowserMultiFormatReader();
+          const result = await reader.decodeFromCanvas(canvas);
+          const code = normalize(result?.getText?.());
+          if (validUpcEan(code)) { detected = code; detectionMethod = "ZXing bars"; methods.push("zxing:matched"); }
+          else methods.push("zxing:invalid");
+        } catch (error) {
+          methods.push("zxing:no-decode");
+          recordScanFailure("barcode-photo-zxing", error, false);
+        }
       }
       if (!detected) {
         const { createWorker } = await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
@@ -398,14 +417,15 @@
             }
           }
         } finally { await worker.terminate(); }
-        if (candidates.size === 1) detected = [...candidates][0];
+        if (candidates.size === 1) { detected = [...candidates][0]; detectionMethod = "printed digits OCR"; }
+        methods.push("ocr:" + (candidates.size === 1 ? "matched" : candidates.size ? "ambiguous" : "none"));
       }
       if (detected) {
         $("manualBarcode").value = detected;
-        $("barcodeStatus").textContent = "Possible UPC/EAN: " + detected + ". Compare every digit with the package, then tap Lookup barcode. No lookup will run until you confirm.";
+        $("barcodeStatus").textContent = "Possible UPC/EAN (" + detectionMethod + "): " + detected + ". Compare every digit with the package, then tap Lookup barcode. No lookup will run until you confirm.";
         // Keep photo available so the member can adjust the crop if the digits are wrong.
       } else {
-        recordScanFailure("barcode-photo-selection", "No unique full-line valid UPC/EAN or decoded barcode found");
+        recordScanFailure("barcode-photo-selection", "Native / ZXing / OCR did not find one reliable UPC/EAN: " + methods.join(", "));
         $("barcodeStatus").textContent = "No reliable barcode number found. Take a close-up showing only the barcode and its printed digits, or enter the number manually. Nothing was looked up.";
       }
     } catch (error) {
