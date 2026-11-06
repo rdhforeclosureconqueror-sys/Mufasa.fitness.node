@@ -1,0 +1,14 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {makePlan,dayDistance}=require('../src/rugby/inSeasonPlan');
+const base={today:'2026-11-06',matchDates:['2026-11-21'],week:1};
+test('match day suppresses additional SAQ',()=>{const p=makePlan({...base,today:'2026-11-21'});assert.equal(p.phase,'match_window');assert.match(p.saq,/No additional SAQ/);});
+test('two days after match prioritizes recovery',()=>{const p=makePlan({...base,today:'2026-11-23'});assert.equal(p.phase,'match_window');});
+test('fatigue blocks added SAQ even with long break',()=>{const p=makePlan({...base,readiness:'fatigued'});assert.equal(p.phase,'recovery_priority');assert.match(p.saq,/No additional SAQ/);});
+test('injury concern stops activity',()=>{const p=makePlan({...base,injuryConcern:true});assert.equal(p.phase,'stop_and_refer');assert.match(p.saq,/No SAQ activity/);});
+test('pain stops activity',()=>{assert.equal(makePlan({...base,readiness:'pain'}).phase,'stop_and_refer');});
+test('team workload overrides gap',()=>{assert.match(makePlan({...base,teamHighLoad:true}).saq,/No additional SAQ/);});
+test('match week allows only optional brief technique',()=>{const p=makePlan({...base,today:'2026-11-16'});assert.equal(p.phase,'match_week');assert.match(p.saq,/low-volume/);});
+test('extended break is maintenance, not automatic overload',()=>{const p=makePlan({...base});assert.equal(p.phase,'maintenance_window');assert.match(p.saq,/coordinated/);});
+test('date arithmetic and invalid inputs',()=>{assert.equal(dayDistance('2026-12-31','2027-01-01'),1);assert.throws(()=>makePlan({...base,today:'2026-02-30'}));assert.throws(()=>makePlan({...base,week:9}));assert.throws(()=>makePlan({...base,readiness:'unknown'}));});
