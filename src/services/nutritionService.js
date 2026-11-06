@@ -182,6 +182,10 @@ function normalizeOpenFoodFactsProduct(product, barcode) {
     nutrients: nutr,
     calculatedServing: calc,
     ingredients: safeString(product?.ingredients_text || "", 2000) || null,
+    novaGroup: [1, 2, 3, 4].includes(Number(product?.nova_group)) ? Number(product.nova_group) : null,
+    additivesTags: parseArray(product?.additives_tags || [], 40),
+    labelsTags: parseArray(product?.labels_tags || [], 40),
+    ingredientsAnalysisTags: parseArray(product?.ingredients_analysis_tags || [], 40),
     allergens: parseArray(product?.allergens_tags || product?.allergens || [], 30),
     source: "open_food_facts",
     sourceId: barcode,
@@ -304,7 +308,7 @@ function createProviderClient({ fetchImpl = global.fetch, env = process.env } = 
   }
   async function lookupBarcode(rawBarcode) {
     const barcode = validateBarcode(rawBarcode);
-    const fields = ["code", "product_name", "generic_name", "brands", "serving_size", "serving_quantity", "nutriments", "ingredients_text", "allergens", "allergens_tags"].join(",");
+    const fields = ["code", "product_name", "generic_name", "brands", "serving_size", "serving_quantity", "nutriments", "ingredients_text", "allergens", "allergens_tags", "nova_group", "additives_tags", "labels_tags", "ingredients_analysis_tags"].join(",");
     const url = `${offBaseUrl}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${encodeURIComponent(fields)}`;
     const json = await cachedJson(`off:${barcode}`, url, { headers: { "User-Agent": offUserAgent } });
     if (!json || json.status === 0 || !json.product) return { found: false, barcode, source: "open_food_facts", message: "Product not found. Try search or manual entry." };

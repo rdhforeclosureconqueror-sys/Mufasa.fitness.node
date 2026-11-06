@@ -93,10 +93,14 @@
     const findings = rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label}));
     const nova = Number(food.nova_group || food.novaGroup || 0);
     if (nova === 4) findings.push({points: 2, label: "NOVA 4 ultra-processed classification"});
+    const additiveTags = Array.isArray(food.additivesTags) ? food.additivesTags : [];
+    const labelTags = Array.isArray(food.labelsTags) ? food.labelsTags : [];
+    const analysisTags = Array.isArray(food.ingredientsAnalysisTags) ? food.ingredientsAnalysisTags : [];
+    const context = [nova ? "NOVA processing group: " + nova : "NOVA processing group: unknown", additiveTags.length ? "Reported additive codes: " + additiveTags.map(escapeHtml).join(", ") : "Additive tags: not supplied", labelTags.length ? "Reported label tags: " + labelTags.map(escapeHtml).join(", ") : "Label certifications: not verified", analysisTags.length ? "Ingredient analysis tags: " + analysisTags.map(escapeHtml).join(", ") : "GMO status: not verified"].join("<br>");
     const deductions = findings.reduce((sum, f) => sum + f.points, 0);
     const score = Math.max(1, 10 - deductions);
     const list = findings.length ? findings.map(f => '<li>' + escapeHtml(f.label) + ': −' + f.points + '</li>').join("") : "<li>No specified deduction triggers identified in available ingredients.</li>";
-    return '<section class="notice" aria-label="Milele Fit Food Standard"><h4>Milele Fit Food Standard · v1</h4><p><strong>Provisional ' + score.toFixed(1) + '/10</strong> · Not yet Milele Fit Approved</p><p>This is our ingredient-preference score, not a medical health or cancer-risk rating.</p><details><summary>Why this score?</summary><ul>' + list + '</ul><p>Starting score: 10. This version screens selected sugars, dyes, preservatives and NOVA 4 when provided. Dr. Sebi food-guide alignment, GMO claims, and missing data are not yet verified or scored. No deduction does not mean an ingredient is proven safe or a food is approved.</p></details></section>';
+    return '<section class="notice" aria-label="Milele Fit Food Standard"><h4>Milele Fit Food Standard · v1</h4><p><strong>Provisional ' + score.toFixed(1) + '/10</strong> · Not yet Milele Fit Approved</p><p>This is our ingredient-preference score, not a medical health or cancer-risk rating.</p><details><summary>Why this score?</summary><ul>' + list + '</ul><p>Starting score: 10. This version screens selected sugars, dyes, preservatives and NOVA 4 when provided. Dr. Sebi food-guide alignment and GMO claims are not yet verified or scored. No deduction does not mean an ingredient is proven safe or a food is approved.</p><p>' + context + '</p></details></section>';
   }
   function reviewHtml(food, source) {
     const calc = food.calculatedServing || {};
