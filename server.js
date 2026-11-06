@@ -2172,6 +2172,45 @@ function createApp(options = {}) {
     if (!record) return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
     const userId = record.id;
     userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier }, acquisition: attribution }));
+    // Notify only on newly created accounts, never on ordinary sign-in.
+    // Email delivery failures do not fail registration; the provider call has a short timeout.
+    try {
+      const from = process.env.PRIVATE_SESSION_EMAIL_FROM || process.env.EVENT_EMAIL_FROM;
+      if (process.env.RESEND_API_KEY && from) {
+        const safe = value => String(value ?? "").replace(/[\r\n\x00-\x1f]/g, " ").slice(0, 160);
+        const lines = [
+          "A new Milele Fit account was created.",
+          "Name: " + safe(name),
+          "Email: " + safe(email),
+          "Access tier: " + safe(accessTier),
+          "Entry context: " + safe(requestedContext || "unspecified"),
+          "Campaign source: " + safe(attribution.utm_source || "not supplied"),
+          "Registered at: " + new Date().toISOString(),
+          "Member ID: " + safe(userId)
+        ];
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + process.env.RESEND_API_KEY,
+            "Content-Type": "application/json",
+            "Idempotency-Key": crypto.createHash("sha256").update("new-member:" + userId).digest("hex")
+          },
+          body: JSON.stringify({
+            from,
+            to: ["rdhforeclosureconqueror@gmail.com"],
+            subject: "Milele Fit — New community account",
+            text: lines.join("\n")
+          }),
+          signal: AbortSignal.timeout(4500)
+        });
+        if (!response.ok) console.warn("[new-member-email] provider returned", response.status);
+      } else {
+        console.info("[new-member-email] not configured");
+      }
+    } catch (error) {
+      console.warn("[new-member-email] delivery failed", error?.message || "unknown");
+    }
+
 
     const token = authTokenLib.issueUserToken({
       userId,
