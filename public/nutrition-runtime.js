@@ -379,15 +379,10 @@
       }
       if (!detected) {
         try {
-          const mod = await import("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/+esm");
-          const reader = new mod.MultiFormatReader();
-          const hints = new Map();
-          hints.set(mod.DecodeHintType.POSSIBLE_FORMATS, [mod.BarcodeFormat.UPC_A, mod.BarcodeFormat.EAN_13, mod.BarcodeFormat.EAN_8, mod.BarcodeFormat.UPC_E]);
-          hints.set(mod.DecodeHintType.TRY_HARDER, true);
-          reader.setHints(hints);
-          const source = new mod.HTMLCanvasElementLuminanceSource(canvas);
-          const bitmap = new mod.BinaryBitmap(new mod.HybridBinarizer(source));
-          const result = reader.decode(bitmap);
+          // Reuse the same ZXing browser package already used for the live camera.
+          const mod = await import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm");
+          const reader = new mod.BrowserMultiFormatReader();
+          const result = await reader.decodeFromCanvas(canvas);
           const code = normalize(result?.getText?.());
           if (validUpcEan(code)) { detected = code; detectionMethod = "ZXing bars"; methods.push("zxing:matched"); }
           else methods.push("zxing:invalid");
