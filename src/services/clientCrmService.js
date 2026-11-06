@@ -44,10 +44,15 @@ function createClientCrmService({ userStore, authCredentialStore, membershipServ
       if(r.checkedInAt)push("community_attended",r.checkedInAt,"Attended community event "+String(r.eventId||""));
       else if(r.status==="going"&&r.updatedAt)push("community_registered",r.updatedAt,"Registered for community event "+String(r.eventId||""));
     }
+    // Guest event claims are stored only after the member proves possession of the secret check-in token.
+    // Do not infer ownership from a matching name or email address.
+    for(const claim of Array.isArray(u.wellnessEventClaims)?u.wellnessEventClaims:[]){
+      if(claim.claimedAt)push("guest_checkin_claimed",claim.claimedAt,"Verified guest check-in linked: "+String(claim.eventId||"Event"));
+    }
     if(u.journeyProfile?.submittedAt)push("intake_completed",u.journeyProfile.submittedAt,"Coaching intake submitted");
     events.sort((a,b)=>b.at.localeCompare(a.at));
     const last30=events.filter(e=>e.at>=new Date(clock()-30*DAY).toISOString());
-    return {events:events.slice(0,100),totalEvents:events.length,last30Days:{workouts:last30.filter(e=>e.type==="workout_completed").length,assessments:last30.filter(e=>e.type==="assessment_completed").length,communityAttendance:last30.filter(e=>e.type==="community_attended").length},sources:["account","workouts","assessments","account-linked community RSVP and attendance"],note:"Only account-linked activity is shown. Unclaimed guest check-ins and independent sound assessments are excluded until explicitly verified."};
+    return {events:events.slice(0,100),totalEvents:events.length,last30Days:{workouts:last30.filter(e=>e.type==="workout_completed").length,assessments:last30.filter(e=>e.type==="assessment_completed").length,communityAttendance:last30.filter(e=>e.type==="community_attended").length,verifiedGuestClaims:last30.filter(e=>e.type==="guest_checkin_claimed").length},sources:["account","workouts","assessments","account-linked community RSVP and attendance","token-verified guest event claims"],note:"Only account-linked activity is shown. Unclaimed guest check-ins and independent sound assessments are excluded. Guest claims require possession of the original secret event token."};
   }
   function intake(actor,id){assertStaff(actor,id);const u=user(id);return {intake:u.journeyIntake||u.retention?.intake||u.journeyProfile||null};}
   function assessments(actor,id){assertStaff(actor,id);const u=user(id);return {assessments:[...(u.assessments||[]),...(u.ohsa||[])]};}
