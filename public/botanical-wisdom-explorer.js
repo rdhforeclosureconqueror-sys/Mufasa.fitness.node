@@ -11,7 +11,9 @@
     if (!results) return;
     const tokens = String(question || "").toLowerCase().match(/[a-z]{3,}/g) || [];
     if (!tokens.length) { results.textContent = "Enter a topic or question to locate relevant source documents."; return; }
-    const matches = sources.filter(s => tokens.some(t => s.topics.some(topic => topic.includes(t) || t.includes(topic))));
+    const stopWords = new Set(["what", "when", "where", "which", "would", "could", "should", "does", "did", "this", "that", "these", "those", "about", "with", "from", "into", "have", "been", "were", "they", "them", "their", "teach", "taught", "cure", "treat", "help"]);
+    const keywords = tokens.filter(t => !stopWords.has(t));
+    const matches = sources.filter(s => keywords.some(t => s.topics.some(topic => topic === t || (t.length >= 5 && topic.startsWith(t)) || (topic.length >= 5 && t.startsWith(topic)))));
     results.replaceChildren();
     const intro = document.createElement("p");
     intro.textContent = matches.length ? "Related documents to inspect (not generated answers):" : "No source is indexed for that topic yet. Try food, minerals, lectures, or herbs.";
