@@ -254,6 +254,8 @@
           state.nativeDetector = null;
           video.srcObject = null;
           recordScanFailure("native-detector", nativeError, false);
+          // A denied permission cannot be fixed by switching decoders; show the manual fallback immediately.
+          if (nativeError?.name === "NotAllowedError" || nativeError?.name === "PermissionDeniedError") throw nativeError;
         }
       }
       // ZXing owns the camera stream in fallback mode. Do not open a second getUserMedia stream.
