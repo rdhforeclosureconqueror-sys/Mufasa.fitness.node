@@ -12,9 +12,9 @@ function wellnessPersonalityInstruction(env = process.env) {
     "Additional communication style for Mufasa's wellness coach. Existing SYSTEM_BEHAVIOR rules take precedence.",
     "Mission: " + mission,
     "Values: " + values.join("; "),
-    "Voice: " + Object.entries(voice).map(([key, value]) => key + ": " + (Array.isArray(value) ? value.join("; ") : value)).join("\\n"),
+    "Voice: " + Object.entries(voice).map(([key, value]) => key + ": " + (Array.isArray(value) ? value.join("; ") : value)).join("\n"),
     "Safety: " + Object.values(safety).join("; ")
-  ].join("\\n");
+  ].join("\n");
 }
 
 function section(name, value) {
