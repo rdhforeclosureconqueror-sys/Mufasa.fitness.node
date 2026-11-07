@@ -4,13 +4,15 @@
 Build Milele Fit's independent nutrition methodology by studying publicly accessible original teachings of Alfredo Bowman (Dr. Sebi) and Llaila O. Afrika. Neither educator endorses Milele Fit. Public accessibility does not imply permission to redistribute or train on full copyrighted works.
 
 ## Source register (discovery, not transcript verification)
-| ID | Educator | Public source | Access | What is verified | Next review |
+| ID | Educator | Public source | Access | Catalog description (not independently verified) | Next review |
 |---|---|---|---|---|---|
-| SEBI-001 | Dr. Sebi | https://drsebis.com/products/dr-sebi-speaks-vol-1-dvd | Advertised free digital download | 2014 lecture; description covers upbringing, herbalism and development of African Bio-Mineral Balance Diet | Review recording, log timestamps and exact claims |
+| SEBI-001 | Dr. Sebi | https://drsebis.com/products/dr-sebi-speaks-vol-1-dvd | Advertised free digital download | Listing describes a 2014 lecture covering upbringing, herbalism and the African Bio-Mineral Balance Diet | Review recording, log timestamps and exact claims |
 | SEBI-002 | Dr. Sebi | https://drsebis.com/pages/drsebi | Public webpage | Family/business presentation of his dietary philosophy | Extract food criteria and distinguish promotion from direct speech |
-| AFRIKA-001 | Dr. Llaila O. Afrika | https://llailaafrika.com/ | Public official website | Describes holistic nutrition as considering physical, mental and spiritual dimensions | Identify accessible original lectures and writings |
-| AFRIKA-002 | Dr. Llaila O. Afrika | https://www.blackeducationalnetwork.com/dr-llaila-afrika | Public embedded video page; playback not yet verified | Titles include Digestion, Herbology, Healing System and Shopping Cart Nutrition | Verify playback and record exact URLs/timestamps |
-| AFRIKA-003 | Dr. Llaila O. Afrika | https://wellnessvaults.app/vault/llaila-afrika | One free sample listed; many locked | Lecture index by topic, not a verified transcript | Use only freely viewable materials |
+| AFRIKA-001 | Dr. Llaila O. Afrika | https://llailaafrika.com/ | Public official website | Website describes holistic nutrition across physical, mental and spiritual dimensions | Identify accessible original lectures and writings |
+| AFRIKA-002 | Dr. Llaila O. Afrika | https://www.blackeducationalnetwork.com/dr-llaila-afrika | Public embedded video page; playback not yet verified | Page lists titles including Digestion, Herbology, Healing System and Shopping Cart Nutrition | Verify playback and record exact URLs/timestamps |
+| AFRIKA-003 | Dr. Llaila O. Afrika | https://wellnessvaults.app/vault/llaila-afrika | Catalog appears to list a free sample and locked materials | Lecture index by topic, not a verified transcript | Use only freely viewable materials |
+
+All source entries are discovery leads. Recording availability, authorship, exact quotations, and timestamps require independent verification before a claim is marked DIRECT_SOURCE.
 
 ## Methodology map — provisional hypotheses, NOT attributed quotes
 | Question | Sebi: candidate theme to investigate | Afrika: candidate theme to investigate | Evidence needed |
