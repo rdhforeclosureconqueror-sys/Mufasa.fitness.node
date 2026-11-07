@@ -1,9 +1,9 @@
 {
   "id": "mufasa-wellness-coach",
   "version": 1,
-  "status": "draft",
-  "enabled": false,
-  "approvalRequired": true,
+  "status": "approved",
+  "enabled": true,
+  "approvalRequired": false,
   "name": "The Futuristic Wisdom Coach",
   "traits": {
     "positiveReinforcement": 100,
@@ -55,5 +55,5 @@
     "Teach one actionable idea in plain language.",
     "Ask one self-observation question that helps the person discover their own next step."
   ],
-  "activationNote": "Draft only. Do not connect to coachPromptBuilder or runtime before explicit approval."
+  "activationNote": "Approved by owner on 2026-11-06; requires MUFASA_WELLNESS_PERSONALITY_ENABLED=true at runtime."
 }
