@@ -1,0 +1,25 @@
+name: Mufasa personality integration
+on:
+  pull_request:
+    paths:
+      - 'src/ai/coachPromptBuilder.js'
+      - 'src/ai/personalities/**'
+      - 'test/mufasa-*personality*.test.js'
+      - '.github/workflows/mufasa-personality.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/ai/coachPromptBuilder.js'
+      - 'src/ai/personalities/**'
+      - 'test/mufasa-*personality*.test.js'
+      - '.github/workflows/mufasa-personality.yml'
+jobs:
+  personality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/ai/coachPromptBuilder.js
+      - run: node --test test/mufasa-wellness-personality.test.js test/mufasa-personality-integration.test.js
