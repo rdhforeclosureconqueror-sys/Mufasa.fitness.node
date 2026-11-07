@@ -98,10 +98,10 @@
       [/\b(?:sugar|cane sugar|brown sugar|corn syrup|glucose syrup|dextrose)\b/i, 1, "Added sugar ingredient"]
     ];
     const findings = hasIngredients ? rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label})) : [];
-    if (nova === 4) findings.push({points:2,label:"NOVA 4 ultra-processed classification"});
+    if (nova === 4) findings.push({points:2,label:"Database-reported NOVA 4 classification (requires ingredient verification)"});
     const total = findings.reduce((sum,f) => sum + f.points,0);
     const score = Math.max(1,10-total);
-    const complete = hasIngredients && hasNova;
+    const complete = hasIngredients && hasNova && !(nova === 4 && findings.length === 1);
     const deductions = findings.length ? findings.map(f=>"<li>"+escapeHtml(f.label)+" <strong>−"+f.points+"</strong></li>").join("") : "<li>No selected deduction triggers identified in available data.</li>";
     const positive = claimed.length ? claimed.map(x=>"<li>"+escapeHtml(x)+" — database-reported label claim; not independently verified</li>").join("") : "<li>No qualifying label claims supplied.</li>";
     const gaps = ["Dr. Sebi food-guide alignment not evaluated", "GMO status not independently verified", "Full nutrition balance not scored"];
@@ -111,7 +111,7 @@
     const gmoClaim = labels.some(x => /^(en:usda-organic|en:organic|en:no-gmos|en:non-gmo-project)$/.test(x));
     const gmoSummary = gmoClaim ? "Organic or non-GMO claim reported; certification not independently checked." : "GMO status unknown — no verified conclusion.";
     const additivesSummary = additives.length ? additives.length + " additive code(s) reported; review details." : "No additive codes supplied; this does not prove additive-free.";
-    const status = complete ? "Preliminary ingredient score" : "Score withheld — incomplete information";
+    const status = complete ? "Preliminary ingredient score" : "Score withheld — insufficient or conflicting classification evidence";
     const headline = complete ? score.toFixed(1)+"/10" : "Not rated";
     const pill = '<span style="display:inline-block;padding:5px 11px;border-radius:999px;border:1px solid #579c89;font-size:.78rem;letter-spacing:.02em">Not yet Milele Fit Approved</span>';
     return '<section class="notice" aria-label="Milele Fit Food Standard" style="padding:18px;border-radius:20px">' +
