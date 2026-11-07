@@ -175,10 +175,19 @@ let server,browser,firstFailure=null;const checks=[];
   finally {page.off("dialog",onEditDialog);}
  });
  await step("nutrition-scanner-camera-denied-dom",async()=>{
+  // Make permission denial deterministic; clearing browser permissions does not guarantee
+  // getUserMedia rejects, and the scanner auto-starts when its panel opens.
   await page.locator('[data-open="scanPanel"]').click();
-  await page.context().clearPermissions();
+  await page.locator("#stopScanBtn").click();
+  await page.evaluate(() => {
+    const denied = () => Promise.reject(new DOMException("Camera permission denied", "NotAllowedError"));
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true, value: { getUserMedia: denied }
+    });
+    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: undefined });
+  });
   await page.locator("#startScanBtn").click();
-  await page.locator("#barcodeStatus").getByText(/camera|denied|unavailable|permission|fallback/i).waitFor({state:"visible",timeout:8000});
+  await page.locator("#barcodeStatus").getByText(/camera|denied|unavailable|permission|fallback|scanner could not start/i).waitFor({state:"visible",timeout:8000});
   await page.locator("#stopScanBtn").click();
  });
  await step("nutrition-natural-language-draft-dom",async()=>{
