@@ -98,20 +98,22 @@
       [/\b(?:sugar|cane sugar|brown sugar|corn syrup|glucose syrup|dextrose)\b/i, 1, "Added sugar ingredient"]
     ];
     const findings = hasIngredients ? rules.filter(([pattern]) => pattern.test(ingredients)).map(([, points, label]) => ({points, label})) : [];
-    if (nova === 4) findings.push({points:2,label:"Database-reported NOVA 4 classification (requires ingredient verification)"});
+    // Database NOVA classification is contextual information, not independent evidence for a deduction.
+    // A provider classification may be stale or contradict the physical ingredient label.
     const total = findings.reduce((sum,f) => sum + f.points,0);
     const score = Math.max(1,10-total);
-    const complete = hasIngredients && hasNova && !(nova === 4 && findings.length === 1);
+    const complete = hasIngredients && hasNova && nova !== 4;
     const deductions = findings.length ? findings.map(f=>"<li>"+escapeHtml(f.label)+" <strong>−"+f.points+"</strong></li>").join("") : "<li>No selected deduction triggers identified in available data.</li>";
     const positive = claimed.length ? claimed.map(x=>"<li>"+escapeHtml(x)+" — database-reported label claim; not independently verified</li>").join("") : "<li>No qualifying label claims supplied.</li>";
     const gaps = ["Dr. Sebi food-guide alignment not evaluated", "GMO status not independently verified", "Full nutrition balance not scored"];
     if(!hasIngredients) gaps.unshift("Ingredient list missing or incomplete");
     if(!hasNova) gaps.unshift("NOVA processing category missing");
-    const quickSummary = !hasIngredients ? "Ingredient list unavailable — check package before deciding." : nova === 4 ? "Ultra-processed (NOVA 4); review additives and added sugar." : nova === 3 ? "Processed (NOVA 3); review the ingredient details." : hasNova ? "Lower NOVA processing category; ingredient review still matters." : "Processing category unknown — check the label.";
+    if(nova === 4) gaps.unshift("Database NOVA 4 classification requires verification against the package ingredients");
+    const quickSummary = !hasIngredients ? "Ingredient list unavailable — check package before deciding." : nova === 4 ? "Database reports NOVA 4; classification not independently verified." : nova === 3 ? "Processed (NOVA 3); review the ingredient details." : hasNova ? "Lower NOVA processing category; ingredient review still matters." : "Processing category unknown — check the label.";
     const gmoClaim = labels.some(x => /^(en:usda-organic|en:organic|en:no-gmos|en:non-gmo-project)$/.test(x));
     const gmoSummary = gmoClaim ? "Organic or non-GMO claim reported; certification not independently checked." : "GMO status unknown — no verified conclusion.";
     const additivesSummary = additives.length ? additives.length + " additive code(s) reported; review details." : "No additive codes supplied; this does not prove additive-free.";
-    const status = complete ? "Preliminary ingredient score" : "Score withheld — insufficient or conflicting classification evidence";
+    const status = complete ? "Preliminary ingredient score" : "Score withheld — ingredient or processing verification required";
     const headline = complete ? score.toFixed(1)+"/10" : "Not rated";
     const pill = '<span style="display:inline-block;padding:5px 11px;border-radius:999px;border:1px solid #579c89;font-size:.78rem;letter-spacing:.02em">Not yet Milele Fit Approved</span>';
     return '<section class="notice" aria-label="Milele Fit Food Standard" style="padding:18px;border-radius:20px">' +
@@ -120,7 +122,7 @@
       '<p style="margin:4px 0 12px">'+status+'. Based on Milele Fit preferences, not a medical safety or cancer-risk rating.</p>' +
       '<div style="padding:12px;border-radius:14px;background:rgba(11,36,39,.55);margin:10px 0 14px"><strong>YOUR 10-SECOND FOOD CHECK</strong><p style="margin:8px 0">Processing: '+escapeHtml(quickSummary)+'</p><p style="margin:8px 0">GMO / organic: '+escapeHtml(gmoSummary)+'</p><p style="margin:8px 0">Additives: '+escapeHtml(additivesSummary)+'</p><small>Unknown does not mean safe, unsafe, GMO, or GMO-free.</small></div>' +
       '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0">' +
-      '<div style="padding:10px;border:1px solid #396b6b;border-radius:12px"><small>PROCESSING</small><div><strong>'+(hasNova?"NOVA "+nova:"Unknown")+'</strong></div></div>' +
+      '<div style="padding:10px;border:1px solid #396b6b;border-radius:12px"><small>PROCESSING</small><div><strong>'+(hasNova?"Reported NOVA "+nova:"Unknown")+'</strong></div></div>' +
       '<div style="padding:10px;border:1px solid #396b6b;border-radius:12px"><small>DEDUCTIONS</small><div><strong>−'+total.toFixed(1)+' points</strong></div></div></div>' +
       '<details><summary>Why this score? · '+findings.length+' findings</summary><ul>'+deductions+'</ul><p>Starts at 10. Scores remain preliminary until the full Milele Fit rubric is complete.</p></details>' +
       '<details><summary>Positive findings · '+claimed.length+' reported claims</summary><ul>'+positive+'</ul></details>' +
