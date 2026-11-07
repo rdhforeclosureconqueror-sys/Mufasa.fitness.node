@@ -184,7 +184,7 @@ let server,browser,firstFailure=null;const checks=[];
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true, value: { getUserMedia: denied }
     });
-    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: undefined });
+    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: class { constructor() {} async detect() { return []; } } });
   });
   await page.locator("#startScanBtn").click();
   await page.locator("#barcodeStatus").getByText(/camera|denied|unavailable|permission|fallback|scanner could not start/i).waitFor({state:"visible",timeout:8000});
