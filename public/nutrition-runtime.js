@@ -278,7 +278,7 @@
         : kind === "NotReadableError" || kind === "AbortError"
           ? "Camera is busy or still releasing. Close other camera views, then tap Capture / Try Again."
           : "Scanner could not start. Tap Capture / Try Again, or enter the UPC/EAN manually.";
-    } finally { if (generation === state.scanGeneration) state.scannerBusy = false; }
+    } finally { state.scannerBusy = false; }
   }
   async function captureOrRetry() {
     if (state.lastSuccessfulBarcode && !$("productReview").hidden) {
