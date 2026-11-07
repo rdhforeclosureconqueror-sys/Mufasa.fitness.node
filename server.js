@@ -3018,6 +3018,33 @@ function createApp(options = {}) {
   }));
 
 
+  // Botanical Wisdom: authenticated, entitlement-gated, source-aware conversation.
+  app.post("/api/nutrition/botanical-wisdom/chat", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
+    const question = String(req.body?.question || "").trim();
+    if (!question || question.length > 500) return res.status(400).json({ ok:false, error:"Enter a question (up to 500 characters)." });
+    const history = Array.isArray(req.body?.history) ? req.body.history.slice(-8).filter(m => ["user","assistant"].includes(m?.role) && typeof m?.content === "string").map(m => ({ role:m.role, content:m.content.slice(0,1200) })) : [];
+    const wisdom = require("./src/botanical-wisdom");
+    const evidence = wisdom.historicalAnswer(question);
+    if (!process.env.OPENAI_API_KEY) return res.status(503).json({ ok:false, error:"Botanical Wisdom conversation is not configured yet. Source explorer remains available." });
+    const system = [
+      "You are Milele Fit Botanical Wisdom, an original educational guide: curious, warm, clear, story-rich, occasionally playfully witty, never impersonating Alfredo Bowman or quoting him without verified text.",
+      "Explain general science accurately. Distinguish historical Dr. Sebi philosophy from modern scientific consensus. No invented teachings, quotes, citations, lecture timestamps or first-person claims of being him.",
+      "There are currently ZERO verified primary teaching passages in the indexed archive. Therefore do not assert specific historical teaching details as verified. When asked about his exact explanation, say the archive does not yet substantiate it and offer general context.",
+      "Do not recommend herbs as cures, diagnose, or suggest abandoning medical care. Be transparent about uncertainty. Answer the user's question conversationally and allow follow-up.",
+      "Available source catalog (not verified transcripts): " + JSON.stringify(evidence.sources || wisdom.listSources()).slice(0,3500)
+    ].join("\n");
+    const upstream = await (options.fetch || global.fetch)("https://api.openai.com/v1/chat/completions", {
+      method:"POST", headers:{ authorization:`Bearer ${process.env.OPENAI_API_KEY}`, "content-type":"application/json" },
+      body:JSON.stringify({ model:process.env.BOTANICAL_WISDOM_MODEL || "gpt-4o-mini", temperature:0.5, max_tokens:550, messages:[{role:"system",content:system},...history,{role:"user",content:question}] }),
+      signal:AbortSignal.timeout(20000)
+    });
+    if (!upstream.ok) return res.status(502).json({ok:false,error:"The conversation service is temporarily unavailable."});
+    const data = await upstream.json();
+    const answer = String(data.choices?.[0]?.message?.content || "").trim();
+    if (!answer) return res.status(502).json({ok:false,error:"The conversation service returned no answer."});
+    return ok(res, req.requestId, {answer, grounding:evidence.status, note:"Historical lecture passages are not yet indexed; answers distinguish general context from verified teachings."}, 200);
+  }));
+
   // ---- Phase 32 Nutrition Journal APIs ----
   app.get("/api/nutrition/barcodes/:barcode", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     const result = await nutritionProviderClient.lookupBarcode(req.params.barcode);
