@@ -22,10 +22,11 @@ function section(name, value) {
 }
 
 function buildCoachPrompt({ context, history = [], message }) {
+  const personality = wellnessPersonalityInstruction();
   const safeHistory = history.slice(-12).map(({ role, content }) => ({ role, content: String(content).slice(0, 2000) }));
   return [
     { role: "system", name: "behavior", content: SYSTEM_BEHAVIOR },
-    ...(wellnessPersonalityInstruction() ? [{ role: "system", name: "wellness_personality", content: wellnessPersonalityInstruction() }] : []),
+    ...(personality ? [{ role: "system", name: "wellness_personality", content: personality }] : []),
     section("platform_context", { source: "authoritative_member_services", generatedAt: context.generatedAt, unavailableValuesAreNull: true }),
     section("member_context", { member: context.member, goals: context.goals, recovery: context.recovery }),
     section("workout_context", { ...context.workouts, yoga: context.yoga, memberExperiences: context.memberExperiences }),
