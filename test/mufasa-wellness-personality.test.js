@@ -3,11 +3,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const profile = require("../src/ai/personalities/mufasa-wellness.draft.json");
 
-test("Mufasa wellness personality is explicitly inactive pending approval", () => {
+test("Mufasa wellness personality is approved but still controlled by the runtime flag", () => {
   assert.equal(profile.id, "mufasa-wellness-coach");
-  assert.equal(profile.status, "draft");
-  assert.equal(profile.enabled, false);
-  assert.equal(profile.approvalRequired, true);
+  assert.equal(profile.status, "approved");
+  assert.equal(profile.enabled, true);
+  assert.equal(profile.approvalRequired, false);
 });
 
 test("default humor is explicit and remains sensitive to member context", () => {
