@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "purpose": "Milele independent nutrition research; never direct medical advice",
+  "purpose": "Preserve and compare historical nutrition frameworks on their own terms; separate attribution from health advice",
   "sources": [
     {
       "id": "sebi-lecture-2014",
@@ -26,9 +26,10 @@
   ],
   "claims": [],
   "publication_policy": {
-    "requires_primary_source_verified": true,
-    "requires_locator": true,
-    "unverified_cure_claims_allowed": false,
-    "allow_hypotheses_to_override_product_labels": false
+    "historical_attribution_requires_source_verification": true,
+    "western_scientific_approval_required": false,
+    "clinical_claims_may_be_historically_documented": true,
+    "personalized_treatment_requires_separate_review": true,
+    "product_label_facts_must_not_be_fabricated": true
   }
 }
