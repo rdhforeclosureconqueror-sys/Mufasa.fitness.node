@@ -1,0 +1,17 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { evaluateClaim, publicClaims } = require('../src/milele-wisdom/evidence-gate');
+const registry = require('../src/milele-wisdom/research-registry.json');
+const source = { id: 'test-recording', media_verified: true };
+const safeRegistry = { sources: [source], claims: [] };
+const good = { source_id: source.id, locator: '00:12:34', reviewed: true, research_status: 'DIRECT_SOURCE' };
+test('empty registry cannot publish historical claims', () => assert.deepEqual(publicClaims(registry), []));
+test('reviewed, located, verified primary claim is eligible', () => assert.equal(evaluateClaim(good, safeRegistry).publishable, true));
+test('unverified audio is blocked', () => assert.ok(evaluateClaim(good, {sources:[{...source,media_verified:false}]}).reasons.includes('PRIMARY_SOURCE_NOT_VERIFIED')));
+test('missing timestamp/page is blocked', () => assert.ok(evaluateClaim({...good, locator:''},safeRegistry).reasons.includes('SOURCE_LOCATOR_MISSING')));
+test('unreviewed claim is blocked', () => assert.ok(evaluateClaim({...good, reviewed:false},safeRegistry).reasons.includes('HUMAN_REVIEW_MISSING')));
+test('hypothesis cannot publish as documented teaching', () => assert.ok(evaluateClaim({...good,research_status:'MILELE_HYPOTHESIS'},safeRegistry).reasons.includes('STATUS_NOT_PUBLISHABLE')));
+test('unverified cure and treatment instructions are blocked', () => assert.ok(evaluateClaim({...good,medical_cure_claim:true},safeRegistry).reasons.includes('MEDICAL_CLAIM_REQUIRES_SEPARATE_REVIEW')));
+test('AI cannot override verified product label', () => assert.ok(evaluateClaim({...good,overrides_product_label:true},safeRegistry).reasons.includes('PRODUCT_LABEL_OVERRIDE_PROHIBITED')));
+test('unknown source is blocked', () => assert.ok(evaluateClaim({...good,source_id:'unknown'},safeRegistry).reasons.includes('SOURCE_NOT_REGISTERED')));
