@@ -9,7 +9,7 @@ function evaluateClaim(claim, registry) {
   const reasons = [];
   const source = registry?.sources?.find(s => s.id === claim?.source_id);
   if (!source) reasons.push('SOURCE_NOT_REGISTERED');
-  if (!source?.media_verified) reasons.push('SOURCE_CONTENT_NOT_VERIFIED');
+  if (source?.source_content_verified !== true && source?.media_verified !== true) reasons.push('SOURCE_CONTENT_NOT_VERIFIED');
   if (typeof claim?.locator !== 'string' || !claim.locator.trim()) reasons.push('SOURCE_LOCATOR_MISSING');
   if (claim?.reviewed !== true) reasons.push('ATTRIBUTION_REVIEW_MISSING');
   if (!['DIRECT_SOURCE','INDEPENDENTLY_EVALUATED_FINDING'].includes(claim?.research_status)) reasons.push('ATTRIBUTION_STATUS_NOT_VERIFIED');
