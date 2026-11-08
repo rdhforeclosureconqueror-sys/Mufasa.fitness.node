@@ -7,7 +7,13 @@
       "educator": "Alfredo Bowman",
       "url": "https://drsebis.com/products/dr-sebi-speaks-vol-1-dvd",
       "access": "free_download_listed",
-      "media_verified": false
+      "media_verified": false,
+      "source_content_verified": false,
+      "playback_status": "not_obtained",
+      "listing_verified": true,
+      "advertised_duration": "1:00:22",
+      "recording_date": "2014-08-24",
+      "verification_basis": "Official free digital download listing verified; actual recording not obtained or listened to"
     },
     {
       "id": "afrika-audio-melanin",
@@ -55,6 +61,18 @@
       "source_content_verified": true,
       "media_verified": false,
       "verification_basis": "Official brand's contemporary exposition; not first-person recording or verbatim Sebi speech"
+    },
+    {
+      "id": "sebi-los-angeles-alternate-index",
+      "educator": "Alfredo Bowman",
+      "url": "https://anointedtube.com/channel/general-health-care/573/",
+      "access": "third_party_video_index",
+      "medium": "video_listing",
+      "media_verified": false,
+      "source_content_verified": false,
+      "listing_verified": true,
+      "advertised_duration": "1:45:53",
+      "verification_basis": "Index advertises Los Angeles 08_24_14 recording; differing runtime from official edition; media not reviewed"
     }
   ],
   "claims": [
