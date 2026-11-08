@@ -13,7 +13,7 @@ test('Milele research registry preserves verified teachings and provisional lead
   assert.equal(new Set(registry.claims.map(c => c.id)).size, registry.claims.length);
   for (const claim of registry.claims) {
     assert.ok(registry.sources.some(s => s.id === claim.source_id));
-    if (claim.research_status === 'THIRD_PARTY_TRANSCRIPT_CANDIDATE') {
+    if (['THIRD_PARTY_TRANSCRIPT_CANDIDATE', 'OFFICIAL_SITE_INTERPRETATION'].includes(claim.research_status)) {
       assert.equal(claim.reviewed, false);
       assert.equal(evaluateClaim(claim, registry).publishable, false);
     } else {

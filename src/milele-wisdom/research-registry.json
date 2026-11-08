@@ -45,6 +45,16 @@
       "source_content_verified": false,
       "media_verified": false,
       "verification_basis": "Excerpt/captions unverified against full original audio"
+    },
+    {
+      "id": "sebi-official-framework-page",
+      "educator": "Alfredo Bowman",
+      "url": "https://drsebis.com/pages/african-bio-mineral-balance",
+      "access": "public_webpage",
+      "medium": "official_site_exposition",
+      "source_content_verified": true,
+      "media_verified": false,
+      "verification_basis": "Official brand's contemporary exposition; not first-person recording or verbatim Sebi speech"
     }
   ],
   "claims": [
@@ -166,6 +176,50 @@
       "reviewed": false,
       "research_status": "THIRD_PARTY_TRANSCRIPT_CANDIDATE",
       "attribution_medium": "unverified_transcript",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-OFFICIAL-001",
+      "source_id": "sebi-official-framework-page",
+      "locator": "page sections: What Is the African Bio-Mineral Balance?; Why Minerals Matter",
+      "topic": "mineral_centered_framework",
+      "summary": "The official brand presents the African Bio-Mineral Balance as a mineral-centered plant-food and herb framework.",
+      "reviewed": false,
+      "research_status": "OFFICIAL_SITE_INTERPRETATION",
+      "attribution_medium": "contemporary_official_brand_page",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-OFFICIAL-002",
+      "source_id": "sebi-official-framework-page",
+      "locator": "page section: Keeping Balance: The Two Parts of the Framework",
+      "topic": "cleanse_then_nourish",
+      "summary": "The official brand describes a two-part approach: reduce selected foods and emphasize mineral-rich nourishment.",
+      "reviewed": false,
+      "research_status": "OFFICIAL_SITE_INTERPRETATION",
+      "attribution_medium": "contemporary_official_brand_page",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-OFFICIAL-003",
+      "source_id": "sebi-official-framework-page",
+      "locator": "page section: Food is the Daily Foundation",
+      "topic": "food_list",
+      "summary": "The official brand describes its Nutritional Guide as a category-based food-selection reference.",
+      "reviewed": false,
+      "research_status": "OFFICIAL_SITE_INTERPRETATION",
+      "attribution_medium": "contemporary_official_brand_page",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-OFFICIAL-004",
+      "source_id": "sebi-official-framework-page",
+      "locator": "page section: Mineral-Rich Herbs & Formulas",
+      "topic": "botanical_selection",
+      "summary": "The official brand attributes importance to herbs growing in their natural environments.",
+      "reviewed": false,
+      "research_status": "OFFICIAL_SITE_INTERPRETATION",
+      "attribution_medium": "contemporary_official_brand_page",
       "clinical_efficacy_established": false
     }
   ],
