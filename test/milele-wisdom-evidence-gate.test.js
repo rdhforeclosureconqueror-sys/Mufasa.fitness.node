@@ -28,3 +28,12 @@ test('Afrika historical health claim remains explainable but not automatic perso
   assert.equal(evaluateUse(claim, registry, 'historical_explanation').allowed, true);
   assert.equal(evaluateUse(claim, registry, 'personalized_advice').allowed, false);
 });
+
+test('five Sebi methodology candidates are preserved for research but excluded from verified historical explanations', () => {
+  const candidates = registry.claims.filter(c => c.id.startsWith('SEBI-CAND-'));
+  assert.equal(candidates.length, 5);
+  for (const c of candidates) {
+    assert.equal(evaluateClaim(c, registry).publishable, false);
+    assert.ok(evaluateClaim(c, registry).reasons.includes('SOURCE_CONTENT_NOT_VERIFIED'));
+  }
+});
