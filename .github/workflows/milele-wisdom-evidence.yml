@@ -1,0 +1,25 @@
+name: Milele Wisdom Research Evidence Gate
+on:
+  pull_request:
+    paths:
+      - 'src/milele-wisdom/**'
+      - 'test/milele-wisdom-*.test.js'
+      - '.github/workflows/milele-wisdom-evidence.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/milele-wisdom/**'
+      - 'test/milele-wisdom-*.test.js'
+      - '.github/workflows/milele-wisdom-evidence.yml'
+  workflow_dispatch:
+jobs:
+  evidence-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate research registry and evidence gate
+        run: node --test test/milele-wisdom-research-registry.test.js test/milele-wisdom-evidence-gate.test.js
