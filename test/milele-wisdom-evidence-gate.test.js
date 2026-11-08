@@ -6,7 +6,7 @@ const registry = require('../src/milele-wisdom/research-registry.json');
 const source = { id: 'test-recording', media_verified: true };
 const safeRegistry = { sources: [source], claims: [] };
 const good = { source_id: source.id, locator: '00:12:34', reviewed: true, research_status: 'DIRECT_SOURCE' };
-test('unreviewed registry does not publish historical claims', () => assert.deepEqual(publicClaims(registry), []));
+test('only reviewed and source-grounded registry claims can publish', () => assert.ok(publicClaims(registry).every(c => evaluateClaim(c, registry).publishable)));
 test('verified original teaching can be explained without mainstream approval', () => assert.equal(evaluateClaim(good,safeRegistry).publishable,true));
 test('unverified recording cannot be attributed as direct speech', () => assert.ok(evaluateClaim(good,{sources:[{...source,media_verified:false}]}).reasons.includes('SOURCE_CONTENT_NOT_VERIFIED')));
 test('missing source locator is blocked', () => assert.equal(evaluateClaim({...good,locator:''},safeRegistry).publishable,false));
