@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "purpose": "Milele independent nutrition research; never direct medical advice",
+  "sources": [
+    {
+      "id": "sebi-lecture-2014",
+      "educator": "Alfredo Bowman",
+      "url": "https://drsebis.com/products/dr-sebi-speaks-vol-1-dvd",
+      "access": "free_download_listed",
+      "media_verified": false
+    },
+    {
+      "id": "afrika-audio-melanin",
+      "educator": "Llaila O. Afrika",
+      "url": "https://soundcloud.com/eye-electric-foods/dr-llaila-afrika-understanding",
+      "access": "public_audio_page",
+      "media_verified": false
+    },
+    {
+      "id": "afrika-written-interview",
+      "educator": "Llaila O. Afrika",
+      "url": "https://soulvegansummit.com/wp-content/uploads/2018/11/joy_ebook2018_final.pdf",
+      "access": "public_written_interview",
+      "media_verified": false
+    }
+  ],
+  "claims": [],
+  "publication_policy": {
+    "requires_primary_source_verified": true,
+    "requires_locator": true,
+    "unverified_cure_claims_allowed": false,
+    "allow_hypotheses_to_override_product_labels": false
+  }
+}
