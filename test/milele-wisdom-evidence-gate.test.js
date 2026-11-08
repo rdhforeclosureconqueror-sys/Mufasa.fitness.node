@@ -17,3 +17,14 @@ test('historical cure claims cannot automatically become personalized treatment 
 test('historical food classifications may be compared', () => assert.equal(evaluateUse({...good,overrides_product_label:true},safeRegistry,'methodology_comparison').allowed,true));
 test('nutrition facts cannot be overwritten by historical classification', () => assert.equal(evaluateUse({...good,overrides_product_label:true},safeRegistry,'food_scanner').allowed,false));
 test('unregistered source is blocked', () => assert.equal(evaluateClaim({...good,source_id:'missing'},safeRegistry).publishable,false));
+
+test('five page-anchored Afrika written teachings are available for historical explanation', () => {
+  const approved = publicClaims(registry).filter(c => c.source_id === 'afrika-written-interview');
+  assert.equal(approved.length, 5);
+  for (const claim of approved) assert.match(claim.locator, /^p\\. 148/);
+});
+test('Afrika historical health claim remains explainable but not automatic personalized advice', () => {
+  const claim = registry.claims.find(c => c.id === 'AFRIKA-WR-005');
+  assert.equal(evaluateUse(claim, registry, 'historical_explanation').allowed, true);
+  assert.equal(evaluateUse(claim, registry, 'personalized_advice').allowed, false);
+});
