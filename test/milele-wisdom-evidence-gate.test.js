@@ -37,3 +37,9 @@ test('five Sebi methodology candidates are preserved for research but excluded f
     assert.ok(evaluateClaim(c, registry).reasons.includes('SOURCE_CONTENT_NOT_VERIFIED'));
   }
 });
+
+test('official brand interpretation is not mislabeled as Sebi first-person teaching', () => {
+  const records = registry.claims.filter(c => c.research_status === 'OFFICIAL_SITE_INTERPRETATION');
+  assert.equal(records.length, 4);
+  assert.ok(records.every(c => evaluateClaim(c, registry).publishable === false));
+});
