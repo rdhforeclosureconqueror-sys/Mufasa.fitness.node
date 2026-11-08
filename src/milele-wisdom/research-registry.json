@@ -25,6 +25,26 @@
       "source_content_verified": true,
       "verification_basis": "Previously extracted first-person written interview, printed page 148; not a lecture recording",
       "medium": "written_interview"
+    },
+    {
+      "id": "sebi-interview-guzman-transcript",
+      "educator": "Alfredo Bowman",
+      "url": "https://theafricanbiomineralbalance.com/dr-sebi-man-is-the-originator-of-all-acid/",
+      "access": "public_third_party_transcript",
+      "medium": "transcript",
+      "source_content_verified": false,
+      "media_verified": false,
+      "verification_basis": "Attributed third-party transcription; original recording not checked"
+    },
+    {
+      "id": "sebi-protein-caption-excerpt",
+      "educator": "Alfredo Bowman",
+      "url": "https://filmot.com/sidebyside/OSyS9p4rpqw/en/en/English/English/Dr%2BSebi%2BExplains%2BThe%2BProtein%2BMyth",
+      "access": "public_captioned_excerpt",
+      "medium": "captioned_excerpt",
+      "source_content_verified": false,
+      "media_verified": false,
+      "verification_basis": "Excerpt/captions unverified against full original audio"
     }
   ],
   "claims": [
@@ -91,6 +111,61 @@
       "research_status": "DIRECT_SOURCE",
       "attribution_medium": "written_interview",
       "medical_cure_claim": true,
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-CAND-001",
+      "source_id": "sebi-interview-guzman-transcript",
+      "topic": "alkaline_acid_classification",
+      "summary": "Sebi reportedly places alkaline/acid distinctions at the center of his food philosophy.",
+      "locator": null,
+      "reviewed": false,
+      "research_status": "THIRD_PARTY_TRANSCRIPT_CANDIDATE",
+      "attribution_medium": "unverified_transcript",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-CAND-002",
+      "source_id": "sebi-interview-guzman-transcript",
+      "topic": "food_ph_comparison",
+      "summary": "Sebi reportedly compares foods using claimed pH observations.",
+      "locator": null,
+      "reviewed": false,
+      "research_status": "THIRD_PARTY_TRANSCRIPT_CANDIDATE",
+      "attribution_medium": "unverified_transcript",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-CAND-003",
+      "source_id": "sebi-interview-guzman-transcript",
+      "topic": "elemental_reasoning",
+      "summary": "Sebi reportedly invokes carbon, hydrogen and oxygen in explaining classifications.",
+      "locator": null,
+      "reviewed": false,
+      "research_status": "THIRD_PARTY_TRANSCRIPT_CANDIDATE",
+      "attribution_medium": "unverified_transcript",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-CAND-004",
+      "source_id": "sebi-protein-caption-excerpt",
+      "topic": "protein_conceptual_challenge",
+      "summary": "Sebi reportedly challenges conventional protein and amino-acid framing.",
+      "locator": null,
+      "reviewed": false,
+      "research_status": "THIRD_PARTY_TRANSCRIPT_CANDIDATE",
+      "attribution_medium": "unverified_transcript",
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "SEBI-CAND-005",
+      "source_id": "sebi-protein-caption-excerpt",
+      "topic": "electrical_analogy",
+      "summary": "Sebi reportedly uses electrical analogies in discussing alkalinity.",
+      "locator": null,
+      "reviewed": false,
+      "research_status": "THIRD_PARTY_TRANSCRIPT_CANDIDATE",
+      "attribution_medium": "unverified_transcript",
       "clinical_efficacy_established": false
     }
   ],
