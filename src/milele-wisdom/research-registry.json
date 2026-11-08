@@ -21,10 +21,79 @@
       "educator": "Llaila O. Afrika",
       "url": "https://soulvegansummit.com/wp-content/uploads/2018/11/joy_ebook2018_final.pdf",
       "access": "public_written_interview",
-      "media_verified": false
+      "media_verified": false,
+      "source_content_verified": true,
+      "verification_basis": "Previously extracted first-person written interview, printed page 148; not a lecture recording",
+      "medium": "written_interview"
     }
   ],
-  "claims": [],
+  "claims": [
+    {
+      "id": "AFRIKA-WR-001",
+      "source_id": "afrika-written-interview",
+      "locator": "p. 148, lines 3365-3366",
+      "title": "Personal raw-food practice",
+      "summary": "Afrika describes personally avoiding cooked and processed foods in his long-term dietary practice.",
+      "topic": "personal_practice",
+      "reviewed": true,
+      "research_status": "DIRECT_SOURCE",
+      "attribution_medium": "written_interview",
+      "medical_cure_claim": false,
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "AFRIKA-WR-002",
+      "source_id": "afrika-written-interview",
+      "locator": "p. 148, lines 3367-3368",
+      "title": "Processed vegetarian substitutes",
+      "summary": "Afrika criticizes highly processed vegetarian substitutes and discusses contrasting family dietary experiences.",
+      "topic": "food_selection",
+      "reviewed": true,
+      "research_status": "DIRECT_SOURCE",
+      "attribution_medium": "written_interview",
+      "medical_cure_claim": false,
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "AFRIKA-WR-003",
+      "source_id": "afrika-written-interview",
+      "locator": "p. 148, lines 3369-3371",
+      "title": "Health-food marketing and sugar",
+      "summary": "Afrika says junk food can appear in health-food stores and discusses resistance to reducing refined sugar.",
+      "topic": "food_environment",
+      "reviewed": true,
+      "research_status": "DIRECT_SOURCE",
+      "attribution_medium": "written_interview",
+      "medical_cure_claim": false,
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "AFRIKA-WR-004",
+      "source_id": "afrika-written-interview",
+      "locator": "p. 148, line 3372",
+      "title": "Gradual nutrition education",
+      "summary": "Afrika advocates gradual changes, nutritional education and food-combining knowledge.",
+      "topic": "education_strategy",
+      "reviewed": true,
+      "research_status": "DIRECT_SOURCE",
+      "attribution_medium": "written_interview",
+      "medical_cure_claim": false,
+      "clinical_efficacy_established": false
+    },
+    {
+      "id": "AFRIKA-WR-005",
+      "source_id": "afrika-written-interview",
+      "locator": "p. 148, line 3373",
+      "title": "MSM processing and health claims",
+      "summary": "Afrika presents views about MSM, processing and health effects; historical attribution only.",
+      "topic": "historical_health_claim",
+      "reviewed": true,
+      "research_status": "DIRECT_SOURCE",
+      "attribution_medium": "written_interview",
+      "medical_cure_claim": true,
+      "clinical_efficacy_established": false
+    }
+  ],
   "publication_policy": {
     "historical_attribution_requires_source_verification": true,
     "western_scientific_approval_required": false,
