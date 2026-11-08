@@ -21,7 +21,7 @@ test('unregistered source is blocked', () => assert.equal(evaluateClaim({...good
 test('five page-anchored Afrika written teachings are available for historical explanation', () => {
   const approved = publicClaims(registry).filter(c => c.source_id === 'afrika-written-interview');
   assert.equal(approved.length, 5);
-  for (const claim of approved) assert.match(claim.locator, /^p\\. 148/);
+  for (const claim of approved) assert.ok(claim.locator.startsWith('p. 148'));
 });
 test('Afrika historical health claim remains explainable but not automatic personalized advice', () => {
   const claim = registry.claims.find(c => c.id === 'AFRIKA-WR-005');
