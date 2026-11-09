@@ -8,6 +8,8 @@
   if (!button || !question || !output) return;
   let lastQuestion = "";
   let lastAnswer = "";
+  const sourcesPanel = document.getElementById("nutritionResearchSources");
+  const searchStatus = document.getElementById("nutritionResearchSearchStatus");
   const mic = document.getElementById("nutritionResearchMic");
   const listen = document.getElementById("nutritionResearchListen");
   const stop = document.getElementById("nutritionResearchStop");
@@ -100,6 +102,8 @@
     if (canSpeak) window.speechSynthesis.cancel();
     if (stop) stop.disabled = true;
     if (listen) listen.disabled = true;
+    if (sourcesPanel) sourcesPanel.replaceChildren();
+    if (searchStatus) searchStatus.textContent = "Researching available sources…";
     button.disabled = true;
     if (deepButton) deepButton.disabled = true;
     if (referencesButton) referencesButton.disabled = true;
@@ -115,12 +119,38 @@
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
       lastAnswer = json.data?.answer || "No answer returned.";
       renderAnswer(lastAnswer);
+      const sources = Array.isArray(json.data?.sources) ? json.data.sources : [];
+      if (searchStatus) searchStatus.textContent = json.data?.webSearchUsed
+        ? "Live web research used" : "No live web search used; answer may rely on existing knowledge";
+      if (sourcesPanel && sources.length) {
+        const heading = document.createElement("strong");
+        heading.textContent = "Research sources";
+        sourcesPanel.append(heading);
+        const list = document.createElement("ul");
+        for (const source of sources) {
+          try {
+            const url = new URL(source.url);
+            if (url.protocol !== "https:" && url.protocol !== "http:") continue;
+            const item = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = url.href;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = String(source.title || url.hostname).slice(0, 140);
+            item.append(link);
+            list.append(item);
+          } catch (_) { /* Invalid source URL. */ }
+        }
+        sourcesPanel.append(list);
+      }
+
       if (listen && canSpeak) listen.disabled = false;
       lastQuestion = text;
       if (deepButton) deepButton.hidden = mode !== "QUICK";
       if (referencesButton) referencesButton.hidden = false;
     } catch (error) {
       output.textContent = error.message || "Unable to answer right now.";
+      if (searchStatus) searchStatus.textContent = "Research unavailable.";
       if (deepButton && lastQuestion && mode === "QUICK") deepButton.hidden = false;
     } finally { button.disabled = false; if (deepButton) deepButton.disabled = false; if (referencesButton) referencesButton.disabled = false; }
   }
