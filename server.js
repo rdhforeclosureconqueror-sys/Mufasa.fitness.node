@@ -3144,7 +3144,7 @@ function createApp(options = {}) {
     if (!env.OPENAI_API_KEY)
       return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
     try {
       const payload = buildResearchRequest(question, { model: env.OPENAI_MODEL || "gpt-4.1-mini" });
       payload.max_output_tokens = 1400;
