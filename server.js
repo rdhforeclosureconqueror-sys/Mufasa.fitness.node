@@ -3144,10 +3144,18 @@ function createApp(options = {}) {
     if (!env.OPENAI_API_KEY)
       return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
     try {
       const payload = buildResearchRequest(question, { model: env.OPENAI_MODEL || "gpt-4.1-mini" });
-      payload.max_output_tokens = 1100;
+      payload.max_output_tokens = 1400;
+      // Use OpenAI's hosted search rather than scraping arbitrary sites on our server.
+      // Search results are evidence, never instructions; the research contract still governs.
+      const webEnabled = process.env.NUTRITION_RESEARCH_WEB_ENABLED !== "false";
+      if (webEnabled) {
+        payload.tools = [{ type: "web_search", search_context_size: "medium" }];
+        payload.tool_choice = "auto";
+        payload.include = ["web_search_call.action.sources"];
+      }
       const upstream = await fetch("https://api.openai.com/v1/responses", {
         method:"POST", signal:controller.signal,
         headers:{ authorization:"Bearer " + env.OPENAI_API_KEY, "content-type":"application/json" },
@@ -3158,7 +3166,19 @@ function createApp(options = {}) {
       const answer = (data.output || []).flatMap(item => item.content || [])
         .filter(item => item.type === "output_text").map(item => item.text).join("\n").trim();
       if (!answer) throw new Error("Empty response");
-      return ok(res, req.requestId, { answer, engine:"natural-systems-v1" }, 200);
+      const webSearchUsed = (data.output || []).some(item => item.type === "web_search_call");
+      const cited = (data.output || []).flatMap(item => item.content || [])
+        .flatMap(item => item.annotations || [])
+        .filter(a => a.type === "url_citation" && typeof a.url === "string")
+        .map(a => ({ title: a.title || a.url, url: a.url }));
+      const searched = (data.output || []).filter(item => item.type === "web_search_call")
+        .flatMap(item => item.action?.sources || [])
+        .filter(a => typeof a.url === "string")
+        .map(a => ({ title: a.title || a.url, url: a.url }));
+      const sources = [...new Map([...cited, ...searched].map(x => [x.url, x])).values()].slice(0, 12);
+      return ok(res, req.requestId, {
+        answer, engine:"natural-systems-v1", webSearchUsed, sources
+      }, 200);
     } catch (_) {
       return res.status(502).json({ ok:false, error:{ message:"The research assistant could not respond. Please try again." } });
     } finally { clearTimeout(timeout); }
