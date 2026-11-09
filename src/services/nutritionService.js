@@ -597,7 +597,7 @@ function createNutritionService({ userStore }) {
     const plan = store.weeklyPlans.find((item) => item.userId === userId && item.status === "active")
       || store.weeklyPlans.find((item) => item.userId === userId && item.weekStartDate === weekStartDate && item.status !== "archived")
       || null;
-    const pantry = plan ? pantryFor(store, plan.id).slice(0, 20).map((item) => safeString(item.canonicalName || item.customName || item.name || "food option", 120)) : [];
+    const pantry = plan ? pantryFor(store, plan.id).slice(0, 20).map((item) => safeString(labelForGroceryItem(item), 120)) : [];
     const missions = plan ? store.dailyMissions
       .filter((mission) => mission.weeklyPlanId === plan.id && mission.missionDate === localDate)
       .slice(0, 8)
