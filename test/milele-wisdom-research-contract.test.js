@@ -42,3 +42,8 @@ test('alkalinity guidance honors historical framework without false blood pH cla
   assert.match(RESEARCH_CONTRACT, /Do not mock, trivialize/);
   assert.match(RESEARCH_CONTRACT, /verified attributed records only/);
 });
+
+test('eczema answers separate historical food framework from medical claims', () => {
+  assert.match(RESEARCH_CONTRACT, /not an established treatment plan/);
+  assert.match(RESEARCH_CONTRACT, /blanket avoidance of all nuts/);
+});
