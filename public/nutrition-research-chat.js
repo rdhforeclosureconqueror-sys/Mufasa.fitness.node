@@ -53,7 +53,7 @@
     if (deepButton) { deepButton.disabled = true; deepButton.hidden = true; }
     output.textContent = mode === "DEEP" ? "Digging a little deeper…" : "Looking into that…";
     try {
-      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
+      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token },
