@@ -17,26 +17,66 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
   const voiceMessage = message => { if (voiceStatus) voiceStatus.textContent = message; };
+  let mediaRecorder = null;
+  let recordingStream = null;
+  let recordingParts = [];
+  const resetMic = () => {
+    recording = false;
+    if (mic) { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; }
+    if (recordingStream) { recordingStream.getTracks().forEach(track => track.stop()); recordingStream = null; }
+  };
   if (mic) {
-    if (!SpeechRecognition) {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       mic.disabled = true;
-      voiceMessage("Speech input isn't supported in this browser. You can still type your question.");
+      voiceMessage("Microphone recording is unavailable in this browser. Try Safari or use keyboard dictation.");
     } else {
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.onresult = event => {
-        const spoken = event.results?.[0]?.[0]?.transcript?.trim();
-        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask to continue the conversation."); }
-      };
-      recognition.onerror = event => { const reason = String(event?.error || "unknown"); const guidance = reason === "not-allowed" || reason === "service-not-allowed" ? "Allow microphone and speech recognition access in Safari settings." : reason === "no-speech" ? "No speech was detected. Speak closer to the microphone and try again." : reason === "network" ? "The iPhone speech recognition service could not connect. Try Safari or use keyboard dictation." : reason === "audio-capture" ? "The microphone could not be opened. Close other apps using it and try again." : "Try again in Safari or use the iPhone keyboard microphone."; voiceMessage("Speech input failed (" + reason + "). " + guidance); };
-      recognition.onend = () => { recording = false; mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
-      mic.addEventListener("click", () => {
-        if (recording) { recognition.stop(); return; }
+      mic.addEventListener("click", async () => {
+        if (recording && mediaRecorder) { mediaRecorder.stop(); return; }
         stopAudio();
-        try { recognition.start(); recording = true; mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
-        catch { voiceMessage("Unable to start the microphone. Try again."); }
+        try {
+          const token = window.AuthStateRuntime?.getAuthToken?.();
+          if (!token) { voiceMessage("Sign in to use voice questions."); return; }
+          recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const candidates = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
+          const mimeType = candidates.find(type => MediaRecorder.isTypeSupported(type));
+          if (!mimeType) throw new Error("No supported recording format on this device");
+          recordingParts = [];
+          mediaRecorder = new MediaRecorder(recordingStream, { mimeType });
+          mediaRecorder.ondataavailable = event => { if (event.data.size) recordingParts.push(event.data); };
+          mediaRecorder.onerror = () => { resetMic(); voiceMessage("Audio recording failed. Try again."); };
+          mediaRecorder.onstop = async () => {
+            resetMic();
+            const blob = new Blob(recordingParts, { type: mimeType });
+            recordingParts = [];
+            if (blob.size > 1250000) { voiceMessage("Question too long. Record a shorter question."); return; }
+            if (blob.size < 100) { voiceMessage("No audio captured. Try again."); return; }
+            voiceMessage("Transcribing your question…");
+            try {
+              const audioBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result).split(",")[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
+              const response = await fetch(origin + "/api/me/nutrition/transcribe", {
+                method:"POST", headers:{ "content-type":"application/json", authorization:"Bearer " + token },
+                body:JSON.stringify({ audioBase64, mimeType })
+              });
+              const data = await response.json();
+              if (!response.ok || data.ok === false) throw new Error(data.error?.message || "Transcription unavailable");
+              const spoken = data.transcript || data.data?.transcript || data.result?.transcript;
+              if (!spoken) throw new Error("No words detected");
+              question.value = spoken;
+              voiceMessage("Question captured. Review it, then tap Ask Nutrition Intelligence.");
+            } catch (error) { voiceMessage("Speech input failed: " + String(error.message || "Please try again.")); }
+          };
+          mediaRecorder.start();
+          recording = true;
+          mic.setAttribute("aria-pressed", "true");
+          mic.textContent = "Stop listening";
+          voiceMessage("Listening… tap Stop listening when finished.");
+        } catch (error) { resetMic(); voiceMessage("Could not record: " + String(error.message || "Check microphone permission.")); }
       });
     }
   }
@@ -159,7 +199,7 @@
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
-    if (recording && recognition) { recognition.stop(); recording = false; }
+    if (recording && mediaRecorder) { mediaRecorder.stop(); return; }
     stopAudio();
     if (stop) stop.disabled = true;
     if (listen) listen.disabled = true;
