@@ -3142,10 +3142,10 @@ function createApp(options = {}) {
     const { audioBase64, mimeType } = req.body || {};
     const types = { "audio/webm":"webm", "audio/mp4":"mp4", "audio/mpeg":"mp3", "audio/wav":"wav", "audio/ogg":"ogg" };
     const normalized = typeof mimeType === "string" ? mimeType.split(";")[0].toLowerCase() : "";
-    if (!types[normalized] || typeof audioBase64 !== "string" || audioBase64.length > 5500000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(audioBase64))
+    if (!types[normalized] || typeof audioBase64 !== "string" || audioBase64.length > 1700000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(audioBase64))
       return res.status(400).json({ ok:false, error:{ message:"Unsupported audio recording. Try a shorter question." } });
     const bytes = Buffer.from(audioBase64, "base64");
-    if (bytes.length < 100 || bytes.length > 4000000) return res.status(400).json({ ok:false, error:{ message:"Recording must be under 4 MB." } });
+    if (bytes.length < 100 || bytes.length > 1250000) return res.status(400).json({ ok:false, error:{ message:"Recording must be under 1.25 MB." } });
     const form = new FormData();
     form.append("model", "gpt-4o-mini-transcribe");
     form.append("file", new Blob([bytes], { type: normalized }), "question." + types[normalized]);
