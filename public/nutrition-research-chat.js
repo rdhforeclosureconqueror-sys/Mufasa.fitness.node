@@ -57,7 +57,7 @@
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token },
-        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\\n" + text })
+        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\n" + text })
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
