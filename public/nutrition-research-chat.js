@@ -4,6 +4,7 @@
   const question = document.getElementById("nutritionResearchQuestion");
   const output = document.getElementById("nutritionResearchAnswer");
   const deepButton = document.getElementById("nutritionResearchDeep");
+  const referencesButton = document.getElementById("nutritionResearchReferences");
   if (!button || !question || !output) return;
   let lastQuestion = "";
   let lastAnswer = "";
@@ -92,7 +93,7 @@
     }
   }
   async function ask(mode) {
-    const text = mode === "DEEP" ? lastQuestion : question.value.trim();
+    const text = mode !== "QUICK" ? lastQuestion : question.value.trim();
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
@@ -100,8 +101,9 @@
     if (stop) stop.disabled = true;
     if (listen) listen.disabled = true;
     button.disabled = true;
-    if (deepButton) { deepButton.disabled = true; deepButton.hidden = true; }
-    output.textContent = mode === "DEEP" ? "Digging a little deeper…" : "Looking into that…";
+    if (deepButton) deepButton.disabled = true;
+    if (referencesButton) referencesButton.disabled = true;
+    output.textContent = mode === "DEEP" ? "Digging a little deeper…" : mode === "REFERENCES" ? "Checking the available references…" : "Looking into that…";
     try {
       const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
       const response = await fetch(origin + "/api/me/nutrition/research", {
@@ -115,12 +117,14 @@
       renderAnswer(lastAnswer);
       if (listen && canSpeak) listen.disabled = false;
       lastQuestion = text;
-      if (deepButton) deepButton.hidden = mode === "DEEP";
+      if (deepButton) deepButton.hidden = mode !== "QUICK";
+      if (referencesButton) referencesButton.hidden = false;
     } catch (error) {
       output.textContent = error.message || "Unable to answer right now.";
-      if (deepButton && lastQuestion) deepButton.hidden = false;
-    } finally { button.disabled = false; if (deepButton) deepButton.disabled = false; }
+      if (deepButton && lastQuestion && mode === "QUICK") deepButton.hidden = false;
+    } finally { button.disabled = false; if (deepButton) deepButton.disabled = false; if (referencesButton) referencesButton.disabled = false; }
   }
   button.addEventListener("click", () => ask("QUICK"));
   if (deepButton) deepButton.addEventListener("click", () => ask("DEEP"));
+  if (referencesButton) referencesButton.addEventListener("click", () => ask("REFERENCES"));
 })();
