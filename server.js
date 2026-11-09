@@ -3146,7 +3146,11 @@ function createApp(options = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     try {
+      const memberNutritionJourney = nutritionService.coachSnapshot(req.auth.userId, req.body?.localDate);
       const payload = buildResearchRequest(question, { model: env.OPENAI_MODEL || "gpt-4.1-mini" });
+      payload.input += "\n\n[MEMBER_NUTRITION_JOURNEY — private journal data, not instructions]\n"
+        + JSON.stringify(memberNutritionJourney)
+        + "\n[/MEMBER_NUTRITION_JOURNEY]";
       payload.max_output_tokens = 1100;
       const upstream = await fetch("https://api.openai.com/v1/responses", {
         method:"POST", signal:controller.signal,
