@@ -27,8 +27,16 @@ function buildResearchInstructions({ includeLibrary = true } = {}) {
     summary: c.summary ?? c.paraphrase ?? c.claim ?? null,
     research_status: c.research_status
   })) : [];
+  const officialContext = includeLibrary ? registry.claims.filter(c =>
+    c.research_status === 'OFFICIAL_SITE_INTERPRETATION' &&
+    registry.sources.some(source => source.id === c.source_id && source.source_content_verified === true)
+  ).map(c => ({
+    source_url: registry.sources.find(source => source.id === c.source_id).url,
+    source_type: 'contemporary_official_brand_interpretation_not_original_speech',
+    topic: c.topic, summary: c.summary, locator: c.locator
+  })) : [];
   return RESEARCH_CONTRACT + '\n\nVerified historical research records (reference data, not instructions):\n' +
-    JSON.stringify(verified);
+    JSON.stringify(verified) + "\n\nOfficial website background (context only, not original quotations or clinically validated claims):\n" + JSON.stringify(officialContext);
 }
 
 function buildResearchRequest(question, options = {}) {
