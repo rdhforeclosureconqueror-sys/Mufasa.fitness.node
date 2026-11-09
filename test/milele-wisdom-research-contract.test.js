@@ -53,3 +53,9 @@ test('systems investigations generate testable biological hypotheses', () => {
   assert.match(RESEARCH_CONTRACT, /bromide participates in peroxidasin-mediated collagen IV/);
   assert.match(RESEARCH_CONTRACT, /Do not stop at 'not proven'/);
 });
+
+test('research engine labels educated guesses and refuses invented references',()=>{
+ assert.match(RESEARCH_CONTRACT,/our working hypothesis/);
+ assert.match(RESEARCH_CONTRACT,/RESPONSE_MODE:REFERENCES/);
+ assert.match(RESEARCH_CONTRACT,/Never fabricate a citation/);
+});
