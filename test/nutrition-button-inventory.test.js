@@ -50,7 +50,7 @@ test("nutrition read aloud uses Mufasa backend voice, not browser speech",()=>{
 
 test("nutrition follow-up voice remains available after deeper answers",()=>{
  const script=fs.readFileSync(path.join(__dirname,"../public/nutrition-research-chat.js"),"utf8");
- assert.doesNotThrow(()=>new vm.Script(script));
+ assert.doesNotThrow(()=>new (require("node:vm").Script)(script));
  assert.match(script,/conversationContext/);
  assert.match(script,/New user question:/);
  assert.match(script,/question\.placeholder = "Ask a follow-up/);
