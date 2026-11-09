@@ -42,3 +42,20 @@ test('alkalinity guidance honors historical framework without false blood pH cla
   assert.match(RESEARCH_CONTRACT, /Do not mock, trivialize/);
   assert.match(RESEARCH_CONTRACT, /verified attributed records only/);
 });
+
+test('eczema answers separate historical food framework from medical claims', () => {
+  assert.match(RESEARCH_CONTRACT, /not an established treatment plan/);
+  assert.match(RESEARCH_CONTRACT, /blanket avoidance of all nuts/);
+});
+
+test('systems investigations generate testable biological hypotheses', () => {
+  assert.match(RESEARCH_CONTRACT, /SYSTEMS INVESTIGATION/);
+  assert.match(RESEARCH_CONTRACT, /bromide participates in peroxidasin-mediated collagen IV/);
+  assert.match(RESEARCH_CONTRACT, /Do not stop at 'not proven'/);
+});
+
+test('research engine labels educated guesses and refuses invented references',()=>{
+ assert.match(RESEARCH_CONTRACT,/our working hypothesis/);
+ assert.match(RESEARCH_CONTRACT,/RESPONSE_MODE:REFERENCES/);
+ assert.match(RESEARCH_CONTRACT,/Never fabricate a citation/);
+});

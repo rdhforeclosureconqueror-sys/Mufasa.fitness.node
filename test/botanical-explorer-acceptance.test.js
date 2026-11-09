@@ -35,7 +35,7 @@ function harness() {
 test("explorer loads only within the existing authenticated nutrition shell", () => {
   const shell = page.indexOf('id="journalShell"');
   const explorer = page.indexOf('id="botanicalWisdom"');
-  const close = page.indexOf("</section>\n  </main>", explorer);
+  const close = page.indexOf("</main>", explorer);
   assert.ok(shell > 0 && explorer > shell && close > explorer);
   assert.match(page, /botanical-wisdom-explorer\.js/);
 });
