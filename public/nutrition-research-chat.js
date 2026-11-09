@@ -37,7 +37,7 @@
       });
     }
   }
-  // Match Mufasa's configured backend voice via /api/speak, not device speechSynthesis.
+  // Match Mufasa's configured backend voice via /api/speak, not device speech synthesis.
   let audioPlayer = null;
   let speechAbort = null;
   let playbackId = 0;
