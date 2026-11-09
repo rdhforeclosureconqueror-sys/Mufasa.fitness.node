@@ -33,3 +33,10 @@ test('nutrition guide defaults to short conversational answers with optional dep
   assert.match(RESEARCH_CONTRACT, /light, original/);
   assert.match(RESEARCH_CONTRACT, /RESPONSE_MODE:DEEP/);
 });
+
+test('alkalinity guidance honors historical framework without false blood pH claims', () => {
+  assert.match(RESEARCH_CONTRACT, /central place in the historical framework/);
+  assert.match(RESEARCH_CONTRACT, /blood pH is tightly regulated/);
+  assert.match(RESEARCH_CONTRACT, /Do not mock, trivialize/);
+  assert.match(RESEARCH_CONTRACT, /verified attributed records only/);
+});
