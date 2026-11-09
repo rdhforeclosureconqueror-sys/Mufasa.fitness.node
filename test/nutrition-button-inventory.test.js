@@ -22,3 +22,12 @@ test("research chat button is bound in dedicated client",()=>{ const client=fs.r
 test("dynamic nutrition action handlers remain present",()=>{
  for(const action of ["customSaveBtn","data-delete","data-edit","data-select","data-grocery-state","data-manual-mission","data-search"])assert.ok(runtime.includes(action),"Missing dynamic handler: "+action);
 });
+
+test("nutrition research script parses and archive is hidden while assistant remains visible",()=>{
+ const vm=require("node:vm");
+ const client=fs.readFileSync(path.join(__dirname,"../public/nutrition-research-chat.js"),"utf8");
+ assert.doesNotThrow(()=>new vm.Script(client));
+ assert.match(html,/<section class="card" id="botanicalWisdom" hidden/);
+ assert.match(html,/<section class="card" id="nutritionIntelligence"/);
+ assert.match(html,/#botanicalWisdom\\[hidden\\] \\{ display:none !important; \\}/);
+});
