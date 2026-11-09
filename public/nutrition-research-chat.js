@@ -4,9 +4,7 @@
   const question = document.getElementById("nutritionResearchQuestion");
   const output = document.getElementById("nutritionResearchAnswer");
   const deepButton = document.getElementById("nutritionResearchDeep");
-  const deepButton = document.getElementById("nutritionResearchDeep");
   if (!button || !question || !output) return;
-  let lastQuestion = "";
   let lastQuestion = "";
   // Render a small, safe Markdown subset without injecting untrusted HTML.
   function renderAnswer(value) {
