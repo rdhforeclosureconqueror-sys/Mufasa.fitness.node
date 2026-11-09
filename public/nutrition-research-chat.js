@@ -4,7 +4,9 @@
   const question = document.getElementById("nutritionResearchQuestion");
   const output = document.getElementById("nutritionResearchAnswer");
   const deepButton = document.getElementById("nutritionResearchDeep");
+  const deepButton = document.getElementById("nutritionResearchDeep");
   if (!button || !question || !output) return;
+  let lastQuestion = "";
   let lastQuestion = "";
   // Render a small, safe Markdown subset without injecting untrusted HTML.
   function renderAnswer(value) {
@@ -44,15 +46,16 @@
       }
     }
   }
-  button.addEventListener("click", async () => {
-    const text = question.value.trim();
+  async function ask(mode) {
+    const text = mode === "DEEP" ? lastQuestion : question.value.trim();
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
     button.disabled = true;
-    output.textContent = "Investigating your question…";
+    if (deepButton) { deepButton.disabled = true; deepButton.hidden = true; }
+    output.textContent = mode === "DEEP" ? "Digging a little deeper…" : "Looking into that…";
     try {
-      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
+      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token },
@@ -62,8 +65,12 @@
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
       renderAnswer(json.data?.answer || "No answer returned.");
       lastQuestion = text;
-      if (deepButton) { deepButton.hidden = mode === "DEEP"; deepButton.disabled = false; }
-    } catch (error) { output.textContent = error.message || "Unable to answer right now."; }
-    finally { button.disabled = false; }
-  });
+      if (deepButton) deepButton.hidden = mode === "DEEP";
+    } catch (error) {
+      output.textContent = error.message || "Unable to answer right now.";
+      if (deepButton && lastQuestion) deepButton.hidden = false;
+    } finally { button.disabled = false; if (deepButton) deepButton.disabled = false; }
+  }
+  button.addEventListener("click", () => ask("QUICK"));
+  if (deepButton) deepButton.addEventListener("click", () => ask("DEEP"));
 })();
