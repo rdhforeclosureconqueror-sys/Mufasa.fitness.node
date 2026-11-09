@@ -98,6 +98,14 @@
   @media(max-width:700px){.garden-hero{min-height:260px;border-radius:26px 26px 42px 26px;background-position:56% center;margin-bottom:14px}.garden-hero-content{padding:21px 20px}.garden-hero h1{font-size:2.1rem}.garden-hero p{font-size:.89rem}.card{border-radius:26px 26px 34px 26px}.method{border-radius:20px 20px 27px 20px}header{background:rgba(4,20,27,.62)}}
 .photo-ocr-options{display:grid;gap:12px;margin:14px 0;padding:16px;border:1px solid rgba(83,220,191,.5);border-radius:22px;background:rgba(6,22,27,.6)}.photo-ocr-label{font-weight:700;color:#9ef3d8}.photo-ocr-options input{max-width:100%;color:var(--text)}#nutritionFactsResult{white-space:normal;line-height:1.55}#nutritionFactsResult p{margin:6px 0}.barcode-crop-preview{width:100%;border-radius:14px;overflow:hidden;border:1px solid rgba(255,211,90,.6)}#barcodeCropCanvas{width:100%;height:auto;display:block;touch-action:none;cursor:crosshair}#barcodeCropPanel{display:grid;gap:9px}#barcodeCropPanel[hidden]{display:none}#barcodeCropPanel input[type=range]{width:100%;accent-color:#ffda78}</style>
 <link rel="stylesheet" href="/global-nav.css?v=20260824-global-nav-production-repair-v3">
+<style>
+    .nutrition-research-answer { overflow-wrap:anywhere; word-break:normal; line-height:1.55; }
+    .nutrition-research-answer p { margin:.75em 0; }
+    .nutrition-research-answer h4,.nutrition-research-answer h5 { margin:1.1em 0 .45em; color:#f8df91; }
+    .nutrition-research-answer ul { padding-left:1.3em; margin:.55em 0; }
+    .nutrition-research-answer li { margin:.35em 0; }
+    #nutritionResearchQuestion { max-width:100%; box-sizing:border-box; }
+  </style>
 </head>
 <body>
   <header>
@@ -160,7 +168,8 @@
           <label for="nutritionResearchQuestion">Your nutrition research question</label>
           <textarea id="nutritionResearchQuestion" rows="3" maxlength="4000" placeholder="What is the connection between soil minerals and minerals in plants?"></textarea>
           <button class="btn primary" type="button" id="nutritionResearchAsk">Ask Nutrition Intelligence</button>
-          <div id="nutritionResearchAnswer" class="muted" role="status" aria-live="polite">Ask a question to begin exploring.</div>
+          <button class="btn" type="button" id="nutritionResearchDeep" hidden>Go deeper into this</button>
+          <div id="nutritionResearchAnswer" class="muted nutrition-research-answer" role="status" aria-live="polite">Ask a question to begin exploring.</div>
         </div>
         <div class="review" aria-label="Historical source explorer">
           <h3>Ask the historical source library</h3>
@@ -212,7 +221,7 @@
   <script src="/auth-state-runtime.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
   <script src="/nutrition-runtime.js?v=20261106-milele-score-v2"></script>
   <script src="/botanical-wisdom-explorer.js?v=20261105-1" defer></script>
-  <script src="/nutrition-research-chat.js?v=20261109-1" defer></script>
+  <script src="/nutrition-research-chat.js?v=20261109-3" defer></script>
 <script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body>
 </html>
