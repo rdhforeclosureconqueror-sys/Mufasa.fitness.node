@@ -39,3 +39,11 @@ test("voice, references and disclaimer controls exist",()=>{
  for(const id of ["nutritionResearchMic","nutritionResearchListen","nutritionResearchStop","nutritionResearchReferences"]) assert.ok(html.includes('id="'+id+'"'));
  assert.match(html,/Educational information only/);
 });
+
+test("nutrition read aloud uses Mufasa backend voice, not browser speech",()=>{
+ const script=fs.readFileSync(path.join(__dirname,"../public/nutrition-research-chat.js"),"utf8");
+ assert.match(script,/\/api\/speak/);
+ assert.match(script,/new Audio\(\)/);
+ assert.doesNotMatch(script,/speechSynthesis/);
+ assert.match(script,/speechChunks/);
+});
