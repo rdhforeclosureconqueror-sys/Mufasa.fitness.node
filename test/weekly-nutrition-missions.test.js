@@ -95,3 +95,18 @@ test("mobile weekly UI preserves nutrition journal elements and exposes required
   assert.match(js, /api\("\/api\/me\/nutrition\/weekly-plan\/current"/);
   assert.match(js, /Manual confirmation/);
 });
+
+
+test("coach snapshot reads only the member's saved food journey and active plan", () => {
+  const svc = service();
+  const plan = svc.createWeeklyPlan("journey-member", { weekStartDate: "2026-07-13", status: "active", proteinGramsTarget: 120 }).plan;
+  svc.upsertGroceryItem("journey-member", plan.id, { groceryOptionId: "spinach", categoryKey: "leafy_greens", alreadyAtHome: true });
+  svc.createEntry("journey-member", { foodName: "Spinach", source: "custom", localDate: "2026-07-15", calories: 20, proteinGrams: 2, fiberGrams: 2 });
+  svc.createEntry("another-member", { foodName: "Private food", source: "custom", localDate: "2026-07-15", calories: 900 });
+  const snapshot = svc.coachSnapshot("journey-member", "2026-07-15");
+  assert.equal(snapshot.today.foodsLogged[0].name, "Spinach");
+  assert.equal(snapshot.today.totals.proteinGrams, 2);
+  assert.equal(snapshot.thisWeek.foodNames.includes("Private food"), false);
+  assert.equal(snapshot.weeklyPlan.proteinGramsTarget, 120);
+  assert.ok(snapshot.weeklyPlan.pantry.includes("Spinach"));
+});
