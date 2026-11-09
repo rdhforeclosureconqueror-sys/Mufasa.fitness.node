@@ -10,6 +10,10 @@
   let lastAnswer = "";
   let conversationContext = "";
   let recording = false;
+  let wakeArmed = true;
+  let wakeExpiryTimer = null;
+  const WAKE_PATTERN = /(?:^|[,.!?\s])(?:hey\s+)?mufasa\b\s*[,!?.-]*/i;
+  const WAKE_WINDOW_MS = 30000;
   const mic = document.getElementById("nutritionResearchMic");
   const listen = document.getElementById("nutritionResearchListen");
   const stop = document.getElementById("nutritionResearchStop");
@@ -17,6 +21,60 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
   const voiceMessage = message => { if (voiceStatus) voiceStatus.textContent = message; };
+
+  const setMicUi = active => {
+    if (!mic) return;
+    mic.setAttribute("aria-pressed", String(active));
+    mic.textContent = active ? "Stop listening" : "🎙️ Turn on “Hey Mufasa”";
+  };
+  const clearWakeWindow = () => {
+    if (wakeExpiryTimer) window.clearTimeout(wakeExpiryTimer);
+    wakeExpiryTimer = null;
+  };
+  const armWakeWindow = () => {
+    wakeArmed = false;
+    clearWakeWindow();
+    wakeExpiryTimer = window.setTimeout(() => {
+      wakeArmed = true;
+      voiceMessage("Still listening. Say “Hey Mufasa” when you’re ready.");
+    }, WAKE_WINDOW_MS);
+  };
+  const stopWakeListening = () => {
+    recording = false;
+    wakeArmed = true;
+    clearWakeWindow();
+    try { recognition?.stop(); } catch (_) {}
+    setMicUi(false);
+  };
+  const startWakeListening = () => {
+    if (!recognition) return;
+    recording = true;
+    wakeArmed = true;
+    clearWakeWindow();
+    try {
+      recognition.start();
+      setMicUi(true);
+      voiceMessage("Listening for “Hey Mufasa”…");
+    } catch (error) {
+      if (error?.name !== "InvalidStateError") {
+        recording = false;
+        setMicUi(false);
+        voiceMessage("Unable to start the microphone. Try again.");
+      }
+    }
+  };
+  const submitSpokenQuestion = spoken => {
+    const clean = String(spoken || "").trim();
+    if (!clean) {
+      voiceMessage("I heard “Hey Mufasa.” What nutrition question would you like to ask?");
+      return;
+    }
+    question.value = clean;
+    voiceMessage("Question captured. Nutrition Intelligence is thinking…");
+    stopWakeListening();
+    ask("QUICK");
+  };
+
   if (mic) {
     if (!SpeechRecognition) {
       mic.disabled = true;
@@ -24,19 +82,55 @@
     } else {
       recognition = new SpeechRecognition();
       recognition.lang = "en-US";
+      recognition.continuous = true;
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
       recognition.onresult = event => {
-        const spoken = event.results?.[0]?.[0]?.transcript?.trim();
-        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask to continue the conversation."); }
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          if (!event.results[index]?.isFinal) continue;
+          const transcript = event.results[index]?.[0]?.transcript?.trim() || "";
+          if (!transcript) continue;
+          if (wakeArmed) {
+            const match = transcript.match(WAKE_PATTERN);
+            if (!match) {
+              voiceMessage("Listening for “Hey Mufasa”…");
+              continue;
+            }
+            const remainder = transcript.slice((match.index || 0) + match[0].length).trim();
+            armWakeWindow();
+            if (remainder) submitSpokenQuestion(remainder);
+            else voiceMessage("I’m listening. Ask your nutrition question.");
+          } else {
+            submitSpokenQuestion(transcript);
+          }
+        }
       };
-      recognition.onerror = event => { const reason = String(event?.error || "unknown"); const guidance = reason === "not-allowed" || reason === "service-not-allowed" ? "Allow microphone and speech recognition access in Safari settings." : reason === "no-speech" ? "No speech was detected. Speak closer to the microphone and try again." : reason === "network" ? "The iPhone speech recognition service could not connect. Try Safari or use keyboard dictation." : reason === "audio-capture" ? "The microphone could not be opened. Close other apps using it and try again." : "Try again in Safari or use the iPhone keyboard microphone."; voiceMessage("Speech input failed (" + reason + "). " + guidance); };
-      recognition.onend = () => { recording = false; mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
+      recognition.onerror = event => {
+        const reason = String(event?.error || "unknown");
+        const guidance = reason === "not-allowed" || reason === "service-not-allowed"
+          ? "Allow microphone and speech recognition access in Safari settings."
+          : reason === "audio-capture"
+            ? "The microphone could not be opened. Close other apps using it and try again."
+            : reason === "network"
+              ? "The iPhone speech recognition service could not connect. Try Safari or use keyboard dictation."
+              : reason === "no-speech"
+                ? "No speech was detected. I’m still listening for “Hey Mufasa”."
+                : "Try again in Safari or use the iPhone keyboard microphone.";
+        voiceMessage("Speech input failed (" + reason + "). " + guidance);
+        if (reason === "not-allowed" || reason === "service-not-allowed" || reason === "audio-capture") {
+          recording = false;
+          setMicUi(false);
+        }
+      };
+      recognition.onend = () => {
+        if (!recording) { setMicUi(false); return; }
+        window.setTimeout(() => {
+          if (recording) startWakeListening();
+        }, 250);
+      };
       mic.addEventListener("click", () => {
-        if (recording) { recognition.stop(); return; }
-        stopAudio();
-        try { recognition.start(); recording = true; mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
-        catch { voiceMessage("Unable to start the microphone. Try again."); }
+        if (recording) stopWakeListening();
+        else startWakeListening();
       });
     }
   }
