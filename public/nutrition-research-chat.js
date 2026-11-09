@@ -8,6 +8,8 @@
   if (!button || !question || !output) return;
   let lastQuestion = "";
   let lastAnswer = "";
+  let conversationContext = "";
+  let recording = false;
   const mic = document.getElementById("nutritionResearchMic");
   const listen = document.getElementById("nutritionResearchListen");
   const stop = document.getElementById("nutritionResearchStop");
@@ -26,13 +28,14 @@
       recognition.maxAlternatives = 1;
       recognition.onresult = event => {
         const spoken = event.results?.[0]?.[0]?.transcript?.trim();
-        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask Nutrition Intelligence."); }
+        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask to continue the conversation."); }
       };
       recognition.onerror = event => voiceMessage(event.error === "not-allowed" ? "Microphone access was denied. Allow access in your browser settings." : "Speech recognition couldn't finish. Try again or type your question.");
-      recognition.onend = () => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
+      recognition.onend = () => { recording = false; mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
       mic.addEventListener("click", () => {
-        if (mic.getAttribute("aria-pressed") === "true") { recognition.stop(); return; }
-        try { recognition.start(); mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
+        if (recording) { recognition.stop(); return; }
+        stopAudio();
+        try { recognition.start(); recording = true; mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
         catch { voiceMessage("Unable to start the microphone. Try again."); }
       });
     }
@@ -156,6 +159,7 @@
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
+    if (recording && recognition) { recognition.stop(); recording = false; }
     stopAudio();
     if (stop) stop.disabled = true;
     if (listen) listen.disabled = true;
@@ -168,15 +172,18 @@
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token },
-        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\n" + text })
+        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\n" + (mode === "QUICK" && conversationContext ? "Previous exchange for context:\n" + conversationContext.slice(-3500) + "\n\nNew user question: " + text : text) })
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
       lastAnswer = json.data?.answer || "No answer returned.";
+      conversationContext = "User: " + text + "\nAssistant: " + lastAnswer;
+      if (mode !== "QUICK") question.value = "";
+      question.placeholder = "Ask a follow-up by typing or tapping the microphone…";
       renderAnswer(lastAnswer);
       if (listen && canSpeak) listen.disabled = false;
       lastQuestion = text;
-      if (deepButton) deepButton.hidden = mode !== "QUICK";
+      if (deepButton) deepButton.hidden = false;
       if (referencesButton) referencesButton.hidden = false;
     } catch (error) {
       output.textContent = error.message || "Unable to answer right now.";
