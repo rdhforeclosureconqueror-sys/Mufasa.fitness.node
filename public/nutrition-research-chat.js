@@ -8,6 +8,8 @@
   if (!button || !question || !output) return;
   let lastQuestion = "";
   let lastAnswer = "";
+  let conversationContext = "";
+  let recording = false;
   const mic = document.getElementById("nutritionResearchMic");
   const listen = document.getElementById("nutritionResearchListen");
   const stop = document.getElementById("nutritionResearchStop");
@@ -26,13 +28,14 @@
       recognition.maxAlternatives = 1;
       recognition.onresult = event => {
         const spoken = event.results?.[0]?.[0]?.transcript?.trim();
-        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask Nutrition Intelligence."); }
+        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask to continue the conversation."); }
       };
       recognition.onerror = event => voiceMessage(event.error === "not-allowed" ? "Microphone access was denied. Allow access in your browser settings." : "Speech recognition couldn't finish. Try again or type your question.");
-      recognition.onend = () => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
+      recognition.onend = () => { recording = false; mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
       mic.addEventListener("click", () => {
-        if (mic.getAttribute("aria-pressed") === "true") { recognition.stop(); return; }
-        try { recognition.start(); mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
+        if (recording) { recognition.stop(); return; }
+        stopAudio();
+        try { recognition.start(); recording = true; mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
         catch { voiceMessage("Unable to start the microphone. Try again."); }
       });
     }
@@ -43,6 +46,7 @@
   let playbackId = 0;
   let activeObjectUrl = null;
   const canSpeak = true;
+  if (voiceStatus) voiceStatus.textContent = "Voice engine: Mufasa AI service (not iPhone narrator).";
   const stopAudio = () => {
     playbackId += 1;
     if (speechAbort) { speechAbort.abort(); speechAbort = null; }
@@ -73,7 +77,7 @@
     if (!token) { voiceMessage("Sign in to listen to the AI voice."); return; }
     if (!audioPlayer) audioPlayer = new Audio();
     if (stop) stop.disabled = false;
-    voiceMessage("Preparing Mufasa's AI voice…");
+    voiceMessage("Connecting to Mufasa AI voice service…");
     try {
       const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
       for (const text of speechChunks(lastAnswer)) {
@@ -86,10 +90,13 @@
           signal: speechAbort.signal
         });
         if (!response.ok) throw new Error("AI voice service unavailable (" + response.status + ")");
+        const type = response.headers.get("content-type") || "";
+        if (!type.toLowerCase().startsWith("audio/")) throw new Error("Voice endpoint did not return audio");
         const blob = await response.blob();
         if (currentId !== playbackId) return;
         activeObjectUrl = URL.createObjectURL(blob);
         audioPlayer.src = activeObjectUrl;
+        voiceMessage("Playing audio from Mufasa AI voice service.");
         await new Promise((resolve, reject) => {
           audioPlayer.onended = resolve;
           audioPlayer.onerror = () => reject(new Error("Audio playback failed"));
@@ -102,7 +109,7 @@
     } catch (error) {
       if (currentId === playbackId) voiceMessage(error.name === "NotAllowedError"
         ? "Tap Read answer again to allow audio playback."
-        : "AI voice could not play. Try again.");
+        : "AI voice failed: " + String(error.message || "Unknown error").slice(0, 110));
     } finally {
       if (currentId === playbackId) { speechAbort = null; if (stop) stop.disabled = true; }
     }
@@ -152,6 +159,7 @@
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
+    if (recording && recognition) { recognition.stop(); recording = false; }
     stopAudio();
     if (stop) stop.disabled = true;
     if (listen) listen.disabled = true;
@@ -164,15 +172,18 @@
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token },
-        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\n" + text })
+        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\n" + (mode === "QUICK" && conversationContext ? "Previous exchange for context:\n" + conversationContext.slice(-3500) + "\n\nNew user question: " + text : text) })
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
       lastAnswer = json.data?.answer || "No answer returned.";
+      conversationContext = "User: " + text + "\nAssistant: " + lastAnswer;
+      if (mode !== "QUICK") question.value = "";
+      question.placeholder = "Ask a follow-up by typing or tapping the microphone…";
       renderAnswer(lastAnswer);
       if (listen && canSpeak) listen.disabled = false;
       lastQuestion = text;
-      if (deepButton) deepButton.hidden = mode !== "QUICK";
+      if (deepButton) deepButton.hidden = false;
       if (referencesButton) referencesButton.hidden = false;
     } catch (error) {
       output.textContent = error.message || "Unable to answer right now.";
