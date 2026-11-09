@@ -3,7 +3,9 @@
   const button = document.getElementById("nutritionResearchAsk");
   const question = document.getElementById("nutritionResearchQuestion");
   const output = document.getElementById("nutritionResearchAnswer");
+  const deepButton = document.getElementById("nutritionResearchDeep");
   if (!button || !question || !output) return;
+  let lastQuestion = "";
   // Render a small, safe Markdown subset without injecting untrusted HTML.
   function renderAnswer(value) {
     output.replaceChildren();
@@ -54,11 +56,13 @@
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token },
-        body: JSON.stringify({ question: text })
+        body: JSON.stringify({ question: "[RESPONSE_MODE:" + mode + "]\\n" + text })
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
       renderAnswer(json.data?.answer || "No answer returned.");
+      lastQuestion = text;
+      if (deepButton) { deepButton.hidden = mode === "DEEP"; deepButton.disabled = false; }
     } catch (error) { output.textContent = error.message || "Unable to answer right now."; }
     finally { button.disabled = false; }
   });
