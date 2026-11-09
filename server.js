@@ -3135,6 +3135,33 @@ function createApp(options = {}) {
   }));
 
 
+  const nutritionTranscriptionLimiter = createRateLimiter({ name: "nutrition-transcription", windowMs: 60000, max: 6 });
+  app.post("/api/me/nutrition/transcribe", requireAuth, requireMembershipEntitlement, nutritionTranscriptionLimiter, asyncHandler(async (req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    if (!env.OPENAI_API_KEY) return res.status(503).json({ ok:false, error:{ message:"Speech transcription is unavailable." } });
+    const { audioBase64, mimeType } = req.body || {};
+    const types = { "audio/webm":"webm", "audio/mp4":"mp4", "audio/mpeg":"mp3", "audio/wav":"wav", "audio/ogg":"ogg" };
+    const normalized = typeof mimeType === "string" ? mimeType.split(";")[0].toLowerCase() : "";
+    if (!types[normalized] || typeof audioBase64 !== "string" || audioBase64.length > 5500000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(audioBase64))
+      return res.status(400).json({ ok:false, error:{ message:"Unsupported audio recording. Try a shorter question." } });
+    const bytes = Buffer.from(audioBase64, "base64");
+    if (bytes.length < 100 || bytes.length > 4000000) return res.status(400).json({ ok:false, error:{ message:"Recording must be under 4 MB." } });
+    const form = new FormData();
+    form.append("model", "gpt-4o-mini-transcribe");
+    form.append("file", new Blob([bytes], { type: normalized }), "question." + types[normalized]);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const upstream = await fetch("https://api.openai.com/v1/audio/transcriptions", { method:"POST", headers:{ authorization:"Bearer " + env.OPENAI_API_KEY }, body:form, signal:controller.signal });
+      if (!upstream.ok) return res.status(502).json({ ok:false, error:{ message:"Speech transcription failed. Please retry." } });
+      const data = await upstream.json();
+      const transcript = typeof data.text === "string" ? data.text.trim().slice(0, 4000) : "";
+      if (!transcript) return res.status(422).json({ ok:false, error:{ message:"No words detected. Please try again." } });
+      return ok(res, req.requestId, { transcript }, 200);
+    } catch (_) { return res.status(502).json({ ok:false, error:{ message:"Speech transcription timed out. Try again." } }); }
+    finally { clearTimeout(timeout); }
+  }));
+
   const nutritionResearchLimiter = createRateLimiter({ name: "nutrition-research", windowMs: 60000, max: 8 });
   app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, asyncHandler(async (req, res) => {
     res.set("Cache-Control", "private, no-store");
