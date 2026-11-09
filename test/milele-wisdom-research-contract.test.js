@@ -27,3 +27,9 @@ test('only certified source records enter prompt', () => {
   assert.ok(!s.includes('SEBI-CAND-001'));
   assert.ok(!s.includes('SEBI-OFFICIAL-001'));
 });
+
+test('nutrition guide defaults to short conversational answers with optional depth', () => {
+  assert.match(RESEARCH_CONTRACT, /under 110 words/);
+  assert.match(RESEARCH_CONTRACT, /light, original/);
+  assert.match(RESEARCH_CONTRACT, /RESPONSE_MODE:DEEP/);
+});
