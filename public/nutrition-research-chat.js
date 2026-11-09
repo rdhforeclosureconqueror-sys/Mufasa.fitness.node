@@ -37,22 +37,77 @@
       });
     }
   }
-  const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
-  if (listen) {
-    if (!canSpeak) { listen.disabled = true; voiceMessage("Read-aloud isn't supported in this browser."); }
-    else listen.addEventListener("click", () => {
-      if (!lastAnswer) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(lastAnswer.replace(/[#*]/g, ""));
-      utterance.lang = "en-US";
-      utterance.rate = 0.95;
-      utterance.onend = utterance.onerror = () => { if (stop) stop.disabled = true; voiceMessage(""); };
-      window.speechSynthesis.speak(utterance);
-      if (stop) stop.disabled = false;
-      voiceMessage("Reading answer aloud…");
-    });
-  }
-  if (stop) stop.addEventListener("click", () => { if (canSpeak) window.speechSynthesis.cancel(); stop.disabled = true; voiceMessage("Reading stopped."); });
+  // Match Mufasa's configured backend voice via /api/speak, not device speechSynthesis.
+  let audioPlayer = null;
+  let speechAbort = null;
+  let playbackId = 0;
+  let activeObjectUrl = null;
+  const canSpeak = true;
+  const stopAudio = () => {
+    playbackId += 1;
+    if (speechAbort) { speechAbort.abort(); speechAbort = null; }
+    if (audioPlayer) { audioPlayer.pause(); audioPlayer.removeAttribute("src"); audioPlayer.load(); }
+    if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; }
+    if (stop) stop.disabled = true;
+  };
+  const speechChunks = text => {
+    const cleaned = String(text || "").replace(/[#*]/g, "").trim();
+    const chunks = [];
+    let remaining = cleaned;
+    while (remaining.length) {
+      if (remaining.length <= 950) { chunks.push(remaining); break; }
+      const candidate = remaining.slice(0, 950);
+      let cut = Math.max(candidate.lastIndexOf(". "), candidate.lastIndexOf("? "), candidate.lastIndexOf("! "), candidate.lastIndexOf(" "));
+      if (cut < 300) cut = 950;
+      else cut += 1;
+      chunks.push(remaining.slice(0, cut).trim());
+      remaining = remaining.slice(cut).trim();
+    }
+    return chunks;
+  };
+  if (listen) listen.addEventListener("click", async () => {
+    if (!lastAnswer) return;
+    stopAudio();
+    const currentId = playbackId;
+    const token = window.AuthStateRuntime?.getAuthToken?.();
+    if (!token) { voiceMessage("Sign in to listen to the AI voice."); return; }
+    if (!audioPlayer) audioPlayer = new Audio();
+    if (stop) stop.disabled = false;
+    voiceMessage("Preparing Mufasa's AI voice…");
+    try {
+      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
+      for (const text of speechChunks(lastAnswer)) {
+        if (currentId !== playbackId) return;
+        speechAbort = new AbortController();
+        const response = await fetch(origin + "/api/speak", {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: "Bearer " + token },
+          body: JSON.stringify({ text, format: "mp3" }),
+          signal: speechAbort.signal
+        });
+        if (!response.ok) throw new Error("AI voice service unavailable (" + response.status + ")");
+        const blob = await response.blob();
+        if (currentId !== playbackId) return;
+        activeObjectUrl = URL.createObjectURL(blob);
+        audioPlayer.src = activeObjectUrl;
+        await new Promise((resolve, reject) => {
+          audioPlayer.onended = resolve;
+          audioPlayer.onerror = () => reject(new Error("Audio playback failed"));
+          audioPlayer.play().catch(reject);
+        });
+        URL.revokeObjectURL(activeObjectUrl);
+        activeObjectUrl = null;
+      }
+      if (currentId === playbackId) voiceMessage("Finished reading.");
+    } catch (error) {
+      if (currentId === playbackId) voiceMessage(error.name === "NotAllowedError"
+        ? "Tap Read answer again to allow audio playback."
+        : "AI voice could not play. Try again.");
+    } finally {
+      if (currentId === playbackId) { speechAbort = null; if (stop) stop.disabled = true; }
+    }
+  });
+  if (stop) stop.addEventListener("click", () => { stopAudio(); voiceMessage("Reading stopped."); });
 
   // Render a small, safe Markdown subset without injecting untrusted HTML.
   function renderAnswer(value) {
@@ -97,7 +152,7 @@
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
-    if (canSpeak) window.speechSynthesis.cancel();
+    stopAudio();
     if (stop) stop.disabled = true;
     if (listen) listen.disabled = true;
     button.disabled = true;
