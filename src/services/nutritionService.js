@@ -578,6 +578,71 @@ function createNutritionService({ userStore }) {
   function listMissions(userId, planId, date = null) { const user = userStore.loadUser(userId); const store = weeklyStore(user); findPlan(store, userId, planId); let missions = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); if (date) missions = missions.filter((m) => m.missionDate === parseLocalDate(date)); return { userId, missions: clone(missions), count: missions.length }; }
   function planBundle(userId, planId) { const user = userStore.loadUser(userId); const store = weeklyStore(user); const plan = findPlan(store, userId, planId); const groceryItems = store.weeklyGroceryItems.filter((i) => i.weeklyPlanId === planId); const pantry = pantryFor(store, planId); const missions = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); return { userId, plan: clone(plan), groceryItems: clone(groceryItems), pantry: clone(pantry), missions: clone(missions), categories: getGroceryOptions().categories, progress: { groceryPrepared: pantry.length, grocerySelected: groceryItems.filter((i) => i.selectedForShopping || i.acquired || i.alreadyAtHome).length, missionsCompleted: missions.filter((m) => m.status === "completed").length, missionCount: missions.length } }; }
   function weeklyReview(userId, planId) { const user = userStore.loadUser(userId); const store = weeklyStore(user); const plan = findPlan(store, userId, planId); const end = addDays(plan.weekStartDate, 6); const entries = store.entries.filter((e) => e.userId === userId && e.localDate >= plan.weekStartDate && e.localDate <= end); const totals = emptyTotals(); entries.forEach((e) => addTotals(totals, e)); const categoriesIncluded = Array.from(new Set(entries.map(matchEntryCategory).filter(Boolean).map((m) => m.categoryKey))); const missions = store.dailyMissions.filter((m) => m.weeklyPlanId === planId); return { userId, plan: clone(plan), weekEndDate: end, groceryItems: clone(store.weeklyGroceryItems.filter((i) => i.weeklyPlanId === planId)), foodsLogged: clone(entries.map((e) => ({ entryId: e.entryId, foodName: e.foodName, localDate: e.localDate, calories: e.calories }))), missionCompletionByDay: Object.fromEntries([...Array(7)].map((_, i) => { const date = addDays(plan.weekStartDate, i); const day = missions.filter((m) => m.missionDate === date); return [date, { completed: day.filter((m) => m.status === "completed").length, total: day.length }]; })), categoriesIncluded, nutritionTotals: finalizeTotals(totals), feedback: "Review what you added and what felt realistic. Skips are information for next week, not failure." }; }
+  function coachSnapshot(userId, date = null) {
+    const localDate = parseLocalDate(date);
+    const weekStartDate = mondayOf(localDate);
+    const weekEndDate = addDays(weekStartDate, 6);
+    const user = userStore.loadUser(userId);
+    const store = weeklyStore(user);
+    const todayEntries = store.entries.filter((entry) => entry.userId === userId && entry.localDate === localDate);
+    const weekEntries = store.entries.filter((entry) => entry.userId === userId && entry.localDate >= weekStartDate && entry.localDate <= weekEndDate);
+    const todayTotals = emptyTotals();
+    const weekTotals = emptyTotals();
+    todayEntries.forEach((entry) => addTotals(todayTotals, entry));
+    weekEntries.forEach((entry) => addTotals(weekTotals, entry));
+    const categoriesLogged = Array.from(new Set(weekEntries
+      .map(matchEntryCategory)
+      .filter(Boolean)
+      .map((match) => titleizeCategory(match.categoryKey))));
+    const plan = store.weeklyPlans.find((item) => item.userId === userId && item.status === "active")
+      || store.weeklyPlans.find((item) => item.userId === userId && item.weekStartDate === weekStartDate && item.status !== "archived")
+      || null;
+    const pantry = plan ? pantryFor(store, plan.id).slice(0, 20).map((item) => safeString(item.canonicalName || item.customName || item.name || "food option", 120)) : [];
+    const missions = plan ? store.dailyMissions
+      .filter((mission) => mission.weeklyPlanId === plan.id && mission.missionDate === localDate)
+      .slice(0, 8)
+      .map((mission) => ({
+        title: safeString(mission.title, 160),
+        status: mission.status,
+        progressValue: Number(mission.progressValue || 0),
+        targetQuantity: Number(mission.targetQuantity || 1),
+        targetUnit: safeString(mission.targetUnit || "occurrence", 40)
+      })) : [];
+
+    return {
+      localDate,
+      today: {
+        foodsLogged: todayEntries.slice(0, 24).map((entry) => ({
+          name: safeString(entry.foodName, 180),
+          meal: entry.mealType,
+          calories: roundInt(entry.calories),
+          proteinGrams: round(entry.proteinGrams),
+          fiberGrams: round(entry.fiberGrams),
+          sodiumMilligrams: roundInt(entry.sodiumMilligrams),
+          estimated: Boolean(entry.isEstimated)
+        })),
+        totals: finalizeTotals(todayTotals)
+      },
+      thisWeek: {
+        weekStartDate,
+        weekEndDate,
+        foodsLoggedCount: weekEntries.length,
+        foodNames: weekEntries.slice(0, 40).map((entry) => safeString(entry.foodName, 180)),
+        totals: finalizeTotals(weekTotals),
+        categoriesLogged
+      },
+      weeklyPlan: plan ? {
+        title: safeString(plan.title, 160),
+        status: plan.status,
+        proteinGramsTarget: plan.proteinGramsTarget,
+        calorieTarget: plan.calorieTarget,
+        waterOuncesTarget: plan.waterOuncesTarget,
+        pantry,
+        todaysMissions: missions
+      } : null
+    };
+  }
+
   function validateAiDraft(input = {}) { const errors = []; if (!safeString(input.title, 160)) errors.push("title is required"); const suggestions = Array.isArray(input.groceryCategorySuggestions) ? input.groceryCategorySuggestions : []; for (const s of suggestions) { if (!CATEGORY_LABELS[s.categoryKey]) errors.push(`invalid category: ${s.categoryKey}`); (s.groceryOptionIds || []).forEach((id) => { if (!STARTER_GROCERY_CATALOG.some((o) => o.id === id)) errors.push(`unknown grocery option: ${id}`); }); } const status = safeString(input.status || "draft", 20); if (status !== "draft") errors.push("AI drafts must remain in draft status"); return { valid: errors.length === 0, errors, schema: AI_DRAFT_SCHEMA }; }
 
   function educationSummary(userId, date) {
@@ -594,7 +659,7 @@ function createNutritionService({ userStore }) {
       "This is general education, not a medical diagnosis or therapeutic diet prescription."
     ] };
   }
-  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, validateAiDraft, planBundle };
+  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, coachSnapshot, validateAiDraft, planBundle };
 }
 
 const AI_DRAFT_SCHEMA = AI_DRAFT_SCHEMA_DOCUMENT;
