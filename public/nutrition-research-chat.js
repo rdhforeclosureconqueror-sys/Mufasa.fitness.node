@@ -6,6 +6,53 @@
   const deepButton = document.getElementById("nutritionResearchDeep");
   if (!button || !question || !output) return;
   let lastQuestion = "";
+  let lastAnswer = "";
+  const mic = document.getElementById("nutritionResearchMic");
+  const listen = document.getElementById("nutritionResearchListen");
+  const stop = document.getElementById("nutritionResearchStop");
+  const voiceStatus = document.getElementById("nutritionResearchVoiceStatus");
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  const voiceMessage = message => { if (voiceStatus) voiceStatus.textContent = message; };
+  if (mic) {
+    if (!SpeechRecognition) {
+      mic.disabled = true;
+      voiceMessage("Speech input isn't supported in this browser. You can still type your question.");
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = document.documentElement.lang || "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = event => {
+        const spoken = event.results?.[0]?.[0]?.transcript?.trim();
+        if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask Nutrition Intelligence."); }
+      };
+      recognition.onerror = event => voiceMessage(event.error === "not-allowed" ? "Microphone access was denied. Allow access in your browser settings." : "Speech recognition couldn't finish. Try again or type your question.");
+      recognition.onend = () => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
+      mic.addEventListener("click", () => {
+        if (mic.getAttribute("aria-pressed") === "true") { recognition.stop(); return; }
+        try { recognition.start(); mic.setAttribute("aria-pressed", "true"); mic.textContent = "Stop listening"; voiceMessage("Listening…"); }
+        catch { voiceMessage("Unable to start the microphone. Try again."); }
+      });
+    }
+  }
+  const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  if (listen) {
+    if (!canSpeak) { listen.disabled = true; voiceMessage("Read-aloud isn't supported in this browser."); }
+    else listen.addEventListener("click", () => {
+      if (!lastAnswer) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(lastAnswer.replace(/[#*]/g, ""));
+      utterance.lang = "en-US";
+      utterance.rate = 0.95;
+      utterance.onend = utterance.onerror = () => { if (stop) stop.disabled = true; voiceMessage(""); };
+      window.speechSynthesis.speak(utterance);
+      if (stop) stop.disabled = false;
+      voiceMessage("Reading answer aloud…");
+    });
+  }
+  if (stop) stop.addEventListener("click", () => { if (canSpeak) window.speechSynthesis.cancel(); stop.disabled = true; voiceMessage("Reading stopped."); });
+
   // Render a small, safe Markdown subset without injecting untrusted HTML.
   function renderAnswer(value) {
     output.replaceChildren();
@@ -49,6 +96,9 @@
     if (!text) { output.textContent = "Enter a question first."; return; }
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { output.textContent = "Sign in to use Nutrition Intelligence."; return; }
+    if (canSpeak) window.speechSynthesis.cancel();
+    if (stop) stop.disabled = true;
+    if (listen) listen.disabled = true;
     button.disabled = true;
     if (deepButton) { deepButton.disabled = true; deepButton.hidden = true; }
     output.textContent = mode === "DEEP" ? "Digging a little deeper…" : "Looking into that…";
@@ -61,7 +111,9 @@
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
-      renderAnswer(json.data?.answer || "No answer returned.");
+      lastAnswer = json.data?.answer || "No answer returned.";
+      renderAnswer(lastAnswer);
+      if (listen && canSpeak) listen.disabled = false;
       lastQuestion = text;
       if (deepButton) deepButton.hidden = mode === "DEEP";
     } catch (error) {
