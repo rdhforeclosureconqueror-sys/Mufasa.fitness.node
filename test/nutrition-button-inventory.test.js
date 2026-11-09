@@ -39,3 +39,12 @@ test("voice, references and disclaimer controls exist",()=>{
  for(const id of ["nutritionResearchMic","nutritionResearchListen","nutritionResearchStop","nutritionResearchReferences"]) assert.ok(html.includes('id="'+id+'"'));
  assert.match(html,/Educational information only/);
 });
+
+test("nutrition web research source controls and script parse",()=>{
+ const vm=require("node:vm");
+ const script=fs.readFileSync(path.join(__dirname,"../public/nutrition-research-chat.js"),"utf8");
+ assert.doesNotThrow(()=>new vm.Script(script));
+ assert.match(html,/id="nutritionResearchSources"/);
+ assert.match(html,/id="nutritionResearchSearchStatus"/);
+ assert.match(script,/noopener noreferrer/);
+});
