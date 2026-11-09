@@ -163,6 +163,7 @@
           <button class="btn" type="button" id="nutritionResearchMic" aria-pressed="false">🎙️ Speak question</button>
           <button class="btn primary" type="button" id="nutritionResearchAsk">Ask Nutrition Intelligence</button>
           <button class="btn" type="button" id="nutritionResearchDeep" hidden>Go deeper into this</button>
+          <button class="btn" type="button" id="nutritionResearchReferences" hidden>Show references</button>
           <button class="btn" type="button" id="nutritionResearchListen" disabled>🔊 Read answer</button>
           <button class="btn" type="button" id="nutritionResearchStop" disabled>Stop reading</button>
           <p id="nutritionResearchVoiceStatus" class="muted" role="status" aria-live="polite"></p>
@@ -218,6 +219,10 @@
         <div class="card"><h2>Today’s entries</h2><div id="entriesList"></div><h2>Milele Fit nutrition insights</h2><div id="educationSummary" class="muted"></div></div>
       </section>
     </section>
+    <aside class="card" id="nutritionEducationNotice" aria-label="Educational information notice" style="max-width:1080px;margin:1.25rem auto;padding:1.25rem;">
+      <h3>Educational information only</h3>
+      <p>Milele Fit Nutrition Intelligence explores nutritional research, historical teachings, and scientific hypotheses. It is not medical advice, diagnosis, or treatment. AI can make mistakes; verify important information and sources. Do not replace prescribed care or make medical decisions based solely on these answers.</p>
+    </aside>
   </main>
   <script>
     window.__MAAT_RUNTIME_CONFIG__ = Object.freeze({
@@ -230,7 +235,7 @@
   <script src="/auth-state-runtime.js?v=2026-08-29-auth-readiness-propagation-v1"></script>
   <script src="/nutrition-runtime.js?v=20261106-milele-score-v2"></script>
   <script src="/botanical-wisdom-explorer.js?v=20261105-1" defer></script>
-  <script src="/nutrition-research-chat.js?v=20261109-5" defer></script>
+  <script src="/nutrition-research-chat.js?v=20261109-6" defer></script>
 <script src="/global-nav.js?v=20260824-global-nav-production-repair-v3"></script>
 </body>
 </html>
