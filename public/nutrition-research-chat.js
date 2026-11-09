@@ -48,7 +48,7 @@
             resetMic();
             const blob = new Blob(recordingParts, { type: mimeType });
             recordingParts = [];
-            if (blob.size > 4000000) { voiceMessage("Question too long. Record a shorter question."); return; }
+            if (blob.size > 1250000) { voiceMessage("Question too long. Record a shorter question."); return; }
             if (blob.size < 100) { voiceMessage("No audio captured. Try again."); return; }
             voiceMessage("Transcribing your question…");
             try {
