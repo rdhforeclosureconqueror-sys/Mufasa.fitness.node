@@ -58,6 +58,7 @@ const { MEDIA: kettlebellMedia, getEducation: getKettlebellEducation } = require
 const { createMemberExperienceCapabilityService } = require("./src/services/memberExperienceCapabilityService");
 const { createExerciseTemplateService } = require("./src/services/exerciseTemplateService");
 const { createNutritionService, createProviderClient } = require("./src/services/nutritionService");
+const { buildResearchRequest } = require("./src/milele-wisdom/research-contract");
 const { createMemberHomeService } = require("./src/services/memberHomeService");
 const { createCoachContextService } = require("./src/ai/coachContextService");
 const { createMemberExerciseService } = require("./src/exercise-intelligence/memberExerciseService");
@@ -3131,6 +3132,36 @@ function createApp(options = {}) {
 
   app.post("/api/me/nutrition/weekly-plans/ai-draft/validate", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
     return ok(res, req.requestId, nutritionService.validateAiDraft(req.body || {}), 200);
+  }));
+
+
+  const nutritionResearchLimiter = createRateLimiter({ name: "nutrition-research", windowMs: 60000, max: 8 });
+  app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, asyncHandler(async (req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    const question = req.body?.question;
+    if (typeof question !== "string" || !question.trim() || question.length > 4000)
+      return res.status(400).json({ ok:false, error:{ message:"Enter a question up to 4000 characters." } });
+    if (!env.OPENAI_API_KEY)
+      return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const payload = buildResearchRequest(question, { model: env.OPENAI_MODEL || "gpt-4.1-mini" });
+      payload.max_output_tokens = 1100;
+      const upstream = await fetch("https://api.openai.com/v1/responses", {
+        method:"POST", signal:controller.signal,
+        headers:{ authorization:"Bearer " + env.OPENAI_API_KEY, "content-type":"application/json" },
+        body:JSON.stringify(payload)
+      });
+      if (!upstream.ok) throw new Error("Provider unavailable");
+      const data = await upstream.json();
+      const answer = (data.output || []).flatMap(item => item.content || [])
+        .filter(item => item.type === "output_text").map(item => item.text).join("\n").trim();
+      if (!answer) throw new Error("Empty response");
+      return ok(res, req.requestId, { answer, engine:"natural-systems-v1" }, 200);
+    } catch (_) {
+      return res.status(502).json({ ok:false, error:{ message:"The research assistant could not respond. Please try again." } });
+    } finally { clearTimeout(timeout); }
   }));
 
   app.get("/api/me/nutrition/education", requireAuth, requireMembershipEntitlement, asyncHandler(async (req, res) => {
