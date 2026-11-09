@@ -25,6 +25,8 @@ test('rejects blank and oversized questions', () => {
 test('only certified source records enter prompt', () => {
   const s = buildResearchInstructions();
   assert.ok(!s.includes('SEBI-CAND-001'));
+  assert.ok(s.includes('contemporary_official_brand_interpretation_not_original_speech'));
+  assert.ok(s.includes('drsebis.com/pages/african-bio-mineral-balance'));
   assert.ok(!s.includes('SEBI-OFFICIAL-001'));
 });
 
