@@ -29,5 +29,5 @@ test("nutrition research script parses and archive is hidden while assistant rem
  assert.doesNotThrow(()=>new vm.Script(client));
  assert.match(html,/<section class="card" id="botanicalWisdom" hidden/);
  assert.match(html,/<section class="card" id="nutritionIntelligence"/);
- assert.match(html,/#botanicalWisdom\\[hidden\\] \\{ display:none !important; \\}/);
+ assert.ok(html.includes("#botanicalWisdom[hidden] { display:none !important; }"));
 });
