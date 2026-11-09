@@ -23,14 +23,14 @@
       voiceMessage("Speech input isn't supported in this browser. You can still type your question.");
     } else {
       recognition = new SpeechRecognition();
-      recognition.lang = document.documentElement.lang || "en-US";
+      recognition.lang = "en-US";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
       recognition.onresult = event => {
         const spoken = event.results?.[0]?.[0]?.transcript?.trim();
         if (spoken) { question.value = spoken; voiceMessage("Question captured. Tap Ask to continue the conversation."); }
       };
-      recognition.onerror = event => voiceMessage(event.error === "not-allowed" ? "Microphone access was denied. Allow access in your browser settings." : "Speech recognition couldn't finish. Try again or type your question.");
+      recognition.onerror = event => { const reason = String(event?.error || "unknown"); const guidance = reason === "not-allowed" || reason === "service-not-allowed" ? "Allow microphone and speech recognition access in Safari settings." : reason === "no-speech" ? "No speech was detected. Speak closer to the microphone and try again." : reason === "network" ? "The iPhone speech recognition service could not connect. Try Safari or use keyboard dictation." : reason === "audio-capture" ? "The microphone could not be opened. Close other apps using it and try again." : "Try again in Safari or use the iPhone keyboard microphone."; voiceMessage("Speech input failed (" + reason + "). " + guidance); };
       recognition.onend = () => { recording = false; mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎙️ Speak question"; };
       mic.addEventListener("click", () => {
         if (recording) { recognition.stop(); return; }
@@ -46,7 +46,7 @@
   let playbackId = 0;
   let activeObjectUrl = null;
   const canSpeak = true;
-  if (voiceStatus) voiceStatus.textContent = "Voice engine: Mufasa AI service (not iPhone narrator).";
+  
   const stopAudio = () => {
     playbackId += 1;
     if (speechAbort) { speechAbort.abort(); speechAbort = null; }
