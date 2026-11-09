@@ -75,7 +75,7 @@
     if (stop) stop.disabled = false;
     voiceMessage("Preparing Mufasa's AI voice…");
     try {
-      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
+      const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
       for (const text of speechChunks(lastAnswer)) {
         if (currentId !== playbackId) return;
         speechAbort = new AbortController();
