@@ -18,10 +18,24 @@ function boot(){
  intro.append(heading,description,back);
  const main=doc.querySelector("main");main?.insertBefore(intro,main.firstChild);
  const title=doc.getElementById("avatarTitle");if(title)title.textContent="Create, upload or change your avatar";
- const name=doc.querySelector("#releaseSignedOutActions > strong");if(name)name.textContent="Sign in to Milele Fit";
+ const name=doc.querySelector("#releaseSignedOutActions > strong");if(name)name.textContent="Sign in or create an account only if you are not already signed in";
  const validation=doc.querySelector("#releaseAvatarValidationPanel .temporary-badge");if(validation)validation.textContent="Community avatar setup · detailed diagnostics";
  const hint=doc.querySelector("#releaseAvatarValidationPanel > p.tiny");if(hint)hint.textContent="The existing avatar validation and First-Failure panels remain available on this page. Never share passwords, tokens, or private files.";
- const panel=doc.getElementById("releaseAvatarValidationPanel");panel?.setAttribute("data-community-reused-validation","true");
+ const chooser=doc.getElementById("releaseAvatarFileInput");
+ const pickerHelp=doc.createElement("p");
+ pickerHelp.id="communityAvatarPickerHelp";pickerHelp.className="tiny";
+ pickerHelp.textContent="On iPhone, choose Browse in Files → On My iPhone, iCloud Drive or Downloads. Find the exported .glb file by its filename. 3D GLB files often look like generic documents, not pictures. This picker deliberately has no file-type filter; the existing uploader checks .glb after selection.";
+ const pickerLabel=doc.querySelector('label[for="releaseAvatarFileInput"]');
+ pickerLabel?.after(pickerHelp);
+ const selected=doc.createElement("p");selected.id="communityAvatarSelectedFile";selected.className="tiny";
+ selected.textContent="No file selected. Find the .glb export in Files, then upload it.";
+ chooser?.after(selected);
+ chooser?.addEventListener("change",()=>{
+   const file=chooser.files?.[0];
+   selected.textContent=!file?"No file selected. Browse Files for the .glb export."
+      : /\\.glb$/i.test(file.name)?"Selected 3D avatar: "+file.name+" ("+Math.ceil(file.size/1024)+" KB). Tap Upload Avatar.":"Selected "+file.name+". This is not a .glb avatar export; select your .glb file instead.";
+ });
+  const panel=doc.getElementById("releaseAvatarValidationPanel");panel?.setAttribute("data-community-reused-validation","true");
  if(global.location.hash!=="#yourAvatar")global.location.hash="#yourAvatar";
 }
 if(global.document.readyState==="loading")global.document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
