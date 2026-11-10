@@ -20,6 +20,12 @@ test("existing member auth uses canonical runtime; only signed-out members see r
 test("community helper explains files browsing and never implements a second uploader",()=>{
  const mode=read("public/community-avatar-setup-mode.js");
  assert.match(mode,/Browse in Files/);
+ assert.match(mode,/greyed out/);
+ assert.match(mode,/On My iPhone/);
+ assert.match(mode,/communityAvatarPickerBoundary/);
+ assert.match(mode,/communityAvatarPickerCopy/);
+ assert.match(mode,/FILE_PICKER_SELECTION/);
+ assert.match(mode,/getAttribute\("accept"\)/);
  assert.match(mode,/No file selected/);
  assert.match(mode,/\.glb avatar export/);
  assert.match(mode,/releaseAvatarFileInput/);
