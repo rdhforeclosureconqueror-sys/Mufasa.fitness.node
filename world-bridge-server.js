@@ -2,6 +2,7 @@
 
 const http = require("node:http");
 const path = require("path");
+const crypto = require("node:crypto");
 const { createApp } = require("./server");
 const { requireAuth } = require("./src/middleware/auth");
 const { createUserStore } = require("./src/repositories/userStore");
@@ -31,6 +32,35 @@ const { createArenaCoachVoiceBridge } = require("./src/world/arenaCoachVoiceBrid
 const { createLobbyBridge } = require("./src/world/lobbyBridge");
 const { createGymMappingBridge } = require("./src/world/gymMappingBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
+const { sendGarveyAssessmentNotification } = require("./src/services/garveyAssessmentNotificationService");
+
+function safeTokenEqual(expected, received) {
+  const expectedBuffer = Buffer.from(String(expected || ""));
+  const receivedBuffer = Buffer.from(String(received || ""));
+  return expectedBuffer.length > 0 && expectedBuffer.length === receivedBuffer.length && crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+function installGarveyAssessmentNotificationRelay(app, options = {}) {
+  const env = options.env || process.env;
+  const relayLimit = createRateLimiter({ name: "garvey-assessment-email-relay", max: 30, windowMs: 60_000 });
+  app.post("/api/internal/garvey/assessment-notification", relayLimit, async (req, res) => {
+    const expectedToken = String(env.GARVEY_ASSESSMENT_RELAY_TOKEN || "");
+    const receivedToken = String(req.get("x-garvey-assessment-token") || "");
+    if (!expectedToken) return res.status(503).json({ ok: false, error: { code: "RELAY_NOT_CONFIGURED" } });
+    if (!safeTokenEqual(expectedToken, receivedToken)) return res.status(401).json({ ok: false, error: { code: "UNAUTHORIZED" } });
+    const notification = req.body && typeof req.body === "object" ? req.body : {};
+    if (!String(notification.resultId || "").trim() || !String(notification.participantEmail || "").trim()) {
+      return res.status(400).json({ ok: false, error: { code: "INVALID_NOTIFICATION" } });
+    }
+    try {
+      const delivery = await sendGarveyAssessmentNotification({ notification, env });
+      if (!delivery.sent) return res.status(503).json({ ok: false, error: { code: "EMAIL_NOT_CONFIGURED" } });
+      return res.status(202).json({ ok: true, data: { accepted: true } });
+    } catch (_error) {
+      return res.status(502).json({ ok: false, error: { code: "EMAIL_DELIVERY_FAILED" } });
+    }
+  });
+}
 
 function createCanonicalUserStore(options = {}) {
   const env = options.env || process.env;
@@ -195,6 +225,7 @@ function installGymMapping(app, options = {}) {
 function createWorldBridgeApp(options = {}) {
   const app = createApp(options);
   installDeploymentIdentity(app, options);
+  installGarveyAssessmentNotificationRelay(app, options);
   installRugbyProfileRoutes({app,requireAuth,userStore:createCanonicalUserStore(options)});
   installFreeRunClub(app, options);
   installResidentialWellness(app, options);
