@@ -36,6 +36,7 @@ async function step(id,work){try{await work();checks.push({id,status:"PASS"});}c
    assert.equal(await page.locator("#communityGymDiagnostics").evaluate(e=>e.open),true);
   });
   await step("avatar-diagnostic-identifies-first-failure",async()=>{
+   await page.locator("#communityAvatarDiagnostics summary").click();
    await page.locator("#communityAvatarRunCheck").click();
    await page.waitForFunction(()=>!document.querySelector("#communityAvatarRunCheck").disabled,{timeout:15000});
    const status=await page.locator("#communityAvatarFirstFailure").innerText();
