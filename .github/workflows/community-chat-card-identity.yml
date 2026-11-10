@@ -1,0 +1,19 @@
+name: Community chat card identity
+on:
+  pull_request:
+    paths:
+      - 'src/services/residentialCommunityService.js'
+      - 'test/community-chat-card-identity.test.js'
+      - '.github/workflows/community-chat-card-identity.yml'
+  workflow_dispatch:
+jobs:
+  privacy-and-name:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/services/residentialCommunityService.js
+      - run: node --test test/community-chat-card-identity.test.js
