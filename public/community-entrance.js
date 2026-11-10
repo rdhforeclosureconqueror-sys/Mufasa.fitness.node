@@ -46,7 +46,7 @@ async function loadAvatar(){
      })[code]||"Avatar status: "+code;}
    });
    const result=await viewer.start(modelUrl);
-   if(["playing","static-avatar"].includes(result.status))fallback.hidden=true;
+   if(["playing","static-avatar","reduced-motion"].includes(result.status))fallback.hidden=true;
  } catch(error){message.textContent="Avatar unavailable: "+error.message; }
 }
 $("avatarAnimation").addEventListener("change",e=>{
