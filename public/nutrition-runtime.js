@@ -557,7 +557,53 @@
   async function refreshNutritionAndWeekly() { await refreshAll(); await loadWeekly(); }
   async function loadEntries() { const data = await api(`/api/me/nutrition/entries?date=${$("journalDate").value}`); state.entries = data.entries; $("entriesList").innerHTML = state.entries.map((e) => `<div class="row"><input type="checkbox" data-select="${e.entryId}"><div class="row-main"><strong>${escapeHtml(e.foodName)}</strong><div class="muted">${e.mealType} · ${e.calories ?? 0} cal · ${e.source} ${e.isEstimated ? '<span class="pill estimated">Estimated</span>' : ""}</div></div><button class="btn" data-edit="${e.entryId}">Edit</button><button class="btn danger" data-delete="${e.entryId}">Delete</button></div>`).join("") || '<p class="muted">No entries logged for this date.</p>'; $("entriesList").querySelectorAll("[data-delete]").forEach((b) => b.onclick = async () => { await api(`/api/me/nutrition/entries/${b.dataset.delete}`, { method: "DELETE" }); await refreshNutritionAndWeekly(); }); $("entriesList").querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editEntry(b.dataset.edit)); $("entriesList").querySelectorAll("[data-select]").forEach((box) => box.onchange = () => box.checked ? state.selectedEntryIds.add(box.dataset.select) : state.selectedEntryIds.delete(box.dataset.select)); }
   function editEntry(id) { const e = state.entries.find((x) => x.entryId === id); if (!e) return; const name = prompt("Food name", e.foodName); if (name === null) return; const amount = Number(prompt("Amount consumed", e.amount || 1) || e.amount || 1); api(`/api/me/nutrition/entries/${id}`, { method: "PUT", body: JSON.stringify({ ...e, foodName: name, amount }) }).then(refreshNutritionAndWeekly); }
-  async function loadSummary() { const s = await api(`/api/me/nutrition/summary?date=${$("journalDate").value}`); const f = s.fullDay; $("dailySummary").innerHTML = [["Calories", f.calories], ["Protein", f.proteinGrams + "g"], ["Carbs", f.carbohydrateGrams + "g"], ["Fat", f.fatGrams + "g"], ["Fiber", f.fiberGrams + "g"], ["Sodium", f.sodiumMilligrams + "mg"]].map(([k, v]) => `<div class="metric"><strong>${v}</strong><span>${k}</span></div>`).join("") + `<p class="muted">Meals logged: ${f.mealsLogged}. Estimated entries: ${f.estimatedEntryCount}. Breakfast/lunch/dinner/snacks totals are available from the API.</p>`; }
+  function nutritionGoalKey() {
+    const token = window.AuthStateRuntime?.getAuthToken?.() || "";
+    // A one-way, per-session namespace prevents different sign-ins sharing the same visible goal set on a device.
+    const userId = window.AuthStateRuntime?.getUserId?.() || "";
+    return "milele-nutrition-goals-v1:" + (userId || token.slice(-24) || "anonymous");
+  }
+  function readNutritionGoals() {
+    try { const data = JSON.parse(localStorage.getItem(nutritionGoalKey()) || "{}"); return data && typeof data === "object" ? data : {}; } catch { return {}; }
+  }
+  function initializeNutritionGoals() {
+    const button = $("saveNutritionGoals");
+    if (!button || button.dataset.bound) return;
+    button.dataset.bound = "1";
+    const goals = readNutritionGoals();
+    for (const [key, field] of Object.entries({ calories:"goalCalories", proteinGrams:"goalProtein", carbohydrateGrams:"goalCarbs", fatGrams:"goalFat" })) {
+      if (goals[key]) $(field).value = goals[key];
+    }
+    button.addEventListener("click", () => {
+      const next = {};
+      for (const [key, field] of Object.entries({ calories:"goalCalories", proteinGrams:"goalProtein", carbohydrateGrams:"goalCarbs", fatGrams:"goalFat" })) {
+        const raw = $(field).value.trim();
+        if (!raw) continue;
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value <= 0 || value > 15000) { $("nutritionGoalStatus").textContent = "Enter positive, realistic numeric goals."; return; }
+        next[key] = value;
+      }
+      localStorage.setItem(nutritionGoalKey(), JSON.stringify(next));
+      $("nutritionGoalStatus").textContent = "Goals saved on this device. Your rings now compare today's food to your chosen targets.";
+      loadSummary().catch(() => {});
+    });
+  }
+  async function loadSummary() {
+    initializeNutritionGoals();
+    const s = await api(`/api/me/nutrition/summary?date=${$("journalDate").value}`);
+    const f = s.fullDay;
+    const goals = readNutritionGoals();
+    const metrics = [["Calories","calories","kcal"],["Protein","proteinGrams","g"],["Carbs","carbohydrateGrams","g"],["Fat","fatGrams","g"],["Fiber","fiberGrams","g"],["Sodium","sodiumMilligrams","mg"]];
+    $("dailySummary").innerHTML = metrics.map(([label,key,unit]) => {
+      const value = Number(f[key] || 0);
+      const goal = Number(goals[key] || 0);
+      const pct = goal > 0 ? Math.round(value / goal * 100) : 0;
+      const ring = goal > 0 ? `<div class="goal-ring" style="--progress:${Math.min(pct,100)}%"><strong>${pct}%</strong></div>` : `<div class="goal-ring" style="--progress:0%"><strong>—</strong></div>`;
+      const detail = goal > 0 ? `${Math.round(value)} / ${goal} ${unit}` : `${Math.round(value)} ${unit} · Set goal`;
+      const note = goal > 0 && pct > 100 ? '<span class="goal-detail">Above your target</span>' : '';
+      return `<div class="metric">${ring}<span>${label}</span><span class="goal-detail">${detail}</span>${note}</div>`;
+    }).join("") + `<p class="muted">Meals logged: ${f.mealsLogged}. Estimated entries: ${f.estimatedEntryCount}. Targets are yours, not prescriptions. Over-target rings show actual percentages.</p>`;
+  }
   async function loadEducation() { const e = await api(`/api/me/nutrition/education?date=${$("journalDate").value}`); $("educationSummary").innerHTML = e.messages.map((m) => `<p>${escapeHtml(m)}</p>`).join(""); }
   async function loadRecent() { const [r, m] = await Promise.all([api("/api/me/nutrition/recent"), api("/api/me/nutrition/meals")]); $("recentList").innerHTML = `<h3>Recent foods</h3>` + r.items.map((e) => `<div class="row"><div><strong>${escapeHtml(e.foodName)}</strong><div class="muted">${e.calories ?? 0} cal</div></div><button class="btn" data-repeat="${e.entryId}">Log again</button></div>`).join(""); $("mealList").innerHTML = `<h3>Saved meals</h3>` + m.meals.map((meal) => `<div class="row"><div><strong>${escapeHtml(meal.name)}</strong><div class="muted">${meal.entries.length} foods</div></div><button class="btn" data-meal="${meal.mealId}">Log meal</button></div>`).join(""); $("recentList").querySelectorAll("[data-repeat]").forEach((b) => b.onclick = async () => { const e = r.items.find((x) => x.entryId === b.dataset.repeat); await api("/api/me/nutrition/entries", { method: "POST", body: JSON.stringify({ ...e, localDate: $("journalDate").value }) }); await refreshNutritionAndWeekly(); }); $("mealList").querySelectorAll("[data-meal]").forEach((b) => b.onclick = async () => { await api(`/api/me/nutrition/meals/${b.dataset.meal}/log`, { method: "POST", body: JSON.stringify({ localDate: $("journalDate").value, servingsMultiplier: 1 }) }); await refreshNutritionAndWeekly(); }); }
   async function saveMeal() { const ids = Array.from(state.selectedEntryIds); if (!ids.length) return alert("Select entries to save as a meal."); const name = prompt("Meal name", "Saved meal"); if (!name) return; await api("/api/me/nutrition/meals", { method: "POST", body: JSON.stringify({ name, entryIds: ids }) }); await loadRecent(); }
