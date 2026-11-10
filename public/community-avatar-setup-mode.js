@@ -24,14 +24,38 @@ function boot(){
  const chooser=doc.getElementById("releaseAvatarFileInput");
  const pickerHelp=doc.createElement("p");
  pickerHelp.id="communityAvatarPickerHelp";pickerHelp.className="tiny";
- pickerHelp.textContent="On iPhone, choose Browse in Files → On My iPhone, iCloud Drive or Downloads. Find the exported .glb file by its filename. 3D GLB files often look like generic documents, not pictures. This picker deliberately has no file-type filter; the existing uploader checks .glb after selection.";
+ pickerHelp.textContent="On iPhone, choose Browse in Files, and first try the .glb file under On My iPhone or Downloads. If a .glb is greyed out (with a minus icon), open the Files app separately, long-press the file, choose Copy, paste it into On My iPhone, then retry. Files may display 3D GLB models as documents. The uploader still validates .glb after selection.";
  const pickerLabel=doc.querySelector('label[for="releaseAvatarFileInput"]');
  pickerLabel?.after(pickerHelp);
  const selected=doc.createElement("p");selected.id="communityAvatarSelectedFile";selected.className="tiny";
  selected.textContent="No file selected. Find the .glb export in Files, then upload it.";
  chooser?.after(selected);
+ const pickerStatus=doc.createElement("p");pickerStatus.id="communityAvatarPickerBoundary";pickerStatus.className="tiny";pickerStatus.setAttribute("role","status");
+ pickerStatus.textContent="Picker check: READY · native Files selection not attempted";
+ selected.after(pickerStatus);
+ const report=()=>{
+   const accept=chooser?.getAttribute("accept");
+   const file=chooser?.files?.[0];
+   return "Picker input="+(chooser?.type||"MISSING")+" · accept="+(accept==null?"NONE (unrestricted)":accept||"EMPTY")+" · disabled="+Boolean(chooser?.disabled)+" · selected="+(file?file.name+" ("+file.size+" bytes)":"NONE");
+ };
+ const update=(state)=>{
+   pickerStatus.textContent="Picker check: "+state+" · "+report()+".";
+   const trace=doc.getElementById("avatarDiagFile");
+   if(trace && !chooser?.files?.length)trace.textContent="NONE · PICKER: "+state;
+ };
+ chooser?.addEventListener("click",()=>update("OPENED; waiting for iOS Files"));
+ chooser?.addEventListener("cancel",()=>update("NO FILE SELECTED; iOS picker cancelled or file unavailable"));
+ const copy=doc.createElement("button");copy.type="button";copy.id="communityAvatarPickerCopy";
+ copy.textContent="Copy Picker Diagnosis";copy.className="secondary";
+ pickerStatus.after(copy);
+ copy.addEventListener("click",async()=>{
+   const message="Community Avatar iPhone Picker\nFIRST FAILURE: "+(chooser?.files?.length?"NONE":"FILE_PICKER_SELECTION")+"\n"+pickerStatus.textContent;
+   try{await global.navigator?.clipboard?.writeText(message);copy.textContent="Picker Diagnosis Copied";}
+   catch(_){copy.textContent="Select and copy the picker status above";}
+ });
  chooser?.addEventListener("change",()=>{
    const file=chooser.files?.[0];
+   update(file?"FILE SELECTED":"NO FILE SELECTED");
    selected.textContent=!file?"No file selected. Browse Files for the .glb export."
       : /\\.glb$/i.test(file.name)?"Selected 3D avatar: "+file.name+" ("+Math.ceil(file.size/1024)+" KB). Tap Upload Avatar.":"Selected "+file.name+". This is not a .glb avatar export; select your .glb file instead.";
  });
