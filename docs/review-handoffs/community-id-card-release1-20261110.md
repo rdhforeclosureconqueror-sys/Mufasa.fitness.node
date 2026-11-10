@@ -19,7 +19,7 @@ Tracking: #1237. **Scope: a mobile-first, saved member Community ID Card with a 
 ## Sequence of focused implementation PRs
 
 1. **Card foundation**: New `public/community-entrance.html` and scoped assets with editable display name, interests, goals, preview, explicit visibility controls; authenticated canonical `GET/PUT /api/me/community-card` API and safe public projection route when authenticated; server-side field validation and ownership. Prefer canonical userStore persistence and versioned migration; no client-only persistence.
-2. **Personal avatar + animation**: Reuse saved user-owned avatar descriptor, asset URL and existing Three.js motion infrastructure. Add one compatible *idle/wave* clip only after a rig-binding test; otherwise display a static avatar and truthful reason. Include pause/reduced-motion/WebGL fallbacks, one RAF, cleanup on navigation.
+2. **Personal avatar + animation**: Reuse saved user-owned avatar descriptor, asset URL and existing Three.js motion infrastructure. Use the animation clip(s) embedded in the member's own GLB asset, with no default shared idle/wave clip or new motion catalog. If multiple native clips exist, allow selecting one saved clip name from that avatar; otherwise auto-play the sole native clip. Verify native bindings, respect reduced-motion, and show a static avatar if the uploaded asset has no viable clip. Do not require a new avatar to change clips within the same asset. Include pause/reduced-motion/WebGL fallbacks, one RAF, cleanup on navigation.
 3. **Media and assessments**: Separate image upload paths for card photo/background with MIME, dimensions, size limits and safe re-encoding, and server-owned references. Love/Loyalty archetype summaries need a verified authenticated cross-origin linking strategy; until then offer manual opt-in badges or disabled integration with explicit status, not untrusted URL result import.
 4. **Entry integration and acceptance**: Wire from Community Hub after free-community registration, whether the optional fitness trial was accepted or skipped. Validate sign-up → (trial accept OR skip) → card → save → reload → other member visibility, iPhone Safari, cross-user isolation, expired auth, no-WebGL, missing avatar and reduced-motion cases.
 
@@ -34,7 +34,7 @@ The first-run flow must be fully possible on a phone. Safe fallback permits card
 ## Acceptance gates and first failures
 
 1. **Profile API**: Authenticated GET/PUT persists and restores after a new session; unauthenticated 401; another user's write/read of private data denied; image and text inputs validated.
-2. **Avatar**: selected saved avatar shown under correct member; wrong account cannot access asset; no stale load after sign-out; idle/wave clip actually binds to the particular loaded rig; unsupported rig shows static fallback with first failure.
+2. **Avatar**: selected saved avatar shown under correct member; wrong account cannot access asset; no stale load after sign-out; selected native animation clip is actually present in the member-owned GLB and its tracks bind to that avatar; no clips or unsupported bindings show a static fallback with first failure.
 3. **Privacy**: Love/Loyalty optional and OFF by default; public projection contains only user-approved fields; disabled card vanishes from directory.
 4. **Mobile/UI**: touch targets, card layout, uploads, save feedback and reduced-motion are tested on iPhone Safari or equivalent browser, then physically verified by owner.
 5. **Onboarding**: Quick Connect and both optional seven-day trial acceptance and skip remain intact; existing exercise pages and arena tests remain passing.
@@ -47,6 +47,17 @@ The first-run flow must be fully possible on a phone. Safe fallback permits card
 - Godot export is a *different* runtime, unnecessary for Release 1 card. Reusing it prematurely increases integration and mobile load risks.
 - Need to verify the actual creation provider UI (as opposed to uploading a GLB), canonical avatar assignment API, storage durability, and the Love/Loyalty assessment service's cross-site account correlation before promising those flows. The `public/avatar-upload-contract.js` contract establishes GLB upload only, not a working self-service creator.
 - Do not treat the optional fitness trial as a mandatory gate for free Community ID access: `public/community-trial-offer.js` routes both `skip` and `accept` to the community hub. Preserve any separate paid fitness feature gates and never disclose private member fields.
+
+## Owner correction: native avatar animations only (2026-11-10)
+
+- Do **not** provide one identical animation to all users, fabricate a default wave, license a separate animation library, or undertake retargeting for the first release.
+- Avatar creation/selection happens through the existing provider flow once verified. The uploaded/generated GLB may contain zero, one, or many animation clips: inventory `gltf.animations` on load.
+- With one compatible clip, autoplay/loop it; with multiple compatible clips, let the member pick one from their own avatar's clips and persist that choice on their card; zero compatible clips displays static avatar and a readable explanation.
+- The existing `DisposableMotionSession.inspectAvatar` already inventories native `asset.animations`, and `loadNativeAnimation` already uses native embedded Avaturn clips **but is currently hard-coded to the `avaturn-personalized-candidate` profile**. A new generic, checked native-clip adapter is needed for actual member-owned avatars; do not treat it as already production-ready.
+- Never allow arbitrary external asset URLs or public cross-account GLB access. Use the canonical member-selected avatar asset with owner checks. Do not allow uploaded model metadata to control web UI/HTML.
+- Replacing/customizing the avatar or outfit uses provider's normal free creation process if available. Do not promise that every provider model contains motion clips; test actual output, and require no paid subscriptions or premium animation tooling for Release 1.
+- Reduced-motion users get paused/static presentation; avoid autoplay while offscreen, unload on navigation, and prevent background GPU use.
+- The visual card and saved profile must work without 3D animation; this is a progressive enhancement rather than a signup blocker.
 
 ## Decision / next best move
 
