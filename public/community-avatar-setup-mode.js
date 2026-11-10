@@ -57,7 +57,7 @@ function boot(){
    const file=chooser.files?.[0];
    update(file?"FILE SELECTED":"NO FILE SELECTED");
    selected.textContent=!file?"No file selected. Browse Files for the .glb export."
-      : /\\.glb$/i.test(file.name)?"Selected 3D avatar: "+file.name+" ("+Math.ceil(file.size/1024)+" KB). Tap Upload Avatar.":"Selected "+file.name+". This is not a .glb avatar export; select your .glb file instead.";
+      : /\.glb$/i.test(file.name)?"Selected 3D avatar: "+file.name+" ("+Math.ceil(file.size/1024)+" KB). Tap Upload Avatar.":"Selected "+file.name+". This is not a .glb avatar export; select your .glb file instead.";
  });
   const panel=doc.getElementById("releaseAvatarValidationPanel");panel?.setAttribute("data-community-reused-validation","true");
  if(global.location.hash!=="#yourAvatar")global.location.hash="#yourAvatar";
