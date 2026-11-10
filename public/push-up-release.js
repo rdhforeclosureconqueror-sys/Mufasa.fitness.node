@@ -82,7 +82,8 @@
   }
 
   function loginTarget(mode = 'login') {
-    const returnTo = '/push-up.html';
+    const returnTo = new URLSearchParams(global.location.search).get('avatarSetup') === 'community'
+      ? '/community-entrance.html' : '/push-up.html';
     if (global.AuthNavigation?.loginUrl) {
       const url = global.AuthNavigation.loginUrl(returnTo);
       if (mode === 'register') {
