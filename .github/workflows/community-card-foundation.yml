@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'src/services/communityCardService.js'
+      - 'public/community-avatar.js'
+      - 'test/community-native-avatar.test.js'
       - 'src/routes/communityCardRoutes.js'
       - 'public/community-entrance.html'
       - 'public/community-entrance.js'
@@ -30,6 +32,7 @@ jobs:
           node --check src/routes/communityCardRoutes.js
           node --check public/community-entrance.js
           node --check server.js
-          node --test test/community-card-foundation.test.js
+          node --check public/community-avatar.js
+          node --test test/community-card-foundation.test.js test/community-native-avatar.test.js
       - name: Isolated real HTTP registration, private card save and reload
         run: node scripts/acceptance-community-card-http.js
