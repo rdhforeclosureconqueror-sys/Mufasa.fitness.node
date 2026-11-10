@@ -607,7 +607,7 @@
     for (const [key, field] of Object.entries({ calories:"goalCalories", proteinGrams:"goalProtein", carbohydrateGrams:"goalCarbs", fatGrams:"goalFat" })) {
       if (goals[key]) $(field).value = goals[key];
     }
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const next = {};
       for (const [key, field] of Object.entries({ calories:"goalCalories", proteinGrams:"goalProtein", carbohydrateGrams:"goalCarbs", fatGrams:"goalFat" })) {
         const raw = $(field).value.trim();
@@ -626,7 +626,13 @@
     initializeNutritionCalculator();
     const s = await api(`/api/me/nutrition/summary?date=${$("journalDate").value}`);
     const f = s.fullDay;
-    const goals = readNutritionGoals();
+    let goals = {};
+    try {
+      const response = await api("/api/me/nutrition/daily-goals");
+      goals = response.goals || {};
+      const fields = { calories:"goalCalories", proteinGrams:"goalProtein", carbohydrateGrams:"goalCarbs", fatGrams:"goalFat" };
+      for (const [key,field] of Object.entries(fields)) if (document.activeElement !== $(field)) $(field).value = goals[key] ?? "";
+    } catch (error) { $("nutritionGoalStatus").textContent = "Could not load account goals. Check your connection."; }
     const metrics = [["Calories","calories","kcal"],["Protein","proteinGrams","g"],["Carbs","carbohydrateGrams","g"],["Fat","fatGrams","g"],["Fiber","fiberGrams","g"],["Sodium","sodiumMilligrams","mg"]];
     $("dailySummary").innerHTML = metrics.map(([label,key,unit]) => {
       const value = Number(f[key] || 0);
