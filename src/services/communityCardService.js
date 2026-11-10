@@ -3,7 +3,7 @@ const { ApiError } = require("../lib/apiResponse");
 
 const INTERESTS = Object.freeze(["yoga","meditation","sound_healing","pranayama","fitness","nutrition","community"]);
 const GOALS = Object.freeze(["make_friends","reduce_stress","build_consistency","mindfulness","strength","confidence","recovery"]);
-const OWN = Object.freeze(["displayName","bioShort","interests","goals","visibility"]);
+const OWN = Object.freeze(["displayName","bioShort","interests","goals","visibility","animationClip"]);
 function invalid(field){ throw new ApiError("COMMUNITY_CARD_INVALID", "Invalid community card field: " + field, 400); }
 function cleanText(v,field,max,required=false) {
   if (typeof v !== "string" || v.length > max*3) invalid(field);
@@ -27,6 +27,7 @@ function createCommunityCardService({userStore,clock=()=>new Date()}) {
       bioShort:cleanText(input.bioShort??"","bioShort",180),
       interests:choices(input.interests??[],"interests",INTERESTS),
       goals:choices(input.goals??[],"goals",GOALS),
+      animationClip:input.animationClip==null || input.animationClip==="" ? null : cleanText(input.animationClip,"animationClip",120),
       visibility:input.visibility==="members"?"members":input.visibility==="private"?"private":invalid("visibility"),
       updatedAt:clock().toISOString()
     };
