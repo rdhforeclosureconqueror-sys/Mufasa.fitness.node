@@ -9,7 +9,7 @@ on:
       - 'public/community-gym-gateway.js'
       - 'public/push-up-release.html'
       - 'test/community-gym-entry-reuse.test.js'
-      - 'test/community-native-avatar.test.js test/community-gym-entry-reuse.test.js'
+      - 'test/community-native-avatar.test.js'
       - 'src/routes/communityCardRoutes.js'
       - 'public/community-entrance.html'
       - 'public/community-entrance.js'
@@ -41,6 +41,6 @@ jobs:
           node --check public/community-avatar-diagnostics.js
           node --check public/community-avatar-setup-mode.js
           node --check public/community-gym-gateway.js
-          node --test test/community-card-foundation.test.js test/community-native-avatar.test.js
+          node --test test/community-card-foundation.test.js test/community-native-avatar.test.js test/community-gym-entry-reuse.test.js
       - name: Isolated real HTTP registration, private card save and reload
         run: node scripts/acceptance-community-card-http.js
