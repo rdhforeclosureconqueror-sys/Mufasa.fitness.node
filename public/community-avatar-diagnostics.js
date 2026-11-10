@@ -2,7 +2,7 @@
 "use strict";
 // Summary diagnostics only. Detailed upload checks remain in existing Avatar Validation Center.
 const $=id=>root.document.getElementById(id);
-const clean=s=>String(s??"").replace(/Bearer\\s+[A-Za-z0-9._~-]+/gi,"Bearer [REDACTED]").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,"[email]").slice(0,180);
+const clean=s=>String(s??"").replace(/Bearer\s+[A-Za-z0-9._~-]+/gi,"Bearer [REDACTED]").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email]").slice(0,180);
 const steps=["AUTH","UPLOAD_CONTRACT","CANONICAL_PROFILE","AVATAR_SOURCE","CARD_RENDERER"];
 function setup(){
  const run=$("communityAvatarRunCheck");if(!run)return;
