@@ -25,7 +25,6 @@ function create({container,token,backend,preferredClip="",onClips=()=>{},onStatu
   async function start(modelPath){
     const path=allowedAvatarPath(modelPath);
     if(!path){status("no-avatar");return {status:"no-avatar"};}
-    if(reducedMotion){status("reduced-motion");return {status:"reduced-motion"};}
     const url=new URL(path,backend).href;
     if(new URL(url).origin!==new URL(backend).origin){status("invalid-origin");return {status:"invalid-origin"};}
     const loader={
@@ -53,6 +52,7 @@ function create({container,token,backend,preferredClip="",onClips=()=>{},onStatu
     const clips=nativeClips(session.avatarAsset);
     const choices=clips.map(c=>({name:c.name,duration:c.duration}));
     onClips(choices);
+    if(reducedMotion){session.renderer?.render?.(session.scene,session.camera);session.stopRenderLoop();status("reduced-motion");return {status:"reduced-motion",clips:choices};}
     if(!clips.length){status("static-avatar");return {status:"static-avatar",clips:choices};}
     const selected=chooseClip(clips,preferredClip);
     const played=selectClip(selected);
