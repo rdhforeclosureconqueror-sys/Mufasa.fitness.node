@@ -10,7 +10,8 @@ function boot(){
  const sessionReturn="/push-up-release.html?avatarSetup=community";
  const signedOut=doc.getElementById("releaseSignedOutActions");
  if(signedOut){
-   signedOut.replaceChildren();
+   // Keep legacy inputs in DOM for existing challenge JS bindings; hide them in community mode.
+   for(const node of [...signedOut.children])node.hidden=true;
    const message=doc.createElement("p");
    message.textContent="Use your Milele Fit account to create or update your avatar. No second account is needed.";
    const login=doc.createElement("a");login.href="/login.html?returnTo="+encodeURIComponent(sessionReturn);login.textContent="Sign in to Milele Fit";
@@ -23,7 +24,7 @@ function boot(){
  doc.title="Avatar Studio | Milele Fit Community";
  doc.body.classList.add("community-avatar-mode");
  const css=doc.createElement("style");
- css.textContent=".community-avatar-mode{background:radial-gradient(circle at 50% 0,#1a4a35,#07130d 65%)}.community-avatar-mode .hero,.community-avatar-mode #howItWorks,.community-avatar-mode .release-gate,.community-avatar-mode .footer{display:none!important}.community-avatar-mode .topbar{margin-bottom:8px}.community-avatar-mode #yourAvatar{margin-top:22px}.community-avatar-mode .panel{border-color:#a8874d}.community-avatar-mode .community-studio-intro{padding:18px 0 0}.community-avatar-mode .community-studio-intro h1{font-size:clamp(2rem,7vw,3.7rem);line-height:1.1;letter-spacing:-.02em;color:#e8ca83}.community-avatar-mode .community-studio-intro p{color:#d2e4d7}.community-avatar-mode .community-studio-intro a{color:#e8ca83}.community-avatar-mode #releaseAvatarValidationPanel{display:block}.community-avatar-mode #releaseAvatarDiagnostics{white-space:pre-wrap}";
+ css.textContent=".community-avatar-mode{background:radial-gradient(circle at 50% 0,#1a4a35,#07130d 65%)}.community-avatar-mode .hero,.community-avatar-mode #howItWorks,.community-avatar-mode .release-gate,.community-avatar-mode .footer{display:none!important}.community-avatar-mode .topbar{margin-bottom:8px}.community-avatar-mode #yourAvatar{margin-top:22px}.community-avatar-mode .panel{border-color:#a8874d}.community-avatar-mode .community-studio-intro{padding:18px 0 0}.community-avatar-mode .community-studio-intro h1{font-size:clamp(2rem,7vw,3.7rem);line-height:1.1;letter-spacing:-.02em;color:#e8ca83}.community-avatar-mode .community-studio-intro p{color:#d2e4d7}.community-avatar-mode .community-studio-intro a{color:#e8ca83}.community-avatar-mode #releaseSignedOutActions .signup-box,.community-avatar-mode #releaseSignedOutActions .signup-alt,.community-avatar-mode #releaseSignedOutActions #releaseSignInBtn,.community-avatar-mode #releaseSignedOutActions > strong{display:none!important}.community-avatar-mode #releaseAvatarValidationPanel{display:block}.community-avatar-mode #releaseAvatarDiagnostics{white-space:pre-wrap}";
  doc.head.appendChild(css);
  const intro=doc.createElement("section");
  intro.className="community-studio-intro";
