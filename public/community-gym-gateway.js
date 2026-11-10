@@ -33,11 +33,7 @@ function init(){
        message.textContent="Create or upload your avatar first, then enter the gym.";return;
      }
      mark("AVATAR_PROFILE","PASS","Canonical avatar selected");
-     mark("AVATAR_ASSET","RUNNING","Checking owner-protected avatar");
-     const url=global.MaatApiClient.resolve(model);
-     const owned=await fetch(url,{method:"HEAD",cache:"no-store",credentials:"omit",headers:{Authorization:"Bearer "+token}});
-     if(!owned.ok){mark("AVATAR_ASSET","FAIL","Avatar asset unavailable (HTTP "+owned.status+"). Use the avatar setup diagnostics.");message.textContent="Your saved avatar needs to be re-uploaded or checked.";return;}
-     mark("AVATAR_ASSET","PASS","Member avatar available");
+     mark("AVATAR_ASSET","SKIP","Asset verification is performed by existing Godot bootstrap");
      mark("WORLD_SESSION","RUNNING","Reusing existing /api/game/sessions");
      const launcher=global.PocketPTWorldLaunch;
      if(typeof launcher?.createArenaSession!=="function"){mark("WORLD_SESSION","FAIL","Existing world launcher unavailable");message.textContent="Gym connection isn't available. Open diagnostics.";return;}
