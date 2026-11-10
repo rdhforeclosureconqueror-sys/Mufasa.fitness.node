@@ -10,6 +10,7 @@ on:
       - 'server.js'
       - 'config/route-authorization-contract.js'
       - 'test/community-card-foundation.test.js'
+      - 'scripts/acceptance-community-card-http.js'
       - '.github/workflows/community-card-foundation.yml'
   workflow_dispatch:
 jobs:
@@ -21,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install runtime dependencies
+        run: npm ci --ignore-scripts
       - name: Static parse and targeted unit tests
         run: |
           node --check src/services/communityCardService.js
@@ -28,3 +31,5 @@ jobs:
           node --check public/community-entrance.js
           node --check server.js
           node --test test/community-card-foundation.test.js
+      - name: Isolated real HTTP registration, private card save and reload
+        run: node scripts/acceptance-community-card-http.js
