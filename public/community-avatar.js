@@ -49,7 +49,7 @@ function create({container,token,backend,preferredClip="",onClips=()=>{},onStatu
     const profile={avatarId:"community-member",source:"member-profile",assetUrl:url};
     const loaded=await session.loadAvatar(profile);
     if(loaded.status!=="ready"||disposed){status("avatar-load-failed");return {status:"avatar-load-failed"};}
-    const clips=nativeClips(session.avatarAsset);
+    const clips=nativeClips(session.avatarAsset).filter(clip=>session.inspectClipBindings(clip).unboundTrackCount===0);
     const choices=clips.map(c=>({name:c.name,duration:c.duration}));
     onClips(choices);
     if(reducedMotion){session.renderer?.render?.(session.scene,session.camera);session.stopRenderLoop();status("reduced-motion");return {status:"reduced-motion",clips:choices};}
