@@ -33,7 +33,7 @@ async function loadAvatar(){
      onClips:clips=>{
        select.replaceChildren();
        for(const clip of clips){const option=document.createElement("option");option.value=clip.name;option.textContent=clip.name;select.append(option);}
-       select.disabled=clips.length<2;
+       select.disabled=clips.length<2 || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
        if(clips.length)select.value=clips.some(c=>c.name===chosenClip)?chosenClip:clips[0].name;
      },
      onStatus:code=>{message.textContent=({
