@@ -20,13 +20,15 @@ function apply(card){if(!card)return;chosenClip=typeof card.animationClip==="str
 form.addEventListener("submit",async e=>{e.preventDefault();save.disabled=true;status.textContent="Saving your card…";try{const payload={displayName:$("displayName").value,bioShort:$("bioShort").value,interests:checked("interests"),goals:checked("goals"),visibility:$("visibility").value,animationClip:chosenClip};const data=await api("/api/me/community-card",{method:"PUT",body:JSON.stringify(payload)});apply(data.card);status.textContent="Your Community ID is saved!";}catch(err){status.textContent=err.message;}finally{save.disabled=false;}});
 async function loadAvatar(){
  const message=$("avatarStatus"),select=$("avatarAnimation"),container=$("avatarSpace"),fallback=$("avatarFallback");
+ message.textContent="Checking your saved member avatar…";
  try {
    const token=await auth(),data=await api("/api/me/profile");
    const modelUrl=data.profile?.avatar?.avatarModelUrl || data.avatar?.avatarModelUrl;
    if(!window.MileleCommunityAvatar?.allowedAvatarPath(modelUrl)){
-     message.textContent="No saved avatar found. Create or upload one through PocketPT.";return;
+     viewer?.dispose();viewer=null;container.querySelectorAll("canvas").forEach(c=>c.remove());fallback.hidden=false;
+     message.textContent=modelUrl?"AVATAR_SOURCE_UNSUPPORTED — saved avatar URL is not a supported owner-protected GLB. Open First-Failure diagnostics.":"No saved avatar on this account yet. Use Create or Change My Avatar, then return here.";return;
    }
-   viewer?.dispose();container.querySelectorAll("canvas").forEach(c=>c.remove());
+   viewer?.dispose();fallback.hidden=false;container.querySelectorAll("canvas").forEach(c=>c.remove());
    viewer=window.MileleCommunityAvatar.create({
      container,token,backend:backend(),preferredClip:chosenClip||"",
      reducedMotion:window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true,
@@ -47,13 +49,15 @@ async function loadAvatar(){
    });
    const result=await viewer.start(modelUrl);
    if(["playing","static-avatar","reduced-motion"].includes(result.status))fallback.hidden=true;
- } catch(error){message.textContent="Avatar unavailable: "+error.message; }
+ } catch(error){message.textContent="Avatar loading failed: "+error.message+". Open Avatar First-Failure Check to troubleshoot."; }
 }
 $("avatarAnimation").addEventListener("change",e=>{
  if(!viewer)return;
  const result=viewer.selectClip(e.target.value);
  if(result.status==="playing"){chosenClip=e.target.value;status.textContent="Animation selected. Tap Save My Card to keep it.";}
 });
-window.addEventListener("pagehide",()=>viewer?.dispose(),{once:true});
+window.addEventListener("pagehide",()=>{viewer?.dispose();viewer=null;});
+window.addEventListener("pageshow",event=>{if(event.persisted)void loadAvatar();});
+$("communityRefreshAvatar")?.addEventListener("click",async()=>{const btn=$("communityRefreshAvatar");btn.disabled=true;try{await loadAvatar();}finally{btn.disabled=false;}});
 (async()=>{try{const data=await api("/api/me/community-card");apply(data.card);save.disabled=false;status.textContent=data.card?"Your saved card is ready to edit.":"Your private Community ID is ready to create.";await loadAvatar();}catch(err){status.textContent=err.message;}})();
 })();
