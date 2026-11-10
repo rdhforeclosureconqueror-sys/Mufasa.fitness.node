@@ -27,6 +27,7 @@ async function step(id,work){try{await work();checks.push({id,status:"PASS"});}c
    await page.waitForFunction(()=>!document.querySelector("#saveCard").disabled,{timeout:15000});
    assert.equal(await page.locator("#communityEnterGym").isVisible(),true);
    assert.equal(await page.locator("#communityAvatarSetupLink").isVisible(),true);
+   assert.equal(await page.locator("#communityRefreshAvatar").isVisible(),true);
    assert.match(await page.locator("#communityAvatarSetupLink").getAttribute("href"),/avatarSetup=community/);
   });
   await step("missing-avatar-fails-before-world-session",async()=>{
@@ -51,7 +52,11 @@ async function step(id,work){try{await work();checks.push({id,status:"PASS"});}c
    assert.equal(await page.locator("#releaseAvatarDebugFirstFailure").count(),1);
    assert.equal(await page.locator("#releaseAvatarFileInput").count(),1);
    assert.equal(await page.locator("#releaseUploadAvatarBtn").count(),1);
-   assert.equal(await page.locator(".release-gate").isVisible(),false);
+   assert.equal(await page.locator(".release-gate").isVisible(),true);
+   assert.equal(await page.locator("#releaseEnterArenaBtn").innerText(),"Enter Virtual Gym");
+   assert.equal(await page.locator("#communityViewMyCard").isVisible(),true);
+   assert.equal(await page.locator("#communityStudio3dStatus").count(),1);
+   assert.match(await page.locator("#communityViewMyCard").getAttribute("href"),/community-entrance/);
    assert.equal(await page.locator('a[href="/community-entrance.html"]').count()>0,true);
   });
   await step("no-new-page-errors",async()=>{assert.deepEqual(errors,[]);});
