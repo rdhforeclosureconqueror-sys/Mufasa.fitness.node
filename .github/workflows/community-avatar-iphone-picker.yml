@@ -1,0 +1,22 @@
+name: Community Avatar iPhone Picker and Session Regression
+on:
+  pull_request:
+    paths:
+      - 'public/push-up-release.js'
+      - 'public/community-avatar-setup-mode.js'
+      - 'test/community-avatar-iphone-picker-session.test.js'
+      - '.github/workflows/community-avatar-iphone-picker.yml'
+jobs:
+  picker-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and established avatar picker regression
+        run: |
+          node --check public/push-up-release.js
+          node --check public/community-avatar-setup-mode.js
+          node --test test/community-avatar-iphone-picker-session.test.js test/push-up-avatar-validation.test.js
