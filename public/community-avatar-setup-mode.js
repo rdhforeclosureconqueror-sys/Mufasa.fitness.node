@@ -5,6 +5,21 @@
 if(new URLSearchParams(global.location.search).get("avatarSetup")!=="community")return;
 function boot(){
  const doc=global.document;
+ // The canonical signed-in account is the sole identity authority. Hide the
+ // legacy challenge signup; it also writes push-up participation metadata.
+ const sessionReturn="/push-up-release.html?avatarSetup=community";
+ const signedOut=doc.getElementById("releaseSignedOutActions");
+ if(signedOut){
+   signedOut.replaceChildren();
+   const message=doc.createElement("p");
+   message.textContent="Use your Milele Fit account to create or update your avatar. No second account is needed.";
+   const login=doc.createElement("a");login.href="/login.html?returnTo="+encodeURIComponent(sessionReturn);login.textContent="Sign in to Milele Fit";
+   login.className="btn primary";login.id="communityAvatarSignInLink";
+   const signup=doc.createElement("a");signup.href="/login.html?mode=register&returnTo="+encodeURIComponent(sessionReturn);signup.textContent="Create a free Milele Fit account";
+   signup.className="btn secondary";signup.id="communityAvatarRegisterLink";
+   signedOut.append(message,login,signup);
+ }
+
  doc.title="Avatar Studio | Milele Fit Community";
  doc.body.classList.add("community-avatar-mode");
  const css=doc.createElement("style");
@@ -22,7 +37,12 @@ function boot(){
  const validation=doc.querySelector("#releaseAvatarValidationPanel .temporary-badge");if(validation)validation.textContent="Community avatar setup · detailed diagnostics";
  const hint=doc.querySelector("#releaseAvatarValidationPanel > p.tiny");if(hint)hint.textContent="The existing avatar validation and First-Failure panels remain available on this page. Never share passwords, tokens, or private files.";
  const panel=doc.getElementById("releaseAvatarValidationPanel");panel?.setAttribute("data-community-reused-validation","true");
- if(global.location.hash!=="#yourAvatar")global.location.hash="#yourAvatar";
+ const secondLink=doc.createElement("a");secondLink.href="/community-hub.html";secondLink.textContent="Go to My Community Dashboard";secondLink.style.cssText="display:inline-block;color:#e8ca83;margin-left:16px";
+ intro.append(secondLink);
+ // AuthStateRuntime restores the existing same-origin session automatically.
+ // If the runtime later presents the signed-out block, these links are the
+ // *only* account actions: no duplicate form, no challenge registration.
+  if(global.location.hash!=="#yourAvatar")global.location.hash="#yourAvatar";
 }
 if(global.document.readyState==="loading")global.document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 })(window);
