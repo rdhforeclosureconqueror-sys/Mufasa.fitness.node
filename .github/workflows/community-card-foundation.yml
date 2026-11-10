@@ -1,0 +1,30 @@
+name: Community ID Card foundation
+on:
+  pull_request:
+    paths:
+      - 'src/services/communityCardService.js'
+      - 'src/routes/communityCardRoutes.js'
+      - 'public/community-entrance.html'
+      - 'public/community-entrance.js'
+      - 'public/community-hub.html'
+      - 'server.js'
+      - 'config/route-authorization-contract.js'
+      - 'test/community-card-foundation.test.js'
+      - '.github/workflows/community-card-foundation.yml'
+  workflow_dispatch:
+jobs:
+  community-card:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static parse and targeted unit tests
+        run: |
+          node --check src/services/communityCardService.js
+          node --check src/routes/communityCardRoutes.js
+          node --check public/community-entrance.js
+          node --check server.js
+          node --test test/community-card-foundation.test.js
