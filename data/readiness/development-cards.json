@@ -796,6 +796,20 @@
       "createdAt": "2026-10-16T02:34:08.116Z",
       "source": "readiness:update",
       "taskId": "acceptance-lab-phase3"
+    },
+    {
+      "id": "daily-check-in-pilot",
+      "board": "launch",
+      "canonical": false,
+      "title": "Daily Check-In pilot",
+      "category": "Member progress",
+      "description": "Authenticated daily check-in and isolated diagnostics",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-11-10T23:46:42.313Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
