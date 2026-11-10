@@ -32,7 +32,7 @@ const { createArenaCoachVoiceBridge } = require("./src/world/arenaCoachVoiceBrid
 const { createLobbyBridge } = require("./src/world/lobbyBridge");
 const { createGymMappingBridge } = require("./src/world/gymMappingBridge");
 const { createMembershipTierBridge } = require("./src/billing/membershipTierBridge");
-const { sendGarveyAssessmentNotification } = require("./src/services/garveyAssessmentNotificationService");
+const { buildGarveyAssessmentDeliveryTest, sendGarveyAssessmentNotification } = require("./src/services/garveyAssessmentNotificationService");
 
 function safeTokenEqual(expected, received) {
   const expectedBuffer = Buffer.from(String(expected || ""));
@@ -55,8 +55,26 @@ function installGarveyAssessmentNotificationRelay(app, options = {}) {
     try {
       const delivery = await sendGarveyAssessmentNotification({ notification, env });
       if (!delivery.sent) return res.status(503).json({ ok: false, error: { code: "EMAIL_NOT_CONFIGURED" } });
-      return res.status(202).json({ ok: true, data: { accepted: true } });
-    } catch (_error) {
+      console.info("[garvey-assessment-email] delivered", { resultId: notification.resultId, providerMessageId: delivery.providerMessageId || null });
+      return res.status(202).json({ ok: true, data: { accepted: true, providerMessageId: delivery.providerMessageId || null } });
+    } catch (error) {
+      console.error("[garvey-assessment-email] delivery failed", { resultId: notification.resultId, reason: String(error?.message || error).slice(0, 160) });
+      return res.status(502).json({ ok: false, error: { code: "EMAIL_DELIVERY_FAILED" } });
+    }
+  });
+  app.post("/api/internal/garvey/assessment-notification/test", relayLimit, async (req, res) => {
+    const expectedToken = String(env.GARVEY_ASSESSMENT_RELAY_TOKEN || "");
+    const receivedToken = String(req.get("x-garvey-assessment-token") || "");
+    if (!expectedToken) return res.status(503).json({ ok: false, error: { code: "RELAY_NOT_CONFIGURED" } });
+    if (!safeTokenEqual(expectedToken, receivedToken)) return res.status(401).json({ ok: false, error: { code: "UNAUTHORIZED" } });
+    const notification = buildGarveyAssessmentDeliveryTest();
+    try {
+      const delivery = await sendGarveyAssessmentNotification({ notification, env });
+      if (!delivery.sent) return res.status(503).json({ ok: false, error: { code: "EMAIL_NOT_CONFIGURED" } });
+      console.info("[garvey-assessment-email] verification delivered", { resultId: notification.resultId, providerMessageId: delivery.providerMessageId || null });
+      return res.status(202).json({ ok: true, data: { verified: true, providerMessageId: delivery.providerMessageId || null } });
+    } catch (error) {
+      console.error("[garvey-assessment-email] verification failed", { reason: String(error?.message || error).slice(0, 160) });
       return res.status(502).json({ ok: false, error: { code: "EMAIL_DELIVERY_FAILED" } });
     }
   });
