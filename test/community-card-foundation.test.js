@@ -1,0 +1,63 @@
+"use strict";
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const os=require("node:os");
+const path=require("node:path");
+const {createUserStore}=require("../src/repositories/userStore");
+const {createCommunityCardService}=require("../src/services/communityCardService");
+
+const example={
+ displayName:"Soul Explorer",bioShort:"Breathing, growing, connecting",
+ interests:["yoga","meditation"],goals:["make_friends","mindfulness"],visibility:"private"
+};
+function setup(t){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),"community-card-"));
+ t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const store=createUserStore({userDir:dir});
+ return {store,service:createCommunityCardService({userStore:store})};
+}
+test("community cards persist to canonical user record and default to private",t=>{
+ const {store,service}=setup(t);
+ assert.equal(service.get("member_a"),null);
+ const card=service.save("member_a",example);
+ assert.equal(card.visibility,"private");
+ assert.equal(service.visibleToMember("member_a"),null);
+ assert.deepEqual(createCommunityCardService({userStore:store}).get("member_a"),card);
+ assert.equal(service.get("member_b"),null);
+});
+test("only consented public projection is shared, never private user fields",t=>{
+ const {store,service}=setup(t);
+ store.updateUser("member_a",u=>{u.email="private@example.com";u.ohsa=[{condition:"private"}];return u;});
+ service.save("member_a",{...example,visibility:"members"});
+ const exposed=service.visibleToMember("member_a");
+ assert.deepEqual(Object.keys(exposed).sort(),["bioShort","displayName","goals","interests"].sort());
+ assert.equal(JSON.stringify(exposed).includes("private@example.com"),false);
+ service.save("member_a",{...example,visibility:"private"});
+ assert.equal(service.visibleToMember("member_a"),null);
+});
+test("rejects invalid, unknown, and over-sized inputs",t=>{
+ const {service}=setup(t);
+ for(const bad of [
+  {...example,displayName:""},
+  {...example,displayName:"x".repeat(49)},
+  {...example,interests:["yoga","yoga"]},
+  {...example,interests:["unknown"]},
+  {...example,goals:["fitness"]},
+  {...example,visibility:"everyone"},
+  {...example,email:"sneaky"},
+  {...example,bioShort:"x".repeat(181)},
+  {...example,displayName:"unsafe\nname"}
+ ]) assert.throws(()=>service.save("member_a",bad),{status:400});
+ assert.equal(service.get("member_a"),null);
+});
+test("Community ID uses auth-protected routes and preserves existing hub entry",()=>{
+ const route=fs.readFileSync(path.join(__dirname,"../src/routes/communityCardRoutes.js"),"utf8");
+ assert.match(route,/\/api\/me\/community-card/);
+ assert.match(route,/requireAuth/);
+ const html=fs.readFileSync(path.join(__dirname,"../public/community-hub.html"),"utf8");
+ assert.match(html,/href="\/community-entrance\.html"/);
+ const page=fs.readFileSync(path.join(__dirname,"../public/community-entrance.html"),"utf8");
+ assert.match(page,/Only me \(default\)/);
+ assert.match(page,/id="avatarSpace"/);
+});
