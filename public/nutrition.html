@@ -137,6 +137,17 @@
           <span class="section-eyebrow">Your daily dashboard</span><h2>Daily nutrition snapshot</h2>
           <input type="date" id="journalDate" />
           <div id="dailySummary" class="summary" aria-live="polite"></div>
+          <details id="nutritionGoalsGuide" style="margin:12px 0;padding:12px;border:1px solid rgba(110,230,208,.35);border-radius:15px;background:rgba(5,24,35,.5)">
+            <summary style="cursor:pointer;font-weight:750;min-height:34px">How to use your daily nutrition goals</summary>
+            <ol style="padding-left:21px;line-height:1.65">
+              <li>Open <strong>Set my daily nutrition goals</strong> below and enter the calorie, protein, carbohydrate, or fat targets you choose. Leave a field blank if you don't want a target for it.</li>
+              <li>Tap <strong>Save my goals</strong>. Your choices are stored on this device for now; you may need to set them again on another device.</li>
+              <li>Log a meal using Scan Barcode, Search Foods, Tell Milele Fit What I Ate, or Repeat Recent Meal. Check the amounts before saving.</li>
+              <li>Watch the rings update. For example, 75 g protein toward a 100 g goal means 75% complete. Tap the date to review another day.</li>
+              <li>A full ring means you've reached that number, not that eating more is always better. For limits such as calories or carbohydrates, pay attention to the amount and any <strong>Above your target</strong> message.</li>
+            </ol>
+            <p class="muted">The dashboard shows logged intake, not guaranteed results or an exercise-adjusted calorie budget. You decide your targets; ask a qualified professional for individualized guidance when needed.</p>
+          </details>
           <details id="nutritionGoalEditor"><summary style="cursor:pointer;font-weight:700">Set my daily nutrition goals</summary><div class="grid" id="nutritionGoalFields"><label>Calories (kcal)<input id="goalCalories" type="number" min="1" max="15000" inputmode="numeric"></label><label>Protein (g)<input id="goalProtein" type="number" min="1" max="1000" inputmode="numeric"></label><label>Carbs (g)<input id="goalCarbs" type="number" min="1" max="1500" inputmode="numeric"></label><label>Fat (g)<input id="goalFat" type="number" min="1" max="1000" inputmode="numeric"></label></div><button class="btn primary" id="saveNutritionGoals" type="button">Save my goals</button><p class="muted" id="nutritionGoalStatus">Goals are chosen by you and saved on this device for now. They are not medical recommendations.</p></details>
         </aside>
       <div class="hero">
