@@ -616,9 +616,16 @@
         if (!Number.isFinite(value) || value <= 0 || value > 15000) { $("nutritionGoalStatus").textContent = "Enter positive, realistic numeric goals."; return; }
         next[key] = value;
       }
-      localStorage.setItem(nutritionGoalKey(), JSON.stringify(next));
-      $("nutritionGoalStatus").textContent = "Goals saved on this device. Your rings now compare today's food to your chosen targets.";
-      loadSummary().catch(() => {});
+      button.disabled = true;
+      $("nutritionGoalStatus").textContent = "Saving your goals to your account…";
+      try {
+        await api("/api/me/nutrition/daily-goals", { method:"PUT", body:JSON.stringify(next) });
+        localStorage.setItem(nutritionGoalKey(), JSON.stringify(next));
+        $("nutritionGoalStatus").textContent = "Saved to your Milele Fit account. Your goals will be available when you sign back in.";
+        await loadSummary();
+      } catch (error) {
+        $("nutritionGoalStatus").textContent = "Could not save goals to your account. Please try again. " + (error.message || "");
+      } finally { button.disabled = false; }
     });
   }
   async function loadSummary() {
