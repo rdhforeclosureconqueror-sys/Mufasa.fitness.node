@@ -41,6 +41,6 @@ jobs:
           node --check public/community-avatar-diagnostics.js
           node --check public/community-avatar-setup-mode.js
           node --check public/community-gym-gateway.js
-          node --test test/community-card-foundation.test.js test/community-native-avatar.test.js test/community-gym-entry-reuse.test.js
+          node --test test/community-card-foundation.test.js test/community-native-avatar.test.js test/community-gym-entry-reuse.test.js test/world-lobby-bridge.test.js
       - name: Isolated real HTTP registration, private card save and reload
         run: node scripts/acceptance-community-card-http.js
