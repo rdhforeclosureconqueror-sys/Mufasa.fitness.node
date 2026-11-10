@@ -83,7 +83,7 @@
 
   function loginTarget(mode = 'login') {
     const returnTo = new URLSearchParams(global.location.search).get('avatarSetup') === 'community'
-      ? '/community-entrance.html' : '/push-up.html';
+      ? '/push-up-release.html?avatarSetup=community' : '/push-up.html';
     if (global.AuthNavigation?.loginUrl) {
       const url = global.AuthNavigation.loginUrl(returnTo);
       if (mode === 'register') {
