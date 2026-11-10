@@ -15,7 +15,7 @@ test("existing member auth uses canonical runtime; only signed-out members see r
  assert.match(release,/AuthStateRuntime\?\.whenReady/);
  assert.match(release,/if \(!auth\) \{[\s\S]*?renderSignedOut\(\)/);
  assert.match(release,/get\('avatarSetup'\) === 'community'/);
- assert.match(release,/\? '\/community-entrance\.html' : '\/push-up\.html'/);
+ assert.match(release,/\? '\/push-up-release\.html\?avatarSetup=community' : '\/push-up\.html'/);
 });
 test("community helper explains files browsing and never implements a second uploader",()=>{
  const mode=read("public/community-avatar-setup-mode.js");
