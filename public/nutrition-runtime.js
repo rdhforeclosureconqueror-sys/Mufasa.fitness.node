@@ -567,6 +567,38 @@
   function readNutritionGoals() {
     try { const data = JSON.parse(localStorage.getItem(nutritionGoalKey()) || "{}"); return data && typeof data === "object" ? data : {}; } catch { return {}; }
   }
+  function initializeNutritionCalculator() {
+    const button = $("calculateNutritionTargets");
+    if (!button || button.dataset.bound) return;
+    button.dataset.bound = "1";
+    button.addEventListener("click", () => {
+      const number = id => Number($(id).value);
+      const weight = number("calcWeight"), target = number("calcTargetWeight"), weeks = number("calcWeeks");
+      const height = number("calcHeight"), age = number("calcAge"), coefficient = $("calcSex").value;
+      const activity = number("calcActivity"), mode = $("calcGoal").value, output = $("nutritionCalculationResult");
+      if (!(weight >= 70 && weight <= 700 && target >= 70 && target <= 700 && weeks >= 4 && weeks <= 104 && height >= 48 && height <= 90 && age >= 18 && age <= 100 && ["male","female"].includes(coefficient))) {
+        output.textContent = "Enter a valid adult age, height, current and target weight, timeframe, and formula coefficient to calculate.";
+        return;
+      }
+      if ((mode === "lose" && target >= weight) || (mode === "gain" && target <= weight)) {
+        output.textContent = "Your target weight does not match the selected goal. Adjust one of them."; return;
+      }
+      const kilograms = weight * 0.45359237, centimeters = height * 2.54;
+      const bmr = 10 * kilograms + 6.25 * centimeters - 5 * age + (coefficient === "male" ? 5 : -161);
+      const maintenance = bmr * activity;
+      const weeklyChange = mode === "maintain" ? 0 : (target - weight) / weeks;
+      const requestedAdjustment = weeklyChange * 3500 / 7;
+      const adjustment = Math.max(-500, Math.min(350, requestedAdjustment));
+      const calories = Math.round((maintenance + adjustment) / 25) * 25;
+      if (calories < 1200) { output.textContent = "This estimate is too low for automatic planning. Please review your goals with a qualified professional."; return; }
+      const protein = Math.round(kilograms * 1.4);
+      const fat = Math.round(calories * 0.28 / 9);
+      const carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
+      for (const [id,value] of [["goalCalories",calories],["goalProtein",protein],["goalCarbs",carbs],["goalFat",fat]]) $(id).value = value;
+      $("nutritionGoalEditor").open = true;
+      output.textContent = "Estimated maintenance: " + Math.round(maintenance) + " kcal/day. Suggested starting intake: " + calories + " kcal, " + protein + " g protein, " + carbs + " g carbs, " + fat + " g fat. Requested change: " + Math.abs(weeklyChange).toFixed(2) + " lb/week; calorie adjustment capped for a cautious starting estimate. These are not guaranteed results. Review the numbers below, then tap Save my goals. Activity already includes usual workouts.";
+    });
+  }
   function initializeNutritionGoals() {
     const button = $("saveNutritionGoals");
     if (!button || button.dataset.bound) return;
@@ -591,6 +623,7 @@
   }
   async function loadSummary() {
     initializeNutritionGoals();
+    initializeNutritionCalculator();
     const s = await api(`/api/me/nutrition/summary?date=${$("journalDate").value}`);
     const f = s.fullDay;
     const goals = readNutritionGoals();
