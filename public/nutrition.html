@@ -137,6 +137,21 @@
           <span class="section-eyebrow">Your daily dashboard</span><h2>Daily nutrition snapshot</h2>
           <input type="date" id="journalDate" />
           <div id="dailySummary" class="summary" aria-live="polite"></div>
+          <section id="nutritionGoalCalculator" style="margin:12px 0;padding:14px;border:1px solid rgba(110,230,208,.4);border-radius:16px;background:rgba(8,31,42,.7)">
+            <h3>Build my nutrition target</h3><p class="muted">Tell us where you are and where you want to go. We'll estimate a starting target you can review, adjust and save.</p>
+            <div class="grid">
+              <label>My goal<select id="calcGoal"><option value="maintain">Maintain weight</option><option value="lose">Lose weight</option><option value="gain">Gain weight</option></select></label>
+              <label>Current weight (lb)<input id="calcWeight" type="number" min="70" max="700" inputmode="decimal"></label>
+              <label>Goal weight (lb)<input id="calcTargetWeight" type="number" min="70" max="700" inputmode="decimal"></label>
+              <label>Timeframe (weeks)<input id="calcWeeks" type="number" min="4" max="104" value="12" inputmode="numeric"></label>
+              <label>Height (inches)<input id="calcHeight" type="number" min="48" max="90" inputmode="decimal"></label>
+              <label>Age (years)<input id="calcAge" type="number" min="18" max="100" inputmode="numeric"></label>
+              <label>Formula coefficient<select id="calcSex"><option value="">Choose for estimate</option><option value="male">Male coefficient (+5)</option><option value="female">Female coefficient (−161)</option></select></label>
+              <label>Typical activity (includes workouts)<select id="calcActivity"><option value="1.2">Mostly sedentary</option><option value="1.375">Lightly active</option><option value="1.55">Moderately active</option><option value="1.725">Very active</option></select></label>
+            </div>
+            <button class="btn" id="calculateNutritionTargets" type="button">Estimate my targets</button>
+            <p id="nutritionCalculationResult" class="muted" aria-live="polite">Your estimate will appear here. Exercise is already included in the activity selection; do not add workout calories again automatically.</p>
+          </section>
           <details id="nutritionGoalEditor"><summary style="cursor:pointer;font-weight:700">Set my daily nutrition goals</summary><div class="grid" id="nutritionGoalFields"><label>Calories (kcal)<input id="goalCalories" type="number" min="1" max="15000" inputmode="numeric"></label><label>Protein (g)<input id="goalProtein" type="number" min="1" max="1000" inputmode="numeric"></label><label>Carbs (g)<input id="goalCarbs" type="number" min="1" max="1500" inputmode="numeric"></label><label>Fat (g)<input id="goalFat" type="number" min="1" max="1000" inputmode="numeric"></label></div><button class="btn primary" id="saveNutritionGoals" type="button">Save my goals</button><p class="muted" id="nutritionGoalStatus">Goals are chosen by you and saved on this device for now. They are not medical recommendations.</p></details>
         </aside>
       <div class="hero">
