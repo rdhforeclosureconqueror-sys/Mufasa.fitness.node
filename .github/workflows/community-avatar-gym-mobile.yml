@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'public/community-avatar.js'
+      - 'public/community-avatar-studio-preview.js'
+      - 'test/community-avatar-return-gym.test.js'
       - 'public/community-avatar-diagnostics.js'
       - 'public/community-avatar-setup-mode.js'
       - 'public/community-gym-gateway.js'
@@ -24,4 +26,6 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright
       - run: npx playwright install --with-deps chromium
+      - run: node --check public/community-avatar-studio-preview.js
+      - run: node --test test/community-avatar-return-gym.test.js test/community-native-avatar.test.js test/push-up-avatar-validation.test.js test/world-avatar-bridge.test.js
       - run: node scripts/acceptance-community-avatar-gym-mobile.js
