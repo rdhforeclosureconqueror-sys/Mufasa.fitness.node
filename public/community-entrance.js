@@ -17,7 +17,14 @@ const login=()=>location.replace("/login.html?returnTo="+encodeURIComponent(loca
 async function auth(){await window.AuthStateRuntime?.whenReady?.();const token=window.AuthStateRuntime?.getAuthToken?.()||window.APP_AUTH?.token;if(!token){login();throw Error("Sign in required");}return token;}
 async function api(path,options={}){const token=await auth();const response=await fetch(new URL(path,backend()),{method:options.method||"GET",headers:{"Authorization":"Bearer "+token,...(options.body?{"Content-Type":"application/json"}:{})},body:options.body,cache:"no-store",credentials:"omit"});if(response.status===401){login();throw Error("Your session expired");}const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error?.message||result.message||"Card request failed");return result.data||result;}
 function apply(card){if(!card)return;chosenClip=typeof card.animationClip==="string"?card.animationClip:null;$("displayName").value=card.displayName||"";$("bioShort").value=card.bioShort||"";$("visibility").value=card.visibility==="members"?"members":"private";for(const key of ["interests","goals"]){const selected=new Set(card[key]||[]);form.querySelectorAll('input[name="'+key+'"]').forEach(e=>e.checked=selected.has(e.value));}preview();}
-form.addEventListener("submit",async e=>{e.preventDefault();save.disabled=true;status.textContent="Saving your card…";try{const payload={displayName:$("displayName").value,bioShort:$("bioShort").value,interests:checked("interests"),goals:checked("goals"),visibility:$("visibility").value,animationClip:chosenClip};const data=await api("/api/me/community-card",{method:"PUT",body:JSON.stringify(payload)});apply(data.card);status.textContent="Your Community ID is saved!";}catch(err){status.textContent=err.message;}finally{save.disabled=false;}});
+form.addEventListener("submit",async e=>{e.preventDefault();save.disabled=true;status.textContent="Saving your card…";try{const payload={displayName:$("displayName").value,bioShort:$("bioShort").value,interests:checked("interests"),goals:checked("goals"),visibility:$("visibility").value,animationClip:chosenClip};const data=await api("/api/me/community-card",{method:"PUT",body:JSON.stringify(payload)});
+    // A successful write response is not proof of persistence. Read back through
+    // the canonical authenticated API before claiming the member card is saved.
+    const confirmed=await api("/api/me/community-card");
+    const fields=["displayName","bioShort","interests","goals","visibility","animationClip"];
+    const matches=confirmed?.card && data?.card && fields.every(key=>JSON.stringify(confirmed.card[key]??null)===JSON.stringify(data.card[key]??null));
+    if(!matches)throw Error("Save was submitted, but the saved card could not be verified. Please reload and check before trying again.");
+    apply(confirmed.card);status.textContent="Your Community ID is saved and verified!";}catch(err){status.textContent=err.message;}finally{save.disabled=false;}});
 async function loadAvatar(){
  const message=$("avatarStatus"),select=$("avatarAnimation"),container=$("avatarSpace"),fallback=$("avatarFallback");
  try {
