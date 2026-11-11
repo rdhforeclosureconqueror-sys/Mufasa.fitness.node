@@ -41,7 +41,11 @@ function init(){
      if(!launch?.launchUrl){mark("WORLD_SESSION","FAIL","No world launch URL");message.textContent="Gym session couldn't be created.";return;}
      mark("WORLD_SESSION","PASS","Original one-time Godot session created");
      mark("GYM_NAVIGATION","PASS","Opening existing Lion's Den");
-     global.location.assign(launch.launchUrl);
+     // Keep the authenticated session and fragment untouched; only opt into
+     // compact community presentation on the existing arena shell.
+     const url=new URL(launch.launchUrl,global.location.href);
+     url.searchParams.set("mode","community");
+     global.location.assign(url.href);
    }catch(error){
      const failure=checks.find(x=>x.status==="RUNNING");
      mark(failure?.stage||"WORLD_SESSION","FAIL",error?.code==="AUTH_REDIRECT"?"Sign-in redirect":error?.message||"Connection failed");
