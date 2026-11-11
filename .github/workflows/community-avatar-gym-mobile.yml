@@ -6,6 +6,9 @@ on:
       - 'public/community-avatar-diagnostics.js'
       - 'public/community-avatar-setup-mode.js'
       - 'public/community-gym-gateway.js'
+      - 'public/arena-push-up.html'
+      - 'public/arena-push-up.js'
+      - 'test/community-lounge-compact-hud.test.js'
       - 'public/community-entrance.html'
       - 'public/community-entrance.js'
       - 'public/push-up-release.html'
@@ -24,4 +27,5 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright
       - run: npx playwright install --with-deps chromium
+      - run: node --test test/community-lounge-compact-hud.test.js test/community-gym-entry-reuse.test.js test/arena-phone-ui.test.js
       - run: node scripts/acceptance-community-avatar-gym-mobile.js

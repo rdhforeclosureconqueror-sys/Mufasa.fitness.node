@@ -18,7 +18,8 @@
   const model = diagnostics.create({onChange: () => view?.render()});
   view = diagnostics.mount({model, board: document.getElementById('bridgeDebugBoard'),
     toggle: document.getElementById('bridgeDebugToggle'), document, navigator, reload: () => location.reload()});
-  let returnTo = '/push-up-challenge.html';
+  const communityLounge = new URLSearchParams(location.search).get('mode') === 'community';
+  let returnTo = communityLounge ? '/community-entrance.html' : '/push-up-challenge.html';
   let leaving = false;
   let disposed = false;
   let frameStarted = false;
@@ -177,7 +178,7 @@
       if (config.returnUrl) {
         const target = new URL(config.returnUrl, location.origin);
         if (!['https:', 'http:'].includes(target.protocol) || target.username || target.password || target.pathname !== '/push-up-challenge.html') throw {safeCode: 'INVALID_PAYLOAD'};
-        returnTo = target.href;
+        if (!communityLounge) returnTo = target.href;
         exitArena.href = returnTo;
       }
       mark('CONFIG', 'PASS', 'CONFIG_VALID');

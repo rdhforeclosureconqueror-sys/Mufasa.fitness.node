@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#050505">
   <title>Unleash the Beast — Push-Up Arena</title>
+  <script>
+    // Opt-in community presentation. The push-up exercise route remains unchanged.
+    if(new URLSearchParams(location.search).get("mode")==="community"){
+      document.documentElement.dataset.communityLounge="true";
+      document.addEventListener("DOMContentLoaded",()=>{
+        const title=document.querySelector("header h1"),exit=document.getElementById("exitArena"),frame=document.getElementById("game");
+        if(title)title.textContent="Milele Fit · Community Lounge";
+        if(exit){exit.textContent="Leave Lounge";exit.href="/community-entrance.html";}
+        if(frame)frame.title="Milele Fit shared community world";
+        document.title="Milele Fit Community Lounge";
+      },{once:true});
+    }
+  </script>
   <style>
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:#050505;color:#fff;font-family:Inter,system-ui,-apple-system,sans-serif}
@@ -79,7 +92,46 @@
     #arenaBodyStatus[data-form="fail"]{color:#ff7588}
     #arenaCameraChoice{margin-top:12px}#arenaCameraChoice label{display:block;margin-bottom:6px}
     @media(max-width:600px){header{align-items:flex-start}h1{font-size:18px}.phone-panel{padding-top:12px}.phone-actions button{flex:1 1 140px}.stage{min-height:72svh}.camera-stage{position:absolute;width:calc(100% - 16px);max-width:none;height:calc(72svh - 16px);left:8px;right:8px;top:8px;margin:0 auto;border-radius:14px}.camera-stage video,.camera-stage canvas{height:calc(100% - 82px)}.camera-guide{bottom:calc(8% + 82px)}#arenaBodyStatus{min-height:82px;font-size:15px;line-height:1.3;padding:10px 14px}}
-  </style>
+  
+    /* Social entry is a lightweight view of the existing shared gym.
+       Exercise entry stays unchanged, including camera and diagnostics. */
+    html[data-community-lounge="true"] body{height:100dvh;overflow:hidden}
+    html[data-community-lounge="true"] header{min-height:48px;padding:8px 12px;background:#0a211bcc;border-color:#577b62}
+    html[data-community-lounge="true"] header h1{font-size:clamp(14px,3vw,19px);color:#f0d28c}
+    html[data-community-lounge="true"] .stage{flex:1;min-height:0!important}
+    html[data-community-lounge="true"] footer{display:none}
+    html[data-community-lounge="true"] .phone-panel{
+      position:fixed;z-index:10;left:max(8px,env(safe-area-inset-left));
+      bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-width:min(220px,48vw);
+      padding:8px;background:transparent;border:0;pointer-events:none;
+    }
+    html[data-community-lounge="true"] .phone-panel>*{pointer-events:auto}
+    html[data-community-lounge="true"] .phone-panel h2,
+    html[data-community-lounge="true"] .phone-panel>p,
+    html[data-community-lounge="true"] .phone-actions,
+    html[data-community-lounge="true"] #arenaCameraChoice,
+    html[data-community-lounge="true"] .locomotion-mode,
+    html[data-community-lounge="true"] .joystick-hint{display:none!important}
+    html[data-community-lounge="true"] .thumb-controls{margin:0;width:auto}
+    html[data-community-lounge="true"] .thumb-controls summary{display:none}
+    html[data-community-lounge="true"] .thumb-controls .joystick-wrap{display:block}
+    html[data-community-lounge="true"] .joystick{
+      width:clamp(98px,23vw,132px);height:clamp(98px,23vw,132px);
+      background:radial-gradient(circle,#1d4036cc 0 28%,#102a25cc 29% 62%,#07140dba 63%);
+      border-color:#d7bb78;opacity:.89
+    }
+    html[data-community-lounge="true"] .joystick-knob{background:#d7bb78}
+    html[data-community-lounge="true"] #bridgeDebugToggle{top:max(54px,calc(48px + env(safe-area-inset-top)))}
+    @media(max-width:600px){
+      html[data-community-lounge="true"] header{min-height:44px}
+      html[data-community-lounge="true"] .stage{min-height:0!important}
+      html[data-community-lounge="true"] #bridgeDebugToggle{top:max(50px,calc(44px + env(safe-area-inset-top)))}
+      html[data-community-lounge="true"] .phone-panel{max-width:150px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      html[data-community-lounge="true"] .joystick-knob{transition:none}
+    }
+</style>
   <script defer src="/arena-push-up-debug-entry.js?v=20260910-consolidation-v3"></script>
   <script defer src="/runtime-state.js"></script>
   <script defer src="/coach-runtime.js?v=20260929-physical-calibration-v2"></script>
