@@ -1,66 +1,25 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id);
-const choices={
- interests:{yoga:"Yoga",meditation:"Meditation",sound_healing:"Sound healing",pranayama:"Breathwork",fitness:"Fitness",nutrition:"Nutrition",community:"Community"},
- goals:{make_friends:"Make friends",reduce_stress:"Reduce stress",build_consistency:"Consistency",mindfulness:"Mindfulness",strength:"Strength",confidence:"Confidence",recovery:"Recovery"}
-};
-function renderOptions(key,element){Object.entries(choices[key]).forEach(([value,label])=>{const wrap=document.createElement("label");const input=document.createElement("input");input.type="checkbox";input.name=key;input.value=value;wrap.append(input,document.createTextNode(label));$(element).append(wrap);});}
-renderOptions("interests","interestChoices");renderOptions("goals","goalChoices");
-const form=$("communityCardForm"),status=$("status"),save=$("saveCard");
-let viewer=null,chosenClip=null;
-function checked(key){return [...form.querySelectorAll('input[name="'+key+'"]:checked')].map(e=>e.value);}
-function paintChips(id,list,key){const parent=$(id);parent.replaceChildren();list.forEach(v=>{const e=document.createElement("span");e.className="chip";e.textContent=choices[key][v]||v;parent.append(e);});}
-function preview(){$("previewName").textContent=$("displayName").value.trim()||"Your community name";$("previewBio").textContent=$("bioShort").value.trim()||"Your story starts here.";paintChips("previewInterests",checked("interests"),"interests");paintChips("previewGoals",checked("goals"),"goals");$("previewPrivacy").textContent=$("visibility").value==="members"?"Visible to signed-in community members":"Private — only you can see this card";}
-form.addEventListener("input",e=>{if(e.target.type==="checkbox"){const list=checked(e.target.name);if(list.length>3){e.target.checked=false;status.textContent="Choose up to three in each section.";}}preview();});
+const choices={interests:{yoga:"Yoga",meditation:"Meditation",sound_healing:"Sound healing",pranayama:"Breathwork",fitness:"Fitness",nutrition:"Nutrition",community:"Community"},goals:{make_friends:"Make friends",reduce_stress:"Reduce stress",build_consistency:"Consistency",mindfulness:"Mindfulness",strength:"Strength",confidence:"Confidence",recovery:"Recovery"}};
+const palettes={kente:"linear-gradient(145deg,#1c6048 0%,#0d3028 48%,#8a382b 100%)",indigo:"linear-gradient(145deg,#273b76 0%,#142351 49%,#9e4d36 100%)",sunset:"linear-gradient(145deg,#8e392e 0%,#5d221d 48%,#173d35 100%)",earth:"linear-gradient(145deg,#65432d 0%,#3f281d 48%,#244b40 100%)",royal:"linear-gradient(145deg,#542a68 0%,#331b4b 48%,#124842 100%)"};
+const form=$("communityCardForm"),status=$("status"),save=$("saveCard"),previewCard=$("cardPreview");let viewer=null,chosenClip=null,backgroundImage="";
+function renderOptions(key,element){Object.entries(choices[key]).forEach(([value,label])=>{const wrap=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.name=key;input.value=value;wrap.append(input,document.createTextNode(label));$(element).append(wrap);});}renderOptions("interests","interestChoices");renderOptions("goals","goalChoices");
 const backend=()=>window.MaatApiClient?.origin?.()||window.MAAT_BACKEND_ORIGIN||"https://mufasa-fitness-node.onrender.com";
 const login=()=>location.replace("/login.html?returnTo="+encodeURIComponent(location.pathname));
 async function auth(){await window.AuthStateRuntime?.whenReady?.();const token=window.AuthStateRuntime?.getAuthToken?.()||window.APP_AUTH?.token;if(!token){login();throw Error("Sign in required");}return token;}
-async function api(path,options={}){const token=await auth();const response=await fetch(new URL(path,backend()),{method:options.method||"GET",headers:{"Authorization":"Bearer "+token,...(options.body?{"Content-Type":"application/json"}:{})},body:options.body,cache:"no-store",credentials:"omit"});if(response.status===401){login();throw Error("Your session expired");}const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error?.message||result.message||"Card request failed");return result.data||result;}
-function apply(card){if(!card)return;chosenClip=typeof card.animationClip==="string"?card.animationClip:null;$("displayName").value=card.displayName||"";$("bioShort").value=card.bioShort||"";$("visibility").value=card.visibility==="members"?"members":"private";for(const key of ["interests","goals"]){const selected=new Set(card[key]||[]);form.querySelectorAll('input[name="'+key+'"]').forEach(e=>e.checked=selected.has(e.value));}preview();}
-form.addEventListener("submit",async e=>{e.preventDefault();save.disabled=true;status.textContent="Saving your card…";try{const payload={displayName:$("displayName").value,bioShort:$("bioShort").value,interests:checked("interests"),goals:checked("goals"),visibility:$("visibility").value,animationClip:chosenClip};const data=await api("/api/me/community-card",{method:"PUT",body:JSON.stringify(payload)});
-    // A successful write response is not proof of persistence. Read back through
-    // the canonical authenticated API before claiming the member card is saved.
-    const confirmed=await api("/api/me/community-card");
-    const fields=["displayName","bioShort","interests","goals","visibility","animationClip"];
-    const matches=confirmed?.card && data?.card && fields.every(key=>JSON.stringify(confirmed.card[key]??null)===JSON.stringify(data.card[key]??null));
-    if(!matches)throw Error("Save was submitted, but the saved card could not be verified. Please reload and check before trying again.");
-    apply(confirmed.card);status.textContent="Your Community ID is saved and verified!";}catch(err){status.textContent=err.message;}finally{save.disabled=false;}});
-async function loadAvatar(){
- const message=$("avatarStatus"),select=$("avatarAnimation"),container=$("avatarSpace"),fallback=$("avatarFallback");
- try {
-   const token=await auth(),data=await api("/api/me/profile");
-   const modelUrl=data.profile?.avatar?.avatarModelUrl || data.avatar?.avatarModelUrl;
-   if(!window.MileleCommunityAvatar?.allowedAvatarPath(modelUrl)){
-     message.textContent="No saved avatar found. Create or upload one through PocketPT.";return;
-   }
-   viewer?.dispose();container.querySelectorAll("canvas").forEach(c=>c.remove());
-   viewer=window.MileleCommunityAvatar.create({
-     container,token,backend:backend(),preferredClip:chosenClip||"",
-     reducedMotion:window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true,
-     onClips:clips=>{
-       select.replaceChildren();
-       for(const clip of clips){const option=document.createElement("option");option.value=clip.name;option.textContent=clip.name;select.append(option);}
-       select.disabled=clips.length<2 || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
-       if(clips.length)select.value=clips.some(c=>c.name===chosenClip)?chosenClip:clips[0].name;
-     },
-     onStatus:code=>{message.textContent=({
-       playing:"Playing your avatar's own animation.",
-       "static-avatar":"Your avatar is ready; no embedded animation was found.",
-       "clip-incompatible":"This animation is incompatible with the saved avatar.",
-       "avatar-load-failed":"Could not load your saved avatar. You can still use your card.",
-       "renderer-unavailable":"3D preview is unavailable on this device.",
-       "reduced-motion":"Animation is paused for your reduced-motion preference."
-     })[code]||"Avatar status: "+code;}
-   });
-   const result=await viewer.start(modelUrl);
-   if(["playing","static-avatar","reduced-motion"].includes(result.status))fallback.hidden=true;
- } catch(error){message.textContent="Avatar unavailable: "+error.message; }
-}
-$("avatarAnimation").addEventListener("change",e=>{
- if(!viewer)return;
- const result=viewer.selectClip(e.target.value);
- if(result.status==="playing"){chosenClip=e.target.value;status.textContent="Animation selected. Tap Save My Card to keep it.";}
-});
-window.addEventListener("pagehide",()=>viewer?.dispose(),{once:true});
-(async()=>{try{const data=await api("/api/me/community-card");apply(data.card);save.disabled=false;status.textContent=data.card?"Your saved card is ready to edit.":"Your private Community ID is ready to create.";await loadAvatar();}catch(err){status.textContent=err.message;}})();
+async function api(path,options={}){const token=await auth(),response=await fetch(new URL(path,backend()),{method:options.method||"GET",headers:{Authorization:"Bearer "+token,...(options.body?{"Content-Type":"application/json"}:{})},body:options.body,cache:"no-store",credentials:"omit"});if(response.status===401){login();throw Error("Your session expired");}const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error?.message||result.message||"Card request failed");return result.data||result;}
+function checked(key){return [...form.querySelectorAll('input[name="'+key+'"]:checked')].map(e=>e.value);}
+function paintChips(id,list,key){const parent=$(id);parent.replaceChildren();list.forEach(v=>{const e=document.createElement("span");e.className="chip";e.textContent=choices[key][v]||v;parent.append(e);});}
+function theme(){return form.querySelector('input[name="colorTheme"]:checked')?.value||"kente";}
+function updateBackground(){previewCard.style.setProperty("--card-bg",backgroundImage?`url("${backgroundImage}")`:palettes[theme()]);$("imageStatus").textContent=backgroundImage?"Custom background ready.":"No custom background yet.";$("uploadTitle").textContent=backgroundImage?"Replace background photo":"Add a photo or texture";$("removeBackground").hidden=!backgroundImage;}
+function preview(){$("previewName").textContent=$("displayName").value.trim()||"Your community name";$("previewBio").textContent=$("bioShort").value.trim()||"Your story starts here.";paintChips("previewInterests",checked("interests"),"interests");paintChips("previewGoals",checked("goals"),"goals");$("previewPrivacy").textContent=$("visibility").value==="members"?"Visible to community members":"Only you can see this card";updateBackground();}
+form.addEventListener("input",e=>{if(e.target.type==="checkbox"){const list=checked(e.target.name);if(list.length>3){e.target.checked=false;status.textContent="Choose up to three in each section.";}}preview();});form.addEventListener("change",preview);
+function toDataUrl(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(Error("We couldn't read that image. Try another photo."));reader.onload=()=>{const image=new Image();image.onerror=()=>reject(Error("That file isn't a usable image."));image.onload=()=>{const max=1280,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));const context=canvas.getContext("2d");context.drawImage(image,0,0,canvas.width,canvas.height);let quality=.82,data=canvas.toDataURL("image/jpeg",quality);while(data.length>600000&&quality>.42){quality-=.08;data=canvas.toDataURL("image/jpeg",quality);}if(data.length>600000)return reject(Error("That photo is still too large. Please choose a simpler image."));resolve(data);};image.src=reader.result;};reader.readAsDataURL(file);});}
+$("backgroundImage").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;if(!["image/jpeg","image/png","image/webp"].includes(file.type)){status.textContent="Please choose a JPG, PNG, or WebP image.";return;}status.textContent="Preparing your background…";try{backgroundImage=await toDataUrl(file);preview();status.textContent="Background ready. Save your card when it feels right.";}catch(error){status.textContent=error.message;e.target.value="";}});
+$("removeBackground").addEventListener("click",()=>{backgroundImage="";$("backgroundImage").value="";preview();status.textContent="Custom background removed. Save to keep this change.";});
+function apply(card){if(!card)return;chosenClip=typeof card.animationClip==="string"?card.animationClip:null;backgroundImage=card.backgroundImage||"";$("displayName").value=card.displayName||"";$("bioShort").value=card.bioShort||"";$("visibility").value=card.visibility==="members"?"members":"private";const color=form.querySelector(`input[name="colorTheme"][value="${card.colorTheme||"kente"}"]`);if(color)color.checked=true;for(const key of ["interests","goals"]){const selected=new Set(card[key]||[]);form.querySelectorAll(`input[name="${key}"]`).forEach(e=>e.checked=selected.has(e.value));}preview();}
+form.addEventListener("submit",async e=>{e.preventDefault();save.disabled=true;status.textContent="Saving your Community ID…";try{const payload={displayName:$("displayName").value,bioShort:$("bioShort").value,interests:checked("interests"),goals:checked("goals"),visibility:$("visibility").value,animationClip:chosenClip,colorTheme:theme(),backgroundImage:backgroundImage||null};const data=await api("/api/me/community-card",{method:"PUT",body:JSON.stringify(payload)});
+const confirmed=await api("/api/me/community-card");const fields=["displayName","bioShort","interests","goals","visibility","animationClip","colorTheme","backgroundImage"];const matches=confirmed?.card&&data?.card&&fields.every(key=>JSON.stringify(confirmed.card[key]??null)===JSON.stringify(data.card[key]??null));if(!matches)throw Error("Save was submitted, but the saved card could not be verified. Please reload before trying again.");apply(confirmed.card);status.textContent="Your Community ID is saved and verified!";}catch(error){status.textContent=error.message;}finally{save.disabled=false;}});
+async function loadAvatar(){const message=$("avatarStatus"),container=$("avatarSpace"),fallback=$("avatarFallback");try{const data=await api("/api/me/profile"),modelUrl=data.profile?.avatar?.avatarModelUrl||data.avatar?.avatarModelUrl;if(!window.MileleCommunityAvatar?.allowedAvatarPath(modelUrl)){message.innerHTML='Want an avatar? <a href="/push-up-release.html?avatarSetup=community">Create one here</a>.';return;}viewer?.dispose();container.querySelectorAll("canvas").forEach(c=>c.remove());viewer=window.MileleCommunityAvatar.create({container,token:await auth(),backend:backend(),preferredClip:chosenClip||"",reducedMotion:window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true,onClips:clips=>{if(clips.length)chosenClip=chosenClip&&clips.some(c=>c.name===chosenClip)?chosenClip:clips[0].name;},onStatus:code=>{if(code==="playing")message.textContent="Your avatar brings your card to life.";}});const result=await viewer.start(modelUrl);if(["playing","static-avatar","reduced-motion"].includes(result.status))fallback.hidden=true;}catch(error){message.textContent="Your avatar will appear here when it’s ready.";}}
+window.addEventListener("pagehide",()=>viewer?.dispose(),{once:true});(async()=>{try{const data=await api("/api/me/community-card");apply(data.card);save.disabled=false;status.textContent=data.card?"Your saved card is ready to edit.":"Your private Community ID is ready to create.";await loadAvatar();}catch(error){status.textContent=error.message;}})();
 })();
