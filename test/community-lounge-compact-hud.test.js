@@ -32,3 +32,9 @@ test("lounge shows full-height world with an overlay joystick and hidden exercis
   assert.match(html,/html\[data-community-lounge="true"\] \.locomotion-mode,/);
   assert.match(html,/prefers-reduced-motion:reduce/);
 });
+
+test("community exit is preserved after arena configuration",()=>{
+ const runtime=read("public/arena-push-up.js");
+ assert.ok(runtime.includes("communityLounge ? '/community-entrance.html' : '/push-up-challenge.html'"));
+ assert.ok(runtime.includes("if (!communityLounge) returnTo = target.href"));
+});
