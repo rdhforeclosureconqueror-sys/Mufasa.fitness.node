@@ -61,3 +61,15 @@ test("Community ID uses auth-protected routes and preserves existing hub entry",
  assert.match(page,/Only me \(default\)/);
  assert.match(page,/id="avatarSpace"/);
 });
+
+test("Community card UI requires a server readback before declaring save verified",()=>{
+ const source=fs.readFileSync(path.join(__dirname,"../public/community-entrance.js"),"utf8");
+ const write=source.indexOf('api("/api/me/community-card",{method:"PUT"');
+ const read=source.indexOf('const confirmed=await api("/api/me/community-card")',write);
+ const success=source.indexOf("Your Community ID is saved and verified!",read);
+ assert.ok(write>=0,"save request must exist");
+ assert.ok(read>write,"saved value must be reloaded after write");
+ assert.ok(success>read,"success message must follow canonical readback");
+ assert.match(source,/fields\.every\(key=>JSON\.stringify\(confirmed\.card/);
+ assert.match(source,/saved card could not be verified/);
+});
