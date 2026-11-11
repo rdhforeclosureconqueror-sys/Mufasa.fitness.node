@@ -810,6 +810,20 @@
       "createdAt": "2026-11-10T23:46:42.313Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-community-id-personalization-v1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Community ID personalization and member experience V1",
+      "category": "MEMBER EXPERIENCE",
+      "description": "Upgrade the Community ID into a responsive Pan-African member experience with guided setup, palette choices, and a member-selected custom card background stored with the owner-scoped card.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-11T01:33:45.829Z",
+      "source": "readiness:update",
+      "taskId": "community-id-personalization-v1"
     }
   ]
 }
