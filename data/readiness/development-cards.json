@@ -824,6 +824,20 @@
       "createdAt": "2026-11-11T01:33:45.829Z",
       "source": "readiness:update",
       "taskId": "community-id-personalization-v1"
+    },
+    {
+      "id": "launch-development-community-presence-hub-v1",
+      "board": "launch",
+      "canonical": false,
+      "title": "Community presence and personalized hub V1",
+      "category": "MEMBER EXPERIENCE",
+      "description": "Add consent-respecting online member presence, tappable member Community ID views, and an optional member-selected Community Hub background.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-11T03:25:10.172Z",
+      "source": "readiness:update",
+      "taskId": "community-presence-hub-v1"
     }
   ]
 }
