@@ -36,6 +36,8 @@ services:
         sync: false
       - key: POCKET_PT_DATA_DIR
         value: /var/data
+      - key: POCKET_PT_AVATAR_UPLOAD_DIR
+        value: /var/data/avatars
     disk:
       name: pocket-pt-data
       mountPath: /var/data
