@@ -8,6 +8,10 @@ on:
       - 'public/community-gym-gateway.js'
       - 'public/arena-push-up.html'
       - 'public/arena-push-up.js'
+      - 'public/arena-community.html'
+      - 'public/arena-lounge-phone-ui.js'
+      - 'src/world/worldBridge.js'
+      - 'test/community-lounge-lean-bootstrap.test.js'
       - 'test/community-lounge-compact-hud.test.js'
       - 'public/community-entrance.html'
       - 'public/community-entrance.js'
@@ -27,5 +31,6 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright
       - run: npx playwright install --with-deps chromium
-      - run: node --test test/community-lounge-compact-hud.test.js test/community-gym-entry-reuse.test.js test/arena-phone-ui.test.js
+      - run: node --check public/arena-lounge-phone-ui.js
+      - run: node --test test/community-lounge-lean-bootstrap.test.js test/community-lounge-compact-hud.test.js test/community-gym-entry-reuse.test.js test/arena-phone-ui.test.js
       - run: node scripts/acceptance-community-avatar-gym-mobile.js
