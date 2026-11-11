@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#081c15">
+  <title>Milele Fit Community Lounge</title>
+  <style>
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    html,body{margin:0;height:100%;height:100dvh;background:#061710;color:#f8f3e8;font:15px/1.4 system-ui,sans-serif;overflow:hidden}
+    body{display:flex;flex-direction:column}
+    header{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));background:#09221b}
+    h1{font:500 clamp(15px,3vw,20px) Georgia,serif;color:#edcd85;margin:0}
+    .exit{border:1px solid #b9a46e;padding:8px 12px;border-radius:8px;color:#edcd85;text-decoration:none}
+    .stage{flex:1;position:relative;min-height:0}
+    .game{border:0;width:100%;height:100%;background:#07140d;display:none}
+    .status{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;background:#0b241b}
+    .card{padding:18px;border:1px solid #9d8556;border-radius:16px;background:#152e25;max-width:340px}
+    .card h2{font-size:20px}
+    .error{color:#ff9f9f}
+    #arenaPhonePanel{position:fixed;z-index:10;bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));pointer-events:none}
+    #arenaPhonePanel>*{pointer-events:auto}
+    #arenaPhonePanel h2,#arenaPhonePanel p{display:none}
+    .joystick{width:clamp(98px,23vw,136px);height:clamp(98px,23vw,136px);position:relative;border-radius:50%;background:#0b2420dd;border:2px solid #d3b875;touch-action:none;user-select:none;box-shadow:0 6px 28px #0007}
+    .joystick-knob{position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21%;border-radius:50%;background:#e7cb88;border:2px solid #fff0b1;pointer-events:none}
+    #bridgeDebugToggle{position:fixed;z-index:99998;top:56px;right:10px;background:#14261e;color:#e7cb88;border:1px solid #ad9156;border-radius:12px;padding:8px;font-size:12px}
+    #bridgeDebugBoard{position:fixed;z-index:99999;right:8px;bottom:12px;max-height:70dvh;overflow:auto;width:min(500px,calc(100vw - 16px));background:#081015fa;color:#f6f8fb;border:1px solid #465773;padding:14px;border-radius:14px;font:13px/1.4 system-ui}
+    #bridgeDebugBoard button{cursor:pointer}
+    button,a,[tabindex]{touch-action:manipulation}
+    :focus-visible{outline:3px solid #e7cb88;outline-offset:3px}
+    @media(orientation:landscape) and (max-height:450px){header{min-height:38px;padding-top:4px;padding-bottom:4px}#bridgeDebugToggle{top:44px}.joystick{width:95px;height:95px}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+  <script defer src="/arena-push-up-debug-entry.js?v=20260910-consolidation-v3"></script>
+  <script defer src="/arena-diagnostics.js?v=20260930-bottom-reset-v1"></script>
+  <script defer src="/arena-phone-flow.js?v=20260921-ready-gated-v1"></script>
+  <script defer src="/arena-lounge-phone-ui.js?v=20261111-lean-v1"></script>
+  <script defer src="/arena-pre-ready-trace.js?v=20260914-pre-ready-v1"></script>
+  <script defer src="/arena-push-up.js?v=20260929-physical-calibration-v2"></script>
+</head>
+<body>
+  <header><h1>Milele Fit · Community Lounge</h1><a id="exitArena" data-arena-exit class="exit" href="/community-entrance.html">Leave Lounge</a></header>
+  <main class="stage">
+    <div id="status" class="status"><div class="card"><h2>Entering the Community Lounge…</h2><p id="message" role="status">Connecting to the shared world.</p></div></div>
+    <iframe id="game" class="game" title="Milele Fit shared community world" allow="fullscreen; gamepad"></iframe>
+  </main>
+  <section id="arenaPhonePanel" hidden aria-label="Community movement">
+    <div id="arenaJoystick" class="joystick" tabindex="0" role="application" aria-label="Joystick: drag to walk, release to stop. Keyboard arrow keys also work.">
+      <span id="arenaJoystickKnob" class="joystick-knob" aria-hidden="true"></span>
+    </div>
+    <h2 id="arenaPhoneTitle">Community movement</h2><p id="arenaPhoneMessage" role="status"></p>
+  </section>
+  <button id="bridgeDebugToggle" type="button" aria-controls="bridgeDebugBoard" aria-expanded="false">Diagnostics</button>
+  <aside id="bridgeDebugBoard" hidden aria-label="Community connection diagnostics"></aside>
+  <noscript>JavaScript is required to enter the Community Lounge.</noscript>
+</body>
+</html>
