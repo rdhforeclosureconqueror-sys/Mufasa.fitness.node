@@ -3,8 +3,9 @@ const { ApiError } = require("../lib/apiResponse");
 
 const INTERESTS = Object.freeze(["yoga","meditation","sound_healing","pranayama","fitness","nutrition","community"]);
 const GOALS = Object.freeze(["make_friends","reduce_stress","build_consistency","mindfulness","strength","confidence","recovery"]);
-const OWN = Object.freeze(["displayName","bioShort","interests","goals","assessmentHighlights","visibility","animationClip","colorTheme","backgroundImage","useHubBackground"]);
+const OWN = Object.freeze(["displayName","bioShort","interests","goals","assessmentHighlights","visibility","animationClip","colorTheme","backgroundImage","avatarAreaTheme","useHubBackground"]);
 const COLOR_THEMES = Object.freeze(["kente","indigo","sunset","earth","royal"]);
+const AVATAR_AREA_THEMES = Object.freeze(["emerald","midnight","indigo","sunset","royal"]);
 function invalid(field){ throw new ApiError("COMMUNITY_CARD_INVALID", "Invalid community card field: " + field, 400); }
 function cleanText(v,field,max,required=false) {
   if (typeof v !== "string" || v.length > max*3) invalid(field);
@@ -54,6 +55,7 @@ function createCommunityCardService({userStore,clock=()=>new Date()}) {
       animationClip:input.animationClip==null || input.animationClip==="" ? null : cleanText(input.animationClip,"animationClip",120),
       colorTheme:COLOR_THEMES.includes(input.colorTheme) ? input.colorTheme : input.colorTheme==null ? "kente" : invalid("colorTheme"),
       backgroundImage:optionalBackground(input.backgroundImage),
+      avatarAreaTheme:AVATAR_AREA_THEMES.includes(input.avatarAreaTheme) ? input.avatarAreaTheme : input.avatarAreaTheme==null ? "emerald" : invalid("avatarAreaTheme"),
       useHubBackground:input.useHubBackground===true,
       visibility:input.visibility==="members"?"members":input.visibility==="private"?"private":invalid("visibility"),
       updatedAt:clock().toISOString()
@@ -66,7 +68,7 @@ function createCommunityCardService({userStore,clock=()=>new Date()}) {
     const card=get(userId);
     if (!card || card.visibility!=="members") return null;
     const avatarModelUrl=userStore.loadUser(userId)?.profile?.avatar?.avatarModelUrl;
-    return {displayName:card.displayName,bioShort:card.bioShort,interests:[...card.interests],goals:[...card.goals],assessmentHighlights:[...(card.assessmentHighlights||[])],animationClip:card.animationClip,colorTheme:card.colorTheme,backgroundImage:card.backgroundImage,avatarModelUrl:avatarModelUrl?`/api/community/members/${encodeURIComponent(userId)}/avatar`:null};
+    return {displayName:card.displayName,bioShort:card.bioShort,interests:[...card.interests],goals:[...card.goals],assessmentHighlights:[...(card.assessmentHighlights||[])],animationClip:card.animationClip,colorTheme:card.colorTheme,backgroundImage:card.backgroundImage,avatarAreaTheme:card.avatarAreaTheme||"emerald",avatarModelUrl:avatarModelUrl?`/api/community/members/${encodeURIComponent(userId)}/avatar`:null};
   }
   return Object.freeze({get,save,visibleToMember,INTERESTS,GOALS});
 }
