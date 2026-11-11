@@ -31,10 +31,16 @@ test("only consented public projection is shared, never private user fields",t=>
  store.updateUser("member_a",u=>{u.email="private@example.com";u.ohsa=[{condition:"private"}];return u;});
  service.save("member_a",{...example,visibility:"members"});
  const exposed=service.visibleToMember("member_a");
- assert.deepEqual(Object.keys(exposed).sort(),["backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
+ assert.deepEqual(Object.keys(exposed).sort(),["animationClip","assessmentHighlights","avatarModelUrl","backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
  assert.equal(JSON.stringify(exposed).includes("private@example.com"),false);
  service.save("member_a",{...example,visibility:"private"});
  assert.equal(service.visibleToMember("member_a"),null);
+});
+test("shared Community ID exposes only a guarded avatar route",t=>{
+ const {store,service}=setup(t);
+ store.updateUser("member_a",u=>{u.profile={avatar:{avatarModelUrl:"/api/me/avatar/assets/abc123def4567890"}};return u;});
+ service.save("member_a",{...example,visibility:"members"});
+ assert.equal(service.visibleToMember("member_a").avatarModelUrl,"/api/community/members/member_a/avatar");
 });
 test("rejects invalid, unknown, and over-sized inputs",t=>{
  const {service}=setup(t);
@@ -95,4 +101,12 @@ test("Community ID exposes an obvious visual save action and opt-in Hub backgrou
  assert.match(source,/Save My Look/);
  assert.match(source,/useHubBackground/);
  assert.match(source,/Tap Save My Look below to keep it/);
+});
+
+test("Community ID stores at most three opt-in assessment highlights without exposing a reading",t=>{
+ const {service}=setup(t);
+ const card=service.save("member_a",{...example,visibility:"members",assessmentHighlights:[{source:"love",label:"The Nurturer"},{source:"love",label:"Steadfast Heart"},{source:"love",label:"Sacred Mirror"}]});
+ assert.deepEqual(card.assessmentHighlights,[{source:"love",label:"The Nurturer"},{source:"love",label:"Steadfast Heart"},{source:"love",label:"Sacred Mirror"}]);
+ assert.deepEqual(service.visibleToMember("member_a").assessmentHighlights,[{source:"love",label:"The Nurturer"},{source:"love",label:"Steadfast Heart"},{source:"love",label:"Sacred Mirror"}]);
+ assert.throws(()=>service.save("member_b",{...example,assessmentHighlights:["one","two","three","four"]}),{status:400});
 });

@@ -9,7 +9,7 @@
 function allowedAvatarPath(value){
   if(typeof value!=="string")return null;
   const path=value.split("?")[0];
-  return /^\/api\/me\/avatar\/assets\/[a-f0-9-]{16,64}$/i.test(path) || /^\/uploads\/avatars\/[a-f0-9-]{16,64}\.glb$/i.test(path) ? path : null;
+  return /^\/api\/me\/avatar\/assets\/[a-f0-9-]{16,64}$/i.test(path) || /^\/api\/community\/members\/[a-z0-9_-]{1,160}\/avatar$/i.test(path) || /^\/uploads\/avatars\/[a-f0-9-]{16,64}\.glb$/i.test(path) ? path : null;
 }
 function nativeClips(asset){
   return (asset?.animations||[]).filter(clip=>clip && typeof clip.name==="string" && clip.tracks?.length>0 && Number.isFinite(clip.duration) && clip.duration>0);
