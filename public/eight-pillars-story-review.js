@@ -16,7 +16,7 @@ function show(i) {
   if (!s) return;
   week.value = String(index); title.textContent = "Week " + s.week + " · " + s.title;
   story.replaceChildren();
-  s.story.split(/\\n\\s*\\n/).filter(Boolean).forEach(t => { const p=document.createElement("p"); p.textContent=t; story.append(p); });
+  s.story.split(/\n\s*\n/).filter(Boolean).forEach(t => { const p=document.createElement("p"); p.textContent=t; story.append(p); });
   el("prev").disabled = index===0; el("next").disabled = index===stories.length-1;
   history.replaceState(null,"","#week-"+s.week);
 }
@@ -41,7 +41,7 @@ async function read() {
     status.textContent = "Sign in to your Milele Fit account to use the AI narrator.";
     return;
   }
-  const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
+  const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
   const selected = stories[index];
   const chunks = speechChunks(selected.story);
   status.textContent = "Connecting to Milele Fit AI voice…";
@@ -99,11 +99,13 @@ el("prev").addEventListener("click",()=>show(index-1));
 el("next").addEventListener("click",()=>show(index+1));
 week.addEventListener("change",()=>show(Number(week.value)));
 window.addEventListener("pagehide",stop);
-fetch("/eight-pillars-review-stories.json").then(r=>{if(!r.ok)throw Error("Story data unavailable");return r.json();}).then(data=>{
+const loadController = new AbortController();
+const loadTimeout = setTimeout(() => loadController.abort(), 12000);
+fetch("/eight-pillars-review-stories.json", {signal: loadController.signal, cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Story data unavailable");return r.json();}).then(data=>{
  stories=(data.stories||[]).filter(s=>typeof s.story==="string"&&typeof s.title==="string");
  if(!stories.length)throw Error("No stories available");
  stories.forEach((s,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent="Week "+s.week+" — "+s.title;week.append(o);});
  const match=location.hash.match(/^#week-([1-8])$/);show(match?Number(match[1])-1:0);
 
-}).catch(e=>{title.textContent="Stories unavailable";status.textContent=e.message;el("play").disabled=true;});
+}).catch(e=>{title.textContent="Stories unavailable";status.textContent=e.name === "AbortError" ? "Loading timed out. Please refresh or try again." : e.message;el("play").disabled=true;}).finally(()=>clearTimeout(loadTimeout));
 })();
