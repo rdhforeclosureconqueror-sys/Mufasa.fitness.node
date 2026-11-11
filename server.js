@@ -3361,16 +3361,6 @@ function createApp(options = {}) {
     }, 200);
   }));
 
-  const { createDailyCheckIns, runDailyCheckInDiagnostic } = require("./src/services/dailyCheckIns");
-  const dailyCheckIns = createDailyCheckIns(userStore);
-  app.get("/api/me/daily-check-in", requireAuth, (req, res) =>
-    ok(res.set("Cache-Control", "private, no-store"), req.requestId, dailyCheckIns.status(req.auth.userId)));
-  app.post("/api/me/daily-check-in", requireAuth, (req, res) =>
-    ok(res.set("Cache-Control", "private, no-store"), req.requestId, dailyCheckIns.complete(req.auth.userId)));
-  app.post("/api/admin/diagnostics/daily-check-in/run",
-    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.GAMIFICATION_OPERATIONS_MANAGE, trackAdminOpsAuthorizationDecision), (req, res) =>
-    ok(res, req.requestId, runDailyCheckInDiagnostic()));
-
   app.get("/api/check-ins", requireAuth, asyncHandler(async (req, res) => {
     const rawLimit = Number.parseInt(String(req.query.limit ?? ""), 10);
     const limit = Number.isFinite(rawLimit) ? rawLimit : 12;
