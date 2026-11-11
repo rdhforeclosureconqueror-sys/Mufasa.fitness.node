@@ -238,9 +238,13 @@ function createWorldBridge(options = {}) {
       });
     });
 
-    app.get("/arena/push-up", (_req, res) => {
+    app.get("/arena/push-up", (req, res) => {
       res.set("Cache-Control", "no-store, no-cache, must-revalidate");
-      return res.sendFile(path.join(rootDir, "public", "arena-push-up.html"));
+      // Presentation-only choice: canonical session exchange, cookies, bootstrap,
+      // and Godot build remain unchanged. Keep workouts on the original shell.
+      const shell = req.query.mode === "community"
+        ? "arena-community.html" : "arena-push-up.html";
+      return res.sendFile(path.join(rootDir, "public", shell));
     });
   }
 
