@@ -418,7 +418,10 @@ function createApp(options = {}) {
 
   // ---- Paths ----
   const PUBLIC_DIR = path.join(rootDir, "public");
-  const AVATAR_UPLOAD_DIR = path.resolve(options.avatarUploadDir || process.env.POCKET_PT_AVATAR_UPLOAD_DIR || path.join(PUBLIC_DIR, "uploads", "avatars"));
+  // Avatar models are member data, not build assets.  Keeping these under the
+  // same durable data root as the member record prevents a Render deploy or
+  // restart from leaving a profile pointed at a deleted GLB.
+  const AVATAR_UPLOAD_DIR = path.resolve(options.avatarUploadDir || process.env.POCKET_PT_AVATAR_UPLOAD_DIR || path.join(DATA_DIR, "avatars"));
   const EX_DB_DIR = path.join(PUBLIC_DIR, "exercise-db");
   const EX_INDEX_PATH = path.join(EX_DB_DIR, "index.json");
   const USER_DIR = path.join(DATA_DIR, "users");
@@ -3497,6 +3500,11 @@ function createApp(options = {}) {
     const destinationPath = path.join(AVATAR_UPLOAD_DIR, fileName);
     fs.writeFileSync(destinationPath, fileBuffer);
     writeJSON(path.join(AVATAR_UPLOAD_DIR, `${unique}.json`), { assetId: unique, ownerUserId: req.auth.userId, originalName: path.basename(originalName), sizeBytes: fileBuffer.length, compatibility, createdAt: new Date().toISOString() });
+    // Do not tell a member their avatar is saved unless both durable records
+    // are present before the profile is updated to reference it.
+    if (!fs.existsSync(destinationPath) || !fs.existsSync(path.join(AVATAR_UPLOAD_DIR, `${unique}.json`))) {
+      throw new ApiError("AVATAR_PERSISTENCE_FAILED", "Avatar storage could not be verified. Please try again.", 500);
+    }
     const avatarModelUrl = `/api/me/avatar/assets/${unique}`;
     try {
       userStore.updateUser(req.auth.userId, user => {
