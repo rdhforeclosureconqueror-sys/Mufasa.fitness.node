@@ -19,6 +19,7 @@ function show(i) {
   s.story.split(/\n\s*\n/).filter(Boolean).forEach(t => { const p=document.createElement("p"); p.textContent=t; story.append(p); });
   el("prev").disabled = index===0; el("next").disabled = index===stories.length-1;
   history.replaceState(null,"","#week-"+s.week);
+  prepareSections();
 }
 function speechChunks(text) {
   const chunks = []; let remaining = text.trim();
@@ -32,62 +33,82 @@ function speechChunks(text) {
   }
   return chunks;
 }
-async function read() {
+let chunkIndex = 0, currentChunks = [], activeWeek = null;
+function updateSectionControls() {
+  const total = currentChunks.length;
+  el("sectionPrev").disabled = !total || chunkIndex <= 0;
+  el("sectionNext").disabled = !total || chunkIndex >= total - 1;
+  el("sectionPosition").textContent = total ? "Section " + (chunkIndex + 1) + " of " + total : "Choose a story to begin";
+}
+function prepareSections(reset = true) {
+  const selected = stories[index];
+  if (!selected) return;
+  if (activeWeek !== selected.week || reset) {
+    currentChunks = speechChunks(selected.story);
+    chunkIndex = 0;
+    activeWeek = selected.week;
+  }
+  updateSectionControls();
+}
+async function playSection() {
   const token = ++generation;
   cleanupAudio(); paused = false; playing = true;
   const authToken = window.AuthStateRuntime?.getAuthToken?.();
-  if (!authToken) {
-    playing = false;
-    status.textContent = "Sign in to your Milele Fit account to use the AI narrator.";
-    return;
-  }
-  const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
+  if (!authToken) { playing = false; status.textContent = "Sign in to Milele Fit to use the AI narrator."; return; }
   const selected = stories[index];
-  const chunks = speechChunks(selected.story);
-  status.textContent = "Connecting to Milele Fit AI voice…";
+  if (!selected) { playing = false; return; }
+  if (activeWeek !== selected.week || !currentChunks.length) prepareSections();
+  const thisSection = chunkIndex;
+  const chunk = currentChunks[thisSection];
+  const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
+  status.textContent = "Preparing AI narrator · section " + (thisSection + 1) + " of " + currentChunks.length;
   try {
-    for (let i=0; i<chunks.length; i++) {
-      if (token !== generation) return;
-      const key = selected.week + ":" + chunks[i];
-      let blob = cache.get(key);
-      if (!blob) {
-        aborter = new AbortController();
-        const response = await fetch(origin + "/api/speak", {
-          method:"POST",
-          headers:{"content-type":"application/json", authorization:"Bearer " + authToken},
-          body:JSON.stringify({text:chunks[i],format:"mp3"}),
-          signal:aborter.signal
-        });
-        if (!response.ok) throw new Error("AI voice request failed (" + response.status + ")");
-        if (!(response.headers.get("content-type") || "").toLowerCase().startsWith("audio/")) throw new Error("AI voice returned no audio.");
-        blob = await response.blob();
-        if (token !== generation) return;
-        cache.set(key,blob);
-      }
-      activeUrl = URL.createObjectURL(blob);
-      activeAudio = new Audio(activeUrl);
-      status.textContent = "AI narrator playing · section " + (i+1) + " of " + chunks.length;
-      await new Promise((resolve,reject)=>{
-        activeAudio.onended = resolve;
-        activeAudio.onerror = () => reject(new Error("Audio playback failed."));
-        activeAudio.play().catch(reject);
+    const key = selected.week + ":" + chunk;
+    let blob = cache.get(key);
+    if (!blob) {
+      aborter = new AbortController();
+      const response = await fetch(origin + "/api/speak", {
+        method:"POST",
+        headers:{"content-type":"application/json",authorization:"Bearer " + authToken},
+        body:JSON.stringify({text:chunk,format:"mp3"}),
+        signal:aborter.signal
       });
+      if (!response.ok) throw Error("AI voice request failed (" + response.status + ")");
+      if (!(response.headers.get("content-type") || "").toLowerCase().startsWith("audio/")) throw Error("AI voice returned no audio.");
+      blob = await response.blob();
       if (token !== generation) return;
-      activeAudio.removeAttribute("src"); activeAudio.load(); activeAudio=null;
-      URL.revokeObjectURL(activeUrl); activeUrl=null;
+      cache.set(key,blob);
     }
-    if (token===generation) status.textContent="Finished listening.";
+    if (token !== generation) return;
+    activeUrl = URL.createObjectURL(blob);
+    activeAudio = new Audio(activeUrl);
+    activeAudio.onended = () => {
+      if (token !== generation) return;
+      playing = false;
+      cleanupAudio();
+      if (chunkIndex < currentChunks.length - 1) {
+        chunkIndex++;
+        updateSectionControls();
+        // iPhone browsers can block a second audio play without a fresh tap.
+        // Try automatic progression, then leave a working Next section button.
+        playSection();
+      } else status.textContent = "Story complete.";
+    };
+    activeAudio.onerror = () => { if(token===generation){playing=false;status.textContent="Audio playback interrupted. Tap Play or Next section.";cleanupAudio();} };
+    await activeAudio.play();
+    if (token===generation) status.textContent="AI narrator playing · section " + (chunkIndex+1) + " of " + currentChunks.length;
   } catch(error) {
-    if (token===generation) status.textContent = error.name === "NotAllowedError"
-      ? "Tap Play again to allow audio on this device."
-      : "AI voice unavailable: " + String(error.message || error).slice(0,140);
-  } finally {
-    if (token===generation) { playing=false; paused=false; cleanupAudio(); }
+    if(token===generation) {
+      playing=false;cleanupAudio();
+      status.textContent = error.name === "NotAllowedError"
+        ? "Your iPhone needs another tap. Press Play or Next section to continue."
+        : "AI voice interrupted: " + String(error.message || error).slice(0,130) + ". Tap Play to retry.";
+    }
   }
 }
 el("play").addEventListener("click",()=>{
-  if (paused && activeAudio) { activeAudio.play().then(()=>{paused=false;status.textContent="AI narrator resumed.";}).catch(()=>{status.textContent="Could not resume playback.";});return; }
-  if (!playing) read();
+  if (paused && activeAudio) { activeAudio.play().then(()=>{paused=false;status.textContent="AI narrator resumed.";}).catch(()=>{status.textContent="Tap Play to resume.";});return; }
+  if (!playing) playSection();
 });
 el("pause").addEventListener("click",()=>{
   if (!activeAudio || !playing) return;
@@ -95,13 +116,15 @@ el("pause").addEventListener("click",()=>{
   else { activeAudio.pause(); paused=true; status.textContent="AI narrator paused."; }
 });
 el("stop").addEventListener("click",stop);
+el("sectionPrev").addEventListener("click",()=>{if(chunkIndex>0){stop();chunkIndex--;updateSectionControls();playSection();}});
+el("sectionNext").addEventListener("click",()=>{if(chunkIndex<currentChunks.length-1){stop();chunkIndex++;updateSectionControls();playSection();}});
 el("prev").addEventListener("click",()=>show(index-1));
 el("next").addEventListener("click",()=>show(index+1));
 week.addEventListener("change",()=>show(Number(week.value)));
 window.addEventListener("pagehide",stop);
 const loadController = new AbortController();
 const loadTimeout = setTimeout(() => loadController.abort(), 12000);
-fetch("/eight-pillars-review-stories.json", {signal: loadController.signal, cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Story data unavailable");return r.json();}).then(data=>{
+Promise.all([fetch("/eight-pillars-review-stories.json", {signal:loadController.signal,cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Story data unavailable");return r.json();}),fetch("/eight-pillars-week-01-approved.txt", {signal:loadController.signal,cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Approved Week One manuscript unavailable");return r.text();})]).then(([data,weekOne])=>{ if(data.stories?.[0]?.week===1){data.stories[0].story=weekOne;data.stories[0].reviewStatus="user-provided";}
  stories=(data.stories||[]).filter(s=>typeof s.story==="string"&&typeof s.title==="string");
  if(!stories.length)throw Error("No stories available");
  stories.forEach((s,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent="Week "+s.week+" — "+s.title;week.append(o);});
