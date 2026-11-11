@@ -16,7 +16,7 @@ function show(i) {
   if (!s) return;
   week.value = String(index); title.textContent = "Week " + s.week + " · " + s.title;
   story.replaceChildren();
-  s.story.split(/\\n\\s*\\n/).filter(Boolean).forEach(t => { const p=document.createElement("p"); p.textContent=t; story.append(p); });
+  s.story.split(/\n\s*\n/).filter(Boolean).forEach(t => { const p=document.createElement("p"); p.textContent=t; story.append(p); });
   el("prev").disabled = index===0; el("next").disabled = index===stories.length-1;
   history.replaceState(null,"","#week-"+s.week);
 }
@@ -41,7 +41,7 @@ async function read() {
     status.textContent = "Sign in to your Milele Fit account to use the AI narrator.";
     return;
   }
-  const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\\/$/, "");
+  const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
   const selected = stories[index];
   const chunks = speechChunks(selected.story);
   status.textContent = "Connecting to Milele Fit AI voice…";
