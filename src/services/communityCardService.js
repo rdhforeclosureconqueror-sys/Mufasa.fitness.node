@@ -3,7 +3,7 @@ const { ApiError } = require("../lib/apiResponse");
 
 const INTERESTS = Object.freeze(["yoga","meditation","sound_healing","pranayama","fitness","nutrition","community"]);
 const GOALS = Object.freeze(["make_friends","reduce_stress","build_consistency","mindfulness","strength","confidence","recovery"]);
-const OWN = Object.freeze(["displayName","bioShort","interests","goals","visibility","animationClip","colorTheme","backgroundImage"]);
+const OWN = Object.freeze(["displayName","bioShort","interests","goals","visibility","animationClip","colorTheme","backgroundImage","useHubBackground"]);
 const COLOR_THEMES = Object.freeze(["kente","indigo","sunset","earth","royal"]);
 function invalid(field){ throw new ApiError("COMMUNITY_CARD_INVALID", "Invalid community card field: " + field, 400); }
 function cleanText(v,field,max,required=false) {
@@ -38,6 +38,7 @@ function createCommunityCardService({userStore,clock=()=>new Date()}) {
       animationClip:input.animationClip==null || input.animationClip==="" ? null : cleanText(input.animationClip,"animationClip",120),
       colorTheme:COLOR_THEMES.includes(input.colorTheme) ? input.colorTheme : input.colorTheme==null ? "kente" : invalid("colorTheme"),
       backgroundImage:optionalBackground(input.backgroundImage),
+      useHubBackground:input.useHubBackground===true,
       visibility:input.visibility==="members"?"members":input.visibility==="private"?"private":invalid("visibility"),
       updatedAt:clock().toISOString()
     };
@@ -48,7 +49,7 @@ function createCommunityCardService({userStore,clock=()=>new Date()}) {
   function visibleToMember(userId){
     const card=get(userId);
     if (!card || card.visibility!=="members") return null;
-    return {displayName:card.displayName,bioShort:card.bioShort,interests:[...card.interests],goals:[...card.goals]};
+    return {displayName:card.displayName,bioShort:card.bioShort,interests:[...card.interests],goals:[...card.goals],colorTheme:card.colorTheme,backgroundImage:card.backgroundImage};
   }
   return Object.freeze({get,save,visibleToMember,INTERESTS,GOALS});
 }
