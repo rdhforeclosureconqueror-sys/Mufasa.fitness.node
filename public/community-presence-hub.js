@@ -29,7 +29,8 @@
     if (!dialog) { dialog = document.createElement("dialog"); dialog.id = "memberIdDialog"; document.body.append(dialog); }
     const background = card.backgroundImage ? `url("${card.backgroundImage}")` : palette(card.colorTheme);
     const highlights = (card.assessmentHighlights || []).map(value => { const label=typeof value === "string" ? value : value.label; const source=typeof value === "string" ? "" : value.source; return `<span class="member-highlight" data-highlight-source="${esc(source)}">${esc(label)}</span>`; }).join("");
-    dialog.innerHTML = `<button class="btn secondary" type="button" id="closeMemberId">Close</button><p class="eyebrow">MILELE FIT · COMMUNITY ID</p><section class="member-id-view" style="background-image:linear-gradient(180deg,rgba(3,19,14,.20),rgba(3,19,14,.70)),${background}"><p class="eyebrow">COMMUNITY MEMBER</p><div class="member-avatar" id="memberAvatarSpace" aria-label="${esc(card.displayName)}'s avatar"><span id="memberAvatarStatus">Loading avatar…</span></div><h2>${esc(card.displayName)}</h2><p>${esc(card.bioShort || "Here for the wellness journey.")}</p><p class="muted">${(card.interests || []).map(esc).join(" · ")}</p><p class="muted">${(card.goals || []).map(esc).join(" · ")}</p>${highlights ? `<div class="member-highlights"><p class="eyebrow">LOVE &amp; LOYALTY · TOP CARDS</p>${highlights}</div>` : ""}</section>`;
+    dialog.innerHTML = `<button class="btn secondary" type="button" id="closeMemberId">Close</button><p class="eyebrow">MILELE FIT · COMMUNITY ID</p><section class="member-id-view"><p class="eyebrow">COMMUNITY MEMBER</p><div class="member-avatar" id="memberAvatarSpace" aria-label="${esc(card.displayName)}'s avatar"><span id="memberAvatarStatus">Loading avatar…</span></div><h2>${esc(card.displayName)}</h2><p>${esc(card.bioShort || "Here for the wellness journey.")}</p><p class="muted">${(card.interests || []).map(esc).join(" · ")}</p><p class="muted">${(card.goals || []).map(esc).join(" · ")}</p>${highlights ? `<div class="member-highlights"><p class="eyebrow">LOVE &amp; LOYALTY · TOP CARDS</p>${highlights}</div>` : ""}</section>`;
+    dialog.querySelector(".member-id-view").style.backgroundImage = `linear-gradient(180deg,rgba(3,19,14,.20),rgba(3,19,14,.70)),${background}`;
     dialog.querySelector("#closeMemberId").addEventListener("click", () => dialog.close());
     dialog.showModal();
     mountAvatar(card, dialog);
@@ -46,7 +47,7 @@
   async function applyPersonalHubLook() {
     try {
       const data = await request("/api/me/community-card"), card = data.card;
-      if (!card?.backgroundImage && !card?.useHubBackground) return;
+      if (card?.useHubBackground !== true) return;
       const base = card.backgroundImage ? `url("${card.backgroundImage}")` : palette(card.colorTheme);
       document.body.classList.add("personal-hub-look");
       document.body.style.backgroundImage = `linear-gradient(rgba(6,19,13,.74),rgba(6,19,13,.82)),${base}`;
