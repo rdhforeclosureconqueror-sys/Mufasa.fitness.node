@@ -4,6 +4,31 @@ const el = id => document.getElementById(id);
 const week = el("week"), title = el("title"), story = el("story"), status = el("status");
 let stories = [], index = 0, generation = 0, paused = false, playing = false;
 let activeAudio = null, activeUrl = null, aborter = null;
+
+const JOURNEY_KEY="milele-eight-pillars-start-v1";
+let startDate=null, selectedDay=1, dayText="";
+try{const saved=localStorage.getItem(JOURNEY_KEY);if(/^\d{4}-\d{2}-\d{2}$/.test(saved||""))startDate=saved;}catch{}
+function today(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
+function journeyDay(){if(!startDate)return 0;return Math.max(1,Math.min(56,Math.floor((Date.parse(today()+"T12:00:00")-Date.parse(startDate+"T12:00:00"))/86400000)+1));}
+function chapters(full){
+ const markers=[...full.matchAll(/The (First|Second|Third|Fourth|Fifth|Sixth|Seventh) Bridge\s*[—–-]\s*[^\n]+/g)];
+ if(markers.length!==7)return null;
+ return markers.map((m,i)=>full.slice(i===0?0:m.index,i===6?full.length:markers[i+1].index).trim());
+}
+function updateJourney(){
+ const day=journeyDay(),active=day>0;
+ el("startJourney").hidden=active;
+ el("journeyInfo").textContent=active?"Journey active · Day "+day+" of 56":"Your journey has not started. Press Start My Journey when you're ready for Day One.";
+ el("dayPicker").hidden=!active;
+ if(!active)return;
+ const max=Math.min(7,(day-1)%7+1);
+ el("dayPicker").replaceChildren();
+ for(let i=1;i<=7;i++){const o=document.createElement("option");o.value=String(i);o.textContent="Day "+i+(i>max?" · locked":"");o.disabled=i>max;el("dayPicker").append(o);}
+ selectedDay=Math.min(selectedDay,max);el("dayPicker").value=String(selectedDay);
+}
+el("startJourney").addEventListener("click",()=>{if(startDate)return;startDate=today();try{localStorage.setItem(JOURNEY_KEY,startDate);}catch{}selectedDay=1;show(index);});
+el("dayPicker").addEventListener("change",()=>{selectedDay=Number(el("dayPicker").value);show(index);});
+
 const cache = new Map(); // Only this page session; permanent audio storage is separate.
 function cleanupAudio() {
   if (aborter) { aborter.abort(); aborter = null; }
@@ -16,7 +41,15 @@ function show(i) {
   if (!s) return;
   week.value = String(index); title.textContent = "Week " + s.week + " · " + s.title;
   story.replaceChildren();
-  s.story.split(/\n\s*\n/).filter(Boolean).forEach(t => { const p=document.createElement("p"); p.textContent=t; story.append(p); });
+  const active=journeyDay()>0, currentWeek=Math.floor((journeyDay()-1)/7)+1;
+  const parts=chapters(s.story);
+  dayText=active && s.week===currentWeek && parts ? parts[selectedDay-1] : "";
+  if(dayText)dayText.split(/\n\s*\n/).filter(Boolean).forEach(t=>{const p=document.createElement("p");p.textContent=t;story.append(p);});
+  else {const p=document.createElement("p");p.textContent=!active?"Start your journey to unlock Day One.":s.week!==currentWeek?"This is not your current journey week. You can read the complete story below.":"Daily chapters require the original seven-part manuscript.";story.append(p);}
+  el("play").disabled=!dayText;
+  el("fullStory").textContent=s.story;
+  el("fullStoryPanel").open=false;
+  updateJourney();
   el("prev").disabled = index===0; el("next").disabled = index===stories.length-1;
   history.replaceState(null,"","#week-"+s.week);
   prepareSections();
@@ -44,7 +77,7 @@ function prepareSections(reset = true) {
   const selected = stories[index];
   if (!selected) return;
   if (activeWeek !== selected.week || reset) {
-    currentChunks = speechChunks(selected.story);
+    currentChunks = speechChunks(dayText);
     chunkIndex = 0;
     activeWeek = selected.week;
   }
@@ -56,7 +89,7 @@ async function playSection() {
   const authToken = window.AuthStateRuntime?.getAuthToken?.();
   if (!authToken) { playing = false; status.textContent = "Sign in to Milele Fit to use the AI narrator."; return; }
   const selected = stories[index];
-  if (!selected) { playing = false; return; }
+  if (!selected || !dayText) { playing = false; status.textContent="Start the journey and select an available daily chapter."; return; }
   if (activeWeek !== selected.week || !currentChunks.length) prepareSections();
   const thisSection = chunkIndex;
   const chunk = currentChunks[thisSection];

@@ -66,19 +66,17 @@
       focus: "How can my wholeness make more room for someone else’s?",
     },
   ];
-  const now = new Date(),
-    epoch = new Date(2026, 9, 4),
-    msWeek = 604800000;
-  const index =
-    ((Math.floor(
-      (new Date(now.getFullYear(), now.getMonth(), now.getDate()) - epoch) /
-        msWeek,
-    ) %
-      8) +
-      8) %
-    8;
-  const current = weeks[index];
-  const day = now.getDay() + 1;
+  // The older Eight Limbs course is independent of the Eight Pillars journey.
+  // No day advances until the member explicitly starts this course.
+  const limbKey="milele-eight-limbs-start-v1";
+  let limbStart=null;
+  try { const saved=localStorage.getItem(limbKey); if(/^\d{4}-\d{2}-\d{2}$/.test(saved||""))limbStart=saved; } catch {}
+  const today=new Date();
+  const localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
+  const elapsed=limbStart?Math.max(0,Math.floor((Date.parse(localDate+"T12:00:00")-Date.parse(limbStart+"T12:00:00"))/86400000)):0;
+  const index=limbStart?Math.min(7,Math.floor(elapsed/7)):0;
+  const day=limbStart?Math.min(7,elapsed%7+1):1;
+  const current=weeks[index];
   const escapeHtml = (value) =>
     String(value || "").replace(
       /[&<>"']/g,
@@ -97,7 +95,10 @@
     document.querySelector("#todayContent").innerHTML =
       `<p class="today-label">WEEK ${index + 1} · ${current.limb.toUpperCase()}</p><h2>${current.limb} + ${current.symbol}</h2><p class="symbol">${current.symbol} · ${current.meaning}</p><p>${current.bridge}</p><p><strong>Weekly reflection:</strong> ${current.focus}</p>${lessonBlock}${storyBlock}<p><a class="button" href="/mindfulness.html?community=pac#pac-community-today">Start today in the Mindfulness Dashboard →</a><a class="button secondary" href="/awareness-journey.html">Take today’s awareness practice →</a></p>`;
   }
-  renderToday();
+  if (!limbStart) {
+    document.querySelector("#todayContent").innerHTML = `<h2>Start your Eight Limbs journey when you are ready</h2><p>Membership does not start the lessons automatically. Your first day begins when you choose to start.</p><button class="button" id="startLimbJourney">Start My Journey · Day One</button><p class="muted">This browser remembers your start date. Cross-device sync is not yet available.</p>`;
+    document.querySelector("#startLimbJourney").addEventListener("click",()=>{try{localStorage.setItem(limbKey,localDate);}catch{}location.reload();});
+  } else renderToday();
   document.querySelector("#weeks").innerHTML = weeks
     .map(
       (week, i) =>
@@ -115,6 +116,7 @@
     }),
   ])
     .then(([curriculum, stories]) => {
+      if (!limbStart) return;
       renderToday({
         lesson: (curriculum.lessons || []).find(
           (item) => item.week === index + 1 && item.day === day,
@@ -122,5 +124,5 @@
         story: (stories.stories || []).find((item) => item.week === index + 1),
       });
     })
-    .catch(() => renderToday());
+    .catch(() => { if(limbStart)renderToday(); });
 })();
