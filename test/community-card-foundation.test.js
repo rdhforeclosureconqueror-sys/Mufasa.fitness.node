@@ -31,7 +31,7 @@ test("only consented public projection is shared, never private user fields",t=>
  store.updateUser("member_a",u=>{u.email="private@example.com";u.ohsa=[{condition:"private"}];return u;});
  service.save("member_a",{...example,visibility:"members"});
  const exposed=service.visibleToMember("member_a");
- assert.deepEqual(Object.keys(exposed).sort(),["assessmentHighlights","avatarModelUrl","backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
+ assert.deepEqual(Object.keys(exposed).sort(),["animationClip","assessmentHighlights","avatarModelUrl","backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
  assert.equal(JSON.stringify(exposed).includes("private@example.com"),false);
  service.save("member_a",{...example,visibility:"private"});
  assert.equal(service.visibleToMember("member_a"),null);

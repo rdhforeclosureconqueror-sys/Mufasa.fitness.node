@@ -66,7 +66,7 @@ function createCommunityCardService({userStore,clock=()=>new Date()}) {
     const card=get(userId);
     if (!card || card.visibility!=="members") return null;
     const avatarModelUrl=userStore.loadUser(userId)?.profile?.avatar?.avatarModelUrl;
-    return {displayName:card.displayName,bioShort:card.bioShort,interests:[...card.interests],goals:[...card.goals],assessmentHighlights:[...(card.assessmentHighlights||[])],colorTheme:card.colorTheme,backgroundImage:card.backgroundImage,avatarModelUrl:avatarModelUrl?`/api/community/members/${encodeURIComponent(userId)}/avatar`:null};
+    return {displayName:card.displayName,bioShort:card.bioShort,interests:[...card.interests],goals:[...card.goals],assessmentHighlights:[...(card.assessmentHighlights||[])],animationClip:card.animationClip,colorTheme:card.colorTheme,backgroundImage:card.backgroundImage,avatarModelUrl:avatarModelUrl?`/api/community/members/${encodeURIComponent(userId)}/avatar`:null};
   }
   return Object.freeze({get,save,visibleToMember,INTERESTS,GOALS});
 }
