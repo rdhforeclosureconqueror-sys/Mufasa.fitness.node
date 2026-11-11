@@ -11,13 +11,27 @@
     return payload.data || payload;
   };
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+  const palette = theme => ({ kente: "linear-gradient(145deg,#1c6048,#0d3028,#8a382b)", indigo: "linear-gradient(145deg,#273b76,#142351,#9e4d36)", sunset: "linear-gradient(145deg,#8e392e,#5d221d,#173d35)", earth: "linear-gradient(145deg,#65432d,#3f281d,#244b40)", royal: "linear-gradient(145deg,#542a68,#331b4b,#124842)" }[theme] || "linear-gradient(145deg,#1c6048,#0d3028)");
+  async function mountAvatar(card, dialog) {
+    const target = dialog.querySelector("#memberAvatarSpace"), status = dialog.querySelector("#memberAvatarStatus");
+    if (!target || !card.avatarModelUrl || !window.MileleCommunityAvatar?.create) { if (status) status.textContent = "No shared avatar yet."; return; }
+    try {
+      await window.AuthStateRuntime?.whenReady?.();
+      const token = window.AuthStateRuntime?.getAuthToken?.();
+      if (!token) throw Error("Sign in required");
+      const viewer = window.MileleCommunityAvatar.create({ container: target, token, backend: origin(), preferredClip: card.animationClip || "", reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true, onStatus: code => { if (status) status.textContent = code === "playing" ? "Avatar movement" : code === "static-avatar" ? "Avatar" : "Avatar unavailable"; } });
+      dialog.addEventListener("close", () => viewer.dispose(), { once: true });
+      await viewer.start(card.avatarModelUrl);
+    } catch (_) { if (status) status.textContent = "Avatar unavailable right now."; }
+  }
   function openCard(card) {
     let dialog = document.getElementById("memberIdDialog");
     if (!dialog) { dialog = document.createElement("dialog"); dialog.id = "memberIdDialog"; document.body.append(dialog); }
-    const background = card.backgroundImage ? `url("${card.backgroundImage}")` : "linear-gradient(145deg,#1c6048,#0d3028)";
-    dialog.innerHTML = `<button class="btn secondary" type="button" id="closeMemberId">Close</button><p class="eyebrow">MILELE FIT · COMMUNITY ID</p><section class="member-id-view" style="background-image:linear-gradient(#061c15b8,#061c15df),${background}"><p class="eyebrow">COMMUNITY MEMBER</p><h2>${esc(card.displayName)}</h2><p>${esc(card.bioShort || "Here for the wellness journey.")}</p><p class="muted">${(card.interests || []).map(esc).join(" · ")}</p></section>`;
+    const background = card.backgroundImage ? `url("${card.backgroundImage}")` : palette(card.colorTheme);
+    dialog.innerHTML = `<button class="btn secondary" type="button" id="closeMemberId">Close</button><p class="eyebrow">MILELE FIT · COMMUNITY ID</p><section class="member-id-view" style="background-image:linear-gradient(180deg,rgba(3,19,14,.20),rgba(3,19,14,.70)),${background}"><p class="eyebrow">COMMUNITY MEMBER</p><div class="member-avatar" id="memberAvatarSpace" aria-label="${esc(card.displayName)}'s avatar"><span id="memberAvatarStatus">Loading avatar…</span></div><h2>${esc(card.displayName)}</h2><p>${esc(card.bioShort || "Here for the wellness journey.")}</p><p class="muted">${(card.interests || []).map(esc).join(" · ")}</p><p class="muted">${(card.goals || []).map(esc).join(" · ")}</p></section>`;
     dialog.querySelector("#closeMemberId").addEventListener("click", () => dialog.close());
     dialog.showModal();
+    mountAvatar(card, dialog);
   }
   function render(members) {
     const target = document.getElementById("onlineMembers"); if (!target) return;
@@ -29,7 +43,13 @@
     catch (error) { const target = document.getElementById("onlineMembers"); if (target) target.innerHTML = `<p class="muted">${esc(error.message)}</p>`; }
   }
   async function applyPersonalHubLook() {
-    try { const data = await request("/api/me/community-card"), card = data.card; if (!card?.useHubBackground) return; const base = card.backgroundImage ? `url("${card.backgroundImage}")` : ({ kente: "linear-gradient(145deg,#1c6048,#0d3028,#8a382b)", indigo: "linear-gradient(145deg,#273b76,#142351,#9e4d36)", sunset: "linear-gradient(145deg,#8e392e,#5d221d,#173d35)", earth: "linear-gradient(145deg,#65432d,#3f281d,#244b40)", royal: "linear-gradient(145deg,#542a68,#331b4b,#124842)" }[card.colorTheme] || "#10100d"); document.body.classList.add("personal-hub-look"); document.body.style.backgroundImage = `linear-gradient(#06130dd9,#06130de8),${base}`; } catch (_) {}
+    try {
+      const data = await request("/api/me/community-card"), card = data.card;
+      if (!card?.backgroundImage && !card?.useHubBackground) return;
+      const base = card.backgroundImage ? `url("${card.backgroundImage}")` : palette(card.colorTheme);
+      document.body.classList.add("personal-hub-look");
+      document.body.style.backgroundImage = `linear-gradient(rgba(6,19,13,.74),rgba(6,19,13,.82)),${base}`;
+    } catch (_) {}
   }
   window.addEventListener("pagehide", () => clearInterval(window.__communityPresenceTimer), { once: true });
   window.addEventListener("DOMContentLoaded", () => { applyPersonalHubLook(); refresh(); window.__communityPresenceTimer = setInterval(refresh, 45_000); });

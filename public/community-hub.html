@@ -187,6 +187,8 @@
       dialog { width: min(520px, calc(100% - 28px)); color: var(--cream); background: #10261f; border: 1px solid var(--gold); border-radius: 20px; padding: 22px; }
       dialog::backdrop { background: #000b; }
       .member-id-view { min-height: 240px; border: 1px solid #d7b965; border-radius: 16px; padding: 18px; background: linear-gradient(145deg,#1c6048,#0d3028); background-size: cover; background-position: center; }
+      .member-avatar { height: 210px; margin: 14px 0; display: grid; place-items: center; overflow: hidden; border: 1px solid #e6cf88; border-radius: 14px; background: rgba(2, 15, 11, .46); color: var(--cream); }
+      .member-avatar canvas { width: 100% !important; height: 100% !important; }
       @media (max-width: 600px) {
         .stats {
           grid-template-columns: repeat(3, 1fr);
@@ -431,7 +433,10 @@
       }
     </script>
     <script src="/auth-state-runtime.js"></script>
+    <script src="/motion/shared3d-loader.js"></script>
+    <script src="/motion/disposable-motion-session.js"></script>
+    <script src="/community-avatar.js?v=20261111-v2"></script>
     <script src="/community-hub.js?v=20261009-wednesday-v1"></script>
-    <script src="/community-presence-hub.js"></script>
+    <script src="/community-presence-hub.js?v=20261111-v2"></script>
   </body>
 </html>

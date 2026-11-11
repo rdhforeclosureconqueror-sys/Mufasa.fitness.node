@@ -832,7 +832,8 @@ function createApp(options = {}) {
   // Member-owned Community ID records. Routes are mounted after authContext.
   const communityCardService = createCommunityCardService({ userStore });
   installCommunityCardRoutes({ app, requireAuth, service: communityCardService });
-  installCommunityPresenceRoutes({ app, requireAuth, service: createCommunityPresenceService({ cardService: communityCardService }) });
+  const communityPresenceService = createCommunityPresenceService({ cardService: communityCardService, userStore });
+  installCommunityPresenceRoutes({ app, requireAuth, service: communityPresenceService });
   const trackAdminOpsAuthorizationDecision = ({ req, permission, allowed, reason }) => {
     writeObservability.trackAdminOpsAuthorization({
       permission,
@@ -3445,6 +3446,18 @@ function createApp(options = {}) {
   app.get("/api/me/avatar/assets/:assetId", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
     const asset = requireOwnedAvatarAsset(req.auth.userId, req.params.assetId); res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
+  }));
+  // Saved avatars are viewable on Community IDs only after their owner shares the card.
+  // The asset ownership check remains in force; uploads do not become public files.
+  app.get("/api/community/members/:userId/avatar", requireAuth, asyncHandler(async (req, res) => {
+    if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
+    const card = communityPresenceService.memberCard(req.params.userId);
+    if (!card?.avatarModelUrl) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
+    const profileUrl = userStore.loadUser(req.params.userId)?.profile?.avatar?.avatarModelUrl;
+    if (!profileUrl) throw new ApiError("AVATAR_ASSET_NOT_FOUND", "Avatar asset not found", 404);
+    const pathname = new URL(String(profileUrl), "https://mufasa.invalid").pathname;
+    const asset = requireOwnedAvatarAsset(req.params.userId, pathname.split("/").pop());
+    res.set("Cache-Control", "private, no-store"); res.type("model/gltf-binary"); return res.sendFile(asset.glb);
   }));
   app.get("/uploads/avatars/:fileName", requireAuth, asyncHandler(async (req, res) => {
     if (!avatarFeatureEnabled) throw new ApiError("FEATURE_DISABLED", AVATAR_FEATURE_DISABLED_MESSAGE, 404);
