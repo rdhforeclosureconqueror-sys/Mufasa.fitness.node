@@ -31,7 +31,7 @@ test("only consented public projection is shared, never private user fields",t=>
  store.updateUser("member_a",u=>{u.email="private@example.com";u.ohsa=[{condition:"private"}];return u;});
  service.save("member_a",{...example,visibility:"members"});
  const exposed=service.visibleToMember("member_a");
- assert.deepEqual(Object.keys(exposed).sort(),["bioShort","displayName","goals","interests"].sort());
+ assert.deepEqual(Object.keys(exposed).sort(),["backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
  assert.equal(JSON.stringify(exposed).includes("private@example.com"),false);
  service.save("member_a",{...example,visibility:"private"});
  assert.equal(service.visibleToMember("member_a"),null);
@@ -71,6 +71,8 @@ test("community card stores only bounded, supported background images and palett
  assert.equal(card.schemaVersion,2);
  assert.equal(card.colorTheme,"royal");
  assert.equal(card.backgroundImage,background);
+ assert.equal(card.useHubBackground,false);
+ assert.equal(service.save("member_a",{...example,useHubBackground:true}).useHubBackground,true);
  assert.throws(()=>service.save("member_b",{...example,colorTheme:"nope"}),{status:400});
  assert.throws(()=>service.save("member_c",{...example,backgroundImage:"https://untrusted.example/photo.jpg"}),{status:400});
  assert.throws(()=>service.save("member_d",{...example,backgroundImage:"data:image/gif;base64,abc"}),{status:400});
@@ -79,11 +81,18 @@ test("community card stores only bounded, supported background images and palett
 test("Community card UI requires a server readback before declaring save verified",()=>{
  const source=fs.readFileSync(path.join(__dirname,"../public/community-entrance.js"),"utf8");
  const write=source.indexOf('api("/api/me/community-card",{method:"PUT"');
- const read=source.indexOf('const confirmed=await api("/api/me/community-card")',write);
- const success=source.indexOf("Your Community ID is saved and verified!",read);
+ const read=source.indexOf('confirmed=await api("/api/me/community-card")',write);
+ const success=source.indexOf("Your Community ID and your Hub look are saved and verified!",read);
  assert.ok(write>=0,"save request must exist");
  assert.ok(read>write,"saved value must be reloaded after write");
  assert.ok(success>read,"success message must follow canonical readback");
  assert.match(source,/fields\.every\(key=>JSON\.stringify\(confirmed\.card/);
  assert.match(source,/saved card could not be verified/);
+});
+
+test("Community ID exposes an obvious visual save action and opt-in Hub background",()=>{
+ const source=fs.readFileSync(path.join(__dirname,"../public/community-entrance.js"),"utf8");
+ assert.match(source,/Save My Look/);
+ assert.match(source,/useHubBackground/);
+ assert.match(source,/Tap Save My Look below to keep it/);
 });

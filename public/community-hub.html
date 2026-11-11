@@ -179,6 +179,14 @@
         outline: 3px solid var(--gold);
         outline-offset: 3px;
       }
+      body.personal-hub-look { background-size: cover; background-position: center; background-attachment: fixed; }
+      .online-members { display: flex; flex-wrap: wrap; gap: 10px; }
+      .member-online { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #7eae87; border-radius: 999px; padding: 9px 12px; background: #123126df; color: var(--cream); font: inherit; cursor: pointer; }
+      .member-online:hover { border-color: var(--gold); }
+      .online-dot { width: 9px; height: 9px; border-radius: 50%; background: #8bed9c; box-shadow: 0 0 12px #8bed9c; }
+      dialog { width: min(520px, calc(100% - 28px)); color: var(--cream); background: #10261f; border: 1px solid var(--gold); border-radius: 20px; padding: 22px; }
+      dialog::backdrop { background: #000b; }
+      .member-id-view { min-height: 240px; border: 1px solid #d7b965; border-radius: 16px; padding: 18px; background: linear-gradient(145deg,#1c6048,#0d3028); background-size: cover; background-position: center; }
       @media (max-width: 600px) {
         .stats {
           grid-template-columns: repeat(3, 1fr);
@@ -216,6 +224,12 @@
         <h2>Your identity, your community</h2>
         <p class="muted">Create your free, personalized community introduction. Choose a display name, interests, goals, and who can see your card.</p>
         <a class="btn" href="/community-entrance.html">Create or Edit My Community Card →</a>
+      </section>
+      <section class="card" id="communityNow">
+        <p class="eyebrow">COMMUNITY NOW</p>
+        <h2>Members in the room</h2>
+        <p class="muted">Names light up while members are active here. Tap a name to see the Community ID they chose to share.</p>
+        <div class="online-members" id="onlineMembers"><p class="muted">Checking who is here…</p></div>
       </section>
       <section class="card next" id="next">
         <p class="eyebrow">YOUR NEXT EVENT</p>
@@ -418,5 +432,6 @@
     </script>
     <script src="/auth-state-runtime.js"></script>
     <script src="/community-hub.js?v=20261009-wednesday-v1"></script>
+    <script src="/community-presence-hub.js"></script>
   </body>
 </html>

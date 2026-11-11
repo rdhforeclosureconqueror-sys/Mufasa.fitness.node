@@ -1,0 +1,10 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path");
+const {createUserStore}=require("../src/repositories/userStore");
+const {createCommunityCardService}=require("../src/services/communityCardService");
+const {createCommunityPresenceService}=require("../src/services/communityPresenceService");
+function setup(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),"community-presence-"));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));let now=1_000;const cards=createCommunityCardService({userStore:createUserStore({userDir:dir})});return{cards,presence:createCommunityPresenceService({cardService:cards,clock:()=>now,ttlMs:90}),advance:ms=>now+=ms};}
+const shared={displayName:"Nia",bioShort:"Breathing together",interests:["yoga"],goals:["mindfulness"],visibility:"members",colorTheme:"royal",backgroundImage:null};
+test("only opted-in shared Community IDs can appear online",t=>{const {cards,presence}=setup(t);cards.save("shared",shared);cards.save("private",{...shared,displayName:"Private",visibility:"private"});presence.heartbeat("shared");presence.heartbeat("private");assert.deepEqual(presence.onlineMembers().map(x=>x.displayName),["Nia"]);assert.equal(presence.memberCard("private"),null);});
+test("presence expires instead of becoming an activity history",t=>{const {cards,presence,advance}=setup(t);cards.save("shared",shared);presence.heartbeat("shared");advance(91);assert.deepEqual(presence.onlineMembers(),[]);});
+test("Hub includes active members and tappable shared Community IDs",()=>{const html=fs.readFileSync(path.join(__dirname,"../public/community-hub.html"),"utf8"),script=fs.readFileSync(path.join(__dirname,"../public/community-presence-hub.js"),"utf8"),routes=fs.readFileSync(path.join(__dirname,"../src/routes/communityPresenceRoutes.js"),"utf8");assert.match(html,/COMMUNITY NOW/);assert.match(script,/\/api\/me\/community\/presence/);assert.match(script,/\/api\/community\/members/);assert.match(routes,/requireAuth/);});
