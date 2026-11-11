@@ -2,7 +2,7 @@
 
 // Presence is intentionally short-lived. It is a live "who is here now"
 // signal, not a member activity history or a location record.
-function createCommunityPresenceService({ cardService, clock = () => Date.now(), ttlMs = 90_000 } = {}) {
+function createCommunityPresenceService({ cardService, userStore, clock = () => Date.now(), ttlMs = 90_000 } = {}) {
   if (!cardService?.visibleToMember) throw new Error("Community card service required");
   const active = new Map();
 
@@ -29,8 +29,17 @@ function createCommunityPresenceService({ cardService, clock = () => Date.now(),
   }
 
   function memberCard(userId) {
-    const card = cardService.visibleToMember(String(userId));
-    return card ? { userId: String(userId), ...card } : null;
+    const memberId = String(userId);
+    const card = cardService.visibleToMember(memberId);
+    if (!card) return null;
+    // The model itself is never exposed here. The authenticated shared-card avatar
+    // endpoint re-checks the member's asset ownership before sending any bytes.
+    const avatarModelUrl = userStore?.loadUser(memberId)?.profile?.avatar?.avatarModelUrl;
+    return {
+      userId: memberId,
+      ...card,
+      avatarModelUrl: avatarModelUrl ? `/api/community/members/${encodeURIComponent(memberId)}/avatar` : null
+    };
   }
 
   return Object.freeze({ heartbeat, onlineMembers, memberCard, ttlMs });
