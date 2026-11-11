@@ -58,8 +58,22 @@ test("Community ID uses auth-protected routes and preserves existing hub entry",
  const html=fs.readFileSync(path.join(__dirname,"../public/community-hub.html"),"utf8");
  assert.match(html,/href="\/community-entrance\.html"/);
  const page=fs.readFileSync(path.join(__dirname,"../public/community-entrance.html"),"utf8");
- assert.match(page,/Only me \(default\)/);
+ assert.match(page,/Your card background/);
+ assert.match(page,/How to make it yours/);
+ assert.match(page,/name="colorTheme"/);
  assert.match(page,/id="avatarSpace"/);
+});
+
+test("community card stores only bounded, supported background images and palette choice",t=>{
+ const {service}=setup(t);
+ const background="data:image/jpeg;base64,"+"a".repeat(200);
+ const card=service.save("member_a",{...example,colorTheme:"royal",backgroundImage:background});
+ assert.equal(card.schemaVersion,2);
+ assert.equal(card.colorTheme,"royal");
+ assert.equal(card.backgroundImage,background);
+ assert.throws(()=>service.save("member_b",{...example,colorTheme:"nope"}),{status:400});
+ assert.throws(()=>service.save("member_c",{...example,backgroundImage:"https://untrusted.example/photo.jpg"}),{status:400});
+ assert.throws(()=>service.save("member_d",{...example,backgroundImage:"data:image/gif;base64,abc"}),{status:400});
 });
 
 test("Community card UI requires a server readback before declaring save verified",()=>{
