@@ -15,6 +15,8 @@ const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = 
 const { createUserStore } = require("./src/repositories/userStore");
 const { createCommunityCardService } = require("./src/services/communityCardService");
 const { installCommunityCardRoutes } = require("./src/routes/communityCardRoutes");
+const { createCommunityPresenceService } = require("./src/services/communityPresenceService");
+const { installCommunityPresenceRoutes } = require("./src/routes/communityPresenceRoutes");
 const avatarUploadContract = require("./public/avatar-upload-contract");
 const { createAuthCredentialStore } = require("./src/repositories/authCredentialStore");
 const { createTrainerWorkspaceStore } = require("./src/repositories/trainerWorkspaceStore");
@@ -828,7 +830,9 @@ function createApp(options = {}) {
       : { enabled: false }
   }));
   // Member-owned Community ID records. Routes are mounted after authContext.
-  installCommunityCardRoutes({ app, requireAuth, service: createCommunityCardService({ userStore }) });
+  const communityCardService = createCommunityCardService({ userStore });
+  installCommunityCardRoutes({ app, requireAuth, service: communityCardService });
+  installCommunityPresenceRoutes({ app, requireAuth, service: createCommunityPresenceService({ cardService: communityCardService }) });
   const trackAdminOpsAuthorizationDecision = ({ req, permission, allowed, reason }) => {
     writeObservability.trackAdminOpsAuthorization({
       permission,
