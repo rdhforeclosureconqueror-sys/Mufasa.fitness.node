@@ -6200,6 +6200,138 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-10T23:46:56.749Z"
+    },
+    {
+      "operationId": "ff5e9175-557a-4ce7-804c-7a002d12ec42",
+      "board": "launch",
+      "cardId": "launch-development-community-id-personalization-v1",
+      "sourceType": "card_creation",
+      "taskId": "community-id-personalization-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "Upgrade the Community ID into a responsive Pan-African member experience with guided setup, palette choices, and a member-selected custom card background stored with the owner-scoped card.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-11T01:33:45.829Z"
+    },
+    {
+      "operationId": "cafffa7d-d4e1-4802-b2b5-ac8a99747254",
+      "board": "launch",
+      "cardId": "launch-development-community-id-personalization-v1",
+      "sourceType": "implementation",
+      "taskId": "community-id-personalization-v1",
+      "files": [
+        "public/community-entrance.html",
+        "public/community-entrance.js",
+        "src/services/communityCardService.js",
+        "test/community-card-foundation.test.js"
+      ],
+      "automated": null,
+      "evidence": "Implementation started: owner-scoped card customization, responsive member-facing redesign, and guided setup.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-11T01:33:46.046Z"
+    },
+    {
+      "operationId": "fd2f7844-cc50-4300-929f-43917ca7e960",
+      "board": "launch",
+      "cardId": "launch-development-community-id-personalization-v1",
+      "sourceType": "implementation",
+      "taskId": "community-id-personalization-v1",
+      "files": [
+        "public/community-entrance.html",
+        "public/community-entrance.js",
+        "src/services/communityCardService.js",
+        "test/community-card-foundation.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented responsive Pan-African Community ID redesign with five palette choices, browser-side image optimization and bounded owner-scoped background persistence, live card preview, simplified member language, and three-step guide. Automated: node --check, node --test test/community-card-foundation.test.js (6/6 PASS), readiness validation PASS. Browser/production visual confirmation remains unverified because the cloud browser was denied authority to open the local preview. Rollback: revert commit e05ee1f, redeploy; no migration is needed.",
+      "prNumber": null,
+      "commitSha": "e05ee1f",
+      "timestamp": "2026-11-11T01:40:59.440Z"
+    },
+    {
+      "operationId": "ab9efc2c-4ed1-452a-9da7-a741192cd368",
+      "board": "launch",
+      "cardId": "launch-development-community-id-personalization-v1",
+      "sourceType": "implementation",
+      "taskId": "community-id-personalization-v1",
+      "files": [
+        "public/community-entrance.html",
+        "public/community-entrance.js"
+      ],
+      "automated": null,
+      "evidence": "Owner visual and mobile acceptance requested after production deployment: confirm background upload, palette selection, preview, avatar rendering, and save/readback on iPhone.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-11T01:40:59.667Z"
+    },
+    {
+      "operationId": "93413835-2d72-4745-80e9-0f710f6bc63b",
+      "board": "launch",
+      "cardId": "launch-development-community-presence-hub-v1",
+      "sourceType": "card_creation",
+      "taskId": "community-presence-hub-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "Add consent-respecting online member presence, tappable member Community ID views, and an optional member-selected Community Hub background.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-11T03:25:10.172Z"
+    },
+    {
+      "operationId": "2ffc4181-0eee-4430-8ecc-b90462b64c4f",
+      "board": "launch",
+      "cardId": "launch-development-community-presence-hub-v1",
+      "sourceType": "implementation",
+      "taskId": "community-presence-hub-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "start recorded",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-11T03:25:10.366Z"
+    },
+    {
+      "operationId": "2ff85ede-2b66-476f-8d51-32033197b0f9",
+      "board": "launch",
+      "cardId": "launch-development-community-presence-hub-v1",
+      "sourceType": "implementation",
+      "taskId": "community-presence-hub-v1",
+      "files": [
+        "server.js",
+        "src/services/communityCardService.js",
+        "src/services/communityPresenceService.js",
+        "src/routes/communityPresenceRoutes.js",
+        "public/community-entrance.js",
+        "public/community-hub.html",
+        "public/community-presence-hub.js",
+        "test/community-card-foundation.test.js",
+        "test/community-presence.test.js",
+        "data/readiness/development-cards.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented consent-respecting 90-second live Community Now presence, tap-to-view shared member IDs, an immediate Save My Look action, and opt-in private Hub background reuse. Local automated suite: 20 tests PASS; hosted PR checks: 11/11 PASS. Rollback: revert squash merge from PR #1251; no data migration required. Owner iPhone visual/interaction acceptance remains required after deployment.",
+      "prNumber": 1251,
+      "commitSha": "7688777bdf0df33055cbd9e5dab8699b120a3282",
+      "timestamp": "2026-11-11T03:33:56.188Z"
+    },
+    {
+      "operationId": "c00fa6b4-e449-487c-9cfa-84d66c11b5ff",
+      "board": "launch",
+      "cardId": "launch-development-community-presence-hub-v1",
+      "sourceType": "implementation",
+      "taskId": "community-presence-hub-v1",
+      "files": [
+        "public/community-entrance.js",
+        "public/community-hub.html",
+        "public/community-presence-hub.js"
+      ],
+      "automated": null,
+      "evidence": "Owner iPhone acceptance requested after deployment: save a card look, enable Hub background, confirm Community Now name appears, and tap a second consented member's name to view their ID.",
+      "prNumber": 1251,
+      "commitSha": "7688777bdf0df33055cbd9e5dab8699b120a3282",
+      "timestamp": "2026-11-11T03:33:56.532Z"
     }
   ]
 }
