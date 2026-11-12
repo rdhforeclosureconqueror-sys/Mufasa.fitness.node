@@ -13,6 +13,23 @@ button.addEventListener("click",async()=>{
   });
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(response.status===403?"Your Pan-African community membership has not been approved yet.":response.status===401?"Please sign in again.":"Could not open the protected journey.");
+  // Old journeys stored opt-in dates on the public site's browser origin.
+  // Import them before navigating to the backend; never auto-start a journey.
+  const legacy={};
+  try{
+   const combined=localStorage.getItem("milele-eight-limbs-start-v1");
+   const pillars=localStorage.getItem("milele-eight-pillars-start-v1");
+   if(/^\\d{4}-\\d{2}-\\d{2}$/.test(combined||""))legacy.combinedEightLimbsStart=combined;
+   if(/^\\d{4}-\\d{2}-\\d{2}$/.test(pillars||""))legacy.eightPillarsStart=pillars;
+  }catch(_){}
+  if(Object.keys(legacy).length){
+   status.textContent="Preserving your existing journey dates…";
+   const saved=await fetch(backendOrigin+"/api/me/pan-african/import-legacy-progress",{
+    method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},
+    credentials:"omit",body:JSON.stringify(legacy)
+   });
+   if(!saved.ok)throw Error("Could not preserve your existing journey dates. Please try again before proceeding.");
+  }
   const entry=new URL(data.enterUrl);
   if(entry.origin!==new URL(backendOrigin).origin||entry.pathname!=="/api/pan-african/enter")throw Error("Unexpected secure journey destination.");
   window.location.assign(entry.href);
