@@ -46,6 +46,37 @@ function createResidentialWellnessService({ userStore, clock=()=>Date.now() }) {
     });
     return result;
   }
+  function getYogaJourney(userId){
+    const user=userStore.loadUser(userId);
+    return user?.eightLimbsYogaJourney || null;
+  }
+  function startYogaJourney(userId){
+    const now=iso(clock());
+    let journey;
+    userStore.updateUser(userId,user=>{
+      const previous=user.eightLimbsYogaJourney;
+      user.eightLimbsYogaJourney=previous || {schemaVersion:1,startedAt:now,completedLimbs:[],updatedAt:now};
+      journey=structuredClone(user.eightLimbsYogaJourney);
+      return user;
+    });
+    return journey;
+  }
+  function completeYogaLimb(userId,limb){
+    if(!Number.isInteger(limb)||limb<1||limb>8) throw new Error("Choose a limb from 1 to 8");
+    const now=iso(clock());
+    let journey;
+    userStore.updateUser(userId,user=>{
+      const previous=user.eightLimbsYogaJourney;
+      if(!previous?.startedAt) throw new Error("Start your yoga journey before recording progress");
+      const completed=Array.isArray(previous.completedLimbs)?previous.completedLimbs:[];
+      const next=completed.length+1;
+      if(!completed.includes(limb)&&limb!==next) throw new Error("Complete the previous limb first");
+      user.eightLimbsYogaJourney={...previous,completedLimbs:[...new Set([...completed,limb])].sort((a,b)=>a-b),updatedAt:now};
+      journey=structuredClone(user.eightLimbsYogaJourney);
+      return user;
+    });
+    return journey;
+  }
   function diagnostic(userId){
     const profile=get(userId);
     const checks=[
@@ -56,6 +87,6 @@ function createResidentialWellnessService({ userStore, clock=()=>Date.now() }) {
     ];
     return {diagnosticVersion:"residential-wellness-v1",firstFailure:checks.find(x=>x.result==="FAIL")?.id||null,checks};
   }
-  return { get,save,diagnostic,INTERESTS,CAMPAIGNS };
+  return { get,save,diagnostic,getYogaJourney,startYogaJourney,completeYogaLimb,INTERESTS,CAMPAIGNS };
 }
 module.exports={createResidentialWellnessService,INTERESTS,CAMPAIGNS};
