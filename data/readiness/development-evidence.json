@@ -6472,6 +6472,62 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-12T02:21:31.655Z"
+    },
+    {
+      "operationId": "fd666a93-ba99-456d-90d5-c59ae6c63180",
+      "board": "avatar",
+      "cardId": "avatar-xhr-first-failure-repair",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Replace silent browser upload failure with observable mobile-safe transport and exact boundary diagnostics.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T04:31:43.598Z"
+    },
+    {
+      "operationId": "5cc6710d-f3b7-4107-85f8-2dd61e8bfa0b",
+      "board": "avatar",
+      "cardId": "avatar-xhr-first-failure-repair",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Tracing browser dispatch boundary; production logs show no upload request reached the backend.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T04:31:43.821Z"
+    },
+    {
+      "operationId": "c6612f2e-e03e-48c5-b9c5-a6a2a70b42bc",
+      "board": "avatar",
+      "cardId": "avatar-xhr-first-failure-repair",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Selected as current avatar upload repair.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T04:31:44.044Z"
+    },
+    {
+      "operationId": "f22ad1da-3160-4bfb-9282-8e862f88c0eb",
+      "board": "avatar",
+      "cardId": "avatar-xhr-first-failure-repair",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/profile-write-runtime.js",
+        "test/avatar-mobile-upload-timeout.test.js",
+        "test/avatar-modal-controls.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Production Render logs show zero POST/OPTIONS requests for /api/avatar/upload while contract discovery succeeds: first failure is browser transport before backend receipt. Replaced opaque fetch upload with XMLHttpRequest lifecycle/progress diagnostics and exact network/abort/timeout classifications. Targeted validation passed: 8 avatar transport/timeout tests and contract diagnostic test; readiness validation passed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T04:34:00.197Z"
     }
   ]
 }
