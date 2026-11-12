@@ -44,6 +44,8 @@ jobs:
           # The legacy repo-route-audit checks server.js static middleware and is not scoped to this journey change.
           # Keep that legacy finding visible separately; certify journey routes with scoped tests below.
           node --test test/eight-limbs-adinkra-community.test.js test/eight-limbs-yoga-journey.test.js test/pac-static-access-guard.test.js test/pan-african-membership.test.js test/pac-protected-content-http.test.js
+          VITE_GOOGLE_MAPS_BROWSER_API_KEY=ci-pac-build-placeholder node scripts/build-frontend.js
+          node -e 'const fs=require("fs"),path=require("path");const {PAC_PROTECTED_ASSETS}=require("./src/config/pacProtectedAssets");for(const asset of PAC_PROTECTED_ASSETS){if(fs.existsSync(path.join("dist",asset)))throw new Error("PUBLIC_STATIC_LEAK:"+asset)}if(!fs.existsSync("dist/eight-limbs-yoga.html"))throw new Error("YOGA_PAGE_MISSING_FROM_PUBLIC_BUILD");console.log("Protected PAC assets absent from public static output")'
           node --check public/eight-limbs-yoga.js
           node --check public/eight-limbs-adinkra.js
           node --check public/eight-pillars-story-review.js
