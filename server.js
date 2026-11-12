@@ -28,6 +28,7 @@ const { createClientCrmService } = require("./src/services/clientCrmService");
 const { createEventCatalog } = require("./src/services/communityEventCatalog");
 const { createResidentialCommunityService } = require("./src/services/residentialCommunityService");
 const { createResidentialWellnessService } = require("./src/services/residentialWellnessService");
+const { getPanAfricanAccess } = require("./src/services/panAfricanMembershipService");
 const { createPrivateCoachingQuoteService } = require("./src/services/privateCoachingQuoteService");
 const { installPrivateCoachingQuoteRoutes } = require("./src/routes/privateCoachingQuoteRoutes");
 const { installCommunityEventCatalogRoutes } = require("./src/routes/communityEventCatalogRoutes");
@@ -3754,16 +3755,44 @@ function createApp(options = {}) {
     return ok(res,req.requestId,{trial:trial?{...trial,status:Date.parse(trial.expiresAt)>Date.now()?"trialing":"expired"}:null});
   }));
 
-  // PAC curriculum is private: never let express.static expose the source files.
-  // A self-selected pac_community interest is NOT verified group membership.
+  // Short-lived, HTTP-only PAC browsing grants. Bearer authentication is required
+  // to create a grant; every file request re-checks verified group membership.
+  const pacCookieName="milele_pac_session";
+  const pacSessionTtlMs=15*60*1000;
+  const pacBrowsingSessions=new Map();
   const pacProtectedFiles=new Set([
     "/eight-limbs-adinkra.html","/eight-limbs-adinkra.js",
-    "/eight-pillars-story-review.html","/eight-pillars-story-review.js"
+    "/eight-pillars-story-review.html","/eight-pillars-story-review.js",
+    "/eight-pillars-review-stories.json","/eight-pillars-week-01-approved.txt"
   ]);
+  app.post("/api/me/pan-african/browse-session",requireAuth,(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    const access=getPanAfricanAccess(userStore,req.auth.userId);
+    if(!access.authorized) return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
+    const now=Date.now();
+    for(const [key,item] of pacBrowsingSessions) if(item.expiresAt<=now) pacBrowsingSessions.delete(key);
+    const ticket=crypto.randomBytes(32).toString("base64url");
+    pacBrowsingSessions.set(ticket,{userId:req.auth.userId,expiresAt:now+pacSessionTtlMs});
+    res.cookie(pacCookieName,ticket,{httpOnly:true,secure:env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:pacSessionTtlMs});
+    return res.status(200).json({authorized:true,expiresInSeconds:900});
+  });
   app.use((req,res,next)=>{
     if(!pacProtectedFiles.has(req.path)) return next();
     res.set("Cache-Control","private, no-store");
-    return res.status(403).type("text/plain").send("Pan-African community content requires verified membership. Secure member delivery is not yet enabled.");
+    res.set("Vary","Cookie");
+    res.set("X-Content-Type-Options","nosniff");
+    const cookie=String(req.headers.cookie||"").split(";").map(p=>p.trim()).find(p=>p.startsWith(pacCookieName+"="));
+    const ticket=cookie?cookie.slice(pacCookieName.length+1):"";
+    const session=pacBrowsingSessions.get(ticket);
+    if(!session||session.expiresAt<=Date.now()) {
+      if(session) pacBrowsingSessions.delete(ticket);
+      return res.status(401).type("text/plain").send("Sign in and open the Pan-African community entry page.");
+    }
+    if(!getPanAfricanAccess(userStore,session.userId).authorized) {
+      pacBrowsingSessions.delete(ticket);
+      return res.status(403).type("text/plain").send("Verified Pan-African community membership required.");
+    }
+    return res.sendFile(path.join(PUBLIC_DIR,req.path));
   });
 
   // ---- Static assets ----
