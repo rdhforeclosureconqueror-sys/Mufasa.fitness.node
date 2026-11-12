@@ -2,8 +2,9 @@
 const { asyncHandler } = require("../middleware/requestContext");
 const { createRateLimiter } = require("../middleware/rateLimit");
 const { ok } = require("../lib/apiResponse");
+const { getPanAfricanAccess } = require("../services/panAfricanMembershipService");
 
-function installResidentialWellnessRoutes({app,requireAuth,service}){
+function installResidentialWellnessRoutes({app,requireAuth,service,userStore}){
   if(!app||!requireAuth||!service) throw new Error("Residential wellness route dependencies are required");
   const writeLimit=createRateLimiter({name:"residential-wellness-write",windowMs:60_000,max:12});
   app.get("/api/me/residential-wellness",requireAuth,asyncHandler(async(req,res)=>{
@@ -14,6 +15,10 @@ function installResidentialWellnessRoutes({app,requireAuth,service}){
     const profile=service.save(req.auth.userId,req.body||{});
     res.set("Cache-Control","private, no-store");
     return ok(res,req.requestId,{profile});
+  }));
+  app.get("/api/me/pan-african/access",requireAuth,asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,{access:getPanAfricanAccess(userStore,req.auth.userId)});
   }));
   app.get("/api/me/eight-limbs-yoga",requireAuth,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
