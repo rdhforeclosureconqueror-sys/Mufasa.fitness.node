@@ -187,9 +187,10 @@
       dialog { width: min(520px, calc(100% - 28px)); color: var(--cream); background: #10261f; border: 1px solid var(--gold); border-radius: 20px; padding: 22px; }
       dialog::backdrop { background: #000b; }
       .member-id-view { min-height: 240px; border: 1px solid #d7b965; border-radius: 16px; padding: 18px; background: linear-gradient(145deg,#1c6048,#0d3028); background-size: cover; background-position: center; }
-      .member-avatar { height: min(48vw,260px); min-height: 190px; margin: 12px 0 18px; overflow: hidden; border: 2px solid var(--avatar-border,#f2c75c); border-radius: 16px; background: var(--avatar-stage,radial-gradient(circle at 50% 28%,#164e40,#061914 72%)); box-shadow: inset 0 0 0 1px #ffffff28,0 12px 28px #0008; }
-      .member-avatar canvas { display:block; width:100%; height:100%; }
-      .member-avatar span { display:grid; height:100%; place-items:center; color:#f7dea0; }
+      .member-avatar { position:relative; height: min(48vw,260px); min-height: 190px; margin: 12px 0 18px; overflow: hidden; border: 2px solid var(--avatar-border,#f2c75c); border-radius: 16px; background: var(--avatar-stage,radial-gradient(circle at 50% 28%,#164e40,#061914 72%)); box-shadow: inset 0 0 0 1px #ffffff28,0 12px 28px #0008; }
+      .member-avatar canvas { position:relative; z-index:1; display:block; width:100%; height:100%; }
+      .member-avatar span { position:absolute; inset:0; z-index:2; display:grid; place-items:center; color:#f7dea0; pointer-events:none; }
+      .member-avatar span[hidden] { display:none; }
       @media (max-width: 600px) {
         .stats {
           grid-template-columns: repeat(3, 1fr);

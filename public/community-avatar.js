@@ -18,7 +18,7 @@ function chooseClip(clips,preferred){
   if(preferred && clips.some(c=>c.name===preferred))return preferred;
   return clips[0]?.name||null;
 }
-function create({container,token,backend,preferredClip="",onClips=()=>{},onStatus=()=>{},reducedMotion=false}){
+function create({container,token,backend,preferredClip="",onClips=()=>{},onStatus=()=>{},reducedMotion=false,transparentBackground=false}){
   let session=null,disposed=false;
   function status(value){if(!disposed)onStatus(value);}
   const dispose=()=>{disposed=true;session?.dispose();session=null;};
@@ -43,7 +43,7 @@ function create({container,token,backend,preferredClip="",onClips=()=>{},onStatu
         };
       }
     };
-    session=runtime.createMotionSession({loader,showProbe:false});
+    session=runtime.createMotionSession({loader,showProbe:false,transparentBackground});
     const init=await session.start(container);
     if(init.status!=="ready"||disposed){status("renderer-unavailable");return {status:"renderer-unavailable"};}
     const profile={avatarId:"community-member",source:"member-profile",assetUrl:url};

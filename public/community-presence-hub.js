@@ -20,7 +20,7 @@
       await window.AuthStateRuntime?.whenReady?.();
       const token = window.AuthStateRuntime?.getAuthToken?.();
       if (!token) throw Error("Sign in required");
-      const viewer = window.MileleCommunityAvatar.create({ container: target, token, backend: origin(), preferredClip: card.animationClip || "", reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true, onStatus: code => { if (status) status.textContent = code === "playing" ? "Avatar movement" : code === "static-avatar" ? "Avatar" : "Avatar unavailable"; } });
+      const viewer = window.MileleCommunityAvatar.create({ container: target, token, backend: origin(), preferredClip: card.animationClip || "", transparentBackground: true, reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true, onStatus: code => { if (!status) return; const ready = ["playing", "static-avatar", "reduced-motion"].includes(code); status.hidden = ready; status.textContent = ready ? "" : "Avatar unavailable"; } });
       dialog.addEventListener("close", () => viewer.dispose(), { once: true });
       await viewer.start(card.avatarModelUrl);
     } catch (_) { if (status) status.textContent = "Avatar unavailable right now."; }

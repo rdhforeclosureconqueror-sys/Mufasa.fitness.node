@@ -43,7 +43,7 @@
         if (this.options.injectFailure === "renderer_init") throw Object.assign(new Error("Injected renderer failure"), { code: "renderer_init_failed" });
         this.renderer = (this.options.createRenderer || (opts => new THREE.WebGLRenderer(opts)))({ antialias: false, alpha: true });
         this.canvas = this.renderer.domElement; container.appendChild(this.canvas); counters.canvases++;
-        this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x07110e); this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 10); this.camera.position.z = 2.5;
+        this.scene = new THREE.Scene(); this.scene.background = this.options.transparentBackground ? null : new THREE.Color(0x07110e); this.renderer.setClearColor?.(0x000000, this.options.transparentBackground ? 0 : 1); this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 10); this.camera.position.z = 2.5;
         this.scene.add(new THREE.HemisphereLight(0xf4f7f5, 0x26352f, 1.15));
         const keyLight = new THREE.DirectionalLight(0xffffff, 1.65); keyLight.position.set(3, 5, 4); this.scene.add(keyLight);
         const fillLight = new THREE.DirectionalLight(0xb9d8ff, 0.55); fillLight.position.set(-4, 2, 3); this.scene.add(fillLight);
