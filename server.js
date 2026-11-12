@@ -3813,6 +3813,34 @@ function createApp(options = {}) {
     res.cookie(pacCookieName,session,{httpOnly:true,secure:env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:pacSessionTtlMs});
     return res.redirect(303,"/eight-limbs-adinkra.html");
   });
+  const currentPacUserId=req=>{
+    const cookie=String(req.headers.cookie||"").split(";").map(p=>p.trim()).find(p=>p.startsWith(pacCookieName+"="));
+    const token=cookie?cookie.slice(pacCookieName.length+1):"";
+    const session=pacBrowsingSessions.get(token);
+    return session&&session.expiresAt>Date.now()&&getPanAfricanAccess(userStore,session.userId).authorized?session.userId:null;
+  };
+  app.get("/api/pan-african/progress",(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    const userId=currentPacUserId(req);
+    if(!userId)return res.status(401).json({error:"VERIFIED_MEMBER_SESSION_REQUIRED"});
+    return res.json({progress:userStore.loadUser(userId).panAfricanJourneyProgress||null});
+  });
+  app.post("/api/pan-african/start",(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    const userId=currentPacUserId(req);
+    if(!userId)return res.status(401).json({error:"VERIFIED_MEMBER_SESSION_REQUIRED"});
+    const kind=req.body?.kind;
+    const field=kind==="combined"?"combinedEightLimbsStart":kind==="pillars"?"eightPillarsStart":null;
+    if(!field)return res.status(400).json({error:"INVALID_JOURNEY_TYPE"});
+    const now=new Date();
+    const date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+    userStore.updateUser(userId,user=>{
+      const old=user.panAfricanJourneyProgress||{};
+      user.panAfricanJourneyProgress={...old,schemaVersion:1,[field]:old[field]||date,updatedAt:now.toISOString()};
+      return user;
+    });
+    return res.json({progress:userStore.loadUser(userId).panAfricanJourneyProgress});
+  });
   app.use((req,res,next)=>{
     if(!pacProtectedFiles.has(req.path))return next();
     res.set("Cache-Control","private, no-store");
