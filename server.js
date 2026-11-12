@@ -3771,6 +3771,23 @@ function createApp(options = {}) {
     for(const [key,item] of pacBrowsingSessions)if(item.expiresAt<=now)pacBrowsingSessions.delete(key);
     for(const [key,item] of pacNavigationTickets)if(item.expiresAt<=now)pacNavigationTickets.delete(key);
   };
+  app.put("/api/admin/pan-african/members/:userId",requireAuth,(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    if(!["admin","super_admin"].includes(req.authz?.role))return res.status(403).json({error:"ADMIN_REQUIRED"});
+    const targetId=String(req.params.userId||"").trim();
+    if(!targetId||!userStore.listUsers().some(user=>user.userId===targetId))return res.status(404).json({error:"MEMBER_NOT_FOUND"});
+    const action=req.body?.action;
+    if(action!=="approve"&&action!=="revoke")return res.status(400).json({error:"INVALID_MEMBERSHIP_ACTION"});
+    const now=new Date().toISOString();
+    userStore.updateUser(targetId,user=>{
+      const previous=user.communityMemberships||{};
+      user.communityMemberships={...previous,panAfrican:action==="approve"
+        ?{status:"approved",approvedBy:req.auth.userId,approvedAt:now}
+        :{status:"revoked",revokedBy:req.auth.userId,revokedAt:now}};
+      return user;
+    });
+    return res.status(200).json({userId:targetId,status:action==="approve"?"approved":"revoked"});
+  });
   app.post("/api/me/pan-african/browse-session",requireAuth,(req,res)=>{
     res.set("Cache-Control","private, no-store");
     if(!getPanAfricanAccess(userStore,req.auth.userId).authorized)return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
