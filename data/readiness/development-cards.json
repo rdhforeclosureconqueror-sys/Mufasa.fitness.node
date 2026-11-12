@@ -866,6 +866,20 @@
       "createdAt": "2026-11-12T02:20:07.465Z",
       "source": "readiness:update",
       "taskId": "avatar-mobile-upload-timeout-v1"
+    },
+    {
+      "id": "avatar-xhr-first-failure-repair",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Avatar mobile transport first-failure repair",
+      "category": "RELIABILITY",
+      "description": "Replace silent browser upload failure with observable mobile-safe transport and exact boundary diagnostics.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-11-12T04:31:43.598Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

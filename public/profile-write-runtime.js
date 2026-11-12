@@ -358,6 +358,70 @@
     return Math.min(MOBILE_UPLOAD_MAX_TIMEOUT_MS, Math.max(MOBILE_UPLOAD_MIN_TIMEOUT_MS, estimate, DEFAULT_UPLOAD_TIMEOUT_MS));
   }
 
+  // Safari can reject a cross-origin fetch carrying a large File with only an
+  // opaque AbortError/DOMException. XMLHttpRequest exposes upload lifecycle
+  // events, including the boundary where bytes actually begin leaving the
+  // device, so the First-Failure panel can distinguish a browser/network
+  // rejection from an API or storage failure.
+  function postAvatarMultipart({ url, method, form, authToken, timeoutMs }) {
+    if (typeof global.XMLHttpRequest !== "function") {
+      return fetch(url, {
+        method,
+        headers: { authorization: `Bearer ${authToken}` },
+        body: form
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      const xhr = new global.XMLHttpRequest();
+      let dispatched = false;
+      const transportError = (message, code, extra = {}) => reject(makeError(message, code, {
+        transport: "xhr",
+        dispatched,
+        ...extra
+      }));
+
+      try {
+        xhr.open(method, url, true);
+        xhr.timeout = timeoutMs;
+        xhr.setRequestHeader("authorization", `Bearer ${authToken}`);
+        xhr.upload.onloadstart = () => {
+          dispatched = true;
+          diagnostic("avatarDiagUpload", "REQUEST_DISPATCHED");
+          setAvatarAssetStatus("Upload started from this device. Sending avatar file…");
+        };
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) {
+            diagnostic("avatarDiagUpload", "REQUEST_UPLOADING");
+            return;
+          }
+          const percent = Math.max(0, Math.min(100, Math.round((event.loaded / event.total) * 100)));
+          diagnostic("avatarDiagUpload", `REQUEST_UPLOADING ${percent}%`);
+          setAvatarAssetStatus(`Sending avatar file… ${percent}%`);
+        };
+        xhr.upload.onerror = () => transportError("avatar_upload_network_error", "UPLOAD_NETWORK_ERROR");
+        xhr.upload.onabort = () => transportError("avatar_upload_aborted", "UPLOAD_ABORTED");
+        xhr.onerror = () => transportError("avatar_upload_network_error", "UPLOAD_NETWORK_ERROR");
+        xhr.onabort = () => transportError("avatar_upload_aborted", "UPLOAD_ABORTED");
+        xhr.ontimeout = () => transportError(`avatar_upload_timeout_${timeoutMs}ms`, "UPLOAD_TIMEOUT", { timeoutMs });
+        xhr.onload = () => {
+          const text = String(xhr.responseText || "");
+          let payload = null;
+          try { payload = text ? JSON.parse(text) : null; } catch (_) {}
+          resolve({
+            status: xhr.status,
+            ok: xhr.status >= 200 && xhr.status < 300,
+            json: async () => payload
+          });
+        };
+        diagnostic("avatarDiagUpload", "TRANSPORT_STARTING");
+        xhr.send(form);
+      } catch (error) {
+        transportError(error?.message || "avatar_upload_transport_setup_failed", "UPLOAD_TRANSPORT_SETUP_FAILED");
+      }
+    });
+  }
+
   function setProfileAvatar(avatar) {
     const profile = getProfile();
     if (!profile) return null;
@@ -467,26 +531,19 @@
       throw err;
     }
     const uploadUrl = resolveCanonicalApiUrl(advertisedContract.path);
-    const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
     timeoutMs = avatarUploadTimeoutMs(file);
-    const timeoutHandle = abortController
-      ? setTimeout(() => abortController.abort("avatar_upload_timeout"), timeoutMs)
-      : null;
 
     try {
       log(AVATAR_TAG, "request starting", { method: "POST", url: uploadUrl, field: "avatar", name: file.name, size: file.size, type: file.type });
-      diagnostic("avatarDiagUpload", "REQUEST_SENT");
+      diagnostic("avatarDiagUpload", "TRANSPORT_STARTING");
       let response;
-      try {
-        response = await fetch(uploadUrl, {
-          method: contract.method,
-          headers: { authorization: `Bearer ${authToken}` },
-          body: form,
-          ...(abortController ? { signal: abortController.signal } : {})
-        });
-      } finally {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
-      }
+      response = await postAvatarMultipart({
+        url: uploadUrl,
+        method: contract.method,
+        form,
+        authToken,
+        timeoutMs
+      });
       const payload = await response.json().catch(() => null);
       diagnostic("avatarDiagHttp", `HTTP ${response.status}`);
       diagnostic("avatarDiagServerCode", payload?.error?.code || "NONE");
@@ -564,9 +621,6 @@
       emitProfileSync(getProfile(), "avatar-upload", "authenticated_api");
       return { ok: true, avatar: nextAvatar, mode: "authenticated_api" };
     } catch (err) {
-      if (abortController?.signal?.aborted && abortController.signal.reason === "avatar_upload_timeout") {
-        err = makeError(`avatar_upload_timeout_${timeoutMs}ms`, "UPLOAD_TIMEOUT", { timeoutMs });
-      }
       recordError("avatar-upload", err);
       // A confirmed 2xx upload remains a transport success even when the
       // mandatory profile reload or later activation fails.
@@ -580,12 +634,18 @@
       if (state.refs.avatarModelUrlInput?.value) diagnostic("avatarDiagProfile", "FAILED");
       diagnostic("avatarDiagError", String(err?.code || err?.message || err || "UPLOAD_FAILED"));
       warn(AVATAR_TAG, "avatar upload failed", err);
-      setAvatarAssetStatus("Upload failed or asset could not be stored.", true);
+      const reachedServer = uploadTransportSucceeded || Boolean(err?.status);
+      setAvatarAssetStatus(
+        reachedServer ? "Upload reached the server but did not complete." : "Upload did not reach the server. Check the browser/network transport failure above.",
+        true
+      );
       const msg = String(err?.message || "");
       if (isAuthUnavailable(err) || msg === "missing_auth_token" || msg.includes("Authentication required") || msg.includes("Trust mode")) {
         visibleAvatarMessage("Upload blocked: backend auth bridge unavailable (missing token).", true);
       } else if (err?.code === "UPLOAD_TIMEOUT" || msg.includes("avatar_upload_timeout") || msg.includes("AbortError")) {
         visibleAvatarMessage(`Upload timed out after ${Math.round((err?.timeoutMs || timeoutMs || DEFAULT_UPLOAD_TIMEOUT_MS) / 1000)}s before the server could finish receiving it. Check your connection and retry.`, true);
+      } else if (err?.code === "UPLOAD_NETWORK_ERROR" || err?.code === "UPLOAD_ABORTED" || err?.code === "UPLOAD_TRANSPORT_SETUP_FAILED") {
+        visibleAvatarMessage("Upload did not leave the browser. The server did not receive the file; retry after the connection stabilizes.", true);
       } else if (msg) {
         visibleAvatarMessage(`Upload failed: ${msg}`, true);
       } else {
