@@ -894,6 +894,20 @@
       "createdAt": "2026-11-12T14:17:15.489Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "community-assessment-profile-link",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Assessment-to-profile linkage and member card selection",
+      "category": "feature",
+      "description": "Persist same-email Love/Loyalty references before Community ID creation; keep readings private and let members choose displayed cards.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-11-12T16:56:11.501Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
