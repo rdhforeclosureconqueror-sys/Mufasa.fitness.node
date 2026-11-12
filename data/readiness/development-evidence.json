@@ -6417,6 +6417,61 @@
       "prNumber": 1262,
       "commitSha": "86c2ef94c77d262b045948071ee12f383bfb859b",
       "timestamp": "2026-11-12T01:53:44.996Z"
+    },
+    {
+      "operationId": "72500355-6a7d-4c9c-8691-d2f9e84df912",
+      "board": "avatar",
+      "cardId": "avatar-development-mobile-upload-timeout-repair",
+      "sourceType": "card_creation",
+      "taskId": "avatar-mobile-upload-timeout-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "Triggered by a real iPhone upload: 13.57 MB GLB aborts after the fixed 30-second client window before the backend receives the POST.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T02:20:07.465Z"
+    },
+    {
+      "operationId": "2beb0be6-f6f0-4073-8aaa-d9204d4082d1",
+      "board": "avatar",
+      "cardId": "avatar-development-mobile-upload-timeout-repair",
+      "sourceType": "implementation",
+      "taskId": "avatar-mobile-upload-timeout-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "Tracing the client abort boundary and implementing a size-aware timeout.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T02:20:07.781Z"
+    },
+    {
+      "operationId": "1fcdb6d3-1cb4-4d92-aaf9-9ea40e536972",
+      "board": "avatar",
+      "cardId": "avatar-development-mobile-upload-timeout-repair",
+      "sourceType": "implementation",
+      "taskId": "avatar-mobile-upload-timeout-v1",
+      "files": [],
+      "automated": null,
+      "evidence": "Selected as active upload repair.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T02:20:08.113Z"
+    },
+    {
+      "operationId": "5ef2467d-f44d-4e85-957a-5a030df4627d",
+      "board": "avatar",
+      "cardId": "avatar-development-mobile-upload-timeout-repair",
+      "sourceType": "implementation",
+      "taskId": "avatar-mobile-upload-timeout-v1",
+      "files": [
+        "public/profile-write-runtime.js",
+        "test/avatar-mobile-upload-timeout.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Root cause: the fixed 30-second client abort produced iPhone error 20 before Render received the 13.57 MB POST. The upload now uses a size-aware 60–180 second budget and reports UPLOAD_TIMEOUT with the actual limit. New timeout test and end-to-end upload transport tests passed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T02:21:31.655Z"
     }
   ]
 }
