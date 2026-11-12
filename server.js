@@ -836,7 +836,7 @@ function createApp(options = {}) {
   installCommunityCardRoutes({ app, requireAuth, service: communityCardService });
   const communityPresenceService = createCommunityPresenceService({ cardService: communityCardService, userStore });
   installCommunityPresenceRoutes({ app, requireAuth, service: communityPresenceService });
-  installCommunityAssessmentImportRoutes({ app, requireAuth, service: createCommunityAssessmentImportService({ cardService: communityCardService }) });
+  installCommunityAssessmentImportRoutes({ app, requireAuth, service: createCommunityAssessmentImportService({ cardService: communityCardService, userStore }) });
   const trackAdminOpsAuthorizationDecision = ({ req, permission, allowed, reason }) => {
     writeObservability.trackAdminOpsAuthorization({
       permission,

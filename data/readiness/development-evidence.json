@@ -6587,6 +6587,39 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-12T14:21:55.918Z"
+    },
+    {
+      "operationId": "f8aa6334-075d-453f-87bd-376077336c81",
+      "board": "avatar",
+      "cardId": "community-assessment-profile-link",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Persist same-email Love/Loyalty references before Community ID creation; keep readings private and let members choose displayed cards.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T16:56:11.501Z"
+    },
+    {
+      "operationId": "401e5e78-061d-4971-ab5b-89ab783916cc",
+      "board": "avatar",
+      "cardId": "community-assessment-profile-link",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/services/communityAssessmentImportService.js",
+        "src/routes/communityAssessmentImportRoutes.js",
+        "public/community-entrance.js",
+        "public/community-entrance.html",
+        "test/community-assessment-import.test.js",
+        "test/community-assessment-selection-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated tests: linked assessment remains private; pre-ID linkage survives card setup; ownership mismatch rejected; selection UI verified.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T16:56:11.735Z"
     }
   ]
 }
