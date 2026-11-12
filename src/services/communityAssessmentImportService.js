@@ -43,8 +43,8 @@ function createCommunityAssessmentImportService({ cardService, fetchImpl = globa
     if (!card) throw new ApiError("COMMUNITY_CARD_REQUIRED", "Create your Community ID first, then add your assessment cards.", 409);
     const imported = labelsFromResult(result, engine);
     const assessmentHighlights = [...(card.assessmentHighlights || []).filter(item => (typeof item === "string" ? true : item.source !== engine)), ...imported];
-    const { displayName, bioShort, interests, goals, visibility, animationClip, colorTheme, backgroundImage, useHubBackground } = card;
-    return cardService.save(userId, { displayName, bioShort, interests, goals, visibility, animationClip, colorTheme, backgroundImage, useHubBackground, assessmentHighlights });
+    const { displayName, bioShort, interests, goals, visibility, animationClip, colorTheme, backgroundImage, avatarAreaTheme, useHubBackground } = card;
+    return cardService.save(userId, { displayName, bioShort, interests, goals, visibility, animationClip, colorTheme, backgroundImage, avatarAreaTheme, useHubBackground, assessmentHighlights });
   }
   return Object.freeze({ importResult, labelsFromResult, resultEmail });
 }

@@ -31,7 +31,7 @@ test("only consented public projection is shared, never private user fields",t=>
  store.updateUser("member_a",u=>{u.email="private@example.com";u.ohsa=[{condition:"private"}];return u;});
  service.save("member_a",{...example,visibility:"members"});
  const exposed=service.visibleToMember("member_a");
- assert.deepEqual(Object.keys(exposed).sort(),["animationClip","assessmentHighlights","avatarModelUrl","backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
+ assert.deepEqual(Object.keys(exposed).sort(),["animationClip","assessmentHighlights","avatarAreaTheme","avatarModelUrl","backgroundImage","bioShort","colorTheme","displayName","goals","interests"].sort());
  assert.equal(JSON.stringify(exposed).includes("private@example.com"),false);
  service.save("member_a",{...example,visibility:"private"});
  assert.equal(service.visibleToMember("member_a"),null);
@@ -78,6 +78,8 @@ test("community card stores only bounded, supported background images and palett
  assert.equal(card.colorTheme,"royal");
  assert.equal(card.backgroundImage,background);
  assert.equal(card.useHubBackground,false);
+ assert.equal(card.avatarAreaTheme,"emerald");
+ assert.equal(service.save("member_a",{...example,avatarAreaTheme:"royal"}).avatarAreaTheme,"royal");
  assert.equal(service.save("member_a",{...example,useHubBackground:true}).useHubBackground,true);
  assert.throws(()=>service.save("member_b",{...example,colorTheme:"nope"}),{status:400});
  assert.throws(()=>service.save("member_c",{...example,backgroundImage:"https://untrusted.example/photo.jpg"}),{status:400});

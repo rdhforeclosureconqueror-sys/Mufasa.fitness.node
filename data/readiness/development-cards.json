@@ -838,6 +838,20 @@
       "createdAt": "2026-11-11T03:25:10.172Z",
       "source": "readiness:update",
       "taskId": "community-presence-hub-v1"
+    },
+    {
+      "id": "avatar-development-community-id-avatar-stage",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Community ID avatar-stage presentation repair",
+      "category": "COMMUNITY ID",
+      "description": "Preserve the chosen framed avatar-stage color in owner preview and shared member cards without changing guarded avatar access.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-12T01:53:44.020Z",
+      "source": "readiness:update",
+      "taskId": "community-avatar-stage-v1"
     }
   ]
 }

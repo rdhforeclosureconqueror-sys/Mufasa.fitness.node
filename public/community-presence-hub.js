@@ -12,6 +12,7 @@
   };
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   const palette = theme => ({ kente: "linear-gradient(145deg,#1c6048,#0d3028,#8a382b)", indigo: "linear-gradient(145deg,#273b76,#142351,#9e4d36)", sunset: "linear-gradient(145deg,#8e392e,#5d221d,#173d35)", earth: "linear-gradient(145deg,#65432d,#3f281d,#244b40)", royal: "linear-gradient(145deg,#542a68,#331b4b,#124842)" }[theme] || "linear-gradient(145deg,#1c6048,#0d3028)");
+  const avatarStage = theme => ({emerald:"radial-gradient(circle at 50% 24%,#1b6651,#061914 72%)",midnight:"radial-gradient(circle at 50% 24%,#243452,#070c18 72%)",indigo:"radial-gradient(circle at 50% 24%,#483d83,#12102b 72%)",sunset:"radial-gradient(circle at 50% 24%,#914c36,#25120e 72%)",royal:"radial-gradient(circle at 50% 24%,#683f78,#1d1029 72%)"}[theme]||"radial-gradient(circle at 50% 24%,#1b6651,#061914 72%)");
   async function mountAvatar(card, dialog) {
     const target = dialog.querySelector("#memberAvatarSpace"), status = dialog.querySelector("#memberAvatarStatus");
     if (!target || !card.avatarModelUrl || !window.MileleCommunityAvatar?.create) { if (status) status.textContent = "No shared avatar yet."; return; }
@@ -19,7 +20,7 @@
       await window.AuthStateRuntime?.whenReady?.();
       const token = window.AuthStateRuntime?.getAuthToken?.();
       if (!token) throw Error("Sign in required");
-      const viewer = window.MileleCommunityAvatar.create({ container: target, token, backend: origin(), preferredClip: card.animationClip || "", reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true, onStatus: code => { if (status) status.textContent = code === "playing" ? "Avatar movement" : code === "static-avatar" ? "Avatar" : "Avatar unavailable"; } });
+      const viewer = window.MileleCommunityAvatar.create({ container: target, token, backend: origin(), preferredClip: card.animationClip || "", transparentBackground: true, reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true, onStatus: code => { if (!status) return; const ready = ["playing", "static-avatar", "reduced-motion"].includes(code); status.hidden = ready; status.textContent = ready ? "" : "Avatar unavailable"; } });
       dialog.addEventListener("close", () => viewer.dispose(), { once: true });
       await viewer.start(card.avatarModelUrl);
     } catch (_) { if (status) status.textContent = "Avatar unavailable right now."; }
@@ -31,6 +32,7 @@
     const highlights = (card.assessmentHighlights || []).map(value => { const label=typeof value === "string" ? value : value.label; const source=typeof value === "string" ? "" : value.source; return `<span class="member-highlight" data-highlight-source="${esc(source)}">${esc(label)}</span>`; }).join("");
     dialog.innerHTML = `<button class="btn secondary" type="button" id="closeMemberId">Close</button><p class="eyebrow">MILELE FIT · COMMUNITY ID</p><section class="member-id-view"><p class="eyebrow">COMMUNITY MEMBER</p><div class="member-avatar" id="memberAvatarSpace" aria-label="${esc(card.displayName)}'s avatar"><span id="memberAvatarStatus">Loading avatar…</span></div><h2>${esc(card.displayName)}</h2><p>${esc(card.bioShort || "Here for the wellness journey.")}</p><p class="muted">${(card.interests || []).map(esc).join(" · ")}</p><p class="muted">${(card.goals || []).map(esc).join(" · ")}</p>${highlights ? `<div class="member-highlights"><p class="eyebrow">LOVE &amp; LOYALTY · TOP CARDS</p>${highlights}</div>` : ""}</section>`;
     dialog.querySelector(".member-id-view").style.backgroundImage = `linear-gradient(180deg,rgba(3,19,14,.20),rgba(3,19,14,.70)),${background}`;
+    dialog.querySelector("#memberAvatarSpace").style.background = avatarStage(card.avatarAreaTheme);
     dialog.querySelector("#closeMemberId").addEventListener("click", () => dialog.close());
     dialog.showModal();
     mountAvatar(card, dialog);
