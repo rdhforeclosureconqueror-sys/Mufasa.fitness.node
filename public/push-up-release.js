@@ -13,6 +13,8 @@
     firstFailure: null,
     trace: []
   };
+  const communityAvatarStudio = new URLSearchParams(global.location.search).get('avatarSetup') === 'community';
+  let communityAvatarViewer = null;
   let avatarVerificationVersion = 0;
 
   const $ = (id) => global.document.getElementById(id);
@@ -135,6 +137,55 @@
     };
   }
 
+  function disposeCommunityAvatarPreview() {
+    communityAvatarViewer?.dispose?.();
+    communityAvatarViewer = null;
+    $('releaseAvatarPreview')?.querySelectorAll?.('canvas').forEach((canvas) => canvas.remove());
+  }
+
+  async function mountCommunityAvatarPreview() {
+    if (!communityAvatarStudio || !state.avatar?.avatarModelUrl || !state.auth?.token) return;
+    const container = $('releaseAvatarPreview');
+    const placeholder = $('releaseAvatarPlaceholder');
+    const thumb = $('releaseAvatarThumb');
+    if (!container || !global.MileleCommunityAvatar?.allowedAvatarPath) return;
+    const modelPath = global.MileleCommunityAvatar.allowedAvatarPath(state.avatar.avatarModelUrl);
+    if (!modelPath) return;
+    disposeCommunityAvatarPreview();
+    if (thumb) thumb.hidden = true;
+    if (placeholder) {
+      placeholder.hidden = false;
+      placeholder.textContent = 'Loading your saved 3D avatar…';
+    }
+    const viewer = global.MileleCommunityAvatar.create({
+      container,
+      token: state.auth.token,
+      backend: backendOrigin(),
+      transparentBackground: false,
+      onStatus: (code) => {
+        if (viewer !== communityAvatarViewer) return;
+        if (['playing', 'static-avatar', 'reduced-motion'].includes(code)) {
+          if (placeholder) placeholder.hidden = true;
+          return;
+        }
+        if (['avatar-load-failed', 'renderer-unavailable'].includes(code) && placeholder) {
+          placeholder.hidden = false;
+          placeholder.textContent = 'Your saved avatar is ready. Its 3D preview could not load here.';
+        }
+      }
+    });
+    communityAvatarViewer = viewer;
+    try {
+      const result = await viewer.start(modelPath);
+      if (viewer !== communityAvatarViewer) return;
+      if (['playing', 'static-avatar', 'reduced-motion'].includes(result?.status) && placeholder) placeholder.hidden = true;
+    } catch (_) {
+      if (viewer !== communityAvatarViewer || !placeholder) return;
+      placeholder.hidden = false;
+      placeholder.textContent = 'Your saved avatar is ready. Its 3D preview could not load here.';
+    }
+  }
+
   function arenaAssetId(modelUrl) {
     const raw = String(modelUrl || '').trim();
     const backend = backendOrigin();
@@ -203,6 +254,7 @@
       setGate('Avatar verified. You can enter the Push-Up Arena.', true);
       setError('');
       trace('ARENA_AVATAR_ASSET', 'PASS', 'owned backend GLB is available to the arena');
+      mountCommunityAvatarPreview();
       return true;
     } catch (error) {
       if (version !== avatarVerificationVersion) return false;
@@ -234,13 +286,16 @@
     if (readyActions) readyActions.hidden = true;
     if (badge) badge.hidden = true;
 
-    const thumbUrl = resolveAssetUrl(state.avatar?.avatarThumbnailUrl);
+    const thumbUrl = communityAvatarStudio ? null : resolveAssetUrl(state.avatar?.avatarThumbnailUrl);
     if (thumb) {
       thumb.hidden = !thumbUrl;
       if (thumbUrl) thumb.src = thumbUrl;
       else thumb.removeAttribute('src');
     }
-    if (placeholder) placeholder.hidden = Boolean(thumbUrl);
+    if (placeholder) {
+      placeholder.hidden = Boolean(thumbUrl);
+      if (communityAvatarStudio && present) placeholder.textContent = 'Loading your saved 3D avatar…';
+    }
 
     if (present) {
       setStatus('Saved avatar found. Checking arena compatibility…');
@@ -256,6 +311,7 @@
 
   function renderSignedOut() {
     avatarVerificationVersion += 1;
+    disposeCommunityAvatarPreview();
     state.profile = null;
     state.avatar = null;
     state.avatarReady = false;
@@ -533,6 +589,7 @@
       $('releaseAvatarSetup').scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
     $('releaseEnterArenaBtn').addEventListener('click', enterArena);
+    global.addEventListener('pagehide', disposeCommunityAvatarPreview, { once: true });
     global.addEventListener('auth:changed', () => refreshAuthAndAvatar('auth-changed'));
     global.addEventListener('app:canonical-profile', (event) => {
       if (!event?.detail?.profile) return;

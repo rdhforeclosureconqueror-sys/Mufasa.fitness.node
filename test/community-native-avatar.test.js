@@ -17,14 +17,14 @@ test("native animation choice belongs to each loaded asset, not global library",
  assert.equal(viewer.chooseClip(clips,"unknown"),"Rest");
  assert.equal(viewer.chooseClip([],null),null);
 });
-test("preferred animation name saves and reloads without exposing in public card projection",t=>{
+test("preferred animation name saves and reloads for the member-card avatar renderer",t=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"community-animation-"));
  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const store=createUserStore({userDir:dir}),service=createCommunityCardService({userStore:store});
  const input={displayName:"Soul",bioShort:"",interests:[],goals:[],visibility:"members",animationClip:"Wave"};
  assert.equal(service.save("member_1",input).animationClip,"Wave");
  assert.equal(createCommunityCardService({userStore:store}).get("member_1").animationClip,"Wave");
- assert.equal(Object.hasOwn(service.visibleToMember("member_1"),"animationClip"),false);
+ assert.equal(service.visibleToMember("member_1").animationClip,"Wave");
  assert.throws(()=>service.save("member_1",{...input,animationClip:"x".repeat(150)}),{status:400});
 });
 test("viewer is wired into community page without touching Push-Up Arena",()=>{
