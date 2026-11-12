@@ -10,5 +10,8 @@ test("PAC curriculum cannot be served as public static files",()=>{
  assert.match(server,/res\.status\(401\)/);
  assert.match(server,/getPanAfricanAccess\(userStore,session\.userId\)/);
  assert.match(server,/httpOnly:true/);
+ assert.match(server,/app\\.put\\("\\/api\/admin\/pan-african\/members\/:userId"/);
+ assert.match(server,/\["admin","super_admin"\]\.includes\(req\.authz\?\.role\)/);
+
  for(const asset of ["eight-pillars-review-stories.json","eight-pillars-week-01-approved.txt"])assert.ok(server.includes('"/'+asset+'"'));
 });
