@@ -19,8 +19,8 @@ button.addEventListener("click",async()=>{
   try{
    const combined=localStorage.getItem("milele-eight-limbs-start-v1");
    const pillars=localStorage.getItem("milele-eight-pillars-start-v1");
-   if(/^\\d{4}-\\d{2}-\\d{2}$/.test(combined||""))legacy.combinedEightLimbsStart=combined;
-   if(/^\\d{4}-\\d{2}-\\d{2}$/.test(pillars||""))legacy.eightPillarsStart=pillars;
+   if(/^\d{4}-\d{2}-\d{2}$/.test(combined||""))legacy.combinedEightLimbsStart=combined;
+   if(/^\d{4}-\d{2}-\d{2}$/.test(pillars||""))legacy.eightPillarsStart=pillars;
   }catch(_){}
   if(Object.keys(legacy).length){
    status.textContent="Preserving your existing journey dates…";
