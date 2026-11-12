@@ -43,7 +43,7 @@ jobs:
           echo "## Wellness journey acceptance" >> "$GITHUB_STEP_SUMMARY"
           # The legacy repo-route-audit checks server.js static middleware and is not scoped to this journey change.
           # Keep that legacy finding visible separately; certify journey routes with scoped tests below.
-          node --test test/eight-limbs-adinkra-community.test.js test/eight-limbs-yoga-journey.test.js test/pac-static-access-guard.test.js
+          node --test test/eight-limbs-adinkra-community.test.js test/eight-limbs-yoga-journey.test.js test/pac-static-access-guard.test.js test/pan-african-membership.test.js test/pac-protected-content-http.test.js
           node --check public/eight-limbs-yoga.js
           node --check public/eight-limbs-adinkra.js
           node --check public/eight-pillars-story-review.js
