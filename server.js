@@ -3754,6 +3754,18 @@ function createApp(options = {}) {
     return ok(res,req.requestId,{trial:trial?{...trial,status:Date.parse(trial.expiresAt)>Date.now()?"trialing":"expired"}:null});
   }));
 
+  // PAC curriculum is private: never let express.static expose the source files.
+  // A self-selected pac_community interest is NOT verified group membership.
+  const pacProtectedFiles=new Set([
+    "/eight-limbs-adinkra.html","/eight-limbs-adinkra.js",
+    "/eight-pillars-story-review.html","/eight-pillars-story-review.js"
+  ]);
+  app.use((req,res,next)=>{
+    if(!pacProtectedFiles.has(req.path)) return next();
+    res.set("Cache-Control","private, no-store");
+    return res.status(403).type("text/plain").send("Pan-African community content requires verified membership. Secure member delivery is not yet enabled.");
+  });
+
   // ---- Static assets ----
   app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));
 
