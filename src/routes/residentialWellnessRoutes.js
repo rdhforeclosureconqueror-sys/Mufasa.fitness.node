@@ -2,7 +2,7 @@
 const { asyncHandler } = require("../middleware/requestContext");
 const { createRateLimiter } = require("../middleware/rateLimit");
 const { ok } = require("../lib/apiResponse");
-const { getPanAfricanAccess } = require("../services/panAfricanMembershipService");
+const { getPanAfricanAccess,migrateLegacyPanAfricanProgress,getPanAfricanProgress } = require("../services/panAfricanMembershipService");
 
 function installResidentialWellnessRoutes({app,requireAuth,service,userStore}){
   if(!app||!requireAuth||!service) throw new Error("Residential wellness route dependencies are required");
@@ -19,6 +19,19 @@ function installResidentialWellnessRoutes({app,requireAuth,service,userStore}){
   app.get("/api/me/pan-african/access",requireAuth,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
     return ok(res,req.requestId,{access:getPanAfricanAccess(userStore,req.auth.userId)});
+  }));
+  app.get("/api/me/pan-african/progress",requireAuth,asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    const access=getPanAfricanAccess(userStore,req.auth.userId);
+    if(!access.authorized)return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
+    return ok(res,req.requestId,{progress:getPanAfricanProgress(userStore,req.auth.userId)});
+  }));
+  app.post("/api/me/pan-african/import-legacy-progress",requireAuth,writeLimit,asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    const result=migrateLegacyPanAfricanProgress(userStore,req.auth.userId,req.body||{});
+    if(result.status==="membership_not_verified")return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
+    if(result.status==="invalid_legacy_date")return res.status(400).json({error:"INVALID_LEGACY_START_DATE"});
+    return ok(res,req.requestId,result);
   }));
   app.get("/api/me/eight-limbs-yoga",requireAuth,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
