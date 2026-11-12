@@ -6528,6 +6528,65 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-12T04:34:00.197Z"
+    },
+    {
+      "operationId": "6f96edf0-bfa2-4db8-b246-88a2061d56fb",
+      "board": "avatar",
+      "cardId": "community-id-mobile-presentation-repair",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Ensure Studio avatar readiness renders the member avatar and prevent Community ID metadata/debug overlays from covering the mobile card.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T14:17:15.489Z"
+    },
+    {
+      "operationId": "ad86b422-c6c1-4625-b40b-9e7f0aa900e1",
+      "board": "avatar",
+      "cardId": "community-id-mobile-presentation-repair",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Owner screenshots show a ready Studio pawn placeholder, overlapping privacy metadata, and exposed Bridge Debug controls on mobile.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T14:17:15.688Z"
+    },
+    {
+      "operationId": "dc36013e-c4e6-42c5-a312-4fb5b1aeede0",
+      "board": "avatar",
+      "cardId": "community-id-mobile-presentation-repair",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Selected as current Community ID mobile repair.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T14:17:15.870Z"
+    },
+    {
+      "operationId": "4c83d6e4-bfe9-4e83-835a-301e8b491ce5",
+      "board": "avatar",
+      "cardId": "community-id-mobile-presentation-repair",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/community-entrance.html",
+        "public/push-up-release.html",
+        "public/push-up-release.js",
+        "public/world-bridge-launch.js",
+        "test/community-id-mobile-presentation.test.js",
+        "test/community-native-avatar.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Owner iPhone evidence addressed: Community Avatar Studio now mounts the authenticated canonical 3D avatar rather than showing a pawn; card privacy metadata flows below member chips on mobile; world bridge debug UI is opt-in via bridgeDebug=1. Targeted Community ID, avatar, arena, and auth tests passed 21/21; readiness validation passed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-12T14:21:55.918Z"
     }
   ]
 }

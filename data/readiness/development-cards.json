@@ -880,6 +880,20 @@
       "createdAt": "2026-11-12T04:31:43.598Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "community-id-mobile-presentation-repair",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Community ID mobile presentation repair",
+      "category": "RELIABILITY",
+      "description": "Ensure Studio avatar readiness renders the member avatar and prevent Community ID metadata/debug overlays from covering the mobile card.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": false,
+      "createdAt": "2026-11-12T14:17:15.489Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
