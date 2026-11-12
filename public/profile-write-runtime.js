@@ -8,7 +8,10 @@
   const AVATAR_TAG = "[AVATAR_UPLOAD]";
   const SYNC_TAG = "[PROFILE_SYNC]";
   const DEFAULT_PROVIDER = "avaturn";
-  const DEFAULT_UPLOAD_TIMEOUT_MS = 30000;
+  const DEFAULT_UPLOAD_TIMEOUT_MS = 60000;
+  const MOBILE_UPLOAD_MIN_TIMEOUT_MS = 60000;
+  const MOBILE_UPLOAD_MAX_TIMEOUT_MS = 180000;
+  const MOBILE_UPLOAD_ASSUMED_BYTES_PER_SECOND = 128 * 1024;
   const DEFAULT_MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
   const state = {
@@ -344,6 +347,17 @@
     return true;
   }
 
+  // A fixed 30-second window aborts a valid near-limit GLB on ordinary mobile
+  // uplinks before it reaches the server. Keep small files responsive while
+  // budgeting enough time for a 15 MB Avaturn export at a conservative rate.
+  function avatarUploadTimeoutMs(file) {
+    const configured = Number(state.deps.uploadTimeoutMs);
+    if (Number.isFinite(configured) && configured > 0) return configured;
+    const size = Math.max(0, Number(file?.size) || 0);
+    const estimate = 30000 + Math.ceil(size / MOBILE_UPLOAD_ASSUMED_BYTES_PER_SECOND) * 1000;
+    return Math.min(MOBILE_UPLOAD_MAX_TIMEOUT_MS, Math.max(MOBILE_UPLOAD_MIN_TIMEOUT_MS, estimate, DEFAULT_UPLOAD_TIMEOUT_MS));
+  }
+
   function setProfileAvatar(avatar) {
     const profile = getProfile();
     if (!profile) return null;
@@ -408,6 +422,7 @@
     const file = selectedFile || selectedAvatarFile();
     let uploadTransportSucceeded = false;
     let profileReloadSucceeded = false;
+    let timeoutMs = DEFAULT_UPLOAD_TIMEOUT_MS;
     // Each attempt owns the visible diagnostic result. Do not let an error from
     // a previous attempt survive a later successful upload and activation.
     diagnostic("avatarDiagError", "NONE");
@@ -453,8 +468,9 @@
     }
     const uploadUrl = resolveCanonicalApiUrl(advertisedContract.path);
     const abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
+    timeoutMs = avatarUploadTimeoutMs(file);
     const timeoutHandle = abortController
-      ? setTimeout(() => abortController.abort("avatar_upload_timeout"), Number(state.deps.uploadTimeoutMs || DEFAULT_UPLOAD_TIMEOUT_MS))
+      ? setTimeout(() => abortController.abort("avatar_upload_timeout"), timeoutMs)
       : null;
 
     try {
@@ -548,6 +564,9 @@
       emitProfileSync(getProfile(), "avatar-upload", "authenticated_api");
       return { ok: true, avatar: nextAvatar, mode: "authenticated_api" };
     } catch (err) {
+      if (abortController?.signal?.aborted && abortController.signal.reason === "avatar_upload_timeout") {
+        err = makeError(`avatar_upload_timeout_${timeoutMs}ms`, "UPLOAD_TIMEOUT", { timeoutMs });
+      }
       recordError("avatar-upload", err);
       // A confirmed 2xx upload remains a transport success even when the
       // mandatory profile reload or later activation fails.
@@ -565,8 +584,8 @@
       const msg = String(err?.message || "");
       if (isAuthUnavailable(err) || msg === "missing_auth_token" || msg.includes("Authentication required") || msg.includes("Trust mode")) {
         visibleAvatarMessage("Upload blocked: backend auth bridge unavailable (missing token).", true);
-      } else if (msg === "avatar_upload_timeout" || msg.includes("AbortError")) {
-        visibleAvatarMessage("Upload timed out after 30s. Check connection or file size and retry.", true);
+      } else if (err?.code === "UPLOAD_TIMEOUT" || msg.includes("avatar_upload_timeout") || msg.includes("AbortError")) {
+        visibleAvatarMessage(`Upload timed out after ${Math.round((err?.timeoutMs || timeoutMs || DEFAULT_UPLOAD_TIMEOUT_MS) / 1000)}s before the server could finish receiving it. Check your connection and retry.`, true);
       } else if (msg) {
         visibleAvatarMessage(`Upload failed: ${msg}`, true);
       } else {

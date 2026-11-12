@@ -852,6 +852,20 @@
       "createdAt": "2026-11-12T01:53:44.020Z",
       "source": "readiness:update",
       "taskId": "community-avatar-stage-v1"
+    },
+    {
+      "id": "avatar-development-mobile-upload-timeout-repair",
+      "board": "avatar",
+      "canonical": false,
+      "title": "Mobile avatar upload timeout repair",
+      "category": "AVATAR UPLOAD",
+      "description": "Allow a valid near-limit Avaturn GLB to finish uploading from an iPhone connection and surface a clear timeout diagnostic if it cannot.",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-12T02:20:07.465Z",
+      "source": "readiness:update",
+      "taskId": "avatar-mobile-upload-timeout-v1"
     }
   ]
 }
