@@ -3777,8 +3777,8 @@ function createApp(options = {}) {
     expirePacMaps();
     const ticket=crypto.randomBytes(32).toString("base64url");
     pacNavigationTickets.set(ticket,{userId:req.auth.userId,expiresAt:Date.now()+pacTicketTtlMs});
-    const backendOrigin=String(env.BACKEND_PUBLIC_URL||"").replace(/\\/$/,"");
-    if(!/^https:\/\//.test(backendOrigin)&&env.NODE_ENV==="production")return res.status(503).json({error:"BACKEND_ORIGIN_NOT_CONFIGURED"});
+    const backendOrigin=String(env.BACKEND_PUBLIC_URL||"").replace(new RegExp("/+$"),"");
+    if(!backendOrigin.startsWith("https://")&&env.NODE_ENV==="production")return res.status(503).json({error:"BACKEND_ORIGIN_NOT_CONFIGURED"});
     const origin=backendOrigin||req.protocol+"://"+req.get("host");
     return res.status(200).json({enterUrl:origin+"/api/pan-african/enter?ticket="+encodeURIComponent(ticket),expiresInSeconds:60});
   });
