@@ -74,3 +74,23 @@ test("workouts, assessments, Journey, leaderboard and admin read model survive r
   assert.equal(detail.training.recentWorkouts.length, 1, "admin completed workouts");
   assert.equal(detail.assessments.summaries.length, 1, "admin assessments");
 });
+
+test("member nutrition goals and food entries survive process restart on the same volume and remain isolated", () => {
+  const { createNutritionService } = require("../src/services/nutritionService");
+  const volume = fs.mkdtempSync(path.join(os.tmpdir(), "nutrition-persistent-volume-"));
+  try {
+    const userDir = path.join(volume, "users");
+    const userId = "nutrition_restart_member";
+    const first = createNutritionService({ userStore: createUserStore({ userDir }) });
+    const chosen = { calories: 2100, proteinGrams: 125, carbohydrateGrams: 210, fatGrams: 70 };
+    assert.deepEqual(first.saveDailyGoals(userId, chosen).goals, chosen);
+    assert.deepEqual(first.getDailyGoals(userId).goals, chosen);
+    const second = createNutritionService({ userStore: createUserStore({ userDir }) });
+    assert.deepEqual(second.getDailyGoals(userId).goals, chosen, "goals survive new service instance");
+    assert.deepEqual(second.coachSnapshot(userId, "2026-11-12").dailyGoalProgress.proteinGrams,
+      { logged: 0, target: 125, remaining: 125, aboveTarget: false });
+    assert.deepEqual(second.getDailyGoals("another_member").goals, {}, "another member cannot see these goals");
+    assert.throws(() => second.saveDailyGoals(userId, { calories: -5 }), /Invalid calories goal/);
+    assert.deepEqual(second.getDailyGoals(userId).goals, chosen, "invalid save does not erase previous goals");
+  } finally { fs.rmSync(volume, { recursive:true, force:true }); }
+});
