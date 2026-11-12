@@ -45,7 +45,7 @@ test("PAC approved, revoked and unauthorized content requests across real HTTP",
  const start=await request(base,"/api/pan-african/start",{method:"POST",cookie,body:{kind:"pillars"}});
  assert.equal(start.status,200,start.text);
  const saved=JSON.parse(start.text).progress;
- assert.match(saved.eightPillarsStart,/^\\d{4}-\\d{2}-\\d{2}$/);
+ assert.match(saved.eightPillarsStart,/^\d{4}-\d{2}-\d{2}$/);
  assert.equal(saved.combinedEightLimbsStart,undefined,"each journey starts independently");
  const again=await request(base,"/api/pan-african/start",{method:"POST",cookie,body:{kind:"pillars"}});
  assert.equal(JSON.parse(again.text).progress.eightPillarsStart,saved.eightPillarsStart,"repeat start cannot reset progress");
