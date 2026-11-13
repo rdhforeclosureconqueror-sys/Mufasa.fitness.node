@@ -3760,6 +3760,7 @@ function createApp(options = {}) {
   // these assets entirely. Authenticated API call mints a one-use navigation
   // ticket so an iPhone can navigate to backend first-party pages without a
   // cross-site cookie or storing bearer tokens in URLs.
+  const isPacAdmin=req=>["admin","super_admin"].includes(req.authz?.role);
   const pacCookieName="milele_pac_session";
   const pacSessionTtlMs=15*60*1000;
   const pacTicketTtlMs=60*1000;
@@ -3790,10 +3791,10 @@ function createApp(options = {}) {
   });
   app.post("/api/me/pan-african/browse-session",requireAuth,(req,res)=>{
     res.set("Cache-Control","private, no-store");
-    if(!getPanAfricanAccess(userStore,req.auth.userId).authorized)return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
+    if(!isPacAdmin(req)&&!getPanAfricanAccess(userStore,req.auth.userId).authorized)return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
     expirePacMaps();
     const ticket=crypto.randomBytes(32).toString("base64url");
-    pacNavigationTickets.set(ticket,{userId:req.auth.userId,expiresAt:Date.now()+pacTicketTtlMs});
+    pacNavigationTickets.set(ticket,{userId:req.auth.userId,adminAccess:isPacAdmin(req),expiresAt:Date.now()+pacTicketTtlMs});
     const backendOrigin=String(env.BACKEND_PUBLIC_URL||"").replace(new RegExp("/+$"),"");
     if(!backendOrigin.startsWith("https://")&&env.NODE_ENV==="production")return res.status(503).json({error:"BACKEND_ORIGIN_NOT_CONFIGURED"});
     const origin=backendOrigin||req.protocol+"://"+req.get("host");
@@ -3807,9 +3808,9 @@ function createApp(options = {}) {
     const grant=pacNavigationTickets.get(ticket);
     if(!grant)return res.status(401).type("text/plain").send("Link expired. Return to the community entry page.");
     pacNavigationTickets.delete(ticket); // one-use even when revoked
-    if(!getPanAfricanAccess(userStore,grant.userId).authorized)return res.status(403).type("text/plain").send("Verified membership required.");
+    if(!grant.adminAccess&&!getPanAfricanAccess(userStore,grant.userId).authorized)return res.status(403).type("text/plain").send("Verified membership required.");
     const session=crypto.randomBytes(32).toString("base64url");
-    pacBrowsingSessions.set(session,{userId:grant.userId,expiresAt:Date.now()+pacSessionTtlMs});
+    pacBrowsingSessions.set(session,{userId:grant.userId,adminAccess:grant.adminAccess===true,expiresAt:Date.now()+pacSessionTtlMs});
     res.cookie(pacCookieName,session,{httpOnly:true,secure:env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:pacSessionTtlMs});
     return res.redirect(303,"/eight-limbs-adinkra.html");
   });
@@ -3817,7 +3818,7 @@ function createApp(options = {}) {
     const cookie=String(req.headers.cookie||"").split(";").map(p=>p.trim()).find(p=>p.startsWith(pacCookieName+"="));
     const token=cookie?cookie.slice(pacCookieName.length+1):"";
     const session=pacBrowsingSessions.get(token);
-    return session&&session.expiresAt>Date.now()&&getPanAfricanAccess(userStore,session.userId).authorized?session.userId:null;
+    return session&&session.expiresAt>Date.now()&&(session.adminAccess===true||getPanAfricanAccess(userStore,session.userId).authorized)?session.userId:null;
   };
   app.get("/api/pan-african/progress",(req,res)=>{
     res.set("Cache-Control","private, no-store");
@@ -3853,7 +3854,7 @@ function createApp(options = {}) {
       if(session)pacBrowsingSessions.delete(ticket);
       return res.status(401).type("text/plain").send("Open this content through the verified Pan-African community entry page.");
     }
-    if(!getPanAfricanAccess(userStore,session.userId).authorized){
+    if(!session.adminAccess&&!getPanAfricanAccess(userStore,session.userId).authorized){
       pacBrowsingSessions.delete(ticket);
       return res.status(403).type("text/plain").send("Verified Pan-African community membership required.");
     }

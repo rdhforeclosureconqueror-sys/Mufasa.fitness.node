@@ -18,17 +18,17 @@ function installResidentialWellnessRoutes({app,requireAuth,service,userStore}){
   }));
   app.get("/api/me/pan-african/access",requireAuth,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
-    return ok(res,req.requestId,{access:getPanAfricanAccess(userStore,req.auth.userId)});
+    return ok(res,req.requestId,{access:getPanAfricanAccess(userStore,req.auth.userId,req.authz?.role)});
   }));
   app.get("/api/me/pan-african/progress",requireAuth,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
     const access=getPanAfricanAccess(userStore,req.auth.userId);
     if(!access.authorized)return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
-    return ok(res,req.requestId,{progress:getPanAfricanProgress(userStore,req.auth.userId)});
+    return ok(res,req.requestId,{progress:getPanAfricanProgress(userStore,req.auth.userId,req.authz?.role)});
   }));
   app.post("/api/me/pan-african/import-legacy-progress",requireAuth,writeLimit,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
-    const result=migrateLegacyPanAfricanProgress(userStore,req.auth.userId,req.body||{});
+    const result=migrateLegacyPanAfricanProgress(userStore,req.auth.userId,req.body||{},req.authz?.role);
     if(result.status==="membership_not_verified")return res.status(403).json({error:"PAN_AFRICAN_MEMBERSHIP_REQUIRED"});
     if(result.status==="invalid_legacy_date")return res.status(400).json({error:"INVALID_LEGACY_START_DATE"});
     return ok(res,req.requestId,result);
