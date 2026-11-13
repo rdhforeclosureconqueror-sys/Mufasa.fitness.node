@@ -7,10 +7,11 @@ function isVerifiedPanAfricanMember(user){
    typeof membership.approvedBy==="string" && membership.approvedBy.trim().length>0 &&
    typeof membership.approvedAt==="string" && Number.isFinite(Date.parse(membership.approvedAt));
 }
-function getPanAfricanAccess(userStore,userId){
+function getPanAfricanAccess(userStore,userId,role){
  if(!userId) return {authorized:false,reason:"authentication_required"};
  const user=userStore.loadUser(userId);
  if(!user) return {authorized:false,reason:"account_not_found"};
+ if(["admin","super_admin"].includes(role))return {authorized:true,reason:"verified_administrator"};
  return {authorized:isVerifiedPanAfricanMember(user),reason:isVerifiedPanAfricanMember(user)?"verified_member":"membership_not_verified"};
 }
 
@@ -19,8 +20,8 @@ function isValidLegacyDay(value){
  const parsed=new Date(value+"T12:00:00Z");
  return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value&&parsed.getTime()<=Date.now()+86400000;
 }
-function migrateLegacyPanAfricanProgress(userStore,userId,input={}){
- if(!getPanAfricanAccess(userStore,userId).authorized)return {status:"membership_not_verified",imported:false};
+function migrateLegacyPanAfricanProgress(userStore,userId,input={},role){
+ if(!getPanAfricanAccess(userStore,userId,role).authorized)return {status:"membership_not_verified",imported:false};
  const candidates={
   combinedEightLimbsStart:input.combinedEightLimbsStart,
   eightPillarsStart:input.eightPillarsStart
@@ -39,8 +40,8 @@ function migrateLegacyPanAfricanProgress(userStore,userId,input={}){
  });
  return result;
 }
-function getPanAfricanProgress(userStore,userId){
- if(!getPanAfricanAccess(userStore,userId).authorized)return null;
+function getPanAfricanProgress(userStore,userId,role){
+ if(!getPanAfricanAccess(userStore,userId,role).authorized)return null;
  return userStore.loadUser(userId)?.panAfricanJourneyProgress||null;
 }
 module.exports={isVerifiedPanAfricanMember,getPanAfricanAccess,migrateLegacyPanAfricanProgress,getPanAfricanProgress};
