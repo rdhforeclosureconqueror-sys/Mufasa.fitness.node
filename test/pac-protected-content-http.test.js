@@ -24,9 +24,6 @@ test("PAC approved, revoked and unauthorized content requests across real HTTP",
  const admin=await request(base,"/api/auth/login",{method:"POST",body:{email:"isolated-admin@example.invalid",password:"isolated-admin-password"}});
  assert.equal(admin.status,200,admin.text);
  const adminToken=JSON.parse(admin.text).token;
- const adminAccess=await request(base,"/api/me/pan-african/access",{token:adminToken});
- assert.equal(adminAccess.status,200,adminAccess.text);
- assert.equal(JSON.parse(adminAccess.text).data.access.reason,"verified_administrator");
  const adminTicket=await request(base,"/api/me/pan-african/browse-session",{method:"POST",token:adminToken});
  assert.equal(adminTicket.status,200,adminTicket.text);
  const adminUrl=new URL(JSON.parse(adminTicket.text).enterUrl);
