@@ -4,10 +4,11 @@
 const fs=require("node:fs");
 const path=require("node:path");
 const root=path.resolve(__dirname,"..");
-const checks=[];
-function check(id,ok,detail){checks.push({id,passed:!!ok,detail});}
+
 function read(p){return fs.readFileSync(path.join(root,p),"utf8");}
 function run(){
+ const checks=[];
+ function check(id,ok,detail){checks.push({id,passed:!!ok,detail});}
  const storage=read("docs/architecture/storage.md");
  const auth=read("docs/auth-rebuild-audit.md");
  const avatar=read("public/avatar-upload-contract.js");
